@@ -119,9 +119,16 @@ const WHAT_IT_IS = 'a session over this project';
  */
 const WHICH_BUILD = `v${VERSION}`;
 
-/** What the two sections of the panel are called. */
+/**
+ * What the panel's ONE section is called.
+ *
+ * ⚠️ THERE WERE TWO OF THEM, and the second was called `Hints`: a heading over the one
+ * affordance the box named. It went because the row under the prompt already says where
+ * every word of the session is — the palette the slash opens — and the panel's copy was the
+ * one that scrolls off the top and never comes back. The heading is kept for the section
+ * that stayed, because a section with a heading and one without are two shapes.
+ */
 const THE_RECORD = 'The record';
-const WHAT_TO_TYPE = 'Hints';
 
 /** How deep a line of a section sits under the heading that names it. */
 const UNDER_A_HEADING = 1;
@@ -145,16 +152,6 @@ const LEVEL_MARK = '\u25c9';
  * columns of nothing between it and the end of the terminal.
  */
 const AT_THE_EDGE = 0;
-
-/**
- * The one affordance that is not a keystroke: the word that lists the verbs.
- *
- * It is named apart from the three beside it because the panel shows THIS one and the row
- * under the prompt shows all four, out of the same constant — a second copy would be two
- * sentences about one session, and the second one goes stale on the day the first is
- * reworded.
- */
-const WHAT_IT_RUNS = `\`${ABOUT}\` says what it runs`;
 
 /**
  * THE THREE CLAUSES OF THE HINT, and each one is a KEY and what that key gives (see
@@ -262,7 +259,6 @@ export async function openSession(request: SessionRequest): Promise<void> {
   const where = standingLine(standing());
   const proved = theRecord();
   const record = recordSection(proved?.trees);
-  const hints = [subjectLine(WHAT_TO_TYPE), aside(WHAT_IT_RUNS)];
   const refuses = whatItRefuses(offered.length).map(render);
   // NO PROJECT, NO BADGE. There is no record to name a level of, so the corner says
   // nothing at all — the same posture the line that says where the session is standing
@@ -273,27 +269,32 @@ export async function openSession(request: SessionRequest): Promise<void> {
   const vocabulary = theSessionsOwnWords();
 
   /**
-   * WHAT THE PAGE OPENS WITH on a terminal `columns` wide — and the only thing on this
-   * surface a width decides.
+   * WHAT THE PAGE OPENS WITH on a terminal of a given SIZE — and the only thing on this
+   * surface the size of the terminal decides.
+   *
+   * ⚠️ IT USED TO TAKE THE WIDTH ALONE, and the doc here said a width was "the only thing
+   * on this surface a width decides". What falsified it is the drawing: the name gives way
+   * by height as well now (`presentation/banner.ts`), because five rows of art on a
+   * four-row terminal is a drawing whose top is in the scrollback before anything is typed.
+   * So both measurements arrive, by the same path, from the one place that asks the device.
    *
    * PURE, AND THAT IS THE POINT OF IT BEING A FUNCTION. The console calls it when the page
    * opens and again whenever the caller has finished resizing their window, and between
-   * those two calls nothing is read: the lines above already exist, and the two answers
-   * that depend on the width are which drawing there is ROOM for (`panelFor`) and how much
-   * of the name is DRAWN (`bannerFor`). A recomposition that asked the record again could
-   * make the panel say something different halfway through a session, which is worse than
-   * costing a tenth of a second — and the reads are counted rather than promised
+   * those two calls nothing is read: the lines above already exist, and the answers that
+   * depend on the size are which drawing there is ROOM for (`panelFor`, width) and how much
+   * of the name is DRAWN (`bannerFor`, both). A recomposition that asked the record again
+   * could make the panel say something different halfway through a session, which is worse
+   * than costing a tenth of a second — and the reads are counted rather than promised
    * (`tests/the-name-and-the-hints.test.ts`).
    */
-  const openingFor = (columns: number): Opening => {
+  const openingFor = (columns: number, rows: number): Opening => {
     const panel = panelFor({
       columns,
       render,
       title,
-      mark: bannerFor(columns),
+      mark: bannerFor({ columns, rows }),
       standing: where,
       record,
-      hints,
     });
     return {
       // A terminal too narrow for a box gets no box, and the same lines land instead —
@@ -449,12 +450,19 @@ export async function typedLine(line: string, session: Session): Promise<AfterLi
  * what they know how to type is about to be refused — and it counts the reads rather than
  * stating a number, so it cannot go stale.
  *
- * IT IS OUTSIDE THE BOX, AND THAT IS MEASURED RATHER THAN AESTHETIC. It is seventy-odd
- * characters wide; inside the panel's right-hand column it would be the widest thing there
- * and would push the box past eighty columns, which is where the panel gives up on being a
- * box at all (`panel.ts`). So the sentence keeps the shape it has always had, at the depth
- * it has always had, and the box keeps the widths that let it exist on an ordinary
- * terminal.
+ * IT IS OUTSIDE THE BOX, AND THAT IS MEASURED RATHER THAN AESTHETIC — but not for the
+ * reason this paragraph used to give. ⚠️ IT SAID that inside the panel's right-hand column
+ * the sentence "would push the box past eighty columns", and that has been false since the
+ * box stopped being as wide as its content: it is drawn corner to corner now, so the width
+ * of the box is the TERMINAL'S and nothing inside it can push it anywhere.
+ *
+ * WHAT SURVIVES OF THE ARGUMENT IS ABOUT THE FORM RATHER THAN THE BOX, and it is still a
+ * measurement. The panel chooses its arrangement by the width its CONTENT needs (`panel.ts`
+ * — the two columns, the rule between them and the gaps on each side are counted), so a
+ * line of seventy-odd columns in the right-hand column would push that number past eighty
+ * and the two-column form would give way to the stacked one on an ordinary terminal. The
+ * sentence keeps the shape it has always had, at the depth it has always had, and the box
+ * keeps the form that lets both of its groups be seen at once.
  *
  * LIKE THE PANEL IT IS STATIC, and that is the difference from the tips below: it lands in
  * the scrollback and stays there, so a caller who scrolls to the top of a long session

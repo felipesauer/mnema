@@ -10,12 +10,16 @@
  *
  * WHAT THE FIX IS, said as the four things this file asks:
  *
- *   - THE PAGE, AGAIN, at the new width. Not a special redraw: the same function the word
+ *   - THE PAGE, AGAIN, at the new size. Not a special redraw: the same function the word
  *     that clears already used, with the opening recomposed and everything the session has
  *     said landed under it. So a caller who resizes loses nothing they had read, which is
  *     asked here by a mark only the CALLER can put on a page — the echo of what they
  *     typed, never a sentence of the panel's, which is on every page there is.
- *   - WIDTH ONLY. A window made taller moves no glyph of a drawing measured in columns.
+ *   - EITHER MEASUREMENT. ⚠️ THIS SAID `WIDTH ONLY — a window made taller moves no glyph of
+ *     a drawing measured in columns`, and the drawing stopped being measured in columns
+ *     alone: the name gives way by HEIGHT as well (`presentation/banner.ts`), so a window
+ *     made shorter can open with a different mark. The case is inverted and renamed below,
+ *     and what it counts is unchanged — pages, not redraws.
  *   - ONCE THE SIZE HAS SETTLED. One drag of a window corner is dozens of sizes, and a
  *     page reemitted on each of them would put a drag's worth of pages in the scrollback.
  *     Proved by COUNTING, because "it is debounced" is not observable and "there is one
@@ -27,9 +31,12 @@
  * THE THREE DELTAS OF THE BOX are here too, and they are here rather than in
  * `the-panel.test.ts` because all three came out of the same reading of the same
  * reference: the version on the title, a rule between the two sections of the right-hand
- * column, and the left column centred. Each is measured against the DRAWING — the rule
- * against the width of the column it divides, the centring against the blanks on either
- * side of the mark — so no number in this file can drift away from what is on the screen.
+ * column, and the left column centred. ⚠️ THE SECOND OF THEM IS GONE, with the section it
+ * divided, and its case is inverted rather than deleted — the reference has two sections
+ * there and this console has one, which is a difference from the reference that is
+ * DECIDED (`.refactor/decisions/estudo-o-console-do-mnema.md`, D-b). What is left is
+ * measured against the DRAWING, the centring against the blanks on either side of the
+ * mark, so no number in this file can drift away from what is on the screen.
  */
 
 import { execFileSync, spawn } from 'node:child_process';
@@ -39,6 +46,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
+import { bannerFor } from '../src/presentation/banner.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { openSession } from '../src/repl/session.js';
 import { LEAVE } from '../src/session-words.js';
@@ -425,25 +433,69 @@ const TALL = 40;
  */
 const CARRIES_THE_PAGE = `${ESC}[${TALL};1H`;
 
-describe('the page follows the width and nothing else, and once per drag', () => {
-  it('draws nothing at all when only the height changed', async () => {
-    // A window dragged by its bottom edge moves no glyph of a drawing measured in columns.
-    const { terminal, close } = await opened(200);
-    const pages = () => times(terminal.bytes(), CARRIES_THE_PAGE);
-    expect(pages(), 'the page was never opened').toBe(1);
-    // Four changes of height, ending back where it started — so the bytes that carry a
-    // page away are the ones this case counts, whichever of the five heights turned it.
-    for (const rows of [30, 20, 10, TALL]) terminal.resize(200, rows);
-    await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
-    expect(pages(), 'a change of height turned the page').toBe(1);
+/**
+ * How many pages a session has carried into the scrollback, at ANY height.
+ *
+ * ⚠️ THE CONSTANT ABOVE NAMES ONE HEIGHT, and that was enough while only a width could turn
+ * a page: every page was carried at the height the console opened at. A page turned after
+ * the caller made their window shorter is carried at the NEW height, so counting the one
+ * sequence would count it as zero — the shape of instrument that reads a defect as a
+ * success. The sequence is written by one function and by nothing else (`repl/page.ts`),
+ * whatever height it names.
+ */
+const carriedPages = (bytes: string): number =>
+  (bytes.match(new RegExp(`${ESC}\\[\\d+;1H`, 'g')) ?? []).length;
 
-    // THE TEETH, in the same window: the same instrument, one column narrower, and it
-    // moves. Without this the case above passes on a console that redraws for nothing at
-    // all — including one that was never listening.
+describe('the page follows the drawing, and once per drag', () => {
+  it('draws nothing when a height moves no glyph, and turns the page when one does', async () => {
+    // ⚠️ THIS CASE WAS `draws nothing at all when only the height changed`, and it is
+    // renamed because what it asserted stopped being true: the name gives way by HEIGHT as
+    // well now (`presentation/banner.ts`), so a window made short enough opens with a
+    // different mark. What survived is the half with teeth — a height that changes no glyph
+    // costs the caller nothing — and it survived because the guard stopped comparing SIZES
+    // and started comparing the opening itself (`repl/panel.ts`, `sameOpening`).
+    //
+    // ⚠️ AND IT WOULD HAVE STAYED GREEN THROUGH THE CHANGE, which is why it is here rather
+    // than deleted: it ended its drag back at the height it started from, so a console that
+    // turned a page for every height still answered one. The drag below ends somewhere
+    // else.
+    const { terminal, close } = await opened(200);
+    const pages = () => carriedPages(terminal.bytes());
+    expect(pages(), 'the page was never opened').toBe(1);
+    // Heights the drawing does not depend on, ending at one of them rather than at the one
+    // it started from — and counted at EVERY height, because the bytes that carry a page
+    // away name the height they carried.
+    for (const rows of [30, 20, 10]) terminal.resize(200, rows);
+    await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
+    expect(pages(), 'a height that moves no glyph turned the page').toBe(1);
+
+    // THE WIDTH STILL DOES IT, which is what this case has always been beside — and it is
+    // asked here, at a height with room for the whole drawing, because a short terminal is
+    // one the LIBRARY writes what it is keeping out again on, and the count of boxes stops
+    // being this product's answer there (measured: five corners for three pages at four
+    // rows; `tests/a-page-that-opens-clean.test.ts` is where that behaviour is pinned).
     terminal.resize(199);
     await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
     expect(pages(), 'a change of width did not turn the page').toBe(2);
     expect(times(terminal.bytes(), TOP_LEFT), 'the box was not drawn again').toBe(2);
+
+    // AND THE TEETH FOR THE OTHER MEASUREMENT: a height the drawing DOES depend on. One row
+    // shorter than the mark is tall, which is derived from the mark rather than chosen —
+    // the tall form cannot be drawn in fewer rows than it has.
+    const marked = bannerFor({ columns: 199, rows: TALL });
+    expect(marked.length, 'the tall form is not the tall form').toBeGreaterThan(1);
+    terminal.resize(199, marked.length - 1);
+    await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
+    expect(pages(), 'a height that gives the mark away did not turn the page').toBe(3);
+    // And it is the SHORTER mark that was drawn, so the page turned for the reason claimed.
+    // Read from the LAST box on the page rather than from everything written after the
+    // resize: on a terminal this short the library writes out everything it is keeping,
+    // which is every page so far — the old drawing included.
+    const said = terminal.bytes();
+    expect(
+      said.slice(said.lastIndexOf(TOP_LEFT)),
+      'the tall form survived a terminal too short for it',
+    ).not.toContain(INK);
     await close();
   }, 120_000);
 
@@ -573,31 +625,41 @@ describe('the title says which build it is, and it is the one the flag prints', 
   });
 });
 
-describe('a rule divides the two sections, and it measures the column it divides', () => {
-  it('runs between the record and the hints, as wide as the widest thing beside it', async () => {
-    // THE DELTA, MEASURED AGAINST THE DRAWING. The rule is a box with one edge switched
-    // on rather than a string of dashes, so what it is as wide as is whatever its siblings
-    // made the column — which is the property asserted, not a number.
+describe('nothing divides the right-hand column, because there is one section in it', () => {
+  it('draws no run of glyphs inside the box, and the record is what is there', async () => {
+    // ⚠️ THIS CASE IS THE INVERSE OF THE ONE IT REPLACES, and it is renamed rather than
+    // edited. It used to be `a rule divides the two sections, and it measures the column it
+    // divides`, and it asserted that the run between `The record` and `Hints` reached as far
+    // as the widest row beside it. Two things fell at once. The second SECTION went — what
+    // to type is said under the prompt, in the place that does not scroll away — so there is
+    // nothing left for a rule to divide. And the property the case was pinning had already
+    // stopped being true of the DRAWING: the box is as wide as the terminal now, so the
+    // column is stretched, and the rule went on measuring its siblings instead — a run of 45
+    // inside a column of 61, measured on a terminal 120 wide. It passed because both numbers
+    // came from the same siblings.
+    //
+    // Kept as a case rather than deleted, because "there is no rule" is exactly what a
+    // future delivery could undo by accident.
     const box = boxOf(await drawnAt(200)).filter((row) => rulesIn(row).length >= 3);
     expect(box.length, 'the box is not in its two-column form').toBeGreaterThan(3);
 
-    const ruled = box.findIndex((row) => isRun(rightOf(row).trim()));
     const record = box.findIndex((row) => rightOf(row).includes('The record'));
-    const hints = box.findIndex((row) => rightOf(row).includes('Hints'));
     expect(record, 'no record section').toBeGreaterThanOrEqual(0);
-    expect(hints, 'no hints section').toBeGreaterThanOrEqual(0);
-    expect(ruled, 'no rule between the sections').toBeGreaterThan(record);
-    expect(ruled).toBeLessThan(hints);
-
-    // AS WIDE AS THE COLUMN. Every row of the right-hand column starts at the same offset,
-    // so how far each one reaches is what has to agree.
+    expect(
+      box.findIndex((row) => isRun(rightOf(row).trim())),
+      'a run of glyphs is still drawn inside the column',
+    ).toBe(-1);
+    // AND NOTHING IS DRAWN INSIDE THE LEFT ONE EITHER, so the absence is about the box
+    // rather than about the half of it this case happened to look in.
+    expect(
+      box.findIndex((row) => isRun(leftOf(row).trim())),
+      'a run of glyphs is drawn inside the left column',
+    ).toBe(-1);
+    // Not vacuous, in two directions: the instrument really can see a run of glyphs, and
+    // the column really has rows in it — the ones the record put there.
+    expect(isRun(RUN.repeat(3))).toBe(true);
     const reach = (row: string): number => rightOf(row).replace(/ +$/, '').length;
-    const widest = Math.max(...box.map(reach));
-    expect(reach(box[ruled] as string), 'the rule is not the width of its column').toBe(widest);
-    // Not vacuous: there really is a run of glyphs, and the column really has something in
-    // it that is not the rule.
-    expect(rightOf(box[ruled] as string).trim().length).toBeGreaterThan(10);
-    expect(widest).toBeGreaterThan(BESIDE_THE_RULE);
+    expect(Math.max(...box.map(reach))).toBeGreaterThan(BESIDE_THE_RULE);
   }, 120_000);
 });
 

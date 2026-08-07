@@ -412,17 +412,27 @@ async function narrowestFor(richness: number): Promise<number> {
 }
 
 describe('the form comes out of the content, and the narrowest still says the essential', () => {
-  it('puts both sections INSIDE the box, headings and all', async () => {
-    // What the box is FOR, asserted where the box is. It is a case of its own because the
-    // floor case below cannot say it: the row under the prompt says the same words as the
-    // panel's one hint, out of the same constant, so a page that had lost the section
-    // entirely would still hold that sentence. Here the rows are the box's own.
+  it('puts the ONE section INSIDE the box, heading and all', async () => {
+    // What the box is FOR, asserted where the box is.
+    //
+    // ⚠️ IT USED TO SAY `both sections`, and the second was `Hints` — a heading over one
+    // sentence naming the word that lists the verbs. It went, and this case is renamed
+    // rather than shortened: what a caller can type is said under the prompt, where it
+    // does not scroll away, and a box that repeated it was the copy nobody could see after
+    // ten reads. So the assertion is now two-sided — the record's section is in the box,
+    // and nothing of the second one is.
     const rows = boxRows(await openedAt(200));
-    for (const said of ['The record', VERIFIED, 'Hints', 'says what it runs']) {
+    for (const said of ['The record', VERIFIED]) {
       expect(
         rows.some((row) => row.includes(said)),
         said,
       ).toBe(true);
+    }
+    for (const gone of ['Hints', 'says what it runs']) {
+      expect(
+        rows.some((row) => row.includes(gone)),
+        gone,
+      ).toBe(false);
     }
   }, 120_000);
 
@@ -471,10 +481,16 @@ describe('the form comes out of the content, and the narrowest still says the es
     expect(page).toContain(OPENED);
     expect(page).toContain(project);
     expect(page).toContain(VERIFIED);
-    // The HEADING and not the hint under it: the row that never scrolls away says the same
-    // words as that hint, so looking for them here would be looking at the wrong row —
-    // measured, by a mutation that dropped the section and left this case green.
-    expect(page).toContain('Hints');
+    // ⚠️ IT ALSO ASKED FOR THE `Hints` HEADING HERE, and the comment said why it was the
+    // heading rather than the sentence under it: the row that never scrolls away says the
+    // same words, so looking for THEM would be looking at the wrong row — measured, by a
+    // mutation that dropped the section and left this case green. The section is gone on
+    // purpose now, so the same reasoning inverts: the heading is what says it is gone from
+    // the floor as well, and it is the one thing on this page that only the panel wrote.
+    expect(page).not.toContain('Hints');
+    // And the floor really is the panel's own lines rather than an empty page: the record's
+    // heading, which is the section that stayed.
+    expect(page).toContain('The record');
   }, 120_000);
 
   it('gives each form up one column below where its own content stops fitting', () => {
@@ -496,7 +512,6 @@ describe('the form comes out of the content, and the narrowest still says the es
         mark: [statement('MARK')],
         standing: [statement('where it is standing')],
         record: [statement('The record'), statement('public', 'verified', 'good', 1)],
-        hints: [statement('Hints'), statement('what to type')],
       });
     const narrowestFor = (form: PanelForm): number => {
       let low = 0;

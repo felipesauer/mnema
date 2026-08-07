@@ -2,10 +2,16 @@
  * HOW MUCH OF THE OPENING PANEL FITS — the arithmetic, and nothing about what it says.
  *
  * The console opens with a box: a title on its top border, the name drawn on the left
- * with the project under it, and on the right what the record is and what to type. That
- * is a drawing with a WIDTH, and a terminal narrower than it would fold the box into
- * nonsense — a border wrapped mid-row is worse than no border at all. So there are three
- * forms, the widest one that fits is the one drawn, and this file is the measurement.
+ * with the project under it, and on the right what the record is. That is a drawing with a
+ * WIDTH, and a terminal narrower than it would fold the box into nonsense — a border
+ * wrapped mid-row is worse than no border at all. So there are three forms, the widest one
+ * that fits is the one drawn, and this file is the measurement.
+ *
+ * ⚠️ THE RIGHT-HAND SIDE HELD TWO SECTIONS AND HOLDS ONE. The second was `Hints`, and what
+ * it said was that a word lists the verbs — which the row under the prompt says too, out of
+ * the palette a slash opens, in a place that never scrolls away. Two sentences about one
+ * session is a thing this bench has paid for; the one that survives is the one a caller can
+ * still see after ten reads.
  *
  * HOW WIDE THE BOX IS DRAWN AND WHICH DRAWING FITS ARE TWO QUESTIONS, and only the second
  * one is here. The box is drawn at the width of the TERMINAL — corner to corner, the way
@@ -43,7 +49,7 @@ import type { Render } from '../presentation/render.js';
  * The three forms, widest first — the same shape of choice the banner makes.
  *
  *   - `columns` — the box, with the mark and where the session is standing on the left,
- *     a rule, and the record and the hints on the right. What the reference showed.
+ *     a rule, and the record on the right. What the reference showed.
  *   - `stacked` — the box, one column: the same groups, one under the other. What a
  *     terminal too narrow for two columns can still hold.
  *   - `bare` — no box. The same lines, in the same order, at the left edge, which is
@@ -65,8 +71,6 @@ export interface PanelRequest {
   readonly standing: readonly Line[];
   /** What the record is: a heading, then one line per tree. Empty outside a project. */
   readonly record: readonly Line[];
-  /** What to type: a heading, then the affordance that names the rest. */
-  readonly hints: readonly Line[];
 }
 
 /** The panel as the layout receives it: bytes, grouped, and the form they go in. */
@@ -91,8 +95,6 @@ export interface Panel {
   readonly standing: readonly string[];
   /** The record's section: its heading and its lines. */
   readonly record: readonly string[];
-  /** The hints section: its heading and its lines. */
-  readonly hints: readonly string[];
 }
 
 /**
@@ -107,7 +109,13 @@ const BORDER = 2;
 const INSIDE = 2;
 /** The gap after the left column, before the rule. */
 const BETWEEN = 2;
-/** The rule between the two columns. */
+/**
+ * The rule between the two columns.
+ *
+ * The one this arithmetic still counts. ⚠️ THERE WAS A SECOND RULE, drawn INSIDE the
+ * right-hand column between its two sections, and this file never counted it — it cost no
+ * columns, because it was a box with nothing in it. It went with the section it divided.
+ */
 const DIVIDER = 1;
 /** The gap after the rule, before the right column. */
 const BESIDE = 2;
@@ -140,6 +148,31 @@ export interface Opening {
 }
 
 /**
+ * Whether two openings are the same drawing — asked by whoever has one on the screen and
+ * has just composed another.
+ *
+ * IT EXISTS BECAUSE THE SIZE STOPPED BEING THE QUESTION. The console used to know a page
+ * was stale by comparing the WIDTH it was drawn for against the width the terminal has,
+ * on the premise that nothing else could move a glyph of it. The name gives way by HEIGHT
+ * now (`presentation/banner.ts`), so the premise is gone — and the answer that replaces it
+ * is not "either measurement moved" but the one that was always underneath: is what would
+ * be drawn what is drawn? A window dragged from forty rows to ten changes no glyph and
+ * costs the caller nothing; one dragged to four changes the mark, and that is a page.
+ *
+ * COMPARED AS A WHOLE rather than field by field, and that is the point of it being here
+ * rather than at the call site: a field added to the panel tomorrow is a field this
+ * comparison cannot forget, which is the shape of defect a hand-written list of fields
+ * produces. Both values come out of {@link panelFor} and {@link Opening}, so the keys are
+ * in the same order and the comparison is over the same shape twice.
+ *
+ * It is cheap by construction: an opening is the dozen or so lines the box holds, already
+ * bytes, and it is asked once per settled resize rather than per frame.
+ */
+export function sameOpening(one: Opening, other: Opening): boolean {
+  return JSON.stringify(one) === JSON.stringify(other);
+}
+
+/**
  * Every line of the panel, in reading order — what a terminal with no room for a box
  * gets.
  *
@@ -149,7 +182,7 @@ export interface Opening {
  * anything is arranged.
  */
 export function panelLines(panel: Panel): readonly string[] {
-  return [panel.title, ...panel.mark, ...panel.standing, ...panel.record, ...panel.hints];
+  return [panel.title, ...panel.mark, ...panel.standing, ...panel.record];
 }
 
 /** How wide the widest of some lines is, and zero when there are none. */
@@ -181,9 +214,9 @@ function widest(lines: readonly Line[]): number {
  * `tests/the-name-and-the-hints.test.ts`).
  */
 export function panelFor(request: PanelRequest): Panel {
-  const { columns, render, title, mark, standing, record, hints } = request;
+  const { columns, render, title, mark, standing, record } = request;
   const left = Math.max(widest(mark), widest(standing));
-  const right = Math.max(widest(record), widest(hints));
+  const right = widest(record);
   // The top border carries the title, so a box narrower than the title is a box whose
   // own name does not fit on it — which is a width the content alone cannot see.
   const titled = widthOf(title) + AROUND_TITLE;
@@ -198,6 +231,5 @@ export function panelFor(request: PanelRequest): Panel {
     mark: mark.map(render),
     standing: standing.map(render),
     record: record.map(render),
-    hints: hints.map(render),
   };
 }
