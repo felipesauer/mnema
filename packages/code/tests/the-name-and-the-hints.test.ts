@@ -17,11 +17,24 @@
  *     opposite decision, so the case that separates them counts: the drawing is written
  *     ONCE and the tips are written on every frame.
  *   - THE STATUS IS PINNED BY WHAT IT DOES NOT DO. `verify` over a real record costs about
- *     a tenth of a second, and a status line that asked the record anything would pay it
- *     before the caller could type. That is an ABSENCE, and an absence needs an instrument
- *     rather than an assertion — so the reads are counted, the record's are asserted to be
- *     none, and the counter is proved to have teeth by a read of the record in the same
- *     session moving it.
+ *     a tenth of a second, and anything that asked the record on every redraw would pay it
+ *     on every keystroke. That is an ABSENCE, and an absence needs an instrument rather
+ *     than an assertion — so the reads are counted, and the counter is proved to have teeth
+ *     by a read of the record in the same window moving it.
+ *
+ * THE INSTRUMENT NOW TELLS THE OPENING FROM A FRAME, and that is a change of shape rather
+ * than a loosening. It used to say the session opened WITHOUT TOUCHING A SINGLE TAIL, and
+ * what falsified it is the opening panel: a console for auditing a record now says, before
+ * the caller types anything, whether that record is intact, which costs one `verify` and is
+ * a decision taken with the number in hand (`repl/session.ts`, `theRecord`). So the
+ * absence was split in two, and the half with teeth is untouched:
+ *
+ *   - THE OPENING may read the record, and reads it EXACTLY ONCE — asserted against what
+ *     one `runVerify` reads over the same project, path for path, so a second call or a
+ *     read per tree is a different list.
+ *   - A FRAME may not read it at all. The watch is switched on AFTER the session is open,
+ *     so what it sees is only what typing causes, and typing a verb in the same window is
+ *     what proves it would have seen one.
  */
 
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
@@ -30,11 +43,14 @@ import { join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
+import { runVerify } from '../src/commands/verify.js';
 import { bannerFor } from '../src/presentation/banner.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { openSession, tips } from '../src/repl/session.js';
+import { here } from '../src/wiring/context.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
+import { DEFAULT_REQUIREMENT } from '../src/wiring/verify.js';
 import { ESC, fakeTerminal, hooksNothing, until } from './support/console.js';
 
 /** `packages/code/src`, for the guards that read the surface's own source. */
@@ -54,6 +70,15 @@ const DIM = `${ESC}[2m`;
 
 /** What the opening always says, whatever the terminal is like. */
 const OPENED = 'a session over this project';
+
+/**
+ * Ctrl-C, which abandons the row being typed.
+ *
+ * Spelled as an escape, like every other unusual byte in this repository's sources: a
+ * control character typed into a source file is invisible in review and survives an edit
+ * made around it.
+ */
+const CLEARS_THE_LINE = '\u0003';
 
 // ---------------------------------------------------------------------------
 // The instrument: every path this process reads, while it is switched on
@@ -179,6 +204,54 @@ async function openedAt(columns: number, typed: readonly string[] = []): Promise
   terminal.type('.exit\r');
   await closed;
   return terminal.bytes();
+}
+
+/**
+ * What a console read while the caller TYPED — with the opening already paid for.
+ *
+ * The watch is switched on only once the session is open, which is the whole point of the
+ * helper: the panel's one read happens before a byte is drawn, so everything counted here
+ * is caused by a keystroke. `answered` is what the page has to say before the counting
+ * stops, so a case that types a verb waits for the verb rather than for a clock.
+ */
+async function readingWhileTyping(typed: string, answered?: string): Promise<string[]> {
+  const terminal = fakeTerminal({ columns: 200 });
+  const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
+  const closed = openSession({
+    io,
+    render: renderPlain,
+    self: REPL_VERB,
+    input: terminal.stdin,
+    output: terminal.stdout,
+    interactive: true,
+    leaving: hooksNothing,
+  });
+  await until(() => terminal.bytes().includes(OPENED), 'opened');
+  const grown = terminal.bytes().length;
+  watched.paths = [];
+  watched.on = true;
+  terminal.type(typed);
+  await until(() => terminal.bytes().length > grown, 'redrew');
+  if (answered !== undefined) {
+    await until(() => terminal.bytes().includes(answered), `answered with ${answered}`);
+  }
+  // The page has stopped growing, so the reads counted are all of them rather than the
+  // ones that happened to be quick.
+  let settled = terminal.bytes().length;
+  for (let still = 0; still < 8; still++) {
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    if (terminal.bytes().length === settled) break;
+    settled = terminal.bytes().length;
+    still = 0;
+  }
+  watched.on = false;
+  const paths = [...watched.paths];
+  // Whatever was typed is abandoned before the word that leaves is: half a verb still on
+  // the row would swallow it, and the session would never come back.
+  terminal.type(CLEARS_THE_LINE);
+  terminal.type('.exit\r');
+  await closed;
+  return paths;
 }
 
 /** How many times `what` occurs in `text`. Overlapping is impossible for these. */
@@ -315,28 +388,39 @@ function recordedAnchor(): string {
 // And it does not read the record to say it
 // ---------------------------------------------------------------------------
 
-describe('the status line does not read the record', () => {
-  it('opens a session without touching a single tail', async () => {
-    // THE ABSENCE, and it is measured rather than asserted. `verify` over a record costs
-    // about a tenth of a second; a bar that asked the record anything would pay that on
-    // the way in, and a bar that asked it again on a redraw would turn a console into a
-    // replay loop.
-    const paths = await reading(async () => {
+describe('the opening reads the record once, and a redraw never reads it', () => {
+  it('reads the record exactly as much as one verify does, and no more', async () => {
+    // THE EXCEPTION, MEASURED. The panel says what the record is, so the opening pays a
+    // `verify` — once. What that costs is not asserted here as a duration, which would be
+    // a number about this machine; it is asserted as the READS, against the only thing
+    // that can say what one verify's worth of them is: one verify.
+    const opening = await reading(async () => {
       await openedAt(200);
     });
-    expect(ofTheRecord(paths)).toEqual([]);
-    // The instrument was pointed at something: opening a console really does read files,
-    // and an empty list of reads would satisfy the line above saying nothing at all.
-    expect(paths.length).toBeGreaterThan(0);
+    const alone = await reading(async () => {
+      runVerify({ ...here(), requirement: DEFAULT_REQUIREMENT, global: false });
+    });
+    expect(ofTheRecord(alone).length).toBeGreaterThan(0);
+    expect(ofTheRecord(opening)).toEqual(ofTheRecord(alone));
+    // The instrument was pointed at something wider than the record, too: opening a
+    // console reads files that are not tails, and a watch that saw nothing at all would
+    // satisfy the comparison above by accident.
+    expect(opening.length).toBeGreaterThan(ofTheRecord(opening).length);
+  }, 120_000);
+
+  it('touches no tail while the caller types, which is the half that may not move', async () => {
+    // THE ABSENCE, and it is the promise the bar was built on: a hint under the prompt is
+    // redrawn on every keystroke, and a redraw that asked the record anything would turn a
+    // console into a replay loop. The watch is switched on with the session already open,
+    // so what it sees is what TYPING caused and nothing the opening paid for.
+    expect(ofTheRecord(await readingWhileTyping('sear'))).toEqual([]);
   }, 120_000);
 
   it('and the counter would have seen one, which is what makes the absence a fact', async () => {
-    // THE TEETH. The same instrument, the same session, one verb typed at its prompt —
-    // and that verb reads the record. Without this case the one above passes on a counter
-    // watching the wrong door.
-    const paths = await reading(async () => {
-      await openedAt(200, ['verify']);
-    });
+    // THE TEETH, in the same window as the case above: one verb typed at the prompt, and
+    // that verb reads the record. Without this case the absence passes on a counter that
+    // was switched off, watching the wrong door, or looking after the fact.
+    const paths = await readingWhileTyping('verify\r', 'local integrity verified');
     expect(ofTheRecord(paths).length).toBeGreaterThan(0);
   }, 120_000);
 });

@@ -41,7 +41,7 @@ import type { LevelRequirement, ProvenLevel, VerdictClause, VerifyResult } from 
 import type { Command } from 'commander';
 import type { TreeReport } from '../commands/verify.js';
 import { fact } from '../presentation/detail.js';
-import type { Severity } from '../presentation/line.js';
+import type { Line, Severity } from '../presentation/line.js';
 import type { Render } from '../presentation/render.js';
 import { type Clause, clauseStatement, statement } from '../presentation/verdict.js';
 import { here } from './context.js';
@@ -76,8 +76,13 @@ const LEVEL_MEANS: Readonly<Record<LevelRequirement, string>> = {
  * default would fail on a healthy project in the middle of its work, every time;
  * a gate that always fails is a gate somebody turns off, and then the break it
  * existed for goes out with it.
+ *
+ * Exported for the console's opening panel, which verifies without a caller to declare
+ * anything: it shows what the record IS and never gates on it, so the minimum it asks
+ * for has to be the one a bare `verify` asks for, and naming it twice is how those two
+ * come to differ.
  */
-const DEFAULT_REQUIREMENT: LevelRequirement = 'chained';
+export const DEFAULT_REQUIREMENT: LevelRequirement = 'chained';
 
 /** Returned by {@link parseRequirement} when the value names no requirement. */
 const INVALID_REQUIREMENT = Symbol('invalid-requirement');
@@ -106,16 +111,26 @@ function parseRequirement(
 }
 
 /**
- * What is said about a tree of the record that holds nothing.
+ * What is said about a tree of the record that holds nothing, in the two pieces every
+ * verdict on this surface comes in: what it IS, and what qualifies it.
  *
  * It is INFORMATIONAL and it says so by what it does not claim: no level, no layer,
  * no word that reads as a pass. A clone has no private tree — it is gitignored and
  * never travels — so this is the line every fresh clone sees, and a reader has to be
  * able to tell it apart from a verdict at a glance.
+ *
+ * THE SPLIT IS THE CHAIN'S SHAPE, borrowed. A verified tree's sentence arrives as a
+ * headline clause and the clauses that qualify it, and a caller with room for one line
+ * shows the headline; this tree had no chain to ask, so the surface says the same thing
+ * in the same two pieces rather than making the short reading impossible for the one
+ * tree whose sentence it words itself. {@link NO_RECORD} is the two joined, by the one
+ * expression that joins them, so the full reading cannot come to disagree with the short
+ * one — and the byte the golden holds is unchanged.
  */
-const NO_RECORD =
-  'no record here — nothing has been written to this tree on this machine, ' +
-  'so there is nothing to rule on';
+const NO_RECORD_HEADLINE = 'no record here';
+const NO_RECORD_WHY =
+  ' — nothing has been written to this tree on this machine, so there is nothing to rule on';
+const NO_RECORD = NO_RECORD_HEADLINE + NO_RECORD_WHY;
 
 /** Registers `mnema verify` on the program. */
 export function registerVerify(program: Command, wiring: Wiring): Declared {
@@ -250,11 +265,53 @@ export function levelSeverity(level: ProvenLevel): Severity {
  */
 function said(result: VerifyResult): readonly [Clause, ...Clause[]] {
   const [lead, ...rest] = result.clauses;
-  const asClause = (clause: VerdictClause): Clause =>
+  const paint = news(result);
+  return [paint(lead), ...rest.map(paint)];
+}
+
+/**
+ * How one clause of THIS verdict reads: its words, and the news where it is the level.
+ *
+ * One function and two readers, which is what keeps the short reading below from being
+ * a second opinion about which clause is the answer.
+ */
+function news(result: VerifyResult): (clause: VerdictClause) => Clause {
+  return (clause) =>
     clause.of === 'level'
       ? { text: clause.text, severity: levelSeverity(result.level) }
       : { text: clause.text };
-  return [asClause(lead), ...rest.map(asClause)];
+}
+
+/**
+ * WHAT ONE TREE'S VERDICT IS, IN A LINE THAT FITS A COLUMN: the tree's name, and the
+ * clause that IS the answer.
+ *
+ * The console's opening panel has room for one line per tree and `verify` has room for
+ * the sentence, and this is the whole of the difference between them: the panel drops
+ * the clauses that QUALIFY the verdict and drops not a word of the verdict itself. That
+ * is a property rather than an intention — what this returns, rendered, is a PREFIX of
+ * what {@link report} writes for the same tree, and `tests/the-panel.test.ts` asserts it
+ * over every tree of a real record. A surface that shortened a verdict any other way
+ * would be wording one, which is the one thing this file exists not to do.
+ *
+ * Which clause is the answer is asked of {@link news}, so the panel and the full reading
+ * cannot come to disagree about it. A verdict with no level clause — which the chain does
+ * not produce and which this cannot rule out by type — keeps every clause it has: saying
+ * less than the record does is the failure worth guarding against, and saying all of it
+ * is still a prefix.
+ */
+export function treeHeadline(tree: TreeReport, depth: number): Line {
+  if (tree.kind === 'no-record') {
+    return statement(tree.scope, NO_RECORD_HEADLINE, undefined, depth);
+  }
+  return clauseStatement(tree.scope, headline(tree.result), depth);
+}
+
+/** The clause that is the answer, alone — or every clause, when none says it is one. */
+function headline(result: VerifyResult): readonly [Clause, ...Clause[]] {
+  const paint = news(result);
+  const level = result.clauses.find((clause) => clause.of === 'level');
+  return level === undefined ? said(result) : [paint(level)];
 }
 
 /**

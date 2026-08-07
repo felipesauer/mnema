@@ -30,13 +30,29 @@
  * concatenation, and the case that proves the scan works makes a component say
  * something and watches it go red.
  *
- * THE ONE STYLE DECISION HERE IS NOT ABOUT A REPORT. The row of candidates a Tab offers
- * is dimmed, and it is the console's own affordance rather than a line of the record —
- * no line that came from a renderer is touched, painted, padded or trimmed here. THE
- * TIPS ARE NOT A SECOND ONE, and the difference is the whole reason they read the same:
- * they are dim because the renderer made them dim (`presentation/detail.ts`, `aside`),
- * so what says "you may skip this" is the same table that says it about an id and an
- * instant, and this file did not decide anything about them at all.
+ * THE STYLE DECISIONS HERE ARE NOT ABOUT A REPORT, and there are two of them. The row of
+ * candidates a Tab offers is dimmed, and it is the console's own affordance rather than a
+ * line of the record. THE TIPS ARE NOT A SECOND ONE, and the difference is the whole
+ * reason they read the same: they are dim because the renderer made them dim
+ * (`presentation/detail.ts`, `aside`), so what says "you may skip this" is the same table
+ * that says it about an id and an instant, and this file did not decide anything about
+ * them at all.
+ *
+ * THE SECOND IS THE ACCENT, AND IT IS CHROME. This sentence used to end "no line that
+ * came from a renderer is touched, painted, padded or trimmed here", and the opening
+ * panel is what falsified it: a box has a border, a border has a colour, and the title on
+ * it and the mark inside it are the same object as the border — the frame the session
+ * puts around itself. What survived, and what the guard now says, is the part that was
+ * load-bearing: NO LINE OF THE RECORD is painted here. A verdict, a project's path, a
+ * hint — everything that says something about what is written down — arrives with the
+ * weight and the hue its renderer gave it and leaves with the same ones.
+ *
+ * SO COLOUR ON THIS SURFACE HAS TWO AXES NOW, and they may not meet. DATA is painted by
+ * severity and by nothing else, which is `presentation/styled.ts` and unchanged. CHROME
+ * is painted by ONE accent, spent here, and the accent is CYAN — chosen by elimination
+ * rather than by taste: red, green and yellow are the three severities, and a frame that
+ * borrowed one of them would be a box that looked like a verdict. `tests/the-panel.test.ts`
+ * holds both halves: exactly one hue in this file, and it is none of the three.
  *
  * AND THERE IS NO ALTERNATE SCREEN, on purpose and against the first design. Measured:
  * this library redraws the changing rows in the NORMAL buffer and leaves everything the
@@ -48,6 +64,34 @@
 import { Box, Static, type StaticProps, Text, useCursor, useInput } from 'ink';
 import { createElement as node, type ReactNode, useEffect, useSyncExternalStore } from 'react';
 import type { Keystroke } from './editing.js';
+import type { Panel } from './panel.js';
+
+/**
+ * The one hue this layout spends, on the one thing it draws.
+ *
+ * Cyan by elimination: the three severities have red, green and yellow, so a frame in any
+ * of them would read as a verdict about what it frames. There is no second accent, and
+ * that is checked rather than intended.
+ */
+const ACCENT = 'cyan';
+
+/** How the box is drawn. The library's own set of corners. */
+const BORDER = 'round';
+
+/** How much of the top border is drawn before the title sits on it. */
+const BEFORE_TITLE = 2;
+
+/** The gap after the left column, before the rule between the two. */
+const BETWEEN_COLUMNS = 2;
+
+/** The gap after the rule, before the right column. */
+const BESIDE_THE_RULE = 2;
+
+/** The gap between the border and what is inside it. */
+const INSIDE_THE_BOX = 1;
+
+/** The blank row between one section of the panel and the next. */
+const BETWEEN_SECTIONS = 1;
 
 /** Everything the console is showing, as one value read at one instant. */
 export interface Shown {
@@ -72,18 +116,25 @@ export interface Watched {
 }
 
 /**
- * The console: everything already said, then the row being typed, then what to do next.
+ * The console: the opening panel, everything already said, then the row being typed, then
+ * what to do next.
  *
- * The tips are a PROP and not part of what is watched, and the distinction is the fact:
- * they are resolved once when the session opens and never move again, so putting them in
- * the value that is rebuilt on every keystroke would say they might.
+ * The tips and the panel are PROPS and not part of what is watched, and the distinction
+ * is the fact: both are resolved once when the session opens and never move again, so
+ * putting either in the value that is rebuilt on every keystroke would say they might.
+ * For the panel that is more than tidiness — it is the one thing on this surface that was
+ * paid for with a read of the record, and a value the layout re-read on every frame would
+ * turn a console into a replay loop.
  */
 export function Region({
   watched,
   tips,
+  panel,
 }: {
   readonly watched: Watched;
   readonly tips: string;
+  /** The box the session opens with, or none when the terminal is too narrow for one. */
+  readonly panel: Panel | undefined;
 }): ReactNode {
   const shown = useSyncExternalStore(watched.watch, watched.now, watched.now);
   const { setCursorPosition } = useCursor();
@@ -102,13 +153,24 @@ export function Region({
   return node(
     Box,
     { flexDirection: 'column' },
-    node(Past, { lines: shown.past }),
+    node(Past, { panel, lines: shown.past }),
     node(Present, { present: shown.present, candidates: shown.candidates, tips }),
   );
 }
 
+/** One thing that stays on the page: the opening panel, or a line the session said. */
+type Kept = Panel | string;
+
 /**
- * What the session has already said, written once and never redrawn.
+ * What the session has already said, written once and never redrawn — with the opening
+ * panel first, when there is one.
+ *
+ * THE PANEL IS AN ITEM OF THIS LIST AND NOT A ROW ABOVE IT, and the reason is the
+ * library's rather than the design's: what is written once and kept is one region, so a
+ * panel outside it would be redrawn on every keystroke and a panel in a second one would
+ * be the second such region, which this library does not have. It is always the first
+ * item and it is never added to, so the list only ever grows at the end — which is the
+ * one thing this component requires of what it is handed.
  *
  * Each line gets a box of its own, and the box's two measurements are the two ways a
  * layout can quietly change a line it was only asked to place:
@@ -128,17 +190,169 @@ export function Region({
  * and with its suppression: this component's child is a FUNCTION OF AN ITEM rather than a
  * node, and a variadic child argument can only be handed a node.
  */
-function Past({ lines }: { readonly lines: readonly string[] }): ReactNode {
-  return node<StaticProps<string>>(Static, {
-    items: [...lines],
+function Past({
+  panel,
+  lines,
+}: {
+  readonly panel: Panel | undefined;
+  readonly lines: readonly string[];
+}): ReactNode {
+  const kept: Kept[] = panel === undefined ? [...lines] : [panel, ...lines];
+  return node<StaticProps<Kept>>(Static, {
+    items: kept,
     // biome-ignore lint/correctness/noChildrenProp: a variadic child cannot be a function
-    children: (line: string, index: number) =>
-      node(
-        Box,
-        { key: String(index), minHeight: 1, width: line.length + 1 },
-        node(Text, null, line),
-      ),
+    children: (item: Kept, index: number) =>
+      typeof item === 'string'
+        ? node(
+            Box,
+            { key: String(index), minHeight: 1, width: item.length + 1 },
+            node(Text, null, item),
+          )
+        : node(Opening, { key: String(index), panel: item }),
   });
+}
+
+/**
+ * Some already-rendered lines, one to a row, with nothing added to any of them.
+ *
+ * `accented` is the CHROME switch and it is false for everything that says something
+ * about the record. What it is true for is the mark: the name drawn, which carries no
+ * fact and is part of the frame the session puts around itself, exactly like the border
+ * it sits inside.
+ *
+ * No width is set, unlike the rows above: inside the panel the box is as wide as its
+ * widest child and the library measures a line the way a terminal does, so a painted line
+ * takes the room it takes on a screen rather than the room its bytes take. That the two
+ * measurements agree with the one the FORM was chosen by is the panel's whole geometry,
+ * and it is asserted (`tests/the-panel.test.ts`).
+ */
+function rows(lines: readonly string[], accented = false): ReactNode[] {
+  return lines.map((line, index) =>
+    node(
+      Box,
+      { key: String(index), minHeight: 1 },
+      node(Text, accented ? { color: ACCENT } : null, line),
+    ),
+  );
+}
+
+/**
+ * THE PANEL: the box the session opens with, in whichever of the two boxed forms the
+ * terminal has room for.
+ *
+ * A terminal too narrow for either gets no panel at all and the same lines at the left
+ * edge, which is decided before this component is reached (`panel.ts`, `session.ts`) —
+ * so there is no third branch here, and the narrow case is not a drawing but the absence
+ * of one.
+ *
+ * The title is a ROW rather than something laid over the border, and that is the whole
+ * reason the box's top edge is drawn in three pieces: a stub, the title with a space on
+ * each side, and the rest running to the corner. Laid over the border instead, the title
+ * would need spaces of its own to push the border characters out from under it — and a
+ * space a component adds to a line is a component composing one.
+ */
+function Opening({ panel }: { readonly panel: Panel }): ReactNode {
+  return node(
+    Box,
+    { flexDirection: 'column' },
+    node(
+      Box,
+      { flexDirection: 'row' },
+      node(Box, {
+        borderStyle: BORDER,
+        borderColor: ACCENT,
+        borderBottom: false,
+        borderRight: false,
+        width: BEFORE_TITLE,
+        height: 1,
+      }),
+      node(Box, { marginX: 1 }, node(Text, { color: ACCENT }, panel.title)),
+      node(Box, {
+        borderStyle: BORDER,
+        borderColor: ACCENT,
+        borderBottom: false,
+        borderLeft: false,
+        flexGrow: 1,
+        height: 1,
+      }),
+    ),
+    node(
+      Box,
+      {
+        borderStyle: BORDER,
+        borderColor: ACCENT,
+        borderTop: false,
+        flexDirection: panel.form === 'columns' ? 'row' : 'column',
+        paddingX: INSIDE_THE_BOX,
+      },
+      ...(panel.form === 'columns' ? sideBySide(panel) : oneOverTheOther(panel)),
+    ),
+  );
+}
+
+/** The mark and where the session is standing, then a rule, then the two sections. */
+function sideBySide(panel: Panel): ReactNode[] {
+  return [
+    node(
+      Box,
+      { key: 'left', flexDirection: 'column', paddingRight: BETWEEN_COLUMNS },
+      ...whereItStands(panel),
+    ),
+    node(
+      Box,
+      {
+        key: 'right',
+        flexDirection: 'column',
+        borderStyle: BORDER,
+        borderColor: ACCENT,
+        borderTop: false,
+        borderRight: false,
+        borderBottom: false,
+        paddingLeft: BESIDE_THE_RULE,
+      },
+      ...sections(panel, 0),
+    ),
+  ];
+}
+
+/** The same groups, one under the other, for a terminal too narrow for two columns. */
+function oneOverTheOther(panel: Panel): ReactNode[] {
+  return [...whereItStands(panel), ...sections(panel, BETWEEN_SECTIONS)];
+}
+
+/**
+ * The mark, and under it where the session is standing.
+ *
+ * Each group is a box of its own rather than rows poured into one, and the reason is the
+ * library's: a row is identified inside its parent by its POSITION, so two groups sharing
+ * a parent would each have a first row claiming the same place. One box per group is what
+ * makes each group's positions its own.
+ */
+function whereItStands(panel: Panel): ReactNode[] {
+  return [
+    node(Box, { key: 'mark', flexDirection: 'column' }, ...rows(panel.mark, true)),
+    node(Box, { key: 'standing', flexDirection: 'column' }, ...rows(panel.standing)),
+  ];
+}
+
+/**
+ * The two sections, each set off from what is above it by a row with nothing in it.
+ *
+ * `above` is what separates the FIRST of them from whatever precedes it, and it differs
+ * between the two forms because what precedes it differs: beside the mark there is
+ * nothing above the first section and its top row lines up with the top of the drawing,
+ * while under the mark there is, and a section that started on the next row would read as
+ * part of the group before it.
+ */
+function sections(panel: Panel, above: number): ReactNode[] {
+  return [
+    node(Box, { key: 'record', flexDirection: 'column', marginTop: above }, ...rows(panel.record)),
+    node(
+      Box,
+      { key: 'hints', flexDirection: 'column', marginTop: BETWEEN_SECTIONS },
+      ...rows(panel.hints),
+    ),
+  ];
 }
 
 /**

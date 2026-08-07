@@ -34,7 +34,7 @@
  * and `styled.test.ts` asserts it over every shape the surface builds.
  */
 
-import type { Part, Role } from './line.js';
+import type { Line, Part, Role } from './line.js';
 import type { Render } from './render.js';
 
 /** The two spaces one level of depth is. */
@@ -120,3 +120,30 @@ export function renderWith(paint: (part: Part) => string): Render {
  * file get — the default in every one of those, decided at the entry and not here.
  */
 export const renderPlain: Render = renderWith((part) => part.text);
+
+/**
+ * HOW WIDE A LINE IS ON A SCREEN, in characters — the plain rendering, counted.
+ *
+ * It lives beside the renderer it counts because the answer IS this renderer's output:
+ * the indent, the separators and the parts are what a reader sees, and a caller that
+ * measured any other way would be a second opinion about how a line is punctuated.
+ *
+ * THE PAINTED LINE IS THE SAME WIDTH, which is what makes one function enough. Style
+ * wraps a part's own text in escapes a terminal does not print (`styled.ts`, and the
+ * promise that stripping them gives back exactly this string), so the two renderings are
+ * the same number of columns and different numbers of bytes. Measuring the bytes is the
+ * mistake this exists to prevent: it would make a drawing that fits shrink for having
+ * colour switched on.
+ *
+ * Characters and not code units, because a name, a path or a title may hold anything a
+ * caller wrote. It is the one thing here that costs a caller nothing to ask and cannot be
+ * asked correctly by hand.
+ *
+ * WHO ASKS: the console's opening panel, which chooses between three drawings by whether
+ * the widest of them fits the terminal (`repl/panel.ts`). Nothing that writes a line asks
+ * — a report is as wide as it is and the TERMINAL folds it, on purpose, because a value
+ * cut to fit is a value a reader cannot check.
+ */
+export function widthOf(line: Line): number {
+  return [...renderPlain(line)].length;
+}

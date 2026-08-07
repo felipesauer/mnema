@@ -53,15 +53,19 @@
  */
 
 import { buildProgram, type CliIo, parseWith } from '../cli.js';
+import type { TreeReport } from '../commands/verify.js';
+import { runVerify } from '../commands/verify.js';
 import { completionTree } from '../completion/tree.js';
 import { bannerFor } from '../presentation/banner.js';
 import { aside, fact, subjectLine } from '../presentation/detail.js';
 import { column, itemLine } from '../presentation/items.js';
 import type { Line } from '../presentation/line.js';
 import type { Render } from '../presentation/render.js';
+import { here } from '../wiring/context.js';
 import { writeLines } from '../wiring/io.js';
 import { reportUsage } from '../wiring/report.js';
 import type { Declared } from '../wiring/verb.js';
+import { DEFAULT_REQUIREMENT, treeHeadline } from '../wiring/verify.js';
 import { completerFor } from './complete.js';
 import {
   ABOUT,
@@ -73,6 +77,7 @@ import {
   verbsOffered,
 } from './gate.js';
 import type { Leaving } from './leaving.js';
+import { panelFor, panelLines } from './panel.js';
 import { type Standing, standing } from './standing.js';
 
 /**
@@ -102,6 +107,27 @@ const BETWEEN_CLAUSES = ' · ';
  * guess at, and the form that always fits is the name.
  */
 const NO_WIDTH = 0;
+
+/** The product, and what this session is — the box's title, and its first line without one. */
+const NAME = 'mnema';
+const WHAT_IT_IS = 'a session over this project';
+
+/** What the two sections of the panel are called. */
+const THE_RECORD = 'The record';
+const WHAT_TO_TYPE = 'Hints';
+
+/** How deep a line of a section sits under the heading that names it. */
+const UNDER_A_HEADING = 1;
+
+/**
+ * The one affordance that is not a keystroke: the word that lists the verbs.
+ *
+ * It is named apart from the three beside it because the panel shows THIS one and the row
+ * under the prompt shows all four, out of the same constant — a second copy would be two
+ * sentences about one session, and the second one goes stale on the day the first is
+ * reworded.
+ */
+const WHAT_IT_RUNS = `\`${ABOUT}\` says what it runs`;
 
 /** What one line of the session needs: where to write, how, and what it is called. */
 export interface Session {
@@ -170,6 +196,21 @@ export async function openSession(request: SessionRequest): Promise<void> {
   const built = buildProgram(onThePage, [], render);
   const offered = verbsOffered(built.verbs, self);
 
+  // WHAT THE SESSION OPENS WITH, composed and measured ONCE. Where it is standing is one
+  // `readdir` and one small file (see `standing.ts`); what the record IS costs a `verify`,
+  // and that is the one read of this kind this surface pays — declared, paid here, and
+  // never paid again (see {@link theRecord}).
+  const columns = output.columns ?? NO_WIDTH;
+  const panel = panelFor({
+    columns,
+    render,
+    title: subjectLine(NAME, WHAT_IT_IS),
+    mark: bannerFor(columns),
+    standing: standingLine(standing()),
+    record: recordSection(theRecord()),
+    hints: [subjectLine(WHAT_TO_TYPE), aside(WHAT_IT_RUNS)],
+  });
+
   const { openConsole } = await import('./console.js');
   const page = openConsole({
     stdin: input,
@@ -178,21 +219,60 @@ export async function openSession(request: SessionRequest): Promise<void> {
     // Rendered ONCE, here, and handed over as bytes: the tips say nothing about the
     // record, so nothing can happen inside the session that changes what they say.
     tips: render(tips()),
+    // A terminal too narrow for a box gets no box, and the same lines land instead —
+    // which is why the layout has two forms and not three.
+    panel: panel.form === 'bare' ? undefined : panel,
     complete: completerFor(completionTree(built.program), offered, SESSION_WORDS),
     answer: (line) => typedLine(line, session),
     leaving,
   });
   land = page.land;
 
-  // WHERE THE SESSION IS, asked once and of the filesystem. Everything the opening says
-  // about the project and the identity is one `readdir` and one small file; a read of the
-  // record here would be paid before the caller could type anything, and paid again by
-  // whatever asked it a second time (see `standing.ts` for the measurement).
-  writeLines(
-    onThePage,
-    opening(offered.length, output.columns ?? NO_WIDTH, standing()).map(render),
-  );
+  writeLines(onThePage, [
+    ...(panel.form === 'bare' ? panelLines(panel) : []),
+    ...opening(offered.length).map(render),
+  ]);
   await page.closed;
+}
+
+/**
+ * WHAT THE RECORD IS, asked ONCE, when the session opens — and the only read of the
+ * record anything on this surface makes without being asked for one.
+ *
+ * IT IS A DECLARED EXCEPTION AND IT HAS A NUMBER. Everything else the opening says is
+ * answered by the filesystem without opening a chain, deliberately, because `verify` over
+ * a real record costs about a tenth of a second and a bar that asked the record anything
+ * would pay that again on every redraw (`standing.ts`). The panel is not a bar: it is
+ * written once and kept, so what it costs is paid once — a session that opened in about a
+ * third of a second opens in a bit more, and what the caller gets for it is a console for
+ * auditing a record that says, before they type anything, whether the record is intact.
+ * That is the product presenting itself by its own thesis.
+ *
+ * THE OTHER HALF OF THE RULE IS UNTOUCHED, and it is the half with teeth: nothing that
+ * REDRAWS reads the record, ever. `tests/the-name-and-the-hints.test.ts` counts the reads
+ * of both — the opening's are exactly one `verify`'s worth, and a frame's are none.
+ *
+ * The minimum is a bare `verify`'s, because this is not a gate: it shows what the record
+ * is and exits nothing, so a stricter minimum would only change a word nobody acts on.
+ * With no project there is nothing to rule on and it says nothing at all, which is the
+ * same posture the status line takes about a fact it does not have.
+ */
+function theRecord(): readonly TreeReport[] | undefined {
+  const verdict = runVerify({ ...here(), requirement: DEFAULT_REQUIREMENT, global: false });
+  return verdict.ok ? verdict.trees : undefined;
+}
+
+/**
+ * What the record is, as a section: the heading, then one line per tree of it.
+ *
+ * Each line is the tree's verdict SHORTENED BY THE VERB THAT WORDS IT (`wiring/verify.ts`)
+ * and never here — what a tree's name and its level clause say is a prefix of what
+ * `mnema verify` prints for the same tree, byte for byte, and the surface that shortened a
+ * verdict any other way would be wording one.
+ */
+function recordSection(trees: readonly TreeReport[] | undefined): readonly Line[] {
+  if (trees === undefined) return [];
+  return [subjectLine(THE_RECORD), ...trees.map((tree) => treeHeadline(tree, UNDER_A_HEADING))];
 }
 
 /**
@@ -237,26 +317,27 @@ export async function typedLine(line: string, session: Session): Promise<AfterLi
 }
 
 /**
- * What the session says when it opens: its name drawn, what it is, what it will not do,
- * and where it is standing.
+ * THE SENTENCE THAT MAY NOT GO, and by now it is the whole of what the opening lands
+ * beside the panel.
  *
- * ALL OF IT IS STATIC, and that is the difference from the tips below. These lines land in
- * the scrollback and stay there — a caller who scrolls to the top of a long session finds
- * the drawing, the default-deny sentence and the project the whole thing was about, which
- * is exactly what someone reading a transcript afterwards needs and exactly what a redrawn
- * region would have thrown away.
+ * It is the only thing that explains, to somebody who just opened a prompt, why half of
+ * what they know how to type is about to be refused — and it counts the reads rather than
+ * stating a number, so it cannot go stale.
  *
- * THE SENTENCE ABOUT THE VERBS IS THE ONE THAT MAY NOT GO. It is the only thing that
- * explains, to somebody who just opened a prompt, why half of what they know how to type
- * is about to be refused — and it counts the reads rather than stating a number, so it
- * cannot go stale.
+ * IT IS OUTSIDE THE BOX, AND THAT IS MEASURED RATHER THAN AESTHETIC. It is seventy-odd
+ * characters wide; inside the panel's right-hand column it would be the widest thing there
+ * and would push the box past eighty columns, which is where the panel gives up on being a
+ * box at all (`panel.ts`). So the sentence keeps the shape it has always had, at the depth
+ * it has always had, and the box keeps the widths that let it exist on an ordinary
+ * terminal.
+ *
+ * LIKE THE PANEL IT IS STATIC, and that is the difference from the tips below: it lands in
+ * the scrollback and stays there, so a caller who scrolls to the top of a long session
+ * finds the drawing, this sentence and the project the whole thing was about.
  */
-function opening(reads: number, columns: number, where: Standing): readonly Line[] {
+function opening(reads: number): readonly Line[] {
   return [
-    ...bannerFor(columns),
-    subjectLine('mnema', 'a session over this project'),
     fact(`It runs the ${reads} verbs that read the record, and refuses the ones that write.`),
-    ...standingLine(where),
   ];
 }
 
@@ -266,10 +347,17 @@ function opening(reads: number, columns: number, where: Standing): readonly Line
  * Absent rather than apologetic: a session opened outside any project, or on a machine
  * whose key root holds no single key, has nothing true to say here, and a line saying
  * "unknown" twice would be the surface filling space. What it knows, it says.
+ *
+ * IT IS AN ASIDE AND IT USED TO BE A FACT, which moves not one byte of what a reader gets
+ * in a pipe and dims it in a terminal. A fact is about the RECORD; this says where the
+ * session is standing and the record was not consulted for either half of it, which is
+ * the distinction `aside` already draws (`presentation/detail.ts`). It is also what the
+ * reference the panel was drawn from does with a path and an identity, and for the same
+ * reason: they are what a reader glances at once and then skips past.
  */
 function standingLine(where: Standing): readonly Line[] {
   const known = [where.project, where.identity].filter((value) => value !== undefined);
-  return known.length === 0 ? [] : [fact(known.join(BETWEEN_CLAUSES))];
+  return known.length === 0 ? [] : [aside(known.join(BETWEEN_CLAUSES))];
 }
 
 /**
@@ -290,12 +378,9 @@ function standingLine(where: Standing): readonly Line[] {
  */
 export function tips(): Line {
   return aside(
-    [
-      `\`${ABOUT}\` says what it runs`,
-      `\`${LEAVE}\` or Ctrl-D leaves`,
-      'Ctrl-C clears the line',
-      'Tab completes',
-    ].join(BETWEEN_CLAUSES),
+    [WHAT_IT_RUNS, `\`${LEAVE}\` or Ctrl-D leaves`, 'Ctrl-C clears the line', 'Tab completes'].join(
+      BETWEEN_CLAUSES,
+    ),
   );
 }
 

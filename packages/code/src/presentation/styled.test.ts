@@ -115,6 +115,16 @@ describe('the styled line is the plain line, wrapped', () => {
       { text: `6 event(s) hash-chained ${ACTOR_ESCAPE}` },
     ]),
     clauseStatement(column('private', 12), [{ text: ' local integrity FAILED ', severity: 'bad' }]),
+    // The two shapes of form C at a DEPTH, which is what the console's opening panel asks
+    // for: a tree's verdict written under the heading that names the section. The indent
+    // belongs to the line and not to a part, so it has to stay outside every escape — the
+    // same property the two spaces between columns have, on the newest place to lose it.
+    statement('private', 'no record here', undefined, 1),
+    clauseStatement(
+      'public',
+      [{ text: 'local integrity verified (T1/T2/T4)', severity: 'good' }],
+      1,
+    ),
     // A task's position, in both forms that show one: the three dispositions that carry
     // news, and the one that carries none — which is the majority of what the surface
     // prints and therefore the line that must come out byte for byte the plain one.
@@ -141,15 +151,15 @@ describe('the styled line is the plain line, wrapped', () => {
     // The other half. Without this, a renderer that returned the plain string would
     // pass the case above on every line in the corpus.
     //
-    // NINETEEN of the twenty-nine, and exactly the ones holding a role or a severity
-    // that shows: the three subject lines, the seven statements, the three clause
+    // TWENTY-ONE of the thirty-one, and exactly the ones holding a role or a severity
+    // that shows: the three subject lines, the eight statements, the four clause
     // statements, the two lists with a said column, the three states whose disposition
     // is news, and the aside. The other ten are bare `field` and bare `state` — a fact, a
     // plain column, an empty part, a blank line, an advancing task, another machine's
     // position — and they are byte for byte the plain line by design, which is what the
     // last case in this block asserts on purpose.
     const painted = corpus.filter((line) => renderStyled(line) !== renderPlain(line));
-    expect(painted.length).toBe(19);
+    expect(painted.length).toBe(21);
   });
 
   it('leaves what an actor wrote alone, escape and all', () => {

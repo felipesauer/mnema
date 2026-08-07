@@ -68,13 +68,23 @@ export function fact(text: string, depth = 1): Line {
 }
 
 /**
- * An ASIDE: a line that says what the reader can DO rather than what is true.
+ * An ASIDE: a line about the SURFACE rather than about the record.
  *
  * It is {@link fact}'s sibling and the difference is what it is about. A fact is
  * about the record; an aside is about the surface — the words a session answers
- * to, the key that leaves it. Nothing about the record is stated, so nothing here
- * is a value anyone checks, and that is exactly what makes it the one line a
- * reader should be able to skip past once they know it.
+ * to, the key that leaves it, the directory it was opened in. Nothing about the
+ * record is stated, so nothing here is a verdict, a count or a stored value, and
+ * that is exactly what makes it the one line a reader should be able to skip past
+ * once they know it.
+ *
+ * THIS USED TO SAY AN ASIDE WAS A LINE THAT SAYS WHAT THE READER CAN DO, and what
+ * falsified it is the console's status line: the project a session was opened in
+ * and the identity this installation recorded for it (`repl/standing.ts`). Neither
+ * is something to do, both are about where the SESSION is standing rather than
+ * about the record, and the whole of `standing.ts` is the argument that the record
+ * is not consulted for either. What survived is the meaning — secondary, and you
+ * may skip it — and what was too narrow was naming one KIND of such line as though
+ * it were the only one.
  *
  * Which is why it takes the `detail` role: DIM is what this surface already means
  * by "secondary, and you may skip it" (see `styled.ts` — it is what an id and an
