@@ -48,12 +48,15 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
+import { runVerify } from '../src/commands/verify.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { EXIT_SIGNALS } from '../src/repl/leaving.js';
-import { openSession, tips } from '../src/repl/session.js';
+import { badgeLine, openSession, tips } from '../src/repl/session.js';
 import { LEAVE } from '../src/session-words.js';
+import { here } from '../src/wiring/context.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
+import { DEFAULT_REQUIREMENT } from '../src/wiring/verify.js';
 import { ESC, fakeTerminal, hooksNothing, until, withoutLayout } from './support/console.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
@@ -401,6 +404,14 @@ const stripped = (line: string): string =>
 const TIPS = renderPlain(tips());
 
 /**
+ * The rune the two rules of the input area are drawn with, named by its code point.
+ *
+ * A run is one keystroke away from a hyphen, and a rune a reader cannot tell from a
+ * neighbouring one is a rune an edit destroys without anybody seeing it happen.
+ */
+const RUN = '\u2500';
+
+/**
  * Whether a row is the console's OWN tips rather than a line the session landed.
  *
  * Matched as a SUFFIX of the tips and not by equality, because the region holding them is
@@ -415,20 +426,63 @@ function isTips(row: string): boolean {
 }
 
 /**
- * Everything the console wrote to the page that is not the row being typed, nor the two
- * rows that are about typing.
+ * The console's own badge, as the session composes it over THIS fixture's record.
+ *
+ * Composed by the module that composes it rather than retyped here, for the reason that
+ * module gives: a second spelling of the row goes stale the day the shape changes, and the
+ * case below would then be comparing an answer to a stale filter. The level comes from the
+ * fold every reading of this surface reads.
+ */
+function theBadge(): string {
+  const verdict = runVerify({ ...here(), requirement: DEFAULT_REQUIREMENT, global: false });
+  return verdict.ok ? renderPlain(badgeLine(verdict.record.level)) : '';
+}
+
+/** Whether a row is the console's own badge, at whatever column the width put it. */
+function isBadge(row: string): boolean {
+  const text = stripped(row).trim();
+  return text.length > 0 && theBadge().endsWith(text);
+}
+
+/**
+ * Whether a row is one of the two rules the input sits between.
+ *
+ * By SHAPE, and it is the one row of the area that cannot be matched against something the
+ * session composed: a rule is drawn by the layout rather than written, so there is no
+ * string anywhere to compare it to. Nothing this product PRINTS is one character repeated
+ * across a row — the panel's own rule has the frame at both ends of it — and the case
+ * below is what says so, because a filter that swallowed an answer would break the very
+ * equality it exists to serve.
+ */
+function isRule(row: string): boolean {
+  const text = stripped(row).replace(/ +$/, '');
+  return text.length > 0 && [...text].every((glyph) => glyph === RUN);
+}
+
+/**
+ * Everything the console wrote to the page that is not the row being typed, nor the rows
+ * of the area around it.
  *
  * The rows the layout redraws are written once per frame and every other row is written
  * once, ever. Telling them apart is therefore not frame archaeology: a row that begins
- * with the prompt is the input row or the echo of one, a row that is the tips is the
- * console's own affordance, and every other row is a line the session landed. The echo is
- * checked on its own, where it cannot be confused with an answer.
+ * with the prompt is the input row or the echo of one, the tips and the badge are the
+ * console's own and are matched against what the session composed for them, a rule is a
+ * row of nothing but the run, and every other row is a line the session landed. The echo
+ * is checked on its own, where it cannot be confused with an answer.
+ *
+ * THE LIST GREW WITH THE AREA, and it is the delivery that gave the input a place of its
+ * own that grew it: a badge in the corner and two rules are three more rows the console
+ * redraws. What did not change is the test the filter has to pass — the answers are
+ * compared to what the same verb says at a shell, so a row wrongly kept and a row wrongly
+ * dropped both come out as an inequality.
  */
 function landed(bytes: string): string[] {
   const rows = withoutLayout(bytes).split('\n');
   // The tail after the last newline: not a row, an artefact of splitting on one.
   rows.pop();
-  return rows.filter((row) => !row.startsWith(PROMPT) && !isTips(row));
+  return rows.filter(
+    (row) => !row.startsWith(PROMPT) && !isTips(row) && !isBadge(row) && !isRule(row),
+  );
 }
 
 /** Drives a console over `typed` in this process and answers with what it drew. */

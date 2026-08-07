@@ -36,7 +36,9 @@
  * reason they read the same: they are dim because the renderer made them dim
  * (`presentation/detail.ts`, `aside`), so what says "you may skip this" is the same table
  * that says it about an id and an instant, and this file did not decide anything about
- * them at all.
+ * them at all. THE BADGE IN THE CORNER IS NOT A THIRD: it says what the record proved, so
+ * it is a line of the record, composed and rendered where every other one is
+ * (`session.ts`) and only PLACED here — at the far end of its row, which is a position.
  *
  * THE SECOND IS THE ACCENT, AND IT IS CHROME. This sentence used to end "no line that
  * came from a renderer is touched, painted, padded or trimmed here", and the opening
@@ -73,11 +75,13 @@
 
 import { Box, Static, type StaticProps, Text, useCursor, useInput, useStdout } from 'ink';
 import { createElement as node, type ReactNode, useEffect, useSyncExternalStore } from 'react';
+import type { Area } from './area.js';
 import type { Keystroke } from './editing.js';
 import type { Panel } from './panel.js';
 
 /**
- * The one hue this layout spends, on the one thing it draws.
+ * The one hue this layout spends, on the things it draws — the panel's frame, the rule
+ * inside it, and the two rules the input area sits between.
  *
  * Cyan by elimination: the three severities have red, green and yellow, so a frame in any
  * of them would read as a verdict about what it frames. There is no second accent, and
@@ -102,6 +106,18 @@ const INSIDE_THE_BOX = 1;
 
 /** The blank row between one section of the panel and the next. */
 const BETWEEN_SECTIONS = 1;
+
+/**
+ * Where the badge sits on its row: at the far end of it.
+ *
+ * It is POSITION and nothing else, which is what makes it this file's to answer. The row
+ * is as wide as the terminal, so the badge ends on the last column at every width and at
+ * every length — no line is padded here, and no number about a terminal is written down.
+ * A column chosen instead would be a badge that stops short on a wide screen and folds on
+ * a narrow one, which is what the reference this was measured from does NOT do (its mark
+ * lands on column 102 of 120, and the run after it ends on 120).
+ */
+const AT_THE_FAR_END = 'flex-end';
 
 /**
  * How the left column's groups sit inside it: in the MIDDLE of the widest of them.
@@ -151,6 +167,16 @@ export interface Shown {
    * the read the session paid for when it opened, and this file only says where it goes.
    */
   readonly panel: Panel | undefined;
+  /**
+   * WHICH ARRANGEMENT THE INPUT AREA IS IN, and where the caret goes inside it.
+   *
+   * It travels with what is shown rather than arriving as a prop, and the two reasons are
+   * the two things it is a function of: how TALL the caller's terminal is, which changes
+   * when they drag the bottom edge of their window, and whether a Tab left words on the
+   * page, which changes on a keystroke. Both are answered before this value is built
+   * (`area.ts`, `console.ts`); nothing is measured here.
+   */
+  readonly area: Area;
 }
 
 /** What the layout reads and what it reports back to. The console implements it. */
@@ -174,13 +200,15 @@ export interface Watched {
 }
 
 /**
- * The console: the opening panel, everything already said, then the row being typed, then
- * what to do next.
+ * The console: the opening panel, everything already said, and then the input — the badge
+ * in the corner, the row being typed between two rules, and what to do next.
  *
- * THE TIPS ARE A PROP AND THE PANEL IS WATCHED, and that used to be one sentence about
- * both: they were resolved once when the session opened and never moved again, so putting
- * either in the value rebuilt on every keystroke would have said they might. The tips are
- * still that. The panel is not — it is drawn at the width of the TERMINAL, and a caller
+ * THE TIPS AND THE BADGE ARE PROPS AND THE PANEL IS WATCHED, and that used to be one
+ * sentence about the first and the last: they were resolved once when the session opened
+ * and never moved again, so putting either in the value rebuilt on every keystroke would
+ * have said they might. The tips are still that, and the badge joined them — it says what
+ * the record proved, out of the one read this surface pays for, and nothing that happens
+ * inside a session changes it. The panel is not — it is drawn at the width of the TERMINAL, and a caller
  * who resizes theirs gets the page again with the box recomposed for it, which is a move.
  * So it travels with {@link Shown}, beside the page identity it changes with.
  *
@@ -190,13 +218,20 @@ export interface Watched {
  * calling a pure function over lines that already exist, once the terminal has stopped
  * changing size; a value the LAYOUT re-read on every frame would still be a replay loop,
  * and this is not one (`tests/the-name-and-the-hints.test.ts` counts the reads).
+ *
+ * WHAT IS WATCHED AND IS NOT A LINE is the SHAPE of the input area, and it is watched for
+ * two reasons that have nothing to do with a read: how TALL the caller's terminal is, and
+ * whether a Tab left words on the page. Which arrangement there is room for is answered
+ * before this file is reached (`area.ts`); all this one does is draw the one it is handed.
  */
 export function Region({
   watched,
   tips,
+  badge,
 }: {
   readonly watched: Watched;
   readonly tips: string;
+  readonly badge: string;
 }): ReactNode {
   const shown = useSyncExternalStore(watched.watch, watched.now, watched.now);
   const { setCursorPosition } = useCursor();
@@ -211,18 +246,27 @@ export function Region({
     watched.opened(write);
   }, [watched, write]);
 
-  // The real caret, on the row being typed, at the offset the arrows moved it to. The
-  // row is the first of the redrawn ones because everything above it is in the
-  // scrollback and out of this frame.
+  // THE REAL CARET, on the row being typed, at the offset the arrows moved it to — and at
+  // the depth the arrangement puts that row at. IT USED TO BE THE FIRST ROW OF THE REGION
+  // and the doc here said so: everything above it was in the scrollback and out of this
+  // frame. What falsified it is the area, which draws up to three rows over the row being
+  // typed. How many is arithmetic and it is answered before this file is reached
+  // (`area.ts`), so the caret and the drawing cannot come to disagree about the shape.
   useEffect(() => {
-    setCursorPosition({ x: shown.column, y: 0 });
-  }, [shown.column, setCursorPosition]);
+    setCursorPosition({ x: shown.column, y: shown.area.above });
+  }, [shown.column, shown.area.above, setCursorPosition]);
 
   return node(
     Box,
     { flexDirection: 'column' },
     node(Past, { panel: shown.panel, lines: shown.past, page: shown.page }),
-    node(Present, { present: shown.present, candidates: shown.candidates, tips }),
+    node(Present, {
+      present: shown.present,
+      candidates: shown.candidates,
+      area: shown.area,
+      tips,
+      badge,
+    }),
   );
 }
 
@@ -458,28 +502,78 @@ function sections(panel: Panel, above: number): ReactNode[] {
 }
 
 /**
- * The row being typed, and under it the two rows that are about typing.
+ * THE INPUT AREA: the row being typed, between two rules, with the badge over it and the
+ * hint under it.
  *
- * The order is the order of how far each one is from the keystroke: the words a Tab could
- * not choose between answer the key that was just pressed, and the tips answer the whole
- * session. A row with nothing in it is left out rather than left blank — the candidates
- * are there only after an ambiguous Tab, and a session with nothing to suggest should not
- * push the caret up a line for an empty row.
+ * IT USED TO BE THREE ROWS IN ONE ORDER — the row being typed, then the words a Tab could
+ * not choose between, then the tips — and the doc here said the order was "how far each
+ * one is from the keystroke". WHAT FALSIFIED IT IS THE REFERENCE, measured rather than
+ * remembered: the input of the console this was drawn from is not a box, it is two runs of
+ * the terminal's full width with the row between them, and the badge is one row above the
+ * upper one, at the far end of it. Both rules are drawn corner to corner, which is why
+ * nothing here says how wide anything is.
+ *
+ * THE WORDS A TAB OFFERED MOVED ABOVE THE RULES, and that is the one part of the old order
+ * that changed on purpose rather than by measurement: they answer the key that was just
+ * pressed, and what answers a keystroke belongs over the input rather than under it. It is
+ * also where the list of commands is going to live, and two things that answer the same key
+ * may not appear on opposite sides of the row it was typed on.
+ *
+ * WHICH ROWS THERE ARE IS NOT DECIDED HERE. A terminal without the height for all of them
+ * gets fewer, tallest arrangement first, and the arithmetic is `area.ts` — the same split
+ * the panel already has between how much fits and what is drawn. A row with nothing in it
+ * is still left out rather than left blank, which is the half of the old shape that
+ * survived whole.
+ *
+ * THE RULES ARE DRAWN AND NOT WRITTEN, exactly as the one inside the panel is: a box with
+ * nothing in it and one edge switched on, so the run of glyphs is the library's. A string
+ * of dashes typed here would be text a component put on the page. They are CHROME and they
+ * take the one accent this file spends, like the frame they are the siblings of.
  */
 function Present({
   present,
   candidates,
+  area,
   tips,
+  badge,
 }: {
   readonly present: string;
   readonly candidates: string;
+  readonly area: Area;
   readonly tips: string;
+  readonly badge: string;
 }): ReactNode {
+  const ruled = area.form !== 'bare';
   return node(
     Box,
     { flexDirection: 'column' },
-    node(Text, null, present),
     candidates.length > 0 ? node(Text, { dimColor: true }, candidates) : null,
+    area.form === 'full'
+      ? node(Box, { justifyContent: AT_THE_FAR_END }, node(Text, null, badge))
+      : null,
+    ruled ? rule() : null,
+    node(Text, null, present),
+    ruled ? rule() : null,
     tips.length > 0 ? node(Text, null, tips) : null,
   );
+}
+
+/**
+ * One rule across the whole terminal: a box with nothing in it and its top edge on.
+ *
+ * AS WIDE AS THE TERMINAL BY CONSTRUCTION, and that is the whole reason it is drawn this
+ * way. With nothing inside it, the box takes the width its parent gives it, and its parent
+ * is the column the library laid out at the width of the device — so the run follows a
+ * caller who resizes their window without anything here being told a number. A run
+ * composed from a width would be this file doing arithmetic about a terminal, and the one
+ * measurement of a terminal on this surface is asked in one place (`console.ts`).
+ */
+function rule(): ReactNode {
+  return node(Box, {
+    borderStyle: BORDER,
+    borderColor: ACCENT,
+    borderBottom: false,
+    borderLeft: false,
+    borderRight: false,
+  });
 }
