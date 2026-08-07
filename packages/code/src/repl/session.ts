@@ -56,14 +56,15 @@ import type { ProvenLevel } from '@mnema/chain';
 import { buildProgram, type CliIo, parseWith } from '../cli.js';
 import type { TreeReport } from '../commands/verify.js';
 import { runVerify } from '../commands/verify.js';
-import { completionTree } from '../completion/tree.js';
+import { completionTree, type CompletionWord } from '../completion/tree.js';
 import { bannerFor } from '../presentation/banner.js';
 import { aside, fact, subjectLine } from '../presentation/detail.js';
 import { column, itemLine } from '../presentation/items.js';
 import type { Line } from '../presentation/line.js';
+import { widthOf } from '../presentation/plain.js';
 import type { Render } from '../presentation/render.js';
 import { statement } from '../presentation/verdict.js';
-import { ABOUT, CLEAR, LEAVE, SESSION_WORDS } from '../session-words.js';
+import { ABOUT, CLEAR, LEAVE, PREFIX, WHAT_EACH_WORD_DOES } from '../session-words.js';
 import { VERSION } from '../version.js';
 import { here } from '../wiring/context.js';
 import { writeLines } from '../wiring/io.js';
@@ -71,6 +72,7 @@ import { reportUsage } from '../wiring/report.js';
 import type { Declared } from '../wiring/verb.js';
 import { DEFAULT_REQUIREMENT, levelSeverity, treeHeadline, VERIFY_VERB } from '../wiring/verify.js';
 import { completerFor } from './complete.js';
+import type { Drawn } from './console.js';
 import { type AfterLine, argvOf, dispositionOf, verbsOffered } from './gate.js';
 import type { Leaving } from './leaving.js';
 import { type Opening, panelFor, panelLines } from './panel.js';
@@ -155,13 +157,22 @@ const AT_THE_EDGE = 0;
 const WHAT_IT_RUNS = `\`${ABOUT}\` says what it runs`;
 
 /**
- * THE OTHER TWO CLAUSES OF THE HINT, and there are two of them because three is the whole
- * of it (see {@link tips}).
+ * THE THREE CLAUSES OF THE HINT (see {@link tips} for why three).
  *
- * The key that completes and the two ways out. Neither is a WORD the session answers to —
- * they are keystrokes, so there is no vocabulary to read them off — and the word that IS
- * one comes from the constant that declares it, so a renamed word renames the hint.
+ * The key that opens the list, the key that completes, and the two ways out. The first is
+ * built out of the PREFIX every word of the session begins with rather than out of a word,
+ * because what it names is the keystroke and not a command; the last is built out of the
+ * constant that declares the word, so a renamed word renames the hint.
+ *
+ * ⚠️ THE FIRST ONE USED TO NAME `/help`, AND IT USED TO BE FORBIDDEN TO NAME THE SLASH.
+ * The rule was right and it was about a promise: a hint naming an affordance that does not
+ * answer is the console lying to the reader who cannot check, and until this delivery the
+ * slash answered nothing on its own — you had to type a whole word behind it. It opens the
+ * palette now, so the promise is kept, and the case that held the ban is inverted rather
+ * than deleted (`tests/the-input-has-its-own-place.test.ts`). `/help` is one keystroke
+ * away, inside the list the slash opens, which is where it now belongs.
  */
+const WHAT_THE_SLASH_DOES = `\`${PREFIX}\` lists the session's words`;
 const TAB_COMPLETES = 'Tab completes';
 const HOW_TO_LEAVE = `\`${LEAVE}\` or Ctrl-D leaves`;
 
@@ -246,7 +257,10 @@ export async function openSession(request: SessionRequest): Promise<void> {
   // NO PROJECT, NO BADGE. There is no record to name a level of, so the corner says
   // nothing at all — the same posture the line that says where the session is standing
   // takes about a fact it does not have, and the same one the panel's record section takes.
-  const badge = proved === undefined ? '' : render(badgeLine(proved.level));
+  // The WIDTH goes with it because the area needs both and only the composer can measure
+  // one: a rendered line carries escapes a screen does not print (see `Drawn`).
+  const badge = drawn(proved === undefined ? undefined : badgeLine(proved.level), render);
+  const vocabulary = theSessionsOwnWords();
 
   /**
    * WHAT THE PAGE OPENS WITH on a terminal `columns` wide — and the only thing on this
@@ -284,19 +298,38 @@ export async function openSession(request: SessionRequest): Promise<void> {
     stdin: input,
     stdout: output,
     prompt: PROMPT,
+    render,
     openingFor,
     // Rendered ONCE, here, and handed over as bytes: the tips say nothing about the
     // record, so nothing can happen inside the session that changes what they say.
-    tips: render(tips()),
+    tips: drawn(tips(), render),
     // Also rendered once — out of the ONE read this surface pays for. It does say
     // something about the record, which is exactly why it may not be asked again.
     badge,
-    complete: completerFor(completionTree(built.program), offered, SESSION_WORDS),
+    vocabulary,
+    complete: completerFor(completionTree(built.program), offered, vocabulary),
     answer: (line) => typedLine(line, session),
     leaving,
   });
   land = page.land;
   await page.closed;
+}
+
+/**
+ * A line as the console needs it: the bytes, and how many columns they take.
+ *
+ * BOTH HALVES ARE ASKED HERE because this is where the line is. The renderer turns it into
+ * bytes and `widthOf` counts the plain rendering, which is the same number of columns the
+ * painted one takes — the escapes a terminal does not print are exactly the difference
+ * between the two. A console that counted the bytes would make a hint that fits look too
+ * wide the moment colour was switched on, and the arrangement it chose would be the narrow
+ * one on a screen with room to spare.
+ *
+ * No line at all is no bytes and no width, which is what the area reads as "there is
+ * nothing to draw here".
+ */
+function drawn(line: Line | undefined, render: Render): Drawn {
+  return line === undefined ? { text: '', width: 0 } : { text: render(line), width: widthOf(line) };
 }
 
 /**
@@ -460,11 +493,16 @@ function standingLine(where: Standing): readonly Line[] {
  * what a person reads without stopping. What went is what {@link ABOUT} answers in full:
  * the word that clears the page, and the key that clears the line.
  *
- * WHICH THREE, AND WHY THEY ARE THESE: the word that lists everything else, so nothing
+ * WHICH THREE, AND WHY THEY ARE THESE: the KEY that lists everything else, so nothing
  * dropped is lost; the key that completes, which is the one affordance a caller cannot
  * guess by typing; and the way out, which is the thing nobody wants to look for. The first
- * and the last are read off the constants that DECLARE those words, so a renamed word
- * renames the hint.
+ * and the last are read off the constants that DECLARE the prefix and the word, so a
+ * renamed word renames the hint.
+ *
+ * ⚠️ THE FIRST CLAUSE USED TO NAME `/help` AND IT NAMES THE SLASH. What made the change
+ * legitimate is the palette: the slash now opens the list of the session's own words, so
+ * naming it promises something that answers. `/help` is inside that list, so nothing was
+ * lost — it moved one keystroke closer.
  *
  * ⛔ IT PROMISES NOTHING THAT IS NOT THERE. A row under the prompt is the most believed
  * sentence on the surface, and a hint naming an affordance that does not answer yet would
@@ -478,7 +516,23 @@ function standingLine(where: Standing): readonly Line[] {
  * console to what it says at a shell would then be comparing a stale list.
  */
 export function tips(): Line {
-  return aside([WHAT_IT_RUNS, TAB_COMPLETES, HOW_TO_LEAVE].join(BETWEEN_CLAUSES));
+  return aside([WHAT_THE_SLASH_DOES, TAB_COMPLETES, HOW_TO_LEAVE].join(BETWEEN_CLAUSES));
+}
+
+/**
+ * THE WORDS THE SESSION ANSWERS TO ITSELF, each with what it does — one value, two
+ * readers.
+ *
+ * A Tab completes them and a slash lists them, and they are the same list read off the
+ * same table (`session-words.ts`, where a word that has no gloss cannot exist because it
+ * would have nothing to be a key of). Two derivations would be a menu that offers a word
+ * the completer does not know, or the reverse.
+ *
+ * Exported so a case can assert what the slash opens against the source rather than
+ * against a retyped list.
+ */
+export function theSessionsOwnWords(): readonly CompletionWord[] {
+  return Object.entries(WHAT_EACH_WORD_DOES).map(([word, description]) => ({ word, description }));
 }
 
 /**

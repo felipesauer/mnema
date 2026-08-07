@@ -16,13 +16,17 @@
  *
  * IT COMPOSES NOTHING A READER SEES EXCEPT THE ECHO. Every line that lands here arrives
  * already rendered, out of the same `presentation/` and the same renderer every other
- * invocation of this product uses. This file writes exactly two strings of its own, and
- * both are INPUT rather than report: the ECHO of what the caller typed (the prompt and
- * their own words, the way a terminal shows what you sent), and the ROW OF CANDIDATES a
- * Tab could not choose between. Neither is a fact about the record, and neither goes
- * through a renderer — for the same reason the prompt never did. The TIPS are not a
- * third: they arrive as bytes a renderer already produced, exactly like a landed line,
- * and all this file does with them is say where they go.
+ * invocation of this product uses. This file writes exactly ONE string of its own, and it
+ * is INPUT rather than report: the ECHO of what the caller typed — the prompt and their
+ * own words, the way a terminal shows what you sent. It is not a fact about the record and
+ * it does not go through a renderer, for the same reason the prompt never did.
+ *
+ * IT USED TO WRITE A SECOND ONE, and that is what the palette took away: the row of words
+ * a Tab could not choose between was joined here, out of the tokens and a separator this
+ * file owned. It is a list of two columns now, composed and cut where every other line of
+ * this product is (`palette.ts`), and all this file does is ask for it at the width and
+ * the height of the moment. The TIPS and the BADGE were never composed here either: they
+ * arrive as bytes a renderer already produced, exactly like a landed line.
  *
  * THE PAGE OPENS CLEAN, AND CLEANING IT AGAIN IS THE SAME PAGE. What the caller had on
  * the screen is carried into the scrollback before anything is drawn (`page.ts`), and the
@@ -55,17 +59,17 @@
 
 import { render } from 'ink';
 import { createElement } from 'react';
+import type { CompletionWord } from '../completion/tree.js';
+import type { Render } from '../presentation/render.js';
 import { areaFor } from './area.js';
 import type { Completer } from './complete.js';
 import { type Editing, type Keystroke, keystrokesOf, NOTHING_TYPED, typeKey } from './editing.js';
 import type { AfterLine } from './gate.js';
 import { armLeaving, type Leaving } from './leaving.js';
+import { offeredBy, paletteFor } from './palette.js';
 import { carriedIntoTheScrollback } from './page.js';
 import type { Opening } from './panel.js';
 import { Region, type Shown, type Watched } from './region.js';
-
-/** What separates two words a Tab could not choose between. */
-const BETWEEN_CANDIDATES = '  ';
 
 /**
  * How wide the terminal is taken to be when the device does not say.
@@ -105,6 +109,22 @@ const NO_HEIGHT = 0;
  */
 const AFTER_THE_LAST_CHANGE = 100;
 
+/**
+ * A LINE THAT IS ALREADY BYTES, and how many columns it takes on a screen.
+ *
+ * The two travel together because the area needs both and only one of them can be worked
+ * out here: a rendered line carries escapes a terminal does not print, so counting its
+ * bytes would make a hint that fits look too wide the moment colour is switched on. How
+ * wide a line is is `presentation/`'s question (`plain.ts`, `widthOf`), asked where the
+ * line was composed, and carried here as a number.
+ */
+export interface Drawn {
+  /** The bytes a renderer produced. Empty when there is nothing to draw. */
+  readonly text: string;
+  /** How many columns it takes on a screen. Zero when there is nothing to draw. */
+  readonly width: number;
+}
+
 /** Everything opening a console needs. */
 export interface ConsoleRequest {
   /** Where the keystrokes come from. */
@@ -114,13 +134,26 @@ export interface ConsoleRequest {
   /** What the caller types in front of. Not a report, and so not rendered. */
   readonly prompt: string;
   /**
+   * How a line becomes bytes, resolved once for the whole session.
+   *
+   * IT IS HERE FOR ONE THING AND THE REASON IS THE KEYSTROKE. Everything else this file
+   * receives arrives already rendered, because it is composed once and never changes; the
+   * PALETTE cannot be, because which words it shows depends on what has been typed and
+   * how wide each row may be depends on the window. So it is composed on the frame that
+   * needs it (`palette.ts`) and turned into bytes with this — which is the same thing the
+   * opening does one layer up, and is not this file composing anything.
+   */
+  readonly render: Render;
+  /**
    * What the caller can do, already rendered, for the region that is redrawn.
    *
    * It stays under the row being typed instead of landing in the scrollback, which is
    * the difference between a tip and a line: one that has scrolled off the screen is not
-   * a tip any more. Empty means the console offers none and draws no row for it.
+   * a tip any more. Empty means the console offers none and draws no row for it — and so
+   * does a window too narrow for it to be one row, which is the area's call rather than
+   * this file's.
    */
-  readonly tips: string;
+  readonly tips: Drawn;
   /**
    * WHAT THE RECORD PROVED, as one row for the corner above the input — already rendered,
    * and empty when there is no record to name a level of.
@@ -136,7 +169,17 @@ export interface ConsoleRequest {
    * through would be the corner of the console disagreeing with the box at the top of it.
    * Counted with the rest (`tests/the-name-and-the-hints.test.ts`).
    */
-  readonly badge: string;
+  readonly badge: Drawn;
+  /**
+   * THE WORDS THE SESSION ANSWERS TO ITSELF, each with what it does — what a slash at the
+   * start of the line opens.
+   *
+   * It is the same value the completer was built with, so what the slash lists and what a
+   * Tab completes cannot come to disagree. It says nothing about the record and it is
+   * composed once, when the session opens; the FILTERING is per keystroke and is a pure
+   * function over this (`palette.ts`).
+   */
+  readonly vocabulary: readonly CompletionWord[];
   /**
    * WHAT THE PAGE OPENS WITH, on a terminal of a given width — the box and the lines that
    * go with it, already composed and already measured.
@@ -184,7 +227,8 @@ export interface OpenConsole {
  * one path onto the page and not a special one for the first three rows.
  */
 export function openConsole(request: ConsoleRequest): OpenConsole {
-  const { stdin, stdout, prompt, tips, badge, openingFor, complete, answer, leaving } = request;
+  const { stdin, stdout, prompt, render: renderLine, tips, badge, vocabulary } = request;
+  const { openingFor, complete, answer, leaving } = request;
 
   /**
    * How wide the page is, asked of the DEVICE — the one place anything does.
@@ -224,23 +268,33 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
 
   /** What the layout is looking at, as one value. Rebuilt whenever anything moved. */
   function showing(): Shown {
+    const columns = howWide();
+    // WHAT THE PALETTE WOULD SHOW, before anything says how much of it there is room for.
+    // A pure function over the row being typed and what a Tab last offered (`palette.ts`),
+    // so nothing is held between frames and nothing goes stale.
+    const offers = offeredBy(editing.typed, editing.offered, vocabulary);
+    // WHICH ARRANGEMENT THE INPUT AREA IS IN, asked again on every frame rather than
+    // held. It is a function of the terminal's SIZE and of how many words the palette has
+    // to show, and both change under a session — one when a window is dragged, the other
+    // on a keystroke — so a value kept beside the page would be right until the first
+    // Tab. It reads four numbers and composes nothing (`area.ts`).
+    const area = areaFor({
+      rows: howTall(),
+      columns,
+      badge: badge.width,
+      hint: tips.width,
+      palette: offers.length,
+    });
     return {
       past,
       page,
       panel: opened.panel,
-      // WHICH ARRANGEMENT THE INPUT AREA IS IN, asked again on every frame rather than
-      // held. It is a function of the terminal's HEIGHT and of whether a Tab left words on
-      // the page, and the second of those changes on a keystroke — so a value kept beside
-      // the page would be right until the first ambiguous Tab. It reads three booleans and
-      // a number and composes nothing (`area.ts`).
-      area: areaFor({
-        rows: howTall(),
-        badge: badge.length > 0,
-        candidates: editing.candidates.length > 0,
-        hint: tips.length > 0,
-      }),
+      area,
       present: prompt + editing.typed,
-      candidates: editing.candidates.join(BETWEEN_CANDIDATES),
+      // COMPOSED WITH THE ROOM THE AREA GAVE IT, and cut to it — by the module that puts
+      // the rows together, which is the only place a cut may happen. What it could not fit
+      // it says (`palette.ts`).
+      palette: paletteFor({ offers, room: area.palette, columns, render: renderLine }),
       // In characters rather than in string offsets: the caret is a column on a screen,
       // and the offset the editor keeps is into a string that can hold more than one
       // code unit per character.
@@ -458,7 +512,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   // through the layout's door once there is one ({@link thePageAgain}).
   stdout.write(carriedIntoTheScrollback(howTall()));
 
-  const app = render(createElement(Region, { watched, tips, badge }), {
+  const app = render(createElement(Region, { watched, tips: tips.text, badge: badge.text }), {
     stdin,
     stdout,
     // Ctrl-C is this session's, and it abandons the LINE. A library that exited the
