@@ -103,6 +103,19 @@ const INSIDE_THE_BOX = 1;
 /** The blank row between one section of the panel and the next. */
 const BETWEEN_SECTIONS = 1;
 
+/**
+ * How the left column's groups sit inside it: in the MIDDLE of the widest of them.
+ *
+ * The mark is a drawing and the line under it is a path and an identity, and one of the
+ * two is always much the wider. Left-aligned, the narrower one hangs off the left edge of
+ * a column whose width the other one decided; centred, the column reads as one block —
+ * which is what the reference this panel was drawn from does with the same two things.
+ *
+ * It is POSITION and nothing else. No line is padded, trimmed or lengthened; where a group
+ * starts is exactly the kind of question a layout is allowed to answer.
+ */
+const IN_THE_MIDDLE = 'center';
+
 /** Everything the console is showing, as one value read at one instant. */
 export interface Shown {
   /** Every line the session has already said, oldest first. Never rewritten. */
@@ -125,6 +138,19 @@ export interface Shown {
    * on which it replays the copy.
    */
   readonly page: number;
+  /**
+   * The box the page opened with, or none when the terminal is too narrow for one.
+   *
+   * IT USED TO BE A PROP, on the argument that it was resolved once and never moved. What
+   * falsified that is the width: the box is drawn corner to corner, so a caller who
+   * narrows their window has a frame the terminal folds, and the console answers with the
+   * page again — the opening recomposed for the new width, on a new {@link page}. It moves
+   * with the page it belongs to, so it belongs where the page is.
+   *
+   * Nothing about it is READ here, and that has not changed: it arrives composed, out of
+   * the read the session paid for when it opened, and this file only says where it goes.
+   */
+  readonly panel: Panel | undefined;
 }
 
 /** What the layout reads and what it reports back to. The console implements it. */
@@ -151,22 +177,26 @@ export interface Watched {
  * The console: the opening panel, everything already said, then the row being typed, then
  * what to do next.
  *
- * The tips and the panel are PROPS and not part of what is watched, and the distinction
- * is the fact: both are resolved once when the session opens and never move again, so
- * putting either in the value that is rebuilt on every keystroke would say they might.
- * For the panel that is more than tidiness — it is the one thing on this surface that was
- * paid for with a read of the record, and a value the layout re-read on every frame would
- * turn a console into a replay loop.
+ * THE TIPS ARE A PROP AND THE PANEL IS WATCHED, and that used to be one sentence about
+ * both: they were resolved once when the session opened and never moved again, so putting
+ * either in the value rebuilt on every keystroke would have said they might. The tips are
+ * still that. The panel is not — it is drawn at the width of the TERMINAL, and a caller
+ * who resizes theirs gets the page again with the box recomposed for it, which is a move.
+ * So it travels with {@link Shown}, beside the page identity it changes with.
+ *
+ * WHAT THE OLD SENTENCE WAS PROTECTING IS UNTOUCHED, and it is worth saying plainly
+ * because it is the expensive half: the panel is the one thing on this surface paid for
+ * with a read of the record, and nothing here re-reads it. A recomposition is the console
+ * calling a pure function over lines that already exist, once the terminal has stopped
+ * changing size; a value the LAYOUT re-read on every frame would still be a replay loop,
+ * and this is not one (`tests/the-name-and-the-hints.test.ts` counts the reads).
  */
 export function Region({
   watched,
   tips,
-  panel,
 }: {
   readonly watched: Watched;
   readonly tips: string;
-  /** The box the session opens with, or none when the terminal is too narrow for one. */
-  readonly panel: Panel | undefined;
 }): ReactNode {
   const shown = useSyncExternalStore(watched.watch, watched.now, watched.now);
   const { setCursorPosition } = useCursor();
@@ -191,7 +221,7 @@ export function Region({
   return node(
     Box,
     { flexDirection: 'column' },
-    node(Past, { panel, lines: shown.past, page: shown.page }),
+    node(Past, { panel: shown.panel, lines: shown.past, page: shown.page }),
     node(Present, { present: shown.present, candidates: shown.candidates, tips }),
   );
 }
@@ -343,7 +373,12 @@ function sideBySide(panel: Panel): ReactNode[] {
   return [
     node(
       Box,
-      { key: 'left', flexDirection: 'column', paddingRight: BETWEEN_COLUMNS },
+      {
+        key: 'left',
+        flexDirection: 'column',
+        alignItems: IN_THE_MIDDLE,
+        paddingRight: BETWEEN_COLUMNS,
+      },
       ...whereItStands(panel),
     ),
     node(
@@ -384,22 +419,41 @@ function whereItStands(panel: Panel): ReactNode[] {
 }
 
 /**
- * The two sections, each set off from what is above it by a row with nothing in it.
+ * The two sections, with a rule between them.
  *
  * `above` is what separates the FIRST of them from whatever precedes it, and it differs
  * between the two forms because what precedes it differs: beside the mark there is
  * nothing above the first section and its top row lines up with the top of the drawing,
  * while under the mark there is, and a section that started on the next row would read as
  * part of the group before it.
+ *
+ * THE RULE IS DRAWN AND NOT WRITTEN, which is the whole of how a layout forbidden to
+ * compose a line is allowed to have one: it is a box with nothing in it and one edge
+ * switched on, so the run of glyphs is the library's the way the frame around all of this
+ * is. A string of dashes typed here would be text a component put on the page.
+ *
+ * IT IS AS WIDE AS THE SECTIONS ARE, and by construction rather than by a number: with
+ * nothing inside it, it takes the width its siblings gave the column. So it measures the
+ * column it divides, in either form, and no arithmetic anywhere had to be told about it.
+ *
+ * It stands where the blank row used to and it is CHROME, painted in the one accent, like
+ * the frame it is part of — the reference this panel was drawn from separates the two
+ * sections of its right-hand column exactly so (measured: a run of 63 in a terminal of
+ * 120).
  */
 function sections(panel: Panel, above: number): ReactNode[] {
   return [
     node(Box, { key: 'record', flexDirection: 'column', marginTop: above }, ...rows(panel.record)),
-    node(
-      Box,
-      { key: 'hints', flexDirection: 'column', marginTop: BETWEEN_SECTIONS },
-      ...rows(panel.hints),
-    ),
+    node(Box, {
+      key: 'between',
+      borderStyle: BORDER,
+      borderColor: ACCENT,
+      borderBottom: false,
+      borderLeft: false,
+      borderRight: false,
+      marginTop: BETWEEN_SECTIONS,
+    }),
+    node(Box, { key: 'hints', flexDirection: 'column' }, ...rows(panel.hints)),
   ];
 }
 

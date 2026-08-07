@@ -113,9 +113,15 @@ function widthOf(form: readonly string[]): number {
  * landed could not be compared to a recorded transcript (`parts.test.ts` refuses a module
  * here that mentions one).
  *
- * It is answered ONCE, when the session opens, and the drawing then belongs to the
- * scrollback like every other line the session has already said. A banner that redrew
- * itself on a resize would be rewriting history the caller can scroll back to.
+ * IT USED TO BE ANSWERED ONCE, when the session opened, on the argument that "a banner
+ * that redrew itself on a resize would be rewriting history the caller can scroll back
+ * to". What falsified it is the box the drawing now sits inside: it is as wide as the
+ * TERMINAL, so a terminal the caller narrowed folds the whole frame in half, and the
+ * console draws the page again at the new width. The argument survives and it is the
+ * console's to keep — the old page is carried INTO the scrollback before the new one is
+ * drawn, so what the caller can scroll back to is added to and never rewritten
+ * (`repl/console.ts`, `repl/page.ts`). Nothing here changed: this is a function of a
+ * number, it is called again with a different one, and it is the caller that decides when.
  */
 export function bannerFor(columns: number): readonly Line[] {
   const form = FORMS.find((candidate) => widthOf(candidate) <= columns) ?? NAME;

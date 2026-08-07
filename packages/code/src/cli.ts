@@ -25,6 +25,7 @@
 import { IdentityUnavailableError } from '@mnema/core';
 import { Command, CommanderError, Option } from 'commander';
 import type { Render } from './presentation/render.js';
+import { VERSION } from './version.js';
 import { COLOR_HELP, COLOR_WHENS, type ColorWhen, rendererFor } from './wiring/color.js';
 import { registerVerbs } from './wiring/index.js';
 import { type CliIo, processIo } from './wiring/io.js';
@@ -114,7 +115,7 @@ export function buildProgram(
   program
     .name('mnema')
     .description('A tamper-evident, local-first audit chain for AI-agent work.')
-    .version('0.0.0')
+    .version(VERSION)
     // Declared on the program and not on a verb: one question about one invocation,
     // asked before the verb (`mnema --color=never verify`). commander refuses a value
     // that is not one of the three, which makes a typo a usage error this file already

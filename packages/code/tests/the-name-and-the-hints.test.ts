@@ -208,6 +208,52 @@ async function openedAt(columns: number, typed: readonly string[] = []): Promise
 }
 
 /**
+ * How tall a console this file opens is, and the bytes that carry ITS page away.
+ *
+ * The second is what says a page was really turned (`repl/page.ts` writes it, and nothing
+ * else does), and waiting for it is what makes the helper below honest. ⚠️ Its first
+ * draft waited for the stream to GROW, which it does the instant a terminal changes size
+ * — the layout library redraws the row being typed on its own — and then went on to the
+ * next width before this product had done anything at all. Every resize in that case was
+ * a resize nothing happened for, and the case built on it could not go red.
+ */
+const TALL = 40;
+const CARRIES_THE_PAGE = `${ESC}[${TALL};1H`;
+
+/**
+ * What a console drew, opened at `columns` and then resized to each of `widths` in turn.
+ *
+ * The page follows the terminal's WIDTH, so each of these is a recomposition of the
+ * opening and a page turned — which is exactly the thing that must not cost a read. Each
+ * width is waited out until the page has really been turned for it.
+ */
+async function resizedThrough(columns: number, widths: readonly number[]): Promise<string> {
+  const terminal = fakeTerminal({ columns, rows: TALL });
+  const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
+  const closed = openSession({
+    io,
+    render: renderPlain,
+    self: REPL_VERB,
+    input: terminal.stdin,
+    output: terminal.stdout,
+    interactive: true,
+    leaving: hooksNothing,
+  });
+  await until(() => terminal.bytes().includes(OPENED), 'opened');
+  for (const width of widths) {
+    const turned = times(terminal.bytes(), CARRIES_THE_PAGE);
+    terminal.resize(width);
+    await until(
+      () => times(terminal.bytes(), CARRIES_THE_PAGE) > turned,
+      `turned the page at ${width}`,
+    );
+  }
+  terminal.type(`${LEAVE}\r`);
+  await closed;
+  return terminal.bytes();
+}
+
+/**
  * What a console read while the caller TYPED — with the opening already paid for.
  *
  * The watch is switched on only once the session is open, which is the whole point of the
@@ -435,6 +481,29 @@ describe('the opening reads the record once, and a redraw never reads it', () =>
     // And nothing at all while the page is being cleared, on the watch that only sees
     // what typing caused.
     expect(ofTheRecord(await readingWhileTyping(`${CLEAR}\r`))).toEqual([]);
+  }, 180_000);
+
+  it('reads nothing at all when the caller resizes the terminal, however many times', async () => {
+    // THE SAME DECISION, ASKED OF THE OTHER CALLER. The page follows the terminal's width
+    // now: a caller who narrows their window gets the page again, with the box recomposed
+    // for it. Recomposing is not RE-READING — the lines already exist, and what the width
+    // decides is which drawing there is room for and how much of the name is drawn. A
+    // redraw that asked `verify` again could make the panel say something different
+    // halfway through a session, which is the same hazard a clean page was measured
+    // against. So: three width changes read exactly what no width change reads.
+    let drew = '';
+    const thrice = await reading(async () => {
+      drew = await resizedThrough(200, [160, 120, 90]);
+    });
+    const once = await reading(async () => {
+      await openedAt(200);
+    });
+    expect(ofTheRecord(once).length, 'the opening read nothing at all').toBeGreaterThan(0);
+    expect(ofTheRecord(thrice)).toEqual(ofTheRecord(once));
+    // THE INSTRUMENT FIRST, and it is here because it was WRONG once: three pages really
+    // were turned, on top of the one the session opened with. Without this the case passes
+    // on a console that never got round to redrawing anything, which is what it did.
+    expect(times(drew, CARRIES_THE_PAGE), 'the page was never turned').toBe(1 + 3);
   }, 180_000);
 
   it('and the counter would have seen one, which is what makes the absence a fact', async () => {
