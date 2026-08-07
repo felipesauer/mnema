@@ -557,8 +557,8 @@ $ mnema repl --help
 | with the line to run outside the session — and it is refused because the verb
 | itself declares what it can do, so one added tomorrow is refused too.
 |
-|   .help   what this session runs
-|   .exit   leave (so does Ctrl-D; Ctrl-C clears the line you are typing)
+|   /help   what this session runs
+|   /exit   leave (so does Ctrl-D; Ctrl-C clears the line you are typing)
 |
 | It needs a terminal at both ends and refuses without one: reading commands from a
 | pipe would be a second way to run the same verbs. The history lives in this

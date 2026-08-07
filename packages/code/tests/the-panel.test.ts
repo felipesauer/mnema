@@ -43,6 +43,7 @@ import { renderStyled } from '../src/presentation/styled.js';
 import { statement } from '../src/presentation/verdict.js';
 import { type PanelForm, panelFor } from '../src/repl/panel.js';
 import { openSession } from '../src/repl/session.js';
+import { LEAVE } from '../src/session-words.js';
 import { here } from '../src/wiring/context.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { DEFAULT_REQUIREMENT, treeHeadline } from '../src/wiring/verify.js';
@@ -136,7 +137,7 @@ async function openedAt(columns: number, render: Render = renderPlain): Promise<
     leaving: hooksNothing,
   });
   await until(() => terminal.bytes().includes(OPENED), 'opened');
-  terminal.type('.exit\r');
+  terminal.type(`${LEAVE}\r`);
   await closed;
   return terminal.bytes();
 }
@@ -539,7 +540,7 @@ describe('the panel is the plain panel, wrapped, and it is drawn once', () => {
       await until(() => terminal.bytes().length > grown, `redrew after ${key}`);
     }
     terminal.type(CLEARS_THE_LINE);
-    terminal.type('.exit\r');
+    terminal.type(`${LEAVE}\r`);
     await closed;
     const page = stripped(withoutLayout(terminal.bytes()));
     // The title is on the top border and nowhere else, and the corner is drawn once.

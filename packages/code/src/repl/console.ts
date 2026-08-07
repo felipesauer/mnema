@@ -144,7 +144,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   /**
    * The caller is done: no more keys, the turn drains, the terminal goes back.
    *
-   * The drain is what keeps a `.exit` typed behind a slow read from cutting its answer
+   * The drain is what keeps the word that leaves, typed behind a slow read, from cutting its answer
    * off — the word ends the session, not the turn that is already running.
    */
   function leave(): void {

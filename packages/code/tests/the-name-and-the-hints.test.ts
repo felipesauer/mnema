@@ -48,6 +48,7 @@ import { bannerFor } from '../src/presentation/banner.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { openSession, tips } from '../src/repl/session.js';
+import { LEAVE, SESSION_WORDS } from '../src/session-words.js';
 import { here } from '../src/wiring/context.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { DEFAULT_REQUIREMENT } from '../src/wiring/verify.js';
@@ -201,7 +202,7 @@ async function openedAt(columns: number, typed: readonly string[] = []): Promise
       still = 0;
     }
   }
-  terminal.type('.exit\r');
+  terminal.type(`${LEAVE}\r`);
   await closed;
   return terminal.bytes();
 }
@@ -249,7 +250,7 @@ async function readingWhileTyping(typed: string, answered?: string): Promise<str
   // Whatever was typed is abandoned before the word that leaves is: half a verb still on
   // the row would swallow it, and the session would never come back.
   terminal.type(CLEARS_THE_LINE);
-  terminal.type('.exit\r');
+  terminal.type(`${LEAVE}\r`);
   await closed;
   return paths;
 }
@@ -336,7 +337,7 @@ describe('the drawing stays in the scrollback and the tips stay on the screen', 
 
   it('says what the caller can do, and says the words a session answers to', () => {
     const said = renderPlain(tips());
-    for (const word of ['.help', '.exit', 'Ctrl-D', 'Ctrl-C', 'Tab']) {
+    for (const word of [...SESSION_WORDS, 'Ctrl-D', 'Ctrl-C', 'Tab']) {
       expect(said).toContain(word);
     }
     // And it is an ASIDE rather than a fact: dim when the renderer paints, and the same

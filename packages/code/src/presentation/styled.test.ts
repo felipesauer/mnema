@@ -138,7 +138,7 @@ describe('the styled line is the plain line, wrapped', () => {
     // The aside: one `detail` on its own, with no label in front of it to take the
     // colon. It is dim, so it is in the painted half, and the words are the same in
     // both renderings — which is the whole promise, on the surface's newest shape.
-    aside('`.exit` or Ctrl-D leaves'),
+    aside('`/exit` or Ctrl-D leaves'),
   ];
 
   it('says exactly what the plain line says, for every shape', () => {

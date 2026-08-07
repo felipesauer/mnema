@@ -13,9 +13,10 @@
 import { Command, Option } from 'commander';
 import { describe, expect, it } from 'vitest';
 import { completionTree } from '../completion/tree.js';
+import { ABOUT, LEAVE, PREFIX, SESSION_WORDS } from '../session-words.js';
 import type { Declared } from '../wiring/verb.js';
 import { completerFor } from './complete.js';
-import { ABOUT, argvOf, dispositionOf, LEAVE, SESSION_WORDS, verbsOffered } from './gate.js';
+import { argvOf, dispositionOf, verbsOffered } from './gate.js';
 
 /** One declaration of this file's own, with the description a menu would print. */
 function declares(name: string, effect: Declared['effect']): Declared {
@@ -173,11 +174,11 @@ describe('tab offers what the session runs', () => {
 
   it('offers the reads and the session’s own words, and not one write', () => {
     const [hits] = complete('');
-    expect(hits).toEqual([LEAVE, ABOUT, 'look', 'read']);
+    expect(hits).toEqual([LEAVE, ABOUT, 'look', 'read'].sort());
     // Named rather than implied: the write is what a menu must not carry, because a
     // word offered by Tab and refused by the next line is the surface contradicting
     // itself in two keystrokes. And `help` — commander's own implicit command — is
-    // absent for the same reason: this session answers with `.help`.
+    // absent for the same reason: this session answers with {@link ABOUT}.
     expect(hits).not.toContain('write');
     expect(hits).not.toContain('help');
     expect(hits).not.toContain(SELF);
@@ -185,7 +186,7 @@ describe('tab offers what the session runs', () => {
 
   it('narrows to the prefix, and offers nothing when nothing matches', () => {
     expect(complete('lo')).toEqual([['look'], 'lo']);
-    expect(complete('.')).toEqual([[LEAVE, ABOUT], '.']);
+    expect(complete(PREFIX)).toEqual([[LEAVE, ABOUT].sort(), PREFIX]);
     expect(complete('zzz')).toEqual([[], 'zzz']);
   });
 

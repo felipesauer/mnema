@@ -61,21 +61,14 @@ import { aside, fact, subjectLine } from '../presentation/detail.js';
 import { column, itemLine } from '../presentation/items.js';
 import type { Line } from '../presentation/line.js';
 import type { Render } from '../presentation/render.js';
+import { ABOUT, LEAVE, SESSION_WORDS } from '../session-words.js';
 import { here } from '../wiring/context.js';
 import { writeLines } from '../wiring/io.js';
 import { reportUsage } from '../wiring/report.js';
 import type { Declared } from '../wiring/verb.js';
 import { DEFAULT_REQUIREMENT, treeHeadline } from '../wiring/verify.js';
 import { completerFor } from './complete.js';
-import {
-  ABOUT,
-  type AfterLine,
-  argvOf,
-  dispositionOf,
-  LEAVE,
-  SESSION_WORDS,
-  verbsOffered,
-} from './gate.js';
+import { type AfterLine, argvOf, dispositionOf, verbsOffered } from './gate.js';
 import type { Leaving } from './leaving.js';
 import { panelFor, panelLines } from './panel.js';
 import { type Standing, standing } from './standing.js';
@@ -89,7 +82,7 @@ import { type Standing, standing } from './standing.js';
  */
 const PROMPT = 'mnema> ';
 
-/** How wide the verb column of `.help` is — the longest verb, and a space after it. */
+/** How wide the verb column of {@link ABOUT} is — the longest verb, and a space after it. */
 const VERB_WIDTH = 16;
 
 /**
@@ -385,7 +378,7 @@ export function tips(): Line {
 }
 
 /**
- * What `.help` answers: the verbs this session runs, and how to leave it.
+ * What {@link ABOUT} answers: the verbs this session runs, and how to leave it.
  *
  * Composed from the DECLARATIONS, so a read added tomorrow is listed the day it exists
  * and its one-line description is the same one `--help` prints. It is the session's
