@@ -85,6 +85,18 @@ const ALTERNATE_SCREEN = `${ESC}[?1049`;
 const THEIRS = 'A-LINE-THE-CALLER-HAD';
 
 /**
+ * THE HEIGHT AT WHICH THE LAYOUT LIBRARY STOPS REDRAWING PART OF THE PAGE, at sixty
+ * columns — measured, and re-measured whenever the redrawn region changes shape.
+ *
+ * It was THREE while the region was the row being typed and two rows under it. The input
+ * has its own place now and the region is five rows, which would have raised this; the
+ * arrangement chosen by height is what stopped it, and the boundary came out at TWO. The
+ * width matters because the hint folds below eighty columns, so the number is stated with
+ * the width it was taken at.
+ */
+const TOO_SHORT_TO_REDRAW_IN_PART = 2;
+
+/**
  * Ctrl-C, which abandons the row being typed and leaves the session alive.
  *
  * Spelled as an escape, like every other unusual byte in this repository's sources: a
@@ -344,9 +356,20 @@ describe('the page opens clean, and what was on it is one scroll up', () => {
     // over the source in `the-console-on-ink.test.ts`), and on an ordinary terminal it
     // never appears. Pinned in both directions so the boundary cannot move in silence: if
     // a future version of the library stops doing it, this case goes red and gets deleted.
+    //
+    // THE HEIGHT USED TO BE THREE ROWS and it is {@link TOO_SHORT_TO_REDRAW_IN_PART} now.
+    // What moved it is the input having its own place: the region went from three rows to
+    // five, which would have raised this boundary, and the arrangement chosen by height
+    // (`repl/area.ts`) is what stopped it — the number came out one row LOWER than it was.
+    // Measured again for this delivery rather than carried over, at the same width, in
+    // `tests/the-input-has-its-own-place.test.ts`.
     const tall = await inPty({ columns: 60, rows: 24, steps: [opens, leaves] });
     expect(tall.bytes, 'an ordinary terminal saw it').not.toContain(ERASES_THE_HISTORY);
-    const short = await inPty({ columns: 60, rows: 3, steps: [opens, leaves] });
+    const short = await inPty({
+      columns: 60,
+      rows: TOO_SHORT_TO_REDRAW_IN_PART,
+      steps: [opens, leaves],
+    });
     expect(short.bytes, 'the library no longer redraws everything').toContain(REDRAWS_EVERYTHING);
     expect(short.bytes, 'the library no longer erases the history with it').toContain(
       ERASES_THE_HISTORY,
@@ -411,7 +434,7 @@ describe('the word that clears gives back the page the session opened with', () 
     // out again. A page cleared without emptying it is a page whose cleared lines return —
     // later, on a frame nobody connected to the clearing.
     const columns = 60;
-    const rows = 3;
+    const rows = TOO_SHORT_TO_REDRAW_IN_PART;
     const ran = await inPty({
       columns,
       rows,

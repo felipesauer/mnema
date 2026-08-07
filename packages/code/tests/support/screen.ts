@@ -35,6 +35,17 @@ export interface Screen {
   readonly rows: readonly string[];
   /** The same rows with their trailing blanks off, joined — what a reader reads. */
   readonly text: string;
+  /**
+   * WHERE THE CARET IS LEFT, in rows from the top of the screen and columns from its
+   * left edge.
+   *
+   * It is on the model because it is the only way to ask a question this surface now
+   * makes: the row being typed stopped being the first of the redrawn ones, so "the caret
+   * is where the caller is typing" is an offset the product works out (`repl/area.ts`) and
+   * the layout is told. Nothing but a screen can say where it ended up — the bytes say
+   * `up three rows`, and how many rows there were is exactly what is under test.
+   */
+  readonly cursor: { readonly row: number; readonly column: number };
 }
 
 /** Where the cursor is, and what is under it. */
@@ -60,7 +71,11 @@ export function screenOf(bytes: string, columns: number, rows: number): Screen {
     printable(byte, grid, columns, rows);
   }
   const lines = grid.cells.map((cells) => cells.join(''));
-  return { rows: lines, text: lines.map((line) => line.replace(/ +$/, '')).join('\n') };
+  return {
+    rows: lines,
+    text: lines.map((line) => line.replace(/ +$/, '')).join('\n'),
+    cursor: { row: grid.row, column: grid.column },
+  };
 }
 
 /** Puts one ordinary byte on the grid. */
