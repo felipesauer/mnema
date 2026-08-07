@@ -277,6 +277,7 @@ describe('nothing else decides which renderer', () => {
       'leaving.ts',
       'region.ts',
       'session.ts',
+      'standing.ts',
     ]);
     expect(readFileSync(join(HERE, 'repl', 'session.ts'), 'utf-8')).toContain('writeLines(io,');
   });

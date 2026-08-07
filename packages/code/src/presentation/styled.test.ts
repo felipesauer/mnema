@@ -27,7 +27,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../cli.js';
-import { fact, statedFact, subjectLine } from './detail.js';
+import { aside, fact, statedFact, subjectLine } from './detail.js';
 import { asId, asWhen, column, itemLine } from './items.js';
 import type { Line } from './line.js';
 import { renderPlain } from './plain.js';
@@ -125,6 +125,10 @@ describe('the styled line is the plain line, wrapped', () => {
     // A state belonging to another machine, which a search lists in the same column: it
     // is a part like the others and it is not painted, so its line is the plain line.
     itemLine(['a title', asState('accepted')]),
+    // The aside: one `detail` on its own, with no label in front of it to take the
+    // colon. It is dim, so it is in the painted half, and the words are the same in
+    // both renderings — which is the whole promise, on the surface's newest shape.
+    aside('`.exit` or Ctrl-D leaves'),
   ];
 
   it('says exactly what the plain line says, for every shape', () => {
@@ -137,15 +141,15 @@ describe('the styled line is the plain line, wrapped', () => {
     // The other half. Without this, a renderer that returned the plain string would
     // pass the case above on every line in the corpus.
     //
-    // EIGHTEEN of the twenty-eight, and exactly the ones holding a role or a severity
+    // NINETEEN of the twenty-nine, and exactly the ones holding a role or a severity
     // that shows: the three subject lines, the seven statements, the three clause
-    // statements, the two lists with a said column and the three states whose disposition
-    // is news. The other ten are bare `field` and bare `state` — a fact, a plain column,
-    // an empty part, a blank line, an advancing task, another machine's position — and
-    // they are byte for byte the plain line by design, which is what the last case in
-    // this block asserts on purpose.
+    // statements, the two lists with a said column, the three states whose disposition
+    // is news, and the aside. The other ten are bare `field` and bare `state` — a fact, a
+    // plain column, an empty part, a blank line, an advancing task, another machine's
+    // position — and they are byte for byte the plain line by design, which is what the
+    // last case in this block asserts on purpose.
     const painted = corpus.filter((line) => renderStyled(line) !== renderPlain(line));
-    expect(painted.length).toBe(18);
+    expect(painted.length).toBe(19);
   });
 
   it('leaves what an actor wrote alone, escape and all', () => {

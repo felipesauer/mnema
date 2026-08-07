@@ -54,7 +54,8 @@
 
 import { buildProgram, type CliIo, parseWith } from '../cli.js';
 import { completionTree } from '../completion/tree.js';
-import { fact, subjectLine } from '../presentation/detail.js';
+import { bannerFor } from '../presentation/banner.js';
+import { aside, fact, subjectLine } from '../presentation/detail.js';
 import { column, itemLine } from '../presentation/items.js';
 import type { Line } from '../presentation/line.js';
 import type { Render } from '../presentation/render.js';
@@ -72,6 +73,7 @@ import {
   verbsOffered,
 } from './gate.js';
 import type { Leaving } from './leaving.js';
+import { type Standing, standing } from './standing.js';
 
 /**
  * What a caller types in front of.
@@ -84,6 +86,22 @@ const PROMPT = 'mnema> ';
 
 /** How wide the verb column of `.help` is — the longest verb, and a space after it. */
 const VERB_WIDTH = 16;
+
+/**
+ * What separates the two facts of the status line, and the words of a tip from the next.
+ *
+ * It is the separator the opening already used between the words the session answers to,
+ * kept for the same reason it was chosen: these are clauses of one line rather than
+ * columns of a table, and the two spaces of a column would read as a table with no header.
+ */
+const BETWEEN_CLAUSES = ' · ';
+
+/**
+ * How wide a terminal has to be before the banner is asked anything, when the device did
+ * not say. Zero, so the narrowest form is drawn: a width nobody reported is not a width to
+ * guess at, and the form that always fits is the name.
+ */
+const NO_WIDTH = 0;
 
 /** What one line of the session needs: where to write, how, and what it is called. */
 export interface Session {
@@ -157,13 +175,23 @@ export async function openSession(request: SessionRequest): Promise<void> {
     stdin: input,
     stdout: output,
     prompt: PROMPT,
+    // Rendered ONCE, here, and handed over as bytes: the tips say nothing about the
+    // record, so nothing can happen inside the session that changes what they say.
+    tips: render(tips()),
     complete: completerFor(completionTree(built.program), offered, SESSION_WORDS),
     answer: (line) => typedLine(line, session),
     leaving,
   });
   land = page.land;
 
-  writeLines(onThePage, opening(offered.length).map(render));
+  // WHERE THE SESSION IS, asked once and of the filesystem. Everything the opening says
+  // about the project and the identity is one `readdir` and one small file; a read of the
+  // record here would be paid before the caller could type anything, and paid again by
+  // whatever asked it a second time (see `standing.ts` for the measurement).
+  writeLines(
+    onThePage,
+    opening(offered.length, output.columns ?? NO_WIDTH, standing()).map(render),
+  );
   await page.closed;
 }
 
@@ -208,13 +236,67 @@ export async function typedLine(line: string, session: Session): Promise<AfterLi
   }
 }
 
-/** What the session says when it opens: what it is, and the two words it answers to. */
-function opening(reads: number): readonly Line[] {
+/**
+ * What the session says when it opens: its name drawn, what it is, what it will not do,
+ * and where it is standing.
+ *
+ * ALL OF IT IS STATIC, and that is the difference from the tips below. These lines land in
+ * the scrollback and stay there — a caller who scrolls to the top of a long session finds
+ * the drawing, the default-deny sentence and the project the whole thing was about, which
+ * is exactly what someone reading a transcript afterwards needs and exactly what a redrawn
+ * region would have thrown away.
+ *
+ * THE SENTENCE ABOUT THE VERBS IS THE ONE THAT MAY NOT GO. It is the only thing that
+ * explains, to somebody who just opened a prompt, why half of what they know how to type
+ * is about to be refused — and it counts the reads rather than stating a number, so it
+ * cannot go stale.
+ */
+function opening(reads: number, columns: number, where: Standing): readonly Line[] {
   return [
+    ...bannerFor(columns),
     subjectLine('mnema', 'a session over this project'),
     fact(`It runs the ${reads} verbs that read the record, and refuses the ones that write.`),
-    fact(`\`${ABOUT}\` says what it runs · \`${LEAVE}\` or Ctrl-D leaves · Ctrl-C clears the line`),
+    ...standingLine(where),
   ];
+}
+
+/**
+ * Where the session is, as one line — or as no line at all when it knows neither fact.
+ *
+ * Absent rather than apologetic: a session opened outside any project, or on a machine
+ * whose key root holds no single key, has nothing true to say here, and a line saying
+ * "unknown" twice would be the surface filling space. What it knows, it says.
+ */
+function standingLine(where: Standing): readonly Line[] {
+  const known = [where.project, where.identity].filter((value) => value !== undefined);
+  return known.length === 0 ? [] : [fact(known.join(BETWEEN_CLAUSES))];
+}
+
+/**
+ * WHAT THE CALLER CAN DO — the one line of the session that does not scroll away.
+ *
+ * It used to be the third line of the opening and it moved, which is the whole of this
+ * change: after ten reads the affordances were somewhere above the top of the screen, and
+ * a hint a caller has to scroll to find is not a hint. It lives under the row being typed
+ * now, in the region the layout redraws, so it is on the screen for as long as there is a
+ * prompt to type at.
+ *
+ * It says nothing about the record and takes no argument, so it is resolved once when the
+ * session opens and never asked again.
+ *
+ * Exported so a test can tell this row apart from a line the record produced without
+ * retyping it: the two would drift, and the case that compares what a verb says inside the
+ * console to what it says at a shell would then be comparing a stale list.
+ */
+export function tips(): Line {
+  return aside(
+    [
+      `\`${ABOUT}\` says what it runs`,
+      `\`${LEAVE}\` or Ctrl-D leaves`,
+      'Ctrl-C clears the line',
+      'Tab completes',
+    ].join(BETWEEN_CLAUSES),
+  );
 }
 
 /**

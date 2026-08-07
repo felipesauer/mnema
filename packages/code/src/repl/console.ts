@@ -20,7 +20,9 @@
  * both are INPUT rather than report: the ECHO of what the caller typed (the prompt and
  * their own words, the way a terminal shows what you sent), and the ROW OF CANDIDATES a
  * Tab could not choose between. Neither is a fact about the record, and neither goes
- * through a renderer — for the same reason the prompt never did.
+ * through a renderer — for the same reason the prompt never did. The TIPS are not a
+ * third: they arrive as bytes a renderer already produced, exactly like a landed line,
+ * and all this file does with them is say where they go.
  *
  * ONE LINE AT A TIME, and it is a chain rather than a flag. A caller who pastes three
  * lines has given the terminal all three before the first one has run, and three verbs
@@ -49,6 +51,14 @@ export interface ConsoleRequest {
   readonly stdout: NodeJS.WriteStream;
   /** What the caller types in front of. Not a report, and so not rendered. */
   readonly prompt: string;
+  /**
+   * What the caller can do, already rendered, for the region that is redrawn.
+   *
+   * It stays under the row being typed instead of landing in the scrollback, which is
+   * the difference between a tip and a line: one that has scrolled off the screen is not
+   * a tip any more. Empty means the console offers none and draws no row for it.
+   */
+  readonly tips: string;
   /** What Tab offers, over the command tree the session was built from. */
   readonly complete: Completer;
   /** What the session does with one submitted line, and whether it goes on. */
@@ -74,7 +84,7 @@ export interface OpenConsole {
  * one path onto the page and not a special one for the first three rows.
  */
 export function openConsole(request: ConsoleRequest): OpenConsole {
-  const { stdin, stdout, prompt, complete, answer, leaving } = request;
+  const { stdin, stdout, prompt, tips, complete, answer, leaving } = request;
 
   let past: readonly string[] = [];
   let editing: Editing = NOTHING_TYPED;
@@ -86,7 +96,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     return {
       past,
       present: prompt + editing.typed,
-      hint: editing.candidates.join(BETWEEN_CANDIDATES),
+      candidates: editing.candidates.join(BETWEEN_CANDIDATES),
       // In characters rather than in string offsets: the caret is a column on a screen,
       // and the offset the editor keeps is into a string that can hold more than one
       // code unit per character.
@@ -190,7 +200,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     pressed,
   };
 
-  const app = render(createElement(Region, { watched }), {
+  const app = render(createElement(Region, { watched, tips }), {
     stdin,
     stdout,
     // Ctrl-C is this session's, and it abandons the LINE. A library that exited the

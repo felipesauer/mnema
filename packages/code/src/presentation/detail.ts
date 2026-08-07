@@ -68,6 +68,30 @@ export function fact(text: string, depth = 1): Line {
 }
 
 /**
+ * An ASIDE: a line that says what the reader can DO rather than what is true.
+ *
+ * It is {@link fact}'s sibling and the difference is what it is about. A fact is
+ * about the record; an aside is about the surface — the words a session answers
+ * to, the key that leaves it. Nothing about the record is stated, so nothing here
+ * is a value anyone checks, and that is exactly what makes it the one line a
+ * reader should be able to skip past once they know it.
+ *
+ * Which is why it takes the `detail` role: DIM is what this surface already means
+ * by "secondary, and you may skip it" (see `styled.ts` — it is what an id and an
+ * instant take, for the same reason). No role and no hue was invented for it; the
+ * plain renderer writes the words and nothing else, so a reader in a pipe or on a
+ * monochrome terminal loses nothing, because there was nothing only the weight
+ * said.
+ *
+ * It sits at the same depth a fact does. The two are read together — a session's
+ * opening says what it runs and then what to type — and a different indent would
+ * say one of them belongs to the other.
+ */
+export function aside(text: string): Line {
+  return { indent: 1, parts: [{ role: 'detail', text }] };
+}
+
+/**
  * One fact that ends in a workflow STATE: the fact, then the position as its own part.
  *
  * It is {@link fact} with the state taken out of the sentence, and the split is the whole
