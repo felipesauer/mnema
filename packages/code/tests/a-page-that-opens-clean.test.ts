@@ -33,7 +33,9 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
-import { ABOUT, CLEAR, LEAVE } from '../src/session-words.js';
+import { renderPlain } from '../src/presentation/plain.js';
+import { tips } from '../src/repl/session.js';
+import { CLEAR, LEAVE } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC } from './support/console.js';
 import { screenOf } from './support/screen.js';
@@ -446,7 +448,16 @@ describe('the word that clears gives back the page the session opened with', () 
     // the word that LISTS the rest now, and the word that clears is one keystroke away
     // inside that list rather than on the page (`repl/session.ts`, `tips`). So the
     // affordance asserted is the one the row actually carries.
-    expect(cleared.text).toContain(ABOUT);
+    //
+    // ⚠️ AND THEN THE WORD THAT LISTS WENT TOO, which is the second time this line has
+    // moved and the reason it is now asked of the module that composes the row. The word
+    // was on the page because the BOX named it, in a section called `Hints`; the section
+    // went, because what a caller can type is said under the prompt and a box that repeated
+    // it was the copy that scrolls away. Nothing was lost — the key that opens the list is
+    // in the row, and the list has the word in it (`tests/the-opening-fits-the-screen.test.ts`
+    // asks a real screen for it) — but the string this case looked for is not on an opened
+    // page any more, and it failed rather than going quiet, which is how it was found.
+    expect(cleared.text).toContain(renderPlain(tips()).trim());
   }, 120_000);
 
   it('does not come back on a frame the layout redraws everything on', async () => {

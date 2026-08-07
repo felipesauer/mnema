@@ -39,13 +39,21 @@
  * through a session.
  *
  * AND THE PAGE FOLLOWS THE TERMINAL, which is the THIRD caller of that same page — the
- * opening, the word that clears, and a caller who changed how wide their window is. The
+ * opening, the word that clears, and a caller who changed the size of their window. The
  * box is drawn corner to corner, so a session opened at a hundred and twenty columns and
  * narrowed to seventy is a frame the terminal folds in half; the fix is not a special
- * redraw but the page again, at the new width. What differs from a clearing is one thing:
+ * redraw but the page again, at the new size. What differs from a clearing is one thing:
  * everything the session already SAID is landed with it, because a caller who resized a
- * window did not ask to lose what they had read. WIDTH ONLY — height moves no glyph of
- * the drawing — and after the size has SETTLED, because one drag of a window corner
+ * window did not ask to lose what they had read.
+ *
+ * ⚠️ IT SAID *WIDTH ONLY — height moves no glyph of the drawing*, and it was a width
+ * standing in for the thing it could be read off. The name gives way by HEIGHT as well now
+ * (`presentation/banner.ts`), so a window made short enough opens with a different mark and
+ * a width can no longer answer for the drawing. What answers is the DRAWING: the page is
+ * turned when the opening this terminal would get is not the one on the screen
+ * (`panel.ts`, `sameOpening`) — so the sentence survives as a consequence rather than as a
+ * rule, and a window dragged taller or shorter without changing a glyph still costs
+ * nothing. And it is asked after the size has SETTLED, because one drag of a window edge
  * delivers dozens of sizes and a page reemitted on each of them is the defect this would
  * otherwise become.
  *
@@ -68,7 +76,7 @@ import type { AfterLine } from './gate.js';
 import { armLeaving, type Leaving } from './leaving.js';
 import { carriedIntoTheScrollback } from './page.js';
 import { offeredBy, paletteFor } from './palette.js';
-import type { Opening } from './panel.js';
+import { type Opening, sameOpening } from './panel.js';
 import { Region, type Shown, type Watched } from './region.js';
 
 /**
@@ -181,15 +189,20 @@ export interface ConsoleRequest {
    */
   readonly vocabulary: readonly CompletionWord[];
   /**
-   * WHAT THE PAGE OPENS WITH, on a terminal of a given width — the box and the lines that
+   * WHAT THE PAGE OPENS WITH, on a terminal of a given SIZE — the box and the lines that
    * go with it, already composed and already measured.
    *
-   * A FUNCTION AND NOT A VALUE, and the width is the whole reason. It arrived as a value
+   * A FUNCTION AND NOT A VALUE, and the size is the whole reason. It arrived as a value
    * while the page was only ever drawn at the size the session opened at; a page that
-   * follows the terminal has to be able to ask for the same opening at another width, and
-   * two of the answers depend on it — which drawing there is room for, and how much of the
+   * follows the terminal has to be able to ask for the same opening at another size, and
+   * the answers that depend on it are which drawing there is room for and how much of the
    * name is drawn. Everything else it returns is closed over, composed once, and never
    * asked for again.
+   *
+   * ⚠️ IT TOOK THE WIDTH ALONE, and the height joined it: the name gives way by height as
+   * well now, because five rows of art on a terminal four rows tall is a drawing whose top
+   * is already in the scrollback (`presentation/banner.ts`). Both numbers come from the two
+   * questions below and from nowhere else.
    *
    * ⛔ IT MAY NOT READ THE RECORD, and that is the caller's promise rather than a
    * signature this file can enforce. What the panel says about the record was paid for
@@ -201,7 +214,7 @@ export interface ConsoleRequest {
    * per page and a caller scrolls back to the top to find it, which is the same argument
    * the opening lines have always been kept by.
    */
-  readonly openingFor: (columns: number) => Opening;
+  readonly openingFor: (columns: number, rows: number) => Opening;
   /** What Tab offers, over the command tree the session was built from. */
   readonly complete: Completer;
   /** What the session does with one submitted line, and whether it goes on. */
@@ -243,9 +256,10 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   /**
    * How tall the page is, asked of the DEVICE each time rather than remembered.
    *
-   * A terminal the caller resized is a different page, and two things are functions of how
-   * tall it is: the bytes that carry a page into the scrollback, and which arrangement the
-   * input area has room for. Asking again costs a property read and is the only way the
+   * A terminal the caller resized is a different page, and three things are functions of
+   * how tall it is: the bytes that carry a page into the scrollback, which arrangement the
+   * input area has room for, and — since the drawing of the name gives way by height —
+   * what the page OPENS with. Asking again costs a property read and is the only way the
    * answer can be right after a resize.
    *
    * It sits beside the other question rather than further down, where it was, because the
@@ -254,10 +268,16 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    */
   const howTall = (): number => stdout.rows ?? NO_HEIGHT;
 
-  /** The width the page on the screen was drawn for. What a resize is compared against. */
-  let drawnAt = howWide();
-  /** The box and the lines this page opened with, for {@link drawnAt}. */
-  let opened: Opening = openingFor(drawnAt);
+  /**
+   * The box and the lines the page on the screen was drawn with.
+   *
+   * ⚠️ THERE WAS A NUMBER BESIDE IT — the WIDTH the page was drawn for — and a resize was
+   * compared against that, on the premise that nothing but a width could move a glyph of
+   * the drawing. The name gives way by height now, so the premise is gone; what replaced it
+   * is not a second number but the DRAWING itself ({@link sameOpening}), which is what the
+   * width was standing in for all along.
+   */
+  let opened: Opening = openingFor(howWide(), howTall());
   /** Everything the session has said SINCE the page opened — the opening is not in it. */
   let said: readonly string[] = [];
   let past: readonly string[] = [...opened.lines];
@@ -342,7 +362,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   /**
    * A clean page: the opening, and nothing the session has said.
    *
-   * The opening is what this console was handed for the width it is drawn at, so a cleared
+   * The opening is what this console was handed for the size it is drawn at, so a cleared
    * page is the opened page by construction rather than by a second composition that could
    * come to say something else.
    */
@@ -352,25 +372,24 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   }
 
   /**
-   * The page at the width the caller's terminal has NOW: the opening recomposed for it,
-   * and every line the session already said landed under it.
+   * The page at the size the caller's terminal has NOW: the opening recomposed for it, and
+   * every line the session already said landed under it.
    *
    * What is not here is as much of the decision as what is. Nothing is re-read — the
-   * opening is recomposed out of lines that already exist, and the two things that depend
-   * on the width are which drawing there is room for and how much of the name is drawn.
-   * And nothing the caller has read is taken from them: the page they had goes UP, into
-   * the scrollback, exactly as it does when they ask for a clean one.
+   * opening is recomposed out of lines that already exist, and what depends on the size is
+   * which drawing there is room for and how much of the name is drawn. And nothing the
+   * caller has read is taken from them: the page they had goes UP, into the scrollback,
+   * exactly as it does when they ask for a clean one.
    */
   function followTheTerminal(): void {
-    const wide = howWide();
-    // THE ONE GUARD, and it answers two questions with one comparison: a window made
-    // taller or shorter moves no glyph of a drawing whose only measurement is columns, and
-    // a drag that wandered away and came back is a caller whose page is already right.
-    // Both are the same fact — the width the page on the screen was drawn for is the width
-    // the terminal has — and asking it twice would be two ideas of when a page is stale.
-    if (wide === drawnAt) return;
-    drawnAt = wide;
-    opened = openingFor(wide);
+    // THE ONE GUARD, and it is one question: is the opening this terminal would get the one
+    // that is on the screen? A drag that wandered away and came back is a caller whose page
+    // is already right; so is a window made shorter by rows the drawing does not depend on.
+    // Composing the answer to ask it costs a pure function over lines that already exist,
+    // which is what makes the question askable at all (`panel.ts`, `sameOpening`).
+    const now = openingFor(howWide(), howTall());
+    if (sameOpening(now, opened)) return;
+    opened = now;
     thePageAgain();
   }
 
@@ -381,15 +400,17 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * The terminal changed size — the page follows it, once the size has SETTLED.
    *
    * Nothing is decided here. Every change starts the wait over, and what happens at the
-   * end of it is {@link followTheTerminal}'s to decide, which is why a drag of a corner
-   * costs one page and a drag of the bottom edge costs none.
+   * end of it is {@link followTheTerminal}'s to decide, which is why a drag costs one page
+   * at most however many sizes it delivered, and none at all when it moved no glyph.
    */
   function resized(): void {
-    // THE HEIGHT IS ANSWERED AT ONCE, and only the width waits. A window made shorter is a
-    // window with room for a different arrangement of the input area, and that arrangement
-    // is decided per frame out of what this rebuilds — nothing is carried into the
-    // scrollback and no page is turned, so there is nothing for a wait to coalesce. The
-    // page below is the other half, and it is the one a drag makes expensive.
+    // THE INPUT AREA IS ANSWERED AT ONCE, and only the page waits. Which arrangement the
+    // area is in is decided per frame out of what this rebuilds — nothing is carried into
+    // the scrollback and no page is turned for it, so there is nothing for a wait to
+    // coalesce. ⚠️ THIS USED TO SAY A HEIGHT COST NOTHING BUT THIS, on the premise that only
+    // the width could turn a page. The name gives way by height too now, so both edges of a
+    // window reach the page below — and what they cost there is a page only when the
+    // drawing really changed.
     moved();
     if (settling !== undefined) clearTimeout(settling);
     settling = setTimeout(() => {

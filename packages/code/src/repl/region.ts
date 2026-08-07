@@ -106,7 +106,13 @@ const BESIDE_THE_RULE = 2;
 /** The gap between the border and what is inside it. */
 const INSIDE_THE_BOX = 1;
 
-/** The blank row between one section of the panel and the next. */
+/**
+ * The blank row over the record's section in the stacked form — what separates it from the
+ * group above it, which is the name and the place.
+ *
+ * There is no such row in the two-column form, where nothing precedes the section: this is
+ * the argument the two forms differ by rather than a margin somebody liked.
+ */
 const BETWEEN_SECTIONS = 1;
 
 /**
@@ -268,9 +274,19 @@ export function Region({
   // frame. What falsified it is the area, which draws up to three rows over the row being
   // typed. How many is arithmetic and it is answered before this file is reached
   // (`area.ts`), so the caret and the drawing cannot come to disagree about the shape.
-  useEffect(() => {
-    setCursorPosition({ x: shown.column, y: shown.area.above });
-  }, [shown.column, shown.area.above, setCursorPosition]);
+  //
+  // ⚠️ IT WAS HANDED OVER IN AN EFFECT, AND AN EFFECT IS ONE FRAME LATE. Measured: the
+  // caret opened three rows BELOW the prompt — where the terminal leaves it after the last
+  // row of a frame — and corrected itself on the first keystroke. The library keeps what it
+  // is handed in a ref and pushes it to the page during the COMMIT (`ink`, `useCursor`: an
+  // insertion effect, which runs before the frame is written); a passive effect runs after
+  // that, so what it sets is a position for the NEXT frame, and on the opening frame there
+  // is no next one until a key is pressed. Handing it over while the frame is being
+  // composed is what puts the caret on the row a caller is about to type on — and it is a
+  // ref rather than state, so nothing is rendered twice for it
+  // (`tests/the-opening-fits-the-screen.test.ts` compares the opening with the frame after
+  // one keystroke: they used to disagree).
+  setCursorPosition({ x: shown.column, y: shown.area.above });
 
   return node(
     Box,
@@ -428,7 +444,7 @@ function Opening({ panel }: { readonly panel: Panel }): ReactNode {
   );
 }
 
-/** The mark and where the session is standing, then a rule, then the two sections. */
+/** The mark and where the session is standing, then a rule, then the record's section. */
 function sideBySide(panel: Panel): ReactNode[] {
   return [
     node(
@@ -453,14 +469,14 @@ function sideBySide(panel: Panel): ReactNode[] {
         borderBottom: false,
         paddingLeft: BESIDE_THE_RULE,
       },
-      ...sections(panel, 0),
+      theRecord(panel, 0),
     ),
   ];
 }
 
 /** The same groups, one under the other, for a terminal too narrow for two columns. */
 function oneOverTheOther(panel: Panel): ReactNode[] {
-  return [...whereItStands(panel), ...sections(panel, BETWEEN_SECTIONS)];
+  return [...whereItStands(panel), theRecord(panel, BETWEEN_SECTIONS)];
 }
 
 /**
@@ -479,42 +495,37 @@ function whereItStands(panel: Panel): ReactNode[] {
 }
 
 /**
- * The two sections, with a rule between them.
+ * WHAT THE RECORD IS: the one section of the box, and everything the box says that is not
+ * the name or the place.
  *
- * `above` is what separates the FIRST of them from whatever precedes it, and it differs
- * between the two forms because what precedes it differs: beside the mark there is
- * nothing above the first section and its top row lines up with the top of the drawing,
- * while under the mark there is, and a section that started on the next row would read as
- * part of the group before it.
+ * `above` is what separates it from whatever precedes it, and it differs between the two
+ * forms because what precedes it differs: beside the mark there is nothing above it and its
+ * top row lines up with the top of the drawing, while under the mark there is, and a
+ * section that started on the next row would read as part of the group before it.
  *
- * THE RULE IS DRAWN AND NOT WRITTEN, which is the whole of how a layout forbidden to
- * compose a line is allowed to have one: it is a box with nothing in it and one edge
- * switched on, so the run of glyphs is the library's the way the frame around all of this
- * is. A string of dashes typed here would be text a component put on the page.
+ * ⚠️ IT USED TO BE TWO SECTIONS WITH A RULE BETWEEN THEM, and this was `sections`. The
+ * second section said what to type; it went because the row under the prompt says it too,
+ * in the place that does not scroll away (`session.ts`, `tips`). The rule went WITH it —
+ * with one section there is nothing left to divide — and the function is renamed rather
+ * than emptied, so a case that was using the rule as a means went red instead of quietly
+ * measuring nothing.
  *
- * IT IS AS WIDE AS THE SECTIONS ARE, and by construction rather than by a number: with
- * nothing inside it, it takes the width its siblings gave the column. So it measures the
- * column it divides, in either form, and no arithmetic anywhere had to be told about it.
- *
- * It stands where the blank row used to and it is CHROME, painted in the one accent, like
- * the frame it is part of — the reference this panel was drawn from separates the two
- * sections of its right-hand column exactly so (measured: a run of 63 in a terminal of
- * 120).
+ * ⚠️ AND THE RULE'S OWN DOC WAS A FALSE PREMISE, which is why it is written down here
+ * rather than deleted with it. It said: *"IT IS AS WIDE AS THE SECTIONS ARE, and by
+ * construction rather than by a number: with nothing inside it, it takes the width its
+ * siblings gave the column."* That was true while the box hugged its content, so the column
+ * was as wide as what was in it and the two were the same number. The box is drawn corner
+ * to corner since the page began following the terminal, so the column is STRETCHED and the
+ * rule went on measuring its siblings: a run of 45 columns inside a column of 61, measured
+ * on a real terminal 120 wide. What it divided and what it looked like it divided had come
+ * apart, and no arithmetic anywhere knew — the rule cost no columns, so nothing counted it.
  */
-function sections(panel: Panel, above: number): ReactNode[] {
-  return [
-    node(Box, { key: 'record', flexDirection: 'column', marginTop: above }, ...rows(panel.record)),
-    node(Box, {
-      key: 'between',
-      borderStyle: BORDER,
-      borderColor: ACCENT,
-      borderBottom: false,
-      borderLeft: false,
-      borderRight: false,
-      marginTop: BETWEEN_SECTIONS,
-    }),
-    node(Box, { key: 'hints', flexDirection: 'column' }, ...rows(panel.hints)),
-  ];
+function theRecord(panel: Panel, above: number): ReactNode {
+  return node(
+    Box,
+    { key: 'record', flexDirection: 'column', marginTop: above },
+    ...rows(panel.record),
+  );
 }
 
 /**

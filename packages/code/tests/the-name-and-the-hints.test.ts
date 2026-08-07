@@ -304,8 +304,17 @@ async function readingWhileTyping(typed: string, answered?: string): Promise<str
 /** How many times `what` occurs in `text`. Overlapping is impossible for these. */
 const times = (text: string, what: string): number => text.split(what).length - 1;
 
-/** One form as the bytes a plain renderer writes for it. */
-const drawn = (columns: number): string[] => bannerFor(columns).map(renderPlain);
+/**
+ * One form as the bytes a plain renderer writes for it, on a terminal with the HEIGHT for
+ * any of them.
+ *
+ * The banner gives way on either measurement now (`presentation/banner.ts`), so a case
+ * about the WIDTH has to hold the other one still — a height that chose a form would make
+ * every width below answer the same thing. {@link TALL} is the height every console in
+ * this file is opened at, and the first case asserts the tall form really is what comes
+ * back at it, which is what keeps this from being a height that decides.
+ */
+const drawn = (columns: number): string[] => bannerFor({ columns, rows: TALL }).map(renderPlain);
 
 // ---------------------------------------------------------------------------
 // The name, and how much of it fits

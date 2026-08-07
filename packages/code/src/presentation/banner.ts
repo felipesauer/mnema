@@ -15,9 +15,27 @@
  * a number somebody chose, which is what keeps the rule from drifting away from the art
  * the day a letter changes.
  *
+ * AND IT DEGRADES BY HEIGHT, WHICH IS THE SAME RULE ON THE OTHER MEASUREMENT. A drawing
+ * five rows tall on a terminal four rows tall is art that does not fit on the screen it
+ * opens: the top of it is in the scrollback before the caller has typed anything, and what
+ * scrolled away is the one thing the banner exists to say. So a form gives way on either
+ * axis, and the threshold on this one is the form's own HEIGHT for the same reason it is
+ * the form's own width on the other — the drawing is what is right, and a number here
+ * would be a second opinion about how tall it is. Pinned in both directions in
+ * `tests/the-opening-fits-the-screen.test.ts`, where the height a form gives way at is
+ * searched for rather than written down.
+ *
+ * IT IS THE THIRD PLACE THIS SURFACE CHOOSES A FORM BY A MEASUREMENT, and now the only one
+ * that chooses by both: the panel picks by width (`repl/panel.ts`) and the input area by
+ * height (`repl/area.ts`), each with the same shape of answer — the richest arrangement
+ * that fits, a floor that is answered whatever the size, and a threshold taken off the
+ * drawing.
+ *
  * AND THE NARROWEST STILL SAYS THE NAME. There is no form that draws nothing: a terminal
  * too narrow even for five characters gets the five characters anyway, because the one
- * thing this banner exists to say is the only thing that may not be dropped.
+ * thing this banner exists to say is the only thing that may not be dropped. The floor is
+ * a single row, so it is answered at every height as well — a terminal too short for one
+ * row is a terminal with nowhere to put a prompt.
  *
  * IT IS COMPOSED HERE AND POSITIONED ELSEWHERE. The console mounts a layout library, and
  * the limit that decision rests on is that no component of it composes a line — five
@@ -96,7 +114,7 @@ const SHORT: readonly string[] = ['M N E M A'];
 /** The name, as it is typed. The floor: no terminal is too narrow for this one. */
 const NAME: readonly string[] = ['mnema'];
 
-/** The three forms, widest first — the order the choice below walks. */
+/** The three forms, biggest first — the order the choice below walks. */
 const FORMS: readonly (readonly string[])[] = [TALL, SHORT, NAME];
 
 /** How wide a form is: its widest row. */
@@ -104,14 +122,29 @@ function widthOf(form: readonly string[]): number {
   return Math.max(...form.map((row) => [...row].length));
 }
 
+/** How tall a form is: how many rows it draws. */
+function heightOf(form: readonly string[]): number {
+  return form.length;
+}
+
+/** How much room the device is giving the drawing. Both measurements, asked in one place. */
+export interface BannerRequest {
+  /** How wide the terminal is, asked of the DEVICE by whoever opens the session. */
+  readonly columns: number;
+  /** How tall it is, asked of the same device in the same place. */
+  readonly rows: number;
+}
+
 /**
- * The banner for a terminal `columns` wide: the widest form that fits, and the name when
- * none does.
+ * The banner for a terminal of a given size: the biggest form that fits across it and down
+ * it, and the name when none does.
  *
- * `columns` is asked of the DEVICE by whoever opens the session and handed in — nothing in
+ * THE SIZE IS ASKED OF THE DEVICE by whoever opens the session and handed in — nothing in
  * `presentation/` may look at a terminal, because a line whose bytes depended on where they
  * landed could not be compared to a recorded transcript (`parts.test.ts` refuses a module
- * here that mentions one).
+ * here that mentions one). Both measurements come down the SAME path, out of the one place
+ * on this surface that asks the device anything (`repl/console.ts`), so the drawing and the
+ * page it is drawn on cannot come to disagree about how big the screen is.
  *
  * IT USED TO BE ANSWERED ONCE, when the session opened, on the argument that "a banner
  * that redrew itself on a resize would be rewriting history the caller can scroll back
@@ -120,10 +153,12 @@ function widthOf(form: readonly string[]): number {
  * console draws the page again at the new width. The argument survives and it is the
  * console's to keep — the old page is carried INTO the scrollback before the new one is
  * drawn, so what the caller can scroll back to is added to and never rewritten
- * (`repl/console.ts`, `repl/page.ts`). Nothing here changed: this is a function of a
- * number, it is called again with a different one, and it is the caller that decides when.
+ * (`repl/console.ts`, `repl/page.ts`). Nothing here changed: this is a function of two
+ * numbers, it is called again with different ones, and it is the caller that decides when.
  */
-export function bannerFor(columns: number): readonly Line[] {
-  const form = FORMS.find((candidate) => widthOf(candidate) <= columns) ?? NAME;
+export function bannerFor(request: BannerRequest): readonly Line[] {
+  const fits = (candidate: readonly string[]): boolean =>
+    widthOf(candidate) <= request.columns && heightOf(candidate) <= request.rows;
+  const form = FORMS.find(fits) ?? NAME;
   return form.map((row) => subjectLine(row));
 }
