@@ -52,6 +52,7 @@
  * paying.
  */
 
+import type { ProvenLevel } from '@mnema/chain';
 import { buildProgram, type CliIo, parseWith } from '../cli.js';
 import type { TreeReport } from '../commands/verify.js';
 import { runVerify } from '../commands/verify.js';
@@ -67,7 +68,7 @@ import { here } from '../wiring/context.js';
 import { writeLines } from '../wiring/io.js';
 import { reportUsage } from '../wiring/report.js';
 import type { Declared } from '../wiring/verb.js';
-import { DEFAULT_REQUIREMENT, treeHeadline } from '../wiring/verify.js';
+import { DEFAULT_REQUIREMENT, treeHeadline, VERIFY_VERB } from '../wiring/verify.js';
 import { completerFor } from './complete.js';
 import { type AfterLine, argvOf, dispositionOf, verbsOffered } from './gate.js';
 import type { Leaving } from './leaving.js';
@@ -123,6 +124,26 @@ const WHAT_TO_TYPE = 'Hints';
 const UNDER_A_HEADING = 1;
 
 /**
+ * THE MARK THE BADGE OPENS WITH — a filled ring, and nothing else about it.
+ *
+ * Spelled by its code point rather than typed, like every unusual byte in this repository:
+ * a glyph a reader cannot tell from a neighbouring one is a glyph an edit destroys without
+ * anybody seeing it happen. It is the one the reference this row was measured from uses,
+ * and it says nothing — it is where the eye lands on a row that is otherwise at the far
+ * edge of a wide screen.
+ */
+const LEVEL_MARK = '\u25c9';
+
+/**
+ * How deep the badge sits: at the edge, like a verdict.
+ *
+ * It is not under anything. The rows of the panel are a section's lines under the heading
+ * that names it; this is one row in a corner, and a level of indentation would be two
+ * columns of nothing between it and the end of the terminal.
+ */
+const AT_THE_EDGE = 0;
+
+/**
  * The one affordance that is not a keystroke: the word that lists the verbs.
  *
  * It is named apart from the three beside it because the panel shows THIS one and the row
@@ -131,6 +152,17 @@ const UNDER_A_HEADING = 1;
  * reworded.
  */
 const WHAT_IT_RUNS = `\`${ABOUT}\` says what it runs`;
+
+/**
+ * THE OTHER TWO CLAUSES OF THE HINT, and there are two of them because three is the whole
+ * of it (see {@link tips}).
+ *
+ * The key that completes and the two ways out. Neither is a WORD the session answers to —
+ * they are keystrokes, so there is no vocabulary to read them off — and the word that IS
+ * one comes from the constant that declares it, so a renamed word renames the hint.
+ */
+const TAB_COMPLETES = 'Tab completes';
+const HOW_TO_LEAVE = `\`${LEAVE}\` or Ctrl-D leaves`;
 
 /** What one line of the session needs: where to write, how, and what it is called. */
 export interface Session {
@@ -206,9 +238,14 @@ export async function openSession(request: SessionRequest): Promise<void> {
   // again (see {@link theRecord}).
   const title = subjectLine(NAME, WHICH_BUILD, WHAT_IT_IS);
   const where = standingLine(standing());
-  const record = recordSection(theRecord());
+  const proved = theRecord();
+  const record = recordSection(proved?.trees);
   const hints = [subjectLine(WHAT_TO_TYPE), aside(WHAT_IT_RUNS)];
   const refuses = whatItRefuses(offered.length).map(render);
+  // NO PROJECT, NO BADGE. There is no record to name a level of, so the corner says
+  // nothing at all — the same posture the line that says where the session is standing
+  // takes about a fact it does not have, and the same one the panel's record section takes.
+  const badge = proved === undefined ? '' : render(badgeLine(proved.level));
 
   /**
    * WHAT THE PAGE OPENS WITH on a terminal `columns` wide — and the only thing on this
@@ -250,6 +287,9 @@ export async function openSession(request: SessionRequest): Promise<void> {
     // Rendered ONCE, here, and handed over as bytes: the tips say nothing about the
     // record, so nothing can happen inside the session that changes what they say.
     tips: render(tips()),
+    // Also rendered once — out of the ONE read this surface pays for. It does say
+    // something about the record, which is exactly why it may not be asked again.
+    badge,
     complete: completerFor(completionTree(built.program), offered, SESSION_WORDS),
     answer: (line) => typedLine(line, session),
     leaving,
@@ -280,9 +320,23 @@ export async function openSession(request: SessionRequest): Promise<void> {
  * With no project there is nothing to rule on and it says nothing at all, which is the
  * same posture the status line takes about a fact it does not have.
  */
-function theRecord(): readonly TreeReport[] | undefined {
+function theRecord(): TheRecord | undefined {
   const verdict = runVerify({ ...here(), requirement: DEFAULT_REQUIREMENT, global: false });
-  return verdict.ok ? verdict.trees : undefined;
+  return verdict.ok ? { trees: verdict.trees, level: verdict.record.level } : undefined;
+}
+
+/**
+ * What the one read answered, as the two things the opening makes out of it.
+ *
+ * They travel together because they came out of one call and must not be asked for
+ * separately: the panel says a line per tree and the badge says the ONE level over all of
+ * them, and a corner that asked its own question could answer it at a different instant.
+ */
+interface TheRecord {
+  /** Every tree the verdict covered, in the order it reported them. */
+  readonly trees: readonly TreeReport[];
+  /** The weakest level any of them reached — what the exit code of the verb reads. */
+  readonly level: ProvenLevel;
 }
 
 /**
@@ -391,11 +445,29 @@ function standingLine(where: Standing): readonly Line[] {
 /**
  * WHAT THE CALLER CAN DO — the one line of the session that does not scroll away.
  *
- * It used to be the third line of the opening and it moved, which is the whole of this
- * change: after ten reads the affordances were somewhere above the top of the screen, and
- * a hint a caller has to scroll to find is not a hint. It lives under the row being typed
- * now, in the region the layout redraws, so it is on the screen for as long as there is a
- * prompt to type at.
+ * It used to be the third line of the opening and it moved, which is the whole of the
+ * change that put it here: after ten reads the affordances were somewhere above the top of
+ * the screen, and a hint a caller has to scroll to find is not a hint. It lives under the
+ * row being typed now, in the region the layout redraws, so it is on the screen for as
+ * long as there is a prompt to type at.
+ *
+ * IT USED TO SAY FIVE THINGS AND IT SAYS THREE, and that is measured rather than trimmed
+ * for taste. Five clauses came to about a hundred and ten characters, which the terminal
+ * folded into two rows below ninety-seven columns — so the row that exists in order to be
+ * glanced at was the tallest thing in the region on an ordinary screen. The reference this
+ * console was measured against says three things in about fifty characters, and three is
+ * what a person reads without stopping. What went is what {@link ABOUT} answers in full:
+ * the word that clears the page, and the key that clears the line.
+ *
+ * WHICH THREE, AND WHY THEY ARE THESE: the word that lists everything else, so nothing
+ * dropped is lost; the key that completes, which is the one affordance a caller cannot
+ * guess by typing; and the way out, which is the thing nobody wants to look for. The first
+ * and the last are read off the constants that DECLARE those words, so a renamed word
+ * renames the hint.
+ *
+ * ⛔ IT PROMISES NOTHING THAT IS NOT THERE. A row under the prompt is the most believed
+ * sentence on the surface, and a hint naming an affordance that does not answer yet would
+ * be the console lying to the one reader who cannot check.
  *
  * It says nothing about the record and takes no argument, so it is resolved once when the
  * session opens and never asked again.
@@ -405,15 +477,36 @@ function standingLine(where: Standing): readonly Line[] {
  * console to what it says at a shell would then be comparing a stale list.
  */
 export function tips(): Line {
-  return aside(
-    [
-      WHAT_IT_RUNS,
-      `\`${CLEAR}\` starts the page over`,
-      `\`${LEAVE}\` or Ctrl-D leaves`,
-      'Ctrl-C clears the line',
-      'Tab completes',
-    ].join(BETWEEN_CLAUSES),
-  );
+  return aside([WHAT_IT_RUNS, TAB_COMPLETES, HOW_TO_LEAVE].join(BETWEEN_CLAUSES));
+}
+
+/**
+ * WHAT THE RECORD PROVED, as the one row that stays in the corner: the mark, the level,
+ * and the verb that says the whole sentence.
+ *
+ * `valor · comando` is the shape of the reference's own corner, measured rather than
+ * guessed (a mark, a value, a middle dot with one space on each side, and the word that
+ * changes it). What goes in it is this product's own answer to what deserves to be fixed
+ * in the corner of a console for AUDITING a record: the proven LEVEL, which is the thesis,
+ * and `verify`, which is the verb that prints the verdict the level was folded out of.
+ *
+ * THE LEVEL IS THE WORST OF THE TREES, and it is the worst by the function that already
+ * decides it rather than by a fold written here — `runVerify` returns one level over every
+ * tree it covered, and the exit code of `mnema verify` is decided by that same value
+ * (`commands/verify.ts`, `weakerLevel`). A second opinion in a corner would be a console
+ * that says a record is fine while the verb says it is not.
+ *
+ * IT CARRIES NO HUE, and that is a decision rather than an omission. Where a level is
+ * RULED ON — the panel's line per tree, and `verify`'s own — it is painted by the one
+ * function that says how a level reads as news (`wiring/verify.ts`, `levelSeverity`). This
+ * row is on the screen for the whole session and is redrawn on every keystroke, and a hue
+ * that is on every frame of every session is a hue nobody reads any more; it is also the
+ * one row of this surface where plain and painted are the same bytes, which is what makes
+ * a screenshot of it and a pipe of it the same claim. The words are the carrier here, as
+ * they are everywhere else on this surface.
+ */
+function badgeLine(level: ProvenLevel): Line {
+  return fact(`${LEVEL_MARK} ${level}${BETWEEN_CLAUSES}${VERIFY_VERB}`, AT_THE_EDGE);
 }
 
 /**

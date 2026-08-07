@@ -84,6 +84,18 @@ const LEVEL_MEANS: Readonly<Record<LevelRequirement, string>> = {
  */
 export const DEFAULT_REQUIREMENT: LevelRequirement = 'chained';
 
+/**
+ * WHAT THIS VERB IS CALLED, and the one place it is spelled.
+ *
+ * It is registered below and it is also NAMED — by the console, in the badge that sits in
+ * the corner of every frame and says what the record proved. That badge is a level and the
+ * word that prints the whole verdict behind it, so the word has to be the one commander
+ * routes; typed a second time, the day this verb is renamed is the day the console starts
+ * telling a caller to run something that does not exist. The same shape `repl.ts` already
+ * uses for its own name.
+ */
+export const VERIFY_VERB = 'verify';
+
 /** Returned by {@link parseRequirement} when the value names no requirement. */
 const INVALID_REQUIREMENT = Symbol('invalid-requirement');
 
@@ -136,7 +148,7 @@ const NO_RECORD = NO_RECORD_HEADLINE + NO_RECORD_WHY;
 export function registerVerify(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
   const verify = program
-    .command('verify')
+    .command(VERIFY_VERB)
     .description("verify this project's record — its committed tree and its private one")
     .option(
       '--global',
