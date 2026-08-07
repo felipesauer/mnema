@@ -56,14 +56,15 @@ import type { ProvenLevel } from '@mnema/chain';
 import { buildProgram, type CliIo, parseWith } from '../cli.js';
 import type { TreeReport } from '../commands/verify.js';
 import { runVerify } from '../commands/verify.js';
-import { completionTree } from '../completion/tree.js';
+import { type CompletionWord, completionTree } from '../completion/tree.js';
 import { bannerFor } from '../presentation/banner.js';
 import { aside, fact, subjectLine } from '../presentation/detail.js';
 import { column, itemLine } from '../presentation/items.js';
 import type { Line } from '../presentation/line.js';
+import { widthOf } from '../presentation/plain.js';
 import type { Render } from '../presentation/render.js';
 import { statement } from '../presentation/verdict.js';
-import { ABOUT, CLEAR, LEAVE, SESSION_WORDS } from '../session-words.js';
+import { ABOUT, CLEAR, LEAVE, PREFIX, WHAT_EACH_WORD_DOES } from '../session-words.js';
 import { VERSION } from '../version.js';
 import { here } from '../wiring/context.js';
 import { writeLines } from '../wiring/io.js';
@@ -71,6 +72,7 @@ import { reportUsage } from '../wiring/report.js';
 import type { Declared } from '../wiring/verb.js';
 import { DEFAULT_REQUIREMENT, levelSeverity, treeHeadline, VERIFY_VERB } from '../wiring/verify.js';
 import { completerFor } from './complete.js';
+import type { Drawn } from './console.js';
 import { type AfterLine, argvOf, dispositionOf, verbsOffered } from './gate.js';
 import type { Leaving } from './leaving.js';
 import { type Opening, panelFor, panelLines } from './panel.js';
@@ -155,15 +157,34 @@ const AT_THE_EDGE = 0;
 const WHAT_IT_RUNS = `\`${ABOUT}\` says what it runs`;
 
 /**
- * THE OTHER TWO CLAUSES OF THE HINT, and there are two of them because three is the whole
- * of it (see {@link tips}).
+ * THE THREE CLAUSES OF THE HINT, and each one is a KEY and what that key gives (see
+ * {@link tips} for why three).
  *
- * The key that completes and the two ways out. Neither is a WORD the session answers to —
- * they are keystrokes, so there is no vocabulary to read them off — and the word that IS
- * one comes from the constant that declares it, so a renamed word renames the hint.
+ * The first is built out of the PREFIX every word of the session begins with rather than
+ * out of a word, because what it names is the keystroke and not a command.
+ *
+ * ⚠️ THE FIRST ONE USED TO NAME `/help`, AND IT USED TO BE FORBIDDEN TO NAME THE SLASH.
+ * The rule was right and it was about a promise: a hint naming an affordance that does not
+ * answer is the console lying to the reader who cannot check, and until this delivery the
+ * slash answered nothing on its own — you had to type a whole word behind it. It opens the
+ * palette now, so the promise is kept, and the case that held the ban is inverted rather
+ * than deleted (`tests/the-input-has-its-own-place.test.ts`).
+ *
+ * ⚠️ AND THE LAST ONE USED TO NAME `/exit`, WHICH THE FIRST CLAUSE NOW DELIVERS. A hint
+ * that says where the list of words IS does not also have to teach a word from it — that
+ * is the economy the reference this console was measured against has, and it became true
+ * here only once the palette existed. What is left is the keystroke, which is in no list.
+ * The saving is measured rather than felt: seventy-four columns to fifty-three, which is
+ * the difference between a hint an eighty-column terminal keeps and one a sixty-column
+ * terminal keeps — and below its own width the area draws no hint at all (`area.ts`).
+ *
+ * ⛔ AND `Tab completes` KEEPS NO QUALIFIER, WHICH IS PRECISION RATHER THAN BREVITY. A Tab
+ * offers the verbs AND the words the session answers to itself, so `Tab for verbs` would
+ * be shorter and false.
  */
+const WHAT_THE_SLASH_DOES = `\`${PREFIX}\` lists the words`;
 const TAB_COMPLETES = 'Tab completes';
-const HOW_TO_LEAVE = `\`${LEAVE}\` or Ctrl-D leaves`;
+const HOW_TO_LEAVE = 'Ctrl-D leaves';
 
 /** What one line of the session needs: where to write, how, and what it is called. */
 export interface Session {
@@ -246,7 +267,10 @@ export async function openSession(request: SessionRequest): Promise<void> {
   // NO PROJECT, NO BADGE. There is no record to name a level of, so the corner says
   // nothing at all — the same posture the line that says where the session is standing
   // takes about a fact it does not have, and the same one the panel's record section takes.
-  const badge = proved === undefined ? '' : render(badgeLine(proved.level));
+  // The WIDTH goes with it because the area needs both and only the composer can measure
+  // one: a rendered line carries escapes a screen does not print (see `Drawn`).
+  const badge = drawn(proved === undefined ? undefined : badgeLine(proved.level), render);
+  const vocabulary = theSessionsOwnWords();
 
   /**
    * WHAT THE PAGE OPENS WITH on a terminal `columns` wide — and the only thing on this
@@ -284,19 +308,38 @@ export async function openSession(request: SessionRequest): Promise<void> {
     stdin: input,
     stdout: output,
     prompt: PROMPT,
+    render,
     openingFor,
     // Rendered ONCE, here, and handed over as bytes: the tips say nothing about the
     // record, so nothing can happen inside the session that changes what they say.
-    tips: render(tips()),
+    tips: drawn(tips(), render),
     // Also rendered once — out of the ONE read this surface pays for. It does say
     // something about the record, which is exactly why it may not be asked again.
     badge,
-    complete: completerFor(completionTree(built.program), offered, SESSION_WORDS),
+    vocabulary,
+    complete: completerFor(completionTree(built.program), offered, vocabulary),
     answer: (line) => typedLine(line, session),
     leaving,
   });
   land = page.land;
   await page.closed;
+}
+
+/**
+ * A line as the console needs it: the bytes, and how many columns they take.
+ *
+ * BOTH HALVES ARE ASKED HERE because this is where the line is. The renderer turns it into
+ * bytes and `widthOf` counts the plain rendering, which is the same number of columns the
+ * painted one takes — the escapes a terminal does not print are exactly the difference
+ * between the two. A console that counted the bytes would make a hint that fits look too
+ * wide the moment colour was switched on, and the arrangement it chose would be the narrow
+ * one on a screen with room to spare.
+ *
+ * No line at all is no bytes and no width, which is what the area reads as "there is
+ * nothing to draw here".
+ */
+function drawn(line: Line | undefined, render: Render): Drawn {
+  return line === undefined ? { text: '', width: 0 } : { text: render(line), width: widthOf(line) };
 }
 
 /**
@@ -457,14 +500,25 @@ function standingLine(where: Standing): readonly Line[] {
  * folded into two rows below ninety-seven columns — so the row that exists in order to be
  * glanced at was the tallest thing in the region on an ordinary screen. The reference this
  * console was measured against says three things in about fifty characters, and three is
- * what a person reads without stopping. What went is what {@link ABOUT} answers in full:
- * the word that clears the page, and the key that clears the line.
+ * what a person reads without stopping.
  *
- * WHICH THREE, AND WHY THEY ARE THESE: the word that lists everything else, so nothing
- * dropped is lost; the key that completes, which is the one affordance a caller cannot
- * guess by typing; and the way out, which is the thing nobody wants to look for. The first
- * and the last are read off the constants that DECLARE those words, so a renamed word
- * renames the hint.
+ * WHICH THREE, AND WHY THEY ARE THESE: each clause is a KEY and what that key gives. The
+ * key that lists everything else, so nothing dropped is lost; the key that completes, which
+ * is the one affordance a caller cannot guess by typing; and the way out, which is the
+ * thing nobody wants to look for.
+ *
+ * ⚠️ IT NAMED TWO WORDS AND IT NAMES NONE. The first clause used to be `/help` and the last
+ * used to be `/exit`, and the palette is what took both: the slash opens the list they are
+ * IN, so a hint that pointed at the list and then quoted an item from it would be spending
+ * a clause on what the clause beside it already hands over. Nothing was lost — both moved
+ * one keystroke closer — and what is left in the hint is three keystrokes, which are in no
+ * list and cannot be looked up.
+ *
+ * AND THE SAVING IS THE POINT, because this row has a WIDTH rule over it now: a hint the
+ * terminal would fold is not drawn at all (`area.ts`), so every column it does not spend is
+ * a narrower terminal that still gets it. Seventy-four columns to fifty-three, measured —
+ * the difference between a hint an eighty-column terminal keeps and one a sixty-column
+ * terminal keeps.
  *
  * ⛔ IT PROMISES NOTHING THAT IS NOT THERE. A row under the prompt is the most believed
  * sentence on the surface, and a hint naming an affordance that does not answer yet would
@@ -478,7 +532,23 @@ function standingLine(where: Standing): readonly Line[] {
  * console to what it says at a shell would then be comparing a stale list.
  */
 export function tips(): Line {
-  return aside([WHAT_IT_RUNS, TAB_COMPLETES, HOW_TO_LEAVE].join(BETWEEN_CLAUSES));
+  return aside([WHAT_THE_SLASH_DOES, TAB_COMPLETES, HOW_TO_LEAVE].join(BETWEEN_CLAUSES));
+}
+
+/**
+ * THE WORDS THE SESSION ANSWERS TO ITSELF, each with what it does — one value, two
+ * readers.
+ *
+ * A Tab completes them and a slash lists them, and they are the same list read off the
+ * same table (`session-words.ts`, where a word that has no gloss cannot exist because it
+ * would have nothing to be a key of). Two derivations would be a menu that offers a word
+ * the completer does not know, or the reverse.
+ *
+ * Exported so a case can assert what the slash opens against the source rather than
+ * against a retyped list.
+ */
+export function theSessionsOwnWords(): readonly CompletionWord[] {
+  return Object.entries(WHAT_EACH_WORD_DOES).map(([word, description]) => ({ word, description }));
 }
 
 /**

@@ -42,7 +42,7 @@ import type { Render } from '../src/presentation/render.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { statement } from '../src/presentation/verdict.js';
 import { type PanelForm, panelFor } from '../src/repl/panel.js';
-import { openSession } from '../src/repl/session.js';
+import { openSession, tips } from '../src/repl/session.js';
 import { LEAVE } from '../src/session-words.js';
 import { here } from '../src/wiring/context.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
@@ -570,7 +570,11 @@ describe('the panel is the plain panel, wrapped, and it is drawn once', () => {
     expect(times(page, OPENED)).toBe(1);
     expect(times(page, CORNER)).toBe(1);
     // The frames really happened: the row under the prompt was written once per keystroke.
-    expect(times(page, 'says what it runs')).toBeGreaterThan(typed.length);
+    // ⚠️ THE WITNESS USED TO BE A CLAUSE OF THE HINT, and the hint stopped saying it: it
+    // names the KEY that lists the session's words now rather than one of the words. The
+    // witness is the hint itself, composed by the module that composes it, so a reworded
+    // hint moves the case with it instead of quietly counting to zero.
+    expect(times(page, renderPlain(tips()).trim())).toBeGreaterThan(typed.length);
     // And what was drawn once really was a box.
     expect(page).toContain(DASH);
   }, 120_000);

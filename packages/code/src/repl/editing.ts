@@ -31,6 +31,7 @@
  * nowhere else.
  */
 
+import type { CompletionWord } from '../completion/tree.js';
 import type { Completer } from './complete.js';
 
 /** How many lines the session scrolls back through. In memory, and nowhere else. */
@@ -74,8 +75,18 @@ export interface Editing {
    * to wherever the caller had been rather than to the line before this one.
    */
   readonly browsing: number;
-  /** What Tab last offered when it could not decide. Cleared by the next key. */
-  readonly candidates: readonly string[];
+  /**
+   * What Tab last offered when it could not decide, each with what it is. Cleared by the
+   * next key.
+   *
+   * ⚠️ IT USED TO BE `candidates`, AND A LIST OF BARE WORDS. It is renamed rather than
+   * widened in place, because the console draws it now as a list of two columns rather
+   * than as a row of tokens (`palette.ts`) — and a field that keeps its spelling while
+   * what it holds changes leaves everything that read it asserting the new shape by
+   * accident. What a Tab DOES is untouched: the same candidates, the same order, the same
+   * common prefix typed for the caller.
+   */
+  readonly offered: readonly CompletionWord[];
 }
 
 /** No key at all: what a synthesised keystroke is built out of, field by field. */
@@ -98,7 +109,7 @@ export const NOTHING_TYPED: Editing = {
   at: 0,
   history: [],
   browsing: 0,
-  candidates: [],
+  offered: [],
 };
 
 /** What a keystroke did. Closed, and total over what can be pressed. */
@@ -252,18 +263,18 @@ function inserting(editing: Editing, text: string): Editing {
     ...editing,
     typed: editing.typed.slice(0, editing.at) + text + editing.typed.slice(editing.at),
     at: editing.at + text.length,
-    candidates: [],
+    offered: [],
   };
 }
 
 /** The row with the character at `index` gone. Out of range is the row unchanged. */
 function erasing(editing: Editing, index: number): Editing {
-  if (index < 0 || index >= editing.typed.length) return { ...editing, candidates: [] };
+  if (index < 0 || index >= editing.typed.length) return { ...editing, offered: [] };
   return {
     ...editing,
     typed: editing.typed.slice(0, index) + editing.typed.slice(index + 1),
     at: index,
-    candidates: [],
+    offered: [],
   };
 }
 
@@ -272,13 +283,13 @@ function caretAt(editing: Editing, index: number): Editing {
   return {
     ...editing,
     at: Math.max(0, Math.min(editing.typed.length, index)),
-    candidates: [],
+    offered: [],
   };
 }
 
 /** An empty row, with the history and the position it was browsing left alone. */
 function cleared(editing: Editing): Editing {
-  return { ...editing, typed: '', at: 0, candidates: [], browsing: editing.history.length };
+  return { ...editing, typed: '', at: 0, offered: [], browsing: editing.history.length };
 }
 
 /**
@@ -303,7 +314,7 @@ function remembering(editing: Editing, line: string): Editing {
 function browsing(editing: Editing, step: number): Editing {
   const at = Math.max(0, Math.min(editing.history.length, editing.browsing + step));
   const remembered = editing.history[at] ?? '';
-  return { ...editing, typed: remembered, at: remembered.length, browsing: at, candidates: [] };
+  return { ...editing, typed: remembered, at: remembered.length, browsing: at, offered: [] };
 }
 
 /**
@@ -320,11 +331,11 @@ function browsing(editing: Editing, step: number): Editing {
  */
 function completing(editing: Editing, complete: Completer): Editing {
   const [hits, word] = complete(editing.typed.slice(0, editing.at));
-  if (hits.length === 0) return { ...editing, candidates: [] };
-  const agreed = commonPrefix(hits);
-  const candidates = hits.length > 1 ? hits : [];
-  if (agreed.length <= word.length) return { ...editing, candidates };
-  return { ...inserting(editing, agreed.slice(word.length)), candidates };
+  if (hits.length === 0) return { ...editing, offered: [] };
+  const agreed = commonPrefix(hits.map((hit) => hit.word));
+  const offered = hits.length > 1 ? hits : [];
+  if (agreed.length <= word.length) return { ...editing, offered };
+  return { ...inserting(editing, agreed.slice(word.length)), offered };
 }
 
 /** The longest start every one of `words` has. Empty when they agree on nothing. */

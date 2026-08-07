@@ -48,7 +48,7 @@ import { bannerFor } from '../src/presentation/banner.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { openSession, tips } from '../src/repl/session.js';
-import { CLEAR, LEAVE, SESSION_WORDS } from '../src/session-words.js';
+import { CLEAR, LEAVE, PREFIX, SESSION_WORDS } from '../src/session-words.js';
 import { here } from '../src/wiring/context.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { DEFAULT_REQUIREMENT } from '../src/wiring/verify.js';
@@ -397,9 +397,17 @@ describe('the drawing stays in the scrollback and the tips stay on the screen', 
     // gives back exactly the plain line.
     const said = renderPlain(tips());
     expect(said.length).toBeGreaterThan(0);
-    // It still names a word the session answers to, so the row is an affordance rather
-    // than a sentence about nothing.
-    expect(SESSION_WORDS.some((word) => said.includes(word))).toBe(true);
+    // ⚠️ THIS USED TO SAY IT NAMED A WORD THE SESSION ANSWERS TO, and the hint stopped
+    // naming any of them. What falsified it is the palette: the slash opens the list those
+    // words are IN, so a hint that pointed at the list and then quoted an item out of it
+    // would be spending a clause on what the clause beside it already hands over. The
+    // property the line was holding survives whole — the row is an AFFORDANCE rather than a
+    // sentence about nothing — and what carries it is the key rather than the word.
+    expect(said.includes(PREFIX)).toBe(true);
+    // THE ELO, so the affordance is one that answers: every word the session has begins
+    // with that key, and there is at least one.
+    expect(SESSION_WORDS.length).toBeGreaterThan(0);
+    for (const word of SESSION_WORDS) expect(word.startsWith(PREFIX), word).toBe(true);
     expect(renderStyled(tips())).toContain(DIM);
     // biome-ignore lint/suspicious/noControlCharactersInRegex: the escape IS the subject.
     expect(renderStyled(tips()).replace(/\u001b\[[0-9;]*m/g, '')).toBe(said);

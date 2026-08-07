@@ -1,14 +1,14 @@
 /**
  * HOW MUCH OF THE INPUT AREA FITS — the arithmetic, and nothing about what it says.
  *
- * The row being typed used to be one row with two rows under it. It is an AREA now: a
- * badge in the corner saying what the record proved, a rule across the terminal, the row
- * itself, a second rule, and the hint. That is five rows where there were three, and the
- * two extra ones are not free — they are rows the layout REDRAWS, and the library that
- * redraws them gives up on redrawing PART of the screen once the region is as tall as the
- * viewport. What it does instead is redraw all of it, with a sequence that carries, inside
- * it, the one erase this product refuses to write: the caller's own history
- * (`a-page-that-opens-clean.test.ts` measures the boundary in both directions).
+ * The row being typed used to be one row with two rows under it. It is an AREA now: the
+ * palette of words a caller could type next, a badge in the corner saying what the record
+ * proved, a rule across the terminal, the row itself, a second rule, and the hint. Those
+ * are rows the layout REDRAWS, and the library that redraws them gives up on redrawing
+ * PART of the screen once the region is as tall as the viewport. What it does instead is
+ * redraw all of it, with a sequence that carries, inside it, the one erase this product
+ * refuses to write: the caller's own history (`a-page-that-opens-clean.test.ts` measures
+ * the boundary in both directions).
  *
  * SO THE AREA HAS FORMS, AND THEY ARE CHOSEN BY HEIGHT. It is the panel's rule
  * (`panel.ts`) applied to the other measurement: the widest form that fits is the one
@@ -23,18 +23,32 @@
  * the way out. Under the viewport by one row, it is not — so the threshold is where the
  * behaviour changes and not where a drawing looks cramped.
  *
- * EVERY ROW THE AREA WILL DRAW IS COUNTED, including the one that comes and goes. A Tab
- * that could not choose between two verbs puts a row of them above the area, and a form
- * chosen as though that row did not exist would be arithmetic about a region that is not
- * the one on the screen — which is the exact shape of instrument this bench has been
- * wrong with before. The cost is that a Tab pressed on a terminal one row above the
- * threshold drops the badge for as long as the words are up, and that is the right trade:
- * the words answer the key that was just pressed.
+ * EVERY ROW THE AREA WILL DRAW IS COUNTED, including the ones that come and go. THIS USED
+ * TO BE ONE ROW — the words a Tab could not choose between — and what replaced it is a
+ * LIST: the palette, which is as many rows as there are words to show and is opened by a
+ * slash as well as by a Tab (`palette.ts`). A form chosen as though those rows did not
+ * exist would be arithmetic about a region that is not the one on the screen, which is
+ * the exact shape of instrument this bench has been wrong with before.
  *
- * NOTHING HERE DRAWS AND NOTHING HERE COMPOSES. It receives three facts about what there
- * is to show and answers with which arrangement there is room for and where the caret
- * goes; the drawing is the layout's (`region.ts`) and the words are the session's
- * (`session.ts`).
+ * AND THE PALETTE IS SERVED BEFORE THE CHROME, which is a trade rather than an oversight.
+ * It answers the key that was just pressed, so on a terminal that cannot hold both it is
+ * the badge and the rules that give way — the same call the single row of candidates
+ * already forced, made explicit now that the list can be long. What the palette may never
+ * do is take the row being typed or crowd the region past the boundary above: it is cut to
+ * what is left over the floor, and the cut is REPORTED, so what it cannot show it says
+ * (`palette.ts`).
+ *
+ * WIDTH IS THE OTHER MEASUREMENT, AND IT WAS MISSING. The arithmetic counted a row per
+ * thing to draw and the terminal counted two whenever a thing was wider than the screen —
+ * a hint of seventy columns on a window of sixty is two rows, and every number this file
+ * answered with was one too few. So a row that would be FOLDED is not drawn, which is the
+ * same rule the forms already are, turned on the other axis: the hint and the badge each
+ * have an "absent" form already, and this is what chooses it.
+ *
+ * NOTHING HERE DRAWS AND NOTHING HERE COMPOSES. It receives what there is to show as
+ * numbers — how wide each thing is, how many rows the palette wants — and answers with
+ * which arrangement there is room for, what is in it, and where the caret goes; the
+ * drawing is the layout's (`region.ts`) and the words are the session's (`session.ts`).
  */
 
 /**
@@ -43,8 +57,9 @@
  *   - `full` — the badge in the corner, a rule, the row being typed, a rule, the hint.
  *     What the reference this was drawn from shows.
  *   - `ruled` — the same without the badge. A terminal that has room for the two rules
- *     and not for the row above them, and the arrangement a session outside a project
- *     gets at any height, because there is no record to name a level of.
+ *     and not for the row above them, a terminal too narrow for the badge to be one row,
+ *     and the arrangement a session outside a project gets at any size, because there is
+ *     no record to name a level of.
  *   - `bare` — the row being typed and the hint, with nothing around them. What this
  *     console drew before the input had a place of its own, and the floor: it is
  *     answered whatever the height, because a terminal too short for it is a terminal
@@ -56,15 +71,25 @@ export type AreaForm = 'full' | 'ruled' | 'bare';
 export interface AreaRequest {
   /** How tall the terminal is, asked of the DEVICE by whoever owns the streams. */
   readonly rows: number;
-  /** Whether there is a badge at all. Outside a project there is no level to name. */
-  readonly badge: boolean;
-  /** Whether a Tab left words it could not choose between on the page. */
-  readonly candidates: boolean;
-  /** Whether there is a hint under the row being typed. */
-  readonly hint: boolean;
+  /** How wide it is, asked of the same device in the same place. */
+  readonly columns: number;
+  /**
+   * How wide the badge is, in columns, and zero when there is none.
+   *
+   * A WIDTH RATHER THAN A YES, and the two are different questions: outside a project
+   * there is no level to name, and on a window narrower than the badge there is a level
+   * that would be drawn across two rows. Both end in the same absence and only one of
+   * them is about the record, so the caller answers what it knows — how wide the row it
+   * composed is — and the choice is made here.
+   */
+  readonly badge: number;
+  /** How wide the hint is, in columns, and zero when the console offers none. */
+  readonly hint: number;
+  /** How many rows the palette would like. Zero when it is not open. */
+  readonly palette: number;
 }
 
-/** Which arrangement the terminal has room for, and the two numbers that follow from it. */
+/** Which arrangement the terminal has room for, and the numbers that follow from it. */
 export interface Area {
   /** The arrangement to draw. */
   readonly form: AreaForm;
@@ -79,6 +104,10 @@ export interface Area {
   readonly above: number;
   /** How many rows the whole area takes. What the form was chosen by. */
   readonly height: number;
+  /** Whether the hint is drawn under it all. */
+  readonly hint: boolean;
+  /** How many rows the palette gets — what it wanted, or what was left over. */
+  readonly palette: number;
 }
 
 /** The row being typed. The one row every form has. */
@@ -87,8 +116,6 @@ const TYPED = 1;
 const BADGE = 1;
 /** One rule. There are two of them in the forms that have any. */
 const RULE = 1;
-/** The row of words a Tab could not choose between, when there is one. */
-const OFFERED = 1;
 /** The hint's row, under everything. */
 const HINT = 1;
 
@@ -102,9 +129,19 @@ const HINT = 1;
  */
 const BELOW_THE_VIEWPORT = 1;
 
-/** How tall each form is, given what there is to show around the row being typed. */
-function heightOf(form: AreaForm, request: AreaRequest): number {
-  const extras = (request.candidates ? OFFERED : 0) + (request.hint ? HINT : 0);
+/** What the area is drawing, once the two widths have been ruled on. */
+interface Drawing {
+  /** Whether the badge fits on one row, and there is one. */
+  readonly badge: boolean;
+  /** Whether the hint does. */
+  readonly hint: boolean;
+  /** How many rows the palette gets. */
+  readonly palette: number;
+}
+
+/** How tall each form is, given what there is to draw around the row being typed. */
+function heightOf(form: AreaForm, drawing: Drawing): number {
+  const extras = drawing.palette + (drawing.hint ? HINT : 0);
   switch (form) {
     case 'full':
       return BADGE + RULE + TYPED + RULE + extras;
@@ -116,15 +153,14 @@ function heightOf(form: AreaForm, request: AreaRequest): number {
 }
 
 /** How many rows a form puts above the row being typed. */
-function aboveIn(form: AreaForm, request: AreaRequest): number {
-  const offered = request.candidates ? OFFERED : 0;
+function aboveIn(form: AreaForm, drawing: Drawing): number {
   switch (form) {
     case 'full':
-      return offered + BADGE + RULE;
+      return drawing.palette + BADGE + RULE;
     case 'ruled':
-      return offered + RULE;
+      return drawing.palette + RULE;
     case 'bare':
-      return offered;
+      return drawing.palette;
   }
 }
 
@@ -135,12 +171,13 @@ function aboveIn(form: AreaForm, request: AreaRequest): number {
  * "NO PROJECT, NO BADGE" IS DECIDED BY THE FORM NOT EXISTING rather than by a form that
  * draws an empty row, and the difference is arithmetic rather than taste: an arrangement
  * that reserved a row for a badge nobody has would count a row nothing draws, and every
- * number this file answers with would be one too many.
+ * number this file answers with would be one too many. A badge too wide for the window is
+ * the same absence by the same construction.
  */
-function formFor(request: AreaRequest): AreaForm {
+function formFor(request: AreaRequest, drawing: Drawing): AreaForm {
   const fits = (form: AreaForm): boolean =>
-    heightOf(form, request) + BELOW_THE_VIEWPORT <= request.rows;
-  if (request.badge && fits('full')) return 'full';
+    heightOf(form, drawing) + BELOW_THE_VIEWPORT <= request.rows;
+  if (drawing.badge && fits('full')) return 'full';
   if (fits('ruled')) return 'ruled';
   // The floor, answered whatever the height: a terminal too short for the row being typed
   // has nowhere to put a prompt, and there is nothing shorter to give it.
@@ -148,13 +185,43 @@ function formFor(request: AreaRequest): AreaForm {
 }
 
 /**
- * The area for a terminal of a given height: the form, where the caret goes, and how tall
- * the whole of it is.
+ * Whether something of a given width is drawn on one row of this terminal.
  *
- * Pure, and asked again on every frame. It reads three booleans and a number, so a caller
- * that held the answer would be holding a stale one the moment a Tab offered a word.
+ * Zero is nothing to draw, and wider than the window is something the terminal would fold
+ * — which costs a second row nothing counted. A window whose width the device never
+ * reported answers no to both, for the reason the panel gives about the same silence: a
+ * width nobody reported is not a width to guess at.
+ */
+function onOneRow(width: number, columns: number): boolean {
+  return width > 0 && width <= columns;
+}
+
+/**
+ * The area for a terminal of a given size: the form, what is in it, where the caret goes,
+ * and how tall the whole of it is.
+ *
+ * Pure, and asked again on every frame. It reads four numbers, so a caller that held the
+ * answer would be holding a stale one the moment a Tab offered a word or a window moved.
  */
 export function areaFor(request: AreaRequest): Area {
-  const form = formFor(request);
-  return { form, above: aboveIn(form, request), height: heightOf(form, request) };
+  const hint = onOneRow(request.hint, request.columns);
+  // WHAT IS LEFT OVER THE FLOOR is what the palette may have, and the floor is the bare
+  // form without it: the row being typed, and the hint when there is one. So a palette
+  // never pushes the region past the boundary the whole of this file exists to keep, and
+  // a palette longer than the screen is CUT rather than drawn off the top.
+  const floor = TYPED + (hint ? HINT : 0);
+  const room = Math.max(0, request.rows - BELOW_THE_VIEWPORT - floor);
+  const drawing: Drawing = {
+    badge: onOneRow(request.badge, request.columns),
+    hint,
+    palette: Math.min(request.palette, room),
+  };
+  const form = formFor(request, drawing);
+  return {
+    form,
+    above: aboveIn(form, drawing),
+    height: heightOf(form, drawing),
+    hint,
+    palette: drawing.palette,
+  };
 }
