@@ -85,6 +85,7 @@ import {
 } from '../recorded-content.js';
 import { REFERENCE_DIRECTIONS } from '../reference-directions.js';
 import { oneLine, SERVED_PATTERN_CONTRACT, servedPatternsFraming } from '../served-patterns.js';
+import { VERSION } from '../version.js';
 import {
   actionsRequiring,
   andListed,
@@ -128,7 +129,6 @@ import {
 
 /** The name the server announces itself as (its own identity, not the client's). */
 const SERVER_NAME = 'mnema';
-const SERVER_VERSION = '0.0.0';
 
 /**
  * The `project` argument every WRITE carries: which of the workspace's projects the
@@ -321,7 +321,7 @@ export function buildMcpServer(options: McpServerOptions = {}): {
   const env = options.env ?? discoveryEnv();
   const log = options.log ?? ((line) => process.stderr.write(`${line}\n`));
 
-  const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION });
+  const server = new McpServer({ name: SERVER_NAME, version: VERSION });
 
   // The one piece of per-connection state: the session. It is resolved once,
   // and the in-flight PROMISE is what guards that — not the resolved value. The

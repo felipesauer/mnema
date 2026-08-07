@@ -31,6 +31,16 @@ export interface FakeTerminal {
   readonly stdout: NodeJS.WriteStream;
   /** Press keys: whatever a terminal would have delivered. */
   readonly type: (text: string) => void;
+  /**
+   * The caller changed the size of their window, the way a device reports it: the new
+   * size is readable, and then the stream says so.
+   *
+   * Both halves matter and in that order — a console that read the size when it was told
+   * would read the OLD one if the event came first, which is the defect this shape cannot
+   * hide. What a real terminal does is exactly this: the kernel updates the window size
+   * and then raises the signal node turns into the event.
+   */
+  readonly resize: (columns: number, rows?: number) => void;
   /** Every byte the terminal has received so far. */
   readonly bytes: () => string;
   /** Whether the input is in raw mode right now, as the device would report it. */
@@ -65,6 +75,10 @@ export function fakeTerminal(size?: { columns?: number; rows?: number }): FakeTe
     stdout: output as unknown as NodeJS.WriteStream,
     type: (text) => {
       input.write(text);
+    },
+    resize: (columns, rows) => {
+      Object.assign(output, rows === undefined ? { columns } : { columns, rows });
+      output.emit('resize');
     },
     bytes: () => bytes,
     raw: () => raw,

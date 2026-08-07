@@ -62,6 +62,7 @@ import { column, itemLine } from '../presentation/items.js';
 import type { Line } from '../presentation/line.js';
 import type { Render } from '../presentation/render.js';
 import { ABOUT, CLEAR, LEAVE, SESSION_WORDS } from '../session-words.js';
+import { VERSION } from '../version.js';
 import { here } from '../wiring/context.js';
 import { writeLines } from '../wiring/io.js';
 import { reportUsage } from '../wiring/report.js';
@@ -70,7 +71,7 @@ import { DEFAULT_REQUIREMENT, treeHeadline } from '../wiring/verify.js';
 import { completerFor } from './complete.js';
 import { type AfterLine, argvOf, dispositionOf, verbsOffered } from './gate.js';
 import type { Leaving } from './leaving.js';
-import { panelFor, panelLines } from './panel.js';
+import { type Opening, panelFor, panelLines } from './panel.js';
 import { type Standing, standing } from './standing.js';
 
 /**
@@ -94,16 +95,25 @@ const VERB_WIDTH = 16;
  */
 const BETWEEN_CLAUSES = ' · ';
 
-/**
- * How wide a terminal has to be before the banner is asked anything, when the device did
- * not say. Zero, so the narrowest form is drawn: a width nobody reported is not a width to
- * guess at, and the form that always fits is the name.
- */
-const NO_WIDTH = 0;
-
 /** The product, and what this session is — the box's title, and its first line without one. */
 const NAME = 'mnema';
 const WHAT_IT_IS = 'a session over this project';
+
+/**
+ * WHICH BUILD THIS IS, on the title beside the name.
+ *
+ * It is the one fact about the PRODUCT the opening states, and it is there because a
+ * console is where somebody reports what they saw: a screenshot of a box that names the
+ * version is a bug report that says which one. The string is the one `mnema --version`
+ * prints — one constant, read by both (`version.ts`), so a title and a flag cannot come to
+ * disagree about what is running.
+ *
+ * A PART OF ITS OWN and not glued to the name: what separates two parts of a heading is
+ * the renderer's decision and has been since the first form of this surface, so composing
+ * `mnema v0` here would be this file punctuating a line. The `v` is not punctuation — it
+ * is how a version is written.
+ */
+const WHICH_BUILD = `v${VERSION}`;
 
 /** What the two sections of the panel are called. */
 const THE_RECORD = 'The record';
@@ -189,40 +199,57 @@ export async function openSession(request: SessionRequest): Promise<void> {
   const built = buildProgram(onThePage, [], render);
   const offered = verbsOffered(built.verbs, self);
 
-  // WHAT THE SESSION OPENS WITH, composed and measured ONCE. Where it is standing is one
-  // `readdir` and one small file (see `standing.ts`); what the record IS costs a `verify`,
-  // and that is the one read of this kind this surface pays — declared, paid here, and
-  // never paid again (see {@link theRecord}).
-  const columns = output.columns ?? NO_WIDTH;
-  const panel = panelFor({
-    columns,
-    render,
-    title: subjectLine(NAME, WHAT_IT_IS),
-    mark: bannerFor(columns),
-    standing: standingLine(standing()),
-    record: recordSection(theRecord()),
-    hints: [subjectLine(WHAT_TO_TYPE), aside(WHAT_IT_RUNS)],
-  });
+  // WHAT THE SESSION OPENS WITH, read and composed ONCE — every part of it except the two
+  // that are functions of how wide the terminal is. Where it is standing is one `readdir`
+  // and one small file (see `standing.ts`); what the record IS costs a `verify`, and that
+  // is the one read of this kind this surface pays — declared, paid here, and never paid
+  // again (see {@link theRecord}).
+  const title = subjectLine(NAME, WHICH_BUILD, WHAT_IT_IS);
+  const where = standingLine(standing());
+  const record = recordSection(theRecord());
+  const hints = [subjectLine(WHAT_TO_TYPE), aside(WHAT_IT_RUNS)];
+  const refuses = whatItRefuses(offered.length).map(render);
+
+  /**
+   * WHAT THE PAGE OPENS WITH on a terminal `columns` wide — and the only thing on this
+   * surface a width decides.
+   *
+   * PURE, AND THAT IS THE POINT OF IT BEING A FUNCTION. The console calls it when the page
+   * opens and again whenever the caller has finished resizing their window, and between
+   * those two calls nothing is read: the lines above already exist, and the two answers
+   * that depend on the width are which drawing there is ROOM for (`panelFor`) and how much
+   * of the name is DRAWN (`bannerFor`). A recomposition that asked the record again could
+   * make the panel say something different halfway through a session, which is worse than
+   * costing a tenth of a second — and the reads are counted rather than promised
+   * (`tests/the-name-and-the-hints.test.ts`).
+   */
+  const openingFor = (columns: number): Opening => {
+    const panel = panelFor({
+      columns,
+      render,
+      title,
+      mark: bannerFor(columns),
+      standing: where,
+      record,
+      hints,
+    });
+    return {
+      // A terminal too narrow for a box gets no box, and the same lines land instead —
+      // which is why the layout has two forms and not three.
+      panel: panel.form === 'bare' ? undefined : panel,
+      lines: [...(panel.form === 'bare' ? panelLines(panel) : []), ...refuses],
+    };
+  };
 
   const { openConsole } = await import('./console.js');
   const page = openConsole({
     stdin: input,
     stdout: output,
     prompt: PROMPT,
-    // WHAT THE PAGE OPENS WITH, as a value rather than as three lines written once. The
-    // console lands it when it opens the page and lands it again whenever the caller
-    // clears one, so an opened page and a cleared page are the same page by
-    // construction — see `console.ts`.
-    opening: [
-      ...(panel.form === 'bare' ? panelLines(panel) : []),
-      ...whatItRefuses(offered.length).map(render),
-    ],
+    openingFor,
     // Rendered ONCE, here, and handed over as bytes: the tips say nothing about the
     // record, so nothing can happen inside the session that changes what they say.
     tips: render(tips()),
-    // A terminal too narrow for a box gets no box, and the same lines land instead —
-    // which is why the layout has two forms and not three.
-    panel: panel.form === 'bare' ? undefined : panel,
     complete: completerFor(completionTree(built.program), offered, SESSION_WORDS),
     answer: (line) => typedLine(line, session),
     leaving,

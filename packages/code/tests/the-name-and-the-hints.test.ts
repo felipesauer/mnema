@@ -208,6 +208,44 @@ async function openedAt(columns: number, typed: readonly string[] = []): Promise
 }
 
 /**
+ * What a console drew, opened at `columns` and then resized to each of `widths` in turn.
+ *
+ * The page follows the terminal's WIDTH, so each of these is a recomposition of the
+ * opening and a page drawn again — which is exactly the thing that must not cost a read.
+ * Each width is waited out until the page has been drawn for it, so nothing here counts a
+ * resize the console had not got round to yet.
+ */
+async function resizedThrough(columns: number, widths: readonly number[]): Promise<string> {
+  const terminal = fakeTerminal({ columns });
+  const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
+  const closed = openSession({
+    io,
+    render: renderPlain,
+    self: REPL_VERB,
+    input: terminal.stdin,
+    output: terminal.stdout,
+    interactive: true,
+    leaving: hooksNothing,
+  });
+  await until(() => terminal.bytes().includes(OPENED), 'opened');
+  for (const width of widths) {
+    const grown = terminal.bytes().length;
+    terminal.resize(width);
+    await until(() => terminal.bytes().length > grown, `redrew at ${width}`);
+    let settled = terminal.bytes().length;
+    for (let still = 0; still < 8; still++) {
+      await new Promise((resolve) => setTimeout(resolve, 40));
+      if (terminal.bytes().length === settled) break;
+      settled = terminal.bytes().length;
+      still = 0;
+    }
+  }
+  terminal.type(`${LEAVE}\r`);
+  await closed;
+  return terminal.bytes();
+}
+
+/**
  * What a console read while the caller TYPED — with the opening already paid for.
  *
  * The watch is switched on only once the session is open, which is the whole point of the
@@ -435,6 +473,24 @@ describe('the opening reads the record once, and a redraw never reads it', () =>
     // And nothing at all while the page is being cleared, on the watch that only sees
     // what typing caused.
     expect(ofTheRecord(await readingWhileTyping(`${CLEAR}\r`))).toEqual([]);
+  }, 180_000);
+
+  it('reads nothing at all when the caller resizes the terminal, however many times', async () => {
+    // THE SAME DECISION, ASKED OF THE OTHER CALLER. The page follows the terminal's width
+    // now: a caller who narrows their window gets the page again, with the box recomposed
+    // for it. Recomposing is not RE-READING — the lines already exist, and what the width
+    // decides is which drawing there is room for and how much of the name is drawn. A
+    // redraw that asked `verify` again could make the panel say something different
+    // halfway through a session, which is the same hazard a clean page was measured
+    // against. So: three width changes read exactly what no width change reads.
+    const thrice = await reading(async () => {
+      await resizedThrough(200, [160, 120, 90]);
+    });
+    const once = await reading(async () => {
+      await openedAt(200);
+    });
+    expect(ofTheRecord(once).length, 'the opening read nothing at all').toBeGreaterThan(0);
+    expect(ofTheRecord(thrice)).toEqual(ofTheRecord(once));
   }, 180_000);
 
   it('and the counter would have seen one, which is what makes the absence a fact', async () => {
