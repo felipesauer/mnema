@@ -8,10 +8,16 @@
  * to state.
  *
  * IT DEGRADES BY WIDTH, AND CUTTING ART IS NOT LYING. Everything else this product prints
- * is as wide as it is and lets the TERMINAL fold it — a line of data cut to fit would be a
- * value a reader cannot check, and the surface refuses to do that (see `items.ts`: a
- * column pads and never truncates). The name is the exception because a smaller drawing of
- * the same word is still the same word. So there are four drawings, and the widest one
+ * is as wide as it is and gets FOLDED to the screen rather than cut — a line of data cut
+ * to fit would be a value a reader cannot check, and the surface refuses to do that (see
+ * `items.ts`: a column pads and never truncates). The name is the exception because a
+ * smaller drawing of the same word is still the same word.
+ *
+ * ⚠️ IT SAID THE TERMINAL DID THE FOLDING, and that is what `presentation/folded.ts`
+ * falsified — the product folds now, between words and with the continuation indented,
+ * and the terminal only gets rows that fit. Nothing about the rule below moved: what makes
+ * the name an exception is that it may be CUT, and cutting is still the one thing no line
+ * of data may be. So there are four drawings, and the widest one
  * that FITS is the one that is drawn — the threshold is each form's own width rather than
  * a number somebody chose, which is what keeps the rule from drifting away from the art
  * the day a letter changes.

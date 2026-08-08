@@ -41,6 +41,7 @@
  * layout's (`region.ts`), and this is only the question of how much room there is.
  */
 
+import { rowsAt } from '../presentation/folded.js';
 import type { Line } from '../presentation/line.js';
 import { widthOf } from '../presentation/plain.js';
 import type { Render } from '../presentation/render.js';
@@ -218,7 +219,7 @@ function boxRows(panel: Panel): number {
 
 /**
  * How many rows of a terminal `columns` wide some lines take — one each, and more for
- * every one the terminal would FOLD.
+ * every one that FOLDS.
  *
  * ⚠️ THIS IS THE HALF THE FIRST ARITHMETIC HERE DID NOT HAVE, and a real screen is what
  * found it: at sixty columns the sentence under the box is seventy-six columns long, so it
@@ -227,12 +228,20 @@ function boxRows(panel: Panel): number {
  * the terminal would fold is not one row (`area.ts`) — asked of the lines the box does not
  * cover.
  *
+ * ⚠️ AND IT DID THE ARITHMETIC ITSELF, which is what the renderer that folds falsified. It
+ * read `ceil(widthOf(line) / columns)` — the terminal's own rule, fill and break at the
+ * margin — and a product that folds between words with a hanging indent does not break
+ * there: a continuation holds fewer characters than the first row, so a line can take one
+ * row more than the division says. Measured on a real pseudo-terminal, one row was exactly
+ * what it cost. So the count ASKS the fold now (`presentation/folded.ts`, `rowsAt`) rather
+ * than predicting it, which is the same rule read once instead of twice.
+ *
  * A width nobody reported folds nothing: it is not a width to guess at, and what it chooses
  * is a page that cannot fit anyway.
  */
 function foldedRows(lines: readonly Line[], columns: number): number {
   if (columns <= 0) return lines.length;
-  return lines.reduce((rows, line) => rows + Math.max(1, Math.ceil(widthOf(line) / columns)), 0);
+  return lines.reduce((rows, line) => rows + rowsAt(line, columns), 0);
 }
 
 /** Everything the page opens with, as lines, before anything decides how much fits. */

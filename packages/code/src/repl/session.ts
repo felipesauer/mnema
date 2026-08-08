@@ -271,9 +271,11 @@ export async function openSession(request: SessionRequest): Promise<void> {
   const proved = theRecord();
   const record = recordSection(proved?.trees);
   // NOT RENDERED HERE, unlike the two below, and the reason is a measurement: how WIDE this
-  // sentence is decides whether the terminal folds it into a second row, and a page counted
-  // as though it were one row opens with its own top in the scrollback. So it travels as
-  // lines and the composer turns it into bytes (`panel.ts`, `openingFor`).
+  // sentence is decides whether it is folded into a second row, and a page counted as though
+  // it were one row opens with its own top in the scrollback. So it travels as lines and the
+  // composer turns it into bytes and counts the rows (`panel.ts`, `openingFor`) — the count
+  // asks the fold rather than predicting it, which is what the terminal's own arithmetic
+  // used to do here (`presentation/folded.ts`, `rowsAt`).
   const refuses = whatItRefuses(offered.length);
   // NO PROJECT, NO BADGE. There is no record to name a level of, so the corner says
   // nothing at all — the same posture the line that says where the session is standing

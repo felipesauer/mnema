@@ -824,17 +824,32 @@ const ASKS_THE_DEVICE = String.raw`\b\w*(?:stdout|stderr|output|stream)\w*\s*\.\
 const asksTheDevice = (code: string): string[] =>
   code.match(new RegExp(ASKS_THE_DEVICE, 'gi')) ?? [];
 
-describe('how big the terminal is is asked in one place, and it is the place that follows it', () => {
-  it('is read off a stream in exactly one module of the product', () => {
-    // A1, BY THE DISCRIMINANT. It used to be two: the session asked how wide the terminal
-    // was in order to compose the panel, and the console asked how tall it was in order to
-    // carry the page away. Two readings are two answers on the frame after a resize — the
-    // session's is the width the console opened at, forever. So the console owns the
-    // device and hands the number to everything that needs it.
+describe('the FRAME asks how big the terminal is in one place, and it follows it', () => {
+  it('is read off a stream in exactly the two modules that own a lifetime', () => {
+    // A1, BY THE DISCRIMINANT. It used to be two of the wrong kind: the session asked how
+    // wide the terminal was in order to compose the panel, and the console asked how tall
+    // it was in order to carry the page away. Two readings were two answers on the FRAME
+    // after a resize — the session's was the width the console opened at, forever. So the
+    // console owns the device and hands the number to everything the layout draws.
+    //
+    // ⚠️ IT SAYS TWO NOW, AND THE SECOND IS THE ENTRY. `cli.ts` reads the width beside the
+    // `isTTY` it already read, because whether a line FOLDS is part of the capability every
+    // verb is handed and that is resolved once, where the process is (`wiring/color.ts`).
+    // It is not the defect the sentence above describes, and the difference is WHAT each
+    // reading feeds: nothing the layout draws comes from the entry's, and nothing the
+    // renderer folds to comes from the console's. What the second reading does cost is
+    // named rather than hidden — a session outlives the window it opened in, so lines
+    // landed after a resize fold to the width the session started at, which is written down
+    // in `wiring/color.ts` and is the terminal's own behaviour rather than a new one.
+    //
+    // A THIRD would be the defect again, and it is what this case refuses.
     const asking = sourcesOf(SRC).filter(
       (file) => asksTheDevice(withoutComments(readFileSync(file, 'utf-8'))).length > 0,
     );
-    expect(asking.map((file) => file.slice(SRC.length + 1))).toEqual([join('repl', 'console.ts')]);
+    expect(asking.map((file) => file.slice(SRC.length + 1))).toEqual([
+      'cli.ts',
+      join('repl', 'console.ts'),
+    ]);
     // Both questions really are asked there, and the scan really would accuse a second
     // module: the corpus is the whole product and the pattern matches what somebody would
     // write.

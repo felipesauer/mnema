@@ -192,8 +192,11 @@ function formFor(request: AreaRequest, drawing: Drawing): AreaForm {
 /**
  * Whether something of a given width is drawn on one row of this terminal.
  *
- * Zero is nothing to draw, and wider than the window is something the terminal would fold
- * — which costs a second row nothing counted. A window whose width the device never
+ * Zero is nothing to draw, and wider than the window is something that would be FOLDED —
+ * which costs a second row nothing counted. It said the TERMINAL would fold it, and the
+ * renderer that folds took that over (`presentation/folded.ts`); the answer here is the
+ * same either way, because what this rules on is whether one row is enough, and a row that
+ * has to become two is not one whoever breaks it. A window whose width the device never
  * reported answers no to both, for the reason the panel gives about the same silence: a
  * width nobody reported is not a width to guess at.
  */

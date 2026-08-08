@@ -24,6 +24,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from './cli.js';
+import { fact } from './presentation/detail.js';
 import { renderPlain } from './presentation/plain.js';
 import type { Render } from './presentation/render.js';
 import { renderStyled } from './presentation/styled.js';
@@ -32,12 +33,20 @@ import { type Capability, type ColorWhen, chooseRenderer } from './wiring/color.
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 
 describe('the precedence is the conventional one', () => {
-  /** One capability, with the terminal absent unless a case says otherwise. */
+  /**
+   * One capability, with the terminal absent unless a case says otherwise.
+   *
+   * NO WIDTH BY DEFAULT, which is what a pipe, a file and a test report — so every case
+   * of the precedence is answered by one of the two renderers themselves and can be
+   * compared by identity. Whether a line FOLDS is the other question, and it has its own
+   * block below.
+   */
   const asked = (
     when: ColorWhen,
     env: Record<string, string | undefined> = {},
     isTty = false,
-  ): Capability => ({ when, env, isTty });
+    columns = 0,
+  ): Capability => ({ when, env, isTty, columns });
 
   it('lets an EXPLICIT `--color` win over the environment, in BOTH directions', () => {
     // Rung one, and the rung that was wrong. `never` is the last resort of a caller
@@ -72,7 +81,7 @@ describe('the precedence is the conventional one', () => {
       ['auto', {}, false, renderPlain],
     ];
     for (const [when, env, isTty, expected] of cases) {
-      expect(chooseRenderer({ when, env, isTty }), JSON.stringify({ when, env })).toBe(expected);
+      expect(chooseRenderer(asked(when, env, isTty)), JSON.stringify({ when, env })).toBe(expected);
     }
     // Both answers appear, so a table that returned one renderer for everything could
     // not walk this case.
@@ -122,10 +131,10 @@ describe('the precedence is the conventional one', () => {
         for (const forceColor of [undefined, '', '0', '1']) {
           for (const isTty of [false, true]) {
             const env = { NO_COLOR: noColor, FORCE_COLOR: forceColor };
-            if (chooseRenderer({ when, env, isTty }) !== renderStyled) continue;
+            if (chooseRenderer({ when, env, isTty, columns: 0 }) !== renderStyled) continue;
             styled++;
-            const asked = when === 'always' || (forceColor !== undefined && forceColor !== '0');
-            expect(asked || isTty, JSON.stringify({ when, env, isTty })).toBe(true);
+            const wanted = when === 'always' || (forceColor !== undefined && forceColor !== '0');
+            expect(wanted || isTty, JSON.stringify({ when, env, isTty })).toBe(true);
           }
         }
       }
@@ -133,6 +142,87 @@ describe('the precedence is the conventional one', () => {
     // And the enumeration reached the styled renderer often enough to be saying
     // something: an implication is satisfied for free by a renderer that never paints.
     expect(styled).toBeGreaterThan(20);
+  });
+});
+
+describe('the line folds only where there is a screen to fold it to', () => {
+  /**
+   * A line no ordinary terminal holds — the width is what decides whether it breaks.
+   *
+   * A hundred and twenty-six columns of it, so that eighty folds it and four hundred does
+   * not: a case about a threshold needs a line on both sides of one, and a first draft of
+   * this block used a sentence that fitted in eighty and asserted that eighty broke it.
+   */
+  const long = fact(
+    'The console is read-only by construction, and that is the whole of it: it reads the ' +
+      'record and it never writes to it.',
+  );
+
+  /** Whether what a capability resolves to breaks that line. */
+  const folds = (capability: Capability): boolean =>
+    chooseRenderer(capability)(long).includes('\n');
+
+  it('hands a pipe the SAME renderer it always had, whatever it reports', () => {
+    // ⛔ THE INVARIANT, and it is asserted by IDENTITY rather than by comparing bytes: a
+    // pipe, a file, a CI log and the recorded transcript get `renderPlain` itself, so
+    // there is no arithmetic between the line and the stream for a fold to slip into.
+    // The width is set anyway in the second case — a stream that reported one without
+    // being a terminal must still not fold, or `mnema … | wc -l` would answer differently
+    // depending on the window it was launched from.
+    expect(chooseRenderer({ when: 'auto', env: {}, isTty: false, columns: 0 })).toBe(renderPlain);
+    expect(chooseRenderer({ when: 'auto', env: {}, isTty: false, columns: 80 })).toBe(renderPlain);
+    // And the same for the one flag that puts style in a pipe: `--color=always | less -R`
+    // is a pager's business, and the pager is the thing with the window.
+    expect(chooseRenderer({ when: 'always', env: {}, isTty: false, columns: 80 })).toBe(
+      renderStyled,
+    );
+  });
+
+  it('folds on a terminal that said how wide it is', () => {
+    expect(folds({ when: 'auto', env: {}, isTty: true, columns: 80 })).toBe(true);
+    // The other half of the same fact: the line is long enough that a fold has something
+    // to do, so the case above cannot pass on a renderer that breaks everything.
+    expect(folds({ when: 'auto', env: {}, isTty: true, columns: 400 })).toBe(false);
+  });
+
+  it('folds nothing on a terminal that never said', () => {
+    // Zero is what the entry answers for a stream with no width, and a width nobody
+    // reported is not a width to guess at.
+    expect(chooseRenderer({ when: 'auto', env: {}, isTty: true, columns: 0 })).toBe(renderStyled);
+  });
+
+  it('is not a rung of the colour precedence: `--color=never` still folds', () => {
+    // The two questions are orthogonal, and this is the case that says so. A caller who
+    // typed `--color=never` on a terminal asked for no colour — not for the badly folded
+    // line the terminal would give them — and one who set `NO_COLOR` in their profile
+    // asked for even less than that.
+    expect(folds({ when: 'never', env: {}, isTty: true, columns: 80 })).toBe(true);
+    expect(folds({ when: 'auto', env: { NO_COLOR: '1' }, isTty: true, columns: 80 })).toBe(true);
+    // And what it folds is the plain line: no colour was asked for and none arrives.
+    const quiet = chooseRenderer({ when: 'never', env: {}, isTty: true, columns: 80 });
+    expect(quiet(long)).not.toContain('\u001b');
+  });
+
+  it('never folds without a terminal — over the whole space at once', () => {
+    // The question the cases above answer one at a time, asked of every input together:
+    // is there a way to break a line for somebody who is not looking at a screen? That is
+    // the failure that reaches a CI log, a redirected file and the recorded transcript.
+    const whens: ColorWhen[] = ['auto', 'always', 'never'];
+    let folded = 0;
+    for (const when of whens) {
+      for (const noColor of [undefined, '', '1']) {
+        for (const isTty of [false, true]) {
+          for (const columns of [0, 1, 40, 80, 400]) {
+            const capability = { when, env: { NO_COLOR: noColor }, isTty, columns };
+            if (!folds(capability)) continue;
+            folded++;
+            expect(isTty && columns > 0, JSON.stringify(capability)).toBe(true);
+          }
+        }
+      }
+    }
+    // And the enumeration reached a fold often enough to be saying something.
+    expect(folded).toBeGreaterThan(20);
   });
 });
 
@@ -193,6 +283,43 @@ describe('the flag reaches the bytes', () => {
     expect(await invoke('verify')).not.toContain('\u001b');
   });
 
+  it('folds to the width the PROCESS reports, and to nothing when it reports none', async () => {
+    // A2, THE LINK: the width is read at the entry and spent on the renderer every verb is
+    // handed, and this is the case that says it ARRIVES rather than that it is plumbed. The
+    // structural scan that counts who asks a stream how big it is would stay green on an
+    // entry that read the number and dropped it — a mechanism wired to the end and never
+    // firing is four defects of this series, and it is what this case refuses.
+    //
+    // The stream is DRESSED as a terminal rather than a terminal being found: what is under
+    // test is the rule, and the process running a suite has a pipe. Both properties are put
+    // back whatever the case does.
+    const stdout = process.stdout as unknown as { isTTY?: boolean; columns?: number };
+    const wasTty = stdout.isTTY;
+    const wasWide = stdout.columns;
+    try {
+      stdout.isTTY = true;
+      stdout.columns = 40;
+      // `verify` says a sentence of clauses that no forty-column terminal holds, so a
+      // renderer that folds has something to break — and one that never folds does not.
+      // Asked of the LINES rather than of the joined output, which holds a break between
+      // every two of them: what is under test is a break INSIDE one line, which is the only
+      // thing a fold puts there.
+      const broken = async (): Promise<boolean> => {
+        await invoke('verify');
+        return lines.some((line) => line.includes('\n'));
+      };
+      expect(await broken()).toBe(true);
+      stdout.columns = undefined;
+      expect(await broken()).toBe(false);
+      stdout.isTTY = false;
+      stdout.columns = 40;
+      expect(await broken()).toBe(false);
+    } finally {
+      stdout.isTTY = wasTty;
+      stdout.columns = wasWide;
+    }
+  });
+
   it('honors `NO_COLOR` from the environment the process is really in', async () => {
     // `FORCE_COLOR` is set alongside it deliberately: with neither of them, a runner in
     // a pipe answers plain on the LAST rung and this case would pass without `NO_COLOR`
@@ -229,8 +356,16 @@ describe('the flag reaches the bytes', () => {
 });
 
 describe('nothing else decides which renderer', () => {
-  /** The two renderers, by the name a file would have to write to use one. */
-  const RENDERERS = ['renderPlain', 'renderStyled'];
+  /**
+   * The three renderers, by the name a file would have to write to use one.
+   *
+   * THE THIRD IS A FUNCTION THAT MAKES ONE rather than a value, and it belongs on this
+   * list for exactly the reason the other two do: naming it is deciding how output looks,
+   * and the decision is the caller's terminal's. A list of two would have let any module
+   * reach for the fold without a case noticing — which is the shape of hole this whole
+   * block exists to keep shut.
+   */
+  const RENDERERS = ['renderPlain', 'renderStyled', 'foldedAt'];
 
   /** Every module of a directory that ships, tests excluded. */
   const shipped = (dir: string): string[] =>
@@ -252,11 +387,16 @@ describe('nothing else decides which renderer', () => {
     expect(naming('wiring')).toEqual(['color.ts']);
   });
 
-  it('and in `presentation/` only by the two files that ARE one', () => {
+  it('and in `presentation/` only by the files that ARE one', () => {
     // The other half, and the one that rots first: six report builders composed a
     // whole report out of rendered strings, so a seventh would reach for a renderer
     // by hand and nothing outside this case would notice.
-    expect(naming('presentation')).toEqual(['plain.ts', 'styled.ts']);
+    //
+    // THREE FILES NOW, and the third is the one that FOLDS: it names the loop it wraps
+    // and the wiring names it, which is the same shape the painted one has. What would
+    // be a defect is a fourth — a report builder deciding that its own lines break
+    // differently from every other line of this product.
+    expect(naming('presentation')).toEqual(['folded.ts', 'plain.ts', 'styled.ts']);
   });
 
   it('and not in the session, which is the newest thing that prints', () => {

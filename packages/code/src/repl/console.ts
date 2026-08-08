@@ -244,12 +244,20 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   const { openingFor, complete, answer, leaving } = request;
 
   /**
-   * How wide the page is, asked of the DEVICE — the one place anything does.
+   * How wide the page is, asked of the DEVICE — the one place anything on the FRAME does.
    *
-   * Everything else that needs the width is HANDED it: the panel's arithmetic, the art of
-   * the name, the layout that draws the frame corner to corner. This is the module that
-   * owns the streams, so this is where the question is asked, and asking it in a second
-   * place would be a second answer on the frame after a resize.
+   * Everything the layout draws is HANDED it: the panel's arithmetic, the art of the name,
+   * the frame drawn corner to corner. This is the module that owns the streams, so this is
+   * where the question is asked, and a second reading feeding any of those would be a
+   * second answer on the frame after a resize.
+   *
+   * ⚠️ IT SAID *THE ONE PLACE ANYTHING DOES*, and the entry falsified it: `cli.ts` reads
+   * the width beside the `isTTY` it already read, because whether a line folds is part of
+   * the capability every verb is handed and that is resolved once, where the process is
+   * (`wiring/color.ts`). Nothing here comes from that reading and nothing there comes from
+   * this one, which is why it is two answers to two questions rather than the defect the
+   * sentence was written against — and a THIRD is still refused
+   * (`tests/the-page-follows-the-terminal.test.ts`).
    */
   const howWide = (): number => stdout.columns ?? NO_WIDTH;
 

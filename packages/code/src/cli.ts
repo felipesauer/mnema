@@ -130,18 +130,26 @@ export function buildProgram(
       writeErr: (str) => io.err(str.replace(/\n$/, '')),
     });
 
-  // Which renderer, from the three facts about this invocation — read late, because
+  // Which renderer, from the facts about this invocation — read late, because
   // `--color` does not exist until commander has parsed, and at most once, because a
   // report styled in halves would be a report a reader has to doubt (see
   // {@link rendererFor}). `isTty` is asked of stdout alone: it is where a report
   // goes, and a verb whose stderr was a terminal while its stdout was a pipe would
   // otherwise style the file it was redirected into.
+  //
+  // HOW WIDE IT IS is asked in the same breath and of the same stream, because it is the
+  // same kind of fact and the answer is spent on the same decision: a terminal that says
+  // how wide it is gets its lines folded to it, and everything else gets the bytes it
+  // always got (`wiring/color.ts`). A stream that reported no width answers zero, which
+  // is what the rule reads as "no screen to fold to" — a width nobody reported is not a
+  // width to guess at.
   const resolved =
     render ??
     rendererFor(() => ({
       when: program.opts<{ color: ColorWhen }>().color,
       env: process.env,
       isTty: process.stdout.isTTY === true,
+      columns: process.stdout.columns ?? 0,
     }));
 
   // The open session's run, resolved lazily and at most once (see
