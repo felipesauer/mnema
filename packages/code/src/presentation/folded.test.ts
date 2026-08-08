@@ -28,7 +28,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../cli.js';
 import { badgeLine, tips } from '../repl/session.js';
 import { aside, fact, statedFact, subjectLine } from './detail.js';
-import { foldedAt } from './folded.js';
+import { foldedAt, rowsAt } from './folded.js';
 import { asId, asWhen, column, itemLine } from './items.js';
 import type { Line } from './line.js';
 import { indentOf, renderPlain, widthOf } from './plain.js';
@@ -308,6 +308,30 @@ describe('the continuation hangs one level under the line', () => {
     expect(unfolded(folded, '')).toBe(renderPlain(deep));
     // It terminates, which is the half a floor written down would have been for.
     expect(folded.split('\n').length).toBeGreaterThan(5);
+  });
+
+  it('counts the rows the fold really takes, not the ones a division predicts', () => {
+    // WHO NEEDS THE COUNT: the console's opening, which decides how much of the name it
+    // has room to draw by how many rows the page it is about to write will take
+    // (`repl/panel.ts`). It did that arithmetic itself — fill the row, break at the
+    // margin, start again at column zero — which is the TERMINAL'S rule and stopped being
+    // this product's the moment a line folded between words with an indent under it.
+    //
+    // The sentence below is the one the session lands under its box. Seventy-seven
+    // columns of it: at forty, the division says two rows and the fold takes three, and
+    // one row of difference is a page opened with its own top already in the scrollback.
+    // Measured on a real pseudo-terminal — `tests/the-input-has-its-own-place.test.ts`
+    // went red on the delivery that added the fold, with the input's two rules off the
+    // bottom of the screen.
+    const landed = fact(
+      'It runs the 16 verbs that read the record, and refuses the ones that write.',
+    );
+    expect(widthOf(landed)).toBe(77);
+    expect(Math.ceil(widthOf(landed) / 40)).toBe(2);
+    expect(rowsAt(landed, 40)).toBe(3);
+    expect(rowsAt(landed, 40)).toBe(foldedAt(40, renderPlain)(landed).split('\n').length);
+    // And a line nothing folds is one row, at every width a person opens.
+    expect(rowsAt(landed, 200)).toBe(1);
   });
 
   it('folds nothing at a width nobody reported', () => {
