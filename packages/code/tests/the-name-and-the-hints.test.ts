@@ -305,24 +305,53 @@ async function readingWhileTyping(typed: string, answered?: string): Promise<str
 const times = (text: string, what: string): number => text.split(what).length - 1;
 
 /**
+ * A PAGE THAT COSTS NOTHING, so nothing but the width can decide which form is drawn.
+ *
+ * ⚠️ THIS USED TO BE THE HEIGHT ALONE. The banner gave way when the DRAWING was taller than
+ * the terminal, so holding the height at {@link TALL} was enough to keep it out of the way.
+ * It gives way when the PAGE stops fitting now (`presentation/banner.ts`), and what a page
+ * costs is answered by whoever composes one — so the way to hold the other axis still is to
+ * answer that a page costs no rows at all, which no console does and every case here needs.
+ */
+const COSTS_NOTHING = (): number => 0;
+
+/**
  * One form as the bytes a plain renderer writes for it, on a terminal with the HEIGHT for
  * any of them.
  *
- * The banner gives way on either measurement now (`presentation/banner.ts`), so a case
- * about the WIDTH has to hold the other one still — a height that chose a form would make
- * every width below answer the same thing. {@link TALL} is the height every console in
- * this file is opened at, and the first case asserts the tall form really is what comes
- * back at it, which is what keeps this from being a height that decides.
+ * The banner gives way on either measurement (`presentation/banner.ts`), so a case about
+ * the WIDTH has to hold the other one still — a height that chose a form would make every
+ * width below answer the same thing. {@link TALL} is the height every console in this file
+ * is opened at, and the first case asserts the tall form really is what comes back at it,
+ * which is what keeps this from being a height that decides.
  */
-const drawn = (columns: number): string[] => bannerFor({ columns, rows: TALL }).map(renderPlain);
+const drawn = (columns: number): string[] =>
+  bannerFor({ columns, rows: TALL, needs: COSTS_NOTHING }).map(renderPlain);
 
 // ---------------------------------------------------------------------------
 // The name, and how much of it fits
 // ---------------------------------------------------------------------------
 
+/**
+ * How wide a drawing is: its widest row.
+ *
+ * ⚠️ THE FIRST ROW USED TO STAND IN FOR THIS, and it was true of every form there was: the
+ * five-row one is a rectangle, so its first row is as wide as the drawing. The isometric one
+ * is not — its widest rows are in the middle — so a case that measured the first would give
+ * way one column early and call it the art's own width.
+ */
+const widthOf = (form: readonly string[]): number =>
+  Math.max(...form.map((row) => [...row].length));
+
 describe('the name is drawn, and how much of it depends on the terminal', () => {
-  it('draws the tall form when it fits, five rows of one glyph', () => {
-    const tall = drawn(200);
+  it('draws the five-row form on a terminal too narrow for the biggest one', () => {
+    // ⚠️ THIS CASE SAID *draws the tall form when it fits* AND ASKED A WIDE TERMINAL. What
+    // falsified it is a fourth drawing: the widest form is the isometric one now, so the
+    // five-row block is what a terminal one column too narrow for THAT gets, and asking two
+    // hundred columns for it would be asking for something else entirely. What the case is
+    // for is unchanged and is the half no other case holds — the mask really became a
+    // drawing of one glyph.
+    const tall = drawn(widthOf(drawn(200)) - 1);
     expect(tall).toHaveLength(5);
     // Every row is the same width, made of the ink and spaces and nothing else — the
     // property a mask translated into a glyph either has or has quietly lost.
@@ -334,11 +363,12 @@ describe('the name is drawn, and how much of it depends on the terminal', () => 
     expect(tall.some((row) => row.includes(`${INK} ${INK}`))).toBe(true);
   });
 
-  it('draws the short form when the tall one does not fit', () => {
-    const wide = [...(drawn(200)[0] as string)].length;
-    expect(drawn(wide)).toEqual(drawn(200));
-    // One character narrower than the tall form is where it gives way, and the threshold
-    // is therefore the art's OWN width rather than a number somebody chose.
+  it('draws the short form when the five-row one does not fit', () => {
+    const tall = drawn(widthOf(drawn(200)) - 1);
+    const wide = widthOf(tall);
+    expect(drawn(wide)).toEqual(tall);
+    // One character narrower than the five-row form is where it gives way, and the
+    // threshold is therefore the art's OWN width rather than a number somebody chose.
     const short = drawn(wide - 1);
     expect(short).toEqual(['M N E M A']);
     expect(short).toEqual(drawn(9));

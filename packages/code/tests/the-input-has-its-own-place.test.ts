@@ -49,7 +49,7 @@ import { here } from '../src/wiring/context.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { DEFAULT_REQUIREMENT, levelSeverity, VERIFY_VERB } from '../src/wiring/verify.js';
 import { ESC, fakeTerminal, hooksNothing, until, withoutLayout } from './support/console.js';
-import { inPty as drive, type Fixture, type Ran, type Step } from './support/pty.js';
+import { inPty as drive, type Fixture, opensAConsole, type Ran, type Step } from './support/pty.js';
 import { screenOf } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
@@ -553,7 +553,7 @@ async function inPty(options: {
 }
 
 /** The step every session begins with. */
-const opens: Step = { until: (bytes) => bytes.includes(PROMPT), what: 'opened its console' };
+const opens: Step = opensAConsole(PROMPT);
 
 /** The step every session ends with. */
 const leaves: Step = {

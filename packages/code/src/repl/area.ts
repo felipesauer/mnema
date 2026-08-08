@@ -126,8 +126,13 @@ const HINT = 1;
  * the viewport as a fullscreen one and redraws the whole screen for it, which is the path
  * that writes the erase this product will not write. Under it by one, it redraws the rows
  * it owns and nothing else.
+ *
+ * EXPORTED BECAUSE THE OPENING ASKS THE SAME QUESTION OF THE WHOLE PAGE. The drawing of the
+ * name gives way when the page it is on stops fitting on the screen, and "fitting" there is
+ * this same boundary for this same reason — so it is the one number, read twice, rather
+ * than a margin the opening chose to agree with (`session.ts`, `presentation/banner.ts`).
  */
-const BELOW_THE_VIEWPORT = 1;
+export const BELOW_THE_VIEWPORT = 1;
 
 /** What the area is drawing, once the two widths have been ruled on. */
 interface Drawing {

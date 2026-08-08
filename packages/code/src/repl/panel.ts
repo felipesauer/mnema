@@ -126,6 +126,26 @@ const BESIDE = 2;
 const AROUND_TITLE = 5;
 
 /**
+ * How much a box costs around what is in it, in ROWS. The counterparts of the columns
+ * above, here for the identical reason and now that something asks: {@link openingRows} and
+ * the drawing in `region.ts` have to agree about the geometry, and two copies of these
+ * numbers is two panels, one of which fits.
+ */
+/** The row the title sits on, which is the box's top edge. */
+const TITLE_ROW = 1;
+/** The box's bottom edge, under everything inside it. */
+const UNDER_THE_BOX = 1;
+/**
+ * The blank row over the record's section in the STACKED form — what separates it from the
+ * group above it, which is the name and the place.
+ *
+ * There is no such row in the two-column form, where nothing precedes the section. It is
+ * counted even when the section is empty, because the drawing spends it either way: the row
+ * is a margin on the section's own box, and a box with nothing in it still has its margin.
+ */
+const BETWEEN_SECTIONS = 1;
+
+/**
  * WHAT THE PAGE OPENS WITH on a terminal of a given width: the box, or the absence of one
  * and the same lines instead.
  *
@@ -145,6 +165,16 @@ export interface Opening {
   readonly panel: Panel | undefined;
   /** What is landed as the page opens, already bytes, in reading order. */
   readonly lines: readonly string[];
+  /**
+   * HOW MANY ROWS OF THIS TERMINAL the whole of it takes — folds counted.
+   *
+   * It is here rather than worked out by whoever wants it because the two things it is
+   * made of are here: what the box costs around its content, and how wide each line that
+   * lands under the box is. A caller counting the lines would be counting a value the
+   * terminal is about to fold, which is the arithmetic this field exists to stop
+   * ({@link openingFor}).
+   */
+  readonly rows: number;
 }
 
 /**
@@ -170,6 +200,82 @@ export interface Opening {
  */
 export function sameOpening(one: Opening, other: Opening): boolean {
   return JSON.stringify(one) === JSON.stringify(other);
+}
+
+/** How many rows the box costs around what is in it: its two edges, and the arrangement. */
+function boxRows(panel: Panel): number {
+  const withTheMark = panel.mark.length + panel.standing.length;
+  // NOTHING INSIDE A BOX FOLDS, and that is by construction rather than by luck: the form
+  // was chosen because its content fits across this terminal, title and gaps counted
+  // ({@link panelFor}), so every row in here is one row. The lines that land UNDER the box
+  // had no such choice made for them, which is why they are counted differently below.
+  const inside =
+    panel.form === 'columns'
+      ? Math.max(withTheMark, panel.record.length)
+      : withTheMark + BETWEEN_SECTIONS + panel.record.length;
+  return TITLE_ROW + inside + UNDER_THE_BOX;
+}
+
+/**
+ * How many rows of a terminal `columns` wide some lines take — one each, and more for
+ * every one the terminal would FOLD.
+ *
+ * ⚠️ THIS IS THE HALF THE FIRST ARITHMETIC HERE DID NOT HAVE, and a real screen is what
+ * found it: at sixty columns the sentence under the box is seventy-six columns long, so it
+ * is two rows, and a page counted as though it were one opened with its own top already in
+ * the scrollback. It is the rule the input area has had since it learnt about width — a row
+ * the terminal would fold is not one row (`area.ts`) — asked of the lines the box does not
+ * cover.
+ *
+ * A width nobody reported folds nothing: it is not a width to guess at, and what it chooses
+ * is a page that cannot fit anyway.
+ */
+function foldedRows(lines: readonly Line[], columns: number): number {
+  if (columns <= 0) return lines.length;
+  return lines.reduce((rows, line) => rows + Math.max(1, Math.ceil(widthOf(line) / columns)), 0);
+}
+
+/** Everything the page opens with, as lines, before anything decides how much fits. */
+export interface OpeningRequest extends PanelRequest {
+  /**
+   * What the session lands UNDER the box — the sentence saying what it refuses.
+   *
+   * It arrives as lines rather than as bytes because two things are asked of it: how it
+   * READS, which the renderer answers, and how WIDE it is, which decides whether the
+   * terminal folds it into a row nothing counted.
+   */
+  readonly beneath: readonly Line[];
+}
+
+/**
+ * WHAT THE PAGE OPENS WITH on a terminal of a given width, and how many rows of it that
+ * takes.
+ *
+ * THE TWO HALVES ARE ONE ANSWER, which is why they are composed together rather than by a
+ * caller holding a box in one hand and a count in the other. Whether there is a box, what is
+ * landed instead when there is not, and what the whole of it costs are three readings of one
+ * arrangement, and a second place that worked out the third would be the count and the
+ * drawing coming apart — which is exactly the defect this file's column costs were pulled
+ * together to prevent.
+ *
+ * IT IS CALLED PER CANDIDATE DRAWING and that is the point of it being cheap. The name gives
+ * way when the PAGE stops fitting rather than when the drawing does (`presentation/banner.ts`
+ * says why), so each drawing is composed, measured and either kept or dropped. Composing is
+ * a render of a dozen lines and no read of anything.
+ */
+export function openingFor(request: OpeningRequest): Opening {
+  const panel = panelFor(request);
+  // A terminal too narrow for a box gets no box, and the same lines land instead — which is
+  // why the layout has two forms and not three.
+  const bare = panel.form === 'bare';
+  const landed: readonly Line[] = bare
+    ? [request.title, ...request.mark, ...request.standing, ...request.record, ...request.beneath]
+    : request.beneath;
+  return {
+    panel: bare ? undefined : panel,
+    lines: [...(bare ? panelLines(panel) : []), ...request.beneath.map(request.render)],
+    rows: (bare ? 0 : boxRows(panel)) + foldedRows(landed, request.columns),
+  };
 }
 
 /**
