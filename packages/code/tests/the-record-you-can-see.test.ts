@@ -29,13 +29,16 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
 import { CUT } from '../src/repl/palette.js';
-import { PREFIX } from '../src/session-words.js';
+import { CLEAR, PREFIX } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { inPty as drive, type Fixture, opensAConsole, type Ran, type Step } from './support/pty.js';
 import { screenOf } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = new URL('../dist/cli.js', import.meta.url).pathname;
+
+/** One escape byte, written as an escape so no control byte enters this file. */
+const ESC = '\u001b';
 
 /** What the caller types in front of, as the layout writes it: trimmed at the end. */
 const PROMPT = 'mnema>';
@@ -197,6 +200,33 @@ function searches(): Step {
   };
 }
 
+/** How many times `what` occurs in `text`. Overlapping is impossible for these. */
+const times = (text: string, what: string): number => text.split(what).length - 1;
+
+/** The bytes that carry a page `rows` tall away — what says a page was really turned. */
+const carriesThePage = (rows: number): string => `${ESC}[${rows};1H`;
+
+/**
+ * The step that takes what was said off the SCREEN without unsaying it.
+ *
+ * IT IS THE INSTRUMENT AND IT IS ALSO A CASE. A row of the palette holding an id and the
+ * row of `search` it was read off are the same characters in a different spacing, so a
+ * scan of the screen cannot tell them apart while both are on it. A clean page leaves
+ * exactly one of the two — which is only true because what a session has SAID cannot be
+ * unsaid: the page is carried into the caller's scrollback, and the records stay
+ * completable. A memory that were cleared with the page would take every case below to
+ * zero rows and be seen at once.
+ *
+ * A page is turned once when the session opens, so the second occurrence is this one.
+ */
+function clears(rows: number): Step {
+  return {
+    types: `${CLEAR}\r`,
+    until: (bytes) => times(bytes, carriesThePage(rows)) >= 2,
+    what: 'started the page over',
+  };
+}
+
 /** What the row being typed is, on a screen — the last row that carries the prompt. */
 function rowBeingTyped(screen: { readonly rows: readonly string[] }): string {
   const typed = screen.rows.filter((row) => row.includes(PROMPT));
@@ -280,16 +310,17 @@ describe('a prefix that names several lists them, each beside the line it came f
       steps: [
         opens,
         searches(),
+        clears(rows),
         {
           types: `show ${shared}${COMPLETES}`,
-          until: (bytes) => bytes.lastIndexOf(shown[0]?.title as string) > bytes.indexOf(PROMPT),
+          until: (bytes) => bytes.lastIndexOf(shown[0]?.title as string) > bytes.lastIndexOf(CLEAR),
           what: 'listed the records it could still be',
         },
         leaves,
       ],
     });
 
-    const screen = screenOf(ran.bytes.slice(0, ran.at[2] as number), columns, rows);
+    const screen = screenOf(ran.bytes.slice(0, ran.at[3] as number), columns, rows);
     // EVERY ONE OF THEM IS A ROW OF THE PALETTE, under the row being typed — the id, and
     // beside it the rest of the line the record was named on. A list of bare ids that all
     // begin alike would be a list nobody can choose from, which is why the gloss is the
@@ -319,6 +350,7 @@ describe('a prefix that names several lists them, each beside the line it came f
       steps: [
         opens,
         searches(),
+        clears(rows),
         {
           types: `show ${shared}${COMPLETES}`,
           until: (bytes) => bytes.includes(CUT),
@@ -328,7 +360,7 @@ describe('a prefix that names several lists them, each beside the line it came f
       ],
     });
 
-    const screen = screenOf(ran.bytes.slice(0, ran.at[2] as number), columns, rows);
+    const screen = screenOf(ran.bytes.slice(0, ran.at[3] as number), columns, rows);
     const listed = screen.rows.filter((row) => row.trimStart().startsWith('019'));
     const said = screen.rows.find((row) => row.trimStart().startsWith(CUT));
     expect(said, `no row said how many had no room:\n${screen.text}`).toBeDefined();
@@ -402,18 +434,20 @@ describe('what it offers is what the session showed, and never the record', () =
       steps: [
         opens,
         searches(),
+        clears(rows),
         {
           // A Tab on an empty row is a caller asking what a LINE can start with, and a
           // line starts with a word this session runs. An id answers to nothing.
           types: COMPLETES,
-          until: (bytes) => bytes.lastIndexOf('search') > bytes.lastIndexOf(`search ${NAMED}`),
+          until: (bytes) =>
+            bytes.lastIndexOf('find what has been recorded') > bytes.lastIndexOf(CLEAR),
           what: 'offered the words a line starts with',
         },
         leaves,
       ],
     });
 
-    const screen = screenOf(ran.bytes.slice(0, ran.at[2] as number), columns, rows);
+    const screen = screenOf(ran.bytes.slice(0, ran.at[3] as number), columns, rows);
     // The palette is open — the verbs are listed — and no row of it is a record.
     expect(screen.text, screen.text).toContain('search');
     const listed = screen.rows.filter((row) => row.trimStart().startsWith('019'));
