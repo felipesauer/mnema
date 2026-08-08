@@ -35,6 +35,7 @@ import { renderPlain } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { completerFor } from '../src/repl/complete.js';
 import { dispositionOf, verbsOffered } from '../src/repl/gate.js';
+import { whatTheSessionShowed } from '../src/repl/seen.js';
 import { openSession, theSessionsOwnWords, typedLine } from '../src/repl/session.js';
 import { LEAVE, SESSION_WORDS } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
@@ -368,21 +369,42 @@ describe('the session prints through the surface’s own renderer', () => {
 });
 
 describe('tab offers what the session runs, over the real tree', () => {
-  it('offers every read and not one write', () => {
+  it('offers every read and not one write, with a record already on the page', async () => {
     const quiet: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
     const { program } = buildProgram(quiet);
     const offered = verbsOffered(DECLARED, REPL_VERB);
-    const complete = completerFor(completionTree(program), offered, theSessionsOwnWords());
+    // A SESSION THAT HAS SOMETHING TO OFFER, and it is fed the bytes a read of this
+    // product really writes. Without it both absences below are absences of everything:
+    // a top level that leaked ids, or a walk that descended into a write and offered the
+    // records under it, would have nothing to leak and would pass.
+    const seen = whatTheSessionShowed();
+    for (const line of (await shell('search', '')).out) seen.saw(line);
+    expect(
+      seen.matching('').map((offer) => offer.word),
+      'the read named no record',
+    ).toContain(task);
+    const complete = completerFor(
+      completionTree(program),
+      offered,
+      theSessionsOwnWords(),
+      seen.matching,
+    );
     // The WORDS of what is offered — each offer also carries what it is, which is what the
     // palette draws its second column from and is asserted where the palette is
     // (`tests/a-palette-for-the-words.test.ts`).
     const hits = complete('')[0].map((hit) => hit.word);
     expect(hits).toEqual([...offered, ...SESSION_WORDS].sort());
     for (const write of verbsThat('mutates')) expect(hits, write).not.toContain(write);
-    // And it does not descend into one either: the level under a write is a level this
-    // session cannot reach, so offering its subcommands would be a menu of nothing.
+    // A LINE DOES NOT START WITH AN ID, so the top level offers none however many the
+    // session has named.
+    expect(hits, 'the top level offered a record').not.toContain(task);
+    // And it does not descend into a write either: the level under one is a level this
+    // session cannot reach, so offering its subcommands — or the records it has seen —
+    // would be a menu of a place the next line refuses to go.
     expect(complete('task ')).toEqual([[], '']);
-  });
+    // WHERE IT DOES OFFER ONE: under a read, which is where an argument goes.
+    expect(complete('show ')[0].map((hit) => hit.word)).toContain(task);
+  }, 60_000);
 });
 
 describe('the session writes no history anywhere', () => {

@@ -25,10 +25,46 @@
  *
  * {@link canonicalId} is the id counterpart of {@link canonicalIdentity}: same
  * agreement with the chain, without the identity-only whitespace policy.
+ *
+ * AND THE FORM AN ID IS WRITTEN IN IS READ OFF THE GENERATOR, once, by both
+ * halves of this file — {@link mintId} writes it and {@link mintedIdsIn}
+ * recognizes it, out of the same group lengths and the same two masks. A
+ * hand-written pattern beside a generator is two accounts of one shape, and the
+ * failure is silent in both directions: it would accept a value nothing here can
+ * produce, or refuse one it just produced. `id.test.ts` closes it from the only
+ * end that can — it feeds the recognizer what the generator makes.
  */
 
 import { randomBytes } from 'node:crypto';
 import { CanonicalizationError, canonicalStringify } from '@mnema/chain';
+
+/**
+ * The five hex groups a UUID is written in, in order — which is where the dashes
+ * fall. Read by the generator and by the recognizer, so neither can hold its own
+ * idea of what an id looks like.
+ */
+const GROUPS = [8, 4, 4, 4, 12] as const;
+
+/** Which byte carries the version, and the two numbers that put it there. */
+const VERSION_AT = 6;
+const VERSION_KEPT = 0x0f;
+const VERSION_SET = 0x70;
+
+/** Which byte carries the variant, and the two numbers that fix its high bits. */
+const VARIANT_AT = 8;
+const VARIANT_KEPT = 0x3f;
+const VARIANT_SET = 0x80;
+
+/** The 16 bytes of a UUID, written as hex in the groups {@link GROUPS} names. */
+function grouped(hex: string): string {
+  const parts: string[] = [];
+  let at = 0;
+  for (const length of GROUPS) {
+    parts.push(hex.slice(at, at + length));
+    at += length;
+  }
+  return parts.join('-');
+}
 
 /**
  * Mints a fresh entity id: a UUID version 7, per RFC 9562. The high 48 bits are
@@ -59,11 +95,103 @@ export function mintId(): string {
   bytes[4] = Math.floor(ms / 2 ** 8) & 0xff;
   bytes[5] = ms & 0xff;
   // Version 7 in the high nibble of byte 6; variant 0b10 in the high bits of
-  // byte 8. `!` is safe: a 16-byte buffer always has these indices.
-  bytes[6] = ((bytes[6] as number) & 0x0f) | 0x70;
-  bytes[8] = ((bytes[8] as number) & 0x3f) | 0x80;
-  const hex = bytes.toString('hex');
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  // byte 8. The cast is safe: a 16-byte buffer always has these indices.
+  bytes[VERSION_AT] = ((bytes[VERSION_AT] as number) & VERSION_KEPT) | VERSION_SET;
+  bytes[VARIANT_AT] = ((bytes[VARIANT_AT] as number) & VARIANT_KEPT) | VARIANT_SET;
+  return grouped(bytes.toString('hex'));
+}
+
+/** One lowercase hex digit: what every character of an id that is not a dash is. */
+const HEX = '[0-9a-f]';
+
+/**
+ * Every hex digit a byte's HIGH NIBBLE can come out of `(byte & kept) | set`
+ * with — the generator's own expression, run over all 256 bytes rather than
+ * reasoned about.
+ *
+ * That is what makes the recognizer derived rather than parallel: the version
+ * digit is whatever {@link VERSION_KEPT} and {@link VERSION_SET} leave possible,
+ * so changing either number moves both halves of this file at once.
+ */
+function nibblesAfter(kept: number, set: number): string {
+  const digits = new Set<string>();
+  for (let byte = 0; byte < 0x100; byte += 1) {
+    digits.add((((byte & kept) | set) >> 4).toString(16));
+  }
+  return [...digits].sort().join('');
+}
+
+/**
+ * The pattern one minted id is written in: the groups of {@link GROUPS}, each
+ * digit a hex digit, except the two the generator fixes.
+ *
+ * Fixed-length classes and no quantifier at all, so matching is linear in the
+ * text and a long line cannot make it expensive.
+ */
+function shapeOfAMintedId(): string {
+  const fixed = new Map([
+    // Two hex digits per byte, and a byte's high nibble is the first of its pair.
+    [VERSION_AT * 2, nibblesAfter(VERSION_KEPT, VERSION_SET)],
+    [VARIANT_AT * 2, nibblesAfter(VARIANT_KEPT, VARIANT_SET)],
+  ]);
+  let digit = 0;
+  const groups = GROUPS.map((length) => {
+    let pattern = '';
+    for (let taken = 0; taken < length; taken += 1, digit += 1) {
+      const only = fixed.get(digit);
+      pattern += only === undefined ? HEX : `[${only}]`;
+    }
+    return pattern;
+  });
+  return groups.join('-');
+}
+
+/**
+ * What may not sit against an id for it to be an id and not part of a longer
+ * word — a letter, a digit or the dash an id is punctuated with.
+ *
+ * The value in `019fe236-…-10dca56a5d17-draft` is not an id that happens to have
+ * a suffix, it is a different string; and a run of hex one digit too long is not
+ * an id with a spare digit either.
+ */
+const ALONGSIDE = '[0-9A-Za-z-]';
+
+/** Every id written in a text, wherever it sits in it. */
+const MINTED = new RegExp(`(?<!${ALONGSIDE})${shapeOfAMintedId()}(?!${ALONGSIDE})`, 'g');
+
+/** One id found in a text: the id itself, and where it starts. */
+export interface MintedId {
+  /** The whole id, exactly as it was written. */
+  readonly id: string;
+  /** Where it starts, as an index into the text it was found in. */
+  readonly at: number;
+}
+
+/**
+ * Every id in `text`, written the way {@link mintId} writes one, in the order
+ * they appear.
+ *
+ * IT IS THE RECOGNIZER AND IT IS NOT A RESOLVER. It says a value is SHAPED like
+ * an id this product minted; whether the record holds one is a question for the
+ * record, and nothing here opens anything. Nor is it a short form: what it finds
+ * is the whole 36 characters, never a prefix of one (see `code/src/anchors.ts`
+ * for why an entity id has no short form to find).
+ *
+ * WHO ASKS: the console, for the ids it has already shown a caller
+ * (`code/src/repl/seen.ts`) — so that a Tab can finish one that was read off the
+ * screen, which is the only way to type a 36-character value without pasting it.
+ */
+export function mintedIdsIn(text: string): readonly MintedId[] {
+  const found: MintedId[] = [];
+  // The pattern is global and therefore stateful; the walk starts from nothing
+  // every time, so two callers cannot resume each other's position.
+  MINTED.lastIndex = 0;
+  let match = MINTED.exec(text);
+  while (match !== null) {
+    found.push({ id: match[0], at: match.index });
+    match = MINTED.exec(text);
+  }
+  return found;
 }
 
 /**
