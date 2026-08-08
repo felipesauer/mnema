@@ -35,7 +35,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../cli.js';
 import { badgeLine, tips } from '../repl/session.js';
 import { aside, fact, statedFact, subjectLine } from './detail.js';
-import { foldedAt, rowsAt } from './folded.js';
+import { foldedAt, rowsAt, withoutSequences } from './folded.js';
 import { asId, asWhen, column, itemLine } from './items.js';
 import type { Line } from './line.js';
 import { indentOf, renderPlain, widthOf } from './plain.js';
@@ -367,6 +367,58 @@ describe('the continuation hangs one level under the line', () => {
     for (const line of corpus) {
       expect(foldedAt(0, renderPlain)(line), JSON.stringify(line)).toBe(renderPlain(line));
     }
+  });
+});
+
+describe('the promise as a function: strip the escapes and you have what a screen shows', () => {
+  // IT WAS ASSERTED AND NEVER CALLED. "Strip the escapes and you have the plain line" was
+  // a property four test files each wrote their own pattern for, and the product had no
+  // way to ASK it — which is why the console, reading the ids out of a line it has already
+  // turned into bytes, could not have. {@link withoutSequences} is that question, and it
+  // is the fold's own walk rather than a fifth pattern.
+
+  it('agrees with an independent strip on every shape, at every width', () => {
+    // THE INSTRUMENT IS NOT THE SUBJECT'S. `ANY_SEQUENCE` is this file's own idea of what
+    // a terminal does not draw, written to check the fold's arithmetic; borrowing the
+    // fold's walk to check the fold's walk would agree by construction.
+    let stripped = 0;
+    for (const line of corpus) {
+      for (const render of [renderPlain, renderStyled]) {
+        for (const columns of [...NARROW, NOTHING_EXCEEDS]) {
+          const bytes = foldedAt(columns, render)(line);
+          expect(withoutSequences(bytes), `${columns}`).toBe(bytes.replace(ANY_SEQUENCE, ''));
+          if (bytes !== withoutSequences(bytes)) stripped += 1;
+        }
+      }
+    }
+    // NOT VACUOUS: there really were sequences to take out, in bulk.
+    expect(stripped).toBeGreaterThan(20);
+  });
+
+  it('gives back the plain line, which is what the promise says', () => {
+    for (const line of corpus) {
+      // Both sides stripped, because a FIELD may hold an escape an actor wrote: the plain
+      // renderer carries those bytes through, and a screen does not draw them either.
+      expect(withoutSequences(renderStyled(line))).toBe(withoutSequences(renderPlain(line)));
+    }
+    // And on a line with nothing of the actor's in it, the plain rendering comes back
+    // exactly — which is the sentence as it is written.
+    const plain = corpus.filter((line) => !renderPlain(line).includes(ESC));
+    for (const line of plain) expect(withoutSequences(renderStyled(line))).toBe(renderPlain(line));
+    expect(plain.length).toBeGreaterThan(20);
+  });
+
+  it('takes out the sequence and NOTHING else, whatever the sequence is', () => {
+    // A walk that ended a sequence at the wrong byte would eat a character of the line or
+    // leave a letter of the sequence behind, and both are silent. The subject is a
+    // sequence this product never writes, so nothing here can pass by knowing the seven.
+    expect(withoutSequences(`a${ACTOR_ESCAPE}b`)).toBe('ab');
+    expect(withoutSequences(`${ESC}[38;5;213mx${ESC}[0m`)).toBe('x');
+    expect(withoutSequences(`${ESC}[?25ly`)).toBe('y');
+    expect(withoutSequences('nothing to take out')).toBe('nothing to take out');
+    // A break is not a sequence: it is a character a screen puts a row-end at, and a
+    // caller reading rows needs it kept.
+    expect(withoutSequences(`a${ACTOR_ESCAPE}\nb`)).toBe('a\nb');
   });
 });
 

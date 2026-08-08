@@ -35,6 +35,7 @@ import { renderPlain } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { completerFor } from '../src/repl/complete.js';
 import { dispositionOf, verbsOffered } from '../src/repl/gate.js';
+import { whatTheSessionShowed } from '../src/repl/seen.js';
 import { openSession, theSessionsOwnWords, typedLine } from '../src/repl/session.js';
 import { LEAVE, SESSION_WORDS } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
@@ -368,20 +369,97 @@ describe('the session prints through the surface’s own renderer', () => {
 });
 
 describe('tab offers what the session runs, over the real tree', () => {
-  it('offers every read and not one write', () => {
+  it('offers every read and not one write, with a record already on the page', async () => {
     const quiet: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
     const { program } = buildProgram(quiet);
     const offered = verbsOffered(DECLARED, REPL_VERB);
-    const complete = completerFor(completionTree(program), offered, theSessionsOwnWords());
+    // A SESSION THAT HAS SOMETHING TO OFFER, and it is fed the bytes a read of this
+    // product really writes. Without it both absences below are absences of everything:
+    // a top level that leaked ids, or a walk that descended into a write and offered the
+    // records under it, would have nothing to leak and would pass.
+    const seen = whatTheSessionShowed();
+    for (const line of (await shell('search', '')).out) seen.saw(line);
+    expect(
+      seen.matching('').map((offer) => offer.word),
+      'the read named no record',
+    ).toContain(task);
+    const complete = completerFor(
+      completionTree(program),
+      offered,
+      theSessionsOwnWords(),
+      seen.matching,
+    );
     // The WORDS of what is offered — each offer also carries what it is, which is what the
     // palette draws its second column from and is asserted where the palette is
     // (`tests/a-palette-for-the-words.test.ts`).
     const hits = complete('')[0].map((hit) => hit.word);
     expect(hits).toEqual([...offered, ...SESSION_WORDS].sort());
     for (const write of verbsThat('mutates')) expect(hits, write).not.toContain(write);
-    // And it does not descend into one either: the level under a write is a level this
-    // session cannot reach, so offering its subcommands would be a menu of nothing.
+    // A LINE DOES NOT START WITH AN ID, so the top level offers none however many the
+    // session has named.
+    expect(hits, 'the top level offered a record').not.toContain(task);
+    // And it does not descend into a write either: the level under one is a level this
+    // session cannot reach, so offering its subcommands — or the records it has seen —
+    // would be a menu of a place the next line refuses to go.
     expect(complete('task ')).toEqual([[], '']);
+    // WHERE IT DOES OFFER ONE: under a read, which is where an argument goes.
+    expect(complete('show ')[0].map((hit) => hit.word)).toContain(task);
+  }, 60_000);
+});
+
+describe('what answers a Tab reaches for no door onto the disk', () => {
+  /**
+   * The two modules a keystroke goes through to be answered.
+   *
+   * A Tab over a record is the one offer on this surface whose candidates are in no
+   * declaration, and the objection written against it before it existed was that the only
+   * way to know one is to READ. That it does not is measured — the reads a Tab causes are
+   * counted in `tests/the-name-and-the-hints.test.ts` — and this is the other half: an
+   * absence in the source, so a door added here is refused before anybody has to notice a
+   * counter moving.
+   */
+  const ANSWERING = ['complete.ts', 'seen.ts'];
+
+  /**
+   * Every way a module of this workspace opens something.
+   *
+   * The chain is on the list because it is the door the SIBLING really uses: where the
+   * session is standing is a `readdir` and a small file, and neither is spelled here —
+   * `standing.ts` asks `@mnema/chain` for both. A ban that named only `node:fs` would
+   * have missed the one module that proves it can accuse anything.
+   *
+   * What is deliberately NOT on it is `@mnema/core`, because one thing is taken from
+   * there and it is a pattern match with no I/O in it: the form an id is written in
+   * (`mintedIdsIn`), which is the recognizer this whole affordance is built out of.
+   */
+  const DOORS: readonly { readonly why: string; readonly term: RegExp }[] = [
+    { why: 'the filesystem is a door onto the record', term: /['"]node:fs['"]/ },
+    { why: 'so is a read of one', term: /readFileSync|readdirSync|openSync|existsSync/ },
+    { why: 'and so is anything that resolves a tree', term: /tree-sources|@mnema\/copilot/ },
+    { why: 'and the chain is the door the record is really behind', term: /@mnema\/chain/ },
+  ];
+
+  const opening = (source: string): string[] =>
+    DOORS.filter((door) => door.term.test(source)).map((door) => door.why);
+
+  it('opens nothing, in either module', () => {
+    for (const file of ANSWERING) {
+      const source = readFileSync(join(SRC, 'repl', file), 'utf-8');
+      expect(opening(source), file).toEqual([]);
+      // The corpus is real rather than a path that does not exist.
+      expect(source.length).toBeGreaterThan(1000);
+    }
+  });
+
+  it('and the ban would accuse the line a careful author would write', () => {
+    // NOT VACUOUS, IN BOTH DIRECTIONS. Each term is checked against the line somebody
+    // would really add — and a SIBLING of these two trips it, because reading is exactly
+    // what that one is for: where the session is standing is a `readdir` and a small file.
+    expect(opening(`import { readdirSync } from 'node:fs';`)).toHaveLength(2);
+    expect(opening(`import { withScopedCaches } from '../tree-sources.js';`)).toHaveLength(1);
+    expect(opening(readFileSync(join(SRC, 'repl', 'standing.ts'), 'utf-8')).length).toBeGreaterThan(
+      0,
+    );
   });
 });
 
@@ -446,6 +524,7 @@ describe('the session writes no history anywhere', () => {
       'palette.ts',
       'panel.ts',
       'region.ts',
+      'seen.ts',
       'session.ts',
       'standing.ts',
     ]);

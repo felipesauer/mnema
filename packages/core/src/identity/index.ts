@@ -11,5 +11,5 @@ export {
   SHORT_ANCHOR_HEX,
   shortenAnchors,
 } from './anchor.js';
-export { canonicalId } from './id.js';
+export { canonicalId, type MintedId, mintedIdsIn } from './id.js';
 export { canonicalIdentity } from './who.js';

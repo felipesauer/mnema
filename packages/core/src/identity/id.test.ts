@@ -1,13 +1,30 @@
 import { describe, expect, it } from 'vitest';
 import { deriveAlias } from './alias.js';
-import { canonicalId, mintId } from './id.js';
+import { canonicalId, mintedIdsIn, mintId } from './id.js';
 
-/** A UUID v7: version nibble 7, variant 8/9/a/b, lowercase hex + dashes. */
-const V7 = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+/**
+ * Whether a value is written the way an id is — asked of the PRODUCT's recognizer.
+ *
+ * ⚠️ THIS FILE WROTE ITS OWN PATTERN FOR IT, and that was one reading of the form too
+ * many. A regex beside a generator is a fixture that can go wrong in both directions —
+ * accept a value nothing here can produce, or refuse one just produced — and it says
+ * nothing about whichever of the two the product itself uses. There is one shape in this
+ * module now ({@link mintedIdsIn}), and the case below is what closes the loop: it feeds
+ * the recognizer what the generator makes.
+ */
+const shapedLikeAnId = (value: string): boolean =>
+  mintedIdsIn(value).some((found) => found.id === value && found.at === 0);
 
 describe('mintId', () => {
   it('produces a well-formed UUID v7 (version and variant bits set)', () => {
-    expect(mintId()).toMatch(V7);
+    expect(shapedLikeAnId(mintId())).toBe(true);
+    // Over many draws rather than one, because the two nibbles the generator FIXES are
+    // the two a single draw is least likely to tell you anything about: it is the
+    // random tail that varies, and the version and variant have to survive all of it.
+    for (let drawn = 0; drawn < 500; drawn += 1) {
+      const id = mintId();
+      expect(shapedLikeAnId(id), id).toBe(true);
+    }
   });
 
   it('mints a distinct id on every call — the property that closes false-merge', () => {
@@ -44,6 +61,56 @@ describe('mintId', () => {
     // the id rather than slicing its prefix.
     const other = mintId();
     expect(deriveAlias('task', other)).not.toBe(alias);
+  });
+});
+
+describe('mintedIdsIn — the form, read off the generator rather than beside it', () => {
+  it('refuses everything the generator cannot produce', () => {
+    const id = mintId();
+    // ONE CHARACTER OFF IN EVERY DIRECTION, and each of them is a value some other part
+    // of this product really writes: a UUID of another version, an id shortened by one,
+    // one lengthened by one, an upper-cased one, one whose dashes fell elsewhere.
+    const version = `${id.slice(0, 14)}4${id.slice(15)}`;
+    const variant = `${id.slice(0, 19)}c${id.slice(20)}`;
+    expect(shapedLikeAnId(version), version).toBe(false);
+    expect(shapedLikeAnId(variant), variant).toBe(false);
+    expect(shapedLikeAnId(id.slice(0, -1))).toBe(false);
+    expect(shapedLikeAnId(`${id}f`)).toBe(false);
+    expect(shapedLikeAnId(id.toUpperCase())).toBe(false);
+    expect(shapedLikeAnId(id.replace(/-/g, ''))).toBe(false);
+    // NOT VACUOUS: the two mutants differ from the id in one character each, and the id
+    // itself is accepted.
+    expect(version).toHaveLength(id.length);
+    expect(variant).toHaveLength(id.length);
+    expect(shapedLikeAnId(id)).toBe(true);
+  });
+
+  it('finds ids WHERE THEY SIT, and never a piece of a longer word', () => {
+    const one = mintId();
+    const other = mintId();
+    const line = `  ${one}  public  and ${other}.`;
+    expect(mintedIdsIn(line).map((found) => found.id)).toEqual([one, other]);
+    // WHERE, exactly — the caller slices around it, so an index that is off by one is a
+    // caller that cuts a character off the value or leaves one behind.
+    for (const found of mintedIdsIn(line)) {
+      expect(line.slice(found.at, found.at + found.id.length)).toBe(found.id);
+    }
+    // AND NOT INSIDE A LONGER RUN of the same alphabet, which is what a value with a
+    // suffix is: `<id>-draft` is a different string, not an id with something after it.
+    expect(mintedIdsIn(`${one}-draft`)).toEqual([]);
+    expect(mintedIdsIn(`x${one}`)).toEqual([]);
+    // Nothing in a text that holds none, including the near misses this product writes.
+    expect(mintedIdsIn('created 2026-08-08T16:30:33.100Z · t-3a9f · mnid:4f2a9c1b')).toEqual([]);
+    expect(mintedIdsIn('')).toEqual([]);
+  });
+
+  it('answers the same way twice, so no caller resumes another’s position', () => {
+    // The pattern is global and therefore stateful. A walk that started where the last
+    // one stopped would answer differently on the second call over the same text, and
+    // the caller — a console reading every line it lands — makes exactly that call.
+    const line = `${mintId()} and ${mintId()}`;
+    expect(mintedIdsIn(line)).toEqual(mintedIdsIn(line));
+    expect(mintedIdsIn(line)).toHaveLength(2);
   });
 });
 

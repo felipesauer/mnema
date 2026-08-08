@@ -30,6 +30,8 @@ export {
   canonicalIdentity,
   deriveAlias,
   isAnchorId,
+  type MintedId,
+  mintedIdsIn,
   resolveAnchorPrefix,
   SHORT_ALIAS_HEX,
   SHORT_ANCHOR_HEX,
