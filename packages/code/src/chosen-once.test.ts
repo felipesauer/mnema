@@ -283,6 +283,43 @@ describe('the flag reaches the bytes', () => {
     expect(await invoke('verify')).not.toContain('\u001b');
   });
 
+  it('folds to the width the PROCESS reports, and to nothing when it reports none', async () => {
+    // A2, THE LINK: the width is read at the entry and spent on the renderer every verb is
+    // handed, and this is the case that says it ARRIVES rather than that it is plumbed. The
+    // structural scan that counts who asks a stream how big it is would stay green on an
+    // entry that read the number and dropped it — a mechanism wired to the end and never
+    // firing is four defects of this series, and it is what this case refuses.
+    //
+    // The stream is DRESSED as a terminal rather than a terminal being found: what is under
+    // test is the rule, and the process running a suite has a pipe. Both properties are put
+    // back whatever the case does.
+    const stdout = process.stdout as unknown as { isTTY?: boolean; columns?: number };
+    const wasTty = stdout.isTTY;
+    const wasWide = stdout.columns;
+    try {
+      stdout.isTTY = true;
+      stdout.columns = 40;
+      // `verify` says a sentence of clauses that no forty-column terminal holds, so a
+      // renderer that folds has something to break — and one that never folds does not.
+      // Asked of the LINES rather than of the joined output, which holds a break between
+      // every two of them: what is under test is a break INSIDE one line, which is the only
+      // thing a fold puts there.
+      const broken = async (): Promise<boolean> => {
+        await invoke('verify');
+        return lines.some((line) => line.includes('\n'));
+      };
+      expect(await broken()).toBe(true);
+      stdout.columns = undefined;
+      expect(await broken()).toBe(false);
+      stdout.isTTY = false;
+      stdout.columns = 40;
+      expect(await broken()).toBe(false);
+    } finally {
+      stdout.isTTY = wasTty;
+      stdout.columns = wasWide;
+    }
+  });
+
   it('honors `NO_COLOR` from the environment the process is really in', async () => {
     // `FORCE_COLOR` is set alongside it deliberately: with neither of them, a runner in
     // a pipe answers plain on the LAST rung and this case would pass without `NO_COLOR`
