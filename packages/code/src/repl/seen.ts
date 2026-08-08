@@ -35,12 +35,24 @@
  * title, and the `show` that follows says less about it in more rows. Costing one entry
  * per RECORD rather than per mention is the same choice from the other side.
  *
- * IT IS NOT PRUNED, AND THE COST IS THE ANSWER RATHER THAN A LIMIT. An entry is an id and
- * one row of text: measured at about 250 bytes of heap each, so a session that named ten
- * thousand distinct records holds about 2.5 MB, and the largest answer this product can
- * give is 200 records (`SEARCH_MAX_LIMIT`) — fifty of those, all disjoint, to get there. A
- * bound would be a threshold no session reaches, which is a mechanism that can never be
- * shown to do anything; the honest form is the number.
+ * IT IS NOT PRUNED, AND THE COST IS THE ANSWER RATHER THAN A LIMIT. Measured, each in a
+ * process of its own against the same process holding nothing: an entry retains about 750
+ * bytes, so a thousand distinct records cost 0.8 MB and ten thousand cost 7.4 MB. The
+ * largest answer this product can give is 200 records (`SEARCH_MAX_LIMIT`), so ten
+ * thousand is fifty of those with no record named twice. A bound would be a threshold no
+ * session reaches — a mechanism nobody could ever show doing anything, which is the shape
+ * this bench has shipped four defects of; the honest form is the number.
+ *
+ * WHAT IT COSTS TO FILL is 6.3 µs on a row that names a record and 2.6 µs on one that does
+ * not, measured with the two halves run in both orders against the same work without the
+ * scan. On the largest answer there is — 200 records, about 205 rows — that is 1.3 ms,
+ * against the ~33 ms one redraw of a 200-line page costs (`console.ts`). Seventy percent
+ * of it is taking the escapes out ({@link withoutSequences}, 4.4 µs), and that is not
+ * skippable by asking the raw bytes first: an SGR sequence ENDS IN A LETTER, so the `m` of
+ * `ESC[2m` sits against the id and the recognizer's own boundary refuses it — measured, on
+ * a painted row, at zero ids found before stripping and one after. Making the strip itself
+ * cheaper is a change to the fold's walk, whose numbers are pinned where it lives; it is
+ * named here as debt rather than taken as a shortcut.
  */
 
 import { type MintedId, mintedIdsIn } from '@mnema/core';
@@ -71,6 +83,12 @@ export interface Seen {
    * caller has never seen. (`complete.ts` sorts the WORDS of the declarations for the
    * opposite reason: their own order is the order `--help` lists them in, which puts the
    * writes first.)
+   *
+   * IT WALKS EVERYTHING NAMED, and every match is wanted: what a Tab types for the caller
+   * is the longest start ALL the candidates share (`editing.ts`), so an answer cut short
+   * would type characters the records left out do not have. Measured at 12 µs over a
+   * hundred records, 118 µs over a thousand and 1.2 ms over ten thousand — linear in what
+   * the session has named, and paid on the Tab rather than on a keystroke.
    */
   readonly matching: (word: string) => readonly CompletionWord[];
 }
