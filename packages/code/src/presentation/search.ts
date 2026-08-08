@@ -55,11 +55,13 @@ export function searchReport(
       // AND THE STATE IS A PART OF ITS OWN NOW, where it used to be concatenated into
       // the title. The reason written here for keeping it plain was that a state is a
       // category and a hue per category is noise. Half of that stands: the TREE is a
-      // category and stays unpainted for that reason. A task's state is not one — it is
-      // a position in a cycle whose exits differ, which collapses to three hues rather
-      // than one per value (see `presentation/state.ts`). The bytes are the same either
-      // way: the parenthesis, the space before it and the position on the line are
-      // untouched, and the golden is what says so.
+      // category and stays unpainted for that reason. A workflow state is not one — it
+      // is a position in a cycle whose exits differ, which collapses to three hues
+      // rather than one per value (see `presentation/state.ts`). This list is where all
+      // three machines meet in one column, and it is where the gap showed: a task's
+      // position was painted and a decision's and a pattern's were not. The bytes are
+      // the same either way: the parenthesis, the space before it and the position on
+      // the line are untouched, and the golden is what says so.
       const state = hit.state;
       lines.push(
         render(

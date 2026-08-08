@@ -62,7 +62,17 @@ export {
 // holds for the two halves of `AwaitingJudgement`: they are reachable THROUGH the
 // union (`item.kind === 'decision'` narrows it without either arm being named), so
 // exporting them as well would be surface nobody needs to write down.
-export type { DecisionRef } from './context/decisions.js';
+//
+// THE ACCESSOR IS A VALUE AND IT IS HERE, which is the one thing the paragraph above
+// does not cover: `decisionDisposition` answers what one state MEANS, and a surface
+// that shows a decision's position has to ask rather than restate it. It is the twin
+// of `skillDisposition` below, and both are held on this surface — not merely allowed
+// on it — by `no-classification-table-reaches-the-surface.test.ts`.
+export { type DecisionRef, decisionDisposition } from './context/decisions.js';
+// The vocabulary the two accessors answer IN. A consumer that maps every disposition
+// to something of its own needs the union to be TOTAL over, and a caller holding only
+// the three literals would have no way to write a table a fourth disposition breaks.
+export type { Disposition } from './context/disposition.js';
 export {
   type ActorScope,
   type AskerContext,

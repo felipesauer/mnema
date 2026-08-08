@@ -289,13 +289,22 @@ function perStateTables(
  * so a second accessor written tomorrow fails this file until its surface status has
  * been decided.
  *
- * Two entries. `@mnema/code` frames a pattern body it just served — an instruction if
- * the pattern is in force, a proposal if it is not — and that framing has to know which,
- * from the one place that says so. The same surface paints a TASK's position by what its
- * disposition says a reader has to do about it, and the derivation from the transition
- * table lives where the machine does.
+ * Three entries, one per machine, and the third is what the second half of this list is
+ * for. `@mnema/code` frames a pattern body it just served — an instruction if the pattern
+ * is in force, a proposal if it is not — and that framing has to know which, from the one
+ * place that says so. The same surface paints a POSITION by what its disposition says a
+ * reader has to do about it, in the one column where all three machines meet, and each
+ * derivation from a transition table lives where its machine does.
+ *
+ * IT USED TO BE TWO, and the missing one is the shape this guard was built for.
+ * `decisionDisposition` did not exist: `decisions.ts` declared its table hidden AND
+ * offered no way to ask, so a surface wanting to know what `proposed` means had exactly
+ * one path left, `state === 'proposed'` written out for itself — the reimplementation
+ * this file's own doc says nothing here can see. The gap showed on screen instead: a
+ * decision's and a pattern's position came out white beside a painted task's.
  */
 const ASKED_NOT_COPIED: readonly { readonly specifier: string; readonly accessor: string }[] = [
+  { specifier: '@mnema/copilot', accessor: 'decisionDisposition' },
   { specifier: '@mnema/copilot', accessor: 'skillDisposition' },
   { specifier: '@mnema/core', accessor: 'taskDisposition' },
 ];

@@ -64,7 +64,10 @@ so if two clones ever disagreed about it, the chain is the one that decides.
   without being read; it refuses `rejected` and `deprecated`, saying the state, since
   a way of working the project retired is worse to hand over than nothing.
   `skillDisposition` says what one state means, for a surface that has to frame the
-  body it just served.
+  body it just served — or, like the CLI's lists, to say by colour what a reader has to
+  do about the position. `decisionDisposition` answers the same question for the other
+  machine, and both exist so a consumer ASKS rather than writing `state === 'adopted'`
+  where nobody can see the two copies drift.
 - **`patternProvenance`** — every pattern the record holds, in every state, with
   who proposed it and who adopted it. The reading for a person auditing where the
   patterns came from, next to the one that serves them.
