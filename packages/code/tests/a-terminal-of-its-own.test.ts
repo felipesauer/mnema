@@ -407,6 +407,62 @@ describe('tab offers what the session runs, over the real tree', () => {
   }, 60_000);
 });
 
+describe('what answers a Tab reaches for no door onto the disk', () => {
+  /**
+   * The two modules a keystroke goes through to be answered.
+   *
+   * A Tab over a record is the one offer on this surface whose candidates are in no
+   * declaration, and the objection written against it before it existed was that the only
+   * way to know one is to READ. That it does not is measured — the reads a Tab causes are
+   * counted in `tests/the-name-and-the-hints.test.ts` — and this is the other half: an
+   * absence in the source, so a door added here is refused before anybody has to notice a
+   * counter moving.
+   */
+  const ANSWERING = ['complete.ts', 'seen.ts'];
+
+  /**
+   * Every way a module of this workspace opens something.
+   *
+   * The chain is on the list because it is the door the SIBLING really uses: where the
+   * session is standing is a `readdir` and a small file, and neither is spelled here —
+   * `standing.ts` asks `@mnema/chain` for both. A ban that named only `node:fs` would
+   * have missed the one module that proves it can accuse anything.
+   *
+   * What is deliberately NOT on it is `@mnema/core`, because one thing is taken from
+   * there and it is a pattern match with no I/O in it: the form an id is written in
+   * (`mintedIdsIn`), which is the recognizer this whole affordance is built out of.
+   */
+  const DOORS: readonly { readonly why: string; readonly term: RegExp }[] = [
+    { why: 'the filesystem is a door onto the record', term: /['"]node:fs['"]/ },
+    { why: 'so is a read of one', term: /readFileSync|readdirSync|openSync|existsSync/ },
+    { why: 'and so is anything that resolves a tree', term: /tree-sources|@mnema\/copilot/ },
+    { why: 'and the chain is the door the record is really behind', term: /@mnema\/chain/ },
+  ];
+
+  const opening = (source: string): string[] =>
+    DOORS.filter((door) => door.term.test(source)).map((door) => door.why);
+
+  it('opens nothing, in either module', () => {
+    for (const file of ANSWERING) {
+      const source = readFileSync(join(SRC, 'repl', file), 'utf-8');
+      expect(opening(source), file).toEqual([]);
+      // The corpus is real rather than a path that does not exist.
+      expect(source.length).toBeGreaterThan(1000);
+    }
+  });
+
+  it('and the ban would accuse the line a careful author would write', () => {
+    // NOT VACUOUS, IN BOTH DIRECTIONS. Each term is checked against the line somebody
+    // would really add — and a SIBLING of these two trips it, because reading is exactly
+    // what that one is for: where the session is standing is a `readdir` and a small file.
+    expect(opening(`import { readdirSync } from 'node:fs';`)).toHaveLength(2);
+    expect(opening(`import { withScopedCaches } from '../tree-sources.js';`)).toHaveLength(1);
+    expect(opening(readFileSync(join(SRC, 'repl', 'standing.ts'), 'utf-8')).length).toBeGreaterThan(
+      0,
+    );
+  });
+});
+
 describe('the session writes no history anywhere', () => {
   /**
    * What a module of the session may not reach, and the line each one would be.
