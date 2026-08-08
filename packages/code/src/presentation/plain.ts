@@ -32,6 +32,13 @@
  * escape around a part's own text. That is what makes "strip the escapes and you have
  * the plain line" a property of the composition rather than of two files agreeing,
  * and `styled.test.ts` asserts it over every shape the surface builds.
+ *
+ * AND THE THIRD ONE COMPOSES OVER EITHER OF THEM. The renderer that folds (`folded.ts`)
+ * takes the bytes one of these two produced and breaks them where a terminal of a known
+ * width would otherwise have broken them badly, so it invents no punctuation of its own
+ * either: the only thing it adds is the indent of a CONTINUATION, and that comes from
+ * {@link indentOf}, here. The promise above got stronger rather than weaker — UNFOLD and
+ * strip the escapes, and you have the plain line, exactly (`folded.test.ts`).
  */
 
 import type { Line, Part, Role } from './line.js';
@@ -39,6 +46,20 @@ import type { Render } from './render.js';
 
 /** The two spaces one level of depth is. */
 const INDENT = '  ';
+
+/**
+ * How far in a line of a given DEPTH starts — the one place that knows what a level is
+ * worth.
+ *
+ * It is a function rather than a constant other files repeat because there is a second
+ * caller now: the renderer that folds indents a continuation one level under the row that
+ * generated it (`folded.ts`), and a hanging indent worked out from a `'  '` written down
+ * there would be a second opinion about the same number. Changing what a level is worth
+ * has to move both, and `folded.test.ts` is where that is asserted on the bytes.
+ */
+export function indentOf(depth: number): string {
+  return INDENT.repeat(depth);
+}
 
 /**
  * What precedes a part of each role when it is not the first on its line.
@@ -105,7 +126,7 @@ const PRECEDED_BY: { readonly [R in Role]: string } = {
  */
 export function renderWith(paint: (part: Part) => string): Render {
   return (line) => {
-    let text = INDENT.repeat(line.indent);
+    let text = indentOf(line.indent);
     for (const [index, part] of line.parts.entries()) {
       text += index === 0 ? paint(part) : `${PRECEDED_BY[part.role]}${paint(part)}`;
     }
@@ -140,9 +161,22 @@ export const renderPlain: Render = renderWith((part) => part.text);
  * asked correctly by hand.
  *
  * WHO ASKS: the console's opening panel, which chooses between three drawings by whether
- * the widest of them fits the terminal (`repl/panel.ts`). Nothing that writes a line asks
- * — a report is as wide as it is and the TERMINAL folds it, on purpose, because a value
- * cut to fit is a value a reader cannot check.
+ * the widest of them fits the terminal (`repl/panel.ts`), and the input area and the
+ * palette, which drop what a window is too narrow for.
+ *
+ * ⚠️ AND THE SENTENCE THAT USED TO END THIS PARAGRAPH IS FALSE. It read: *nothing that
+ * writes a line asks — a report is as wide as it is and the TERMINAL folds it, ON PURPOSE,
+ * because a value cut to fit is a value a reader cannot check.* What falsified it is that
+ * the argument is about CUTTING and it was standing in for a decision about FOLDING, and
+ * the two are not the same operation: a value cut to fit loses bytes and cannot be checked
+ * against the record, while a folded value loses nothing at all — only WHERE it breaks
+ * moves. The choice was never whether to fold, either, because the terminal already does:
+ * measured at eighty columns it splits `The console is read-` from `only by construction`
+ * and returns to column zero, in the middle of a list whose other rows are indented. So the
+ * option is folding WELL or leaving it folded badly, and there is a renderer that folds
+ * well now (`folded.ts`). The half of the sentence that survives whole is the half about
+ * cutting: nothing here truncates at any width, and `folded.test.ts` asserts that unfolding
+ * a folded line gives back the line, byte for byte, over every shape the surface builds.
  */
 export function widthOf(line: Line): number {
   return [...renderPlain(line)].length;

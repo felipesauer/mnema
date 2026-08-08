@@ -817,7 +817,7 @@ function withoutComments(source: string): string {
  * Whether a source RULES ON a measurement of the terminal — the discriminant, and it is a
  * comparison rather than a mention.
  *
- * Twenty-two modules of this surface name a width or a height; four decide something with
+ * Twenty-two modules of this surface name a width or a height; five decide something with
  * one. What tells them apart is the comparison itself: `<= columns` is a module asking
  * whether something fits, and every other mention is a module passing a number along.
  */
@@ -838,8 +838,8 @@ function rulesOnTheSize(source: string): boolean {
 const AN_OPERATOR = String.raw`(?<![=!])(?:<=|<|>=|>)\s*(?:request\.)?`;
 const THE_COMPARISON = new RegExp(`${AN_OPERATOR}(?:columns|rows)\\b`);
 
-describe('everything that chooses a shape by the size of the terminal is one of four', () => {
-  it('is these four modules, and a fifth would be accused', () => {
+describe('everything that chooses a shape by the size of the terminal is one of five', () => {
+  it('is these five modules, and a sixth would be accused', () => {
     // A1, BY THE DISCRIMINANT AND NOT BY A LIST FROM A HANDOFF. The rule this delivery
     // extends — *a form gives way at its own measurement, never at a number somebody chose*
     // — is applied in more than one place, so the places are FOUND rather than recalled.
@@ -857,6 +857,15 @@ describe('everything that chooses a shape by the size of the terminal is one of 
     //                                  the boundary that moves with the hint's own width.
     //   - `repl/palette.ts`         — `a-palette-for-the-words.test.ts`, over a grid of
     //                                  every room and every width.
+    //
+    // ⚠️ AND THE FIFTH IS THE ACHADO OF THE DELIVERY AFTER THIS ONE, found by this scan
+    // rather than by anybody's list: `presentation/folded.ts`, the renderer that folds a
+    // line to the terminal. It rules twice and both thresholds are the same rule again —
+    // a row gives way when it is wider than the screen, and the hanging INDENT gives way
+    // when there is no room for anything beside it — so it is the family this case is
+    // about rather than an exception to it. Pinned by `presentation/folded.test.ts`: a
+    // line as wide as the terminal comes out byte for byte, one column wider folds, and a
+    // depth wider than the window drops the indent instead of losing the text.
     const ruling = sourcesOf(SRC)
       .filter((file) => rulesOnTheSize(readFileSync(file, 'utf-8')))
       .map((file) => file.slice(SRC.length + 1))
@@ -864,6 +873,7 @@ describe('everything that chooses a shape by the size of the terminal is one of 
     expect(ruling).toEqual(
       [
         join('presentation', 'banner.ts'),
+        join('presentation', 'folded.ts'),
         join('repl', 'area.ts'),
         join('repl', 'palette.ts'),
         join('repl', 'panel.ts'),
