@@ -324,11 +324,17 @@ type Kept = Panel | string;
  *     lines would arrive with the separations gone. Measured against two reads of this
  *     product that do exactly that.
  *   - AS WIDE AS THE LINE IS LONG, so the layout never re-wraps it. Left to itself the
- *     box is as wide as the terminal and a long line comes out broken across rows with
- *     real newlines in it — which is not what the same verb writes at a shell, where the
- *     line is one line and the TERMINAL is what folds it. One more than the string is
- *     long, so an empty line still has a box to be a row in; and a line carrying style
- *     is measured longer than it looks, which only ever makes the box roomier.
+ *     box is as wide as the terminal and a long line comes out broken across rows by the
+ *     library's own arithmetic — which is not what the same verb writes at a shell, and
+ *     is not where the break belongs. ⚠️ THE REASON GIVEN USED TO BE *the line is one
+ *     line and the TERMINAL is what folds it*, and `presentation/folded.ts` falsified it:
+ *     the line arrives at a terminal already folded, between words and with the
+ *     continuation indented, by the one renderer the whole product shares. Which makes
+ *     this measurement matter MORE rather than less — a layout that re-wrapped a line
+ *     that had already been folded well would fold it twice, and the second fold is the
+ *     one at the margin. One more than the string is long, so an empty line still has a
+ *     box to be a row in; and a line carrying style is measured longer than it looks,
+ *     which only ever makes the box roomier.
  *
  * The child is passed as a PROP rather than as an argument, against the lint's advice
  * and with its suppression: this component's child is a FUNCTION OF AN ITEM rather than a

@@ -6,9 +6,14 @@
  * are shaped around:
  *
  *   - THE BANNER IS THE ONE PLACE A WIDTH DECIDES WHAT IS PRINTED. Everything else this
- *     surface writes is as wide as it is and lets the terminal fold it, on purpose: a
+ *     surface writes is as wide as it is and is FOLDED to the screen rather than cut: a
  *     column pads and never truncates, because a value cut to fit is a value a reader
- *     cannot check. Art is the exception, and an exception is exactly the thing to pin —
+ *     cannot check. ⚠️ This used to say the TERMINAL folded it, on purpose, and
+ *     `presentation/folded.ts` falsified the second half of that: the product folds, and
+ *     what is on purpose is that it never CUTS. The first half of the sentence is what
+ *     this file pins, and it did not move — a width still decides what is printed in
+ *     exactly one place, and everywhere else it decides only where a line breaks.
+ *     Art is the exception, and an exception is exactly the thing to pin —
  *     so the three forms are asserted one by one, at the widths that choose them, and the
  *     narrowest is asserted to still say the name.
  *   - THE TIPS ARE PINNED BY WHERE THEY LAND, not by what they say. A hint that has
