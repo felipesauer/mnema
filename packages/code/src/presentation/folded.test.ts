@@ -121,6 +121,7 @@ const corpus: readonly Line[] = [
   statedFact('a title', asState('DONE')),
   statedFact('a title', asState('DRAFT')),
   itemLine(['a title', asState('accepted')]),
+  itemLine(['a title', asState('superseded')]),
   aside('`/exit` or Ctrl-D leaves'),
   // THE SHAPES THIS FILE ADDS, each one a way a fold goes wrong. The measured line from
   // the console at eighty columns, at the depth a list item sits at; the same sentence
