@@ -397,9 +397,10 @@ describe('what it offers is what the session showed, and never the record', () =
       steps: [
         opens,
         searches(),
+        clears(rows),
         {
           types: `show ${missing}${COMPLETES}`,
-          until: (bytes) => bytes.includes(`show ${missing}`),
+          until: (bytes) => bytes.lastIndexOf(`show ${missing}`) > bytes.lastIndexOf(CLEAR),
           what: 'was asked for a record it had not named',
         },
         {
@@ -414,14 +415,23 @@ describe('what it offers is what the session showed, and never the record', () =
       ],
     });
 
-    const refused = screenOf(ran.bytes.slice(0, ran.at[2] as number), columns, rows);
+    const refused = screenOf(ran.bytes.slice(0, ran.at[3] as number), columns, rows);
     expect(rowBeingTyped(refused), refused.text).toBe(`${PROMPT} show ${missing}`);
     // Neither the id nor the title of that record is anywhere on the screen — a menu that
     // had gone and looked would have put one of the two there.
     expect(refused.text).not.toContain(hidden.id);
     expect(refused.text).not.toContain(UNNAMED);
+    // ⚠️ AND NOTHING AT ALL WAS LISTED, which is the half the first draft of this case
+    // missed. A memory that answered without narrowing to what was typed would leave the
+    // row exactly as it is above and open a palette of six records the caller did not ask
+    // about — every assertion so far passes on that. The page was cleared, so a row that
+    // begins with a record here can only be one the palette drew.
+    expect(
+      refused.rows.filter((row) => row.trimStart().startsWith('019')),
+      `something was offered for a record nobody named:\n${refused.text}`,
+    ).toEqual([]);
 
-    const completed = screenOf(ran.bytes.slice(0, ran.at[3] as number), columns, rows);
+    const completed = screenOf(ran.bytes.slice(0, ran.at[4] as number), columns, rows);
     expect(rowBeingTyped(completed), completed.text).toBe(`${PROMPT} show ${present.id}`);
   }, 240_000);
 
