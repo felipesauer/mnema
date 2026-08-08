@@ -425,6 +425,40 @@ describe('what it offers is what the session showed, and never the record', () =
     expect(rowBeingTyped(completed), completed.text).toBe(`${PROMPT} show ${present.id}`);
   }, 240_000);
 
+  it('and finishes that same record once the session HAS named it', async () => {
+    // A1, FROM THE OUTSIDE: everything a reader sees comes through ONE door, and this is
+    // the case that would go red if a second one appeared. The record above is refused
+    // until a read NAMES it, and the read that names it here is a different verb writing
+    // a different shape of line — so a `show` whose output reached the page past the
+    // memory would leave this Tab with nothing, exactly as the search-only session had.
+    const columns = NOTHING_IS_CUT;
+    const rows = 40;
+    const missing = tellsApart(hidden.id, [...shown.map((record) => record.id), hidden.id]);
+
+    const ran = await inPty({
+      columns,
+      rows,
+      steps: [
+        opens,
+        {
+          types: `show ${hidden.id}\r`,
+          until: (bytes) => bytes.includes(UNNAMED),
+          what: 'named the record it had not seen',
+        },
+        clears(rows),
+        {
+          types: `show ${missing}${COMPLETES}`,
+          until: (bytes) => bytes.lastIndexOf(`show ${hidden.id}`) > bytes.lastIndexOf(CLEAR),
+          what: 'finished the record the show had named',
+        },
+        leaves,
+      ],
+    });
+
+    const screen = screenOf(ran.bytes.slice(0, ran.at[3] as number), columns, rows);
+    expect(rowBeingTyped(screen), screen.text).toBe(`${PROMPT} show ${hidden.id}`);
+  }, 240_000);
+
   it('offers no record where a verb goes, however many it has named', async () => {
     const columns = NOTHING_IS_CUT;
     const rows = 40;
