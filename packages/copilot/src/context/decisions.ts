@@ -88,9 +88,17 @@ import { type Disposition, statesWith } from './disposition.js';
  * this against `DECISION_TRANSITIONS`. It is not on the package's public surface —
  * a consumer gets the two lists, not the classification behind them — and that it
  * stays off it is checked, not declared: `no-classification-table-reaches-the-surface.test.ts`
- * walks every entry point's runtime exports. Unlike the skill machine's table this one
- * has no accessor on the surface either, because no consumer outside this package has
- * a reason to ask what a decision's state means.
+ * walks every entry point's runtime exports.
+ *
+ * IT USED TO SAY THIS TABLE HAD NO ACCESSOR ON THE SURFACE EITHER, *because no consumer
+ * outside this package has a reason to ask what a decision's state means*. What
+ * falsified it is a reading that prints the state: `@mnema/code` shows a decision's
+ * position in the same column as a task's, and paints a position by what a reader has
+ * to do about it. That surface has exactly the reason the sentence said did not exist,
+ * and without {@link decisionDisposition} its only path was to write `state ===
+ * 'proposed'` for itself — the copy this table is hidden to prevent. The accessor is
+ * the honest path, and it is held ON the surface by the same test that holds the table
+ * off it.
  */
 export const DECISION_DISPOSITION: Readonly<Record<DecisionState, Disposition>> = {
   proposed: 'awaiting-judgement',
@@ -98,6 +106,18 @@ export const DECISION_DISPOSITION: Readonly<Record<DecisionState, Disposition>> 
   rejected: 'closed',
   superseded: 'closed',
 };
+
+/**
+ * What one state MEANS to a reader — the classification, asked rather than restated.
+ *
+ * The twin of `skills.ts`'s `skillDisposition`, and it exists for the same kind of
+ * consumer: one that has to SAY something about a decision it is showing and must not
+ * decide what the state means a second time. The words are the caller's; the
+ * classification is this module's.
+ */
+export function decisionDisposition(state: DecisionState): Disposition {
+  return DECISION_DISPOSITION[state];
+}
 
 /** The states whose decisions govern — derived, never restated. */
 const IN_FORCE = statesWith(DECISION_STATES, DECISION_DISPOSITION, 'in-force');

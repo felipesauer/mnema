@@ -42,6 +42,17 @@
  * they do not. One vocabulary over three machines would have to be the union of both
  * questions, and every reader of it would then meet values that cannot occur.
  *
+ * A READER NOW HOLDS BOTH UNIONS IN ONE TABLE, and it does not overturn the paragraph
+ * above — it is what the paragraph leaves room for. `@mnema/code`'s `presentation/
+ * state.ts` paints a position by what a reader has to do about it, so it maps BOTH
+ * vocabularies onto its own three-value scale in a single table keyed by their union.
+ * That table is a SCALE and not a classification: it invents no position, it is not
+ * asked "where is this record", and the two words the unions share (`awaiting-judgement`,
+ * `closed`) get one row each precisely because the mapping is one reading of one rule.
+ * Nothing there re-derives what a state means; it asks — `taskDisposition` here,
+ * `decisionDisposition` and `skillDisposition` in `copilot` — which is the distinction
+ * this paragraph is about.
+ *
  * {@link TASK_DISPOSITION} is exported so the claims above are CHECKABLE against the
  * table they are read from, rather than asserted in prose. It is not on the package's
  * public surface — a consumer gets {@link taskDisposition}, the question, never the

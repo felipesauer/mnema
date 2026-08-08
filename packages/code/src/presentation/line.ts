@@ -48,7 +48,10 @@
  *     A DATE, you copy one or skip past it. Dimming them is what makes the title
  *     beside them the thing the eye lands on, which is what `git log --oneline` does
  *     with a hash and `gh pr list` with a number.
- *   - `state` — a task's position in the workflow, wherever a reading shows one. It is
+ *   - `state` — a record's position in its workflow, wherever a reading shows one. THIS
+ *     USED TO SAY A TASK'S, and what falsified it is `state.ts` reaching the other two
+ *     machines: a decision's and a pattern's position ride this same role in this same
+ *     column, and the word here was narrower than the part always was. It is
  *     the one role that is not a column and not a clause: it RIDES the field before it
  *     (a title), which is why its separator is a single space and not a column's two
  *     (see `plain.ts`). It was inside that field until this role existed, and a part
@@ -84,11 +87,12 @@
  * apart means one hue per value, and five hues in a list is noise*. THE RULE SURVIVED
  * AND THE CLASSIFICATION OF THE STATE DID NOT. A tree and a title really are categories
  * — three trees with no order and no consequence between them — and neither is a role
- * today for exactly that reason. A task's state is not one: it is a POSITION IN A CYCLE,
- * and the transition table gives each position a structurally different set of exits, so
- * the seven states collapse to five DISPOSITIONS and those to three hues (see
- * `state.ts`, and `core`'s `disposition.ts` for the derivation). One hue per value was
- * never the alternative. The day someone wants a tree apart, the old sentence still
+ * today for exactly that reason. A workflow state is not one: it is a POSITION IN A
+ * CYCLE, and the transition table gives each position a structurally different set of
+ * exits, so the product's sixteen states across three machines collapse to six
+ * DISPOSITIONS and those to three hues (see `state.ts`, and `core`'s `disposition.ts`
+ * and `copilot`'s `decisions.ts` and `skills.ts` for the derivations). One hue per value
+ * was never the alternative. The day someone wants a tree apart, the old sentence still
  * answers them.
  *
  * The union is derived from this tuple so the roles can be walked at run time:

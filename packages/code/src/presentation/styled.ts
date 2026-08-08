@@ -128,11 +128,13 @@ const OPENED_BY: { readonly [R in Role]: string } = {
  * from being the thing that judges the record.
  *
  * AND THE TRIPLE MEANS ONE THING PER HUE, whichever call site sets it. That is the whole
- * reason a task's position reuses this scale instead of getting one of its own: a
+ * reason a record's position reuses this scale instead of getting one of its own: a
  * `stalled` task is red because it is an answer a caller has to act on, exactly as a
- * refusal is; a `settled` one is green for the same reason `ALLOWED` is. A second
- * vocabulary would have given this surface two reds meaning different things, which is
- * how a hue stops being readable at all.
+ * refusal is; a `settled` one is green for the same reason `ALLOWED` is, and so is a
+ * decision in force. A second vocabulary would have given this surface two reds meaning
+ * different things, which is how a hue stops being readable at all — and it is why the
+ * three machines' positions come through ONE table on the way here (`state.ts`), not one
+ * per machine.
  */
 const PAINTED_BY: { readonly [S in Severity]: string } = {
   good: GREEN,

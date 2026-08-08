@@ -16,7 +16,9 @@
  * the fact beside the title — `` `${title} (${state})` `` — so a position and the words an
  * actor wrote were one field and nothing could tell them apart. The bytes are unchanged
  * (see `statedFact`); what the split buys is that the position can be painted where the
- * domain says it is news, which today is the task machine and only it (`state.ts`).
+ * domain says it is news — for all three machines, and this used to say the task machine
+ * and only it. What that sentence described was never a rule of this read: it was
+ * `state.ts` not yet asking the other two domains what their positions mean.
  *
  * IT PRINTS A DECISION'S `ADR-<n>` AND SAYS NOTHING ABOUT THE LABEL BEING SHARED, and
  * that is a decision rather than a gap. Two rules of one chain can answer to one

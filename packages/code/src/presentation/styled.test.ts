@@ -132,9 +132,14 @@ describe('the styled line is the plain line, wrapped', () => {
     itemLine(['a title', asState('IN_REVIEW')]),
     statedFact('a title', asState('DONE')),
     statedFact('a title', asState('DRAFT')),
-    // A state belonging to another machine, which a search lists in the same column: it
-    // is a part like the others and it is not painted, so its line is the plain line.
+    // States belonging to the OTHER TWO machines, which a search lists in this same
+    // column. Both shapes are here on purpose: a decision in force is news the same way
+    // an arrived task is, and a superseded one is over and says nothing — so one of the
+    // pair is in the painted half and the other is byte for byte the plain line. This
+    // used to be one entry, `accepted`, asserted PLAIN, which is what a corpus looks
+    // like when the surface has not been taught to ask a machine what its position means.
     itemLine(['a title', asState('accepted')]),
+    itemLine(['a title', asState('superseded')]),
     // The aside: one `detail` on its own, with no label in front of it to take the
     // colon. It is dim, so it is in the painted half, and the words are the same in
     // both renderings — which is the whole promise, on the surface's newest shape.
@@ -151,15 +156,15 @@ describe('the styled line is the plain line, wrapped', () => {
     // The other half. Without this, a renderer that returned the plain string would
     // pass the case above on every line in the corpus.
     //
-    // TWENTY-ONE of the thirty-one, and exactly the ones holding a role or a severity
+    // TWENTY-TWO of the thirty-two, and exactly the ones holding a role or a severity
     // that shows: the three subject lines, the eight statements, the four clause
-    // statements, the two lists with a said column, the three states whose disposition
-    // is news, and the aside. The other ten are bare `field` and bare `state` — a fact, a
-    // plain column, an empty part, a blank line, an advancing task, another machine's
-    // position — and they are byte for byte the plain line by design, which is what the
-    // last case in this block asserts on purpose.
+    // statements, the two lists with a said column, the FOUR states whose disposition is
+    // news, and the aside. The other ten are bare `field` and bare `state` — a fact, a
+    // plain column, an empty part, a blank line, an advancing task, a superseded decision
+    // — and they are byte for byte the plain line by design, which is what the last case
+    // in this block asserts on purpose.
     const painted = corpus.filter((line) => renderStyled(line) !== renderPlain(line));
-    expect(painted.length).toBe(21);
+    expect(painted.length).toBe(22);
   });
 
   it('leaves what an actor wrote alone, escape and all', () => {
@@ -220,6 +225,15 @@ describe('the styled line is the plain line, wrapped', () => {
     );
     // And an advancing position is not a painted part at all.
     expect(renderStyled(itemLine(['a title', asState('READY')]))).toBe('  a title (READY)');
+    // The other two machines reach the same three escapes through the same part — the
+    // scale is the surface's own and there is not a second one per machine.
+    expect(renderStyled(itemLine(['a title', asState('proposed')]))).toBe(
+      '  a title \u001b[33m(proposed)\u001b[39m',
+    );
+    expect(renderStyled(statedFact('a title', asState('adopted')))).toBe(
+      '  a title \u001b[32m(adopted)\u001b[39m',
+    );
+    expect(renderStyled(itemLine(['a title', asState('rejected')]))).toBe('  a title (rejected)');
   });
 
   it('costs a list of columns nothing at all', () => {
