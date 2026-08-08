@@ -19,6 +19,13 @@
  * splitting on that pair and joining with nothing — and where the guess about the indent
  * is wrong, the comparison FAILS rather than quietly passing, which is the property an
  * instrument in this repository has to have before it is believed.
+ *
+ * ⚠️ AND IT HAS EXACTLY ONE BLIND INPUT, which is measured rather than supposed: a field
+ * whose own text holds a break followed by the very spaces a continuation is indented by.
+ * The split cannot tell that break from one the fold made, so it answers wrongly — and it
+ * answers wrongly by going red. The fold is not wrong there, and the case that says so
+ * checks what cannot be argued with instead: not one character that is neither a break nor
+ * a space is lost, and the actor's own break is still a break.
  */
 
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
@@ -254,6 +261,25 @@ describe('the break goes between words', () => {
     const rows = foldedAt(24, renderPlain)(measured).split('\n');
     expect(rows[0]?.endsWith(' ')).toBe(true);
     expect(unfolded(foldedAt(24, renderPlain)(measured), indentOf(2))).toBe(renderPlain(measured));
+  });
+
+  it('loses nothing even where the instrument cannot put the line back', () => {
+    // ⚠️ THE ONE INPUT THE UNFOLD ABOVE CANNOT READ, measured rather than imagined: a field
+    // whose own text holds a break followed by exactly what a continuation is indented by.
+    // Splitting on that pair takes out a break the ACTOR wrote, so the instrument answers
+    // wrongly — and it answers wrongly by going RED, which is the property that makes it
+    // usable at all. Nothing about the fold is wrong here, and this case says so without
+    // the inverse: every character that is not a break or a space survives, and the actor's
+    // own break is still a break.
+    const nasty = fact('alpha beta gamma delta epsilon zeta eta theta\n    iota kappa lambda mu');
+    const folded = foldedAt(30, renderPlain)(nasty);
+    const naive = unfolded(folded, indentOf(2));
+    expect(naive).not.toBe(renderPlain(nasty));
+    const kept = (text: string): string => [...text].filter((one) => !' \n'.includes(one)).join('');
+    expect(kept(folded)).toBe(kept(renderPlain(nasty)));
+    expect(folded).toContain('\n    iota');
+    // And every row of it still fits, which is what the fold was asked for.
+    for (const row of folded.split('\n')) expect(columnsOf(row)).toBeLessThanOrEqual(30);
   });
 
   it('leaves a break an ACTOR wrote alone, and does not indent under it', () => {
