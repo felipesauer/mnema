@@ -77,6 +77,7 @@ import type { Drawn } from './console.js';
 import { type AfterLine, argvOf, dispositionOf, verbsOffered } from './gate.js';
 import type { Leaving } from './leaving.js';
 import { type Opening, openingFor } from './panel.js';
+import { whatTheSessionShowed } from './seen.js';
 import { type Standing, standing } from './standing.js';
 
 /**
@@ -288,6 +289,11 @@ export async function openSession(request: SessionRequest): Promise<void> {
   // terminal would fold, and the opening, which is budgeted against the area under it.
   const hint = drawn(tips(), render);
   const vocabulary = theSessionsOwnWords();
+  // WHAT THIS SESSION HAS NAMED, as one value with two ends: the console fills it with
+  // every line that lands, and the completer reads it to offer a record back. One object
+  // rather than two, so what a Tab offers cannot become a different set from what the
+  // page said. It holds no record and opens nothing (`seen.ts`).
+  const seen = whatTheSessionShowed();
 
   /**
    * WHAT THE PAGE OPENS WITH on a terminal of a given SIZE — and the only thing on this
@@ -361,7 +367,8 @@ export async function openSession(request: SessionRequest): Promise<void> {
     // something about the record, which is exactly why it may not be asked again.
     badge,
     vocabulary,
-    complete: completerFor(completionTree(built.program), offered, vocabulary),
+    saw: seen.saw,
+    complete: completerFor(completionTree(built.program), offered, vocabulary, seen.matching),
     answer: (line) => typedLine(line, session),
     leaving,
   });

@@ -117,6 +117,28 @@ function cellsOf(text: string): readonly Cell[] {
   return cells;
 }
 
+/**
+ * A rendered row as the characters a screen actually shows: the escapes taken out, and
+ * every other byte left exactly where it was.
+ *
+ * IT IS THE PROMISE `styled.ts` MAKES, AS A FUNCTION — *strip the escapes and you have
+ * the plain line, exactly*. That sentence was true and was asserted by tests that each
+ * wrote their own pattern for what an escape is; this is the one reading of it in the
+ * product, over the same walk the fold counts columns by, so nothing can come to
+ * disagree about where a sequence ends. `folded.test.ts` asserts it against the plain
+ * renderer over every shape the surface builds.
+ *
+ * WHO ASKS: the console, which reads the ids out of a line it has already turned into
+ * bytes (`repl/seen.ts`). What a caller can name is what is on their screen, so what is
+ * scanned has to be what the screen shows rather than what the stream carried.
+ */
+export function withoutSequences(text: string): string {
+  return cellsOf(text)
+    .filter((cell) => cell.width > 0)
+    .map((cell) => cell.bytes)
+    .join('');
+}
+
 /** The bytes of `cells` from `from` up to `to`, in order and with nothing added. */
 function bytesOf(cells: readonly Cell[], from: number, to: number): string {
   return cells

@@ -86,6 +86,18 @@ const OPENED = 'a session over this project';
  */
 const CLEARS_THE_LINE = '\u0003';
 
+/** Tab, likewise — the key that finishes a word, and here a record. */
+const COMPLETES = '\u0009';
+
+/**
+ * An id, as one appears on a page: five groups of hex, found in the bytes.
+ *
+ * THE INSTRUMENT IS THIS FILE'S OWN, deliberately. The product has a recognizer of its
+ * own and the session fills its memory with it; a case that borrowed that to find the id
+ * it then expects the session to have found would agree with it by construction.
+ */
+const ID_ON_THE_PAGE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
+
 // ---------------------------------------------------------------------------
 // The instrument: every path this process reads, while it is switched on
 // ---------------------------------------------------------------------------
@@ -305,6 +317,88 @@ async function readingWhileTyping(typed: string, answered?: string): Promise<str
   await closed;
   return paths;
 }
+
+/**
+ * What a console read while the caller COMPLETED a record — with a read already answered.
+ *
+ * A Tab over an id is the one offer on this surface whose candidates are not in a
+ * declaration, so it is the one that could have gone looking. It cannot: what it offers is
+ * what the session has already SHOWN, and this is where that stops being a sentence. The
+ * search is run and waited out BEFORE the watch is switched on, so what is counted is the
+ * Tabs and nothing else — and the completion is waited for, so a run that pressed Tab
+ * against an empty memory is not what came back with no reads.
+ *
+ * It drives a terminal of its own rather than taking {@link readingWhileTyping}'s, because
+ * the two halves have to be separated in TIME: everything before the watch is on is the
+ * read's, everything after it is the keystroke's.
+ */
+async function readingWhileCompleting(tabs: number): Promise<{
+  paths: string[];
+  row: string;
+}> {
+  const terminal = fakeTerminal({ columns: 200 });
+  const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
+  const closed = openSession({
+    io,
+    render: renderPlain,
+    self: REPL_VERB,
+    input: terminal.stdin,
+    output: terminal.stdout,
+    interactive: true,
+    leaving: hooksNothing,
+  });
+  await until(() => terminal.bytes().includes(OPENED), 'opened');
+  // THE READ, PAID FOR OUTSIDE THE WINDOW. `search` reads the record — that is what makes
+  // an id appear on the page at all — and the counting starts after it has answered.
+  terminal.type('search\r');
+  await until(() => ID_ON_THE_PAGE.test(terminal.bytes()), 'answered with a record');
+  const found = ID_ON_THE_PAGE.exec(terminal.bytes())?.[0] as string;
+  const prefix = found.slice(0, 13);
+
+  watched.paths = [];
+  watched.on = true;
+  for (let pressed = 0; pressed < tabs; pressed += 1) {
+    terminal.type(`show ${prefix}`);
+    terminal.type(COMPLETES);
+    await until(() => terminal.bytes().includes(`show ${prefix}`), 'took the prefix');
+    terminal.type(CLEARS_THE_LINE);
+  }
+  // Nothing is asked of a clock: the page has stopped growing, so what was counted is
+  // everything the keystrokes caused.
+  let settled = terminal.bytes().length;
+  for (let still = 0; still < 8; still++) {
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    if (terminal.bytes().length === settled) break;
+    settled = terminal.bytes().length;
+    still = 0;
+  }
+  watched.on = false;
+  const paths = [...watched.paths];
+  const row = terminal.bytes();
+  terminal.type(CLEARS_THE_LINE);
+  terminal.type(`${LEAVE}\r`);
+  await closed;
+  return { paths, row };
+}
+
+describe('a Tab over a record reads nothing, however many times it is pressed', () => {
+  it('reads exactly what no Tab reads, and really did finish one', async () => {
+    // THE HALF WITH TEETH, asked of the one offer that is not in a declaration. What a Tab
+    // completes here is an id, and the only other way to know one is to open the record —
+    // so this is where "it never reads" would break if it were going to.
+    const none = await readingWhileCompleting(0);
+    const many = await readingWhileCompleting(4);
+    expect(ofTheRecord(many.paths)).toEqual(ofTheRecord(none.paths));
+    expect(ofTheRecord(many.paths)).toEqual([]);
+    // NOT VACUOUS: the Tabs really finished an id, so the absence is about a completion
+    // that happened rather than about a session that ignored four keystrokes.
+    const whole = ID_ON_THE_PAGE.exec(many.row)?.[0] as string;
+    expect(whole, 'nothing on the page was a record').toBeDefined();
+    expect(many.row, 'no Tab ever finished an id').toContain(`show ${whole}`);
+    // And the instrument was watching something: the run that pressed no Tab still typed.
+    expect(none.row.length).toBeGreaterThan(0);
+  }, 180_000);
+});
 
 /** How many times `what` occurs in `text`. Overlapping is impossible for these. */
 const times = (text: string, what: string): number => text.split(what).length - 1;

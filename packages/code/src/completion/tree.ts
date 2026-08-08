@@ -38,9 +38,17 @@
  * hand in the help, and reading a sentence to complete a word would be building on the
  * defect. They are now DECLARED (`wiring/enumerated.ts`) without being validated by the
  * parser, and this file reads both channels ({@link enumeratedBy}). What is still never
- * offered is an ID: it is in no declaration, and the only way to know one is to run
- * mnema, whose floor is ~95 ms on this machine. A Tab that cost more than the command it
- * is helping you type would be a worse defect than the one this file exists to fix.
+ * offered HERE is an ID: it is in no declaration, and the only way for a SHELL to know one
+ * is to run mnema, whose floor is ~95 ms on this machine. A Tab that cost more than the
+ * command it is helping you type would be a worse defect than the one this file exists to
+ * fix.
+ *
+ * ⚠️ AND THAT PARAGRAPH USED TO SAY *NEVER OFFERED* WITHOUT THE *HERE*, which stopped
+ * being true one consumer over. The console offers ids now, and the reason it may is that
+ * it does not have this file's problem: a session has already PUT records on its own page,
+ * so it completes what it has said rather than asking what exists (`repl/seen.ts`). The
+ * cost argument above is untouched and is what keeps this side as it is — from a shell,
+ * every Tab is a new process, and there is no page to have said anything.
  *
  * NOTHING HERE IS SHELL. The three renderers own the quoting, and a value is a value
  * until one of them writes it out — which is what lets the same tree be asserted once

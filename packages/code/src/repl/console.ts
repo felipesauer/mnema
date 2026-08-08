@@ -215,6 +215,21 @@ export interface ConsoleRequest {
    * the opening lines have always been kept by.
    */
   readonly openingFor: (columns: number, rows: number) => Opening;
+  /**
+   * WHAT A LANDED LINE IS REMEMBERED BY — the records it names, so a Tab can finish one
+   * of them (`seen.ts`).
+   *
+   * It is handed one line at a time rather than reading what this file keeps, because
+   * this is the ONE door onto the page: everything a reader ever sees below the opening
+   * comes through {@link land}, including the echo of what they typed. A second place
+   * that noticed an id would be a second idea of what the session has shown.
+   *
+   * ⛔ IT MAY NOT READ THE RECORD, and here that is not a promise but an absence of one:
+   * what it is given is bytes that were already on their way to the screen, and there is
+   * nothing to read them FROM. Counted with the rest
+   * (`tests/the-name-and-the-hints.test.ts`).
+   */
+  readonly saw: (line: string) => void;
   /** What Tab offers, over the command tree the session was built from. */
   readonly complete: Completer;
   /** What the session does with one submitted line, and whether it goes on. */
@@ -241,7 +256,7 @@ export interface OpenConsole {
  */
 export function openConsole(request: ConsoleRequest): OpenConsole {
   const { stdin, stdout, prompt, render: renderLine, tips, badge, vocabulary } = request;
-  const { openingFor, complete, answer, leaving } = request;
+  const { openingFor, saw, complete, answer, leaving } = request;
 
   /**
    * How wide the page is, asked of the DEVICE — the one place anything on the FRAME does.
@@ -336,6 +351,12 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   }
 
   function land(line: string): void {
+    // WHAT THE PAGE SAID, NOTICED WHERE IT IS SAID. A record named on this row can be
+    // named back by the caller from here on, and this is the row's one door — so a line
+    // that reached the screen without passing here would be a record the session showed
+    // and cannot complete. Asked BEFORE the frame is rebuilt, so a Tab on the same
+    // keystroke sees it.
+    saw(line);
     said = [...said, line];
     past = [...past, line];
     moved();

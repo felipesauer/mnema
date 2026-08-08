@@ -17,6 +17,7 @@ import { ABOUT, LEAVE, PREFIX, SESSION_WORDS } from '../session-words.js';
 import type { Declared } from '../wiring/verb.js';
 import { completerFor } from './complete.js';
 import { argvOf, dispositionOf, verbsOffered } from './gate.js';
+import { whatTheSessionShowed } from './seen.js';
 import { theSessionsOwnWords } from './session.js';
 
 /** One declaration of this file's own, with the description a menu would print. */
@@ -156,22 +157,31 @@ describe('a session offers the reads and nothing else', () => {
   });
 });
 
-describe('tab offers what the session runs', () => {
-  /** A program of this file's own, so the tree is a tree and not the product's. */
-  function tree() {
-    const program = new Command('tool');
-    program.command('look').description('a read').option('--json', 'as an object');
-    program
-      .command('read')
-      .description('another read')
-      .addOption(new Option('--scope <s>', 'where').choices(['public', 'here']));
-    const write = program.command('write').description('a write');
-    write.command('move').description('a move');
-    program.command('session').description('this');
-    return completionTree(program);
-  }
+/** A program of this file's own, so the tree is a tree and not the product's. */
+function tree() {
+  const program = new Command('tool');
+  program.command('look').description('a read').option('--json', 'as an object');
+  program
+    .command('read')
+    .description('another read')
+    .addOption(new Option('--scope <s>', 'where').choices(['public', 'here']));
+  const write = program.command('write').description('a write');
+  write.command('move').description('a move');
+  program.command('session').description('this');
+  return completionTree(program);
+}
 
-  const complete = completerFor(tree(), verbsOffered(VERBS, SELF), theSessionsOwnWords());
+describe('tab offers what the session runs', () => {
+  /**
+   * A session that has named nothing.
+   *
+   * The cases below are about the DECLARATIONS, and a completer handed a memory with
+   * records in it answers with those as well; the cases that are about the records are in
+   * the describe under this one, over a memory that has some.
+   */
+  const named = () => [];
+
+  const complete = completerFor(tree(), verbsOffered(VERBS, SELF), theSessionsOwnWords(), named);
 
   /** The words of an offer, which is what these cases were written about. */
   const wordsOf = (line: string): readonly string[] => complete(line)[0].map((hit) => hit.word);
@@ -226,5 +236,69 @@ describe('tab offers what the session runs', () => {
     const flags = new Map(complete('look --')[0].map((offer) => [offer.word, offer.description]));
     expect([...flags.keys()]).toContain('--json');
     expect(flags.get('--json')).toBe('');
+  });
+});
+
+describe('tab finishes a record the session has already named', () => {
+  /**
+   * Two records, on the rows a `search` of this product really writes.
+   *
+   * The ids are the record's own and they share a long prefix, which is the ordinary
+   * case rather than a contrived one: an id begins with the millisecond it was minted.
+   * That the FORM of one is what the generator produces is proved where the generator is
+   * (`core/src/identity/id.test.ts`); what these cases are about is where an offer goes.
+   */
+  const FIRST = '019fe236-3c8b-795a-a517-f5e55bae80de';
+  const SECOND = '019fe236-3d00-73e3-9776-10dca56a5d17';
+
+  /** A completer over the tree above, for a session that has landed those two rows. */
+  function completing() {
+    const seen = whatTheSessionShowed();
+    seen.saw(`  ${SECOND}  public  2026-08-08  the second task (DRAFT)`);
+    seen.saw(`  ${FIRST}  public  2026-08-08  the first task (DRAFT)`);
+    return completerFor(tree(), verbsOffered(VERBS, SELF), theSessionsOwnWords(), seen.matching);
+  }
+
+  it('offers them where an argument goes, and never where a verb goes', () => {
+    const complete = completing();
+    const under = complete('look ')[0].map((hit) => hit.word);
+    expect(under).toEqual([SECOND, FIRST]);
+    // A LINE DOES NOT START WITH A RECORD. The top level is what this session RUNS, and
+    // an id is in no declaration and answers to nothing.
+    expect(complete('')[0].map((hit) => hit.word)).toEqual(
+      [...SESSION_WORDS, 'look', 'read'].sort(),
+    );
+    expect(complete('019')[0]).toEqual([]);
+  });
+
+  it('narrows to the prefix, and carries the rest of the row as what it is', () => {
+    const complete = completing();
+    const [hits, word] = complete(`look ${SECOND.slice(0, 13)}`);
+    expect(hits.map((hit) => hit.word)).toEqual([SECOND]);
+    expect(word).toBe(SECOND.slice(0, 13));
+    // WHAT THE PALETTE'S SECOND COLUMN COMES FROM, and it is what makes a list of ids
+    // that begin alike readable at all.
+    expect(hits[0]?.description).toBe('public 2026-08-08 the second task (DRAFT)');
+    // The shared prefix leaves both, which is the common case.
+    expect(complete('look 019fe236-3')[0].map((hit) => hit.word)).toEqual([SECOND, FIRST]);
+  });
+
+  it('puts what the declaration says first, and the records after it', () => {
+    // A level with subcommands is still its own menu: a reader looking for `move` does
+    // not scroll past the records of the session to find it. `read` enumerates two
+    // scopes, which is the same question one level down.
+    const complete = completing();
+    expect(complete('read --scope ')[0].map((hit) => hit.word)).toEqual(['here', 'public']);
+    // And a flag that enumerates NOTHING is a flag whose value may well be a record.
+    expect(complete('look --json ')[0].map((hit) => hit.word)).toEqual([SECOND, FIRST]);
+  });
+
+  it('offers none at all under a verb the session refuses', () => {
+    // The other half of "it does not descend": a level this session cannot reach has no
+    // records in it either, or a Tab would be listing the record under a word the next
+    // line will not run.
+    const complete = completing();
+    expect(complete('write ')).toEqual([[], '']);
+    expect(complete(`write ${SECOND.slice(0, 8)}`)[0]).toEqual([]);
   });
 });

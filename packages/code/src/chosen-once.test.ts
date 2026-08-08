@@ -425,6 +425,7 @@ describe('nothing else decides which renderer', () => {
       'palette.ts',
       'panel.ts',
       'region.ts',
+      'seen.ts',
       'session.ts',
       'standing.ts',
     ]);
