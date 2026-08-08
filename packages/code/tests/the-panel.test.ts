@@ -36,6 +36,7 @@ import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
 import { runVerify, type TreeReport } from '../src/commands/verify.js';
+import { bannerFor } from '../src/presentation/banner.js';
 import { SEVERITIES } from '../src/presentation/line.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import type { Render } from '../src/presentation/render.js';
@@ -57,7 +58,7 @@ const OPENED = 'a session over this project';
 
 /**
  * The characters this file looks for: the box's top-left corner, its vertical rule, its
- * horizontal run, and the glyph the name is drawn with.
+ * horizontal run.
  *
  * Named by their code points rather than typed, like every other unusual byte in this
  * repository's sources: a rule is one keystroke away from a pipe and a run from a hyphen,
@@ -67,7 +68,6 @@ const OPENED = 'a session over this project';
 const CORNER = '\u256d';
 const RULE = '\u2502';
 const DASH = '\u2500';
-const INK = '\u2588';
 
 /** Ctrl-C, which abandons the row being typed. Spelled out, for the same reason. */
 const CLEARS_THE_LINE = '\u0003';
@@ -159,24 +159,52 @@ function rowsOf(page: string): string[] {
   return stripped(withoutLayout(page)).split('\n');
 }
 
-/** The rows of the page that are part of the box. */
+/**
+ * The rows of the page that are part of the box.
+ *
+ * ⚠️ IT USED TO BE ANY ROW HOLDING THE RULE, and the fourth drawing of the name falsified
+ * that: the isometric form is inked with three glyphs and one of them is {@link RULE}, the
+ * very character the frame's sides are drawn with. So a page with no box at all came back
+ * as eleven box rows of six different widths, and the case that reads their widths called
+ * the box ragged. A row of the box BEGINS at the left edge of the screen, which the art
+ * never does.
+ */
 function boxRows(page: string): string[] {
-  return rowsOf(page).filter((row) => row.includes(RULE) || row.includes(CORNER));
+  return rowsOf(page).filter((row) => row.startsWith(RULE) || row.startsWith(CORNER));
 }
 
-/** Which drawing is on the page, judged by what only that drawing has. */
+/**
+ * Which drawing is on the page, judged by what only that drawing has.
+ *
+ * ⚠️ IT COUNTED THE RULES ON ONE ROW — three of them meant a column on each side of a
+ * divider — and the drawing of the name now puts as many as it likes on a row of its own.
+ * What tells the two boxed forms apart is a rule that runs THROUGH the box: a column of the
+ * screen carrying the glyph on every interior row. The frame's two sides are two of them
+ * and the divider is the third; the art's verticals are in a different column on every row
+ * of it, and the rows the place and the record are on hold none.
+ */
 function formOf(page: string): PanelForm {
-  const rows = boxRows(page);
+  const rows = boxRows(page).filter((row) => !row.includes(CORNER));
   if (rows.length === 0) return 'bare';
-  // A row with three rules on it is a row with a column on each side of one, which is the
-  // only thing that tells the two boxed forms apart.
-  return rows.some((row) => [...row].filter((glyph) => glyph === RULE).length >= 3)
-    ? 'columns'
-    : 'stacked';
+  const through = [...(rows[0] as string)].filter((_, at) =>
+    rows.every((row) => [...row][at] === RULE),
+  );
+  return through.length >= 3 ? 'columns' : 'stacked';
 }
 
 /** How wide a row is on a screen, in characters. */
 const widthOf = (row: string): number => [...row].length;
+
+/**
+ * The drawing of the name a terminal this wide gets, as the rows a plain renderer writes.
+ *
+ * The page it is on costs nothing, which is what holds the height out of the answer: this
+ * file opens every console at one height and asks only about widths, and the name gives way
+ * when the PAGE stops fitting rather than when the drawing does
+ * (`presentation/banner.ts`).
+ */
+const drawnAt = (columns: number): string[] =>
+  bannerFor({ columns, rows: 0, needs: () => 0 }).map(renderPlain);
 
 /** How many times `what` occurs in `text`. */
 const times = (text: string, what: string): number => text.split(what).length - 1;
@@ -342,9 +370,15 @@ describe('the chrome spends exactly one hue, and it is none of the three severit
     // …and the accent really is around the two things that ARE chrome: the frame, and the
     // mark. A layout that had stopped painting would satisfy the loop above saying nothing.
     expect(wrapped.some((run) => [...stripped(run)].every((glyph) => glyph === RULE))).toBe(true);
-    const mark = rowHolding(page, INK);
+    // ⚠️ THE MARK USED TO BE FOUND BY ITS GLYPH, and a fourth drawing is what falsified
+    // that: the widest form is inked with diagonals rather than with blocks, so a page two
+    // hundred columns wide holds no full block at all. What the drawing IS is asked of the
+    // module that draws it, at the size this page was opened at, so a fifth form moves this
+    // case with it.
+    const widest = drawnAt(200).reduce((most, row) => (row.length > most.length ? row : most));
+    const mark = rowHolding(page, widest);
     expect(
-      accented(mark, accent as string, closer as string).some((run) => run.includes(INK)),
+      accented(mark, accent as string, closer as string).some((run) => run.includes(widest)),
     ).toBe(true);
   }, 120_000);
 });
@@ -398,17 +432,43 @@ describe('what the panel says about a tree is a prefix of what verify says', () 
 // How much fits, and what gives way first
 // ---------------------------------------------------------------------------
 
-/** The narrowest terminal on which the drawing is still at least this rich. */
-async function narrowestFor(richness: number): Promise<number> {
-  let low = 0;
-  let high = 400;
-  expect(RICHNESS[formOf(await openedAt(high))]).toBeGreaterThanOrEqual(richness);
-  while (high - low > 1) {
-    const middle = Math.floor((low + high) / 2);
-    if (RICHNESS[formOf(await openedAt(middle))] >= richness) high = middle;
-    else low = middle;
+/**
+ * The widths this file walks, and the form the console draws at each of them — scanned
+ * once, because every question below is about the same ladder.
+ *
+ * ⚠️ IT WAS A BINARY SEARCH, on the premise that a wider terminal never gets a simpler
+ * drawing. WHAT FALSIFIED IT is the fourth form of the name: a terminal wide enough for the
+ * biggest drawing buys a drawing wider than a box has room for, so there is a band where the
+ * box is given up and the art is landed bare — and a search that halves an interval over a
+ * predicate that goes false and true again lands wherever the halving took it. The window is
+ * wide enough to hold both edges and the case below asserts that it does.
+ */
+const A_WINDOW = { widest: 140, narrowest: 40 } as const;
+
+/** The scan, done once and kept: about a hundred openings, twenty milliseconds each. */
+let theLadder: Map<number, PanelForm> | undefined;
+async function everyWidth(): Promise<ReadonlyMap<number, PanelForm>> {
+  if (theLadder !== undefined) return theLadder;
+  const walked = new Map<number, PanelForm>();
+  for (let columns = A_WINDOW.widest; columns >= A_WINDOW.narrowest; columns -= 1) {
+    walked.set(columns, formOf(await openedAt(columns)));
   }
-  return high;
+  theLadder = walked;
+  return walked;
+}
+
+/**
+ * The narrowest terminal of the TOP band on which the drawing is still at least this rich
+ * — walked down from the widest, so a band below a gap cannot be mistaken for this one.
+ */
+async function narrowestFor(richness: number): Promise<number> {
+  const ladder = await everyWidth();
+  const rich = (columns: number): boolean => RICHNESS[ladder.get(columns) as PanelForm] >= richness;
+  expect(rich(A_WINDOW.widest), 'the window does not start rich enough').toBe(true);
+  let edge = A_WINDOW.widest;
+  while (edge > A_WINDOW.narrowest && rich(edge - 1)) edge -= 1;
+  expect(edge, 'the window has no edge in it for this form').toBeGreaterThan(A_WINDOW.narrowest);
+  return edge;
 }
 
 describe('the form comes out of the content, and the narrowest still says the essential', () => {
@@ -436,18 +496,42 @@ describe('the form comes out of the content, and the narrowest still says the es
     }
   }, 120_000);
 
-  it('draws all three, and never a richer one on a narrower terminal', async () => {
-    // The sweep, and it is ORDERED rather than a list of widths that happen to work: what
-    // is asserted is that the drawing only ever gets simpler as the terminal narrows, and
-    // that all three of the forms are reachable over a record this ordinary.
-    const forms: PanelForm[] = [];
-    for (const columns of [200, 120, 80, 60, 40]) forms.push(formOf(await openedAt(columns)));
-    expect(new Set(forms)).toEqual(new Set(['columns', 'stacked', 'bare']));
-    for (const [at, form] of forms.entries()) {
-      if (at === 0) continue;
-      const richer = forms[at - 1] as PanelForm;
-      expect(RICHNESS[form], `${form} came after ${richer}`).toBeLessThanOrEqual(RICHNESS[richer]);
+  it('draws all three, and gets simpler as the terminal narrows unless the ART got bigger', async () => {
+    // ⚠️ THIS CASE WAS `never a richer one on a narrower terminal`, over five sampled
+    // widths, and this delivery FALSIFIED it. The name has a fourth drawing now and it is
+    // seventy columns wide: a terminal wide enough to be given it is not always wide enough
+    // to put a BOX around it, so there is a band where widening the window costs the frame.
+    // The five widths it sampled all missed that band, which is the other half of why the
+    // case is rewritten rather than repaired — it is asked of every width in the window now,
+    // one column at a time.
+    //
+    // WHAT SURVIVES IS THE RULE WITH ITS REASON: the drawing only gets simpler as the
+    // terminal narrows, and where it does not, the ART is what changed. That is not an
+    // excuse written into the assertion — it is the one thing that can make a wider terminal
+    // hold less, and a form that gave way for any other reason goes red here.
+    const ladder = await everyWidth();
+    expect(new Set(ladder.values())).toEqual(new Set(['columns', 'stacked', 'bare']));
+    let boughtArtInstead = 0;
+    for (let columns = A_WINDOW.widest; columns > A_WINDOW.narrowest; columns -= 1) {
+      const wider = RICHNESS[ladder.get(columns) as PanelForm];
+      const narrower = RICHNESS[ladder.get(columns - 1) as PanelForm];
+      if (narrower <= wider) continue;
+      boughtArtInstead += 1;
+      expect(
+        widthOf(drawnAt(columns).reduce((most, row) => (row.length > most.length ? row : most))),
+        `${columns} is simpler than ${columns - 1} and the drawing did not grow`,
+      ).toBeGreaterThan(
+        widthOf(
+          drawnAt(columns - 1).reduce((most, row) => (row.length > most.length ? row : most)),
+        ),
+      );
     }
+    // NOT VACUOUS IN EITHER DIRECTION: the window really holds the band where the art is
+    // bought instead of the frame — so the loop ruled on something — and it is a BAND rather
+    // than the whole ladder, so "simpler as it narrows" is still what the drawing mostly
+    // does.
+    expect(boughtArtInstead, 'the window holds no place where the art won').toBeGreaterThan(0);
+    expect(boughtArtInstead, 'the ladder is nothing but exceptions').toBeLessThan(3);
   }, 180_000);
 
   it('gives each form up at the width its own content stops fitting at', async () => {

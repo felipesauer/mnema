@@ -28,6 +28,49 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect } from 'vitest';
 
+/**
+ * WHAT THE LAYOUT WRITES WHEN A FRAME IS FINISHED: the end of the synchronized update it
+ * wrapped the whole frame in.
+ *
+ * ⚠️ IT WAS THE CURSOR, SHOWN AGAIN, and a one-row terminal falsified that inside this
+ * delivery: measured on a real pty at 100x1 and 60x1, the frame ends `ESC[?25l ESC[?2026l`
+ * — the caret is hidden and never shown, because there is nowhere to put it. The end of the
+ * synchronized update is written on every path there is, which is what makes it the frame's
+ * boundary rather than a symptom of one. Spelled by its code point, like every unusual byte
+ * in this repository.
+ */
+const FRAME_IS_DRAWN = '\u001b[?2026l';
+
+/**
+ * WHETHER A WHOLE FRAME HAS BEEN DRAWN since `prompt` was last written.
+ *
+ * ⚠️ FIVE FILES WAITED FOR THE PROMPT INSTEAD, and a prompt is written in the MIDDLE of a
+ * frame: the rows under it, and the caret's own position, come after. Two of them went red
+ * on one delivery for the same reason and neither was about a prompt — the opening grew by
+ * a third on a terminal with room for the biggest drawing of the name, so a frame is more
+ * writes and there are more places for a read to be cut in half. What was measured: a caret
+ * one row below the prompt, and a rule that had not been written yet.
+ *
+ * IT IS HERE BECAUSE THIS FILE IS THE INSTRUMENT, and the paragraph at the top of it says
+ * why in advance: two ideas of "wait until the session settled" is how one of them quietly
+ * stops waiting. Two cases drive a pty of their own rather than this one, and they take
+ * this function — what a finished frame IS is the rule, and it is written once.
+ */
+export function aFrameAfter(prompt: string): (bytes: string) => boolean {
+  // AND NOTHING AFTER IT. A frame boundary that is not the END of the stream is a frame
+  // boundary with another frame already in flight behind it, and a screen replayed from
+  // half of one is the defect this exists to stop. Measured: with the boundary alone, the
+  // two rules of the input area were on the screen about half the time at a hundred
+  // columns — the rows are written after the prompt, in the same frame.
+  return (bytes) =>
+    bytes.endsWith(FRAME_IS_DRAWN) && bytes.lastIndexOf(prompt) < bytes.lastIndexOf(FRAME_IS_DRAWN);
+}
+
+/** The step every session begins with: the console open, and its first frame DRAWN. */
+export function opensAConsole(prompt: string): Step {
+  return { until: aFrameAfter(prompt), what: 'opened its console' };
+}
+
 /** One thing to do in the session, and what says it is done. */
 export interface Step {
   /** What the caller types, if anything. */
@@ -69,6 +112,51 @@ export async function waitFor(ready: () => boolean, what: string, tries = 1200):
     await new Promise((resolve) => setTimeout(resolve, 25));
   }
   throw new Error(`the session never ${what}`);
+}
+
+/** How long the stream has to stop growing before it counts as quiet, in milliseconds. */
+const QUIET = 40;
+
+/** How many quiet periods to give a stream that keeps arriving before giving up on it. */
+const AT_MOST = 200;
+
+/** Waits until the stream has stopped growing for one quiet period. */
+async function settles(bytes: () => string): Promise<void> {
+  for (let tried = 0; tried < AT_MOST; tried += 1) {
+    const was = bytes().length;
+    await new Promise((resolve) => setTimeout(resolve, QUIET));
+    if (bytes().length === was) return;
+  }
+}
+
+/**
+ * WHERE A STEP ENDS IN THE STREAM: how many bytes had arrived at the instant the step's own
+ * question answered YES.
+ *
+ * ⚠️ IT WAS TWO READINGS OF ONE RULE, and they diverged in silence. The question was asked
+ * at one instant — *has the step happened?* — and the length was taken at ANOTHER, after a
+ * pause that only watched the stream stop growing. Between the two, the next frame arrives;
+ * the pause does not ask the question again, so under load a write that stalls mid-frame for
+ * longer than the pause ends the step at a point the question would have REFUSED. Measured:
+ * a screen replayed from that point had the input area's two rules missing, red in the whole
+ * suite and green on its own — the shape of defect the A3 amarra is about.
+ *
+ * SO THE ANSWER AND THE LENGTH COME OUT OF THE SAME STRING. The question is asked again once
+ * the stream is quiet, and while it says no this goes on waiting; when it says yes, the
+ * length taken is the length of the very string it just said yes about, with no `await`
+ * between the two — so nothing can arrive in between.
+ *
+ * A stream that has ENDED is answered wherever it is: the process is gone, there is nothing
+ * more coming, and a case reading a dead session's screen has its own assertions to fail.
+ */
+export async function endOf(step: Step, bytes: () => string, over: () => boolean): Promise<number> {
+  for (let round = 0; round < AT_MOST; round += 1) {
+    await waitFor(() => step.until(bytes()) || over(), step.what);
+    await settles(bytes);
+    const now = bytes();
+    if (step.until(now) || over()) return now.length;
+  }
+  throw new Error(`the session never settled anywhere it ${step.what}`);
 }
 
 /** Runs the session on a pseudo-terminal of a given size, resizing it between steps. */
@@ -130,15 +218,16 @@ export async function inPty(
         ]);
       }
       if (step.types !== undefined) child.stdin.write(step.types);
-      await waitFor(() => step.until(bytes) || over, step.what);
-      for (let still = 0, was = -1; still < 8; still++) {
-        if (bytes.length === was) break;
-        was = bytes.length;
-        await new Promise((resolve) => setTimeout(resolve, 40));
-        still = 0;
-        if (bytes.length === was) break;
-      }
-      at.push(bytes.length);
+      // WHERE THE STEP ENDS is the point its own question approved, and it is asked for as
+      // one thing rather than waited for here and measured there ({@link endOf} says what
+      // that cost).
+      at.push(
+        await endOf(
+          step,
+          () => bytes,
+          () => over,
+        ),
+      );
     }
     await Promise.race([
       ended,

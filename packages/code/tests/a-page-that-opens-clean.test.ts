@@ -38,6 +38,7 @@ import { tips } from '../src/repl/session.js';
 import { CLEAR, LEAVE } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC } from './support/console.js';
+import { aFrameAfter } from './support/pty.js';
 import { screenOf } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
@@ -273,7 +274,12 @@ async function inPty(options: {
 }
 
 /** The step every session begins with: the console is open when the prompt is drawn. */
-const opens: Step = { until: (bytes) => bytes.includes(PROMPT), what: 'opened its console' };
+const opens: Step = {
+  // What a finished frame IS is the shared instrument's (`support/pty.ts`): a prompt is
+  // written in the middle of one, and this file drives a pty of its own.
+  until: aFrameAfter(PROMPT),
+  what: 'opened its console',
+};
 
 /** The step every session ends with. */
 const leaves: Step = {
