@@ -468,6 +468,7 @@ describe('the session writes no history anywhere', () => {
       'palette.ts',
       'panel.ts',
       'region.ts',
+      'seen.ts',
       'session.ts',
       'standing.ts',
     ]);
