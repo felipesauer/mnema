@@ -71,11 +71,12 @@ import { writeLines } from '../wiring/io.js';
 import { reportUsage } from '../wiring/report.js';
 import type { Declared } from '../wiring/verb.js';
 import { DEFAULT_REQUIREMENT, levelSeverity, treeHeadline, VERIFY_VERB } from '../wiring/verify.js';
+import { areaFor, BELOW_THE_VIEWPORT } from './area.js';
 import { completerFor } from './complete.js';
 import type { Drawn } from './console.js';
 import { type AfterLine, argvOf, dispositionOf, verbsOffered } from './gate.js';
 import type { Leaving } from './leaving.js';
-import { type Opening, panelFor, panelLines } from './panel.js';
+import { type Opening, openingFor } from './panel.js';
 import { type Standing, standing } from './standing.js';
 
 /**
@@ -152,6 +153,16 @@ const LEVEL_MARK = '\u25c9';
  * columns of nothing between it and the end of the terminal.
  */
 const AT_THE_EDGE = 0;
+
+/**
+ * How many rows the palette wants while the page is being opened: none.
+ *
+ * The list of words is what a keystroke opens, and the opening is what is on the screen
+ * before there has been one. Counting rows for it here would budget the page against a
+ * region no caller has yet — and when a caller does open it, it is cut to what is left over
+ * the row being typed rather than allowed to push anything off the top (`area.ts`).
+ */
+const NOTHING_OFFERED_YET = 0;
 
 /**
  * THE THREE CLAUSES OF THE HINT, and each one is a KEY and what that key gives (see
@@ -259,13 +270,21 @@ export async function openSession(request: SessionRequest): Promise<void> {
   const where = standingLine(standing());
   const proved = theRecord();
   const record = recordSection(proved?.trees);
-  const refuses = whatItRefuses(offered.length).map(render);
+  // NOT RENDERED HERE, unlike the two below, and the reason is a measurement: how WIDE this
+  // sentence is decides whether the terminal folds it into a second row, and a page counted
+  // as though it were one row opens with its own top in the scrollback. So it travels as
+  // lines and the composer turns it into bytes (`panel.ts`, `openingFor`).
+  const refuses = whatItRefuses(offered.length);
   // NO PROJECT, NO BADGE. There is no record to name a level of, so the corner says
   // nothing at all — the same posture the line that says where the session is standing
   // takes about a fact it does not have, and the same one the panel's record section takes.
   // The WIDTH goes with it because the area needs both and only the composer can measure
   // one: a rendered line carries escapes a screen does not print (see `Drawn`).
   const badge = drawn(proved === undefined ? undefined : badgeLine(proved.level), render);
+  // What the caller can do, rendered ONCE for the same reason the badge is — and measured
+  // here as well, because two things read the width: the area, which draws no hint the
+  // terminal would fold, and the opening, which is budgeted against the area under it.
+  const hint = drawn(tips(), render);
   const vocabulary = theSessionsOwnWords();
 
   /**
@@ -274,9 +293,19 @@ export async function openSession(request: SessionRequest): Promise<void> {
    *
    * ⚠️ IT USED TO TAKE THE WIDTH ALONE, and the doc here said a width was "the only thing
    * on this surface a width decides". What falsified it is the drawing: the name gives way
-   * by height as well now (`presentation/banner.ts`), because five rows of art on a
-   * four-row terminal is a drawing whose top is in the scrollback before anything is typed.
+   * by height as well now (`presentation/banner.ts`), because a drawing whose PAGE is taller
+   * than the screen is a drawing already in the scrollback before anything is typed.
    * So both measurements arrive, by the same path, from the one place that asks the device.
+   *
+   * ⚠️ AND THE HEIGHT RULE IT ARRIVED WITH WAS THE WRONG ONE, which is what this function
+   * now carries. The name gave way when the DRAWING was taller than the terminal, and five
+   * rows against twenty-four never is — measured, and the axis chose nothing at any size a
+   * person opens. What the drawing costs is one ADDEND of what the page costs: the box's two
+   * edges, where the session is standing, what the record is, the sentence under it and the
+   * input area are the others, and only the first depends on which form is drawn. So the
+   * question asked here is whether the WHOLE page fits, with a row to spare, and the row is
+   * the one the layout keeps (`area.ts`, {@link BELOW_THE_VIEWPORT}) rather than a margin
+   * somebody thought looked right.
    *
    * PURE, AND THAT IS THE POINT OF IT BEING A FUNCTION. The console calls it when the page
    * opens and again whenever the caller has finished resizing their window, and between
@@ -287,21 +316,31 @@ export async function openSession(request: SessionRequest): Promise<void> {
    * than costing a tenth of a second — and the reads are counted rather than promised
    * (`tests/the-name-and-the-hints.test.ts`).
    */
-  const openingFor = (columns: number, rows: number): Opening => {
-    const panel = panelFor({
-      columns,
-      render,
-      title,
-      mark: bannerFor({ columns, rows }),
-      standing: where,
-      record,
-    });
-    return {
-      // A terminal too narrow for a box gets no box, and the same lines land instead —
-      // which is why the layout has two forms and not three.
-      panel: panel.form === 'bare' ? undefined : panel,
-      lines: [...(panel.form === 'bare' ? panelLines(panel) : []), ...refuses],
-    };
+  const theOpening = (columns: number, rows: number): Opening => {
+    // THE PAGE WITH A GIVEN DRAWING IN IT, composed rather than estimated — and that is what
+    // keeps the arithmetic out of a circle. The mark's WIDTH is what decides whether the box
+    // has two columns, and the arrangement is what decides whether the mark's rows are added
+    // to the record's or shared with them; both are settled the moment the opening exists.
+    const drawnWith = (mark: readonly Line[]): Opening =>
+      openingFor({ columns, render, title, mark, standing: where, record, beneath: refuses });
+    // WHAT THE PAGE SPENDS THAT NO DRAWING CHANGES: the input area at the bottom, in
+    // whichever arrangement this terminal has room for, and the row the library needs left
+    // over to redraw that area in PART rather than redrawing the whole screen.
+    const underneath =
+      areaFor({
+        rows,
+        columns,
+        badge: badge.width,
+        hint: hint.width,
+        palette: NOTHING_OFFERED_YET,
+      }).height + BELOW_THE_VIEWPORT;
+    return drawnWith(
+      bannerFor({
+        columns,
+        rows,
+        needs: (drawing) => drawnWith(drawing).rows + underneath,
+      }),
+    );
   };
 
   const { openConsole } = await import('./console.js');
@@ -310,10 +349,12 @@ export async function openSession(request: SessionRequest): Promise<void> {
     stdout: output,
     prompt: PROMPT,
     render,
-    openingFor,
-    // Rendered ONCE, here, and handed over as bytes: the tips say nothing about the
-    // record, so nothing can happen inside the session that changes what they say.
-    tips: drawn(tips(), render),
+    openingFor: theOpening,
+    // Rendered ONCE, above, and handed over as bytes: the tips say nothing about the
+    // record, so nothing can happen inside the session that changes what they say. The
+    // opening reads the same value, because how tall the area under it is is part of
+    // whether the page fits.
+    tips: hint,
     // Also rendered once — out of the ONE read this surface pays for. It does say
     // something about the record, which is exactly why it may not be asked again.
     badge,
