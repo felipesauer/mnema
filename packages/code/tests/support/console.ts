@@ -15,6 +15,7 @@
  */
 
 import { PassThrough } from 'node:stream';
+import { decodedWhole } from './arriving.js';
 
 /** One escape byte, written as an escape so no control byte enters a source file. */
 export const ESC = '\u001b';
@@ -52,10 +53,8 @@ export function fakeTerminal(size?: { columns?: number; rows?: number }): FakeTe
   const input = new PassThrough();
   const output = new PassThrough();
   let raw = false;
-  let bytes = '';
-  output.on('data', (chunk: Buffer) => {
-    bytes += chunk.toString('utf-8');
-  });
+  const arriving = decodedWhole();
+  arriving.from(output);
   Object.assign(input, {
     isTTY: true,
     setRawMode: (on: boolean) => {
@@ -80,7 +79,7 @@ export function fakeTerminal(size?: { columns?: number; rows?: number }): FakeTe
       Object.assign(output, rows === undefined ? { columns } : { columns, rows });
       output.emit('resize');
     },
-    bytes: () => bytes,
+    bytes: arriving.text,
     raw: () => raw,
   };
 }
