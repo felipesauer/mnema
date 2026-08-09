@@ -157,6 +157,50 @@ function theWidthIsTheOneItWasDrawnAt(rows: readonly string[], columns: number):
  */
 const CHANGES_ONLY_HOW_IT_LOOKS = 'm';
 
+/**
+ * WHAT A DECODER LEAVES BEHIND when it is handed half a character: the replacement, U+FFFD.
+ *
+ * Spelled by code point, like every other unusual glyph here — and it is the one glyph in
+ * this file that nothing ever draws on purpose.
+ */
+const HALF_A_CHARACTER = '\ufffd';
+
+/**
+ * ACCUSES A STREAM THAT WAS DECODED IN PIECES.
+ *
+ * ⚠️ THIS IS THE DEFECT THE WHOLE DELIVERY WENT LOOKING FOR, and it is the instrument's own.
+ * A pty is read in chunks and every driver accumulated them as `chunk.toString('utf-8')` —
+ * one decode per chunk. The glyph a rule is made of is THREE bytes, so a chunk boundary that
+ * lands inside one destroys it and leaves TWO replacements where there was one character.
+ * The row is then one column WIDER than the terminal, the terminal folds it, and the page
+ * has a row nobody drew.
+ *
+ * MEASURED, on a run caught by dumping the screen of the failing case: a rule 100 columns
+ * wide came back 101 characters long, `a run with two replacements in the middle of it`, and the extra column wrapped
+ * onto the row below as a single `─`. That one row is every symptom this family has:
+ * `expected 22 to be 21` for the caret, `expected 25 to be 24` for what the page spends, and
+ * a row above the prompt that is not a rule.
+ *
+ * IT IS NOT FIXED HERE — a decoder that keeps its state across chunks is a delivery of its
+ * own, and four drivers hold the copy. What this does is make the red SAY it, every time,
+ * instead of leaving a reader with a number that is one out for no visible reason.
+ */
+function theStreamWasDecodedWhole(bytes: string, columns: number): void {
+  const at = bytes.indexOf(HALF_A_CHARACTER);
+  if (at < 0) return;
+  const around = bytes.slice(Math.max(0, at - 20), at + 20);
+  throw new Error(
+    `this screen was replayed from a stream with a REPLACEMENT CHARACTER in it, which is ` +
+      `what a decoder leaves when it is handed half a character: ${JSON.stringify(around)}. ` +
+      `The bytes of a pseudo-terminal arrive in chunks and are decoded one chunk at a time, ` +
+      `so a boundary inside a multi-byte glyph destroys it — and the glyph a rule is drawn ` +
+      `out of is three bytes long. What that costs is a row ONE COLUMN wider than the ` +
+      `${columns} it was drawn for, which the terminal folds, which puts a row on the page ` +
+      `that nobody drew. Every off-by-one a case is about to report is that row. The product ` +
+      `wrote the right bytes; the stream they were read out of is what is wrong.`,
+  );
+}
+
 /** A screen, as a reader would see it. */
 export interface Screen {
   /** Every row, top first, each exactly as wide as the terminal. */
@@ -185,6 +229,9 @@ interface Grid {
 
 /** Replays `bytes` onto a screen `columns` by `rows`, and answers with what is on it. */
 export function screenOf(bytes: string, columns: number, rows: number): Screen {
+  // BEFORE ANYTHING IS REPLAYED, because a stream that lost a character is a stream whose
+  // every row after it is out — there is nothing to be learnt from the page it produces.
+  theStreamWasDecodedWhole(bytes, columns);
   const grid: Grid = {
     cells: Array.from({ length: rows }, () => Array.from({ length: columns }, () => BLANK)),
     row: 0,

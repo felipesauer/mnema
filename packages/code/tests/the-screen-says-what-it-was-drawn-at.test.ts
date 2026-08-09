@@ -25,6 +25,13 @@
  *     for, which is what makes the two comparable at all.
  *   - THE MODEL PERFORMED EVERY SEQUENCE IT WAS GIVEN. A scroll it did not perform is a
  *     page one row out, silently.
+ *   - THE STREAM ARRIVED WHOLE. ⚠️ AND THIS IS THE ONE THAT WAS ACTUALLY WRONG. A pty is
+ *     read in chunks and every driver decoded them one chunk at a time; a boundary inside
+ *     the three bytes of a rule's glyph leaves two replacement characters where there was
+ *     one, the row is a column too wide, the terminal folds it, and the page has a row
+ *     nobody drew. Measured on a caught run: a rule of 100 columns came back 101 characters
+ *     long. It is NOT fixed here — a decoder that keeps its state across chunks is a
+ *     delivery of its own, and four drivers hold the copy — but the red says it now.
  *
  * NOTHING HERE IS ABOUT THE PRODUCT. Every case below is built out of bytes composed by
  * hand, because a race does not answer a single run and the arithmetic does.
@@ -48,6 +55,9 @@ const TESTS = fileURLToPath(new URL('.', import.meta.url));
  */
 const ESC = '\u001b';
 const BELL = '\u0007';
+
+/** What a decoder leaves behind when it is handed half a character. */
+const HALF_A_CHARACTER = '\ufffd';
 
 /**
  * The glyphs a frame is drawn with, spelled by code point — like every other unusual byte
@@ -201,6 +211,43 @@ describe('a screen refuses bytes it cannot replay, rather than replaying part of
     // AND A SLICE TAKEN MID-SEQUENCE IS NOT AN UNKNOWN SEQUENCE: an escape that is the last
     // byte there is has nothing after it to have been misread.
     expect(() => screenOf(`a${ESC}`, 40, 10)).not.toThrow();
+  });
+});
+
+describe('a screen refuses a stream that was decoded in pieces, and says that is what it is', () => {
+  it('accuses a run with a replacement character in it, and says what it costs', () => {
+    // ⚠️ THE DEFECT THE WHOLE DELIVERY WENT LOOKING FOR, and it is the instrument's own. The
+    // pty is read in chunks and every driver accumulated them one decode at a time, so a
+    // chunk boundary inside the three bytes of a rule's glyph destroys it and leaves TWO
+    // replacements where there was one character. The row is then one column wider than the
+    // terminal, the terminal folds it, and the page has a row nobody drew.
+    //
+    // Caught by dumping the screen of a failing run: a rule 100 columns wide came back 101
+    // characters long, and the extra column was on the row below as a single glyph. That row
+    // is every symptom this family has.
+    const half = HALF_A_CHARACTER;
+    const rule = RUN.repeat(48) + half + half + RUN.repeat(49);
+    let said = '';
+    try {
+      screenOf(`${aPageDrawn(100)}\r\n${rule}`, 100, 40);
+    } catch (accused) {
+      said = (accused as Error).message;
+    }
+    expect(said, 'a stream that lost a character said nothing').not.toBe('');
+    expect(said, 'the accusation does not name what is in the stream').toContain('REPLACEMENT');
+    expect(said, 'the accusation does not say what it costs').toContain('ONE COLUMN');
+    // AND IT CLEARS THE PRODUCT, which is the half a reader needs most: the bytes the
+    // console wrote were right, and what is wrong is the stream they were read out of.
+    expect(said, 'the accusation leaves the product under suspicion').toContain(
+      'The product wrote the right bytes',
+    );
+  });
+
+  it('says nothing about a stream that arrived whole', () => {
+    // The other side. A guard that accused every page there is would have made the whole
+    // suite red rather than one run in three, which is a difference nobody would have had to
+    // measure — but it is asserted, because that is what makes the case above mean anything.
+    expect(() => screenOf(aPageDrawn(100), 100, 40)).not.toThrow();
   });
 });
 
