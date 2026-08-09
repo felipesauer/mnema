@@ -51,14 +51,32 @@ const WHAT_THE_DEVICE_SAID = 'size';
  *
  * `stty` is asked rather than trusted: the size is set and then READ BACK, out of the same
  * device, by the same program, one line later.
+ *
+ * ⚠️ AND IT IS RENAMED INTO PLACE RATHER THAN WRITTEN INTO IT, because the first version of
+ * this accused a session that was fine. A redirection CREATES the file and fills it after,
+ * so a reader waiting for the file to exist reads an EMPTY one — measured in a run of the
+ * whole suite, once in ten: *"the terminal the session opened on is undefinedx0"*. A rename
+ * within a directory is atomic, so the name appearing at all means the content is there.
  */
 export function sizedTo(rows: number, columns: number, here: string): readonly string[] {
-  return [`stty rows ${rows} cols ${columns}`, `stty size > ${join(here, WHAT_THE_DEVICE_SAID)}`];
+  const said = join(here, WHAT_THE_DEVICE_SAID);
+  return [
+    `stty rows ${rows} cols ${columns}`,
+    `stty size > ${said}.part`,
+    `mv ${said}.part ${said}`,
+  ];
 }
 
-/** What `stty size` answers with: the rows and the columns, in that order. */
-function asSaid(said: string): { readonly rows: number; readonly columns: number } {
+/**
+ * What `stty size` answers with: the rows and the columns, in that order — and nothing when
+ * it is not two numbers.
+ *
+ * The nothing is the half that matters: a partial read has to be told from an answer, or
+ * the instrument accuses a device it never actually asked.
+ */
+function asSaid(said: string): { readonly rows: number; readonly columns: number } | undefined {
   const [rows, columns] = said.trim().split(/\s+/).map(Number);
+  if (!Number.isInteger(rows) || !Number.isInteger(columns)) return undefined;
   return { rows: rows as number, columns: columns as number };
 }
 
@@ -84,23 +102,25 @@ export async function theDeviceWasTheSizeAskedFor(
   // the runner writes the file before the session starts, so a caller that read it the
   // instant it spawned would be racing the shell — and four drivers racing it four ways is
   // the shape of divergence this whole delivery is about.
+  //
+  // ⚠️ AND WHAT IS WAITED FOR IS THE ANSWER, NOT THE FILE. Waiting for the name is what made
+  // this instrument accuse an innocent session once in ten runs of the suite: the file is
+  // there before it has anything in it. It is renamed into place now ({@link sizedTo}) AND
+  // the content is what ends the wait — one of those alone is a race that comes back.
   const at = join(here, WHAT_THE_DEVICE_SAID);
-  for (let tried = 0; tried < 400 && !existsSync(at); tried += 1) {
-    await new Promise((resolve) => setTimeout(resolve, 25));
+  let said: { readonly rows: number; readonly columns: number } | undefined;
+  for (let tried = 0; tried < 400 && said === undefined; tried += 1) {
+    said = existsSync(at) ? asSaid(readFileSync(at, 'utf-8')) : undefined;
+    if (said === undefined) await new Promise((resolve) => setTimeout(resolve, 25));
   }
-  if (!existsSync(at)) {
+  if (said === undefined) {
     throw new Error(
       `the runner never said how big its terminal was: it was asked for ${columns}x${rows} and ` +
         `left nothing behind, so the session either never started or never got as far as ` +
         `sizing the device. Nothing read off this run is about a terminal of a known size.`,
     );
   }
-  theSizeIsTheOneAskedFor(
-    asSaid(readFileSync(at, 'utf-8')),
-    rows,
-    columns,
-    'the terminal the session opened on',
-  );
+  theSizeIsTheOneAskedFor(said, rows, columns, 'the terminal the session opened on');
 }
 
 /**
@@ -124,11 +144,19 @@ export function resizedTo(device: string, rows: number, columns: number): void {
 
 /** The comparison itself, and the sentence it produces. One reading, two callers. */
 function theSizeIsTheOneAskedFor(
-  was: { readonly rows: number; readonly columns: number },
+  was: { readonly rows: number; readonly columns: number } | undefined,
   rows: number,
   columns: number,
   what: string,
 ): void {
+  if (was === undefined) {
+    // NOT AN ACCUSATION. A device that answered with something that is not two numbers was
+    // not asked successfully, and saying it is the wrong size would be inventing a reading.
+    throw new Error(
+      `${what} did not answer with a size at all, so this run is not one where a size is ` +
+        `known. Nothing about the product follows from it.`,
+    );
+  }
   if (was.rows === rows && was.columns === columns) return;
   throw new Error(
     `${what} is ${was.columns}x${was.rows}, and this case asked for ${columns}x${rows}. ` +

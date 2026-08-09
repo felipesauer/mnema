@@ -30,10 +30,12 @@
  * hand, because a race does not answer a single run and the arithmetic does.
  */
 
-import { readdirSync, readFileSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { sizedTo, theDeviceWasTheSizeAskedFor } from './support/pty.js';
 import { everyWidthDrawnOn, screenOf } from './support/screen.js';
 
 /** `packages/code/tests`, for the guard that reads the instrument's own callers. */
@@ -200,6 +202,36 @@ describe('a screen refuses bytes it cannot replay, rather than replaying part of
     // byte there is has nothing after it to have been misread.
     expect(() => screenOf(`a${ESC}`, 40, 10)).not.toThrow();
   });
+});
+
+describe('the device says its size in one piece, or the instrument says it does not know', () => {
+  it('never reads a half-written answer as a size', async () => {
+    // ⚠️ THE INSTRUMENT ACCUSED AN INNOCENT SESSION, once in ten runs of the whole suite:
+    // `the terminal the session opened on is undefinedx0`. A redirection CREATES the file
+    // and fills it afterwards, and the wait was for the NAME — so the answer read was an
+    // empty one, and an empty one parses as a size nobody has.
+    //
+    // Two things closed it and both are asserted: the runner RENAMES the answer into place,
+    // which is atomic within a directory, and the wait is for the CONTENT rather than for
+    // the name. One of them alone is a race that comes back.
+    const here = mkdtempSync(join(tmpdir(), 'mnema-said-'));
+    const lines = sizedTo(24, 80, here).join('\n');
+    expect(lines, 'the answer is written straight into the name it is read from').toContain('mv ');
+    expect(lines, 'the answer is not written aside first').toContain('.part');
+
+    // AND THE WAIT IS FOR THE CONTENT: an empty answer left where the reader looks does not
+    // end the wait, and what comes back says it does not know rather than naming a size.
+    writeFileSync(join(here, 'size'), '');
+    const said = await theDeviceWasTheSizeAskedFor(here, 24, 80).catch((accused: Error) => accused);
+    expect((said as Error).message, 'an empty answer was read as a size').toContain(
+      'never said how big',
+    );
+    expect((said as Error).message, 'an empty answer became a number').not.toContain('undefined');
+    // Not vacuous: the same reader answers a COMPLETE one without complaint.
+    writeFileSync(join(here, 'size'), '24 80\n');
+    await expect(theDeviceWasTheSizeAskedFor(here, 24, 80)).resolves.toBeUndefined();
+    rmSync(here, { recursive: true, force: true });
+  }, 30_000);
 });
 
 // ---------------------------------------------------------------------------
