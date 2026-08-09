@@ -37,6 +37,7 @@ import { renderPlain } from '../src/presentation/plain.js';
 import { tips } from '../src/repl/session.js';
 import { CLEAR, LEAVE } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
+import { decodedWhole } from './support/arriving.js';
 import { ESC } from './support/console.js';
 import { aFrameAfter, sizedTo, theDeviceWasTheSizeAskedFor } from './support/pty.js';
 import { screenOf } from './support/screen.js';
@@ -227,18 +228,15 @@ async function inPty(options: {
     ].join('\n'),
   );
 
-  let bytes = '';
+  const arriving = decodedWhole();
   let over = false;
   const child = spawn('script', ['-qec', `sh ${runner}`, '/dev/null'], {
     cwd: project,
     env: environment,
     stdio: ['pipe', 'pipe', 'pipe'],
   });
-  const collect = (chunk: Buffer): void => {
-    bytes += chunk.toString('utf-8');
-  };
-  child.stdout.on('data', collect);
-  child.stderr.on('data', collect);
+  arriving.from(child.stdout);
+  arriving.from(child.stderr);
   const ended = new Promise<void>((resolve) => {
     child.on('close', () => {
       over = true;
@@ -254,17 +252,17 @@ async function inPty(options: {
     await theDeviceWasTheSizeAskedFor(here, options.rows, options.columns);
     for (const step of options.steps) {
       if (step.types !== undefined) child.stdin.write(step.types);
-      await until(() => step.until(bytes) || over, step.what);
+      await until(() => step.until(arriving.text()) || over, step.what);
       // Settled: the page has stopped growing, so the offset taken below is the end of a
       // frame rather than the middle of one.
       for (let still = 0, was = -1; still < 8; still++) {
-        if (bytes.length === was) break;
-        was = bytes.length;
+        if (arriving.text().length === was) break;
+        was = arriving.text().length;
         await new Promise((resolve) => setTimeout(resolve, 40));
         still = 0;
-        if (bytes.length === was) break;
+        if (arriving.text().length === was) break;
       }
-      at.push(bytes.length);
+      at.push(arriving.text().length);
     }
     await Promise.race([
       ended,
@@ -274,7 +272,7 @@ async function inPty(options: {
     child.stdin.end();
     child.kill('SIGKILL');
   }
-  return { bytes, at };
+  return { bytes: arriving.text(), at };
 }
 
 /** The step every session begins with: the console is open when the prompt is drawn. */

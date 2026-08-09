@@ -169,8 +169,7 @@ const HALF_A_CHARACTER = '\ufffd';
  * ACCUSES A STREAM THAT WAS DECODED IN PIECES.
  *
  * ⚠️ THIS IS THE DEFECT THE WHOLE DELIVERY WENT LOOKING FOR, and it is the instrument's own.
- * A pty is read in chunks and every driver accumulated them as `chunk.toString('utf-8')` —
- * one decode per chunk. The glyph a rule is made of is THREE bytes, so a chunk boundary that
+ * A pty is read in chunks and five places accumulated them one decode per chunk. The glyph a rule is made of is THREE bytes, so a chunk boundary that
  * lands inside one destroys it and leaves TWO replacements where there was one character.
  * The row is then one column WIDER than the terminal, the terminal folds it, and the page
  * has a row nobody drew.
@@ -181,9 +180,10 @@ const HALF_A_CHARACTER = '\ufffd';
  * `expected 22 to be 21` for the caret, `expected 25 to be 24` for what the page spends, and
  * a row above the prompt that is not a rule.
  *
- * IT IS NOT FIXED HERE — a decoder that keeps its state across chunks is a delivery of its
- * own, and four drivers hold the copy. What this does is make the red SAY it, every time,
- * instead of leaving a reader with a number that is one out for no visible reason.
+ * IT IS FIXED IN ONE PLACE (`support/arriving.ts`, a collector whose decoder keeps its state
+ * across chunks), AND THIS STAYS. It is not redundant now that the defect is gone: it is the
+ * thing that says out loud the day a sixth reader turns bytes into text on its own, instead
+ * of leaving a reader with a number that is one out for no visible reason.
  */
 function theStreamWasDecodedWhole(bytes: string, columns: number): void {
   const at = bytes.indexOf(HALF_A_CHARACTER);

@@ -27,6 +27,7 @@ import { execFileSync, spawn } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect } from 'vitest';
+import { decodedWhole } from './arriving.js';
 
 /**
  * Where a runner leaves the DEVICE'S OWN answer about how big it is.
@@ -321,18 +322,15 @@ export async function inPty(
     ].join('\n'),
   );
 
-  let bytes = '';
+  const arriving = decodedWhole();
   let over = false;
   const child = spawn('script', ['-qec', `sh ${runner}`, '/dev/null'], {
     cwd: fixture.project,
     env: fixture.environment,
     stdio: ['pipe', 'pipe', 'pipe'],
   });
-  const collect = (chunk: Buffer): void => {
-    bytes += chunk.toString('utf-8');
-  };
-  child.stdout.on('data', collect);
-  child.stderr.on('data', collect);
+  arriving.from(child.stdout);
+  arriving.from(child.stderr);
   const ended = new Promise<void>((resolve) => {
     child.on('close', () => {
       over = true;
@@ -342,8 +340,8 @@ export async function inPty(
 
   const at: number[] = [];
   try {
-    await waitFor(() => bytes.includes(named) || over, 'said which terminal it had');
-    const device = /TTY=(\S+)/.exec(bytes)?.[1];
+    await waitFor(() => arriving.text().includes(named) || over, 'said which terminal it had');
+    const device = /TTY=(\S+)/.exec(arriving.text())?.[1];
     expect(device, 'the runner never named the terminal').toBeDefined();
     // BEFORE ANY STEP, because everything after this is read against a size — and a size
     // nobody checked is the premise every count below rests on.
@@ -356,13 +354,7 @@ export async function inPty(
       // WHERE THE STEP ENDS is the point its own question approved, and it is asked for as
       // one thing rather than waited for here and measured there ({@link endOf} says what
       // that cost).
-      at.push(
-        await endOf(
-          step,
-          () => bytes,
-          () => over,
-        ),
-      );
+      at.push(await endOf(step, arriving.text, () => over));
     }
     await Promise.race([
       ended,
@@ -372,5 +364,5 @@ export async function inPty(
     child.stdin.end();
     child.kill('SIGKILL');
   }
-  return { bytes, at };
+  return { bytes: arriving.text(), at };
 }
