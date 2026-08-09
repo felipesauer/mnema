@@ -57,7 +57,9 @@ import { LEAVE } from '../src/session-words.js';
 import { here } from '../src/wiring/context.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { DEFAULT_REQUIREMENT } from '../src/wiring/verify.js';
+import { decodedWhole } from './support/arriving.js';
 import { ESC, fakeTerminal, hooksNothing, until, withoutLayout } from './support/console.js';
+import { sizedTo, theDeviceWasTheSizeAskedFor } from './support/pty.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
@@ -203,21 +205,17 @@ async function inPty(options: {
   const here = mkdtempSync(join(sandbox, 'pty-'));
   const pidFile = join(here, 'pid');
   const runner = join(here, 'run.sh');
-  writeRunner(runner, pidFile, options.entry);
+  writeRunner(runner, pidFile, options.entry, here);
 
-  let bytes = '';
+  const arriving = decodedWhole();
   let over = false;
   const child = spawn('script', ['-qec', `sh ${runner}`, '/dev/null'], {
     cwd: project,
     env: environment,
     stdio: ['pipe', 'pipe', 'pipe'],
   });
-  child.stdout.on('data', (chunk: Buffer) => {
-    bytes += chunk.toString('utf-8');
-  });
-  child.stderr.on('data', (chunk: Buffer) => {
-    bytes += chunk.toString('utf-8');
-  });
+  arriving.from(child.stdout);
+  arriving.from(child.stderr);
   const ended = new Promise<void>((resolve) => {
     child.on('close', () => {
       over = true;
@@ -226,13 +224,18 @@ async function inPty(options: {
   });
 
   try {
+    // THE SIZE THE CASE ASKED FOR IS THE PREMISE, and this file's is that the terminal is
+    // wide enough that nothing it reads was folded — so a device that is not that wide
+    // makes every line read here a line that was cut somewhere nobody chose. The rule is
+    // the shared instrument's (`support/pty.ts`), read from where it is written.
+    await theDeviceWasTheSizeAskedFor(here, PTY_ROWS, PTY_COLUMNS);
     // The console is open when the prompt is on the screen. Everything after this is
     // sent to a session that is really running, which is what makes a kill mid-session.
-    await until(() => bytes.includes(PROMPT) || over, 'opened its console');
+    await until(() => arriving.text().includes(PROMPT) || over, 'opened its console');
     for (const typed of options.types ?? []) child.stdin.write(typed);
     if (options.waitFor !== undefined) {
       const marker = options.waitFor;
-      await until(() => bytes.includes(marker) || over, `answered with ${marker}`);
+      await until(() => arriving.text().includes(marker) || over, `answered with ${marker}`);
     }
     for (const typed of options.thenTypes ?? []) child.stdin.write(typed);
     if (options.signal !== undefined) {
@@ -249,6 +252,7 @@ async function inPty(options: {
     child.kill('SIGKILL');
   }
 
+  const bytes = arriving.text();
   const afterwards = bytes.slice(bytes.lastIndexOf(AFTERWARDS));
   return {
     bytes,
@@ -258,12 +262,17 @@ async function inPty(options: {
 }
 
 /** The shell script the pty runs: the session, then the caller's next command. */
-function writeRunner(runner: string, pidFile: string, entry: readonly string[]): void {
+function writeRunner(
+  runner: string,
+  pidFile: string,
+  entry: readonly string[],
+  here: string,
+): void {
   writeFileSync(
     runner,
     [
       `cd ${project}`,
-      `stty rows ${PTY_ROWS} cols ${PTY_COLUMNS}`,
+      ...sizedTo(PTY_ROWS, PTY_COLUMNS, here),
       `sh -c 'echo $$ > ${pidFile}; exec node ${entry.join(' ')}'`,
       `printf '\\n${AFTERWARDS}\\n'`,
       'stty -a',
