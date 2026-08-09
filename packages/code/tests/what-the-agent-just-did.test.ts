@@ -17,8 +17,11 @@
  *     it walks the console into the height at which the library stops redrawing PART of
  *     the screen and starts redrawing all of it — with the erase this product refuses to
  *     write inside the sequence (`a-page-that-opens-clean.test.ts` measures that boundary
- *     in both directions). So the shape of the input area is measured before the
- *     occurrences and after them, and it is the same shape.
+ *     in both directions). It is asserted twice, and only the second one has teeth: the
+ *     arrangement from the badge down is compared before and after, which a region that
+ *     grew UPWARDS would survive (measured — a mutation that put the occurrences in the
+ *     palette left that case green); and the session is then run ON the boundary, where
+ *     one more row of region IS the erase, with the height bracketed rather than assumed.
  *   - WHAT WAS ALREADY SAID IS NOT UNSAID. An occurrence about a record named ABOVE on the
  *     page lands UNDER it, because a surface whose whole argument is that the scrollback
  *     is the feature may not rewrite it.
@@ -73,6 +76,24 @@ const THE_AGENT = 'the-agent-that-wrote-it';
 /** How wide and how tall the terminal every case here drives is. */
 const COLUMNS = 140;
 const ROWS = 40;
+
+/** What the layout library writes when it takes the caller's history with the page. */
+const ERASES_THE_HISTORY = '\u001b[3J';
+
+/**
+ * THE SHORTEST TERMINAL ON WHICH THE LAYOUT STILL REDRAWS PART OF THE PAGE, in rows.
+ *
+ * Measured rather than chosen, and BRACKETED by the case that uses it: at this height the
+ * erase never appears, and one row below it does. It is where the region a session redraws
+ * — the row being typed and the hint under it — stops fitting under the viewport, so it is
+ * the height at which one extra row of region becomes the erase this product refuses to
+ * write. `a-page-that-opens-clean.test.ts` is where the boundary itself is pinned, in both
+ * directions and at several widths.
+ */
+const SHORTEST_THAT_REDRAWS_IN_PART = 2;
+
+/** The width the boundary is measured at: one with room for the hint on a single row. */
+const WIDE_ENOUGH_FOR_THE_HINT = 100;
 
 // ---------------------------------------------------------------------------
 // The fixture
@@ -260,11 +281,16 @@ describe('a session shows what another process wrote while it was open', () => {
     expect(ran.bytes).not.toContain('\u001b[3J');
   });
 
-  it('leaves the redrawn region exactly the shape it was', () => {
-    // THE MEASUREMENT, and it is taken from the SCREEN rather than from the stream: what
-    // the input area costs is rows on a terminal, and only a screen has any. The shape is
-    // read as how many rows sit at and below the row being typed — the rules, the hint —
-    // which is what would grow if an occurrence had landed in the region.
+  it('leaves the badge, the rules and the hint exactly where they were', () => {
+    // ONE READING OF THE REGION, taken from the SCREEN rather than from the stream: what
+    // the input area costs is rows on a terminal, and only a screen has any. What it covers
+    // is the arrangement from the badge DOWN — the two rules, the row being typed, the hint
+    // — which is what would move if an occurrence had landed among them.
+    //
+    // ⚠️ IT DOES NOT COVER A ROW ADDED ABOVE THE BADGE, and that is written here rather
+    // than left implied: the palette opens there, so a region that grew UPWARDS would leave
+    // this reading identical. Measured — a mutation that put the occurrences in the palette
+    // left this case green. The half with teeth is the boundary case below.
     const before = shapeOfTheInput(ran.bytes.slice(0, ran.at[1]));
     const after = shapeOfTheInput(ran.bytes.slice(0, ran.at[3]));
     expect(after).toEqual(before);
@@ -278,6 +304,46 @@ describe('a session shows what another process wrote while it was open', () => {
     // still taking keystrokes after everything above.
     expect(ran.bytes.lastIndexOf(PROMPT)).toBeGreaterThan(ran.bytes.indexOf(`${PREFIX}exit`));
   });
+
+  it('does not push the region past the height where the library erases the history', async () => {
+    // THE HALF WITH TEETH, and it is the library's boundary rather than this product's. A
+    // region as tall as the viewport is one the layout stops redrawing in PART: it redraws
+    // the whole screen instead, with the sequence that erases the caller's own history
+    // inside it (`a-page-that-opens-clean.test.ts` owns that measurement). So an occurrence
+    // that landed in the region would not merely look wrong — on a short terminal it would
+    // take the scrollback with it.
+    //
+    // THE HEIGHT IS NOT ASSUMED, IT IS BRACKETED. The session is run at the shortest height
+    // where the erase does not appear AND one row below it, so the case proves it is
+    // sitting ON the boundary: a region one row taller is a region it catches.
+    const writing = (): Step => ({
+      does: () => {
+        elsewhere('task', 'written while the terminal was tiny', '--which', THE_AGENT);
+      },
+      until: (bytes) => bytes.includes('task.created'),
+      what: 'showed the occurrence on a short terminal',
+    });
+    const leaves: Step = {
+      types: `${CLEARS_THE_LINE}${PREFIX}exit\r`,
+      what: 'left',
+      until: (bytes) => bytes.lastIndexOf(PROMPT) > bytes.indexOf(`${PREFIX}exit`),
+    };
+    const atTheBoundary = await inPty(fixture(), {
+      columns: WIDE_ENOUGH_FOR_THE_HINT,
+      rows: SHORTEST_THAT_REDRAWS_IN_PART,
+      steps: [opensAConsole(PROMPT), writing(), leaves],
+    });
+    expect(atTheBoundary.bytes, 'the occurrence never landed').toContain('task.created');
+    expect(atTheBoundary.bytes).not.toContain(ERASES_THE_HISTORY);
+    // ONE ROW SHORTER, the library really does give up — which is what says the height
+    // above is the boundary and not simply a roomy terminal.
+    const shorter = await inPty(fixture(), {
+      columns: WIDE_ENOUGH_FOR_THE_HINT,
+      rows: SHORTEST_THAT_REDRAWS_IN_PART - 1,
+      steps: [opensAConsole(PROMPT), leaves],
+    });
+    expect(shorter.bytes, 'the library no longer erases the history').toContain(ERASES_THE_HISTORY);
+  }, 240_000);
 
   /** The instant the record carries for `id`, read off the record rather than guessed. */
   function instantOf(id: string): string {
