@@ -406,8 +406,14 @@ describe('everything that gives a session a terminal of a chosen size checks tha
     // on: the guard is named inside the body that every one of those callers reaches.
     const instrument = readFileSync(join(TESTS, 'support', 'screen.ts'), 'utf-8');
     const body = instrument.slice(instrument.indexOf('export function screenOf'));
-    expect(body.slice(0, body.indexOf('\n}\n')), 'the one function stopped checking').toContain(
+    const inside = body.slice(0, body.indexOf('\n}\n'));
+    // BOTH PREMISES, and both named here rather than one: they are two rules with one site
+    // each, and a delivery that dropped either would leave the other looking like coverage.
+    expect(inside, 'the one function stopped checking the width').toContain(
       'theWidthIsTheOneItWasDrawnAt(',
+    );
+    expect(inside, 'the one function stopped checking the stream').toContain(
+      'theStreamWasDecodedWhole(',
     );
   });
 });
