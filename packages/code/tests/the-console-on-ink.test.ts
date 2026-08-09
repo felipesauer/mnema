@@ -58,6 +58,7 @@ import { here } from '../src/wiring/context.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { DEFAULT_REQUIREMENT } from '../src/wiring/verify.js';
 import { ESC, fakeTerminal, hooksNothing, until, withoutLayout } from './support/console.js';
+import { sizedTo, theDeviceWasTheSizeAskedFor } from './support/pty.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
@@ -203,7 +204,7 @@ async function inPty(options: {
   const here = mkdtempSync(join(sandbox, 'pty-'));
   const pidFile = join(here, 'pid');
   const runner = join(here, 'run.sh');
-  writeRunner(runner, pidFile, options.entry);
+  writeRunner(runner, pidFile, options.entry, here);
 
   let bytes = '';
   let over = false;
@@ -226,6 +227,11 @@ async function inPty(options: {
   });
 
   try {
+    // THE SIZE THE CASE ASKED FOR IS THE PREMISE, and this file's is that the terminal is
+    // wide enough that nothing it reads was folded — so a device that is not that wide
+    // makes every line read here a line that was cut somewhere nobody chose. The rule is
+    // the shared instrument's (`support/pty.ts`), read from where it is written.
+    await theDeviceWasTheSizeAskedFor(here, PTY_ROWS, PTY_COLUMNS);
     // The console is open when the prompt is on the screen. Everything after this is
     // sent to a session that is really running, which is what makes a kill mid-session.
     await until(() => bytes.includes(PROMPT) || over, 'opened its console');
@@ -258,12 +264,17 @@ async function inPty(options: {
 }
 
 /** The shell script the pty runs: the session, then the caller's next command. */
-function writeRunner(runner: string, pidFile: string, entry: readonly string[]): void {
+function writeRunner(
+  runner: string,
+  pidFile: string,
+  entry: readonly string[],
+  here: string,
+): void {
   writeFileSync(
     runner,
     [
       `cd ${project}`,
-      `stty rows ${PTY_ROWS} cols ${PTY_COLUMNS}`,
+      ...sizedTo(PTY_ROWS, PTY_COLUMNS, here),
       `sh -c 'echo $$ > ${pidFile}; exec node ${entry.join(' ')}'`,
       `printf '\\n${AFTERWARDS}\\n'`,
       'stty -a',

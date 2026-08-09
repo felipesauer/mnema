@@ -18,9 +18,26 @@
  * IT IS AN INSTRUMENT, AND IT IS PROVED BEFORE IT IS BELIEVED. A model that quietly did
  * nothing would say the page is clean about every page there is, so the case that uses it
  * renders the screen from BEFORE the session opened and finds the caller's output on it
- * (`tests/a-page-that-opens-clean.test.ts`). Anything it does not understand is skipped
- * rather than printed, which is the safe direction for the same reason: an unhandled
- * escape becomes nothing on the page instead of becoming text that was never there.
+ * (`tests/a-page-that-opens-clean.test.ts`).
+ *
+ * ⚠️ AND IT USED TO SAY THAT ANYTHING IT DID NOT UNDERSTAND WAS SKIPPED RATHER THAN
+ * PRINTED, "which is the safe direction: an unhandled escape becomes nothing on the page
+ * instead of becoming text that was never there". That is true of a glyph and it is the
+ * OPPOSITE of true for a sequence that moves something. A scroll this model did not
+ * perform leaves every row of its answer one out, and what a case then reads is a number
+ * that is wrong for a reason nothing on the screen mentions — which is the shape of red
+ * that costs a reviewer an afternoon. So skipping is now a NAMED list with a reason each
+ * ({@link CHANGES_ONLY_HOW_IT_LOOKS}), and everything outside it is accused
+ * (`tests/the-screen-says-what-it-was-drawn-at.test.ts`).
+ *
+ * ⚠️ AND THE OTHER HALF: A REPLAY IS NOT A TERMINAL, and the size is the seam. This model
+ * is handed the size the CASE asked for, and the bytes were written by a process that read
+ * the size from a DEVICE. When those two are not the same number, every row under the first
+ * thing that folds is off — and the case fails on a count, which says nothing about the
+ * disagreement that produced it. The frame the console opens with is drawn corner to corner
+ * (`src/repl/panel.ts`), so the width the process read is ON THE PAGE: it is measured here
+ * ({@link everyWidthDrawnOn}) and it has to be one of the widths this screen was replayed
+ * at, or the replay is accused instead of the product.
  */
 
 /** One escape byte, written as an escape so no control byte enters a source file. */
@@ -28,6 +45,117 @@ const ESC = '\u001b';
 
 /** What a row is made of before anything is written on it. */
 const BLANK = ' ';
+
+/**
+ * WHAT A FRAME IS DRAWN OUT OF — the run, and the four corners it ends at.
+ *
+ * Spelled by code point rather than typed, like every other unusual glyph in this
+ * repository: a run is one keystroke away from a hyphen and a corner from its mirror, and a
+ * character a reader cannot tell from a neighbouring one is a character an edit destroys
+ * without anybody seeing it happen.
+ */
+const RUN = '\u2500';
+/** The two corners a horizontal edge BEGINS at: the box's top-left and its bottom-left. */
+const OPENS_AN_EDGE = '\u256d\u2570';
+/** The two it ENDS at: the top-right and the bottom-right. */
+const CLOSES_AN_EDGE = '\u256e\u256f';
+
+/** Whether a glyph — or the nothing off the end of the page — is one of `of`. */
+function isOneOf(glyph: string | undefined, of: string): boolean {
+  return glyph !== undefined && of.includes(glyph);
+}
+
+/**
+ * EVERY WIDTH THE PAGE WAS DRAWN AT, read off the drawing rather than off a number.
+ *
+ * THE FRAME IS THE WITNESS. The box the console opens with is drawn corner to corner and
+ * the input area's rules run the whole way across (`src/repl/panel.ts`, `src/repl/area.ts`),
+ * so the distance from one end of an edge to the other IS the width the process read off
+ * its device. Nothing here knows what that number ought to be; it answers what is there.
+ *
+ * THE ROWS ARE JOINED because a row wider than the screen does not stop at the screen: it
+ * carries on at the first column of the next one, which is what a terminal does and what
+ * {@link screenOf} models. Joined, an edge is contiguous whether it fitted or not, so the
+ * measurement works in BOTH directions — a frame narrower than the replay ends in blanks,
+ * and one wider than it ends on the row below.
+ *
+ * WHAT COUNTS AS AN EDGE is a maximal run of {@link RUN}, and what it is worth depends on
+ * what bounds it:
+ *
+ *   - CORNER TO CORNER — the box's bottom edge. Its width is the run and the two corners.
+ *   - NEITHER END A CORNER — one of the input area's rules, which has none. Its width is
+ *     the run itself.
+ *   - ONE END ONLY — the box's TOP edge, which the title cuts in two. Neither half is a
+ *     width and neither is counted: a page that offered them would be offering two numbers
+ *     that are each smaller than the terminal, and a wrong witness is worse than none.
+ */
+export function everyWidthDrawnOn(rows: readonly string[]): readonly number[] {
+  const page = rows.join('');
+  const widths: number[] = [];
+  for (let at = 0; at < page.length; ) {
+    if (page[at] !== RUN) {
+      at += 1;
+      continue;
+    }
+    let end = at;
+    while (end < page.length && page[end] === RUN) end += 1;
+    const opens = isOneOf(page[at - 1], OPENS_AN_EDGE);
+    const closes = isOneOf(page[end], CLOSES_AN_EDGE);
+    if (opens && closes) widths.push(end - at + 2);
+    else if (!opens && !closes) widths.push(end - at);
+    at = end;
+  }
+  return widths;
+}
+
+/**
+ * ACCUSES A SCREEN REPLAYED AT A WIDTH NOTHING ON IT WAS DRAWN AT.
+ *
+ * ONE WITNESS IS ENOUGH, and that is deliberate rather than lax. A page can honestly hold
+ * two widths at once: a session opened at a hundred and twenty columns and narrowed to
+ * seventy leaves the old drawing above, folded, and those rows are a true record of a
+ * terminal that really was that wide (`tests/the-input-has-its-own-place.test.ts` says so
+ * where it reads the rules by position rather than by counting them). What may not happen
+ * is NOTHING on the page having been drawn at the width it is being read at — that is a
+ * replay and a process that never agreed about the device, and every row under the first
+ * fold is out by the difference.
+ *
+ * A page with no frame on it is not accused and cannot be: a screen the box has scrolled
+ * off says nothing about a width, and an instrument that guessed would be inventing one.
+ */
+function theWidthIsTheOneItWasDrawnAt(rows: readonly string[], columns: number): void {
+  const drawn = everyWidthDrawnOn(rows);
+  if (drawn.length === 0 || drawn.includes(columns)) return;
+  const measured = [...new Set(drawn)].sort((one, other) => one - other).join(', ');
+  throw new Error(
+    `this screen was replayed ${columns} columns wide and nothing on it was drawn that wide: ` +
+      `the frame's own edges measure ${measured}. The box and the rules are drawn corner to ` +
+      `corner, so the width of an edge IS the width the process read off its device. Whether ` +
+      `that device was the size the case asked for is answered where the session is driven — ` +
+      `\`support/pty.ts\` accuses it there — so if nothing was said there, the console drew at ` +
+      `a width the terminal never reported; and if this screen is simply being read at a size ` +
+      `the run was never driven at, the case is asking the wrong question. Either way an ` +
+      `assertion about a row further down is out by whatever the difference folds, and that ` +
+      `off-by-one is the SYMPTOM rather than the finding.`,
+  );
+}
+
+/**
+ * THE SEQUENCES THIS MODEL DELIBERATELY DOES NOTHING ABOUT, and the reason it is safe to do
+ * nothing about them.
+ *
+ *   - `m` — SGR, which is colour and weight. It changes how a glyph LOOKS and never where
+ *     one goes, and this model answers what is on the page rather than what colour it is.
+ *
+ * A private sequence (`ESC[?…`) never reaches this: it is a mode being switched, and a mode
+ * changes nothing on the page either.
+ *
+ * MEASURED RATHER THAN GUESSED AT: a session that opens at a hundred by thirty, lists the
+ * words a slash offers and leaves writes eight distinct finals — `H`, `h`, `l`, `m`, `A`,
+ * `B`, `G` and `K` — and every one but `m` is acted on below. So this list is one letter
+ * long because there is one letter to put in it, not because the rest were never looked for.
+ */
+const CHANGES_ONLY_HOW_IT_LOOKS = 'm';
 
 /** A screen, as a reader would see it. */
 export interface Screen {
@@ -71,6 +199,11 @@ export function screenOf(bytes: string, columns: number, rows: number): Screen {
     printable(byte, grid, columns, rows);
   }
   const lines = grid.cells.map((cells) => cells.join(''));
+  // THE ONE PLACE THE SIZE IS CHECKED, and it is here rather than at the three dozen call
+  // sites for the reason the A3 amarra is about: a rule read in two places is a rule that
+  // comes apart, and a case added tomorrow would be a site that forgot. Everything that
+  // reads a screen of this surface reads it from here.
+  theWidthIsTheOneItWasDrawnAt(lines, columns);
   return {
     rows: lines,
     text: lines.map((line) => line.replace(/ +$/, '')).join('\n'),
@@ -116,12 +249,29 @@ function down(grid: Grid, rows: number): void {
  * Acts on the escape sequence starting at `at`, and answers with the index of its last
  * byte.
  *
- * Only the CSI family is understood, which is the only one this product's layout writes;
- * anything else is stepped over. A private sequence (`ESC[?…`) is a mode being switched
- * and changes nothing on the page.
+ * Only the CSI family is understood, which is the only family this product's layout writes.
+ * A private sequence (`ESC[?…`) is a mode being switched and changes nothing on the page.
+ *
+ * ⚠️ ANYTHING ELSE USED TO BE STEPPED OVER, and the header of this file says what falsified
+ * that: a sequence outside CSI is not a sequence that does nothing. `ESC M` scrolls the page
+ * backwards, `ESC 7` and `ESC 8` put the cursor somewhere and fetch it back, and `ESC ]`
+ * opens a string that runs until its own terminator — stepped over one byte at a time, the
+ * TITLE inside it is printed onto the page as text nobody wrote. So it is accused, which is
+ * the only answer that cannot be wrong: this model does not have to grow a case for a
+ * sequence the product does not write, it has to stop pretending it read one.
  */
 function sequence(bytes: string, at: number, grid: Grid, columns: number, rows: number): number {
-  if (bytes[at + 1] !== '[') return at + 1;
+  if (bytes[at + 1] !== '[') {
+    // A lone escape at the very end of the bytes is a slice taken mid-sequence and not a
+    // sequence: there is nothing after it to have been misread.
+    if (at + 1 >= bytes.length) return bytes.length;
+    throw new Error(
+      `this screen was replayed from bytes holding an escape outside the CSI family — ` +
+        `ESC ${JSON.stringify(bytes.slice(at + 1, at + 8))} — which this model does not ` +
+        `understand and therefore did not perform. What is above is a page the terminal ` +
+        `never showed, so anything read off it is about the model rather than the product.`,
+    );
+  }
   let end = at + 2;
   while (end < bytes.length && /[0-9;?]/.test(bytes[end] as string)) end += 1;
   const final = bytes[end];
@@ -158,6 +308,20 @@ function sequence(bytes: string, at: number, grid: Grid, columns: number, rows: 
       eraseRow(numbers[0] ?? 0, grid, columns);
       break;
     default:
+      // NOT A DEFAULT THAT DOES NOTHING. Every final above moves something or erases
+      // something, and so do the ones that are not here — `S` and `T` scroll, `L` and `M`
+      // open and close rows, `r` sets the region a scroll happens in. A model that shrugged
+      // at them would answer with a page that is right everywhere except by a row, which is
+      // the one kind of wrong nothing on the screen shows.
+      if (!CHANGES_ONLY_HOW_IT_LOOKS.includes(final)) {
+        throw new Error(
+          `this screen was replayed from bytes holding ESC[${body}${final}, which this model ` +
+            `does not act on. It is not one of the sequences that only change how a glyph ` +
+            `LOOKS (${CHANGES_ONLY_HOW_IT_LOOKS}), so the page above is one the terminal ` +
+            `never showed and anything read off it is about the model rather than the ` +
+            `product. Give it a case here, or say here why it moves nothing.`,
+        );
+      }
       break;
   }
   return end;

@@ -38,7 +38,7 @@ import { tips } from '../src/repl/session.js';
 import { CLEAR, LEAVE } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC } from './support/console.js';
-import { aFrameAfter } from './support/pty.js';
+import { aFrameAfter, sizedTo, theDeviceWasTheSizeAskedFor } from './support/pty.js';
 import { screenOf } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
@@ -218,7 +218,7 @@ async function inPty(options: {
     runner,
     [
       `cd ${project}`,
-      `stty rows ${options.rows} cols ${options.columns}`,
+      ...sizedTo(options.rows, options.columns, here),
       ...(options.theirs === undefined
         ? []
         : ['i=0', `while [ $i -lt ${options.theirs} ]; do echo "${THEIRS}-$i"; i=$((i+1)); done`]),
@@ -248,6 +248,10 @@ async function inPty(options: {
 
   const at: number[] = [];
   try {
+    // The size the case asked for is the premise every count below rests on, so the device
+    // is asked whether it became it — the shared instrument's rule, read from where it is
+    // written (`support/pty.ts`) rather than restated here.
+    await theDeviceWasTheSizeAskedFor(here, options.rows, options.columns);
     for (const step of options.steps) {
       if (step.types !== undefined) child.stdin.write(step.types);
       await until(() => step.until(bytes) || over, step.what);

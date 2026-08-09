@@ -39,7 +39,7 @@
  * mark, so no number in this file can drift away from what is on the screen.
  */
 
-import { execFileSync, spawn } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -53,7 +53,7 @@ import { LEAVE } from '../src/session-words.js';
 import { VERSION } from '../src/version.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC, fakeTerminal, hooksNothing, until, withoutLayout } from './support/console.js';
-import { aFrameAfter } from './support/pty.js';
+import { aFrameAfter, resizedTo, sizedTo, theDeviceWasTheSizeAskedFor } from './support/pty.js';
 import { screenOf } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
@@ -215,7 +215,7 @@ async function inPty(options: {
     runner,
     [
       `cd ${project}`,
-      `stty rows ${options.rows} cols ${options.columns}`,
+      ...sizedTo(options.rows, options.columns, here),
       `echo "${named}$(tty)"`,
       `node ${CLI} ${REPL_VERB}`,
       '',
@@ -246,16 +246,13 @@ async function inPty(options: {
     await waitFor(() => bytes.includes(named) || over, 'said which terminal it had');
     const device = /TTY=(\S+)/.exec(bytes)?.[1];
     expect(device, 'the runner never named the terminal').toBeDefined();
+    // The size the case asked for is the premise every count below rests on, so the device
+    // is asked whether it became it — the shared instrument's rule, read from where it is
+    // written (`support/pty.ts`) rather than restated here.
+    await theDeviceWasTheSizeAskedFor(here, options.rows, options.columns);
     for (const step of options.steps) {
       if (step.resize !== undefined) {
-        execFileSync('stty', [
-          '-F',
-          device as string,
-          'rows',
-          String(step.resize.rows),
-          'cols',
-          String(step.resize.columns),
-        ]);
+        resizedTo(device as string, step.resize.rows, step.resize.columns);
       }
       if (step.types !== undefined) child.stdin.write(step.types);
       await waitFor(() => step.until(bytes) || over, step.what);

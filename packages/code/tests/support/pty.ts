@@ -24,9 +24,120 @@
  */
 
 import { execFileSync, spawn } from 'node:child_process';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect } from 'vitest';
+
+/**
+ * Where a runner leaves the DEVICE'S OWN answer about how big it is.
+ *
+ * A file rather than a line printed into the terminal, and that is the whole reason it is
+ * one: what a runner echoes is on the caller's page, and one of the cases driven from here
+ * is about exactly what is on the caller's page before a session opens
+ * (`tests/a-page-that-opens-clean.test.ts`). An instrument that changed the fixture to
+ * measure it would be measuring something else.
+ */
+const WHAT_THE_DEVICE_SAID = 'size';
+
+/**
+ * THE LINES A RUNNER BEGINS WITH: the size the case asked for, and what the device became.
+ *
+ * ⚠️ THE SIZE WAS ASKED FOR AND NEVER CHECKED, in four separate runners, and a case has no
+ * other way of knowing. Everything downstream is arithmetic ABOUT the size — which drawing
+ * of the name fits, whether the input area keeps its rules, how many rows the page spends —
+ * so a device that is not the size the case asked for makes every one of those numbers
+ * wrong, and each of them fails as an off-by-one that mentions no size at all. Two cases of
+ * this surface have been red intermittently for three deliveries with exactly that shape.
+ *
+ * `stty` is asked rather than trusted: the size is set and then READ BACK, out of the same
+ * device, by the same program, one line later.
+ */
+export function sizedTo(rows: number, columns: number, here: string): readonly string[] {
+  return [`stty rows ${rows} cols ${columns}`, `stty size > ${join(here, WHAT_THE_DEVICE_SAID)}`];
+}
+
+/** What `stty size` answers with: the rows and the columns, in that order. */
+function asSaid(said: string): { readonly rows: number; readonly columns: number } {
+  const [rows, columns] = said.trim().split(/\s+/).map(Number);
+  return { rows: rows as number, columns: columns as number };
+}
+
+/**
+ * ACCUSES A DEVICE THAT WAS NOT THE SIZE THE CASE ASKED FOR.
+ *
+ * It is the half of the seam a screen cannot see. A replay is handed the size the case
+ * asked for (`support/screen.ts`), and the page it replays was written by a process that
+ * read a size off a device — so the two questions are *did the device become what was
+ * asked?* and *was the page drawn at that?*, and they have to be asked separately or a red
+ * cannot say which of them went wrong.
+ *
+ * IT IS THE ONLY WAY THE HEIGHT IS OBSERVABLE AT ALL. A width is on the page, drawn corner
+ * to corner; a height is not drawn anywhere, and the only thing that can be asked about it
+ * is the device itself.
+ */
+export async function theDeviceWasTheSizeAskedFor(
+  here: string,
+  rows: number,
+  columns: number,
+): Promise<void> {
+  // IT IS WAITED FOR RATHER THAN READ, and the wait belongs here rather than at each driver:
+  // the runner writes the file before the session starts, so a caller that read it the
+  // instant it spawned would be racing the shell — and four drivers racing it four ways is
+  // the shape of divergence this whole delivery is about.
+  const at = join(here, WHAT_THE_DEVICE_SAID);
+  for (let tried = 0; tried < 400 && !existsSync(at); tried += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  if (!existsSync(at)) {
+    throw new Error(
+      `the runner never said how big its terminal was: it was asked for ${columns}x${rows} and ` +
+        `left nothing behind, so the session either never started or never got as far as ` +
+        `sizing the device. Nothing read off this run is about a terminal of a known size.`,
+    );
+  }
+  theSizeIsTheOneAskedFor(
+    asSaid(readFileSync(at, 'utf-8')),
+    rows,
+    columns,
+    'the terminal the session opened on',
+  );
+}
+
+/**
+ * Resizes a device the way a caller drags the corner of their window, and READS BACK what
+ * it became.
+ *
+ * The read-back is out of the same device one call later, while the session is certainly
+ * still on it — the resize itself would have failed otherwise — so it says what the running
+ * process is about to be told, rather than what it was asked to be told.
+ */
+export function resizedTo(device: string, rows: number, columns: number): void {
+  execFileSync('stty', ['-F', device, 'rows', String(rows), 'cols', String(columns)]);
+  const said = execFileSync('stty', ['-F', device, 'size'], { encoding: 'utf-8' });
+  theSizeIsTheOneAskedFor(
+    asSaid(said),
+    rows,
+    columns,
+    `the terminal resized to ${columns}x${rows}`,
+  );
+}
+
+/** The comparison itself, and the sentence it produces. One reading, two callers. */
+function theSizeIsTheOneAskedFor(
+  was: { readonly rows: number; readonly columns: number },
+  rows: number,
+  columns: number,
+  what: string,
+): void {
+  if (was.rows === rows && was.columns === columns) return;
+  throw new Error(
+    `${what} is ${was.columns}x${was.rows}, and this case asked for ${columns}x${rows}. ` +
+      `Everything the session drew was chosen by the size it read off that device, so a page ` +
+      `replayed at the size the case asked for is a page measured against a terminal that ` +
+      `never existed. The rows and the columns a case then counts are out by whatever the ` +
+      `difference re-arranges, and that count is the SYMPTOM rather than the finding.`,
+  );
+}
 
 /**
  * WHAT THE LAYOUT WRITES WHEN A FRAME IS FINISHED: the end of the synchronized update it
@@ -175,7 +286,7 @@ export async function inPty(
     runner,
     [
       `cd ${fixture.project}`,
-      `stty rows ${options.rows} cols ${options.columns}`,
+      ...sizedTo(options.rows, options.columns, here),
       `echo "${named}$(tty)"`,
       `node ${fixture.cli} ${fixture.verb}`,
       '',
@@ -206,16 +317,12 @@ export async function inPty(
     await waitFor(() => bytes.includes(named) || over, 'said which terminal it had');
     const device = /TTY=(\S+)/.exec(bytes)?.[1];
     expect(device, 'the runner never named the terminal').toBeDefined();
+    // BEFORE ANY STEP, because everything after this is read against a size — and a size
+    // nobody checked is the premise every count below rests on.
+    await theDeviceWasTheSizeAskedFor(here, options.rows, options.columns);
     for (const step of options.steps) {
       if (step.resize !== undefined) {
-        execFileSync('stty', [
-          '-F',
-          device as string,
-          'rows',
-          String(step.resize.rows),
-          'cols',
-          String(step.resize.columns),
-        ]);
+        resizedTo(device as string, step.resize.rows, step.resize.columns);
       }
       if (step.types !== undefined) child.stdin.write(step.types);
       // WHERE THE STEP ENDS is the point its own question approved, and it is asked for as
