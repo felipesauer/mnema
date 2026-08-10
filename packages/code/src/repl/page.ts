@@ -77,6 +77,13 @@
  * does not move and nothing scrolls at all. The leftover was always the room the area could take;
  * it was in the wrong half of the page.
  *
+ * AND WHAT SCROLLED AWAY IS REMEMBERED, WHICH IS THE ONE THING A REDRAWN LEFTOVER STILL NEEDS. A
+ * page whose flow and frame together outgrow the screen loses rows off the top, and nothing brings
+ * them back — so the flow this subtracts is the flow ON THE SCREEN and not the flow the session
+ * has said ({@link ThePage.flow}). Measured, before it was: at a hundred by thirty a list opened
+ * and shut left the input fourteen rows above the foot, on a page that had scrolled thirteen rows
+ * away and been placed as though it had not.
+ *
  * AND THE BOUNDARY IS KEPT BY THE ROW IT WAS ALWAYS KEPT BY, which is why this costs the erase
  * nothing. The region is the leftover and the area, and the leftover is what is left over after
  * {@link BELOW_THE_VIEWPORT} — so `gap + area` is at most `rows − flow − 1`, one row short of the
@@ -139,14 +146,23 @@ export interface ThePage {
    */
   readonly rows: number;
   /**
-   * HOW MANY ROWS OF THE FLOW ARE ON THE SCREEN — everything written since the page was
-   * carried away, in rows rather than in lines.
+   * HOW MANY ROWS OF THE FLOW ARE ON THE SCREEN — and the words mean exactly what they say: the
+   * rows a reader can SEE, in rows rather than in lines.
+   *
+   * ⚠️ IT USED TO BE EVERYTHING WRITTEN SINCE THE PAGE WAS CARRIED AWAY, which is a different
+   * number the moment anything scrolls — and the leftover moving into the frame is what made the
+   * difference matter. A page whose flow and frame together outgrow the screen loses rows off the
+   * TOP, for good; a leftover subtracted from the flow the console HOLDS would then place the
+   * frame that many rows short of the foot. Measured, at a hundred by thirty and at eighty by
+   * twenty-four: a list of words opened and shut left the input fourteen and seventeen rows above
+   * the foot. So what the caller hands over is what the screen still has (`console.ts`,
+   * `flowOnScreen`), and this file does the same subtraction over it.
    *
    * ⚠️ IT WAS TWO FIELDS, `opening` AND `said`, and they were the same question asked in
    * halves: the flow is what the page opens with plus what has been said under it, and a
    * caller who had to add them up before asking was a caller who could get the addition
-   * wrong. It is one number now, and it is COUNTED — the opening's own rows and the lines the
-   * session has said under it, both of them held by the console that asks (`console.ts`).
+   * wrong. It is one number now, and it is FOLLOWED rather than added up — it grows by what
+   * lands and is capped by what the frame left room for, both of them in the console that asks.
    *
    * ⚠️ AND IT WAS KNOWN A SECOND WAY, which went with the premise above: a frame whose area had
    * given rows back worked the flow out BACKWARDS, from where the area was anchored, because

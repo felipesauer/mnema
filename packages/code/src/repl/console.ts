@@ -112,7 +112,7 @@
 import { render } from 'ink';
 import { createElement } from 'react';
 import type { Render } from '../presentation/render.js';
-import { areaFor } from './area.js';
+import { areaFor, BELOW_THE_VIEWPORT } from './area.js';
 import type { Completer } from './complete.js';
 import { type Editing, type Keystroke, keystrokesOf, NOTHING_TYPED, typeKey } from './editing.js';
 import type { AfterLine } from './gate.js';
@@ -371,6 +371,35 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   let past: readonly string[] = [...opened.lines];
   let page = 0;
   let editing: Editing = NOTHING_TYPED;
+
+  /**
+   * HOW MANY ROWS OF THE FLOW ARE ON THE SCREEN — the one number the placement has to remember
+   * from one frame to the next, and the difference between the flow the session HAS and the flow
+   * a reader can see.
+   *
+   * SCROLLING IS THE ONE THING THAT CANNOT BE UNDONE, and it is what makes this a number rather
+   * than a count. The flow is written once, so a page whose flow and frame together outgrow the
+   * screen loses rows off the TOP — and those rows are gone for good, however short the frame
+   * becomes afterwards. A leftover worked out from the flow the console HOLDS would then be
+   * placing the frame against rows that are in the caller's scrollback: measured, before this
+   * was here, at a hundred by thirty and at eighty by twenty-four — a list of words opened and
+   * shut left the input FOURTEEN and SEVENTEEN rows above the foot, on the same delivery that
+   * put it there.
+   *
+   * SO WHAT IS ON THE SCREEN IS FOLLOWED RATHER THAN RECOMPUTED. It GROWS by what lands
+   * ({@link land}), it is CAPPED by what the frame just drawn left room for ({@link moved}), and
+   * it is reset to the whole flow when the page is turned, because a page that is turned is
+   * written again from the top ({@link thePageAgain}).
+   *
+   * ⚠️ AND IT IS NOT THE MECHANISM THAT WAS TAKEN OUT, which asked the same question backwards.
+   * That one worked the flow out from where the area HAD been anchored and repaired the
+   * difference by landing more empty lines in the flow — so the flow grew by its own leftover,
+   * and what the area's growing had already scrolled away never came back. Nothing is repaired
+   * here and nothing is landed: this is read on the way out of a frame, and the frame after it
+   * has one subtraction to do.
+   */
+  let flowOnScreen = opened.rows;
+
   let shown: Shown = showing();
   const watchers = new Set<() => void>();
 
@@ -406,12 +435,15 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
       panel: opened.panel,
       area,
       // WHAT IS LEFT OF THE PAGE, asked on the same frame as the area and out of the same
-      // height, because it is the rest of that subtraction: the flow is the opening's rows and
-      // what has been said under them, both of which this file holds, and the area has just
-      // been chosen. It is drawn with the area rather than landed in the flow, which is what
-      // lets a list of words take its rows out of the emptiness instead of out of the screen
-      // (`page.ts`).
-      gap: theGap({ rows, flow: opened.rows + said.length, area: area.height }),
+      // height, because it is the rest of that subtraction. It is drawn with the area rather
+      // than landed in the flow, which is what lets a list of words take its rows out of the
+      // emptiness instead of out of the screen (`page.ts`).
+      //
+      // THE FLOW IT SUBTRACTS IS THE FLOW ON THE SCREEN and not the flow the session has said:
+      // rows the terminal has already scrolled away are in the caller's scrollback, and a
+      // leftover that counted them would place the frame that many rows short of the foot
+      // ({@link flowOnScreen}).
+      gap: theGap({ rows, flow: flowOnScreen, area: area.height }),
       present: prompt + editing.typed,
       // COMPOSED WITH THE ROOM THE AREA GAVE IT, and cut to it — by the module that puts
       // the rows together, which is the only place a cut may happen. What it could not fit
@@ -438,6 +470,14 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    */
   function moved(): void {
     shown = showing();
+    // AND WHAT THE FRAME LEFT ROOM FOR IS WHAT IS STILL ON THE SCREEN. The frame is drawn at the
+    // foot, so the flow has the rows above it and no more: a frame that did not fit scrolled the
+    // difference away, and a frame with a leftover in it did not move anything at all — which is
+    // the same subtraction read the other way round, and why it is not a second answer.
+    flowOnScreen = Math.min(
+      flowOnScreen,
+      Math.max(0, howTall() - BELOW_THE_VIEWPORT - shown.gap - shown.area.height),
+    );
     for (const watcher of watchers) watcher();
   }
 
@@ -450,6 +490,11 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     saw(line);
     said = [...said, line];
     past = [...past, line];
+    // AND THE SCREEN HAS ONE MORE ROW OF FLOW ON IT, which is where the leftover gives a row up:
+    // a line lands at the END of the flow, above the emptiness, so the page fills downwards into
+    // the room it had rather than pushing anything off the top. What it costs when there is no
+    // room left is capped in {@link moved}, on the way out of the frame this asks for.
+    flowOnScreen += 1;
     moved();
   }
 
@@ -501,6 +546,10 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     carry(carriedIntoTheScrollback(rows));
     placedAt = rows;
     past = [...opened.lines, ...said];
+    // AND THE WHOLE FLOW IS ON THE SCREEN AGAIN, because a page that is turned is written from
+    // the top: what the terminal had scrolled away is being drawn a second time, so what was
+    // remembered about it is not this page's ({@link flowOnScreen}).
+    flowOnScreen = opened.rows + said.length;
     page += 1;
     moved();
   }

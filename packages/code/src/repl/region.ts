@@ -614,6 +614,11 @@ function theRecord(panel: Panel, above: number): ReactNode {
  *
  * NONE AT ALL IS NO BOX, and not a box of no rows: a page whose flow already fills the screen
  * is the case this surface had before there was a leftover, and it draws what it drew then.
+ *
+ * HOW MANY IS NOT A FUNCTION OF WHAT THE SESSION SAID but of what is still on the screen, and the
+ * difference is a page that scrolled: a list too long for the room a page has to spare still costs
+ * the flow its top rows, and the frame after it has to be placed against what SURVIVED
+ * (`console.ts`, `flowOnScreen`). Nothing of that is decided here — the number arrives.
  */
 function theLeftover(many: number): ReactNode {
   return many > 0 ? node(Box, { key: 'leftover', minHeight: many }) : null;

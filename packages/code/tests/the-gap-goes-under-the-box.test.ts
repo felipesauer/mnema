@@ -37,8 +37,12 @@
  *   - THE BYTES A PAGE IS TURNED WITH, which no longer place it: the leftover cannot be written
  *     there, because the opening is drawn after them and nothing written there can land under it.
  *   - THE ORDER ON THE SCREEN: the box, then the emptiness, then the input.
- *   - THE LIST OPENED AND SHUT TEN TIMES OVER, which is the defect above and the case this file
- *     is for: the box on the first row and the input at the foot in every one of them.
+ *   - THE LIST OPENED AND SHUT TEN TIMES OVER, at three sizes, which is the defect above and the
+ *     case this file is for: the input at the foot in every one of them, and the box on the first
+ *     row wherever the page had room to spare for the list. Where it did not — the list wants
+ *     twenty-one rows and eighty by twenty-four has ONE to spare — the box still goes, because
+ *     what the palette is budgeted against is the room over the prompt rather than the leftover.
+ *     That is a decision this delivery did not touch, and the table asserts it where it is true.
  *   - ⛔ AND THE ERASE, still absent, bracketed at the height where the library writes it — with
  *     the list open, which is the region at its tallest.
  */
@@ -330,6 +334,11 @@ function boxEndsOn(screen: Screen): number {
   return screen.rows.findIndex((row) => row.includes(BOTTOM_LEFT));
 }
 
+/** Which row the box BEGINS on — its top edge — and −1 when that row has scrolled away. */
+function boxBeginsOn(screen: Screen): number {
+  return screen.rows.findIndex((row) => row.includes(TOP_LEFT));
+}
+
 /** How many rows above the row being typed have nothing at all on them. */
 function emptyRowsAbove(screen: Screen): number {
   return screen.rows.slice(0, promptRow(screen, PROMPT)).filter((row) => row.trim().length === 0)
@@ -499,69 +508,102 @@ describe('the list of words takes its room out of the emptiness', () => {
     );
   }, 240_000);
 
-  it('⚠️ keeps the box on the first row through ten openings and shuttings', async () => {
-    // ⛔ THE DEFECT, AND IT IS THE WHOLE REASON THIS DELIVERY EXISTS. This case used to assert
-    // the opposite and called it the price of the fix: *a list twenty rows tall pushes twenty
-    // rows of the page into the scrollback when it opens, and the rows that come back when it
-    // shuts are EMPTY ones, because the flow is written once and what went up cannot be pulled
-    // down — so a caller who opens and shuts the list twice has spent the box*. It was true, and
-    // it was measured on the binary: the box was gone after the FIRST cycle and never came back.
-    //
-    // WHAT WAS WRONG WITH THE TRADE is that the alternative it was weighed against was reemitting
-    // the whole page on every keystroke (linear in what the session has said, about 33 ms over 200
-    // lines, and it flickers). There is a third way and it costs nothing: the rows the list needs
-    // are taken out of the EMPTINESS, which is redrawn with it, so the region's height never
-    // changes and the terminal never scrolls. No page is reemitted and nothing is carried away.
-    //
-    // TEN CYCLES, because one is the defect and a fix that drifts by a row per cycle would pass a
-    // case that asked for two. Every screen is asked, so the answer is a table rather than an end
-    // state.
-    const columns = 120;
-    const rows = 40;
-    const cycles = 10;
-    const steps: Step[] = [opens];
-    for (let round = 0; round < cycles; round += 1) steps.push(opensTheList, shutsTheList);
-    steps.push(leaves);
-    const ran = await inPty({ columns, rows, steps });
-    // EVERY ONE OF THEM, and the last step (the word that leaves) is left out of the walk: it
-    // lands a line, which is the case above.
-    for (const [step, at] of ran.at.slice(0, -1).entries()) {
-      const screen = screenOf(ran.bytes.slice(0, at), columns, rows);
-      const what = step === 0 ? 'the page that opened' : `cycle ${Math.ceil(step / 2)}`;
-      const open = step > 0 && step % 2 === 1;
-      // THE LIST REALLY IS OPEN ON THE ODD STEPS AND SHUT ON THE EVEN ONES, or the walk below is
-      // one screen read twenty-one times. This is what makes the geometry a measurement.
-      expect(screen.text, `${what}: the list was ${open ? 'not open' : 'open'}`).toSatisfy(
-        (text: string) => text.includes(ONLY_THE_LIST_SAYS) === open,
+  // THREE SIZES, AND THE THIRD COLUMN IS THE RESIDUAL. The list of words wants twenty-one rows
+  // (twenty words and the blank row over them), and what pays for them is the room the page has to
+  // spare: twenty-one at a hundred and twenty by forty, SEVEN at a hundred by thirty, ONE at eighty
+  // by twenty-four. Where the room is not enough the difference still comes off the screen and the
+  // box still goes — the palette is budgeted against the room over the PROMPT rather than against
+  // the leftover (`repl/area.ts`), which is a decision this delivery did not touch.
+  //
+  // WHAT HOLDS AT EVERY SIZE IS THE ANCHOR, and that is the half that is not a residual: the input
+  // comes back to the foot however much of the flow the list cost. The case is a table so the two
+  // halves cannot be confused for one another — and so that a delivery which cuts the list to the
+  // leftover instead turns the third column red and has to say so.
+  for (const [columns, rows, theBoxStays] of [
+    [120, 40, true],
+    [100, 30, false],
+    [80, 24, false],
+  ] as const) {
+    it(`⚠️ comes back to the foot through ten openings at ${columns}x${rows}`, async () => {
+      // ⛔ THE DEFECT, AND IT IS THE WHOLE REASON THIS DELIVERY EXISTS. This case used to assert
+      // the opposite and called it the price of the fix: *a list twenty rows tall pushes twenty
+      // rows of the page into the scrollback when it opens, and the rows that come back when it
+      // shuts are EMPTY ones, because the flow is written once and what went up cannot be pulled
+      // down — so a caller who opens and shuts the list twice has spent the box*. It was true, and
+      // it was measured on the binary: at every size the box was gone after the FIRST cycle and
+      // never came back.
+      //
+      // WHAT WAS WRONG WITH THE TRADE is that the alternative it was weighed against was reemitting
+      // the whole page on every keystroke (linear in what the session has said, about 33 ms over 200
+      // lines, and it flickers). There is a third way and where there is room it costs nothing: the
+      // rows the list needs come out of the EMPTINESS, which is redrawn with it, so the region's
+      // height never changes and the terminal never scrolls.
+      //
+      // TEN CYCLES, because one is the defect and a fix that drifts by a row per cycle would pass a
+      // case that asked for two. Every screen is asked, so the answer is a table rather than an end
+      // state.
+      const cycles = 10;
+      const steps: Step[] = [opens];
+      for (let round = 0; round < cycles; round += 1) steps.push(opensTheList, shutsTheList);
+      steps.push(leaves);
+      const ran = await inPty({ columns, rows, steps });
+      // EVERY ONE OF THEM, and the last step (the word that leaves) is left out of the walk: it
+      // lands a line, which is the case above.
+      for (const [step, at] of ran.at.slice(0, -1).entries()) {
+        const screen = screenOf(ran.bytes.slice(0, at), columns, rows);
+        const what = step === 0 ? 'the page that opened' : `cycle ${Math.ceil(step / 2)}`;
+        const open = step > 0 && step % 2 === 1;
+        // THE LIST REALLY IS OPEN ON THE ODD STEPS AND SHUT ON THE EVEN ONES, or the walk below is
+        // one screen read twenty-one times. This is what makes the geometry a measurement.
+        expect(screen.text, `${what}: the list was ${open ? 'not open' : 'open'}`).toSatisfy(
+          (text: string) => text.includes(ONLY_THE_LIST_SAYS) === open,
+        );
+        // ⛔ THE ANCHOR, AT EVERY SIZE AND IN BOTH STATES. This is what the first fix of this
+        // frontier bought and what this one may not cost: measured before the flow on the SCREEN
+        // was followed, a list opened and shut left the input FOURTEEN rows above the foot at a
+        // hundred by thirty and SEVENTEEN at eighty by twenty-four — because the leftover was
+        // worked out from a flow whose top the terminal had already scrolled away.
+        endsAtTheFoot(screen, rows, `${columns}x${rows} ${what}`);
+        // AND THE SCREEN IS AS TALL AS IT WAS.
+        expect(screen.rows.length, `${what}: the screen changed size`).toBe(rows);
+        // AND THE EMPTINESS IS ONE RUN AND IT IS WHERE IT WAS: everything above the input with
+        // nothing on it is the run that touches the area. With the list open the palette's own
+        // blank row is part of that run, which is the area's (`repl/area.ts`).
+        expect(emptyRowsAbove(screen), `${what}: the emptiness is in two places`).toBe(
+          theGapOn(screen, PROMPT),
+        );
+        if (!theBoxStays) continue;
+        // THE BOX IS ON THE FIRST ROW — the defect, and the promise. Not merely present: the top
+        // edge is the row that goes first when a page is pushed up, so the row it is on is the
+        // measurement.
+        expect(screen.rows[0], `${what}: the box is not on the first row`).toContain(TOP_LEFT);
+        expect(firstDrawnRow(screen), `${what}: something is above the box`).toBe(0);
+      }
+      // AND THE ROOM REALLY DID MOVE, which is what says the cycles were not a screen that never
+      // changed: with the list open there are a handful of rows over the input, with it shut there
+      // are more.
+      const shut = screenOf(ran.bytes.slice(0, ran.at[cycles * 2] as number), columns, rows);
+      const listed = screenOf(ran.bytes.slice(0, ran.at[cycles * 2 - 1] as number), columns, rows);
+      expect(theGapOn(listed, PROMPT), 'the list took no room at all').toBeLessThan(
+        theGapOn(shut, PROMPT),
       );
-      // THE BOX IS ON THE FIRST ROW — the defect, and the promise. Not merely present: the top
-      // edge is the row that goes first when a page is pushed up, so the row it is on is the
-      // measurement.
-      expect(screen.rows[0], `${what}: the box is not on the first row`).toContain(TOP_LEFT);
-      expect(firstDrawnRow(screen), `${what}: something is above the box`).toBe(0);
-      // AND THE INPUT IS AT THE FOOT, with the list open and with it shut.
-      endsAtTheFoot(screen, rows, what);
-      // AND THE EMPTINESS IS ONE RUN AND IT IS WHERE IT WAS: everything above the input with
-      // nothing on it is the run that touches the area. With the list open the palette's own
-      // blank row is part of that run, which is the area's (`repl/area.ts`).
-      expect(emptyRowsAbove(screen), `${what}: the emptiness is in two places`).toBe(
-        theGapOn(screen, PROMPT),
+      // AND THE RESIDUAL IS ASSERTED WHERE IT IS TRUE: a page with less room to spare than the list
+      // wants loses the box on the first opening, and does not get it back — scrolling is not
+      // undone by anything. Named rather than hidden, and red the day the list is cut to the room.
+      expect(
+        boxBeginsOn(screenOf(ran.bytes.slice(0, ran.at[0] as number), columns, rows)),
+        'the page opened without a box',
+      ).toBe(0);
+      // THE TOP EDGE AND NOT THE BOTTOM ONE, which is what "the box went" means: a page pushed up
+      // by a list keeps the box's LAST rows on the screen — measured at a hundred by thirty, the
+      // bottom-left corner is on row 2 while the top of the drawing is in the scrollback. A case
+      // that asked whether the box was gone ALTOGETHER would be asserting something else and would
+      // pass on a frame with half a frame on it.
+      expect(boxBeginsOn(shut), `the box ${theBoxStays ? 'did not survive' : 'survived'}`).toBe(
+        theBoxStays ? 0 : -1,
       );
-      // AND THE SCREEN IS AS TALL AS IT WAS.
-      expect(screen.rows.length, `${what}: the screen changed size`).toBe(rows);
-    }
-    // AND THE ROOM REALLY DID MOVE, which is what says the cycles were not a screen that never
-    // changed: with the list open there are a handful of rows over the input, with it shut there
-    // are twenty-one, and the box is on the first row of both.
-    const shut = screenOf(ran.bytes.slice(0, ran.at[cycles * 2] as number), columns, rows);
-    const listed = screenOf(ran.bytes.slice(0, ran.at[cycles * 2 - 1] as number), columns, rows);
-    expect(theGapOn(listed, PROMPT), 'the list took no room at all').toBeLessThan(
-      theGapOn(shut, PROMPT),
-    );
-    expect(theGapOn(shut, PROMPT), 'the page had nothing to spare to begin with').toBeGreaterThan(
-      1,
-    );
-  }, 240_000);
+    }, 240_000);
+  }
 });
 
 // ---------------------------------------------------------------------------
