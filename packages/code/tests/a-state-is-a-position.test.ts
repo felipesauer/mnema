@@ -126,7 +126,9 @@ const REACHED_BY: Readonly<Record<TaskState, readonly (readonly string[])[]>> = 
  * that undoes it costs a reason, which is the same shape as a task's `DONE` and takes the
  * same green. THE GREEN IS THE POINT OF THIS TABLE and not a detail of it: `supersede`
  * stays legal from `accepted` forever, so a rule built on "has a legal move" would paint
- * every settled call as a pendency that never clears. The two terminal states carry
+ * every settled call as a pendency that never clears — the same rule that kept every
+ * completed TASK on the opening read's work list until that list asked the
+ * classification instead. The two terminal states carry
  * nothing: the word says what happened and there is nothing to do about it.
  */
 const DECISION_HUE_OF: Readonly<Record<DecisionState, string | undefined>> = {

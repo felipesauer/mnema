@@ -109,7 +109,9 @@ import { type Disposition, statesMeaning } from './disposition.js';
  *     the state travels with the item: "needs a review" and "needs a decision"
  *     ask for different moves and would otherwise be the same line.
  *   - `adopted` — it is a live pattern. `deprecate` is still legal from it, which
- *     is why "has a legal move" is the wrong criterion for the waiting list.
+ *     is why "has a legal move" is the wrong criterion for either of the opening
+ *     read's lists — including the work list, which is where that rule came from
+ *     and where it was equally wrong (`tasks.ts`).
  *   - `rejected`, `deprecated` — terminal, no row leaves either.
  *
  * Exported so the claims above are CHECKABLE against the table they are read from,

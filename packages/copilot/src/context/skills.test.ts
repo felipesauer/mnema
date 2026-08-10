@@ -455,8 +455,10 @@ describe('skillsAwaitingJudgement — the patterns somebody still owes a ruling 
   it('an ADOPTED pattern is not awaiting anything, though `deprecate` is legal from it forever', () => {
     // THE TEST THAT PROVES THE CRITERION DID NOT HITCH A RIDE, on this machine.
     // `SKILL_TRANSITIONS` carries `{from: 'adopted', action: 'deprecate'}` with
-    // nothing to ever make it happen, so the work list's rule ("has a legal move")
-    // would keep every adopted pattern on a pendency list for good.
+    // nothing to ever make it happen, so a rule reading "has a legal move" would keep
+    // every adopted pattern on a pendency list for good. That rule used to be the work
+    // list's, and it was wrong there too — see `tasks.ts`; both lists ask the
+    // disposition now, so there is no ride left to hitch.
     const b = bench();
     adopt(b, 'sk-live', 'A live pattern');
     const cache = b.cache();

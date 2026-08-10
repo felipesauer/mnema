@@ -79,10 +79,11 @@
  *
  * AND ON THE MIXED LIST, THE `kind` SAYS WHAT THE SECOND READ WILL HAND BACK. An
  * index is only an index if its reader knows where the rest is, and one list holding
- * two sorts of item has to say which is which per line or the reader has to guess:
- * `decision` → the argument and the alternatives, `skill` → the pattern itself. The
+ * three sorts of item has to say which is which per line or the reader has to guess:
+ * `decision` → the argument and the alternatives, `skill` → the pattern itself,
+ * `task` → the verdicts its position allows and the proof each demands. The
  * discriminant that makes the union readable in TypeScript and the label that makes
- * it actionable for an agent are the same field, which is why there is no second one.
+ * it usable by an agent are the same field, which is why there is no second one.
  *
  * EVERY ITEM ON THIS LIST HAS A SECOND READ THAT ANSWERS IT: a decision's is
  * {@link readRecord} (the `read_record` tool), a pattern's is
@@ -196,7 +197,7 @@
  * AN HONEST LIMIT. The work list is workspace-wide, not the actor's own: a task
  * projection carries no `who`, so the tasks cannot be attributed to the actor
  * the way the runs can (see {@link focus}). bootstrap surfaces the actor's focus
- * (their runs) AND the workspace's actionable work — the two honest halves the
+ * (their runs) AND the workspace's live work — the two honest halves the
  * read model supports today. When a future slice ties a task to the actor, the
  * work list can narrow to the actor with no change to this shape.
  *
@@ -269,7 +270,7 @@ export type AwaitingJudgement =
   | TaskAwaitingJudgement;
 
 /**
- * The opening context: where the actor is, the actionable work, the patterns to
+ * The opening context: where the actor is, the live work, the patterns to
  * work by, and the decisions that govern.
  */
 export interface Bootstrap {

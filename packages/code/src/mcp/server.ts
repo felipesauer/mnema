@@ -911,7 +911,7 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       title: 'Bootstrap the session',
       description:
         "The opening context for this session's actor: where they left off, the " +
-        'actionable work, the patterns to work by, the DECISIONS IN FORCE — what ' +
+        'LIVE work, the patterns to work by, the DECISIONS IN FORCE — what ' +
         'this project has already settled and has not replaced — and what is ' +
         'AWAITING A JUDGEMENT. Derived from the ' +
         'chain. Every list is NAMES: a task arrives as id, title and state, a pattern ' +
@@ -924,16 +924,24 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'force is listed: one still proposed, rejected, or superseded by a later ' +
         'decision does not govern and is left out. ' +
         '`awaitingJudgement` is the other side of that: everything somebody has to ' +
-        'RULE ON before it means anything — a decision still `proposed`, a pattern ' +
-        '`proposed` or `reviewed`. It is one list holding both, and each item says ' +
+        'RULE ON before it means anything — a task `IN_REVIEW`, a decision still ' +
+        '`proposed`, a pattern `proposed` or `reviewed`. It is one list holding all ' +
+        'three, and each item says ' +
         'which it is in `kind` and what is owed in `state` (`proposed` needs the ' +
-        'first ruling, `reviewed` needs the adoption call). Each has a read that ' +
+        'first ruling, `reviewed` needs the adoption call, `IN_REVIEW` needs the ' +
+        'approve-or-send-back call). Each has a read that ' +
         'serves the rest of it, by the same id: `read_record` for a `decision`’s ' +
-        'argument, and `skills` with the id for a `skill`’s pattern — which is ' +
+        'argument, `skills` with the id for a `skill`’s pattern — which is ' +
         'served labelled with its state, and NOT as a way of working here, because ' +
-        'nobody can rule on a pattern without reading it. Asking for it records the ' +
-        'consultation like any other. What the lists above never carry is a body, so ' +
+        'nobody can rule on a pattern without reading it, and asking for it records ' +
+        'the consultation like any other — and `next_actions` for a `task`’s ' +
+        'verdicts. What the lists above never carry is a body, so ' +
         'a `skill` here is a name until you ask. ' +
+        'BOTH LISTS ASK WHAT THE STATE MEANS, never whether a move is legal: `reopen` ' +
+        'is always legal from `DONE` and `supersede` from an accepted decision, so ' +
+        'that rule would report everything finished as still to do. A task that is ' +
+        'DONE or CANCELED is therefore on NEITHER list — ask `search` (kind `task`) ' +
+        'for it. ' +
         'It is NOT more work to do: it is what a person has left open, and the ' +
         'useful move is usually to raise it rather than to move it yourself. ' +
         'Three of the four lists are CUT to the freshest ' +

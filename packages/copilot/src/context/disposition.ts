@@ -31,8 +31,8 @@
  * been given a meaning here, which is the one guard that cannot be forgotten —
  * the alternative (an `if` naming the states it cares about) is silent about
  * every state it does not name, and a new state would join no list at all.
- * Asserted in `disposition.test.ts` — "every state of both machines has a
- * disposition" — and proved by mutation in this slice's report.
+ * Asserted in `disposition.test.ts` — "classifies every state of all three
+ * machines, and invents none" — and proved by mutation in this slice's report.
  */
 
 /** What one workflow state means to a reader of the record. */
