@@ -92,6 +92,7 @@ export {
   orderedSegments,
   readTailCheckpoints,
   readTailEntries,
+  readTailTip,
 } from './chain/store.js';
 export { ensureTree } from './chain/tree.js';
 export {

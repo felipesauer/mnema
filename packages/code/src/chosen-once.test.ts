@@ -419,6 +419,7 @@ describe('nothing else decides which renderer', () => {
       'complete.ts',
       'console.ts',
       'editing.ts',
+      'following.ts',
       'gate.ts',
       'leaving.ts',
       'page.ts',

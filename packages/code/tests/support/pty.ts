@@ -215,6 +215,16 @@ export function opensAConsole(prompt: string): Step {
 export interface Step {
   /** What the caller types, if anything. */
   readonly types?: string;
+  /**
+   * WHAT HAPPENS OUTSIDE THE SESSION, before the step is waited out — another process
+   * writing to the record while the console is up.
+   *
+   * It is a step of its own kind rather than a variant of typing, and the difference is
+   * the whole point of the cases that use it: a console that refuses every verb which
+   * writes cannot be made to produce an occurrence from the keyboard, so the only way to
+   * prove it shows one is for somebody ELSE to append.
+   */
+  readonly does?: () => void | Promise<void>;
   /** The size their window becomes first, if it changes. */
   readonly resize?: { readonly columns: number; readonly rows: number };
   /** What is true of everything received once the step has happened. */
@@ -350,6 +360,9 @@ export async function inPty(
       if (step.resize !== undefined) {
         resizedTo(device as string, step.resize.rows, step.resize.columns);
       }
+      // WHAT SOMEBODY ELSE DOES comes before what the caller types, and before the wait,
+      // so a step can be "the record moved" with nothing typed at all.
+      if (step.does !== undefined) await step.does();
       if (step.types !== undefined) child.stdin.write(step.types);
       // WHERE THE STEP ENDS is the point its own question approved, and it is asked for as
       // one thing rather than waited for here and measured there ({@link endOf} says what

@@ -40,6 +40,22 @@
  *   - A FRAME may not read it at all. The watch is switched on AFTER the session is open,
  *     so what it sees is only what typing causes, and typing a verb in the same window is
  *     what proves it would have seen one.
+ *
+ * ⚠️ AND THE INSTRUMENT NOW TELLS A READ FROM A QUESTION, which is a sharpening rather than
+ * a loosening, and it is what following the record required. A session ASKS, ten times a
+ * second, whether the chain has grown — one `readdir` per tail and one `stat` on that
+ * tail's last segment, and nothing opened (`chain/freshness.ts`). Counting that as a read
+ * would have made "a frame reads nothing" false about a console that opens no file at all,
+ * and the two are different questions of the filesystem: a LISTING says how far a chain
+ * reaches, and only a READ can say what is in it. So the doors are split — `readFileSync`
+ * and `openSync` are reads, `readdirSync` is a listing — and the promise with teeth is
+ * asserted over the reads:
+ *
+ *   - THE PROBE opens nothing, however long a session watches, and the listings GROW with
+ *     the time it watched, which is what says the probe was running at all.
+ *   - THE OPENING pays one verify's worth of reads, PLUS one line per tail: the follower
+ *     resumes from where each tail stands, off the end of the file, so it knows what is
+ *     already there and what is new (`repl/following.ts`).
  */
 
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
@@ -103,49 +119,59 @@ const ID_ON_THE_PAGE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]
 // ---------------------------------------------------------------------------
 
 /**
- * Every path read while the watch is on.
+ * WHAT THIS PROCESS ASKED OF THE FILESYSTEM: which door, and what path.
+ *
+ * The door is half the fact and it used to be thrown away. A chain is REACHED through
+ * three calls — a whole file at once, a directory's names, and an `open` for the backward
+ * walk that resumes a tail (which then reads by descriptor, so the path is only ever seen
+ * here) — but they do not answer the same question. Two of them open a file and can say
+ * what is IN the record; the third can only say how far it reaches, which is what a
+ * freshness probe asks and all it is allowed to know.
+ */
+type Door = 'read' | 'list';
+interface Touched {
+  readonly door: Door;
+  readonly path: string;
+}
+
+/**
+ * Everything touched while the watch is on.
  *
  * An ESM namespace cannot be spied on, so the module is WRAPPED — every other export is
- * the real one, and each of the three doors below passes straight through to it. The three
- * are the doors a chain is read through: a whole file at once, a directory's names, and an
- * `open` for the backward walk that resumes a tail (which then reads by descriptor, so the
- * path is only ever seen here).
+ * the real one, and each of the three doors below passes straight through to it.
  */
-const watched = vi.hoisted(() => ({ paths: [] as string[], on: false }));
+const watched = vi.hoisted(() => ({ touched: [] as { door: string; path: string }[], on: false }));
 
 vi.mock('node:fs', async (importActual) => {
   const actual = await importActual<typeof import('node:fs')>();
-  const note = (path: unknown): void => {
-    if (watched.on && typeof path === 'string') watched.paths.push(path);
-  };
   const through =
-    (real: unknown) =>
+    (real: unknown, door: string) =>
     (...args: unknown[]): unknown => {
-      note(args[0]);
+      if (watched.on && typeof args[0] === 'string') watched.touched.push({ door, path: args[0] });
       return (real as (...rest: unknown[]) => unknown)(...args);
     };
   return {
     ...actual,
-    readFileSync: through(actual.readFileSync) as typeof actual.readFileSync,
-    readdirSync: through(actual.readdirSync) as typeof actual.readdirSync,
-    openSync: through(actual.openSync) as typeof actual.openSync,
+    readFileSync: through(actual.readFileSync, 'read') as typeof actual.readFileSync,
+    readdirSync: through(actual.readdirSync, 'list') as typeof actual.readdirSync,
+    openSync: through(actual.openSync, 'read') as typeof actual.openSync,
   };
 });
 
-/** Watches what `work` reads, and answers with the paths it touched. */
-async function reading(work: () => Promise<void>): Promise<string[]> {
-  watched.paths = [];
+/** Watches what `work` touches, and answers with it. */
+async function reading(work: () => Promise<void>): Promise<Touched[]> {
+  watched.touched = [];
   watched.on = true;
   try {
     await work();
   } finally {
     watched.on = false;
   }
-  return [...watched.paths];
+  return [...watched.touched] as Touched[];
 }
 
 /**
- * Which of those paths are THE RECORD.
+ * Which of those are THE RECORD.
  *
  * A tail is where every event of a chain lives — the segments, the checkpoints and the
  * proof of the tail's own ownership are all under it — and nothing can be projected,
@@ -154,8 +180,42 @@ async function reading(work: () => Promise<void>): Promise<string[]> {
  * allowed to read that, which is why the predicate names the tail and not the tree.
  */
 const RECORD = `${sep}tails${sep}`;
-const ofTheRecord = (paths: readonly string[]): string[] =>
-  paths.filter((path) => path.includes(RECORD));
+
+/** Every path of the record that was OPENED — what it took to know what is in it. */
+const ofTheRecord = (touched: readonly Touched[]): string[] =>
+  touched.filter((one) => one.door === 'read' && one.path.includes(RECORD)).map((one) => one.path);
+
+/**
+ * Every path of the record that was merely LISTED — the probe's whole question.
+ *
+ * It is counted rather than banned, and the difference is the design: a listing cannot say
+ * what an event is, so a session that only ever lists has read nothing. What it CAN say is
+ * that the probe ran, which is what keeps the absence above from being an absence of
+ * anything happening.
+ */
+const listedInTheRecord = (touched: readonly Touched[]): string[] =>
+  touched.filter((one) => one.door === 'list' && one.path.includes(RECORD)).map((one) => one.path);
+
+/** Which tail a path of the record belongs to. */
+function tailOf(path: string): string {
+  const at = path.indexOf(RECORD) + RECORD.length;
+  return path.slice(0, at) + (path.slice(at).split(sep)[0] ?? '');
+}
+
+/**
+ * What is in `these` and not in `those` — as a MULTISET, so a path read twice by one and
+ * once by the other counts once here.
+ */
+function beyond(these: readonly string[], those: readonly string[]): string[] {
+  const left = [...those];
+  const extra: string[] = [];
+  for (const path of these) {
+    const at = left.indexOf(path);
+    if (at === -1) extra.push(path);
+    else left.splice(at, 1);
+  }
+  return extra;
+}
 
 // ---------------------------------------------------------------------------
 // The fixture
@@ -191,8 +251,19 @@ afterAll(() => {
   rmSync(sandbox, { recursive: true, force: true });
 });
 
-/** What a console drew, opened on a terminal `columns` wide and left at the end. */
-async function openedAt(columns: number, typed: readonly string[] = []): Promise<string> {
+/**
+ * What a console drew, opened on a terminal `columns` wide and left at the end.
+ *
+ * `watching` is how long it SITS there before leaving, in milliseconds, and it is the one
+ * argument that is about time rather than about what a caller did: a session that follows
+ * the record asks it a question on a clock, so how many questions a run pays for is a
+ * function of how long it stayed open and of nothing else.
+ */
+async function openedAt(
+  columns: number,
+  typed: readonly string[] = [],
+  watching = 0,
+): Promise<string> {
   const terminal = fakeTerminal({ columns });
   const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
   const closed = openSession({
@@ -219,6 +290,7 @@ async function openedAt(columns: number, typed: readonly string[] = []): Promise
       still = 0;
     }
   }
+  if (watching > 0) await new Promise((resolve) => setTimeout(resolve, watching));
   terminal.type(`${LEAVE}\r`);
   await closed;
   return terminal.bytes();
@@ -278,7 +350,7 @@ async function resizedThrough(columns: number, widths: readonly number[]): Promi
  * is caused by a keystroke. `answered` is what the page has to say before the counting
  * stops, so a case that types a verb waits for the verb rather than for a clock.
  */
-async function readingWhileTyping(typed: string, answered?: string): Promise<string[]> {
+async function readingWhileTyping(typed: string, answered?: string): Promise<Touched[]> {
   const terminal = fakeTerminal({ columns: 200 });
   const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
   const closed = openSession({
@@ -292,7 +364,7 @@ async function readingWhileTyping(typed: string, answered?: string): Promise<str
   });
   await until(() => terminal.bytes().includes(OPENED), 'opened');
   const grown = terminal.bytes().length;
-  watched.paths = [];
+  watched.touched = [];
   watched.on = true;
   terminal.type(typed);
   await until(() => terminal.bytes().length > grown, 'redrew');
@@ -309,7 +381,7 @@ async function readingWhileTyping(typed: string, answered?: string): Promise<str
     still = 0;
   }
   watched.on = false;
-  const paths = [...watched.paths];
+  const paths = [...watched.touched] as Touched[];
   // Whatever was typed is abandoned before the word that leaves is: half a verb still on
   // the row would swallow it, and the session would never come back.
   terminal.type(CLEARS_THE_LINE);
@@ -333,7 +405,7 @@ async function readingWhileTyping(typed: string, answered?: string): Promise<str
  * read's, everything after it is the keystroke's.
  */
 async function readingWhileCompleting(tabs: number): Promise<{
-  paths: string[];
+  paths: Touched[];
   row: string;
 }> {
   const terminal = fakeTerminal({ columns: 200 });
@@ -355,7 +427,7 @@ async function readingWhileCompleting(tabs: number): Promise<{
   const found = ID_ON_THE_PAGE.exec(terminal.bytes())?.[0] as string;
   const prefix = found.slice(0, 13);
 
-  watched.paths = [];
+  watched.touched = [];
   watched.on = true;
   for (let pressed = 0; pressed < tabs; pressed += 1) {
     terminal.type(`show ${prefix}`);
@@ -373,7 +445,7 @@ async function readingWhileCompleting(tabs: number): Promise<{
     still = 0;
   }
   watched.on = false;
-  const paths = [...watched.paths];
+  const paths = [...watched.touched] as Touched[];
   const row = terminal.bytes();
   terminal.type(CLEARS_THE_LINE);
   terminal.type(`${LEAVE}\r`);
@@ -594,11 +666,17 @@ function recordedAnchor(): string {
 // ---------------------------------------------------------------------------
 
 describe('the opening reads the record once, and a redraw never reads it', () => {
-  it('reads the record exactly as much as one verify does, and no more', async () => {
+  it('reads one verify’s worth, plus the one line per tail a follower resumes from', async () => {
     // THE EXCEPTION, MEASURED. The panel says what the record is, so the opening pays a
     // `verify` — once. What that costs is not asserted here as a duration, which would be
     // a number about this machine; it is asserted as the READS, against the only thing
     // that can say what one verify's worth of them is: one verify.
+    //
+    // ⚠️ AND IT USED TO BE THE WHOLE OF WHAT THE OPENING PAID. A session follows the record
+    // now, and to tell what happens NEXT from what was already there it takes the seq each
+    // tail ENDS at — one entry, off the end of the tail, whatever the history weighs
+    // (`repl/following.ts`). So the exception has a second half and it has a NUMBER: one
+    // line per tail, and the line is one the verify opened too.
     const opening = await reading(async () => {
       await openedAt(200);
     });
@@ -606,12 +684,43 @@ describe('the opening reads the record once, and a redraw never reads it', () =>
       runVerify({ ...here(), requirement: DEFAULT_REQUIREMENT, global: false });
     });
     expect(ofTheRecord(alone).length).toBeGreaterThan(0);
-    expect(ofTheRecord(opening)).toEqual(ofTheRecord(alone));
+    const extra = beyond(ofTheRecord(opening), ofTheRecord(alone));
+    // ONE PER TAIL, and how many tails there are is read off what the verify itself
+    // touched rather than written down here.
+    const tails = new Set(ofTheRecord(alone).map(tailOf));
+    expect(extra).toHaveLength(tails.size);
+    for (const path of extra) {
+      // And each one is a file the verify opened as well: the follower resumes from a
+      // segment of the record, not from something beside it.
+      expect(ofTheRecord(alone), path).toContain(path);
+    }
+    // Nothing the verify read went unread by the opening, either — the exception is what
+    // the opening pays ON TOP, never something it skipped.
+    expect(beyond(ofTheRecord(alone), ofTheRecord(opening))).toEqual([]);
     // The instrument was pointed at something wider than the record, too: opening a
     // console reads files that are not tails, and a watch that saw nothing at all would
     // satisfy the comparison above by accident.
     expect(opening.length).toBeGreaterThan(ofTheRecord(opening).length);
   }, 120_000);
+
+  it('asks whether the record moved, however long it watches, and opens nothing to ask', async () => {
+    // THE PROBE, AND THE HALF THIS DELIVERY ADDED. A session follows the record on a clock,
+    // so the question is asked ten times a second for as long as a caller leaves the
+    // console open. What it may never do is READ to answer it: the question is whether the
+    // chain grew, and that is a `readdir` per tail and a `stat`, with nothing opened.
+    const briefly = await reading(async () => {
+      await openedAt(200);
+    });
+    const watching = await reading(async () => {
+      await openedAt(200, [], 1_500);
+    });
+    // N QUESTIONS READ EXACTLY WHAT ZERO QUESTIONS READ, which is the whole promise.
+    expect(ofTheRecord(watching)).toEqual(ofTheRecord(briefly));
+    // NOT VACUOUS: the probe really was running, and it ran MORE in the longer window —
+    // without this the case passes on a console that never asked anything at all.
+    expect(listedInTheRecord(briefly).length).toBeGreaterThan(0);
+    expect(listedInTheRecord(watching).length).toBeGreaterThan(listedInTheRecord(briefly).length);
+  }, 180_000);
 
   it('touches no tail while the caller types, which is the half that may not move', async () => {
     // THE ABSENCE, and it is the promise the bar was built on: a hint under the prompt is
