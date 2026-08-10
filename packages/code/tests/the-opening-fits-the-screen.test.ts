@@ -712,7 +712,15 @@ describe('a session has opened when its frame is finished, not when its prompt i
       // third time. An instrument that can accuse three ways needs its own cases.
       const at = code.indexOf('await theDeviceWasTheSizeAskedFor(');
       expect(at, 'a driver that never awaited the size of its device').toBeGreaterThan(-1);
-      return code.slice(at);
+      // ⚠️ AND IT ENDS WHERE THE DRIVER DOES. Running the scope to the end of the FILE swept in
+      // everything below it, and one of these files holds cases driven in process — on a pair of
+      // fake streams rather than on a device — which wait for the opening on purpose and have no
+      // keystroke to be scoped against. The guard accused them: a fourth way to accuse the
+      // innocent, and the third caught by its own cases. Every driver hands the terminal back in
+      // a `finally`, so that is the end of the body that drives one.
+      const ends = code.indexOf('} finally {', at);
+      expect(ends, 'a driver that never gives the terminal back').toBeGreaterThan(at);
+      return code.slice(at, ends);
     };
 
     /**
@@ -767,17 +775,42 @@ describe('a session has opened when its frame is finished, not when its prompt i
           ', since',
         );
       }
+      // ⚠️ AND NOTHING AFTER THE FIRST KEYSTROKE READS THE WHOLE STREAM. This is the half that
+      // scored ZERO: reverting the fourth driver's wait to the unscoped form left every other
+      // reading of this rule satisfied — the number was still read, still before the writing,
+      // and the rule was still imported. What is more, the compiler did not catch the local it
+      // orphaned, because `tsc -b` does not type-check tests at all.
+      //
+      // A WAIT BEFORE THE CALLER HAS DONE ANYTHING MAY read the whole stream — that is how a
+      // driver knows the console opened, and the opening is exactly what it is waiting for. A
+      // wait AFTER may not, because by then the whole stream contains the opening.
+      const typed = driving.indexOf('stdin.write(');
+      if (typed !== -1) {
+        for (const unscoped of ['arriving.text().includes(', 'terminal.bytes().includes(']) {
+          expect(
+            driving.slice(typed),
+            `${name}: a wait after the first keystroke reads the whole stream`,
+          ).not.toContain(unscoped);
+        }
+      }
     }
     // NOT VACUOUS, IN FOUR DIRECTIONS: the scope really would refuse a driver that read the
     // number nowhere, the walker really reads a call whose argument is itself a call, the
     // one-argument form really is told from the two-argument one, and the drivers that have
     // steps really were asked something — a walker that found nothing would have approved them
     // all in silence.
-    expect(drivingIn('await theDeviceWasTheSizeAskedFor(x); child.stdin.write(k);')).not.toContain(
-      'const since =',
-    );
+    expect(
+      drivingIn('await theDeviceWasTheSizeAskedFor(x); child.stdin.write(k); } finally {'),
+    ).not.toContain('const since =');
     expect(askedIn('step.until(now)')).toEqual(['now']);
     expect(askedIn('step.until(arriving.text(), since)')).toEqual(['arriving.text(), since']);
+    // AND THE UNSCOPED-WAIT CHECK REALLY ACCUSES, on the exact shape it exists to refuse: a
+    // read of the whole stream written after a keystroke.
+    const wouldBeAccused = 'child.stdin.write(k); await until(() => arriving.text().includes(m));';
+    expect(
+      wouldBeAccused.slice(wouldBeAccused.indexOf('stdin.write(')),
+      'the check cannot accuse the shape it exists for',
+    ).toContain('arriving.text().includes(');
     expect(
       waiting
         .filter(({ source }) => askedIn(codeOnly(source)).length > 0)
