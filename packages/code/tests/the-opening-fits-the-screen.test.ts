@@ -49,7 +49,11 @@ import {
   type Ran,
   type Step,
 } from './support/pty.js';
+import { codeOnly } from './support/reading-source.js';
 import { screenOf } from './support/screen.js';
+
+/** This package's own tests — the corpus the guard over the pty drivers enumerates. */
+const TESTS = fileURLToPath(new URL('.', import.meta.url));
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
@@ -640,6 +644,112 @@ describe('a session has opened when its frame is finished, not when its prompt i
     expect(opening.slice(0, cut)).not.toContain(`${PROMPT} verify`);
     // And the fixed question, on the same stream, refuses that cut point.
     expect(answered(opening.slice(0, cut), since)).toBe(false);
+  });
+
+  it('⚠️ asks every step its question with the point the step began at, in all three drivers', () => {
+    // ⚠️ THE OTHER HALF, AND IT SCORED ZERO. The question above is only as good as the number
+    // handed to it, and mutating the DRIVER to hand `0` instead of where the step began left
+    // every case green — the rule was proved in the predicate and unguarded in the three
+    // places that feed it. This is the site count, and there are THREE: the shared instrument
+    // and two files that drive a pty of their own.
+    //
+    // FOUND BY THE DISCRIMINANT rather than listed: a driver is a file that asks a step its
+    // own question, so `step.until(` is what enumerates them. A fourth driver written tomorrow
+    // is in this list the day it exists.
+    const drivers = readdirSync(TESTS)
+      .filter((name) => name.endsWith('.ts'))
+      .map((name) => ({ name, source: readFileSync(join(TESTS, name), 'utf-8') }))
+      .concat(
+        readdirSync(join(TESTS, 'support'))
+          .filter((name) => name.endsWith('.ts'))
+          .map((name) => ({
+            name: join('support', name),
+            source: readFileSync(join(TESTS, 'support', name), 'utf-8'),
+          })),
+      )
+      .filter(({ source }) => codeOnly(source).includes('step.until('));
+    expect(drivers.map(({ name }) => name).sort(), 'a driver appeared or went away').toEqual([
+      'a-page-that-opens-clean.test.ts',
+      join('support', 'pty.ts'),
+      'the-page-follows-the-terminal.test.ts',
+    ]);
+
+    // ⚠️ AND IT IS READ INSIDE THE LOOP, not anywhere in the file. The first draft of this
+    // guard compared against the whole source and accused the shared instrument for DEFINING
+    // `resizedTo` above the loop that calls it — an instrument that accuses the innocent, which
+    // this bench has now paid for twice.
+    const loopOf = (source: string): string => {
+      const code = codeOnly(source);
+      const at = code.indexOf('for (const step of');
+      expect(at, 'a driver with no loop over its steps').toBeGreaterThan(-1);
+      return code.slice(at);
+    };
+
+    /**
+     * WHAT EACH `step.until(…)` IS HANDED, one string per call.
+     *
+     * ⚠️ IT WAS A REGULAR EXPRESSION and it read the wrong thing: `[^)]*` stops at the FIRST
+     * close paren, so `step.until(arriving.text(), since)` came back as `arriving.text(` — an
+     * argument list with no comma in it, and the guard accused a driver that was correct. The
+     * parens are walked instead, which is the only way to read a call whose arguments are
+     * themselves calls.
+     */
+    const askedIn = (loop: string): string[] => {
+      const asked: string[] = [];
+      const call = 'step.until(';
+      for (let at = loop.indexOf(call); at !== -1; at = loop.indexOf(call, at + 1)) {
+        let depth = 1;
+        let end = at + call.length;
+        while (end < loop.length && depth > 0) {
+          if (loop[end] === '(') depth += 1;
+          if (loop[end] === ')') depth -= 1;
+          end += 1;
+        }
+        asked.push(loop.slice(at + call.length, end - 1));
+      }
+      return asked;
+    };
+
+    for (const { name, source } of drivers) {
+      const loop = loopOf(source);
+      // THE NUMBER IS READ OFF THE STREAM, and that is what the mutation broke: a driver that
+      // assigned a constant satisfied every other reading of this rule.
+      expect(loop, `${name}: the step's starting point is not read off the stream`).toContain(
+        'const since = arriving.text().length;',
+      );
+      // AND THE READING COMES BEFORE THE DOING — the resize, the other process and the
+      // keystroke are all the step's own, so a number taken after any of them is a number that
+      // already includes what the step caused.
+      const read = loop.indexOf('const since = arriving.text().length;');
+      for (const doing of ['resizedTo(device', 'await step.does()', 'write(step.types)']) {
+        const at = loop.indexOf(doing);
+        if (at === -1) continue;
+        expect(read, `${name}: the starting point is taken after \`${doing}\``).toBeLessThan(at);
+      }
+      // AND EVERY QUESTION IS HANDED THE NUMBER. Asked over the whole file rather than over the
+      // loop, and the difference is a real one this guard's own non-vacuity check found: the
+      // shared instrument READS the number in its loop and ASKS the question one function up
+      // ({@link endOf}), while the two local drivers do both inline. `step.until(` is only ever
+      // a step being asked, wherever it is written.
+      const asking = askedIn(codeOnly(source));
+      expect(
+        asking.length,
+        `${name}: no step is asked anything, so nothing here is checked`,
+      ).toBeGreaterThan(0);
+      for (const asked of asking) {
+        expect(asked, `${name}: a step was asked its question without where it began`).toContain(
+          ', since',
+        );
+      }
+    }
+    // NOT VACUOUS, IN THREE DIRECTIONS: the reading really is asserted (a loop without it
+    // fails), the walker really reads a call whose argument is itself a call, and the
+    // one-argument form really is told from the two-argument one.
+    expect(loopOf('for (const step of steps) { step.until(bytes()); }')).not.toContain(
+      'const since =',
+    );
+    expect(askedIn('step.until(now)')).toEqual(['now']);
+    expect(askedIn('step.until(arriving.text(), since)')).toEqual(['arriving.text(), since']);
   });
 });
 
