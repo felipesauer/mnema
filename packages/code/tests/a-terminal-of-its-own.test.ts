@@ -150,10 +150,17 @@ async function captured(work: (io: CliIo) => Promise<void>): Promise<Said> {
 /** `mnema <argv>` at the shell, with output injected. */
 const shell = (...argv: string[]): Promise<Said> => captured((io) => run(argv, io));
 
-/** One line typed at the session's prompt, with output injected. */
+/**
+ * One line typed at the session's prompt, with output injected.
+ *
+ * The session KNOWS NOBODY, deliberately and by name: what is asked here is what the gate
+ * does with a line, and a session with an identity fills a flag into some of them
+ * (`repl/asking.ts`). The cases below type the actor out where a verb needs one, so this
+ * is the session that changes nothing about what they run.
+ */
 const prompt = (line: string, render = renderPlain): Promise<Said> =>
   captured(async (io) => {
-    await typedLine(line, { io, render, self: REPL_VERB });
+    await typedLine(line, { io, render, self: REPL_VERB, identity: undefined });
   });
 
 beforeAll(async () => {
@@ -515,6 +522,7 @@ describe('the session writes no history anywhere', () => {
     // every file, so a module the filter above cannot see is a module missing here.
     expect(modules()).toEqual([
       'area.ts',
+      'asking.ts',
       'complete.ts',
       'console.ts',
       'editing.ts',

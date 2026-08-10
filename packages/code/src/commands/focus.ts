@@ -19,6 +19,15 @@
  * accountability` or the bootstrap — never from `mnema verify`, which the flag's
  * help used to name and which prints no identity at all.
  *
+ * ⚠️ IT SAID *THE CLI HAS NONE*, AND THE CLI HAS ONE NOW. `mnema repl` is a session,
+ * and it names the identity this installation recorded for the tree from LOCAL
+ * material, with no writer opened (`repl/standing.ts`) — so at that prompt the flag is
+ * filled in for the caller, who would otherwise be typing back the value the box above
+ * the prompt is showing them (`repl/asking.ts`). What is unchanged is this declaration
+ * and every word of the reason for it: an INVOCATION has no session, `mnema focus` at a
+ * shell asks for the actor exactly as it always has, and nothing anywhere derives a
+ * `who` by touching key material.
+ *
  * The runs come from EVERY tree the project can see, and that is the correction a
  * run per destination forced. A run opens in the tree the fact it authorizes lands
  * in, and what a session records is routed by KIND — so one session's runs are
