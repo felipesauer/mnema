@@ -653,9 +653,13 @@ describe('a session has opened when its frame is finished, not when its prompt i
     // places that feed it. This is the site count, and there are THREE: the shared instrument
     // and two files that drive a pty of their own.
     //
-    // FOUND BY THE DISCRIMINANT rather than listed: a driver is a file that asks a step its
-    // own question, so `step.until(` is what enumerates them. A fourth driver written tomorrow
-    // is in this list the day it exists.
+    // ⚠️ FOUND BY THE DISCRIMINANT, AND THE FIRST DISCRIMINANT WAS TOO NARROW. It was
+    // `step.until(` — *a driver is a file that asks a STEP its own question* — and that named
+    // three. Two more drive a pty without a step at all, and one of them waits for
+    // *"local integrity verified"* in four places, which is the very sentence the panel writes.
+    // What every pty driver DOES have is the size check, because a reading taken against a
+    // device of unknown size is not a reading (`support/pty.ts`); so that is the discriminant,
+    // and it names five.
     const drivers = readdirSync(TESTS)
       .filter((name) => name.endsWith('.ts'))
       .map((name) => ({ name, source: readFileSync(join(TESTS, name), 'utf-8') }))
@@ -667,21 +671,47 @@ describe('a session has opened when its frame is finished, not when its prompt i
             source: readFileSync(join(TESTS, 'support', name), 'utf-8'),
           })),
       )
-      .filter(({ source }) => codeOnly(source).includes('step.until('));
-    expect(drivers.map(({ name }) => name).sort(), 'a driver appeared or went away').toEqual([
+      .filter(({ source }) => codeOnly(source).includes('theDeviceWasTheSizeAskedFor('));
+    expect(drivers.map(({ name }) => name).sort(), 'a pty driver appeared or went away').toEqual([
       'a-page-that-opens-clean.test.ts',
       join('support', 'pty.ts'),
+      'the-console-on-ink.test.ts',
       'the-page-follows-the-terminal.test.ts',
+      'the-screen-says-what-it-was-drawn-at.test.ts',
     ]);
 
-    // ⚠️ AND IT IS READ INSIDE THE LOOP, not anywhere in the file. The first draft of this
-    // guard compared against the whole source and accused the shared instrument for DEFINING
-    // `resizedTo` above the loop that calls it — an instrument that accuses the innocent, which
-    // this bench has now paid for twice.
-    const loopOf = (source: string): string => {
+    // WHICH OF THEM WAIT FOR SOMETHING THE CALLER CAUSED, which is what the rule is about. One
+    // of the five does not: it writes bytes at a decoder and asserts what came back, so it has
+    // no marker to be answered early about. It is NAMED rather than filtered out silently — a
+    // driver that stopped waiting would otherwise leave this list quietly.
+    const WAITS_FOR_NOTHING_THE_CALLER_CAUSED = 'the-screen-says-what-it-was-drawn-at.test.ts';
+    const waiting = drivers.filter(({ name }) => name !== WAITS_FOR_NOTHING_THE_CALLER_CAUSED);
+    expect(
+      codeOnly(
+        drivers.find(({ name }) => name === WAITS_FOR_NOTHING_THE_CALLER_CAUSED)?.source as string,
+      ),
+      `${WAITS_FOR_NOTHING_THE_CALLER_CAUSED} started waiting for something, so it needs the rule`,
+    ).not.toContain('until(() =>');
+    // AND THE OTHER FOUR ALL USE THE ONE RULE. This is the A3 half: four drivers, one function
+    // that says what the question means.
+    for (const { name, source } of waiting) {
+      expect(codeOnly(source), `${name}: waits without the rule`).toContain('arrivedSince(');
+    }
+
+    // ⚠️ AND IT IS READ AFTER THE DEVICE IS SETTLED, not anywhere in the file. The first draft
+    // of this guard compared against the whole source and accused the shared instrument for
+    // DEFINING `resizedTo` above the loop that calls it — an instrument that accuses the
+    // innocent, which this bench has now paid for twice. The scope is what the driver does once
+    // it has a device of a known size, which is the same boundary in all four shapes rather
+    // than a loop only three of them have.
+    const drivingIn = (source: string): string => {
       const code = codeOnly(source);
-      const at = code.indexOf('for (const step of');
-      expect(at, 'a driver with no loop over its steps').toBeGreaterThan(-1);
+      // ⚠️ THE CALL AND NOT THE NAME. Anchoring on the bare name put the scope at the shared
+      // instrument's own DEFINITION of the check, above every function in the file, so the
+      // definition of `resizedTo` fell inside the scope and this guard accused the innocent for a
+      // third time. An instrument that can accuse three ways needs its own cases.
+      const at = code.indexOf('await theDeviceWasTheSizeAskedFor(');
+      expect(at, 'a driver that never awaited the size of its device').toBeGreaterThan(-1);
       return code.slice(at);
     };
 
@@ -710,46 +740,55 @@ describe('a session has opened when its frame is finished, not when its prompt i
       return asked;
     };
 
-    for (const { name, source } of drivers) {
-      const loop = loopOf(source);
+    for (const { name, source } of waiting) {
+      const driving = drivingIn(source);
       // THE NUMBER IS READ OFF THE STREAM, and that is what the mutation broke: a driver that
       // assigned a constant satisfied every other reading of this rule.
-      expect(loop, `${name}: the step's starting point is not read off the stream`).toContain(
+      expect(driving, `${name}: the starting point is not read off the stream`).toContain(
         'const since = arriving.text().length;',
       );
       // AND THE READING COMES BEFORE THE DOING — the resize, the other process and the
-      // keystroke are all the step's own, so a number taken after any of them is a number that
-      // already includes what the step caused.
-      const read = loop.indexOf('const since = arriving.text().length;');
-      for (const doing of ['resizedTo(device', 'await step.does()', 'write(step.types)']) {
-        const at = loop.indexOf(doing);
+      // keystroke are all the caller's own, so a number taken after any of them already
+      // includes what the step caused.
+      const read = driving.indexOf('const since = arriving.text().length;');
+      for (const doing of ['resizedTo(device', 'await step.does()', 'stdin.write(']) {
+        const at = driving.indexOf(doing);
         if (at === -1) continue;
         expect(read, `${name}: the starting point is taken after \`${doing}\``).toBeLessThan(at);
       }
-      // AND EVERY QUESTION IS HANDED THE NUMBER. Asked over the whole file rather than over the
-      // loop, and the difference is a real one this guard's own non-vacuity check found: the
-      // shared instrument READS the number in its loop and ASKS the question one function up
-      // ({@link endOf}), while the two local drivers do both inline. `step.until(` is only ever
-      // a step being asked, wherever it is written.
+      // AND EVERY QUESTION A STEP IS ASKED IS HANDED THE NUMBER, in the three drivers that have
+      // steps. Asked over the whole file rather than over the loop, and the difference is a real
+      // one this guard's own non-vacuity check found: the shared instrument READS the number in
+      // its loop and ASKS the question one function up ({@link endOf}), while the two local
+      // drivers do both inline.
       const asking = askedIn(codeOnly(source));
-      expect(
-        asking.length,
-        `${name}: no step is asked anything, so nothing here is checked`,
-      ).toBeGreaterThan(0);
       for (const asked of asking) {
         expect(asked, `${name}: a step was asked its question without where it began`).toContain(
           ', since',
         );
       }
     }
-    // NOT VACUOUS, IN THREE DIRECTIONS: the reading really is asserted (a loop without it
-    // fails), the walker really reads a call whose argument is itself a call, and the
-    // one-argument form really is told from the two-argument one.
-    expect(loopOf('for (const step of steps) { step.until(bytes()); }')).not.toContain(
+    // NOT VACUOUS, IN FOUR DIRECTIONS: the scope really would refuse a driver that read the
+    // number nowhere, the walker really reads a call whose argument is itself a call, the
+    // one-argument form really is told from the two-argument one, and the drivers that have
+    // steps really were asked something — a walker that found nothing would have approved them
+    // all in silence.
+    expect(drivingIn('await theDeviceWasTheSizeAskedFor(x); child.stdin.write(k);')).not.toContain(
       'const since =',
     );
     expect(askedIn('step.until(now)')).toEqual(['now']);
     expect(askedIn('step.until(arriving.text(), since)')).toEqual(['arriving.text(), since']);
+    expect(
+      waiting
+        .filter(({ source }) => askedIn(codeOnly(source)).length > 0)
+        .map(({ name }) => name)
+        .sort(),
+      'the drivers that ask a step its question changed',
+    ).toEqual([
+      'a-page-that-opens-clean.test.ts',
+      join('support', 'pty.ts'),
+      'the-page-follows-the-terminal.test.ts',
+    ]);
   });
 });
 
