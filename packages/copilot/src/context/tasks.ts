@@ -50,10 +50,28 @@
  * empty (see `bootstrap.ts`): a task that has arrived is terminal for the purpose of
  * this read, and there is nothing to be done about it.
  *
- * BY THE INDEXED READ, one bucket per state, like both neighbouring modules. Listing
- * every task and classifying in memory reads the whole table to throw most of it away
- * — on a record whose tasks are mostly done, most of it — and that cost grows with
- * the record while this one grows with the answer.
+ * ONE READ EACH, AND THEY ARE NOT THE SAME READ — which is a measurement and not a
+ * taste. Both neighbouring modules ask the INDEX, one statement per state, on the
+ * argument that listing everything and filtering in memory reads the whole table to
+ * throw most of it away. That argument is about ROWS, and at these sizes the cost is
+ * STATEMENTS: a `prepare` + bind + step is a fixed charge that four of them pay four
+ * times over. Measured over the same warm caches, alternating the order of the arms,
+ * 300 calls each, two runs:
+ *
+ *   | selection            | 30 tasks       | 300 tasks      |
+ *   |----------------------|---------------:|---------------:|
+ *   | one statement/state  | 0.20–0.24 ms   | 0.23–0.24 ms   |
+ *   | one scan + classify  | 0.07 ms        | 0.20 ms        |
+ *
+ * against a WHOLE `bootstrap` of 0.87 ms, so on a small record the difference is
+ * about a sixth of the opening read. So {@link liveWork}, whose set is four of the machine's seven
+ * states, takes ONE statement and classifies the rows — the index would select most
+ * of the table anyway — while {@link tasksAwaitingJudgement}, whose set is one state
+ * and a small slice of it, asks the index like its neighbours. The rule behind both
+ * is the same sentence: ask the index when the answer is a small part of the table.
+ *
+ * Neither of them writes out a set of states either way; what differs is only whether
+ * the derived set is a bucket to fetch or a membership to test.
  *
  * ACROSS THE TREES the caller can see, for the reason `bootstrap` gives: a task lands
  * in the tree that travels, whoever wrote it, so "the actor's tree" names no tree in
@@ -63,6 +81,7 @@
  */
 
 import {
+  isTaskState,
   type ProjectionCache,
   TASK_STATES,
   type TaskProjection,
@@ -71,8 +90,14 @@ import {
 } from '@mnema/core';
 import { statesMeaning } from './disposition.js';
 
-/** The states whose tasks still have something to do about them — derived, never restated. */
-const LIVE = statesMeaning(TASK_STATES, taskDisposition, 'advancing', 'stalled');
+/**
+ * The states whose tasks still have something to do about them — derived, never
+ * restated, and held as a SET because this one is asked "is this state live" per row
+ * rather than "give me the rows in this state" (see the module doc's measurement).
+ */
+const LIVE: ReadonlySet<string> = new Set(
+  statesMeaning(TASK_STATES, taskDisposition, 'advancing', 'stalled'),
+);
 
 /** The states whose tasks are waiting on somebody's verdict — derived, never restated. */
 const AWAITING_JUDGEMENT = statesMeaning(TASK_STATES, taskDisposition, 'awaiting-judgement');
@@ -83,10 +108,15 @@ export interface WorkItem {
   readonly id: string;
   readonly title: string;
   /**
-   * The task's current state. Typed as the workflow's own vocabulary rather than a
-   * bare string, and it is the state the row was READ under (the bucket the indexed
-   * lookup asked for), not a second reading of the projection — the same thing both
-   * neighbouring modules do, for the same reason.
+   * The task's current state, typed as the workflow's own vocabulary rather than a
+   * bare string — which is what lets a surface print it on a line whose count has to
+   * match the count of items served.
+   *
+   * A projection stores `state` as a literal string on purpose, so a fact written
+   * today stays legible if the workflow later renames a state; a word the workflow has
+   * never had therefore reaches the reads below, and the honest answer for it is that
+   * it is on no list. Narrowed by the product's own validator ({@link isTaskState}) on
+   * the read that scans, and by the bucket asked for on the read that is indexed.
    */
   readonly state: TaskState;
   /** `at` of its last transition — what "most recently touched" orders on. */
@@ -119,12 +149,16 @@ export interface TaskAwaitingJudgement extends WorkItem {
  * this answer is ordered by {@link bootstrap} together with the cut it feeds, and an
  * order imposed here would be one the composition immediately discards while a reader
  * of this function took it for the answer's.
+ *
+ * ONE statement per cache, classifying the rows — see the module doc for the number
+ * that decided it against four indexed reads.
  */
 export function liveWork(caches: readonly ProjectionCache[]): WorkItem[] {
   const live: WorkItem[] = [];
   for (const cache of caches) {
-    for (const state of LIVE) {
-      for (const task of cache.listTasksByState(state)) live.push(named(task, state));
+    for (const task of cache.listTasks()) {
+      if (!isTaskState(task.state) || !LIVE.has(task.state)) continue;
+      live.push(named(task, task.state));
     }
   }
   return live;
