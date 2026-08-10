@@ -620,9 +620,10 @@ describe('the page follows the drawing, and once per drag', () => {
     // product. What the product wrote is {@link carriedPages}, which is the instrument this case
     // already had for the same reason. So what is asserted about the drawing is the drawing:
     // whichever arrangement is on the page last is the one that was there before.
-    expect(besideTheMark(lastTitle(terminal.bytes()), 200).trim(), 'the arrangement moved').toContain(
-      OPENED,
-    );
+    expect(
+      besideTheMark(lastTitle(terminal.bytes()), 200).trim(),
+      'the arrangement moved',
+    ).toContain(OPENED);
     // AND A DRAG THAT ENDS WHERE IT STARTED STILL COSTS NOTHING. The guard grew a half; it
     // did not become "a resize event happened".
     terminal.resize(200, 30);
@@ -649,9 +650,10 @@ describe('the page follows the drawing, and once per drag', () => {
     expect(pages(), 'a width that changes the arrangement did not turn the page').toBe(3);
     // And it is the ARRANGEMENT that changed, which is the reason claimed: at seventy-four
     // columns the text is under the mark, so nothing is beside it.
-    expect(besideTheMark(lastTitle(terminal.bytes()), 74).trim(), 'the text is still beside the mark').toBe(
-      '',
-    );
+    expect(
+      besideTheMark(lastTitle(terminal.bytes()), 74).trim(),
+      'the text is still beside the mark',
+    ).toBe('');
 
     // AND THE TEETH FOR THE OTHER MEASUREMENT: a height the drawing DOES depend on.
     //
@@ -718,9 +720,10 @@ describe('the page follows the drawing, and once per drag', () => {
       art.some((row) => last.startsWith(row)),
       'the last page was not drawn at the width the drag ended on',
     ).toBe(false);
-    expect([...last.replace(/ +$/, '')].length, 'the last page is wider than the drag ended').toBeLessThanOrEqual(
-      ended,
-    );
+    expect(
+      [...last.replace(/ +$/, '')].length,
+      'the last page is wider than the drag ended',
+    ).toBeLessThanOrEqual(ended);
     await close();
   }, 120_000);
 
@@ -859,7 +862,10 @@ describe('nothing on the panel is a run of glyphs, because there is nothing to d
     // really are the panel's — the record put its section in them — and the page really does draw
     // a rule somewhere, which is the input area's and is not one of these rows.
     expect(isRun(RUN.repeat(3))).toBe(true);
-    expect(opening.some((row) => row.includes('The record')), 'no record section').toBe(true);
+    expect(
+      opening.some((row) => row.includes('The record')),
+      'no record section',
+    ).toBe(true);
     expect(
       rowsOf(await drawnAt(200)).some((row) => isRun(row.trim())),
       'the input area drew no rule at all',

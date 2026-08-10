@@ -66,6 +66,7 @@ import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC } from './support/console.js';
 import {
   aFrameAfter,
+  arrivedSince,
   inPty as drive,
   type Fixture,
   opensAConsole,
@@ -324,11 +325,47 @@ const RUBS_OUT = '\u007f';
 /** The key that opens the palette, which is also the one the hint names. */
 const LISTS_THE_WORDS = '/';
 
-/** Opens the list of words, which is the area at its tallest. */
+/**
+ * Opens the list of words, which is the area at its tallest — waiting for a frame, whatever is in
+ * it.
+ *
+ * THE TOLERANT FORM, and it is the one a sweep over HEIGHTS needs: on a terminal of three rows the
+ * palette is cut to nothing at all, so a step waiting for a word of the list would wait forever.
+ * Every case that uses this one asserts an ABSENCE, which a frame with no list in it satisfies
+ * honestly.
+ */
 const opensTheList: Step = { types: LISTS_THE_WORDS, until: aFrameAfter(PROMPT), what: 'listed' };
 
-/** Shuts it again, by taking back the key that opened it. */
-const shutsTheList: Step = { types: RUBS_OUT, until: aFrameAfter(PROMPT), what: 'shut the list' };
+/**
+ * The same key, waiting for THE LIST — for the cases that then read it off a screen.
+ *
+ * ⚠️ THOSE CASES USED THE TOLERANT FORM, and a frame is not the list: measured in the full suite,
+ * under load, the second cycle of ten ended on a frame the palette was not in yet and the screen
+ * read as though the key had done nothing. It is the rule this bench has already written down once
+ * — a step in a pty waits for what IT caused, which is what `since` is for (`support/pty.ts`,
+ * `arrivedSince`) — applied to the site that did not have it. The two forms are separate rather
+ * than one clever predicate, because *the list may be cut to nothing* and *the list must be on the
+ * screen* are two different cases and a step cannot be both.
+ */
+const opensTheListAndWaitsForIt: Step = {
+  ...opensTheList,
+  until: arrivedSince(ONLY_THE_LIST_SAYS),
+};
+
+/**
+ * Shuts it again, by taking back the key that opened it — and waits for a frame that does NOT
+ * hold the list.
+ *
+ * THE OTHER HALF OF THE SAME REPAIR, and it cannot be `arrivedSince` because what it waits for is
+ * an absence: the frame the keystroke causes is one the palette is not written into at all. So it
+ * is a frame after the prompt AND nothing of the list in what has arrived since.
+ */
+const shutsTheList: Step = {
+  types: RUBS_OUT,
+  until: (bytes, since) =>
+    aFrameAfter(PROMPT)(bytes) && !bytes.slice(since).includes(ONLY_THE_LIST_SAYS),
+  what: 'shut the list',
+};
 
 /** How many times `what` occurs in `text`. */
 const times = (text: string, what: string): number => text.split(what).length - 1;
@@ -505,7 +542,7 @@ describe('the list of words takes its room out of the emptiness', () => {
     const ran = await inPty({
       columns,
       rows,
-      steps: [opens, opensTheList, shutsTheList, leaves],
+      steps: [opens, opensTheListAndWaitsForIt, shutsTheList, leaves],
     });
     const opened = screenOf(ran.bytes.slice(0, ran.at[0] as number), columns, rows);
     const listed = screenOf(ran.bytes.slice(0, ran.at[1] as number), columns, rows);
@@ -591,7 +628,9 @@ describe('the list of words takes its room out of the emptiness', () => {
       // state.
       const cycles = 10;
       const steps: Step[] = [opens];
-      for (let round = 0; round < cycles; round += 1) steps.push(opensTheList, shutsTheList);
+      for (let round = 0; round < cycles; round += 1) {
+        steps.push(opensTheListAndWaitsForIt, shutsTheList);
+      }
       steps.push(leaves);
       const ran = await inPty({ columns, rows, steps });
       // EVERY ONE OF THEM, and the last step (the word that leaves) is left out of the walk: it
@@ -816,7 +855,11 @@ describe('the region redrawn holds the emptiness, and is still short of the scre
     const tall = await inPty({
       columns: WIDE_ENOUGH_FOR_THE_HINT,
       rows: 40,
-      steps: [opens, opensTheList, { ...leaves, types: `${ABANDONS_THE_LINE}${LEAVE}\r` }],
+      steps: [
+        opens,
+        opensTheListAndWaitsForIt,
+        { ...leaves, types: `${ABANDONS_THE_LINE}${LEAVE}\r` },
+      ],
     });
     expect(
       screenOf(tall.bytes.slice(0, tall.at[1] as number), WIDE_ENOUGH_FOR_THE_HINT, 40).text,

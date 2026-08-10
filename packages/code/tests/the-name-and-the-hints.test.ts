@@ -333,6 +333,11 @@ const CARRIES_THE_PAGE = `${ESC}[${TALL};1H`;
  * The page follows the terminal's WIDTH, so each of these is a recomposition of the
  * opening and a page turned — which is exactly the thing that must not cost a read. Each
  * width is waited out until the page has really been turned for it.
+ *
+ * ⚠️ EACH WIDTH HAS TO CHANGE THE DRAWING, and that is what the frame's departure made a
+ * requirement. Any two widths used to differ, because the box was drawn corner to corner; nothing
+ * is drawn to an edge now, so a width that moves no glyph turns no page (`repl/panel.ts`,
+ * `sameOpening`) and a step waiting for one waits forever — measured, at a hundred and sixty.
  */
 async function resizedThrough(columns: number, widths: readonly number[]): Promise<string> {
   const terminal = fakeTerminal({ columns, rows: TALL });
@@ -774,15 +779,17 @@ describe('the opening reads the record once, and a redraw never reads it', () =>
 
   it('reads nothing at all when the caller resizes the terminal, however many times', async () => {
     // THE SAME DECISION, ASKED OF THE OTHER CALLER. The page follows the terminal's width
-    // now: a caller who narrows their window gets the page again, with the box recomposed
-    // for it. Recomposing is not RE-READING — the lines already exist, and what the width
+    // now: a caller who narrows their window past the threshold gets the page again, with the
+    // arrangement recomposed for it. Recomposing is not RE-READING — the lines already exist, and what the width
     // decides is which drawing there is room for and how much of the name is drawn. A
     // redraw that asked `verify` again could make the panel say something different
     // halfway through a session, which is the same hazard a clean page was measured
     // against. So: three width changes read exactly what no width change reads.
     let drew = '';
     const thrice = await reading(async () => {
-      drew = await resizedThrough(200, [160, 120, 90]);
+      // THREE WIDTHS THAT EACH CROSS A THRESHOLD: down to where the text has no room beside the
+      // mark, back up to where it has, and down to where there is no arrangement at all.
+      drew = await resizedThrough(200, [90, 200, 46]);
     });
     const once = await reading(async () => {
       await openedAt(200);

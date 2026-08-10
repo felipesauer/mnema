@@ -775,7 +775,9 @@ describe('the form comes out of the content, and the narrowest still says the es
         Math.max(...rows),
         `${form}: the widest row is not the width the form gives way at`,
       ).toBe(edge);
-      expect(formOf(await openedAt(edge - 1), edge - 1), `${form}: did not give way`).not.toBe(form);
+      expect(formOf(await openedAt(edge - 1), edge - 1), `${form}: did not give way`).not.toBe(
+        form,
+      );
     }
   }, 300_000);
 
@@ -902,7 +904,10 @@ describe('the panel is the plain panel, wrapped, and it is drawn once', () => {
     // that draws it, so a fifth form moves this case with it.
     expect(times(page, OPENED)).toBe(1);
     expect(
-      times(page, drawnAt(200).reduce((most, row) => (row.length > most.length ? row : most))),
+      times(
+        page,
+        drawnAt(200).reduce((most, row) => (row.length > most.length ? row : most)),
+      ),
     ).toBe(1);
     // The frames really happened: the row under the prompt was written once per keystroke.
     // ⚠️ THE WITNESS USED TO BE A CLAUSE OF THE HINT, and the hint stopped saying it: it
