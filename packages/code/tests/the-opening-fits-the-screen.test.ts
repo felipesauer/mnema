@@ -835,11 +835,18 @@ describe('a session has opened when its frame is finished, not when its prompt i
  * ⚠️ IT WAS ONE NUMBER — *how many rows from the top have anything on them* — and it was the
  * same as the page's own height for as long as the page was drawn from the top of the screen.
  * That is what the delivery which anchored the input at the FOOT falsified
- * (`repl/page.ts`, `tests/the-prompt-sits-at-the-foot.test.ts`): the page is preceded by as
+ * (`repl/page.ts`, `tests/the-prompt-sits-at-the-foot.test.ts`): the page is placed with as
  * many blank rows as it takes for the input area to end on the last row the layout leaves, so
  * counting from the top answers *how tall the terminal is*, near enough, at every size. The
  * two rows are returned rather than the count, and every reading below says which end it
  * means — a count from the top cannot be written by accident any more.
+ *
+ * ⚠️ AND THE TWO ROWS ARE NO LONGER A HEIGHT EITHER, which the delivery that moved those blank
+ * rows UNDER the box falsified in turn: they are between the page and the input now, so the
+ * distance from the first drawn row to the last is the whole screen bar the row the layout keeps
+ * — at every size, whatever is drawn. What the first row is still good for is whether the top of
+ * the opening is on the screen at all; how much the console SPENDS is counted instead
+ * ({@link openedAt}).
  */
 function thePageOn(screen: { readonly rows: readonly string[] }): {
   readonly first: number;
@@ -883,9 +890,15 @@ async function openedAt(
   const page = thePageOn(screen);
   return {
     drawing,
-    // HOW TALL THE PAGE IS, corner to corner of what is drawn — not how far down the screen
-    // its last row reaches, which is where the anchor put it rather than what it costs.
-    spent: page.last - page.first + 1,
+    // HOW MANY ROWS THE CONSOLE DRAWS ON, which is what it costs a reader.
+    //
+    // ⚠️ IT WAS THE DISTANCE FROM THE FIRST DRAWN ROW TO THE LAST, and that was the same number
+    // for as long as the page and the input area were next to each other. The delivery that put
+    // the emptiness BETWEEN them falsified it: corner to corner is the whole screen now, at
+    // every size. Counted rather than spanned, the table below did not move by a row — which is
+    // the finding, and it is the same one the anchoring produced: where the page sits has
+    // changed twice now, and what it costs has not changed at all.
+    spent: screen.rows.filter((row) => row.trim().length > 0).length,
     whole: (screen.rows[page.first] as string).includes(`v${VERSION}`),
   };
 }
@@ -918,14 +931,15 @@ async function openedAt(
  *     big one. The opening is still whole and there is still a row over — what a reader loses
  *     is four rows of the record, and what they gain is the mark. It is a declared cost.
  *
- * ⚠️ AND WHAT THE LEFTOVER ROWS ARE HAS MOVED, while every number in the table stayed put.
- * They used to be the rows UNDER the page — screen a reader still had, which is what "leaves"
- * meant. The delivery that anchored the input at the foot spends them as blank rows ABOVE it
- * instead (`repl/page.ts`), so what is left over is the same COUNT and no longer the same
- * thing: the room a session has before it starts scrolling is nil either way, since a page
- * whose flow reached the foot scrolls on the next line said, and a page that stopped in the
- * middle of the screen scrolled once it got there. That the table did not move is the finding:
- * anchoring changed where the page sits and not what it costs.
+ * ⚠️ AND WHAT THE LEFTOVER ROWS ARE HAS MOVED TWICE, while every number in the table stayed
+ * put. They used to be the rows UNDER the page — screen a reader still had, which is what
+ * "leaves" meant. The delivery that anchored the input at the foot spent them as blank rows
+ * ABOVE it, and the one after that moved them UNDER THE BOX, which is where they are: between
+ * what the page says and the row being typed (`repl/page.ts`). What is left over is the same
+ * COUNT all three times and it has not been the same thing since the first: the room a session
+ * has before it starts scrolling is nil once the page is anchored, since a page whose flow
+ * reaches the foot scrolls on the next line said. That the table did not move through either
+ * move is the finding: both changed where the page sits, and neither changed what it costs.
  *
  * The three sizes are the ordinary one (eighty by twenty-four, which is the size every
  * terminal has had since before they were on screens), a common laptop window, and a large

@@ -15,6 +15,14 @@
  * region that is redrawn and stay under the row being typed for as long as the session
  * lives. Neither of them is composed here — both arrive as bytes a renderer produced.
  *
+ * AND WHAT IS REDRAWN INCLUDES WHAT IS EMPTY, which is the one thing on the page that is not a
+ * line at all: the rows between the flow and the input area ({@link theLeftover}). They are
+ * there so the input ends on the last row the layout leaves, and they are HERE — in what is
+ * redrawn — because that is what lets the area grow into them instead of into the screen. A
+ * list of words twenty rows tall takes twenty rows of nothing and gives them back when it
+ * shuts; the region is the same height throughout, so nothing of the caller's is carried away
+ * by a menu that came and went (`page.ts`).
+ *
  * NOTHING HERE COMPOSES A LINE, and that is the limit the whole decision to take a
  * layout library rests on. Five deliveries built ONE model of what a line of this
  * product says: `presentation/` answers with parts that carry a role, a renderer turns
@@ -207,6 +215,25 @@ export interface Shown {
    */
   readonly panel: Panel | undefined;
   /**
+   * HOW MANY ROWS WITH NOTHING ON THEM SIT BETWEEN THE FLOW AND THE AREA — what is left of the
+   * page once the flow and the area have taken their rows (`page.ts`, `theGap`).
+   *
+   * ⚠️ THEY USED TO BE LINES OF {@link past}, and that is the premise this delivery falsified.
+   * The argument was that the region redrawn then stayed exactly as tall as the AREA, which is
+   * true and was not the whole of it: the area changes height under a session, a region that
+   * grows scrolls the screen, and what scrolls off the top does not come back. Measured on a
+   * real terminal at a hundred and twenty by forty, one opening and shutting of the list of
+   * words carried the whole box away for good.
+   *
+   * SO THE ROOM IS REDRAWN WITH THE AREA, and the list takes it out of HERE rather than out of
+   * the screen: the two move in opposite directions on the same frame and the region's whole
+   * height does not change, so nothing scrolls and the box stays where the page put it. It
+   * travels with {@link area} because it is a function of the same two things — how tall the
+   * terminal is, and how tall the area is — and it is a number rather than rows, because a row
+   * with nothing on it is a row this file draws and never a line it composes.
+   */
+  readonly gap: number;
+  /**
    * WHICH ARRANGEMENT THE INPUT AREA IS IN, and where the caret goes inside it.
    *
    * It travels with what is shown rather than arriving as a prop, and the two reasons are
@@ -303,12 +330,20 @@ export function Region({
   // ref rather than state, so nothing is rendered twice for it
   // (`tests/the-opening-fits-the-screen.test.ts` compares the opening with the frame after
   // one keystroke: they used to disagree).
-  setCursorPosition({ x: shown.column, y: shown.area.above });
+  //
+  // ⚠️ AND THE OFFSET IS INTO THE WHOLE REGION AND NOT INTO THE AREA, which the leftover is
+  // what falsified: the rows with nothing on them are the FIRST rows of what is redrawn now
+  // (`page.ts`), so a caret placed at the area's own depth would open as many rows above the
+  // prompt as the page had room to spare — twenty-one of them, measured at a hundred and twenty
+  // by forty. Both halves are counted where each is answered: the leftover here, and how many
+  // rows the arrangement draws over the row being typed in `area.ts`.
+  setCursorPosition({ x: shown.column, y: shown.gap + shown.area.above });
 
   return node(
     Box,
     { flexDirection: 'column' },
     node(Past, { panel: shown.panel, lines: shown.past, page: shown.page }),
+    theLeftover(shown.gap),
     node(Present, {
       present: shown.present,
       palette: shown.palette,
@@ -558,6 +593,35 @@ function theRecord(panel: Panel, above: number): ReactNode {
     { key: 'record', flexDirection: 'column', marginTop: above },
     ...rows(panel.record),
   );
+}
+
+/**
+ * WHAT IS LEFT OF THE PAGE, DRAWN: that many rows with nothing on them, between the flow and
+ * the input area.
+ *
+ * ROWS AND NOT LINES, which is what keeps this file from composing one — a box with a minimum
+ * height is a row of the page with nothing put on it, exactly like the row over the palette.
+ * And ONE box rather than one per row: what it is is a single stretch of nothing, and a stretch
+ * of nothing has a height and no parts.
+ *
+ * ⛔ IT IS PART OF WHAT IS REDRAWN, and that is the whole mechanism rather than an
+ * implementation detail. The area changes height while a session runs — a list of words opens
+ * twenty rows tall and shuts on the next keystroke — and this is what it takes those rows OUT
+ * of: the two change by the same amount on the same frame, so the region's total height does
+ * not move, the terminal never scrolls for it, and what the page opened with stays on the
+ * screen. Rows kept in the flow instead could only ever be appended, which is why the box used
+ * to leave for good on the first list a caller opened (`page.ts`).
+ *
+ * NONE AT ALL IS NO BOX, and not a box of no rows: a page whose flow already fills the screen
+ * is the case this surface had before there was a leftover, and it draws what it drew then.
+ *
+ * HOW MANY IS NOT A FUNCTION OF WHAT THE SESSION SAID but of what is still on the screen, and the
+ * difference is a page that scrolled: a list too long for the room a page has to spare still costs
+ * the flow its top rows, and the frame after it has to be placed against what SURVIVED
+ * (`console.ts`, `flowOnScreen`). Nothing of that is decided here — the number arrives.
+ */
+function theLeftover(many: number): ReactNode {
+  return many > 0 ? node(Box, { key: 'leftover', minHeight: many }) : null;
 }
 
 /**

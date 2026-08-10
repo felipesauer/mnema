@@ -663,12 +663,30 @@ describe('the two keys open one list, and it stands off the row under it', () =>
     const columns = NOTHING_IS_CUT;
     const rows = 40;
     const offers = everythingOffered();
+    // ⚠️ AND A LINE IS LANDED BEFORE THE KEY IS PRESSED, which is not scenery: the page is
+    // PLACED with rows that have nothing on them, so that the input ends on the last row the
+    // layout leaves, and since those rows go under the flow (`repl/page.ts`) the row above the
+    // list's own blank one is one of THEM on a page nothing has been said on. What the session
+    // says lands under them, so one landed line is what puts something back over the gap — and
+    // the non-vacuity below is a statement about the separation again rather than about a screen
+    // with room to spare. It is abandoned rather than run, because one line is all it takes.
+    const typed = 'x';
     const listedBy = async (key: string): Promise<readonly string[]> => {
       const ran = await inPty({
         columns,
         rows,
         steps: [
           opens,
+          {
+            types: typed,
+            until: (bytes) => bytes.includes(`${PROMPT} ${typed}`),
+            what: 'echoed a keystroke',
+          },
+          {
+            types: CLEARS_THE_LINE,
+            until: arrivedSince(`${PROMPT} ${typed}`),
+            what: 'landed the abandoned line',
+          },
           {
             types: key,
             until: (bytes) => offers.every((offer) => bytes.includes(offer.word)),
@@ -677,7 +695,7 @@ describe('the two keys open one list, and it stands off the row under it', () =>
           leaves,
         ],
       });
-      const screen = screenOf(ran.bytes.slice(0, ran.at[1] as number), columns, rows);
+      const screen = screenOf(ran.bytes.slice(0, ran.at[3] as number), columns, rows);
       const listed = rowsNaming(
         screen,
         offers.map((offer) => offer.word),
