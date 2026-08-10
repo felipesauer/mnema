@@ -146,6 +146,14 @@ const ABOVE_THE_PALETTE = 1;
  * name gives way when the page it is on stops fitting on the screen, and "fitting" there is
  * this same boundary for this same reason — so it is the one number, read twice, rather
  * than a margin the opening chose to agree with (`session.ts`, `presentation/banner.ts`).
+ *
+ * AND A THIRD READER, WHICH IS THE ROW UNDER THE AREA. The page is written so that the flow
+ * ends on the last row the layout leaves to it, and the row it stops short of is this one
+ * (`page.ts`): measured on a real terminal, the library writes a newline after the last row
+ * of its frame, so a flow that reached the very last row would scroll the screen by one and
+ * land in the same place — the identical row, kept for the other of the two reasons. What the
+ * two readings together buy is that the arithmetic cannot go negative: the drawing is chosen
+ * so that the opening, the area and this row fit, so the page always has room to be placed.
  */
 export const BELOW_THE_VIEWPORT = 1;
 

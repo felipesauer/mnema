@@ -187,8 +187,16 @@ export interface Opening {
  * on the premise that nothing else could move a glyph of it. The name gives way by HEIGHT
  * now (`presentation/banner.ts`), so the premise is gone — and the answer that replaces it
  * is not "either measurement moved" but the one that was always underneath: is what would
- * be drawn what is drawn? A window dragged from forty rows to ten changes no glyph and
- * costs the caller nothing; one dragged to four changes the mark, and that is a page.
+ * be drawn what is drawn? A window dragged from forty rows to ten changes no glyph; one
+ * dragged to four changes the mark, and that is a page.
+ *
+ * ⚠️ AND IT IS NO LONGER THE WHOLE QUESTION A CALLER ASKS. This said that a height changing
+ * no glyph *costs the caller nothing*, and the delivery that put the input at the FOOT of the
+ * terminal falsified it: a page is now a drawing AND a placement, and the rows before the
+ * opening are how many the height leaves over (`repl/page.ts`). What is here is still the
+ * drawing, whole and unchanged — a panel that has no idea how tall a device is could not
+ * answer the other half — and the console asks both
+ * (`repl/console.ts`, `placedAt`; `tests/the-page-follows-the-terminal.test.ts`).
  *
  * COMPARED AS A WHOLE rather than field by field, and that is the point of it being here
  * rather than at the call site: a field added to the panel tomorrow is a field this

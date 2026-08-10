@@ -42,7 +42,14 @@ import { badgeLine, theSessionsOwnWords, tips } from '../src/repl/session.js';
 import { CLEAR, LEAVE, PREFIX, SESSION_WORDS } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC } from './support/console.js';
-import { inPty as drive, type Fixture, opensAConsole, type Ran, type Step } from './support/pty.js';
+import {
+  arrivedSince,
+  inPty as drive,
+  type Fixture,
+  opensAConsole,
+  type Ran,
+  type Step,
+} from './support/pty.js';
 import { screenOf } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
@@ -784,7 +791,12 @@ describe('opening the palette does not move the height the library erases at', (
           rows,
           steps: [
             opens,
-            { types: PREFIX, until: (bytes) => bytes.includes(PREFIX), what: 'opened the palette' },
+            // ⚠️ WHAT THIS KEYSTROKE PUT ON THE PAGE, and not the character anywhere in the
+            // stream: the opening writes a slash three ways over — the project's path, the
+            // record's `T1/T2/T4`, and the hint that names this very key — so a predicate over
+            // the whole stream was over before the key was pressed
+            // (`support/pty.ts`, `arrivedSince`).
+            { types: PREFIX, until: arrivedSince(PREFIX), what: 'opened the palette' },
             { types: COMPLETES, until: () => true, what: 'was asked for the words' },
             leaves,
           ],

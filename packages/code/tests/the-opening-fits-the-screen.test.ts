@@ -41,6 +41,7 @@ import { VERSION } from '../src/version.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import {
   aFrameAfter,
+  arrivedSince,
   inPty as drive,
   endOf,
   type Fixture,
@@ -48,7 +49,11 @@ import {
   type Ran,
   type Step,
 } from './support/pty.js';
+import { codeOnly } from './support/reading-source.js';
 import { screenOf } from './support/screen.js';
+
+/** This package's own tests — the corpus the guard over the pty drivers enumerates. */
+const TESTS = fileURLToPath(new URL('.', import.meta.url));
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
@@ -589,26 +594,274 @@ describe('a session has opened when its frame is finished, not when its prompt i
     );
     expect(cut).toBe(finished.length);
   });
+
+  it('⚠️ refuses a sentence the OPENING said, and takes the same sentence from the verb', async () => {
+    // ⚠️ THE OTHER WAY A STEP ENDS TOO EARLY, and it is not about frames at all: the string it
+    // waits for is one THE PANEL ALREADY WROTE. The opening prints the record's verdict on
+    // every page there is, so three steps that typed `verify` and waited for *"local integrity
+    // verified"* anywhere in the stream were satisfied by the drawing — and the case they fed
+    // asserted the ECHO, which is the one thing only a caller can put on a page. It went red
+    // once in two runs of the whole suite and green three times out of three on its own.
+    //
+    // ⛔ AND IT IS PINNED ON BYTES BUILT BY HAND, for the reason the case above is: a race does
+    // not answer a single run. What is deterministic is the predicate — a sentence that was
+    // already there when the step began is not this step's answer, and the same sentence
+    // arriving after it is.
+    const said = 'local integrity verified';
+    // The opening, as far as this case is concerned: it says the sentence, and nothing has
+    // been typed.
+    const opening = `box${said}(T1/T2/T4)${PROMPT} `;
+    const since = opening.length;
+
+    // ⚠️ WHAT THE OLD PREDICATE ANSWERED, written out here rather than imported, because it is
+    // what this case exists to refuse: over the whole stream, the opening alone says yes.
+    const overTheWholeStream = (bytes: string): boolean => bytes.includes(said);
+    expect(overTheWholeStream(opening), 'the opening does not say it, so there is no trap').toBe(
+      true,
+    );
+
+    // THE PROMISE: the step's own question says NO on bytes in which only the opening said it.
+    const answered = arrivedSince(said);
+    expect(answered(opening, since), 'the opening answered a step it did not cause').toBe(false);
+
+    // AND YES once the verb has answered — so this is a predicate that discriminates rather
+    // than one that refuses everything.
+    const echoed = `${opening}verify\r\n`;
+    const whole = `${echoed}public: ${said}(T1/T2/T4)\r\n`;
+    expect(answered(whole, since), 'the verb answered and the step did not notice').toBe(true);
+
+    // AND THE STEP REALLY WOULD HAVE BEEN CUT BEFORE THE ECHO, which is the defect rather than
+    // the predicate: with the old question the step ends on `opening`, where the echo the case
+    // asserts is not yet on the page. Asked of {@link endOf}, so it is the instrument's own
+    // answer and not an argument about it.
+    const cut = await endOf(
+      { until: overTheWholeStream, what: 'answered' },
+      () => opening,
+      () => false,
+      since,
+    );
+    expect(cut, 'the old question did not end the step on the opening').toBe(opening.length);
+    expect(opening.slice(0, cut)).not.toContain(`${PROMPT} verify`);
+    // And the fixed question, on the same stream, refuses that cut point.
+    expect(answered(opening.slice(0, cut), since)).toBe(false);
+  });
+
+  it('⚠️ asks every wait about what the caller caused, in each of the drivers that wait', () => {
+    // ⚠️ THE OTHER HALF, AND IT SCORED ZERO. The question above is only as good as the number
+    // handed to it, and mutating the DRIVER to hand `0` instead of where the step began left
+    // every case green — the rule was proved in the predicate and unguarded in the three
+    // places that feed it. This is the site count, and there are THREE: the shared instrument
+    // and two files that drive a pty of their own.
+    //
+    // ⚠️ FOUND BY THE DISCRIMINANT, AND THE FIRST DISCRIMINANT WAS TOO NARROW. It was
+    // `step.until(` — *a driver is a file that asks a STEP its own question* — and that named
+    // three. Two more drive a pty without a step at all, and one of them waits for
+    // *"local integrity verified"* in four places, which is the very sentence the panel writes.
+    // What every pty driver DOES have is the size check, because a reading taken against a
+    // device of unknown size is not a reading (`support/pty.ts`); so that is the discriminant,
+    // and it names five.
+    const drivers = readdirSync(TESTS)
+      .filter((name) => name.endsWith('.ts'))
+      .map((name) => ({ name, source: readFileSync(join(TESTS, name), 'utf-8') }))
+      .concat(
+        readdirSync(join(TESTS, 'support'))
+          .filter((name) => name.endsWith('.ts'))
+          .map((name) => ({
+            name: join('support', name),
+            source: readFileSync(join(TESTS, 'support', name), 'utf-8'),
+          })),
+      )
+      .filter(({ source }) => codeOnly(source).includes('theDeviceWasTheSizeAskedFor('));
+    expect(drivers.map(({ name }) => name).sort(), 'a pty driver appeared or went away').toEqual([
+      'a-page-that-opens-clean.test.ts',
+      join('support', 'pty.ts'),
+      'the-console-on-ink.test.ts',
+      'the-page-follows-the-terminal.test.ts',
+      'the-screen-says-what-it-was-drawn-at.test.ts',
+    ]);
+
+    // WHICH OF THEM WAIT FOR SOMETHING THE CALLER CAUSED, which is what the rule is about. One
+    // of the five does not: it writes bytes at a decoder and asserts what came back, so it has
+    // no marker to be answered early about. It is NAMED rather than filtered out silently — a
+    // driver that stopped waiting would otherwise leave this list quietly.
+    const WAITS_FOR_NOTHING_THE_CALLER_CAUSED = 'the-screen-says-what-it-was-drawn-at.test.ts';
+    const waiting = drivers.filter(({ name }) => name !== WAITS_FOR_NOTHING_THE_CALLER_CAUSED);
+    expect(
+      codeOnly(
+        drivers.find(({ name }) => name === WAITS_FOR_NOTHING_THE_CALLER_CAUSED)?.source as string,
+      ),
+      `${WAITS_FOR_NOTHING_THE_CALLER_CAUSED} started waiting for something, so it needs the rule`,
+    ).not.toContain('until(() =>');
+    // AND THE OTHER FOUR ALL USE THE ONE RULE. This is the A3 half: four drivers, one function
+    // that says what the question means.
+    for (const { name, source } of waiting) {
+      expect(codeOnly(source), `${name}: waits without the rule`).toContain('arrivedSince(');
+    }
+
+    // ⚠️ AND IT IS READ AFTER THE DEVICE IS SETTLED, not anywhere in the file. The first draft
+    // of this guard compared against the whole source and accused the shared instrument for
+    // DEFINING `resizedTo` above the loop that calls it — an instrument that accuses the
+    // innocent, which this bench has now paid for twice. The scope is what the driver does once
+    // it has a device of a known size, which is the same boundary in all four shapes rather
+    // than a loop only three of them have.
+    const drivingIn = (source: string): string => {
+      const code = codeOnly(source);
+      // ⚠️ THE CALL AND NOT THE NAME. Anchoring on the bare name put the scope at the shared
+      // instrument's own DEFINITION of the check, above every function in the file, so the
+      // definition of `resizedTo` fell inside the scope and this guard accused the innocent for a
+      // third time. An instrument that can accuse three ways needs its own cases.
+      const at = code.indexOf('await theDeviceWasTheSizeAskedFor(');
+      expect(at, 'a driver that never awaited the size of its device').toBeGreaterThan(-1);
+      // ⚠️ AND IT ENDS WHERE THE DRIVER DOES. Running the scope to the end of the FILE swept in
+      // everything below it, and one of these files holds cases driven in process — on a pair of
+      // fake streams rather than on a device — which wait for the opening on purpose and have no
+      // keystroke to be scoped against. The guard accused them: a fourth way to accuse the
+      // innocent, and the third caught by its own cases. Every driver hands the terminal back in
+      // a `finally`, so that is the end of the body that drives one.
+      const ends = code.indexOf('} finally {', at);
+      expect(ends, 'a driver that never gives the terminal back').toBeGreaterThan(at);
+      return code.slice(at, ends);
+    };
+
+    /**
+     * WHAT EACH `step.until(…)` IS HANDED, one string per call.
+     *
+     * ⚠️ IT WAS A REGULAR EXPRESSION and it read the wrong thing: `[^)]*` stops at the FIRST
+     * close paren, so `step.until(arriving.text(), since)` came back as `arriving.text(` — an
+     * argument list with no comma in it, and the guard accused a driver that was correct. The
+     * parens are walked instead, which is the only way to read a call whose arguments are
+     * themselves calls.
+     */
+    const askedIn = (loop: string): string[] => {
+      const asked: string[] = [];
+      const call = 'step.until(';
+      for (let at = loop.indexOf(call); at !== -1; at = loop.indexOf(call, at + 1)) {
+        let depth = 1;
+        let end = at + call.length;
+        while (end < loop.length && depth > 0) {
+          if (loop[end] === '(') depth += 1;
+          if (loop[end] === ')') depth -= 1;
+          end += 1;
+        }
+        asked.push(loop.slice(at + call.length, end - 1));
+      }
+      return asked;
+    };
+
+    for (const { name, source } of waiting) {
+      const driving = drivingIn(source);
+      // THE NUMBER IS READ OFF THE STREAM, and that is what the mutation broke: a driver that
+      // assigned a constant satisfied every other reading of this rule.
+      expect(driving, `${name}: the starting point is not read off the stream`).toContain(
+        'const since = arriving.text().length;',
+      );
+      // AND THE READING COMES BEFORE THE DOING — the resize, the other process and the
+      // keystroke are all the caller's own, so a number taken after any of them already
+      // includes what the step caused.
+      const read = driving.indexOf('const since = arriving.text().length;');
+      for (const doing of ['resizedTo(device', 'await step.does()', 'stdin.write(']) {
+        const at = driving.indexOf(doing);
+        if (at === -1) continue;
+        expect(read, `${name}: the starting point is taken after \`${doing}\``).toBeLessThan(at);
+      }
+      // AND EVERY QUESTION A STEP IS ASKED IS HANDED THE NUMBER, in the three drivers that have
+      // steps. Asked over the whole file rather than over the loop, and the difference is a real
+      // one this guard's own non-vacuity check found: the shared instrument READS the number in
+      // its loop and ASKS the question one function up ({@link endOf}), while the two local
+      // drivers do both inline.
+      const asking = askedIn(codeOnly(source));
+      for (const asked of asking) {
+        expect(asked, `${name}: a step was asked its question without where it began`).toContain(
+          ', since',
+        );
+      }
+      // ⚠️ AND NOTHING AFTER THE FIRST KEYSTROKE READS THE WHOLE STREAM. This is the half that
+      // scored ZERO: reverting the fourth driver's wait to the unscoped form left every other
+      // reading of this rule satisfied — the number was still read, still before the writing,
+      // and the rule was still imported. What is more, the compiler did not catch the local it
+      // orphaned, because `tsc -b` does not type-check tests at all.
+      //
+      // A WAIT BEFORE THE CALLER HAS DONE ANYTHING MAY read the whole stream — that is how a
+      // driver knows the console opened, and the opening is exactly what it is waiting for. A
+      // wait AFTER may not, because by then the whole stream contains the opening.
+      const typed = driving.indexOf('stdin.write(');
+      if (typed !== -1) {
+        for (const unscoped of ['arriving.text().includes(', 'terminal.bytes().includes(']) {
+          expect(
+            driving.slice(typed),
+            `${name}: a wait after the first keystroke reads the whole stream`,
+          ).not.toContain(unscoped);
+        }
+      }
+    }
+    // NOT VACUOUS, IN FOUR DIRECTIONS: the scope really would refuse a driver that read the
+    // number nowhere, the walker really reads a call whose argument is itself a call, the
+    // one-argument form really is told from the two-argument one, and the drivers that have
+    // steps really were asked something — a walker that found nothing would have approved them
+    // all in silence.
+    expect(
+      drivingIn('await theDeviceWasTheSizeAskedFor(x); child.stdin.write(k); } finally {'),
+    ).not.toContain('const since =');
+    expect(askedIn('step.until(now)')).toEqual(['now']);
+    expect(askedIn('step.until(arriving.text(), since)')).toEqual(['arriving.text(), since']);
+    // AND THE UNSCOPED-WAIT CHECK REALLY ACCUSES, on the exact shape it exists to refuse: a
+    // read of the whole stream written after a keystroke.
+    const wouldBeAccused = 'child.stdin.write(k); await until(() => arriving.text().includes(m));';
+    expect(
+      wouldBeAccused.slice(wouldBeAccused.indexOf('stdin.write(')),
+      'the check cannot accuse the shape it exists for',
+    ).toContain('arriving.text().includes(');
+    expect(
+      waiting
+        .filter(({ source }) => askedIn(codeOnly(source)).length > 0)
+        .map(({ name }) => name)
+        .sort(),
+      'the drivers that ask a step its question changed',
+    ).toEqual([
+      'a-page-that-opens-clean.test.ts',
+      join('support', 'pty.ts'),
+      'the-page-follows-the-terminal.test.ts',
+    ]);
+  });
 });
 
 // ---------------------------------------------------------------------------
 // The count: how much of the screen the console spends, and whether it FITS
 // ---------------------------------------------------------------------------
 
-/** How many rows from the top of a screen have anything on them. */
-function rowsDrawn(screen: { readonly rows: readonly string[] }): number {
-  return screen.rows.map((row) => row.trim().length > 0).lastIndexOf(true) + 1;
+/**
+ * WHERE THE PAGE IS ON A SCREEN: the first row with anything on it, and the last.
+ *
+ * ⚠️ IT WAS ONE NUMBER — *how many rows from the top have anything on them* — and it was the
+ * same as the page's own height for as long as the page was drawn from the top of the screen.
+ * That is what the delivery which anchored the input at the FOOT falsified
+ * (`repl/page.ts`, `tests/the-prompt-sits-at-the-foot.test.ts`): the page is preceded by as
+ * many blank rows as it takes for the input area to end on the last row the layout leaves, so
+ * counting from the top answers *how tall the terminal is*, near enough, at every size. The
+ * two rows are returned rather than the count, and every reading below says which end it
+ * means — a count from the top cannot be written by accident any more.
+ */
+function thePageOn(screen: { readonly rows: readonly string[] }): {
+  readonly first: number;
+  readonly last: number;
+} {
+  const drawn = screen.rows.map((row) => row.trim().length > 0);
+  return { first: drawn.indexOf(true), last: drawn.lastIndexOf(true) };
 }
 
 /**
  * WHAT A CONSOLE OPENED AT A SIZE SHOWS: which of the drawings is on it, how many rows it
  * spends, and whether the whole of the opening is still on the screen.
  *
- * WHOLE IS THE PROMISE THIS FILE IS NAMED AFTER, and it is read off the FIRST row rather
- * than off a count: an opening taller than the screen loses its top, and its top is the
- * title. What the title is is asked of the product — it is the only line of the opening that
- * names the build — so a case cannot come to look for a sentence the session stopped
- * saying.
+ * WHOLE IS THE PROMISE THIS FILE IS NAMED AFTER, and it is read off the first row the page
+ * is DRAWN on rather than off a count: an opening taller than the screen loses its top, and
+ * its top is the title. What the title is is asked of the product — it is the only line of
+ * the opening that names the build — so a case cannot come to look for a sentence the session
+ * stopped saying.
+ *
+ * ⚠️ IT WAS ROW ZERO, and the anchoring is what falsified that: the rows above the page are
+ * blank now, so `rows[0]` names the build on no terminal with room to spare, and this read
+ * would answer *cut* on every one of them ({@link thePageOn}).
  */
 async function openedAt(
   columns: number,
@@ -627,10 +880,13 @@ async function openedAt(
   const drawing =
     everyForm().find((form) => form.every((row) => screen.text.includes(row.trimEnd()))) ??
     ([] as readonly string[]);
+  const page = thePageOn(screen);
   return {
     drawing,
-    spent: rowsDrawn(screen),
-    whole: (screen.rows[0] as string).includes(`v${VERSION}`),
+    // HOW TALL THE PAGE IS, corner to corner of what is drawn — not how far down the screen
+    // its last row reaches, which is where the anchor put it rather than what it costs.
+    spent: page.last - page.first + 1,
+    whole: (screen.rows[page.first] as string).includes(`v${VERSION}`),
   };
 }
 
@@ -662,6 +918,15 @@ async function openedAt(
  *     big one. The opening is still whole and there is still a row over — what a reader loses
  *     is four rows of the record, and what they gain is the mark. It is a declared cost.
  *
+ * ⚠️ AND WHAT THE LEFTOVER ROWS ARE HAS MOVED, while every number in the table stayed put.
+ * They used to be the rows UNDER the page — screen a reader still had, which is what "leaves"
+ * meant. The delivery that anchored the input at the foot spends them as blank rows ABOVE it
+ * instead (`repl/page.ts`), so what is left over is the same COUNT and no longer the same
+ * thing: the room a session has before it starts scrolling is nil either way, since a page
+ * whose flow reached the foot scrolls on the next line said, and a page that stopped in the
+ * middle of the screen scrolled once it got there. That the table did not move is the finding:
+ * anchoring changed where the page sits and not what it costs.
+ *
  * The three sizes are the ordinary one (eighty by twenty-four, which is the size every
  * terminal has had since before they were on screens), a common laptop window, and a large
  * one — the last because a count that only held where the defect was measured is a count
@@ -673,12 +938,12 @@ const THE_SCREEN: readonly { columns: number; rows: number; takes: number }[] = 
   { columns: 120, rows: 40, takes: 18 },
 ];
 
-describe('the console leaves the screen to the record it was opened over', () => {
+describe('the console spends only part of the screen it opens on', () => {
   for (const { columns, rows, takes } of THE_SCREEN) {
     it(`spends ${takes} rows of ${rows} at ${columns} columns, and leaves ${rows - takes}`, async () => {
       const opened = await openedAt(columns, rows);
       expect(opened.spent, `${columns}x${rows}: what the console spends`).toBe(takes);
-      expect(rows - opened.spent, `${columns}x${rows}: what is left for the record`).toBe(
+      expect(rows - opened.spent, `${columns}x${rows}: what the page does not take`).toBe(
         rows - takes,
       );
       // AND IT FITS, which is what the count is for. Nothing of the opening is in the
@@ -835,7 +1100,7 @@ describe('the caret opens on the prompt, and the first keystroke does not move i
     // Not vacuous: something really is drawn over the row being typed, so a caret left at
     // the end of the frame would have landed somewhere else.
     expect(promptRow(opening)).toBeGreaterThan(0);
-    expect(rowsDrawn(opening)).toBeGreaterThan(promptRow(opening));
+    expect(thePageOn(opening).last).toBeGreaterThan(promptRow(opening));
   }, 180_000);
 });
 

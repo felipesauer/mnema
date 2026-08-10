@@ -211,6 +211,35 @@ export function opensAConsole(prompt: string): Step {
   return { until: aFrameAfter(prompt), what: 'opened its console' };
 }
 
+/**
+ * WHETHER `what` IS IN THE BYTES THAT ARRIVED SINCE THIS STEP BEGAN — rather than anywhere
+ * in the stream.
+ *
+ * ⚠️ FOUR STEPS WAITED FOR SOMETHING THE OPENING ALREADY WRITES, and a predicate over the
+ * WHOLE stream is answered by the opening: the panel prints the record's verdict on every
+ * page there is, so a step that typed `verify` and waited for *"local integrity verified"*
+ * was over before the caller's line had been echoed. Measured: red once in two runs of the
+ * suite, green three times out of three on its own, and the case it broke was the one
+ * asserting the echo — *"the caller never typed a verb"*, over a screen of blank rows. The
+ * fourth waited for a SLASH, which the opening writes three ways over: the project's path,
+ * the record's `T1/T2/T4`, and the hint that names that very key.
+ *
+ * IT IS THE DELIVERY THAT ANCHORED THE PAGE THAT EXPOSED IT, and not what broke it: the blank
+ * rows before the opening changed how many bytes arrive before the echo, so a window that had
+ * been hiding the flaw stopped hiding it. The predicate was always wrong.
+ *
+ * THE RULE IS ABOUT THE STEP AND NOT ABOUT THE STRING, which is why it is one function rather
+ * than a count written out at each site: *did what I am waiting for arrive because of what
+ * this step did?* Waiting for "the second occurrence" answers the same question only as long
+ * as somebody keeps the count right, and the right count is different at every site.
+ *
+ * Pinned on bytes built by hand (`tests/the-opening-fits-the-screen.test.ts`) — a race does
+ * not answer a single run.
+ */
+export function arrivedSince(what: string): (bytes: string, since: number) => boolean {
+  return (bytes, since) => bytes.slice(since).includes(what);
+}
+
 /** One thing to do in the session, and what says it is done. */
 export interface Step {
   /** What the caller types, if anything. */
@@ -227,8 +256,15 @@ export interface Step {
   readonly does?: () => void | Promise<void>;
   /** The size their window becomes first, if it changes. */
   readonly resize?: { readonly columns: number; readonly rows: number };
-  /** What is true of everything received once the step has happened. */
-  readonly until: (bytes: string) => boolean;
+  /**
+   * What is true of everything received once the step has happened.
+   *
+   * `since` is how many bytes had arrived when the step BEGAN — before it resized anything,
+   * before somebody else appended, and before a key was written. It is what lets a predicate
+   * ask about the step's own doing rather than about the whole stream, which is the difference
+   * between waiting for an answer and being answered by the opening ({@link arrivedSince}).
+   */
+  readonly until: (bytes: string, since: number) => boolean;
   /** What the step is, for the message when it never happens. */
   readonly what: string;
 }
@@ -299,12 +335,20 @@ async function settles(bytes: () => string): Promise<void> {
  * A stream that has ENDED is answered wherever it is: the process is gone, there is nothing
  * more coming, and a case reading a dead session's screen has its own assertions to fail.
  */
-export async function endOf(step: Step, bytes: () => string, over: () => boolean): Promise<number> {
+export async function endOf(
+  step: Step,
+  bytes: () => string,
+  over: () => boolean,
+  // HOW MUCH HAD ARRIVED WHEN THE STEP BEGAN, so a predicate can ask about the step's own
+  // doing ({@link Step.until}). Defaulted, because a caller with one step and nothing before
+  // it is asking about the whole stream and there is nothing to subtract.
+  since = 0,
+): Promise<number> {
   for (let round = 0; round < AT_MOST; round += 1) {
-    await waitFor(() => step.until(bytes()) || over(), step.what);
+    await waitFor(() => step.until(bytes(), since) || over(), step.what);
     await settles(bytes);
     const now = bytes();
-    if (step.until(now) || over()) return now.length;
+    if (step.until(now, since) || over()) return now.length;
   }
   throw new Error(`the session never settled anywhere it ${step.what}`);
 }
@@ -357,6 +401,10 @@ export async function inPty(
     // nobody checked is the premise every count below rests on.
     await theDeviceWasTheSizeAskedFor(here, options.rows, options.columns);
     for (const step of options.steps) {
+      // WHERE THE STEP BEGINS, taken before anything it does — the resize, the other process,
+      // and the keystroke are all the step's own doing, so a predicate that wants to know what
+      // this step produced has to be able to cut in front of all three.
+      const since = arriving.text().length;
       if (step.resize !== undefined) {
         resizedTo(device as string, step.resize.rows, step.resize.columns);
       }
@@ -367,7 +415,7 @@ export async function inPty(
       // WHERE THE STEP ENDS is the point its own question approved, and it is asked for as
       // one thing rather than waited for here and measured there ({@link endOf} says what
       // that cost).
-      at.push(await endOf(step, arriving.text, () => over));
+      at.push(await endOf(step, arriving.text, () => over, since));
     }
     await Promise.race([
       ended,
