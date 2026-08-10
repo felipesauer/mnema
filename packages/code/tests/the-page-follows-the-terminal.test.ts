@@ -54,7 +54,13 @@ import { VERSION } from '../src/version.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { decodedWhole } from './support/arriving.js';
 import { ESC, fakeTerminal, hooksNothing, until, withoutLayout } from './support/console.js';
-import { aFrameAfter, resizedTo, sizedTo, theDeviceWasTheSizeAskedFor } from './support/pty.js';
+import {
+  aFrameAfter,
+  arrivedSince,
+  resizedTo,
+  sizedTo,
+  theDeviceWasTheSizeAskedFor,
+} from './support/pty.js';
 import { screenOf } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
@@ -189,8 +195,15 @@ interface Step {
    * Nothing here writes to the session or asks it anything.
    */
   readonly resize?: { readonly columns: number; readonly rows: number };
-  /** What the terminal must have received before this step counts as over. */
-  readonly until: (bytes: string) => boolean;
+  /**
+   * What the terminal must have received before this step counts as over.
+   *
+   * `since` is how many bytes had arrived when the step BEGAN — the number that lets a
+   * predicate ask about the step's own doing rather than about the whole stream, which is the
+   * difference between waiting for an answer and being answered by the OPENING
+   * (`support/pty.ts`, `arrivedSince`).
+   */
+  readonly until: (bytes: string, since: number) => boolean;
   /** What to call it when it never happens. */
   readonly what: string;
 }
@@ -267,11 +280,15 @@ async function inPty(options: {
     // written (`support/pty.ts`) rather than restated here.
     await theDeviceWasTheSizeAskedFor(here, options.rows, options.columns);
     for (const step of options.steps) {
+      // WHERE THE STEP BEGINS — the shared instrument's rule again, taken before the resize as
+      // well as before the keystroke, because both are the step's own doing
+      // (`support/pty.ts`, `arrivedSince`).
+      const since = arriving.text().length;
       if (step.resize !== undefined) {
         resizedTo(device as string, step.resize.rows, step.resize.columns);
       }
       if (step.types !== undefined) child.stdin.write(step.types);
-      await waitFor(() => step.until(arriving.text()) || over, step.what);
+      await waitFor(() => step.until(arriving.text(), since) || over, step.what);
       // Settled: the page has stopped growing, so the offset taken below is the end of a
       // frame rather than the middle of one.
       for (let still = 0, was = -1; still < 8; still++) {
@@ -384,7 +401,11 @@ describe('the box is redrawn at the width the caller left their window at', () =
       rows,
       steps: [
         opens,
-        { types: 'verify\r', until: (bytes) => bytes.includes(VERIFIED), what: 'answered' },
+        // ⚠️ AND IT WAITS FOR WHAT THE VERB SAID, not for the sentence anywhere in the
+        // stream: the PANEL prints the record's verdict on every page there is, so a
+        // predicate over the whole stream was satisfied by the opening and this step could
+        // end before the echo existed (`support/pty.ts`, `arrivedSince`).
+        { types: 'verify\r', until: arrivedSince(VERIFIED), what: 'answered' },
         {
           resize: { columns: 90, rows },
           until: (bytes) => times(bytes, TOP_LEFT) > 1,
@@ -471,32 +492,49 @@ const carriedPages = (bytes: string): number =>
   (bytes.match(new RegExp(`${ESC}\\[\\d+;1H`, 'g')) ?? []).length;
 
 describe('the page follows the drawing, and once per drag', () => {
-  it('draws nothing when a height moves no glyph, and turns the page when one does', async () => {
-    // ⚠️ THIS CASE WAS `draws nothing at all when only the height changed`, and it is
-    // renamed because what it asserted stopped being true: the name gives way by HEIGHT as
-    // well now (`presentation/banner.ts`), so a window made short enough opens with a
-    // different mark. What survived is the half with teeth — a height that changes no glyph
-    // costs the caller nothing — and it survived because the guard stopped comparing SIZES
-    // and started comparing the opening itself (`repl/panel.ts`, `sameOpening`).
+  it('turns the page for a height that moves no glyph, and for one that does', async () => {
+    // ⚠️ THIS CASE WAS `draws nothing when a height moves no glyph, and turns the page when
+    // one does`, and before that `draws nothing at all when only the height changed`. Both
+    // halves of both names rested on one premise — a height the DRAWING does not depend on is
+    // a height the page does not depend on — and the delivery that put the input at the FOOT
+    // of the terminal falsified it: the rows before the opening are how many the height leaves
+    // over, so a page placed at one height is misplaced at another whatever is drawn on it
+    // (`repl/page.ts`, `tests/the-prompt-sits-at-the-foot.test.ts`). Measured, on a real
+    // device, before the guard was widened: at a hundred by thirty dragged to forty, not one
+    // byte was written and the input stayed eleven rows above the foot.
     //
-    // ⚠️ AND IT WOULD HAVE STAYED GREEN THROUGH THE CHANGE, which is why it is here rather
-    // than deleted: it ended its drag back at the height it started from, so a console that
-    // turned a page for every height still answered one. The drag below ends somewhere
-    // else.
+    // ⚠️ AND IT WOULD HAVE STAYED GREEN THROUGH THE EARLIER CHANGE, which is why the drag ends
+    // somewhere other than where it began: a drag that came back to its own height would be
+    // answered with one page by a console that turned one for every height and by a console
+    // that turned none.
+    //
+    // WHAT IS ASSERTED NOW IS THE PAIR: the height alone turns a page, and a drag that ends
+    // where it started still turns none — so this is the guard being widened rather than
+    // removed.
     const { terminal, close } = await opened(200);
     const pages = () => carriedPages(terminal.bytes());
     expect(pages(), 'the page was never opened').toBe(1);
-    // ⚠️ THE HEIGHTS IT USED WERE THIRTY, TWENTY AND TEN, and this delivery falsified the
-    // premise under them: the name gave way when the DRAWING was taller than the terminal,
+    // ⚠️ THE HEIGHTS IT USED WERE THIRTY, TWENTY AND TEN, and an earlier delivery falsified
+    // the premise under them: the name gave way when the DRAWING was taller than the terminal,
     // so nothing but a four-row window could move a glyph. It gives way when the PAGE stops
     // fitting now, and every one of those three crosses a threshold. What is chosen instead
     // is derived rather than picked: the biggest drawing there is is already on the screen
     // at forty rows, so no TALLER terminal can change it — heights above the one the session
-    // opened at are heights the drawing cannot depend on, whatever the arithmetic under it
+    // opened at are heights the DRAWING cannot depend on, whatever the arithmetic under it
     // says, and the drag still ends somewhere other than where it began.
     for (const rows of [50, 60, 44]) terminal.resize(200, rows);
     await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
-    expect(pages(), 'a height that moves no glyph turned the page').toBe(1);
+    expect(pages(), 'a height with a new placement did not turn the page').toBe(2);
+    // AND IT IS THE PLACEMENT AND NOT THE DRAWING THAT DID IT, which is what makes this the
+    // widened half rather than a coincidence: the box on the new page is the box that was on
+    // the old one, drawn at the same width, so nothing a panel can see moved.
+    expect(times(terminal.bytes(), TOP_LEFT), 'the box was not drawn again').toBe(2);
+    // AND A DRAG THAT ENDS WHERE IT STARTED STILL COSTS NOTHING. The guard grew a half; it
+    // did not become "a resize event happened".
+    terminal.resize(200, 30);
+    terminal.resize(200, 44);
+    await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
+    expect(pages(), 'a drag back to the height on the screen turned a page').toBe(2);
 
     // THE WIDTH STILL DOES IT, which is what this case has always been beside — and it is
     // asked here, at a height with room for the whole drawing, because a short terminal is
@@ -505,8 +543,8 @@ describe('the page follows the drawing, and once per drag', () => {
     // rows; `tests/a-page-that-opens-clean.test.ts` is where that behaviour is pinned).
     terminal.resize(199);
     await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
-    expect(pages(), 'a change of width did not turn the page').toBe(2);
-    expect(times(terminal.bytes(), TOP_LEFT), 'the box was not drawn again').toBe(2);
+    expect(pages(), 'a change of width did not turn the page').toBe(3);
+    expect(times(terminal.bytes(), TOP_LEFT), 'the box was not drawn again').toBe(3);
 
     // AND THE TEETH FOR THE OTHER MEASUREMENT: a height the drawing DOES depend on.
     //
@@ -522,7 +560,7 @@ describe('the page follows the drawing, and once per drag', () => {
     const before = terminal.bytes().length;
     terminal.resize(199, 4);
     await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
-    expect(pages(), 'a height that gives the mark away did not turn the page').toBe(3);
+    expect(pages(), 'a height that gives the mark away did not turn the page').toBe(4);
     // And it is a SHORTER mark that was drawn, so the page turned for the reason claimed.
     // Read from the LAST box on the page rather than from everything written after the
     // resize: on a terminal this short the library writes out everything it is keeping,
@@ -924,6 +962,19 @@ describe('the FRAME asks how big the terminal is in one place, and it follows it
     // And there really are two callers of it, plus the write to the DEVICE that opens the
     // page before there is a layout to write through — which is the third of the three.
     expect(times(source, 'thePageAgain();'), 'the one page has fewer than two callers').toBe(2);
-    expect(times(source, 'carriedIntoTheScrollback(howTall())')).toBe(2);
+    // ⚠️ AND IT USED TO COUNT THE WHOLE CALL — `carriedIntoTheScrollback(howTall())`. A page
+    // is placed against four numbers now rather than one, because the input is anchored at the
+    // foot and the leftover is a subtraction over what the opening and the area take
+    // (`repl/page.ts`), so the argument is no longer one expression written the same way at
+    // both sites. What the count is FOR is the two places the bytes of a page are written —
+    // the device before there is a layout, and the layout's own door after — so that is what
+    // it counts, and the argument is pinned by the type rather than by a spelling.
+    expect(times(source, 'carriedIntoTheScrollback('), 'the page is written elsewhere').toBe(2);
+    // AND THE HEIGHT THE PAGE WAS PLACED AT IS RECORDED WHERE THE PAGE IS TURNED. It is the
+    // half of the resize guard the drawing cannot answer (`repl/panel.ts`, `sameOpening`), so
+    // a page turned without recording it would leave the guard comparing against a height two
+    // pages old and refusing to follow the terminal at all: born with the page that opens, and
+    // written again in the one place that turns one.
+    expect(times(source, 'placedAt ='), 'the placement is recorded somewhere else').toBe(2);
   });
 });

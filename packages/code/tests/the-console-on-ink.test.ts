@@ -59,7 +59,7 @@ import { REPL_VERB } from '../src/wiring/repl.js';
 import { DEFAULT_REQUIREMENT } from '../src/wiring/verify.js';
 import { decodedWhole } from './support/arriving.js';
 import { ESC, fakeTerminal, hooksNothing, until, withoutLayout } from './support/console.js';
-import { sizedTo, theDeviceWasTheSizeAskedFor } from './support/pty.js';
+import { arrivedSince, sizedTo, theDeviceWasTheSizeAskedFor } from './support/pty.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
@@ -232,10 +232,24 @@ async function inPty(options: {
     // The console is open when the prompt is on the screen. Everything after this is
     // sent to a session that is really running, which is what makes a kill mid-session.
     await until(() => arriving.text().includes(PROMPT) || over, 'opened its console');
+    // ⚠️ WHERE WHAT THE CALLER DOES BEGINS, and the whole reason it is taken: what this driver
+    // is asked to wait for is *"local integrity verified"* in four cases, and THE PANEL SAYS
+    // THAT — it is the record's own verdict, on every page there is. So the wait below was
+    // answered by the opening, and the keys after it were sent to a session that had not
+    // finished the verb. The rule and why it is one function: `support/pty.ts`,
+    // {@link arrivedSince}.
+    //
+    // ⚠️ AND THIS FILE IS WHERE THE COST SHOWED. `on Ctrl-D` has been a catalogued flake of
+    // this bench — the child never closing, thirty seconds, no assertion involved — and one of
+    // the four is that case: the end-of-input was written while `verify` was still answering.
+    // A flake is not proof of a cause, and this is not claimed as one; what IS deterministic is
+    // that the wait was satisfied by the drawing, which this removes.
+    const since = arriving.text().length;
     for (const typed of options.types ?? []) child.stdin.write(typed);
     if (options.waitFor !== undefined) {
       const marker = options.waitFor;
-      await until(() => arriving.text().includes(marker) || over, `answered with ${marker}`);
+      const answered = arrivedSince(marker);
+      await until(() => answered(arriving.text(), since) || over, `answered with ${marker}`);
     }
     for (const typed of options.thenTypes ?? []) child.stdin.write(typed);
     if (options.signal !== undefined) {
