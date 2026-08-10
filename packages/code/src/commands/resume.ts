@@ -5,9 +5,15 @@
  * every tree of the project, rebuild, and hand them to the copilot's PURE `resume`
  * derivation. It opens no writer, emits no event, mints no key. The
  * actor is a required flag for the same reason `focus` requires it — the record
- * has no "current actor", the CLI has no session `who`, and deriving one would
- * touch key material the surface must not own. The derivation takes the actor as
- * a parameter, so passing it keeps the read truly read-only.
+ * has no "current actor", an invocation of this CLI has no session `who`, and
+ * deriving one would touch key material the surface must not own. The derivation
+ * takes the actor as a parameter, so passing it keeps the read truly read-only.
+ *
+ * ⚠️ IT SAID *THE CLI* HAS NO SESSION `who`, and the console is one: `mnema repl`
+ * resolves the identity from local material with no writer opened, and fills this flag
+ * in for a caller who would otherwise type back what its own panel shows
+ * (`repl/asking.ts`). The declaration and its reason are untouched — see `focus.ts`,
+ * where the whole argument is written out.
  *
  * `resume` answers "where was I" even for a run that ALREADY ENDED — the latest
  * run by start time, open or not, carries the goal that reminds the actor what it

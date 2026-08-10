@@ -73,6 +73,7 @@ import { reportUsage } from '../wiring/report.js';
 import type { Declared } from '../wiring/verb.js';
 import { DEFAULT_REQUIREMENT, levelSeverity, treeHeadline, VERIFY_VERB } from '../wiring/verify.js';
 import { areaFor, BELOW_THE_VIEWPORT } from './area.js';
+import { asTheSession } from './asking.js';
 import { completerFor } from './complete.js';
 import type { Drawn } from './console.js';
 import { followingTheRecord } from './following.js';
@@ -205,10 +206,33 @@ export interface Session {
   readonly render: Render;
   /** The name the session's own verb was registered under (see {@link verbsOffered}). */
   readonly self: string;
+  /**
+   * WHO THIS SESSION IS SPEAKING AS — the identity the opening resolved, or nothing when
+   * it could not name one.
+   *
+   * It is the value the panel is drawn with (`standing.ts`), carried rather than asked
+   * for again: a verb that requires the asker's identity is given it here instead of
+   * demanding a caller type back what the box above the prompt is showing them
+   * (`asking.ts`). Resolved ONCE, when the session opens, from local material and with no
+   * writer opened — so what a line costs is the line's own work and nothing else.
+   *
+   * `undefined` is a first-class answer and not a missing value: a session outside any
+   * project, or on a machine whose key root names no single key, has no identity to speak
+   * as, and the verb asks for one the way it always has.
+   */
+  readonly identity: string | undefined;
 }
 
-/** Everything opening a session needs beyond one line's worth. */
-export interface SessionRequest extends Session {
+/**
+ * Everything opening a session needs beyond one line's worth.
+ *
+ * WHO THE SESSION IS IS NOT ON IT, and the omission is the guarantee: the identity a
+ * line is answered as is READ when the session opens (`standing.ts`) and cannot be
+ * handed in. A caller that could supply one would be a caller that could open a console
+ * speaking as somebody else, and the whole argument for filling it at all is that the
+ * value is this installation's own.
+ */
+export interface SessionRequest extends Omit<Session, 'identity'> {
   /** Where the keystrokes come from. */
   readonly input: NodeJS.ReadStream;
   /** The page the console draws on. Not where a report goes — that is the console. */
@@ -256,7 +280,13 @@ export async function openSession(request: SessionRequest): Promise<void> {
     err: (line) => land(line),
     fail: () => undefined,
   };
-  const session: Session = { io: onThePage, render, self };
+  // WHERE THE SESSION IS STANDING, resolved once and read by two things: the line the
+  // opening draws, and every line the caller then types. It is one `readdir` and one
+  // small file, and no writer is opened to get it (`standing.ts`) — which is what makes
+  // it affordable to carry and is the whole reason a verb inside here need not ask for
+  // the identity it names.
+  const whereItStands = standing();
+  const session: Session = { io: onThePage, render, self, identity: whereItStands.identity };
 
   // The declarations and the command tree, read off a program built the way every line
   // will build one. What Tab offers is therefore what the gate will accept, from the
@@ -270,7 +300,7 @@ export async function openSession(request: SessionRequest): Promise<void> {
   // is the one read of this kind this surface pays — declared, paid here, and never paid
   // again (see {@link theRecord}).
   const title = subjectLine(NAME, WHICH_BUILD, WHAT_IT_IS);
-  const where = standingLine(standing());
+  const where = standingLine(whereItStands);
   const proved = theRecord();
   const record = recordSection(proved?.trees);
   // NOT RENDERED HERE, unlike the two below, and the reason is a measurement: how WIDE this
@@ -483,6 +513,9 @@ export async function typedLine(line: string, session: Session): Promise<AfterLi
 
   // Tokenized here for the parser's own refusals, which name what the caller typed, and
   // again inside the disposition. `argvOf` is pure, so the two readings are one reading.
+  // It stays what the CALLER typed even when the session fills a flag in below: a
+  // refusal that quoted a token nobody wrote would be the surface accusing them of its
+  // own line.
   const built = buildProgram(io, argvOf(line) ?? [], render);
   const what = dispositionOf(line, built.verbs, self);
   switch (what.does) {
@@ -501,7 +534,12 @@ export async function typedLine(line: string, session: Session): Promise<AfterLi
       reportUsage({ io, render }, what.sentence, what.detail);
       return 'go on';
     case 'run':
-      await parseWith(built, what.argv);
+      // THE ONE PLACE THE LINE IS ASSEMBLED, which is why the identity is filled in here
+      // and nowhere else: what the gate decided about and what the parser receives are
+      // the same words, plus the one thing the caller did not have to type because the
+      // session already knew it (`asking.ts`). A caller who typed it keeps what they
+      // typed, and a session that knows nobody hands the line over untouched.
+      await parseWith(built, asTheSession(what.argv, built.verbs, session.identity));
       return 'go on';
   }
 }

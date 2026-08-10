@@ -19,11 +19,18 @@
  *
  * WHY THE ACTOR IS EXPLICIT, which is `focus`'s reason unchanged. Half of this answer is
  * `resume`, and a resume is always SOMEONE's; the record carries no notion of a "current
- * actor" (a `who` is only ever stamped on past events) and the CLI has no session to read
- * one from. Deriving the machine's `who` without a writer means touching key material,
- * which mints a key on a fresh machine — domain logic a surface must not own. So the
- * actor is a required flag, exactly as it is on the two context reads that came before,
- * and passing it keeps the read truly read-only.
+ * actor" (a `who` is only ever stamped on past events) and an invocation of this CLI has
+ * no session to read one from. Deriving the machine's `who` without a writer means
+ * touching key material, which mints a key on a fresh machine — domain logic a surface
+ * must not own. So the actor is a required flag, exactly as it is on the two context
+ * reads that came before, and passing it keeps the read truly read-only.
+ *
+ * ⚠️ IT SAID *THE CLI HAS NO SESSION*, and this verb is where that stopped being true in
+ * a way anybody could feel: `status` typed at the console's prompt was answered with a
+ * demand for the identity the box two rows above it was naming. A session resolves that
+ * identity from local material with no writer opened, so it fills the flag in
+ * (`repl/asking.ts`) — and what the caller types still wins. The declaration is
+ * unchanged, and `mnema status` at a shell asks exactly as it always has.
  *
  * EVERY TREE, and the four lists take the union for the reason `bootstrap` gives: a task
  * lands in the tree that travels and a memory in this machine's own, whoever wrote
