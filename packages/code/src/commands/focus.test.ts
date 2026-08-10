@@ -121,8 +121,9 @@ describe('mnema focus', () => {
   });
 
   it('ages every open run, against the clock it is given', () => {
-    // A command-line read has no session of its own, so what makes a list of leftover
-    // runs readable here is the age. The clock is injected for the same reason the
+    // A command-line read has no session of its own — the console's is one the caller
+    // opened, and it never reaches this adapter with anything but an actor — so what
+    // makes a list of leftover runs readable here is the age. The clock is injected for the same reason the
     // core injects one: an age is only assertable against a pinned instant.
     const { repo, env, who, ctx } = projectWithRuns();
     // Both instants pinned: the run's own `at` through the core's injectable clock,

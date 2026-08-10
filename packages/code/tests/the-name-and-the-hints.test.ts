@@ -186,6 +186,24 @@ const ofTheRecord = (touched: readonly Touched[]): string[] =>
   touched.filter((one) => one.door === 'read' && one.path.includes(RECORD)).map((one) => one.path);
 
 /**
+ * WHAT SAYS WHICH IDENTITY THIS INSTALLATION SPEAKS AS — the anchor a tree recorded for a
+ * key of this machine.
+ *
+ * It is not the record and the predicate above deliberately does not cover it: it sits
+ * beside a tail under `keys/`, and the status line is allowed to read it, which is the
+ * whole reason {@link RECORD} names the tail rather than the tree. It is counted on its
+ * own because the value read out of it is now read TWICE — the panel is drawn with it,
+ * and a verb that requires the asker's identity is given it (`repl/asking.ts`) — and
+ * "twice read, once resolved" is exactly the kind of promise that decays into a small
+ * file opened on every line.
+ */
+const IDENTITY = /\.anchor$/;
+
+/** Every anchor this process OPENED — what it took to know who this installation is. */
+const ofTheIdentity = (touched: readonly Touched[]): string[] =>
+  touched.filter((one) => one.door === 'read' && IDENTITY.test(one.path)).map((one) => one.path);
+
+/**
  * Every path of the record that was merely LISTED — the probe's whole question.
  *
  * It is counted rather than banned, and the difference is the design: a listing cannot say
@@ -780,6 +798,34 @@ describe('the opening reads the record once, and a redraw never reads it', () =>
     const paths = await readingWhileTyping('verify\r', 'local integrity verified');
     expect(ofTheRecord(paths).length).toBeGreaterThan(0);
   }, 120_000);
+});
+
+// ---------------------------------------------------------------------------
+// And it knows who it is without asking twice
+// ---------------------------------------------------------------------------
+
+describe('the session resolves who it is when it opens, and never again', () => {
+  it('reads the anchor to open, and none while the caller runs a verb that needs one', async () => {
+    // THE COST OF THE ANSWER IS PAID ONCE. What the panel names is also what a verb
+    // requiring the asker's identity is handed (`repl/asking.ts`), and the only reason
+    // that is affordable is that it is a VALUE the session already has. Resolved per
+    // line, it would be a small file opened on every read the caller runs — cheap enough
+    // to go unnoticed and a second answer to "who is this machine" either way.
+    const opening = await reading(async () => {
+      await openedAt(200);
+    });
+    // NOT VACUOUS: the door really is one this instrument can see, and the opening really
+    // goes through it. Without this the absence below is an absence of an instrument.
+    expect(ofTheIdentity(opening).length, 'the opening read no identity at all').toBeGreaterThan(0);
+    // AND NOTHING WHILE TYPING, in the window that only sees what a keystroke caused —
+    // asked of the verb that requires the identity, so the line that is filled in is the
+    // line being counted.
+    const typing = await readingWhileTyping('status\r', 'where things stand');
+    expect(ofTheIdentity(typing)).toEqual([]);
+    // The verb really ran, and it really read: without this the emptiness above could be
+    // a session that answered nothing at all.
+    expect(ofTheRecord(typing).length).toBeGreaterThan(0);
+  }, 180_000);
 });
 
 // ---------------------------------------------------------------------------

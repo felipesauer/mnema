@@ -43,12 +43,16 @@
  * whose record it is could not.
  *
  * status/focus/resume are always SOMEONE's context, and the record has no "current
- * actor" — a `who` is only stamped on past events. The CLI has no session to
+ * actor" — a `who` is only stamped on past events. An invocation has no session to
  * read a `who` from, and deriving one would touch key material (minting a key
  * on a fresh machine) that the surface must not own. So the actor is a REQUIRED
  * `--actor` flag: the derivation takes it as a parameter, and passing it keeps
  * the read truly read-only. (next-actions needs no actor — its answer is a
- * property of the task's state, not of who asks.)
+ * property of the task's state, not of who asks.) ⚠️ This said *the CLI* has no
+ * session, and `mnema repl` is one: it resolves that identity from local material
+ * with no writer opened and fills the flag in at its own prompt
+ * (`repl/asking.ts`). Every declaration here is unchanged, and so is the reason
+ * for it — a verb typed at a shell asks for the actor as it always has.
  *
  * The two RECORD reads — `search` and `show`. Together they are one idea in two
  * halves: find by an INDEX (a line per record, never the bodies), then read the

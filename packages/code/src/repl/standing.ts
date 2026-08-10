@@ -44,7 +44,15 @@ import { here } from '../wiring/context.js';
 export interface Standing {
   /** The directory the project's tree sits in, or none when there is no project. */
   readonly project: string | undefined;
-  /** The identity this installation recorded for that tree, short. */
+  /**
+   * The identity this installation recorded for that tree, short.
+   *
+   * IT IS READ BY TWO THINGS AND THE SECOND IS THE POINT OF THE FIRST. It is on the
+   * opening line, and it is who the session speaks as: a verb that requires the asker's
+   * identity is handed this rather than demanding the caller type back what the box above
+   * the prompt shows them (`asking.ts`). Both are the same value, which is what makes the
+   * filled line the line the caller would have written by copying the screen.
+   */
   readonly identity: string | undefined;
 }
 

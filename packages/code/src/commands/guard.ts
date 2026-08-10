@@ -20,14 +20,21 @@
  * visible tree holds is `UNKNOWN_TASK`; with no project at all, `NO_PROJECT`.
  *
  * WHY THE ACTOR IS EXPLICIT. Like every actor-bearing read on this surface,
- * guard needs a `who` and the CLI has no session to read one from. Deriving the
- * machine's `who` would touch key material (minting a key on a fresh machine),
+ * guard needs a `who` and an invocation of this CLI has no session to read one
+ * from. Deriving the machine's `who` would touch key material (minting a key on a
+ * fresh machine),
  * which is a write and domain logic the surface must not own. So `--actor` is a
  * required flag: passing it keeps the read truly read-only, and it doubles as
  * the `who` the gate checks against `--which` (an agent asking on a human's
  * behalf simulates the who != which invariant). It may be written whole or as a
  * prefix of an identity the record knows — and a whole one costs nothing, because
  * only a prefix makes this open the other trees to find out what it names.
+ *
+ * ⚠️ IT SAID *THE CLI* HAS NO SESSION, and `mnema repl` is one. A session resolves the
+ * identity this installation recorded from local material, with no writer opened, so it
+ * fills this flag in at its own prompt (`repl/asking.ts`) — the `who` it fills is the
+ * one on its own panel, and a `--which` typed against it is checked exactly as one typed
+ * against an actor a caller wrote out. The declaration is untouched.
  *
  * WHY IT SIMULATES THE PROOF. The dry-run must be FAITHFUL to what a move would
  * decide, so it accepts the same optional proof flags a move does (`--note`,

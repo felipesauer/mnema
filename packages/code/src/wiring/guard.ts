@@ -8,8 +8,11 @@
  * the verdict. ALLOWED names the state the move would reach; REFUSED carries
  * the gate's own code and message — the same answer the real move would give.
  *
- * The actor is a REQUIRED `--actor` for the reason focus/resume are: the CLI
+ * The actor is a REQUIRED `--actor` for the reason focus/resume are: an invocation
  * has no session, and deriving the machine's `who` would mint a key (a write).
+ * ⚠️ It said *the CLI* has no session, and `mnema repl` is one — it fills this flag
+ * in at its own prompt, from what it already resolved (`repl/asking.ts`), and the
+ * declaration below is unchanged.
  * The proof flags (`--note`/`--reason`/`--feedback`) and `--which` are optional
  * and simulate the move faithfully — with the required proof it is ALLOWED,
  * without it REFUSED (MISSING_PROOF), the useful "you are only missing the
