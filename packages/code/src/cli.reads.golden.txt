@@ -116,7 +116,7 @@ $ mnema status --actor <anchor>
 | <anchor-short> — where things stand.
 |   No runs.
 |
-| No actionable tasks.
+| No live tasks.
 |
 | No decisions in force.
 |
@@ -996,7 +996,7 @@ $ mnema status --actor <anchor>
 |   last run <run-second> (open) — read the record back · open <duration> · nothing recorded in it
 |   1 run(s) still open
 |
-| 3 actionable task(s):
+| 3 live task(s):
 |   <task-runbook>  Write the deploy runbook (IN_PROGRESS)
 |   <task-errand>  Read the release notes (DRAFT)
 |   <task-chore>  Rotate the local credentials (DRAFT)

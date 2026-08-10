@@ -2,7 +2,7 @@
  * The `mnema status` wiring: what it declares, and what it prints.
  *
  * `mnema status --actor <id> [--json]` — where things stand: where the actor left off,
- * the actionable work, the adopted patterns, the decisions in force, and what is waiting
+ * the live work, the adopted patterns, the decisions in force, and what is waiting
  * on somebody to rule on it.
  *
  * It is the OPENING read, and it is the same one the agent surface has always had — the

@@ -2253,22 +2253,33 @@ describe('MCP server — end to end over a real client', () => {
     await client.close();
   });
 
-  it('answers `next_actions` for EVERY name the opening read served', async () => {
+  it('answers `next_actions` for EVERY task the opening read served, on EITHER list', async () => {
     // The pairing, and the whole reason the moves may leave the work list: what the
     // opening read stopped carrying has to be reachable for every item it names. Not
     // "the tool works" — that is next door — but that the two lists agree, over the
     // wire, for each id, with the proof fields intact.
+    //
+    // IT USED A COMPLETED TASK AS ONE OF THE FOUR, and that is worth saying because it
+    // was a device rather than an assertion: `finished` was here to make the answers
+    // differ per state, and the opening read served it because the rule was "has a
+    // legal move" and `reopen` leaves `DONE`. It no longer serves it, so the spread is
+    // made of positions the read really carries — including `IN_REVIEW`, which the
+    // read serves on the OTHER list, and this case follows both.
     const project = makeProject('proj');
     const { server } = buildMcpServer({ env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     // A spread of states, so the answers differ per item and a single hard-coded
-    // reply could not stand in for all of them.
+    // reply could not stand in for all of them. `finished` is written and NOT
+    // expected back: the read that drops it is what the two counts below assert.
     const ids: string[] = [];
+    let finished = '';
     for (const [title, moves] of [
       ['left in draft', []],
       ['submitted', ['submit']],
       ['under way', ['submit', 'start']],
+      ['stuck', ['submit', 'start', 'block']],
+      ['up for review', ['submit', 'start', 'submit_review']],
       ['finished', ['submit', 'start', 'complete']],
     ] as const) {
       const made = await client.callTool({ name: 'create_task', arguments: { title } });
@@ -2276,47 +2287,64 @@ describe('MCP server — end to end over a real client', () => {
       for (const action of moves) {
         await client.callTool({
           name: 'task_transition',
-          arguments: { id, action, ...(action === 'complete' ? { note: 'shipped' } : {}) },
+          arguments: {
+            id,
+            action,
+            ...(action === 'complete' ? { note: 'shipped' } : {}),
+            ...(action === 'block' ? { reason: 'the API is down' } : {}),
+          },
         });
       }
-      ids.push(id);
+      if (title === 'finished') finished = id;
+      else ids.push(id);
     }
 
     const boot = await client.callTool({ name: 'bootstrap' });
     const context = JSON.parse(textOf(boot)) as {
       work: { id: string; state: string }[];
       workTotal: number;
+      awaitingJudgement: { kind: string; id: string; state: string }[];
     };
-    // Nothing was cut here, so the list is the whole of the actionable work.
+    const waitingTasks = context.awaitingJudgement.filter((one) => one.kind === 'task');
+    // Nothing was cut here, so the two lists are the whole of the live work and the
+    // whole of what awaits a ruling — and between them they name every task written
+    // above EXCEPT the one that is over.
     expect(context.work).toHaveLength(4);
     expect(context.workTotal).toBe(4);
-    expect(new Set(context.work.map((w) => w.id))).toEqual(new Set(ids));
+    expect(new Set([...context.work, ...waitingTasks].map((w) => w.id))).toEqual(new Set(ids));
+    expect(new Set([...context.work, ...waitingTasks].map((w) => w.id)).has(finished)).toBe(false);
 
     // Every name, answered — and the answer is a list of real moves, with the proof
     // each demands. A `Refused` for any one of them would mean the information did
     // not move doors, it fell between them.
     const answered: Record<string, string[]> = {};
-    for (const item of context.work) {
+    for (const item of [...context.work, ...waitingTasks]) {
       const reply = await client.callTool({ name: 'next_actions', arguments: { id: item.id } });
       const text = textOf(reply);
       expect(text, `next_actions for ${item.state}`).not.toContain('Refused');
       const moves = JSON.parse(text) as { action: string; to: string; requires: string[] }[];
-      expect(moves.length, `${item.state} is in the work list, so it has a move`).toBeGreaterThan(
-        0,
-      );
+      expect(moves.length, `${item.state} was served, so it has a move`).toBeGreaterThan(0);
       answered[item.state] = moves.map((m) => m.action).sort();
       // The proof fields travel with the move, which is what the item never carried
       // and what a caller needs before it tries the write.
       const complete = moves.find((m) => m.action === 'complete');
       if (complete !== undefined) expect(complete.requires).toEqual(['note']);
     }
-    // Per state, so the answers are the workflow's and not one list repeated.
+    // Per state, so the answers are the workflow's and not one list repeated — and the
+    // waiting one is the pair of verdicts, which is what puts it on that list at all.
     expect(answered).toEqual({
       DRAFT: ['cancel', 'submit'],
       READY: ['cancel', 'start'],
       IN_PROGRESS: ['block', 'cancel', 'complete', 'submit_review'],
-      DONE: ['reopen'],
+      BLOCKED: ['unblock'],
+      IN_REVIEW: ['approve', 'request_changes'],
     });
+    // And the one that is over is still reachable by id — it left the opening read,
+    // not the record. `reopen` is exactly the move that made it "actionable" before.
+    const over = JSON.parse(
+      textOf(await client.callTool({ name: 'next_actions', arguments: { id: finished } })),
+    ) as { action: string }[];
+    expect(over.map((m) => m.action)).toEqual(['reopen']);
 
     await client.close();
   });

@@ -79,7 +79,10 @@ import type { Severity } from './line.js';
  *   - `awaiting-judgement` — YELLOW. Somebody owes a verdict. Neither a thing to fix nor
  *     a thing that is finished, which is exactly the middle the scale has. It is the one
  *     row all three machines reach, and it is the criterion the record's opening page is
- *     already built on: a decision `proposed`, a pattern `proposed` or `reviewed`.
+ *     built on: a task `IN_REVIEW`, a decision `proposed`, a pattern `proposed` or
+ *     `reviewed`. That sentence used to name only the last two, and the surface was
+ *     right first: `IN_REVIEW` was painted yellow here while the opening page's waiting
+ *     list asked two machines out of three and left it off.
  *   - `settled` — GREEN. It arrived. Nothing to do, and green is what says so.
  *   - `in-force` — GREEN, and the same green for the same reason. A decision that was
  *     accepted and a pattern that was adopted ARRIVED at the position that ends the
@@ -89,7 +92,11 @@ import type { Severity } from './line.js';
  *     reader to do about it, so one hue. It is NOT yellow, and that is the trap this
  *     row exists to avoid: `supersede` is legal from `accepted` forever, so any rule
  *     built on "has a legal move" would report every call the project ever settled as
- *     a pendency that never clears.
+ *     a pendency that never clears. Which is not a hypothetical about this surface's
+ *     neighbours: the opening read's work list WAS built on that rule, and `reopen`
+ *     never stops being legal from `DONE`, so it served every completed task as work
+ *     to pick up until both its lists started asking the classification this table
+ *     reads.
  *   - `advancing` — NOTHING. It is the ordinary case and the majority of any list; a hue
  *     on the normal state would be a hue on everything, which is a hue on nothing.
  *   - `closed` — NOTHING. A canceled task, a rejected call, a retired pattern: it is over

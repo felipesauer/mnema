@@ -887,7 +887,7 @@ function skillProofToFields(input: {
  *
  * Takes the session's caches over EVERY tree of its project and composes the
  * copilot's `bootstrap` derivation for the machine's anchor (`who`): where the actor
- * left off, the NAMES of the actionable work, the NAMES of the adopted patterns, and
+ * left off, the NAMES of the live work, the NAMES of the adopted patterns, and
  * the NAMES of the decisions in force. Read-only — it opens no writer and emits no
  * event.
  *

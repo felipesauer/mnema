@@ -14,7 +14,7 @@ so if two clones ever disagreed about it, the chain is the one that decides.
 ## What it gives you
 
 - **`bootstrap`** — the opening context for a session, focused on one actor:
-  where they left off (their latest run and open focus), the actionable work by
+  where they left off (their latest run and open focus), the LIVE work by
   NAME (id, title, state — freshest first, cut to a limit, with `workTotal` saying
   how many there were), the names of the adopted patterns to work by, the
   decisions IN FORCE by name (title, the citable `ADR-<n>` label, id — freshest
@@ -26,16 +26,22 @@ so if two clones ever disagreed about it, the chain is the one that decides.
   `accepted` decisions are served: proposed is still on the table, rejected was
   refused, and superseded was replaced, so none of the three governs anything.
   `awaitingJudgement` is the other side of that filter — everything somebody has
-  to rule on before it means anything: a decision still `proposed`, a pattern
-  `proposed` or `reviewed`. One list holding both, freshest-moved first across the
-  two, cut to the same limit with `awaitingJudgementTotal`; each item carries the
+  to rule on before it means anything: a task `IN_REVIEW`, a decision still
+  `proposed`, a pattern `proposed` or `reviewed`. One list holding all three,
+  freshest-moved first across them, cut to the same limit with
+  `awaitingJudgementTotal`; each item carries the
   `kind` that says which sort of item the line is and the `state` that says which
   ruling is missing. Each has a read that serves the rest of it by the same id: a
   decision's argument from `readRecord`, a pattern's body from `lookupServedSkill` —
   which serves it labelled with its state, because a pattern cannot be ruled on
-  without being read. It is deliberately NOT the work list's
-  criterion ("has a legal move"): `supersede` stays legal on an accepted decision
-  forever, so that rule would make a pendency of every call the project ever settled.
+  without being read — and a task's moves from `nextActions`.
+
+  **Both lists ask the DISPOSITION**, which is what a state means to a reader,
+  classified once per machine from that machine's transition table. Neither asks
+  "has a legal move": `supersede` stays legal on an accepted decision forever,
+  `deprecate` on an adopted pattern, and `reopen` on a completed task — so that rule
+  would make a pendency of every call the project ever settled, and it did exactly
+  that to every task ever finished until the lists were derived this way.
 - **`brief`** — everything that governs the work in the tree that TRAVELS, whole:
   every decision in force and every adopted pattern of the public tree, each by name.
   It composes the same two derivations `bootstrap` does, so a file generated from it
@@ -99,7 +105,7 @@ layer makes no proof of its own; being clear about that is the point.
   authorized it, so an actor's runs are known. A task's projected state does not
   carry that identity, so the tasks an actor is working cannot yet be attributed
   to them. `focus` therefore scopes to the actor's runs, and `bootstrap`'s work
-  list is every actionable task of the caches it was given, not the actor's own. When
+  list is every live task of the caches it was given, not the actor's own. When
   a later version ties a task to the actor, those views narrow with no change to
   their shape.
 - **An open run is not a live session, and nothing here claims otherwise.** The
@@ -148,7 +154,7 @@ const opening = bootstrap([cache], {
 });
 const lastGoal = opening.resume.lastRun?.goal; // "ship the parser"
 const openFor = opening.resume.lastRun?.ageSeconds; // how long it has been open
-const firstJob = opening.work[0]; // the freshest actionable task — a NAME
+const firstJob = opening.work[0]; // the freshest live task — a NAME
 const more = opening.workTotal > opening.work.length; // was the list cut?
 const patterns = opening.skills.map((s) => s.name); // names only — one line each
 const governing = opening.decisions.map((d) => `${d.adr} ${d.title}`); // names only

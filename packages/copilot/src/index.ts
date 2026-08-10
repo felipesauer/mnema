@@ -45,7 +45,6 @@ export {
   type AwaitingJudgement,
   type Bootstrap,
   bootstrap,
-  type WorkItem,
 } from './context/bootstrap.js';
 export {
   type Brief,
@@ -104,6 +103,13 @@ export {
   type SkillRef,
   skillDisposition,
 } from './context/skills.js';
+// The TYPE only, and from the module that OWNS the task machine's reads rather than
+// from the composition that serves them: `WorkItem` is what `Bootstrap.work` is made
+// of, so reading the opening context needs it written down. Neither `liveWork` nor
+// `tasksAwaitingJudgement` is exported for the reason `decisionsInForce` is not —
+// they are called by `bootstrap` and by nothing outside this package, and an export
+// with no consumer is the shape `every-public-value-has-a-caller.test.ts` catches.
+export type { WorkItem } from './context/tasks.js';
 export {
   type GuardWithFocus,
   guard,

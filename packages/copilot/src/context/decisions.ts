@@ -26,12 +26,20 @@
  * superseded are all absent" and "drops a decision the moment a successor
  * supersedes it".
  *
- * AWAITING A JUDGEMENT IS `proposed`, AND THE CRITERION IS NOT THE WORK LIST'S.
- * The work list's rule is "has at least one legal move", and it does not transport
- * to this machine: `supersede` is legal from `accepted` (`DECISION_TRANSITIONS`),
- * so a decision in force has a legal move FOREVER and that rule would report it as
- * a pendency that never clears. The rule here is narrower and it is about a person:
- * somebody has to accept or reject this before it means anything. Asserted in
+ * AWAITING A JUDGEMENT IS `proposed`, AND THE CRITERION IS THE DISPOSITION.
+ * Somebody has to accept or reject this before it means anything, which is what the
+ * table above says of that one state and of no other.
+ *
+ * THIS PARAGRAPH USED TO ARGUE AGAINST THE WORK LIST'S RULE, and it is worth keeping
+ * because the argument was right and its premise was not. It read: the work list's
+ * rule is "has at least one legal move", and it does not transport to this machine —
+ * `supersede` is legal from `accepted` (`DECISION_TRANSITIONS`), so a decision in
+ * force has a legal move FOREVER and that rule would report it as a pendency that
+ * never clears. True of this machine, and the premise underneath it — that the rule
+ * held for the machine it came FROM — was false: `reopen` is legal from `DONE`, so
+ * the work list called a completed task live work forever, which is the same defect
+ * this module was written to avoid. The work list asks the disposition now
+ * (`tasks.ts`), so there is no other rule left to transport. Asserted in
  * `decisions.test.ts` — "an ACCEPTED decision is not awaiting anything, though
  * `supersede` is legal from it forever".
  *
@@ -67,7 +75,7 @@ import {
   type DecisionState,
   type ProjectionCache,
 } from '@mnema/core';
-import { type Disposition, statesWith } from './disposition.js';
+import { type Disposition, statesMeaning } from './disposition.js';
 
 /**
  * What each state of the decision machine means to a reader — TOTAL, so a fifth
@@ -78,8 +86,8 @@ import { type Disposition, statesWith } from './disposition.js';
  *   - `proposed` — `accept` and `reject` both leave from it, and both are a
  *     verdict a person owes. That is the whole of "awaiting a judgement".
  *   - `accepted` — it governs. `supersede` is still legal from it, which is
- *     precisely why "has a legal move" is the wrong criterion for the waiting
- *     list; being replaceable is not being pending.
+ *     precisely why "has a legal move" is the wrong criterion for either of the
+ *     opening read's lists; being replaceable is not being pending.
  *   - `rejected`, `superseded` — terminal, no row leaves either. Nothing is
  *     pending and nothing governs.
  *
@@ -120,10 +128,14 @@ export function decisionDisposition(state: DecisionState): Disposition {
 }
 
 /** The states whose decisions govern — derived, never restated. */
-const IN_FORCE = statesWith(DECISION_STATES, DECISION_DISPOSITION, 'in-force');
+const IN_FORCE = statesMeaning(DECISION_STATES, decisionDisposition, 'in-force');
 
 /** The states whose decisions are waiting on somebody — derived, never restated. */
-const AWAITING_JUDGEMENT = statesWith(DECISION_STATES, DECISION_DISPOSITION, 'awaiting-judgement');
+const AWAITING_JUDGEMENT = statesMeaning(
+  DECISION_STATES,
+  decisionDisposition,
+  'awaiting-judgement',
+);
 
 /** A decision in force, named but not spelled out — what an index is made of. */
 export interface DecisionRef {

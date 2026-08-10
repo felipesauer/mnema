@@ -81,11 +81,22 @@ function sessionLines(render: Render, status: Bootstrap): string[] {
   return [render(fact(lastRunPhrase(lastRun))), render(fact(openRunsPhrase(status.resume)))];
 }
 
-/** The actionable work: what has a legal move, freshest first. */
+/**
+ * The live work: what a reader still has something to do about, freshest first.
+ *
+ * IT SAID `actionable` UNTIL THE WORD BECAME FALSE, and the rename is the point of
+ * this paragraph rather than a tidy-up. The list used to mean "has a legal move", and
+ * under that rule a completed task was on it forever — `reopen` is legal from `DONE`
+ * — which is how a person reading `5 actionable task(s)` on a terminal found one of
+ * them marked `(DONE)`. The derivation now asks the disposition (see `copilot`'s
+ * `tasks.ts`), and a word that promises "there is an action available here" would
+ * still be true of the task this list correctly leaves out. `live` is what the filter
+ * actually says.
+ */
 function workLines(render: Render, status: Bootstrap): string[] {
-  if (status.work.length === 0) return ['No actionable tasks.'];
+  if (status.work.length === 0) return ['No live tasks.'];
   return [
-    `${served(status.work.length, status.workTotal)} actionable task(s):`,
+    `${served(status.work.length, status.workTotal)} live task(s):`,
     ...status.work.map((item) =>
       render(itemLine([asId(item.id), oneLine(item.title), asState(item.state)])),
     ),
@@ -116,13 +127,13 @@ function skillLines(render: Render, status: Bootstrap): string[] {
 }
 
 /**
- * What is waiting on a person: one list across both machines, each line saying which
- * machine it is and which ruling is missing.
+ * What is waiting on a person: one list across all three machines, each line saying
+ * which machine it is and which ruling is missing.
  *
  * The `kind` is a column of its own rather than folded into the title, because it is
- * what says which second read serves the rest of the item — `mnema show <id>` either
- * way on this surface, but a decision's argument and a pattern's text are different
- * things to go and read.
+ * what says which second read serves the rest of the item — `mnema show <id>` for a
+ * decision's argument or a pattern's text, `mnema next-actions <id>` for the pair of
+ * verdicts a task in review allows, which are different things to go and read.
  */
 function awaitingLines(render: Render, status: Bootstrap): string[] {
   if (status.awaitingJudgement.length === 0) return ['Nothing awaiting a judgement.'];
@@ -142,14 +153,30 @@ function awaitingLines(render: Render, status: Bootstrap): string[] {
 }
 
 /**
- * What one item on the mixed list is CALLED, which is the one place the two kinds are
- * told apart on this surface.
+ * What one item on the mixed list is CALLED, which is the one place the three kinds
+ * are told apart on this surface.
  *
- * The discriminant is the derivation's own `kind`, so a third machine with a waiting
- * side does not compile until somebody has said how its items are named.
+ * The discriminant is the derivation's own `kind`, and the claim that a third machine
+ * with a waiting side "does not compile until somebody has said how its items are
+ * named" was written here before there was one. It held: the day the task machine
+ * joined the list, `tsc` refused this function — a task carries a `title` and no
+ * `name`, so the two-armed ternary this used to be had nowhere to put it.
+ *
+ * The arms are spelled out per kind and there is NO `default`, which is what keeps
+ * that property for the next one. An else would have compiled the day a fourth kind
+ * arrived carrying a `title`, and named it wrongly; with every arm returning and none
+ * catching the rest, a kind this switch does not answer leaves a path that returns
+ * nothing, and a function declared `string` does not build with one.
  */
 function named(item: AwaitingJudgement): string {
-  return item.kind === 'decision' ? `${item.adr} · ${item.title}` : item.name;
+  switch (item.kind) {
+    case 'decision':
+      return `${item.adr} · ${item.title}`;
+    case 'skill':
+      return item.name;
+    case 'task':
+      return item.title;
+  }
 }
 
 /**

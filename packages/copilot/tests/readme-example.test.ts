@@ -52,7 +52,7 @@ describe('README example', () => {
       });
       const lastGoal = opening.resume.lastRun?.goal; // "ship the parser"
       const openFor = opening.resume.lastRun?.ageSeconds; // how long it has been open
-      const firstJob = opening.work[0]; // the freshest actionable task — a NAME
+      const firstJob = opening.work[0]; // the freshest live task — a NAME
       const more = opening.workTotal > opening.work.length; // was the list cut?
       const patterns = opening.skills.map((s) => s.name); // names only
       const governing = opening.decisions.map((d) => `${d.adr} ${d.title}`); // names only

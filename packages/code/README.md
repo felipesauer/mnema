@@ -187,7 +187,9 @@ which is most lines.
 Green on `(accepted)` is the part that is easy to get wrong, so it is worth saying why it
 is not yellow: `supersede` stays legal from `accepted` for good, so anything built on
 "this still has a legal move" would report every call the project ever settled as a
-pendency that never clears.
+pendency that never clears. That is not hypothetical — the opening read's work list was
+built on exactly that rule, and it listed every completed task as work to pick up until
+it started asking what the position MEANS instead.
 
 This section used to say colour meant two things, and that a state would never be one of
 them *because states are categories and a hue per category is noise*. The rule held and
@@ -503,24 +505,30 @@ what a person types are not the same word), and `skills` exists on both sides do
 **different things**.
 
 `bootstrap` is an INDEX, and every list in it names the read that serves the rest:
-the actionable work by name (`next_actions` for the moves one allows), the adopted
+the LIVE work by name (`next_actions` for the moves one allows), the adopted
 patterns by name (`skills` for the pattern itself), and the decisions **in force**
 by title and `ADR-<n>` label (`read_record` for the rationale and what the decision
 turned down). Only an accepted
 decision is listed — one still proposed, rejected, or superseded by a later
 decision does not govern.
 
-The fourth list is what is **awaiting a judgement**: a decision still `proposed`, a
-pattern `proposed` or `reviewed` — everything a person has to rule on before it
-means anything. One list holds both kinds, and each item says which it is (`kind`)
-and what is owed (`state`). Both have a read that serves the rest by the same id:
-`read_record` for a decision's argument, `skills` for a pattern's text. A pattern
+The fourth list is what is **awaiting a judgement**: a task `IN_REVIEW`, a decision
+still `proposed`, a pattern `proposed` or `reviewed` — everything a person has to rule
+on before it means anything. One list holds all three kinds, and each item says which
+it is (`kind`) and what is owed (`state`). Each has a read that serves the rest by the
+same id: `read_record` for a decision's argument, `skills` for a pattern's text,
+`next_actions` for the verdicts a task in review allows. A pattern
 awaiting a ruling is served **only when the id is named** — never in the list you get
 by asking for none — and it arrives labelled with its state, because nothing can be
 ruled on without being read. You read it with `mnema show <id>` instead, which serves
-any state and records nothing. It is not a second work
-list either: the work list means "a move is legal", and by that rule an accepted
-decision — which can always be superseded — would be pending forever.
+any state and records nothing.
+
+Both lists ask what a state **means** — the position's disposition, derived from the
+machine's own transition table — and neither asks whether a move is legal. That rule
+would leave an accepted decision, which can always be superseded, pending forever; it
+did exactly that to every completed task, which stayed on the work list because `reopen`
+is always legal from `DONE`. So a task waiting on a reviewer is on the fourth list and
+not the first, and a task that is finished or cancelled is on neither.
 
 Three of the four lists are cut to the freshest items, and
 `workTotal`/`decisionsTotal`/`awaitingJudgementTotal` say how many there were, so a

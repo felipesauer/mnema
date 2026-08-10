@@ -52,7 +52,7 @@ export function withScopedCaches<T>(
 
 /**
  * The caches alone, for a derivation that reads the RECORD and not the trees it is
- * kept in — the actor's runs, the actionable work.
+ * kept in — the actor's runs, the live work.
  *
  * The scope is dropped rather than carried through, because such an answer never
  * names it: a run is the actor's session whichever tree it was opened in, and a task

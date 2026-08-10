@@ -7,7 +7,7 @@
  * the actor and forwards — the same shape `focus` and `resume` have, and the same
  * strictness: no writer, no event, no key minted. The agent-facing surface serves the
  * SAME call (`mcp/tools.ts`, `runBootstrap`), so the two doors cannot come to disagree
- * about what is actionable, what governs, or what is still waiting on somebody
+ * about what is live, what governs, or what is still waiting on somebody
  * (`where-things-stand.test.ts` — "the CLI's `--json` and the MCP's payload are the same
  * answer").
  *
@@ -74,7 +74,7 @@ export type StatusRefused =
 
 /**
  * Derives the opening context over every tree of the current project: where the actor
- * left off, the actionable work, the adopted patterns, the decisions in force, and what
+ * left off, the live work, the adopted patterns, the decisions in force, and what
  * awaits a judgement. Read-only: no writer, no event. With no project found it refuses
  * `NO_PROJECT`; an actor that names no identity here is refused rather than answered
  * about.
