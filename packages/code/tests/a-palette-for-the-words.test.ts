@@ -1294,6 +1294,12 @@ describe('a terminal without the height shows fewer, and says how many it could 
  * front found it. Where the boundary sits as a FUNCTION of the hint is
  * `the-input-has-its-own-place.test.ts`; what this file adds is that the palette does not
  * move it.
+ *
+ * ⚠️ AND THE LIST IS ONE ROW TALLER THAN WHEN THIS WAS WRITTEN — the keys that move it are said
+ * under it now — so the question had to be asked again rather than inherited: the row comes out of
+ * the palette's OWN budget (`repl/palette.ts`, `paletteRowsFor`), which is what is left over the
+ * prompt, so the region is bounded exactly where it was. The keystrokes below are the ones that
+ * could move it: the key that opens the list, and the arrow that MARKS a row in it.
  */
 const TOO_SHORT_TO_REDRAW_IN_PART = 1;
 
@@ -1306,6 +1312,7 @@ describe('opening the palette does not move the height the library erases at', (
         steps: [
           opens,
           { types: COMPLETES, until: () => true, what: 'was asked for the words' },
+          { types: MOVES_DOWN, until: () => true, what: 'was asked to mark a row' },
           leaves,
         ],
       });
@@ -1326,6 +1333,9 @@ describe('opening the palette does not move the height the library erases at', (
             // (`support/pty.ts`, `arrivedSince`).
             { types: PREFIX, until: arrivedSince(PREFIX), what: 'opened the palette' },
             { types: COMPLETES, until: () => true, what: 'was asked for the words' },
+            // AND WITH A ROW OF IT MARKED, which is the keystroke this delivery added: a mark
+            // that had grown the region would reach the erase here and nowhere else.
+            { types: MOVES_DOWN, until: () => true, what: 'was asked to mark a row' },
             leaves,
           ],
         });
@@ -1408,6 +1418,59 @@ describe('the mark that says a line was cut is written in one place', () => {
     );
     expect(shortening).toEqual([]);
     expect(sourcesOf(join(SRC, 'presentation')).length).toBeGreaterThan(10);
+  });
+});
+
+/**
+ * Whether a source writes the MARK as a mark — a literal that is the glyph and nothing else.
+ *
+ * The same discriminant the cut's own scan uses, and for the same reason: the glyph is ordinary
+ * punctuation in prose (this very file's doc-comments quote the reference's selector with it), so
+ * a scan for it anywhere in a file would accuse an innocent module. What is refused is a source
+ * that could DRAW one.
+ */
+function marksARow(source: string): boolean {
+  return literalsOf(withoutComments(source)).some(
+    (literal) => named(literal.slice(1, -1)) === PICK,
+  );
+}
+
+/**
+ * A literal's content with its `\uXXXX` escapes resolved.
+ *
+ * ⚠️ WITHOUT IT THE SCAN FOUND NOTHING AT ALL, which is how it was caught: the one module that
+ * draws the mark NAMES it by its code point rather than typing it, so a comparison against the
+ * raw glyph accused nobody and would have gone on accusing nobody however many modules started
+ * drawing marks. A guard that cannot fire is worse than no guard, and this is the line that makes
+ * this one total over both spellings.
+ */
+function named(text: string): string {
+  return text.replace(/\\u([0-9a-fA-F]{4})/g, (_, code: string) =>
+    String.fromCodePoint(Number.parseInt(code, 16)),
+  );
+}
+
+describe('the mark that says which row is picked is written in one place', () => {
+  it('is in the module that composes the row, and in no other source', () => {
+    // A1, BY THE DISCRIMINANT AND NOT BY THIS FILE'S LIST. A second module that drew the mark
+    // would be a second answer to *which row is picked* — the question already has exactly one
+    // (`repl/palette.ts`, `thePicked`), and a drawing that decided it again could disagree with
+    // the key that fills the row.
+    const marking = sourcesOf(SRC).filter((file) => marksARow(readFileSync(file, 'utf-8')));
+    expect(marking.map((file) => file.slice(SRC.length + 1))).toEqual([join('repl', 'palette.ts')]);
+    // The scan would accuse the line a careful author would write — in EITHER spelling, which is
+    // the half that was missing — and does not accuse prose.
+    expect(marksARow(`const row = isPicked ? '${PICK}' : ' ';`)).toBe(true);
+    expect(marksARow("const mark = '\\u276f';")).toBe(true);
+    expect(marksARow(`/** the reference draws '${PICK}' on the row it has selected. */`)).toBe(
+      false,
+    );
+    // AND IT IS SPELLED BY ITS CODE POINT, like every unusual byte in this repository: the source
+    // of the one module that draws it does not hold the character itself outside a comment.
+    const spelled = withoutComments(
+      readFileSync(join(SRC, 'repl', 'palette.ts'), 'utf-8'),
+    ).includes(PICK);
+    expect(spelled, 'the mark is typed into the source rather than named').toBe(false);
   });
 });
 
