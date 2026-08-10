@@ -1,12 +1,24 @@
 /**
- * The two disposition tables, checked against the workflow they claim to read.
+ * The three disposition tables, checked against the workflows they claim to read.
  *
  * A classification is a second statement about a machine whose first statement is
  * the transition table, and nothing but a test keeps the two agreeing. Every case
  * here enumerates from the product's own vocabulary (`DECISION_STATES`,
- * `SKILL_STATES`) and its own tables (`DECISION_TRANSITIONS`, `SKILL_TRANSITIONS`)
- * — never from a list typed in this file — so a state or a move added tomorrow is
- * covered without this file being edited.
+ * `SKILL_STATES`, `TASK_STATES`) and its own tables (`DECISION_TRANSITIONS`,
+ * `SKILL_TRANSITIONS`, `TRANSITIONS`) — never from a list typed in this file — so a
+ * state or a move added tomorrow is covered without this file being edited.
+ *
+ * IT COVERED TWO MACHINES, and the third arrived with the slice that made the opening
+ * read ask the classification for tasks as well. The properties this file proves are
+ * about the WAITING LIST, and that list reaches all three now: "nothing can wait
+ * forever" said `checked` was three, and a task `IN_REVIEW` was the fourth waiting
+ * state in the product with nothing here reading its exits.
+ *
+ * The task machine's table is `core`'s and stays there — it is derived from
+ * `TRANSITIONS` and cross-checked against it in that package — so what this file gets
+ * of it is `taskDisposition`, the accessor, which is the whole of what crosses the
+ * boundary. Its five words are NOT this layer's three, and nothing here unifies them:
+ * the two cases that need to speak of both name the word each vocabulary uses.
  */
 
 import {
@@ -14,21 +26,40 @@ import {
   DECISION_TRANSITIONS,
   SKILL_STATES,
   SKILL_TRANSITIONS,
+  TASK_STATES,
+  type TaskDisposition,
+  TRANSITIONS,
+  taskDisposition,
 } from '@mnema/core';
 import { describe, expect, it } from 'vitest';
 import { DECISION_DISPOSITION } from './decisions.js';
 import type { Disposition } from './disposition.js';
 import { SKILL_DISPOSITION } from './skills.js';
 
-/** One machine: its states, its legal moves, and what this layer says each state means. */
+/** One machine: its states, its legal moves, and what a state means to a reader. */
 interface Machine {
   readonly name: string;
   readonly states: readonly string[];
   readonly moves: readonly { readonly from: string; readonly to: string }[];
-  readonly disposition: Readonly<Record<string, Disposition>>;
+  readonly disposition: Readonly<Record<string, Disposition | TaskDisposition>>;
 }
 
+/**
+ * The task machine's classification, as a table, built by ASKING the accessor for
+ * every state the workflow publishes.
+ *
+ * `TASK_DISPOSITION` itself is deliberately off `@mnema/core`'s surface — a consumer
+ * gets the question and never the table — so this is how a reader outside that package
+ * holds the whole of it, and it is a projection of the real one rather than a copy: a
+ * state added to the machine appears here without this file being edited, and a row
+ * changed there changes here.
+ */
+const TASK_MEANING: Readonly<Record<string, TaskDisposition>> = Object.fromEntries(
+  TASK_STATES.map((state) => [state, taskDisposition(state)]),
+);
+
 const MACHINES: readonly Machine[] = [
+  { name: 'task', states: TASK_STATES, moves: TRANSITIONS, disposition: TASK_MEANING },
   {
     name: 'decision',
     states: DECISION_STATES,
@@ -38,9 +69,12 @@ const MACHINES: readonly Machine[] = [
   { name: 'skill', states: SKILL_STATES, moves: SKILL_TRANSITIONS, disposition: SKILL_DISPOSITION },
 ];
 
-/** The states of one machine this layer classifies as `wanted`. */
-function classified(machine: Machine, wanted: Disposition): string[] {
-  return machine.states.filter((state) => machine.disposition[state] === wanted);
+/** The states of one machine classified as any of `wanted`. */
+function classified(machine: Machine, ...wanted: (Disposition | TaskDisposition)[]): string[] {
+  return machine.states.filter((state) => {
+    const meaning = machine.disposition[state];
+    return meaning !== undefined && wanted.includes(meaning);
+  });
 }
 
 /** Every state one move reaches from `from`. */
@@ -49,7 +83,7 @@ function movesFrom(machine: Machine, from: string): string[] {
 }
 
 describe('the disposition tables agree with the workflow', () => {
-  it('classifies every state of both machines, and invents none', () => {
+  it('classifies every state of all three machines, and invents none', () => {
     // The compiler already refuses a `Record<State, Disposition>` with a state
     // missing — that is the guard, and it lives in `src` where it is real. This is
     // the other direction plus the non-vacuity: a table with an EXTRA key (a state
@@ -61,7 +95,9 @@ describe('the disposition tables agree with the workflow', () => {
         [...machine.states].sort(),
       );
     }
-    expect(MACHINES.flatMap((m) => m.states)).toHaveLength(9);
+    // Seven task states, four decision, five skill. The count is asserted so a
+    // machine dropping out of the list above empties every case below in silence.
+    expect(MACHINES.flatMap((m) => m.states)).toHaveLength(16);
   });
 
   it('NOTHING CAN WAIT FOREVER: every awaiting state has a way out that does not come back', () => {
@@ -78,9 +114,10 @@ describe('the disposition tables agree with the workflow', () => {
         checked += 1;
       }
     }
-    // Three: a decision `proposed`, a skill `proposed`, a skill `reviewed` — and the
-    // count is asserted so the loop cannot silently stop covering the machines.
-    expect(checked).toBe(3);
+    // Four: a task `IN_REVIEW`, a decision `proposed`, a skill `proposed`, a skill
+    // `reviewed` — and the count is asserted so the loop cannot silently stop covering
+    // the machines. It said three until the task machine joined the waiting list.
+    expect(checked).toBe(4);
   });
 
   it('and no cycle keeps one waiting either — the waiting side is a DAG', () => {
@@ -117,27 +154,41 @@ describe('the disposition tables agree with the workflow', () => {
     //
     // ONE: the skill machine's `review` (`proposed → reviewed`) is the only move
     // inside the waiting side anywhere in the product, and it is reached from one
-    // waiting start; a decision `proposed` and a skill `reviewed` lead straight out.
+    // waiting start; a decision `proposed`, a skill `reviewed` and a task `IN_REVIEW`
+    // all lead straight out.
     // Counted per traversal, so an edge reachable from two waiting starts would count
     // twice. Drop that edge from `SKILL_TRANSITIONS` and this case would otherwise
     // pass having compared nothing.
     expect(edges).toBe(1);
   });
 
-  it('an IN-FORCE state keeps a legal move forever — which is why "has a move" is the wrong rule', () => {
-    // The evidence for the decision this slice is built on, held as a test so it
-    // cannot quietly stop being true. `supersede` is legal from `accepted` and
-    // `deprecate` from `adopted`, with nothing to make either happen — so the work
-    // list's criterion would put every settled call and every adopted pattern on a
-    // pendency list that never empties. They are classified in-force instead.
+  it('a state that ARRIVED keeps a legal move forever — which is why "has a move" is the wrong rule', () => {
+    // The evidence for the decision this file's slice was built on, held as a test so
+    // it cannot quietly stop being true — and now over all three machines, which is
+    // where it stopped being hypothetical. `supersede` is legal from `accepted`,
+    // `deprecate` from `adopted` and `reopen` from `DONE`, with nothing to make any of
+    // them happen, so a rule reading "has at least one legal move" would report every
+    // settled call, every adopted pattern AND every completed task as a pendency that
+    // never clears. The third of those was not a hypothesis: it was the opening read's
+    // work list, and it is what this slice removed.
+    //
+    // TWO WORDS, NOT ONE. `in-force` is what the decision and skill machines call the
+    // position that arrived and `settled` is the task machine's; naming both here is
+    // reading two vocabularies, not merging them — whether three machines should ever
+    // speak one is a question this file does not answer.
+    let arrived = 0;
     for (const machine of MACHINES) {
-      const holding = classified(machine, 'in-force');
+      const holding = classified(machine, 'in-force', 'settled');
       expect(holding.length, machine.name).toBeGreaterThan(0);
       for (const state of holding) {
         expect(movesFrom(machine, state), `${machine.name}.${state} is terminal`).not.toEqual([]);
         expect(machine.disposition[state]).not.toBe('awaiting-judgement');
+        arrived += 1;
       }
     }
+    // `DONE`, `accepted`, `adopted` — one per machine, and the count is what stops the
+    // loop above passing over a machine whose arrived states stopped being classified.
+    expect(arrived).toBe(3);
   });
 
   it('a CLOSED state is terminal — nothing leaves it', () => {
@@ -152,7 +203,9 @@ describe('the disposition tables agree with the workflow', () => {
         closed += 1;
       }
     }
-    // `rejected` and `superseded` for decisions, `rejected` and `deprecated` for skills.
-    expect(closed).toBe(4);
+    // `CANCELED` for tasks, `rejected` and `superseded` for decisions, `rejected` and
+    // `deprecated` for skills. `DONE` is NOT here: the task machine calls it `settled`
+    // precisely because a move does leave it, which the case above reads.
+    expect(closed).toBe(5);
   });
 });

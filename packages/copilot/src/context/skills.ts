@@ -95,7 +95,7 @@ import {
   type SkillProjection,
   type SkillState,
 } from '@mnema/core';
-import { type Disposition, statesWith } from './disposition.js';
+import { type Disposition, statesMeaning } from './disposition.js';
 
 /**
  * What each state of the skill machine means to a reader — TOTAL, so a sixth state
@@ -109,7 +109,9 @@ import { type Disposition, statesWith } from './disposition.js';
  *     the state travels with the item: "needs a review" and "needs a decision"
  *     ask for different moves and would otherwise be the same line.
  *   - `adopted` — it is a live pattern. `deprecate` is still legal from it, which
- *     is why "has a legal move" is the wrong criterion for the waiting list.
+ *     is why "has a legal move" is the wrong criterion for either of the opening
+ *     read's lists — including the work list, which is where that rule came from
+ *     and where it was equally wrong (`tasks.ts`).
  *   - `rejected`, `deprecated` — terminal, no row leaves either.
  *
  * Exported so the claims above are CHECKABLE against the table they are read from,
@@ -154,10 +156,10 @@ const BODY_SERVED: Readonly<Record<Disposition, boolean>> = {
 };
 
 /** The states whose skills are live patterns — derived, never restated. */
-const ADOPTED = statesWith(SKILL_STATES, SKILL_DISPOSITION, 'in-force');
+const ADOPTED = statesMeaning(SKILL_STATES, skillDisposition, 'in-force');
 
 /** The states whose skills are waiting on somebody — derived, never restated. */
-const AWAITING_JUDGEMENT = statesWith(SKILL_STATES, SKILL_DISPOSITION, 'awaiting-judgement');
+const AWAITING_JUDGEMENT = statesMeaning(SKILL_STATES, skillDisposition, 'awaiting-judgement');
 
 /**
  * What one state MEANS to a reader — the classification, for the one consumer that

@@ -24,22 +24,48 @@
  *
  * The table is closed here. Five of the six cells are served and the sixth — the
  * holding side of TASK — is deliberately empty: a task that holds is a terminal
- * one, and there is nothing to be done about it.
+ * one, and there is nothing to be done about it. What later split in two is the
+ * task machine's WAITING side: a task can wait on a move (the work list) or on a
+ * verdict (the waiting list), and until the disposition decided it, both were the
+ * work list and one of them was wrong there.
  *
- * THE WAITING SIDE HAS A CRITERION OF ITS OWN, AND IT IS NOT THE WORK LIST'S. The
- * work list's rule is "has at least one legal move", and it does not transport: a
+ * BOTH LISTS ASK THE DISPOSITION, WHICH IS ONE RULE AND NOT TWO. A disposition is
+ * what a state MEANS to a reader — derived from the machine's own transition table,
+ * classified once per machine (`core`'s `TASK_DISPOSITION`, this package's
+ * {@link DECISION_DISPOSITION} and {@link SKILL_DISPOSITION}) — and it is exactly
+ * the question these two lists ask. {@link Bootstrap.work} carries the tasks whose
+ * disposition still has something to do about it (`advancing`, `stalled`);
+ * {@link Bootstrap.awaitingJudgement} carries everything, of any machine, whose
+ * disposition is `awaiting-judgement`. Neither list writes out a set of states, and
+ * the two sets are disjoint by construction — a state has one disposition.
+ *
+ * THIS PARAGRAPH USED TO SAY THE WORK LIST'S RULE WAS "HAS AT LEAST ONE LEGAL MOVE",
+ * and it used that rule to explain why the WAITING list needed a different one: a
  * decision that is `accepted` still accepts `supersede`, and a skill that is
- * `adopted` still accepts `deprecate` (`DECISION_TRANSITIONS`, `SKILL_TRANSITIONS`),
- * so under that rule both would be pendencies for as long as they exist and the
- * list would grow and never empty. The rule for {@link Bootstrap.awaitingJudgement}
- * is about a person instead: somebody has to rule on this before it means anything.
- * It reaches three states — a decision `proposed`, a skill `proposed` or `reviewed`
- * — and every one of them has a way out that does not come back (proved from the
- * transition tables in `disposition.test.ts`, "nothing can wait forever"). ONE list
- * discriminated by `kind`, not two: the criterion is one sentence, and a criterion
- * written twice is two criteria that come to disagree about what "waiting" means.
- * Asserted in `bootstrap.test.ts` — "lists what awaits a judgement across BOTH
- * machines, with the state that says which ruling is missing".
+ * `adopted` still accepts `deprecate`, so under it both would be pendencies for as
+ * long as they exist and the list would grow and never empty. That argument was
+ * right, and the premise underneath it — that the rule at least held for the machine
+ * it came from — was false. `reopen` is legal from `DONE` (`TRANSITIONS`) with
+ * nothing to make it happen, so this read called a completed task live work forever:
+ * the very shape the paragraph was written to avoid, in the list the paragraph was
+ * pointing AT. What falsified it was a person reading the list on a terminal instead
+ * of an agent parsing it — `5 actionable task(s)`, and one of them said `(DONE)`.
+ * The proxy is gone from both lists; see `tasks.ts` for the machine it came from.
+ *
+ * THE WAITING LIST REACHES FOUR STATES, ACROSS ALL THREE MACHINES: a task
+ * `IN_REVIEW`, a decision `proposed`, a skill `proposed` or `reviewed`. It used to
+ * say three and leave the task machine out, which was the same defect from the other
+ * side: `core` classified `IN_REVIEW` as `awaiting-judgement` — both its exits demand
+ * a proof field, so every way out is a verdict somebody owes — and this list asked
+ * two machines out of three, so a task submitted for review appeared as one more job
+ * to pick up and on nobody's list of what they owed a ruling on. Every one of the
+ * four has a way out that does not come back, proved from the transition tables in
+ * `disposition.test.ts` ("nothing can wait forever", and the DAG case beside it), so
+ * the list still empties. ONE list discriminated by `kind`, not three: the criterion
+ * is one sentence, and a criterion written twice is two criteria that come to
+ * disagree about what "waiting" means. Asserted in `bootstrap.test.ts` — "lists what
+ * awaits a judgement across ALL THREE machines, with the state that says which ruling
+ * is missing".
  *
  * NAMES, NEVER BODIES. The skills appear as name + id and nothing else, and the
  * decisions as title + `adr` + id. A body is the pattern, or the argument, in full
@@ -53,16 +79,20 @@
  *
  * AND ON THE MIXED LIST, THE `kind` SAYS WHAT THE SECOND READ WILL HAND BACK. An
  * index is only an index if its reader knows where the rest is, and one list holding
- * two sorts of item has to say which is which per line or the reader has to guess:
- * `decision` → the argument and the alternatives, `skill` → the pattern itself. The
+ * three sorts of item has to say which is which per line or the reader has to guess:
+ * `decision` → the argument and the alternatives, `skill` → the pattern itself,
+ * `task` → the verdicts its position allows and the proof each demands. The
  * discriminant that makes the union readable in TypeScript and the label that makes
- * it actionable for an agent are the same field, which is why there is no second one.
+ * it usable by an agent are the same field, which is why there is no second one.
  *
  * EVERY ITEM ON THIS LIST HAS A SECOND READ THAT ANSWERS IT: a decision's is
  * {@link readRecord} (the `read_record` tool), a pattern's is
- * {@link lookupServedSkill} (the `skills` tool, with the id). Both serve the text of
- * something still being decided, and that is the point of naming them here — an index
- * that points at a door which refuses its own items is an index that lies.
+ * {@link lookupServedSkill} (the `skills` tool, with the id), and a task's is
+ * {@link nextActions} (the `next_actions` tool) — the pair of verdicts `IN_REVIEW`
+ * allows and the proof each one demands, which is the same second read a task on the
+ * work list has. Each serves the rest of something still being decided, and that is
+ * the point of naming them here — an index that points at a door which refuses its
+ * own items is an index that lies.
  *
  * THIS PARAGRAPH USED TO SAY THE OPPOSITE, and what falsified it is worth keeping.
  * It read: "A PATTERN'S IS NOT SERVED TO AN AGENT AT ALL, and that is measured, not
@@ -95,21 +125,23 @@
  * path where an agent ACTS, against the whole table for every task on the path
  * where it only LOOKS.
  *
- * No count of the moves takes their place, either. Being in this list already
- * means having a legal move — the filter below drops a terminal task by
- * construction — so a number beside each item would restate the definition of the
- * list it is in.
+ * No count of the moves takes their place, either. A number beside each item would
+ * be a second, weaker statement of the position the item already carries: the state
+ * IS what decides which moves exist, and `next_actions` answers it exactly. It used
+ * to be argued the other way round — that a count would "restate the definition of
+ * the list", because membership WAS having a legal move — and that definition is the
+ * one this read no longer uses.
  *
  * FILTERING WAS NOT A LIMIT, AND MEASUREMENT IS WHAT SAID SO. This doc used to
  * claim, under the heading LEAN, NOT MEASURED, that "the economy is a CONSEQUENCE
  * of serving only what matters, never a budget this layer manages". The premise
- * beneath that was that "actionable" bounds the work list. It does not: a healthy
- * backlog is mostly actionable, and excluding terminal tasks excludes almost
- * nothing. The number that falsified it was 854 — the lines of ONE payload over a
- * modest record (30 actionable tasks, 15 decisions, 25 adopted patterns, 20
- * memories, 10 observations), of which the work list alone was 742, some 25 lines
- * per task, against the ~200 lines the market publishes for a whole project
- * memory. A hundred actionable tasks would have been ~2,500 lines.
+ * beneath that was that being live bounds the work list. It does not: a healthy
+ * backlog is mostly live, and excluding what is over excludes almost nothing. The
+ * number that falsified it was 854 — the lines of ONE payload over a modest record
+ * (30 live tasks, 15 decisions, 25 adopted patterns, 20 memories, 10 observations),
+ * of which the work list alone was 742, some 25 lines per task, against the ~200
+ * lines the market publishes for a whole project memory. A hundred live tasks would
+ * have been ~2,500 lines.
  *
  * So the limit is STATED now, in two halves, and neither of them is a tokenizer:
  *   - each item is a NAME, which is what fixes the per-item cost at a handful of
@@ -149,21 +181,23 @@
  *
  * What still makes the rest lean is the filtering:
  *   - the actor's focus comes from `resume`, already scoped to the actor;
- *   - the work list carries ONLY actionable tasks — those with at least one legal
- *     next move (a terminal task has none and is left out) — most recently
- *     touched first, so the freshest work leads and the cut falls on the stalest;
+ *   - the work list carries ONLY live tasks — those a reader still has something to
+ *     do about, which is `advancing` or `stalled` (see {@link liveWork}) — most
+ *     recently touched first, so the freshest work leads and the cut falls on the
+ *     stalest;
  *   - the skill list carries ONLY adopted patterns, by name;
  *   - the decision list carries ONLY decisions in force (`accepted`), by name,
  *     most recently settled first — see {@link decisionsInForce} for why one state
  *     is the whole filter;
  *   - the awaiting list carries ONLY what a person still owes a ruling on, by name
- *     and by the state that says which ruling — see {@link DECISION_DISPOSITION}
- *     and {@link SKILL_DISPOSITION}, one table per machine, total in the compiler.
+ *     and by the state that says which ruling — `core`'s `TASK_DISPOSITION` and this
+ *     package's {@link DECISION_DISPOSITION} and {@link SKILL_DISPOSITION}, one
+ *     table per machine, each total in the compiler.
  *
  * AN HONEST LIMIT. The work list is workspace-wide, not the actor's own: a task
  * projection carries no `who`, so the tasks cannot be attributed to the actor
  * the way the runs can (see {@link focus}). bootstrap surfaces the actor's focus
- * (their runs) AND the workspace's actionable work — the two honest halves the
+ * (their runs) AND the workspace's live work — the two honest halves the
  * read model supports today. When a future slice ties a task to the actor, the
  * work list can narrow to the actor with no change to this shape.
  *
@@ -184,7 +218,7 @@
  * reshuffle the list.
  */
 
-import { type ProjectionCache, SEARCH_DEFAULT_LIMIT, type TaskProjection } from '@mnema/core';
+import { type ProjectionCache, SEARCH_DEFAULT_LIMIT } from '@mnema/core';
 import {
   type DecisionAwaitingJudgement,
   type DecisionRef,
@@ -192,13 +226,18 @@ import {
   decisionsInForce,
 } from './decisions.js';
 import { type ActorScope, type Resume, resume } from './focus.js';
-import { nextActions } from './next-action.js';
 import {
   adoptedSkills,
   type SkillAwaitingJudgement,
   type SkillRef,
   skillsAwaitingJudgement,
 } from './skills.js';
+import {
+  liveWork,
+  type TaskAwaitingJudgement,
+  tasksAwaitingJudgement,
+  type WorkItem,
+} from './tasks.js';
 
 /**
  * How many items of ONE list an opening context serves.
@@ -213,45 +252,42 @@ import {
 const SERVED_LIMIT: number = SEARCH_DEFAULT_LIMIT;
 
 /**
- * One thing waiting on a person's ruling, NAMED, from either machine that has a
- * waiting side.
+ * One thing waiting on a person's ruling, NAMED, from any of the three machines —
+ * all of which have a waiting side.
  *
- * A discriminated union and not a widened record: the two machines name their
- * items differently (a decision by title and `ADR-<n>`, a pattern by its name) and
- * flattening them into one optional-everything shape would let a consumer read a
- * field that is never there. The `kind` narrows it, and it is the same field that
- * tells an agent which read serves the rest (see the module doc).
+ * A discriminated union and not a widened record: the machines name their items
+ * differently (a decision by title and `ADR-<n>`, a pattern by its name, a task by
+ * its title) and flattening them into one optional-everything shape would let a
+ * consumer read a field that is never there. The `kind` narrows it, and it is the
+ * same field that tells an agent which read serves the rest (see the module doc). A
+ * consumer that says something per item therefore does not compile until it has an
+ * answer for all three — which is how the surface that prints this list met the task
+ * arm rather than dropping it into whichever branch was last.
  */
-export type AwaitingJudgement = DecisionAwaitingJudgement | SkillAwaitingJudgement;
-
-/** One live piece of work, NAMED — a unit of "what can be done". */
-export interface WorkItem {
-  /** The task's id — the key {@link nextActionsForTask} takes. */
-  readonly id: string;
-  readonly title: string;
-  /** The task's current state. */
-  readonly state: string;
-  /** `at` of its last transition — what "most recently touched" orders on. */
-  readonly updatedAt: string;
-}
+export type AwaitingJudgement =
+  | DecisionAwaitingJudgement
+  | SkillAwaitingJudgement
+  | TaskAwaitingJudgement;
 
 /**
- * The opening context: where the actor is, the actionable work, the patterns to
+ * The opening context: where the actor is, the live work, the patterns to
  * work by, and the decisions that govern.
  */
 export interface Bootstrap {
   /** Where the actor left off and what they have open. */
   readonly resume: Resume;
   /**
-   * The workspace's actionable tasks — those with a legal next move — most
-   * recently touched first, NAMED and not spelled out: the moves each one allows
-   * come from {@link nextActions}, asked per task (see the module doc). Terminal
-   * tasks (no move out) are omitted, and so is everything past
-   * {@link Bootstrap.workTotal}'s cut. NOT attributed to the actor (see below).
+   * The workspace's LIVE tasks — those a reader still has something to do about,
+   * which is what {@link liveWork} answers — most recently touched first, NAMED and
+   * not spelled out: the moves each one allows come from {@link nextActions}, asked
+   * per task (see the module doc). A task that has arrived or was called off is
+   * omitted, one waiting on a verdict is on {@link Bootstrap.awaitingJudgement}
+   * instead, and so is everything past {@link Bootstrap.workTotal}'s cut omitted.
+   * NOT attributed to the actor (see below).
    */
   readonly work: readonly WorkItem[];
   /**
-   * How many actionable tasks there are in all. Greater than `work.length` means
+   * How many live tasks there are in all. Greater than `work.length` means
    * the list was cut, and the items missing are the STALEST — the order is
    * freshest-first, so a cut answer is always the top of it.
    *
@@ -287,18 +323,19 @@ export interface Bootstrap {
    */
   readonly decisionsTotal: number;
   /**
-   * What is waiting on a person: the decisions still `proposed` and the patterns
-   * still `proposed` or `reviewed`, in ONE list, each carrying the `kind` that says
-   * which read serves the rest of it and the `state` that says which ruling is
-   * missing. Never a body — the argument and the pattern are both a second read.
+   * What is waiting on a person: the tasks `IN_REVIEW`, the decisions still
+   * `proposed` and the patterns still `proposed` or `reviewed`, in ONE list, each
+   * carrying the `kind` that says which read serves the rest of it and the `state`
+   * that says which ruling is missing. Never a body — the argument, the pattern and
+   * a task's moves are all a second read.
    *
-   * Most recently moved first, ACROSS the two kinds: it is one list ordered by one
-   * property of the content, not decisions and then skills. Everything past
-   * {@link Bootstrap.awaitingJudgementTotal}'s cut is omitted.
+   * Most recently moved first, ACROSS the three kinds: it is one list ordered by one
+   * property of the content, not tasks and then decisions and then skills.
+   * Everything past {@link Bootstrap.awaitingJudgementTotal}'s cut is omitted.
    *
-   * NOT the same question as `work`. That list means "a move is legal"; this one
-   * means "somebody owes a ruling", and the difference is the whole reason it
-   * exists — see the module doc.
+   * NOT the same question as `work`, though both now ask the disposition. That list
+   * means "there is still something to do about this"; this one means "somebody owes
+   * a ruling", and no record is on both — see the module doc.
    */
   readonly awaitingJudgement: readonly AwaitingJudgement[];
   /**
@@ -314,35 +351,38 @@ export interface Bootstrap {
 
 /**
  * Builds the opening context for `actor` over every tree the caller can see:
- * their resume, the freshest actionable tasks by name, the names of the adopted
+ * their resume, the freshest live tasks by name, the names of the adopted
  * patterns, the names of the decisions in force, and the names of what awaits a
  * judgement. Reads caches only; composes pure derivations. The five halves are
  * independent — an actor with no runs still gets the work list, and a record with
  * no patterns still gets the other four.
  */
 export function bootstrap(caches: readonly ProjectionCache[], scope: ActorScope): Bootstrap {
-  const actionable = caches
-    .flatMap((cache) => cache.listTasks())
-    .map((t) => toWorkItem(t))
-    .filter((w): w is WorkItem => w !== null)
-    .sort(byUpdatedDesc);
+  // Ordered HERE and not in `tasks.ts`, for the reason the awaiting halves give: the
+  // order belongs to the list that is served and cut, and the same comparator settles
+  // both, so "most recently moved first, ties by id" is one rule in one function.
+  const live = liveWork(caches).sort(byUpdatedDesc);
   // Named, never spelled out: the body is dropped here and served by its own
   // read, so the opening context stays one line per pattern.
   const skills = adoptedSkills(caches).map(({ id, name }) => ({ id, name }));
-  const work = capped(actionable);
+  const work = capped(live);
   // The rule for which decisions govern is NOT here: it is `decisionsInForce`, so
   // the brief that serves that same derivation into a file cannot answer "in force"
   // differently. What the brief does differ in is the trees it asks about — it
   // carries only the one that travels, and it filters its own sources to do it, so
   // this answer keeps every tree the caller can see.
   const decisions = capped(decisionsInForce(caches));
-  // ONE list from two machines, and the ordering happens HERE rather than in
-  // either half: interleaving by when each item last moved is a property of the
+  // ONE list from three machines, and the ordering happens HERE rather than in
+  // any half: interleaving by when each item last moved is a property of the
   // composed list, and a half that sorted itself would be asserting an order this
   // line discards. Same comparator the work list uses — "most recently moved
   // first, ties by id" is one rule, so it is one function.
   const awaiting = capped(
-    [...decisionsAwaitingJudgement(caches), ...skillsAwaitingJudgement(caches)].sort(byUpdatedDesc),
+    [
+      ...tasksAwaitingJudgement(caches),
+      ...decisionsAwaitingJudgement(caches),
+      ...skillsAwaitingJudgement(caches),
+    ].sort(byUpdatedDesc),
   );
   return {
     resume: resume(caches, scope),
@@ -378,22 +418,6 @@ function capped<T>(items: readonly T[]): {
   readonly total: number;
 } {
   return { served: items.slice(0, SERVED_LIMIT), total: items.length };
-}
-
-/**
- * A task becomes a WorkItem only if it has at least one legal next move. The moves
- * decide MEMBERSHIP and are then dropped: what a state allows is the task's body,
- * served by {@link nextActions} per task, so being in the list is the whole of what
- * this answer says about them.
- */
-function toWorkItem(task: TaskProjection): WorkItem | null {
-  if (nextActions(task.state).length === 0) return null;
-  return {
-    id: task.id,
-    title: task.title,
-    state: task.state,
-    updatedAt: task.updatedAt,
-  };
 }
 
 /**

@@ -23,7 +23,9 @@
  *     record that cannot PRODUCE one of them makes a measurement of its absence
  *     meaningless — so the fixture rules on some things and deliberately leaves others
  *     waiting, and each cell is asserted present before anything is asserted about how
- *     it reads.
+ *     it reads. The task machine's waiting side is TWO of those things now: a task
+ *     waiting on a move is the work list and a task waiting on a verdict is the other
+ *     one, so the fixture produces both and each is followed to the line it prints.
  *   - AND THE TWO HONEST EMPTIES. Outside a project there is nothing to read and it
  *     refuses; inside an empty one every half says it is empty, in words, rather than
  *     printing a heading with nothing under it.
@@ -108,6 +110,8 @@ function bornId(lines: readonly string[], head: string): string {
 async function aRecordThatReachesEveryCell(): Promise<{
   anchor: string;
   liveTask: string;
+  waitingTask: string;
+  overTask: string;
   inForce: string;
   adopted: string;
   waitingDecision: string;
@@ -126,6 +130,8 @@ async function aRecordThatReachesEveryCell(): Promise<{
   process.env.MNEMA_RUN = runId;
 
   const liveTask = bornId(await mnema('task', 'Write the deploy runbook'), 'Created task ');
+  const waitingTask = bornId(await mnema('task', 'Rewrite the rollback step'), 'Created task ');
+  const overTask = bornId(await mnema('task', 'Rename the staging bucket'), 'Created task ');
   const inForce = bornId(
     await mnema('decision', 'Keep the runbook in the record', 'a wiki page goes stale'),
     'Recorded decision ',
@@ -147,12 +153,31 @@ async function aRecordThatReachesEveryCell(): Promise<{
   // and `waitingSkill` stops at `reviewed`, which is the second of the two states a
   // pattern can wait in.
   await mnema('task', 'move', 'submit', liveTask);
+  // The task machine's two sides, through the gate: one waiting on a verdict, and one
+  // that ARRIVED — which the opening read serves on neither list, and which is here so
+  // that absence is measured over a record that can produce it.
+  for (const id of [waitingTask, overTask]) {
+    await mnema('task', 'move', 'submit', id);
+    await mnema('task', 'move', 'start', id);
+  }
+  await mnema('task', 'move', 'submit_review', waitingTask);
+  await mnema('task', 'move', 'complete', overTask, '--note', 'the bucket is renamed');
   await mnema('decision', 'move', 'accept', inForce, '--note', 'we agreed in review');
   await mnema('skill', 'move', 'review', adopted, '--note', 'it reads well');
   await mnema('skill', 'move', 'adopt', adopted, '--note', 'we work this way already');
   await mnema('skill', 'move', 'review', waitingSkill, '--note', 'worth a look');
 
-  return { anchor, liveTask, inForce, adopted, waitingDecision, waitingSkill, run: runId };
+  return {
+    anchor,
+    liveTask,
+    waitingTask,
+    overTask,
+    inForce,
+    adopted,
+    waitingDecision,
+    waitingSkill,
+    run: runId,
+  };
 }
 
 /** What `mnema status --actor <anchor> --json` served, parsed. */
@@ -215,6 +240,12 @@ describe('mnema status — the opening read, over a record that reaches every ce
     // A record that cannot produce a waiting decision makes "the waiting list is right"
     // a claim about an empty list, and the case would pass with the whole half deleted.
     expect((served.work as { id: string }[]).map((one) => one.id)).toContain(fixture.liveTask);
+    // And the two the work list must NOT hold: one waiting on a verdict (it is on the
+    // other list, below) and one that arrived (it is on neither).
+    expect((served.work as { id: string }[]).map((one) => one.id)).not.toContain(
+      fixture.waitingTask,
+    );
+    expect((served.work as { id: string }[]).map((one) => one.id)).not.toContain(fixture.overTask);
     expect((served.decisions as { id: string }[]).map((one) => one.id)).toEqual([fixture.inForce]);
     expect((served.skills as { id: string }[]).map((one) => one.id)).toEqual([fixture.adopted]);
     expect(
@@ -223,6 +254,7 @@ describe('mnema status — the opening read, over a record that reaches every ce
         .sort(),
     ).toEqual(
       [
+        `task IN_REVIEW ${fixture.waitingTask}`,
         `decision proposed ${fixture.waitingDecision}`,
         `skill reviewed ${fixture.waitingSkill}`,
       ].sort(),
@@ -239,9 +271,10 @@ describe('mnema status — the opening read, over a record that reaches every ce
     const text = printed.join('\n');
     expect(text).toContain('1 decision(s) in force:');
     expect(text).toContain('1 adopted pattern(s):');
-    expect(text).toContain('2 awaiting a judgement:');
+    expect(text).toContain('3 awaiting a judgement:');
     for (const id of [
       fixture.liveTask,
+      fixture.waitingTask,
       fixture.inForce,
       fixture.adopted,
       fixture.waitingDecision,
@@ -250,8 +283,12 @@ describe('mnema status — the opening read, over a record that reaches every ce
       const lines = printed.filter((line) => line.includes(id));
       expect(lines, `one line for ${id}`).toHaveLength(1);
     }
+    // The task that arrived is on NO line of this read — the sixth cell, deliberately
+    // empty, asserted over a record that holds one.
+    expect(printed.filter((line) => line.includes(fixture.overTask))).toEqual([]);
     // The waiting list says which machine each item is and which ruling is missing —
     // without those two words the line names a record and no action.
+    expect(text).toMatch(new RegExp(`${fixture.waitingTask}\\s+task\\s+.*\\(IN_REVIEW\\)`));
     expect(text).toMatch(new RegExp(`${fixture.waitingDecision}\\s+decision\\s+.*\\(proposed\\)`));
     expect(text).toMatch(new RegExp(`${fixture.waitingSkill}\\s+skill\\s+.*\\(reviewed\\)`));
     // NAMES, NEVER BODIES — the derivation's rule, kept by the surface that prints it.
@@ -272,12 +309,12 @@ describe('mnema status — the opening read, over a record that reaches every ce
     // their own, which is a difference the golden pins and this case is not about.
     const said = printed.map((line) => line.trim());
     expect(said).toContain('No runs.');
-    expect(said).toContain('No actionable tasks.');
+    expect(said).toContain('No live tasks.');
     expect(said).toContain('No decisions in force.');
     expect(said).toContain('No adopted patterns.');
     expect(said).toContain('Nothing awaiting a judgement.');
     // And nothing is invented: no count, no header, no item.
-    expect(printed.join('\n')).not.toMatch(/\d+ (of \d+ )?(actionable|decision|adopted|awaiting)/);
+    expect(printed.join('\n')).not.toMatch(/\d+ (of \d+ )?(live|decision|adopted|awaiting)/);
   }, 30_000);
 
   it('refuses outside a project rather than answering about nothing', async () => {
@@ -361,8 +398,7 @@ function production(): { path: string; code: string }[] {
 }
 
 /**
- * The five halves the opening context is composed OF, named as the derivation names
- * them.
+ * The halves the opening context is composed OF, named as the derivation names them.
  *
  * A door that calls `bootstrap` reaches none of these directly; a door that decided to
  * assemble the answer for itself reaches most of them. That is the discriminant, and it
@@ -372,8 +408,10 @@ function production(): { path: string; code: string }[] {
  */
 const HALVES = [
   'resume',
+  'liveWork',
   'adoptedSkills',
   'decisionsInForce',
+  'tasksAwaitingJudgement',
   'decisionsAwaitingJudgement',
   'skillsAwaitingJudgement',
 ] as const;

@@ -8,7 +8,7 @@ import {
   makeBench,
   moveSkill,
 } from '../../tests/support/chain.js';
-import { statesWith } from './disposition.js';
+import { statesMeaning } from './disposition.js';
 import {
   adoptedSkills,
   lookupServedSkill,
@@ -359,14 +359,14 @@ describe('lookupServedSkill — asking for one pattern by id', () => {
         new Set(['served', 'not-served']),
       );
       // The state that comes back with a served body is the state it was READ in.
-      for (const state of statesWith(SKILL_STATES, SKILL_DISPOSITION, 'closed')) {
+      for (const state of statesMeaning(SKILL_STATES, skillDisposition, 'closed')) {
         expect(lookupServedSkill([cache], `sk-${state}`)).toEqual({
           outcome: 'not-served',
           state,
         });
       }
       for (const disposition of ['in-force', 'awaiting-judgement'] as const) {
-        for (const state of statesWith(SKILL_STATES, SKILL_DISPOSITION, disposition)) {
+        for (const state of statesMeaning(SKILL_STATES, skillDisposition, disposition)) {
           expect(lookupServedSkill([cache], `sk-${state}`)).toMatchObject({
             outcome: 'served',
             skill: { state },
@@ -455,8 +455,10 @@ describe('skillsAwaitingJudgement — the patterns somebody still owes a ruling 
   it('an ADOPTED pattern is not awaiting anything, though `deprecate` is legal from it forever', () => {
     // THE TEST THAT PROVES THE CRITERION DID NOT HITCH A RIDE, on this machine.
     // `SKILL_TRANSITIONS` carries `{from: 'adopted', action: 'deprecate'}` with
-    // nothing to ever make it happen, so the work list's rule ("has a legal move")
-    // would keep every adopted pattern on a pendency list for good.
+    // nothing to ever make it happen, so a rule reading "has a legal move" would keep
+    // every adopted pattern on a pendency list for good. That rule used to be the work
+    // list's, and it was wrong there too — see `tasks.ts`; both lists ask the
+    // disposition now, so there is no ride left to hitch.
     const b = bench();
     adopt(b, 'sk-live', 'A live pattern');
     const cache = b.cache();

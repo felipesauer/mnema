@@ -25,7 +25,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     if (bench) rmSync(bench.root, { recursive: true, force: true });
   });
 
-  it('composes the actor’s resume and the actionable work, NAMED', () => {
+  it('composes the actor’s resume and the live work, NAMED', () => {
     bench = makeBench();
     startRun(bench, 'run-1', { agent: 'claude', goal: 'in flight' });
     const t = birthTask(bench, 'task-1', 'Parse tokens');
@@ -59,13 +59,13 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     try {
       const b = bootstrap([cache], asking(bench.who));
       const item = b.work[0];
-      if (item === undefined) throw new Error('the actionable task is missing');
+      if (item === undefined) throw new Error('the live task is missing');
       // Absence, because a present-but-empty `actions` would be a second claim:
       // that this task allows nothing, which is the opposite of why it is here.
       expect(item).not.toHaveProperty('actions');
       expect(Object.keys(item).sort()).toEqual(['id', 'state', 'title', 'updatedAt']);
-      // And no count of them took their place: being in this list IS the claim
-      // that a move exists.
+      // And no count of them took their place: the state on the line is what says
+      // which moves exist, and `nextActions` is what answers it exactly.
       expect(JSON.stringify(item)).not.toMatch(/action|move|count/i);
     } finally {
       cache.close();
@@ -192,7 +192,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     const cache = bench.cache();
     try {
       const named = bootstrap([cache], asking(bench.who)).work[0];
-      if (named === undefined) throw new Error('the actionable task is missing');
+      if (named === undefined) throw new Error('the live task is missing');
       expect(named.id).toBe('task-1');
       // The information MOVED doors; it did not disappear. Asked per task, the
       // moves come back whole — every action, and the proof each one demands.
@@ -210,36 +210,74 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     }
   });
 
-  it('omits a terminal task (CANCELED has no next move) from the work list', () => {
+  it('omits a task that is OVER — canceled and completed are both off the work list', () => {
+    // This case used to be about `CANCELED` alone, and its title said why: it "has no
+    // next move". That was the old criterion, and `DONE` passed it — `reopen` is legal
+    // from there forever — so a completed task sat on the work list for good. Both
+    // sides are asserted here now, over a record that reaches both.
     bench = makeBench();
     const live = birthTask(bench, 'task-live', 'Still going');
     moveTask(bench, live, 'DRAFT', 'READY', 'submit');
     const dead = birthTask(bench, 'task-dead', 'Abandoned');
     moveTask(bench, dead, 'DRAFT', 'CANCELED', 'cancel', { reason: 'dropped' });
+    const shipped = birthTask(bench, 'task-done', 'Shipped');
+    moveTask(bench, shipped, 'DRAFT', 'READY', 'submit');
+    moveTask(bench, shipped, 'READY', 'IN_PROGRESS', 'start');
+    moveTask(bench, shipped, 'IN_PROGRESS', 'DONE', 'complete', { note: 'done' });
     const cache = bench.cache();
     try {
       const b = bootstrap([cache], asking(bench.who));
       expect(b.work.map((w) => w.id)).toEqual(['task-live']);
+      expect(b.workTotal).toBe(1);
+      // And neither of them went to the OTHER list on the way out: what is over is on
+      // no list at all, which is the sixth cell left deliberately empty.
+      expect(b.awaitingJudgement).toEqual([]);
     } finally {
       cache.close();
     }
   });
 
-  it('keeps a DONE task in the work list, because it can still be reopened', () => {
+  it('moves a task IN_REVIEW off the work list and onto what awaits a judgement', () => {
+    // The second half of the same rule, and the one that ADDS rather than removes: a
+    // task whose every exit is a verdict is not one more job to pick up. It is on
+    // exactly one list, and the case asserts both halves so a copy that put it on both
+    // would fail here rather than read as thoroughness.
     bench = makeBench();
-    const t = birthTask(bench, 'task-done', 'Shipped');
+    const t = birthTask(bench, 'task-review', 'Waiting on a reviewer');
     moveTask(bench, t, 'DRAFT', 'READY', 'submit');
     moveTask(bench, t, 'READY', 'IN_PROGRESS', 'start');
-    moveTask(bench, t, 'IN_PROGRESS', 'DONE', 'complete', { note: 'done' });
+    moveTask(bench, t, 'IN_PROGRESS', 'IN_REVIEW', 'submit_review');
+    const going = birthTask(bench, 'task-live', 'Still going');
+    moveTask(bench, going, 'DRAFT', 'READY', 'submit');
     const cache = bench.cache();
     try {
       const b = bootstrap([cache], asking(bench.who));
-      // This test used to read the item's `reopen` action to prove DONE is not
-      // terminal. The moves left the item, so the substitute is MEMBERSHIP plus
-      // the state it was admitted in — the list's own definition (a legal move
-      // exists) is what being here means now.
+      expect(b.work.map((w) => w.id)).toEqual(['task-live']);
+      expect(b.awaitingJudgement).toEqual([
+        {
+          kind: 'task',
+          id: 'task-review',
+          title: 'Waiting on a reviewer',
+          state: 'IN_REVIEW',
+          updatedAt: expect.any(String),
+        },
+      ]);
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('keeps a BLOCKED task on the work list — stalled is what somebody has to see', () => {
+    bench = makeBench();
+    const t = birthTask(bench, 'task-stuck', 'Waiting on the API');
+    moveTask(bench, t, 'DRAFT', 'READY', 'submit');
+    moveTask(bench, t, 'READY', 'IN_PROGRESS', 'start');
+    moveTask(bench, t, 'IN_PROGRESS', 'BLOCKED', 'block', { reason: 'the API is down' });
+    const cache = bench.cache();
+    try {
+      const b = bootstrap([cache], asking(bench.who));
       expect(b.work.map((w) => ({ id: w.id, state: w.state }))).toEqual([
-        { id: 'task-done', state: 'DONE' },
+        { id: 'task-stuck', state: 'BLOCKED' },
       ]);
     } finally {
       cache.close();
@@ -465,20 +503,34 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     }
   });
 
-  it('lists what awaits a judgement across BOTH machines, with the state that says which ruling is missing', () => {
+  it('lists what awaits a judgement across ALL THREE machines, with the state that says which ruling is missing', () => {
     // The record the measurement was taken over held two ADRs — and BOTH were
     // `proposed`, so the list of what governs said nothing about them either. This
     // is the half that answers for them, and for the curation backlog beside it.
+    //
+    // It used to reach two machines, and the task arm is the third: `IN_REVIEW` was
+    // classified `awaiting-judgement` the whole time and this list did not ask.
     bench = makeBench();
     birthDecision(bench, 'dec-1', 'Nobody has ruled');
     birthSkill(bench, 'sk-new', 'Nobody has looked');
     birthSkill(bench, 'sk-seen', 'Looked at, not adopted');
     moveSkill(bench, 'sk-seen', 'proposed', 'reviewed', 'review');
+    const t = birthTask(bench, 'task-review', 'Nobody has reviewed');
+    moveTask(bench, t, 'DRAFT', 'READY', 'submit');
+    moveTask(bench, t, 'READY', 'IN_PROGRESS', 'start');
+    moveTask(bench, t, 'IN_PROGRESS', 'IN_REVIEW', 'submit_review');
     const cache = bench.cache();
     try {
       const b = bootstrap([cache], asking(bench.who));
-      // Freshest-moved first, and the `review` was the last event written.
+      // Freshest-moved first, and the `submit_review` was the last event written.
       expect(b.awaitingJudgement).toEqual([
+        {
+          kind: 'task',
+          id: 'task-review',
+          title: 'Nobody has reviewed',
+          state: 'IN_REVIEW',
+          updatedAt: expect.any(String),
+        },
         {
           kind: 'skill',
           id: 'sk-seen',
@@ -502,28 +554,44 @@ describe('bootstrap — the opening context, focused on the actor', () => {
           updatedAt: expect.any(String),
         },
       ]);
-      expect(b.awaitingJudgementTotal).toBe(3);
-      // Neither body travelled: not the argument, not the pattern.
+      expect(b.awaitingJudgementTotal).toBe(4);
+      // ONE list and not three: the kinds interleave by content, so a list built
+      // machine by machine would fail on the order above rather than on the members.
+      expect(b.awaitingJudgement.map((i) => i.kind)).toEqual([
+        'task',
+        'skill',
+        'skill',
+        'decision',
+      ]);
+      // No body travelled: not the argument, not the pattern — and not the moves,
+      // which are the task's.
       expect(JSON.stringify(b)).not.toContain('why Nobody has ruled');
       expect(JSON.stringify(b)).not.toContain('body of Nobody has looked');
+      expect(JSON.stringify(b)).not.toMatch(/approve|request_changes/);
     } finally {
       cache.close();
     }
   });
 
-  it('does NOT list what is settled, though `supersede` and `deprecate` stay legal on both', () => {
-    // The criterion did not hitch a ride from the work list. `DECISION_TRANSITIONS`
-    // allows `supersede` from `accepted` and `SKILL_TRANSITIONS` allows `deprecate`
-    // from `adopted`, for as long as either exists — so "has at least one legal
-    // move", which is what puts a task in `work`, would report both of these as
-    // pendencies that never clear. Both are served by the lists that say what
-    // GOVERNS, so their absence here is the criterion and not an empty record.
+  it('does NOT list what is settled, on any of the three machines', () => {
+    // The criterion did not hitch a ride from the work list, and the work list no
+    // longer has the ride to give. `DECISION_TRANSITIONS` allows `supersede` from
+    // `accepted`, `SKILL_TRANSITIONS` allows `deprecate` from `adopted` and
+    // `TRANSITIONS` allows `reopen` from `DONE`, for as long as each exists — so "has
+    // at least one legal move", which used to be what put a task in `work`, would
+    // report all three as pendencies that never clear. The first two are served by the
+    // lists that say what GOVERNS and the third by no list at all, so their absence
+    // here is the criterion and not an empty record.
     bench = makeBench();
     birthDecision(bench, 'dec-1', 'Settled');
     moveDecision(bench, 'dec-1', 'proposed', 'accepted', 'accept');
     birthSkill(bench, 'sk-1', 'In use');
     moveSkill(bench, 'sk-1', 'proposed', 'reviewed', 'review');
     moveSkill(bench, 'sk-1', 'reviewed', 'adopted', 'adopt');
+    const t = birthTask(bench, 'task-1', 'Shipped');
+    moveTask(bench, t, 'DRAFT', 'READY', 'submit');
+    moveTask(bench, t, 'READY', 'IN_PROGRESS', 'start');
+    moveTask(bench, t, 'IN_PROGRESS', 'DONE', 'complete', { note: 'done' });
     const cache = bench.cache();
     try {
       const b = bootstrap([cache], asking(bench.who));
@@ -533,6 +601,7 @@ describe('bootstrap — the opening context, focused on the actor', () => {
       });
       expect(b.decisions.map((d) => d.id)).toEqual(['dec-1']);
       expect(b.skills.map((s) => s.id)).toEqual(['sk-1']);
+      expect({ work: b.work, workTotal: b.workTotal }).toEqual({ work: [], workTotal: 0 });
     } finally {
       cache.close();
     }

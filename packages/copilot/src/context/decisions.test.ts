@@ -261,12 +261,15 @@ describe('decisionsAwaitingJudgement — the calls somebody still owes a ruling 
   });
 
   it('an ACCEPTED decision is not awaiting anything, though `supersede` is legal from it forever', () => {
-    // THE TEST THAT PROVES THE CRITERION DID NOT HITCH A RIDE. The work list's rule
-    // is "has at least one legal move", and `DECISION_TRANSITIONS` carries
-    // `{from: 'accepted', action: 'supersede'}` with nothing to ever make it happen
-    // — so under that rule this decision would be a pendency for as long as the
-    // project exists, and the list would grow and never empty. The rule here is
-    // "somebody owes a ruling", and nobody owes one on a call already settled.
+    // THE TEST THAT PROVES THE CRITERION DID NOT HITCH A RIDE. The rule this refers
+    // to is "has at least one legal move", which the work list used to select by, and
+    // `DECISION_TRANSITIONS` carries `{from: 'accepted', action: 'supersede'}` with
+    // nothing to ever make it happen — so under that rule this decision would be a
+    // pendency for as long as the project exists, and the list would grow and never
+    // empty. The rule here is "somebody owes a ruling", and nobody owes one on a call
+    // already settled. (The work list's rule was wrong on its OWN machine as well —
+    // `reopen` never stops being legal from `DONE` — so it asks the disposition now
+    // too; see `tasks.ts`.)
     const b = bench();
     accept(b, 'dec-settled', 'Already agreed');
     const cache = b.cache();
