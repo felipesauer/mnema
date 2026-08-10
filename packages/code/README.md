@@ -30,9 +30,11 @@ CLI and the MCP tools behave identically, because they are the same call.
   author: an agent's stays on its machine, yours goes to the record. `--scope`
   overrides any of it, a move follows the entity it moves, and every write says which
   tree it landed in.
-- **Reads that answer questions** — what is in flight (`focus`), where you left
-  off (`resume`), what the workflow allows next (`next-actions`), and whether a
-  move would be allowed at all (`guard`, a dry run that writes nothing).
+- **Reads that answer questions** — where things stand (`status`: the live work, the
+  adopted patterns, the decisions in force, and what is still waiting on somebody to
+  rule on it), what is in flight (`focus`), where you left off (`resume`), what the
+  workflow allows next (`next-actions`), and whether a move would be allowed at all
+  (`guard`, a dry run that writes nothing).
 - **Audit reads** — an entity's history across trees (`timeline`), what it is
   connected to (`refs`), who authorized what (`accountability`), recurring
   shapes like reopens and supersessions (`antipatterns`), and where each adopted
@@ -451,8 +453,9 @@ exists precisely so that what is in it stays here. Two consequences worth knowin
 the `ADR-<n>` label is numbered inside one chain, so committed-only is what keeps
 folding the trees from printing two `ADR-1`s, and a difference against your copy
 now means one thing only — the copy is stale. The document declares the scope in its
-own text, so nobody reads it as the whole of what governs. For that, ask the agent's
-opening context (`bootstrap` over the MCP server), which spans every tree you can see.
+own text, so nobody reads it as the whole of what governs. For that, ask the opening
+context, which spans every tree you can see: `mnema status --actor <you>` on the command
+line, or the `bootstrap` tool over the MCP server — one derivation behind both.
 
 One chain is not one machine, though, and that is the limit of the sentence above.
 The number is frozen from the writer's view of the chain, so two people who decide
@@ -494,9 +497,10 @@ project to serve must not serve another instead.
 
 The write tools mirror the CLI verbs — same gate, same refusals — so a move an
 agent cannot make is one you cannot make either. A few names do not pair up:
-`init` and `verify` are yours only, `bootstrap` — an agent's opening orientation
-— is the agent's only, and `skills` exists on both sides doing **different
-things**.
+`init` and `verify` are yours only, `bootstrap` is the same opening read the command
+line calls `status` (one derivation, two names, because an agent's opening call and
+what a person types are not the same word), and `skills` exists on both sides doing
+**different things**.
 
 `bootstrap` is an INDEX, and every list in it names the read that serves the rest:
 the actionable work by name (`next_actions` for the moves one allows), the adopted

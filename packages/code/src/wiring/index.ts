@@ -6,7 +6,7 @@
  * array is what a reader sees when they ask what mnema does — the writes first, from
  * founding a project to the four knowledge facts, then the session, then every read,
  * then the machine's keys, then verification. Reordering the list reorders the help,
- * which is why it lives in one place and not in the sequence of twenty-seven calls
+ * which is why it lives in one place and not in the sequence of twenty-eight calls
  * inside one function.
  *
  * The FAMILIES are the shape of the surface, and each one exists for a reason worth
@@ -26,15 +26,23 @@
  * NONE validates the ids it references — the core resolves a dangling reference
  * on read (an honest cross-tree assertion), and the surface only forwards.
  *
- * The three CONTEXT reads — `focus`, `resume`, `next-actions`. Like init/verify
- * they are top-level verbs (heterogeneous shapes, not an interchangeable
- * resource family), and unlike every write above they are strictly READ-ONLY:
- * each opens the projection cache, rebuilds, and calls a PURE copilot
+ * The four CONTEXT reads — `status`, `focus`, `resume`, `next-actions`. Like
+ * init/verify they are top-level verbs (heterogeneous shapes, not an
+ * interchangeable resource family), and unlike every write above they are strictly
+ * READ-ONLY: each opens the projection cache, rebuilds, and calls a PURE copilot
  * derivation — no writer, no event, no key minted. `--json` emits the faithful
  * object (the agent's stable contract); without it, a lean human summary (one
  * line per item).
  *
- * focus/resume are always SOMEONE's context, and the record has no "current
+ * `status` LEADS THEM because it is the OPENING read: it answers where things
+ * stand — where the actor left off, what work is live, which patterns are adopted,
+ * which decisions govern, and what is waiting on somebody to rule on it — and the
+ * other three narrow one part of that. It is the same derivation the agent surface
+ * opens on (`bootstrap`, over MCP), which until it was declared here was reachable
+ * from that surface alone: an agent could ask where things stood and the person
+ * whose record it is could not.
+ *
+ * status/focus/resume are always SOMEONE's context, and the record has no "current
  * actor" — a `who` is only stamped on past events. The CLI has no session to
  * read a `who` from, and deriving one would touch key material (minting a key
  * on a fresh machine) that the surface must not own. So the actor is a REQUIRED
@@ -138,6 +146,7 @@ import { registerSearch } from './search.js';
 import { registerShow } from './show.js';
 import { registerSkill } from './skill.js';
 import { registerSkills } from './skills.js';
+import { registerStatus } from './status.js';
 import { registerTask } from './task.js';
 import { registerTimeline } from './timeline.js';
 import type { Declared, Verb, Wiring } from './verb.js';
@@ -154,6 +163,7 @@ export const VERBS: readonly Verb[] = [
   registerHandoff,
   registerLink,
   registerRun,
+  registerStatus,
   registerFocus,
   registerResume,
   registerNextActions,

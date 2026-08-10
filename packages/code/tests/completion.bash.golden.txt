@@ -10,7 +10,7 @@
 
 _mnema_commands() {
   case "$1" in
-    '') echo 'init task decision skill memory observe handoff link run focus resume next-actions guard search show timeline accountability antipatterns exposure refs skills brief key verify mcp repl completion help' ;;
+    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure refs skills brief key verify mcp repl completion help' ;;
     'task') echo 'move' ;;
     'decision') echo 'move supersede' ;;
     'skill') echo 'move' ;;
@@ -38,6 +38,7 @@ _mnema_flags() {
     'run') echo '-h --help -V --version --color' ;;
     'run start') echo '--which --goal -h --help -V --version --color' ;;
     'run end') echo '--which --outcome -h --help -V --version --color' ;;
+    'status') echo '--actor --json -h --help -V --version --color' ;;
     'focus') echo '--actor --json -h --help -V --version --color' ;;
     'resume') echo '--actor --json -h --help -V --version --color' ;;
     'next-actions') echo '--json -h --help -V --version --color' ;;
@@ -96,6 +97,7 @@ _mnema_values() {
     'run:--color') echo 'auto always never' ;;
     'run start:--color') echo 'auto always never' ;;
     'run end:--color') echo 'auto always never' ;;
+    'status:--color') echo 'auto always never' ;;
     'focus:--color') echo 'auto always never' ;;
     'resume:--color') echo 'auto always never' ;;
     'next-actions:--color') echo 'auto always never' ;;

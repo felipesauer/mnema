@@ -1,13 +1,15 @@
 /**
  * How a RUN is worded, wherever one is reported.
  *
- * `focus` lists the open runs and `resume` names the last one, and both need the
- * same three things said the same way: how long it has been open, how long since it
- * recorded anything, and what a run IS for the reader who has none. Two readings
- * wording that twice is two wordings, and the second one to change would be the one
- * nobody noticed.
+ * `focus` lists the open runs, `resume` names the last one and `status` says where the
+ * actor left off as one half of a wider answer, and all three need the same things said
+ * the same way: how long a run has been open, how long since it recorded anything, what
+ * the LAST one was, how many are still open, and what a run IS for the reader who has
+ * none. Three readings wording that separately is three wordings, and the second one to
+ * change would be the one nobody noticed.
  */
 
+import type { Resume } from '@mnema/copilot';
 import { fact } from './detail.js';
 import type { Line } from './line.js';
 
@@ -27,6 +29,46 @@ export const NO_RUNS_HINT: readonly Line[] = [
   fact('on the command line, `mnema run start --which <agent>` opens one.'),
   fact('Work you do yourself is recorded without one.'),
 ];
+
+/**
+ * The LAST run an actor had, as the words that follow whoever it is about: what it
+ * is, whether it is still open, what it was for, and how it stands.
+ *
+ * It is worded here rather than at a call site because two readings say it — `resume`
+ * leads the line with the actor (`<actor> last run …`) and `status` prints it as a fact
+ * under a heading that already named them — and a run's line has four parts that have to
+ * agree between the two. What each caller keeps is the SUBJECT: the phrase begins at
+ * "last run", so neither has to strip an actor the other put there.
+ *
+ * The age rides it only while it is OPEN, which is {@link runAgeSuffix}'s rule stated
+ * where the decision is made: an ended run reports its own end, and an age beside that
+ * would read as time still passing in it.
+ */
+export function lastRunPhrase(run: {
+  readonly id: string;
+  readonly open: boolean;
+  readonly goal?: string;
+  readonly ageSeconds?: number;
+  readonly idleSeconds?: number;
+}): string {
+  return (
+    `last run ${run.id} (${run.open ? 'open' : 'ended'})` +
+    `${run.goal !== undefined ? ` — ${run.goal}` : ''}` +
+    `${run.open ? runAgeSuffix(run) : ''}`
+  );
+}
+
+/**
+ * How many of the actor's runs are still open — the second half of "where did I leave
+ * off", said the same way by both readings that answer it.
+ *
+ * The count is the whole line on purpose: which runs those are is `focus`'s answer, and
+ * repeating them here would be a second list of the same thing with no way to keep the
+ * two in step.
+ */
+export function openRunsPhrase(resume: Resume): string {
+  return `${resume.focus.openRuns.length} run(s) still open`;
+}
 
 /**
  * How long an open run has been open, and how long since it recorded anything —

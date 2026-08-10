@@ -550,7 +550,7 @@ describe('a word the machine gains tomorrow', () => {
   it('reaches the help and every shell without a line of code', () => {
     // The mechanism, over a set this test owns — the real one is proved by mutating
     // `TASK_ACTIONS` in the core, which is in the report. A program of its own, so the
-    // twenty-seven verbs that exist cannot satisfy the case.
+    // twenty-eight verbs that exist cannot satisfy the case.
     const later = new Command().name('later');
     const actions = ['submit', 'reticulate'];
     later

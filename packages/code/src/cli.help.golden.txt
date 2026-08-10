@@ -19,6 +19,7 @@ $ mnema --help
 |   handoff [options] <task> <from> <to>    record a handoff on a task in the current project
 |   link [options] <subject> <target>       link one piece of knowledge to another in the current project
 |   run                                     open and close the session an agent works inside
+|   status [options]                        show where things stand: the work, what governs, what awaits a ruling
 |   focus [options]                         show an actor's open runs (what they are touching now)
 |   resume [options]                        show where an actor left off (their latest run, open or ended)
 |   next-actions [options] <task-id>        show the moves the workflow allows a task next
