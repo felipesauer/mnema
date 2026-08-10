@@ -37,12 +37,22 @@ import { renderPlain, widthOf } from '../src/presentation/plain.js';
 import { areaFor } from '../src/repl/area.js';
 import { type Completer, completerFor } from '../src/repl/complete.js';
 import { verbsOffered } from '../src/repl/gate.js';
-import { CUT, offeredBy, paletteFor } from '../src/repl/palette.js';
-import { badgeLine, theSessionsOwnWords, tips } from '../src/repl/session.js';
+import {
+  CUT,
+  NOBODY,
+  offeredBy,
+  PICK,
+  paletteFor,
+  paletteRowsFor,
+  theNextPicked,
+  thePicked,
+} from '../src/repl/palette.js';
+import { badgeLine, pickingTips, theSessionsOwnWords, tips } from '../src/repl/session.js';
 import { CLEAR, LEAVE, PREFIX, SESSION_WORDS } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC } from './support/console.js';
 import {
+  aFrameAfter,
   arrivedSince,
   inPty as drive,
   type Fixture,
@@ -50,7 +60,7 @@ import {
   type Ran,
   type Step,
 } from './support/pty.js';
-import { endsAtTheFoot, screenOf } from './support/screen.js';
+import { endsAtTheFoot, type Screen, screenOf } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = new URL('../dist/cli.js', import.meta.url).pathname;
@@ -63,11 +73,35 @@ const PROMPT = 'mnema>';
 const CLEARS_THE_LINE = '\u0003';
 /** Tab, likewise. */
 const COMPLETES = '\u0009';
+/** The two keys that move through the list, as a terminal sends them. */
+const MOVES_DOWN = '\u001b[B';
+const MOVES_UP = '\u001b[A';
+/** Escape, which shuts the list. One byte, and the library tells it from an arrow's own. */
+const SHUTS_THE_LIST = '\u001b';
+/** The chord that empties the row. */
+const CLEARS_THE_ROW = '\u0015';
 /** The sequence that erases the caller's history. It is not this product's to write. */
 const ERASES_THE_HISTORY = `${ESC}[3J`;
 
+/**
+ * ANY SEQUENCE THAT PAINTS — a hue, a weight, or the end of either.
+ *
+ * Built rather than written as a literal, because a control byte inside a regular expression is
+ * refused at the door of this repository (and rightly: it is a byte a reader cannot see).
+ */
+const PAINTED = new RegExp(`${ESC}\\[[0-9;]*m`, 'g');
+
 /** How wide a terminal has to be for nothing in these lists to be cut. */
 const NOTHING_IS_CUT = 160;
+
+/**
+ * A SENTENCE ONLY THE LIST SAYS, so a screen can be asked whether it is open.
+ *
+ * Read off the vocabulary rather than retyped: it is what the session says about the word that
+ * clears the page, and the day that is reworded this moves with it.
+ */
+const ONLY_A_LIST_SAYS = theSessionsOwnWords().find((entry) => entry.word === CLEAR)
+  ?.description as string;
 
 // ---------------------------------------------------------------------------
 // The fixture
@@ -244,9 +278,31 @@ describe('one palette, one list, and the slash counts only at the start of the l
 // What the rows say, and the one thing that is cut
 // ---------------------------------------------------------------------------
 
-/** How many of the offers a set of composed rows actually shows. */
-function rowsFor(offers: readonly CompletionWord[], room: number, columns: number): string[] {
-  return [...paletteFor({ offers, room, columns, render: renderPlain })];
+/**
+ * The rows a palette composes, as the console asks for them — with a word picked, or none.
+ *
+ * IT PASSES THE PRODUCT'S OWN ROW OF KEYS rather than a line invented here, because that row is
+ * one of the palette's rows: a fixture with a different one would make every count below about a
+ * palette this product does not compose (`repl/session.ts`, `pickingTips`).
+ */
+function rowsFor(
+  offers: readonly CompletionWord[],
+  room: number,
+  columns: number,
+  picked: string = NOBODY,
+): string[] {
+  return [...paletteFor({ offers, room, columns, render: renderPlain, picked, picking: THE_KEYS })];
+}
+
+/** The row that says which keys move the list, as the palette draws it. */
+const THE_KEYS = pickingTips();
+
+/** The same row as bytes — what a case looks for at the bottom of a palette. */
+const THE_KEYS_ROW = renderPlain(THE_KEYS);
+
+/** The rows of the LIST: everything the palette drew except the row of keys under it. */
+function listIn(rows: readonly string[]): string[] {
+  return rows.filter((row) => row !== THE_KEYS_ROW);
 }
 
 /** The number on the row that says how many offers had no room, or nothing when there is none. */
@@ -261,10 +317,13 @@ describe('the palette is two columns, and the only thing it cuts is a descriptio
   const offers = everythingOffered();
 
   it('puts every offer on one row, with what it is beside it', () => {
-    const rows = rowsFor(offers, offers.length, NOTHING_IS_CUT);
-    expect(rows).toHaveLength(offers.length);
+    const rows = rowsFor(offers, paletteRowsFor(offers), NOTHING_IS_CUT);
+    const listed = listIn(rows);
+    expect(listed).toHaveLength(offers.length);
+    // AND THE ROW OF KEYS IS UNDER THEM, which is the one row of a palette that is not an offer.
+    expect(rows.at(-1), 'the keys are not the last row of the list').toBe(THE_KEYS_ROW);
     for (const [index, offer] of offers.entries()) {
-      const row = rows[index] as string;
+      const row = listed[index] as string;
       expect(row, offer.word).toContain(offer.word);
       if (offer.description.length > 0) expect(row, offer.word).toContain(offer.description);
     }
@@ -275,7 +334,7 @@ describe('the palette is two columns, and the only thing it cuts is a descriptio
   });
 
   it('lines the second column up, which is what makes it a column', () => {
-    const rows = rowsFor(offers, offers.length, NOTHING_IS_CUT);
+    const rows = listIn(rowsFor(offers, paletteRowsFor(offers), NOTHING_IS_CUT));
     const at = rows.map((row, index) => row.indexOf((offers[index] as CompletionWord).description));
     expect(new Set(at).size, `the descriptions start at ${[...new Set(at)].join()}`).toBe(1);
     // Not vacuous: the words are of different lengths, so an unpadded list would not line
@@ -290,13 +349,13 @@ describe('the palette is two columns, and the only thing it cuts is a descriptio
     const longest = offers.reduce((most, offer) =>
       offer.description.length > most.description.length ? offer : most,
     );
-    const wide = rowsFor(offers, offers.length, NOTHING_IS_CUT);
+    const wide = rowsFor(offers, paletteRowsFor(offers), NOTHING_IS_CUT);
     expect(
       wide.some((row) => row.includes(CUT)),
       'something was cut at a width that fits',
     ).toBe(false);
 
-    const narrow = rowsFor(offers, offers.length, 60);
+    const narrow = rowsFor(offers, paletteRowsFor(offers), 60);
     const cut = narrow.filter((row) => row.endsWith(CUT));
     expect(cut.length, 'nothing was cut on a narrow window').toBeGreaterThan(0);
     // WHAT A CUT ROW IS: no wider than the terminal, and ending in the mark that says
@@ -343,8 +402,17 @@ describe('whenever it draws a row, what it shows plus what it names is everythin
           expect([...row].length, `${room}/${columns}`).toBeLessThanOrEqual(columns);
         // And it never draws more rows than it was given room for.
         expect(rows.length, `${room}/${columns}`).toBeLessThanOrEqual(room);
-        const missing = saidToBeMissing(rows);
-        const shown = missing === undefined ? rows.length : rows.length - 1;
+        // ⛔ AND IT DRAWS EXACTLY WHAT THE AREA BUDGETED, which is the property the caret and
+        // the foot of the page rest on: the same function answers how many rows the list wants
+        // and how many it spends (`repl/palette.ts`, `paletteRowsFor`), so a row drawn and not
+        // counted — the shape a row of KEYS added to one side alone would have — is a page whose
+        // input is a row off the last one the layout leaves.
+        expect(rows.length, `${room}/${columns}: what the area budgeted`).toBe(
+          Math.min(paletteRowsFor(offers), room),
+        );
+        const listed = listIn(rows);
+        const missing = saidToBeMissing(listed);
+        const shown = missing === undefined ? listed.length : listed.length - 1;
         expect(shown + (missing ?? 0), `${room}/${columns}: ${rows.length} rows`).toBe(
           offers.length,
         );
@@ -357,18 +425,121 @@ describe('whenever it draws a row, what it shows plus what it names is everythin
   });
 
   it('spends a row on saying so, rather than showing one more and going quiet', () => {
+    // ⚠️ THE NUMBERS MOVED BY ONE ROW, AND THE ROW IS THE KEYS'. Three rows of room is now one
+    // offer, the account of the rest, and the row that says which keys move the list — so what
+    // it names is one more than it used to be. The count is still asserted against the TOTAL
+    // rather than written down, which is what keeps it a measurement.
     const rows = rowsFor(offers, 3, NOTHING_IS_CUT);
     expect(rows).toHaveLength(3);
-    expect(saidToBeMissing(rows)).toBe(offers.length - 2);
-    // And with room for exactly one row, that row is the one that accounts for all of them.
+    expect(rows.at(-1)).toBe(THE_KEYS_ROW);
+    expect(saidToBeMissing(listIn(rows))).toBe(offers.length - 1);
+    // AND WITH ROOM FOR EXACTLY ONE ROW, THAT ROW IS THE ACCOUNT AND THE KEYS GIVE THEIRS UP: a
+    // row saying how to move a list nobody can see would be furniture where the honesty goes.
     const only = rowsFor(offers, 1, NOTHING_IS_CUT);
     expect(only).toHaveLength(1);
+    expect(only).not.toContain(THE_KEYS_ROW);
     expect(saidToBeMissing(only)).toBe(offers.length);
   });
 
   it('says nothing when everything fits, so the row is a signal and not furniture', () => {
-    const rows = rowsFor(offers, offers.length, NOTHING_IS_CUT);
-    expect(saidToBeMissing(rows)).toBeUndefined();
+    const rows = rowsFor(offers, paletteRowsFor(offers), NOTHING_IS_CUT);
+    expect(saidToBeMissing(listIn(rows))).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The mark: which row is picked, and how a reader can tell
+// ---------------------------------------------------------------------------
+
+describe('the mark says which row is picked, and it is a column of the table', () => {
+  const offers = everythingOffered();
+  const picked = (offers[2] as CompletionWord).word;
+  /** Every row of a list that carries the mark. */
+  const marked = (rows: readonly string[]): string[] =>
+    rows.filter((row) => row.trimStart().startsWith(PICK));
+
+  it('marks exactly one row, and it is the row of the picked word', () => {
+    const rows = listIn(rowsFor(offers, paletteRowsFor(offers), NOTHING_IS_CUT, picked));
+    expect(marked(rows), `two rows carry ${PICK}`).toHaveLength(1);
+    expect(marked(rows)[0], `${PICK} is on the wrong row`).toContain(picked);
+    // NOT VACUOUS: the marked row is not the first one, so a mark that never moved would fail
+    // rather than land on the right row by luck.
+    expect(rows.indexOf(marked(rows)[0] as string)).toBe(2);
+  });
+
+  it('marks nothing at all until a word is picked', () => {
+    const rows = rowsFor(offers, paletteRowsFor(offers), NOTHING_IS_CUT);
+    expect(marked(rows), 'a palette nobody moved through has a mark on it').toHaveLength(0);
+  });
+
+  it('marks nothing when what was picked is not one of the offers', () => {
+    // THE BRANCH A FILTER TAKES. What is picked is a word, so a list narrowed past it has no row
+    // to mark — and the composition asks the same function the keys ask (`repl/palette.ts`,
+    // `thePicked`) rather than deciding again.
+    const rows = rowsFor(offers, paletteRowsFor(offers), NOTHING_IS_CUT, 'a word nobody offers');
+    expect(marked(rows)).toHaveLength(0);
+    expect(thePicked(offers, 'a word nobody offers')).toBe(NOBODY);
+    expect(thePicked(offers, picked)).toBe(picked);
+  });
+
+  it('keeps the second column lined up, mark or no mark', () => {
+    // THE MARK IS A COLUMN, and this is what says so: a glyph put on the picked row alone would
+    // move that row right of its neighbours by the width of the mark and its separator.
+    const withMark = listIn(rowsFor(offers, paletteRowsFor(offers), NOTHING_IS_CUT, picked));
+    const without = listIn(rowsFor(offers, paletteRowsFor(offers), NOTHING_IS_CUT));
+    const at = (rows: readonly string[]): number[] =>
+      rows.map((row, index) => row.indexOf((offers[index] as CompletionWord).description));
+    expect(new Set(at(withMark)).size, 'a mark moved the column it is beside').toBe(1);
+    expect(at(withMark)).toEqual(at(without));
+    // AND THE WORDS DID NOT MOVE EITHER, which is the same statement about the first column.
+    expect(withMark.map((row) => row.indexOf('/'))).toEqual(without.map((row) => row.indexOf('/')));
+  });
+
+  it('is in the TEXT of the row, which is what makes it work with no colour', () => {
+    // ⛔ THE DECISION THIS DELIVERY TOOK ON PURPOSE. This product paints with the eight colours a
+    // reader's theme defines, so a hue is a weak signal; the mark is a glyph in the line, so it
+    // survives a pipe, `--color=never`, a monochrome terminal and a reader who does not separate
+    // two tones. The renderer here is the PLAIN one — what all three of those get — and the mark
+    // is in its bytes.
+    const rows = rowsFor(offers, paletteRowsFor(offers), NOTHING_IS_CUT, picked);
+    const row = marked(rows)[0] as string;
+    expect(row).toContain(PICK);
+    expect(row, 'the mark is an escape rather than a glyph').not.toContain(ESC);
+    // AND IT IS ONE GLYPH WIDE, so what pads an unmarked row is what the mark takes.
+    expect([...PICK]).toHaveLength(1);
+  });
+});
+
+describe('the pick is a word, and the ends of the list hold', () => {
+  const offers = everythingOffered();
+  const words = offers.map((offer) => offer.word);
+
+  it('steps one word at a time, in both directions', () => {
+    expect(theNextPicked(offers, words[1] as string, 1)).toBe(words[2]);
+    expect(theNextPicked(offers, words[1] as string, -1)).toBe(words[0]);
+  });
+
+  it('holds at both ends rather than wrapping round', () => {
+    // The list is CUT to the room a terminal has (see the budget above), so a wrap would put the
+    // mark on a row the caller cannot see.
+    expect(theNextPicked(offers, words[0] as string, -1)).toBe(words[0]);
+    expect(theNextPicked(offers, words.at(-1) as string, 1)).toBe(words.at(-1));
+  });
+
+  it('takes the first with a step down and the last with a step up when nothing is picked', () => {
+    expect(theNextPicked(offers, NOBODY, 1)).toBe(words[0]);
+    expect(theNextPicked(offers, NOBODY, -1)).toBe(words.at(-1));
+  });
+
+  it('picks nothing out of a list with nothing in it', () => {
+    // The adversarial pair: a list of ONE, where every step is the same word, and a list of NONE,
+    // where there is nothing to pick and the arrows are the history's again (`repl/editing.ts`).
+    const one = [offers[0] as CompletionWord];
+    expect(theNextPicked(one, NOBODY, 1)).toBe(words[0]);
+    expect(theNextPicked(one, words[0] as string, 1)).toBe(words[0]);
+    expect(theNextPicked(one, words[0] as string, -1)).toBe(words[0]);
+    expect(theNextPicked([], NOBODY, 1)).toBe(NOBODY);
+    expect(theNextPicked([], words[0] as string, -1)).toBe(NOBODY);
   });
 });
 
@@ -492,13 +663,23 @@ const leaves: Step = {
   until: (bytes) => bytes.lastIndexOf(PROMPT) > bytes.indexOf(`${PREFIX}exit`),
 };
 
-/** Every row of a screen that begins, after the indent, with one of these words. */
+/**
+ * Every row of a screen that begins, after the indent, with one of these words.
+ *
+ * ⚠️ A MARKED ROW STILL NAMES ITS WORD, and this helper did not know it. The picked row carries
+ * the mark in a column BEFORE the word (`repl/palette.ts`), so a scan that read the row's first
+ * token as the word missed exactly the row the caller had chosen — measured, as two cases of this
+ * file counting one row fewer than the list had. The mark is taken off the front before the
+ * comparison, and only off the front: it is punctuation nowhere else, and a description that
+ * happened to contain the glyph is not a marked row.
+ */
 function rowsNaming(
   screen: { readonly rows: readonly string[] },
   words: readonly string[],
 ): string[] {
   return screen.rows.filter((row) => {
-    const said = row.trimStart();
+    const shown = row.trimStart();
+    const said = shown.startsWith(PICK) ? shown.slice(PICK.length).trimStart() : shown;
     return words.some((word) => said === word || said.startsWith(`${word} `));
   });
 }
@@ -739,6 +920,324 @@ describe('the two keys open one list, and it stands off the row under it', () =>
     expect(bySlash).toContain(LEAVE);
     expect(bySlash.some((word) => !word.startsWith(PREFIX))).toBe(true);
   }, 300_000);
+});
+
+// ---------------------------------------------------------------------------
+// The picker, on a real device: the mark moves, Return takes, Escape shuts
+// ---------------------------------------------------------------------------
+
+/** The row of a screen the mark is on, and nothing when no row carries one. */
+function markedOn(screen: Screen): string | undefined {
+  return screen.rows.find((row) => row.trimStart().startsWith(PICK));
+}
+
+/** The word on the marked row — the first column after the mark. */
+function pickedOn(screen: Screen): string | undefined {
+  const row = markedOn(screen);
+  if (row === undefined) return undefined;
+  return row
+    .trimStart()
+    .slice(PICK.length)
+    .trim()
+    .split(/\s{2,}/)[0];
+}
+
+/** How many times the prompt is on a screen. One is the row being typed and nothing else. */
+function prompts(screen: Screen): number {
+  return screen.text.split(PROMPT).length - 1;
+}
+
+/**
+ * A step that waits for the MARK to arrive on a given word's row.
+ *
+ * The mark, two spaces and the word, contiguous: the layout draws a row as one string, so the
+ * separator between the mark's column and the word is in the same write. It is `arrivedSince`
+ * rather than a predicate over the whole stream because the mark is in every frame from the first
+ * arrow on — what a step has to know is that a frame arrived because of ITS keystroke
+ * (`support/pty.ts`).
+ */
+function marks(word: string): (bytes: string, since: number) => boolean {
+  return arrivedSince(`${PICK}  ${word}`);
+}
+
+describe('the arrows move the mark, and the ends of the list hold', () => {
+  it('marks nothing until an arrow, then walks the list from its end', async () => {
+    const columns = NOTHING_IS_CUT;
+    const rows = 40;
+    const offers = everythingOffered();
+    const last = offers.at(-1)?.word as string;
+    const before = offers.at(-2)?.word as string;
+    const ran = await inPty({
+      columns,
+      rows,
+      steps: [
+        opens,
+        { types: PREFIX, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
+        { types: MOVES_UP, until: marks(last), what: 'marked the last word' },
+        // THE END HOLDS, AND WHAT IS ASSERTED IS AN ABSENCE — so the step waits for a frame
+        // rather than for something in one: a Down that wrapped WOULD write a frame, and the
+        // settle this waits out is long enough to have caught it (`support/pty.ts`, `endOf`).
+        { types: MOVES_DOWN, until: aFrameAfter(PROMPT), what: 'was asked to step past the end' },
+        { types: MOVES_UP, until: marks(before), what: 'stepped back up the list' },
+        leaves,
+      ],
+    });
+    const at = (step: number): Screen =>
+      screenOf(ran.bytes.slice(0, ran.at[step] as number), columns, rows);
+    expect(markedOn(at(1)), 'the list opened with a row already marked').toBeUndefined();
+    expect(pickedOn(at(2)), 'an Up on a list nobody had moved through missed the last word').toBe(
+      last,
+    );
+    expect(pickedOn(at(3)), 'a Down walked off the end of the list').toBe(last);
+    expect(pickedOn(at(4)), 'an Up did not step back up the list').toBe(before);
+    // AND THE PAGE IS STILL A PAGE THROUGH ALL OF IT: nothing about a mark moves the input off
+    // the last row the layout leaves.
+    for (const step of [1, 2, 3, 4]) endsAtTheFoot(at(step), rows, `after step ${step}`);
+    // NOT VACUOUS: the two words are two different words, so the walk really moved.
+    expect(last).not.toBe(before);
+  }, 240_000);
+
+  it('holds at the other end too, and keeps the list showing everything', async () => {
+    const columns = NOTHING_IS_CUT;
+    const rows = 40;
+    const offers = everythingOffered();
+    const first = offers[0]?.word as string;
+    const ran = await inPty({
+      columns,
+      rows,
+      steps: [
+        opens,
+        { types: PREFIX, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
+        { types: MOVES_DOWN, until: marks(first), what: 'marked the first word' },
+        { types: MOVES_UP, until: aFrameAfter(PROMPT), what: 'was asked to step past the start' },
+        leaves,
+      ],
+    });
+    const at = (step: number): Screen =>
+      screenOf(ran.bytes.slice(0, ran.at[step] as number), columns, rows);
+    expect(pickedOn(at(2)), 'a Down on a list nobody had moved through missed the first word').toBe(
+      first,
+    );
+    expect(pickedOn(at(3)), 'an Up walked off the start of the list').toBe(first);
+    // AND MOVING THROUGH IT DOES NOT CHANGE WHAT IT SHOWS: the same words, and the row of keys
+    // still under them.
+    const listed = rowsNaming(
+      at(3),
+      offers.map((offer) => offer.word),
+    );
+    expect(listed, 'the mark cost the list a row').toHaveLength(offers.length);
+    expect(at(3).text, 'the keys that move the list are not said under it').toContain(
+      renderPlain(pickingTips()).trim(),
+    );
+  }, 240_000);
+});
+
+describe('Return takes the picked word, and Escape shuts the list', () => {
+  it('puts the word on the row, runs nothing, and gives the row back on Escape', async () => {
+    // T-d, END TO END. The Return that submits is the same key, so what is asserted is not only
+    // that the row holds the word but that the session never SAW a line: a submitted line is
+    // echoed into the flow (`repl/console.ts`), so a page with one prompt on it is a page where
+    // nothing was run.
+    const columns = NOTHING_IS_CUT;
+    const rows = 40;
+    const offers = everythingOffered();
+    const first = offers[0]?.word as string;
+    const ran = await inPty({
+      columns,
+      rows,
+      steps: [
+        opens,
+        { types: PREFIX, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
+        { types: MOVES_DOWN, until: marks(first), what: 'marked the first word' },
+        { types: '\r', until: arrivedSince(`${PROMPT} ${first}`), what: 'took the word' },
+        {
+          types: SHUTS_THE_LIST,
+          until: (bytes, since) =>
+            aFrameAfter(PROMPT)(bytes) && !bytes.slice(since).includes(ONLY_A_LIST_SAYS),
+          what: 'shut the list',
+        },
+        leaves,
+      ],
+    });
+    const at = (step: number): Screen =>
+      screenOf(ran.bytes.slice(0, ran.at[step] as number), columns, rows);
+    // THE ROW HOLDS THE WORD, AND THE PAGE HOLDS NOTHING ELSE.
+    const taken = at(3);
+    expect(taken.text, 'the picked word is not on the row being typed').toContain(
+      `${PROMPT} ${first}`,
+    );
+    expect(prompts(taken), 'Return ran the word instead of typing it').toBe(1);
+    expect(markedOn(taken), 'the pick outlived being taken').toBeUndefined();
+    // AND ESCAPE SHUTS IT AND GIVES THE ROW BACK — the row it was before the list was asked for,
+    // which on a row that is nothing but a word of the session is an empty one.
+    const shut = at(4);
+    expect(shut.text, 'the list is still open').not.toContain(ONLY_A_LIST_SAYS);
+    expect(shut.text, 'the row still holds what the pick put there').not.toContain(
+      `${PROMPT} ${first}`,
+    );
+    expect(prompts(shut)).toBe(1);
+    endsAtTheFoot(shut, rows, 'the page with the list shut');
+  }, 240_000);
+
+  it('narrows to the word it had picked, and takes that one', async () => {
+    // THE ADVERSARIAL SEQUENCE: open, move, type until one word is left, take it. What is picked
+    // is a WORD, so the mark cannot drift onto a neighbour while the list narrows — the case
+    // reads which word the mark is on AFTER the filter, and then which one Return brought.
+    //
+    // AND THE OTHER HALF OF THE SAME QUESTION — a filter that EXCLUDES the picked word — is
+    // asserted where a value can be read: nothing is picked afterwards and Return hands the row
+    // over exactly as it does on a list nobody moved through (`src/repl/editing.test.ts`).
+    const columns = NOTHING_IS_CUT;
+    const rows = 40;
+    const offers = everythingOffered();
+    const first = offers[0]?.word as string;
+    const letter = first[PREFIX.length] as string;
+    const ran = await inPty({
+      columns,
+      rows,
+      steps: [
+        opens,
+        { types: PREFIX, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
+        { types: MOVES_DOWN, until: marks(first), what: 'marked the first word' },
+        { types: letter, until: arrivedSince(letter), what: 'narrowed the list' },
+        { types: '\r', until: arrivedSince(`${PROMPT} ${first}`), what: 'took what was left' },
+        leaves,
+      ],
+    });
+    const narrowed = screenOf(ran.bytes.slice(0, ran.at[3] as number), columns, rows);
+    const taken = screenOf(ran.bytes.slice(0, ran.at[4] as number), columns, rows);
+    // THE FILTER LEFT THE PICKED WORD, and the mark is still on it — which is the property the
+    // pick being a word rather than a row number buys.
+    const listed = rowsNaming(
+      narrowed,
+      offers.map((offer) => offer.word),
+    );
+    expect(listed.length, 'the filter narrowed nothing').toBeLessThan(offers.length);
+    expect(pickedOn(narrowed), 'the filter lost a pick it was still showing').toBe(first);
+    expect(taken.text, 'Return did not bring the word that was left').toContain(
+      `${PROMPT} ${first}`,
+    );
+    expect(prompts(taken), 'Return ran the word instead of typing it').toBe(1);
+  }, 240_000);
+});
+
+describe('a list of one, a list of none, and the arrows in both', () => {
+  it('marks the only word there is, and browses the history when there is no list', async () => {
+    const columns = NOTHING_IS_CUT;
+    const rows = 40;
+    const words = theSessionsOwnWords().map((entry) => entry.word);
+    const one = CLEAR;
+    const ran = await inPty({
+      columns,
+      rows,
+      steps: [
+        opens,
+        // A LIST OF ONE: the whole word typed out, which narrows the list to itself.
+        { types: one, until: arrivedSince(`${PROMPT} ${one}`), what: 'typed a whole word' },
+        { types: MOVES_DOWN, until: marks(one), what: 'marked the only word' },
+        // AND A LIST OF NONE. A line is submitted, so there is a history to browse and nothing
+        // offered — which is where the arrows go back to doing what they always did.
+        {
+          types: `${CLEARS_THE_ROW}xyzzy\r`,
+          until: arrivedSince(`${PROMPT} xyzzy`),
+          what: 'submitted a line nothing answers to',
+        },
+        { types: MOVES_UP, until: arrivedSince(`${PROMPT} xyzzy`), what: 'browsed back to it' },
+        leaves,
+      ],
+    });
+    const at = (step: number): Screen =>
+      screenOf(ran.bytes.slice(0, ran.at[step] as number), columns, rows);
+    // A LIST OF ONE IS A LIST: it has a row, the row can be marked, and the keys are under it.
+    const alone = at(2);
+    expect(rowsNaming(alone, words), 'a whole word left more than itself in the list').toHaveLength(
+      1,
+    );
+    expect(pickedOn(alone), 'the only word in the list could not be marked').toBe(one);
+    // AND WITH NO LIST OPEN, AN ARROW IS THE HISTORY'S AGAIN — the row holds the line that was
+    // submitted, and no mark was drawn anywhere.
+    const browsed = at(4);
+    expect(browsed.text, 'the arrow did not browse back to what was typed').toContain(
+      `${PROMPT} xyzzy`,
+    );
+    expect(markedOn(browsed), 'a mark was drawn with no list open').toBeUndefined();
+  }, 240_000);
+});
+
+describe('the mark survives what changes around it', () => {
+  it('is still on its word after the caller resizes their window', async () => {
+    // A RESIZE IS A PAGE AGAIN (`repl/console.ts`), so the question is whether what the caller
+    // picked belongs to the page or to the row being typed. It belongs to the row: the pick
+    // travels on the value the keys build, so a window dragged to another size redraws the list
+    // with the same word still marked.
+    const columns = NOTHING_IS_CUT;
+    const rows = 40;
+    const narrower = 100;
+    const offers = everythingOffered();
+    const first = offers[0]?.word as string;
+    const ran = await inPty({
+      columns,
+      rows,
+      steps: [
+        opens,
+        { types: PREFIX, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
+        { types: MOVES_DOWN, until: marks(first), what: 'marked the first word' },
+        {
+          resize: { columns: narrower, rows },
+          until: arrivedSince(`${PICK}  ${first}`),
+          what: 'was resized with a word picked',
+        },
+        leaves,
+      ],
+    });
+    const after = screenOf(ran.bytes.slice(0, ran.at[3] as number), narrower, rows);
+    expect(pickedOn(after), 'the resize lost what the caller had picked').toBe(first);
+    endsAtTheFoot(after, rows, 'the page after a resize with a pick on it');
+  }, 240_000);
+
+  it('spends no colour, so a session with none still shows which row it is', async () => {
+    // ⛔ THE REASON THE MARK IS A GLYPH AND NOT A HUE, asked of a real device twice over. The
+    // session is driven with colour switched off at the environment — what a pipe, a CI log and
+    // `--color=never` get — and the mark is still on the screen; and the paint on the frame that
+    // MOVED the mark is the same paint as on the frame that opened the list, so nothing about
+    // being picked is carried by a hue or a weight.
+    //
+    // ⚠️ AND SWITCHING COLOUR OFF DOES NOT MAKE THE PAGE PLAIN, which this case measured and is
+    // worth writing down rather than asserting past: the capability the environment resolves is
+    // the RECORD's renderer (`wiring/color.ts`), and the layout dims the palette and paints the
+    // accent out of its own (`repl/region.ts`). So a page with `NO_COLOR` set still carries the
+    // dim of the list and the magenta of the rules — 44 sequences of it, measured. That is a
+    // decision this delivery did not take and did not touch; what it means here is that the claim
+    // is *the pick spends no colour*, which is what the mark rests on, rather than *the page has
+    // none*, which is not true today.
+    const columns = NOTHING_IS_CUT;
+    const rows = 40;
+    const offers = everythingOffered();
+    const first = offers[0]?.word as string;
+    const ran = await drive(
+      { ...fixture(), environment: { ...environment, NO_COLOR: '1' } },
+      {
+        columns,
+        rows,
+        steps: [
+          opens,
+          { types: PREFIX, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
+          { types: MOVES_DOWN, until: marks(first), what: 'marked the first word' },
+          leaves,
+        ],
+      },
+    );
+    const screen = screenOf(ran.bytes.slice(0, ran.at[2] as number), columns, rows);
+    expect(pickedOn(screen), 'the mark is not on the screen without colour').toBe(first);
+    // THE PICK ADDED NO PAINT. The frame the arrow caused and the frame that opened the list are
+    // compared by the SET of sequences that change how a glyph looks: equal sets mean the mark is
+    // the whole of the difference a reader is being shown.
+    const paintIn = (from: number, to: number): Set<string> =>
+      new Set(ran.bytes.slice(ran.at[from] as number, ran.at[to] as number).match(PAINTED) ?? []);
+    expect(paintIn(1, 2), 'the pick was painted rather than marked').toEqual(paintIn(0, 1));
+    // NOT VACUOUS: there IS paint on both of those frames, so the comparison is over something.
+    expect(paintIn(1, 2).size).toBeGreaterThan(0);
+  }, 240_000);
 });
 
 describe('a terminal without the height shows fewer, and says how many it could not', () => {
