@@ -54,7 +54,13 @@ import { VERSION } from '../src/version.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { decodedWhole } from './support/arriving.js';
 import { ESC, fakeTerminal, hooksNothing, until, withoutLayout } from './support/console.js';
-import { aFrameAfter, resizedTo, sizedTo, theDeviceWasTheSizeAskedFor } from './support/pty.js';
+import {
+  aFrameAfter,
+  arrivedSince,
+  resizedTo,
+  sizedTo,
+  theDeviceWasTheSizeAskedFor,
+} from './support/pty.js';
 import { screenOf } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
@@ -189,8 +195,15 @@ interface Step {
    * Nothing here writes to the session or asks it anything.
    */
   readonly resize?: { readonly columns: number; readonly rows: number };
-  /** What the terminal must have received before this step counts as over. */
-  readonly until: (bytes: string) => boolean;
+  /**
+   * What the terminal must have received before this step counts as over.
+   *
+   * `since` is how many bytes had arrived when the step BEGAN — the number that lets a
+   * predicate ask about the step's own doing rather than about the whole stream, which is the
+   * difference between waiting for an answer and being answered by the OPENING
+   * (`support/pty.ts`, `arrivedSince`).
+   */
+  readonly until: (bytes: string, since: number) => boolean;
   /** What to call it when it never happens. */
   readonly what: string;
 }
@@ -267,11 +280,15 @@ async function inPty(options: {
     // written (`support/pty.ts`) rather than restated here.
     await theDeviceWasTheSizeAskedFor(here, options.rows, options.columns);
     for (const step of options.steps) {
+      // WHERE THE STEP BEGINS — the shared instrument's rule again, taken before the resize as
+      // well as before the keystroke, because both are the step's own doing
+      // (`support/pty.ts`, `arrivedSince`).
+      const since = arriving.text().length;
       if (step.resize !== undefined) {
         resizedTo(device as string, step.resize.rows, step.resize.columns);
       }
       if (step.types !== undefined) child.stdin.write(step.types);
-      await waitFor(() => step.until(arriving.text()) || over, step.what);
+      await waitFor(() => step.until(arriving.text(), since) || over, step.what);
       // Settled: the page has stopped growing, so the offset taken below is the end of a
       // frame rather than the middle of one.
       for (let still = 0, was = -1; still < 8; still++) {
@@ -384,7 +401,11 @@ describe('the box is redrawn at the width the caller left their window at', () =
       rows,
       steps: [
         opens,
-        { types: 'verify\r', until: (bytes) => bytes.includes(VERIFIED), what: 'answered' },
+        // ⚠️ AND IT WAITS FOR WHAT THE VERB SAID, not for the sentence anywhere in the
+        // stream: the PANEL prints the record's verdict on every page there is, so a
+        // predicate over the whole stream was satisfied by the opening and this step could
+        // end before the echo existed (`support/pty.ts`, `arrivedSince`).
+        { types: 'verify\r', until: arrivedSince(VERIFIED), what: 'answered' },
         {
           resize: { columns: 90, rows },
           until: (bytes) => times(bytes, TOP_LEFT) > 1,

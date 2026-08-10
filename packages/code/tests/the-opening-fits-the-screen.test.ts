@@ -41,6 +41,7 @@ import { VERSION } from '../src/version.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import {
   aFrameAfter,
+  arrivedSince,
   inPty as drive,
   endOf,
   type Fixture,
@@ -588,6 +589,57 @@ describe('a session has opened when its frame is finished, not when its prompt i
       midFrame.length,
     );
     expect(cut).toBe(finished.length);
+  });
+
+  it('⚠️ refuses a sentence the OPENING said, and takes the same sentence from the verb', async () => {
+    // ⚠️ THE OTHER WAY A STEP ENDS TOO EARLY, and it is not about frames at all: the string it
+    // waits for is one THE PANEL ALREADY WROTE. The opening prints the record's verdict on
+    // every page there is, so three steps that typed `verify` and waited for *"local integrity
+    // verified"* anywhere in the stream were satisfied by the drawing — and the case they fed
+    // asserted the ECHO, which is the one thing only a caller can put on a page. It went red
+    // once in two runs of the whole suite and green three times out of three on its own.
+    //
+    // ⛔ AND IT IS PINNED ON BYTES BUILT BY HAND, for the reason the case above is: a race does
+    // not answer a single run. What is deterministic is the predicate — a sentence that was
+    // already there when the step began is not this step's answer, and the same sentence
+    // arriving after it is.
+    const said = 'local integrity verified';
+    // The opening, as far as this case is concerned: it says the sentence, and nothing has
+    // been typed.
+    const opening = `box${said}(T1/T2/T4)${PROMPT} `;
+    const since = opening.length;
+
+    // ⚠️ WHAT THE OLD PREDICATE ANSWERED, written out here rather than imported, because it is
+    // what this case exists to refuse: over the whole stream, the opening alone says yes.
+    const overTheWholeStream = (bytes: string): boolean => bytes.includes(said);
+    expect(overTheWholeStream(opening), 'the opening does not say it, so there is no trap').toBe(
+      true,
+    );
+
+    // THE PROMISE: the step's own question says NO on bytes in which only the opening said it.
+    const answered = arrivedSince(said);
+    expect(answered(opening, since), 'the opening answered a step it did not cause').toBe(false);
+
+    // AND YES once the verb has answered — so this is a predicate that discriminates rather
+    // than one that refuses everything.
+    const echoed = `${opening}verify\r\n`;
+    const whole = `${echoed}public: ${said}(T1/T2/T4)\r\n`;
+    expect(answered(whole, since), 'the verb answered and the step did not notice').toBe(true);
+
+    // AND THE STEP REALLY WOULD HAVE BEEN CUT BEFORE THE ECHO, which is the defect rather than
+    // the predicate: with the old question the step ends on `opening`, where the echo the case
+    // asserts is not yet on the page. Asked of {@link endOf}, so it is the instrument's own
+    // answer and not an argument about it.
+    const cut = await endOf(
+      { until: overTheWholeStream, what: 'answered' },
+      () => opening,
+      () => false,
+      since,
+    );
+    expect(cut, 'the old question did not end the step on the opening').toBe(opening.length);
+    expect(opening.slice(0, cut)).not.toContain(`${PROMPT} verify`);
+    // And the fixed question, on the same stream, refuses that cut point.
+    expect(answered(opening.slice(0, cut), since)).toBe(false);
   });
 });
 

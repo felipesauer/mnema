@@ -39,7 +39,7 @@ import { CLEAR, LEAVE } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { decodedWhole } from './support/arriving.js';
 import { ESC } from './support/console.js';
-import { aFrameAfter, sizedTo, theDeviceWasTheSizeAskedFor } from './support/pty.js';
+import { aFrameAfter, arrivedSince, sizedTo, theDeviceWasTheSizeAskedFor } from './support/pty.js';
 import { screenOf } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
@@ -171,8 +171,15 @@ afterAll(() => {
 interface Step {
   /** Typed first. Nothing at all means: only wait. */
   readonly types?: string;
-  /** What the terminal must have received before this step counts as over. */
-  readonly until: (bytes: string) => boolean;
+  /**
+   * What the terminal must have received before this step counts as over.
+   *
+   * `since` is how many bytes had arrived when the step BEGAN — the number that lets a
+   * predicate ask about the step's own doing rather than about the whole stream, which is the
+   * difference between waiting for an answer and being answered by the OPENING
+   * (`support/pty.ts`, `arrivedSince`).
+   */
+  readonly until: (bytes: string, since: number) => boolean;
   /** What to call it when it never happens. */
   readonly what: string;
 }
@@ -251,8 +258,12 @@ async function inPty(options: {
     // written (`support/pty.ts`) rather than restated here.
     await theDeviceWasTheSizeAskedFor(here, options.rows, options.columns);
     for (const step of options.steps) {
+      // WHERE THE STEP BEGINS — the shared instrument's rule again, and the number a predicate
+      // needs to ask about the step's own doing rather than about the whole stream
+      // (`support/pty.ts`, `arrivedSince`).
+      const since = arriving.text().length;
       if (step.types !== undefined) child.stdin.write(step.types);
-      await until(() => step.until(arriving.text()) || over, step.what);
+      await until(() => step.until(arriving.text(), since) || over, step.what);
       // Settled: the page has stopped growing, so the offset taken below is the end of a
       // frame rather than the middle of one.
       for (let still = 0, was = -1; still < 8; still++) {
@@ -419,7 +430,10 @@ describe('the word that clears gives back the page the session opened with', () 
         opens,
         {
           types: 'verify\r',
-          until: (bytes) => bytes.includes(VERIFIED),
+          // WHAT THE VERB SAID, not the sentence anywhere in the stream: the panel prints
+          // the record's verdict on every page, so a predicate over the whole stream is
+          // answered by the OPENING (`support/pty.ts`, `arrivedSince`).
+          until: arrivedSince(VERIFIED),
           what: 'answered the verb',
         },
         {
@@ -480,7 +494,7 @@ describe('the word that clears gives back the page the session opened with', () 
       rows,
       steps: [
         opens,
-        { types: 'verify\r', until: (bytes) => bytes.includes(VERIFIED), what: 'answered' },
+        { types: 'verify\r', until: arrivedSince(VERIFIED), what: 'answered' },
         {
           types: `${CLEAR}\r`,
           until: (bytes) => times(bytes, TOP_LEFT) > 1,
@@ -488,7 +502,7 @@ describe('the word that clears gives back the page the session opened with', () 
         },
         // Keystrokes after the clearing, each of which is a frame — and on this terminal a
         // frame is where the replay would happen.
-        { types: 'sear', until: (bytes) => bytes.includes('sear'), what: 'echoed' },
+        { types: 'sear', until: arrivedSince('sear'), what: 'echoed' },
         { types: ABANDONS_THE_LINE, until: (bytes) => bytes.length > 0, what: 'abandoned' },
         leaves,
       ],
