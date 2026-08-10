@@ -191,7 +191,8 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   run: { argv: () => ['run', 'start', '--which', 'agent-alpha'] },
   key: { argv: (f) => ['key', 'revoke', f.backupKey, '--reason', 'it left this machine'] },
   mcp: CANNOT_BE_EXERCISED,
-  // The sixteen reads.
+  // The seventeen reads.
+  status: { argv: (f) => ['status', '--actor', f.anchor] },
   focus: { argv: (f) => ['focus', '--actor', f.anchor] },
   resume: { argv: (f) => ['resume', '--actor', f.anchor] },
   'next-actions': { argv: (f) => ['next-actions', f.task] },
@@ -418,7 +419,7 @@ function offersJson(verb: string): boolean {
  * the one this file did not run would be invisible. The number is asserted so a
  * `command.options` that stopped answering cannot silently halve the exercise.
  */
-const EXERCISED_IN_BOTH_FORMS = 12;
+const EXERCISED_IN_BOTH_FORMS = 13;
 
 /** Exercises every verb the table names, each in its own project, and measures the record. */
 async function exerciseEverything(): Promise<Exercised[]> {
@@ -487,7 +488,7 @@ describe('every verb says if it writes', () => {
     expect(Object.keys(INVOCATION).sort()).toEqual([...EFFECT_BY_VERB.keys()].sort());
   });
 
-  it('counts eleven writes and sixteen reads over the whole surface', () => {
+  it('counts eleven writes and seventeen reads over the whole surface', () => {
     // The count in the report, asserted rather than trusted, and the total against the
     // list: a verb that stopped being registered would otherwise leave both halves
     // looking healthy.
@@ -505,6 +506,7 @@ describe('every verb says if it writes', () => {
       'mcp',
     ]);
     expect(verbsThat('reads')).toEqual([
+      'status',
       'focus',
       'resume',
       'next-actions',

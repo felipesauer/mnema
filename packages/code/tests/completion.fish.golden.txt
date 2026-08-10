@@ -12,7 +12,7 @@
 function __mnema_commands --description 'the subcommands one level of the tree offers'
     switch "$argv[1]"
         case ''
-            echo 'init task decision skill memory observe handoff link run focus resume next-actions guard search show timeline accountability antipatterns exposure refs skills brief key verify mcp repl completion help'
+            echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure refs skills brief key verify mcp repl completion help'
         case 'task'
             echo 'move'
         case 'decision'
@@ -65,6 +65,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'observe' -d 'record an observation a
 complete -c mnema -f -n '__mnema_at ""' -a 'handoff' -d 'record a handoff on a task in the current project'
 complete -c mnema -f -n '__mnema_at ""' -a 'link' -d 'link one piece of knowledge to another in the current project'
 complete -c mnema -f -n '__mnema_at ""' -a 'run' -d 'open and close the session an agent works inside'
+complete -c mnema -f -n '__mnema_at ""' -a 'status' -d 'show where things stand: the work, what governs, what awaits a ruling'
 complete -c mnema -f -n '__mnema_at ""' -a 'focus' -d 'show an actor\'s open runs (what they are touching now)'
 complete -c mnema -f -n '__mnema_at ""' -a 'resume' -d 'show where an actor left off (their latest run, open or ended)'
 complete -c mnema -f -n '__mnema_at ""' -a 'next-actions' -d 'show the moves the workflow allows a task next'
@@ -213,6 +214,13 @@ complete -c mnema -f -n '__mnema_at "run end"' -l outcome -r
 complete -c mnema -f -n '__mnema_at "run end"' -s h -l help
 complete -c mnema -f -n '__mnema_at "run end"' -s V -l version
 complete -c mnema -f -n '__mnema_at "run end"' -l color -x -a 'auto always never'
+
+# mnema status
+complete -c mnema -f -n '__mnema_at "status"' -l actor -r
+complete -c mnema -f -n '__mnema_at "status"' -l json
+complete -c mnema -f -n '__mnema_at "status"' -s h -l help
+complete -c mnema -f -n '__mnema_at "status"' -s V -l version
+complete -c mnema -f -n '__mnema_at "status"' -l color -x -a 'auto always never'
 
 # mnema focus
 complete -c mnema -f -n '__mnema_at "focus"' -l actor -r

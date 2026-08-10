@@ -1,8 +1,8 @@
 /**
  * `mnema focus --actor <id>` — what an actor is touching now: their open runs.
  *
- * The first of the three CONTEXT reads on the surface, and a different shape from
- * every command before it. A read opens the projection cache over the project
+ * One of the four CONTEXT reads on the surface, and the first one written — a different
+ * shape from every command before it. A read opens the projection cache over the project
  * tree, rebuilds it, and hands it to the copilot's PURE derivation — that is all.
  * It opens NO writer, emits no event, mints no key: it is read-only in the strict
  * sense the boundary and `verify` mean it. The derivation is the logic; the
