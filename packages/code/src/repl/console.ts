@@ -63,6 +63,18 @@
  * for the one before it — and so does its ECHO, which is why the echo lands inside the
  * queued turn rather than when the key was pressed: a prompt printed above the answer to
  * the question before it would read as though the second had been asked first.
+ *
+ * AND WHAT SOMEBODY ELSE WROTE LANDS THROUGH THE SAME DOOR, on the same queue. This
+ * console runs no verb that writes, so a record that moved was moved by another process,
+ * and a caller watching one sees it happen. The occurrence is a line like any other: it
+ * comes composed from `presentation/`, it goes through {@link OpenConsole.land}, and it
+ * stays in the scrollback where the session put it. What it may NOT be is a region of its
+ * own — a list that grows where the input is redrawn walks the region into the height at
+ * which the layout library stops redrawing a PART of the screen and starts redrawing all
+ * of it, with the erase this product refuses to write inside the sequence
+ * (`area.ts`) — and it may not rewrite what is above it either: a fact about a line the
+ * caller has already read lands UNDER it, because the one promise of this surface is that
+ * what has been said is not unsaid.
  */
 
 import { render } from 'ink';
@@ -114,6 +126,14 @@ const NO_HEIGHT = 0;
  * WHAT IT BUYS IS THE WHOLE COST, and the cost is per PAGE rather than per event: reemitting
  * one is linear in what the session has said, measured at about 33 ms over 200 lines and
  * about 100 ms over 800. Thirty of those inside one drag is the defect; one is a redraw.
+ *
+ * IT IS ALSO HOW OFTEN THE RECORD IS ASKED WHETHER IT MOVED, and that is one constant with
+ * two readers rather than a second number chosen to look like this one. The two are the same
+ * question about the same thing — how long a caller waits before the console catches up with
+ * the world outside it — and a tenth of a second is what a person reads as immediate at both
+ * ends of it. What it costs on the other reader is the cheaper one: a question is one
+ * `readdir` per tail and one `stat`, measured at 26 µs, so ten a second is 0.026% of a core
+ * and an hour of an idle session is 36 000 of them (`following.ts`).
  */
 const AFTER_THE_LAST_CHANGE = 100;
 
@@ -230,6 +250,21 @@ export interface ConsoleRequest {
    * (`tests/the-name-and-the-hints.test.ts`).
    */
   readonly saw: (line: string) => void;
+  /**
+   * WHAT HAS HAPPENED TO THE RECORD since this was last asked, already rendered — the
+   * lines of every append somebody else made while the caller was watching.
+   *
+   * ASKED ON A CLOCK AND ANSWERED FOR NOTHING, which is what makes it affordable to ask
+   * ten times a second: the question is whether anything MOVED, and a record that did not
+   * move costs a `readdir` per tail and a `stat` (`following.ts`). Empty is the ordinary
+   * answer, and an empty answer lands nothing.
+   *
+   * ⛔ IT MAY NOT READ THE RECORD TO ANSWER "no", and that is the caller's promise rather
+   * than a signature this file can enforce. The counter that holds the other reads of this
+   * surface holds this one too — a session that watches for a second and a half asks the
+   * question fifteen times and opens nothing (`tests/the-name-and-the-hints.test.ts`).
+   */
+  readonly happened: () => readonly string[];
   /** What Tab offers, over the command tree the session was built from. */
   readonly complete: Completer;
   /** What the session does with one submitted line, and whether it goes on. */
@@ -256,7 +291,7 @@ export interface OpenConsole {
  */
 export function openConsole(request: ConsoleRequest): OpenConsole {
   const { stdin, stdout, prompt, render: renderLine, tips, badge, vocabulary } = request;
-  const { openingFor, saw, complete, answer, leaving } = request;
+  const { openingFor, saw, happened, complete, answer, leaving } = request;
 
   /**
    * How wide the page is, asked of the DEVICE — the one place anything on the FRAME does.
@@ -460,6 +495,30 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     finish = resolve;
   });
 
+  /**
+   * WHAT SOMEBODY ELSE WROTE, landed — every occurrence since the last time the record was
+   * asked, in the order it was appended.
+   *
+   * NOTHING IS DECIDED HERE AND NOTHING IS COMPOSED: what happened is the session's
+   * question to answer (`following.ts`), the lines arrive rendered, and this puts them
+   * where every line goes. A record that did not move answers with nothing, which is the
+   * ordinary case and the whole reason this can be asked ten times a second.
+   *
+   * IT GOES ON THE QUEUE, for the reason the echo does. A verb answering at the prompt
+   * writes its lines over several ticks, and an occurrence landing between two of them
+   * would read as part of the answer to a question nobody asked. So it waits for the turn
+   * to drain, exactly as a submitted line waits for the one before it — and a session on
+   * its way out lands nothing, because the page is about to stop being this one's.
+   */
+  function landWhatHappened(): void {
+    const occurrences = happened();
+    if (occurrences.length === 0) return;
+    turn = turn.then(() => {
+      if (left) return;
+      for (const line of occurrences) land(line);
+    });
+  }
+
   /** Everything this session took from the terminal, given back. Idempotent, and sync. */
   function restore(): void {
     if (restored) return;
@@ -469,6 +528,9 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     // a terminal that is somebody else's again.
     stdout.off('resize', resized);
     if (settling !== undefined) clearTimeout(settling);
+    // And the watch on the RECORD goes with it, for the same reason: an occurrence landing
+    // after the frame came down would be a line written onto somebody else's terminal.
+    clearInterval(watching);
     disarm();
     app.unmount();
   }
@@ -587,6 +649,14 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   // arming this one second is what puts the page in front of a library that has already
   // agreed about how wide the screen is.
   stdout.on('resize', resized);
+
+  // AND THE PAGE FOLLOWS THE RECORD, on the cadence a settled resize already waits out —
+  // one constant, two readers, because both are the same question about how long a caller
+  // waits for the console to catch up with something that changed outside it.
+  const watching = setInterval(landWhatHappened, AFTER_THE_LAST_CHANGE);
+  // Watching is no reason for the process to stay up: with everything else that holds it
+  // open gone, the session is over and there is nobody left to tell.
+  watching.unref();
 
   const disarm = armLeaving(leaving, restore);
 

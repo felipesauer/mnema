@@ -61,6 +61,7 @@ import { bannerFor } from '../presentation/banner.js';
 import { aside, fact, subjectLine } from '../presentation/detail.js';
 import { column, itemLine } from '../presentation/items.js';
 import type { Line } from '../presentation/line.js';
+import { occurrenceLine } from '../presentation/occurrence.js';
 import { widthOf } from '../presentation/plain.js';
 import type { Render } from '../presentation/render.js';
 import { statement } from '../presentation/verdict.js';
@@ -74,6 +75,7 @@ import { DEFAULT_REQUIREMENT, levelSeverity, treeHeadline, VERIFY_VERB } from '.
 import { areaFor, BELOW_THE_VIEWPORT } from './area.js';
 import { completerFor } from './complete.js';
 import type { Drawn } from './console.js';
+import { followingTheRecord } from './following.js';
 import { type AfterLine, argvOf, dispositionOf, verbsOffered } from './gate.js';
 import type { Leaving } from './leaving.js';
 import { type Opening, openingFor } from './panel.js';
@@ -294,6 +296,13 @@ export async function openSession(request: SessionRequest): Promise<void> {
   // rather than two, so what a Tab offers cannot become a different set from what the
   // page said. It holds no record and opens nothing (`seen.ts`).
   const seen = whatTheSessionShowed();
+  // WHERE THE RECORD STANDS NOW, so that what happens NEXT can be told from what was
+  // already there. The trees are the ones the verdict above covered rather than a second
+  // list resolved here — a console that watched a tree it had said nothing about would be
+  // reporting from outside its own verdict. What it costs to start is a line per tail, off
+  // the end of the tail (`following.ts`); what it costs after that is a question with no
+  // read behind it.
+  const following = followingTheRecord((proved?.trees ?? []).map((tree) => tree.root));
 
   /**
    * WHAT THE PAGE OPENS WITH on a terminal of a given SIZE — and the only thing on this
@@ -368,6 +377,11 @@ export async function openSession(request: SessionRequest): Promise<void> {
     badge,
     vocabulary,
     saw: seen.saw,
+    // WHAT SOMEBODY ELSE WROTE, as lines — composed where every line of this product is
+    // and rendered with the session's own renderer, so an occurrence reads exactly like
+    // the same event read back by `timeline`. This surface writes nothing, so every one
+    // of them is another process's append (`following.ts`).
+    happened: () => following.whatHappened().map((event) => render(occurrenceLine(event))),
     complete: completerFor(completionTree(built.program), offered, vocabulary, seen.matching),
     answer: (line) => typedLine(line, session),
     leaving,
