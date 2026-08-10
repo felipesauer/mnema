@@ -62,30 +62,34 @@ const BELL = '\u0007';
 const HALF_A_CHARACTER = '\ufffd';
 
 /**
- * The glyphs a frame is drawn with, spelled by code point — like every other unusual byte
- * in this repository's sources, and for the reason `support/screen.ts` gives where it names
- * the same four: a corner is one keystroke away from its mirror.
+ * The horizontal run a rule is drawn out of, spelled by code point — like every other unusual
+ * byte in this repository's sources, and for the reason `support/screen.ts` gives where it names
+ * the same glyph: a run is one keystroke away from a hyphen.
+ *
+ * ⚠️ THERE WERE FOUR MORE AND THEY WERE A FRAME'S CORNERS. The panel was a BOX and this fixture
+ * drew one; the frame is gone from the product, so a fixture that kept drawing one would be
+ * feeding the instrument a shape nothing can produce — which is how a branch stays green after
+ * the thing it was for has been deleted.
  */
-const TOP_LEFT = '\u256d';
-const TOP_RIGHT = '\u256e';
-const BOTTOM_LEFT = '\u2570';
-const BOTTOM_RIGHT = '\u256f';
 const RUN = '\u2500';
 
 /**
  * A CONSOLE'S PAGE, AS BYTES, DRAWN AT A GIVEN WIDTH — the smallest thing that has the two
  * shapes the measurement is made of.
  *
- * The box, corner to corner with a title cutting its top edge in two, and a rule under it
- * with no corners at all. It is the drawing this product opens with, reduced to what is
- * being measured: a delivery that changed the box would change this, which is the point.
+ * Rows the width is NOT readable off — what the panel draws, which is text and art and holds no
+ * run at all — and the two rules the input area sits between, which run the whole way across. It
+ * is the drawing this product opens with, reduced to what is being measured: a delivery that
+ * changed it would change this, which is the point.
+ *
+ * ⚠️ IT WAS A BOX: corner to corner, with a title cutting its top edge in two, and a rule under
+ * it. All three shapes were the frame's — and the frame is what the delivery that took it off
+ * removed from the product, so two of the instrument's three branches went with it
+ * (`support/screen.ts`, {@link everyWidthDrawnOn}).
  */
 function aPageDrawn(columns: number): string {
-  const title = ' a session ';
-  const top = TOP_LEFT + RUN + title + RUN.repeat(columns - 3 - title.length) + TOP_RIGHT;
-  const bottom = BOTTOM_LEFT + RUN.repeat(columns - 2) + BOTTOM_RIGHT;
   const rule = RUN.repeat(columns);
-  return [top, bottom, rule, 'mnema>', rule].join('\r\n');
+  return ['MNEMA', 'mnema \u00b7 v0.0.0 \u00b7 a session', rule, 'mnema>', rule].join('\r\n');
 }
 
 /**

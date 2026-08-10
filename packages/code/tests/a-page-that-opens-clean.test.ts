@@ -46,19 +46,18 @@ import { screenOf } from './support/screen.js';
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 /**
- * The glyphs the box is drawn with: its corners, its horizontal run and its rule.
+ * The four corners a frame turns at.
  *
  * Named by their code points rather than typed, like every other unusual byte in this
- * repository's sources: a rule is one keystroke away from a pipe and a run from a hyphen.
+ * repository's sources: a corner is one keystroke away from its mirror.
+ *
+ * ⚠️ THE PANEL WAS A BOX and this file read it: the corners told a row of the frame from a row
+ * inside it, the run told the top edge from the sides, and every row had to end on the last
+ * column of the terminal. THE FRAME IS GONE, so what these are for has inverted — they are
+ * ASKED FOR AS ABSENT, and the width the page was drawn at is read off the input area's own
+ * rules instead (`support/screen.ts`, `everyWidthDrawnOn`).
  */
-const TOP_LEFT = '╭';
-const TOP_RIGHT = '╮';
-const BOTTOM_RIGHT = '╯';
-const RUN = '─';
-const RULE = '│';
-
-/** Every character the frame can end a row with. */
-const FRAME = [TOP_RIGHT, BOTTOM_RIGHT, RULE];
+const CORNERS = ['╭', '╮', '╯', '╰'];
 
 /** What the opening always says, whatever the terminal is like. */
 const OPENED = 'a session over this project';
@@ -66,6 +65,11 @@ const OPENED = 'a session over this project';
 const PROMPT = 'mnema>';
 /** What the record says about a tree that is intact. */
 const VERIFIED = 'local integrity verified';
+/**
+ * The first words of the one sentence the session lands UNDER the panel — what bounds the
+ * opening's rows from below now that no bottom edge does (`src/repl/session.ts`).
+ */
+const UNDER_THE_PANEL = 'It runs the';
 
 /**
  * A verb the caller ran, as the page shows it: the prompt and the word they typed.
@@ -305,33 +309,42 @@ const leaves: Step = {
 const times = (text: string, what: string): number => text.split(what).length - 1;
 
 // ---------------------------------------------------------------------------
-// Corner to corner
+// It fits the terminal, and there is no frame on it
 // ---------------------------------------------------------------------------
 
-describe('the box is as wide as the terminal, and every row of it reaches the last column', () => {
-  // Three widths, because one width is a coincidence: at 80 the drawing stacks, at 140 it
-  // stands in two columns, and the frame has to end in the same place either way.
+describe('the opening fits the terminal it was drawn on, with no frame around it', () => {
+  // Three widths, because one width is a coincidence: at 80 the text goes under the mark, at
+  // 140 it goes beside it, and neither may put a row past the edge of the screen.
+  //
+  // ⚠️ THIS WAS `the box is as wide as the terminal, and every row of it reaches the last
+  // column`, and it read the frame's own edge as the witness that the page had been drawn at the
+  // width the process read off its device. THE FRAME IS GONE. What replaces the witness is the
+  // input area's rules, which still run corner to corner and are read where that instrument
+  // lives (`support/screen.ts`, `everyWidthDrawnOn`;
+  // `tests/the-screen-says-what-it-was-drawn-at.test.ts`). What replaces the ASSERTION is the
+  // invariant the arrangement was ever chosen for: nothing in it folds.
   for (const columns of [80, 100, 140]) {
-    it(`ends on column ${columns} of ${columns}`, async () => {
+    it(`fits across ${columns} columns, and draws no frame`, async () => {
       const rows = 40;
       const ran = await inPty({ columns, rows, steps: [opens, leaves] });
       const screen = screenOf(ran.bytes.slice(0, ran.at[0] as number), columns, rows);
-      const box = screen.rows.filter(
-        (row) => row.includes(RULE) || row.includes(TOP_LEFT) || row.includes(BOTTOM_RIGHT),
-      );
-      // There really is a drawing: a top edge, a bottom edge and rows between them.
-      expect(box.length, `${columns}: no box`).toBeGreaterThan(3);
+      const first = screen.rows.findIndex((row) => row.trim().length > 0);
+      const under = screen.rows.findIndex((row) => row.includes(UNDER_THE_PANEL));
+      expect(under, `${columns}: no sentence under the panel`).toBeGreaterThan(first);
+      const opening = screen.rows.slice(first, under);
+      // There really is a drawing, and it is more than a row or two of it.
+      expect(opening.length, `${columns}: no opening`).toBeGreaterThan(3);
       expect(screen.text, `${columns}: no panel`).toContain(OPENED);
-      for (const row of box) {
+      for (const row of opening) {
         const drawn = row.replace(/ +$/, '');
-        expect([...drawn].length, `${columns}: a row of the box stops short: ${drawn}`).toBe(
-          columns,
-        );
-        expect(FRAME, `${columns}: the last column is not the frame`).toContain([...drawn].at(-1));
+        expect(
+          [...drawn].length,
+          `${columns}: a row of the opening runs past the edge: ${drawn}`,
+        ).toBeLessThanOrEqual(columns);
+        for (const corner of CORNERS) {
+          expect(drawn, `${columns}: a corner is drawn: ${drawn}`).not.toContain(corner);
+        }
       }
-      // And the top edge really runs to the corner rather than ending in the title.
-      const top = box.find((row) => row.includes(TOP_LEFT)) as string;
-      expect(top).toContain(`${RUN}${TOP_RIGHT}`);
     }, 120_000);
   }
 });
@@ -378,9 +391,11 @@ describe('the page opens clean, and what was on it is one scroll up', () => {
     const ran = await inPty({ columns: 100, rows: 24, theirs: 24, steps: [opens, leaves] });
     expect(ran.bytes).not.toContain(ERASES_THE_HISTORY);
     expect(ran.bytes).not.toContain(ALTERNATE_SCREEN);
-    // Not vacuous: the session really opened and really drew its box.
+    // Not vacuous: the session really opened and really drew its opening. ⚠️ THE SECOND LINE
+    // ASKED FOR A CORNER, and there are none — what says a drawing was written is the row that
+    // says what the session is, which is what the corner was standing in for.
     expect(ran.bytes).toContain(OPENED);
-    expect(ran.bytes).toContain(TOP_LEFT);
+    expect(ran.bytes).toContain(VERIFIED);
   }, 120_000);
 
   it('⚠️ except on a terminal too short for the rows the layout redraws', async () => {
@@ -439,7 +454,7 @@ describe('the word that clears gives back the page the session opened with', () 
         {
           types: `${CLEAR}\r`,
           // The drawing is written a second time, which is what a clean page IS.
-          until: (bytes) => times(bytes, TOP_LEFT) > 1,
+          until: (bytes) => times(bytes, OPENED) > 1,
           what: 'drew the page again',
         },
         leaves,
@@ -497,7 +512,7 @@ describe('the word that clears gives back the page the session opened with', () 
         { types: 'verify\r', until: arrivedSince(VERIFIED), what: 'answered' },
         {
           types: `${CLEAR}\r`,
-          until: (bytes) => times(bytes, TOP_LEFT) > 1,
+          until: (bytes) => times(bytes, OPENED) > 1,
           what: 'drew the page again',
         },
         // Keystrokes after the clearing, each of which is a frame — and on this terminal a

@@ -5,12 +5,14 @@
  * them as it takes for the input area to end on the last row a caller has.
  *
  * A console that opens over whatever the caller's last command left behind opens in the
- * middle of somebody else's output, and this one draws a box: half a page of `git log`
- * above a frame reads as one thing rather than two. So the page is cleared. WHAT
+ * middle of somebody else's output, and this one draws the name: half a page of `git log`
+ * above a wordmark reads as one thing rather than two. ⚠️ IT SAID *a box*, and the frame is
+ * gone; what the argument needs is that the opening is a DRAWING, and it still is. So the page
+ * is cleared. WHAT
  * "CLEARED" MEANS is the whole decision, and there are three ways to take it:
  *
  *   - THE ALTERNATE SCREEN, which is what a full-screen program takes and what the
- *     reference this box was drawn from takes. Refused, and it was refused before this:
+ *     reference this console was drawn from takes. Refused, and it was refused before this:
  *     the alternate screen has NO SCROLLBACK, so whoever takes it has to build their own
  *     rolling — measured on the reference, which turns mouse tracking on in the same
  *     breath as it switches buffers — and it throws away everything the session said on
@@ -39,9 +41,9 @@
  * page downwards and the input area ends where a caller's eye already is* — and the input
  * really did end at the foot. WHAT FALSIFIED IT IS WHERE THE EMPTINESS THEN WAS: measured on
  * a real terminal at a hundred and twenty by forty, the page opened with twenty-one blank
- * rows at the TOP and the box pushed down against the input, so the first thing a reader
+ * rows at the TOP and the opening pushed down against the input, so the first thing a reader
  * looks at was the last thing on the screen. The anchoring was right and the direction was
- * not. The rows go UNDER the opening now: the box is at the top, the input is at the foot,
+ * not. The rows go UNDER the opening now: the panel is at the top, the input is at the foot,
  * and the emptiness is between them, which is where emptiness costs a reader nothing
  * (`tests/the-gap-goes-under-the-box.test.ts` reads both off a real screen).
  *

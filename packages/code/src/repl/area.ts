@@ -126,11 +126,17 @@ const HINT = 1;
  * own affordance and the row under it is the badge or a rule, so a list that began on the
  * very next row was a paragraph continuing rather than an answer to the key just pressed.
  *
- * IT IS COUNTED HERE AND DRAWN IN `region.ts`, and the number is in both files for the reason
- * the panel's row costs are in `panel.ts`: the arithmetic and the drawing have to agree about
- * the geometry, and a row the layout draws and this file does not count is a region one row
- * taller than the boundary this whole file exists to keep. It is spent only when there is a
- * palette, because a blank row over nothing is a blank row.
+ * IT IS COUNTED HERE AND DRAWN IN `region.ts`, and what makes that safe is the reason rather
+ * than the arrangement: the arithmetic and the drawing have to agree about the geometry, and a
+ * row the layout draws and this file does not count is a region one row taller than the
+ * boundary this whole file exists to keep. It is spent only when there is a palette, because a
+ * blank row over nothing is a blank row.
+ *
+ * ⚠️ THE PANEL'S ROW COSTS WERE CITED HERE AS THE PRECEDENT, and the precedent moved: this said
+ * the number is in both files *for the reason the panel's row costs are in `panel.ts`*, and the
+ * panel's two surviving numbers are ONE constant with two readers now — the arithmetic exports
+ * them and the drawing imports them (`panel.ts`, `BETWEEN_COLUMNS`). This one is still a copy,
+ * and saying so is the point of writing it down: the debt is here rather than there.
  */
 const ABOVE_THE_PALETTE = 1;
 

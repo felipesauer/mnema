@@ -54,7 +54,8 @@ import { fileURLToPath } from 'node:url';
 import { LEVEL_REQUIREMENTS, requiredLevel } from '@mnema/chain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
-import { widthOf } from '../src/presentation/plain.js';
+import { bannerFor } from '../src/presentation/banner.js';
+import { renderPlain, widthOf } from '../src/presentation/plain.js';
 import { areaFor, BELOW_THE_VIEWPORT } from '../src/repl/area.js';
 import { carriedIntoTheScrollback, type ThePage, theGap } from '../src/repl/page.js';
 import { CUT } from '../src/repl/palette.js';
@@ -65,6 +66,7 @@ import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC } from './support/console.js';
 import {
   aFrameAfter,
+  arrivedSince,
   inPty as drive,
   type Fixture,
   opensAConsole,
@@ -86,11 +88,14 @@ const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 /** What the caller types in front of, as the layout writes it: trimmed at the end. */
 const PROMPT = 'mnema>';
 
-/** The box's top-left corner, named by its code point rather than typed. */
-const TOP_LEFT = '╭';
-
-/** The box's bottom-left corner — the last row of the opening's own drawing. */
-const BOTTOM_LEFT = '╰';
+/**
+ * The first words of the one sentence the session lands UNDER the panel — the last row the
+ * opening draws (`src/repl/session.ts`, `whatItRefuses`).
+ *
+ * ⚠️ IT WAS THE BOX'S BOTTOM-LEFT CORNER, and the row above the emptiness was found by it. The
+ * frame is gone, so what the opening ENDS with is the one line it lands rather than an edge.
+ */
+const UNDER_THE_PANEL = 'It runs the';
 
 /** What the opening always says, whatever the terminal is like. */
 const OPENED = 'a session over this project';
@@ -320,29 +325,97 @@ const RUBS_OUT = '\u007f';
 /** The key that opens the palette, which is also the one the hint names. */
 const LISTS_THE_WORDS = '/';
 
-/** Opens the list of words, which is the area at its tallest. */
+/**
+ * Opens the list of words, which is the area at its tallest — waiting for a frame, whatever is in
+ * it.
+ *
+ * THE TOLERANT FORM, and it is the one a sweep over HEIGHTS needs: on a terminal of three rows the
+ * palette is cut to nothing at all, so a step waiting for a word of the list would wait forever.
+ * Every case that uses this one asserts an ABSENCE, which a frame with no list in it satisfies
+ * honestly.
+ */
 const opensTheList: Step = { types: LISTS_THE_WORDS, until: aFrameAfter(PROMPT), what: 'listed' };
 
-/** Shuts it again, by taking back the key that opened it. */
-const shutsTheList: Step = { types: RUBS_OUT, until: aFrameAfter(PROMPT), what: 'shut the list' };
+/**
+ * The same key, waiting for THE LIST — for the cases that then read it off a screen.
+ *
+ * ⚠️ THOSE CASES USED THE TOLERANT FORM, and a frame is not the list: measured in the full suite,
+ * under load, the second cycle of ten ended on a frame the palette was not in yet and the screen
+ * read as though the key had done nothing. It is the rule this bench has already written down once
+ * — a step in a pty waits for what IT caused, which is what `since` is for (`support/pty.ts`,
+ * `arrivedSince`) — applied to the site that did not have it. The two forms are separate rather
+ * than one clever predicate, because *the list may be cut to nothing* and *the list must be on the
+ * screen* are two different cases and a step cannot be both.
+ */
+const opensTheListAndWaitsForIt: Step = {
+  ...opensTheList,
+  until: arrivedSince(ONLY_THE_LIST_SAYS),
+};
+
+/**
+ * Shuts it again, by taking back the key that opened it — and waits for a frame that does NOT
+ * hold the list.
+ *
+ * THE OTHER HALF OF THE SAME REPAIR, and it cannot be `arrivedSince` because what it waits for is
+ * an absence: the frame the keystroke causes is one the palette is not written into at all. So it
+ * is a frame after the prompt AND nothing of the list in what has arrived since.
+ */
+const shutsTheList: Step = {
+  types: RUBS_OUT,
+  until: (bytes, since) =>
+    aFrameAfter(PROMPT)(bytes) && !bytes.slice(since).includes(ONLY_THE_LIST_SAYS),
+  what: 'shut the list',
+};
 
 /** How many times `what` occurs in `text`. */
 const times = (text: string, what: string): number => text.split(what).length - 1;
 
-/** Which row the box's last one is, and −1 when the box is not on the screen at all. */
-function boxEndsOn(screen: Screen): number {
-  return screen.rows.findIndex((row) => row.includes(BOTTOM_LEFT));
+/** Which row the opening's last one is, and −1 when the opening is not on the screen at all. */
+function openingEndsOn(screen: Screen): number {
+  return screen.rows.findIndex((row) => row.includes(UNDER_THE_PANEL));
 }
 
-/** Which row the box BEGINS on — its top edge — and −1 when that row has scrolled away. */
-function boxBeginsOn(screen: Screen): number {
-  return screen.rows.findIndex((row) => row.includes(TOP_LEFT));
+/**
+ * Which row the opening BEGINS on — the first row of the MARK — and −1 when it has scrolled away.
+ *
+ * ⚠️ IT WAS THE BOX'S TOP EDGE, found by its corner: the row that goes first when a page is
+ * pushed up. The frame is gone and the row that goes first is the first row of the drawing, which
+ * is asked of the module that draws it at the width this screen was replayed at — so a fifth form
+ * of the art moves this instrument with it instead of leaving it looking for a glyph nobody
+ * writes.
+ */
+function openingBeginsOn(screen: Screen, columns: number): number {
+  return screen.rows.findIndex((row) => row.startsWith(theFirstRowOfTheMark(columns)));
 }
 
-/** How many rows above the row being typed have nothing at all on them. */
+/** The first row of the drawing of the name a terminal this wide gets, as the layout writes it. */
+function theFirstRowOfTheMark(columns: number): string {
+  const art = bannerFor({ columns, rows: 0, needs: () => 0 }).map(renderPlain);
+  const first = art[0];
+  expect(first, 'the name is drawn with no rows at all').toBeDefined();
+  return first as string;
+}
+
+/**
+ * How many rows BETWEEN THE OPENING AND THE ROW BEING TYPED have nothing at all on them.
+ *
+ * ⚠️ IT WAS EVERY BLANK ROW ABOVE THE ROW BEING TYPED, and the frame is what made that the same
+ * question. The stacked arrangement has always had a blank row inside it — the margin over the
+ * record's section (`src/repl/panel.ts`, `BETWEEN_SECTIONS`) — and while there was a border, the
+ * row was `│ … │` and therefore DRAWN. With the border gone the row is genuinely blank, so a
+ * count from the top of the screen answers with the leftover PLUS the panel's own margin:
+ * measured at eighty by twenty-four, three against a leftover of two.
+ *
+ * WHAT THE CALLERS ARE FOR IS UNCHANGED — the emptiness above the input is ONE run, because a
+ * page with emptiness in two places is a page that was placed twice — and the run they are about
+ * begins below the opening. A margin the PANEL draws inside itself is not a placement, and it is
+ * counted by neither this nor {@link theGapOn}.
+ */
 function emptyRowsAbove(screen: Screen): number {
-  return screen.rows.slice(0, promptRow(screen, PROMPT)).filter((row) => row.trim().length === 0)
-    .length;
+  const from = openingEndsOn(screen);
+  return screen.rows
+    .slice(from + 1, promptRow(screen, PROMPT))
+    .filter((row) => row.trim().length === 0).length;
 }
 
 // ---------------------------------------------------------------------------
@@ -367,9 +440,10 @@ describe('the box opens at the top and the emptiness goes under it', () => {
       expect(firstDrawnRow(screen), `${columns}x${rows}: the page does not begin at the top`).toBe(
         0,
       );
-      expect(screen.rows[0], `${columns}x${rows}: the first row is not the box's`).toContain(
-        TOP_LEFT,
-      );
+      expect(
+        openingBeginsOn(screen, columns),
+        `${columns}x${rows}: the first row is not the mark's`,
+      ).toBe(0);
       // AND THE EMPTINESS IS UNDER IT: it begins below the box's last row and it ends where the
       // input area begins, which is what makes it the leftover rather than a gap in the drawing.
       const gap = theGapOn(screen, PROMPT);
@@ -377,9 +451,17 @@ describe('the box opens at the top and the emptiness goes under it', () => {
         gap,
         `${columns}x${rows}: nothing was left over, so nothing was anchored`,
       ).toBeGreaterThan(0);
-      const emptyFrom = screen.rows.findIndex((row) => row.trim().length === 0);
-      expect(emptyFrom, `${columns}x${rows}: the emptiness is above the box`).toBeGreaterThan(
-        boxEndsOn(screen),
+      // ⚠️ AND THE FIRST BLANK ROW ON THE SCREEN USED TO BE THE ONE THIS ASKED ABOUT, on the
+      // premise that the drawing had no blank row in it. The frame is what made that true: the
+      // margin over the record's section was a row of the box, `│ … │`, and it is genuinely
+      // blank now — measured, at eighty by twenty-four, where the first blank row is row 11 and
+      // the opening ends on row 15. So what is asked is that the run touching the INPUT begins
+      // below the opening, which is what the emptiness being under it means.
+      const emptyFrom = screen.rows.findIndex(
+        (row, at) => at > openingEndsOn(screen) && row.trim().length === 0,
+      );
+      expect(emptyFrom, `${columns}x${rows}: nothing is empty under the opening`).toBe(
+        openingEndsOn(screen) + 1,
       );
       // AND IT IS ONE RUN AND NOT SEVERAL: everything above the input with nothing on it is the
       // run that touches the input. A page with emptiness anywhere else is a page placed twice.
@@ -436,7 +518,9 @@ describe('the box opens at the top and the emptiness goes under it', () => {
     expect(theGapOn(said, PROMPT), 'the emptiness did not give the row up').toBe(
       theGapOn(opened, PROMPT) - 1,
     );
-    expect(boxEndsOn(said), 'the page moved for a line it had room for').toBe(boxEndsOn(opened));
+    expect(openingEndsOn(said), 'the page moved for a line it had room for').toBe(
+      openingEndsOn(opened),
+    );
     // And the input is where it was through all of it.
     endsAtTheFoot(opened, rows, 'the page that opened');
     endsAtTheFoot(said, rows, 'the page with a line on it');
@@ -458,7 +542,7 @@ describe('the list of words takes its room out of the emptiness', () => {
     const ran = await inPty({
       columns,
       rows,
-      steps: [opens, opensTheList, shutsTheList, leaves],
+      steps: [opens, opensTheListAndWaitsForIt, shutsTheList, leaves],
     });
     const opened = screenOf(ran.bytes.slice(0, ran.at[0] as number), columns, rows);
     const listed = screenOf(ran.bytes.slice(0, ran.at[1] as number), columns, rows);
@@ -519,7 +603,7 @@ describe('the list of words takes its room out of the emptiness', () => {
   // comes back to the foot however much of the flow the list cost. The case is a table so the two
   // halves cannot be confused for one another — and so that a delivery which cuts the list to the
   // leftover instead turns the third column red and has to say so.
-  for (const [columns, rows, theBoxStays] of [
+  for (const [columns, rows, theOpeningStays] of [
     [120, 40, true],
     [100, 30, false],
     [80, 24, false],
@@ -544,7 +628,9 @@ describe('the list of words takes its room out of the emptiness', () => {
       // state.
       const cycles = 10;
       const steps: Step[] = [opens];
-      for (let round = 0; round < cycles; round += 1) steps.push(opensTheList, shutsTheList);
+      for (let round = 0; round < cycles; round += 1) {
+        steps.push(opensTheListAndWaitsForIt, shutsTheList);
+      }
       steps.push(leaves);
       const ran = await inPty({ columns, rows, steps });
       // EVERY ONE OF THEM, and the last step (the word that leaves) is left out of the walk: it
@@ -572,12 +658,14 @@ describe('the list of words takes its room out of the emptiness', () => {
         expect(emptyRowsAbove(screen), `${what}: the emptiness is in two places`).toBe(
           theGapOn(screen, PROMPT),
         );
-        if (!theBoxStays) continue;
+        if (!theOpeningStays) continue;
         // THE BOX IS ON THE FIRST ROW — the defect, and the promise. Not merely present: the top
         // edge is the row that goes first when a page is pushed up, so the row it is on is the
         // measurement.
-        expect(screen.rows[0], `${what}: the box is not on the first row`).toContain(TOP_LEFT);
-        expect(firstDrawnRow(screen), `${what}: something is above the box`).toBe(0);
+        expect(openingBeginsOn(screen, columns), `${what}: the mark is not on the first row`).toBe(
+          0,
+        );
+        expect(firstDrawnRow(screen), `${what}: something is above the opening`).toBe(0);
       }
       // AND THE ROOM REALLY DID MOVE, which is what says the cycles were not a screen that never
       // changed: with the list open there are a handful of rows over the input, with it shut there
@@ -591,17 +679,18 @@ describe('the list of words takes its room out of the emptiness', () => {
       // wants loses the box on the first opening, and does not get it back — scrolling is not
       // undone by anything. Named rather than hidden, and red the day the list is cut to the room.
       expect(
-        boxBeginsOn(screenOf(ran.bytes.slice(0, ran.at[0] as number), columns, rows)),
-        'the page opened without a box',
+        openingBeginsOn(screenOf(ran.bytes.slice(0, ran.at[0] as number), columns, rows), columns),
+        'the page opened without its mark',
       ).toBe(0);
-      // THE TOP EDGE AND NOT THE BOTTOM ONE, which is what "the box went" means: a page pushed up
-      // by a list keeps the box's LAST rows on the screen — measured at a hundred by thirty, the
-      // bottom-left corner is on row 2 while the top of the drawing is in the scrollback. A case
-      // that asked whether the box was gone ALTOGETHER would be asserting something else and would
-      // pass on a frame with half a frame on it.
-      expect(boxBeginsOn(shut), `the box ${theBoxStays ? 'did not survive' : 'survived'}`).toBe(
-        theBoxStays ? 0 : -1,
-      );
+      // THE FIRST ROW AND NOT THE LAST ONE, which is what "the opening went" means: a page pushed
+      // up by a list keeps the opening's LAST rows on the screen — measured at a hundred by
+      // thirty, the sentence under the panel was on row 2 while the top of the drawing was in the
+      // scrollback. A case that asked whether the opening was gone ALTOGETHER would be asserting
+      // something else and would pass on a frame with half a drawing on it.
+      expect(
+        openingBeginsOn(shut, columns),
+        `the opening ${theOpeningStays ? 'did not survive' : 'survived'}`,
+      ).toBe(theOpeningStays ? 0 : -1);
     }, 240_000);
   }
 });
@@ -766,7 +855,11 @@ describe('the region redrawn holds the emptiness, and is still short of the scre
     const tall = await inPty({
       columns: WIDE_ENOUGH_FOR_THE_HINT,
       rows: 40,
-      steps: [opens, opensTheList, { ...leaves, types: `${ABANDONS_THE_LINE}${LEAVE}\r` }],
+      steps: [
+        opens,
+        opensTheListAndWaitsForIt,
+        { ...leaves, types: `${ABANDONS_THE_LINE}${LEAVE}\r` },
+      ],
     });
     expect(
       screenOf(tall.bytes.slice(0, tall.at[1] as number), WIDE_ENOUGH_FOR_THE_HINT, 40).text,
@@ -790,7 +883,9 @@ describe('the region redrawn holds the emptiness, and is still short of the scre
     // so a caret left at the top of the page or at the end of the frame would be somewhere else.
     expect(promptRow(screen, PROMPT)).toBeGreaterThan(firstDrawnRow(screen));
     expect(theGapOn(screen, PROMPT)).toBeGreaterThan(0);
-    // And the version really was drawn at the top, so the page is the whole page.
-    expect(screen.rows[0]).toContain(`v${VERSION}`);
+    // And the version really was drawn, so the page is the whole page. ⚠️ IT ASKED FOR IT ON ROW
+    // ZERO, and row zero was the box's top border, which the version was on. It is beside the mark
+    // now, so the row it is on is the mark's height away from the top.
+    expect(screen.rows.slice(0, promptRow(screen, PROMPT)).join('\n')).toContain(`v${VERSION}`);
   }, 240_000);
 });
