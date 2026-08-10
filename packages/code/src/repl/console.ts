@@ -28,7 +28,7 @@
  * the height of the moment. The TIPS and the BADGE were never composed here either: they
  * arrive as bytes a renderer already produced, exactly like a landed line.
  *
- * AND IT OPENS WITH THE BOX AT THE TOP AND THE INPUT AT THE FOOT. The row being typed used to
+ * AND IT OPENS WITH THE PANEL AT THE TOP AND THE INPUT AT THE FOOT. The row being typed used to
  * sit wherever the opening happened to end — the middle of the screen on anything tall, with
  * nothing under it — and what fixed it is not a place the input is moved to but rows with
  * nothing on them BETWEEN the flow and the area: the area ends on the last row the layout
@@ -63,12 +63,17 @@
  * through a session.
  *
  * AND THE PAGE FOLLOWS THE TERMINAL, which is the THIRD caller of that same page — the
- * opening, the word that clears, and a caller who changed the size of their window. The
- * box is drawn corner to corner, so a session opened at a hundred and twenty columns and
- * narrowed to seventy is a frame the terminal folds in half; the fix is not a special
- * redraw but the page again, at the new size. What differs from a clearing is one thing:
- * everything the session already SAID is landed with it, because a caller who resized a
- * window did not ask to lose what they had read.
+ * opening, the word that clears, and a caller who changed the size of their window. Which
+ * ARRANGEMENT the width has room for is the panel's answer, so a session opened at a hundred
+ * and twenty columns and narrowed to seventy has the text beside the mark on a screen with no
+ * room for it; the fix is not a special redraw but the page again, at the new size. ⚠️ THE
+ * REASON GIVEN USED TO BE THE FRAME — *the box is drawn corner to corner, so a terminal
+ * narrowed to seventy is a frame the terminal folds in half* — and the frame is gone. What it
+ * cost is a page turned for every width there was; what is left is a page turned when the
+ * arrangement or the art really changed (`panel.ts`, `sameOpening`).
+ *
+ * What differs from a clearing is one thing: everything the session already SAID is landed
+ * with it, because a caller who resized a window did not ask to lose what they had read.
  *
  * ⚠️ IT SAID *WIDTH ONLY — height moves no glyph of the drawing*, and it was a width
  * standing in for the thing it could be read off. The name gives way by HEIGHT as well now
@@ -152,7 +157,7 @@ const NO_HEIGHT = 0;
  * A tenth of a second, and the number is chosen from both ends: it is more than thirty
  * times the gap between two steps of that drag, so a drag coalesces into one page; and it
  * is at the threshold below which a person reads a response as immediate, so a caller who
- * resized once and let go does not watch the box lag behind their window.
+ * resized once and let go does not watch the panel lag behind their window.
  *
  * WHAT IT BUYS IS THE WHOLE COST, and the cost is per PAGE rather than per event: reemitting
  * one is linear in what the session has said, measured at about 33 ms over 200 lines and
@@ -225,13 +230,13 @@ export interface ConsoleRequest {
    *
    * ⛔ IT MAY NOT BE RE-READ EITHER, and for a sharper reason than the panel's: this row is
    * on the screen for the whole session, so a level that changed under the caller halfway
-   * through would be the corner of the console disagreeing with the box at the top of it.
+   * through would be the corner of the console disagreeing with the panel at the top of it.
    * Counted with the rest (`tests/the-name-and-the-hints.test.ts`).
    */
   readonly badge: Drawn;
   /**
-   * WHAT THE PAGE OPENS WITH, on a terminal of a given SIZE — the box and the lines that
-   * go with it, already composed and already measured.
+   * WHAT THE PAGE OPENS WITH, on a terminal of a given SIZE — the arrangement and the lines
+   * that go with it, already composed and already measured.
    *
    * A FUNCTION AND NOT A VALUE, and the size is the whole reason. It arrived as a value
    * while the page was only ever drawn at the size the session opened at; a page that
@@ -251,7 +256,7 @@ export interface ConsoleRequest {
    * could say something different halfway through a session — measured by counting the
    * reads three width changes cause, which is none (`tests/the-name-and-the-hints.test.ts`).
    *
-   * The box goes into what is KEPT rather than into what is redrawn: it is written once
+   * The panel goes into what is KEPT rather than into what is redrawn: it is written once
    * per page and a caller scrolls back to the top to find it, which is the same argument
    * the opening lines have always been kept by.
    */
@@ -326,10 +331,11 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   /**
    * How wide the page is, asked of the DEVICE — the one place anything on the FRAME does.
    *
-   * Everything the layout draws is HANDED it: the panel's arithmetic, the art of the name,
-   * the frame drawn corner to corner. This is the module that owns the streams, so this is
+   * Everything the layout draws is HANDED it: the panel's arithmetic, the art of the name, the
+   * rules the input area sits between. This is the module that owns the streams, so this is
    * where the question is asked, and a second reading feeding any of those would be a
-   * second answer on the frame after a resize.
+   * second answer on the frame after a resize. ⚠️ THE THIRD USED TO BE *the frame drawn corner
+   * to corner*, and nothing is drawn to a corner any more.
    *
    * ⚠️ IT SAID *THE ONE PLACE ANYTHING DOES*, and the entry falsified it: `cli.ts` reads
    * the width beside the `isTTY` it already read, because whether a line folds is part of
@@ -357,7 +363,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   const howTall = (): number => stdout.rows ?? NO_HEIGHT;
 
   /**
-   * The box and the lines the page on the screen was drawn with.
+   * The arrangement and the lines the page on the screen was drawn with.
    *
    * ⚠️ THERE WAS A NUMBER BESIDE IT — the WIDTH the page was drawn for — and a resize was
    * compared against that, on the premise that nothing but a width could move a glyph of
@@ -777,7 +783,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     exitOnCtrlC: false,
     // The global `console` is left alone. Every line this product prints goes through
     // its own port, so there is nothing to reroute — and patching a global of the
-    // caller's process in order to draw a box is a larger thing to borrow than a layout.
+    // caller's process in order to draw a page is a larger thing to borrow than a layout.
     patchConsole: false,
     // WHETHER THERE IS A TERMINAL IS THIS PRODUCT'S ANSWER, not the library's. Left to
     // itself it decides by looking for the marks of a build server, and would draw
