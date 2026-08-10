@@ -499,6 +499,31 @@ function isRule(row: string): boolean {
  * compared to what the same verb says at a shell, so a row wrongly kept and a row wrongly
  * dropped both come out as an inequality.
  */
+/**
+ * WHAT THE CONSOLE PLACED RATHER THAN SAID, taken off the end of what it landed.
+ *
+ * THE PAGE IS PLACED WITH ROWS THAT HAVE NOTHING ON THEM, so that the input ends on the last row
+ * the layout leaves, and the console lands more of them whenever the input area gives rows back
+ * — which is what a list of words shutting does (`repl/page.ts`, `repl/console.ts`). They are
+ * lines of the flow, so they arrive through the same door a verb's lines do and there is nothing
+ * in a row with nothing on it to tell the two apart.
+ *
+ * SO IT IS THE POSITION THAT TELLS THEM APART, and that is exact rather than a heuristic: a
+ * placement is APPENDED to the flow, so it is always the tail of it. What a verb said is
+ * everything before the last row that has something on it. Every session below leaves by typing
+ * a word that begins with a slash, which opens the list and shuts it again, so every one of them
+ * ends with a placement.
+ *
+ * ⚠️ AND IT WOULD HIDE A VERB WHOSE LAST LINE IS BLANK, which is why both sides of the
+ * comparison are trimmed and why the shell's own answer is asserted not to end in one: a read of
+ * this product that ended with a blank line would otherwise stop being compared at all.
+ */
+function withoutThePlacement(rows: readonly string[]): string[] {
+  const said = [...rows];
+  while (said.at(-1) === '') said.pop();
+  return said;
+}
+
 function landed(bytes: string): string[] {
   const rows = withoutLayout(bytes).split('\n');
   // The tail after the last newline: not a row, an artefact of splitting on one.
@@ -569,7 +594,8 @@ describe('the same verbs, the same lines, another place', () => {
       // which is a fact about this product's lines and is checked rather than assumed.
       for (const line of outside.out) expect(line, verb).toBe(line.replace(/[ \t]+$/, ''));
       const inside = await inTheConsole([verb]);
-      expect(inside.answers, verb).toEqual(outside.out);
+      expect(outside.out.at(-1), `${verb}: the shell's answer ends with a blank line`).not.toBe('');
+      expect(withoutThePlacement(inside.answers), verb).toEqual(withoutThePlacement(outside.out));
       // And the caller's own line is on the page, the way a terminal shows what you sent.
       expect(inside.all, verb).toContain(`${PROMPT} ${verb}`);
     }
@@ -592,7 +618,8 @@ describe('the same verbs, the same lines, another place', () => {
     });
     expect(outside.err.length).toBeGreaterThan(0);
     expect(outside.out).toEqual([]);
-    expect(inside.answers).toEqual(outside.err);
+    expect(outside.err.at(-1), "the shell's refusal ends with a blank line").not.toBe('');
+    expect(withoutThePlacement(inside.answers)).toEqual(withoutThePlacement(outside.err));
     expect(outside.err.join('\n')).toContain('`task` can change the record');
   }, 120_000);
 
