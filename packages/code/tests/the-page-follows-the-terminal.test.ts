@@ -985,6 +985,17 @@ describe('the FRAME asks how big the terminal is in one place, and it follows it
     // function of the same height the arrangement is chosen by, so a second site asking would be
     // a leftover worked out against a terminal the area was not.
     expect(times(source, 'theGap('), 'the room is worked out somewhere else as well').toBe(1);
+    // ⛔ AND WHATEVER WRITES THE FLOW SAYS WHAT THE SCREEN HAS. The leftover is subtracted from the
+    // rows of the flow that are ON the screen (`repl/console.ts`, `flowOnScreen`), and rows that
+    // scrolled off the top do not come back — so a place that added to the flow without moving that
+    // number would place every frame after it short of the foot, which is the defect this pairing
+    // exists to prevent. Two places write the flow: a line that lands, and a page that is turned.
+    // Three move the number: those two, and the frame that caps it at what it left room for.
+    expect(times(source, 'past = '), 'the flow is written somewhere else as well').toBe(2);
+    expect(times(source, 'flowOnScreen ='), 'the rows on the screen are set somewhere else').toBe(
+      3,
+    );
+    expect(times(source, 'flowOnScreen +='), 'the rows on the screen grow somewhere else').toBe(1);
     // AND THE HEIGHT THE PAGE WAS PLACED AT IS RECORDED WHERE THE PAGE IS TURNED. It is the
     // half of the resize guard the drawing cannot answer (`repl/panel.ts`, `sameOpening`), so
     // a page turned without recording it would leave the guard comparing against a height two
