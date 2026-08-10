@@ -2,8 +2,8 @@
  * THE NAME, DRAWN — the one thing this surface prints that says nothing about the
  * record.
  *
- * It is ART, and that is the whole of what it is: eleven rows of an isometric block, five
- * rows of a glyph, or the name letterspaced, or the name. It carries no fact, so there is
+ * It is ART, and that is the whole of what it is: nine rows of blocks and shades, five rows
+ * of one block, or the name letterspaced, or the name. It carries no fact, so there is
  * nothing in it a reader could be misled about, and that is what makes the rule below safe
  * to state.
  *
@@ -84,53 +84,66 @@ import type { Line } from './line.js';
 import { widthOf as widthOfLine } from './plain.js';
 
 /**
- * THE FOUR GLYPHS THE MASKS ARE INKED WITH, each named by its code point rather than typed,
- * and the reason is the one this bench has paid for twenty-four times: a character a reader
- * cannot see in a source file survives every edit made around it. Every mask below is ASCII
- * to the byte, so the only unusual bytes in this module are on these four lines, where they
- * are spelled out.
+ * THE BLOCK THE FIVE-ROW MASK IS INKED WITH, named by its code point rather than typed, and
+ * the reason is the one this bench has paid for twenty-four times: a character a reader
+ * cannot see in a source file survives every edit made around it. FULL BLOCK, and the mask
+ * it fills is ASCII to the byte.
  *
- *   - `INK` — FULL BLOCK, what the five-row form is filled with.
- *   - `RISING` and `FALLING` — the two BOX DRAWINGS LIGHT DIAGONALs, which are what turn
- *     the isometric form's slashes into edges.
- *   - `UPRIGHT` — BOX DRAWINGS LIGHT VERTICAL, the same for its pipes.
- *
- * ⚠️ ALL FOUR ARE EAST ASIAN AMBIGUOUS, and that is a DECLARED RISK rather than a solved
- * problem: a terminal set to a CJK locale draws them two cells wide, while {@link widthOf}
- * counts what `plain.ts` counts, so a drawing would be twice as wide as everything that
- * measured it thinks. The five-row form has carried exactly this risk in one character
- * since it was drawn — nothing here made it worse in kind, the isometric one carries it in
- * three. Closing it means a character-width table for the whole surface, which is a
- * delivery rather than a line, and nothing in this file pretends otherwise.
+ * ⚠️ THERE WERE FOUR OF THEM, and the other three were the two diagonals and the vertical
+ * that the isometric drawing's slashes and pipes became. That drawing is not in this file
+ * any more, so the substitutions it needed went with it — and one of the three was the very
+ * glyph the box's frame is drawn with, which is what made four cases of this surface have to
+ * tell a row of the art from a row of the box.
  */
 const INK = '\u2588';
-const RISING = '\u2571';
-const FALLING = '\u2572';
-const UPRIGHT = '\u2502';
 
 /**
- * WHAT AN ASCII MARK IS INKED AS — the one table, read by every form.
+ * WHAT AN ASCII MARK IS INKED AS — the one table, read by every mask.
  *
  * A mask is written in characters an editor renders at one width and a diff can show, and
- * this is the only place a mark becomes a glyph. Marks a form does not use are simply
- * absent from it: the five-row form is made of `#` and blanks, the isometric one of slashes
- * and pipes, and neither holds the other's marks — so one table serves both without either
- * form having to say which substitutions are its.
+ * this is the only place a mark becomes a glyph. Marks a form does not use are simply absent
+ * from it, and everything that is not a key of this table is drawn as it was written — which
+ * is what lets one table serve every mask without a form having to say which substitutions
+ * are its.
  *
- * Everything that is not a key of it is drawn as it was written, which is what keeps the
- * underscores, the colons and the tildes of the isometric form ASCII on the screen as well
- * as in the source.
+ * ⚠️ IT HELD FOUR SUBSTITUTIONS AND IT HOLDS ONE, because the drawing that needed the other
+ * three is no longer written as a mask at all ({@link THE_BLOCKS}). One entry rather than
+ * none: the five-row form is still a mask, and a table with one key is what keeps the inking
+ * in one place for whichever mask is written next.
  */
 const INKED: { readonly [mark: string]: string } = {
   '#': INK,
-  '/': RISING,
-  '\\': FALLING,
-  '|': UPRIGHT,
 };
 
 /**
- * The isometric form, as a mask — eleven rows, and the widest drawing there is of this
- * name.
+ * THE BIGGEST DRAWING, AS THE DRAWING — nine rows of blocks and shades, fifty columns, and
+ * the one form in this file that is not written as a mask.
+ *
+ * ⚠️ IT WOULD HAVE BEEN A MASK, AND THIS DRAWING IS WHAT FALSIFIED THE PREMISE THAT SAID SO.
+ * Every form here has been written as *characters an editor renders at one width and a diff
+ * can show*, and the argument under that rule is that a reader sees the FORM. This one is
+ * inked with EIGHT different blocks and shades: as a mask its first row reads
+ * ` ###_ _###% ###_    # %#####` — measured, by writing it out — and at eight marks the FORM
+ * is the one thing that stops being visible. So the premise did not survive a drawing of
+ * eight glyphs, and it is written down here rather than deleted.
+ *
+ * WHAT THE DOCTRINE IS REALLY AGAINST IS A CHARACTER A READER CANNOT SEE — an escape, a NUL,
+ * a zero-width space, the twenty-four bytes this bench has paid for — and a block is the
+ * opposite of invisible. What replaces the mask is stronger than the mask was: an
+ * ENUMERATION of the code points this module may hold, each one named, with any other
+ * non-ASCII byte in the file ACCUSED (`tests/the-opening-fits-the-screen.test.ts`, which
+ * also keeps a second copy of these rows so that an edit to the art is loud).
+ *
+ *   - FULL BLOCK U+2588, DARK SHADE U+2593, MEDIUM SHADE U+2592, LIGHT SHADE U+2591
+ *   - LOWER HALF BLOCK U+2584, UPPER HALF BLOCK U+2580
+ *   - RIGHT HALF BLOCK U+2590, LEFT HALF BLOCK U+258C
+ *
+ * ⚠️ THEY ARE EAST ASIAN AMBIGUOUS, and that is the DECLARED RISK the one block has carried
+ * since the first drawing rather than a new one: a terminal set to a CJK locale draws them
+ * two cells wide, while {@link widthOf} counts what `plain.ts` counts, so the drawing would
+ * be twice as wide as everything that measured it thinks. Closing it means a character-width
+ * table for the whole surface, which is a delivery rather than a line, and nothing in this
+ * file pretends otherwise.
  *
  * No row ends in a blank, and that is load-bearing rather than tidy: the layout trims the
  * end of every row it writes, so a form padded on the right would arrive somewhere trimmed
@@ -138,31 +151,31 @@ const INKED: { readonly [mark: string]: string } = {
  * pads every row to the widest one; the padding came off before it was brought here, and a
  * case asserts the property rather than trusting that it was done.
  */
-const ISOMETRIC_MASK: readonly string[] = [
-  '      ___           ___           ___           ___           ___',
-  '     /  /\\         /  /\\         /  /\\         /  /\\         /  /\\',
-  '    /  /::|       /  /::|       /  /::\\       /  /::|       /  /::\\',
-  '   /  /:|:|      /  /:|:|      /  /:/\\:\\     /  /:|:|      /  /:/\\:\\',
-  '  /  /:/|:|__   /  /:/|:|__   /  /::\\ \\:\\   /  /:/|:|__   /  /::\\ \\:\\',
-  ' /__/:/_|::::\\ /__/:/ |:| /\\ /__/:/\\:\\ \\:\\ /__/:/_|::::\\ /__/:/\\:\\_\\:\\',
-  ' \\__\\/  /~~/:/ \\__\\/  |:|/:/ \\  \\:\\ \\:\\_\\/ \\__\\/  /~~/:/ \\__\\/  \\:\\/:/',
-  '       /  /:/      |  |:/:/   \\  \\:\\ \\:\\         /  /:/       \\__\\::/',
-  '      /  /:/       |__|::/     \\  \\:\\_\\/        /  /:/        /  /:/',
-  '     /__/:/        /__/:/       \\  \\:\\         /__/:/        /__/:/',
-  '     \\__\\/         \\__\\/         \\__\\/         \\__\\/         \\__\\/',
+const THE_BLOCKS: readonly string[] = [
+  ' ███▄ ▄███▓ ███▄    █ ▓█████  ███▄ ▄███▓ ▄▄▄',
+  '▓██▒▀█▀ ██▒ ██ ▀█   █ ▓█   ▀ ▓██▒▀█▀ ██▒▒████▄',
+  '▓██    ▓██░▓██  ▀█ ██▒▒███   ▓██    ▓██░▒██  ▀█▄',
+  '▒██    ▒██ ▓██▒  ▐▌██▒▒▓█  ▄ ▒██    ▒██ ░██▄▄▄▄██',
+  '▒██▒   ░██▒▒██░   ▓██░░▒████▒▒██▒   ░██▒ ▓█   ▓██▒',
+  '░ ▒░   ░  ░░ ▒░   ▒ ▒ ░░ ▒░ ░░ ▒░   ░  ░ ▒▒   ▓▒█░',
+  '░  ░      ░░ ░░   ░ ▒░ ░ ░  ░░  ░      ░  ▒   ▒▒ ░',
+  '░      ░      ░   ░ ░    ░   ░      ░     ░   ▒',
+  '       ░            ░    ░  ░       ░         ░  ░',
 ];
 
 /**
  * The tall form, as a mask — one mark per inked column, five rows, five letters.
  *
- * Written as a mask for the reason the one above is: a reader of this file sees the SHAPE
- * in characters their editor renders at one width, where a row of full blocks and spaces is
- * the same picture with half of it invisible to a diff.
+ * Written as a mask, and it is the reason the rule survives with one exception rather than
+ * none: a reader of this file sees the SHAPE in characters their editor renders at one
+ * width, where a row of full blocks and spaces is the same picture with half of it invisible
+ * to a diff. One mark is a mask that shows the form; eight marks is the drawing above, which
+ * is why that one is written out.
  *
  * ⚠️ IT STOPPED BEING THE BIGGEST FORM AND IT DID NOT GO. It covers the band between the
- * isometric drawing's seventy columns and the nine of the letterspaced name — an ordinary
- * eighty-column terminal is in that band — and with the isometric one put in its place
- * there would be nothing at all between seventy columns and nine.
+ * biggest drawing's fifty columns and the nine of the letterspaced name — a terminal of
+ * forty-something columns is in that band — and with the biggest one put in its place there
+ * would be nothing at all between fifty columns and nine.
  */
 const TALL_MASK: readonly string[] = [
   '#   # #   # ##### #   # #####',
@@ -184,9 +197,16 @@ const SHORT_MASK: readonly string[] = ['M N E M A'];
 /** The name, as it is typed. The floor: no terminal is too narrow for this one. */
 const NAME_MASK: readonly string[] = ['mnema'];
 
-/** A mask, drawn: every mark inked, everything else as it was written. */
-function inked(mask: readonly string[]): readonly Line[] {
-  return mask.map((row) => subjectLine([...row].map((mark) => INKED[mark] ?? mark).join('')));
+/**
+ * Some rows as lines: every mark inked, everything else as it was written.
+ *
+ * ONE FUNCTION FOR THE MASKS AND FOR THE DRAWING, because the second half of that sentence
+ * is what makes it total. A row of {@link THE_BLOCKS} holds no mark, so it comes back as
+ * itself; a row of a mask holds nothing but marks and blanks. A second function for the form
+ * that is not a mask would be a second answer to what a row of the name becomes.
+ */
+function inked(rows: readonly string[]): readonly Line[] {
+  return rows.map((row) => subjectLine([...row].map((mark) => INKED[mark] ?? mark).join('')));
 }
 
 /** The floor, drawn once — the one form that is answered whatever the size. */
@@ -200,7 +220,7 @@ const NAME: readonly Line[] = inked(NAME_MASK);
  * on every resize.
  */
 const FORMS: readonly (readonly Line[])[] = [
-  inked(ISOMETRIC_MASK),
+  inked(THE_BLOCKS),
   inked(TALL_MASK),
   inked(SHORT_MASK),
   NAME,

@@ -63,21 +63,48 @@ const PROMPT = 'mnema>';
 const AFTER_THE_PROMPT = `${PROMPT} `;
 
 /**
- * The glyphs the drawing is made of: the ink of the tall form, the box's side, and the run
- * a rule is made of.
+ * The glyphs the drawing is made of, the box's side, and the run a rule is made of.
  *
  * Named by their code points rather than typed, like every other unusual byte in this
  * repository's sources: a rule is one keystroke away from a pipe and a run from a hyphen,
  * and a character a reader cannot tell from a neighbouring one is a character an edit
  * destroys without anybody seeing it happen. A raw Ctrl-C got into the first draft of this
  * very file, which is the twenty-fourth time on this bench.
+ *
+ * \u26a0\ufe0f THREE OF THEM WERE THE ISOMETRIC DRAWING'S, and they are gone with it: the two
+ * diagonals, and the vertical \u2014 which was the same glyph as {@link FRAME}, one character in
+ * two roles, and four cases of this surface had to be taught to tell a row of the art from a
+ * row of the box because of it. What draws the name now holds no frame glyph at all.
  */
 const INK = '\u2588';
-const RISING = '\u2571';
-const FALLING = '\u2572';
-const UPRIGHT = '\u2502';
 const FRAME = '\u2502';
 const RUN = '\u2500';
+
+/**
+ * EVERY GLYPH THE DRAWINGS MAY BE MADE OF, each named by its code point \u2014 the eight blocks
+ * and shades, and nothing else.
+ *
+ * THIS IS THE GUARD THAT REPLACED THE MASK, and it is stronger than the mask was. Every form
+ * of the name used to be written as an ASCII mask, on the argument that a reader of the source
+ * sees the FORM in characters an editor renders at one width; the biggest drawing is inked
+ * with eight different blocks, and at eight marks a mask is unreadable \u2014 measured, by writing
+ * it out (` ###_ _###% ###_    # %#####`). So the drawing is written out and the eight are
+ * ENUMERATED instead, here and in the module's own doc: a ninth non-ASCII byte anywhere in
+ * that file is accused, which is a stronger statement than "the masks are ASCII" ever made.
+ *
+ * The names are the Unicode ones, so a reader can check a code point against the standard
+ * rather than against this file.
+ */
+const THE_EIGHT: readonly { readonly name: string; readonly glyph: string }[] = [
+  { name: 'UPPER HALF BLOCK', glyph: '\u2580' },
+  { name: 'LOWER HALF BLOCK', glyph: '\u2584' },
+  { name: 'FULL BLOCK', glyph: INK },
+  { name: 'LEFT HALF BLOCK', glyph: '\u258c' },
+  { name: 'RIGHT HALF BLOCK', glyph: '\u2590' },
+  { name: 'LIGHT SHADE', glyph: '\u2591' },
+  { name: 'MEDIUM SHADE', glyph: '\u2592' },
+  { name: 'DARK SHADE', glyph: '\u2593' },
+];
 
 /** Ctrl-C, which abandons the row being typed. Spelled as an escape, for the same reason. */
 const CLEARS_THE_LINE = '\u0003';
@@ -184,20 +211,19 @@ const WIDE = 200;
 const ROOMY = 40;
 
 /**
- * What an ASCII mark is inked as — the same four substitutions the module makes, spelled
- * here by code point for the reason the module spells them: a glyph a reader cannot tell
- * from its neighbour is a glyph an edit destroys without anybody seeing it happen. The
- * first is the file's own {@link INK}, so the two cannot come to name different blocks.
+ * What an ASCII mark is inked as — the same substitution the module makes, spelled here by
+ * code point for the reason the module spells it: a glyph a reader cannot tell from its
+ * neighbour is a glyph an edit destroys without anybody seeing it happen. It is the file's
+ * own {@link INK}, so the two cannot come to name different blocks.
+ *
+ * ⚠️ THERE WERE FOUR, and three of them were the isometric drawing's. That drawing is not a
+ * mask any more — it is not in the file at all — so the substitutions it needed went with it
+ * and one entry is what the masks that are left need.
  */
-const INKS: readonly (readonly [string, string])[] = [
-  ['#', INK],
-  ['/', RISING],
-  ['\\', FALLING],
-  ['|', UPRIGHT],
-];
+const INKS: readonly (readonly [string, string])[] = [['#', INK]];
 
-/** The four glyphs a drawing may hold, and nothing else may. */
-const GLYPHS: readonly string[] = INKS.map(([, glyph]) => glyph);
+/** The glyphs a drawing may hold, and nothing else may. */
+const GLYPHS: readonly string[] = THE_EIGHT.map(({ glyph }) => glyph);
 
 /**
  * EVERY DRAWING THERE IS, biggest first — walked off the module rather than written down.
@@ -236,10 +262,11 @@ describe('the name has four drawings, and the widest that fits across is the one
         above.length,
       );
     }
-    // AND THE ISOMETRIC ONE JOINED WITHOUT PUSHING THE FIVE-ROW ONE OUT. The band between
-    // them is what a form covers, so the second is the one an ordinary terminal gets: it is
-    // narrower than the widest and wider than the letterspacing, and a delivery that
-    // replaced rather than added would leave nothing between them.
+    // AND THE BIGGEST ONE DID NOT PUSH THE FIVE-ROW ONE OUT — through two changes of what the
+    // biggest one IS. The band between them is what a form covers, so the second is what a
+    // terminal too narrow for the first gets: narrower than the widest and wider than the
+    // letterspacing, and a delivery that replaced the SECOND rather than the first would leave
+    // nothing between them.
     const [biggest, second] = forms as readonly (readonly string[])[];
     expect((biggest as readonly string[]).length).toBeGreaterThan(
       (second as readonly string[]).length,
@@ -279,15 +306,18 @@ describe('the name has four drawings, and the widest that fits across is the one
     expect(drawnAcross(WIDE)).not.toEqual(drawnAcross(0));
   });
 
-  it('never pads a row at its end, and inks nothing but the four named glyphs', () => {
+  it('never pads a row at its end, and draws nothing but the eight named glyphs', () => {
     // TWO PROPERTIES THE REST OF THE SURFACE DEPENDS ON, and neither is visible to a reader.
     //
     //   - NO ROW ENDS IN A BLANK. The layout trims the end of every row it writes, so a form
     //     padded on the right would arrive somewhere narrower than the arithmetic that chose
-    //     it thinks it is — and the generator the isometric drawing came from pads.
-    //   - EVERY GLYPH IS ASCII OR ONE OF THE FOUR. The masks in the source are ASCII to the
-    //     byte and the substitutions are named by code point, so a drawing that came back
-    //     with a fifth unusual character is a character somebody typed into a mask.
+    //     it thinks it is — and the generator the biggest drawing came from pads.
+    //   - EVERY GLYPH IS ASCII OR ONE OF THE EIGHT. ⚠️ IT USED TO BE *ONE OF THE FOUR*, and
+    //     the four were substitutions: every form was an ASCII mask, so an unusual byte in a
+    //     drawing could only have come from the table that inks one. The biggest drawing is
+    //     written out now, blocks and all, and what replaces that reasoning is the
+    //     enumeration itself ({@link THE_EIGHT}) — asked of the drawing here, and of the
+    //     module's own bytes below.
     for (const form of everyForm()) {
       for (const row of form) {
         expect(row, 'a row is padded at its end').toBe(row.replace(/[ \t]+$/, ''));
@@ -300,6 +330,34 @@ describe('the name has four drawings, and the widest that fits across is the one
         }
       }
     }
+    // NOT VACUOUS: the drawings really are made of those glyphs rather than of ASCII alone,
+    // so the enumeration is ruling on something. Every one of the eight is used, which is
+    // what makes a ninth the only thing the guard below can be about.
+    const drawn = new Set([...everyForm().flat().join('')].filter((g) => g.codePointAt(0) >= 0x80));
+    expect([...drawn].sort(), 'a named glyph is drawn nowhere').toEqual([...GLYPHS].sort());
+  });
+
+  it('holds those eight code points in the module and no other unusual byte', () => {
+    // THE GUARD THE MASK USED TO BE, over the bytes of the source rather than over the
+    // drawing. What the doctrine is against is a character a reader cannot SEE — an escape, a
+    // NUL, a zero-width space — and the enumeration is what makes "no other" checkable now
+    // that a drawing is written out instead of masked.
+    //
+    // OVER THE CODE AND NOT OVER THE PROSE, because every doc in this repository is English
+    // with a dash and a warning sign in it. That is the same split every scan on this surface
+    // makes, and the case below proves this one makes it.
+    const code = withoutComments(readFileSync(BANNER, 'utf-8'));
+    const unusual = new Set([...code].filter((glyph) => (glyph.codePointAt(0) as number) >= 0x80));
+    expect([...unusual].sort(), 'an unnamed byte is in the module').toEqual([...GLYPHS].sort());
+    // Not vacuous in either direction: there really are unusual bytes to find, and a ninth
+    // glyph — or an invisible one, which is what this exists for — would be accused.
+    expect(unusual.size).toBe(THE_EIGHT.length);
+    const ninth = '▖';
+    expect(GLYPHS, 'the ninth glyph of the probe is one of the eight').not.toContain(ninth);
+    const relapse = new Set(
+      [...`const A = '${ninth}';`].filter((g) => (g.codePointAt(0) ?? 0) >= 0x80),
+    );
+    expect([...relapse]).toEqual([ninth]);
   });
 });
 
@@ -330,41 +388,51 @@ function masksIn(source: string): readonly (readonly string[])[] {
 }
 
 /**
- * THE ART, AS A SECOND COPY — the eleven rows of the biggest drawing, as the mask a person
- * edits.
+ * THE ART, AS A SECOND COPY — the nine rows of the biggest drawing, written out.
  *
- * ⚠️ IT IS A GOLDEN AND IT IS HERE BECAUSE A ROUND TRIP COULD NOT BE ONE. The mask in the
- * source and the drawing that comes back are ONE artifact: the second is the first with four
- * substitutions made, so a mark changed in the mask changes both and they go on agreeing.
- * Measured rather than reasoned — a mutation that turned one stroke of the first letter
- * round left the whole suite green. What makes an edit to the art LOUD is a copy that does
- * not derive from it, and the copy is ASCII for the same reason the mask is: a reader sees
- * the shape, and a diff shows which stroke moved.
+ * ⚠️ IT IS A GOLDEN AND IT IS HERE BECAUSE A ROUND TRIP COULD NOT BE ONE. While the biggest
+ * form was a mask, the mask in the source and the drawing that came back were ONE artifact:
+ * the second was the first with four substitutions made, so a mark changed in the mask
+ * changed both and they went on agreeing. Measured rather than reasoned — a mutation that
+ * turned one stroke of the first letter round left the whole suite green. What makes an edit
+ * to the art LOUD is a copy that does not derive from it.
+ *
+ * ⚠️ AND THE COPY WAS ASCII, AND THIS IS WHERE THAT STOPS. The reason given was *the copy is
+ * ASCII for the same reason the mask is: a reader sees the shape, and a diff shows which
+ * stroke moved* — and the drawing this now holds is inked with eight blocks and shades, whose
+ * mask a reader cannot see the shape in at all (` ###_ _###% ###_    # %#####`, measured by
+ * writing it). So the copy is the GLYPHS, which is what keeps the half of the argument that
+ * was load-bearing: a reader sees the shape and a diff shows which block moved. What guards
+ * the bytes instead of the mask is the enumeration ({@link THE_EIGHT}), which is asked of this
+ * file's own copy as much as of the module's.
  *
  * Changing the drawing is meant to change this. That is the whole of what it is for.
  */
 const THE_BIGGEST_DRAWING: readonly string[] = [
-  '      ___           ___           ___           ___           ___',
-  '     /  /\\         /  /\\         /  /\\         /  /\\         /  /\\',
-  '    /  /::|       /  /::|       /  /::\\       /  /::|       /  /::\\',
-  '   /  /:|:|      /  /:|:|      /  /:/\\:\\     /  /:|:|      /  /:/\\:\\',
-  '  /  /:/|:|__   /  /:/|:|__   /  /::\\ \\:\\   /  /:/|:|__   /  /::\\ \\:\\',
-  ' /__/:/_|::::\\ /__/:/ |:| /\\ /__/:/\\:\\ \\:\\ /__/:/_|::::\\ /__/:/\\:\\_\\:\\',
-  ' \\__\\/  /~~/:/ \\__\\/  |:|/:/ \\  \\:\\ \\:\\_\\/ \\__\\/  /~~/:/ \\__\\/  \\:\\/:/',
-  '       /  /:/      |  |:/:/   \\  \\:\\ \\:\\         /  /:/       \\__\\::/',
-  '      /  /:/       |__|::/     \\  \\:\\_\\/        /  /:/        /  /:/',
-  '     /__/:/        /__/:/       \\  \\:\\         /__/:/        /__/:/',
-  '     \\__\\/         \\__\\/         \\__\\/         \\__\\/         \\__\\/',
+  ' ███▄ ▄███▓ ███▄    █ ▓█████  ███▄ ▄███▓ ▄▄▄',
+  '▓██▒▀█▀ ██▒ ██ ▀█   █ ▓█   ▀ ▓██▒▀█▀ ██▒▒████▄',
+  '▓██    ▓██░▓██  ▀█ ██▒▒███   ▓██    ▓██░▒██  ▀█▄',
+  '▒██    ▒██ ▓██▒  ▐▌██▒▒▓█  ▄ ▒██    ▒██ ░██▄▄▄▄██',
+  '▒██▒   ░██▒▒██░   ▓██░░▒████▒▒██▒   ░██▒ ▓█   ▓██▒',
+  '░ ▒░   ░  ░░ ▒░   ▒ ▒ ░░ ▒░ ░░ ▒░   ░  ░ ▒▒   ▓▒█░',
+  '░  ░      ░░ ░░   ░ ▒░ ░ ░  ░░  ░      ░  ▒   ▒▒ ░',
+  '░      ░      ░   ░ ░    ░   ░      ░     ░   ▒',
+  '       ░            ░    ░  ░       ░         ░  ░',
 ];
 
-describe('the drawing is the mask inked, and the mask is ASCII', () => {
-  it('reconstructs every drawing from the mask beside it, byte for byte', () => {
+describe('every drawing but the biggest is a mask inked, and every mask is ASCII', () => {
+  it('reconstructs each masked drawing from the mask beside it, byte for byte', () => {
     const masks = masksIn(readFileSync(BANNER, 'utf-8'));
     const forms = everyForm();
-    // The instrument first: as many masks were found as there are drawings, in the same
+    // The instrument first: a mask was found for every form but the biggest, in the same
     // order — a regular expression that matched nothing would otherwise pass this whole case
     // by having nothing to compare.
-    expect(masks, 'the masks were not found in the source').toHaveLength(forms.length);
+    //
+    // ⚠️ IT USED TO BE ONE MASK PER FORM. The biggest drawing is written out rather than
+    // masked, because eight marks is a mask a reader cannot see the shape in — so the masks
+    // are the forms UNDER it, and what holds the biggest one is the copy above and the
+    // enumeration of the eight glyphs.
+    expect(masks, 'the masks were not found in the source').toHaveLength(forms.length - 1);
 
     for (const [at, mask] of masks.entries()) {
       // THE MASK IS ASCII TO THE BYTE. It is what a reader edits, and an editor renders
@@ -380,27 +448,34 @@ describe('the drawing is the mask inked, and the mask is ASCII', () => {
       }
       // THE ROUND TRIP: the mask, with every mark inked, is the drawing the module answers
       // with. A mark added to a mask and not to the table below comes back as itself and
-      // this goes red, and so does a drawing that stopped being made of its mask.
+      // this goes red, and so does a drawing that stopped being made of its mask. The masks
+      // are the forms UNDER the biggest one, so each is compared with the form after it.
       const inked = mask.map((row) =>
         INKS.reduce((drawing, [mark, glyph]) => drawing.split(mark).join(glyph), row),
       );
-      expect(inked, `mask ${at} does not draw form ${at}`).toEqual(forms[at]);
+      expect(inked, `mask ${at} does not draw form ${at + 1}`).toEqual(forms[at + 1]);
     }
   });
 
-  it('draws the art this file has a copy of, stroke for stroke', () => {
-    // THE ONE ASSERTION THE ROUND TRIP ABOVE CANNOT MAKE. Both sides of it come out of the
-    // same mask, so a mark changed in the source changes both — measured, and the suite
-    // stayed green. This compares the drawing with a copy that derives from nothing.
+  it('draws the art this file has a copy of, block for block', () => {
+    // THE ONE ASSERTION NOTHING DERIVED CAN MAKE. While the biggest form was a mask, both
+    // sides of the round trip above came out of that mask, so a mark changed in the source
+    // changed both — measured, and the suite stayed green. This compares the drawing with a
+    // copy that derives from nothing at all.
     const biggest = everyForm()[0] as readonly string[];
     expect(biggest, 'the biggest drawing is not the art this file has a copy of').toEqual(
-      THE_BIGGEST_DRAWING.map((row) =>
-        INKS.reduce((drawing, [mark, glyph]) => drawing.split(mark).join(glyph), row),
-      ),
+      THE_BIGGEST_DRAWING,
     );
-    // Not vacuous: the copy really is the biggest form and not, say, the floor.
+    // Not vacuous: the copy really is the biggest form and not, say, the floor, and it is the
+    // drawing rather than a mask of one — every row of it holds a glyph no mask may hold.
     expect(biggest.length).toBe(THE_BIGGEST_DRAWING.length);
     expect(biggest.length).toBeGreaterThan(1);
+    for (const row of THE_BIGGEST_DRAWING) {
+      expect(
+        [...row].some((glyph) => GLYPHS.includes(glyph)),
+        row,
+      ).toBe(true);
+    }
   });
 
   it('would accuse a mask that was padded, and one that was not ASCII', () => {
@@ -414,9 +489,7 @@ describe('the drawing is the mask inked, and the mask is ASCII', () => {
     expect((escaped[0] as readonly string[])[0]).toBe('/\\|');
     // And the inking really changes something, or the round trip above compares a mask
     // with itself.
-    expect(INKS.reduce((row, [mark, glyph]) => row.split(mark).join(glyph), '#/\\|')).not.toBe(
-      '#/\\|',
-    );
+    expect(INKS.reduce((row, [mark, glyph]) => row.split(mark).join(glyph), '#')).not.toBe('#');
   });
 });
 
@@ -570,11 +643,24 @@ async function openedAt(
  * down.
  *
  * ⚠️ THERE WAS A FOURTH COLUMN AND IT IS GONE. It held what the same measurement answered
- * before the previous delivery, and every row asserted the count had gone DOWN. What
- * falsified it is this one: the drawing the name was asked for is eleven rows tall, so on a
- * terminal with room for it the opening is BIGGER than it was, on purpose. The promise that
+ * before an earlier delivery, and every row asserted the count had gone DOWN. What falsified
+ * it is the art: a drawing the name is asked for can be taller than the one before it, so on
+ * a terminal with room for it the opening is BIGGER than it was, on purpose. The promise that
  * replaces "it got smaller" is the one the file is named after and the one a reader can
  * check — the opening FITS, whole, with the input area under it.
+ *
+ * ⚠️ AND THE COUNT MOVED IN BOTH DIRECTIONS AT ONCE, which is the achado of the delivery that
+ * changed the drawing. The new art is SMALLER on both measurements — nine rows by fifty
+ * columns against eleven by seventy — and *smaller art costs fewer rows* is nonetheless false:
+ *
+ *   - AT A HUNDRED AND TWENTY COLUMNS the box fits two columns again (the threshold is the
+ *     content's, and it fell from 124 to 104), so the record's three rows are shared with the
+ *     drawing's nine instead of added to them: 24 rows to 18.
+ *   - AT EIGHTY BY TWENTY-FOUR the count went UP, 18 to 22, and the mechanism is the whole
+ *     reason: eleven rows of art did not fit that screen and gave way to the five-row block,
+ *     and nine rows DO fit. A terminal that used to be given the small drawing is given the
+ *     big one. The opening is still whole and there is still a row over — what a reader loses
+ *     is four rows of the record, and what they gain is the mark. It is a declared cost.
  *
  * The three sizes are the ordinary one (eighty by twenty-four, which is the size every
  * terminal has had since before they were on screens), a common laptop window, and a large
@@ -582,9 +668,9 @@ async function openedAt(
  * that moved a case rather than the product.
  */
 const THE_SCREEN: readonly { columns: number; rows: number; takes: number }[] = [
-  { columns: 80, rows: 24, takes: 18 },
-  { columns: 100, rows: 30, takes: 24 },
-  { columns: 120, rows: 40, takes: 24 },
+  { columns: 80, rows: 24, takes: 22 },
+  { columns: 100, rows: 30, takes: 22 },
+  { columns: 120, rows: 40, takes: 18 },
 ];
 
 describe('the console leaves the screen to the record it was opened over', () => {
@@ -667,19 +753,25 @@ describe('the drawing gives way so the page fits, rather than the page being cut
   }, 180_000);
 
   it('draws the biggest form on a terminal with the room for it, and not on one without', async () => {
-    // THE ELO FOR THE FOURTH FORM, and the answer to the question the previous delivery's
+    // THE ELO FOR THE BIGGEST FORM, and the answer to the question an earlier delivery's
     // mechanism failed: does this one ever fire on a screen a person has? Both halves in one
     // case, at ONE width, so the only thing that moved between them is the height.
     //
     // ⚠️ AND IT IS THE OPPOSITE FAILURE TO WATCH FOR. A drawing that is never chosen is the
     // same defect as a threshold that never fires, so the case that says where it IS chosen
     // has to say where it is NOT beside it.
+    //
+    // ⚠️ THE SECOND HALF USED TO ASK AN ORDINARY TWENTY-FOUR-ROW TERMINAL, and the drawing is
+    // what falsified that: nine rows of art fit a screen eleven did not, so a page a person
+    // opens most often is now on the side that KEEPS the biggest form. The heights are a size
+    // and its half rather than a threshold — where the form gives way is searched for in the
+    // ladder above, one height at a time.
     const biggest = drawnAcross(WIDE);
     const roomy = await openedAt(100, 30);
     expect(roomy.drawing, 'the biggest drawing is on no terminal at all').toEqual(biggest);
     expect(roomy.whole, 'the biggest drawing opened cut').toBe(true);
 
-    const ordinary = await openedAt(100, 24);
+    const ordinary = await openedAt(100, 15);
     expect(
       ordinary.drawing,
       'the biggest drawing was kept on a screen without the room',

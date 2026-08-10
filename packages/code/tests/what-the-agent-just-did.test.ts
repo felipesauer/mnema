@@ -73,6 +73,20 @@ const CLEARS_THE_LINE = '\u0003';
 /** The agent the other process writes as — the name that has to reach the page. */
 const THE_AGENT = 'the-agent-that-wrote-it';
 
+/**
+ * WHAT THE VERDICT OF A GOOD TREE SAYS — one spelling, read by the step that waits for the
+ * verb's answer and by the case that counts what was said.
+ *
+ * ⚠️ THE TWO USED TO SPELL IT DIFFERENTLY, and that is what made this run flaky: the step
+ * waited for `integrity`, and the OPENING PANEL already says it. So the step could end on the
+ * opening frame — before the verb had answered — and the case under it then read one occurrence
+ * where the finished page has two. It went red once in a full-suite run and passed on its own
+ * twice, which is the signature of a wait satisfied by the frame before the one it means.
+ * The condition is the SECOND occurrence now: the panel says the sentence once, so the verb
+ * having answered is the sentence being on the page again.
+ */
+const THE_VERDICT = 'local integrity verified';
+
 /** How wide and how tall the terminal every case here drives is. */
 const COLUMNS = 140;
 const ROWS = 40;
@@ -202,7 +216,9 @@ describe('a session shows what another process wrote while it was open', () => {
     // and the case about not rewriting what was said would be about an empty page.
     const answers: Step = {
       types: 'verify\r',
-      until: (bytes) => bytes.includes('integrity'),
+      // THE SECOND OCCURRENCE, for the reason {@link THE_VERDICT} gives: the panel says the
+      // sentence when the session opens, so the first one is not an answer to anything.
+      until: (bytes) => times(bytes, THE_VERDICT) > 1,
       what: 'answered the verb it was asked',
     };
     // HOW MANY OCCURRENCES ARE ON THE PAGE is what says the step happened, and the count
@@ -265,9 +281,12 @@ describe('a session shows what another process wrote while it was open', () => {
     // about the page rather than about the product: the opening panel states the same
     // verdict, so the session says it twice before anything moves. What the case is really
     // about is the DIFFERENCE — as many times after the occurrences as before them.
-    const said = 'local integrity verified';
+    const said = THE_VERDICT;
     const before = times(ran.bytes.slice(0, ran.at[1] as number), said);
-    expect(before, said).toBeGreaterThan(0);
+    // BOTH of them: the panel's, and the verb's answer. A cut that landed between the two
+    // reads a page the session had not finished saying, which is what the step above waits
+    // for and what this asserts it got.
+    expect(before, said).toBe(2);
     expect(times(ran.bytes, said), said).toBe(before);
     // And the drawing of the name, which is written once for a page and is the discriminant
     // this suite already uses for "nothing was said twice".

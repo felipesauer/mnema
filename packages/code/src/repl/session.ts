@@ -320,6 +320,10 @@ export async function openSession(request: SessionRequest): Promise<void> {
   // here as well, because two things read the width: the area, which draws no hint the
   // terminal would fold, and the opening, which is budgeted against the area under it.
   const hint = drawn(tips(), render);
+  // THE WORDS THE SESSION ANSWERS TO ITSELF, read ONCE and handed to ONE thing: the
+  // completer, which puts them in the same list as the verbs. ⚠️ THEY WENT TO THE CONSOLE AS
+  // WELL, so that a slash could be answered out of them, and that is what made the two keys
+  // show two different menus — the slash three words, a Tab fourteen. One reader, one list.
   const vocabulary = theSessionsOwnWords();
   // WHAT THIS SESSION HAS NAMED, as one value with two ends: the console fills it with
   // every line that lands, and the completer reads it to offer a record back. One object
@@ -405,7 +409,6 @@ export async function openSession(request: SessionRequest): Promise<void> {
     // Also rendered once — out of the ONE read this surface pays for. It does say
     // something about the record, which is exactly why it may not be asked again.
     badge,
-    vocabulary,
     saw: seen.saw,
     // WHAT SOMEBODY ELSE WROTE, as lines — composed where every line of this product is
     // and rendered with the session's own renderer, so an occurrence reads exactly like

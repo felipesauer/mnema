@@ -525,9 +525,11 @@ const drawn = (columns: number): string[] =>
  * How wide a drawing is: its widest row.
  *
  * ⚠️ THE FIRST ROW USED TO STAND IN FOR THIS, and it was true of every form there was: the
- * five-row one is a rectangle, so its first row is as wide as the drawing. The isometric one
- * is not — its widest rows are in the middle — so a case that measured the first would give
- * way one column early and call it the art's own width.
+ * five-row one is a rectangle, so its first row is as wide as the drawing. The biggest one is
+ * not — its widest rows are in the middle — so a case that measured the first would give way
+ * one column early and call it the art's own width. It has been true of two different biggest
+ * drawings now, the second by a wider margin than the first: forty-four columns on its first
+ * row against fifty on its widest.
  */
 const widthOf = (form: readonly string[]): number =>
   Math.max(...form.map((row) => [...row].length));
@@ -535,10 +537,12 @@ const widthOf = (form: readonly string[]): number =>
 describe('the name is drawn, and how much of it depends on the terminal', () => {
   it('draws the five-row form on a terminal too narrow for the biggest one', () => {
     // ⚠️ THIS CASE SAID *draws the tall form when it fits* AND ASKED A WIDE TERMINAL. What
-    // falsified it is a fourth drawing: the widest form is the isometric one now, so the
-    // five-row block is what a terminal one column too narrow for THAT gets, and asking two
-    // hundred columns for it would be asking for something else entirely. What the case is
-    // for is unchanged and is the half no other case holds — the mask really became a
+    // falsified it is a fourth drawing: the widest form is not the five-row block any more, so
+    // that block is what a terminal one column too narrow for the biggest one gets, and asking
+    // two hundred columns for it would be asking for something else entirely. Which drawing is
+    // the biggest has changed twice since — from the isometric one to a drawing of blocks — and
+    // nothing here moved, because the width it asks for is the biggest form's OWN. What the
+    // case is for is unchanged and is the half no other case holds: the mask really became a
     // drawing of one glyph.
     const tall = drawn(widthOf(drawn(200)) - 1);
     expect(tall).toHaveLength(5);

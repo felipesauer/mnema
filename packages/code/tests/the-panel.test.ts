@@ -162,12 +162,17 @@ function rowsOf(page: string): string[] {
 /**
  * The rows of the page that are part of the box.
  *
- * ⚠️ IT USED TO BE ANY ROW HOLDING THE RULE, and the fourth drawing of the name falsified
- * that: the isometric form is inked with three glyphs and one of them is {@link RULE}, the
- * very character the frame's sides are drawn with. So a page with no box at all came back
- * as eleven box rows of six different widths, and the case that reads their widths called
- * the box ragged. A row of the box BEGINS at the left edge of the screen, which the art
- * never does.
+ * ⚠️ IT USED TO BE ANY ROW HOLDING THE RULE, and a drawing of the name falsified that: the
+ * isometric form was inked with three glyphs and one of them was {@link RULE}, the very
+ * character the frame's sides are drawn with. So a page with no box at all came back as
+ * eleven box rows of six different widths, and the case that reads their widths called the
+ * box ragged.
+ *
+ * THE COLLISION IS GONE AND THE DISCRIMINANT STAYS. The drawing that replaced it is made of
+ * blocks and shades and holds no frame glyph at all, so this would work either way now — and
+ * it is kept as it is because what makes it right is not which glyphs the art happens to use:
+ * a row of the box BEGINS at the left edge of the screen, which no drawing inside the box
+ * ever does. A fifth form is one edit away from bringing the collision back.
  */
 function boxRows(page: string): string[] {
   return rowsOf(page).filter((row) => row.startsWith(RULE) || row.startsWith(CORNER));
@@ -177,11 +182,16 @@ function boxRows(page: string): string[] {
  * Which drawing is on the page, judged by what only that drawing has.
  *
  * ⚠️ IT COUNTED THE RULES ON ONE ROW — three of them meant a column on each side of a
- * divider — and the drawing of the name now puts as many as it likes on a row of its own.
- * What tells the two boxed forms apart is a rule that runs THROUGH the box: a column of the
- * screen carrying the glyph on every interior row. The frame's two sides are two of them
- * and the divider is the third; the art's verticals are in a different column on every row
- * of it, and the rows the place and the record are on hold none.
+ * divider — and a drawing of the name put as many as it liked on a row of its own. What tells
+ * the two boxed forms apart is a rule that runs THROUGH the box: a column of the screen
+ * carrying the glyph on every interior row. The frame's two sides are two of them and the
+ * divider is the third; a vertical of the art was in a different column on every row of it,
+ * and the rows the place and the record are on hold none.
+ *
+ * THE ART NO LONGER HOLDS THAT GLYPH, and this is not written back to counting one row for it:
+ * *a rule of the frame is in the same column on every row* is true of a frame whatever the art
+ * is made of, and *there are three of them on this row* was only ever true of the art there
+ * was. The weaker reading is the one that already went red once.
  */
 function formOf(page: string): PanelForm {
   const rows = boxRows(page).filter((row) => !row.includes(CORNER));
@@ -370,11 +380,13 @@ describe('the chrome spends exactly one hue, and it is none of the three severit
     // …and the accent really is around the two things that ARE chrome: the frame, and the
     // mark. A layout that had stopped painting would satisfy the loop above saying nothing.
     expect(wrapped.some((run) => [...stripped(run)].every((glyph) => glyph === RULE))).toBe(true);
-    // ⚠️ THE MARK USED TO BE FOUND BY ITS GLYPH, and a fourth drawing is what falsified
-    // that: the widest form is inked with diagonals rather than with blocks, so a page two
-    // hundred columns wide holds no full block at all. What the drawing IS is asked of the
-    // module that draws it, at the size this page was opened at, so a fifth form moves this
-    // case with it.
+    // ⚠️ THE MARK USED TO BE FOUND BY ITS GLYPH, and a change of drawing is what falsified
+    // that: the widest form was inked with diagonals rather than with blocks, so a page two
+    // hundred columns wide held no full block at all. ⚠️ AND THE DRAWING AFTER IT IS FULL OF
+    // BLOCKS AGAIN, which is exactly why the glyph is not what this asks: the art has changed
+    // twice under this case and both times the answer to *which glyph is the mark made of*
+    // moved. What the drawing IS is asked of the module that draws it, at the size this page
+    // was opened at, so the next form moves this case with it.
     const widest = drawnAt(200).reduce((most, row) => (row.length > most.length ? row : most));
     const mark = rowHolding(page, widest);
     expect(
@@ -445,6 +457,18 @@ describe('what the panel says about a tree is a prefix of what verify says', () 
  */
 const A_WINDOW = { widest: 140, narrowest: 40 } as const;
 
+/**
+ * A TERMINAL A PERSON OPENS — a hundred and twenty columns, and it is a SIZE rather than a
+ * threshold.
+ *
+ * It is the width the defect this panel's last two deliveries were reported from was measured
+ * at: a window that wide got the stacked form and a column of blank rows beside the record,
+ * because the two-column arrangement cost 124 columns while the art was seventy wide. Nothing
+ * below asserts what the threshold IS — that is searched for — only that it is under a size
+ * somebody really has.
+ */
+const A_WORKING_TERMINAL = 120;
+
 /** The scan, done once and kept: about a hundred openings, twenty milliseconds each. */
 let theLadder: Map<number, PanelForm> | undefined;
 async function everyWidth(): Promise<ReadonlyMap<number, PanelForm>> {
@@ -496,23 +520,32 @@ describe('the form comes out of the content, and the narrowest still says the es
     }
   }, 120_000);
 
-  it('draws all three, and gets simpler as the terminal narrows unless the ART got bigger', async () => {
-    // ⚠️ THIS CASE WAS `never a richer one on a narrower terminal`, over five sampled
-    // widths, and this delivery FALSIFIED it. The name has a fourth drawing now and it is
-    // seventy columns wide: a terminal wide enough to be given it is not always wide enough
-    // to put a BOX around it, so there is a band where widening the window costs the frame.
-    // The five widths it sampled all missed that band, which is the other half of why the
-    // case is rewritten rather than repaired — it is asked of every width in the window now,
-    // one column at a time.
+  it('draws all three, and never a richer one on a narrower terminal', async () => {
+    // ⚠️ THIS CASE HAS BEEN WRITTEN THREE TIMES AND THE ART MOVED IT EVERY TIME. It began as
+    // `never a richer one on a narrower terminal` over five sampled widths; a seventy-column
+    // drawing FALSIFIED that, because a terminal wide enough to be given the art was not
+    // always wide enough to put a BOX around it, so there was a band — one column of the
+    // ladder — where widening the window cost the frame. The five widths it sampled all
+    // missed it, so it was rewritten to walk every width in the window and to allow the
+    // exception on one condition: where a narrower terminal is richer, the ART is what grew.
     //
-    // WHAT SURVIVES IS THE RULE WITH ITS REASON: the drawing only gets simpler as the
-    // terminal narrows, and where it does not, the ART is what changed. That is not an
-    // excuse written into the assertion — it is the one thing that can make a wider terminal
-    // hold less, and a form that gave way for any other reason goes red here.
+    // ⚠️ AND THE EXCEPTION IS GONE, WHICH IS WHY THE NAME IS THE FIRST ONE AGAIN. Measured:
+    // the drawing is fifty columns now and the line under it — a project's path and an
+    // identity — is about forty-nine, so giving the art up buys the column almost nothing and
+    // the stacked form is unreachable either way. The band closed by ARITHMETIC rather than by
+    // anybody's intention, and the assertion is written as the count so that the day it
+    // reopens this case says which width it reopened at.
+    //
+    // WHAT SURVIVES IS THE RULE WITH ITS REASON, and it survives as a guard rather than as an
+    // observation: the drawing only gets simpler as the terminal narrows, and where it does
+    // not, the ART has to be what changed. The loop rules on every step of the ladder; that
+    // no step needs the excuse today is the assertion under it.
     const ladder = await everyWidth();
     expect(new Set(ladder.values())).toEqual(new Set(['columns', 'stacked', 'bare']));
     let boughtArtInstead = 0;
+    let steps = 0;
     for (let columns = A_WINDOW.widest; columns > A_WINDOW.narrowest; columns -= 1) {
+      steps += 1;
       const wider = RICHNESS[ladder.get(columns) as PanelForm];
       const narrower = RICHNESS[ladder.get(columns - 1) as PanelForm];
       if (narrower <= wider) continue;
@@ -526,13 +559,39 @@ describe('the form comes out of the content, and the narrowest still says the es
         ),
       );
     }
-    // NOT VACUOUS IN EITHER DIRECTION: the window really holds the band where the art is
-    // bought instead of the frame — so the loop ruled on something — and it is a BAND rather
-    // than the whole ladder, so "simpler as it narrows" is still what the drawing mostly
-    // does.
-    expect(boughtArtInstead, 'the window holds no place where the art won').toBeGreaterThan(0);
-    expect(boughtArtInstead, 'the ladder is nothing but exceptions').toBeLessThan(3);
+    // THE LADDER IS ONE-WAY, with no step needing the art to explain it.
+    expect(boughtArtInstead, 'a narrower terminal is richer somewhere in the window').toBe(0);
+    // NOT VACUOUS: the walk really covered the window, so "no step" is a statement about a
+    // hundred steps rather than about an empty loop — and the window really holds three
+    // different forms, asserted above, so the ladder it walked is not one answer repeated.
+    expect(steps).toBe(A_WINDOW.widest - A_WINDOW.narrowest);
+    expect(new Set(ladder.values()).size).toBe(3);
   }, 180_000);
+
+  it('stands in two columns on the terminal a person opens, with the biggest art in it', async () => {
+    // WHAT THE NEW DRAWING BOUGHT, and the reason it is a case rather than a note: the box
+    // gave the two columns up at 124 columns while the art was seventy wide, so a window of
+    // a hundred and twenty — an ordinary one, and the one this was reported from — got the
+    // stacked form and nine blank rows beside the record. The art is fifty columns now and
+    // the threshold is the content's, so it moved with it.
+    //
+    // THE THRESHOLD IS NOT WRITTEN HERE. {@link A_WORKING_TERMINAL} is a SIZE — a window a
+    // person has — and where the form gives way is searched for off the ladder, so this case
+    // says the threshold is under that size rather than what the threshold is.
+    const edge = await narrowestFor(RICHNESS.columns);
+    expect(edge, 'the two columns cost more than a terminal a person opens').toBeLessThanOrEqual(
+      A_WORKING_TERMINAL,
+    );
+    expect(formOf(await openedAt(A_WORKING_TERMINAL))).toBe('columns');
+    // AND THE ART DID NOT PAY FOR THEM. The two columns are worth nothing if the drawing gave
+    // way to get them, so the mark on that page is the biggest form there is.
+    expect(drawnAt(A_WORKING_TERMINAL), 'the art gave way to buy the columns').toEqual(
+      drawnAt(200),
+    );
+    // Not vacuous: the ladder really does have a stacked band under that width, so the
+    // comparison above is about a threshold that exists.
+    expect(edge, 'every width in the window draws two columns').toBeGreaterThan(A_WINDOW.narrowest);
+  }, 300_000);
 
   it('gives each form up at the width its own content stops fitting at', async () => {
     // THE THRESHOLD, asserted as a property of the DRAWING rather than as a number. For

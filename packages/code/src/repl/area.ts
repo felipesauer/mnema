@@ -118,6 +118,21 @@ const BADGE = 1;
 const RULE = 1;
 /** The hint's row, under everything. */
 const HINT = 1;
+/**
+ * THE BLANK ROW OVER THE PALETTE — what separates the list of words from whatever the
+ * arrangement puts under it.
+ *
+ * It exists because the list read as part of what was above it: the palette is the console's
+ * own affordance and the row under it is the badge or a rule, so a list that began on the
+ * very next row was a paragraph continuing rather than an answer to the key just pressed.
+ *
+ * IT IS COUNTED HERE AND DRAWN IN `region.ts`, and the number is in both files for the reason
+ * the panel's row costs are in `panel.ts`: the arithmetic and the drawing have to agree about
+ * the geometry, and a row the layout draws and this file does not count is a region one row
+ * taller than the boundary this whole file exists to keep. It is spent only when there is a
+ * palette, because a blank row over nothing is a blank row.
+ */
+const ABOVE_THE_PALETTE = 1;
 
 /**
  * How much shorter than the viewport a region has to be to be redrawn in PART.
@@ -144,9 +159,21 @@ interface Drawing {
   readonly palette: number;
 }
 
+/**
+ * How many rows the palette takes, its own blank row counted — and none at all when it is
+ * shut.
+ *
+ * ONE FUNCTION, READ BY BOTH ARITHMETICS below, because the height of the area and the depth
+ * of the caret are the same sum read from two ends: a blank row counted in one and not in the
+ * other is a caret one row away from the line it is meant to be on.
+ */
+function paletteRows(drawing: Drawing): number {
+  return drawing.palette === 0 ? 0 : ABOVE_THE_PALETTE + drawing.palette;
+}
+
 /** How tall each form is, given what there is to draw around the row being typed. */
 function heightOf(form: AreaForm, drawing: Drawing): number {
-  const extras = drawing.palette + (drawing.hint ? HINT : 0);
+  const extras = paletteRows(drawing) + (drawing.hint ? HINT : 0);
   switch (form) {
     case 'full':
       return BADGE + RULE + TYPED + RULE + extras;
@@ -161,11 +188,11 @@ function heightOf(form: AreaForm, drawing: Drawing): number {
 function aboveIn(form: AreaForm, drawing: Drawing): number {
   switch (form) {
     case 'full':
-      return drawing.palette + BADGE + RULE;
+      return paletteRows(drawing) + BADGE + RULE;
     case 'ruled':
-      return drawing.palette + RULE;
+      return paletteRows(drawing) + RULE;
     case 'bare':
-      return drawing.palette;
+      return paletteRows(drawing);
   }
 }
 
@@ -217,8 +244,13 @@ export function areaFor(request: AreaRequest): Area {
   // form without it: the row being typed, and the hint when there is one. So a palette
   // never pushes the region past the boundary the whole of this file exists to keep, and
   // a palette longer than the screen is CUT rather than drawn off the top.
+  //
+  // THE BLANK ROW COMES OFF IT FIRST, because the palette does not get to spend a row the
+  // drawing is going to take. A terminal with room for one row of the list gets that row and
+  // its separation; one with room for neither gets no palette, which is the same absence a
+  // terminal that offered nothing gets.
   const floor = TYPED + (hint ? HINT : 0);
-  const room = Math.max(0, request.rows - BELOW_THE_VIEWPORT - floor);
+  const room = Math.max(0, request.rows - BELOW_THE_VIEWPORT - floor - ABOVE_THE_PALETTE);
   const drawing: Drawing = {
     badge: onOneRow(request.badge, request.columns),
     hint,
