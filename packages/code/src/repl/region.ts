@@ -53,10 +53,14 @@
  *
  * SO COLOUR ON THIS SURFACE HAS TWO AXES NOW, and they may not meet. DATA is painted by
  * severity and by nothing else, which is `presentation/styled.ts` and unchanged. CHROME
- * is painted by ONE accent, spent here, and the accent is CYAN — chosen by elimination
- * rather than by taste: red, green and yellow are the three severities, and a frame that
- * borrowed one of them would be a box that looked like a verdict. `tests/the-panel.test.ts`
- * holds both halves: exactly one hue in this file, and it is none of the three.
+ * is painted by ONE accent, spent here, and the accent is MAGENTA — the hue this product
+ * is marked by. ⚠️ IT WAS CYAN, AND THE ARGUMENT FOR IT WAS *chosen by elimination rather
+ * than by taste*: red, green and yellow are the three severities, blue is a link, and cyan
+ * was what was left. Elimination NARROWS and it does not choose — magenta survives the same
+ * elimination, so what the argument really said was that any survivor would do, and the mark
+ * of the product is a better reason than alphabetical luck. Nothing about the rule moved:
+ * `tests/the-panel.test.ts` holds both halves, exactly one hue in this file and it is none of
+ * the three severities.
  *
  * AND THERE IS NO ALTERNATE SCREEN, on purpose and against the first design. Measured:
  * this library redraws the changing rows in the NORMAL buffer and leaves everything the
@@ -85,11 +89,14 @@ import type { Panel } from './panel.js';
  * The one hue this layout spends, on the things it draws — the panel's frame, the rule
  * inside it, and the two rules the input area sits between.
  *
- * Cyan by elimination: the three severities have red, green and yellow, so a frame in any
- * of them would read as a verdict about what it frames. There is no second accent, and
- * that is checked rather than intended.
+ * MAGENTA, and it is the mark of the product rather than the survivor of an elimination.
+ * ⚠️ THE DOC HERE SAID *cyan by elimination* and the elimination is unchanged — the three
+ * severities have red, green and yellow, so a frame in any of them would read as a verdict
+ * about what it frames, and blue is a link. What that argument could not do is CHOOSE: it
+ * leaves cyan and magenta both admissible, and this product is marked in one of the two.
+ * There is still no second accent, and that is checked rather than intended.
  */
-const ACCENT = 'cyan';
+const ACCENT = 'magenta';
 
 /** How the box is drawn. The library's own set of corners. */
 const BORDER = 'round';
@@ -128,15 +135,25 @@ const BETWEEN_SECTIONS = 1;
 const AT_THE_FAR_END = 'flex-end';
 
 /**
- * How the left column's groups sit inside it: in the MIDDLE of the widest of them.
+ * THE MIDDLE — one word, and both of the box's columns are arranged by it.
  *
- * The mark is a drawing and the line under it is a path and an identity, and one of the
- * two is always much the wider. Left-aligned, the narrower one hangs off the left edge of
- * a column whose width the other one decided; centred, the column reads as one block —
- * which is what the reference this panel was drawn from does with the same two things.
+ * ACROSS THE LEFT COLUMN, its groups sit in the middle of the widest of them. The mark is a
+ * drawing and the line under it is a path and an identity, and one of the two is always much
+ * the wider. Left-aligned, the narrower one hangs off the left edge of a column whose width
+ * the other one decided; centred, the column reads as one block — which is what the reference
+ * this panel was drawn from does with the same two things.
  *
- * It is POSITION and nothing else. No line is padded, trimmed or lengthened; where a group
- * starts is exactly the kind of question a layout is allowed to answer.
+ * DOWN THE RIGHT COLUMN, its one section sits in the middle of the box's height. ⚠️ IT SAT AT
+ * THE TOP, and nothing said so — the top row of the section lined up with the top row of the
+ * drawing because that is where a column starts, not because anybody chose it. Measured at a
+ * hundred and forty columns: fourteen rows of box, three of them the record, and NINE blank
+ * rows under it. Centred, the gap is halved and shared, and what the record says sits at the
+ * height of the mark it is beside.
+ *
+ * IT IS POSITION AND NOTHING ELSE, on either axis. No line is padded, trimmed or lengthened;
+ * where a group starts is exactly the kind of question a layout is allowed to answer. And it
+ * is ONE constant rather than two of the same value, because it is one decision about where
+ * something sits — the axis is whichever axis the box it is in runs along.
  */
 const IN_THE_MIDDLE = 'center';
 
@@ -450,7 +467,15 @@ function Opening({ panel }: { readonly panel: Panel }): ReactNode {
   );
 }
 
-/** The mark and where the session is standing, then a rule, then the record's section. */
+/**
+ * The mark and where the session is standing, then a rule, then the record's section — with
+ * the section in the middle of the height the mark gave the box.
+ *
+ * THE RIGHT-HAND COLUMN IS AS TALL AS THE ROW, by construction rather than by a number: a
+ * column of a row takes the row's height, and the row is as tall as its tallest child, which
+ * is the drawing. So {@link IN_THE_MIDDLE} has a height to be in the middle of, and nothing
+ * here counts a row.
+ */
 function sideBySide(panel: Panel): ReactNode[] {
   return [
     node(
@@ -468,6 +493,7 @@ function sideBySide(panel: Panel): ReactNode[] {
       {
         key: 'right',
         flexDirection: 'column',
+        justifyContent: IN_THE_MIDDLE,
         borderStyle: BORDER,
         borderColor: ACCENT,
         borderTop: false,
@@ -581,7 +607,9 @@ function Present({
   return node(
     Box,
     { flexDirection: 'column' },
-    palette.length > 0 ? node(Box, { flexDirection: 'column' }, ...dimmed(palette)) : null,
+    palette.length > 0
+      ? node(Box, { flexDirection: 'column' }, breathing(), ...dimmed(palette))
+      : null,
     area.form === 'full'
       ? node(Box, { justifyContent: AT_THE_FAR_END }, node(Text, null, badge))
       : null,
@@ -606,6 +634,22 @@ function Present({
  */
 function dimmed(rows: readonly string[]): ReactNode[] {
   return rows.map((row, index) => node(Text, { key: String(index), dimColor: true }, row));
+}
+
+/**
+ * THE BLANK ROW OVER THE PALETTE: a box with nothing in it, one row tall.
+ *
+ * A ROW AND NOT A LINE, which is what keeps this file from composing one. There is no string
+ * here, empty or otherwise — a box with a minimum height is a row of the page with nothing
+ * put on it, exactly like the row a landed empty line gets above.
+ *
+ * WHY IT IS HERE AT ALL is the palette reading as part of what is above it rather than as an
+ * answer to the key just pressed. The row is COUNTED where the region's height is worked out
+ * (`area.ts`, `ABOVE_THE_PALETTE`), because a row this file drew and that file did not count
+ * is a region one row taller than the boundary the library redraws in part below.
+ */
+function breathing(): ReactNode {
+  return node(Box, { key: 'breathing', minHeight: 1 });
 }
 
 /**

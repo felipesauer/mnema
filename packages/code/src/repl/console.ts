@@ -79,7 +79,6 @@
 
 import { render } from 'ink';
 import { createElement } from 'react';
-import type { CompletionWord } from '../completion/tree.js';
 import type { Render } from '../presentation/render.js';
 import { areaFor } from './area.js';
 import type { Completer } from './complete.js';
@@ -199,16 +198,6 @@ export interface ConsoleRequest {
    */
   readonly badge: Drawn;
   /**
-   * THE WORDS THE SESSION ANSWERS TO ITSELF, each with what it does — what a slash at the
-   * start of the line opens.
-   *
-   * It is the same value the completer was built with, so what the slash lists and what a
-   * Tab completes cannot come to disagree. It says nothing about the record and it is
-   * composed once, when the session opens; the FILTERING is per keystroke and is a pure
-   * function over this (`palette.ts`).
-   */
-  readonly vocabulary: readonly CompletionWord[];
-  /**
    * WHAT THE PAGE OPENS WITH, on a terminal of a given SIZE — the box and the lines that
    * go with it, already composed and already measured.
    *
@@ -265,7 +254,16 @@ export interface ConsoleRequest {
    * question fifteen times and opens nothing (`tests/the-name-and-the-hints.test.ts`).
    */
   readonly happened: () => readonly string[];
-  /** What Tab offers, over the command tree the session was built from. */
+  /**
+   * WHAT CAN BE TYPED WHERE THE CARET IS, over the command tree the session was built from
+   * — the verbs this session runs, the words it answers to itself, and the records it has
+   * already named.
+   *
+   * ⚠️ IT WAS *WHAT TAB OFFERS*, AND THERE WAS A SECOND LIST BESIDE IT: the session's own
+   * vocabulary, handed over so that a slash could be answered from it. Two lists is two
+   * menus — the slash listed three words and a Tab listed fourteen — so the vocabulary is
+   * gone from here and this is what both keys ask (`palette.ts`, `offeredBy`).
+   */
   readonly complete: Completer;
   /** What the session does with one submitted line, and whether it goes on. */
   readonly answer: (line: string) => Promise<AfterLine>;
@@ -290,7 +288,7 @@ export interface OpenConsole {
  * one path onto the page and not a special one for the first three rows.
  */
 export function openConsole(request: ConsoleRequest): OpenConsole {
-  const { stdin, stdout, prompt, render: renderLine, tips, badge, vocabulary } = request;
+  const { stdin, stdout, prompt, render: renderLine, tips, badge } = request;
   const { openingFor, saw, happened, complete, answer, leaving } = request;
 
   /**
@@ -349,8 +347,10 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     const columns = howWide();
     // WHAT THE PALETTE WOULD SHOW, before anything says how much of it there is room for.
     // A pure function over the row being typed and what a Tab last offered (`palette.ts`),
-    // so nothing is held between frames and nothing goes stale.
-    const offers = offeredBy(editing.typed, editing.offered, vocabulary);
+    // so nothing is held between frames and nothing goes stale. What a SLASH opens is asked
+    // of the completer rather than of a second list kept here, which is what makes the two
+    // keys answer with one menu.
+    const offers = offeredBy(editing.typed, editing.offered, complete);
     // WHICH ARRANGEMENT THE INPUT AREA IS IN, asked again on every frame rather than
     // held. It is a function of the terminal's SIZE and of how many words the palette has
     // to show, and both change under a session — one when a window is dragged, the other

@@ -110,6 +110,8 @@ const CLEARS_THE_LINE = '\u0003';
 
 let sandbox: string;
 let project: string;
+/** A project whose path is wider than the drawing of the name. See the fixture. */
+let aLongerPath: string;
 let environment: NodeJS.ProcessEnv;
 const before = { cwd: process.cwd(), env: { ...process.env } };
 
@@ -138,6 +140,22 @@ beforeAll(async () => {
 
   await shell('init');
   await shell('task', 'the task the page is opened over');
+
+  // A SECOND PROJECT, WHOSE PATH IS LONGER THAN THE DRAWING OF THE NAME — founded for one
+  // case, and named for the reason it exists.
+  //
+  // ⚠️ THE CASE THAT NEEDS IT USED TO RUN ON THE PROJECT ABOVE, and what falsified that is
+  // the ART: a sandbox path is about forty-nine columns and the biggest drawing used to be
+  // seventy, so the path was decisively the narrower group and the centring was observable.
+  // The drawing is fifty columns now — ONE column wider than the path — and the case's own
+  // guard against vacuity went red saying so. A case whose non-vacuity depends on the length
+  // of a temporary directory decides nothing, so the difference is MADE here rather than
+  // hoped for.
+  aLongerPath = join(sandbox, 'a-project-whose-path-is-wider-than-the-drawing-of-the-name');
+  mkdirSync(aLongerPath, { recursive: true });
+  process.chdir(aLongerPath);
+  await shell('init');
+  process.chdir(project);
 
   environment = {
     ...process.env,
@@ -718,6 +736,38 @@ describe('nothing divides the right-hand column, because there is one section in
   }, 120_000);
 });
 
+describe('the right column is centred down the height the mark gave the box', () => {
+  it('leaves the same number of blank rows over the record as under it', async () => {
+    // POSITION AND NOTHING ELSE, on the other axis, and it is the same shape of question the
+    // case below asks across the left column: no row is added or dropped, so what can be
+    // observed is WHERE the section starts inside a column whose height something else
+    // decided.
+    //
+    // WHAT IT IS FOR, measured before it was written: the box is as tall as the drawing — ten
+    // rows at a hundred and forty columns — and the record's section is three of them, so the
+    // section sat at the top with SEVEN blank rows under it. Nothing said it should; a column
+    // starts at its top, and that was all. Centred, the gap is halved and shared.
+    const box = throughRuled(boxOf(await drawnAt(140)));
+    expect(box.length, 'the box is not in its two-column form').toBeGreaterThan(3);
+    const at = rulesThrough(box);
+    const held = box.map((row) => rightOf(row, at).trim());
+    const first = held.findIndex((row) => row.length > 0);
+    const last = held.length - 1 - [...held].reverse().findIndex((row) => row.length > 0);
+    expect(first, 'nothing is in the right-hand column').toBeGreaterThanOrEqual(0);
+    // THE PROMISE: the blank over the section and the blank under it differ by at most one
+    // row, which is what a gap of an odd number of rows allows and nothing more.
+    const over = first;
+    const under = held.length - 1 - last;
+    expect(Math.abs(over - under), `${over} over, ${under} under`).toBeLessThanOrEqual(1);
+    // NOT VACUOUS, IN TWO DIRECTIONS. There really is a gap to share — the section is shorter
+    // than the box, which is what the top-aligned drawing put all of underneath it — and the
+    // section really is the record's rather than an empty column read as centred.
+    expect(over + under, 'the section fills the box, so nothing was centred').toBeGreaterThan(2);
+    expect(held.filter((row) => row.length > 0).length, 'the column is empty').toBeGreaterThan(1);
+    expect(held.some((row) => row.includes('The record'))).toBe(true);
+  }, 120_000);
+});
+
 describe('the left column is centred on the widest thing in it', () => {
   it('leaves the same blank on each side of the mark', async () => {
     // POSITION AND NOTHING ELSE, which is why it is asked as a symmetry: no line is padded
@@ -729,20 +779,27 @@ describe('the left column is centred on the widest thing in it', () => {
     // verticals as dividers. What makes a row the box's is that it BEGINS at the left edge
     // of the screen, and what makes the form the two-column one is a rule running THROUGH
     // every row of it rather than three on any one of them.
-    const box = throughRuled(boxOf(await drawnAt(200)));
+    //
+    // OPENED OVER THE PROJECT WITH THE LONGER PATH, for the reason the fixture gives: the
+    // slack between the two groups came to ONE column when the drawing changed, and a
+    // symmetry measured across one column of slack is a case that would pass left-aligned.
+    process.chdir(aLongerPath);
+    const page = await drawnAt(200).finally(() => process.chdir(project));
+    const box = throughRuled(boxOf(page));
     const at = rulesThrough(box);
     const widest = drawnAcross(200).reduce((most, row) => (row.length > most.length ? row : most));
     const mark = box.find((row) => row.includes(widest));
     expect(mark, 'the drawing of the name is not in the box').toBeDefined();
-    const standing = box.find((row) => leftOf(row, at).includes(project));
+    const standing = box.find((row) => leftOf(row, at).includes(aLongerPath));
     expect(standing, 'the line beside the mark is not there').toBeDefined();
     // ⚠️ WHICH OF THE TWO IS CENTRED USED TO BE WRITTEN DOWN, and it was the mark: the
     // five-row drawing was twenty-nine columns and the path under it is about fifty, so the
-    // path decided the column's width and the art sat in the middle of it. The widest
-    // drawing is seventy columns now, so the two changed places — and the property this case
-    // is for did not: whichever group is NARROWER is the one with the same blank on each
-    // side of it. Written as the pair rather than as the winner, so a wider path tomorrow
-    // moves the case with it.
+    // path decided the column's width and the art sat in the middle of it. The next drawing
+    // was seventy columns, so the two changed places; the one after it is fifty, so on an
+    // ordinary sandbox path they changed places AGAIN and came within a column of each other.
+    // The property this case is for did not move through any of that: whichever group is
+    // NARROWER is the one with the same blank on each side of it. Written as the pair rather
+    // than as the winner, which is what let three changes of art pass through it.
     //
     // ⚠️ AND IT WAS ASKED AS BLANK-BEFORE AGAINST BLANK-AFTER, each corrected by one of the
     // box's own constants. That arithmetic held while the column's width came from the line

@@ -184,18 +184,30 @@ describe('the area has forms, and the tallest one that fits is the one drawn', (
     expect(areaFor({ ...showingEverything, rows: 6 }).form).toBe('full');
   });
 
-  it('counts the rows the palette wants, because they are rows the region redraws', () => {
+  it('counts the rows the palette wants and the blank one over them', () => {
     // The words a caller could type next are rows like any other. A form chosen as though
     // they were not there would be arithmetic about a region that is not the one on the
     // screen, which is the exact shape of instrument this bench has been wrong with.
+    //
+    // ⚠️ AND THERE IS ONE MORE ROW THAN THERE ARE WORDS, which is what this delivery added:
+    // the list stands off what is under it by a blank row, so an OPEN palette costs its rows
+    // plus one. It is the same rule as everything else here — a row the layout draws is a row
+    // this arithmetic counts — and the shape of defect it prevents is the caret one row away
+    // from the line it is meant to be on.
     const tall = { ...showingEverything, rows: 6 };
     expect(areaFor(tall).form).toBe('full');
-    expect(areaFor({ ...tall, palette: 1 }).form).toBe('ruled');
+    expect(areaFor({ ...tall, palette: 1 }).form).toBe('bare');
     // And they are counted rather than merely changing the answer: the same form is one
-    // taller per row of palette.
+    // taller per row of palette, and one taller again for the blank row over the list.
     const wide = { ...showingEverything, rows: 40 };
-    expect(areaFor({ ...wide, palette: 1 }).height - areaFor(wide).height).toBe(1);
-    expect(areaFor({ ...wide, palette: 7 }).height - areaFor(wide).height).toBe(7);
+    expect(areaFor({ ...wide, palette: 1 }).height - areaFor(wide).height).toBe(2);
+    expect(areaFor({ ...wide, palette: 7 }).height - areaFor(wide).height).toBe(8);
+    // THE BLANK ROW IS SPENT ONCE AND ONLY WHEN THERE IS A LIST: seven rows of words cost six
+    // more than one row of words, not seven, and a palette that is SHUT costs nothing at all.
+    expect(areaFor({ ...wide, palette: 7 }).height - areaFor({ ...wide, palette: 1 }).height).toBe(
+      6,
+    );
+    expect(areaFor({ ...wide, palette: 0 }).height).toBe(areaFor(wide).height);
   });
 
   it('says how many rows sit above the row being typed, and it is one per row drawn', () => {
@@ -209,13 +221,22 @@ describe('the area has forms, and the tallest one that fits is the one drawn', (
     expect(bare.above).toBe(0);
     expect(ruled.above - bare.above).toBe(1);
     expect(full.above - ruled.above).toBe(1);
+    // ⚠️ ONE ROW OF PALETTE PUTS TWO ROWS OVER THE PROMPT, and that is what this delivery
+    // changed: the list stands off what is under it by a blank row, and the caret has to be
+    // told about a row that is drawn whether or not anything is written on it.
+    // ⚠️ AND THE THIRD REQUEST USED TO BE A SHORT TERMINAL, which stopped being able to
+    // answer the question: with the blank row counted, one row of palette on a terminal of
+    // four or six rows changes the FORM as well — the trade the area makes when it cannot hold
+    // both (`a-palette-for-the-words.test.ts`) — and a difference measured across two forms is
+    // the rule it gave up plus the rows it gained. The three here are three ARRANGEMENTS at a
+    // height that holds all of them, which is what isolates the palette's own rows.
     for (const request of [
       { ...showingEverything, rows },
       { ...showingEverything, badge: 0, rows },
-      { ...showingEverything, rows: 4 },
+      { ...showingEverything, hint: 0, rows },
     ]) {
       const offered = areaFor({ ...request, palette: 1 });
-      expect(offered.above - areaFor(request).above, `${request.rows}`).toBe(1);
+      expect(offered.above - areaFor(request).above, `${request.rows}`).toBe(2);
     }
     // And the row of a palette there is no room for is not above anything, because it is
     // not drawn: the budget is what keeps the caret and the drawing agreeing about the
