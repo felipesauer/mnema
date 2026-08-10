@@ -7,14 +7,16 @@
  * a Tab that could not decide printed a row of bare tokens with nothing to say what any
  * of them was. This is the one list both of them are shown in.
  *
- * ONE MECHANISM, TWO TRIGGERS, and that is the whole of why a palette is worth building
- * for three words. A slash at the start of the line opens the session's own vocabulary
- * and narrows it as the caller types; a Tab that could not choose opens whatever the
- * completer offered, which is the verbs at the top level and the declaration's own words
- * below it. The second is had for nothing: the row it replaces was already drawn, and the
- * descriptions were already read off the same declarations `--help` prints
- * (`completion/tree.ts` — a {@link CompletionWord} has carried both halves since it
- * existed, and the console was throwing one away).
+ * ONE MECHANISM, ONE LIST, AND TWO KEYS THAT ASK FOR IT. ⚠️ IT WAS ONE MECHANISM AND TWO
+ * ANSWERS, and this paragraph said so: *a slash opens the session's own vocabulary and
+ * narrows it as the caller types; a Tab that could not choose opens whatever the completer
+ * offered*. Two answers is what a reader met: the slash listed three words and a Tab listed
+ * fourteen, so the console had two menus and neither of them was the list of what you can
+ * type. WHAT REPLACES IT is the completer's answer, whichever key asked — the verbs and the
+ * session's own words together, in one list built in one place ({@link Completer},
+ * `complete.ts`), with the words that begin with a slash inside it rather than beside it. The
+ * slash is a KEY here and not a filter: on a line that is nothing but the prefix it asks the
+ * same question an empty line asks, which is what makes the two answers one.
  *
  * THE SLASH ONLY COUNTS AS THE FIRST CHARACTER OF THE LINE. Inside a path, an argument or
  * a quoted string it is a character like any other, and a palette that opened there would
@@ -49,6 +51,7 @@ import type { Line } from '../presentation/line.js';
 import { widthOf } from '../presentation/plain.js';
 import type { Render } from '../presentation/render.js';
 import { PREFIX } from '../session-words.js';
+import type { Completer } from './complete.js';
 
 /**
  * The mark that says there is more — at the end of a description too long for the row,
@@ -72,27 +75,32 @@ const NOT_SHOWN = 'not shown';
 const AFTER_THE_WORD = 1;
 
 /**
- * WHAT THE PALETTE IS SHOWING, given the line, what a Tab offered, and the session's own
- * vocabulary.
+ * WHAT THE PALETTE IS SHOWING, given the line, what a Tab last offered, and the one thing
+ * that knows what can be typed.
  *
- * Total over the three cases and it decides nothing else: the slash wins when the line
- * begins with one, the Tab's offers stand when it does not, and an empty answer is a
- * palette that is not open. Nothing here is filtered twice — the completer already
- * narrowed its own offers to what the caller has typed, and the slash's are narrowed
- * against the WHOLE line because the session's words are one token and never take an
- * argument.
+ * Total over the three cases and it decides nothing else: the slash asks when the line begins
+ * with one, the Tab's offers stand when it does not, and an empty answer is a palette that is
+ * not open.
  *
- * The vocabulary arrives rather than being read, for the reason `complete.ts` gives about
- * the same list: a module that decided what a session answers to would be a second
- * opinion about it, and the one place that decides is `gate.ts`.
+ * ⚠️ IT FILTERED A VOCABULARY OF ITS OWN, and that is what made the two keys answer with two
+ * different lists. It was handed the session's words and narrowed them against the whole line
+ * — right about the narrowing, and a second reading of *what can be typed at the start of a
+ * line* even so, because the completer was already answering that question with the verbs in
+ * it. So the answer is ASKED rather than composed, and there is one list.
+ *
+ * THE BARE PREFIX ASKS WHAT AN EMPTY LINE ASKS, and that is the whole of the difference
+ * between a key and a word. A slash with nothing behind it is the caller asking to be shown
+ * what there is; a slash with a letter behind it is a word of the session being typed, and the
+ * completer narrows to the words that really start that way. Nothing is filtered twice.
  */
 export function offeredBy(
   typed: string,
   offered: readonly CompletionWord[],
-  vocabulary: readonly CompletionWord[],
+  asked: Completer,
 ): readonly CompletionWord[] {
-  if (typed.startsWith(PREFIX)) return vocabulary.filter((entry) => entry.word.startsWith(typed));
-  return offered;
+  if (!typed.startsWith(PREFIX)) return offered;
+  const [hits] = asked(typed === PREFIX ? '' : typed);
+  return hits;
 }
 
 /** What a palette needs to be drawn: what to show, how much room, and how to say it. */

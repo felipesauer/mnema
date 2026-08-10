@@ -35,10 +35,11 @@ import type { CompletionWord } from '../src/completion/tree.js';
 import { completionTree } from '../src/completion/tree.js';
 import { renderPlain, widthOf } from '../src/presentation/plain.js';
 import { areaFor } from '../src/repl/area.js';
+import { type Completer, completerFor } from '../src/repl/complete.js';
 import { verbsOffered } from '../src/repl/gate.js';
 import { CUT, offeredBy, paletteFor } from '../src/repl/palette.js';
 import { badgeLine, theSessionsOwnWords, tips } from '../src/repl/session.js';
-import { PREFIX, SESSION_WORDS } from '../src/session-words.js';
+import { CLEAR, LEAVE, PREFIX, SESSION_WORDS } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC } from './support/console.js';
 import { inPty as drive, type Fixture, opensAConsole, type Ran, type Step } from './support/pty.js';
@@ -131,24 +132,66 @@ function everythingOffered(): readonly CompletionWord[] {
   ].sort((one, other) => (one.word < other.word ? -1 : one.word > other.word ? 1 : 0));
 }
 
+/**
+ * WHAT CAN BE TYPED WHERE THE CARET IS, as the console asks it — the real completer, over the
+ * same program a session builds.
+ *
+ * IT IS THE ONE LIST, and that is why the cases below take it rather than a vocabulary. Both
+ * keys ask this: a Tab asks about the line up to the caret, and a slash asks about the line it
+ * is the first character of. A fake here would be a case about a shape rather than about the
+ * answer a caller gets.
+ *
+ * A session that has named nothing, because what a record adds to the offers is asked where
+ * the memory of the page is (`repl/session.test.ts`).
+ */
+function theCompleter(): Completer {
+  const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
+  const built = buildProgram(io, [], renderPlain);
+  return completerFor(
+    completionTree(built.program),
+    verbsOffered(built.verbs, REPL_VERB),
+    theSessionsOwnWords(),
+    () => [],
+  );
+}
+
 // ---------------------------------------------------------------------------
 // What is offered: the two triggers
 // ---------------------------------------------------------------------------
 
-describe('one palette, two triggers, and the slash counts only at the start of the line', () => {
+describe('one palette, one list, and the slash counts only at the start of the line', () => {
   const words = theSessionsOwnWords();
   const tabOffered: readonly CompletionWord[] = [
     { word: 'search', description: 'a read' },
     { word: 'show', description: 'another read' },
   ];
+  /** What can be typed here, as the console asks it: the real completer over a real tree. */
+  const asked = theCompleter();
+  /** The words of what a key asks for on a given line. */
+  const wordsOf = (offers: readonly CompletionWord[]): readonly string[] =>
+    offers.map((offer) => offer.word);
 
-  it('opens the session’s own words on a slash, and narrows them as they are typed', () => {
-    expect(offeredBy(PREFIX, [], words)).toEqual(words);
+  it('opens the whole list on a slash — the words and the verbs, in one answer', () => {
+    // ⚠️ THIS CASE SAID *opens the session's own words on a slash*, and asserted the palette
+    // was those three words. That is the defect this delivery closes rather than a property to
+    // keep: the slash listed three words, a Tab listed sixteen verbs and the three words, and a
+    // console with two menus has no list of what you can type. So the slash asks what an empty
+    // line asks, and the answer is one list with the slash's own words inside it.
+    const listed = wordsOf(offeredBy(PREFIX, [], asked));
+    expect(listed, 'the slash lists a list of its own').toEqual(wordsOf(asked('')[0]));
+    for (const word of [CLEAR, LEAVE]) expect(listed, word).toContain(word);
+    // Not vacuous: the list really is both vocabularies rather than either one of them.
+    expect(listed.length).toBeGreaterThan(words.length);
+    expect(listed.some((word) => !word.startsWith(PREFIX))).toBe(true);
+  });
+
+  it('narrows to the words that can still be typed as the caller types them', () => {
     // Narrowing REDUCES, and to the words that really start that way rather than to a
     // number: the case reads the vocabulary rather than counting to one.
-    const narrowed = offeredBy(`${PREFIX}c`, [], words);
-    expect(narrowed.length).toBeLessThan(words.length);
-    expect(narrowed.map((offer) => offer.word)).toEqual(
+    const whole = offeredBy(PREFIX, [], asked);
+    const narrowed = offeredBy(`${PREFIX}c`, [], asked);
+    expect(narrowed.length).toBeLessThan(whole.length);
+    expect(wordsOf(narrowed)).toEqual(
       words.map((entry) => entry.word).filter((word) => word.startsWith(`${PREFIX}c`)),
     );
     // Not vacuous: there is more than one word to narrow away from, and what survives is
@@ -163,30 +206,30 @@ describe('one palette, two triggers, and the slash counts only at the start of t
     // halves are asserted: the palette is shut, and it is shut BECAUSE of the position —
     // the same characters at the start of the line do open it.
     for (const line of [`show a${PREFIX}b`, `search ${PREFIX}help`, `a${PREFIX}`]) {
-      expect(offeredBy(line, [], words), line).toEqual([]);
+      expect(offeredBy(line, [], asked), line).toEqual([]);
     }
-    expect(offeredBy(`${PREFIX}help`, [], words).length).toBe(1);
+    expect(offeredBy(`${PREFIX}help`, [], asked).length).toBe(1);
     // ⚠️ AND IT DOES NOT SUPPRESS WHAT A TAB OFFERED, WHICH IS THE OTHER HALF AND THE ONE
     // THE FIRST DRAFT OF THIS CASE MISSED. Reading the slash anywhere in the line is a
-    // mutation that leaves every assertion above green — filtering the vocabulary by a
-    // whole line that has a verb in it answers with nothing either way — and what it
-    // really breaks is the OTHER trigger: a Tab pressed on a line holding a path would
-    // stop offering anything at all. Measured: the mutation lit zero cases until this line
-    // existed.
-    expect(offeredBy(`show a${PREFIX}`, tabOffered, words)).toEqual(tabOffered);
-    expect(offeredBy(`show ${PREFIX}tmp${PREFIX}x`, tabOffered, words)).toEqual(tabOffered);
+    // mutation that leaves every assertion above green — asking about a whole line that has a
+    // verb in it answers with nothing either way — and what it really breaks is the OTHER
+    // key: a Tab pressed on a line holding a path would stop offering anything at all.
+    // Measured: the mutation lit zero cases until this line existed.
+    expect(offeredBy(`show a${PREFIX}`, tabOffered, asked)).toEqual(tabOffered);
+    expect(offeredBy(`show ${PREFIX}tmp${PREFIX}x`, tabOffered, asked)).toEqual(tabOffered);
   });
 
   it('offers what a Tab could not choose between when the line has no slash', () => {
-    expect(offeredBy('s', tabOffered, words)).toEqual(tabOffered);
+    expect(offeredBy('s', tabOffered, asked)).toEqual(tabOffered);
     // And nothing at all when a Tab offered nothing, which is a palette that is shut.
-    expect(offeredBy('s', [], words)).toEqual([]);
+    expect(offeredBy('s', [], asked)).toEqual([]);
   });
 
   it('lets the slash win over what a Tab left, because the slash is live', () => {
     // Typing a slash after an ambiguous Tab is a caller asking a different question. Both
     // answers exist here, so this says which one is given.
-    expect(offeredBy(PREFIX, tabOffered, words)).toEqual(words);
+    expect(offeredBy(PREFIX, tabOffered, asked)).toEqual(offeredBy(PREFIX, [], asked));
+    expect(offeredBy(PREFIX, tabOffered, asked)).not.toEqual(tabOffered);
   });
 });
 
@@ -377,10 +420,18 @@ describe('the palette gets what is left over the row being typed, and never more
     const roomAt = (rows: number) =>
       areaFor({ rows, columns, badge: BADGE_IS, hint: HINT_IS, palette: wanted }).palette;
     // Tall enough for all of it, and then one row less at a time.
+    //
+    // ⚠️ EVERY NUMBER BELOW A ROW SMALLER THAN IT WAS, AND THE ROW IS THE PALETTE'S OWN
+    // BLANK ONE. The list is separated from what is under it now, and the separation comes
+    // off the palette's budget rather than out of the region's height — a row the layout
+    // draws and this arithmetic does not count is the region growing past the boundary this
+    // file exists to keep. Written as the subtraction rather than as a total, so which row
+    // is which stays legible: the row the library keeps, the row being typed, the hint, and
+    // the blank one over the list.
     expect(roomAt(40)).toBe(wanted);
-    expect(roomAt(10)).toBe(10 - 1 - 2);
-    expect(roomAt(4)).toBe(1);
-    expect(roomAt(3)).toBe(0);
+    expect(roomAt(10)).toBe(10 - 1 - 1 - 1 - 1);
+    expect(roomAt(5)).toBe(1);
+    expect(roomAt(4)).toBe(0);
     // The region never grows past the boundary: whatever the height, what the area takes
     // leaves the library a row to work in.
     for (const rows of [3, 4, 6, 10, 24, 40]) {
@@ -587,6 +638,71 @@ describe('a Tab shows the verbs with the description the declaration gives them'
     // Not vacuous: most of the list is verbs, and every one of them was compared.
     expect(checked).toBeGreaterThan(10);
   }, 240_000);
+});
+
+describe('the two keys open one list, and it stands off the row under it', () => {
+  it('lists the same words whether a slash or a Tab asked, with a blank row over them', async () => {
+    // THE PROMISE OF THIS DELIVERY, ASKED OF A SCREEN AND NOT OF A FUNCTION. Both keys go
+    // through one function now (`palette.ts`, `offeredBy`), so a case over that function can
+    // only restate the implementation; what a caller MET was two menus — the slash listed
+    // three words, a Tab listed those three and sixteen verbs — and the only place that is
+    // observable is the page. So the same session is asked twice and the two screens are
+    // compared with each other.
+    //
+    // AND THE BLANK ROW IS ASKED HERE for the same reason: the list used to begin on the row
+    // directly over the badge, so it read as a continuation of what was above it rather than
+    // as an answer to the key just pressed. It is a row of the page and nothing else — no
+    // string, empty or otherwise — so a screen is the only place it exists.
+    const columns = NOTHING_IS_CUT;
+    const rows = 40;
+    const offers = everythingOffered();
+    const listedBy = async (key: string): Promise<readonly string[]> => {
+      const ran = await inPty({
+        columns,
+        rows,
+        steps: [
+          opens,
+          {
+            types: key,
+            until: (bytes) => offers.every((offer) => bytes.includes(offer.word)),
+            what: 'listed what can be typed',
+          },
+          leaves,
+        ],
+      });
+      const screen = screenOf(ran.bytes.slice(0, ran.at[1] as number), columns, rows);
+      const listed = rowsNaming(
+        screen,
+        offers.map((offer) => offer.word),
+      );
+      // THE ROW OVER THE LIST IS EMPTY. Found off the list rather than counted from the top:
+      // where the palette begins depends on how tall the box above it is, and this case is
+      // about the row before it whatever that is.
+      const first = screen.rows.indexOf(listed[0] as string);
+      expect(first, `${key}: the list is not on the screen`).toBeGreaterThan(0);
+      expect(
+        (screen.rows[first - 1] as string).trim(),
+        `${key}: the list has no blank row over it`,
+      ).toBe('');
+      // Not vacuous: the row above THAT is not blank, so this is a separation rather than a
+      // screen with room to spare.
+      expect(
+        (screen.rows[first - 2] as string).trim(),
+        `${key}: nothing is above the gap`,
+      ).not.toBe('');
+      return listed.map((row) => row.trimStart().split(/\s{2,}/)[0] as string);
+    };
+
+    const bySlash = await listedBy(PREFIX);
+    const byTab = await listedBy(COMPLETES);
+    expect(bySlash, 'the two keys answer with two lists').toEqual(byTab);
+    // And the ONE list is everything there is to type: the verbs, and the words the session
+    // answers to itself, which is what neither key used to show on its own.
+    expect([...bySlash].sort()).toEqual(offers.map((offer) => offer.word).sort());
+    expect(bySlash).toContain(CLEAR);
+    expect(bySlash).toContain(LEAVE);
+    expect(bySlash.some((word) => !word.startsWith(PREFIX))).toBe(true);
+  }, 300_000);
 });
 
 describe('a terminal without the height shows fewer, and says how many it could not', () => {
