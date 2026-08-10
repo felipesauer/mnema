@@ -284,6 +284,13 @@ async function readEverything(label: string, ids: Record<string, string>): Promi
   await mnema('reads', 'accountability', '--who', ids.short as string);
   await mnema('reads', 'antipatterns');
   await mnema('reads', 'antipatterns', '--json');
+  // The OPENING read, over both records the fixture reaches: the empty one, where
+  // every half has to say it is empty rather than print a heading with nothing under
+  // it, and the populated one. What it cannot reach here is a full FIVE cells — the
+  // fixture rules on everything it proposes — so the record that leaves a decision and
+  // a pattern waiting is `where-things-stand.test.ts`'s.
+  await mnema('reads', 'status', '--actor', ids.anchor as string);
+  await mnema('reads', 'status', '--actor', ids.anchor as string, '--json');
   await mnema('reads', 'focus', '--actor', ids.short as string);
   await mnema('reads', 'focus', '--actor', ids.anchor as string);
   await mnema('reads', 'focus', '--actor', ids.anchor as string, '--json');

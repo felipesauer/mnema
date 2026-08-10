@@ -7,7 +7,7 @@
 
 import type { Command } from 'commander';
 import { fact } from '../presentation/detail.js';
-import { NO_RUNS_HINT, runAgeSuffix } from '../presentation/runs.js';
+import { lastRunPhrase, NO_RUNS_HINT, openRunsPhrase } from '../presentation/runs.js';
 import { here } from './context.js';
 import { writeLines } from './io.js';
 import { ACTOR_HELP } from './options.js';
@@ -34,7 +34,7 @@ export function registerResume(program: Command, wiring: Wiring): Declared {
         io.out(JSON.stringify(result.resume, null, 2));
         return;
       }
-      const { lastRun, focus } = result.resume;
+      const { lastRun } = result.resume;
       const actor = anchorText(result.anchors, result.resume.actor);
       if (lastRun === null) {
         // Not "no runs YET": for a person working the CLI directly that reads as
@@ -43,15 +43,11 @@ export function registerResume(program: Command, wiring: Wiring): Declared {
         writeLines(io, NO_RUNS_HINT.map(render));
         return;
       }
-      const state = lastRun.open ? 'open' : 'ended';
-      io.out(
-        `${actor} last run ${lastRun.id} (${state})` +
-          `${lastRun.goal !== undefined ? ` — ${lastRun.goal}` : ''}` +
-          // Only while it is OPEN: an ended run reports its own end, and an age
-          // beside that would read as time still passing in it.
-          `${lastRun.open ? runAgeSuffix(lastRun) : ''}`,
-      );
-      io.out(render(fact(`${focus.openRuns.length} run(s) still open`)));
+      // The actor LEADS the line here and heads the answer in `status`, which is why
+      // the phrase begins after them and is composed in one place (see
+      // {@link lastRunPhrase}).
+      io.out(`${actor} ${lastRunPhrase(lastRun)}`);
+      io.out(render(fact(openRunsPhrase(result.resume))));
     });
   return readsTheRecord(resume);
 }

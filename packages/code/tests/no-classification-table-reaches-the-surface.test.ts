@@ -67,6 +67,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { sourceFiles } from './support/reading-source.js';
 
 const PACKAGES = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -140,20 +141,6 @@ function publishedValues(): { specifier: string; name: string; value: unknown }[
  * a heading.
  */
 const HIDDEN_CLAIM = /not on the package['’]s public surface/i;
-
-/** Every non-test TypeScript file under a directory. */
-function sourceFiles(directory: string): string[] {
-  const found: string[] = [];
-  for (const entry of readdirSync(directory, { withFileTypes: true })) {
-    const path = join(directory, entry.name);
-    if (entry.isDirectory()) {
-      found.push(...sourceFiles(path));
-      continue;
-    }
-    if (entry.name.endsWith('.ts') && !entry.name.endsWith('.test.ts')) found.push(path);
-  }
-  return found;
-}
 
 /** One module that declares its tables hidden, and the tables it exports. */
 interface Hidden {

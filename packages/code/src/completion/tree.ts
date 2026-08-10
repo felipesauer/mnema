@@ -2,7 +2,7 @@
  * THE COMMAND TREE, read off the declarations — the one datum three shells render.
  *
  * A completion script is a copy of the command tree written in a shell's dialect, and
- * a copy is the whole difficulty: hand-written, it would list twenty-seven verbs and
+ * a copy is the whole difficulty: hand-written, it would list twenty-eight verbs and
  * thirty-odd subcommands, and the first pull request to add a verb would leave the
  * script a version behind with nothing failing — a completion that quietly omits a
  * word is indistinguishable from a shell that does not know the word exists. So
