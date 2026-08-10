@@ -1,12 +1,24 @@
 /**
- * THE PAGE FOLLOWS THE TERMINAL — the box is drawn corner to corner, so the corner moves
- * when the caller's window does.
+ * THE PAGE FOLLOWS THE TERMINAL — which ARRANGEMENT the opening has room for is a function of
+ * the width, so a window the caller narrowed past the threshold has the wrong page on it.
  *
- * IT IS A REGRESSION AND IT HAS A NAME. While the drawing was as wide as its own content,
- * a session opened at a hundred and twenty columns and narrowed to eighty still fitted;
- * corner to corner it does not, and eight rows of frame get folded in half by the terminal.
- * That was reported from real use — "it does not become responsive when the terminal
- * changes size" — and reproduced before it was fixed.
+ * ⚠️ THE REASON USED TO BE THE FRAME, and it was written here in as many words: *the box is
+ * drawn corner to corner, so the corner moves when the caller's window does*. THE FRAME IS
+ * GONE — the console this was measured against draws none — and what that took away is a
+ * regression rather than a rule: nothing is drawn to an edge, so a window one column narrower
+ * changes no glyph and the page is not turned at all. What is left is the half that was always
+ * underneath, which `panel.ts` had already written down as the question — *is what would be
+ * drawn what is drawn?* — and which the frame made impossible for the value to keep, because
+ * every width was a width the box folded at. Two cases of this file INVERTED on that, and they
+ * are named where they are.
+ *
+ * IT IS A REGRESSION AND IT HAS A NAME. While the drawing was as wide as its own content, a
+ * session opened at a hundred and twenty columns and narrowed to eighty still fitted; corner to
+ * corner it did not, and eight rows of frame got folded in half by the terminal. That was
+ * reported from real use — "it does not become responsive when the terminal changes size" — and
+ * reproduced before it was fixed. The frame's departure closes that particular hole by
+ * construction; what a resize still has to answer for is the FORM, and that is what is asked
+ * here.
  *
  * WHAT THE FIX IS, said as the four things this file asks:
  *
@@ -23,20 +35,20 @@
  *   - ONCE THE SIZE HAS SETTLED. One drag of a window corner is dozens of sizes, and a
  *     page reemitted on each of them would put a drag's worth of pages in the scrollback.
  *     Proved by COUNTING, because "it is debounced" is not observable and "there is one
- *     box on the page after thirty changes" is.
+ *     opening on the page after thirty changes" is.
  *   - AND NOTHING IS READ TO DO IT. That half is asked where the instrument for it already
  *     lives, `tests/the-name-and-the-hints.test.ts`, which counts the reads of the record:
  *     three width changes read what no width change reads.
  *
- * THE THREE DELTAS OF THE BOX are here too, and they are here rather than in
- * `the-panel.test.ts` because all three came out of the same reading of the same
- * reference: the version on the title, a rule between the two sections of the right-hand
- * column, and the left column centred. ⚠️ THE SECOND OF THEM IS GONE, with the section it
- * divided, and its case is inverted rather than deleted — the reference has two sections
- * there and this console has one, which is a difference from the reference that is
- * DECIDED (`.refactor/decisions/estudo-o-console-do-mnema.md`, D-b). What is left is
- * measured against the DRAWING, the centring against the blanks on either side of the
- * mark, so no number in this file can drift away from what is on the screen.
+ * THE DELTAS OF THE OPENING are here too, and they are here rather than in
+ * `the-panel.test.ts` because they came out of the same reading of the same reference: the
+ * version beside the name, a rule between the two sections of the text column, and the mark's
+ * own column centred. ⚠️ THE SECOND OF THEM WENT with the section it divided
+ * (`.refactor/decisions/estudo-o-console-do-mnema.md`, D-b), and ⚠️ THE THIRD WENT WITH THE
+ * FRAME: the place moved out of the mark's column, so there is one group in it and nothing to
+ * centre. Both are inverted rather than deleted. What is left is measured against the DRAWING
+ * and against the one constant the arithmetic exports, so no number in this file can drift away
+ * from what is on the screen.
  */
 
 import { spawn } from 'node:child_process';
@@ -48,6 +60,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
 import { bannerFor } from '../src/presentation/banner.js';
 import { renderPlain } from '../src/presentation/plain.js';
+import { BETWEEN_COLUMNS } from '../src/repl/panel.js';
 import { openSession } from '../src/repl/session.js';
 import { LEAVE } from '../src/session-words.js';
 import { VERSION } from '../src/version.js';
@@ -71,19 +84,17 @@ const SRC = fileURLToPath(new URL('../src', import.meta.url));
 const MANIFEST = fileURLToPath(new URL('../package.json', import.meta.url));
 
 /**
- * The glyphs the box is drawn with.
+ * The horizontal run the input area's two rules are drawn out of.
  *
- * Named by their code points rather than typed, like every other unusual byte in this
- * repository's sources: a rule is one keystroke away from a pipe and a run from a hyphen.
+ * Named by its code point rather than typed, like every other unusual byte in this
+ * repository's sources: a run is one keystroke away from a hyphen.
+ *
+ * ⚠️ THERE WERE FIVE OF THEM AND FOUR WERE THE BOX'S: two corners, a third for the row ends,
+ * and the vertical its sides ran down. The frame is gone, so the only glyph this file still has
+ * anything to say about is the one the rules are made of — and what it says is that the panel
+ * draws NONE of them (*nothing on the panel is a run of glyphs*).
  */
-const TOP_LEFT = '\u256d';
-const TOP_RIGHT = '\u256e';
-const BOTTOM_RIGHT = '\u256f';
 const RUN = '\u2500';
-const RULE = '\u2502';
-
-/** Every character the frame can end a row with. */
-const FRAME = [TOP_RIGHT, BOTTOM_RIGHT, RULE];
 
 /** What the opening always says, whatever the terminal is like. */
 const OPENED = 'a session over this project';
@@ -91,6 +102,11 @@ const OPENED = 'a session over this project';
 const PROMPT = 'mnema>';
 /** What the record says about a tree that is intact. */
 const VERIFIED = 'local integrity verified';
+/**
+ * The first words of the one sentence the session lands UNDER the panel — what bounds the
+ * opening's rows from below now that no bottom edge does (`session.ts`, `whatItRefuses`).
+ */
+const UNDER_THE_PANEL = 'It runs the';
 
 /**
  * A verb the caller ran, as the page shows it: the prompt and the word they typed.
@@ -102,10 +118,23 @@ const VERIFIED = 'local integrity verified';
  */
 const SAID = `${PROMPT} verify`;
 
-/** The gap between the rule down the middle of the box and the column beside it. */
-const BESIDE_THE_RULE = 2;
-/** The gap between the border and what is inside it. */
-const INSIDE_THE_BOX = 1;
+/**
+ * WHERE THE TEXT COLUMN BEGINS on a terminal this wide: past the mark, and past the gap.
+ *
+ * BOTH HALVES ARE ASKED OF THE PRODUCT. The mark is asked of the module that draws it and the
+ * gap is the very constant the arithmetic chooses the form by (`panel.ts`,
+ * {@link BETWEEN_COLUMNS}) — so this is the elo as well as the instrument: a gap the drawing
+ * spent and the arithmetic did not count would put every column read below in the wrong place.
+ *
+ * ⚠️ IT WAS READ OFF THE FRAME, by finding the columns a rule ran down on every row and cutting
+ * between them. Two constants of this file went with that — the gap inside the border and the
+ * gap beside the rule — because a cut made at a border needed correcting by whatever padding sat
+ * on each side of it.
+ */
+function whereTheTextBegins(columns: number): number {
+  const art = drawnAcross(columns);
+  return Math.max(...art.map((row) => [...row].length)) + BETWEEN_COLUMNS;
+}
 
 /** Ctrl-C, which abandons the row being typed. Spelled as an escape, for the same reason. */
 const CLEARS_THE_LINE = '\u0003';
@@ -326,29 +355,51 @@ const leaves: Step = {
   what: 'left',
 };
 
-/** The box, as the rows of a screen: every row the frame is on. */
-function boxRowsOf(screen: { readonly rows: readonly string[] }): string[] {
-  return screen.rows.filter(
-    (row) => row.includes(RULE) || row.includes(TOP_LEFT) || row.includes(BOTTOM_RIGHT),
-  );
+/**
+ * THE ROWS OF THE OPENING on a screen: from the first row with anything on it down to the
+ * sentence the session lands under the panel.
+ *
+ * ⚠️ IT WAS `boxRowsOf` AND IT FILTERED BY THE FRAME — any row carrying a corner or a side. What
+ * bounds the panel now is what is above it and what is below it: a screen whose page was carried
+ * into the scrollback, and the one sentence that is landed rather than arranged (`session.ts`,
+ * `whatItRefuses`).
+ */
+function openingRowsOf(screen: { readonly rows: readonly string[] }): string[] {
+  return openingIn(screen.rows);
+}
+
+/**
+ * The same question over the rows of a byte STREAM rather than of a screen.
+ *
+ * ONE FUNCTION AND TWO CALLERS, because it is one answer: a screen is what an emulator made of
+ * the bytes, and where the opening begins and ends is the same on both. Two readings would be
+ * two ideas of which rows the panel wrote.
+ */
+function openingIn(rows: readonly string[]): string[] {
+  const first = rows.findIndex((row) => row.trim().length > 0);
+  const under = rows.findIndex((row) => row.includes(UNDER_THE_PANEL));
+  return first < 0 || under <= first ? [] : rows.slice(first, under);
 }
 
 // ---------------------------------------------------------------------------
 // The box takes the width the terminal has NOW
 // ---------------------------------------------------------------------------
 
-describe('the box is redrawn at the width the caller left their window at', () => {
-  it('follows the terminal down to 74 and back up to 100', async () => {
-    // THE REGRESSION, in one case and in both directions. Opened at a hundred and twenty
-    // and narrowed, every row of the drawing has to end on the last column of the NEW
-    // terminal — which is the same promise `a-page-that-opens-clean.test.ts` makes about
-    // the terminal a session opened on, asked of one that changed underneath it.
+describe('the page is drawn again at the width the caller left their window at', () => {
+  it('follows the terminal down to 74 and back up to 120', async () => {
+    // THE REGRESSION, in one case and in both directions. Opened at a hundred and twenty, the
+    // text sits beside the mark; narrowed to seventy-four there is no room for it, so the page
+    // this terminal would get is not the one on the screen and the console draws it again.
     //
-    // ⚠️ IT NARROWED TO SEVENTY AND SEVENTY HAS NO BOX ANY MORE. The name's widest drawing
-    // is seventy columns across, so a terminal exactly that wide is given the art and has
-    // nothing left to put a frame around it — the panel answers with no box, which is a
-    // real answer and the wrong instrument for a case about a box being REDRAWN. Narrowed
-    // to the first width that still has one, so what moves is the width and not the form.
+    // ⚠️ IT WENT DOWN TO 74 AND BACK UP TO 100, and 100 was a width the FRAME made different
+    // from 74 — every width was, because the box was drawn to the corner. It is not any more:
+    // both of them put the text under the mark, so a step from one to the other would have been
+    // a step this case waited forever for. It comes back to the width it started at, which is
+    // the one width certain to differ from the middle of the drag.
+    //
+    // ⚠️ AND IT MEASURED THE FRAME: every row of the box had to end on the last column of the
+    // new terminal. Nothing is drawn to an edge, so what is asked is what the width really
+    // decides — which arrangement is on the screen, read off the drawing.
     const rows = 40;
     const ran = await inPty({
       columns: 120,
@@ -357,35 +408,43 @@ describe('the box is redrawn at the width the caller left their window at', () =
         opens,
         {
           resize: { columns: 74, rows },
-          until: (bytes) => times(bytes, TOP_LEFT) > 1,
-          what: 'drew the box again after shrinking',
+          until: (bytes) => times(bytes, OPENED) > 1,
+          what: 'drew the opening again after shrinking',
         },
         {
-          resize: { columns: 100, rows },
-          until: (bytes) => times(bytes, TOP_LEFT) > 2,
-          what: 'drew the box again after growing',
+          resize: { columns: 120, rows },
+          until: (bytes) => times(bytes, OPENED) > 2,
+          what: 'drew the opening again after growing',
         },
         leaves,
       ],
     });
 
-    for (const [step, columns] of [
-      [1, 74],
-      [2, 100],
+    for (const [step, columns, beside] of [
+      [1, 74, false],
+      [2, 120, true],
     ] as const) {
       const screen = screenOf(ran.bytes.slice(0, ran.at[step] as number), columns, rows);
-      const box = boxRowsOf(screen);
-      expect(box.length, `${columns}: no box`).toBeGreaterThan(3);
+      const opening = openingRowsOf(screen);
+      expect(opening.length, `${columns}: no opening`).toBeGreaterThan(3);
       expect(screen.text, `${columns}: no panel`).toContain(OPENED);
-      for (const row of box) {
-        const drawn = row.replace(/ +$/, '');
-        expect([...drawn].length, `${columns}: a row of the box stops short: ${drawn}`).toBe(
-          columns,
-        );
-        expect(FRAME, `${columns}: the last column is not the frame`).toContain([...drawn].at(-1));
+      // WHICH ARRANGEMENT, read the way the panel's own file reads it: the row that says what
+      // the session is begins with a row of the ART when the text is beside the mark, and at the
+      // left edge of the screen when it is under it.
+      const title = opening.find((row) => row.includes(OPENED)) as string;
+      const art = drawnAcross(columns).filter((row) => row.trim().length > 0);
+      expect(
+        art.some((row) => title.startsWith(row)),
+        `${columns}: the text is ${beside ? 'not ' : ''}beside the mark`,
+      ).toBe(beside);
+      // AND NO ROW OF IT IS WIDER THAN THE TERMINAL, which is the invariant the form was chosen
+      // for and the one the folded frame used to break (`panel.ts`, `panelRows`).
+      for (const row of opening) {
+        expect(
+          [...row.replace(/ +$/, '')].length,
+          `${columns}: a row of the opening is wider than the terminal: ${row}`,
+        ).toBeLessThanOrEqual(columns);
       }
-      const top = box.find((row) => row.includes(TOP_LEFT)) as string;
-      expect(top, `${columns}: the top edge stops at the title`).toContain(`${RUN}${TOP_RIGHT}`);
     }
   }, 180_000);
 
@@ -407,32 +466,33 @@ describe('the box is redrawn at the width the caller left their window at', () =
         // end before the echo existed (`support/pty.ts`, `arrivedSince`).
         { types: 'verify\r', until: arrivedSince(VERIFIED), what: 'answered' },
         {
-          resize: { columns: 90, rows },
-          until: (bytes) => times(bytes, TOP_LEFT) > 1,
-          what: 'drew the box again',
+          // NARROWED PAST THE THRESHOLD, because that is what turns a page now: seventy-four
+          // columns has no room for the text beside the mark and a hundred and twenty does.
+          resize: { columns: 74, rows },
+          until: (bytes) => times(bytes, OPENED) > 1,
+          what: 'drew the opening again',
         },
         leaves,
       ],
     });
     const answered = screenOf(ran.bytes.slice(0, ran.at[1] as number), 120, rows);
-    const resized = screenOf(ran.bytes.slice(0, ran.at[2] as number), 90, rows);
+    const resized = screenOf(ran.bytes.slice(0, ran.at[2] as number), 74, rows);
     // The caller really did type a verb, or the assertion below is about nothing.
     expect(answered.text, 'the caller never typed a verb').toContain(SAID);
     expect(resized.text, 'what the caller had said went with the old page').toContain(SAID);
-    // And it is the page AGAIN rather than the old page left alone: the box is there, at
-    // the new width.
+    // And it is the page AGAIN rather than the old page left alone: the opening is there, in the
+    // arrangement the NEW width has room for.
     //
-    // ⚠️ ITS TITLE MAY NOT BE ON THE SCREEN, and it was until the emptiness moved under the box.
+    // ⚠️ ITS TITLE MAY NOT BE ON THE SCREEN, and it was until the emptiness moved under the panel.
     // What the session said was landed FOLDED to the width it was said at, so a narrower window
     // turns some of those lines into two rows and the flow is placed a row or two low — which
-    // the terminal absorbs by scrolling, exactly as `repl/page.ts` says it does. The rows that
-    // go over the top used to be the emptiness and are the top of the box now. So what is
-    // asserted is the box AT THE NEW WIDTH rather than the sentence on its top border; that the
-    // box was drawn a second time at all is what this step waited for.
-    const box = boxRowsOf(resized);
-    expect(box.length, 'no box after the resize').toBeGreaterThan(0);
-    for (const row of box) {
-      expect([...row.replace(/ +$/, '')].length).toBe(90);
+    // the terminal absorbs by scrolling, exactly as `repl/page.ts` says it does. So what is
+    // asserted is the arrangement rather than any one row of it; that the opening was drawn a
+    // second time at all is what this step waited for.
+    const opening = openingRowsOf(resized);
+    expect(opening.length, 'no opening after the resize').toBeGreaterThan(0);
+    for (const row of opening) {
+      expect([...row.replace(/ +$/, '')].length).toBeLessThanOrEqual(74);
     }
   }, 180_000);
 });
@@ -500,6 +560,22 @@ const CARRIES_THE_PAGE = `${ESC}[${TALL};1H`;
 const carriedPages = (bytes: string): number =>
   (bytes.match(new RegExp(`${ESC}\\[\\d+;1H`, 'g')) ?? []).length;
 
+/**
+ * The LAST row on the page that says what the session is — the arrangement most recently drawn.
+ *
+ * THE LAST AND NOT THE COUNT, and that is the whole point of it: the library rewrites the region
+ * it keeps when a width changes, so how MANY openings are in the bytes answers for the library
+ * too. Which one is last answers for the drawing, and the drawing is what a resize is meant to
+ * move.
+ */
+function lastTitle(bytes: string): string {
+  const row = rowsOf(bytes)
+    .filter((line) => line.includes(OPENED))
+    .at(-1);
+  expect(row, 'nothing on the page says what the session is').toBeDefined();
+  return row as string;
+}
+
 describe('the page follows the drawing, and once per drag', () => {
   it('turns the page for a height that moves no glyph, and for one that does', async () => {
     // ⚠️ THIS CASE WAS `draws nothing when a height moves no glyph, and turns the page when
@@ -535,9 +611,18 @@ describe('the page follows the drawing, and once per drag', () => {
     await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
     expect(pages(), 'a height with a new placement did not turn the page').toBe(2);
     // AND IT IS THE PLACEMENT AND NOT THE DRAWING THAT DID IT, which is what makes this the
-    // widened half rather than a coincidence: the box on the new page is the box that was on
-    // the old one, drawn at the same width, so nothing a panel can see moved.
-    expect(times(terminal.bytes(), TOP_LEFT), 'the box was not drawn again').toBe(2);
+    // widened half rather than a coincidence: the opening on the new page is the opening that was
+    // on the old one, at the same width, so nothing a panel can see moved.
+    //
+    // ⚠️ THE COUNT WAS OF CORNERS — one per box drawn — and there are none. It is not replaced by
+    // a count of anything: measured, the LIBRARY rewrites the region it keeps when the width
+    // changes, so any count of what is on the page answers for the library as well as for this
+    // product. What the product wrote is {@link carriedPages}, which is the instrument this case
+    // already had for the same reason. So what is asserted about the drawing is the drawing:
+    // whichever arrangement is on the page last is the one that was there before.
+    expect(besideTheMark(lastTitle(terminal.bytes()), 200).trim(), 'the arrangement moved').toContain(
+      OPENED,
+    );
     // AND A DRAG THAT ENDS WHERE IT STARTED STILL COSTS NOTHING. The guard grew a half; it
     // did not become "a resize event happened".
     terminal.resize(200, 30);
@@ -545,15 +630,28 @@ describe('the page follows the drawing, and once per drag', () => {
     await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
     expect(pages(), 'a drag back to the height on the screen turned a page').toBe(2);
 
-    // THE WIDTH STILL DOES IT, which is what this case has always been beside — and it is
-    // asked here, at a height with room for the whole drawing, because a short terminal is
-    // one the LIBRARY writes what it is keeping out again on, and the count of boxes stops
-    // being this product's answer there (measured: five corners for three pages at four
-    // rows; `tests/a-page-that-opens-clean.test.ts` is where that behaviour is pinned).
+    // ⚠️ AND HERE IS THE OTHER HALF OF THIS CASE, INVERTED BY THIS DELIVERY. It read
+    // `terminal.resize(199)` and asserted a THIRD page, on the sentence *the width still does
+    // it* — and it did, because the box was drawn corner to corner and one column narrower was
+    // one column of frame moved. Nothing is drawn to an edge now, so a hundred and ninety-nine
+    // columns is the same drawing as two hundred and the console writes nothing at all. The
+    // assertion is turned over rather than dropped, because *a width that moves no glyph costs
+    // nothing* is the rule `panel.ts` states and this is the only place it can be observed.
     terminal.resize(199);
     await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
-    expect(pages(), 'a change of width did not turn the page').toBe(3);
-    expect(times(terminal.bytes(), TOP_LEFT), 'the box was not drawn again').toBe(3);
+    expect(pages(), 'a width that moves no glyph turned a page').toBe(2);
+
+    // AND A WIDTH THAT DOES MOVE ONE STILL DOES IT, which is the half that had to survive: at
+    // seventy-four columns the text has no room beside the mark, so the arrangement is a
+    // different one and the page is turned.
+    terminal.resize(74);
+    await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
+    expect(pages(), 'a width that changes the arrangement did not turn the page').toBe(3);
+    // And it is the ARRANGEMENT that changed, which is the reason claimed: at seventy-four
+    // columns the text is under the mark, so nothing is beside it.
+    expect(besideTheMark(lastTitle(terminal.bytes()), 74).trim(), 'the text is still beside the mark').toBe(
+      '',
+    );
 
     // AND THE TEETH FOR THE OTHER MEASUREMENT: a height the drawing DOES depend on.
     //
@@ -564,20 +662,23 @@ describe('the page follows the drawing, and once per drag', () => {
     // derivation would still be green while asserting the wrong reason. What is derived now
     // is the drawing itself: the widest form is what a tall terminal draws, and the height
     // is walked down until something else is.
-    const widest = drawnAcross(199).reduce((most, row) => (row.length > most.length ? row : most));
+    const widest = drawnAcross(74).reduce((most, row) => (row.length > most.length ? row : most));
     expect(terminal.bytes(), 'the widest form was not on the wide terminal').toContain(widest);
     const before = terminal.bytes().length;
-    terminal.resize(199, 4);
+    terminal.resize(74, 4);
     await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
     expect(pages(), 'a height that gives the mark away did not turn the page').toBe(4);
     // And it is a SHORTER mark that was drawn, so the page turned for the reason claimed.
-    // Read from the LAST box on the page rather than from everything written after the
+    // Read from the LAST opening on the page rather than from everything written after the
     // resize: on a terminal this short the library writes out everything it is keeping,
     // which is every page so far — the old drawing included.
+    //
+    // ⚠️ THE LAST OPENING WAS FOUND BY THE LAST CORNER. It is found by the row that says what
+    // the session is, which is written once per page exactly as the corner was.
     const said = terminal.bytes();
     expect(before, 'nothing was written before the resize').toBeGreaterThan(0);
     expect(
-      said.slice(said.lastIndexOf(TOP_LEFT)),
+      said.slice(said.lastIndexOf(OPENED)),
       'the widest form survived a terminal too short for its page',
     ).not.toContain(widest);
     await close();
@@ -593,18 +694,33 @@ describe('the page follows the drawing, and once per drag', () => {
     // because thirty store updates inside one tick are a single frame to a library that
     // renders on a schedule. What a drag costs is what went into the SCROLLBACK, and that
     // is written to the device once per page by this product itself.
+    // ⚠️ AND THE DRAG USED TO BE THIRTY SINGLE COLUMNS, which turned a page because the frame
+    // was drawn to the corner. A one-column step moves no glyph now, so the drag has to END
+    // somewhere the drawing really differs or the whole case would be about a page nobody turns:
+    // thirty steps of four columns, from two hundred down to eighty, which crosses the width the
+    // text stops fitting beside the mark at.
     const { terminal, close } = await opened(200);
     const dragged = 30;
-    for (let step = 1; step <= dragged; step++) terminal.resize(200 - step);
+    const step = 4;
+    for (let at = 1; at <= dragged; at++) terminal.resize(200 - at * step);
     await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
     // One for the page that opened, one for the size the drag ended on.
     expect(times(terminal.bytes(), CARRIES_THE_PAGE), 'a page per step of the drag').toBe(2);
-    // And it really is the size the drag ENDED on, rather than the one it started from.
+    // And it really is the size the drag ENDED on, rather than the one it started from: at eighty
+    // columns the text is under the mark, and at two hundred it was beside it.
+    const ended = 200 - dragged * step;
     const last = stripped(withoutLayout(terminal.bytes()))
       .split('\n')
-      .filter((row) => row.includes(TOP_LEFT))
+      .filter((row) => row.includes(OPENED))
       .at(-1) as string;
-    expect([...last.replace(/ +$/, '')].length).toBe(200 - dragged);
+    const art = drawnAcross(ended).filter((row) => row.trim().length > 0);
+    expect(
+      art.some((row) => last.startsWith(row)),
+      'the last page was not drawn at the width the drag ended on',
+    ).toBe(false);
+    expect([...last.replace(/ +$/, '')].length, 'the last page is wider than the drag ended').toBeLessThanOrEqual(
+      ended,
+    );
     await close();
   }, 120_000);
 
@@ -630,7 +746,7 @@ describe('the page follows the drawing, and once per drag', () => {
 });
 
 // ---------------------------------------------------------------------------
-// The three deltas of the box
+// The deltas of the opening
 // ---------------------------------------------------------------------------
 
 /** The same bytes with every style sequence taken out — what a pipe would have received. */
@@ -649,53 +765,28 @@ const drawnAcross = (columns: number): string[] =>
   bannerFor({ columns, rows: 0, needs: () => 0 }).map(renderPlain);
 
 /**
- * The rows of a box that are its own — the ones beginning at the left edge of the screen.
+ * The rows of the opening a console DREW, out of its bytes.
  *
- * ⚠️ ANY ROW HOLDING THE RULE USED TO COUNT, and the name's widest drawing is inked with
- * the rule's own glyph now: a page with no box came back as eleven rows of a box that is
- * not there.
+ * ⚠️ THE HELPERS THIS REPLACES WERE ALL THE FRAME'S, and there were five: `boxOf`, which kept
+ * the rows beginning with a corner or a side; `insideOf`, the rows between the two edges;
+ * `rulesThrough`, the columns a rule ran down on every one of them; `throughRuled`, three of
+ * those meaning the two-column form; and `leftOf`/`rightOf`, which cut a row at them. Every one
+ * of them read a geometry that is no longer drawn. What is left is two questions — which rows,
+ * and what is in the text column — and both are answered off the product's own numbers.
  */
-function boxOf(page: string): string[] {
-  return rowsOf(page).filter((row) => row.startsWith(RULE) || row.startsWith(TOP_LEFT));
+function openingOf(page: string): string[] {
+  return openingIn(rowsOf(page));
 }
 
 /**
- * WHERE THE RULES OF THE BOX ARE — the columns of the screen one runs down on EVERY row of
- * it: the two sides, and the divider when there is one.
+ * What is in the TEXT COLUMN of a row: everything past the mark and the gap.
  *
- * ⚠️ IT USED TO BE THE RULES ON ONE ROW, and that was the same character in two roles. The
- * name's widest drawing is inked with three glyphs and one of them is {@link RULE}, so a
- * row of the art carries a handful of them in places that are not columns of the box at
- * all — and the two halves of a row were then cut at whichever of the art's verticals came
- * second. A rule of the FRAME is in the same column on every row; a vertical of the art is
- * in a different one on each.
+ * ⚠️ THE CUT USED TO BE MADE AT THE FRAME'S OWN RULES, which is what made it possible to be
+ * wrong about which padding sat on which side of one. It is made at a column derived from the
+ * two things that decide it ({@link whereTheTextBegins}), so nothing here corrects for anything.
  */
-function rulesThrough(box: readonly string[]): number[] {
-  const inside = insideOf(box);
-  if (inside.length === 0) return [];
-  return [...(inside[0] as string)].flatMap((_, at) =>
-    inside.every((row) => [...row][at] === RULE) ? [at] : [],
-  );
-}
-
-/** The rows of a box between its two edges — the ones a rule of the frame runs down. */
-function insideOf(box: readonly string[]): string[] {
-  return box.filter((row) => row.startsWith(RULE));
-}
-
-/** The rows inside a box that is in its two-column form, and none when it is not. */
-function throughRuled(box: readonly string[]): string[] {
-  return rulesThrough(box).length >= 3 ? insideOf(box) : [];
-}
-
-/** What is inside the right-hand column of a row, given where the box's rules run. */
-function rightOf(row: string, at: readonly number[]): string {
-  return at.length < 3 ? '' : [...row].slice((at[1] as number) + 1, at[2]).join('');
-}
-
-/** What is inside the left-hand column of a row, given where the box's rules run. */
-function leftOf(row: string, at: readonly number[]): string {
-  return at.length < 3 ? '' : [...row].slice((at[0] as number) + 1, at[1]).join('');
+function besideTheMark(row: string, columns: number): string {
+  return [...row].slice(whereTheTextBegins(columns)).join('');
 }
 
 /** What a console drew, opened on a terminal `columns` wide and left again. */
@@ -706,9 +797,9 @@ async function drawnAt(columns: number): Promise<string> {
 }
 
 describe('the title says which build it is, and it is the one the flag prints', () => {
-  it('puts the version on the box, beside the name', async () => {
-    const title = boxOf(await drawnAt(200)).find((row) => row.includes(OPENED));
-    expect(title, 'no title on the box').toBeDefined();
+  it('puts the version on the opening, beside the name', async () => {
+    const title = openingOf(await drawnAt(200)).find((row) => row.includes(OPENED));
+    expect(title, 'nothing on the opening says what the session is').toBeDefined();
     expect(title as string).toContain(`v${VERSION}`);
     // Beside the NAME rather than anywhere on the row: the title is the product, then the
     // build, then what the session is.
@@ -744,139 +835,114 @@ describe('the title says which build it is, and it is the one the flag prints', 
   });
 });
 
-describe('nothing divides the right-hand column, because there is one section in it', () => {
-  it('draws no run of glyphs inside the box, and the record is what is there', async () => {
-    // ⚠️ THIS CASE IS THE INVERSE OF THE ONE IT REPLACES, and it is renamed rather than
-    // edited. It used to be `a rule divides the two sections, and it measures the column it
-    // divides`, and it asserted that the run between `The record` and `Hints` reached as far
-    // as the widest row beside it. Two things fell at once. The second SECTION went — what
-    // to type is said under the prompt, in the place that does not scroll away — so there is
-    // nothing left for a rule to divide. And the property the case was pinning had already
-    // stopped being true of the DRAWING: the box is as wide as the terminal now, so the
-    // column is stretched, and the rule went on measuring its siblings instead — a run of 45
-    // inside a column of 61, measured on a terminal 120 wide. It passed because both numbers
-    // came from the same siblings.
+describe('nothing on the panel is a run of glyphs, because there is nothing to divide', () => {
+  it('draws no rule anywhere in the opening, and the record is what is there', async () => {
+    // ⚠️ THIS CASE HAS BEEN INVERTED TWICE AND RENAMED BOTH TIMES. It began as `a rule divides
+    // the two sections, and it measures the column it divides`, asserting that the run between
+    // `The record` and `Hints` reached as far as the widest row beside it; the second SECTION
+    // went — what to type is said under the prompt, where it does not scroll away — so there was
+    // nothing left to divide, and the case became `draws no run of glyphs inside the box`.
+    // ⚠️ NOW THE BOX HAS GONE TOO, so `inside the box` had no subject: the rows were found by the
+    // frame's own sides and the halves of each row were cut at its rules.
     //
-    // Kept as a case rather than deleted, because "there is no rule" is exactly what a
-    // future delivery could undo by accident.
-    const box = throughRuled(boxOf(await drawnAt(200)));
-    expect(box.length, 'the box is not in its two-column form').toBeGreaterThan(3);
-    const at = rulesThrough(box);
-
-    const record = box.findIndex((row) => rightOf(row, at).includes('The record'));
-    expect(record, 'no record section').toBeGreaterThanOrEqual(0);
+    // WHAT SURVIVES IS THE ABSENCE, asked of the rows the panel really has: no row of the opening
+    // is a run of glyphs. Kept as a case rather than deleted, because "there is no rule in here"
+    // is exactly what a future delivery could undo by accident — and the two rules the input area
+    // draws are OUTSIDE these rows, which is what makes the absence sayable at all.
+    const opening = openingOf(await drawnAt(200));
+    expect(opening.length, 'nothing was drawn').toBeGreaterThan(3);
     expect(
-      box.findIndex((row) => isRun(rightOf(row, at).trim())),
-      'a run of glyphs is still drawn inside the column',
+      opening.findIndex((row) => isRun(row.trim())),
+      'a run of glyphs is drawn in the opening',
     ).toBe(-1);
-    // AND NOTHING IS DRAWN INSIDE THE LEFT ONE EITHER, so the absence is about the box
-    // rather than about the half of it this case happened to look in.
-    expect(
-      box.findIndex((row) => isRun(leftOf(row, at).trim())),
-      'a run of glyphs is drawn inside the left column',
-    ).toBe(-1);
-    // Not vacuous, in two directions: the instrument really can see a run of glyphs, and
-    // the column really has rows in it — the ones the record put there.
+    // NOT VACUOUS, IN THREE DIRECTIONS: the instrument really can see a run of glyphs, the rows
+    // really are the panel's — the record put its section in them — and the page really does draw
+    // a rule somewhere, which is the input area's and is not one of these rows.
     expect(isRun(RUN.repeat(3))).toBe(true);
-    const reach = (row: string): number => rightOf(row, at).replace(/ +$/, '').length;
-    expect(Math.max(...box.map(reach))).toBeGreaterThan(BESIDE_THE_RULE);
+    expect(opening.some((row) => row.includes('The record')), 'no record section').toBe(true);
+    expect(
+      rowsOf(await drawnAt(200)).some((row) => isRun(row.trim())),
+      'the input area drew no rule at all',
+    ).toBe(true);
   }, 120_000);
 });
 
-describe('the right column is centred down the height the mark gave the box', () => {
-  it('leaves the same number of blank rows over the record as under it', async () => {
-    // POSITION AND NOTHING ELSE, on the other axis, and it is the same shape of question the
-    // case below asks across the left column: no row is added or dropped, so what can be
-    // observed is WHERE the section starts inside a column whose height something else
-    // decided.
+describe('the text is centred down the height the mark gave the row', () => {
+  it('leaves the same number of blank rows over the text as under it', async () => {
+    // POSITION AND NOTHING ELSE: no row is added or dropped, so what can be observed is WHERE
+    // the text starts inside a column whose height something else decided.
     //
-    // WHAT IT IS FOR, measured before it was written: the box is as tall as the drawing — ten
-    // rows at a hundred and forty columns — and the record's section is three of them, so the
-    // section sat at the top with SEVEN blank rows under it. Nothing said it should; a column
-    // starts at its top, and that was all. Centred, the gap is halved and shared.
-    const box = throughRuled(boxOf(await drawnAt(140)));
-    expect(box.length, 'the box is not in its two-column form').toBeGreaterThan(3);
-    const at = rulesThrough(box);
-    const held = box.map((row) => rightOf(row, at).trim());
+    // WHAT IT IS FOR, measured before it was written: the row is as tall as the drawing — nine
+    // rows — and what the text says is fewer, so it sat at the TOP with the difference under it.
+    // Nothing said it should; a column starts at its top, and that was all. Centred, the gap is
+    // halved and shared.
+    //
+    // ⚠️ IT USED TO BE `the right column ... the box`, and what it read was the column between two
+    // of the frame's rules. The column is found by the mark and the gap now
+    // ({@link whereTheTextBegins}), and what is centred is one group MORE than it was: what the
+    // session is moved off the border and into these rows this delivery.
+    const opening = openingOf(await drawnAt(140));
+    expect(opening.length, 'nothing was drawn').toBeGreaterThan(3);
+    const held = opening.map((row) => besideTheMark(row, 140).trim());
     const first = held.findIndex((row) => row.length > 0);
     const last = held.length - 1 - [...held].reverse().findIndex((row) => row.length > 0);
-    expect(first, 'nothing is in the right-hand column').toBeGreaterThanOrEqual(0);
-    // THE PROMISE: the blank over the section and the blank under it differ by at most one
+    expect(first, 'nothing is beside the mark').toBeGreaterThanOrEqual(0);
+    // THE PROMISE: the blank over the text and the blank under it differ by at most one
     // row, which is what a gap of an odd number of rows allows and nothing more.
     const over = first;
     const under = held.length - 1 - last;
     expect(Math.abs(over - under), `${over} over, ${under} under`).toBeLessThanOrEqual(1);
-    // NOT VACUOUS, IN TWO DIRECTIONS. There really is a gap to share — the section is shorter
-    // than the box, which is what the top-aligned drawing put all of underneath it — and the
-    // section really is the record's rather than an empty column read as centred.
-    expect(over + under, 'the section fills the box, so nothing was centred').toBeGreaterThan(2);
-    expect(held.filter((row) => row.length > 0).length, 'the column is empty').toBeGreaterThan(1);
+    // NOT VACUOUS, IN TWO DIRECTIONS. There really is a gap to share — the text is shorter than
+    // the drawing, which is what the top-aligned column put all of underneath it — and the rows
+    // really are the text's rather than an empty column read as centred.
+    expect(over + under, 'the text fills the row, so nothing was centred').toBeGreaterThan(2);
     expect(held.some((row) => row.includes('The record'))).toBe(true);
+    expect(held.some((row) => row.includes(OPENED))).toBe(true);
   }, 120_000);
 });
 
-describe('the left column is centred on the widest thing in it', () => {
-  it('leaves the same blank on each side of the mark', async () => {
-    // POSITION AND NOTHING ELSE, which is why it is asked as a symmetry: no line is padded
-    // or trimmed, so what can be observed is where the narrower group starts and ends
-    // inside a column whose width the wider one decided.
+describe('the mark has its column to itself, and it begins at the left edge', () => {
+  it('puts nothing before the mark and the place beside it, not under it', async () => {
+    // ⚠️ THIS CASE IS THE INVERSE OF THE ONE IT REPLACES, and it is renamed rather than edited.
+    // It was `the left column is centred on the widest thing in it`, and it asserted that the
+    // narrower of the mark and the place had the same blank on each side of it — the two shared
+    // a column, one of them was always much the wider, and centring made the column read as one
+    // block. THE PLACE MOVED to the column beside the mark, so there is ONE group in the mark's
+    // column and nothing left to centre: the alignment went, because a word that can never
+    // change an answer is worse than no word.
     //
-    // ⚠️ THE BOX ROWS WERE THE ROWS WITH THREE RULES ON THEM, and the widest drawing of the
-    // name is inked with the rule's own glyph — so its rows counted as box rows and its
-    // verticals as dividers. What makes a row the box's is that it BEGINS at the left edge
-    // of the screen, and what makes the form the two-column one is a rule running THROUGH
-    // every row of it rather than three on any one of them.
+    // WHAT IS ASSERTED IS WHAT THAT MADE TRUE. The mark begins at the very first column of the
+    // screen — nothing pads it, because there is no border for it to be inside and no wider
+    // sibling for it to be centred against — and the place is BESIDE it.
     //
-    // OPENED OVER THE PROJECT WITH THE LONGER PATH, for the reason the fixture gives: the
-    // slack between the two groups came to ONE column when the drawing changed, and a
-    // symmetry measured across one column of slack is a case that would pass left-aligned.
+    // OPENED OVER THE PROJECT WITH THE LONGER PATH, and the fixture's reason changed with the
+    // case: it existed to make the two groups differ in width inside one column, and it now
+    // makes the TEXT column decisively the wider of the two — so `beside the mark` is a
+    // measurement rather than a coincidence of a short path.
     process.chdir(aLongerPath);
     const page = await drawnAt(200).finally(() => process.chdir(project));
-    const box = throughRuled(boxOf(page));
-    const at = rulesThrough(box);
+    const opening = openingOf(page);
     const widest = drawnAcross(200).reduce((most, row) => (row.length > most.length ? row : most));
-    const mark = box.find((row) => row.includes(widest));
-    expect(mark, 'the drawing of the name is not in the box').toBeDefined();
-    const standing = box.find((row) => leftOf(row, at).includes(aLongerPath));
-    expect(standing, 'the line beside the mark is not there').toBeDefined();
-    // ⚠️ WHICH OF THE TWO IS CENTRED USED TO BE WRITTEN DOWN, and it was the mark: the
-    // five-row drawing was twenty-nine columns and the path under it is about fifty, so the
-    // path decided the column's width and the art sat in the middle of it. The next drawing
-    // was seventy columns, so the two changed places; the one after it is fifty, so on an
-    // ordinary sandbox path they changed places AGAIN and came within a column of each other.
-    // The property this case is for did not move through any of that: whichever group is
-    // NARROWER is the one with the same blank on each side of it. Written as the pair rather
-    // than as the winner, which is what let three changes of art pass through it.
-    //
-    // ⚠️ AND IT WAS ASKED AS BLANK-BEFORE AGAINST BLANK-AFTER, each corrected by one of the
-    // box's own constants. That arithmetic held while the column's width came from the line
-    // under the mark, and it is off by three now that it comes from the drawing — the two
-    // gaps are measured from different edges, so the correction has to be right about which
-    // padding is on which side. WHAT THE CASE IS FOR needs neither constant: centred means
-    // the two groups have the SAME MIDDLE, and a middle is a position rather than a gap.
-    const inColumn = (row: string): string => leftOf(row, at);
-    const middleOf = (row: string): number => {
-      const held = inColumn(row);
-      const from = held.length - held.trimStart().length;
-      return from + (held.trim().length - 1) / 2;
-    };
-    const [wider, narrower] =
-      inColumn(mark as string).trim().length >= inColumn(standing as string).trim().length
-        ? [mark as string, standing as string]
-        : [standing as string, mark as string];
+    const mark = opening.find((row) => row.includes(widest));
+    expect(mark, 'the drawing of the name is not in the opening').toBeDefined();
+    // THE MARK IS AT THE LEFT EDGE. Its own widest row begins where the screen does, so the
+    // column holds the drawing and nothing else — measured against the art rather than against a
+    // number, because a form with leading blanks of its own would otherwise read as padding.
+    expect((mark as string).indexOf(widest), 'something is drawn before the mark').toBe(
+      widest.length - widest.trimStart().length,
+    );
+    // AND THE PLACE IS BESIDE IT rather than under it, which is the group that moved.
+    const standing = opening.find((row) => row.includes(aLongerPath));
+    expect(standing, 'the place is not on the page').toBeDefined();
     expect(
-      Math.abs(middleOf(wider) - middleOf(narrower)),
-      `${inColumn(narrower)}`,
-    ).toBeLessThanOrEqual(1);
-    // Not vacuous, in two directions. Left-aligned, the two middles would differ by half the
-    // slack — and there really is slack, because one group is wider than the other.
-    const slack = inColumn(wider).trim().length - inColumn(narrower).trim().length;
-    expect(slack, 'the two groups are the same width, so nothing was centred').toBeGreaterThan(2);
-    const held = inColumn(narrower);
-    expect(
-      held.length - held.trimStart().length,
-      'the narrower group is at the left edge of its column',
-    ).toBeGreaterThan(INSIDE_THE_BOX);
+      besideTheMark(standing as string, 200),
+      'the place is not in the column beside the mark',
+    ).toContain(aLongerPath);
+    // NOT VACUOUS: the place really is past the mark's own column, so `beside` is a position and
+    // not a slice that happened to contain everything.
+    expect(whereTheTextBegins(200), 'the text column begins at the left edge').toBeGreaterThan(
+      widest.length,
+    );
   }, 120_000);
 });
 
@@ -905,7 +971,7 @@ function literalsOf(code: string): string[] {
   return code.match(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`/g) ?? [];
 }
 
-/** Whether some glyphs are a run of the box's own edge, and there are some. */
+/** Whether some glyphs are a run of the horizontal, and there are some. */
 const isRun = (text: string): boolean => text.length > 0 && [...text].every((one) => one === RUN);
 
 /**
@@ -955,8 +1021,11 @@ describe('the FRAME asks how big the terminal is in one place, and it follows it
     const owner = withoutComments(readFileSync(join(SRC, 'repl', 'console.ts'), 'utf-8'));
     expect(asksTheDevice(owner).length).toBeGreaterThan(1);
     expect(asksTheDevice('const columns = output.columns ?? 0;')).toHaveLength(1);
-    // And it does not accuse the number this product decided for itself.
-    expect(asksTheDevice('width: panel.columns')).toEqual([]);
+    // And it does not accuse a number this product decided for itself. ⚠️ THE PROBE WAS
+    // `width: panel.columns`, and the panel stopped carrying the terminal's width when the frame
+    // came off — a probe naming a field nothing can write is a probe that proves nothing. What it
+    // names now is the width the arithmetic really receives.
+    expect(asksTheDevice('const wide = request.columns;')).toEqual([]);
     expect(sourcesOf(SRC).length).toBeGreaterThan(50);
   });
 
