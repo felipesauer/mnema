@@ -203,6 +203,21 @@ const WHAT_THE_SLASH_DOES = `\`${PREFIX}\` lists the words`;
 const TAB_COMPLETES = 'Tab completes';
 const HOW_TO_LEAVE = 'Ctrl-D leaves';
 
+/**
+ * THE THREE CLAUSES OF THE ROW UNDER THE LIST, in the same shape as the three above: a KEY, and
+ * what that key gives (see {@link pickingTips} for why they are beside the list rather than in
+ * the row under the prompt).
+ *
+ * The two arrows are one clause because they are one affordance — a caller who knows Down moves
+ * knows Up does — and they are drawn as the glyphs a keyboard has rather than spelled out, which
+ * is what the reference does and is four columns instead of fifteen. UPWARDS ARROW U+2191 and
+ * DOWNWARDS ARROW U+2193, spelled by their code points like every unusual byte in this
+ * repository.
+ */
+const ARROWS_MOVE = '\u2191\u2193 moves';
+const RETURN_FILLS = 'Enter fills the row';
+const ESCAPE_SHUTS = 'Esc shuts the list';
+
 /** What one line of the session needs: where to write, how, and what it is called. */
 export interface Session {
   /** Where a command's output goes — the caller's own port. */
@@ -411,6 +426,10 @@ export async function openSession(request: SessionRequest): Promise<void> {
     // opening reads the same value, because how tall the area under it is is part of
     // whether the page fits.
     tips: hint,
+    // AND THE ROW UNDER THE LIST, as a LINE rather than as bytes: it is one of the palette's own
+    // rows, so it is rendered and measured with them (`palette.ts`). Composed once, for the
+    // reason the tips are — three keystrokes, and nothing about the record.
+    picking: pickingTips(),
     // Also rendered once — out of the ONE read this surface pays for. It does say
     // something about the record, which is exactly why it may not be asked again.
     badge,
@@ -653,6 +672,36 @@ function standingLine(where: Standing): readonly Line[] {
  */
 export function tips(): Line {
   return aside([WHAT_THE_SLASH_DOES, TAB_COMPLETES, HOW_TO_LEAVE].join(BETWEEN_CLAUSES));
+}
+
+/**
+ * THE KEYS THAT MOVE THE LIST OF WORDS, as the row that sits UNDER it — three clauses, in the
+ * voice the row under the prompt already speaks.
+ *
+ * IT IS A SECOND HINT AND NOT A LONGER FIRST ONE, and where it goes is the whole argument. The
+ * row under the prompt says what is true of the session at every moment of it, so it may not
+ * grow a clause about a list that is shut most of the time — and the three keys here mean
+ * nothing until the list is open. It is drawn beside what it governs instead, which is what the
+ * console this surface was measured against does with the same sentence: its selector says
+ * *Enter to confirm · Esc to cancel* directly under the rows those keys act on, and its
+ * permanent row goes on saying what it always says.
+ *
+ * THE ARROWS ARE NAMED FIRST BECAUSE THEY ARE THE DISCOVERY. Return and Escape mean here what
+ * they mean in every menu a reader has ever used; what nothing on the screen could otherwise
+ * say is that the arrows have stopped browsing what was typed before and started moving through
+ * the list (`editing.ts`).
+ *
+ * AND WHAT RETURN DOES IS SAID EXACTLY: it FILLS the row rather than running the word. Half the
+ * verbs of this product take arguments, so a pick that ran what it landed on would take the
+ * caller's chance to finish the line — and a hint that said *Enter runs it* would be promising
+ * the one thing this key deliberately does not do.
+ *
+ * It says nothing about the record and takes no argument, so it is resolved once when the
+ * session opens, exactly like {@link tips}. Exported for the reason that one is: a case that had
+ * to tell this row from a row of the list would otherwise retype it.
+ */
+export function pickingTips(): Line {
+  return aside([ARROWS_MOVE, RETURN_FILLS, ESCAPE_SHUTS].join(BETWEEN_CLAUSES));
 }
 
 /**

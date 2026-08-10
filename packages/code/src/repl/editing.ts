@@ -20,10 +20,30 @@
  * makes a mistyped line fixable without retyping it.
  *
  *   - a character, at the caret; Backspace before it and Delete under it
- *   - the arrows, along the line and back through what was typed before
+ *   - the arrows, along the line, through the list of words, and back through what was
+ *     typed before
  *   - Tab, which asks the completer and takes what every candidate agrees on
+ *   - Return, which hands the line over — or takes the word the caller picked
+ *   - Escape, which shuts the list of words
  *   - Ctrl-A and Ctrl-E, the two ends; Ctrl-U, the whole line
  *   - Ctrl-C, which abandons the LINE, and Ctrl-D on an empty line, which leaves
+ *
+ * THREE KEYS MEAN TWO THINGS EACH, AND WHICH ONE IS DECIDED BY ONE QUESTION: is the list of
+ * words open? The vertical arrows move through the list when it is and browse the history
+ * when it is not; Return takes the picked word when there is one and hands the line over when
+ * there is not. That question has exactly ONE reading here ({@link theOffers}), asked of the
+ * same function the console asks before it draws (`palette.ts`, `offeredBy`) — two readings
+ * would be a console whose list and whose keys disagreed about whether there was a list.
+ *
+ * WHAT THE ARROWS DO IS NOT AMBIGUOUS TO A READER, which is what makes the double meaning
+ * affordable: the list is on the screen or it is not, and the keys that move it are written
+ * under it while it is (`session.ts`, `pickingTips`).
+ *
+ * ⛔ AND RETURN NEVER RUNS WHAT THE ARROWS LANDED ON. A pick puts the word on the row and
+ * stops there, because half the verbs of this product take arguments and the Return that
+ * submits is the same key: a pick that ran the word would take away the caller's chance to
+ * finish the line. It is also why nothing is picked until an arrow says so — on a palette
+ * that has just opened, Return still hands the row over.
  *
  * THE HISTORY LIVES HERE AND NOWHERE ELSE — in this value, for the length of the
  * process, written to no file. Where a history file would live is a decision about the
@@ -33,6 +53,7 @@
 
 import type { CompletionWord } from '../completion/tree.js';
 import type { Completer } from './complete.js';
+import { NOBODY, offeredBy, theNextPicked, thePicked } from './palette.js';
 
 /** How many lines the session scrolls back through. In memory, and nowhere else. */
 const REMEMBERED = 500;
@@ -56,6 +77,15 @@ export interface Keystroke {
   readonly upArrow: boolean;
   readonly downArrow: boolean;
   readonly tab: boolean;
+  /**
+   * Escape, which is the key that shuts the list of words.
+   *
+   * It is DECLARED rather than read off the byte, like every other named key here: the
+   * library that reads the keyboard tells an Escape from the start of an arrow's own sequence
+   * (an arrow arrives as an escape and two more bytes), and that is exactly the distinction a
+   * reducer must not be left to make from a chunk.
+   */
+  readonly escape: boolean;
   readonly ctrl: boolean;
 }
 
@@ -87,6 +117,23 @@ export interface Editing {
    * common prefix typed for the caller.
    */
   readonly offered: readonly CompletionWord[];
+  /**
+   * WHICH WORD OF THE LIST THE CALLER PICKED with the arrows, and {@link NOBODY} when they
+   * have picked none.
+   *
+   * A WORD RATHER THAN A ROW NUMBER, and the reason is the filter: the list narrows as the
+   * caller types, so a position kept from one keystroke to the next names a different offer
+   * afterwards — which is the defect this shape is famous for, and it is absent by
+   * construction here rather than repaired by clamping. Whether the word is still offered is
+   * one question with one answer (`palette.ts`, `thePicked`), asked wherever it matters.
+   *
+   * IT IS NOT A SECOND FLAG BESIDE {@link offered}, and that is why the list being OPEN is not
+   * recorded at all: what is open is a function of the row and of what a Tab left
+   * (`palette.ts`, `offeredBy`), so a field saying so could disagree with the list on the
+   * screen. This says what was picked out of whatever is open, and means nothing when nothing
+   * is.
+   */
+  readonly picked: string;
 }
 
 /** No key at all: what a synthesised keystroke is built out of, field by field. */
@@ -100,6 +147,7 @@ const NO_KEY: Keystroke = {
   upArrow: false,
   downArrow: false,
   tab: false,
+  escape: false,
   ctrl: false,
 };
 
@@ -110,6 +158,7 @@ export const NOTHING_TYPED: Editing = {
   history: [],
   browsing: 0,
   offered: [],
+  picked: NOBODY,
 };
 
 /** What a keystroke did. Closed, and total over what can be pressed. */
@@ -154,7 +203,8 @@ export function keystrokesOf(stroke: Keystroke): readonly Keystroke[] {
     stroke.leftArrow ||
     stroke.rightArrow ||
     stroke.upArrow ||
-    stroke.downArrow;
+    stroke.downArrow ||
+    stroke.escape;
   if (named || !unprintable(stroke.input)) return [stroke];
 
   const strokes: Keystroke[] = [];
@@ -184,33 +234,104 @@ function controlKey(character: string): Keystroke {
   if (code >= 0x01 && code <= 0x1a) {
     return { ...NO_KEY, input: String.fromCharCode(code + 0x60), ctrl: true };
   }
+  // AN ESCAPE INSIDE A CHUNK IS THE KEY, and it is here for the same reason every other byte
+  // above is: a paste, or a fast keyboard, hands over several keys at once. What it may NOT be
+  // asked to decide is whether the bytes after it make an arrow — that is the keyboard
+  // library's, which has already decided by the time a named key arrives ({@link Keystroke}).
+  if (code === 0x1b) return { ...NO_KEY, escape: true };
   return { ...NO_KEY };
 }
 
 /**
- * What one keystroke does to the input row.
+ * What one keystroke does to the input row — and then, always, WHAT IS STILL PICKED.
  *
- * Total: every keystroke reaches exactly one arm, and the arm for a key this session has
- * no use for is the row unchanged. A key that fell through to an exception would be a
+ * Total: every keystroke reaches exactly one arm of {@link pressing}, and the arm for a key this
+ * session has no use for is the row unchanged. A key that fell through to an exception would be a
  * session that dies of a function key.
+ *
+ * THE PICK IS SETTLED HERE AND IN NO ARM, and that is the difference between one rule and
+ * eleven agreements. Every key can change which words the list is showing — a character narrows
+ * it, a Backspace widens it, a chord empties the row and shuts it — so after every key the
+ * question is the same: is the word the caller picked still one of the offers? Asked once, of
+ * the one function that answers it (`palette.ts`, {@link thePicked}), against the list the NEW
+ * row produces.
+ *
+ * WHAT THAT BUYS IS THE THREE ANSWERS NOBODY THEN HAS TO REMEMBER TO WRITE. A filter that
+ * narrows to a list the pick is still in KEEPS it, so a caller who picks a word and then types
+ * to narrow can still take it with Return. A filter that excludes it DROPS it, so no mark can
+ * survive on a row that is no longer shown. And a key that shuts the list drops it too, which is
+ * what stops a pick made a minute ago from coming back to life the next time the same list is
+ * opened — measured as the defect it would be: with the pick merely kept on the value, `/` then
+ * Down then Ctrl-U then `/` again showed a mark the caller had not put there, and Return would
+ * have filled the row with it.
+ *
+ * SO EVERY VALUE THIS HANDS BACK IS SETTLED, which is what lets the arms read `picked` straight
+ * off the value they were given rather than reconciling it again.
  */
 export function typeKey(editing: Editing, stroke: Keystroke, complete: Completer): Typed {
+  const what = pressing(editing, stroke, complete);
+  if (what.does === 'leave') return what;
+  const settled = settling(what.editing, complete);
+  switch (what.does) {
+    case 'edit':
+      return { does: 'edit', editing: settled };
+    case 'submit':
+      return { does: 'submit', line: what.line, editing: settled };
+    case 'abandon':
+      return { does: 'abandon', line: what.line, editing: settled };
+  }
+}
+
+/**
+ * The row with nothing picked that is not still offered.
+ *
+ * ONE FUNCTION, ONE CALLER, and it is here rather than inlined so that what it does has a name a
+ * doc can point at: the pick is a WORD, and a word is picked exactly while the list holds it.
+ */
+function settling(editing: Editing, complete: Completer): Editing {
+  const picked = thePicked(theOffers(editing, complete), editing.picked);
+  return picked === editing.picked ? editing : { ...editing, picked };
+}
+
+/** What one keystroke does to the row, before the pick is settled over it. */
+function pressing(editing: Editing, stroke: Keystroke, complete: Completer): Typed {
   // Asked first, and of the WHOLE keystroke: a control chord carries a character too
   // (Ctrl-D is `d`), so a reducer that looked at `input` before `ctrl` would type the
   // letter and never see the chord.
   if (stroke.ctrl) return chord(editing, stroke.input);
 
   if (stroke.return) {
+    // THE PICK COMES FIRST, AND IT FILLS RATHER THAN RUNS. A caller who moved the arrows chose
+    // a word and not a line; putting it on the row and stopping is what leaves them the
+    // arguments half the verbs of this product take. With nothing picked — which is every
+    // palette nobody has moved through — this is the Return it always was.
+    //
+    // AND THE PICK IS SPENT BY BEING TAKEN, which is the one thing {@link settling} cannot say:
+    // the word is still offered afterwards — it is on the row now, so the list has narrowed to
+    // it — and a pick left standing would make the NEXT Return fill the row with what is already
+    // on it instead of running it. So a caller could never submit a word they had picked, which
+    // is measured rather than reasoned: with this line absent, `/` Down Return Return leaves the
+    // row at `/clear` twice over and the session never sees the line.
+    const picked = thePicked(theOffers(editing, complete), editing.picked);
+    if (picked !== NOBODY) {
+      return { does: 'edit', editing: { ...taking(editing, complete, picked), picked: NOBODY } };
+    }
     const line = editing.typed;
     return { does: 'submit', line, editing: remembering(editing, line) };
   }
   if (stroke.tab) return { does: 'edit', editing: completing(editing, complete) };
+  // ESCAPE SHUTS THE LIST, and the row is what it was before the list was asked for. There is
+  // no third state to put the list in: whether it is open is a function of the row and of what
+  // a Tab left (`palette.ts`, `offeredBy`), so shutting one opened by a slash means taking the
+  // row back — and a row that begins with a slash holds nothing BUT a word of the session being
+  // typed, so what is taken back is that word and never a line the caller had assembled.
+  if (stroke.escape) return { does: 'edit', editing: cleared(editing) };
   if (stroke.backspace) return { does: 'edit', editing: erasing(editing, editing.at - 1) };
   if (stroke.delete) return { does: 'edit', editing: erasing(editing, editing.at) };
   if (stroke.leftArrow) return { does: 'edit', editing: caretAt(editing, editing.at - 1) };
   if (stroke.rightArrow) return { does: 'edit', editing: caretAt(editing, editing.at + 1) };
-  if (stroke.upArrow) return { does: 'edit', editing: browsing(editing, -1) };
-  if (stroke.downArrow) return { does: 'edit', editing: browsing(editing, 1) };
+  if (stroke.upArrow) return { does: 'edit', editing: moving(editing, complete, -1) };
+  if (stroke.downArrow) return { does: 'edit', editing: moving(editing, complete, 1) };
   if (stroke.input.length > 0 && !unprintable(stroke.input)) {
     return { does: 'edit', editing: inserting(editing, stroke.input) };
   }
@@ -257,6 +378,61 @@ function unprintable(input: string): boolean {
   return false;
 }
 
+/**
+ * WHAT THE LIST IS SHOWING RIGHT NOW — the one reading of it in this file.
+ *
+ * It is the same function the console asks before it draws (`palette.ts`, `offeredBy`), over the
+ * same two things: the row, and what a Tab left behind. So "is the list open" cannot be answered
+ * one way by the keys and another by the drawing, and there is nothing kept here to go stale.
+ *
+ * Asked only by the keys that mean two things — the two vertical arrows and Return — which is
+ * why it costs nothing on an ordinary keystroke.
+ */
+function theOffers(editing: Editing, complete: Completer): readonly CompletionWord[] {
+  return offeredBy(editing.typed, editing.offered, complete);
+}
+
+/**
+ * The row after an arrow: one step through the list of words when there is one, and one step
+ * back through what was typed before when there is not.
+ *
+ * ONE ARM FOR BOTH MEANINGS, because it is one question: the list is open or it is not. Written
+ * this way rather than as two arms in {@link typeKey} so that neither meaning can acquire a
+ * condition the other does not have.
+ */
+function moving(editing: Editing, complete: Completer, step: number): Editing {
+  const offers = theOffers(editing, complete);
+  if (offers.length === 0) return browsing(editing, step);
+  return { ...editing, picked: theNextPicked(offers, editing.picked, step) };
+}
+
+/**
+ * THE ROW WITH ONE WHOLE WORD ON IT: the word the completer was answering about, replaced.
+ *
+ * ONE FUNCTION, TWO KEYS, and they hand it two different strings — a Tab hands it everything the
+ * candidates agree on, and Return hands it the word the arrows landed on. The rule they share is
+ * the one that is easy to get subtly wrong: what is replaced is the word THE COMPLETER SAYS it
+ * is answering about, which is the last word of the row up to the caret. That is what makes a
+ * pick land correctly in the three shapes this surface has — `/` alone replaced by a whole
+ * session word, `/cl` grown into one, and `task mo` with only its last word touched — without a
+ * branch anywhere for the slash.
+ *
+ * ⚠️ AND IT IS WHY PICKING A VERB OFF A BARE SLASH LEAVES NO SLASH BEHIND. The bare prefix asks
+ * what an empty line asks (`palette.ts`), so the list under it holds the verbs as well as the
+ * session's own words; the word being replaced there is the slash itself, so a picked verb lands
+ * on a row of its own rather than behind a prefix that would make it unrunnable.
+ */
+function taking(editing: Editing, complete: Completer, whole: string): Editing {
+  const [, word] = complete(editing.typed.slice(0, editing.at));
+  const from = editing.at - word.length;
+  const without: Editing = {
+    ...editing,
+    typed: editing.typed.slice(0, from) + editing.typed.slice(editing.at),
+    at: from,
+  };
+  return inserting(without, whole);
+}
+
 /** The row with `text` at the caret, and the caret after it. */
 function inserting(editing: Editing, text: string): Editing {
   return {
@@ -289,7 +465,13 @@ function caretAt(editing: Editing, index: number): Editing {
 
 /** An empty row, with the history and the position it was browsing left alone. */
 function cleared(editing: Editing): Editing {
-  return { ...editing, typed: '', at: 0, offered: [], browsing: editing.history.length };
+  return {
+    ...editing,
+    typed: '',
+    at: 0,
+    browsing: editing.history.length,
+    offered: [],
+  };
 }
 
 /**
@@ -314,7 +496,13 @@ function remembering(editing: Editing, line: string): Editing {
 function browsing(editing: Editing, step: number): Editing {
   const at = Math.max(0, Math.min(editing.history.length, editing.browsing + step));
   const remembered = editing.history[at] ?? '';
-  return { ...editing, typed: remembered, at: remembered.length, browsing: at, offered: [] };
+  return {
+    ...editing,
+    typed: remembered,
+    at: remembered.length,
+    browsing: at,
+    offered: [],
+  };
 }
 
 /**
@@ -328,14 +516,23 @@ function browsing(editing: Editing, step: number): Editing {
  * When more than one candidate survives, they are carried on the value. Where they are
  * shown is the console's business; that they are shown at all is why a Tab that cannot
  * decide is not a Tab that did nothing.
+ *
+ * NOTHING HERE SAYS ANYTHING ABOUT WHAT IS PICKED, and that is deliberate rather than an
+ * omission: a Tab that leaves a list is a row like any other, and whether the word the caller
+ * had picked is still in that list is settled where every key's is ({@link typeKey}).
+ *
+ * ⚠️ IT INSERTED THE AGREED SUFFIX AND IT REPLACES THE WHOLE WORD NOW ({@link taking}), which is
+ * the same bytes by construction — everything the candidates agree on begins with what was
+ * typed — and one function instead of two: a Tab and a pick put a word on the row in exactly the
+ * same way, and the way is the part that is easy to get subtly wrong.
  */
 function completing(editing: Editing, complete: Completer): Editing {
   const [hits, word] = complete(editing.typed.slice(0, editing.at));
   if (hits.length === 0) return { ...editing, offered: [] };
-  const agreed = commonPrefix(hits.map((hit) => hit.word));
   const offered = hits.length > 1 ? hits : [];
+  const agreed = commonPrefix(hits.map((hit) => hit.word));
   if (agreed.length <= word.length) return { ...editing, offered };
-  return { ...inserting(editing, agreed.slice(word.length)), offered };
+  return { ...taking(editing, complete, agreed), offered };
 }
 
 /** The longest start every one of `words` has. Empty when they agree on nothing. */

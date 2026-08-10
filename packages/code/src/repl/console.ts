@@ -116,6 +116,7 @@
 
 import { render } from 'ink';
 import { createElement } from 'react';
+import type { Line } from '../presentation/line.js';
 import type { Render } from '../presentation/render.js';
 import { areaFor, BELOW_THE_VIEWPORT } from './area.js';
 import type { Completer } from './complete.js';
@@ -123,7 +124,7 @@ import { type Editing, type Keystroke, keystrokesOf, NOTHING_TYPED, typeKey } fr
 import type { AfterLine } from './gate.js';
 import { armLeaving, type Leaving } from './leaving.js';
 import { carriedIntoTheScrollback, theGap } from './page.js';
-import { offeredBy, paletteFor } from './palette.js';
+import { offeredBy, paletteFor, paletteRowsFor } from './palette.js';
 import { type Opening, sameOpening } from './panel.js';
 import { Region, type Shown, type Watched } from './region.js';
 
@@ -218,6 +219,18 @@ export interface ConsoleRequest {
    * this file's.
    */
   readonly tips: Drawn;
+  /**
+   * WHICH KEYS MOVE THE LIST OF WORDS, as a line — drawn under the list, and only on the frames
+   * there is one.
+   *
+   * A LINE AND NOT BYTES, unlike the row above, and the difference is which of the two the
+   * palette owns: this is one of the palette's ROWS (`palette.ts`), measured and refused by the
+   * same rule that measures and refuses a row of the table, so it goes through the palette's own
+   * renderer rather than arriving already rendered. It says nothing about the record and nothing
+   * about the terminal, so it is composed once when the session opens (`session.ts`,
+   * `pickingTips`).
+   */
+  readonly picking: Line;
   /**
    * WHAT THE RECORD PROVED, as one row for the corner above the input — already rendered,
    * and empty when there is no record to name a level of.
@@ -325,7 +338,7 @@ export interface OpenConsole {
  * one path onto the page and not a special one for the first three rows.
  */
 export function openConsole(request: ConsoleRequest): OpenConsole {
-  const { stdin, stdout, prompt, render: renderLine, tips, badge } = request;
+  const { stdin, stdout, prompt, render: renderLine, tips, badge, picking } = request;
   const { openingFor, saw, happened, complete, answer, leaving } = request;
 
   /**
@@ -433,7 +446,11 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
       columns,
       badge: badge.width,
       hint: tips.width,
-      palette: offers.length,
+      // HOW MANY ROWS THE LIST WANTS, asked of the module that draws them rather than counted
+      // here: it is one per offer AND one for the row that says which keys move it, and a
+      // count that left the second out would budget a region one row shorter than the one
+      // drawn (`palette.ts`, `paletteRowsFor`).
+      palette: paletteRowsFor(offers),
     });
     return {
       past,
@@ -454,7 +471,19 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
       // COMPOSED WITH THE ROOM THE AREA GAVE IT, and cut to it — by the module that puts
       // the rows together, which is the only place a cut may happen. What it could not fit
       // it says (`palette.ts`).
-      palette: paletteFor({ offers, room: area.palette, columns, render: renderLine }),
+      //
+      // WHAT THE CALLER PICKED TRAVELS WITH THE ROW BEING TYPED, because that is what it is
+      // part of: the arrows move it, so it changes on a keystroke exactly as the row does
+      // (`editing.ts`). Nothing about it is decided here — this hands over the word and the
+      // palette decides whether it is still one of the offers.
+      palette: paletteFor({
+        offers,
+        room: area.palette,
+        columns,
+        render: renderLine,
+        picked: editing.picked,
+        picking,
+      }),
       // In characters rather than in string offsets: the caret is a column on a screen,
       // and the offset the editor keeps is into a string that can hold more than one
       // code unit per character.
