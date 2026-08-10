@@ -59,6 +59,14 @@
  * hint — everything that says something about what is written down — arrives with the
  * weight and the hue its renderer gave it and leaves with the same ones.
  *
+ * ⚠️ AND THERE IS NO FRAME LEFT TO CARRY THE ACCENT. The box went — the console this was drawn
+ * from writes its name and its context as text beside its logo and draws none — so what the
+ * accent is spent on is the two things it was always really on: the MARK and the TITLE, which
+ * say what the product is and nothing about the record. The rules the input area sits between
+ * are the third and they are the frame's last surviving siblings ({@link rule}). The rule did
+ * not change and the count did not change: ONE hue, spent in this file, and none of the three
+ * severities.
+ *
  * SO COLOUR ON THIS SURFACE HAS TWO AXES NOW, and they may not meet. DATA is painted by
  * severity and by nothing else, which is `presentation/styled.ts` and unchanged. CHROME
  * is painted by ONE accent, spent here, and the accent is MAGENTA — the hue this product
@@ -91,11 +99,19 @@ import { Box, Static, type StaticProps, Text, useCursor, useInput, useStdout } f
 import { createElement as node, type ReactNode, useEffect, useSyncExternalStore } from 'react';
 import type { Area } from './area.js';
 import type { Keystroke } from './editing.js';
-import type { Panel } from './panel.js';
+// THE TWO MEASUREMENTS OF THE ARRANGEMENT, read from where the arithmetic that chooses the
+// form reads them. ⚠️ THEY WERE COPIED, and the copy was defended in as many words — *two
+// copies of these numbers is two panels, one of which fits* — which named the risk and then
+// took it. One constant, two readers.
+import { BETWEEN_COLUMNS, BETWEEN_SECTIONS, type Panel } from './panel.js';
 
 /**
- * The one hue this layout spends, on the things it draws — the panel's frame, the rule
- * inside it, and the two rules the input area sits between.
+ * The one hue this layout spends, on the things it draws — the mark, what the session is, and
+ * the two rules the input area sits between.
+ *
+ * ⚠️ IT WAS SPENT ON A FRAME: the panel's border, the rule down the middle of it and the title
+ * laid on its top edge. The frame is gone and the hue is not — what it is on is what the frame
+ * was around.
  *
  * MAGENTA, and it is the mark of the product rather than the survivor of an elimination.
  * ⚠️ THE DOC HERE SAID *cyan by elimination* and the elimination is unchanged — the three
@@ -106,29 +122,19 @@ import type { Panel } from './panel.js';
  */
 const ACCENT = 'magenta';
 
-/** How the box is drawn. The library's own set of corners. */
-const BORDER = 'round';
-
-/** How much of the top border is drawn before the title sits on it. */
-const BEFORE_TITLE = 2;
-
-/** The gap after the left column, before the rule between the two. */
-const BETWEEN_COLUMNS = 2;
-
-/** The gap after the rule, before the right column. */
-const BESIDE_THE_RULE = 2;
-
-/** The gap between the border and what is inside it. */
-const INSIDE_THE_BOX = 1;
-
 /**
- * The blank row over the record's section in the stacked form — what separates it from the
- * group above it, which is the name and the place.
+ * How an EDGE is drawn — the library's own set, asked for by the only thing on this surface
+ * that still has one: the two rules the input area sits between.
  *
- * There is no such row in the two-column form, where nothing precedes the section: this is
- * the argument the two forms differ by rather than a margin somebody liked.
+ * ⚠️ IT WAS `How the box is drawn` AND IT NAMED THE PANEL'S FRAME. The frame is gone — the
+ * console this was measured against writes its name and its context as text beside its logo
+ * and draws no box at all — so what is left of the set is the top edge of a box with nothing
+ * in it, which is how a rule across the terminal is drawn ({@link rule}). The four constants
+ * that were the frame's geometry went with it: the stub of border before the title, the gap
+ * inside the border, and the two halves of the gap on either side of the rule that divided the
+ * columns.
  */
-const BETWEEN_SECTIONS = 1;
+const BORDER = 'round';
 
 /**
  * Where the badge sits on its row: at the far end of it.
@@ -143,25 +149,23 @@ const BETWEEN_SECTIONS = 1;
 const AT_THE_FAR_END = 'flex-end';
 
 /**
- * THE MIDDLE — one word, and both of the box's columns are arranged by it.
+ * THE MIDDLE — where the text beside the mark sits down the height the mark gave the row.
  *
- * ACROSS THE LEFT COLUMN, its groups sit in the middle of the widest of them. The mark is a
- * drawing and the line under it is a path and an identity, and one of the two is always much
- * the wider. Left-aligned, the narrower one hangs off the left edge of a column whose width
- * the other one decided; centred, the column reads as one block — which is what the reference
- * this panel was drawn from does with the same two things.
+ * ⚠️ IT ARRANGED BOTH COLUMNS AND IT ARRANGES ONE. ACROSS the left column its groups used to
+ * sit in the middle of the widest of them, because the mark and the line under it were both in
+ * there and one of the two was always much the wider. The place moved to the other column, so
+ * the left one holds the drawing and nothing else — a column with one group in it has nothing
+ * to centre, and an alignment kept there would be a word that could never change an answer.
  *
- * DOWN THE RIGHT COLUMN, its one section sits in the middle of the box's height. ⚠️ IT SAT AT
- * THE TOP, and nothing said so — the top row of the section lined up with the top row of the
+ * DOWN THE TEXT COLUMN it stayed, and it is the half with a measurement behind it. ⚠️ THE
+ * SECTION SAT AT THE TOP and nothing said so — its top row lined up with the top row of the
  * drawing because that is where a column starts, not because anybody chose it. Measured at a
  * hundred and forty columns: fourteen rows of box, three of them the record, and NINE blank
- * rows under it. Centred, the gap is halved and shared, and what the record says sits at the
+ * rows under it. Centred, the gap is halved and shared, and what the text says sits at the
  * height of the mark it is beside.
  *
- * IT IS POSITION AND NOTHING ELSE, on either axis. No line is padded, trimmed or lengthened;
- * where a group starts is exactly the kind of question a layout is allowed to answer. And it
- * is ONE constant rather than two of the same value, because it is one decision about where
- * something sits — the axis is whichever axis the box it is in runs along.
+ * IT IS POSITION AND NOTHING ELSE. No line is padded, trimmed or lengthened; where a group
+ * starts is exactly the kind of question a layout is allowed to answer.
  */
 const IN_THE_MIDDLE = 'center';
 
@@ -202,13 +206,18 @@ export interface Shown {
    */
   readonly page: number;
   /**
-   * The box the page opened with, or none when the terminal is too narrow for one.
+   * The arrangement the page opened with, or none when the terminal is too narrow for one.
    *
    * IT USED TO BE A PROP, on the argument that it was resolved once and never moved. What
-   * falsified that is the width: the box is drawn corner to corner, so a caller who
-   * narrows their window has a frame the terminal folds, and the console answers with the
-   * page again — the opening recomposed for the new width, on a new {@link page}. It moves
-   * with the page it belongs to, so it belongs where the page is.
+   * falsified that is the width: a terminal narrowed past the threshold has the wrong
+   * arrangement on it, and the console answers with the page again — the opening recomposed
+   * for the new width, on a new {@link page}. It moves with the page it belongs to, so it
+   * belongs where the page is.
+   *
+   * ⚠️ THE ARGUMENT USED TO BE SHARPER AND IT WAS THE FRAME'S: the box was drawn corner to
+   * corner, so EVERY width was a width the drawing folded at. The frame is gone, so what
+   * changes with a width is the arrangement and the art alone — the prop would be wrong less
+   * often and still wrong, and less often is not a reason to hold a stale value.
    *
    * Nothing about it is READ here, and that has not changed: it arrives composed, out of
    * the read the session paid for when it opened, and this file only says where it goes.
@@ -223,11 +232,12 @@ export interface Shown {
    * true and was not the whole of it: the area changes height under a session, a region that
    * grows scrolls the screen, and what scrolls off the top does not come back. Measured on a
    * real terminal at a hundred and twenty by forty, one opening and shutting of the list of
-   * words carried the whole box away for good.
+   * words carried the whole opening away for good — the panel was a box then, and it was the
+   * box that left.
    *
    * SO THE ROOM IS REDRAWN WITH THE AREA, and the list takes it out of HERE rather than out of
    * the screen: the two move in opposite directions on the same frame and the region's whole
-   * height does not change, so nothing scrolls and the box stays where the page put it. It
+   * height does not change, so nothing scrolls and the panel stays where the page put it. It
    * travels with {@link area} because it is a function of the same two things — how tall the
    * terminal is, and how tall the area is — and it is a number rather than rows, because a row
    * with nothing on it is a row this file draws and never a line it composes.
@@ -274,9 +284,10 @@ export interface Watched {
  * and never moved again, so putting either in the value rebuilt on every keystroke would
  * have said they might. The tips are still that, and the badge joined them — it says what
  * the record proved, out of the one read this surface pays for, and nothing that happens
- * inside a session changes it. The panel is not — it is drawn at the width of the TERMINAL, and a caller
- * who resizes theirs gets the page again with the box recomposed for it, which is a move.
- * So it travels with {@link Shown}, beside the page identity it changes with.
+ * inside a session changes it. The panel is not — which ARRANGEMENT the terminal has room for
+ * is a function of its width, so a caller who narrows theirs past the threshold gets the page
+ * again with the text under the mark instead of beside it, which is a move. So it travels with
+ * {@link Shown}, beside the page identity it changes with.
  *
  * WHAT THE OLD SENTENCE WAS PROTECTING IS UNTOUCHED, and it is worth saying plainly
  * because it is the expensive half: the panel is the one thing on this surface paid for
@@ -424,16 +435,19 @@ function Past({
 /**
  * Some already-rendered lines, one to a row, with nothing added to any of them.
  *
- * `accented` is the CHROME switch and it is false for everything that says something
- * about the record. What it is true for is the mark: the name drawn, which carries no
- * fact and is part of the frame the session puts around itself, exactly like the border
- * it sits inside.
+ * `accented` is the CHROME switch and it is false for everything that says something about
+ * the record. What it is true for is the two things that say nothing about it: the mark — the
+ * name drawn, which carries no fact — and the title, which says what the product and the
+ * session are. ⚠️ IT WAS TRUE FOR THE MARK ALONE, and the border and the title on it were
+ * painted where they were drawn; with the border gone the title is a row like any other, so
+ * the switch is what carries the accent onto it. There is no third, and that is checked rather
+ * than intended (`tests/the-panel.test.ts`).
  *
- * No width is set, unlike the rows above: inside the panel the box is as wide as its
- * widest child and the library measures a line the way a terminal does, so a painted line
- * takes the room it takes on a screen rather than the room its bytes take. That the two
- * measurements agree with the one the FORM was chosen by is the panel's whole geometry,
- * and it is asserted (`tests/the-panel.test.ts`).
+ * No width is set, unlike the rows above: inside the panel each group is as wide as its widest
+ * child and the library measures a line the way a terminal does, so a painted line takes the
+ * room it takes on a screen rather than the room its bytes take. That the two measurements
+ * agree with the one the FORM was chosen by is the panel's whole geometry, and it is asserted
+ * (`tests/the-panel.test.ts`).
  */
 function rows(lines: readonly string[], accented = false): ReactNode[] {
   return lines.map((line, index) =>
@@ -446,129 +460,112 @@ function rows(lines: readonly string[], accented = false): ReactNode[] {
 }
 
 /**
- * THE PANEL: the box the session opens with, in whichever of the two boxed forms the
- * terminal has room for.
+ * THE PANEL: the name drawn, and what the session is — in whichever of the two arrangements
+ * the terminal has room for.
  *
  * A terminal too narrow for either gets no panel at all and the same lines at the left
  * edge, which is decided before this component is reached (`panel.ts`, `session.ts`) —
  * so there is no third branch here, and the narrow case is not a drawing but the absence
  * of one.
  *
- * The title is a ROW rather than something laid over the border, and that is the whole
- * reason the box's top edge is drawn in three pieces: a stub, the title with a space on
- * each side, and the rest running to the corner. Laid over the border instead, the title
- * would need spaces of its own to push the border characters out from under it — and a
- * space a component adds to a line is a component composing one.
+ * ⚠️ THERE WAS A BOX AROUND IT, drawn corner to corner, with the title laid on its top edge
+ * in three pieces — a stub of border, the title with a space on each side, and the rest
+ * running to the corner. All of it is gone: the reference this panel was measured against
+ * writes its name, its build and its context as text beside its logo and draws no frame, and
+ * the frame was the one thing on this surface a component painted for a reason that was not
+ * the record's. What the box cost is measured rather than remembered — two rows of edge, four
+ * columns of border and gap, and the arrangement that had to be chosen around them — and what
+ * replaces it costs the drawing of the name and nothing more.
+ *
+ * ⚠️ AND WITH IT WENT THE WIDTH. The box took the terminal's, so this component was handed one;
+ * nothing here is drawn to an edge now, so every row is as wide as what is on it and the panel
+ * has no width to be told (`panel.ts`, {@link Panel}).
  */
 function Opening({ panel }: { readonly panel: Panel }): ReactNode {
   return node(
     Box,
-    // CORNER TO CORNER. How much of the screen the frame takes is the terminal's answer
-    // and not the content's; which arrangement goes inside it is the content's and was
-    // decided before this component was reached (`panel.ts`).
-    { flexDirection: 'column', width: panel.columns },
-    node(
-      Box,
-      { flexDirection: 'row' },
-      node(Box, {
-        borderStyle: BORDER,
-        borderColor: ACCENT,
-        borderBottom: false,
-        borderRight: false,
-        width: BEFORE_TITLE,
-        height: 1,
-      }),
-      node(Box, { marginX: 1 }, node(Text, { color: ACCENT }, panel.title)),
-      node(Box, {
-        borderStyle: BORDER,
-        borderColor: ACCENT,
-        borderBottom: false,
-        borderLeft: false,
-        flexGrow: 1,
-        height: 1,
-      }),
-    ),
-    node(
-      Box,
-      {
-        borderStyle: BORDER,
-        borderColor: ACCENT,
-        borderTop: false,
-        flexDirection: panel.form === 'columns' ? 'row' : 'column',
-        paddingX: INSIDE_THE_BOX,
-      },
-      ...(panel.form === 'columns' ? sideBySide(panel) : oneOverTheOther(panel)),
-    ),
+    { flexDirection: panel.form === 'columns' ? 'row' : 'column' },
+    ...(panel.form === 'columns' ? sideBySide(panel) : oneOverTheOther(panel)),
   );
 }
 
 /**
- * The mark and where the session is standing, then a rule, then the record's section — with
- * the section in the middle of the height the mark gave the box.
+ * The mark, and beside it what the session is — with the text in the middle of the height the
+ * mark gave the row.
  *
- * THE RIGHT-HAND COLUMN IS AS TALL AS THE ROW, by construction rather than by a number: a
- * column of a row takes the row's height, and the row is as tall as its tallest child, which
- * is the drawing. So {@link IN_THE_MIDDLE} has a height to be in the middle of, and nothing
- * here counts a row.
+ * THE TEXT COLUMN IS AS TALL AS THE ROW, by construction rather than by a number: a column of
+ * a row takes the row's height, and the row is as tall as its tallest child, which is the
+ * drawing. So {@link IN_THE_MIDDLE} has a height to be in the middle of, and nothing here
+ * counts a row.
+ *
+ * THE GAP IS ON THE MARK'S SIDE OF IT, which is one place rather than two: it used to be a
+ * padding on each of them with a rule in between, and there is nothing in between.
  */
 function sideBySide(panel: Panel): ReactNode[] {
   return [
     node(
       Box,
-      {
-        key: 'left',
-        flexDirection: 'column',
-        alignItems: IN_THE_MIDDLE,
-        paddingRight: BETWEEN_COLUMNS,
-      },
-      ...whereItStands(panel),
+      { key: 'mark', flexDirection: 'column', paddingRight: BETWEEN_COLUMNS },
+      ...rows(panel.mark, true),
     ),
     node(
       Box,
-      {
-        key: 'right',
-        flexDirection: 'column',
-        justifyContent: IN_THE_MIDDLE,
-        borderStyle: BORDER,
-        borderColor: ACCENT,
-        borderTop: false,
-        borderRight: false,
-        borderBottom: false,
-        paddingLeft: BESIDE_THE_RULE,
-      },
-      theRecord(panel, 0),
+      { key: 'beside', flexDirection: 'column', justifyContent: IN_THE_MIDDLE },
+      ...whatItSays(panel),
     ),
   ];
 }
 
-/** The same groups, one under the other, for a terminal too narrow for two columns. */
-function oneOverTheOther(panel: Panel): ReactNode[] {
-  return [...whereItStands(panel), theRecord(panel, BETWEEN_SECTIONS)];
-}
-
 /**
- * The mark, and under it where the session is standing.
+ * The same groups, one under the other, for a terminal too narrow to put the text beside the
+ * mark.
  *
- * Each group is a box of its own rather than rows poured into one, and the reason is the
- * library's: a row is identified inside its parent by its POSITION, so two groups sharing
- * a parent would each have a first row claiming the same place. One box per group is what
- * makes each group's positions its own.
+ * THE MARK IS FIRST, and it is the same reading order the other form has across the screen
+ * rather than a second one: the drawing, then what the session is. ⚠️ THE TITLE USED TO BE
+ * FIRST here, because the frame drew it above everything.
  */
-function whereItStands(panel: Panel): ReactNode[] {
-  return [
-    node(Box, { key: 'mark', flexDirection: 'column' }, ...rows(panel.mark, true)),
-    node(Box, { key: 'standing', flexDirection: 'column' }, ...rows(panel.standing)),
-  ];
+function oneOverTheOther(panel: Panel): ReactNode[] {
+  return [group('mark', panel.mark, true), ...whatItSays(panel)];
 }
 
 /**
- * WHAT THE RECORD IS: the one section of the box, and everything the box says that is not
- * the name or the place.
+ * WHAT THE SESSION IS, WHERE IT IS STANDING, AND WHAT THE RECORD IS — the three groups that
+ * go beside the mark, in that order, in both arrangements.
  *
- * `above` is what separates it from whatever precedes it, and it differs between the two
- * forms because what precedes it differs: beside the mark there is nothing above it and its
- * top row lines up with the top of the drawing, while under the mark there is, and a
- * section that started on the next row would read as part of the group before it.
+ * ⚠️ THE FIRST OF THEM WAS ON THE BOX'S TOP BORDER and the second was under the mark. Moving
+ * them here is the whole of what the frame's departure bought: the drawing is nine rows and
+ * the text is five, so text BESIDE the mark costs the page the mark alone, and text under it
+ * cost the page both.
+ *
+ * THE TITLE IS PAINTED AND THE OTHER TWO ARE NOT, which is the same switch the mark is drawn
+ * with and the same reason: it says what the session is rather than anything about the record.
+ * It is the accent's second and last place, exactly as it was when the border carried it.
+ */
+function whatItSays(panel: Panel): ReactNode[] {
+  return [group('title', [panel.title], true), group('standing', panel.standing), theRecord(panel)];
+}
+
+/**
+ * Some already-rendered lines as one group of rows, under a key of its own.
+ *
+ * ONE BOX PER GROUP rather than rows poured into one parent, and the reason is the library's:
+ * a row is identified inside its parent by its POSITION, so two groups sharing a parent would
+ * each have a first row claiming the same place.
+ */
+function group(key: string, lines: readonly string[], accented = false): ReactNode {
+  return node(Box, { key, flexDirection: 'column' }, ...rows(lines, accented));
+}
+
+/**
+ * WHAT THE RECORD IS: the one section of the panel, and everything it says that is not the
+ * name, the build or the place.
+ *
+ * A BLANK ROW OVER IT, IN BOTH ARRANGEMENTS. ⚠️ IT WAS THE STACKED FORM'S ALONE, on a premise
+ * this delivery falsified: *beside the mark there is nothing above it and its top row lines up
+ * with the top of the drawing*. That was true while the column held the record and nothing
+ * else. What the session is and where it is standing are above it in both forms now, so a
+ * section that started on the next row would read as part of the group before it either way —
+ * and the argument the two forms differed by is the same argument that now applies to both.
  *
  * ⚠️ IT USED TO BE TWO SECTIONS WITH A RULE BETWEEN THEM, and this was `sections`. The
  * second section said what to type; it went because the row under the prompt says it too,
@@ -581,16 +578,18 @@ function whereItStands(panel: Panel): ReactNode[] {
  * rather than deleted with it. It said: *"IT IS AS WIDE AS THE SECTIONS ARE, and by
  * construction rather than by a number: with nothing inside it, it takes the width its
  * siblings gave the column."* That was true while the box hugged its content, so the column
- * was as wide as what was in it and the two were the same number. The box is drawn corner
- * to corner since the page began following the terminal, so the column is STRETCHED and the
+ * was as wide as what was in it and the two were the same number. The box was drawn corner
+ * to corner once the page began following the terminal, so the column was STRETCHED and the
  * rule went on measuring its siblings: a run of 45 columns inside a column of 61, measured
  * on a real terminal 120 wide. What it divided and what it looked like it divided had come
  * apart, and no arithmetic anywhere knew — the rule cost no columns, so nothing counted it.
+ * There is no box to stretch a column now, which is why this is the last delivery that could
+ * have said it.
  */
-function theRecord(panel: Panel, above: number): ReactNode {
+function theRecord(panel: Panel): ReactNode {
   return node(
     Box,
-    { key: 'record', flexDirection: 'column', marginTop: above },
+    { key: 'record', flexDirection: 'column', marginTop: BETWEEN_SECTIONS },
     ...rows(panel.record),
   );
 }
@@ -649,10 +648,11 @@ function theLeftover(many: number): ReactNode {
  * already has between how much fits and what is drawn. A row with nothing in it is still
  * left out rather than left blank, which is the half of the old shape that survived whole.
  *
- * THE RULES ARE DRAWN AND NOT WRITTEN, exactly as the one inside the panel is: a box with
- * nothing in it and one edge switched on, so the run of glyphs is the library's. A string
- * of dashes typed here would be text a component put on the page. They are CHROME and they
- * take the one accent this file spends, like the frame they are the siblings of.
+ * THE RULES ARE DRAWN AND NOT WRITTEN: a box with nothing in it and one edge switched on, so
+ * the run of glyphs is the library's. A string of dashes typed here would be text a component
+ * put on the page. They are CHROME and they take the one accent this file spends. ⚠️ THIS SAID
+ * *exactly as the one inside the panel is* and *like the frame they are the siblings of*, and
+ * the panel has neither: the frame went, and these two are the only edges left on the surface.
  */
 function Present({
   present,

@@ -50,7 +50,7 @@ import {
   type Ran,
   type Step,
 } from './support/pty.js';
-import { screenOf } from './support/screen.js';
+import { endsAtTheFoot, screenOf } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = new URL('../dist/cli.js', import.meta.url).pathname;
@@ -709,12 +709,23 @@ describe('the two keys open one list, and it stands off the row under it', () =>
         (screen.rows[first - 1] as string).trim(),
         `${key}: the list has no blank row over it`,
       ).toBe('');
-      // Not vacuous: the row above THAT is not blank, so this is a separation rather than a
-      // screen with room to spare.
-      expect(
-        (screen.rows[first - 2] as string).trim(),
-        `${key}: nothing is above the gap`,
-      ).not.toBe('');
+      // NOT VACUOUS, AND ⚠️ THE WITNESS FOR IT CHANGED. It used to be the row above THAT: with one
+      // line landed the page had no room to spare, so the row two above the list was the landed
+      // line and the blank row between them could only be the palette's. What falsified it is the
+      // delivery that took the FRAME off the panel: the opening is three rows shorter at this
+      // size, so the page has room over again and the row two above the list is one of the
+      // leftover's — measured, as this very assertion going red on an empty string.
+      //
+      // WHAT REPLACES IT IS STRONGER THAN WHAT IT WAS, because it does not depend on how much
+      // room the page happens to have: the blank row is COUNTED as well as drawn (`repl/area.ts`,
+      // `ABOVE_THE_PALETTE`), and a row drawn and not counted — or counted and not drawn — puts
+      // the input off the last row the layout leaves. So the separation is asserted by the anchor,
+      // which no amount of spare room can satisfy by accident.
+      endsAtTheFoot(screen, rows, `${key}: with the list open`);
+      // And what is above the whole run of emptiness really is the page rather than the top of
+      // the screen, so the list is not being read on an empty page.
+      const above = screen.rows.slice(0, first).findLastIndex((row) => row.trim().length > 0);
+      expect(above, `${key}: nothing at all is above the list`).toBeGreaterThanOrEqual(0);
       return listed.map((row) => row.trimStart().split(/\s{2,}/)[0] as string);
     };
 

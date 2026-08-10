@@ -104,15 +104,20 @@ const VERB_WIDTH = 16;
  */
 const BETWEEN_CLAUSES = ' · ';
 
-/** The product, and what this session is — the box's title, and its first line without one. */
+/**
+ * The product, and what this session is — the first row of the text beside the mark.
+ *
+ * ⚠️ IT WAS THE BOX'S TITLE, laid on the frame's top edge. The frame is gone; the words did
+ * not change and neither did the order they are in.
+ */
 const NAME = 'mnema';
 const WHAT_IT_IS = 'a session over this project';
 
 /**
- * WHICH BUILD THIS IS, on the title beside the name.
+ * WHICH BUILD THIS IS, beside the name.
  *
  * It is the one fact about the PRODUCT the opening states, and it is there because a
- * console is where somebody reports what they saw: a screenshot of a box that names the
+ * console is where somebody reports what they saw: a screenshot of an opening that names the
  * version is a bug report that says which one. The string is the one `mnema --version`
  * prints — one constant, read by both (`version.ts`), so a title and a flag cannot come to
  * disagree about what is running.
@@ -128,7 +133,7 @@ const WHICH_BUILD = `v${VERSION}`;
  * What the panel's ONE section is called.
  *
  * ⚠️ THERE WERE TWO OF THEM, and the second was called `Hints`: a heading over the one
- * affordance the box named. It went because the row under the prompt already says where
+ * affordance the panel named. It went because the row under the prompt already says where
  * every word of the session is — the palette the slash opens — and the panel's copy was the
  * one that scrolls off the top and never comes back. The heading is kept for the section
  * that stayed, because a section with a heading and one without are two shapes.
@@ -212,7 +217,7 @@ export interface Session {
    *
    * It is the value the panel is drawn with (`standing.ts`), carried rather than asked
    * for again: a verb that requires the asker's identity is given it here instead of
-   * demanding a caller type back what the box above the prompt is showing them
+   * demanding a caller type back what the panel above the prompt is showing them
    * (`asking.ts`). Resolved ONCE, when the session opens, from local material and with no
    * writer opened — so what a line costs is the line's own work and nothing else.
    *
@@ -351,8 +356,8 @@ export async function openSession(request: SessionRequest): Promise<void> {
    * ⚠️ AND THE HEIGHT RULE IT ARRIVED WITH WAS THE WRONG ONE, which is what this function
    * now carries. The name gave way when the DRAWING was taller than the terminal, and five
    * rows against twenty-four never is — measured, and the axis chose nothing at any size a
-   * person opens. What the drawing costs is one ADDEND of what the page costs: the box's two
-   * edges, where the session is standing, what the record is, the sentence under it and the
+   * person opens. What the drawing costs is one ADDEND of what the page costs: what the
+   * session is, where it is standing, what the record is, the sentence under it and the
    * input area are the others, and only the first depends on which form is drawn. So the
    * question asked here is whether the WHOLE page fits, with a row to spare, and the row is
    * the one the layout keeps (`area.ts`, {@link BELOW_THE_VIEWPORT}) rather than a margin
@@ -369,9 +374,9 @@ export async function openSession(request: SessionRequest): Promise<void> {
    */
   const theOpening = (columns: number, rows: number): Opening => {
     // THE PAGE WITH A GIVEN DRAWING IN IT, composed rather than estimated — and that is what
-    // keeps the arithmetic out of a circle. The mark's WIDTH is what decides whether the box
-    // has two columns, and the arrangement is what decides whether the mark's rows are added
-    // to the record's or shared with them; both are settled the moment the opening exists.
+    // keeps the arithmetic out of a circle. The mark's WIDTH is what decides whether the text
+    // goes beside it, and the arrangement is what decides whether the mark's rows are added to
+    // the text's or shared with them; both are settled the moment the opening exists.
     const drawnWith = (mark: readonly Line[]): Opening =>
       openingFor({ columns, render, title, mark, standing: where, record, beneath: refuses });
     // WHAT THE PAGE SPENDS THAT NO DRAWING CHANGES: the input area at the bottom, in
@@ -549,25 +554,27 @@ export async function typedLine(line: string, session: Session): Promise<AfterLi
 
 /**
  * THE SENTENCE THAT MAY NOT GO, and by now it is the whole of what the opening lands
- * beside the panel.
+ * under the panel.
  *
  * It is the only thing that explains, to somebody who just opened a prompt, why half of
  * what they know how to type is about to be refused — and it counts the reads rather than
  * stating a number, so it cannot go stale.
  *
- * IT IS OUTSIDE THE BOX, AND THAT IS MEASURED RATHER THAN AESTHETIC — but not for the
- * reason this paragraph used to give. ⚠️ IT SAID that inside the panel's right-hand column
- * the sentence "would push the box past eighty columns", and that has been false since the
- * box stopped being as wide as its content: it is drawn corner to corner now, so the width
- * of the box is the TERMINAL'S and nothing inside it can push it anywhere.
+ * IT IS NOT ONE OF THE PANEL'S OWN ROWS, AND THAT IS MEASURED RATHER THAN AESTHETIC — but not
+ * for the reason this paragraph used to give. ⚠️ IT SAID that inside the panel's right-hand
+ * column the sentence "would push the box past eighty columns", and that was false from the
+ * moment the box stopped being as wide as its content: it was drawn corner to corner, so the
+ * width of the box was the TERMINAL'S and nothing inside it could push it anywhere. ⚠️ AND
+ * THERE IS NO BOX AT ALL NOW, which does not put the first argument back — it removes the
+ * subject of it.
  *
- * WHAT SURVIVES OF THE ARGUMENT IS ABOUT THE FORM RATHER THAN THE BOX, and it is still a
- * measurement. The panel chooses its arrangement by the width its CONTENT needs (`panel.ts`
- * — the two columns, the rule between them and the gaps on each side are counted), so a
- * line of seventy-odd columns in the right-hand column would push that number past eighty
- * and the two-column form would give way to the stacked one on an ordinary terminal. The
- * sentence keeps the shape it has always had, at the depth it has always had, and the box
- * keeps the form that lets both of its groups be seen at once.
+ * WHAT SURVIVES OF THE ARGUMENT IS ABOUT THE FORM, and it is still a measurement. The panel
+ * chooses its arrangement by the width its CONTENT needs (`panel.ts` — the mark, the gap, and
+ * the widest row of the text beside it), so a line of seventy-odd columns among those rows
+ * would make the two columns cost about a hundred and twenty-eight and the form would give way
+ * to the stacked one on the terminal a person opens. The sentence keeps the shape it has always
+ * had, at the depth it has always had, and the panel keeps the arrangement that lets the mark
+ * and what the record is be seen at once.
  *
  * LIKE THE PANEL IT IS STATIC, and that is the difference from the tips below: it lands in
  * the scrollback and stays there, so a caller who scrolls to the top of a long session

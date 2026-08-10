@@ -43,6 +43,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
+import { bannerFor } from '../src/presentation/banner.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { tips } from '../src/repl/session.js';
 import { CLEAR, LEAVE } from '../src/session-words.js';
@@ -53,6 +54,7 @@ import {
   endsAtTheFoot,
   firstDrawnRow,
   lastDrawnRow,
+  promptRow,
   screenOf,
   theGapOn,
 } from './support/screen.js';
@@ -63,8 +65,20 @@ const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 /** What the caller types in front of, as the layout writes it: trimmed at the end. */
 const PROMPT = 'mnema>';
 
-/** The box's top-left corner, named by its code point rather than typed. */
-const TOP_LEFT = '╭';
+/**
+ * The first row of the drawing of the name a terminal this wide gets, as the layout writes it —
+ * the row that goes first when a page is pushed up.
+ *
+ * ⚠️ IT WAS THE BOX'S TOP-LEFT CORNER, one constant and one glyph. The frame is gone, so what the
+ * top of the opening IS has to be asked of the module that draws it, at the width the screen was
+ * replayed at — which also means a fifth form of the art moves this instrument with it.
+ */
+function theFirstRowOfTheMark(columns: number): string {
+  const art = bannerFor({ columns, rows: 0, needs: () => 0 }).map(renderPlain);
+  const first = art[0];
+  expect(first, 'the name is drawn with no rows at all').toBeDefined();
+  return first as string;
+}
 
 /** What the opening always says, whatever the terminal is like. */
 const OPENED = 'a session over this project';
@@ -206,14 +220,21 @@ describe('the input ends on the last row the layout leaves, at every size', () =
         theGapOn(screen, PROMPT),
         `${columns}x${rows}: nothing was left over, so nothing was anchored`,
       ).toBeGreaterThan(0);
-      // AND NOTHING OF THE PAGE IS CUT. The first row is the box's top edge, which is the one
-      // line of the opening that names the build — so what is on the screen is the whole page
-      // rather than a drawing whose top went into the scrollback.
+      // AND NOTHING OF THE PAGE IS CUT. The first row is the first row of the MARK and the build
+      // is named somewhere on the page — so what is on the screen is the whole opening rather than
+      // a drawing whose top went into the scrollback.
+      //
+      // ⚠️ BOTH USED TO BE ROW ZERO, because the box's top border carried the version: one row
+      // answered *the page starts at the top* and *the page is not cut* at once. The version is
+      // beside the mark now, so the two questions are two rows and are asked separately.
       expect(firstDrawnRow(screen), `${columns}x${rows}: the page does not start at the top`).toBe(
         0,
       );
-      expect(screen.rows[0], `${columns}x${rows}: the page opened cut`).toContain(`v${VERSION}`);
-      expect(screen.rows[0], `${columns}x${rows}`).toContain(TOP_LEFT);
+      expect(screen.rows[0], `${columns}x${rows}`).toContain(theFirstRowOfTheMark(columns));
+      expect(
+        screen.rows.slice(0, promptRow(screen, PROMPT)).join('\n'),
+        `${columns}x${rows}: the page opened cut`,
+      ).toContain(`v${VERSION}`);
     }, 240_000);
   }
 
@@ -230,11 +251,13 @@ describe('the input ends on the last row the layout leaves, at every size', () =
     const answered = screenOf(ran.bytes.slice(0, ran.at[1] as number), columns, rows);
     endsAtTheFoot(opening, rows, 'opened');
     endsAtTheFoot(answered, rows, 'answered');
-    // THE ANSWER REALLY WAS TALLER THAN THE SCREEN: the box the page opened with is not on
+    // THE ANSWER REALLY WAS TALLER THAN THE SCREEN: the mark the page opened with is not on
     // it any more, so what is being asserted is a page the terminal scrolled rather than one
     // that happened to fit.
     expect(answered.text, 'the answer never came').toContain(`${NAMED} eight`);
-    expect(answered.text, 'the answer fitted on the page').not.toContain(TOP_LEFT);
+    expect(answered.text, 'the answer fitted on the page').not.toContain(
+      theFirstRowOfTheMark(columns),
+    );
     // AND THE EMPTINESS WENT WITH IT, which is what "by construction" means here — though not for
     // the reason written here before. ⚠️ IT SAID *the leftover is rows of the flow, so an answer
     // long enough to fill the page pushes them off the top*: the leftover is part of the frame
@@ -261,42 +284,51 @@ describe('all three callers of the page leave the input at the foot', () => {
     // one of the three failing to anchor is the defect that shows up a week later. They are
     // asked in ONE run, in the order a caller would reach them.
     const rows = 40;
-    const wide = 120;
-    // NARROWED, NOT SHORTENED, and the width is chosen so nothing folds: the answer's rows
-    // are landed folded to the width the session STARTED at, so a narrower window would
-    // make each of them two rows — and the case below asks whether all of the page survived
-    // a page turn, which a fold would answer for it.
-    const narrow = 110;
+    // WIDENED, NOT SHORTENED, and the two widths are chosen for two reasons.
+    //
+    // NOTHING FOLDS: the answer's rows are landed folded to the width the session STARTED at, so
+    // a NARROWER window would make each of them two rows — and the case below asks whether all of
+    // the page survived a page turn, which a fold would answer for it. Growing cannot fold
+    // anything.
+    //
+    // ⚠️ AND THE PAIR HAS TO CROSS THE THRESHOLD, which is what this delivery changed. It went
+    // from a hundred and twenty to a hundred and TEN, and any two widths differed while the box
+    // was drawn corner to corner; nothing is drawn to an edge now, so both of those put the text
+    // beside the mark and the console would have written nothing at all — measured, as a step
+    // that waited forever. A hundred has no room beside the mark and a hundred and twenty has, so
+    // the resize is a page and the direction is still the safe one.
+    const opensAt = 100;
+    const widened = 120;
     const ran = await inPty({
-      columns: wide,
+      columns: opensAt,
       rows,
       steps: [
         opens,
         asks(0),
         {
-          resize: { columns: narrow, rows },
-          until: (bytes) => times(bytes, TOP_LEFT) > 1,
+          resize: { columns: widened, rows },
+          until: (bytes) => times(bytes, OPENED) > 1,
           what: 'drew the page again at the new width',
         },
         {
           types: `${CLEAR}\r`,
-          until: (bytes) => times(bytes, TOP_LEFT) > 2,
+          until: (bytes) => times(bytes, OPENED) > 2,
           what: 'gave back a clean page',
         },
         leaves,
       ],
     });
-    const opened = screenOf(ran.bytes.slice(0, ran.at[0] as number), wide, rows);
-    const resized = screenOf(ran.bytes.slice(0, ran.at[2] as number), narrow, rows);
-    const cleared = screenOf(ran.bytes.slice(0, ran.at[3] as number), narrow, rows);
+    const opened = screenOf(ran.bytes.slice(0, ran.at[0] as number), opensAt, rows);
+    const resized = screenOf(ran.bytes.slice(0, ran.at[2] as number), widened, rows);
+    const cleared = screenOf(ran.bytes.slice(0, ran.at[3] as number), widened, rows);
 
     endsAtTheFoot(opened, rows, 'the page that opened');
     endsAtTheFoot(resized, rows, 'the page that followed the terminal');
     endsAtTheFoot(cleared, rows, 'the page that was cleared');
 
     // AND ALL THREE ARE REALLY PAGES OF THEIR OWN, or one screen is being asserted three
-    // times: the first has nothing said on it, the second has the answer and a box at the
-    // new width, and the third has the box and nothing said.
+    // times: the first has nothing said on it, the second has the answer and the opening at the
+    // new width, and the third has the opening and nothing said.
     expect(opened.text, 'nothing was drawn when it opened').toContain(OPENED);
     expect(opened.text, 'the caller had already searched when it opened').not.toContain(
       `${NAMED} eight`,
@@ -305,13 +337,19 @@ describe('all three callers of the page leave the input at the foot', () => {
       `${NAMED} eight`,
     );
     expect(cleared.text, 'the answer survived a clean page').not.toContain(`${NAMED} eight`);
-    expect(cleared.text, 'the clean page has no box on it').toContain(OPENED);
+    expect(cleared.text, 'the clean page has no opening on it').toContain(OPENED);
 
     // WHAT THE RESIZE MAY NOT COST, and it is the case that pins the count of what has been
     // SAID: the page is turned over an answer that is already on it, so a placement that
     // counted the opening and the area alone would push the whole of the flow off the top by
-    // as many rows as the session had said. The box's top edge is the row that goes first.
-    expect(resized.rows[0], 'the page turned for a resize opened cut').toContain(`v${VERSION}`);
+    // as many rows as the session had said. The first row of the MARK is the row that goes first.
+    //
+    // ⚠️ IT ASKED FOR THE BUILD ON ROW ZERO, because row zero was the box's top border and the
+    // border carried the version. The version is beside the mark now, so the row that goes first
+    // and the row that names the build are two rows.
+    expect(resized.rows[0], 'the page turned for a resize opened cut').toContain(
+      theFirstRowOfTheMark(widened),
+    );
     // And both really were anchored rather than merely fitting: there are rows with nothing on
     // them between what the page says and the input.
     for (const [screen, what] of [
@@ -343,12 +381,12 @@ describe('all three callers of the page leave the input at the foot', () => {
         opens,
         {
           resize: { columns, rows: tall },
-          until: (bytes) => times(bytes, TOP_LEFT) > 1,
+          until: (bytes) => times(bytes, OPENED) > 1,
           what: 'drew the page again at the new height',
         },
         {
           resize: { columns, rows: short },
-          until: (bytes) => times(bytes, TOP_LEFT) > 2,
+          until: (bytes) => times(bytes, OPENED) > 2,
           what: 'drew the page again back at the old height',
         },
         leaves,
@@ -366,7 +404,7 @@ describe('all three callers of the page leave the input at the foot', () => {
       [grown, 'the taller page'],
       [shrunk, 'the shorter page'],
     ] as const) {
-      expect(screen.rows[0], `${what} opened cut`).toContain(`v${VERSION}`);
+      expect(screen.rows[0], `${what} opened cut`).toContain(theFirstRowOfTheMark(columns));
       expect(theGapOn(screen, PROMPT), `${what} has nothing left over`).toBeGreaterThan(0);
     }
     // Not vacuous: the two pages really were placed at different heights, so this is not one

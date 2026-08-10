@@ -473,9 +473,14 @@ function isBadge(row: string): boolean {
  * By SHAPE, and it is the one row of the area that cannot be matched against something the
  * session composed: a rule is drawn by the layout rather than written, so there is no
  * string anywhere to compare it to. Nothing this product PRINTS is one character repeated
- * across a row — the panel's own rule has the frame at both ends of it — and the case
- * below is what says so, because a filter that swallowed an answer would break the very
- * equality it exists to serve.
+ * across a row, and the case below is what says so, because a filter that swallowed an answer
+ * would break the very equality it exists to serve.
+ *
+ * ⚠️ THE REASON GIVEN USED TO BE THE FRAME — *the panel's own rule has the frame at both ends of
+ * it*, so a row of nothing but the run could only be the input area's. The panel drew a rule then
+ * and it draws none now, which makes the filter safer rather than less safe: the two rules the
+ * input sits between are the only runs on the page at all (`tests/the-panel.test.ts` asks the
+ * absence of the other kind).
  */
 function isRule(row: string): boolean {
   const text = stripped(row).replace(/ +$/, '');

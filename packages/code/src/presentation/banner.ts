@@ -32,7 +32,7 @@
  * THE TWO AXES HAVE DIFFERENT ROLES, and that is why the rule could not be copied across.
  * Across the screen the drawing IS what disputes the room: it is the widest thing in its
  * column, so "the drawing fits" and "the page fits" are one question. Down the screen it is
- * a PARCEL — the box's borders, the place the session is standing, what the record is, the
+ * a PARCEL — what the session is, the place it is standing, what the record is, the
  * sentence under it and the input area all take rows too — and a form that asked "do I
  * fit?" ignored every other addend and answered yes. So the question asked on this axis is
  * whether the PAGE fits with this drawing in it, and this module may not answer that one:
@@ -72,10 +72,12 @@
  * tempting place there is to spend a hue on decoration" — the temptation was named
  * correctly and the rule it appealed to has since gained an axis. Colour means severity
  * wherever it says something about the RECORD, which is every line `presentation/`
- * produces; the console's opening panel paints its border, its title and this drawing in
- * one accent, and that accent is CHROME — it is the layout's, it is spent in one place,
- * and it is a hue no severity uses (`repl/region.ts`, and the guard in
- * `tests/the-panel.test.ts`). Nothing in this module knows about it: the drawing is the
+ * produces; the console's opening panel paints this drawing and the row that says what the
+ * session is in one accent, and that accent is CHROME — it is the layout's, it is spent in one
+ * place, and it is a hue no severity uses (`repl/region.ts`, and the guard in
+ * `tests/the-panel.test.ts`). ⚠️ IT USED TO PAINT A BORDER AND A TITLE ON IT as well, and the
+ * frame is gone; the rule did not move, only what there is to spend it on. Nothing in this
+ * module knows about it: the drawing is the
  * same parts either way, and a caller that puts it anywhere else gets a heading.
  */
 
@@ -244,23 +246,22 @@ export interface BannerRequest {
   /** How tall it is, asked of the same device in the same place. */
   readonly rows: number;
   /**
-   * HOW MANY ROWS THE PAGE NEEDS with a given drawing of the name in it — the box around
-   * it, where the session is standing, what the record is, the sentence under it, the input
-   * area at the bottom, and the row the layout keeps free.
+   * HOW MANY ROWS THE PAGE NEEDS with a given drawing of the name in it — what the session
+   * is, where it is standing, what the record is, the sentence under it, the input area at
+   * the bottom, and the row the layout keeps free.
    *
    * IT IS A QUESTION THIS MODULE MAY NOT ANSWER, and that is the whole shape of the height
-   * rule. Nothing in `presentation/` may look at a terminal or know what a box costs, and
-   * the drawing is one addend of a sum whose other addends are somewhere else entirely
-   * (`repl/panel.ts`, `repl/area.ts`) — so what arrives here is the ANSWER, asked of
+   * rule. Nothing in `presentation/` may look at a terminal or know what an arrangement
+   * costs, and the drawing is one addend of a sum whose other addends are somewhere else
+   * entirely (`repl/panel.ts`, `repl/area.ts`) — so what arrives here is the ANSWER, asked of
    * whoever composes the page.
    *
    * ⚠️ IT IS ASKED PER CANDIDATE RATHER THAN ONCE, and that is not an economy missed. What
-   * the page costs is not this drawing's height plus a constant: inside a two-column box the
-   * drawing shares its rows with the record's section and the taller of the two is what is
-   * paid, and a drawing wide enough to force the stacked arrangement is measured inside a
-   * different shape than the one below it. A single number handed in would be right for one
-   * form and wrong for the three others, in the direction that draws a page taller than the
-   * screen.
+   * the page costs is not this drawing's height plus a constant: with the text BESIDE the mark
+   * the drawing shares its rows with it and the taller of the two is what is paid, and a
+   * drawing wide enough to force the stacked arrangement is measured inside a different shape
+   * than the one below it. A single number handed in would be right for one form and wrong for
+   * the three others, in the direction that draws a page taller than the screen.
    */
   readonly needs: (drawing: readonly Line[]) => number;
 }
@@ -278,9 +279,12 @@ export interface BannerRequest {
  *
  * IT USED TO BE ANSWERED ONCE, when the session opened, on the argument that "a banner
  * that redrew itself on a resize would be rewriting history the caller can scroll back
- * to". What falsified it is the box the drawing now sits inside: it is as wide as the
- * TERMINAL, so a terminal the caller narrowed folds the whole frame in half, and the
- * console draws the page again at the new width. The argument survives and it is the
+ * to". What falsified it was the box the drawing sat inside: it was as wide as the
+ * TERMINAL, so a terminal the caller narrowed folded the whole frame in half, and the
+ * console draws the page again at the new width. ⚠️ THE BOX IS GONE AND THE ANSWER IS THE
+ * SAME ONE: which ARRANGEMENT the width has room for is still a function of the width, so a
+ * terminal narrowed past that threshold still has the wrong page on it. The argument survives
+ * and it is the
  * console's to keep — the old page is carried INTO the scrollback before the new one is
  * drawn, so what the caller can scroll back to is added to and never rewritten
  * (`repl/console.ts`, `repl/page.ts`). Nothing here changed: this is a function of two

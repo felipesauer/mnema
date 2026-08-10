@@ -64,11 +64,16 @@ const SRC = fileURLToPath(new URL('../src', import.meta.url));
 const OPENED = 'a session over this project';
 /** What the caller types in front of, as the layout writes it: trimmed at the end. */
 const PROMPT = 'mnema>';
+/**
+ * The first words of the one sentence the session lands UNDER the panel — the last row the
+ * opening draws, and what bounds it from below now that no bottom edge does.
+ */
+const UNDER_THE_PANEL = 'It runs the';
 /** The caret's home: the prompt and the space after it, which is what a caller types past. */
 const AFTER_THE_PROMPT = `${PROMPT} `;
 
 /**
- * The glyphs the drawing is made of, the box's side, and the run a rule is made of.
+ * The glyph the drawings are inked with, and the run a rule is made of.
  *
  * Named by their code points rather than typed, like every other unusual byte in this
  * repository's sources: a rule is one keystroke away from a pipe and a run from a hyphen,
@@ -77,12 +82,15 @@ const AFTER_THE_PROMPT = `${PROMPT} `;
  * very file, which is the twenty-fourth time on this bench.
  *
  * \u26a0\ufe0f THREE OF THEM WERE THE ISOMETRIC DRAWING'S, and they are gone with it: the two
- * diagonals, and the vertical \u2014 which was the same glyph as {@link FRAME}, one character in
- * two roles, and four cases of this surface had to be taught to tell a row of the art from a
+ * diagonals, and the vertical \u2014 which was the same glyph as the box's own side, one character
+ * in two roles, and four cases of this surface had to be taught to tell a row of the art from a
  * row of the box because of it. What draws the name now holds no frame glyph at all.
+ *
+ * \u26a0\ufe0f AND THE BOX'S SIDE WAS A CONSTANT OF THIS FILE. The frame is gone, so what it was here for
+ * \u2014 telling a row inside the box from a row of it \u2014 has no subject at all; the rows of the
+ * opening are bounded by what is above and below them instead.
  */
 const INK = '\u2588';
-const FRAME = '\u2502';
 const RUN = '\u2500';
 
 /**
@@ -861,14 +869,18 @@ function thePageOn(screen: { readonly rows: readonly string[] }): {
  * spends, and whether the whole of the opening is still on the screen.
  *
  * WHOLE IS THE PROMISE THIS FILE IS NAMED AFTER, and it is read off the first row the page
- * is DRAWN on rather than off a count: an opening taller than the screen loses its top, and
- * its top is the title. What the title is is asked of the product — it is the only line of
- * the opening that names the build — so a case cannot come to look for a sentence the session
- * stopped saying.
+ * is DRAWN on rather than off a count: an opening taller than the screen loses its top, and its
+ * top is the first row of the MARK. What the drawing is is asked of the module that draws it, so
+ * a case cannot come to look for a glyph the art stopped using.
  *
- * ⚠️ IT WAS ROW ZERO, and the anchoring is what falsified that: the rows above the page are
- * blank now, so `rows[0]` names the build on no terminal with room to spare, and this read
- * would answer *cut* on every one of them ({@link thePageOn}).
+ * ⚠️ IT WAS THE ROW THAT NAMES THE BUILD, and the frame is what made that the top: the version
+ * was on the box's top border, so the highest row of the opening and the row naming the build
+ * were one row. The build is beside the mark now — so the top is the art, and that the build is
+ * on the screen at all is asked separately.
+ *
+ * ⚠️ AND BEFORE THAT IT WAS ROW ZERO, which the anchoring falsified: the rows above the page are
+ * blank, so `rows[0]` is drawn on no terminal with room to spare and this read would answer
+ * *cut* on every one of them ({@link thePageOn}).
  */
 async function openedAt(
   columns: number,
@@ -877,6 +889,7 @@ async function openedAt(
   readonly drawing: readonly string[];
   readonly spent: number;
   readonly whole: boolean;
+  readonly named: boolean;
 }> {
   const ran = await inPty({ columns, rows, steps: [opens, leaves] });
   const screen = screenOf(ran.bytes.slice(0, ran.at[0] as number), columns, rows);
@@ -899,7 +912,10 @@ async function openedAt(
     // the finding, and it is the same one the anchoring produced: where the page sits has
     // changed twice now, and what it costs has not changed at all.
     spent: screen.rows.filter((row) => row.trim().length > 0).length,
-    whole: (screen.rows[page.first] as string).includes(`v${VERSION}`),
+    whole: drawing.length > 0 && (screen.rows[page.first] as string).includes(drawing[0] as string),
+    // AND THE BUILD IS ON THE SCREEN, which used to be the same question as the one above and is
+    // a second one now: a page cut at the bottom rather than at the top would keep its art.
+    named: screen.text.includes(`v${VERSION}`),
   };
 }
 
@@ -931,6 +947,21 @@ async function openedAt(
  *     big one. The opening is still whole and there is still a row over — what a reader loses
  *     is four rows of the record, and what they gain is the mark. It is a declared cost.
  *
+ * ⚠️ AND THE DELIVERY THAT TOOK THE FRAME OFF MOVED EVERY ROW OF THE TABLE DOWN, which is the
+ * first time it has moved in one direction. Measured on the same fixture with the output wiped on
+ * both sides: 18 to 15 at a hundred and twenty by forty, and 22 to 20 at both of the others. Two
+ * things account for it and they are worth separating, because only the first is rows the console
+ * stopped drawing:
+ *
+ *   - THE BOX'S TWO EDGES AND ITS ARRANGEMENT. Beside the mark the panel is as tall as the taller
+ *     of the drawing and the text, and the drawing is the taller: NINE rows of chrome, which is
+ *     the height of the art and the floor under this whole table. Under the mark it is the art
+ *     plus the text, one row less than it was — the bottom edge.
+ *   - AND ONE ROW THAT IS STILL DRAWN AND IS NO LONGER COUNTED. The stacked arrangement has a
+ *     margin over the record's section; with a border that row was `│ … │` and this count read it
+ *     as drawn, and it is genuinely blank now. So one of the two rows at eighty by twenty-four is
+ *     the console drawing less and the other is this instrument seeing what was always there.
+ *
  * ⚠️ AND WHAT THE LEFTOVER ROWS ARE HAS MOVED TWICE, while every number in the table stayed
  * put. They used to be the rows UNDER the page — screen a reader still had, which is what
  * "leaves" meant. The delivery that anchored the input at the foot spent them as blank rows
@@ -947,9 +978,9 @@ async function openedAt(
  * that moved a case rather than the product.
  */
 const THE_SCREEN: readonly { columns: number; rows: number; takes: number }[] = [
-  { columns: 80, rows: 24, takes: 22 },
-  { columns: 100, rows: 30, takes: 22 },
-  { columns: 120, rows: 40, takes: 18 },
+  { columns: 80, rows: 24, takes: 20 },
+  { columns: 100, rows: 30, takes: 20 },
+  { columns: 120, rows: 40, takes: 15 },
 ];
 
 describe('the console spends only part of the screen it opens on', () => {
@@ -964,6 +995,7 @@ describe('the console spends only part of the screen it opens on', () => {
       // scrollback before the caller has typed anything, and there is a row the layout can
       // keep — the boundary the input area is chosen by, asked of the whole page.
       expect(opened.whole, `${columns}x${rows}: the opening opened cut`).toBe(true);
+      expect(opened.named, `${columns}x${rows}: the build is not on the screen`).toBe(true);
       expect(
         opened.spent,
         `${columns}x${rows}: the opening is taller than the screen`,
@@ -1287,38 +1319,49 @@ describe('everything that chooses a shape by the size of the terminal is one of 
 });
 
 // ---------------------------------------------------------------------------
-// The drawing is what the page follows: nothing is drawn inside the box
+// The drawing is what the page follows: nothing on the panel is a rule
 // ---------------------------------------------------------------------------
 
-describe('the box has one section in it, and the art is the only thing drawn', () => {
+describe('the panel has one section in it, and the art is the only thing drawn', () => {
   it('holds no run of glyphs of its own on an ordinary terminal', async () => {
     // THE OTHER HALF OF WHAT THE SECOND SECTION TOOK: the rule that divided it from the
     // record. It measured its SIBLINGS rather than the column it looked like it divided —
     // 45 columns inside a column of 61, measured at 120 — and it went with the section
     // rather than being fixed, because one section has nothing to be divided from.
     //
-    // Asked at eighty columns, where the box is STACKED and the drawing of the name is the
-    // only run of glyphs inside the frame. `tests/the-page-follows-the-terminal.test.ts`
-    // asks the same thing of the two-column form.
+    // Asked at eighty columns, where the text is UNDER the mark and the drawing of the name is
+    // the only run of glyphs the panel draws. `tests/the-page-follows-the-terminal.test.ts` asks
+    // the same thing of the arrangement that puts the text beside it.
+    //
+    // ⚠️ THE ROWS USED TO BE FOUND BY THE FRAME — every row beginning with the box's side — and
+    // each was read between its two ends. There is no frame: the rows are the ones between the
+    // top of the screen and the sentence the session lands under the panel, and they are read
+    // whole. Which also means the two rules the INPUT area draws have to be outside them, and
+    // they are: the sentence is above the emptiness and the rules are below it.
     const columns = 80;
     const rows = 24;
     const ran = await inPty({ columns, rows, steps: [opens, leaves] });
     const screen = screenOf(ran.bytes.slice(0, ran.at[0] as number), columns, rows);
     expect(screen.text, 'the session never opened').toContain(OPENED);
-    // Every row of the box, which is every row between the frame's two ends.
-    const inside = screen.rows.filter((row) => row.startsWith(FRAME));
-    expect(inside.length, 'the box has no rows').toBeGreaterThan(3);
-    for (const row of inside) {
-      const middle = row.slice(1, -1);
+    const under = screen.rows.findIndex((row) => row.includes(UNDER_THE_PANEL));
+    expect(under, 'no sentence under the panel').toBeGreaterThan(0);
+    const opening = screen.rows.slice(0, under);
+    expect(opening.length, 'the opening has no rows').toBeGreaterThan(3);
+    for (const row of opening) {
       expect(
-        [...middle].some((glyph) => glyph === RUN),
-        `a run of glyphs is drawn inside the box: ${row}`,
+        [...row].some((glyph) => glyph === RUN),
+        `a run of glyphs is drawn in the opening: ${row}`,
       ).toBe(false);
     }
-    // Not vacuous: the art really is inside the box, so the rows being read are the box's.
+    // Not vacuous, in two directions: the art really is in those rows, so what is being read is
+    // the panel's — and the page really does draw a run somewhere, which is the input area's.
     expect(
-      inside.some((row) => row.includes(INK)),
-      'the mark is not inside the box',
+      opening.some((row) => row.includes(INK)),
+      'the mark is not in the opening',
+    ).toBe(true);
+    expect(
+      screen.rows.slice(under).some((row) => [...row.trim()].every((glyph) => glyph === RUN)),
+      'the input area drew no rule at all',
     ).toBe(true);
   }, 180_000);
 });

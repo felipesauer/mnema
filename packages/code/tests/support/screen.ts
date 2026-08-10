@@ -50,47 +50,43 @@ const ESC = '\u001b';
 const BLANK = ' ';
 
 /**
- * WHAT A FRAME IS DRAWN OUT OF — the run, and the four corners it ends at.
+ * WHAT A RULE IS DRAWN OUT OF — the horizontal run, and nothing else.
  *
  * Spelled by code point rather than typed, like every other unusual glyph in this
- * repository: a run is one keystroke away from a hyphen and a corner from its mirror, and a
- * character a reader cannot tell from a neighbouring one is a character an edit destroys
- * without anybody seeing it happen.
+ * repository: a run is one keystroke away from a hyphen, and a character a reader cannot tell
+ * from a neighbouring one is a character an edit destroys without anybody seeing it happen.
+ *
+ * ⚠️ THERE WERE FOUR MORE, and they were the corners a frame turns at: the panel used to be a
+ * BOX, drawn corner to corner, so an edge bounded by two of them was a width and the two halves
+ * of a title-cut top edge were neither. The frame is gone from the product
+ * (`src/repl/region.ts`), so a corner cannot appear on a page this replays — and a branch that
+ * cannot fire is worse than no branch, because the fixture that kept it green was drawing
+ * something the product does not produce.
  */
 const RUN = '\u2500';
-/** The two corners a horizontal edge BEGINS at: the box's top-left and its bottom-left. */
-const OPENS_AN_EDGE = '\u256d\u2570';
-/** The two it ENDS at: the top-right and the bottom-right. */
-const CLOSES_AN_EDGE = '\u256e\u256f';
-
-/** Whether a glyph — or the nothing off the end of the page — is one of `of`. */
-function isOneOf(glyph: string | undefined, of: string): boolean {
-  return glyph !== undefined && of.includes(glyph);
-}
 
 /**
  * EVERY WIDTH THE PAGE WAS DRAWN AT, read off the drawing rather than off a number.
  *
- * THE FRAME IS THE WITNESS. The box the console opens with is drawn corner to corner and
- * the input area's rules run the whole way across (`src/repl/panel.ts`, `src/repl/area.ts`),
- * so the distance from one end of an edge to the other IS the width the process read off
- * its device. Nothing here knows what that number ought to be; it answers what is there.
+ * A RULE IS THE WITNESS. The two rules the input area sits between run the whole way across the
+ * terminal (`src/repl/area.ts`, `src/repl/region.ts`), so the length of one IS the width the
+ * process read off its device. Nothing here knows what that number ought to be; it answers what
+ * is there.
+ *
+ * ⚠️ THE FRAME WAS THE WITNESS TOO, and it was the richer half of this measurement: the box was
+ * drawn corner to corner, so its bottom edge gave a width whatever the input area did. What is
+ * left is one witness rather than two — which is a REDUCTION and is written down as one, because
+ * a page with no input area on it can no longer say what it was drawn at.
  *
  * THE ROWS ARE JOINED because a row wider than the screen does not stop at the screen: it
  * carries on at the first column of the next one, which is what a terminal does and what
- * {@link screenOf} models. Joined, an edge is contiguous whether it fitted or not, so the
- * measurement works in BOTH directions — a frame narrower than the replay ends in blanks,
+ * {@link screenOf} models. Joined, a rule is contiguous whether it fitted or not, so the
+ * measurement works in BOTH directions — a rule narrower than the replay ends in blanks,
  * and one wider than it ends on the row below.
  *
- * WHAT COUNTS AS AN EDGE is a maximal run of {@link RUN}, and what it is worth depends on
- * what bounds it:
- *
- *   - CORNER TO CORNER — the box's bottom edge. Its width is the run and the two corners.
- *   - NEITHER END A CORNER — one of the input area's rules, which has none. Its width is
- *     the run itself.
- *   - ONE END ONLY — the box's TOP edge, which the title cuts in two. Neither half is a
- *     width and neither is counted: a page that offered them would be offering two numbers
- *     that are each smaller than the terminal, and a wrong witness is worse than none.
+ * WHAT COUNTS IS A MAXIMAL RUN of {@link RUN}, and its width is its own length. ⚠️ IT USED TO
+ * DEPEND ON WHAT BOUNDED IT — corner to corner was the run plus two, one end only was not a width
+ * at all — and neither case can occur on a page without a frame.
  */
 export function everyWidthDrawnOn(rows: readonly string[]): readonly number[] {
   const page = rows.join('');
@@ -102,10 +98,7 @@ export function everyWidthDrawnOn(rows: readonly string[]): readonly number[] {
     }
     let end = at;
     while (end < page.length && page[end] === RUN) end += 1;
-    const opens = isOneOf(page[at - 1], OPENS_AN_EDGE);
-    const closes = isOneOf(page[end], CLOSES_AN_EDGE);
-    if (opens && closes) widths.push(end - at + 2);
-    else if (!opens && !closes) widths.push(end - at);
+    widths.push(end - at);
     at = end;
   }
   return widths;
