@@ -31,18 +31,26 @@
  * AND IT OPENS WITH THE BOX AT THE TOP AND THE INPUT AT THE FOOT. The row being typed used to
  * sit wherever the opening happened to end — the middle of the screen on anything tall, with
  * nothing under it — and what fixed it is not a place the input is moved to but rows with
- * nothing on them landed UNDER the flow: the flow ends on the last row the layout leaves, so
- * the input is at the foot when the session opens and stays there by construction once the
- * content scrolls. How many rows that is is one subtraction over what the opening and the area
- * already say (`page.ts`), and nothing about the region redrawn here moved.
+ * nothing on them BETWEEN the flow and the area: the area ends on the last row the layout
+ * leaves, so the input is at the foot when the session opens and stays there by construction
+ * once the content scrolls. How many rows that is is one subtraction over what the opening and
+ * the area already say (`page.ts`).
  *
  * ⚠️ THEY WERE WRITTEN BEFORE THE OPENING, and it was this file that put them there — as bytes,
  * with the page that carried the screen away. The anchoring was right and the DIRECTION was
  * not: measured at a hundred and twenty by forty, the page opened with twenty-one empty rows at
  * the top of the screen and the box shoved down against the input, so the first thing there was
- * to read was the last thing on the page. They land through {@link OpenConsole.land}'s own list
- * now, which is also the only way they COULD go under the opening — the opening is drawn by the
- * layout, after those bytes, so nothing written with them can land below it.
+ * to read was the last thing on the page.
+ *
+ * ⚠️ AND THEN THEY WERE LANDED AS LINES OF THE FLOW, which is the half this delivery undid. It
+ * was written here that they went through {@link OpenConsole.land}'s own list *and that nothing
+ * about the region redrawn here moved* — true of the rows, and it is what made the anchoring
+ * one-way: a line of the flow can only ever be APPENDED, so an input area that GREW scrolled the
+ * page and an input area that shrank could be answered with nothing but more empty rows.
+ * Measured, at a hundred and twenty by forty: one opening and shutting of the list of words, and
+ * the whole box was in the scrollback for good. The rows are part of the frame now
+ * ({@link showing}, `region.ts`), so the list takes them and gives them back and the page does
+ * not move at all.
  *
  * THE PAGE OPENS CLEAN, AND CLEANING IT AGAIN IS THE SAME PAGE. What the caller had on
  * the screen is carried into the scrollback before anything is drawn (`page.ts`), and the
@@ -85,12 +93,20 @@
  * and a caller watching one sees it happen. The occurrence is a line like any other: it
  * comes composed from `presentation/`, it goes through {@link OpenConsole.land}, and it
  * stays in the scrollback where the session put it. What it may NOT be is a region of its
- * own — a list that grows where the input is redrawn walks the region into the height at
- * which the layout library stops redrawing a PART of the screen and starts redrawing all
- * of it, with the erase this product refuses to write inside the sequence
- * (`area.ts`) — and it may not rewrite what is above it either: a fact about a line the
- * caller has already read lands UNDER it, because the one promise of this surface is that
- * what has been said is not unsaid.
+ * own — a list that GROWS WITHOUT BOUND where the input is redrawn walks the region into the
+ * height at which the layout library stops redrawing a PART of the screen and starts redrawing
+ * all of it, with the erase this product refuses to write inside the sequence (`area.ts`) — and
+ * it may not rewrite what is above it either: a fact about a line the caller has already read
+ * lands UNDER it, because the one promise of this surface is that what has been said is not
+ * unsaid.
+ *
+ * ⚠️ THAT SENTENCE SAID *A LIST THAT GROWS*, WITHOUT THE BOUND, and what the redrawn region now
+ * holds is exactly such a list: the rows with nothing on them between the flow and the area are
+ * part of the frame. What keeps the boundary is that they are what is LEFT OVER — the flow, the
+ * area and the one row under it, subtracted from the height — so the region is at most one row
+ * short of the screen however short the flow is, at every height (`page.ts`, measured and
+ * bracketed). A region that grew with what a session had to SAY has no such bound, which is why
+ * an occurrence still lands in the flow.
  */
 
 import { render } from 'ink';
@@ -101,7 +117,7 @@ import type { Completer } from './complete.js';
 import { type Editing, type Keystroke, keystrokesOf, NOTHING_TYPED, typeKey } from './editing.js';
 import type { AfterLine } from './gate.js';
 import { armLeaving, type Leaving } from './leaving.js';
-import { blankRows, carriedIntoTheScrollback, type ThePage, theFlowAbove, theGap } from './page.js';
+import { carriedIntoTheScrollback, theGap } from './page.js';
 import { offeredBy, paletteFor } from './palette.js';
 import { type Opening, sameOpening } from './panel.js';
 import { Region, type Shown, type Watched } from './region.js';
@@ -358,29 +374,14 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   let shown: Shown = showing();
   const watchers = new Set<() => void>();
 
-  /**
-   * HOW TALL THE AREA WAS WHEN THE FLOW UNDER IT WAS LAST PLACED — the one number the anchoring
-   * has to remember from one frame to the next.
-   *
-   * THE AREA CHANGES HEIGHT UNDER A SESSION, which is the whole reason this exists: the palette
-   * opens on a keystroke and shuts on the next one, and the badge and the hint come and go with
-   * the width of a window. GROWING NEEDS NOTHING — a frame that will not fit scrolls the screen
-   * and the terminal puts the area back at the foot by itself. SHRINKING does not un-scroll
-   * anything: the layout redraws a shorter region where a taller one was and what is left under
-   * it is a hole. Measured, at a hundred and twenty by forty: a palette opened and shut left the
-   * input twenty-one rows above the foot, with nothing under it.
-   *
-   * SO THE ANCHOR FOLLOWS THE AREA and not only the page ({@link moved}), and what the difference
-   * asks for is rows with nothing on them — which is what the page is placed with in the first
-   * place, so it is the same function ({@link placeTheFlow}) rather than a second answer. It is
-   * born at nothing because nothing has been drawn yet: the page that opens is placed by
-   * COUNTING its flow, like the two other callers that turn one.
-   */
-  let placedUnder = 0;
-
   /** What the layout is looking at, as one value. Rebuilt whenever anything moved. */
   function showing(): Shown {
     const columns = howWide();
+    // HOW TALL THE TERMINAL IS, read once for the whole frame: the arrangement the area has room
+    // for and what is left of the page after it are two answers to the same question, and two
+    // readings of a device that a caller can resize between them is a frame built out of two
+    // different terminals.
+    const rows = howTall();
     // WHAT THE PALETTE WOULD SHOW, before anything says how much of it there is room for.
     // A pure function over the row being typed and what a Tab last offered (`palette.ts`),
     // so nothing is held between frames and nothing goes stale. What a SLASH opens is asked
@@ -393,7 +394,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     // on a keystroke — so a value kept beside the page would be right until the first
     // Tab. It reads four numbers and composes nothing (`area.ts`).
     const area = areaFor({
-      rows: howTall(),
+      rows,
       columns,
       badge: badge.width,
       hint: tips.width,
@@ -404,6 +405,13 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
       page,
       panel: opened.panel,
       area,
+      // WHAT IS LEFT OF THE PAGE, asked on the same frame as the area and out of the same
+      // height, because it is the rest of that subtraction: the flow is the opening's rows and
+      // what has been said under them, both of which this file holds, and the area has just
+      // been chosen. It is drawn with the area rather than landed in the flow, which is what
+      // lets a list of words take its rows out of the emptiness instead of out of the screen
+      // (`page.ts`).
+      gap: theGap({ rows, flow: opened.rows + said.length, area: area.height }),
       present: prompt + editing.typed,
       // COMPOSED WITH THE ROOM THE AREA GAVE IT, and cut to it — by the module that puts
       // the rows together, which is the only place a cut may happen. What it could not fit
@@ -416,17 +424,20 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     };
   }
 
+  /**
+   * ANYTHING MOVED: the value the layout reads is built again, and everyone watching is told.
+   *
+   * ⚠️ IT ANCHORED THE FLOW HERE TOO, and that is what this delivery took out. The rows with
+   * nothing on them were the flow's, so an area that had GIVEN rows back left a hole under
+   * itself and the repair was to land that many more of them — a page missing rows, worked out
+   * backwards from where the area had been anchored. What the repair could not do is bring back
+   * what the area's GROWING had already scrolled away, so a list of words opened and shut cost
+   * the caller the box at the top of their page, permanently, and one keystroke was enough. The
+   * leftover is redrawn with the area now ({@link showing}), so it shrinks and grows on its own
+   * and there is nothing here to repair.
+   */
   function moved(): void {
     shown = showing();
-    // AND THE ANCHOR FOLLOWS THE AREA, on every frame rather than only when a page is turned.
-    // The flow ends where the area was anchored against it ({@link theFlowAbove}), so an area
-    // that gave rows back is a page missing exactly that many — which is asked of the same
-    // subtraction the page was placed with, and answered with the same rows.
-    placeTheFlow({
-      rows: howTall(),
-      flow: theFlowAbove(howTall(), placedUnder),
-      area: shown.area.height,
-    });
     for (const watcher of watchers) watcher();
   }
 
@@ -459,52 +470,6 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   let placedAt = howTall();
 
   /**
-   * THE PAGE AS THE NUMBERS THAT PLACE IT: how tall the terminal is now, how many rows the flow
-   * has taken, and how tall the area is.
-   *
-   * ONE READING FOR ALL THREE CALLERS, which is the A3 shape of this: the bytes that turn a
-   * page are one function (`page.ts`) and so is the question of what page it is turning. Every
-   * number is asked of whoever already knows it — the DEVICE for the height, the opening for
-   * its own rows, this console's own list for what has been said, and the frame on the screen
-   * for the area — so nothing here counts a row.
-   *
-   * IT IS A FUNCTION AND NOT A VALUE for the reason the height is: a caller who resized their
-   * window has a different page, and a page placed against a size that was true a moment ago
-   * is a page whose top is in the scrollback.
-   */
-  function thePage(): ThePage {
-    return {
-      rows: howTall(),
-      // THE FLOW IS THE OPENING AND WHAT HAS BEEN SAID UNDER IT, added up here because this is
-      // where both halves are known. A page that has just been turned is the caller of
-      // {@link theGap} that knows its flow by COUNTING (`page.ts`); the rows with nothing on
-      // them are not in it, because a page that is turned again is placed from scratch.
-      flow: opened.rows + said.length,
-      // THE AREA THE FRAME IS IN, not one worked out here: {@link showing} is the one place
-      // that asks how much of the input area fits, and it is rebuilt whenever anything moved
-      // — including on the resize event itself, before the page that follows it is drawn.
-      area: shown.area.height,
-    };
-  }
-
-  /**
-   * THE FLOW, PLACED: as many rows with nothing on them as it takes for the area to end on the
-   * last row the layout leaves, landed under everything the flow already says.
-   *
-   * THEY GO IN WHAT IS KEPT AND NOT IN WHAT IS REDRAWN, which is the one thing about them that
-   * may not change: they are rows of the FLOW, so the region the layout redraws is the area and
-   * nothing else, and the height at which this library erases the caller's history is as far
-   * away as it was (`area.ts`). And they are not in {@link said} either — what the session SAID
-   * is what a page turned again is placed from, and a placement counted as part of it would
-   * grow by its own leftover every time the page turned.
-   */
-  function placeTheFlow(page: ThePage): void {
-    placedUnder = page.area;
-    past = [...past, ...blankRows(theGap(page))];
-    shown = { ...shown, past };
-  }
-
-  /**
    * THE PAGE, AGAIN: what was on it goes into the scrollback, and it is drawn from what
    * this console holds — the opening, then whatever the session has said that is still on
    * it.
@@ -522,16 +487,20 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * write it did not make leaves that count pointing at the wrong ones.
    *
    * Nothing is READ to do it, in either caller.
+   *
+   * ⚠️ AND IT USED TO PLACE THE PAGE AS WELL AS TURN IT, with the rows that put the input at the
+   * foot landed into the flow it had just rebuilt. There is nothing to place now: the leftover is
+   * part of the frame ({@link showing}), so a page turned at any height is drawn with whatever it
+   * takes on the very next frame — which is the same frame, because turning one ends in
+   * {@link moved}.
    */
   function thePageAgain(): void {
-    const placing = thePage();
-    carry(carriedIntoTheScrollback(placing.rows));
-    placedAt = placing.rows;
+    // THE ONE READING OF THE HEIGHT this turn is made against: the bytes that carry the screen
+    // away are a page's worth of rows, and what is remembered is the page they were written for.
+    const rows = howTall();
+    carry(carriedIntoTheScrollback(rows));
+    placedAt = rows;
     past = [...opened.lines, ...said];
-    // AND THE LEFTOVER IS LANDED WITH THEM rather than written with the bytes above, because
-    // the opening is drawn by the layout out of this list: rows written with the page could
-    // only ever go OVER the box, which is where they used to go and what this fixed.
-    placeTheFlow(placing);
     page += 1;
     moved();
   }
@@ -744,11 +713,11 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   // THE PAGE OPENS CLEAN, and here it is written to the DEVICE: nothing is mounted yet,
   // so there is no frame for these bytes to be out of step with. The same bytes go
   // through the layout's door once there is one ({@link thePageAgain}).
+  //
+  // AND IT OPENS PLACED WITHOUT A SECOND LINE HERE, which is what the leftover moving into the
+  // frame bought: the value the layout is about to read was built with the room the page has to
+  // spare in it ({@link showing}), so the first frame drawn is already anchored.
   stdout.write(carriedIntoTheScrollback(howTall()));
-  // AND IT OPENS PLACED, which is the same second half the other two callers have: the box is
-  // the first thing the layout draws, and what puts the input at the foot is the rows with
-  // nothing on them that go under it.
-  placeTheFlow(thePage());
 
   const app = render(createElement(Region, { watched, tips: tips.text, badge: badge.text }), {
     stdin,

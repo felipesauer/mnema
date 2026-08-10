@@ -1,6 +1,6 @@
 /**
- * THE EMPTINESS GOES UNDER THE BOX — and the anchor follows the area, which changes height
- * while a session is running.
+ * THE EMPTINESS GOES UNDER THE BOX — and it is what the LIST OF WORDS takes its room out of, so
+ * that a menu opening and shutting costs the page nothing.
  *
  * The input sits on the last row the layout leaves, and what puts it there is as many rows with
  * nothing on them as the page has to spare (`repl/page.ts`). ⚠️ THEY WENT OVER THE OPENING, and
@@ -11,41 +11,50 @@
  * was the last thing on the screen. What was falsified is not the anchoring but the DIRECTION,
  * and the rows go under the flow now.
  *
- * THE SECOND HALF IS THE ONE THAT WAS MISSING ALTOGETHER, and it is a defect this file is the
- * first to ask about: the area is not one height. The palette opens on a keystroke and shuts on
- * the next one, and the badge and the hint come and go with the width of a window. Growing needs
- * nothing — a frame that will not fit scrolls the screen, and the terminal puts the area back at
- * the foot by itself. SHRINKING un-scrolls nothing: measured at a hundred and twenty by forty, a
- * palette opened and shut left the input twenty-one rows above the foot with a hole under it.
+ * ⚠️ AND THEN THEY WERE LINES OF THE FLOW, which is the premise the delivery this file now
+ * describes falsified. It was written here that the region the layout redraws had not grown —
+ * *the rows are lines of the FLOW; in the region instead, they would walk it into the height at
+ * which this library gives up on redrawing part of a screen* — and the guard for it was that the
+ * region is the same size on a tall terminal as on a short one. True of the rows, and it is
+ * exactly what made the anchoring one-way: a line of the flow can only be APPENDED. So an area
+ * that GREW scrolled the page, an area that shrank was answered with more empty rows, and what
+ * had scrolled away never came back. Measured at a hundred and twenty by forty, on the binary of
+ * the delivery before this one: ONE opening and shutting of the list, and the box was gone for
+ * good — the panel, the mark, the verdict, all of it in the scrollback, on the first keystroke a
+ * caller presses to see what they can type.
+ *
+ * SO THE EMPTINESS IS PART OF WHAT IS REDRAWN, and the list takes its twenty rows out of THAT:
+ * the two move in opposite directions on the same frame, the region's height does not change, and
+ * nothing scrolls at all. The old guard is not weakened, it is replaced by the arithmetic that
+ * makes it unnecessary — the region is the leftover and the area, and the leftover is what is
+ * left after the row the library needs, so `gap + area` is at most one row short of the screen
+ * whatever the flow, at every height.
  *
  * FIVE THINGS ARE ASKED HERE, and the last three of them are asked of a real pseudo-terminal:
  *
- *   - THE ARITHMETIC, which is one subtraction with two callers — a page that counts its own
- *     flow, and a frame that knows where the flow ENDS because the area was anchored against it.
+ *   - THE ARITHMETIC, which is one subtraction asked on every frame — and, composed with the
+ *     arrangement the area chose, never a region as tall as the viewport.
  *   - THE BYTES A PAGE IS TURNED WITH, which no longer place it: the leftover cannot be written
  *     there, because the opening is drawn after them and nothing written there can land under it.
  *   - THE ORDER ON THE SCREEN: the box, then the emptiness, then the input.
- *   - THE PALETTE, OPENED AND SHUT, which is the defect above and the case this file is for.
- *   - ⛔ AND THAT THE REGION THE LAYOUT REDRAWS DID NOT GROW, from both ends. The rows are lines
- *     of the FLOW; in the region instead, they would walk it into the height at which this
- *     library gives up on redrawing part of a screen and writes the erase that takes the
- *     caller's history with it.
+ *   - THE LIST OPENED AND SHUT TEN TIMES OVER, which is the defect above and the case this file
+ *     is for: the box on the first row and the input at the foot in every one of them.
+ *   - ⛔ AND THE ERASE, still absent, bracketed at the height where the library writes it — with
+ *     the list open, which is the region at its tallest.
  */
 
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { LEVEL_REQUIREMENTS, requiredLevel } from '@mnema/chain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
-import { BELOW_THE_VIEWPORT } from '../src/repl/area.js';
-import {
-  blankRows,
-  carriedIntoTheScrollback,
-  type ThePage,
-  theFlowAbove,
-  theGap,
-} from '../src/repl/page.js';
+import { widthOf } from '../src/presentation/plain.js';
+import { areaFor, BELOW_THE_VIEWPORT } from '../src/repl/area.js';
+import { carriedIntoTheScrollback, type ThePage, theGap } from '../src/repl/page.js';
+import { CUT } from '../src/repl/palette.js';
+import { badgeLine, tips } from '../src/repl/session.js';
 import { LEAVE } from '../src/session-words.js';
 import { VERSION } from '../src/version.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
@@ -86,17 +95,34 @@ const OPENED = 'a session over this project';
 const ONLY_THE_LIST_SAYS = 'start the page over';
 
 /**
- * HOW MANY ROWS OF THE INPUT AREA ARE DRAWN ABOVE THE ROW BEING TYPED, in its tallest form: the
- * badge in the corner, and the rule under it (`repl/area.ts`, `aboveIn`).
+ * WHAT THE PALETTE SAYS WHEN IT HAD MORE WORDS THAN ROWS: the mark, a count, and what the count
+ * is — the row that accounts for the offers there was no room for (`repl/palette.ts`).
  *
- * It is here so that a case can say *nothing of the page is left above the input* without saying
- * a row number: the first drawn row of a screen whose flow has entirely scrolled away is the
- * area's own first row, which is this many above the prompt.
+ * A PATTERN AND NOT THE MARK ALONE, and the difference is an instrument that accuses the wrong
+ * thing: the same mark ends a DESCRIPTION too long for the row, so a case that looked for it
+ * would be satisfied by a palette that fitted perfectly and had one wordy entry. The count is
+ * left as a number to match rather than written down, because how many had no room is a function
+ * of the height and a case that spelled it would be asserting the geometry twice.
  */
-const ABOVE_THE_TYPED_ROW = 2;
+const SAYS_WHAT_IT_CUT = new RegExp(`${CUT} \\d+ not shown`);
+
+/** How wide the row of affordances under the input is, as the session composes it. */
+const HINT = widthOf(tips());
+
+/**
+ * WIDTHS A BADGE REALLY IS, and none at all for a session with no record to name a level of.
+ *
+ * Composed out of the levels a caller can DEMAND rather than written down, for the reason the
+ * amarra about fixtures gives: a width nothing can produce would make the grid below assert the
+ * geometry of a console that cannot exist.
+ */
+const BADGES = [
+  0,
+  ...LEVEL_REQUIREMENTS.map((requirement) => widthOf(badgeLine(requiredLevel(requirement)))),
+];
 
 // ---------------------------------------------------------------------------
-// The arithmetic: one subtraction, two callers
+// The arithmetic: one subtraction, asked on every frame
 // ---------------------------------------------------------------------------
 
 describe('the gap is what the flow does not fill', () => {
@@ -126,30 +152,75 @@ describe('the gap is what the flow does not fill', () => {
     expect(theGap({ rows: 24, flow: 17, area: 5 })).toBe(1);
   });
 
-  it('⚠️ cancels the height for the caller that knows where the flow ENDS', () => {
-    // THE SECOND CALLER, and this is what makes it the same subtraction rather than a second
-    // one: a frame whose area gave rows back does not count its flow, it knows the flow ends
-    // where the area was anchored against it. Handed that, what is left over is the difference
-    // between the two areas — and the WINDOW cancels, which is what keeps a caller who resized
-    // in the same breath from being answered with rows they did not ask for.
-    for (const rows of [24, 40, 120]) {
-      expect(theGap({ rows, flow: theFlowAbove(rows, 25), area: 5 })).toBe(20);
-      expect(theGap({ rows, flow: theFlowAbove(rows, 6), area: 5 })).toBe(1);
-      // AND GROWING ASKS FOR NOTHING, which is the other half of why this is asked on every
-      // frame: the terminal scrolls a frame that will not fit and puts the area back itself.
-      expect(theGap({ rows, flow: theFlowAbove(rows, 5), area: 25 })).toBe(0);
-      // And an area that did not move asks for nothing, which is every other frame there is.
-      expect(theGap({ rows, flow: theFlowAbove(rows, 5), area: 5 })).toBe(0);
-    }
+  it('⚠️ gives the area exactly what the area takes, so the two of them are one height', () => {
+    // THE WHOLE MECHANISM OF THIS DELIVERY, as arithmetic. The leftover and the area are drawn
+    // together, so what matters is their SUM: a list of words twenty rows tall takes twenty rows
+    // out of the leftover and the region is the same height it was, which is why the page does
+    // not move and nothing of the caller's is carried away.
+    //
+    // ⚠️ IT USED TO BE ASKED THE OTHER WAY ROUND, and that case is what this replaces: the rows
+    // were the flow's, so a frame whose area had SHRUNK worked its flow out backwards from where
+    // the area had been anchored (`theFlowAbove`, gone) and the difference was landed as more
+    // empty lines. The window cancelled in that subtraction, which was the point of it. Here
+    // there is nothing to cancel: one height, one flow, one answer per frame.
+    const rows = 40;
+    const flow = 14;
+    const region = (area: number): number => theGap({ rows, flow, area }) + area;
+    expect(region(5), 'the region is not the leftover and the area').toBe(
+      rows - flow - BELOW_THE_VIEWPORT,
+    );
+    // A list of words open, at the height the palette really asks for at this size, and the
+    // region has not moved a row.
+    expect(region(25), 'the list of words changed the height of the region').toBe(region(5));
+    // AND THE LEFTOVER REALLY DID GIVE THE ROWS UP, or the equality above is two zeroes: it is
+    // twenty rows shorter for an area twenty rows taller.
+    expect(theGap({ rows, flow, area: 5 }) - theGap({ rows, flow, area: 25 })).toBe(20);
+    // AND AN AREA THAT OUTGROWS THE PAGE takes what there is and no more: the leftover is
+    // nothing, and the region is the area alone. This is the one case where the sum is not the
+    // page — because there is no page left to share.
+    expect(region(rows), 'a page with no room to spare invented some').toBe(rows);
   });
 
-  it('hands the layout that many lines with nothing on them', () => {
-    expect(blankRows(3)).toEqual(['', '', '']);
-    expect(blankRows(0)).toEqual([]);
-    // ⛔ THEY ARE LINES AND NOT BYTES, which is what keeps them out of the region: there is
-    // nothing in one that moves a cursor, erases a row or scrolls a screen. What makes a row of
-    // them is the layout drawing a line with nothing on it (`repl/region.ts`).
-    expect(blankRows(40).join('')).toBe('');
+  it('⛔ never asks for a region as tall as the screen, at any size a terminal has', () => {
+    // ⛔ THE GUARD THE WHOLE DELIVERY RESTS ON, and it is a COMPOSITION of the two functions
+    // rather than a property of either: the arrangement the area has room for is chosen so that
+    // it fits with a row to spare (`repl/area.ts`), and the leftover is what is left after that
+    // row — so the region the layout redraws is at most one row short of the viewport, which is
+    // the height at which the same library redraws the WHOLE screen with the erase this product
+    // refuses to write inside the sequence.
+    //
+    // IT IS ASKED OVER EVERY SIZE AND EVERY LIST, and over a flow of NOTHING, which is the
+    // worst case: the shorter the flow, the taller the leftover.
+    let withRoom = 0;
+    let withNone = 0;
+    for (const rows of [2, 3, 4, 5, 6, 8, 10, 24, 40, 120]) {
+      for (const columns of [20, 60, 100, 200]) {
+        for (const badge of BADGES) {
+          for (const palette of [0, 1, 7, 20, 80]) {
+            for (const flow of [0, 1, 5, 14, 200]) {
+              const area = areaFor({ rows, columns, badge, hint: HINT, palette });
+              const at = `${columns}x${rows} flow ${flow} palette ${palette} badge ${badge}`;
+              const region = theGap({ rows, flow, area: area.height }) + area.height;
+              // THE SUM IS THE PAGE MINUS THE FLOW, or the area alone when there is no page
+              // left to share — one statement, both branches, so neither can go unasserted.
+              expect(region, at).toBe(Math.max(area.height, rows - flow - BELOW_THE_VIEWPORT));
+              // AND THE FLOOR IS THE ONE THING THAT CAN REACH THE VIEWPORT, which it could
+              // before this delivery and can still: a terminal too short for the row being
+              // typed and its hint has nowhere to put a prompt, and there is nothing shorter
+              // to give it. Everywhere else the region is short of the screen.
+              if (area.height + BELOW_THE_VIEWPORT <= rows) {
+                expect(region + BELOW_THE_VIEWPORT, at).toBeLessThanOrEqual(rows);
+                withRoom += 1;
+              } else withNone += 1;
+            }
+          }
+        }
+      }
+    }
+    // NOT VACUOUS IN EITHER DIRECTION: the grid really contains sizes with room to spare and
+    // sizes with none, so the branch that asserts the boundary is not the branch nobody took.
+    expect(withRoom, 'no size in the grid had room for an area at all').toBeGreaterThan(100);
+    expect(withNone, 'no size in the grid was too short for the floor').toBeGreaterThan(0);
   });
 
   it('⚠️ carries the page away and no longer places it, byte for byte', () => {
@@ -312,16 +383,20 @@ describe('the box opens at the top and the emptiness goes under it', () => {
     }, 240_000);
   }
 
-  it('⚠️ lands what the session says UNDER the emptiness, and takes it off the top', async () => {
-    // WHAT "THE EMPTINESS GOES BY ITSELF" REALLY IS, measured rather than claimed. The rows are
-    // the flow's and the flow is written once, so a line the session says cannot be put INTO
-    // them — it lands under them, and the whole page moves up by one. So the emptiness is not
-    // filled in: it leaves the screen from the TOP, one row per row said, and a page long enough
-    // to fill the screen has none (`the-prompt-sits-at-the-foot.test.ts` reads that end of it).
+  it('⚠️ lands what the session says INTO the emptiness, and the page does not move', async () => {
+    // ⚠️ THE INVERSION, AND IT IS THIS DELIVERY'S. This case used to say the opposite, in its own
+    // title — *lands what the session says UNDER the emptiness, and takes it off the top* — and
+    // the reason given was true of the design it described: the rows were lines of the flow and
+    // the flow is written once, so a line could only land BELOW them, which pushed the whole page
+    // up by one. What was named as the cost of that is what is gone: *an anchored page fills the
+    // screen by construction, so the FIRST row the session says carries the box's top row into
+    // the scrollback even though a third of the screen is empty*.
     //
-    // WHAT IT COSTS IS NAMED HERE because it is the other side of the trade this delivery made:
-    // an anchored page fills the screen by construction, so the FIRST row the session says
-    // carries the box's top row into the scrollback even though a third of the screen is empty.
+    // WITH THE EMPTINESS IN THE REGION IT IS THE OTHER WAY ROUND, and it is better: a line lands
+    // at the end of the FLOW, which is above the emptiness, and the leftover is one row shorter
+    // on the next frame because the flow is one row longer. So the page fills downwards into the
+    // room it had, and nothing goes into the scrollback until the room runs out
+    // (`the-prompt-sits-at-the-foot.test.ts` reads the end where it has).
     const columns = 120;
     const rows = 40;
     const typed = 'verify';
@@ -339,23 +414,20 @@ describe('the box opens at the top and the emptiness goes under it', () => {
     });
     const opened = screenOf(ran.bytes.slice(0, ran.at[0] as number), columns, rows);
     const said = screenOf(ran.bytes.slice(0, ran.at[2] as number), columns, rows);
-    // THE LINE REALLY LANDED, and it landed under the emptiness: what is directly above the
-    // input is what the session said, so the run that was there is not there any more.
+    // THE LINE REALLY LANDED, and the page really had room to spare when it opened.
     expect(said.text, 'the abandoned line never landed').toContain(`${PROMPT} ${typed}`);
     expect(theGapOn(opened, PROMPT), 'the page opened with nothing left over').toBeGreaterThan(0);
-    // THE LINE IS BELOW THE EMPTINESS, which is the direction: the rows are the flow's and the
-    // flow is written once, so the row it landed on is under the last of them.
+    // THE LINE IS ABOVE THE EMPTINESS, which is the direction now: it is the last row of the flow
+    // and the flow is above the region the layout redraws.
     const landedOn = said.rows.findIndex((row) => row.includes(`${PROMPT} ${typed}`));
     const emptyFrom = said.rows.findIndex((row) => row.trim().length === 0);
-    expect(landedOn, 'the line landed above the emptiness').toBeGreaterThan(emptyFrom);
-    // AND THE EMPTINESS IS STILL AS LONG AS IT WAS, one row further up: it was not filled in, the
-    // page moved. This is what "it goes by itself" costs and what it means.
-    expect(theGapOn(said, PROMPT), 'the emptiness was filled in rather than moved').toBe(
-      theGapOn(opened, PROMPT),
+    expect(landedOn, 'the line landed below the emptiness').toBeLessThan(emptyFrom);
+    // AND THE EMPTINESS IS ONE ROW SHORTER, not one row higher: the row the session said came out
+    // of the room the page had, so nothing was carried away for it.
+    expect(theGapOn(said, PROMPT), 'the emptiness did not give the row up').toBe(
+      theGapOn(opened, PROMPT) - 1,
     );
-    expect(boxEndsOn(said), 'the page did not move up by the row it said').toBe(
-      boxEndsOn(opened) - 1,
-    );
+    expect(boxEndsOn(said), 'the page moved for a line it had room for').toBe(boxEndsOn(opened));
     // And the input is where it was through all of it.
     endsAtTheFoot(opened, rows, 'the page that opened');
     endsAtTheFoot(said, rows, 'the page with a line on it');
@@ -363,17 +435,15 @@ describe('the box opens at the top and the emptiness goes under it', () => {
 });
 
 // ---------------------------------------------------------------------------
-// The anchor follows the area, which changes height under a session
+// The list takes the emptiness, and gives it back — as many times as a caller asks
 // ---------------------------------------------------------------------------
 
-describe('the anchor follows the area and not only the page', () => {
+describe('the list of words takes its room out of the emptiness', () => {
   it('⚠️ opens the list of words and shuts it, and the input comes back to the foot', async () => {
-    // THE CASE THIS FILE IS FOR. The area is anchored once, when the page is placed, and its
-    // HEIGHT changes on a keystroke: the palette is as many rows as there are words to show.
-    // Growing is answered by the terminal, which scrolls a frame that will not fit and leaves
-    // the area at the foot. Shrinking is answered by nobody — measured, before this: the list
-    // shut and the input stayed twenty-one rows above the foot, with an empty hole under it, on
-    // a page nothing was wrong with a keystroke earlier.
+    // THE CASE THIS FILE IS FOR. The area is not one height: the palette is as many rows as
+    // there are words to show, and it opens on a keystroke and shuts on the next one. Both
+    // directions are answered by the leftover, which is drawn with it — so the region is one
+    // height throughout and the terminal is never asked to scroll for a menu.
     const columns = 120;
     const rows = 40;
     const ran = await inPty({
@@ -397,55 +467,115 @@ describe('the anchor follows the area and not only the page', () => {
     endsAtTheFoot(shut, rows, 'the page after the list was shut');
   }, 240_000);
 
-  it('⚠️ costs the rows it gives back, and asks for them once per shutting', async () => {
-    // WHAT S-b2 COSTS, ASSERTED RATHER THAN CLAIMED, because it is the price of the fix and not
-    // a detail: a list twenty rows tall pushes twenty rows of the page into the scrollback when
-    // it opens — which it did before this delivery too — and the rows that come back when it
-    // shuts are EMPTY ones, because the flow is written once and what went up cannot be pulled
-    // down. So a caller who opens and shuts the list twice has spent the box.
+  it('⚠️ fits a list too long for the room, and says how many it could not show', async () => {
+    // ⚠️ THE ADVERSARIAL CASE OF THIS DELIVERY: a list that does not fit. The palette's budget is
+    // what is left over the row being typed (`repl/area.ts`), and the emptiness is what it grows
+    // into — so on a terminal with barely any room the list is CUT, and the question is whether
+    // the region still ends where the layout leaves it or whether the cut list pushes past.
     //
-    // The alternative is reemitting the whole page on every keystroke that opens a list, which
-    // is linear in what the session has said (measured at about 33 ms over 200 lines) and
-    // flickers. This is the trade, and this is the number.
-    const columns = 120;
-    const rows = 40;
+    // A SHORT TERMINAL AND A WIDE ONE, chosen so the list really is cut: at ten rows there is room
+    // for a handful of the words there are.
+    const columns = 100;
+    const rows = 10;
     const ran = await inPty({
       columns,
       rows,
-      steps: [opens, opensTheList, shutsTheList, opensTheList, shutsTheList, leaves],
+      steps: [opens, opensTheList, { ...leaves, types: `${ABANDONS_THE_LINE}${LEAVE}\r` }],
     });
-    const opened = screenOf(ran.bytes.slice(0, ran.at[0] as number), columns, rows);
-    const twice = screenOf(ran.bytes.slice(0, ran.at[4] as number), columns, rows);
-    endsAtTheFoot(twice, rows, 'the page after the list was shut twice');
-    // THE BOX IS GONE, and every row above the input has nothing on it: that is the cost, in
-    // full, at this geometry. What the page opened with was a box and a leftover.
-    expect(boxEndsOn(opened), 'the page opened without a box').toBeGreaterThan(0);
-    expect(boxEndsOn(twice), 'the box survived two openings of the list').toBe(-1);
-    // AND NOTHING OF THE FLOW IS LEFT ABOVE THE INPUT: the first row with anything on it is the
-    // area's own, so everything over it is a row the page was placed with.
-    expect(firstDrawnRow(twice), 'something of the page survived two openings').toBe(
-      promptRow(twice, PROMPT) - ABOVE_THE_TYPED_ROW,
+    const listed = screenOf(ran.bytes.slice(0, ran.at[1] as number), columns, rows);
+    // THE LIST WAS REALLY CUT, and it says so — the row that accounts for what had no room.
+    expect(listed.text, 'the list was not cut, so nothing here is about a cut list').toMatch(
+      SAYS_WHAT_IT_CUT,
     );
-    expect(emptyRowsAbove(twice), 'the emptiness above the input is in two places').toBe(
-      theGapOn(twice, PROMPT),
+    // AND THE PAGE IS STILL A PAGE: the input on the last row the layout leaves, and nothing
+    // drawn under it.
+    endsAtTheFoot(listed, rows, 'the page with a cut list on it');
+    // AND THE SCREEN IS AS TALL AS IT WAS, which is what a region that pushed past would cost.
+    expect(listed.rows.length, 'the screen changed size').toBe(rows);
+    // ⛔ AND THE LIBRARY DID NOT REACH FOR THE ERASE at the one geometry where the region is the
+    // whole page but for a row.
+    expect(ran.bytes, 'the cut list walked the region into the erase').not.toContain(
+      ERASES_THE_HISTORY,
     );
-    // AND NOT ONE ROW MORE THAN THAT: the rows the shutting asks for are exactly the ones the
-    // opening took, so a page cannot be pushed past its own screen by a list that came and went.
-    // The screen is as tall as it was, and the area is still the whole of what is drawn on it.
-    expect(twice.rows.length, 'the screen changed size').toBe(rows);
+  }, 240_000);
+
+  it('⚠️ keeps the box on the first row through ten openings and shuttings', async () => {
+    // ⛔ THE DEFECT, AND IT IS THE WHOLE REASON THIS DELIVERY EXISTS. This case used to assert
+    // the opposite and called it the price of the fix: *a list twenty rows tall pushes twenty
+    // rows of the page into the scrollback when it opens, and the rows that come back when it
+    // shuts are EMPTY ones, because the flow is written once and what went up cannot be pulled
+    // down — so a caller who opens and shuts the list twice has spent the box*. It was true, and
+    // it was measured on the binary: the box was gone after the FIRST cycle and never came back.
+    //
+    // WHAT WAS WRONG WITH THE TRADE is that the alternative it was weighed against was reemitting
+    // the whole page on every keystroke (linear in what the session has said, about 33 ms over 200
+    // lines, and it flickers). There is a third way and it costs nothing: the rows the list needs
+    // are taken out of the EMPTINESS, which is redrawn with it, so the region's height never
+    // changes and the terminal never scrolls. No page is reemitted and nothing is carried away.
+    //
+    // TEN CYCLES, because one is the defect and a fix that drifts by a row per cycle would pass a
+    // case that asked for two. Every screen is asked, so the answer is a table rather than an end
+    // state.
+    const columns = 120;
+    const rows = 40;
+    const cycles = 10;
+    const steps: Step[] = [opens];
+    for (let round = 0; round < cycles; round += 1) steps.push(opensTheList, shutsTheList);
+    steps.push(leaves);
+    const ran = await inPty({ columns, rows, steps });
+    // EVERY ONE OF THEM, and the last step (the word that leaves) is left out of the walk: it
+    // lands a line, which is the case above.
+    for (const [step, at] of ran.at.slice(0, -1).entries()) {
+      const screen = screenOf(ran.bytes.slice(0, at), columns, rows);
+      const what = step === 0 ? 'the page that opened' : `cycle ${Math.ceil(step / 2)}`;
+      const open = step > 0 && step % 2 === 1;
+      // THE LIST REALLY IS OPEN ON THE ODD STEPS AND SHUT ON THE EVEN ONES, or the walk below is
+      // one screen read twenty-one times. This is what makes the geometry a measurement.
+      expect(screen.text, `${what}: the list was ${open ? 'not open' : 'open'}`).toSatisfy(
+        (text: string) => text.includes(ONLY_THE_LIST_SAYS) === open,
+      );
+      // THE BOX IS ON THE FIRST ROW — the defect, and the promise. Not merely present: the top
+      // edge is the row that goes first when a page is pushed up, so the row it is on is the
+      // measurement.
+      expect(screen.rows[0], `${what}: the box is not on the first row`).toContain(TOP_LEFT);
+      expect(firstDrawnRow(screen), `${what}: something is above the box`).toBe(0);
+      // AND THE INPUT IS AT THE FOOT, with the list open and with it shut.
+      endsAtTheFoot(screen, rows, what);
+      // AND THE EMPTINESS IS ONE RUN AND IT IS WHERE IT WAS: everything above the input with
+      // nothing on it is the run that touches the area. With the list open the palette's own
+      // blank row is part of that run, which is the area's (`repl/area.ts`).
+      expect(emptyRowsAbove(screen), `${what}: the emptiness is in two places`).toBe(
+        theGapOn(screen, PROMPT),
+      );
+      // AND THE SCREEN IS AS TALL AS IT WAS.
+      expect(screen.rows.length, `${what}: the screen changed size`).toBe(rows);
+    }
+    // AND THE ROOM REALLY DID MOVE, which is what says the cycles were not a screen that never
+    // changed: with the list open there are a handful of rows over the input, with it shut there
+    // are twenty-one, and the box is on the first row of both.
+    const shut = screenOf(ran.bytes.slice(0, ran.at[cycles * 2] as number), columns, rows);
+    const listed = screenOf(ran.bytes.slice(0, ran.at[cycles * 2 - 1] as number), columns, rows);
+    expect(theGapOn(listed, PROMPT), 'the list took no room at all').toBeLessThan(
+      theGapOn(shut, PROMPT),
+    );
+    expect(theGapOn(shut, PROMPT), 'the page had nothing to spare to begin with').toBeGreaterThan(
+      1,
+    );
   }, 240_000);
 });
 
 // ---------------------------------------------------------------------------
-// ⛔ And the region the layout redraws did not grow
+// ⛔ And the region the layout redraws is short of the screen, whatever it holds
 // ---------------------------------------------------------------------------
 
 /**
  * WHAT THE LAYOUT WRITES TO TAKE BACK A ROW IT REDREW: erase the row it is on, and move up.
  *
- * Counting the erases in one frame is how many rows the library thinks it owns — which is
- * the number this delivery may not move, because the region reaching the height of the
- * viewport is the condition under which the same library erases the caller's history.
+ * Counting the erases in one frame is how many rows the library thinks it owns — which is the
+ * number this delivery MOVES, on purpose: the emptiness that puts the input at the foot is part
+ * of what is redrawn now, so the count is the leftover and the area together, plus the row the
+ * library writes under its own frame. Measured at a hundred columns: seven at twenty-four rows
+ * and twenty-three at forty, against a leftover of one and seventeen.
  */
 const TAKES_A_ROW_BACK = `${ESC}[2K`;
 
@@ -466,18 +596,28 @@ const TOO_SHORT_TO_REDRAW_IN_PART = 1;
 /** The width the number above was taken at: one with room for the hint on a single row. */
 const WIDE_ENOUGH_FOR_THE_HINT = 100;
 
-describe('the rows with nothing on them go into the flow, never into the region redrawn', () => {
-  it('redraws the same number of rows on a tall terminal as on a short one', async () => {
-    // ⛔ THE GUARD THIS WHOLE DELIVERY RESTS ON. The rows a taller terminal spends are rows of
-    // the FLOW, so the region the layout redraws is the input area and nothing else — the same
-    // size at forty rows as at twenty-four. A page anchored by padding INSIDE the frame instead
-    // would make the two differ by the sixteen rows between them, and would walk the region into
-    // the height at which this library erases the caller's history.
+describe('the region redrawn holds the emptiness, and is still short of the screen', () => {
+  it('⚠️ redraws MORE rows on a tall terminal, and exactly the rows it has to spare', async () => {
+    // ⚠️ THE GUARD THAT WAS INVERTED, and it was the one the delivery before this one rested on:
+    // *redraws the same number of rows on a tall terminal as on a short one* — because the rows a
+    // taller terminal spends were rows of the FLOW, so the region was the input area and nothing
+    // else. It is false now and it is false on purpose. The rows are the region's, so a terminal
+    // with more to spare has a TALLER region, which is the whole mechanism: those are the rows a
+    // list of words grows into instead of pushing the page off the screen.
+    //
+    // WHAT REPLACES THE OLD GUARD IS THE ARITHMETIC OF THE DIFFERENCE, which is stronger than the
+    // equality was: the region grows by exactly the emptiness the page gained and by nothing else
+    // — the area is the same arrangement at both heights — so the count and the screen are two
+    // instruments answering the same number. And the count stays SHORT of the height it was drawn
+    // at, which is the condition the erase hangs on (bracketed in the case below, and asserted
+    // over every size in `the gap is what the flow does not fill`).
     const columns = WIDE_ENOUGH_FOR_THE_HINT;
     const typed = 'v';
     const redrawn = new Map<number, number>();
     const leftOver = new Map<number, number>();
-    for (const rows of [24, 40]) {
+    const short = 24;
+    const tall = 40;
+    for (const rows of [short, tall]) {
       const ran = await inPty({
         columns,
         rows,
@@ -496,16 +636,25 @@ describe('the rows with nothing on them go into the flow, never into the region 
         theGapOn(screenOf(ran.bytes.slice(0, ran.at[1] as number), columns, rows), PROMPT),
       );
     }
-    // THE PROMISE: one keystroke takes back the same rows on both.
-    expect(redrawn.get(24), 'the region grew with the terminal').toBe(redrawn.get(40));
-    // NOT VACUOUS IN EITHER DIRECTION. There really is a redraw to count, it is a handful of
-    // rows rather than a screen, and the two terminals really were left with different amounts
-    // over — which is the thing that would have made the numbers differ.
-    expect(redrawn.get(24) ?? 0, 'nothing was redrawn at all').toBeGreaterThan(1);
-    expect(redrawn.get(24) ?? 0, 'the region is as tall as the shorter screen').toBeLessThan(24);
-    expect(leftOver.get(40) ?? 0, 'the taller terminal had no more room to spare').toBeGreaterThan(
-      leftOver.get(24) ?? 0,
+    // THE PROMISE: what the taller terminal redraws is what the shorter one redraws plus the rows
+    // it had over — the emptiness, read off the SCREEN, against the erases, read off the BYTES.
+    expect(
+      (redrawn.get(tall) ?? 0) - (redrawn.get(short) ?? 0),
+      'the region grew by something other than the room the page gained',
+    ).toBe((leftOver.get(tall) ?? 0) - (leftOver.get(short) ?? 0));
+    // NOT VACUOUS IN EITHER DIRECTION. There really is a redraw to count, the two terminals really
+    // were left with different amounts over, and the difference is the sixteen rows between them.
+    expect(redrawn.get(short) ?? 0, 'nothing was redrawn at all').toBeGreaterThan(1);
+    expect((leftOver.get(tall) ?? 0) - (leftOver.get(short) ?? 0), 'the room did not grow').toBe(
+      tall - short,
     );
+    // ⛔ AND NEITHER REGION IS AS TALL AS THE SCREEN IT WAS DRAWN ON, which is the condition under
+    // which this library redraws the whole page and erases the caller's history on the way.
+    for (const rows of [short, tall]) {
+      expect(redrawn.get(rows) ?? 0, `${rows}: the region is as tall as the screen`).toBeLessThan(
+        rows,
+      );
+    }
   }, 240_000);
 
   it('⚠️ leaves the erase where it was: absent at two rows, and the library’s own at one', async () => {
@@ -531,6 +680,56 @@ describe('the rows with nothing on them go into the flow, never into the region 
     expect(over.bytes, 'one row over the boundary saw the erase').not.toContain(ERASES_THE_HISTORY);
     // Both sessions really opened, so the difference between them is the height alone.
     for (const ran of [short, over]) expect(ran.bytes).toContain(PROMPT);
+  }, 240_000);
+
+  it('⛔ leaves it absent with the LIST OPEN, which is the region at its tallest', async () => {
+    // ⛔ THE RISK OF THIS DELIVERY, MEASURED BEFORE IT WAS WRITTEN. The region is the emptiness
+    // and the area, so it comes within one row of the screen when the flow is short — and a list
+    // of words open is the area at its tallest ON TOP of that, which is the geometry where the
+    // library would reach for the erase if the arithmetic were one out anywhere.
+    //
+    // TWO WIDTHS, because the width decides what the area draws: at sixty columns the hint does
+    // not fit on one row and the palette's rows are cut, which is the geometry the study that
+    // designed this console recorded the erase appearing at with ONE row of slack.
+    //
+    // AND THE HEIGHTS GO DOWN TO THE FLOOR, so the sweep passes through every arrangement: the
+    // full form, the form without the badge, and the bare one that is answered whatever the
+    // height. What a person uses is at the other end of the same sweep.
+    for (const columns of [60, WIDE_ENOUGH_FOR_THE_HINT]) {
+      for (const rows of [TOO_SHORT_TO_REDRAW_IN_PART + 1, 3, 5, 8, 24, 40]) {
+        const ran = await inPty({
+          columns,
+          rows,
+          steps: [
+            opens,
+            opensTheList,
+            shutsTheList,
+            opensTheList,
+            // THE ROW IS ABANDONED BEFORE THE WORD THAT LEAVES: the list was opened by a slash
+            // typed INTO the row, and `//exit` is not a word — a session that never leaves is a
+            // case that times out instead of failing.
+            { ...leaves, types: `${ABANDONS_THE_LINE}${LEAVE}\r` },
+          ],
+        });
+        const at = `${columns}x${rows}`;
+        expect(ran.bytes, `${at}: the library erased the caller's history`).not.toContain(
+          ERASES_THE_HISTORY,
+        );
+        // AND EVERY ONE OF THEM REALLY RAN, or the absence above is the absence of a session.
+        expect(ran.bytes, `${at}: the session never opened`).toContain(PROMPT);
+      }
+    }
+    // AND THE LIST REALLY IS DRAWN at a height where there is room for it, which is what makes
+    // the sweep about a region with a palette in it rather than about a bare prompt.
+    const tall = await inPty({
+      columns: WIDE_ENOUGH_FOR_THE_HINT,
+      rows: 40,
+      steps: [opens, opensTheList, { ...leaves, types: `${ABANDONS_THE_LINE}${LEAVE}\r` }],
+    });
+    expect(
+      screenOf(tall.bytes.slice(0, tall.at[1] as number), WIDE_ENOUGH_FOR_THE_HINT, 40).text,
+      'the list was never drawn, so nothing above was measured with one open',
+    ).toContain(ONLY_THE_LIST_SAYS);
   }, 240_000);
 
   it('puts the caret on the row being typed, wherever on the screen that row is', async () => {

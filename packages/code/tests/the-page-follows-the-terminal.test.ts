@@ -971,18 +971,20 @@ describe('the FRAME asks how big the terminal is in one place, and it follows it
     // And there really are two callers of it, plus the write to the DEVICE that opens the
     // page before there is a layout to write through — which is the third of the three.
     expect(times(source, 'thePageAgain();'), 'the one page has fewer than two callers').toBe(2);
-    // ⚠️ AND IT USED TO COUNT THE WHOLE CALL — `carriedIntoTheScrollback(howTall())`. A page is
-    // placed as well as carried away now, because the input is anchored at the foot and the
-    // leftover is a subtraction over what the flow and the area take (`repl/page.ts`), so the
-    // argument is no longer one expression written the same way at both sites. What the count
-    // is FOR is the two places the bytes of a page are written — the device before there is a
-    // layout, and the layout's own door after — so that is what it counts, and what places the
-    // page is counted beside it.
-    // AND WHAT PLACES THE PAGE IS COUNTED BESIDE IT: one function, its two callers that turn a
-    // page — the device before there is a layout, and the layout's door after — and the frame
-    // that asks for the rows an area gave back when it shrank (`repl/console.ts`, `moved`).
-    expect(times(source, 'placeTheFlow('), 'the flow is placed somewhere else').toBe(4);
+    // ⚠️ AND IT USED TO COUNT THE WHOLE CALL — `carriedIntoTheScrollback(howTall())` — because
+    // the argument was one expression written the same way at both sites. It stopped being one
+    // when a page began to be PLACED as well as carried away, and the placement is gone again:
+    // the rows that put the input at the foot are part of the frame now (`repl/page.ts`), so
+    // there is no `placeTheFlow` to count anywhere and no third site where one could hide. What
+    // the count is FOR is the two places the bytes of a page are written — the device before
+    // there is a layout, and the layout's own door after. A count of ZERO for the function that
+    // is gone is not written here: a ban on a name nobody can write is a guard that cannot go
+    // red, and what replaces it is the positive count below.
     expect(times(source, 'carriedIntoTheScrollback('), 'the page is written elsewhere').toBe(2);
+    // AND THE ROOM THE PAGE HAS TO SPARE IS ASKED FOR IN ONE PLACE, which is the frame: it is a
+    // function of the same height the arrangement is chosen by, so a second site asking would be
+    // a leftover worked out against a terminal the area was not.
+    expect(times(source, 'theGap('), 'the room is worked out somewhere else as well').toBe(1);
     // AND THE HEIGHT THE PAGE WAS PLACED AT IS RECORDED WHERE THE PAGE IS TURNED. It is the
     // half of the resize guard the drawing cannot answer (`repl/panel.ts`, `sameOpening`), so
     // a page turned without recording it would leave the guard comparing against a height two

@@ -5,12 +5,15 @@
  * The row being typed used to land wherever the opening happened to end: on a window forty
  * rows tall the box and the input took eighteen of them and the other twenty-two were empty,
  * under the prompt, doing nothing. What fixes it is not a place the input is moved to — it is
- * rows with nothing on them landed under the FLOW (`repl/page.ts`), so the flow ends on the last
- * row the layout leaves and the input is at the foot when the session opens and stays there by
- * construction once the content scrolls.
+ * rows with nothing on them BETWEEN the flow and the area (`repl/page.ts`), so the area ends on
+ * the last row the layout leaves and the input is at the foot when the session opens and stays
+ * there by construction once the content scrolls.
  *
- * ⚠️ THEY WENT OVER THE OPENING AND THEY GO UNDER IT, and this file is where the difference is
- * NOT asserted: everything here is about the last row, and the last row is the same either way.
+ * ⚠️ THEY WENT OVER THE OPENING, THEN UNDER IT AS LINES OF THE FLOW, AND THEY ARE PART OF THE
+ * FRAME NOW — and this file is where none of those three differences is asserted: everything here
+ * is about the last row, and the last row is the same in all of them. Which is why it stayed
+ * green through both moves, and it is the WITNESS this delivery leaned on rather than a case it
+ * had to teach.
  * Where the emptiness ends up is asked in `the-gap-goes-under-the-box.test.ts`, which is also
  * where the arithmetic and the guard on the redrawn region went — they moved with the rows they
  * are about. What this file lost to that move is its old instrument: how far down the page BEGAN
@@ -232,12 +235,15 @@ describe('the input ends on the last row the layout leaves, at every size', () =
     // that happened to fit.
     expect(answered.text, 'the answer never came').toContain(`${NAMED} eight`);
     expect(answered.text, 'the answer fitted on the page').not.toContain(TOP_LEFT);
-    // AND THE EMPTINESS WENT WITH IT, which is what "by construction" means here: the leftover
-    // is rows of the flow, so an answer long enough to fill the page pushes them off the top and
-    // the anchoring stops being anything anybody has to do. What is left is not nothing — an
-    // answer has a blank line of its own in it, and the instrument answers about the last run of
-    // empty rows there is — so what is asserted is that the RUN the page was placed with is not
-    // on the screen any more.
+    // AND THE EMPTINESS WENT WITH IT, which is what "by construction" means here — though not for
+    // the reason written here before. ⚠️ IT SAID *the leftover is rows of the flow, so an answer
+    // long enough to fill the page pushes them off the top*: the leftover is part of the frame
+    // now (`repl/page.ts`), so nothing pushes it anywhere. What happens instead is the same
+    // ending by the other road: the leftover is what is left after the flow, so a flow longer
+    // than the screen leaves nothing over and the emptiness is not drawn at all. What is left is
+    // not nothing — an answer has a blank line of its own in it, and the instrument answers about
+    // the last run of empty rows there is — so what is asserted is that the RUN the page opened
+    // with is not on the screen any more.
     expect(theGapOn(answered, PROMPT), 'the page did not fill the screen').toBeLessThan(
       theGapOn(opening, PROMPT),
     );

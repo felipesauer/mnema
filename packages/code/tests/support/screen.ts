@@ -293,10 +293,17 @@ export function endsAtTheFoot(screen: Screen, rows: number, what: string): void 
  * number the product answered with. A page that was not placed at all has a run of nothing.
  *
  * IT IS FOUND BY WALKING UP FROM THE ROW BEING TYPED, past everything that is drawn, to the
- * first thing that is not: the rows of the area above the input, then whatever of the flow has
- * been said since the page was placed — because what the session says lands UNDER the leftover,
- * so the run does not have to touch the area to be the one. That is measured rather than assumed
- * (`tests/the-gap-goes-under-the-box.test.ts` lands a line and finds the same run one row up).
+ * first thing that is not: the rows of the area above the input, and then the run.
+ *
+ * ⚠️ THE WALK USED TO HAVE A THIRD LEG, and it was *whatever of the flow has been said since the
+ * page was placed — because what the session says lands UNDER the leftover, so the run does not
+ * have to touch the area to be the one*. That was true while the rows were lines of the flow:
+ * they were appended when the page was placed, so a line said afterwards landed below them. The
+ * leftover is part of the region the layout redraws now (`src/repl/page.ts`), so it is always the
+ * last thing above the area and a line the session says lands ABOVE it — measured, in the case
+ * that lands one and finds the run one row SHORTER rather than one row higher
+ * (`tests/the-gap-goes-under-the-box.test.ts`). The walk is unchanged and the leg is simply never
+ * taken: what it stepped over cannot be there.
  *
  * ⚠️ IT IS NOT THE PLACEMENT WITH A LIST OPEN, and the reason is the area's rather than this
  * instrument's: the palette has a row with nothing on it OVER it, which belongs to the region
