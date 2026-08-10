@@ -421,8 +421,17 @@ describe('the box is redrawn at the width the caller left their window at', () =
     expect(resized.text, 'what the caller had said went with the old page').toContain(SAID);
     // And it is the page AGAIN rather than the old page left alone: the box is there, at
     // the new width.
-    expect(resized.text, 'no box after the resize').toContain(OPENED);
-    for (const row of boxRowsOf(resized)) {
+    //
+    // ⚠️ ITS TITLE MAY NOT BE ON THE SCREEN, and it was until the emptiness moved under the box.
+    // What the session said was landed FOLDED to the width it was said at, so a narrower window
+    // turns some of those lines into two rows and the flow is placed a row or two low — which
+    // the terminal absorbs by scrolling, exactly as `repl/page.ts` says it does. The rows that
+    // go over the top used to be the emptiness and are the top of the box now. So what is
+    // asserted is the box AT THE NEW WIDTH rather than the sentence on its top border; that the
+    // box was drawn a second time at all is what this step waited for.
+    const box = boxRowsOf(resized);
+    expect(box.length, 'no box after the resize').toBeGreaterThan(0);
+    for (const row of box) {
       expect([...row.replace(/ +$/, '')].length).toBe(90);
     }
   }, 180_000);
@@ -497,8 +506,8 @@ describe('the page follows the drawing, and once per drag', () => {
     // one does`, and before that `draws nothing at all when only the height changed`. Both
     // halves of both names rested on one premise — a height the DRAWING does not depend on is
     // a height the page does not depend on — and the delivery that put the input at the FOOT
-    // of the terminal falsified it: the rows before the opening are how many the height leaves
-    // over, so a page placed at one height is misplaced at another whatever is drawn on it
+    // of the terminal falsified it: the rows a page is placed with are how many the height
+    // leaves over, so a page placed at one height is misplaced at another whatever is on it
     // (`repl/page.ts`, `tests/the-prompt-sits-at-the-foot.test.ts`). Measured, on a real
     // device, before the guard was widened: at a hundred by thirty dragged to forty, not one
     // byte was written and the input stayed eleven rows above the foot.
@@ -962,14 +971,31 @@ describe('the FRAME asks how big the terminal is in one place, and it follows it
     // And there really are two callers of it, plus the write to the DEVICE that opens the
     // page before there is a layout to write through — which is the third of the three.
     expect(times(source, 'thePageAgain();'), 'the one page has fewer than two callers').toBe(2);
-    // ⚠️ AND IT USED TO COUNT THE WHOLE CALL — `carriedIntoTheScrollback(howTall())`. A page
-    // is placed against four numbers now rather than one, because the input is anchored at the
-    // foot and the leftover is a subtraction over what the opening and the area take
-    // (`repl/page.ts`), so the argument is no longer one expression written the same way at
-    // both sites. What the count is FOR is the two places the bytes of a page are written —
-    // the device before there is a layout, and the layout's own door after — so that is what
-    // it counts, and the argument is pinned by the type rather than by a spelling.
+    // ⚠️ AND IT USED TO COUNT THE WHOLE CALL — `carriedIntoTheScrollback(howTall())` — because
+    // the argument was one expression written the same way at both sites. It stopped being one
+    // when a page began to be PLACED as well as carried away, and the placement is gone again:
+    // the rows that put the input at the foot are part of the frame now (`repl/page.ts`), so
+    // there is no `placeTheFlow` to count anywhere and no third site where one could hide. What
+    // the count is FOR is the two places the bytes of a page are written — the device before
+    // there is a layout, and the layout's own door after. A count of ZERO for the function that
+    // is gone is not written here: a ban on a name nobody can write is a guard that cannot go
+    // red, and what replaces it is the positive count below.
     expect(times(source, 'carriedIntoTheScrollback('), 'the page is written elsewhere').toBe(2);
+    // AND THE ROOM THE PAGE HAS TO SPARE IS ASKED FOR IN ONE PLACE, which is the frame: it is a
+    // function of the same height the arrangement is chosen by, so a second site asking would be
+    // a leftover worked out against a terminal the area was not.
+    expect(times(source, 'theGap('), 'the room is worked out somewhere else as well').toBe(1);
+    // ⛔ AND WHATEVER WRITES THE FLOW SAYS WHAT THE SCREEN HAS. The leftover is subtracted from the
+    // rows of the flow that are ON the screen (`repl/console.ts`, `flowOnScreen`), and rows that
+    // scrolled off the top do not come back — so a place that added to the flow without moving that
+    // number would place every frame after it short of the foot, which is the defect this pairing
+    // exists to prevent. Two places write the flow: a line that lands, and a page that is turned.
+    // Three move the number: those two, and the frame that caps it at what it left room for.
+    expect(times(source, 'past = '), 'the flow is written somewhere else as well').toBe(2);
+    expect(times(source, 'flowOnScreen ='), 'the rows on the screen are set somewhere else').toBe(
+      3,
+    );
+    expect(times(source, 'flowOnScreen +='), 'the rows on the screen grow somewhere else').toBe(1);
     // AND THE HEIGHT THE PAGE WAS PLACED AT IS RECORDED WHERE THE PAGE IS TURNED. It is the
     // half of the resize guard the drawing cannot answer (`repl/panel.ts`, `sameOpening`), so
     // a page turned without recording it would leave the guard comparing against a height two

@@ -40,6 +40,9 @@
  * at, or the replay is accused instead of the product.
  */
 
+import { expect } from 'vitest';
+import { BELOW_THE_VIEWPORT } from '../../src/repl/area.js';
+
 /** One escape byte, written as an escape so no control byte enters a source file. */
 const ESC = '\u001b';
 
@@ -218,6 +221,106 @@ export interface Screen {
    * `up three rows`, and how many rows there were is exactly what is under test.
    */
   readonly cursor: { readonly row: number; readonly column: number };
+}
+
+// ---------------------------------------------------------------------------
+// WHERE THE PAGE BEGINS AND WHERE IT ENDS — the four questions a placement is asked
+// ---------------------------------------------------------------------------
+
+/**
+ * THE FIRST ROW OF THE SCREEN WITH ANYTHING ON IT — where the page begins.
+ *
+ * ⚠️ IT WAS THE INSTRUMENT THE ANCHORING WAS READ WITH, and it stopped being one: while the
+ * rows with nothing on them went OVER the opening, how far down the page began WAS the
+ * placement, and the case that proved a page was anchored asserted this was not zero. The rows
+ * go under the flow now, so the box is on the first row at every size and this answers zero on
+ * an anchored page and on an unanchored one alike. What replaced it is {@link theGapOn}, which
+ * measures the same leftover where the leftover now is.
+ *
+ * It is still asked, for the half it can still answer: whether the top of the page is on the
+ * screen at all, and whether what is on the first row is the box's own top edge rather than the
+ * middle of a drawing whose top went into the scrollback.
+ */
+export function firstDrawnRow(screen: Screen): number {
+  return screen.rows.map((row) => row.trim().length > 0).indexOf(true);
+}
+
+/** The last row of the screen with anything on it — the last row of the input area. */
+export function lastDrawnRow(screen: Screen): number {
+  return screen.rows.map((row) => row.trim().length > 0).lastIndexOf(true);
+}
+
+/** The row the caller is typing on, which is the one the input area is arranged around. */
+export function promptRow(screen: Screen, prompt: string): number {
+  return screen.rows.map((row) => row.includes(prompt)).lastIndexOf(true);
+}
+
+/**
+ * ACCUSES A SCREEN WHOSE LAST DRAWN ROW IS NOT THE LAST ONE THE LAYOUT LEAVES.
+ *
+ * THE ROW UNDER THE AREA IS NOT OURS, and that is the whole of why this is not simply the
+ * bottom row: the library writes a newline after the last row of every frame it draws, so
+ * there is always exactly one row below the region with its own cursor on it. It is the same
+ * row the area's arithmetic keeps to be redrawn in PART (`src/repl/area.ts`,
+ * `BELOW_THE_VIEWPORT`), read from where it is written rather than restated as a margin.
+ *
+ * The message names both numbers, because a red here is a page one row out and the count
+ * alone says nothing about which way.
+ *
+ * ONE INSTRUMENT AND TWO FILES, which is why it is here rather than beside the cases about the
+ * foot: the delivery that put the input there and the one that moved the emptiness under the
+ * box both ask it, and two spellings of "at the foot" is the shape this bench pays for.
+ */
+export function endsAtTheFoot(screen: Screen, rows: number, what: string): void {
+  const last = lastDrawnRow(screen);
+  expect(rows - 1 - last, `${what}: the input is ${rows - 1 - last} rows off the foot`).toBe(
+    BELOW_THE_VIEWPORT,
+  );
+  // AND WHAT IS UNDER IT IS NOTHING, which is the other half: a row of the caller's own
+  // output left below the area would satisfy the count above and be a page opened over
+  // somebody else's.
+  for (const row of screen.rows.slice(last + 1)) {
+    expect(row.trim(), `${what}: something is drawn under the input`).toBe('');
+  }
+}
+
+/**
+ * THE GAP: how many rows with nothing on them sit immediately above the input area.
+ *
+ * IT IS WHAT THE PLACEMENT IS, read off a screen. The page is the flow, then as many rows with
+ * nothing on them as it takes for the area to end on the last row the layout leaves
+ * (`src/repl/page.ts`, `theGap`) — so the leftover is a RUN of empty rows, and its length is the
+ * number the product answered with. A page that was not placed at all has a run of nothing.
+ *
+ * IT IS FOUND BY WALKING UP FROM THE ROW BEING TYPED, past everything that is drawn, to the
+ * first thing that is not: the rows of the area above the input, and then the run.
+ *
+ * ⚠️ THE WALK USED TO HAVE A THIRD LEG, and it was *whatever of the flow has been said since the
+ * page was placed — because what the session says lands UNDER the leftover, so the run does not
+ * have to touch the area to be the one*. That was true while the rows were lines of the flow:
+ * they were appended when the page was placed, so a line said afterwards landed below them. The
+ * leftover is part of the region the layout redraws now (`src/repl/page.ts`), so it is always the
+ * last thing above the area and a line the session says lands ABOVE it — measured, in the case
+ * that lands one and finds the run one row SHORTER rather than one row higher
+ * (`tests/the-gap-goes-under-the-box.test.ts`). The walk is unchanged and the leg is simply never
+ * taken: what it stepped over cannot be there.
+ *
+ * ⚠️ IT IS NOT THE PLACEMENT WITH A LIST OPEN, and the reason is the area's rather than this
+ * instrument's: the palette has a row with nothing on it OVER it, which belongs to the region
+ * the layout redraws (`src/repl/area.ts`, `ABOVE_THE_PALETTE`) — so the walk stops there and
+ * answers about the list instead. Every caller that measures a placement measures it with the
+ * list shut.
+ */
+export function theGapOn(screen: Screen, prompt: string): number {
+  const drawn = screen.rows.map((row) => row.trim().length > 0);
+  let at = promptRow(screen, prompt);
+  while (at > 0 && drawn[at] === true) at -= 1;
+  let gap = 0;
+  while (at >= 0 && drawn[at] === false) {
+    gap += 1;
+    at -= 1;
+  }
+  return gap;
 }
 
 /** Where the cursor is, and what is under it. */

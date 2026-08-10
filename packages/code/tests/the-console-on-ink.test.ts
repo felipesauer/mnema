@@ -499,13 +499,49 @@ function isRule(row: string): boolean {
  * compared to what the same verb says at a shell, so a row wrongly kept and a row wrongly
  * dropped both come out as an inequality.
  */
+/** Whether a row is one the input area draws rather than one the session said. */
+function ownedByTheArea(row: string): boolean {
+  return row.startsWith(PROMPT) || isTips(row) || isBadge(row) || isRule(row);
+}
+
+/**
+ * WHICH OF THESE ROWS ARE THE ROOM THE PAGE HAS TO SPARE — the rows with nothing on them that
+ * put the input at the foot, told apart from a blank line a verb really printed.
+ *
+ * ⚠️ IT WAS `withoutThePlacement`, AND IT TOOK THEM OFF THE END. The rows used to be lines of the
+ * FLOW: appended, so always its tail, so *what a verb said is everything before the last row that
+ * has something on it* — which is what that function did, and it is now false. The room is part
+ * of the region the layout REDRAWS (`repl/page.ts`, `repl/region.ts`), so it is written above the
+ * area on every frame, which puts it in the middle of what a session landed as well as at the
+ * end. Measured on the case below: twenty rows with nothing on them arrived BEFORE a verb's two
+ * lines, and trimming the end could not see them.
+ *
+ * SO IT IS STILL POSITION AND STILL EXACT, one step further: the room is what sits immediately
+ * above a row of the AREA — or above more room. A frame is the room and then the area, always in
+ * that order, so a run of empty rows that ends where the area begins is a frame's own and a run
+ * that ends anywhere else is a verb's. The end of the stream counts as the area's, because the
+ * last thing written to a page is a frame.
+ *
+ * ⚠️ AND IT WOULD STILL HIDE A VERB WHOSE LAST LINE IS BLANK, which is why the shell's own answer
+ * is asserted not to end in one: a read of this product that ended with a blank line would be
+ * immediately above a frame, and so indistinguishable from room.
+ */
+function whereTheRoomIs(rows: readonly string[]): readonly boolean[] {
+  const room = new Array<boolean>(rows.length).fill(false);
+  for (let at = rows.length - 1; at >= 0; at -= 1) {
+    const under = rows[at + 1];
+    room[at] =
+      rows[at] === '' && (under === undefined || ownedByTheArea(under) || room[at + 1] === true);
+  }
+  return room;
+}
+
 function landed(bytes: string): string[] {
   const rows = withoutLayout(bytes).split('\n');
   // The tail after the last newline: not a row, an artefact of splitting on one.
   rows.pop();
-  return rows.filter(
-    (row) => !row.startsWith(PROMPT) && !isTips(row) && !isBadge(row) && !isRule(row),
-  );
+  const room = whereTheRoomIs(rows);
+  return rows.filter((row, at) => !ownedByTheArea(row) && room[at] !== true);
 }
 
 /** Drives a console over `typed` in this process and answers with what it drew. */
@@ -569,6 +605,7 @@ describe('the same verbs, the same lines, another place', () => {
       // which is a fact about this product's lines and is checked rather than assumed.
       for (const line of outside.out) expect(line, verb).toBe(line.replace(/[ \t]+$/, ''));
       const inside = await inTheConsole([verb]);
+      expect(outside.out.at(-1), `${verb}: the shell's answer ends with a blank line`).not.toBe('');
       expect(inside.answers, verb).toEqual(outside.out);
       // And the caller's own line is on the page, the way a terminal shows what you sent.
       expect(inside.all, verb).toContain(`${PROMPT} ${verb}`);
@@ -592,6 +629,7 @@ describe('the same verbs, the same lines, another place', () => {
     });
     expect(outside.err.length).toBeGreaterThan(0);
     expect(outside.out).toEqual([]);
+    expect(outside.err.at(-1), "the shell's refusal ends with a blank line").not.toBe('');
     expect(inside.answers).toEqual(outside.err);
     expect(outside.err.join('\n')).toContain('`task` can change the record');
   }, 120_000);

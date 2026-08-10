@@ -1,7 +1,8 @@
 /**
- * THE PAGE OPENS CLEAN AND IT OPENS AT THE FOOT — and the whole of how is: everything on
- * the screen is carried INTO the scrollback, the cursor goes back to the top, and then as
- * many blank rows as it takes for the input to end up on the last row a caller has.
+ * THE PAGE OPENS CLEAN, THE BOX OPENS AT THE TOP, AND THE INPUT SITS AT THE FOOT — and the
+ * whole of how is: everything on the screen is carried INTO the scrollback, the cursor goes
+ * back to the top, the opening is drawn there, and under it go as many rows with nothing on
+ * them as it takes for the input area to end on the last row a caller has.
  *
  * A console that opens over whatever the caller's last command left behind opens in the
  * middle of somebody else's output, and this one draws a box: half a page of `git log`
@@ -33,23 +34,64 @@
  * leaves. `tests/a-page-that-opens-clean.test.ts` reads it off a real terminal both ways:
  * what is on the screen, and what is in the bytes.
  *
- * AND THE INPUT SITS AT THE FOOT OF IT, which is the same operation asked once more. The
- * page used to be drawn from the top, so a session opened on a tall terminal put the row
- * being typed in the middle of the screen with nothing under it. What is under it now is
- * nothing at all: the blank rows go BEFORE the opening, so what the session says fills the
- * page downwards and the input area ends where a caller's eye already is.
+ * ⚠️ AND THE ROWS WITH NOTHING ON THEM USED TO GO BEFORE THE OPENING. It was written here in
+ * those words — *the blank rows go BEFORE the opening, so what the session says fills the
+ * page downwards and the input area ends where a caller's eye already is* — and the input
+ * really did end at the foot. WHAT FALSIFIED IT IS WHERE THE EMPTINESS THEN WAS: measured on
+ * a real terminal at a hundred and twenty by forty, the page opened with twenty-one blank
+ * rows at the TOP and the box pushed down against the input, so the first thing a reader
+ * looks at was the last thing on the screen. The anchoring was right and the direction was
+ * not. The rows go UNDER the opening now: the box is at the top, the input is at the foot,
+ * and the emptiness is between them, which is where emptiness costs a reader nothing
+ * (`tests/the-gap-goes-under-the-box.test.ts` reads both off a real screen).
  *
- * ⚠️ IT WAS WRITTEN DOWN THAT THIS REQUIRED TAKING THE SCREEN, and it was wrong. The study
- * that designed this console recorded, as a decision left open, that *anchoring the input at
- * the foot is what the reference does by taking the alternate screen, and there is no cheap
- * third way with this library*. What falsified it is the direction: that reasoning assumed
- * anchoring meant filling the rows AFTER the input, which makes the region the layout
- * redraws as tall as the viewport — the one condition under which the library erases the
- * caller's history. Filling BEFORE it costs nothing of the sort. The argument against the
- * alternate screen above is untouched and still the reason this console does not take it;
- * what fell is only the belief that the two came together.
+ * ⚠️ AND IT WAS WRITTEN DOWN BEFORE THAT THAT ANCHORING REQUIRED TAKING THE SCREEN, which is
+ * the premise the anchoring itself falsified and it is still false. The study that designed
+ * this console recorded, as a decision left open, that *anchoring the input at the foot is
+ * what the reference does by taking the alternate screen, and there is no cheap third way
+ * with this library*. That reasoning assumed anchoring meant filling the rows AFTER the
+ * input, which makes the region the layout redraws as tall as the viewport — the one
+ * condition under which the library erases the caller's history. Filling above it costs
+ * nothing of the sort, and it costs nothing of the sort whether the rows go over the opening
+ * or under it. The argument against the alternate screen above is untouched.
  *
- * THE ROW UNDER THE AREA IS THE LAYOUT'S, and it is the one row the flow stops short of.
+ * SO THE ROWS ARE NO LONGER BYTES OF THIS FILE, and that is forced rather than chosen: the
+ * opening is drawn by the LAYOUT, after these bytes have been written, so nothing written here
+ * can land under it. What this file answers is how MANY there are; the drawing of them is the
+ * layout's ({@link theGap}).
+ *
+ * ⚠️ AND THEY WERE LINES OF THE FLOW, which is the premise this delivery falsified. It was
+ * written here in those words — *they go in what is KEPT and not in what is redrawn, which is
+ * the whole safety of them: the region stays exactly as tall as the area, and the height at
+ * which the library gives up on redrawing PART of the screen is as far away as it was*. The
+ * safety was real; the anchoring was not, because THE AREA CHANGES HEIGHT. A list of words opens
+ * twenty rows tall, a region that grows scrolls the screen, and what scrolls off the top is in
+ * the scrollback for good — nothing un-scrolls. Measured on a real terminal at a hundred and
+ * twenty by forty: ONE opening and shutting of the list, and the box was gone and did not come
+ * back. The rows that were landed to make up the difference were empty ones, because the flow is
+ * written once and what went up cannot be pulled down.
+ *
+ * SO THE ROWS ARE THE REGION'S, and that is what makes the area grow without pushing anything:
+ * the list takes its room out of the LEFTOVER instead of out of the screen — twenty-one rows of
+ * nothing become one while the area goes from five to twenty-five — so the region's whole height
+ * does not move and nothing scrolls at all. The leftover was always the room the area could take;
+ * it was in the wrong half of the page.
+ *
+ * AND WHAT SCROLLED AWAY IS REMEMBERED, WHICH IS THE ONE THING A REDRAWN LEFTOVER STILL NEEDS. A
+ * page whose flow and frame together outgrow the screen loses rows off the top, and nothing brings
+ * them back — so the flow this subtracts is the flow ON THE SCREEN and not the flow the session
+ * has said ({@link ThePage.flow}). Measured, before it was: at a hundred by thirty a list opened
+ * and shut left the input fourteen rows above the foot, on a page that had scrolled thirteen rows
+ * away and been placed as though it had not.
+ *
+ * AND THE BOUNDARY IS KEPT BY THE ROW IT WAS ALWAYS KEPT BY, which is why this costs the erase
+ * nothing. The region is the leftover and the area, and the leftover is what is left over after
+ * {@link BELOW_THE_VIEWPORT} — so `gap + area` is at most `rows − flow − 1`, one row short of the
+ * height at which the library redraws the whole screen, at every height and with the flow as
+ * short as a flow gets. Measured across nine heights and bracketed
+ * (`tests/the-gap-goes-under-the-box.test.ts`).
+ *
+ * THE ROW UNDER THE AREA IS THE LAYOUT'S, and it is the one row the page stops short of.
  * It is the same row `area.ts` keeps so that the region is redrawn in PART
  * ({@link BELOW_THE_VIEWPORT}) — read here rather than counted again, which is also what
  * makes the arithmetic below safe: the drawing of the name is chosen so that the opening,
@@ -64,7 +106,7 @@
  * directly, before the layout is mounted, or the layout's own door once it is
  * (`console.ts`). A page turned for a caller who resized their window is the third, and it
  * is the one that has something to say already: what the session HAS said is part of the
- * flow, so it is counted with the opening ({@link ThePage.said}).
+ * flow, so it is counted with the opening.
  */
 
 import { BELOW_THE_VIEWPORT } from './area.js';
@@ -90,11 +132,12 @@ const THE_TOP = `${ESC}[${PUT_THE_CURSOR}`;
 const theLastRow = (rows: number): string => `${ESC}[${rows};1${PUT_THE_CURSOR}`;
 
 /**
- * THE PAGE THAT IS ABOUT TO BE DRAWN, as the four numbers it takes to place it.
+ * WHERE THE FLOW HAS GOT TO AND HOW MUCH ROOM IS LEFT UNDER IT — the three numbers it takes
+ * to answer how much of the page is still empty.
  *
  * Every one of them is ALREADY ANSWERED somewhere else, and that is the point of them
- * arriving as numbers: this module writes bytes and does one subtraction, and a second
- * opinion about how tall an opening is would be the count and the drawing coming apart.
+ * arriving as numbers: this module does one subtraction, and a second opinion about how tall
+ * an opening is would be the count and the drawing coming apart.
  */
 export interface ThePage {
   /**
@@ -103,45 +146,72 @@ export interface ThePage {
    */
   readonly rows: number;
   /**
-   * How many rows what the page OPENS with takes, folds counted — the box and the lines
-   * under it (`panel.ts`, `Opening.rows`).
-   */
-  readonly opening: number;
-  /**
-   * How many lines the session has SAID since the page opened, one row each.
+   * HOW MANY ROWS OF THE FLOW ARE ON THE SCREEN — and the words mean exactly what they say: the
+   * rows a reader can SEE, in rows rather than in lines.
    *
-   * IT IS A COUNT OF LINES AND NOT OF ROWS, and the difference is a line the terminal
-   * folds: a landed line arrives already folded to the width the session started at
-   * (`presentation/folded.ts`), so it is one row until a caller NARROWS their window, and
-   * after that it can be two. What the difference costs is a page anchored a row or two low,
-   * which the terminal absorbs by scrolling — the area is still at the foot, and what goes
-   * past the top is what a longer session would have carried up anyway. What it buys is the
-   * whole of the resized case: a page turned with fifteen lines already on it and the flow
-   * counted as though there were none would carry the box and half of what the caller was
-   * reading into the scrollback (measured at a hundred by thirty: twelve rows).
+   * ⚠️ IT USED TO BE EVERYTHING WRITTEN SINCE THE PAGE WAS CARRIED AWAY, which is a different
+   * number the moment anything scrolls — and the leftover moving into the frame is what made the
+   * difference matter. A page whose flow and frame together outgrow the screen loses rows off the
+   * TOP, for good; a leftover subtracted from the flow the console HOLDS would then place the
+   * frame that many rows short of the foot. Measured, at a hundred by thirty and at eighty by
+   * twenty-four: a list of words opened and shut left the input fourteen and seventeen rows above
+   * the foot. So what the caller hands over is what the screen still has (`console.ts`,
+   * `flowOnScreen`), and this file does the same subtraction over it.
+   *
+   * ⚠️ IT WAS TWO FIELDS, `opening` AND `said`, and they were the same question asked in
+   * halves: the flow is what the page opens with plus what has been said under it, and a
+   * caller who had to add them up before asking was a caller who could get the addition
+   * wrong. It is one number now, and it is FOLLOWED rather than added up — it grows by what
+   * lands and is capped by what the frame left room for, both of them in the console that asks.
+   *
+   * ⚠️ AND IT WAS KNOWN A SECOND WAY, which went with the premise above: a frame whose area had
+   * given rows back worked the flow out BACKWARDS, from where the area was anchored, because
+   * the rows it was anchored with were part of the flow and nobody had counted them. Nothing is
+   * anchored against anything now — the leftover is redrawn with the area on every frame — so
+   * there is one way to know the flow, which is the one that was always the honest one.
+   *
+   * IT IS ROWS AND NOT LINES, and the difference is a line the terminal folds: a landed line
+   * arrives already folded to the width the session started at (`presentation/folded.ts`), so
+   * it is one row until a caller NARROWS their window, and after that it can be two. What the
+   * difference costs is a page anchored a row or two low, which the terminal absorbs by
+   * scrolling — the area is still at the foot, and what goes past the top is what a longer
+   * session would have carried up anyway.
    */
-  readonly said: number;
+  readonly flow: number;
   /** How many rows the region the layout redraws takes (`area.ts`, `Area.height`). */
   readonly area: number;
 }
 
 /**
- * HOW MANY BLANK ROWS GO BEFORE THE OPENING, so that the flow ends on the last row the
- * layout leaves to it.
+ * HOW MANY ROWS WITH NOTHING ON THEM GO BETWEEN THE FLOW AND THE AREA, so that the area ends
+ * on the last row the layout leaves to it.
  *
- * ONE SUBTRACTION AND NO NUMBER OF ITS OWN: the page is what the opening takes plus what
- * has been said plus the area, the row under it is the layout's, and what is left over is
- * blank. Nothing fits into a negative number of rows, so a page that already fills the
- * screen gets none — which is the behaviour this surface had before there were any, and the
- * case is the same one rather than a new branch.
+ * ONE SUBTRACTION AND NO NUMBER OF ITS OWN: the page is what the flow has taken plus the
+ * area, the row under it is the layout's, and what is left over is empty. Nothing fits into
+ * a negative number of rows, so a page that already fills the screen gets none — which is
+ * the behaviour this surface had before there were any, and the case is the same one rather
+ * than a new branch.
+ *
+ * ONE CALLER ASKS IT, ON EVERY FRAME, and it is the frame itself: the leftover is drawn with
+ * the area, above it, in the region the layout redraws (`console.ts`, `region.ts`). So the
+ * answer is never remembered and never repaired — a list of words that opens takes its rows
+ * out of this subtraction, and one that shuts gives them back to it, both of them by the
+ * area's height changing and this being asked again.
+ *
+ * ⚠️ IT USED TO HAVE TWO CALLERS, and the second one is what this delivery removed. The rows
+ * were the FLOW's, so they could only ever be APPENDED: a page that was just turned counted
+ * its own flow and got them, and a session whose area had shrunk had to work the flow out
+ * backwards from where the area was anchored, so that the difference could be landed as more
+ * of them. That repair is what a leftover redrawn every frame makes impossible to need, and
+ * what it was repairing — a page whose top had already scrolled away — it could not undo.
  */
-function beforeTheOpening(page: ThePage): number {
-  return Math.max(0, page.rows - page.opening - page.said - page.area - BELOW_THE_VIEWPORT);
+export function theGap(page: ThePage): number {
+  return Math.max(0, page.rows - page.flow - page.area - BELOW_THE_VIEWPORT);
 }
 
 /**
- * The bytes that carry a page into the scrollback, come back to the top, and leave the
- * cursor where the opening has to start for the input to end up at the foot.
+ * The bytes that carry a page into the scrollback and come back to the top, so the opening
+ * is drawn on an empty screen.
  *
  * The cursor is put on the LAST row first, and that is not decoration: a blank row
  * written anywhere above the bottom only moves the cursor down, so scrolling by a whole
@@ -149,30 +219,18 @@ function beforeTheOpening(page: ThePage): number {
  * screen that is above it. From the bottom, `rows` of them scroll `rows`, whatever was
  * where.
  *
- * THE BLANK ROWS AFTER THE TOP ARE THE OTHER KIND, and the same character does both because
- * the terminal does: at the bottom of the page a blank row SCROLLS, and on a page that is
- * already empty it only moves the cursor down. So nothing above the flow is written over and
- * nothing extra is carried away — the rows the flow does not reach are blank because the
- * page was carried away, not because something was drawn on them.
- *
- * ⛔ AND THEY GO OUTSIDE THE REGION THE LAYOUT REDRAWS, which is the whole safety of it.
- * They are bytes of the FLOW — the part of the page that is written once and never taken
- * back — and not rows of the frame, so the region stays exactly as tall as the area and the
- * height at which the library gives up on redrawing PART of the screen (and erases the
- * caller's history on the way) is as far away as it was. Asserted from both ends: the region
- * is the same size on a tall terminal as on a short one, and the erase is bracketed at the
- * height where one row more IS it (`tests/the-prompt-sits-at-the-foot.test.ts`).
+ * ⚠️ IT USED TO END WITH THE LEFTOVER, and that is what put the emptiness at the top of the
+ * screen. Nothing written here can land under the opening, because the opening is the
+ * layout's to draw and it is drawn after these bytes — so the leftover left this file
+ * altogether and is answered as a count ({@link theGap}) for the console to hand over as
+ * lines. What survives is the half that was never about the direction: the rows are the
+ * FLOW's, wherever they go.
  *
  * A terminal that reports no height gets nothing at all rather than a guess: there is no
  * page to carry, and a sequence written against a height nobody reported would be this
  * module inventing a device.
  */
-export function carriedIntoTheScrollback(page: ThePage): string {
-  if (page.rows <= 0) return '';
-  return (
-    theLastRow(page.rows) +
-    A_BLANK_ROW.repeat(page.rows) +
-    THE_TOP +
-    A_BLANK_ROW.repeat(beforeTheOpening(page))
-  );
+export function carriedIntoTheScrollback(rows: number): string {
+  if (rows <= 0) return '';
+  return theLastRow(rows) + A_BLANK_ROW.repeat(rows) + THE_TOP;
 }
