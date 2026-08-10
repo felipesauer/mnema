@@ -437,6 +437,61 @@ describe('all three callers of the page leave the input at the foot', () => {
       expect(firstDrawnRow(screen), `${what} begins on the first row`).toBeGreaterThan(0);
     }
   }, 240_000);
+
+  it('⚠️ follows a window that only changed HEIGHT, both ways', async () => {
+    // THE ACHADO OF THIS DELIVERY, and it is the geometry where the promise was not kept. The
+    // page is turned for a resize only when the OPENING the terminal would get differs from
+    // the one on the screen, and a window made taller by rows no glyph depends on is the same
+    // opening — so nothing was written at all. Measured, before the guard was widened: at a
+    // hundred by thirty dragged to forty the byte stream was IDENTICAL on either side of the
+    // resize, and the input stayed eleven rows above the foot.
+    //
+    // BOTH WAYS IN ONE RUN, because the two directions are different mechanisms as far as the
+    // terminal is concerned — growing leaves rows over and shrinking takes them away — and a
+    // guard that only noticed one of them would be half a fix.
+    const columns = 100;
+    const short = 30;
+    const tall = 40;
+    const ran = await inPty({
+      columns,
+      rows: short,
+      steps: [
+        opens,
+        {
+          resize: { columns, rows: tall },
+          until: (bytes) => times(bytes, TOP_LEFT) > 1,
+          what: 'drew the page again at the new height',
+        },
+        {
+          resize: { columns, rows: short },
+          until: (bytes) => times(bytes, TOP_LEFT) > 2,
+          what: 'drew the page again back at the old height',
+        },
+        leaves,
+      ],
+    });
+    const grown = screenOf(ran.bytes.slice(0, ran.at[1] as number), columns, tall);
+    const shrunk = screenOf(ran.bytes.slice(0, ran.at[2] as number), columns, short);
+    endsAtTheFoot(grown, tall, 'the page that followed a taller window');
+    endsAtTheFoot(shrunk, short, 'the page that followed a shorter window');
+    // AND NOTHING A PANEL CAN SEE MOVED, which is what makes this the placement rather than
+    // the drawing: the width never changed, and the drawing on the taller screen is the one
+    // that was on the shorter — so a guard that only compared openings would have refused
+    // both of these, and did.
+    for (const [screen, what] of [
+      [grown, 'the taller page'],
+      [shrunk, 'the shorter page'],
+    ] as const) {
+      expect(screen.rows[firstDrawnRow(screen)], `${what} opened cut`).toContain(`v${VERSION}`);
+      expect(firstDrawnRow(screen), `${what} begins on the first row`).toBeGreaterThan(0);
+    }
+    // Not vacuous: the two pages really were placed at different heights, so this is not one
+    // screen read twice at two sizes.
+    expect(
+      firstDrawnRow(grown),
+      'the taller window was anchored no lower than the shorter one',
+    ).toBeGreaterThan(firstDrawnRow(shrunk));
+  }, 240_000);
 });
 
 // ---------------------------------------------------------------------------

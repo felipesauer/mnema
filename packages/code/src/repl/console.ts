@@ -419,6 +419,22 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * window has a different page, and a page placed against a size that was true a moment ago
    * is a page whose top is in the scrollback.
    */
+  /**
+   * HOW TALL THE TERMINAL WAS WHEN THE PAGE NOW ON THE SCREEN WAS PLACED.
+   *
+   * IT IS THE HALF OF THE QUESTION THE DRAWING CANNOT ANSWER. A page is a drawing AND a
+   * placement: the flow is preceded by whatever it takes for the input to end on the last row
+   * the layout leaves (`page.ts`), and that leftover is a function of the HEIGHT. So two
+   * terminals that would be drawn identically are still two different pages, and the page on
+   * the screen is stale for one of them — which is why the answer is not in the opening.
+   *
+   * The height alone rather than the leftover it produces, and the difference is the safe
+   * direction: a placement recomputed from a height nobody re-read is the defect, while a page
+   * turned once for a settled drag that happened to need no new rows costs one screen carried
+   * into the scrollback — the same thing a width drag has always cost.
+   */
+  let placedAt = howTall();
+
   function thePage(): ThePage {
     return {
       rows: howTall(),
@@ -451,7 +467,9 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * Nothing is READ to do it, in either caller.
    */
   function thePageAgain(): void {
-    carry(carriedIntoTheScrollback(thePage()));
+    const placing = thePage();
+    carry(carriedIntoTheScrollback(placing));
+    placedAt = placing.rows;
     past = [...opened.lines, ...said];
     page += 1;
     moved();
@@ -480,13 +498,22 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * exactly as it does when they ask for a clean one.
    */
   function followTheTerminal(): void {
-    // THE ONE GUARD, and it is one question: is the opening this terminal would get the one
-    // that is on the screen? A drag that wandered away and came back is a caller whose page
-    // is already right; so is a window made shorter by rows the drawing does not depend on.
-    // Composing the answer to ask it costs a pure function over lines that already exist,
-    // which is what makes the question askable at all (`panel.ts`, `sameOpening`).
+    // THE ONE GUARD, and it is one question in two halves: is the page this terminal would
+    // get the one that is on the screen? A page is a drawing and a placement, so both are
+    // asked — the drawing of the opening ({@link sameOpening}, a pure function over lines
+    // that already exist, which is what makes it askable at all), and the height the page on
+    // the screen was placed against ({@link placedAt}). A drag that wandered away and came
+    // back is a caller whose page is already right, and that is what still gets nothing.
+    //
+    // ⚠️ THE SECOND HALF USED NOT TO BE HERE, and the premise it rested on was written down:
+    // *a window made shorter by rows the drawing does not depend on costs the caller nothing*.
+    // What falsified it is the input sitting at the FOOT (`page.ts`): the rows before the
+    // opening are how many the height leaves over, so a terminal that changed height has a
+    // page whose flow no longer ends where the layout's last row is — measured, on a real
+    // device, at a hundred by thirty dragged to forty: not one byte was written, and the
+    // input stayed eleven rows above the foot. What it costs is named in {@link placedAt}.
     const now = openingFor(howWide(), howTall());
-    if (sameOpening(now, opened)) return;
+    if (sameOpening(now, opened) && howTall() === placedAt) return;
     opened = now;
     thePageAgain();
   }

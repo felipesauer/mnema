@@ -471,32 +471,49 @@ const carriedPages = (bytes: string): number =>
   (bytes.match(new RegExp(`${ESC}\\[\\d+;1H`, 'g')) ?? []).length;
 
 describe('the page follows the drawing, and once per drag', () => {
-  it('draws nothing when a height moves no glyph, and turns the page when one does', async () => {
-    // ⚠️ THIS CASE WAS `draws nothing at all when only the height changed`, and it is
-    // renamed because what it asserted stopped being true: the name gives way by HEIGHT as
-    // well now (`presentation/banner.ts`), so a window made short enough opens with a
-    // different mark. What survived is the half with teeth — a height that changes no glyph
-    // costs the caller nothing — and it survived because the guard stopped comparing SIZES
-    // and started comparing the opening itself (`repl/panel.ts`, `sameOpening`).
+  it('turns the page for a height that moves no glyph, and for one that does', async () => {
+    // ⚠️ THIS CASE WAS `draws nothing when a height moves no glyph, and turns the page when
+    // one does`, and before that `draws nothing at all when only the height changed`. Both
+    // halves of both names rested on one premise — a height the DRAWING does not depend on is
+    // a height the page does not depend on — and the delivery that put the input at the FOOT
+    // of the terminal falsified it: the rows before the opening are how many the height leaves
+    // over, so a page placed at one height is misplaced at another whatever is drawn on it
+    // (`repl/page.ts`, `tests/the-prompt-sits-at-the-foot.test.ts`). Measured, on a real
+    // device, before the guard was widened: at a hundred by thirty dragged to forty, not one
+    // byte was written and the input stayed eleven rows above the foot.
     //
-    // ⚠️ AND IT WOULD HAVE STAYED GREEN THROUGH THE CHANGE, which is why it is here rather
-    // than deleted: it ended its drag back at the height it started from, so a console that
-    // turned a page for every height still answered one. The drag below ends somewhere
-    // else.
+    // ⚠️ AND IT WOULD HAVE STAYED GREEN THROUGH THE EARLIER CHANGE, which is why the drag ends
+    // somewhere other than where it began: a drag that came back to its own height would be
+    // answered with one page by a console that turned one for every height and by a console
+    // that turned none.
+    //
+    // WHAT IS ASSERTED NOW IS THE PAIR: the height alone turns a page, and a drag that ends
+    // where it started still turns none — so this is the guard being widened rather than
+    // removed.
     const { terminal, close } = await opened(200);
     const pages = () => carriedPages(terminal.bytes());
     expect(pages(), 'the page was never opened').toBe(1);
-    // ⚠️ THE HEIGHTS IT USED WERE THIRTY, TWENTY AND TEN, and this delivery falsified the
-    // premise under them: the name gave way when the DRAWING was taller than the terminal,
+    // ⚠️ THE HEIGHTS IT USED WERE THIRTY, TWENTY AND TEN, and an earlier delivery falsified
+    // the premise under them: the name gave way when the DRAWING was taller than the terminal,
     // so nothing but a four-row window could move a glyph. It gives way when the PAGE stops
     // fitting now, and every one of those three crosses a threshold. What is chosen instead
     // is derived rather than picked: the biggest drawing there is is already on the screen
     // at forty rows, so no TALLER terminal can change it — heights above the one the session
-    // opened at are heights the drawing cannot depend on, whatever the arithmetic under it
+    // opened at are heights the DRAWING cannot depend on, whatever the arithmetic under it
     // says, and the drag still ends somewhere other than where it began.
     for (const rows of [50, 60, 44]) terminal.resize(200, rows);
     await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
-    expect(pages(), 'a height that moves no glyph turned the page').toBe(1);
+    expect(pages(), 'a height with a new placement did not turn the page').toBe(2);
+    // AND IT IS THE PLACEMENT AND NOT THE DRAWING THAT DID IT, which is what makes this the
+    // widened half rather than a coincidence: the box on the new page is the box that was on
+    // the old one, drawn at the same width, so nothing a panel can see moved.
+    expect(times(terminal.bytes(), TOP_LEFT), 'the box was not drawn again').toBe(2);
+    // AND A DRAG THAT ENDS WHERE IT STARTED STILL COSTS NOTHING. The guard grew a half; it
+    // did not become "a resize event happened".
+    terminal.resize(200, 30);
+    terminal.resize(200, 44);
+    await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
+    expect(pages(), 'a drag back to the height on the screen turned a page').toBe(2);
 
     // THE WIDTH STILL DOES IT, which is what this case has always been beside — and it is
     // asked here, at a height with room for the whole drawing, because a short terminal is
@@ -505,8 +522,8 @@ describe('the page follows the drawing, and once per drag', () => {
     // rows; `tests/a-page-that-opens-clean.test.ts` is where that behaviour is pinned).
     terminal.resize(199);
     await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
-    expect(pages(), 'a change of width did not turn the page').toBe(2);
-    expect(times(terminal.bytes(), TOP_LEFT), 'the box was not drawn again').toBe(2);
+    expect(pages(), 'a change of width did not turn the page').toBe(3);
+    expect(times(terminal.bytes(), TOP_LEFT), 'the box was not drawn again').toBe(3);
 
     // AND THE TEETH FOR THE OTHER MEASUREMENT: a height the drawing DOES depend on.
     //
@@ -522,7 +539,7 @@ describe('the page follows the drawing, and once per drag', () => {
     const before = terminal.bytes().length;
     terminal.resize(199, 4);
     await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
-    expect(pages(), 'a height that gives the mark away did not turn the page').toBe(3);
+    expect(pages(), 'a height that gives the mark away did not turn the page').toBe(4);
     // And it is a SHORTER mark that was drawn, so the page turned for the reason claimed.
     // Read from the LAST box on the page rather than from everything written after the
     // resize: on a terminal this short the library writes out everything it is keeping,
@@ -924,12 +941,19 @@ describe('the FRAME asks how big the terminal is in one place, and it follows it
     // And there really are two callers of it, plus the write to the DEVICE that opens the
     // page before there is a layout to write through — which is the third of the three.
     expect(times(source, 'thePageAgain();'), 'the one page has fewer than two callers').toBe(2);
-    // ⚠️ AND IT USED TO NAME THE HEIGHT — `carriedIntoTheScrollback(howTall())`. A page is
-    // placed against four numbers now rather than one, because the input is anchored at the
+    // ⚠️ AND IT USED TO COUNT THE WHOLE CALL — `carriedIntoTheScrollback(howTall())`. A page
+    // is placed against four numbers now rather than one, because the input is anchored at the
     // foot and the leftover is a subtraction over what the opening and the area take
-    // (`repl/page.ts`); the height alone would place the page and not the anchor. The shape
-    // this counts moved with it, which is why the count is over the call and not the symbol:
-    // a caller that passed something else would be a second idea of what page is being turned.
-    expect(times(source, 'carriedIntoTheScrollback(thePage())')).toBe(2);
+    // (`repl/page.ts`), so the argument is no longer one expression written the same way at
+    // both sites. What the count is FOR is the two places the bytes of a page are written —
+    // the device before there is a layout, and the layout's own door after — so that is what
+    // it counts, and the argument is pinned by the type rather than by a spelling.
+    expect(times(source, 'carriedIntoTheScrollback('), 'the page is written elsewhere').toBe(2);
+    // AND THE HEIGHT THE PAGE WAS PLACED AT IS RECORDED WHERE THE PAGE IS TURNED. It is the
+    // half of the resize guard the drawing cannot answer (`repl/panel.ts`, `sameOpening`), so
+    // a page turned without recording it would leave the guard comparing against a height two
+    // pages old and refusing to follow the terminal at all: born with the page that opens, and
+    // written again in the one place that turns one.
+    expect(times(source, 'placedAt ='), 'the placement is recorded somewhere else').toBe(2);
   });
 });
