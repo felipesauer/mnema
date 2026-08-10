@@ -67,7 +67,7 @@ import {
   type DecisionState,
   type ProjectionCache,
 } from '@mnema/core';
-import { type Disposition, statesWith } from './disposition.js';
+import { type Disposition, statesMeaning } from './disposition.js';
 
 /**
  * What each state of the decision machine means to a reader — TOTAL, so a fifth
@@ -120,10 +120,14 @@ export function decisionDisposition(state: DecisionState): Disposition {
 }
 
 /** The states whose decisions govern — derived, never restated. */
-const IN_FORCE = statesWith(DECISION_STATES, DECISION_DISPOSITION, 'in-force');
+const IN_FORCE = statesMeaning(DECISION_STATES, decisionDisposition, 'in-force');
 
 /** The states whose decisions are waiting on somebody — derived, never restated. */
-const AWAITING_JUDGEMENT = statesWith(DECISION_STATES, DECISION_DISPOSITION, 'awaiting-judgement');
+const AWAITING_JUDGEMENT = statesMeaning(
+  DECISION_STATES,
+  decisionDisposition,
+  'awaiting-judgement',
+);
 
 /** A decision in force, named but not spelled out — what an index is made of. */
 export interface DecisionRef {

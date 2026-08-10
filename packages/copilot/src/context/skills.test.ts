@@ -8,7 +8,7 @@ import {
   makeBench,
   moveSkill,
 } from '../../tests/support/chain.js';
-import { statesWith } from './disposition.js';
+import { statesMeaning } from './disposition.js';
 import {
   adoptedSkills,
   lookupServedSkill,
@@ -359,14 +359,14 @@ describe('lookupServedSkill — asking for one pattern by id', () => {
         new Set(['served', 'not-served']),
       );
       // The state that comes back with a served body is the state it was READ in.
-      for (const state of statesWith(SKILL_STATES, SKILL_DISPOSITION, 'closed')) {
+      for (const state of statesMeaning(SKILL_STATES, skillDisposition, 'closed')) {
         expect(lookupServedSkill([cache], `sk-${state}`)).toEqual({
           outcome: 'not-served',
           state,
         });
       }
       for (const disposition of ['in-force', 'awaiting-judgement'] as const) {
-        for (const state of statesWith(SKILL_STATES, SKILL_DISPOSITION, disposition)) {
+        for (const state of statesMeaning(SKILL_STATES, skillDisposition, disposition)) {
           expect(lookupServedSkill([cache], `sk-${state}`)).toMatchObject({
             outcome: 'served',
             skill: { state },

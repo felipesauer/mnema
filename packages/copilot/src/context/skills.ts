@@ -95,7 +95,7 @@ import {
   type SkillProjection,
   type SkillState,
 } from '@mnema/core';
-import { type Disposition, statesWith } from './disposition.js';
+import { type Disposition, statesMeaning } from './disposition.js';
 
 /**
  * What each state of the skill machine means to a reader — TOTAL, so a sixth state
@@ -154,10 +154,10 @@ const BODY_SERVED: Readonly<Record<Disposition, boolean>> = {
 };
 
 /** The states whose skills are live patterns — derived, never restated. */
-const ADOPTED = statesWith(SKILL_STATES, SKILL_DISPOSITION, 'in-force');
+const ADOPTED = statesMeaning(SKILL_STATES, skillDisposition, 'in-force');
 
 /** The states whose skills are waiting on somebody — derived, never restated. */
-const AWAITING_JUDGEMENT = statesWith(SKILL_STATES, SKILL_DISPOSITION, 'awaiting-judgement');
+const AWAITING_JUDGEMENT = statesMeaning(SKILL_STATES, skillDisposition, 'awaiting-judgement');
 
 /**
  * What one state MEANS to a reader — the classification, for the one consumer that
