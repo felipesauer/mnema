@@ -646,7 +646,7 @@ describe('a session has opened when its frame is finished, not when its prompt i
     expect(answered(opening.slice(0, cut), since)).toBe(false);
   });
 
-  it('⚠️ asks every step its question with the point the step began at, in all three drivers', () => {
+  it('⚠️ asks every wait about what the caller caused, in each of the drivers that wait', () => {
     // ⚠️ THE OTHER HALF, AND IT SCORED ZERO. The question above is only as good as the number
     // handed to it, and mutating the DRIVER to hand `0` instead of where the step began left
     // every case green — the rule was proved in the predicate and unguarded in the three
