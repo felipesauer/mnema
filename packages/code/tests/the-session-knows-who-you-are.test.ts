@@ -356,6 +356,26 @@ function pathOf(command: Command): string[] {
   return names;
 }
 
+/**
+ * A line that really reaches `command`: the words that name it, and something in the
+ * position of every argument it requires.
+ *
+ * DERIVED RATHER THAN LISTED, because a table of invocations here would carry the same
+ * blind spot the list of verbs would: a fifth verb, or a fourth argument on one of these,
+ * and the case would be typing a line the parser refuses for a reason that has nothing to
+ * do with an identity. An argument that enumerates its values gets one of its own
+ * (`guard`'s action does); anything else gets a value that names nothing, which is enough
+ * to get past the parser and into the verb.
+ */
+function invocationOf(command: Command): string[] {
+  return [
+    ...pathOf(command),
+    ...command.registeredArguments
+      .filter((argument) => argument.required)
+      .map((argument) => argument.argChoices?.[0] ?? 'nothing-of-that-name'),
+  ];
+}
+
 /** A value shaped like the one a panel is drawn with, for asking what a line becomes. */
 const ME = 'mnid:7d30343b';
 
@@ -400,6 +420,27 @@ describe('every command that requires an identity is served, and nothing else is
     }
   });
 
+  it('none of them asks a session that knows itself, and every one asks one that does not', async () => {
+    // THE RULE IN N POINTS, TYPED AT N POINTS — the enumeration above is about the words a
+    // parser receives, and this is about what a caller gets back. Each command that
+    // requires an identity is really run at a prompt, with the arguments it declares, and
+    // whatever it then says, it does not ask for the identity.
+    const { program } = registered();
+    const requires = everyCommandOf(program).filter((command) =>
+      command.options.some((option) => option.mandatory && option.description.includes(ACTOR_HELP)),
+    );
+    expect(requires.length).toBeGreaterThanOrEqual(4);
+    for (const command of requires) {
+      const line = invocationOf(command).join(' ');
+      const knowing = await prompt(line, mine);
+      expect([...knowing.out, ...knowing.err].join('\n'), line).not.toContain(ASKS_FOR_ONE);
+      // NOT VACUOUS, PER COMMAND: the same line at a session that knows nobody asks for
+      // one. Without this half, a verb refusing for some other reason reads as served.
+      const knowingNobody = await prompt(line, undefined);
+      expect(knowingNobody.err.join('\n'), line).toContain(ASKS_FOR_ONE);
+    }
+  }, 180_000);
+
   it('leaves the two shapes that look like it and are not', () => {
     const { verbs } = registered();
     // A MANDATORY option that is not an identity — a question only the caller can answer.
@@ -409,6 +450,12 @@ describe('every command that requires an identity is served, and nothing else is
     // default is EVERYBODY, so filling it would quietly turn "who authorized these facts"
     // into "which of them are mine" — in the caller's name, with nothing on screen saying
     // so. It is the shape closest to the rule and the one it must not touch.
+    //
+    // ⚠️ IT IS HELD HERE BY BOTH HALVES AT ONCE — the flag is spelled `--who` AND it is
+    // optional — so this case cannot say which half is doing the work, and measured on a
+    // mutation that dropped the requirement it stayed green. The half about a flag that
+    // asks for the ASKER and is merely optional is exercised where such a declaration can
+    // exist at all: `repl/asking.test.ts`, on a verb of its own.
     expect(asTheSession(['accountability'], verbs, ME)).toEqual(['accountability']);
     // Both are really there to be got wrong: each declares a flag of the kind above.
     const { program } = registered();
