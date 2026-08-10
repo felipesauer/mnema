@@ -595,20 +595,39 @@ describe('a session has opened when its frame is finished, not when its prompt i
 // The count: how much of the screen the console spends, and whether it FITS
 // ---------------------------------------------------------------------------
 
-/** How many rows from the top of a screen have anything on them. */
-function rowsDrawn(screen: { readonly rows: readonly string[] }): number {
-  return screen.rows.map((row) => row.trim().length > 0).lastIndexOf(true) + 1;
+/**
+ * WHERE THE PAGE IS ON A SCREEN: the first row with anything on it, and the last.
+ *
+ * ⚠️ IT WAS ONE NUMBER — *how many rows from the top have anything on them* — and it was the
+ * same as the page's own height for as long as the page was drawn from the top of the screen.
+ * That is what the delivery which anchored the input at the FOOT falsified
+ * (`repl/page.ts`, `tests/the-prompt-sits-at-the-foot.test.ts`): the page is preceded by as
+ * many blank rows as it takes for the input area to end on the last row the layout leaves, so
+ * counting from the top answers *how tall the terminal is*, near enough, at every size. The
+ * two rows are returned rather than the count, and every reading below says which end it
+ * means — a count from the top cannot be written by accident any more.
+ */
+function thePageOn(screen: { readonly rows: readonly string[] }): {
+  readonly first: number;
+  readonly last: number;
+} {
+  const drawn = screen.rows.map((row) => row.trim().length > 0);
+  return { first: drawn.indexOf(true), last: drawn.lastIndexOf(true) };
 }
 
 /**
  * WHAT A CONSOLE OPENED AT A SIZE SHOWS: which of the drawings is on it, how many rows it
  * spends, and whether the whole of the opening is still on the screen.
  *
- * WHOLE IS THE PROMISE THIS FILE IS NAMED AFTER, and it is read off the FIRST row rather
- * than off a count: an opening taller than the screen loses its top, and its top is the
- * title. What the title is is asked of the product — it is the only line of the opening that
- * names the build — so a case cannot come to look for a sentence the session stopped
- * saying.
+ * WHOLE IS THE PROMISE THIS FILE IS NAMED AFTER, and it is read off the first row the page
+ * is DRAWN on rather than off a count: an opening taller than the screen loses its top, and
+ * its top is the title. What the title is is asked of the product — it is the only line of
+ * the opening that names the build — so a case cannot come to look for a sentence the session
+ * stopped saying.
+ *
+ * ⚠️ IT WAS ROW ZERO, and the anchoring is what falsified that: the rows above the page are
+ * blank now, so `rows[0]` names the build on no terminal with room to spare, and this read
+ * would answer *cut* on every one of them ({@link thePageOn}).
  */
 async function openedAt(
   columns: number,
@@ -627,10 +646,13 @@ async function openedAt(
   const drawing =
     everyForm().find((form) => form.every((row) => screen.text.includes(row.trimEnd()))) ??
     ([] as readonly string[]);
+  const page = thePageOn(screen);
   return {
     drawing,
-    spent: rowsDrawn(screen),
-    whole: (screen.rows[0] as string).includes(`v${VERSION}`),
+    // HOW TALL THE PAGE IS, corner to corner of what is drawn — not how far down the screen
+    // its last row reaches, which is where the anchor put it rather than what it costs.
+    spent: page.last - page.first + 1,
+    whole: (screen.rows[page.first] as string).includes(`v${VERSION}`),
   };
 }
 
@@ -662,6 +684,15 @@ async function openedAt(
  *     big one. The opening is still whole and there is still a row over — what a reader loses
  *     is four rows of the record, and what they gain is the mark. It is a declared cost.
  *
+ * ⚠️ AND WHAT THE LEFTOVER ROWS ARE HAS MOVED, while every number in the table stayed put.
+ * They used to be the rows UNDER the page — screen a reader still had, which is what "leaves"
+ * meant. The delivery that anchored the input at the foot spends them as blank rows ABOVE it
+ * instead (`repl/page.ts`), so what is left over is the same COUNT and no longer the same
+ * thing: the room a session has before it starts scrolling is nil either way, since a page
+ * whose flow reached the foot scrolls on the next line said, and a page that stopped in the
+ * middle of the screen scrolled once it got there. That the table did not move is the finding:
+ * anchoring changed where the page sits and not what it costs.
+ *
  * The three sizes are the ordinary one (eighty by twenty-four, which is the size every
  * terminal has had since before they were on screens), a common laptop window, and a large
  * one — the last because a count that only held where the defect was measured is a count
@@ -673,12 +704,12 @@ const THE_SCREEN: readonly { columns: number; rows: number; takes: number }[] = 
   { columns: 120, rows: 40, takes: 18 },
 ];
 
-describe('the console leaves the screen to the record it was opened over', () => {
+describe('the console spends only part of the screen it opens on', () => {
   for (const { columns, rows, takes } of THE_SCREEN) {
     it(`spends ${takes} rows of ${rows} at ${columns} columns, and leaves ${rows - takes}`, async () => {
       const opened = await openedAt(columns, rows);
       expect(opened.spent, `${columns}x${rows}: what the console spends`).toBe(takes);
-      expect(rows - opened.spent, `${columns}x${rows}: what is left for the record`).toBe(
+      expect(rows - opened.spent, `${columns}x${rows}: what the page does not take`).toBe(
         rows - takes,
       );
       // AND IT FITS, which is what the count is for. Nothing of the opening is in the
@@ -835,7 +866,7 @@ describe('the caret opens on the prompt, and the first keystroke does not move i
     // Not vacuous: something really is drawn over the row being typed, so a caret left at
     // the end of the frame would have landed somewhere else.
     expect(promptRow(opening)).toBeGreaterThan(0);
-    expect(rowsDrawn(opening)).toBeGreaterThan(promptRow(opening));
+    expect(thePageOn(opening).last).toBeGreaterThan(promptRow(opening));
   }, 180_000);
 });
 

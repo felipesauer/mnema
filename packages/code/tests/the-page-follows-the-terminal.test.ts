@@ -924,6 +924,12 @@ describe('the FRAME asks how big the terminal is in one place, and it follows it
     // And there really are two callers of it, plus the write to the DEVICE that opens the
     // page before there is a layout to write through — which is the third of the three.
     expect(times(source, 'thePageAgain();'), 'the one page has fewer than two callers').toBe(2);
-    expect(times(source, 'carriedIntoTheScrollback(howTall())')).toBe(2);
+    // ⚠️ AND IT USED TO NAME THE HEIGHT — `carriedIntoTheScrollback(howTall())`. A page is
+    // placed against four numbers now rather than one, because the input is anchored at the
+    // foot and the leftover is a subtraction over what the opening and the area take
+    // (`repl/page.ts`); the height alone would place the page and not the anchor. The shape
+    // this counts moved with it, which is why the count is over the call and not the symbol:
+    // a caller that passed something else would be a second idea of what page is being turned.
+    expect(times(source, 'carriedIntoTheScrollback(thePage())')).toBe(2);
   });
 });

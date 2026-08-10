@@ -28,6 +28,14 @@
  * the height of the moment. The TIPS and the BADGE were never composed here either: they
  * arrive as bytes a renderer already produced, exactly like a landed line.
  *
+ * AND IT OPENS AT THE FOOT OF THEIR TERMINAL. The row being typed used to sit wherever the
+ * opening happened to end — the middle of the screen on anything tall, with nothing under it
+ * — and what fixed it is not a place the input is moved to but blank rows written BEFORE the
+ * opening: the flow ends on the last row the layout leaves, so the input is at the foot when
+ * the session opens and stays there by construction once the content scrolls. How many rows
+ * that is is one subtraction over what the opening and the area already say (`page.ts`), and
+ * nothing about the region redrawn here moved.
+ *
  * THE PAGE OPENS CLEAN, AND CLEANING IT AGAIN IS THE SAME PAGE. What the caller had on
  * the screen is carried into the scrollback before anything is drawn (`page.ts`), and the
  * word that clears asks for exactly that again: the same bytes, then the opening the
@@ -85,7 +93,7 @@ import type { Completer } from './complete.js';
 import { type Editing, type Keystroke, keystrokesOf, NOTHING_TYPED, typeKey } from './editing.js';
 import type { AfterLine } from './gate.js';
 import { armLeaving, type Leaving } from './leaving.js';
-import { carriedIntoTheScrollback } from './page.js';
+import { carriedIntoTheScrollback, type ThePage } from './page.js';
 import { offeredBy, paletteFor } from './palette.js';
 import { type Opening, sameOpening } from './panel.js';
 import { Region, type Shown, type Watched } from './region.js';
@@ -398,6 +406,32 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   }
 
   /**
+   * THE PAGE AS THE NUMBERS THAT PLACE IT: how tall the terminal is now, what the opening
+   * takes, how many lines have been said since, and how tall the area is.
+   *
+   * ONE READING FOR ALL THREE CALLERS, which is the A3 shape of this: the bytes that turn a
+   * page are one function (`page.ts`) and so is the question of what page it is turning. Every
+   * number is asked of whoever already knows it — the DEVICE for the height, the opening for
+   * its own rows, this console's own list for what has been said, and the frame on the screen
+   * for the area — so nothing here counts a row.
+   *
+   * IT IS A FUNCTION AND NOT A VALUE for the reason the height is: a caller who resized their
+   * window has a different page, and a page placed against a size that was true a moment ago
+   * is a page whose top is in the scrollback.
+   */
+  function thePage(): ThePage {
+    return {
+      rows: howTall(),
+      opening: opened.rows,
+      said: said.length,
+      // THE AREA THE FRAME IS IN, not one worked out here: {@link showing} is the one place
+      // that asks how much of the input area fits, and it is rebuilt whenever anything moved
+      // — including on the resize event itself, before the page that follows it is drawn.
+      area: shown.area.height,
+    };
+  }
+
+  /**
    * THE PAGE, AGAIN: what was on it goes into the scrollback, and it is drawn from what
    * this console holds — the opening, then whatever the session has said that is still on
    * it.
@@ -417,7 +451,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * Nothing is READ to do it, in either caller.
    */
   function thePageAgain(): void {
-    carry(carriedIntoTheScrollback(howTall()));
+    carry(carriedIntoTheScrollback(thePage()));
     past = [...opened.lines, ...said];
     page += 1;
     moved();
@@ -622,7 +656,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   // THE PAGE OPENS CLEAN, and here it is written to the DEVICE: nothing is mounted yet,
   // so there is no frame for these bytes to be out of step with. The same bytes go
   // through the layout's door once there is one ({@link thePageAgain}).
-  stdout.write(carriedIntoTheScrollback(howTall()));
+  stdout.write(carriedIntoTheScrollback(thePage()));
 
   const app = render(createElement(Region, { watched, tips: tips.text, badge: badge.text }), {
     stdin,
