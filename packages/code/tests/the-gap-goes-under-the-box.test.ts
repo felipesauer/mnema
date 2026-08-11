@@ -425,6 +425,28 @@ function emptyRowsAbove(screen: Screen): number {
     .filter((row) => row.trim().length === 0).length;
 }
 
+/**
+ * HOW MANY WORDS OF THE LIST ARE DRAWN — the rows between the blank one over the palette and the
+ * row that accounts for what had no room.
+ *
+ * COUNTED BY POSITION AND NOT BY VOCABULARY, which is what keeps it in this file: what a word of
+ * the list IS belongs to the palette, and a case here that knew the verbs of this product would
+ * be a second reading of a list built somewhere else (`the-list-is-a-window.test.ts` counts them
+ * against the offers, because that is what that file is about). Both ends are the palette's own —
+ * the account row it draws when it cut, and the blank row the area spends over it
+ * (`repl/area.ts`, `ABOVE_THE_PALETTE`) — so nothing above the list can be counted into it.
+ *
+ * NOTHING WAS CUT MEANS THERE IS NO SUCH ROW, and the answer is then a refusal rather than a
+ * zero: this instrument cannot tell where a list that fits ends, and the caller asks it only
+ * where the list is cut.
+ */
+function wordsOfTheListOn(screen: Screen): number | undefined {
+  const account = screen.rows.findIndex((row) => row.trimStart().startsWith(CUT));
+  if (account < 0) return undefined;
+  const above = screen.rows.slice(0, account);
+  return above.length - 1 - above.map((row) => row.trim().length === 0).lastIndexOf(true);
+}
+
 // ---------------------------------------------------------------------------
 // The order on the screen: the box, the emptiness, the input
 // ---------------------------------------------------------------------------
@@ -614,10 +636,18 @@ describe('the list of words takes its room out of the emptiness', () => {
   // hundred by thirty and TWO at eighty by twenty-four. So the same list is drawn whole, cut to
   // eight words, and cut to two — three regimes of one arithmetic, with the anchor and the
   // drawing asserted in all of them.
-  for (const [columns, rows] of [
-    [120, 40],
-    [100, 30],
-    [80, 24],
+  //
+  // ⚠️ AND THE THIRD COLUMN IS HOW MANY WORDS EACH OF THEM DRAWS, which is what the delivery
+  // after this one may not move. A floor was put under the list so that a key pressed on a page
+  // with NOTHING to spare still answers with a word (`repl/area.ts`, `roomForThePalette`), and
+  // the whole safety of a floor is that it is not a reservation: where the page has room the
+  // leftover is what it always was, so these numbers are the same on both sides of it —
+  // measured, on the binary of each. A page that had room and now draws MORE is the floor having
+  // become a floor for everybody, which is what this column would go red for.
+  for (const [columns, rows, wordsDrawn] of [
+    [120, 40, undefined],
+    [100, 30, 8],
+    [80, 24, 2],
   ] as const) {
     it(`⚠️ comes back to the foot through ten openings at ${columns}x${rows}`, async () => {
       // ⛔ THE DEFECT, AND IT IS THE WHOLE REASON THIS DELIVERY EXISTS. This case used to assert
@@ -707,6 +737,13 @@ describe('the list of words takes its room out of the emptiness', () => {
       expect(SAYS_WHAT_IT_CUT.test(listed.text), `${columns}x${rows}: the list was cut`).toBe(
         rows < 40,
       );
+      // ⚠️ AND IT DRAWS THE SAME WORDS IT DREW BEFORE THERE WAS A FLOOR UNDER IT, which is the
+      // half a floor is dangerous for: a floor that had become a RESERVATION would show here as
+      // one of these numbers going UP, on a page that never needed one.
+      expect(
+        wordsOfTheListOn(listed),
+        `${columns}x${rows}: the list drew a different number of words`,
+      ).toBe(wordsDrawn);
     }, 240_000);
   }
 });

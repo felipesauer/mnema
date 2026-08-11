@@ -49,6 +49,15 @@
  * ({@link AreaRequest.flow}), and the two measurements it takes are named in the next
  * paragraph.
  *
+ * ⚠️ AND WHAT IS LEFT OVER IS A PREFERENCE AND NOT THE WHOLE RULE, which is the second premise
+ * this frontier had to correct. Cutting the list to the page was measured on a page that had
+ * just opened, where there is room to spare; on the page a session spends its life on — one
+ * ordinary verb printed — there is none, and the list drew the count of what had no room and
+ * NOT ONE WORD. So the room is a preference with a FLOOR of one word under it and the
+ * library's own limit over it ({@link roomForThePalette}), and the floor bites exactly where
+ * it costs nothing: on a page with nothing to spare, what it takes is the top of the flow,
+ * which is one scroll away in the caller's own scrollback.
+ *
  * THE LIST IS BUDGETED BY THE PAGE AND THE ARRANGEMENT BY THE SCREEN, and that is one
  * decision rather than two measures that disagree. The chrome is the FLOOR of this area and
  * has to be STABLE: a badge and two rules that came and went as the session printed would be
@@ -184,6 +193,19 @@ const HINT = 1;
 const ABOVE_THE_PALETTE = 1;
 
 /**
+ * WHAT IT TAKES TO DRAW ONE WORD OF THE LIST — three rows, and they are read off what the
+ * palette does with them rather than chosen: the word, the row that accounts for everything
+ * with no room, and the row that says which keys move the list (`palette.ts`, `paletteFor`).
+ * At two rows the account and the keys fill both and no word is drawn at all.
+ *
+ * IT IS A FLOOR AND NOT A RESERVATION, and the difference is the whole of why it is safe: it is
+ * what the list gets when the page has nothing to spare, never what it is held to when the page
+ * has more. A key that draws no word is indistinguishable from a key that does nothing, and
+ * *nineteen things, none of them* is a worse answer than *one of nineteen*.
+ */
+const A_WORD = 3;
+
+/**
  * How much shorter than the viewport a region has to be to be redrawn in PART.
  *
  * One row, and it is measured rather than chosen: the library treats a region as tall as
@@ -298,28 +320,49 @@ function onOneRow(width: number, columns: number): boolean {
 }
 
 /**
- * HOW MANY ROWS THE PALETTE MAY HAVE: what the page has left under the flow, over the
- * area's own floor — and never more than the list asked for.
+ * HOW MANY ROWS THE PALETTE MAY HAVE — a PREFERENCE, a FLOOR and a CEILING, in that order of
+ * softness, and never more than the list asked for.
  *
- * ONE FUNCTION AND ONE SITE, because it is one rule: the list takes what is left over. The
- * floor is the bare form — the row being typed, and the hint when there is one — so a palette
- * never takes the row a caller types on; the flow is what a reader can still see, so a palette
- * never takes a row that is already spoken for; and {@link BELOW_THE_VIEWPORT} is the row the
- * library needs, so the region is never as tall as the screen.
+ * ONE FUNCTION AND ONE SITE, because the three are one rule and they answer three different
+ * questions:
  *
- * ⚠️ THE FLOW IS WHAT THIS DELIVERY ADDED, and at a flow of zero every answer is the one this
- * gave before — `rows − 1 − floor − 1`, which is what the cases that pin the numbers still
- * read. What changes is a page with something on it: the list is one row shorter per row the
- * session has said, until there is nothing left over and the palette is absent — the same
- * absence a window too narrow for a row gets, and it claims nothing.
+ *   - THE PREFERENCE IS WHAT THE PAGE HAS LEFT OVER, under the flow and over the area's own
+ *     floor. It is what the list takes wherever there is anything to take, and taking it costs
+ *     the caller nothing at all: those rows are the emptiness the region redraws (`page.ts`),
+ *     so the list grows into them and the page does not move.
+ *   - THE FLOOR IS ONE WORD, and it is what the list gets when the page has nothing to spare:
+ *     {@link A_WORD} rows, which is a word, the count of what had no room, and the row of keys.
+ *   - THE CEILING IS THE LIBRARY'S AND IT DOES NOT BEND: what is left of the SCREEN over the
+ *     floor. Past it the region is as tall as the viewport and the layout stops redrawing part
+ *     of the screen — the one path that carries the erase this product refuses to write. The
+ *     floor may reach it and may not pass it.
  *
- * THE BLANK ROW COMES OFF IT FIRST, because the palette does not get to spend a row the
- * drawing is going to take. A page with room for one row of the list gets that row and its
- * separation; one with room for neither gets no palette at all.
+ * ⚠️ THE FLOOR WAS LEFT OUT, AND THE PREMISE FOR LEAVING IT OUT WAS HALF-MEASURED. It was
+ * argued that a floor *carries the top of the drawing away, which is the defect this closes* —
+ * true on a page that has just opened, where the drawing is on the screen and the page has
+ * rows to spare anyway, and FALSE where the floor actually bites. What bites is a page with
+ * nothing left over, and on that page the drawing has already scrolled away with the flow: what
+ * the floor takes is the top of the FLOW, which is in the caller's scrollback and one scroll
+ * away. Measured on the binary, at a hundred and twenty by forty and by thirty: after ONE
+ * ordinary verb the list drew `… 19 not shown` and NOT ONE WORD, which is a console answering
+ * *what can I type* with *nineteen things, none of them*. The rare loss was traded for a daily
+ * one.
+ *
+ * SO THE PREFERENCE IS UNTOUCHED WHERE IT WAS RIGHT: a page with room to spare answers exactly
+ * what it answered before the floor came back, because `max(floor, spare)` is `spare` there.
+ *
+ * ⚠️ AND AT A FLOW OF ZERO on a terminal with room for a word, every answer is still the one
+ * this gave before the flow existed — `rows − 1 − floor − 1` — which is what the cases that pin
+ * those numbers read.
+ *
+ * THE BLANK ROW COMES OFF ALL THREE FIRST, because the palette does not get to spend a row the
+ * drawing is going to take.
  */
 function roomForThePalette(request: AreaRequest, floor: number): number {
-  const left = request.rows - BELOW_THE_VIEWPORT - request.flow - floor - ABOVE_THE_PALETTE;
-  return Math.max(0, Math.min(request.palette, left));
+  const ceiling = Math.max(0, request.rows - BELOW_THE_VIEWPORT - floor - ABOVE_THE_PALETTE);
+  const spare = Math.max(0, ceiling - request.flow);
+  const least = Math.min(request.palette, A_WORD);
+  return Math.min(request.palette, ceiling, Math.max(least, spare));
 }
 
 /**

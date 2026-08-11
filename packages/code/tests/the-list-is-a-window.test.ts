@@ -1,6 +1,6 @@
 /**
- * THE LIST IS A WINDOW, AND THE WINDOW FOLLOWS THE CHOICE — the two halves of one residual,
- * measured on the merged binary before either was written.
+ * THE LIST IS A WINDOW, AND THE WINDOW FOLLOWS THE CHOICE — the halves of one residual,
+ * measured on the merged binary before any of them was written.
  *
  * THE FIRST HALF IS WHAT THE LIST IS CUT TO. The emptiness between the flow and the input is
  * what the area grows into, so a menu that opens and shuts costs the page nothing
@@ -20,19 +20,38 @@
  * frame from the offers, the room and the picked word (`repl/palette.ts`, `theWindow`) — so
  * there is nothing between two frames that could name a different offer on the second.
  *
- * WHAT IS ASKED HERE, and the first three are asked of pure functions because they are
- * statements about every size and every list rather than about one screen:
+ * ⚠️ AND THE THIRD HALF IS THE PAGE THE FIRST TWO WERE NEVER MEASURED ON. Both were read off a
+ * page that had just OPENED, where the emptiness is a long run and there is room to spare. The
+ * page a session spends its life on has one ordinary verb printed on it and no room at all, and
+ * there the list drew the account of what had no room and NOT ONE WORD — measured on the binary
+ * of the delivery before this one, at a hundred and twenty by forty and by thirty after
+ * `brief`, and by twenty after either verb: `… 19 not shown`, which is a console answering *what
+ * can I type* with *nineteen things, none of them*. So the leftover is a PREFERENCE with a floor
+ * of one word under it and the library's own limit over it (`repl/area.ts`,
+ * `roomForThePalette`), and what the floor takes on a full page is the top of the FLOW, which is
+ * in the caller's own scrollback one scroll away.
  *
- *   - THE BUDGET IS THE PAGE. One row less of list per row of flow, down to none — and at a
- *     flow of nothing, every number the area gave before this field existed.
- *   - THE PAGE IS NEVER PUSHED, over a grid of heights, widths, lists and flows: with a list
- *     open, the flow, the emptiness, the area and the row the library keeps fit the screen.
- *     The two branches are stated together, so neither can go unasserted.
+ * WHAT IS ASKED HERE, and the pure ones are pure because they are statements about every size
+ * and every list rather than about one screen:
+ *
+ *   - THE BUDGET IS THE PAGE. One row less of list per row of flow, down to ONE WORD — and at a
+ *     flow of nothing, every number the area gave before this field existed. Nothing at all is
+ *     still an answer, and it is the SCREEN's: a terminal with no room over the area's own floor
+ *     has no palette, which is the absence a window too narrow for a row already gets.
+ *   - THE REGION NEVER REACHES THE VIEWPORT AND A PAGE WITH ROOM IS NEVER CHARGED, over a grid
+ *     of heights, widths, lists and flows. ⚠️ IT WAS ONE STATEMENT — *the flow, the emptiness,
+ *     the area and the row the library keeps fit the screen* — and the floor falsified it in
+ *     eleven hundred and eighty of the twenty-six hundred geometries the grid holds, ON PURPOSE:
+ *     that is the trade, and what replaces it is the pair it comes apart into.
+ *   - A TALLER TERMINAL NEVER DRAWS FEWER WORDS of the same page, which is the shape the ladder
+ *     of heights had lost.
  *   - THE WINDOW HOLDS THE PICK, at every room and every position of it, and everything that is
  *     not drawn is counted in ONE number that a reader can check by adding up what they see.
- *   - AND THEN THE SCREEN: the mark still on the page after eleven arrows on a cut list, and
- *     the list on the page as long as the arithmetic says it is — the ELO for the number the
- *     console hands over, which nothing else can see (`repl/console.ts`, `onScreen`).
+ *   - AND THEN THE SCREEN: the mark still on the page after eleven arrows on a cut list, the
+ *     list on the page as long as the arithmetic says it is — the ELO for the number the console
+ *     hands over, which nothing else can see (`repl/console.ts`, `onScreen`) — and a word of the
+ *     list on a page a session has really USED, which is the case the two halves above were
+ *     never asked on.
  */
 
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
@@ -61,6 +80,7 @@ import { badgeLine, pickingTips, theSessionsOwnWords, tips } from '../src/repl/s
 import { LEAVE, PREFIX } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import {
+  aFrameAfter,
   arrivedSince,
   inPty as drive,
   type Fixture,
@@ -68,7 +88,7 @@ import {
   type Ran,
   type Step,
 } from './support/pty.js';
-import { endsAtTheFoot, type Screen, screenOf } from './support/screen.js';
+import { endsAtTheFoot, type Screen, screenOf, theGapOn } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
@@ -97,12 +117,43 @@ const BADGES = [
 /** A request with everything to show, so a case only says what it is changing. */
 const showingEverything = { columns: 200, badge: BADGE, hint: HINT, palette: 0, flow: 0 };
 
+/**
+ * THE LEAST ROOM THE PALETTE DRAWS A WORD IN — asked of the palette rather than written down.
+ *
+ * It is three today, and what makes it three is the palette's own arrangement: the row that
+ * accounts for what had no room and the row that says which keys move the list are both spent
+ * before a word is (`repl/palette.ts`, `theWindow`). A case that spelled the number would be a
+ * case that goes on passing the day the palette gains or loses a row of furniture, which is
+ * exactly when the floor under the list stops being one word.
+ */
+function leastRoomForAWord(): number {
+  const offers = everythingOffered();
+  const room = [0, 1, 2, 3, 4, 5, 6].find((many) => theWindow(offers, many, NOBODY).length > 0);
+  expect(room, 'the palette draws no word at any room at all').toBeDefined();
+  return room as number;
+}
+
+/**
+ * WHAT ONE WORD OF LIST COSTS THE REGION — the rows a page gives up so that a key that was
+ * pressed answers with something rather than with an account of nothing.
+ *
+ * MEASURED OFF THE AREA, on a terminal tall enough that nothing else is giving way: the height
+ * with the least list that draws a word in it, less the height with the list shut. So it is the
+ * word and the blank row over it ({@link leastRoomForAWord}, `repl/area.ts`), and neither number
+ * is written here — a delivery that changed either would move this with it instead of leaving a
+ * bound that quietly stopped bounding anything.
+ */
+function whatOneWordOfListCosts(): number {
+  const tall = { ...showingEverything, columns: 100, rows: 120 };
+  return areaFor({ ...tall, palette: leastRoomForAWord() }).height - areaFor(tall).height;
+}
+
 // ---------------------------------------------------------------------------
 // The budget: what the PAGE has left over, and not what the screen has
 // ---------------------------------------------------------------------------
 
 describe('the list of words is cut to what the page has left over', () => {
-  it('gives up one row of list per row of flow, down to none', () => {
+  it('⚠️ gives up one row of list per row of flow, down to one word', () => {
     const wanted = 20;
     const rows = 30;
     const roomAt = (flow: number): number =>
@@ -118,14 +169,29 @@ describe('the list of words is cut to what the page has left over', () => {
     for (const flow of [1, 5, 12]) {
       expect(roomAt(flow), `${flow}`).toBe(Math.min(wanted, overTheFloor - flow));
     }
-    // AND IT REACHES NOTHING RATHER THAN GOING NEGATIVE: a page whose flow has taken the room
-    // gets no palette, which is the same absence a window too narrow for a row gets.
-    expect(roomAt(overTheFloor)).toBe(0);
-    expect(roomAt(rows + 100)).toBe(0);
-    // Not vacuous: the flows above really do span the whole ladder, from the list it wants to
-    // none of it.
+    // ⚠️ AND WHERE IT STOPS IS ONE WORD, WHICH IS THE PREMISE THIS DELIVERY FALSIFIED. What
+    // stood here was *it reaches NOTHING rather than going negative: a page whose flow has taken
+    // the room gets no palette, which is the same absence a window too narrow for a row gets* —
+    // and the absence is what a person met, because that page is the ordinary one. A window too
+    // narrow claims nothing and a key that draws nothing does NOT claim nothing: it draws `… 19
+    // not shown`, which is a console answering *what can I type* with *nineteen things, none of
+    // them*. So the leftover is a preference and the floor is one word under it
+    // (`repl/area.ts`, `roomForThePalette`).
+    const aWord = leastRoomForAWord();
+    expect(roomAt(overTheFloor), 'a full page answered with no word at all').toBe(aWord);
+    expect(roomAt(rows + 100), 'a flow longer than the screen took the word too').toBe(aWord);
+    // AND NOTHING IS STILL AN ANSWER — it is the SCREEN's rather than the page's. A terminal with
+    // no room over the area's own floor gets no palette at all, which is the same absence a
+    // window too narrow for a row gets, and it is the one the floor may not overrule.
+    expect(
+      areaFor({ ...showingEverything, rows: floor + 1 + BELOW_THE_VIEWPORT, palette: wanted })
+        .palette,
+      'a terminal with no room over the floor was given a list anyway',
+    ).toBe(0);
+    // Not vacuous: the flows above really do span the whole ladder, from the list it wants to the
+    // one word under it.
     expect(roomAt(0)).toBeGreaterThan(roomAt(12));
-    expect(roomAt(12)).toBeGreaterThan(0);
+    expect(roomAt(12)).toBeGreaterThan(aWord);
   });
 
   it('answers at a flow of nothing exactly what it answered before there was a flow', () => {
@@ -143,19 +209,40 @@ describe('the list of words is cut to what the page has left over', () => {
     }
   });
 
-  it('⛔ never lets the list push the page, at any size and any flow', () => {
+  it('⛔ never reaches the viewport, and never charges a page that had the room', () => {
     // ⛔ THE GUARD THIS DELIVERY EXISTS FOR, and it is a COMPOSITION rather than a property of
     // either function: the area is budgeted against the page and the emptiness is the rest of
-    // the same subtraction (`repl/page.ts`), so the flow, the emptiness, the area and the row
-    // the library keeps fit on the screen — which is what "nothing scrolled" means, and
-    // scrolling is the one thing that cannot be undone.
+    // the same subtraction (`repl/page.ts`), so what the region takes is what the page had to
+    // give — and scrolling is the one thing that cannot be undone.
     //
-    // TWO BRANCHES, STATED TOGETHER. Where the page has room over the area's floor the list
-    // takes some of it and everything fits; where it has none the list takes NOTHING, and the
-    // frame is the one the page would have had with the list shut. A case that asserted only
-    // the first would pass on an area that quietly refused to open a list at all.
+    // ⚠️ IT WAS ONE INEQUALITY AND THE FLOOR FALSIFIED IT. What stood here was *the flow, the
+    // emptiness, the area and the row the library keeps fit on the screen*, over every geometry
+    // in the grid — and it is false in eleven hundred and eighty of the twenty-six hundred with
+    // a list open, measured, because that is exactly what a floor IS: on a page with nothing
+    // left over, one word of list is one row the flow gives up. The inequality was never the
+    // promise; it was the promise and its mechanism written as one line, and the mechanism is
+    // what moved.
+    //
+    // SO IT COMES APART INTO THE TWO IT ALWAYS WAS, and both are asked of every geometry:
+    //
+    //   - THE CEILING, which does not bend. The region is never as tall as the viewport, because
+    //     that is the height at which the library redraws the WHOLE screen with the erase this
+    //     product refuses to write inside the sequence. The floor may REACH it and may not pass
+    //     it, and the count below says how often it reaches.
+    //   - THE PAGE, which is charged only when it had nothing. A page with as much left over as
+    //     one word of list costs pays NOTHING for opening one — the rows come out of the
+    //     emptiness, which is what the first half of this file bought — and no page anywhere
+    //     pays more than that one word, whatever the flow.
+    //
+    // THREE BRANCHES, STATED TOGETHER, so none of them can go unasserted: the list took rows and
+    // the page paid nothing, the list took rows and the page paid, and the list took nothing at
+    // all.
+    const mostAPageCanBeCharged = whatOneWordOfListCosts();
     let held = 0;
     let tookNothing = 0;
+    let reachedTheCeiling = 0;
+    let paid = 0;
+    let free = 0;
     for (const rows of [2, 3, 4, 5, 6, 8, 10, 24, 30, 40, 120]) {
       for (const columns of [20, 60, 100, 200]) {
         for (const badge of BADGES) {
@@ -163,42 +250,87 @@ describe('the list of words is cut to what the page has left over', () => {
             for (const flow of [0, 1, 5, 14, 200]) {
               const request: AreaRequest = { rows, columns, badge, hint: HINT, palette, flow };
               const area = areaFor(request);
+              const shut = areaFor({ ...request, palette: 0 });
               const at = `${columns}x${rows} flow ${flow} palette ${palette} badge ${badge}`;
-              if (area.palette > 0) {
+              if (area.palette === 0) {
+                // THE LIST TOOK NOTHING, so the frame is the frame the page already had — the
+                // same arrangement, the same height, the same caret.
+                expect(area, at).toEqual(shut);
+                tookNothing += 1;
+                continue;
+              }
+              held += 1;
+              // ⛔ THE CEILING. Nothing about the flow is in it: it is the SCREEN, and it is the
+              // library's boundary rather than this product's taste.
+              expect(area.height + BELOW_THE_VIEWPORT, at).toBeLessThanOrEqual(rows);
+              if (area.height + BELOW_THE_VIEWPORT === rows) reachedTheCeiling += 1;
+              // WHAT THE PAGE PAID FOR THE LIST: how many rows of the caller's own page a region
+              // this tall carries off the top, less what the same page was already paying with
+              // the list SHUT. A difference rather than a total, because a flow longer than the
+              // screen is already over the edge and the list did not put it there.
+              const carriedAway = (height: number): number =>
+                Math.max(0, flow + height + BELOW_THE_VIEWPORT - rows);
+              const charged = carriedAway(area.height) - carriedAway(shut.height);
+              expect(charged, at).toBeLessThanOrEqual(mostAPageCanBeCharged);
+              // ⚠️ CHARGED MORE AND NOT MERELY CHARGED DIFFERENTLY. A difference of nothing and a
+              // difference BELOW nothing are both pages that paid the list nothing — the second
+              // is a page whose chrome gave up more rows than the list took — and a counter that
+              // called the second one "paid" would be answered by a grid with no floor in it at
+              // all: measured, seventy-two of them.
+              if (charged > 0) paid += 1;
+              else free += 1;
+              // ⛔ AND A PAGE THAT HAD THE ROOM IS NOT CHARGED AT ALL, which is the half of the
+              // old inequality that survives untouched — and it is the half a person meets, on
+              // every page with an emptiness on it.
+              if (theGap({ rows, flow, area: shut.height }) >= mostAPageCanBeCharged) {
+                expect(charged, `${at}: a page with room to spare paid for the list`).toBe(0);
                 expect(
                   flow + theGap({ rows, flow, area: area.height }) + area.height,
                   at,
                 ).toBeLessThanOrEqual(rows - BELOW_THE_VIEWPORT);
-                held += 1;
-              } else {
-                // THE LIST TOOK NOTHING, so the frame is the frame the page already had — the
-                // same arrangement, the same height, the same caret.
-                expect(area, at).toEqual(areaFor({ ...request, palette: 0 }));
-                tookNothing += 1;
               }
             }
           }
         }
       }
     }
-    // NOT VACUOUS IN EITHER DIRECTION: the grid really holds pages with room to spare and
-    // pages with none, so neither branch is the branch nobody took.
+    // NOT VACUOUS IN ANY DIRECTION: the grid really holds pages with room to spare and pages
+    // with none, geometries where the floor reaches the ceiling and geometries where a page pays
+    // — so no branch above is the branch nobody took. ⚠️ AND `paid` IS THE ONE THAT ANSWERS FOR
+    // THE FLOOR: it is zero without one, because a list cut to what is left over can never take
+    // a row the page did not have.
     expect(held, 'no size in the grid had room for a list at all').toBeGreaterThan(100);
     expect(tookNothing, 'every size in the grid had room for a list').toBeGreaterThan(10);
+    expect(reachedTheCeiling, 'no geometry in the grid reached the ceiling').toBeGreaterThan(10);
+    expect(
+      paid,
+      'no page in the grid paid for its list, so the floor is not under test',
+    ).toBeGreaterThan(100);
+    expect(free, 'every page in the grid paid for its list').toBeGreaterThan(100);
   });
 
-  it('gives the list the chrome, so a key on a full page still draws something', () => {
+  it('⚠️ gives the list the chrome AND one word, so a key on a full page draws a word', () => {
     // WHAT A PAGE WITH NOTHING TO SPARE STILL ANSWERS WITH, and it is the one thing that keeps
     // a key from looking broken. The badge and the two rules are the AREA's rather than its
     // floor, so a list has them to take even when the flow has taken everything else — the
     // trade this area has always made, *the palette is served before the chrome*, and what is
     // measured here is what that trade is worth on a page that is full.
     //
+    // ⚠️ AND THE CHROME WAS NOT ENOUGH, WHICH IS WHAT THIS DELIVERY MEASURED. This case pinned
+    // the answer at *what the chrome gave up, less its own blank row — which is two rows at every
+    // height: the account of what had no room, and the row of keys under it* and called that
+    // "still draws something". Two rows draw NO WORD: the account and the keys fill both
+    // (`repl/palette.ts`, `theWindow`), so what "something" meant was a count of what the caller
+    // could not see. The floor is one WORD now, and the row it needs over the chrome comes off
+    // the top of the flow — which is one scroll away in the caller's own scrollback, where the
+    // drawing had already gone.
+    //
     // THE FLOW IS THE MOST A FRAME COULD HAVE LEFT, which is what makes this a full page rather
     // than an arbitrary number: the console follows what the frame left room for
     // (`repl/console.ts`, `whatTheFrameLeft`), so the flow is never longer than the screen less
     // the row the library keeps and less the area that was drawn.
-    const floor = 1 + 1;
+    const offers = everythingOffered();
+    const aWord = leastRoomForAWord();
     for (const rows of [10, 24, 30, 40]) {
       const at = { ...showingEverything, columns: 100, rows };
       const shut = areaFor(at);
@@ -206,18 +338,76 @@ describe('the list of words is cut to what the page has left over', () => {
       const open = areaFor({ ...at, palette: 21, flow: spent });
       // The page really is full: there is no emptiness left under the flow.
       expect(theGap({ rows, flow: spent, area: shut.height }), `${rows}`).toBe(0);
-      // AND THE LIST GETS WHAT THE CHROME GAVE UP, less its own blank row — which is two rows
-      // at every height: the account of what had no room, and the row of keys under it.
-      expect(open.palette, `${rows}`).toBe(shut.height - floor - 1);
-      expect(open.palette, `${rows}: a full page answered with no list at all`).toBeGreaterThan(0);
+      // ⛔ AND WHAT THE LIST GETS IS A WORD, at every height — which is the least a console may
+      // answer a key with, and the whole of what the floor under the list bought.
+      expect(open.palette, `${rows}`).toBe(aWord);
+      expect(
+        theWindow(offers, open.palette, NOBODY).length,
+        `${rows}: a full page answered with a count and no word`,
+      ).toBeGreaterThanOrEqual(1);
       expect(open.form, `${rows}`).toBe('bare');
       expect(shut.form, `${rows}`).toBe('full');
-      // ⛔ AND THE PAGE STILL DID NOT MOVE, which is what says the rows came from the chrome
-      // rather than from the top of the caller's screen.
-      expect(
-        spent + theGap({ rows, flow: spent, area: open.height }) + open.height,
-        `${rows}`,
-      ).toBe(rows - BELOW_THE_VIEWPORT);
+      // ⚠️ AND THE PAGE PAID FOR THE WORD, which is the trade rather than an oversight — and it
+      // is bounded: what the region takes past the page is what the FLOW gives up, never more
+      // than one word and its blank row, and it comes off the top, where the caller's own
+      // scrollback holds it.
+      const carried = spent + theGap({ rows, flow: spent, area: open.height }) + open.height;
+      expect(carried, `${rows}: the page paid more than one word`).toBeLessThanOrEqual(
+        rows - BELOW_THE_VIEWPORT + whatOneWordOfListCosts(),
+      );
+      // ⛔ AND THE REGION IS STILL SHORT OF THE VIEWPORT, which is the limit that does not bend:
+      // past it the library redraws the whole screen with the erase this product will not write.
+      expect(open.height + BELOW_THE_VIEWPORT, `${rows}`).toBeLessThanOrEqual(rows);
+    }
+  });
+
+  it('⚠️ never draws fewer words on a taller terminal, at every page', () => {
+    // ⚠️ THE SHAPE THE LADDER OF HEIGHTS HAD LOST, and it is what a person meets by dragging the
+    // corner of their window. Measured on the binary of the delivery before this one, at a
+    // hundred and twenty columns on a page that had just opened: FOURTEEN rows drew one word,
+    // SIXTEEN drew none, and EIGHTEEN drew two. A terminal that answers with less for being
+    // bigger is a console a reader cannot form a rule about — and the middle of that ladder is a
+    // key that looks broken at a size between two that work.
+    //
+    // ASKED OF THE PAGE RATHER THAN OF THE SCREEN, which is what makes it a statement and not a
+    // photograph: the flow is held still and the height is walked, so what moves is the one thing
+    // under test. The ladder above moved TWO things at once — the drawing of the name is a
+    // different height at different sizes (`presentation/banner.ts`), so each rung had a
+    // different page on it — and the case that reads a real device is the one further down this
+    // file.
+    //
+    // AND IT IS THE WORDS AND THE ROOM TOGETHER. The room is what the area answers and the words
+    // are what the palette makes of it, and a room that climbed while the words did not would be
+    // this defect with the arithmetic looking innocent (`repl/palette.ts`, `theWindow`).
+    const offers = everythingOffered();
+    const wanted = paletteRowsFor(offers);
+    const columns = 120;
+    for (const flow of [0, 5, 12, 20, 26]) {
+      const ladder = [];
+      for (let rows = 2; rows <= 60; rows += 1) {
+        const room = areaFor({
+          ...showingEverything,
+          columns,
+          rows,
+          palette: wanted,
+          flow,
+        }).palette;
+        ladder.push({ rows, room, words: theWindow(offers, room, NOBODY).length });
+      }
+      for (const [step, rung] of ladder.entries()) {
+        const under = ladder[step - 1];
+        if (under === undefined) continue;
+        const at = `flow ${flow}: ${rung.rows} rows against ${under.rows}`;
+        expect(rung.words, `${at}, in words`).toBeGreaterThanOrEqual(under.words);
+        expect(rung.room, `${at}, in rows of list`).toBeGreaterThanOrEqual(under.room);
+      }
+      // NOT VACUOUS: every ladder really climbs the whole way, from a terminal with no room for a
+      // word to one that draws the vocabulary — so the comparison above is over a run of numbers
+      // that move rather than over a column of zeroes.
+      expect(ladder[0]?.words, `flow ${flow}: the shortest terminal drew a word`).toBe(0);
+      expect(ladder.at(-1)?.words, `flow ${flow}: the tallest drew less than the list`).toBe(
+        offers.length,
+      );
     }
   });
 });
@@ -470,13 +660,43 @@ function pickedOn(screen: Screen): string | undefined {
     .split(/\s{2,}/)[0];
 }
 
-/** Every row of a screen that names one of these words, mark or no mark. */
-function rowsNaming(screen: Screen, words: readonly string[]): readonly string[] {
-  return screen.rows.filter((row) => {
+/**
+ * Every row of a screen that names one of these words, mark or no mark.
+ *
+ * ⚠️ IT TOOK A SCREEN, and it takes ROWS because a page a session has USED is not a page whose
+ * only rows are the list's: what a verb printed is above, and a line of it that begins with a
+ * verb's name reads to this exactly as a drawn offer does. The callers that mean the whole page
+ * hand it the whole page; the one that means the list hands it the list's own rows
+ * ({@link wordsOfTheListOn}).
+ */
+function rowsNaming(rows: readonly string[], words: readonly string[]): readonly string[] {
+  return rows.filter((row) => {
     const shown = row.trimStart();
     const said = shown.startsWith(PICK) ? shown.slice(PICK.length).trimStart() : shown;
     return words.some((word) => said === word || said.startsWith(`${word} `));
   });
+}
+
+/**
+ * HOW MANY WORDS OF THE LIST ARE DRAWN — counted inside the palette, on a page that has
+ * something else on it too.
+ *
+ * WHERE THE LIST BEGINS AND ENDS IS READ OFF THE DRAWING. It ends at the row that accounts for
+ * what had no room, which is the palette's own ({@link CUT}, `repl/palette.ts`), and it begins
+ * under the last row with nothing on it above that — the blank row the area spends over the
+ * list, which is drawn whenever there is one at all (`repl/area.ts`, `ABOVE_THE_PALETTE`). So
+ * the count is bounded by the palette at both ends and cannot be swelled by a line the session
+ * printed.
+ *
+ * A LIST THAT WAS NOT CUT HAS NO SUCH ROW, and then the answer is the whole page's: nothing was
+ * left out, so every row naming an offer is one of the list's.
+ */
+function wordsOfTheListOn(screen: Screen, words: readonly string[]): number {
+  const account = screen.rows.findIndex((row) => row.trimStart().startsWith(CUT));
+  if (account < 0) return rowsNaming(screen.rows, words).length;
+  const above = screen.rows.slice(0, account);
+  const from = above.map((row) => row.trim().length === 0).lastIndexOf(true) + 1;
+  return rowsNaming(above.slice(from), words).length;
 }
 
 // ---------------------------------------------------------------------------
@@ -520,7 +740,7 @@ describe('the mark stays on the screen however far down a cut list it goes', () 
     // THE LIST REALLY IS CUT, or nothing here is about a window: what is drawn is fewer rows
     // than there are offers, and the row that accounts for the rest says so.
     const drawn = rowsNaming(
-      listed,
+      listed.rows,
       offers.map((offer) => offer.word),
     );
     expect(drawn.length, 'the list was not cut at all').toBeLessThan(offers.length);
@@ -535,8 +755,10 @@ describe('the mark stays on the screen however far down a cut list it goes', () 
     // AND THE WINDOW REALLY MOVED: the first offer was drawn when the list opened and is not
     // drawn now, which is what says the rows follow the pick rather than being the first of
     // them forever.
-    expect(rowsNaming(listed, [first]), 'the list opened without its first word').toHaveLength(1);
-    expect(rowsNaming(walked, [first]), 'the window did not move at all').toHaveLength(0);
+    expect(rowsNaming(listed.rows, [first]), 'the list opened without its first word').toHaveLength(
+      1,
+    );
+    expect(rowsNaming(walked.rows, [first]), 'the window did not move at all').toHaveLength(0);
     // AND THE PAGE PAID NOTHING FOR ANY OF IT: the input is still on the last row the layout
     // leaves, and the count still adds up to every word there is.
     endsAtTheFoot(walked, rows, 'the page after eleven arrows');
@@ -545,7 +767,7 @@ describe('the mark stays on the screen however far down a cut list it goes', () 
     const missing = Number(/(\d+)/.exec(said as string)?.[1]);
     expect(
       rowsNaming(
-        walked,
+        walked.rows,
         offers.map((offer) => offer.word),
       ).length + missing,
       'what is shown plus what is named is not everything there was',
@@ -596,7 +818,7 @@ describe('the mark stays on the screen however far down a cut list it goes', () 
     // the row of keys under them — which is exactly what the area budgeted.
     const drawn =
       rowsNaming(
-        listed,
+        listed.rows,
         offers.map((offer) => offer.word),
       ).length + 2;
     expect(drawn, `${said.palette} budgeted, ${drawn} drawn`).toBe(said.palette);
@@ -605,6 +827,185 @@ describe('the mark stays on the screen however far down a cut list it goes', () 
     expect(said.palette).toBeLessThan(paletteRowsFor(offers));
     expect(said.palette).toBeGreaterThan(2);
   }, 240_000);
+});
+
+// ---------------------------------------------------------------------------
+// On a page a session has really USED: a key that was pressed answers with a word
+// ---------------------------------------------------------------------------
+
+/** What takes the last key back off the row being typed, spelled by its code point. */
+const RUBS_OUT = '\u007f';
+
+/**
+ * TWO VERBS THE SESSION REALLY RUNS, and what they are for here is the LENGTH of what they
+ * print rather than what they say.
+ *
+ * ⚠️ A FIXTURE THAT DOES NOT FILL THE PAGE DOES NOT EXERCISE THIS AT ALL, and that is the way
+ * this case fails silently: the floor is what a list gets when the page has nothing left over,
+ * so a page with an emptiness on it answers the same whether there is a floor or not, and the
+ * assertion becomes a green about a geometry nobody was worried about. So the longer of the two
+ * is asserted to have left the page with less to spare than one word of list needs — measured on
+ * this fixture at all three sizes, where it leaves ONE row.
+ *
+ * AND THE SHORTER ONE IS ASKED TOO, because what it leaves is a function of the RECORD and not
+ * of this file: on this fixture it leaves thirteen rows at forty and one at twenty, so the same
+ * pair of verbs walks the whole range without either of them being chosen for a number.
+ */
+const FILLS_THE_PAGE = 'brief';
+
+/** The other one, which fills a tall page and not a short one. */
+const A_SHORTER_ANSWER = 'status';
+
+/** Types a verb into the row, and waits for the frame that answered it. */
+function runs(verb: string): Step {
+  return {
+    types: `${verb}\r`,
+    until: (bytes, since) =>
+      aFrameAfter(PROMPT)(bytes) && bytes.slice(since).includes(`${PROMPT} ${verb}`),
+    what: `ran \`${verb}\``,
+  };
+}
+
+/**
+ * Types a verb, and waits until what it printed has FILLED THE PAGE.
+ *
+ * ⚠️ WAITING FOR THE FRAME THAT ANSWERED IT IS NOT ENOUGH, and the whole suite is where that was
+ * measured: an answer lands one line at a time and every line is a frame, so a step that waits
+ * for a frame after the echo is answered by the FIRST of twenty-five lines. On its own the
+ * stream never pauses long enough for it to matter and the case was green; under the load of the
+ * whole suite it ended eleven lines in, on a page with twelve rows still to spare — and what
+ * failed was the premise rather than the promise, which is the honest half of how it showed.
+ *
+ * SO THE STEP WAITS FOR WHAT THE CASE NEEDS, which is a page with less left over than one word of
+ * list takes. It is read off the SCREEN, on the same instrument the case reads it with
+ * (`support/screen.ts`, `theGapOn`), so there is one idea of "the page is full" rather than a
+ * predicate that approximates the assertion. A fixture that stopped filling the page fails here,
+ * by name, instead of leaving every assertion downstream green about a page that had room.
+ */
+function fills(verb: string, columns: number, rows: number, aWord: number): Step {
+  return {
+    types: `${verb}\r`,
+    until: (bytes, since) =>
+      aFrameAfter(PROMPT)(bytes) &&
+      bytes.slice(since).includes(`${PROMPT} ${verb}`) &&
+      theGapOn(screenOf(bytes, columns, rows), PROMPT) < aWord,
+    what: `filled the page with \`${verb}\``,
+  };
+}
+
+/**
+ * Opens the list, and waits for THE LIST rather than for a frame.
+ *
+ * WHAT IT WAITS FOR IS EITHER OF THE TWO THINGS A PALETTE CAN ARRIVE AS — a word of it, or the
+ * row that accounts for what had no room — because WHICH of the two a page gets is exactly what
+ * is under test. A step that waited for a word would time out on the defect this closes instead
+ * of failing on it, and a timeout is not an assertion (`repl/palette.ts`, {@link CUT}).
+ */
+function listsTheWords(offers: readonly CompletionWord[]): Step {
+  const first = offers[0]?.word as string;
+  return {
+    types: PREFIX,
+    until: (bytes, since) =>
+      aFrameAfter(PROMPT)(bytes) &&
+      (bytes.slice(since).includes(CUT) || bytes.slice(since).includes(first)),
+    what: 'listed the words',
+  };
+}
+
+/** Takes the key back off the row, and waits for a frame with no palette written into it. */
+const shutsTheList: Step = {
+  types: RUBS_OUT,
+  until: (bytes, since) => aFrameAfter(PROMPT)(bytes) && !bytes.slice(since).includes(CUT),
+  what: 'shut the list',
+};
+
+describe('a key pressed on a page a session has used answers with a word', () => {
+  // THREE SIZES A PERSON REALLY HAS, and the shortest of them is the one the defect was worst
+  // at: at a hundred and twenty by twenty, EITHER verb filled the page and the list drew nothing.
+  for (const [columns, rows] of [
+    [120, 40],
+    [120, 30],
+    [120, 20],
+  ] as const) {
+    it(`⚠️ draws a word of the list after a verb at ${columns}x${rows}`, async () => {
+      // ⚠️ THE DEFECT, ON THE PAGE A SESSION SPENDS ITS LIFE ON. Every other case in this file
+      // reads a page that has just OPENED, where there is an emptiness for the list to grow
+      // into. Measured on the binary of the delivery before this one, after ONE ordinary
+      // verb: `… 19 not shown` and NOT ONE WORD — at a hundred and twenty by forty and by thirty
+      // after `brief`, and at a hundred and twenty by twenty after either verb. Four of these six
+      // screens drew nothing a caller could read, and the key that drew them is the one a person
+      // presses to ask what they can type.
+      //
+      // TWO VERBS IN ONE SESSION, because the pair is the measurement: the same three sizes
+      // answer differently depending on how much the last verb printed, and a case that ran only
+      // the longer one would not show that the page with room over is untouched.
+      const offers = everythingOffered();
+      const words = offers.map((offer) => offer.word);
+      const aWord = leastRoomForAWord();
+      const ran = await inPty({
+        columns,
+        rows,
+        steps: [
+          opens,
+          runs(A_SHORTER_ANSWER),
+          listsTheWords(offers),
+          shutsTheList,
+          fills(FILLS_THE_PAGE, columns, rows, aWord),
+          listsTheWords(offers),
+          { ...leaves, types: `${ABANDONS_THE_LINE}${LEAVE}\r` },
+        ],
+      });
+      const screenAt = (step: number): Screen =>
+        screenOf(ran.bytes.slice(0, ran.at[step] as number), columns, rows);
+      const ranTheVerb = { shorter: screenAt(1), filled: screenAt(4) };
+      const listed = { shorter: screenAt(2), filled: screenAt(5) };
+      // BOTH VERBS REALLY RAN, or the screens below are one screen read four times. ⚠️ ASKED OF
+      // THE BYTES AND NOT OF THE SCREEN, and the reason is the case itself: the row a caller
+      // typed is the FIRST thing a long answer carries into the scrollback, so on the page this
+      // is about the echo is exactly what is no longer on the screen — measured, at all three
+      // sizes, where the page holds the end of what `brief` printed and nothing of the line that
+      // asked for it.
+      for (const verb of [A_SHORTER_ANSWER, FILLS_THE_PAGE]) {
+        expect(ran.bytes, `${verb} never ran`).toContain(`${PROMPT} ${verb}`);
+      }
+      // ⚠️ AND THE PAGE REALLY IS FULL, which is the premise the whole case rests on: what the
+      // longer verb printed left less over than one word of list takes, so there is nothing for
+      // the list to grow into and the floor is the only thing that can answer the key. A fixture
+      // that stopped filling the page would make every assertion below a green about a page that
+      // was never short of room. It is what the step itself waited for ({@link fills}) and it is
+      // asked again here, because a step is also over when the SESSION is — so a console that
+      // died would satisfy the wait and nothing else would say so.
+      expect(
+        theGapOn(ranTheVerb.filled, PROMPT),
+        `${columns}x${rows}: the page had room to spare, so the floor is not under test`,
+      ).toBeLessThan(aWord);
+      // ⛔ AND THE KEY ANSWERS WITH A WORD, on both pages. One is the least a console may say
+      // when it is asked what can be typed: a key that draws no word is indistinguishable from a
+      // key that does nothing.
+      for (const [what, screen] of [
+        [A_SHORTER_ANSWER, listed.shorter],
+        [FILLS_THE_PAGE, listed.filled],
+      ] as const) {
+        const drawn = wordsOfTheListOn(screen, words);
+        expect(
+          drawn,
+          `${columns}x${rows} after \`${what}\`: the list drew the count and no word\n${screen.text}`,
+        ).toBeGreaterThanOrEqual(1);
+        // AND WHAT IT DID NOT SHOW IT STILL SAYS, which is the honesty the floor may not cost:
+        // what is drawn plus what the count names is everything there was.
+        const said = screen.rows.find((row) => row.trimStart().startsWith(CUT));
+        const missing = said === undefined ? 0 : Number(/(\d+)/.exec(said)?.[1]);
+        expect(
+          drawn + missing,
+          `${columns}x${rows} after \`${what}\`: the count does not add up`,
+        ).toBe(offers.length);
+        // AND THE INPUT IS STILL ON THE LAST ROW THE LAYOUT LEAVES, which is the promise the
+        // floor may not cost either: what it takes comes off the TOP of the flow, and the foot of
+        // the page does not move for it.
+        endsAtTheFoot(screen, rows, `${columns}x${rows} after \`${what}\``);
+      }
+    }, 240_000);
+  }
 });
 
 /**

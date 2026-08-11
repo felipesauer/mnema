@@ -1276,15 +1276,22 @@ describe('a page without the room shows fewer, and says how many it could not', 
   // TWO SIZES, AND THEY ARE THE TWO REGIMES OF THE SAME PROMISE. ⚠️ THIS WAS ONE CASE AT A
   // HUNDRED BY EIGHT, and it asserted that some were shown AND some were named — which is
   // what a list cut to the SCREEN did at that size. The list is cut to what the PAGE has left
-  // over now (`repl/area.ts`, `AreaRequest.flow`), and at eight rows the opening spends the
-  // whole page: what is left over is the chrome the list takes back, which is two rows, and
-  // two rows are the account and the row of keys. So the case that pinned "some are shown"
-  // moved to a size where the page really has some to spare, and the size where it has none
-  // asserts the OTHER half — nothing shown, everything named — instead of being deleted for
-  // going red.
-  for (const [rows, someAreShown] of [
-    [30, true],
-    [8, false],
+  // over now (`repl/area.ts`, `AreaRequest.flow`), so the case that pinned "some are shown"
+  // gained a size where the page really has some to spare.
+  //
+  // ⚠️ AND THE SHORT ONE ASSERTED THAT NOTHING WAS SHOWN, which is the premise the floor
+  // falsified — and it was written down here as the other half of a promise rather than as the
+  // defect it was: *at eight rows the opening spends the whole page: what is left over is the
+  // chrome the list takes back, which is two rows, and two rows are the account and the row of
+  // keys*. Both sentences were true of the arithmetic and neither was a promise worth keeping: a
+  // list that draws `… 18 not shown` and NOT ONE WORD answers *what can I type* with *eighteen
+  // things, none of them*, and a key that draws no word is indistinguishable from a key that does
+  // nothing. There is a floor of one word under the leftover now (`repl/area.ts`,
+  // `roomForThePalette`), so what the two sizes are two regimes OF has moved: it is how MANY are
+  // shown — a page with room shows what it has room for, and a page with none shows one.
+  for (const [rows, shown] of [
+    [30, 8],
+    [8, 1],
   ] as const) {
     it(`names a number that adds up to everything there was, at 100x${rows}`, async () => {
       // THE NUMBER IS ASSERTED AGAINST THE TOTAL rather than written down: what is on the
@@ -1316,9 +1323,11 @@ describe('a page without the room shows fewer, and says how many it could not', 
         offers.length,
       );
       // Not vacuous: it really did leave some out, and the two sizes really are the two
-      // regimes rather than one measured twice.
+      // regimes rather than one measured twice. ⚠️ THE SECOND OF THESE WAS A YES-OR-NO — *some
+      // are shown* — and it is a COUNT now, because with a floor under the list both sizes show
+      // some and what tells them apart is how many.
       expect(missing).toBeGreaterThan(0);
-      expect(listed.length > 0, `${rows}: ${listed.length} shown`).toBe(someAreShown);
+      expect(listed.length, `${rows}: ${listed.length} shown`).toBe(shown);
       // ⛔ AND THE PAGE DID NOT PAY FOR THE LIST at either size, which is what the cut buys:
       // the row the caller types on is still the last one the layout leaves.
       endsAtTheFoot(screen, rows, `100x${rows} with a cut list`);
