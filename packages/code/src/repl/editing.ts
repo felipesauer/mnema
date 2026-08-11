@@ -78,6 +78,27 @@ export interface Keystroke {
   readonly downArrow: boolean;
   readonly tab: boolean;
   /**
+   * THE FOUR KEYS THAT MOVE THE WINDOW rather than the row — a page back, a page forward, the
+   * oldest line the console still holds, and the tail.
+   *
+   * THEY ARE DECLARED HERE AND ANSWERED NOWHERE IN THIS FILE, and that is the shape rather than
+   * an omission. This value is the whole language of a keystroke on this surface, so a key the
+   * console acts on has to be IN it or the console would be reading a chunk a second time; what
+   * each of them does is about which part of the roll a reader is looking at, which is not a
+   * question about the line being typed (`console.ts`, `scrolling.ts`). Every arm of the reducer
+   * below leaves the row exactly as it found it for all four, which is what the console relies
+   * on when it answers them and then does nothing else.
+   *
+   * ⚠️ THE CARET'S OWN ENDS ARE Ctrl-A AND Ctrl-E and they always were, so nothing was taken
+   * from the row to give these two their meaning: a console that lives on one screen has a
+   * second axis a console that scrolled the caller's terminal did not, and Home and End are what
+   * a hand already reaches for on it.
+   */
+  readonly pageUp: boolean;
+  readonly pageDown: boolean;
+  readonly home: boolean;
+  readonly end: boolean;
+  /**
    * Escape, which is the key that shuts the list of words.
    *
    * It is DECLARED rather than read off the byte, like every other named key here: the
@@ -147,6 +168,10 @@ const NO_KEY: Keystroke = {
   upArrow: false,
   downArrow: false,
   tab: false,
+  pageUp: false,
+  pageDown: false,
+  home: false,
+  end: false,
   escape: false,
   ctrl: false,
 };
@@ -204,6 +229,12 @@ export function keystrokesOf(stroke: Keystroke): readonly Keystroke[] {
     stroke.rightArrow ||
     stroke.upArrow ||
     stroke.downArrow ||
+    // AND THE FOUR THAT MOVE THE WINDOW, which the keyboard already named: a chunk carrying one
+    // of them is one key and not text to be broken up, exactly like an arrow.
+    stroke.pageUp ||
+    stroke.pageDown ||
+    stroke.home ||
+    stroke.end ||
     stroke.escape;
   if (named || !unprintable(stroke.input)) return [stroke];
 

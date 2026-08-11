@@ -2,26 +2,34 @@
  * WHERE A LINE LANDS — and nothing at all about what it says.
  *
  * This is the whole of the console's layout, and it is deliberately the only file on
- * this surface that a layout library reaches. Everything in it POSITIONS: a row for what
- * the session has already said, a row for what is being typed, the caret at the offset
- * the caller's arrows put it at, a place for the words a Tab could not choose between,
- * and a place for what the caller can do next.
+ * this surface that a layout library reaches. Everything in it POSITIONS: the opening at the
+ * top, a window onto what the session has said under it, a row for what is being typed, the
+ * caret at the offset the caller's arrows put it at, a place for the words a Tab could not
+ * choose between, and a place for what the caller can do next.
  *
- * WHAT IS REDRAWN AND WHAT IS KEPT IS THE ONE DECISION THIS FILE MAKES ABOUT A LINE, and
- * it is about WHERE and never about what. The banner is written once and stays in the
- * scrollback, because it is the session's own opening and a caller scrolls back to the
- * top to find it. The TIPS are the other way round and for the reverse of the same
- * reason: a hint that has scrolled off the screen is not a hint, so they sit in the
- * region that is redrawn and stay under the row being typed for as long as the session
- * lives. Neither of them is composed here — both arrive as bytes a renderer produced.
+ * THREE REGIONS, AND EVERY ONE OF THEM IS REDRAWN. The opening is FIXED at the top and never
+ * moves; the input area is FIXED at the foot and never moves; between them is a WINDOW onto
+ * the roll of what the session has said, and that is where the scroll works. The three
+ * together are exactly as tall as the terminal, on every frame — which is what makes the first
+ * and the last fixed at all.
  *
- * AND WHAT IS REDRAWN INCLUDES WHAT IS EMPTY, which is the one thing on the page that is not a
- * line at all: the rows between the flow and the input area ({@link theLeftover}). They are
- * there so the input ends on the last row the layout leaves, and they are HERE — in what is
- * redrawn — because that is what lets the area grow into them instead of into the screen. A
- * list of words twenty rows tall takes twenty rows of nothing and gives them back when it
- * shuts; the region is the same height throughout, so nothing of the caller's is carried away
- * by a menu that came and went (`page.ts`).
+ * ⚠️ AND IT WAS THE OPPOSITE OF THAT, WHICH IS THE MODEL THIS DELIVERY REPLACED. What the
+ * session said used to be written ONCE, into a region the library keeps and never redraws, and
+ * the caller's own scrollback was the roll: a line that left the top of the screen went into
+ * their history, where they could scroll back to it. So the opening was CONTENT — the first
+ * item of that kept region — and it rose off the screen the moment enough was printed. A fixed
+ * header is not a thing that model can have, and eight deliveries of this frontier were patches
+ * on that impossibility: rows with nothing on them under the opening, the input anchored at the
+ * foot by arithmetic, a page turned when the drawing changed, a subtraction for the rows a
+ * shrinking window carried away, a window onto the list of words. Each closed one symptom and
+ * the next appeared beside it.
+ *
+ * ⚠️ AND THE ARGUMENT AGAINST TAKING THE SCREEN WAS WRITTEN HERE, in as many words: *the
+ * alternate screen DISCARDS the scrollback when the program exits, which is the opposite of a
+ * session whose whole output a caller wants to keep reading afterwards*. It was not wrong, it
+ * was incomplete — the cost it named is real, and it is PAID rather than avoided: everything
+ * the session said is written into the caller's own buffer on the way out, so their history
+ * still ends with the whole of it (`scrolling.ts`, `console.ts`).
  *
  * NOTHING HERE COMPOSES A LINE, and that is the limit the whole decision to take a
  * layout library rests on. Five deliveries built ONE model of what a line of this
@@ -77,26 +85,10 @@
  * of the product is a better reason than alphabetical luck. Nothing about the rule moved:
  * `tests/the-panel.test.ts` holds both halves, exactly one hue in this file and it is none of
  * the three severities.
- *
- * AND THERE IS NO ALTERNATE SCREEN, on purpose and against the first design. Measured:
- * this library redraws the changing rows in the NORMAL buffer and leaves everything the
- * session has already said permanently in the scrollback. The alternate screen — what
- * `vim` and `htop` take — DISCARDS the scrollback when the program exits, which is the
- * opposite of a session whose whole output a caller wants to keep reading afterwards.
- *
- * THAT PARAGRAPH USED TO BE THE WHOLE ANSWER TO "WHY DOES THE PAGE OPEN OVER SOMEBODY
- * ELSE'S OUTPUT", and it was answering a question nobody asked. The page opens CLEAN now,
- * and it is not the alternate screen and not an erase: everything on the screen is
- * SCROLLED into the scrollback and the cursor comes back to the top, which is the one
- * operation whose effect on the scrollback is defined (`page.ts`). Nothing of the
- * caller's is destroyed — it is one scroll up, where it always was. The same bytes are
- * what the caller gets when they ask for a clean page again, and the identity of the
- * region below is what makes the second one really clean rather than a redraw over the
- * first.
  */
 
-import { Box, Static, type StaticProps, Text, useCursor, useInput, useStdout } from 'ink';
-import { createElement as node, type ReactNode, useEffect, useSyncExternalStore } from 'react';
+import { Box, Text, useCursor, useInput } from 'ink';
+import { createElement as node, type ReactNode, useSyncExternalStore } from 'react';
 import type { Area } from './area.js';
 import type { Keystroke } from './editing.js';
 // THE TWO MEASUREMENTS OF THE ARRANGEMENT, read from where the arithmetic that chooses the
@@ -169,10 +161,65 @@ const AT_THE_FAR_END = 'flex-end';
  */
 const IN_THE_MIDDLE = 'center';
 
+/**
+ * ⛔ WHERE A LINE TOO WIDE FOR THE SCREEN IS BROKEN: at the margin, and nowhere else.
+ *
+ * IT IS THE LIBRARY'S OWN NAME FOR *break at the width and do not look for a word*, and both
+ * halves of that are the decision. Breaking at the margin is what a TERMINAL does to a line that
+ * does not fit, so nothing on the page moves by asking for it — the same glyphs land on the same
+ * rows. What changes is WHO knows: a frame whose rows the library counted and the terminal then
+ * folded is a frame the library believes is shorter than it is, and on a page that is exactly the
+ * screen that one row is the difference between writing in place and scrolling.
+ *
+ * ⛔ AND WORD WRAPPING IS REFUSED, which is what the other half rules out. Where a sentence
+ * divides is a decision about what a line SAYS, and this surface has one place for that
+ * (`presentation/folded.ts`, which folds between words with the continuation indented, before a
+ * line ever reaches here). A layout that broke at a space would be a second such place — the
+ * exact shape of divergence the header of this file is about.
+ */
+const THE_MARGIN = 'hard';
+
 /** Everything the console is showing, as one value read at one instant. */
 export interface Shown {
-  /** Every line the session has already said, oldest first. Never rewritten. */
-  readonly past: readonly string[];
+  /**
+   * THE TOP REGION: the arrangement the page opens with, or nothing when this terminal has no
+   * room for one.
+   *
+   * ⚠️ IT USED TO BE THE FIRST ITEM OF WHAT WAS KEPT, above every line the session had said,
+   * and that is what made it CONTENT: enough output and it rose off the screen for good, which
+   * is the defect the whole of this delivery is about. It is a region of its own now, drawn on
+   * every frame at the top of the screen, and nothing the session says can move it.
+   *
+   * ⛔ AND IT IS THE ARRANGEMENT ALONE. The LINES an opening lands are on the roll with
+   * everything else the session said (`scrolling.ts`), which is what the narrow case forced: a
+   * fixed region that does not fit can only be CLIPPED, and a clipped drawing loses exactly the
+   * rows that say what the session is and what the record proved. On the roll it loses nothing —
+   * the reader sees the end of it and scrolls back for the rest.
+   */
+  readonly panel: Panel | undefined;
+  /**
+   * THE MIDDLE REGION: the lines of the roll a reader can see right now, oldest first.
+   *
+   * Composed and CUT before it arrives, like every other line here: which lines are in the
+   * window is a function of how far back the reader has walked and how many rows each line
+   * takes at this width, and both are answered where the roll is (`scrolling.ts`). This file
+   * has nothing to measure and nothing to choose.
+   */
+  readonly window: readonly string[];
+  /**
+   * HOW TALL THE CALLER'S TERMINAL IS, asked of the DEVICE by the module that owns the streams
+   * and handed over as the height of the frame.
+   *
+   * ⛔ IT IS THE ONE NUMBER THAT MAKES THE THREE REGIONS FIXED, and it is a number rather than
+   * an arrangement for a reason the library forces. The frame is laid out to exactly this
+   * height, so the middle takes whatever the other two leave and the whole is the screen — which
+   * is what the library needs to write the frame IN PLACE instead of appending a row under it.
+   * Measured, before the height was declared: the library counted a folded line as one row where
+   * the terminal counted two, decided the frame was short of the viewport, wrote the newline it
+   * writes under a frame that is, and the page scrolled by one — the top row of the drawing gone,
+   * on a screen where nothing is supposed to move.
+   */
+  readonly rows: number;
   /** The row being typed: the prompt and what is on it, already put together. */
   readonly present: string;
   /**
@@ -194,56 +241,6 @@ export interface Shown {
   /** Which column of {@link present} the caret sits in. */
   readonly column: number;
   /**
-   * WHICH PAGE THIS IS: the one the session opened with, and one more each time the
-   * caller asked for a clean one.
-   *
-   * It is the IDENTITY of what is kept, and it is here rather than anywhere else because
-   * the library reads it as one: a region written once and never taken back can only be
-   * emptied by ceasing to be the same region. Handing it a new identity is also what
-   * makes the library forget what it wrote there, which matters for a reason nothing on
-   * the screen shows — it keeps a copy of everything written above, and there are frames
-   * on which it replays the copy.
-   */
-  readonly page: number;
-  /**
-   * The arrangement the page opened with, or none when the terminal is too narrow for one.
-   *
-   * IT USED TO BE A PROP, on the argument that it was resolved once and never moved. What
-   * falsified that is the width: a terminal narrowed past the threshold has the wrong
-   * arrangement on it, and the console answers with the page again — the opening recomposed
-   * for the new width, on a new {@link page}. It moves with the page it belongs to, so it
-   * belongs where the page is.
-   *
-   * ⚠️ THE ARGUMENT USED TO BE SHARPER AND IT WAS THE FRAME'S: the box was drawn corner to
-   * corner, so EVERY width was a width the drawing folded at. The frame is gone, so what
-   * changes with a width is the arrangement and the art alone — the prop would be wrong less
-   * often and still wrong, and less often is not a reason to hold a stale value.
-   *
-   * Nothing about it is READ here, and that has not changed: it arrives composed, out of
-   * the read the session paid for when it opened, and this file only says where it goes.
-   */
-  readonly panel: Panel | undefined;
-  /**
-   * HOW MANY ROWS WITH NOTHING ON THEM SIT BETWEEN THE FLOW AND THE AREA — what is left of the
-   * page once the flow and the area have taken their rows (`page.ts`, `theGap`).
-   *
-   * ⚠️ THEY USED TO BE LINES OF {@link past}, and that is the premise this delivery falsified.
-   * The argument was that the region redrawn then stayed exactly as tall as the AREA, which is
-   * true and was not the whole of it: the area changes height under a session, a region that
-   * grows scrolls the screen, and what scrolls off the top does not come back. Measured on a
-   * real terminal at a hundred and twenty by forty, one opening and shutting of the list of
-   * words carried the whole opening away for good — the panel was a box then, and it was the
-   * box that left.
-   *
-   * SO THE ROOM IS REDRAWN WITH THE AREA, and the list takes it out of HERE rather than out of
-   * the screen: the two move in opposite directions on the same frame and the region's whole
-   * height does not change, so nothing scrolls and the panel stays where the page put it. It
-   * travels with {@link area} because it is a function of the same two things — how tall the
-   * terminal is, and how tall the area is — and it is a number rather than rows, because a row
-   * with nothing on it is a row this file draws and never a line it composes.
-   */
-  readonly gap: number;
-  /**
    * WHICH ARRANGEMENT THE INPUT AREA IS IN, and where the caret goes inside it.
    *
    * It travels with what is shown rather than arriving as a prop, and the two reasons are
@@ -261,45 +258,36 @@ export interface Watched {
   readonly now: () => Shown;
   /** Call back on every change; the answer stops the calling back. */
   readonly watch: (changed: () => void) => () => void;
-  /** A key the caller pressed. What it means is decided elsewhere. */
-  readonly pressed: (stroke: Keystroke) => void;
   /**
-   * The layout is up: here is the door bytes of the console's own go through.
-   *
-   * The console has one thing to write that is not a line — the bytes that carry the
-   * page into the scrollback — and while the layout is mounted it may not write them to
-   * the device itself: the library keeps count of the rows it is redrawing, and a write
-   * behind its back leaves that count pointing at the wrong ones. The door it offers
-   * takes the frame down, writes, and puts the frame back.
+   * A key the caller pressed — or a notch of the wheel, which arrives by the same road.
+   * What either of them MEANS is decided elsewhere.
    */
-  readonly opened: (write: (bytes: string) => void) => void;
+  readonly pressed: (stroke: Keystroke) => void;
 }
 
 /**
- * The console: the opening panel, everything already said, and then the input — the badge
- * in the corner, the row being typed between two rules, and what to do next.
+ * The console: the opening at the top, what the session has said in the middle, and the input
+ * at the foot — the badge in the corner, the row being typed between two rules, and what to do
+ * next.
  *
- * THE TIPS AND THE BADGE ARE PROPS AND THE PANEL IS WATCHED, and that used to be one
- * sentence about the first and the last: they were resolved once when the session opened
- * and never moved again, so putting either in the value rebuilt on every keystroke would
- * have said they might. The tips are still that, and the badge joined them — it says what
- * the record proved, out of the one read this surface pays for, and nothing that happens
- * inside a session changes it. The panel is not — which ARRANGEMENT the terminal has room for
- * is a function of its width, so a caller who narrows theirs past the threshold gets the page
- * again with the text under the mark instead of beside it, which is a move. So it travels with
- * {@link Shown}, beside the page identity it changes with.
+ * THE TIPS AND THE BADGE ARE PROPS AND EVERYTHING ELSE IS WATCHED, and the line between them
+ * is what each one is a function of: those two were resolved once when the session opened and
+ * nothing that happens inside a session changes either, so putting them in the value rebuilt
+ * on every keystroke would have said they might.
+ *
+ * ⚠️ THE OPENING USED TO BE A PROP TOO, then it joined the watched value, and now it is watched
+ * for a different reason than the one it joined for. It joined because a caller who narrowed
+ * their window past a threshold got the page again with a different arrangement, on a new
+ * identity — a page TURN. There are no pages to turn: it is watched because it is a REGION,
+ * rebuilt with the other two whenever anything moves, and it is composed for the size read at
+ * the moment of the drawing rather than for a size that has settled (`console.ts`).
  *
  * WHAT THE OLD SENTENCE WAS PROTECTING IS UNTOUCHED, and it is worth saying plainly
  * because it is the expensive half: the panel is the one thing on this surface paid for
  * with a read of the record, and nothing here re-reads it. A recomposition is the console
- * calling a pure function over lines that already exist, once the terminal has stopped
- * changing size; a value the LAYOUT re-read on every frame would still be a replay loop,
- * and this is not one (`tests/the-name-and-the-hints.test.ts` counts the reads).
- *
- * WHAT IS WATCHED AND IS NOT A LINE is the SHAPE of the input area, and it is watched for
- * two reasons that have nothing to do with a read: how TALL the caller's terminal is, and
- * whether a Tab left words on the page. Which arrangement there is room for is answered
- * before this file is reached (`area.ts`); all this one does is draw the one it is handed.
+ * calling a pure function over lines that already exist; a value the LAYOUT re-read on every
+ * frame would still be a replay loop, and this is not one
+ * (`tests/the-name-and-the-hints.test.ts` counts the reads).
  */
 export function Region({
   watched,
@@ -312,23 +300,17 @@ export function Region({
 }): ReactNode {
   const shown = useSyncExternalStore(watched.watch, watched.now, watched.now);
   const { setCursorPosition } = useCursor();
-  const { write } = useStdout();
 
   useInput((input, key) => {
     watched.pressed({ input, ...key });
   });
 
-  // The one thing handed back rather than received. See {@link Watched.opened}.
-  useEffect(() => {
-    watched.opened(write);
-  }, [watched, write]);
-
   // THE REAL CARET, on the row being typed, at the offset the arrows moved it to — and at
-  // the depth the arrangement puts that row at. IT USED TO BE THE FIRST ROW OF THE REGION
+  // the depth the three regions put that row at. IT USED TO BE THE FIRST ROW OF THE REGION
   // and the doc here said so: everything above it was in the scrollback and out of this
-  // frame. What falsified it is the area, which draws up to three rows over the row being
-  // typed. How many is arithmetic and it is answered before this file is reached
-  // (`area.ts`), so the caret and the drawing cannot come to disagree about the shape.
+  // frame. Everything above it is IN this frame now — the opening, the window onto the roll,
+  // and the rows of the area over the row being typed — and every one of those numbers is
+  // counted where it is answered ({@link Shown.above}, `area.ts`).
   //
   // ⚠️ IT WAS HANDED OVER IN AN EFFECT, AND AN EFFECT IS ONE FRAME LATE. Measured: the
   // caret opened three rows BELOW the prompt — where the terminal leaves it after the last
@@ -341,20 +323,31 @@ export function Region({
   // ref rather than state, so nothing is rendered twice for it
   // (`tests/the-opening-fits-the-screen.test.ts` compares the opening with the frame after
   // one keystroke: they used to disagree).
-  //
-  // ⚠️ AND THE OFFSET IS INTO THE WHOLE REGION AND NOT INTO THE AREA, which the leftover is
-  // what falsified: the rows with nothing on them are the FIRST rows of what is redrawn now
-  // (`page.ts`), so a caret placed at the area's own depth would open as many rows above the
-  // prompt as the page had room to spare — twenty-one of them, measured at a hundred and twenty
-  // by forty. Both halves are counted where each is answered: the leftover here, and how many
-  // rows the arrangement draws over the row being typed in `area.ts`.
-  setCursorPosition({ x: shown.column, y: shown.gap + shown.area.above });
+  // ⚠️ AND IT IS COUNTED UP FROM THE FOOT RATHER THAN DOWN FROM THE TOP, which is the one way
+  // it can be exact. Counted downwards it would be the top region plus the middle one, and
+  // neither of those is a number this side of the layout knows: how many rows a drawing really
+  // takes is the library's arithmetic over what it was handed, and a console that predicted it
+  // would be a second opinion that goes one out on the first line that folds. The area is at the
+  // foot of a frame that is exactly as tall as the screen, so the row being typed is as many
+  // rows up from the bottom as the area is tall, less what the arrangement draws over it — two
+  // numbers, both of them already answered ({@link Shown.rows}, `area.ts`).
+  setCursorPosition(theCaretOn(shown));
 
   return node(
     Box,
-    { flexDirection: 'column' },
-    node(Past, { panel: shown.panel, lines: shown.past, page: shown.page }),
-    theLeftover(shown.gap),
+    // ⛔ THE FRAME IS THE SCREEN, and this is where that is said. Everything else about the
+    // three regions follows from it: the two fixed ones take what they take, the middle takes
+    // what is left, and there is no row under the last one for the library to write a newline
+    // into. What is outside it is CLIPPED rather than allowed to push — a frame one row taller
+    // than the terminal scrolls the page, and the top region moving is the defect this whole
+    // model exists to remove.
+    {
+      flexDirection: 'column',
+      height: shown.rows > 0 ? shown.rows : undefined,
+      overflow: 'hidden',
+    },
+    shown.panel === undefined ? null : node(Header, { panel: shown.panel }),
+    node(Middle, { window: shown.window }),
     node(Present, {
       present: shown.present,
       palette: shown.palette,
@@ -365,71 +358,144 @@ export function Region({
   );
 }
 
-/** One thing that stays on the page: the opening panel, or a line the session said. */
-type Kept = Panel | string;
+/**
+ * ⚠️ WHERE THE CARET GOES, WITH THE LIBRARY'S OWN OFF-BY-ONE ANSWERED — one row lower than the
+ * row it is meant to be on.
+ *
+ * THE LIBRARY MOVES THE CARET UP FROM THE BOTTOM, and it says in its own words what it is
+ * counting from: *assumes cursor is at (col 0, line visibleLineCount) — i.e. just after the last
+ * output line*. That is true of every frame it writes with a newline under it, and FALSE of a
+ * frame that fills the viewport: it deliberately leaves the newline off that one, so the caret
+ * is left at the end of the LAST line rather than on the line after it, and every position it is
+ * then asked for comes out one row high. Measured on a real terminal at a hundred by forty: the
+ * caret opened on the rule above the row being typed.
+ *
+ * SO THE NUMBER HANDED OVER IS THE ROW PLUS ONE, which is the library's own origin expressed in
+ * the library's own terms rather than a fudge: it is being told where the caret is relative to
+ * the place it thinks it is standing. It is here, in one expression, so the compensation cannot
+ * be applied twice or forgotten (`tests/the-input-has-its-own-place.test.ts` reads the caret's
+ * row off a real screen).
+ *
+ * A DEVICE THAT REPORTS NO HEIGHT GETS NO CARET AT ALL. The frame is not the screen there — it
+ * is whatever its content is — so there is no row to count back from, and a position invented
+ * against a height nobody reported would put the caret somewhere nothing is drawn.
+ */
+function theCaretOn(shown: Shown): { readonly x: number; readonly y: number } | undefined {
+  if (shown.rows <= 0) return undefined;
+  return { x: shown.column, y: shown.rows - shown.area.height + shown.area.above + 1 };
+}
 
 /**
- * What the session has already said, written once and never redrawn — with the opening
- * panel first, when there is one.
+ * THE TOP REGION: the name drawn, and what the session is — in whichever of the two
+ * arrangements the terminal has room for.
  *
- * THE PANEL IS AN ITEM OF THIS LIST AND NOT A ROW ABOVE IT, and the reason is the
- * library's rather than the design's: what is written once and kept is one region, so a
- * panel outside it would be redrawn on every keystroke and a panel in a second one would
- * be the second such region, which this library does not have. It is always the first
- * item and it is never added to, so the list only ever grows at the end — which is the
- * one thing this component requires of what it is handed.
+ * IT IS FIXED AND IT IS REDRAWN, which used to be a contradiction and is the whole shape of
+ * this delivery. In the model this replaces, "fixed" could only be bought by writing something
+ * once and never touching it again — and a thing written once cannot stay at the top of a
+ * screen that scrolls. The screen does not scroll now, so being at the top is a POSITION and
+ * being fixed is the consequence of drawing it there on every frame.
  *
- * Each line gets a box of its own, and the box's two measurements are the two ways a
- * layout can quietly change a line it was only asked to place:
+ * A terminal too narrow for either arrangement gets none, which is decided before this
+ * component is reached (`panel.ts`, `session.ts`) — so there is no third branch here, and the
+ * narrow case is not a drawing but the absence of one, with the same lines on the roll instead.
+ *
+ * ⚠️ THERE WAS A BOX AROUND IT, drawn corner to corner, with the title laid on its top edge
+ * in three pieces — a stub of border, the title with a space on each side, and the rest
+ * running to the corner. All of it is gone: the reference this panel was measured against
+ * writes its name, its build and its context as text beside its logo and draws no frame, and
+ * the frame was the one thing on this surface a component painted for a reason that was not
+ * the record's. What the box cost is measured rather than remembered — two rows of edge, four
+ * columns of border and gap, and the arrangement that had to be chosen around them — and what
+ * replaces it costs the drawing of the name and nothing more.
+ *
+ * ⚠️ AND WITH IT WENT THE WIDTH. The box took the terminal's, so this component was handed one;
+ * nothing here is drawn to an edge now, so every row is as wide as what is on it and the panel
+ * has no width to be told (`panel.ts`, {@link Panel}).
+ */
+function Header({ panel }: { readonly panel: Panel }): ReactNode {
+  return node(
+    Box,
+    // IT GIVES WAY BEFORE THE INPUT DOES, which is the only ordering a degenerate terminal can
+    // have: on a screen with no room for both, what a caller can still TYPE on matters more than
+    // what the product is called. It cannot happen on a terminal anybody opens — the arrangement
+    // is chosen to fit and there is none at all when it cannot be (`panel.ts`) — and it is said
+    // here so that the case which cannot happen does not happen by pushing the prompt off.
+    {
+      flexDirection: panel.form === 'columns' ? 'row' : 'column',
+      flexShrink: 1,
+      overflow: 'hidden',
+    },
+    ...(panel.form === 'columns' ? sideBySide(panel) : oneOverTheOther(panel)),
+  );
+}
+
+/**
+ * ONE LINE ON ONE ROW, with nothing added to it — the shape every line of this page is drawn
+ * in, wherever it is drawn.
+ *
+ * The box's two measurements are the two ways a layout can quietly change a line it was only
+ * asked to place:
  *
  *   - A ROW TALL WHATEVER IS IN IT, because a line with NOTHING on it is still a line.
  *     Text alone occupies no rows, so a report that separates its sections with blank
  *     lines would arrive with the separations gone. Measured against two reads of this
  *     product that do exactly that.
- *   - AS WIDE AS THE LINE IS LONG, so the layout never re-wraps it. Left to itself the
- *     box is as wide as the terminal and a long line comes out broken across rows by the
- *     library's own arithmetic — which is not what the same verb writes at a shell, and
- *     is not where the break belongs. ⚠️ THE REASON GIVEN USED TO BE *the line is one
- *     line and the TERMINAL is what folds it*, and `presentation/folded.ts` falsified it:
- *     the line arrives at a terminal already folded, between words and with the
- *     continuation indented, by the one renderer the whole product shares. Which makes
- *     this measurement matter MORE rather than less — a layout that re-wrapped a line
- *     that had already been folded well would fold it twice, and the second fold is the
- *     one at the margin. One more than the string is long, so an empty line still has a
- *     box to be a row in; and a line carrying style is measured longer than it looks,
- *     which only ever makes the box roomier.
+ *   - BROKEN AT THE MARGIN BY THE LAYOUT AND NEVER BY THE TERMINAL, which is the half this
+ *     delivery inverted. ⚠️ IT USED TO BE *AS WIDE AS THE LINE IS LONG*, with the reason
+ *     written out: the line arrives already folded between words with the continuation
+ *     indented (`presentation/folded.ts`), so a layout that re-wrapped it would fold it twice
+ *     and the second fold is the one at the margin. WHAT FALSIFIED IT IS WHO COUNTS. A box as
+ *     wide as its line does not stop the line being folded — the TERMINAL folds it, at exactly
+ *     the margin, and the only thing the width bought was that the LIBRARY did not know. On a
+ *     page that scrolled, a frame the library measured one row short of the truth cost nothing;
+ *     on a frame that is the screen, it costs the library a newline it writes under a frame it
+ *     believes has room, and the page scrolls. Measured after a resize to eighty columns: the
+ *     top row of the drawing gone, and a blank row at the foot.
  *
- * The child is passed as a PROP rather than as an argument, against the lint's advice
- * and with its suppression: this component's child is a FUNCTION OF AN ITEM rather than a
- * node, and a variadic child argument can only be handed a node.
+ *     So the break happens where it was always going to happen and the layout is the one that
+ *     makes it: `hard` is a break at the margin and nothing else — no word wrapping, which
+ *     would be this file deciding where a sentence divides. Same glyphs on the same rows, and a
+ *     library that knows how many rows there are.
  */
-function Past({
-  panel,
-  lines,
-  page,
-}: {
-  readonly panel: Panel | undefined;
-  readonly lines: readonly string[];
-  readonly page: number;
-}): ReactNode {
-  const kept: Kept[] = panel === undefined ? [...lines] : [panel, ...lines];
-  return node<StaticProps<Kept>>(Static, {
-    // WHAT MAKES A CLEAN PAGE CLEAN. This region is written once and never taken back,
-    // so the only way to empty it is for it to stop being the same region — and the
-    // library answers a new identity by forgetting everything the old one wrote, which
-    // is what keeps the cleared lines from coming back on a frame that replays them.
-    key: String(page),
-    items: kept,
-    // biome-ignore lint/correctness/noChildrenProp: a variadic child cannot be a function
-    children: (item: Kept, index: number) =>
-      typeof item === 'string'
-        ? node(
-            Box,
-            { key: String(index), minHeight: 1, width: item.length + 1 },
-            node(Text, null, item),
-          )
-        : node(Opening, { key: String(index), panel: item }),
-  });
+function landed(line: string, index: number): ReactNode {
+  return node(Box, { key: String(index), minHeight: 1 }, node(Text, { wrap: THE_MARGIN }, line));
+}
+
+/**
+ * THE MIDDLE REGION: the part of the roll a reader can see, and the emptiness under it.
+ *
+ * ⛔ IT IS A WINDOW AND NOT A LIST THAT GROWS, and that distinction is the one this surface has
+ * been paying for since it had two regions. A region whose height followed what a session had
+ * to SAY walks into the height at which the library stops redrawing part of the screen; a
+ * region whose height is what the terminal has left after the two fixed ones cannot, at any
+ * length of session, because nothing about what was said is in the arithmetic. What is said
+ * goes on a roll of its own, and this shows as much of it as there is room for
+ * (`scrolling.ts`).
+ *
+ * THE EMPTINESS IS A ROW AND NOT A LINE, which is what keeps this file from composing one: a
+ * box with a minimum height is a row of the page with nothing put on it, exactly like the row
+ * over the palette. And ONE box rather than one per row: what it is is a single stretch of
+ * nothing, and a stretch of nothing has a height and no parts.
+ *
+ * NONE AT ALL IS NO BOX, and not a box of no rows: a middle region the window fills exactly is
+ * the ordinary case of a session that has printed, and it draws what it drew then.
+ */
+function Middle({ window }: { readonly window: readonly string[] }): ReactNode {
+  return node(
+    Box,
+    // ⛔ IT TAKES WHAT THE OTHER TWO LEAVE, and that is a property of the layout rather than a
+    // number anybody works out. The frame is the screen and the two fixed regions are as tall as
+    // their content, so this one growing into the rest is what makes the arithmetic exact
+    // without anybody predicting how many rows a drawing takes.
+    //
+    // THE EMPTINESS IS UNDER THE LINES, which is where a page reads downwards to: the opening at
+    // the top, what the session said following it, and the room to spare between that and the
+    // input. Measured, when it was the other way round: at a hundred and twenty by forty the
+    // page opened with twenty-one blank rows at the TOP and the drawing shoved down against the
+    // input, so the first thing there was to read was the last thing on the screen.
+    { flexDirection: 'column', flexGrow: 1, flexShrink: 1, overflow: 'hidden' },
+    ...window.map((line, index) => landed(line, index)),
+  );
 }
 
 /**
@@ -454,38 +520,8 @@ function rows(lines: readonly string[], accented = false): ReactNode[] {
     node(
       Box,
       { key: String(index), minHeight: 1 },
-      node(Text, accented ? { color: ACCENT } : null, line),
+      node(Text, accented ? { color: ACCENT, wrap: THE_MARGIN } : { wrap: THE_MARGIN }, line),
     ),
-  );
-}
-
-/**
- * THE PANEL: the name drawn, and what the session is — in whichever of the two arrangements
- * the terminal has room for.
- *
- * A terminal too narrow for either gets no panel at all and the same lines at the left
- * edge, which is decided before this component is reached (`panel.ts`, `session.ts`) —
- * so there is no third branch here, and the narrow case is not a drawing but the absence
- * of one.
- *
- * ⚠️ THERE WAS A BOX AROUND IT, drawn corner to corner, with the title laid on its top edge
- * in three pieces — a stub of border, the title with a space on each side, and the rest
- * running to the corner. All of it is gone: the reference this panel was measured against
- * writes its name, its build and its context as text beside its logo and draws no frame, and
- * the frame was the one thing on this surface a component painted for a reason that was not
- * the record's. What the box cost is measured rather than remembered — two rows of edge, four
- * columns of border and gap, and the arrangement that had to be chosen around them — and what
- * replaces it costs the drawing of the name and nothing more.
- *
- * ⚠️ AND WITH IT WENT THE WIDTH. The box took the terminal's, so this component was handed one;
- * nothing here is drawn to an edge now, so every row is as wide as what is on it and the panel
- * has no width to be told (`panel.ts`, {@link Panel}).
- */
-function Opening({ panel }: { readonly panel: Panel }): ReactNode {
-  return node(
-    Box,
-    { flexDirection: panel.form === 'columns' ? 'row' : 'column' },
-    ...(panel.form === 'columns' ? sideBySide(panel) : oneOverTheOther(panel)),
   );
 }
 
@@ -573,18 +609,6 @@ function group(key: string, lines: readonly string[], accented = false): ReactNo
  * with one section there is nothing left to divide — and the function is renamed rather
  * than emptied, so a case that was using the rule as a means went red instead of quietly
  * measuring nothing.
- *
- * ⚠️ AND THE RULE'S OWN DOC WAS A FALSE PREMISE, which is why it is written down here
- * rather than deleted with it. It said: *"IT IS AS WIDE AS THE SECTIONS ARE, and by
- * construction rather than by a number: with nothing inside it, it takes the width its
- * siblings gave the column."* That was true while the box hugged its content, so the column
- * was as wide as what was in it and the two were the same number. The box was drawn corner
- * to corner once the page began following the terminal, so the column was STRETCHED and the
- * rule went on measuring its siblings: a run of 45 columns inside a column of 61, measured
- * on a real terminal 120 wide. What it divided and what it looked like it divided had come
- * apart, and no arithmetic anywhere knew — the rule cost no columns, so nothing counted it.
- * There is no box to stretch a column now, which is why this is the last delivery that could
- * have said it.
  */
 function theRecord(panel: Panel): ReactNode {
   return node(
@@ -592,43 +616,6 @@ function theRecord(panel: Panel): ReactNode {
     { key: 'record', flexDirection: 'column', marginTop: BETWEEN_SECTIONS },
     ...rows(panel.record),
   );
-}
-
-/**
- * WHAT IS LEFT OF THE PAGE, DRAWN: that many rows with nothing on them, between the flow and
- * the input area.
- *
- * ROWS AND NOT LINES, which is what keeps this file from composing one — a box with a minimum
- * height is a row of the page with nothing put on it, exactly like the row over the palette.
- * And ONE box rather than one per row: what it is is a single stretch of nothing, and a stretch
- * of nothing has a height and no parts.
- *
- * ⛔ IT IS PART OF WHAT IS REDRAWN, and that is the whole mechanism rather than an
- * implementation detail. The area changes height while a session runs — a list of words opens
- * twenty rows tall and shuts on the next keystroke — and this is what it takes those rows OUT
- * of: the two change by the same amount on the same frame, so the region's total height does
- * not move, the terminal never scrolls for it, and what the page opened with stays on the
- * screen. Rows kept in the flow instead could only ever be appended, which is why the box used
- * to leave for good on the first list a caller opened (`page.ts`).
- *
- * NONE AT ALL IS NO BOX, and not a box of no rows: a page whose flow already fills the screen
- * is the case this surface had before there was a leftover, and it draws what it drew then.
- *
- * HOW MANY IS NOT A FUNCTION OF WHAT THE SESSION SAID but of what is still on the screen, and the
- * difference is a page that scrolled: what went off the top is in the caller's scrollback, and the
- * frame after it has to be placed against what SURVIVED (`console.ts`, `flowOnScreen`). Nothing of
- * that is decided here — the number arrives.
- *
- * ⚠️ AND IT SAID *a list too long for the room a page has to spare still costs the flow its top
- * rows*, which was true and is the residual this frontier then closed. The list was budgeted
- * against the SCREEN, so on a page with little to spare it took the difference off the top —
- * measured, at a hundred by thirty and at eighty by twenty-four, as the drawing of the name going
- * on the first keystroke. It is budgeted against this leftover now (`area.ts`,
- * `AreaRequest.flow`), so a list that does not fit shows fewer words and says how many rather than
- * spending the page.
- */
-function theLeftover(many: number): ReactNode {
-  return many > 0 ? node(Box, { key: 'leftover', minHeight: many }) : null;
 }
 
 /**
@@ -678,17 +665,17 @@ function Present({
   const ruled = area.form !== 'bare';
   return node(
     Box,
-    { flexDirection: 'column' },
+    { flexDirection: 'column', flexShrink: 0 },
     palette.length > 0
       ? node(Box, { flexDirection: 'column' }, breathing(), ...dimmed(palette))
       : null,
     area.form === 'full'
-      ? node(Box, { justifyContent: AT_THE_FAR_END }, node(Text, null, badge))
+      ? node(Box, { justifyContent: AT_THE_FAR_END }, node(Text, { wrap: THE_MARGIN }, badge))
       : null,
     ruled ? rule() : null,
-    node(Text, null, present),
+    node(Text, { wrap: THE_MARGIN }, present),
     ruled ? rule() : null,
-    area.hint ? node(Text, null, tips) : null,
+    area.hint ? node(Text, { wrap: THE_MARGIN }, tips) : null,
   );
 }
 
@@ -704,8 +691,10 @@ function Present({
  * Nothing is added to a row and nothing is taken off one: they arrive composed, padded and
  * cut (`palette.ts`), and all this does is put each on a row of its own.
  */
-function dimmed(rows: readonly string[]): ReactNode[] {
-  return rows.map((row, index) => node(Text, { key: String(index), dimColor: true }, row));
+function dimmed(list: readonly string[]): ReactNode[] {
+  return list.map((row, index) =>
+    node(Text, { key: String(index), dimColor: true, wrap: THE_MARGIN }, row),
+  );
 }
 
 /**
@@ -718,7 +707,7 @@ function dimmed(rows: readonly string[]): ReactNode[] {
  * WHY IT IS HERE AT ALL is the palette reading as part of what is above it rather than as an
  * answer to the key just pressed. The row is COUNTED where the region's height is worked out
  * (`area.ts`, `ABOVE_THE_PALETTE`), because a row this file drew and that file did not count
- * is a region one row taller than the boundary the library redraws in part below.
+ * is a frame one row taller than the screen it is drawn on.
  */
 function breathing(): ReactNode {
   return node(Box, { key: 'breathing', minHeight: 1 });

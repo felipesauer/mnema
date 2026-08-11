@@ -31,14 +31,21 @@ import { type CliIo, run } from '../src/cli.js';
 import { CUT } from '../src/repl/palette.js';
 import { CLEAR, PREFIX } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
-import { inPty as drive, type Fixture, opensAConsole, type Ran, type Step } from './support/pty.js';
+import {
+  aFrameSince,
+  inPty as drive,
+  type Fixture,
+  opensAConsole,
+  type Ran,
+  type Step,
+} from './support/pty.js';
 import { screenOf } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = new URL('../dist/cli.js', import.meta.url).pathname;
 
 /** One escape byte, written as an escape so no control byte enters this file. */
-const ESC = '\u001b';
+const _ESC = '\u001b';
 
 /** What the caller types in front of, as the layout writes it: trimmed at the end. */
 const PROMPT = 'mnema>';
@@ -191,20 +198,28 @@ const leaves: Step = {
   until: (bytes) => bytes.lastIndexOf(PROMPT) > bytes.indexOf(`${PREFIX}exit`),
 };
 
-/** The read that puts the records on the page, and what says it has answered. */
+/**
+ * The read that puts the records on the page, and what says it has answered.
+ *
+ * ⚠️ IT WAITED FOR EVERY ID TO BE IN THE BYTES, and a window is what falsified that. What the
+ * session says goes on a roll and the middle region shows the TAIL of it (`repl/scrolling.ts`),
+ * so on a terminal with a few rows to spare the ids at the top of the answer are on the roll and
+ * never on the screen — and a step waiting for all of them waits for ever. It waits for the
+ * frame it caused and for the answer to have STARTED arriving instead; whether every record was
+ * shown is then the assertion's question rather than the step's, and a record that never landed
+ * fails the count it is asserted by rather than hanging the driver.
+ */
 function searches(): Step {
   return {
     types: `search ${NAMED}\r`,
-    until: (bytes) => shown.every((record) => bytes.includes(record.id)),
+    until: (bytes, since) =>
+      aFrameSince(PROMPT)(bytes, since) && shown.some((record) => bytes.includes(record.id)),
     what: 'answered with the records',
   };
 }
 
 /** How many times `what` occurs in `text`. Overlapping is impossible for these. */
-const times = (text: string, what: string): number => text.split(what).length - 1;
-
-/** The bytes that carry a page `rows` tall away — what says a page was really turned. */
-const carriesThePage = (rows: number): string => `${ESC}[${rows};1H`;
+const _times = (text: string, what: string): number => text.split(what).length - 1;
 
 /**
  * The step that takes what was said off the SCREEN without unsaying it.
@@ -213,18 +228,19 @@ const carriesThePage = (rows: number): string => `${ESC}[${rows};1H`;
  * row of `search` it was read off are the same characters in a different spacing, so a
  * scan of the screen cannot tell them apart while both are on it. A clean page leaves
  * exactly one of the two — which is only true because what a session has SAID cannot be
- * unsaid: the page is carried into the caller's scrollback, and the records stay
- * completable. A memory that were cleared with the page would take every case below to
- * zero rows and be seen at once.
+ * unsaid by the completer: the roll is emptied and the records stay completable. A memory
+ * that were cleared with the page would take every case below to zero rows and be seen at
+ * once.
  *
- * A page is turned once when the session opens, so the second occurrence is this one.
+ * ⚠️ IT WAITED FOR A PAGE TO BE CARRIED INTO THE SCROLLBACK, and there are no pages to carry.
+ * A clean page used to mean a screen of the caller's own scrolled away and the opening written
+ * over it, so the bytes that did it were what said the word had been answered; the console
+ * draws on a screen of its own now and clearing is the ROLL being emptied
+ * (`repl/scrolling.ts`), which is a frame like any other. So the step waits for the frame it
+ * caused, which is the rule every other step of this bench already waits by.
  */
-function clears(rows: number): Step {
-  return {
-    types: `${CLEAR}\r`,
-    until: (bytes) => times(bytes, carriesThePage(rows)) >= 2,
-    what: 'started the page over',
-  };
+function clears(): Step {
+  return { types: `${CLEAR}\r`, until: aFrameSince(PROMPT), what: 'started the page over' };
 }
 
 /** What the row being typed is, on a screen — the last row that carries the prompt. */
@@ -310,7 +326,7 @@ describe('a prefix that names several lists them, each beside the line it came f
       steps: [
         opens,
         searches(),
-        clears(rows),
+        clears(),
         {
           types: `show ${shared}${COMPLETES}`,
           until: (bytes) => bytes.lastIndexOf(shown[0]?.title as string) > bytes.lastIndexOf(CLEAR),
@@ -339,20 +355,20 @@ describe('a prefix that names several lists them, each beside the line it came f
 
   it('says how many it had no room for, and the number adds up to all of them', async () => {
     // THE CUT IS THE PALETTE'S OWN and it is measured here rather than assumed: the rows are
-    // budgeted against what the PAGE has left over under the flow (`repl/area.ts`,
-    // `AreaRequest.flow` — it was what is left over the row being typed, which is what let a
-    // list take the top of a page), and whenever it draws a row at all, what it shows plus what
-    // it says is left over is everything there was.
+    // what is left of the screen under the fixed region at the top (`repl/area.ts`,
+    // `AreaRequest.header`), and whenever it draws a row at all, what it shows plus what it says
+    // is left over is everything there was.
     //
-    // ⚠️ THE HEIGHT WAS EIGHT ROWS, and the delivery that budgeted the list against the page
-    // moved what that size means: a page eight rows tall spends all of them on the opening and
-    // the input, so the list gets the two rows the chrome gives up — the account of what had no
-    // room, and the row of keys. That is honest and it is not what THIS case is about, which is
-    // a list that shows SOME and names the rest. Sixteen rows is where the page has both, and
-    // the size where it has only the account is asserted where it belongs
-    // (`a-palette-for-the-words.test.ts`).
+    // ⚠️ THE HEIGHT HAS MOVED TWICE AND FOR TWO DIFFERENT REASONS. It was eight rows while the
+    // list was budgeted against what the page had left over; it was sixteen once the list was
+    // cut to the leftover under the flow. It is FOURTEEN now, and what moved it is the model:
+    // the list is cut to what the screen has left under the fixed region at the top
+    // (`repl/area.ts`, `AreaRequest.header`), and at sixteen rows there is room for every one of
+    // the six — which would make this case about a list that fits rather than about one that
+    // says what it could not show. The size where it has only the account is asserted where it
+    // belongs (`a-palette-for-the-words.test.ts`).
     const columns = 100;
-    const rows = 16;
+    const rows = 14;
     const shared = sharedBy(shown.map((record) => record.id));
     const ran = await inPty({
       columns,
@@ -360,7 +376,7 @@ describe('a prefix that names several lists them, each beside the line it came f
       steps: [
         opens,
         searches(),
-        clears(rows),
+        clears(),
         {
           types: `show ${shared}${COMPLETES}`,
           until: (bytes) => bytes.includes(CUT),
@@ -407,7 +423,7 @@ describe('what it offers is what the session showed, and never the record', () =
       steps: [
         opens,
         searches(),
-        clears(rows),
+        clears(),
         {
           types: `show ${missing}${COMPLETES}`,
           until: (bytes) => bytes.lastIndexOf(`show ${missing}`) > bytes.lastIndexOf(CLEAR),
@@ -465,7 +481,7 @@ describe('what it offers is what the session showed, and never the record', () =
           until: (bytes) => bytes.includes(UNNAMED),
           what: 'named the record it had not seen',
         },
-        clears(rows),
+        clears(),
         {
           types: `show ${missing}${COMPLETES}`,
           until: (bytes) => bytes.lastIndexOf(`show ${hidden.id}`) > bytes.lastIndexOf(CLEAR),
@@ -488,7 +504,7 @@ describe('what it offers is what the session showed, and never the record', () =
       steps: [
         opens,
         searches(),
-        clears(rows),
+        clears(),
         {
           // A Tab on an empty row is a caller asking what a LINE can start with, and a
           // line starts with a word this session runs. An id answers to nothing.

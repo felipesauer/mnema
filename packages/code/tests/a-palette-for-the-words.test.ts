@@ -36,6 +36,7 @@ import { completionTree } from '../src/completion/tree.js';
 import { renderPlain, widthOf } from '../src/presentation/plain.js';
 import { areaFor } from '../src/repl/area.js';
 import { type Completer, completerFor } from '../src/repl/complete.js';
+import { erasesTheScreen } from '../src/repl/erasing.js';
 import { verbsOffered } from '../src/repl/gate.js';
 import {
   CUT,
@@ -55,14 +56,13 @@ import {
   aFrameAfter,
   aFrameWithout,
   arrivedSince,
-  carriedPages,
   inPty as drive,
   type Fixture,
   opensAConsole,
   type Ran,
   type Step,
 } from './support/pty.js';
-import { endsAtTheFoot, type Screen, screenOf } from './support/screen.js';
+import { fillsTheScreen, type Screen, screenOf } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = new URL('../dist/cli.js', import.meta.url).pathname;
@@ -97,14 +97,16 @@ const PAINTED = new RegExp(`${ESC}\\[[0-9;]*m`, 'g');
 const NOTHING_IS_CUT = 160;
 
 /**
- * A PAGE WITH NOTHING ON IT — how many rows of the flow the area is asked about here.
+ * NOTHING ABOVE THE AREA — how tall the fixed region at the top is taken to be here.
  *
- * The list of words takes its rows out of what the page has LEFT OVER (`repl/area.ts`,
- * `AreaRequest.flow`), so every number in this file is about the height of a terminal alone,
- * which is what it was about before that field existed. The cases about a page with something
- * on it are `the-list-is-a-window.test.ts`.
+ * ⚠️ IT WAS THE FLOW, and the field it fills is not the field it used to. The list took its rows
+ * out of what the PAGE had left over under everything the session had said, so the number GREW
+ * as lines landed; what a session says is a window onto a roll now, inside the middle region, so
+ * what the list is budgeted against is the ARRANGEMENT at the top (`repl/area.ts`,
+ * `AreaRequest.header`). Nought leaves every number in this file about the height of a terminal
+ * alone, which is what it was about before either field existed.
  */
-const NOTHING_SAID_YET = 0;
+const NOTHING_ABOVE_YET = 0;
 
 /**
  * A SENTENCE ONLY THE LIST SAYS, so a screen can be asked whether it is open.
@@ -575,7 +577,7 @@ const BADGE_IS = widthOf(badgeLine('fully-signed'));
 describe('a row of the area the terminal would fold is not drawn at all', () => {
   // A PAGE WITH NOTHING ON IT: these cases are about WIDTH, and the flow is the other
   // measurement the area takes (`repl/area.ts`, `AreaRequest.flow`).
-  const tall = { rows: 40, palette: 0, flow: NOTHING_SAID_YET };
+  const tall = { rows: 40, palette: 0, header: NOTHING_ABOVE_YET };
 
   it('draws the hint at its own width and not one column under it', () => {
     const at = (columns: number) => areaFor({ ...tall, columns, badge: BADGE_IS, hint: HINT_IS });
@@ -621,23 +623,23 @@ describe('the palette gets what is left over on a page with nothing on it, and n
         badge: BADGE_IS,
         hint: HINT_IS,
         palette: wanted,
-        flow: NOTHING_SAID_YET,
+        header: NOTHING_ABOVE_YET,
       }).palette;
     // Tall enough for all of it, and then one row less at a time.
     //
-    // ⚠️ EVERY NUMBER BELOW A ROW SMALLER THAN IT WAS, AND THE ROW IS THE PALETTE'S OWN
-    // BLANK ONE. The list is separated from what is under it now, and the separation comes
-    // off the palette's budget rather than out of the region's height — a row the layout
-    // draws and this arithmetic does not count is the region growing past the boundary this
-    // file exists to keep. Written as the subtraction rather than as a total, so which row
-    // is which stays legible: the row the library keeps, the row being typed, the hint, and
-    // the blank one over the list.
+    // ⚠️ EVERY NUMBER IS A ROW BIGGER THAN IT WAS, AND THE ROW IS THE LIBRARY'S BOUNDARY. The
+    // area used to be held one row short of the viewport, because a region as tall as the
+    // viewport was one the library redrew whole — with the erase of the caller's history inside
+    // the sequence. The console owns the screen and its frame IS the viewport on every frame, so
+    // there is nothing to stay under and the page gets that row back (`repl/area.ts`). Written
+    // as the subtraction rather than as a total, so which row is which stays legible: the row
+    // being typed, the hint, and the blank one over the list.
     expect(roomAt(40)).toBe(wanted);
-    expect(roomAt(10)).toBe(10 - 1 - 1 - 1 - 1);
-    expect(roomAt(5)).toBe(1);
-    expect(roomAt(4)).toBe(0);
-    // The region never grows past the boundary: whatever the height, what the area takes
-    // leaves the library a row to work in.
+    expect(roomAt(10)).toBe(10 - 1 - 1 - 1);
+    expect(roomAt(5)).toBe(2);
+    expect(roomAt(3)).toBe(0);
+    // ⛔ AND THE FRAME NEVER OUTGROWS THE SCREEN, which is what replaces the old boundary:
+    // whatever the height, what the area takes leaves the two regions above it a page to be on.
     for (const rows of [3, 4, 6, 10, 24, 40]) {
       const area = areaFor({
         rows,
@@ -645,9 +647,9 @@ describe('the palette gets what is left over on a page with nothing on it, and n
         badge: BADGE_IS,
         hint: HINT_IS,
         palette: wanted,
-        flow: NOTHING_SAID_YET,
+        header: NOTHING_ABOVE_YET,
       });
-      expect(area.height, `${rows}`).toBeLessThanOrEqual(rows - 1);
+      expect(area.height, `${rows}`).toBeLessThanOrEqual(rows);
     }
   });
 
@@ -656,7 +658,7 @@ describe('the palette gets what is left over on a page with nothing on it, and n
     // both it is the badge and the rules that go — the same call the single row of
     // candidates already forced, made explicit now the list can be long.
     const columns = 100;
-    const at = { rows: 8, columns, badge: BADGE_IS, hint: HINT_IS, flow: NOTHING_SAID_YET };
+    const at = { rows: 7, columns, badge: BADGE_IS, hint: HINT_IS, header: NOTHING_ABOVE_YET };
     const shut = areaFor({ ...at, palette: 0 });
     const open = areaFor({ ...at, palette: 20 });
     expect(shut.form).toBe('full');
@@ -942,7 +944,7 @@ describe('the two keys open one list, and it stands off the row under it', () =>
       // `ABOVE_THE_PALETTE`), and a row drawn and not counted — or counted and not drawn — puts
       // the input off the last row the layout leaves. So the separation is asserted by the anchor,
       // which no amount of spare room can satisfy by accident.
-      endsAtTheFoot(screen, rows, `${key}: with the list open`);
+      fillsTheScreen(screen, rows, `${key}: with the list open`);
       // And what is above the whole run of emptiness really is the page rather than the top of
       // the screen, so the list is not being read on an empty page.
       const above = screen.rows.slice(0, first).findLastIndex((row) => row.trim().length > 0);
@@ -1032,7 +1034,7 @@ describe('the arrows move the mark, and the ends of the list hold', () => {
     expect(pickedOn(at(4)), 'an Up did not step back up the list').toBe(before);
     // AND THE PAGE IS STILL A PAGE THROUGH ALL OF IT: nothing about a mark moves the input off
     // the last row the layout leaves.
-    for (const step of [1, 2, 3, 4]) endsAtTheFoot(at(step), rows, `after step ${step}`);
+    for (const step of [1, 2, 3, 4]) fillsTheScreen(at(step), rows, `after step ${step}`);
     // NOT VACUOUS: the two words are two different words, so the walk really moved.
     expect(last).not.toBe(before);
   }, 240_000);
@@ -1118,7 +1120,7 @@ describe('Return takes the picked word, and Escape shuts the list', () => {
       `${PROMPT} ${first}`,
     );
     expect(prompts(shut)).toBe(1);
-    endsAtTheFoot(shut, rows, 'the page with the list shut');
+    fillsTheScreen(shut, rows, 'the page with the list shut');
   }, 240_000);
 
   it('narrows to the word it had picked, and takes that one', async () => {
@@ -1234,7 +1236,7 @@ describe('the mark survives what changes around it', () => {
     });
     const after = screenOf(ran.bytes.slice(0, ran.at[3] as number), narrower, rows);
     expect(pickedOn(after), 'the resize lost what the caller had picked').toBe(first);
-    endsAtTheFoot(after, rows, 'the page after a resize with a pick on it');
+    fillsTheScreen(after, rows, 'the page after a resize with a pick on it');
   }, 240_000);
 
   it('spends no colour, so a session with none still shows which row it is', async () => {
@@ -1299,9 +1301,17 @@ describe('a page without the room shows fewer, and says how many it could not', 
   // nothing. There is a floor of one word under the leftover now (`repl/area.ts`,
   // `roomForThePalette`), so what the two sizes are two regimes OF has moved: it is how MANY are
   // shown — a page with room shows what it has room for, and a page with none shows one.
+  //
+  // ⚠️ AND THE SECOND SIZE MOVED FROM EIGHT ROWS TO SIXTEEN, which is the model rather than a
+  // number retuned. Rows the list takes used to come out of what the PAGE had left over under
+  // everything the session had said; they come out of the middle region now, which is a WINDOW
+  // and costs the page nothing (`repl/area.ts`, `repl/scrolling.ts`) — so a list has more room
+  // at every height, and eight rows is a screen with no room for a list at all rather than a
+  // screen that shows one word. Both counts are read off the product and asserted against the
+  // total, which is what keeps them honest as the geometry moves.
   for (const [rows, shown] of [
-    [30, 8],
-    [8, 1],
+    [30, 10],
+    [16, 5],
   ] as const) {
     it(`names a number that adds up to everything there was, at 100x${rows}`, async () => {
       // THE NUMBER IS ASSERTED AGAINST THE TOTAL rather than written down: what is on the
@@ -1340,7 +1350,7 @@ describe('a page without the room shows fewer, and says how many it could not', 
       expect(listed.length, `${rows}: ${listed.length} shown`).toBe(shown);
       // ⛔ AND THE PAGE DID NOT PAY FOR THE LIST at either size, which is what the cut buys:
       // the row the caller types on is still the last one the layout leaves.
-      endsAtTheFoot(screen, rows, `100x${rows} with a cut list`);
+      fillsTheScreen(screen, rows, `100x${rows} with a cut list`);
     }, 180_000);
   }
 });
@@ -1349,65 +1359,24 @@ describe('a page without the room shows fewer, and says how many it could not', 
 // The boundary, measured again with the palette open
 // ---------------------------------------------------------------------------
 
-/**
- * THE HEIGHT THE LIBRARY GIVES UP AT, MEASURED WITH THE TALLEST THING THE REGION HOLDS.
- *
- * The palette is that thing — eighteen rows on a Tab — so if a budget were going to reopen
- * the hole the last two deliveries closed, this is where it would show. It does not: the
- * boundary is ONE row with the palette open and one row with it shut, and the palette is
- * CUT to what is left over rather than pushing the region past it. ⚠️ WHAT IT IS CUT TO
- * MOVED — it was what is left over the PROMPT and it is what is left over the FLOW
- * (`repl/area.ts`, `AreaRequest.flow`) — and the boundary did not, because the flow can only
- * ever make the cut deeper.
- *
- * BOTH WIDTHS ARE MEASURED, AND THE SECOND IS THE ONE THAT WAS IN DOUBT. Shortening the
- * hint gave it back to a sixty-column window, which grows that region by a row — so
- * "does the erase come back there too" had to be asked again rather than assumed. It does,
- * at ONE row: the same place a hundred columns is at, and one row lower than where this
- * front found it. Where the boundary sits as a FUNCTION of the hint is
- * `the-input-has-its-own-place.test.ts`; what this file adds is that the palette does not
- * move it.
- *
- * ⚠️ AND THE LIST IS ONE ROW TALLER THAN WHEN THIS WAS WRITTEN — the keys that move it are said
- * under it now — so the question had to be asked again rather than inherited: the row comes out of
- * the palette's OWN budget (`repl/palette.ts`, `paletteRowsFor`), which is what is left over, so
- * the region is bounded exactly where it was. The keystrokes below are the ones that could move
- * it: the key that opens the list, and the arrow that MARKS a row in it.
- *
- * ⚠️ AND *THE ERASE* IS WHAT THE BOUNDARY USED TO BE READ OFF, IN EVERY SENTENCE ABOVE. It does not
- * reach a terminal at any height any more — it is translated on the way out (`repl/page.ts`,
- * `theEraseAsAScroll`) — so the sentences survive as what they were always about, which is the
- * height the library gives up on redrawing PART of the page at, and the reading is the ANSWER to
- * its giving up: a page carried into the scrollback where nothing could have turned one.
- */
-const TOO_SHORT_TO_REDRAW_IN_PART = 1;
-
-describe('opening the palette does not move the height the library starts the page over at', () => {
+describe('⚠️ opening the palette never makes the frame outgrow the screen', () => {
+  // ⚠️ THIS BLOCK MEASURED A BOUNDARY THAT NO LONGER EXISTS, and what it was for is worth
+  // keeping: the palette is the tallest thing the bottom region holds — eighteen rows on a Tab —
+  // so if a budget were going to reopen the hole two deliveries closed, this is where it would
+  // show. It used to prove that by bracketing the height at which the layout library stops
+  // redrawing PART of the page, because that path's sequence carried the erase of the caller's
+  // history and the palette had to be cut short of it.
+  //
+  // THE FRAME IS THE VIEWPORT AT EVERY HEIGHT NOW, so the library takes that path on every
+  // session there is and there is no boundary to be on one side of. What replaces the bracket is
+  // the property the bracket was protecting, asked at the sizes where a list is tallest: the
+  // frame ends on the last row of the terminal with the list open, and not one row of the
+  // caller's history is erased — with the library's own request as the witness that the
+  // absence is merited (`src/repl/erasing.ts`, `erasesTheScreen`).
   for (const columns of [60, 100]) {
-    it(`reaches it at the same row with the palette open, at ${columns} columns`, async () => {
-      const short = await inPty({
-        columns,
-        rows: TOO_SHORT_TO_REDRAW_IN_PART,
-        steps: [
-          opens,
-          { types: COMPLETES, until: () => true, what: 'was asked for the words' },
-          { types: MOVES_DOWN, until: () => true, what: 'was asked to mark a row' },
-          leaves,
-        ],
-      });
-      // ⚠️ THE BOUNDARY USED TO BE READ OFF THE ERASE and it is read off the ANSWER now: the
-      // sequence the library starts the whole page over with is translated on the way out
-      // (`src/repl/page.ts`, `theEraseAsAScroll`), so the erase reaches no terminal at any height
-      // and a bracket made of it would be two absences. What the translation writes instead is a
-      // page carried into the scrollback, and at a fixed height nothing else can carry one
-      // (`support/pty.ts`, `carriedPages`).
-      expect(
-        carriedPages(short.bytes),
-        `${columns}: the boundary moved with the palette`,
-      ).toBeGreaterThan(1);
-
-      for (const rows of [TOO_SHORT_TO_REDRAW_IN_PART + 1, 4, 8]) {
-        const taller = await inPty({
+    it(`ends on the last row with the list open, at ${columns} columns`, async () => {
+      for (const rows of [8, 12, 24, 40]) {
+        const ran = await inPty({
           columns,
           rows,
           steps: [
@@ -1420,21 +1389,26 @@ describe('opening the palette does not move the height the library starts the pa
             { types: PREFIX, until: arrivedSince(PREFIX), what: 'opened the palette' },
             { types: COMPLETES, until: () => true, what: 'was asked for the words' },
             // AND WITH A ROW OF IT MARKED, which is the keystroke this delivery added: a mark
-            // that had grown the region would reach the erase here and nowhere else.
+            // that had grown the region would be seen here and nowhere else.
             { types: MOVES_DOWN, until: () => true, what: 'was asked to mark a row' },
             leaves,
           ],
         });
-        expect(carriedPages(taller.bytes), `${columns}x${rows} with the palette open`).toBe(1);
-        expect(taller.bytes, `${columns}x${rows} never opened`).toContain(PROMPT);
-        // ⛔ AND NOT ONE ROW OF THE CALLER'S HISTORY WAS ERASED, on either side of the boundary.
-        expect(taller.bytes, `${columns}x${rows}: the history was erased`).not.toContain(
+        const screen = screenOf(ran.bytes.slice(0, ran.at[3] as number), columns, rows);
+        expect(screen.alternate, `${columns}x${rows}: the screen stopped being ours`).toBe(true);
+        fillsTheScreen(screen, rows, `${columns}x${rows} with the list open`);
+        // ⛔ AND NOT ONE ROW OF THE CALLER'S HISTORY WAS ERASED — with the witness that the
+        // library really did ask, so the absence is merited rather than vacuous.
+        expect(ran.bytes, `${columns}x${rows}: the history was erased`).not.toContain(
           ERASES_THE_HISTORY,
         );
+        expect(
+          erasesTheScreen(ran.bytes),
+          `${columns}x${rows}: the library never started the page over`,
+        ).toBe(true);
       }
-      expect(short.bytes, `${columns}: the history was erased`).not.toContain(ERASES_THE_HISTORY);
-      // Not vacuous: the hint IS drawn at this width, which is what makes the region two
-      // rows and the boundary reachable at all.
+      // Not vacuous: the hint IS drawn at this width, which is what makes the region two rows
+      // and the list something the height has to be shared with.
       expect(widthOf(tips()), `${columns}`).toBeLessThanOrEqual(columns);
     }, 300_000);
   }

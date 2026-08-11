@@ -52,14 +52,7 @@ import { here } from '../src/wiring/context.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { DEFAULT_REQUIREMENT, levelSeverity, VERIFY_VERB } from '../src/wiring/verify.js';
 import { ESC, fakeTerminal, hooksNothing, until, withoutLayout } from './support/console.js';
-import {
-  carriedPages,
-  inPty as drive,
-  type Fixture,
-  opensAConsole,
-  type Ran,
-  type Step,
-} from './support/pty.js';
+import { inPty as drive, type Fixture, opensAConsole, type Ran, type Step } from './support/pty.js';
 import { screenOf } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
@@ -91,7 +84,7 @@ const CLEARS_THE_LINE = '\u0003';
  * ⛔ The sequence that erases the caller's history. It may not reach a terminal this surface is
  * drawing on, at any height (`src/repl/page.ts`, `theEraseAsAScroll`).
  */
-const ERASES_THE_HISTORY = `${ESC}[3J`;
+const _ERASES_THE_HISTORY = `${ESC}[3J`;
 
 /**
  * The widest a hint may be and still be one row.
@@ -169,38 +162,46 @@ const showingEverything = {
   badge: widthOf(badgeLine('fully-signed')),
   hint: widthOf(tips()),
   palette: 0,
-  // A PAGE WITH NOTHING ON IT, which is what leaves the HEIGHT the only thing these cases
-  // vary — and it is also where every number below comes from: the list of words is budgeted
-  // against what the page has left over (`repl/area.ts`, `AreaRequest.flow`), so a request
-  // with a flow in it would be asking about a shorter page rather than about a shorter
-  // terminal. The cases about the flow are `the-list-is-a-window.test.ts`.
-  flow: 0,
+  // ⚠️ NOTHING ABOVE THE AREA, and the field it fills is not the field it used to. It was the
+  // FLOW on the screen — everything the session had said that a reader could still see, which
+  // GREW as lines landed — because the list of words was budgeted against what the page had
+  // left over. What a session says is not above the input area any anymore: it is a window onto
+  // a roll, inside the middle region (`repl/scrolling.ts`), so what the list is budgeted against
+  // is the fixed region at the TOP (`repl/area.ts`, `AreaRequest.header`). Nought here leaves the
+  // HEIGHT the only thing these cases vary, which is what it was for either way.
+  header: 0,
 };
 
 describe('the area has forms, and the tallest one that fits is the one drawn', () => {
   it('gives up the badge first, then the rules, and never the row being typed', () => {
     // THE LADDER, at the heights that choose each rung. What is asserted is WHERE each
     // form gives way — one row below its own threshold — rather than how tall it is.
+    // ⚠️ AND EVERY RUNG CAME DOWN A ROW, which is the boundary this delivery removed rather
+    // than a threshold anybody re-tuned. A form used to have to fit with ONE ROW TO SPARE,
+    // because a region as tall as the viewport was one the library redrew whole — with the
+    // erase of the caller's history inside the sequence. The console owns the screen now and its
+    // frame IS the viewport on every frame, so there is nothing to stay under: a form fits when
+    // it fits (`repl/area.ts`).
     const at = (rows: number) => areaFor({ ...showingEverything, rows }).form;
     expect(at(40)).toBe('full');
-    expect(at(6)).toBe('full');
-    expect(at(5)).toBe('ruled');
-    expect(at(4)).toBe('bare');
+    expect(at(5)).toBe('full');
+    expect(at(4)).toBe('ruled');
+    expect(at(3)).toBe('bare');
     // And the floor is the floor: it is answered at heights no terminal has.
-    for (const rows of [3, 2, 1, 0]) expect(at(rows), `${rows}`).toBe('bare');
+    for (const rows of [2, 1, 0]) expect(at(rows), `${rows}`).toBe('bare');
   });
 
   it('never draws the badge when there is none, at any height there is', () => {
     // NO PROJECT, NO BADGE, and it is the FORM that does not exist rather than a row drawn
     // empty — so a session outside a project gets the ruled arrangement at every height
     // the full one would have fitted.
-    for (const rows of [200, 40, 6, 5]) {
+    for (const rows of [200, 40, 5]) {
       const form = areaFor({ ...showingEverything, badge: 0, rows }).form;
       expect(form, `${rows}`).not.toBe('full');
     }
     expect(areaFor({ ...showingEverything, badge: 0, rows: 40 }).form).toBe('ruled');
     // Not vacuous: the same heights DO give the full form when there is a badge.
-    expect(areaFor({ ...showingEverything, rows: 6 }).form).toBe('full');
+    expect(areaFor({ ...showingEverything, rows: 5 }).form).toBe('full');
   });
 
   it('counts the rows the palette wants and the blank one over them', () => {
@@ -213,7 +214,7 @@ describe('the area has forms, and the tallest one that fits is the one drawn', (
     // plus one. It is the same rule as everything else here — a row the layout draws is a row
     // this arithmetic counts — and the shape of defect it prevents is the caret one row away
     // from the line it is meant to be on.
-    const tall = { ...showingEverything, rows: 6 };
+    const tall = { ...showingEverything, rows: 5 };
     expect(areaFor(tall).form).toBe('full');
     expect(areaFor({ ...tall, palette: 1 }).form).toBe('bare');
     // And they are counted rather than merely changing the answer: the same form is one
@@ -771,7 +772,7 @@ describe('the caret is left on the row being typed, under everything drawn over 
  * The boundary is pinned three ways below: at a width that keeps the hint, at one that
  * loses it, and — the sharp one — at the hint's own width and one column under it.
  */
-const TOO_SHORT_TO_REDRAW_IN_PART = 1;
+const _TOO_SHORT_TO_REDRAW_IN_PART = 1;
 
 /** A window with room for the hint on one row — which is what makes the region two. */
 const WIDE_ENOUGH_FOR_THE_HINT = 100;
@@ -783,10 +784,10 @@ const WIDE_ENOUGH_FOR_THE_HINT = 100;
  * "one less than the hint" would make the assertion that the hint is wider than it true by
  * construction. The sharp case below is the one that derives, and it derives the INPUT.
  */
-const TOO_NARROW_FOR_THE_HINT = 40;
+const _TOO_NARROW_FOR_THE_HINT = 40;
 
 /** The width the two deliveries before this one recorded the boundary at. */
-const WHERE_IT_WAS_RECORDED = 60;
+const _WHERE_IT_WAS_RECORDED = 60;
 
 /** A height with no room for a rule, and enough for the row being typed and its hint. */
 const SHORT_ENOUGH_FOR_THE_BARE_FORM = 4;
@@ -819,114 +820,20 @@ describe('a terminal without the height gets less area, down to the bare prompt'
     ).toBe(false);
   }, 240_000);
 
-  it('⚠️ and the height the library starts the whole page over at is one row', async () => {
-    // A MEASUREMENT AND A BOUNDARY, and it is the LIBRARY'S rather than this product's.
-    // Below a certain height it stops redrawing part of the page and starts the whole page
-    // over, with a sequence that carries the one erase this product refuses. Pinned in
-    // both directions, so the boundary cannot move in silence — which is what caught it
-    // moving when the width rule landed (see {@link TOO_SHORT_TO_REDRAW_IN_PART}).
-    //
-    // ⚠️ AND WHAT IT IS READ OFF CHANGED, and the case is renamed for it. It was read off the
-    // ERASE, which is the byte the library reached the terminal with; that byte is answered on the
-    // way out now (`src/repl/page.ts`, `theEraseAsAScroll`) and reaches nobody at any height, so a
-    // bracket made of it would be two absences and no boundary. What is read instead is the ANSWER:
-    // starting the page over is answered with a page carried into the scrollback, so at a fixed
-    // height — where nothing can turn a page — a count above the one the session opened with IS the
-    // library having given up (`support/pty.ts`, {@link carriedPages}).
-    const short = await inPty({
-      columns: WIDE_ENOUGH_FOR_THE_HINT,
-      rows: TOO_SHORT_TO_REDRAW_IN_PART,
-      steps: [opens, leaves],
-    });
-    expect(
-      carriedPages(short.bytes),
-      'the library no longer starts the page over that low',
-    ).toBeGreaterThan(1);
-    const taller = await inPty({
-      columns: WIDE_ENOUGH_FOR_THE_HINT,
-      rows: TOO_SHORT_TO_REDRAW_IN_PART + 1,
-      steps: [opens, leaves],
-    });
-    expect(carriedPages(taller.bytes), 'the boundary did not move with the area').toBe(1);
-    // ⛔ AND NEITHER OF THEM COST THE CALLER A ROW OF THEIR HISTORY, which is the promise the
-    // bracket above used to be the exception to.
-    for (const ran of [short, taller]) {
-      expect(ran.bytes, 'the history was erased').not.toContain(ERASES_THE_HISTORY);
-      // Both sessions really opened, so the difference above is the height and nothing else.
-      expect(ran.bytes).toContain(PROMPT);
-    }
-  }, 240_000);
-
-  it('⚠️ and a window too narrow for the hint does not reach it at any height', async () => {
-    // The hint is not drawn below its own width, so the bare form is ONE row there and the
-    // region is never as tall as the viewport.
-    const shortest = await inPty({
-      columns: TOO_NARROW_FOR_THE_HINT,
-      rows: TOO_SHORT_TO_REDRAW_IN_PART,
-      steps: [opens, leaves],
-    });
-    expect(carriedPages(shortest.bytes), 'the boundary is still reached without the hint').toBe(1);
-    // Not vacuous: the session really opened on that terminal, and the hint really is too
-    // wide for it — so the absence above is the hint's missing row and not a dead probe.
-    expect(shortest.bytes).toContain(PROMPT);
-    expect(shortest.bytes, 'the history was erased').not.toContain(ERASES_THE_HISTORY);
-    expect(widthOf(tips())).toBeGreaterThan(TOO_NARROW_FOR_THE_HINT);
-  }, 240_000);
-
-  it('⚠️ and the boundary moves with the HINT, to the column', async () => {
-    // THE SHARP FORM, AND THE ONE THAT SAYS WHY THE NUMBER KEEPS MOVING. Everything above
-    // states the boundary at a width somebody chose; this states what the boundary is a
-    // FUNCTION of. The width is derived from the hint — which is deriving the INPUT, not
-    // the answer: what is asserted is what a real pty did at two adjacent columns.
-    const wide = widthOf(tips());
-    const keepsIt = await inPty({
-      columns: wide,
-      rows: TOO_SHORT_TO_REDRAW_IN_PART,
-      steps: [opens, leaves],
-    });
-    const losesIt = await inPty({
-      columns: wide - 1,
-      rows: TOO_SHORT_TO_REDRAW_IN_PART,
-      steps: [opens, leaves],
-    });
-    expect(
-      carriedPages(keepsIt.bytes),
-      `${wide} columns: the hint's row stopped counting`,
-    ).toBeGreaterThan(1);
-    expect(
-      carriedPages(losesIt.bytes),
-      `${wide - 1} columns: a hint that would fold was drawn`,
-    ).toBe(1);
-
-    // AND AT THE WIDTH THE FRONT KEEPS ITS RECORD AT, so the number is comparable with the
-    // two deliveries before this one: it was TWO rows there when the hint folded in two, it
-    // was reached at NO height when the hint was too wide to draw, and it is ONE now.
-    const recorded = await inPty({
-      columns: WHERE_IT_WAS_RECORDED,
-      rows: TOO_SHORT_TO_REDRAW_IN_PART,
-      steps: [opens, leaves],
-    });
-    const oneTaller = await inPty({
-      columns: WHERE_IT_WAS_RECORDED,
-      rows: TOO_SHORT_TO_REDRAW_IN_PART + 1,
-      steps: [opens, leaves],
-    });
-    expect(
-      carriedPages(recorded.bytes),
-      `${WHERE_IT_WAS_RECORDED} columns, one row`,
-    ).toBeGreaterThan(1);
-    expect(carriedPages(oneTaller.bytes), `${WHERE_IT_WAS_RECORDED} columns, two rows`).toBe(1);
-    // Every one of them really opened, so each answer above is about a height and a width
-    // rather than about a session that died. ⛔ AND NONE OF THEM ERASED THE CALLER'S HISTORY, at
-    // either side of either boundary.
-    for (const ran of [keepsIt, losesIt, recorded, oneTaller]) {
-      expect(ran.bytes).toContain(PROMPT);
-      expect(ran.bytes, 'the history was erased').not.toContain(ERASES_THE_HISTORY);
-    }
-    // And the width that keeps it really is narrower than the one the case above uses, so
-    // the two are measuring different points rather than the same one twice.
-    expect(wide).toBeLessThan(WIDE_ENOUGH_FOR_THE_HINT);
-  }, 300_000);
+  // ⚠️ THREE CASES STOOD HERE AND ALL THREE DIED WITH THE BOUNDARY THEY MEASURED, which is the
+  // one thing worth writing down about them. They pinned the height at which the layout library
+  // stops redrawing PART of the page and starts the whole page over — *one row*, then *not at any
+  // height without the hint*, then *and it moves with the hint, to the column* — because that
+  // path was the one whose sequence carried the erase of the caller's history, and every number
+  // in this file was chosen to keep the region one row short of it.
+  //
+  // THE CONSOLE'S FRAME IS THE VIEWPORT ON EVERY FRAME NOW. It is fullscreen at every height by
+  // construction, so the boundary is not something a session can be on one side of — and what
+  // the three cases READ it off is gone too: they counted pages carried into the caller's
+  // scrollback, which was this product's own answer to the erase, and nothing is carried anywhere
+  // any more. What survives of the promise they were protecting is asked where it is now true:
+  // the history erase never reaches the caller, and the library really did ask for it, on every
+  // session there is (`tests/the-screen-is-ours.test.ts`).
 });
 
 // ---------------------------------------------------------------------------

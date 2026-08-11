@@ -38,6 +38,16 @@
  * ({@link CHANGES_ONLY_HOW_IT_LOOKS}), and everything outside it is accused
  * (`tests/the-screen-says-what-it-was-drawn-at.test.ts`).
  *
+ * ⚠️ AND IT USED TO MODEL ONE SCREEN, which is what the console taking the alternate buffer
+ * falsified. A terminal has TWO — the caller's own, with a scrollback under it, and an
+ * alternate one that has none and is cleared on the way in — and every promise this delivery
+ * makes is about which of the two something landed on. So there are two grids here
+ * ({@link Screen.alternate}, {@link Screen.beneath}): a scroll on the caller's own buffer feeds
+ * the scrollback and a scroll on the alternate one throws the row away, which is the terminal's
+ * own rule and the reason a full-screen program pollutes nothing. A model with one grid would
+ * answer *the caller's page is intact* and *the transcript came back* identically whether either
+ * was true.
+ *
  * ⚠️ AND THE OTHER HALF: A REPLAY IS NOT A TERMINAL, and the size is the seam. This model
  * is handed the size the CASE asked for, and the bytes were written by a process that read
  * the size from a DEVICE. When those two are not the same number, every row under the first
@@ -49,7 +59,6 @@
  */
 
 import { expect } from 'vitest';
-import { BELOW_THE_VIEWPORT } from '../../src/repl/area.js';
 
 /** One escape byte, written as an escape so no control byte enters a source file. */
 const ESC = '\u001b';
@@ -207,10 +216,28 @@ function theStreamWasDecodedWhole(bytes: string, columns: number): void {
 
 /** A screen, as a reader would see it. */
 export interface Screen {
-  /** Every row, top first, each exactly as wide as the terminal. */
+  /** Every row of the buffer that is SHOWING, top first, each exactly as wide as the terminal. */
   readonly rows: readonly string[];
   /** The same rows with their trailing blanks off, joined — what a reader reads. */
   readonly text: string;
+  /**
+   * WHETHER THE ALTERNATE SCREEN IS SHOWING — which is whether {@link rows} is the session's
+   * page or the caller's own.
+   *
+   * It is the first thing every case about this console asks, because it is the difference
+   * between the two models: a page drawn on the caller's buffer is a page that scrolls their
+   * history, and a page drawn on the alternate one cannot touch it at all.
+   */
+  readonly alternate: boolean;
+  /**
+   * THE CALLER'S OWN BUFFER, whichever one is showing — trailing blanks off and joined.
+   *
+   * ⛔ IT IS THE ONE PLACE THE TRANSCRIPT CAN BE READ, and reading it anywhere else would be
+   * reading it off a screen that is about to be thrown away. While the session is up this is
+   * whatever the caller had before it opened, untouched; after the session has given the screen
+   * back, it is that plus everything the session said (`src/repl/scrolling.ts`).
+   */
+  readonly beneath: string;
   /**
    * WHAT IS ABOVE THE SCREEN: every row that left the top, in the order it left — the caller's
    * scrollback, which is the thing this product's whole page design is about.
@@ -274,32 +301,27 @@ export function promptRow(screen: Screen, prompt: string): number {
 }
 
 /**
- * ACCUSES A SCREEN WHOSE LAST DRAWN ROW IS NOT THE LAST ONE THE LAYOUT LEAVES.
+ * ACCUSES A SCREEN WHOSE FRAME DOES NOT FILL IT — the input area's last row is not the last
+ * row of the terminal.
  *
- * THE ROW UNDER THE AREA IS NOT OURS, and that is the whole of why this is not simply the
- * bottom row: the library writes a newline after the last row of every frame it draws, so
- * there is always exactly one row below the region with its own cursor on it. It is the same
- * row the area's arithmetic keeps to be redrawn in PART (`src/repl/area.ts`,
- * `BELOW_THE_VIEWPORT`), read from where it is written rather than restated as a margin.
+ * ⚠️ IT WAS `endsAtTheFoot` AND IT ALLOWED EXACTLY ONE ROW UNDER THE AREA, and it is renamed
+ * because the number it asserts INVERTED. That row was the layout library's: it writes a
+ * newline after the last row of every frame, and the area's arithmetic kept a row back so the
+ * region stayed shorter than the viewport and was redrawn in PART. On a screen the console owns
+ * there is no boundary to stay under and the frame IS the viewport, so a frame that stopped one
+ * row short would be a row of the terminal nobody drew. Renamed rather than re-numbered because
+ * every case that used the old reading as a MEANS has to be looked at rather than quietly
+ * agreeing with a new constant.
  *
- * The message names both numbers, because a red here is a page one row out and the count
- * alone says nothing about which way.
+ * The message names both numbers, because a red here is a page a row out and the count alone
+ * says nothing about which way.
  *
- * ONE INSTRUMENT AND TWO FILES, which is why it is here rather than beside the cases about the
- * foot: the delivery that put the input there and the one that moved the emptiness under the
- * box both ask it, and two spellings of "at the foot" is the shape this bench pays for.
+ * ONE INSTRUMENT AND SEVERAL FILES, which is why it is here rather than beside the cases about
+ * the foot: two spellings of "at the foot" is the shape this bench pays for.
  */
-export function endsAtTheFoot(screen: Screen, rows: number, what: string): void {
+export function fillsTheScreen(screen: Screen, rows: number, what: string): void {
   const last = lastDrawnRow(screen);
-  expect(rows - 1 - last, `${what}: the input is ${rows - 1 - last} rows off the foot`).toBe(
-    BELOW_THE_VIEWPORT,
-  );
-  // AND WHAT IS UNDER IT IS NOTHING, which is the other half: a row of the caller's own
-  // output left below the area would satisfy the count above and be a page opened over
-  // somebody else's.
-  for (const row of screen.rows.slice(last + 1)) {
-    expect(row.trim(), `${what}: something is drawn under the input`).toBe('');
-  }
+  expect(rows - 1 - last, `${what}: the input is ${rows - 1 - last} rows off the foot`).toBe(0);
 }
 
 /**
@@ -383,13 +405,82 @@ export function theLineAndTheEmptiness(screen: Screen, line: string): TheLineAnd
   return { landedOn, emptyFrom, placed: landedOn >= 0 && landedOn < emptyFrom };
 }
 
-/** Where the cursor is, and what is under it. */
-interface Grid {
-  readonly cells: string[][];
-  /** Every row that has been pushed off the top, oldest first. See {@link Screen.above}. */
-  readonly carried: string[];
+/** One buffer of a terminal: its cells, and where the cursor is on it. */
+interface Buffer {
+  cells: string[][];
   row: number;
   column: number;
+}
+
+/**
+ * A TERMINAL'S TWO BUFFERS, and which of them is showing.
+ *
+ * THE SCROLLBACK BELONGS TO ONE OF THEM. A row pushed off the top of the caller's own buffer
+ * goes into their history; a row pushed off the top of the alternate one is gone, because the
+ * alternate buffer has no history and that is the whole reason a full-screen program uses it.
+ * Modelling one list for both would answer the same thing for a page that destroyed the
+ * caller's history and a page that never touched it.
+ */
+interface Grid {
+  /** The caller's own buffer — the one a shell writes on. */
+  readonly primary: Buffer;
+  /** The alternate one, which is cleared on the way in and thrown away on the way out. */
+  readonly alternate: Buffer;
+  /** Whether the alternate buffer is the one showing. */
+  showing: boolean;
+  /**
+   * Every row that has been pushed off the top OF THE PRIMARY BUFFER, oldest first.
+   * See {@link Screen.above}.
+   */
+  readonly carried: string[];
+  /** Where the cursor was saved when the alternate screen was entered. */
+  saved: { readonly row: number; readonly column: number } | undefined;
+}
+
+/** The buffer that is showing — what every sequence below acts on. */
+function onScreen(grid: Grid): Buffer {
+  return grid.showing ? grid.alternate : grid.primary;
+}
+
+/**
+ * THE PRIVATE MODES THIS MODEL DELIBERATELY DOES NOTHING ABOUT, and the reason it is safe to
+ * do nothing about each.
+ *
+ * ⚠️ EVERY PRIVATE SEQUENCE USED TO BE SKIPPED, on the grounds that *a mode changes nothing on
+ * the page*. That was true of the modes the console wrote then and it is false of the one it
+ * writes now: `?1049` SWITCHES THE BUFFER, which is the largest thing anything can do to a
+ * page. A model that shrugged at it would replay the session's whole page onto the caller's own
+ * buffer and answer *the caller's history is gone* about a session that never touched it.
+ *
+ * So the skipping is a NAMED list, exactly like the one for the sequences that only change how
+ * a glyph looks, and everything outside it is accused:
+ *
+ *   - `25` — the caret, shown or hidden. It is not a cell.
+ *   - `2026` — synchronized output, which asks the terminal to hold the last painted state
+ *     while a frame arrives. It changes WHEN a page is shown and never what is on it.
+ *   - `1000`, `1006` — mouse reporting and its encoding, which are about what the terminal
+ *     SENDS and not about what it draws (`src/repl/pointing.ts`).
+ *   - `1004`, `2004`, `1049`-adjacent detection queries and the like are NOT here: nothing on
+ *     this surface writes them, and a model that pre-approved them would be approving bytes it
+ *     has never seen.
+ */
+const MODES_THAT_DRAW_NOTHING = new Set([25, 1000, 1006, 2026]);
+
+/**
+ * ⛔ THE MODE THAT SWITCHES THE BUFFER — save the cursor, go to the alternate screen and clear
+ * it; and on the way back, restore the caller's buffer and the cursor with it.
+ *
+ * It is the one private mode this model ACTS on, because it is the one that moves a page.
+ */
+const THE_ALTERNATE_SCREEN = 1049;
+
+/** A buffer with nothing on it, `columns` by `rows`. */
+function blankBuffer(columns: number, rows: number): Buffer {
+  return {
+    cells: Array.from({ length: rows }, () => Array.from({ length: columns }, () => BLANK)),
+    row: 0,
+    column: 0,
+  };
 }
 
 /** Replays `bytes` onto a screen `columns` by `rows`, and answers with what is on it. */
@@ -398,10 +489,11 @@ export function screenOf(bytes: string, columns: number, rows: number): Screen {
   // every row after it is out — there is nothing to be learnt from the page it produces.
   theStreamWasDecodedWhole(bytes, columns);
   const grid: Grid = {
-    cells: Array.from({ length: rows }, () => Array.from({ length: columns }, () => BLANK)),
+    primary: blankBuffer(columns, rows),
+    alternate: blankBuffer(columns, rows),
+    showing: false,
     carried: [],
-    row: 0,
-    column: 0,
+    saved: undefined,
   };
   for (let at = 0; at < bytes.length; at++) {
     const byte = bytes[at] as string;
@@ -411,7 +503,10 @@ export function screenOf(bytes: string, columns: number, rows: number): Screen {
     }
     printable(byte, grid, columns, rows);
   }
-  const lines = grid.cells.map((cells) => cells.join(''));
+  const showing = onScreen(grid);
+  const lines = showing.cells.map((cells) => cells.join(''));
+  const readable = (list: readonly string[]): string =>
+    list.map((line) => line.replace(/ +$/, '')).join('\n');
   // THE ONE PLACE THE SIZE IS CHECKED, and it is here rather than at the three dozen call
   // sites for the reason the A3 amarra is about: a rule read in two places is a rule that
   // comes apart, and a case added tomorrow would be a site that forgot. Everything that
@@ -419,52 +514,58 @@ export function screenOf(bytes: string, columns: number, rows: number): Screen {
   theWidthIsTheOneItWasDrawnAt(lines, columns);
   return {
     rows: lines,
-    text: lines.map((line) => line.replace(/ +$/, '')).join('\n'),
+    text: readable(lines),
+    alternate: grid.showing,
+    beneath: readable(grid.primary.cells.map((cells) => cells.join(''))),
     above: grid.carried,
-    aboveText: grid.carried.map((line) => line.replace(/ +$/, '')).join('\n'),
-    cursor: { row: grid.row, column: grid.column },
+    aboveText: readable(grid.carried),
+    cursor: { row: showing.row, column: showing.column },
   };
 }
 
-/** Puts one ordinary byte on the grid. */
+/** Puts one ordinary byte on the buffer that is showing. */
 function printable(byte: string, grid: Grid, columns: number, rows: number): void {
+  const buffer = onScreen(grid);
   if (byte === '\n') {
     // The output side of a terminal turns a newline into a new row at column one, which
     // is what `onlcr` does and what every pty this is read from has on.
-    grid.column = 0;
+    buffer.column = 0;
     down(grid, rows);
     return;
   }
   if (byte === '\r') {
-    grid.column = 0;
+    buffer.column = 0;
     return;
   }
   // Every other control byte is skipped rather than drawn: a tab, a bell or a backspace
   // that became a character would be text on the page that nobody wrote.
   if (byte < ' ') return;
-  if (grid.column >= columns) {
-    grid.column = 0;
+  if (buffer.column >= columns) {
+    buffer.column = 0;
     down(grid, rows);
   }
-  (grid.cells[grid.row] as string[])[grid.column] = byte;
-  grid.column += 1;
+  (buffer.cells[buffer.row] as string[])[buffer.column] = byte;
+  buffer.column += 1;
 }
 
 /**
  * One row further down, scrolling the whole page when there is no further down.
  *
- * AND THIS IS THE ONE PLACE THE SCROLLBACK IS FED, because a scroll is the one thing that feeds
- * it: the row that leaves the top goes above, and nothing else there ever puts anything there
- * ({@link Screen.above}).
+ * ⛔ AND WHERE THE ROW THAT LEAVES GOES IS THE WHOLE POINT OF THERE BEING TWO BUFFERS. Off the
+ * top of the caller's own it goes into their scrollback, which is the one thing that ever feeds
+ * it ({@link Screen.above}); off the top of the alternate one it is DISCARDED, because the
+ * alternate buffer has no history — which is exactly why a program that takes it pollutes
+ * nothing, and exactly what a case proving that has to be able to see.
  */
 function down(grid: Grid, rows: number): void {
-  if (grid.row + 1 < rows) {
-    grid.row += 1;
+  const buffer = onScreen(grid);
+  if (buffer.row + 1 < rows) {
+    buffer.row += 1;
     return;
   }
-  const left = grid.cells.shift() as string[];
-  grid.carried.push(left.join(''));
-  grid.cells.push(Array.from({ length: left.length }, () => BLANK));
+  const left = buffer.cells.shift() as string[];
+  if (!grid.showing) grid.carried.push(left.join(''));
+  buffer.cells.push(Array.from({ length: left.length }, () => BLANK));
 }
 
 /**
@@ -472,7 +573,6 @@ function down(grid: Grid, rows: number): void {
  * byte.
  *
  * Only the CSI family is understood, which is the only family this product's layout writes.
- * A private sequence (`ESC[?…`) is a mode being switched and changes nothing on the page.
  *
  * ⚠️ ANYTHING ELSE USED TO BE STEPPED OVER, and the header of this file says what falsified
  * that: a sequence outside CSI is not a sequence that does nothing. `ESC M` scrolls the page
@@ -499,29 +599,33 @@ function sequence(bytes: string, at: number, grid: Grid, columns: number, rows: 
   const final = bytes[end];
   if (final === undefined) return bytes.length;
   const body = bytes.slice(at + 2, end);
-  if (body.startsWith('?')) return end;
+  if (body.startsWith('?')) {
+    privateMode(body.slice(1), final, grid, columns, rows);
+    return end;
+  }
   const numbers = body.split(';').map((part) => (part === '' ? undefined : Number(part)));
   const first = numbers[0] ?? 1;
+  const buffer = onScreen(grid);
   switch (final) {
     case 'A':
-      grid.row = Math.max(0, grid.row - first);
+      buffer.row = Math.max(0, buffer.row - first);
       break;
     case 'B':
-      grid.row = Math.min(rows - 1, grid.row + first);
+      buffer.row = Math.min(rows - 1, buffer.row + first);
       break;
     case 'C':
-      grid.column = Math.min(columns - 1, grid.column + first);
+      buffer.column = Math.min(columns - 1, buffer.column + first);
       break;
     case 'D':
-      grid.column = Math.max(0, grid.column - first);
+      buffer.column = Math.max(0, buffer.column - first);
       break;
     case 'G':
-      grid.column = Math.min(columns - 1, Math.max(0, first - 1));
+      buffer.column = Math.min(columns - 1, Math.max(0, first - 1));
       break;
     case 'H':
     case 'f':
-      grid.row = Math.min(rows - 1, Math.max(0, first - 1));
-      grid.column = Math.min(columns - 1, Math.max(0, (numbers[1] ?? 1) - 1));
+      buffer.row = Math.min(rows - 1, Math.max(0, first - 1));
+      buffer.column = Math.min(columns - 1, Math.max(0, (numbers[1] ?? 1) - 1));
       break;
     case 'J':
       eraseDisplay(numbers[0] ?? 0, grid, columns, rows);
@@ -549,38 +653,98 @@ function sequence(bytes: string, at: number, grid: Grid, columns: number, rows: 
   return end;
 }
 
+/**
+ * A PRIVATE MODE SWITCHED ON OR OFF — the buffer swap acted on, the named ones ignored, and
+ * anything else ACCUSED.
+ *
+ * The accusation is the half that matters. A mode this model has never seen might move a page,
+ * and a model that shrugged would answer with a screen the terminal never showed — so an
+ * unknown one is a red that says which mode and why, rather than a count somewhere further
+ * down that is quietly one out.
+ */
+function privateMode(body: string, final: string, grid: Grid, columns: number, rows: number): void {
+  for (const part of body.split(';')) {
+    const mode = Number(part);
+    if (MODES_THAT_DRAW_NOTHING.has(mode)) continue;
+    if (mode === THE_ALTERNATE_SCREEN) {
+      theAlternateScreen(final === 'h', grid, columns, rows);
+      continue;
+    }
+    throw new Error(
+      `this screen was replayed from bytes holding ESC[?${part}${final}, which is a private ` +
+        `mode this model neither acts on nor has a reason to ignore. A mode can move a whole ` +
+        `page — the buffer swap is one — so the page above may be one the terminal never ` +
+        `showed. Give it a case here, or name it in MODES_THAT_DRAW_NOTHING with the reason ` +
+        `it draws nothing.`,
+    );
+  }
+}
+
+/**
+ * ⛔ INTO THE ALTERNATE SCREEN AND BACK OUT — what `?1049` means, in the words of the
+ * specification: *save the cursor, then switch to the alternate screen buffer, CLEARING IT
+ * FIRST*; and on the way out, switch back and restore the cursor.
+ *
+ * BOTH HALVES ARE LOAD-BEARING FOR THIS SURFACE. Clearing on the way in is why the session's
+ * page opens on nothing of the caller's without erasing anything; leaving the caller's buffer
+ * untouched is why what they had is still there when the session goes. A model that switched
+ * without clearing would show a page with the caller's output under it and a case would call
+ * that a defect of the product.
+ */
+function theAlternateScreen(entering: boolean, grid: Grid, columns: number, rows: number): void {
+  if (entering) {
+    if (grid.showing) return;
+    const from = grid.primary;
+    grid.saved = { row: from.row, column: from.column };
+    grid.alternate.cells = blankBuffer(columns, rows).cells;
+    grid.alternate.row = 0;
+    grid.alternate.column = 0;
+    grid.showing = true;
+    return;
+  }
+  if (!grid.showing) return;
+  grid.showing = false;
+  if (grid.saved !== undefined) {
+    grid.primary.row = grid.saved.row;
+    grid.primary.column = grid.saved.column;
+  }
+}
+
 /** Erases part of the page: from the cursor down, up to it, or all of it. */
 function eraseDisplay(how: number, grid: Grid, columns: number, rows: number): void {
-  // ⛔ 3 IS THE HISTORY ABOVE THE SCREEN, and it EMPTIES it. ⚠️ It used to be modelled as nothing
-  // at all, on the grounds that the scrollback is not the screen and that this product refuses to
-  // write the sequence anyway. Both halves stopped holding: the door translates it now rather than
-  // nobody writing it (`src/repl/page.ts`, `theEraseAsAScroll`), so a case has to be able to tell
-  // a page that was SCROLLED from one that was erased — and a model that shrugged at this would
-  // answer *the caller's history is intact* for the very bytes that destroy it.
+  // ⛔ 3 IS THE HISTORY ABOVE THE SCREEN, and it EMPTIES it — the caller's own, from WHICHEVER
+  // buffer is showing. ⚠️ It used to be modelled as nothing at all, on the grounds that the
+  // scrollback is not the screen. It is the one thing this whole surface promises about, and a
+  // model that shrugged at this would answer *the caller's history is intact* for the very
+  // bytes that destroy it. It is not the alternate buffer's history either: that buffer has
+  // none, so what an erase issued from inside it reaches is the primary's
+  // (`src/repl/erasing.ts`).
   if (how === 3) {
     grid.carried.length = 0;
     return;
   }
+  const buffer = onScreen(grid);
   const blank = (row: number): void => {
-    grid.cells[row] = Array.from({ length: columns }, () => BLANK);
+    buffer.cells[row] = Array.from({ length: columns }, () => BLANK);
   };
   if (how === 2) {
     for (let row = 0; row < rows; row++) blank(row);
     return;
   }
   if (how === 1) {
-    for (let row = 0; row < grid.row; row++) blank(row);
+    for (let row = 0; row < buffer.row; row++) blank(row);
     eraseRow(1, grid, columns);
     return;
   }
-  for (let row = grid.row + 1; row < rows; row++) blank(row);
+  for (let row = buffer.row + 1; row < rows; row++) blank(row);
   eraseRow(0, grid, columns);
 }
 
 /** Erases part of the row the cursor is on: to its end, to its start, or all of it. */
 function eraseRow(how: number, grid: Grid, columns: number): void {
-  const cells = grid.cells[grid.row] as string[];
-  const from = how === 0 ? grid.column : 0;
-  const to = how === 1 ? grid.column + 1 : columns;
+  const buffer = onScreen(grid);
+  const cells = buffer.cells[buffer.row] as string[];
+  const from = how === 0 ? buffer.column : 0;
+  const to = how === 1 ? buffer.column + 1 : columns;
   for (let column = from; column < to; column++) cells[column] = BLANK;
 }

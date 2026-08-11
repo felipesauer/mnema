@@ -96,7 +96,7 @@ const COLUMNS = 140;
 const ROWS = 40;
 
 /** What the layout library writes when it takes the caller's history with the page. */
-const ERASES_THE_HISTORY = '\u001b[3J';
+const _ERASES_THE_HISTORY = '\u001b[3J';
 
 /**
  * WHAT THE OPENING ALWAYS SAYS, whatever the terminal is like — and therefore how many times the
@@ -105,7 +105,7 @@ const ERASES_THE_HISTORY = '\u001b[3J';
  * It is the signature of the path on which the library gives up on redrawing PART of the screen:
  * that path replays what it holds, and nothing else on any path does.
  */
-const THE_OPENING = 'a session over this project';
+const _THE_OPENING = 'a session over this project';
 
 /**
  * THE SHORTEST TERMINAL ON WHICH THE LAYOUT STILL REDRAWS PART OF THE PAGE, in rows.
@@ -121,10 +121,10 @@ const THE_OPENING = 'a session over this project';
  * way out (`src/repl/page.ts`, `theEraseAsAScroll`), so the bracket is read off the library's own
  * REPLAY of what it keeps instead, which is the other thing it does on that path.
  */
-const SHORTEST_THAT_REDRAWS_IN_PART = 2;
+const _SHORTEST_THAT_REDRAWS_IN_PART = 2;
 
 /** The width the boundary is measured at: one with room for the hint on a single row. */
-const WIDE_ENOUGH_FOR_THE_HINT = 100;
+const _WIDE_ENOUGH_FOR_THE_HINT = 100;
 
 // ---------------------------------------------------------------------------
 // The fixture
@@ -206,6 +206,19 @@ const fixture = (): Fixture => ({
 /** How many times `what` occurs in `text`. Overlapping is impossible for these. */
 const times = (text: string, what: string): number => text.split(what).length - 1;
 
+/**
+ * EVERYTHING THE SESSION SAID, ONCE EACH AND IN ORDER — the bytes written after the console
+ * gave the caller's screen back.
+ *
+ * ⚠️ THE STREAM STOPPED BEING A PAGE, which is what every count in this file had to move for.
+ * While the console lived in the caller's own buffer a line was written once and never taken
+ * back, so *how many times is this in the bytes* and *how many times did the session say it*
+ * were the same question. Every frame is the whole screen now, so a line is in the bytes once
+ * per keystroke. What the session SAID is on the caller's buffer, written once each, after the
+ * sequence that leaves the alternate screen (`repl/scrolling.ts`, `repl/console.ts`).
+ */
+const transcript = (bytes: string): string => bytes.slice(bytes.lastIndexOf('\u001b[?1049l'));
+
 /** What one occurrence of a task's creation says, as this product composes it. */
 const created = (id: string, at: string): string =>
   renderPlain(
@@ -278,7 +291,11 @@ describe('a session shows what another process wrote while it was open', () => {
     expect(ran.bytes).toContain(first);
     expect(ran.bytes).toContain(second);
     expect(ran.bytes).toContain(THE_AGENT);
-    expect(times(ran.bytes, 'task.created')).toBe(2);
+    // ⚠️ COUNTED ON THE TRANSCRIPT AND NOT IN THE STREAM, and the difference is the model: every
+    // frame redraws the whole screen, so a line the session said once is in the bytes once per
+    // keystroke. What the session SAID, once each and in order, is what it writes onto the
+    // caller's own buffer on the way out ({@link transcript}).
+    expect(times(transcript(ran.bytes), 'task.created')).toBe(2);
     // AND THE LINE IS THE COMPOSER'S, not this file's: the parts, in the order and the
     // spacing `presentation/` puts them in, found on the page the terminal received. The
     // instant comes off the record rather than out of a clock here, so what is compared is
@@ -298,22 +315,20 @@ describe('a session shows what another process wrote while it was open', () => {
     // about the page rather than about the product: the opening panel states the same
     // verdict, so the session says it twice before anything moves. What the case is really
     // about is the DIFFERENCE — as many times after the occurrences as before them.
+    // ⚠️ AND IT IS READ OFF THE TRANSCRIPT, which is where "said once" is a question with an
+    // answer. In the stream every line is redrawn on every frame; on the caller's own buffer
+    // each one appears exactly as often as the session said it ({@link transcript}).
     const said = THE_VERDICT;
-    const before = times(ran.bytes.slice(0, ran.at[1] as number), said);
-    // BOTH of them: the panel's, and the verb's answer. A cut that landed between the two
-    // reads a page the session had not finished saying, which is what the step above waits
-    // for and what this asserts it got.
-    expect(before, said).toBe(2);
-    expect(times(ran.bytes, said), said).toBe(before);
-    // And the drawing of the name, which is written once for a page and is the discriminant
-    // this suite already uses for "nothing was said twice".
-    expect(times(ran.bytes, 'It runs the')).toBe(1);
-    // And the page itself was never turned for an occurrence: the bytes that carry a page
-    // into the scrollback are written once, when the session opens (`repl/page.ts`).
-    expect(times(ran.bytes, `\u001b[${ROWS};1H`)).toBe(1);
-    // NOR THE ERASE. The one sequence this product refuses to write is the one that takes
-    // the caller's own history with it, and a region that grew past the viewport is how it
-    // would arrive without anybody asking for it.
+    // ONCE — the verb's answer. ⚠️ IT WAS TWICE, the panel's and the verb's, because the panel
+    // was landed like a line; the arrangement is a REGION now and never goes on the roll
+    // (`repl/panel.ts`, `Opening.above`), so the transcript holds only what was said.
+    expect(times(transcript(ran.bytes), said), said).toBe(1);
+    // And the one sentence the opening does land, which is written once for a session and is
+    // the discriminant this suite already uses for "nothing was said twice".
+    expect(times(transcript(ran.bytes), 'It runs the')).toBe(1);
+    // ⛔ NOR THE ERASE. The one sequence this product refuses to write is the one that takes
+    // the caller's own history with it, in any buffer — and a region that grew past the
+    // viewport is how it would arrive without anybody asking for it.
     expect(ran.bytes).not.toContain('\u001b[3J');
   });
 
@@ -341,56 +356,18 @@ describe('a session shows what another process wrote while it was open', () => {
     expect(ran.bytes.lastIndexOf(PROMPT)).toBeGreaterThan(ran.bytes.indexOf(`${PREFIX}exit`));
   });
 
-  it('does not push the region past the height where the library erases the history', async () => {
-    // THE HALF WITH TEETH, and it is the library's boundary rather than this product's. A
-    // region as tall as the viewport is one the layout stops redrawing in PART: it redraws
-    // the whole screen instead, with the sequence that erases the caller's own history
-    // inside it (`a-page-that-opens-clean.test.ts` owns that measurement). So an occurrence
-    // that landed in the region would not merely look wrong — on a short terminal it would
-    // take the scrollback with it.
-    //
-    // THE HEIGHT IS NOT ASSUMED, IT IS BRACKETED. The session is run at the shortest height
-    // where the erase does not appear AND one row below it, so the case proves it is
-    // sitting ON the boundary: a region one row taller is a region it catches.
-    const writing = (): Step => ({
-      does: () => {
-        elsewhere('task', 'written while the terminal was tiny', '--which', THE_AGENT);
-      },
-      until: (bytes) => bytes.includes('task.created'),
-      what: 'showed the occurrence on a short terminal',
-    });
-    const leaves: Step = {
-      types: `${CLEARS_THE_LINE}${PREFIX}exit\r`,
-      what: 'left',
-      until: (bytes) => bytes.lastIndexOf(PROMPT) > bytes.indexOf(`${PREFIX}exit`),
-    };
-    const atTheBoundary = await inPty(fixture(), {
-      columns: WIDE_ENOUGH_FOR_THE_HINT,
-      rows: SHORTEST_THAT_REDRAWS_IN_PART,
-      steps: [opensAConsole(PROMPT), writing(), leaves],
-    });
-    expect(atTheBoundary.bytes, 'the occurrence never landed').toContain('task.created');
-    expect(atTheBoundary.bytes).not.toContain(ERASES_THE_HISTORY);
-    // ONE ROW SHORTER, the library really does give up — which is what says the height
-    // above is the boundary and not simply a roomy terminal. ⚠️ IT USED TO BE READ OFF THE ERASE
-    // and it is read off the library's own REPLAY now: the erase is answered on the way out at
-    // every height, so a bracket made of it would be two absences and no boundary.
-    const shorter = await inPty(fixture(), {
-      columns: WIDE_ENOUGH_FOR_THE_HINT,
-      rows: SHORTEST_THAT_REDRAWS_IN_PART - 1,
-      steps: [opensAConsole(PROMPT), leaves],
-    });
-    const replays = (bytes: string): number => bytes.split(THE_OPENING).length - 1;
-    expect(
-      replays(shorter.bytes),
-      'the library no longer gives up on part of the page',
-    ).toBeGreaterThan(replays(atTheBoundary.bytes));
-    // ⛔ AND IT COSTS THE CALLER NOTHING WHEN IT DOES, which is the promise the bracket used to be
-    // the exception to.
-    expect(shorter.bytes, 'the history was erased below the boundary').not.toContain(
-      ERASES_THE_HISTORY,
-    );
-  }, 240_000);
+  // ⚠️ A CASE STOOD HERE AND IT DIED WITH THE BOUNDARY IT BRACKETED. It ran the session at the
+  // shortest height where the layout still redrew PART of the page and one row below it, to prove
+  // an occurrence landing could not push the region over the height at which the library redraws
+  // the WHOLE screen — the path whose sequence carries the erase of the caller's history.
+  //
+  // NOTHING GROWS WITH WHAT A SESSION SAYS ANY MORE. An occurrence goes on the roll, and the
+  // middle region is a WINDOW onto it whose height is what the two fixed regions leave
+  // (`repl/scrolling.ts`, `repl/region.ts`) — so the region is the same height after ten thousand
+  // occurrences as after none, and there is no boundary for one to walk the page over. The frame
+  // is fullscreen at every height by construction, which means the library's own path is reached
+  // on every session there is; that it costs the caller's history nothing is asserted where it is
+  // now true (`tests/the-screen-is-ours.test.ts`).
 
   /** The instant the record carries for `id`, read off the record rather than guessed. */
   function instantOf(id: string): string {
@@ -588,18 +565,26 @@ const modulesIn = (dir: string): string[] =>
   readdirSync(join(SRC, dir)).filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'));
 
 describe('the cadence is the one that already existed', () => {
-  it('waits for the record on the same constant a settled resize waits on', () => {
+  it('⚠️ waits for the record on the one cadence the console has left', () => {
     const source = sourceOf('repl', 'console.ts');
     // EVERY TIMER OF THIS FILE, found by what a timer IS rather than by a list: the delay
     // each one is given has to be the constant, so a second number cannot be introduced
     // beside it without this going red.
+    //
+    // ⚠️ IT WAS TWO READERS OF ONE CONSTANT AND IT IS ONE, which is the count going DOWN and is
+    // as much what this case is for. The same number was how long the terminal's size had to
+    // stop changing before the page was drawn again — a drag delivered a size every two or three
+    // milliseconds and each of them TURNED A PAGE, so the wait existed to coalesce them. Nothing
+    // is turned now: a resize is a frame drawn at the size the device has when it is drawn
+    // (`repl/console.ts`, `resized`), so there is nothing for a wait to coalesce and the damper
+    // is off the geometry entirely. What is left is the question this case was always about.
     const delays = [...source.matchAll(/set(?:Timeout|Interval)\([\s\S]*?,\s*([^,)]+)\)/g)].map(
       (found) => (found[1] as string).trim(),
     );
-    expect(delays.length, 'no timer at all in the console').toBeGreaterThan(1);
-    for (const delay of delays) expect(delay).toBe('AFTER_THE_LAST_CHANGE');
+    expect(delays.length, 'no timer at all in the console').toBe(1);
+    for (const delay of delays) expect(delay).toBe('HOW_OFTEN_THE_RECORD_IS_ASKED');
     // And the constant is declared once, with a number, in the file that owns the streams.
-    expect(times(source, 'const AFTER_THE_LAST_CHANGE =')).toBe(1);
+    expect(times(source, 'const HOW_OFTEN_THE_RECORD_IS_ASKED =')).toBe(1);
     // NOT VACUOUS: the follower has no number of its own to wait on, so the cadence cannot
     // have been quietly moved there.
     expect(sourceOf('repl', 'following.ts')).not.toContain('setInterval');

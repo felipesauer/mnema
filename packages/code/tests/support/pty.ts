@@ -311,6 +311,25 @@ export function aFrameWithout(
   };
 }
 
+/**
+ * A FRAME THE STEP ITSELF CAUSED — the presence half of {@link aFrameWithout}, on its own.
+ *
+ * IT IS THE SAME RULE AND IT IS WRITTEN ONCE, which is the whole reason it is here: a step that
+ * ends on `aFrameAfter` alone is a step that can end on the frame which arrived BEFORE it did
+ * anything, and four sites have already been red for exactly that. The row being typed is
+ * rewritten by every frame the layout draws, so a frame that arrived since the step began has
+ * the prompt in what arrived.
+ *
+ * ⛔ IT IS ONLY HONEST FOR A STEP THAT REALLY CHANGES THE FRAME. The layout writes nothing at
+ * all for a frame identical to the one on the screen, so a key that moves nothing produces no
+ * bytes and this never answers — which is the driver's own wall rather than a failed assertion.
+ * Every caller below is a step whose effect on the page is the thing under test.
+ */
+export function aFrameSince(prompt: string): (bytes: string, since: number) => boolean {
+  const finished = aFrameAfter(prompt);
+  return (bytes, since) => finished(bytes) && bytes.slice(since).includes(prompt);
+}
+
 /** One thing to do in the session, and what says it is done. */
 export interface Step {
   /** What the caller types, if anything. */
