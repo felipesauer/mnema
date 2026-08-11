@@ -81,6 +81,7 @@ import { LEAVE, PREFIX } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import {
   aFrameAfter,
+  aFrameWithout,
   arrivedSince,
   inPty as drive,
   type Fixture,
@@ -912,10 +913,15 @@ function listsTheWords(offers: readonly CompletionWord[]): Step {
   };
 }
 
-/** Takes the key back off the row, and waits for a frame with no palette written into it. */
+/**
+ * Takes the key back off the row, and waits for a frame with no palette written into it.
+ *
+ * ⚠️ IT WAS SPELLED OUT HERE TOO, and spelled out it is true before the key has been drawn — the
+ * third of three sites with one rule between them (`support/pty.ts`, {@link aFrameWithout}).
+ */
 const shutsTheList: Step = {
   types: RUBS_OUT,
-  until: (bytes, since) => aFrameAfter(PROMPT)(bytes) && !bytes.slice(since).includes(CUT),
+  until: aFrameWithout(PROMPT, CUT),
   what: 'shut the list',
 };
 

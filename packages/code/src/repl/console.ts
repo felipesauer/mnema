@@ -574,22 +574,6 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   }
 
   /**
-   * HOW TALL THE TERMINAL WAS WHEN THE PAGE NOW ON THE SCREEN WAS PLACED.
-   *
-   * IT IS THE HALF OF THE QUESTION THE DRAWING CANNOT ANSWER. A page is a drawing AND a
-   * placement: the flow is followed by whatever it takes for the input to end on the last row
-   * the layout leaves (`page.ts`), and that leftover is a function of the HEIGHT. So two
-   * terminals that would be drawn identically are still two different pages, and the page on
-   * the screen is stale for one of them — which is why the answer is not in the opening.
-   *
-   * The height alone rather than the leftover it produces, and the difference is the safe
-   * direction: a placement recomputed from a height nobody re-read is the defect, while a page
-   * turned once for a settled drag that happened to need no new rows costs one screen carried
-   * into the scrollback — the same thing a width drag has always cost.
-   */
-  let placedAt = howTall();
-
-  /**
    * THE PAGE, AGAIN: what was on it goes into the scrollback, and it is drawn from what
    * this console holds — the opening, then whatever the session has said that is still on
    * it.
@@ -613,13 +597,15 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * part of the frame ({@link showing}), so a page turned at any height is drawn with whatever it
    * takes on the very next frame — which is the same frame, because turning one ends in
    * {@link moved}.
+   *
+   * ⚠️ AND IT USED TO REMEMBER THE HEIGHT IT TURNED AT, in a `placedAt` the guard below compared
+   * against. Nothing is remembered here now: what this console holds between frames is the
+   * DRAWING and never a measurement of the device ({@link followTheTerminal}).
    */
   function thePageAgain(): void {
-    // THE ONE READING OF THE HEIGHT this turn is made against: the bytes that carry the screen
-    // away are a page's worth of rows, and what is remembered is the page they were written for.
-    const rows = howTall();
-    carry(carriedIntoTheScrollback(rows));
-    placedAt = rows;
+    // THE HEIGHT IS ASKED FOR HERE AND NOWHERE ELSE IN THIS TURN, because the bytes that carry
+    // the screen away are a page's worth of rows and the page is the one on the device NOW.
+    carry(carriedIntoTheScrollback(howTall()));
     past = [...opened.lines, ...said];
     // AND THE WHOLE FLOW IS ON THE SCREEN AGAIN, because a page that is turned is written from
     // the top: what the terminal had scrolled away is being drawn a second time, so what was
@@ -652,22 +638,44 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * exactly as it does when they ask for a clean one.
    */
   function followTheTerminal(): void {
-    // THE ONE GUARD, and it is one question in two halves: is the page this terminal would
-    // get the one that is on the screen? A page is a drawing and a placement, so both are
-    // asked — the drawing of the opening ({@link sameOpening}, a pure function over lines
-    // that already exist, which is what makes it askable at all), and the height the page on
-    // the screen was placed against ({@link placedAt}). A drag that wandered away and came
-    // back is a caller whose page is already right, and that is what still gets nothing.
+    // THE ONE GUARD, AND IT IS ONE QUESTION: is the page this terminal would get the one that
+    // is on the screen? What answers it is the DRAWING ({@link sameOpening}, a pure function
+    // over lines that already exist, which is what makes it askable at all). A drag that
+    // wandered away and came back is a caller whose page is already right, and so is a window
+    // dragged taller or shorter without moving a glyph.
     //
-    // ⚠️ THE SECOND HALF USED NOT TO BE HERE, and the premise it rested on was written down:
-    // *a window made shorter by rows the drawing does not depend on costs the caller nothing*.
-    // What falsified it is the input sitting at the FOOT (`page.ts`): the rows under the
-    // flow are how many the height leaves over, so a terminal that changed height has a
-    // page whose flow no longer ends where the layout's last row is — measured, on a real
-    // device, at a hundred by thirty dragged to forty: not one byte was written, and the
-    // input stayed eleven rows above the foot. What it costs is named in {@link placedAt}.
+    // ⚠️ IT ASKED A SECOND HALF — *and the height the page on the screen was placed at* — and
+    // this delivery took it out. The premise under it was that a page is a drawing AND a
+    // placement: the rows under the flow are how many the height leaves over, so a terminal that
+    // changed height had a page whose flow no longer ended where the layout's last row is,
+    // measured at a hundred by thirty dragged to forty with the input eleven rows above the
+    // foot. WHAT FALSIFIED IT IS THE LEFTOVER MOVING INTO THE FRAME (`page.ts`, {@link theGap}):
+    // the rows under the flow are drawn WITH the area now, and {@link resized} rebuilds the
+    // frame at once — before this is ever asked — so the input is back at the foot without a
+    // page being turned at all. What the second half cost is a page per STEP of a drag: a
+    // window dragged by its edge delivers a size per step, and only steps closer together than
+    // {@link AFTER_THE_LAST_CHANGE} coalesce, which a hand dragging a corner never is. Measured
+    // on the binary, twelve steps of two rows from a hundred by twenty-four: TWELVE pages, one
+    // per step, against TWO for the same drag along the width — and each page is a screen of
+    // the caller's carried away and their opening rewritten over it.
+    //
+    // ⚠️ AND THREE PARAGRAPHS OF THIS FILE WENT ON SAYING WHAT THE GUARD HAD STOPPED DOING —
+    // *a window dragged taller or shorter without changing a glyph still costs nothing*, *what
+    // they cost there is a page only when the drawing really changed*, and, beside the opening
+    // itself, *what replaced it is not a second number but the DRAWING*. All three were false
+    // for as long as the second half was here, and all three are true again; they are left
+    // standing rather than rewritten, and this is the note that says they were once out of step.
+    // ⚠️ THE COUNT WAS TWO when this was written, and the third was found by the phrase rather
+    // than by the symbol: it names no `placedAt` at all, it just promises there is no second
+    // number ({@link opened}).
+    //
+    // WHAT ANSWERS FOR THE REMOVAL is a page that follows the drawing and a page that does not
+    // move for a height — asserted as pages carried into the scrollback, over a drag of twelve
+    // steps along each edge (`tests/the-page-follows-the-terminal.test.ts`) — and the property
+    // that pays for it, which is that the input is at the foot after a height changed and no
+    // page was turned, swept up and down (`tests/the-prompt-sits-at-the-foot.test.ts`).
     const now = openingFor(howWide(), howTall());
-    if (sameOpening(now, opened) && howTall() === placedAt) return;
+    if (sameOpening(now, opened)) return;
     opened = now;
     thePageAgain();
   }

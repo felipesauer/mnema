@@ -667,7 +667,10 @@ describe('a session has opened when its frame is finished, not when its prompt i
     // *"local integrity verified"* in four places, which is the very sentence the panel writes.
     // What every pty driver DOES have is the size check, because a reading taken against a
     // device of unknown size is not a reading (`support/pty.ts`); so that is the discriminant,
-    // and it names five.
+    // and it named five. ⚠️ IT NAMES FOUR NOW: the copy in `the-page-follows-the-terminal.test.ts`
+    // went back to the shared instrument, because a step that has to WAIT — an absence is waited
+    // OUT, not watched for — is something the copy had no way to express. The rule is unchanged
+    // and one site fewer holds it.
     const drivers = readdirSync(TESTS)
       .filter((name) => name.endsWith('.ts'))
       .map((name) => ({ name, source: readFileSync(join(TESTS, name), 'utf-8') }))
@@ -684,12 +687,11 @@ describe('a session has opened when its frame is finished, not when its prompt i
       'a-page-that-opens-clean.test.ts',
       join('support', 'pty.ts'),
       'the-console-on-ink.test.ts',
-      'the-page-follows-the-terminal.test.ts',
       'the-screen-says-what-it-was-drawn-at.test.ts',
     ]);
 
     // WHICH OF THEM WAIT FOR SOMETHING THE CALLER CAUSED, which is what the rule is about. One
-    // of the five does not: it writes bytes at a decoder and asserts what came back, so it has
+    // of the four does not: it writes bytes at a decoder and asserts what came back, so it has
     // no marker to be answered early about. It is NAMED rather than filtered out silently — a
     // driver that stopped waiting would otherwise leave this list quietly.
     const WAITS_FOR_NOTHING_THE_CALLER_CAUSED = 'the-screen-says-what-it-was-drawn-at.test.ts';
@@ -700,7 +702,7 @@ describe('a session has opened when its frame is finished, not when its prompt i
       ),
       `${WAITS_FOR_NOTHING_THE_CALLER_CAUSED} started waiting for something, so it needs the rule`,
     ).not.toContain('until(() =>');
-    // AND THE OTHER FOUR ALL USE THE ONE RULE. This is the A3 half: four drivers, one function
+    // AND THE OTHER THREE ALL USE THE ONE RULE. This is the A3 half: three drivers, one function
     // that says what the question means.
     for (const { name, source } of waiting) {
       expect(codeOnly(source), `${name}: waits without the rule`).toContain('arrivedSince(');
@@ -710,8 +712,8 @@ describe('a session has opened when its frame is finished, not when its prompt i
     // of this guard compared against the whole source and accused the shared instrument for
     // DEFINING `resizedTo` above the loop that calls it — an instrument that accuses the
     // innocent, which this bench has now paid for twice. The scope is what the driver does once
-    // it has a device of a known size, which is the same boundary in all four shapes rather
-    // than a loop only three of them have.
+    // it has a device of a known size, which is the same boundary in every shape rather than a
+    // loop only some of them have.
     const drivingIn = (source: string): string => {
       const code = codeOnly(source);
       // ⚠️ THE CALL AND NOT THE NAME. Anchoring on the bare name put the scope at the shared
@@ -772,11 +774,11 @@ describe('a session has opened when its frame is finished, not when its prompt i
         if (at === -1) continue;
         expect(read, `${name}: the starting point is taken after \`${doing}\``).toBeLessThan(at);
       }
-      // AND EVERY QUESTION A STEP IS ASKED IS HANDED THE NUMBER, in the three drivers that have
-      // steps. Asked over the whole file rather than over the loop, and the difference is a real
-      // one this guard's own non-vacuity check found: the shared instrument READS the number in
-      // its loop and ASKS the question one function up ({@link endOf}), while the two local
-      // drivers do both inline.
+      // AND EVERY QUESTION A STEP IS ASKED IS HANDED THE NUMBER, in the drivers that have steps.
+      // Asked over the whole file rather than over the loop, and the difference is a real one this
+      // guard's own non-vacuity check found: the shared instrument READS the number in its loop and
+      // ASKS the question one function up ({@link endOf}), while the local driver that still has
+      // steps of its own does both inline.
       const asking = askedIn(codeOnly(source));
       for (const asked of asking) {
         expect(asked, `${name}: a step was asked its question without where it began`).toContain(
@@ -784,7 +786,7 @@ describe('a session has opened when its frame is finished, not when its prompt i
         );
       }
       // ⚠️ AND NOTHING AFTER THE FIRST KEYSTROKE READS THE WHOLE STREAM. This is the half that
-      // scored ZERO: reverting the fourth driver's wait to the unscoped form left every other
+      // scored ZERO: reverting one driver's wait to the unscoped form left every other
       // reading of this rule satisfied — the number was still read, still before the writing,
       // and the rule was still imported. What is more, the compiler did not catch the local it
       // orphaned, because `tsc -b` does not type-check tests at all.
@@ -825,11 +827,7 @@ describe('a session has opened when its frame is finished, not when its prompt i
         .map(({ name }) => name)
         .sort(),
       'the drivers that ask a step its question changed',
-    ).toEqual([
-      'a-page-that-opens-clean.test.ts',
-      join('support', 'pty.ts'),
-      'the-page-follows-the-terminal.test.ts',
-    ]);
+    ).toEqual(['a-page-that-opens-clean.test.ts', join('support', 'pty.ts')]);
   });
 });
 

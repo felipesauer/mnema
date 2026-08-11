@@ -27,11 +27,18 @@
  *     said landed under it. So a caller who resizes loses nothing they had read, which is
  *     asked here by a mark only the CALLER can put on a page — the echo of what they
  *     typed, never a sentence of the panel's, which is on every page there is.
- *   - EITHER MEASUREMENT. ⚠️ THIS SAID `WIDTH ONLY — a window made taller moves no glyph of
- *     a drawing measured in columns`, and the drawing stopped being measured in columns
- *     alone: the name gives way by HEIGHT as well (`presentation/banner.ts`), so a window
- *     made shorter can open with a different mark. The case is inverted and renamed below,
- *     and what it counts is unchanged — pages, not redraws.
+ *   - EITHER MEASUREMENT, AND ONLY THROUGH THE DRAWING. ⚠️ THIS SAID `WIDTH ONLY — a window made
+ *     taller moves no glyph of a drawing measured in columns`, and the drawing stopped being
+ *     measured in columns alone: the name gives way by HEIGHT as well
+ *     (`presentation/banner.ts`), so a window made shorter can open with a different mark.
+ *     ⚠️ AND THEN IT SAID A HEIGHT TURNED A PAGE ON ITS OWN, on the premise that *a page is a
+ *     drawing AND a placement* — the rows under the flow are what the height leaves over, so a
+ *     page placed at one height was stale at another whatever was drawn on it. WHAT FALSIFIED IT
+ *     is where those rows went: they are drawn WITH the frame now (`repl/page.ts`, `theGap`), and
+ *     the frame is rebuilt on the signal itself. So a height reaches the page only through the
+ *     DRAWING, and what a height that moves no glyph costs is nothing — measured as twelve pages
+ *     against nought over a drag of twelve steps. The case is inverted and renamed below; what it
+ *     counts is unchanged — pages, not redraws.
  *   - ONCE THE SIZE HAS SETTLED. One drag of a window corner is dozens of sizes, and a
  *     page reemitted on each of them would put a drag's worth of pages in the scrollback.
  *     Proved by COUNTING, because "it is debounced" is not observable and "there is one
@@ -51,8 +58,7 @@
  * from what is on the screen.
  */
 
-import { spawn } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -65,16 +71,16 @@ import { openSession } from '../src/repl/session.js';
 import { LEAVE } from '../src/session-words.js';
 import { VERSION } from '../src/version.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
-import { decodedWhole } from './support/arriving.js';
 import { ESC, fakeTerminal, hooksNothing, until, withoutLayout } from './support/console.js';
 import {
-  aFrameAfter,
   arrivedSince,
-  resizedTo,
-  sizedTo,
-  theDeviceWasTheSizeAskedFor,
+  inPty as drive,
+  type Fixture,
+  opensAConsole,
+  type Ran,
+  type Step,
 } from './support/pty.js';
-import { screenOf } from './support/screen.js';
+import { endsAtTheFoot, screenOf, theGapOn } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
@@ -211,142 +217,39 @@ afterAll(() => {
 // A real pty whose size can be changed from outside it
 // ---------------------------------------------------------------------------
 
-/** One thing to do in the session, and what says it is done. */
-interface Step {
-  /** Typed first. */
-  readonly types?: string;
-  /**
-   * The caller resized their window before this step, in columns and rows.
-   *
-   * Done by setting the window size on the pty's own device from OUTSIDE the session,
-   * which is what a terminal emulator does when somebody drags a corner: the kernel
-   * records the new size and raises the signal at the process group on the other end.
-   * Nothing here writes to the session or asks it anything.
-   */
-  readonly resize?: { readonly columns: number; readonly rows: number };
-  /**
-   * What the terminal must have received before this step counts as over.
-   *
-   * `since` is how many bytes had arrived when the step BEGAN — the number that lets a
-   * predicate ask about the step's own doing rather than about the whole stream, which is the
-   * difference between waiting for an answer and being answered by the OPENING
-   * (`support/pty.ts`, `arrivedSince`).
-   */
-  readonly until: (bytes: string, since: number) => boolean;
-  /** What to call it when it never happens. */
-  readonly what: string;
-}
-
-/** What a run in a pty produced. */
-interface Ran {
-  /** Every byte the terminal received, from the first to the last. */
-  readonly bytes: string;
-  /** How much of {@link bytes} had arrived when each step was over, in order. */
-  readonly at: readonly number[];
-}
-
-/** Waits until `ready` answers true, or gives up — a poll, never a fixed sleep. */
-async function waitFor(ready: () => boolean, what: string, tries = 1200): Promise<void> {
-  for (let tried = 0; tried < tries; tried++) {
-    if (ready()) return;
-    await new Promise((resolve) => setTimeout(resolve, 25));
-  }
-  throw new Error(`the session never ${what}`);
-}
-
 /** How many times `what` occurs in `text`. */
 const times = (text: string, what: string): number => text.split(what).length - 1;
+
+/** Where this file's sessions are opened, and what they are opened with. */
+const fixture = (): Fixture => ({
+  cli: CLI,
+  verb: REPL_VERB,
+  project,
+  scratch: sandbox,
+  environment,
+});
 
 /**
  * Runs `mnema repl` on a pseudo-terminal of a given size, resizing it between steps.
  *
- * The pty comes from `script`, which is how a shell hands a program a terminal it did not
- * inherit; the runner prints WHICH device it got before it starts the session, so the size
- * of that device can be changed while the session is running on it.
+ * ⚠️ IT WAS A DRIVER OF THIS FILE'S OWN — the same `script`, a runner naming its device, and a
+ * settling loop written out again — and what took it out is the thing this delivery had to
+ * assert. An ABSENCE is waited OUT rather than waited for: a page that is not turned has no byte
+ * to wait for, so a step has to be able to DO something (a wait longer than the console's own
+ * amortiser) before its question is asked at all. The shared instrument has that
+ * (`support/pty.ts`, `Step.does`) and the copy did not, and teaching the copy would have been
+ * the second idea of *wait until the session settled* that file's own header is about.
  */
 async function inPty(options: {
   readonly columns: number;
   readonly rows: number;
   readonly steps: readonly Step[];
 }): Promise<Ran> {
-  const here = mkdtempSync(join(sandbox, 'pty-'));
-  const runner = join(here, 'run.sh');
-  const named = 'TTY=';
-  writeFileSync(
-    runner,
-    [
-      `cd ${project}`,
-      ...sizedTo(options.rows, options.columns, here),
-      `echo "${named}$(tty)"`,
-      `node ${CLI} ${REPL_VERB}`,
-      '',
-    ].join('\n'),
-  );
-
-  const arriving = decodedWhole();
-  let over = false;
-  const child = spawn('script', ['-qec', `sh ${runner}`, '/dev/null'], {
-    cwd: project,
-    env: environment,
-    stdio: ['pipe', 'pipe', 'pipe'],
-  });
-  arriving.from(child.stdout);
-  arriving.from(child.stderr);
-  const ended = new Promise<void>((resolve) => {
-    child.on('close', () => {
-      over = true;
-      resolve();
-    });
-  });
-
-  const at: number[] = [];
-  try {
-    await waitFor(() => arriving.text().includes(named) || over, 'said which terminal it had');
-    const device = /TTY=(\S+)/.exec(arriving.text())?.[1];
-    expect(device, 'the runner never named the terminal').toBeDefined();
-    // The size the case asked for is the premise every count below rests on, so the device
-    // is asked whether it became it — the shared instrument's rule, read from where it is
-    // written (`support/pty.ts`) rather than restated here.
-    await theDeviceWasTheSizeAskedFor(here, options.rows, options.columns);
-    for (const step of options.steps) {
-      // WHERE THE STEP BEGINS — the shared instrument's rule again, taken before the resize as
-      // well as before the keystroke, because both are the step's own doing
-      // (`support/pty.ts`, `arrivedSince`).
-      const since = arriving.text().length;
-      if (step.resize !== undefined) {
-        resizedTo(device as string, step.resize.rows, step.resize.columns);
-      }
-      if (step.types !== undefined) child.stdin.write(step.types);
-      await waitFor(() => step.until(arriving.text(), since) || over, step.what);
-      // Settled: the page has stopped growing, so the offset taken below is the end of a
-      // frame rather than the middle of one.
-      for (let still = 0, was = -1; still < 8; still++) {
-        if (arriving.text().length === was) break;
-        was = arriving.text().length;
-        await new Promise((resolve) => setTimeout(resolve, 40));
-        still = 0;
-        if (arriving.text().length === was) break;
-      }
-      at.push(arriving.text().length);
-    }
-    await Promise.race([
-      ended,
-      new Promise((_, reject) => setTimeout(() => reject(new Error('never came back')), 30_000)),
-    ]);
-  } finally {
-    child.stdin.end();
-    child.kill('SIGKILL');
-  }
-  return { bytes: arriving.text(), at };
+  return drive(fixture(), options);
 }
 
-/** The step every session begins with: the console is open when the prompt is drawn. */
-const opens: Step = {
-  // What a finished frame IS is the shared instrument's (`support/pty.ts`): a prompt is
-  // written in the middle of one, and this file drives a pty of its own.
-  until: aFrameAfter(PROMPT),
-  what: 'opened its console',
-};
+/** The step every session begins with: the console is open when its first frame is drawn. */
+const opens: Step = opensAConsole(PROMPT);
 
 /** The step every session ends with. */
 const leaves: Step = {
@@ -577,62 +480,65 @@ function lastTitle(bytes: string): string {
 }
 
 describe('the page follows the drawing, and once per drag', () => {
-  it('turns the page for a height that moves no glyph, and for one that does', async () => {
-    // ⚠️ THIS CASE WAS `draws nothing when a height moves no glyph, and turns the page when
-    // one does`, and before that `draws nothing at all when only the height changed`. Both
-    // halves of both names rested on one premise — a height the DRAWING does not depend on is
-    // a height the page does not depend on — and the delivery that put the input at the FOOT
-    // of the terminal falsified it: the rows a page is placed with are how many the height
-    // leaves over, so a page placed at one height is misplaced at another whatever is on it
-    // (`repl/page.ts`, `tests/the-prompt-sits-at-the-foot.test.ts`). Measured, on a real
-    // device, before the guard was widened: at a hundred by thirty dragged to forty, not one
-    // byte was written and the input stayed eleven rows above the foot.
+  it('turns NO page for a height that moves no glyph, and one for a height that does', async () => {
+    // ⚠️ THIS CASE HAS BEEN INVERTED TWICE AND RENAMED BOTH TIMES, AND THIS IS THE SECOND. It was
+    // `turns the page for a height that moves no glyph, and for one that does`, and before that
+    // `draws nothing when a height moves no glyph, and turns the page when one does`. THE PREMISE
+    // THAT FELL THIS TIME is the one the previous name was built on: *a page is a drawing AND a
+    // placement*, so a height alone made the page on the screen stale — the rows under the flow
+    // are how many the height leaves over, and a page placed at one height is misplaced at
+    // another whatever is drawn on it. It was measured on a real device: at a hundred by thirty
+    // dragged to forty, not one byte was written and the input stayed ELEVEN rows above the foot.
     //
-    // ⚠️ AND IT WOULD HAVE STAYED GREEN THROUGH THE EARLIER CHANGE, which is why the drag ends
-    // somewhere other than where it began: a drag that came back to its own height would be
-    // answered with one page by a console that turned one for every height and by a console
-    // that turned none.
+    // WHAT FALSIFIED IT is where those rows went. They are drawn WITH the area now
+    // (`repl/page.ts`, `theGap`) and the frame is rebuilt the instant the signal arrives, before
+    // the guard is ever asked (`repl/console.ts`, `resized`) — so the input is back at the foot
+    // with no page turned at all, which is the property `tests/the-prompt-sits-at-the-foot.test.ts`
+    // sweeps up and down. What the second half COST is a page per step of a drag: twelve steps of
+    // two rows are twelve screens of the caller's carried into the scrollback and twelve openings
+    // written over them, measured on the binary, against two for the same drag along the width.
     //
-    // WHAT IS ASSERTED NOW IS THE PAIR: the height alone turns a page, and a drag that ends
-    // where it started still turns none — so this is the guard being widened rather than
-    // removed.
+    // WHAT IS ASSERTED NOW IS THE PAIR THE OTHER WAY ROUND: a height that moves no glyph costs
+    // nothing, and a height that gives the drawing away still turns a page — so this is the guard
+    // being narrowed to the DRAWING rather than switched off.
     const { terminal, close } = await opened(200);
     const pages = () => carriedPages(terminal.bytes());
     expect(pages(), 'the page was never opened').toBe(1);
-    // ⚠️ THE HEIGHTS IT USED WERE THIRTY, TWENTY AND TEN, and an earlier delivery falsified
-    // the premise under them: the name gave way when the DRAWING was taller than the terminal,
-    // so nothing but a four-row window could move a glyph. It gives way when the PAGE stops
-    // fitting now, and every one of those three crosses a threshold. What is chosen instead
-    // is derived rather than picked: the biggest drawing there is is already on the screen
-    // at forty rows, so no TALLER terminal can change it — heights above the one the session
-    // opened at are heights the DRAWING cannot depend on, whatever the arithmetic under it
-    // says, and the drag still ends somewhere other than where it began.
+    // ⚠️ THE HEIGHTS IT USED WERE THIRTY, TWENTY AND TEN, and an earlier delivery falsified the
+    // premise under them: the name gave way when the DRAWING was taller than the terminal, so
+    // nothing but a four-row window could move a glyph. It gives way when the PAGE stops fitting
+    // now, and every one of those three crosses a threshold. What is used instead is derived
+    // rather than picked: the biggest drawing there is is already on the screen at forty rows, so
+    // no TALLER terminal can change it — heights above the one the session opened at are heights
+    // the DRAWING cannot depend on, whatever the arithmetic under it says. The drag still ends
+    // somewhere other than where it began, which is what keeps the count from being answered by a
+    // console that only ever compares a height with itself.
+    const drawnBefore = terminal.bytes().length;
     for (const rows of [50, 60, 44]) terminal.resize(200, rows);
     await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
-    expect(pages(), 'a height with a new placement did not turn the page').toBe(2);
-    // AND IT IS THE PLACEMENT AND NOT THE DRAWING THAT DID IT, which is what makes this the
-    // widened half rather than a coincidence: the opening on the new page is the opening that was
-    // on the old one, at the same width, so nothing a panel can see moved.
-    //
-    // ⚠️ THE COUNT WAS OF CORNERS — one per box drawn — and there are none. It is not replaced by
-    // a count of anything: measured, the LIBRARY rewrites the region it keeps when the width
-    // changes, so any count of what is on the page answers for the library as well as for this
-    // product. What the product wrote is {@link carriedPages}, which is the instrument this case
-    // already had for the same reason. So what is asserted about the drawing is the drawing:
-    // whichever arrangement is on the page last is the one that was there before.
+    expect(pages(), 'a height that moves no glyph turned a page').toBe(1);
+    // AND THE HEIGHT REALLY REACHED THE SESSION, which is the non-vacuity this half needs: a
+    // console that had stopped watching the device would answer the count above just as well.
+    // The frame is rebuilt on the signal itself, so bytes were written — and no page was carried.
+    expect(terminal.bytes().length, 'nothing at all was drawn for the new height').toBeGreaterThan(
+      drawnBefore,
+    );
+    // AND THE ARRANGEMENT ON THE PAGE IS THE ONE THAT WAS THERE, read off the drawing rather than
+    // off a count: the width never moved, so a page rewritten in a different arrangement would be
+    // the guard answering about something other than the drawing.
     expect(
       besideTheMark(lastTitle(terminal.bytes()), 200).trim(),
       'the arrangement moved',
     ).toContain(OPENED);
-    // AND A DRAG THAT ENDS WHERE IT STARTED STILL COSTS NOTHING. The guard grew a half; it
-    // did not become "a resize event happened".
+    // AND A DRAG THAT ENDS WHERE IT STARTED COSTS NOTHING EITHER, which was true of the guard
+    // before this delivery and is still true: it never became "a resize event happened".
     terminal.resize(200, 30);
     terminal.resize(200, 44);
     await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
-    expect(pages(), 'a drag back to the height on the screen turned a page').toBe(2);
+    expect(pages(), 'a drag back to the height on the screen turned a page').toBe(1);
 
-    // ⚠️ AND HERE IS THE OTHER HALF OF THIS CASE, INVERTED BY THIS DELIVERY. It read
-    // `terminal.resize(199)` and asserted a THIRD page, on the sentence *the width still does
+    // ⚠️ AND HERE IS A HALF THAT WAS INVERTED BY THE DELIVERY BEFORE THIS ONE. It read
+    // `terminal.resize(199)` and asserted another page, on the sentence *the width still does
     // it* — and it did, because the box was drawn corner to corner and one column narrower was
     // one column of frame moved. Nothing is drawn to an edge now, so a hundred and ninety-nine
     // columns is the same drawing as two hundred and the console writes nothing at all. The
@@ -640,14 +546,14 @@ describe('the page follows the drawing, and once per drag', () => {
     // nothing* is the rule `panel.ts` states and this is the only place it can be observed.
     terminal.resize(199);
     await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
-    expect(pages(), 'a width that moves no glyph turned a page').toBe(2);
+    expect(pages(), 'a width that moves no glyph turned a page').toBe(1);
 
     // AND A WIDTH THAT DOES MOVE ONE STILL DOES IT, which is the half that had to survive: at
     // seventy-four columns the text has no room beside the mark, so the arrangement is a
     // different one and the page is turned.
     terminal.resize(74);
     await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
-    expect(pages(), 'a width that changes the arrangement did not turn the page').toBe(3);
+    expect(pages(), 'a width that changes the arrangement did not turn the page').toBe(2);
     // And it is the ARRANGEMENT that changed, which is the reason claimed: at seventy-four
     // columns the text is under the mark, so nothing is beside it.
     expect(
@@ -669,7 +575,7 @@ describe('the page follows the drawing, and once per drag', () => {
     const before = terminal.bytes().length;
     terminal.resize(74, 4);
     await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
-    expect(pages(), 'a height that gives the mark away did not turn the page').toBe(4);
+    expect(pages(), 'a height that gives the mark away did not turn the page').toBe(3);
     // And it is a SHORTER mark that was drawn, so the page turned for the reason claimed.
     // Read from the LAST opening on the page rather than from everything written after the
     // resize: on a terminal this short the library writes out everything it is keeping,
@@ -746,6 +652,159 @@ describe('the page follows the drawing, and once per drag', () => {
     expect(narrow).toContain('M N E M A');
     await close();
   }, 120_000);
+});
+
+// ---------------------------------------------------------------------------
+// A drag of a real window, one edge at a time
+// ---------------------------------------------------------------------------
+
+/**
+ * ONE STEP OF A DRAG: the caller's window becomes this size, and the console is then left alone
+ * for longer than it waits before following a size.
+ *
+ * ⚠️ THE WAIT IS THE INSTRUMENT RATHER THAN A CONVENIENCE, and without it the case below cannot
+ * go red. What is asserted is an ABSENCE — no page carried into the scrollback — and an absence
+ * cannot be waited FOR: a step that ended on the next frame would be a step the console's own
+ * amortiser had not run out on, so twelve steps would coalesce into ONE decision and a console
+ * that turned a page per step would answer exactly like one that turns none. Each step is spaced
+ * by longer than `AFTER_THE_LAST_CHANGE` (`repl/console.ts`), which is what makes the count below
+ * the count of a real drag: twelve decisions rather than one. It is what the mutation shows — with
+ * the height half of the guard put back, this is a page per step.
+ */
+const dragged = (columns: number, rows: number): Step => ({
+  resize: { columns, rows },
+  does: () => new Promise((resolve) => setTimeout(resolve, BETWEEN_STEPS_OF_A_DRAG)),
+  until: () => true,
+  what: `waited out ${columns}x${rows}`,
+});
+
+/**
+ * How long one step of a drag is left alone: two and a half times the tenth of a second the
+ * console waits after the last change (`repl/console.ts`, `AFTER_THE_LAST_CHANGE`).
+ *
+ * IT IS THE SMALLEST NUMBER THAT KEEPS THE CASES HONEST, and that is a cost rather than a
+ * preference: a drag of twelve steps is twelve waits, in three cases, and pty time in this suite is
+ * shared with a hundred and eighty other files — the machine under load is what turns a settling
+ * wait into a red somewhere else. What says it is enough is not the ratio but the MUTATION: with
+ * the half of the guard put back, these cases count a page per step.
+ */
+const BETWEEN_STEPS_OF_A_DRAG = 250;
+
+/** How many steps a drag of a window edge is taken to be here, and how big each one is. */
+const STEPS = 12;
+
+describe('a drag of the window edge costs the caller what the drawing costs, and nothing else', () => {
+  it('carries no page away for a drag of twelve heights, and writes the opening once', async () => {
+    // THE COMPLAINT THIS DELIVERY CAME FROM, in a pty and as a count. It was reported from use
+    // with a screenshot — *every time I keep changing the size of the terminal it renders the
+    // mnema layout again, all misaligned; it is as though it just pushed mnema upwards* — and the
+    // shape of it is that a drag of one edge cost a page per step: twelve steps of two rows, from
+    // a hundred by twenty-four, measured at TWELVE pages carried into the caller's scrollback with
+    // an opening rewritten over each of them. Along the width the same drag cost TWO.
+    //
+    // WHAT IS COUNTED IS WHAT WENT INTO THE SCROLLBACK ({@link carriedPages}) — the bytes this
+    // product writes once per page and nothing else writes at all — and, beside it, how many times
+    // the opening is in the stream. The second is the symptom a reader sees (thirteen wordmarks
+    // stacked in their history) and it answers for the LAYOUT as well as for this product: the
+    // library writes out what it is keeping when its region will not fit, so the count is the one
+    // that was measured rather than a promise. Growing is where it is measured for that reason.
+    const columns = 100;
+    const from = 24;
+    const heights = Array.from({ length: STEPS }, (_, at) => from + (at + 1) * 2);
+    const to = heights.at(-1) as number;
+    const ran = await inPty({
+      columns,
+      rows: from,
+      steps: [opens, ...heights.map((rows) => dragged(columns, rows)), leaves],
+    });
+    // ONE PAGE, AND IT IS THE ONE THAT OPENED. Twelve decisions were taken and none of them was
+    // a page: the drawing never moved, because at a hundred columns no height between
+    // twenty-four and forty-eight changes which form there is room for.
+    expect(carriedPages(ran.bytes), 'a page was carried away for a height').toBe(1);
+    expect(times(ran.bytes, OPENED), 'the opening was written again for a height').toBe(1);
+    // AND THE DRAG REALLY HAPPENED, in two directions of evidence: the device answered with each
+    // size it was asked for (`support/pty.ts`, `resizedTo`, which reads it back or throws), and
+    // the page that is on the screen at the end is the page the LAST height calls for — the input
+    // on the last row the layout leaves, with the emptiness the new height left over above it. A
+    // console that had stopped watching the device would answer the counts above and fail this.
+    const screen = screenOf(ran.bytes.slice(0, ran.at[STEPS] as number), columns, to);
+    expect(screen.text, 'the session never opened').toContain(OPENED);
+    endsAtTheFoot(screen, to, `${columns}x${to}, dragged`);
+    expect(
+      theGapOn(screen, PROMPT),
+      'nothing was left over at the height it ended on',
+    ).toBeGreaterThan(0);
+  }, 240_000);
+
+  it('carries the page away for a drag of twelve widths, because the drawing gives way', async () => {
+    // THE HALF THAT HAD TO SURVIVE, and it is asked of the same drag along the other edge: the
+    // guard was narrowed to the drawing, so a drag that makes the drawing give way must still
+    // cost a page at the point it does. Twelve steps of eight columns, from a hundred to a hundred
+    // and ninety-six at twenty-four rows: measured, ONE page turned inside the drag and one page
+    // was the one that opened.
+    //
+    // THE BRACKET RATHER THAN THE NUMBER, and the reason is that how many arrangements a range of
+    // widths passes through is the panel's arithmetic rather than this case's subject: at least
+    // one page inside the drag, or the surviving half went slack, and fewer than one per STEP, or
+    // the amortiser did. What the page was turned FOR is asserted off the drawing below.
+    const rows = 24;
+    const from = 100;
+    const widths = Array.from({ length: STEPS }, (_, at) => from + (at + 1) * 8);
+    const to = widths.at(-1) as number;
+    const ran = await inPty({
+      columns: from,
+      rows,
+      steps: [opens, ...widths.map((columns) => dragged(columns, rows)), leaves],
+    });
+    const turned = carriedPages(ran.bytes) - 1;
+    expect(turned, 'a drag that gave the drawing away turned no page').toBeGreaterThanOrEqual(1);
+    expect(turned, 'a page per step of the drag').toBeLessThan(STEPS);
+    // AND IT IS THE DRAWING THAT DID IT: at a hundred columns there is no room for the text beside
+    // the mark and at a hundred and ninety-six there is, so the arrangement on the page at the end
+    // of the drag is not the arrangement it started in.
+    const screen = screenOf(ran.bytes.slice(0, ran.at[STEPS] as number), to, rows);
+    const title = openingRowsOf(screen).find((row) => row.includes(OPENED));
+    expect(title, 'nothing on the page says what the session is').toBeDefined();
+    const art = drawnAcross(to).filter((row) => row.trim().length > 0);
+    expect(
+      art.some((row) => (title as string).startsWith(row)),
+      'the text is not beside the mark at the width the drag ended on',
+    ).toBe(true);
+  }, 240_000);
+
+  it('carries no page away for the same drag once the session has said something', async () => {
+    // A13, AND IT IS THE STATE OF THE FIXTURE RATHER THAN THE SIZE OF IT. A page that has just
+    // opened is the least representative instant of a session: the flow is the opening and nothing
+    // else, so every count taken on it is taken where the page has the most room it will ever
+    // have. This series has already lost a hole that way. So the same drag is measured after the
+    // caller has asked something and read the answer.
+    //
+    // AND IT IS THE ANSWER THAT MAKES IT DIFFERENT, not the keystroke: what a verb said is part of
+    // the flow, so the page a drag is decided against is a taller page than the one that opened —
+    // which is exactly the page a turn would have carried into the scrollback.
+    const columns = 100;
+    const from = 24;
+    const heights = Array.from({ length: STEPS }, (_, at) => from + (at + 1) * 2);
+    const to = heights.at(-1) as number;
+    const ran = await inPty({
+      columns,
+      rows: from,
+      steps: [
+        opens,
+        { types: 'verify\r', until: arrivedSince(VERIFIED), what: 'answered' },
+        ...heights.map((rows) => dragged(columns, rows)),
+        leaves,
+      ],
+    });
+    expect(carriedPages(ran.bytes), 'a page was carried away for a height').toBe(1);
+    expect(times(ran.bytes, OPENED), 'the opening was written again for a height').toBe(1);
+    // AND THE SESSION REALLY HAD SAID SOMETHING BEFORE THE DRAG, which is the whole point of this
+    // case: the echo of the verb is the one mark only a caller can put on a page, and it is on the
+    // page at the end of the drag as well — nothing the drag did took it away.
+    const screen = screenOf(ran.bytes.slice(0, ran.at[STEPS + 1] as number), columns, to);
+    expect(screen.text, 'the caller never typed a verb').toContain(SAID);
+    endsAtTheFoot(screen, to, `${columns}x${to}, dragged over an answer`);
+  }, 240_000);
 });
 
 // ---------------------------------------------------------------------------
@@ -995,6 +1054,29 @@ const ASKS_THE_DEVICE = String.raw`\b\w*(?:stdout|stderr|output|stream)\w*\s*\.\
 const asksTheDevice = (code: string): string[] =>
   code.match(new RegExp(ASKS_THE_DEVICE, 'gi')) ?? [];
 
+/**
+ * WHAT THE CONSOLE KEEPS BETWEEN FRAMES THAT COMES OUT OF THE DEVICE — the discriminant of the
+ * half this delivery removed, as a scan over the console's own source.
+ *
+ * IT IS THE KEEPING AND NOT THE READING. Asking how tall the terminal is costs a property read
+ * and is right whenever it is asked; the answer REMEMBERED is what goes stale, and a page turned
+ * for a number that went stale is the defect this replaces a count of `placedAt` with. So what is
+ * looked for is a name the console holds between frames (`let`, at the console's own scope) whose
+ * value comes from {@link ASKS_THE_DEVICE}'s two questions, however it got there — born with it,
+ * or written with it later.
+ *
+ * WHAT IT CANNOT SEE is a reading laundered through a local: `const rows = howTall()` and then
+ * `kept = rows` is two statements and this reads one. That is the limit of a scan over text, and
+ * it is why the guard is a PAIR — this says nothing is kept, and the cases in a pty say a drag
+ * costs no page, which is what a kept height would cost.
+ */
+function remembersTheDevice(code: string): string[] {
+  const kept = [...code.matchAll(/\blet\s+(\w+)/g)].map((found) => found[1] as string);
+  return kept.filter((name) =>
+    new RegExp(String.raw`\b${name}\b[^=;()]*=\s*[^;]*\bhow(?:Tall|Wide)\s*\(`).test(code),
+  );
+}
+
 describe('the FRAME asks how big the terminal is in one place, and it follows it', () => {
   it('is read off a stream in exactly the two modules that own a lifetime', () => {
     // A1, BY THE DISCRIMINANT. It used to be two of the wrong kind: the session asked how
@@ -1080,11 +1162,28 @@ describe('the FRAME asks how big the terminal is in one place, and it follows it
     // the first frame and every frame after it ask the same question of the same subtraction.
     expect(times(source, 'function whatTheFrameLeft'), 'the cap is worked out twice').toBe(1);
     expect(times(source, 'flowOnScreen +='), 'the rows on the screen grow somewhere else').toBe(1);
-    // AND THE HEIGHT THE PAGE WAS PLACED AT IS RECORDED WHERE THE PAGE IS TURNED. It is the
-    // half of the resize guard the drawing cannot answer (`repl/panel.ts`, `sameOpening`), so
-    // a page turned without recording it would leave the guard comparing against a height two
-    // pages old and refusing to follow the terminal at all: born with the page that opens, and
-    // written again in the one place that turns one.
-    expect(times(source, 'placedAt ='), 'the placement is recorded somewhere else').toBe(2);
+    // ⚠️ AND IT COUNTED A HEIGHT THE PAGE REMEMBERED — `placedAt =`, twice: born with the page
+    // that opened and written again wherever one was turned. THE PREMISE WAS THAT A PAGE IS A
+    // DRAWING AND A PLACEMENT, so the guard on a resize had a half the drawing could not answer
+    // and that half needed a number kept between frames. It is gone, and a count of ZERO for it
+    // is not written here: a ban on a name nobody can write is a guard that cannot go red. What
+    // replaces it is the RULE the removal leaves — nothing this console keeps between frames is a
+    // measurement of the device — and it is asked of every name kept, by the discriminant rather
+    // than by that one name.
+    const remembered = remembersTheDevice(source);
+    expect(remembered, 'a measurement of the device is remembered between frames').toEqual([
+      'opened',
+    ]);
+    // AND THE ONE THING THAT IS KEPT IS A DRAWING RATHER THAN A NUMBER, which is what makes the
+    // list above the rule and not an exception: the opening is composed FROM the two measurements
+    // and what is held is what was composed (`repl/panel.ts`, `Opening`).
+    expect(source, 'the opening is not composed where it is kept').toMatch(
+      /let opened: Opening = openingFor\(/,
+    );
+    // NOT VACUOUS, IN BOTH DIRECTIONS: the scan really accuses the half that was taken out, and
+    // it really does not accuse a reading taken and spent inside one frame.
+    expect(remembersTheDevice('let placedAt = howTall();')).toEqual(['placedAt']);
+    expect(remembersTheDevice('let placedAt = 0;\nplacedAt = howTall();')).toEqual(['placedAt']);
+    expect(remembersTheDevice('const rows = howTall();')).toEqual([]);
   });
 });

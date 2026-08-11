@@ -240,6 +240,37 @@ export function arrivedSince(what: string): (bytes: string, since: number) => bo
   return (bytes, since) => bytes.slice(since).includes(what);
 }
 
+/**
+ * A FRAME THE STEP ITSELF CAUSED, WITH `absent` NOT IN IT — which is how a step waits for
+ * something to have GONE.
+ *
+ * ⚠️ THREE STEPS SPELLED THIS OUT AND ALL THREE WERE TRUE BEFORE ANYTHING HAPPENED. They read
+ * `aFrameAfter(prompt)(bytes) && !bytes.slice(since).includes(x)`, and the second half of that is
+ * satisfied by an EMPTY slice: at the instant the key is written nothing has arrived, so there is
+ * nothing of `x` in it, while the first half is still approving the frame that arrived BEFORE the
+ * key. So the step ended before the keystroke had been drawn at all, and the case then read a
+ * screen with the thing still on it. Measured in whole-suite runs, under load: *cycle 10: the list
+ * was open* at a hundred by thirty, and *the list is still open* on the Escape that shuts it —
+ * both green on their own, because on an idle machine the next frame beats the settling wait.
+ *
+ * SO AN ABSENCE IS WAITED FOR IN TWO PARTS, and the first is a PRESENCE: the row being typed is
+ * rewritten by every frame the layout draws, so a frame that arrived since the step began has the
+ * prompt in what arrived. Then, and only then, does the absence mean the step is over.
+ *
+ * It is one function because it is one rule — the same reason {@link arrivedSince} is one — and
+ * the three sites that spelled it out are exactly how two ideas of "it has gone" come to exist.
+ */
+export function aFrameWithout(
+  prompt: string,
+  absent: string,
+): (bytes: string, since: number) => boolean {
+  const finished = aFrameAfter(prompt);
+  return (bytes, since) => {
+    const arrived = bytes.slice(since);
+    return finished(bytes) && arrived.includes(prompt) && !arrived.includes(absent);
+  };
+}
+
 /** One thing to do in the session, and what says it is done. */
 export interface Step {
   /** What the caller types, if anything. */

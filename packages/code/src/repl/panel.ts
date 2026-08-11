@@ -219,13 +219,16 @@ export interface Opening {
  * arrangement there is room for, and how many rows the sentence under it folds into
  * ({@link openingFor}).
  *
- * ⚠️ AND IT IS NO LONGER THE WHOLE QUESTION A CALLER ASKS. This said that a height changing
- * no glyph *costs the caller nothing*, and the delivery that put the input at the FOOT of the
- * terminal falsified it: a page is now a drawing AND a placement, and the rows before the
- * opening are how many the height leaves over (`repl/page.ts`). What is here is still the
- * drawing, whole and unchanged — a panel that has no idea how tall a device is could not
- * answer the other half — and the console asks both
- * (`repl/console.ts`, `placedAt`; `tests/the-page-follows-the-terminal.test.ts`).
+ * ⚠️ AND IT WAS WRITTEN HERE THAT IT WAS NO LONGER THE WHOLE QUESTION A CALLER ASKS, on the
+ * premise that *a page is now a drawing AND a placement*: the delivery that put the input at the
+ * FOOT of the terminal made the rows under the flow a function of the height, so the console
+ * asked this AND the height it had last turned a page at. THAT PREMISE IS GONE, and what
+ * falsified it is where the leftover went: those rows are drawn with the redrawn region now
+ * (`repl/page.ts`, `theGap`), so a window that only changed height is answered by the very next
+ * frame and there is no placement left for a page to be stale for. What the second half cost was
+ * a page per step of a drag — twelve, measured, against two for the same drag along the width.
+ * So this is the WHOLE question again, and the console asks nothing beside it
+ * (`repl/console.ts`, `followTheTerminal`; `tests/the-page-follows-the-terminal.test.ts`).
  *
  * COMPARED AS A WHOLE rather than field by field, and that is the point of it being here
  * rather than at the call site: a field added to the panel tomorrow is a field this
