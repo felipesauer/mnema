@@ -96,6 +96,20 @@
  * short as a flow gets. Measured across nine heights and bracketed
  * (`tests/the-gap-goes-under-the-box.test.ts`).
  *
+ * ⛔ AND THAT IS TRUE OF THE HEIGHT A FRAME IS DRAWN AT AND OF NO OTHER, which is the premise a
+ * window the caller makes SHORTER falsifies. The sentence above says *at every height*, and what
+ * it can only mean is every height the page was drawn ON: the library decides whether to redraw
+ * the whole screen by comparing the frame it LAST drew against the viewport the caller has NOW,
+ * so a region that was one row short of the screen it was written on is over the boundary the
+ * moment that screen becomes shorter — and nothing this file counts can prevent it, because the
+ * comparison is against a frame that is already on the page. Measured on the binary over
+ * twenty-six pairs, and the rule has no exception: the erase appears exactly when the region last
+ * drawn is as tall as the new window. From forty rows the frontier is at twenty-three, which is
+ * the region a page that has just opened leaves; after a shrink that carries the flow off the top,
+ * ONE row is enough. Declared and asserted as a hole rather than hidden
+ * (`tests/the-page-follows-the-terminal.test.ts`, *a window made SHORTER reaches the erase*), which
+ * carries the frontier and what it will take to close it.
+ *
  * THE ROW UNDER THE AREA IS THE LAYOUT'S, and it is the one row the page stops short of.
  * It is the same row `area.ts` keeps so that the region is redrawn in PART
  * ({@link BELOW_THE_VIEWPORT}) — read here rather than counted again, which is also what
