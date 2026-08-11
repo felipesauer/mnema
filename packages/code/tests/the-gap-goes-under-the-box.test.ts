@@ -83,6 +83,7 @@ import {
   type Screen,
   screenOf,
   theGapOn,
+  theLineAndTheEmptiness,
 } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
@@ -555,20 +556,57 @@ describe('the box opens at the top and the emptiness goes under it', () => {
         { types: typed, until: (bytes) => bytes.includes(`${PROMPT} ${typed}`), what: 'echoed' },
         // ABANDONED RATHER THAN RUN, because what this case needs is exactly ONE line landed:
         // the row being typed is landed as it stands and nothing answers it.
-        { types: ABANDONS_THE_LINE, until: aFrameAfter(PROMPT), what: 'abandoned the line' },
+        //
+        // ⚠️ AND THE STEP WAITED FOR A FRAME, WHICH IS THE SIGNAL THAT PRECEDES WHAT IT CAUSED.
+        // Abandoning a row redraws the frame first — with the row cleared — and lands the line on
+        // the turn after it, so `aFrameAfter(PROMPT)` was approved by the abandon's OWN frame and
+        // the case read the screen with the line still in the input area: *the line landed below
+        // the emptiness: expected 36 to be less than 10*, where 36 is where the region begins.
+        // Red in about half of the whole-suite runs under load, green eighteen of eighteen on its
+        // own. What it waits for now is what it caused — the line PLACED, above the emptiness —
+        // and it is read with the same function the assertion reads it with, so a step can no
+        // longer approve the screen the assertion refuses (`support/screen.ts`,
+        // {@link theLineAndTheEmptiness}).
+        {
+          types: ABANDONS_THE_LINE,
+          until: (bytes) =>
+            aFrameAfter(PROMPT)(bytes) &&
+            theLineAndTheEmptiness(screenOf(bytes, columns, rows), `${PROMPT} ${typed}`).placed,
+          what: 'landed the abandoned line into the flow',
+        },
         leaves,
       ],
     });
     const opened = screenOf(ran.bytes.slice(0, ran.at[0] as number), columns, rows);
     const said = screenOf(ran.bytes.slice(0, ran.at[2] as number), columns, rows);
-    // THE LINE REALLY LANDED, and the page really had room to spare when it opened.
-    expect(said.text, 'the abandoned line never landed').toContain(`${PROMPT} ${typed}`);
+    // THE PAGE REALLY HAD ROOM TO SPARE when it opened. ⚠️ AND THE OTHER HALF OF THIS GUARD WAS
+    // SATISFIED BY THE ROW BEING TYPED — *the abandoned line never landed* read
+    // `said.text` for the text, which is on the screen while the caller is still typing it, so it
+    // could not tell a line the page had placed from one it had not. What answers both halves is
+    // WHERE the line is, which is the one reading below.
     expect(theGapOn(opened, PROMPT), 'the page opened with nothing left over').toBeGreaterThan(0);
     // THE LINE IS ABOVE THE EMPTINESS, which is the direction now: it is the last row of the flow
-    // and the flow is above the region the layout redraws.
-    const landedOn = said.rows.findIndex((row) => row.includes(`${PROMPT} ${typed}`));
-    const emptyFrom = said.rows.findIndex((row) => row.trim().length === 0);
-    expect(landedOn, 'the line landed below the emptiness').toBeLessThan(emptyFrom);
+    // and the flow is above the region the layout redraws. Read with the same function the step
+    // ended on, so there is ONE idea of where the line is (`support/screen.ts`).
+    const placed = theLineAndTheEmptiness(said, `${PROMPT} ${typed}`);
+    expect(placed.landedOn, 'the abandoned line is nowhere on the page').toBeGreaterThanOrEqual(0);
+    expect(
+      placed.landedOn,
+      `the line landed below the emptiness: row ${placed.landedOn} against ${placed.emptyFrom}`,
+    ).toBeLessThan(placed.emptyFrom);
+    // AND THE READING IS NOT VACUOUS, which is also exactly what the step had to wait OUT: on the
+    // frame before the abandon the SAME text is on the screen and it is not placed — it is the row
+    // being typed, at the foot, below the emptiness. So what the step ends on can be false, and it
+    // was false when the step began.
+    const beingTyped = theLineAndTheEmptiness(
+      screenOf(ran.bytes.slice(0, ran.at[1] as number), columns, rows),
+      `${PROMPT} ${typed}`,
+    );
+    expect(
+      beingTyped.landedOn,
+      'the row being typed is not on the screen at all',
+    ).toBeGreaterThanOrEqual(0);
+    expect(beingTyped.placed, 'the line was in the flow before it was abandoned').toBe(false);
     // AND THE EMPTINESS IS ONE ROW SHORTER, not one row higher: the row the session said came out
     // of the room the page had, so nothing was carried away for it.
     expect(theGapOn(said, PROMPT), 'the emptiness did not give the row up').toBe(
