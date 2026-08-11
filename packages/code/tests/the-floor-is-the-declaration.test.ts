@@ -456,5 +456,8 @@ describe('a verb that loads its work still answers', () => {
     const done = cli('task', 'a task the floor test wrote');
     expect(done.stdout).toContain('Created task ');
     expect(done.status).toBe(0);
-  });
+    // TWO PROCESSES, and one of them FOUNDS a project — the only case in this file that
+    // writes, and the only one that pays a key being made. 237 ms on a quiet machine and
+    // 1006 ms with the suite running at a load of twenty.
+  }, 60_000);
 });
