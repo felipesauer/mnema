@@ -220,6 +220,46 @@ describe('a screen refuses bytes it cannot replay, rather than replaying part of
   });
 });
 
+describe('a screen keeps what left the top, because where a row went is the whole question', () => {
+  /** Ten rows of text, each one naming itself, and nothing else on the page. */
+  const rowsOf = (many: number): string =>
+    Array.from({ length: many }, (_, at) => `row-${at}\r\n`).join('');
+
+  it('feeds the scrollback on a SCROLL and on nothing else', () => {
+    // A ROW GOES ABOVE WHEN IT IS PUSHED OFF THE TOP, and that is the only way there is. Each row
+    // here ends with a newline, so eleven of them on a ten-row screen scroll it TWICE — the last
+    // newline of the tenth row is already the first scroll — and the two that left are above.
+    const scrolled = screenOf(rowsOf(11), 40, 10);
+    expect(
+      scrolled.above.map((row) => row.trim()),
+      'the rows that left are not above, in the order they left',
+    ).toEqual(['row-0', 'row-1']);
+    expect(scrolled.text, 'the row that left is still on the screen').not.toContain('row-0');
+    expect(scrolled.text, 'the rows that stayed are not on the screen').toContain('row-10');
+    // AND ERASING THE SCREEN ADDS NOTHING TO IT, which is the difference the whole page design of
+    // this product rests on: the rows it erases are simply not anywhere afterwards.
+    const erased = screenOf(`${rowsOf(4)}${ESC}[2J`, 40, 10);
+    expect(erased.text.trim(), 'the screen was not emptied').toBe('');
+    expect(erased.above, 'erasing the screen fed the scrollback').toEqual([]);
+  });
+
+  it('⛔ empties the scrollback on the sequence that erases the history', () => {
+    // ⚠️ THIS MODEL USED TO DO NOTHING AT ALL ABOUT `ESC[3J`, on the grounds that the scrollback is
+    // not the screen and that this product refuses to write the sequence anyway. Both halves
+    // stopped holding: the door translates it now rather than nobody writing it
+    // (`src/repl/page.ts`, `theEraseAsAScroll`), so a case has to be able to tell a page that was
+    // SCROLLED from one that was erased — and a model that shrugged at this would answer *the
+    // caller's history is intact* for the very bytes that destroy it.
+    const kept = screenOf(rowsOf(12), 40, 10);
+    expect(kept.above.length, 'nothing was above to be destroyed').toBe(3);
+    const gone = screenOf(`${rowsOf(12)}${ESC}[3J`, 40, 10);
+    expect(gone.above, 'the history survived the sequence that erases it').toEqual([]);
+    // AND IT LEAVES THE SCREEN ALONE, which is what it does on a terminal: it is the history it
+    // takes, and a model that blanked the page here would be answering for `2J` instead.
+    expect(gone.rows, 'the screen was erased with the history').toEqual([...kept.rows]);
+  });
+});
+
 describe('a screen refuses a stream that was decoded in pieces, and says that is what it is', () => {
   it('accuses a run with a replacement character in it, and says what it costs', () => {
     // ⚠️ THE DEFECT THE WHOLE DELIVERY WENT LOOKING FOR, and it is the instrument's own. The

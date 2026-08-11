@@ -7,8 +7,16 @@
  * are rows the layout REDRAWS, and the library that redraws them gives up on redrawing
  * PART of the screen once the region is as tall as the viewport. What it does instead is
  * redraw all of it, with a sequence that carries, inside it, the one erase this product
- * refuses to write: the caller's own history (`a-page-that-opens-clean.test.ts` measures
- * the boundary in both directions).
+ * refuses: the caller's own history (`a-page-that-opens-clean.test.ts` measures the boundary
+ * in both directions).
+ *
+ * ⚠️ AND WHAT THAT COSTS IS NO LONGER THE HISTORY, which is worth saying where the arithmetic
+ * that avoids the path is written. The sequence is translated on the way out — the screen erase
+ * into the scroll this product empties a page with, the erase of the history into nothing
+ * (`page.ts`, `theEraseAsAScroll`) — so nothing above the caller's screen is destroyed by it any
+ * more. What the path still costs is the whole page rewritten out of what the library keeps, and a
+ * page of the caller's carried into the scrollback to make room for it, which is why the boundary
+ * below is still kept rather than abandoned.
  *
  * SO THE AREA HAS FORMS, AND THEY ARE CHOSEN BY HEIGHT. It is the panel's rule
  * (`panel.ts`) applied to the other measurement: the widest form that fits is the one
@@ -29,9 +37,15 @@
  * frame it LAST drew against the viewport of the moment — and the second is asked again on every
  * change of size, so a region that was one row short of its own screen is over the boundary as
  * soon as that screen becomes shorter. Nothing here can answer it: the frame it judges is already
- * on the page. Measured, declared and asserted as a hole where a resize is the subject
- * (`tests/the-page-follows-the-terminal.test.ts`), which is also where the frontier is written
- * down.
+ * on the page.
+ *
+ * SO IT IS ANSWERED WHERE THE BYTES LEAVE, and the sentence above is untouched by that: the
+ * library still crosses the boundary at exactly the same windows, and what it writes when it does
+ * is translated into a page carried into the scrollback instead of an erase (`page.ts`,
+ * `theEraseAsAScroll`; the frontier itself is written down in
+ * `tests/the-page-follows-the-terminal.test.ts`). This arithmetic is still worth its row, because
+ * the path still costs the whole page rewritten — but what it protects is no longer the caller's
+ * history.
  *
  * EVERY ROW THE AREA WILL DRAW IS COUNTED, including the ones that come and go. THIS USED
  * TO BE ONE ROW — the words a Tab could not choose between — and what replaced it is a
@@ -219,9 +233,11 @@ const A_WORD = 3;
  * How much shorter than the viewport a region has to be to be redrawn in PART.
  *
  * One row, and it is measured rather than chosen: the library treats a region as tall as
- * the viewport as a fullscreen one and redraws the whole screen for it, which is the path
- * that writes the erase this product will not write. Under it by one, it redraws the rows
- * it owns and nothing else.
+ * the viewport as a fullscreen one and redraws the whole screen for it, which is the path whose
+ * sequence carries the erase this product will not write — answered on the way out rather than
+ * avoided, so what the path costs is the page rewritten and not the caller's history
+ * (`page.ts`, `theEraseAsAScroll`). Under it by one, it redraws the rows it owns and nothing
+ * else.
  *
  * EXPORTED BECAUSE THE OPENING ASKS THE SAME QUESTION OF THE WHOLE PAGE. The drawing of the
  * name gives way when the page it is on stops fitting on the screen, and "fitting" there is
@@ -344,8 +360,9 @@ function onOneRow(width: number, columns: number): boolean {
  *     {@link A_WORD} rows, which is a word, the count of what had no room, and the row of keys.
  *   - THE CEILING IS THE LIBRARY'S AND IT DOES NOT BEND: what is left of the SCREEN over the
  *     floor. Past it the region is as tall as the viewport and the layout stops redrawing part
- *     of the screen — the one path that carries the erase this product refuses to write. The
- *     floor may reach it and may not pass it.
+ *     of the screen — the one path whose sequence carries the erase this product refuses, and
+ *     which costs the page being rewritten now that the sequence is answered on the way out
+ *     ({@link BELOW_THE_VIEWPORT}). The floor may reach it and may not pass it.
  *
  * ⚠️ THE FLOOR WAS LEFT OUT, AND THE PREMISE FOR LEAVING IT OUT WAS HALF-MEASURED. It was
  * argued that a floor *carries the top of the drawing away, which is the defect this closes* —

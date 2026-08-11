@@ -100,7 +100,8 @@
  * stays in the scrollback where the session put it. What it may NOT be is a region of its
  * own — a list that GROWS WITHOUT BOUND where the input is redrawn walks the region into the
  * height at which the layout library stops redrawing a PART of the screen and starts redrawing
- * all of it, with the erase this product refuses to write inside the sequence (`area.ts`) — and
+ * all of it, with the erase this product refuses inside the sequence (`area.ts`, and the sequence
+ * is answered at the pipe rather than avoided — {@link theWayOut}) — and
  * it may not rewrite what is above it either: a fact about a line the caller has already read
  * lands UNDER it, because the one promise of this surface is that what has been said is not
  * unsaid.
@@ -118,10 +119,16 @@
  * against the viewport of the moment, so a region one row short of its own screen is over the
  * boundary as soon as the caller drags the bottom edge up past it — and it is the library's own
  * watch on the device that answers first, before anything here runs at the new size. So the erase
- * this surface refuses to write is reached without this surface writing it, and no frame this file
- * composes can avoid it. Measured, declared and asserted as a hole
- * (`tests/the-page-follows-the-terminal.test.ts`, *a window made SHORTER reaches the erase*), which
- * carries the frontier.
+ * this surface refuses is reached without this surface writing it, and no frame this file composes
+ * can avoid it.
+ *
+ * SO IT IS ANSWERED ON THE WAY OUT, WHICH IS THE ONE PLACE LEFT ({@link theWayOut}). The library
+ * goes on reaching that path at exactly the windows it always did — the frontier is unchanged and
+ * still asserted — and what it writes there is translated into this product's own way of emptying
+ * a page: the screen erase becomes a scroll, and the erase of the caller's history becomes nothing
+ * (`page.ts`, `theEraseAsAScroll`). What was a declared hole is a property now
+ * (`tests/the-page-follows-the-terminal.test.ts`, *a window made SHORTER asks for the erase, and
+ * the caller's history survives it*).
  */
 
 import { render } from 'ink';
@@ -133,7 +140,7 @@ import type { Completer } from './complete.js';
 import { type Editing, type Keystroke, keystrokesOf, NOTHING_TYPED, typeKey } from './editing.js';
 import type { AfterLine } from './gate.js';
 import { armLeaving, type Leaving } from './leaving.js';
-import { carriedIntoTheScrollback, theGap } from './page.js';
+import { carriedIntoTheScrollback, theEraseAsAScroll, theGap } from './page.js';
 import { offeredBy, paletteFor, paletteRowsFor } from './palette.js';
 import { type Opening, sameOpening } from './panel.js';
 import { Region, type Shown, type Watched } from './region.js';
@@ -384,6 +391,63 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * finished running — and a question asked from inside it cannot be declared after it.
    */
   const howTall = (): number => stdout.rows ?? NO_HEIGHT;
+
+  /**
+   * ⛔ EVERY BYTE THIS SESSION WRITES, AND THE ONE PLACE THE ERASE IS ANSWERED — the caller's own
+   * device, with one door in front of the only method that puts anything on it.
+   *
+   * IT IS THE LAST POINT IN THE PROCESS, and that is the whole of why it is here rather than in a
+   * frame. The library decides to start the page over by comparing the frame it LAST drew against
+   * the viewport of the moment, so the decision is taken before anything of this file runs at the
+   * new size and no frame this file composes can change it ({@link followTheTerminal}). What IS
+   * still ours is the pipe: the bytes it decided on have to leave through a stream, and this file
+   * is the one that owns the streams. So the sequence is translated on the way out
+   * (`page.ts`, {@link theEraseAsAScroll}) — the screen erase into the scroll this product empties
+   * a page with, the erase of the caller's history into nothing.
+   *
+   * ONE DOOR AND TWO WRITERS, which is what makes it a pipe rather than a patch: the layout is
+   * handed this instead of the device, and the one string this file writes itself goes through it
+   * too. A second writer on the raw stream would be a second mouth with no door on it, which is
+   * asserted over this file's own source (`tests/the-console-on-ink.test.ts`).
+   *
+   * EVERYTHING BUT THE WRITE IS THE DEVICE'S OWN, and it is delegated rather than listed on
+   * purpose. What a layout library asks a terminal is its business and changes with its version —
+   * how wide, how tall, whether it is a terminal, whether it is still writable, and the watch on
+   * the size — so a stand-in built out of the members one version happens to ask for is a stand-in
+   * that breaks on the next. This forwards every question to the real device and answers exactly
+   * one of them differently.
+   */
+  const theWayOut: NodeJS.WriteStream = new Proxy(stdout, {
+    get: (device, named) => {
+      if (named === 'write') return throughTheDoor;
+      const found: unknown = Reflect.get(device, named);
+      // BOUND TO THE DEVICE, so that a method the library calls runs on the terminal and not on
+      // this. The watch on the size is the one that matters: a listener registered against a
+      // stand-in is a listener the device never tells.
+      return typeof found === 'function' ? found.bind(device) : found;
+    },
+  });
+
+  /**
+   * ONE WRITE, ANSWERED — the bytes with the erase translated, handed to the real device.
+   *
+   * A chunk that is not TEXT goes out exactly as it arrived, and that is a refusal rather than a
+   * gap: bytes are where a character can be cut in half, so a door that decoded them in order to
+   * search them would be the defect this bench has already paid for once (`support/screen.ts`).
+   * Nothing writes one here — the library assembles a frame into a string, and this file writes
+   * what one function returned.
+   */
+  function throughTheDoor(chunk: unknown): boolean {
+    // ONE STATEMENT, AND IT IS THE ONLY PLACE IN THIS SURFACE THAT PUTS A BYTE ON THE CALLER'S
+    // DEVICE — asserted over this file's own source, so a second one is an accusation rather
+    // than a hole (`tests/the-console-on-ink.test.ts`). The HEIGHT is asked at the instant of the
+    // write, because the page being carried away is the one on the device NOW: the whole reason
+    // this write exists is a window whose size just changed, and a height read anywhere earlier
+    // is the height it changed FROM.
+    return stdout.write(
+      typeof chunk === 'string' ? theEraseAsAScroll(chunk, howTall()) : (chunk as Uint8Array),
+    );
+  }
 
   /**
    * The arrangement and the lines the page on the screen was drawn with.
@@ -944,11 +1008,18 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   // AND IT OPENS PLACED WITHOUT A SECOND LINE HERE, which is what the leftover moving into the
   // frame bought: the value the layout is about to read was built with the room the page has to
   // spare in it ({@link showing}), so the first frame drawn is already anchored.
-  stdout.write(carriedIntoTheScrollback(howTall()));
+  //
+  // AND IT GOES THROUGH THE DOOR LIKE EVERY OTHER BYTE ({@link theWayOut}), which costs nothing
+  // here and is what makes the pipe one pipe: these bytes hold no erase to translate, and a second
+  // writer on the raw device would be the hole the door exists to close.
+  theWayOut.write(carriedIntoTheScrollback(howTall()));
 
   const app = render(createElement(Region, { watched, tips: tips.text, badge: badge.text }), {
     stdin,
-    stdout,
+    // THE DOOR AND NOT THE DEVICE, which is the whole of this delivery: what the library writes
+    // when it gives up on redrawing PART of the screen carries the one sequence this product
+    // refuses, and it is answered here ({@link theWayOut}).
+    stdout: theWayOut,
     // Ctrl-C is this session's, and it abandons the LINE. A library that exited the
     // process on it would make the console worse than the shell prompt it replaces:
     // you would lose the session for mistyping a word.

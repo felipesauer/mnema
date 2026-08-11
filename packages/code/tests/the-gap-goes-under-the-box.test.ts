@@ -910,27 +910,42 @@ describe('the region redrawn holds the emptiness, and is still short of the scre
     }
   }, 240_000);
 
-  it('⚠️ leaves the erase where it was: absent at two rows, and the library’s own at one', async () => {
+  it('⚠️ leaves the BOUNDARY where it was, and the erase on neither side of it', async () => {
     // THE BOUNDARY, BRACKETED, and it is the LIBRARY'S rather than this product's: on a
     // terminal shorter than the region it redraws, the layout redraws the whole screen and
-    // the sequence it uses for that carries, inside it, the one this product refuses to
-    // write. Nothing of ours writes it (guarded over the source in `the-console-on-ink.test.ts`).
-    // Pinned in BOTH directions so the rows with nothing on them cannot have moved it: one row
-    // more than the boundary and the erase is gone, and at the boundary it is still there.
+    // the sequence it uses for that carries, inside it, the one this product refuses.
+    // Pinned in BOTH directions so the rows with nothing on them cannot have moved it.
+    //
+    // ⚠️ AND THE CASE IS INVERTED AND RENAMED. It was `leaves the erase where it was: absent at
+    // two rows, and the library's own at one`, and the second half of that asserted the erase
+    // arriving at the boundary. It does not arrive any more, at any height: the sequence is
+    // translated on the way out (`src/repl/console.ts`, `theWayOut`). What still brackets the
+    // boundary is the library's own REPLAY of everything it was keeping, which is what it does on
+    // that path and which the door leaves untouched.
     const short = await inPty({
       columns: WIDE_ENOUGH_FOR_THE_HINT,
       rows: TOO_SHORT_TO_REDRAW_IN_PART,
       steps: [opens, leaves],
     });
-    expect(short.bytes, 'the library no longer erases the history at the boundary').toContain(
-      ERASES_THE_HISTORY,
-    );
     const over = await inPty({
       columns: WIDE_ENOUGH_FOR_THE_HINT,
       rows: TOO_SHORT_TO_REDRAW_IN_PART + 1,
       steps: [opens, leaves],
     });
-    expect(over.bytes, 'one row over the boundary saw the erase').not.toContain(ERASES_THE_HISTORY);
+    // ⛔ THE PROMISE, ON BOTH SIDES: the height the library gives up at, and the one it does not.
+    for (const [what, ran] of [
+      [`${TOO_SHORT_TO_REDRAW_IN_PART} rows`, short],
+      [`${TOO_SHORT_TO_REDRAW_IN_PART + 1} rows`, over],
+    ] as const) {
+      expect(ran.bytes, `${what}: the history was erased`).not.toContain(ERASES_THE_HISTORY);
+    }
+    // AND THE BOUNDARY ITSELF, read off the replay rather than off the erase: at the boundary the
+    // library writes the page again out of what it keeps, and one row over it does not.
+    const replays = (bytes: string): number => bytes.split(OPENED).length - 1;
+    expect(replays(short.bytes), 'the library no longer gives up at the boundary').toBeGreaterThan(
+      1,
+    );
+    expect(replays(over.bytes), 'one row over the boundary the library gave up').toBe(1);
     // Both sessions really opened, so the difference between them is the height alone.
     for (const ran of [short, over]) expect(ran.bytes).toContain(PROMPT);
   }, 240_000);

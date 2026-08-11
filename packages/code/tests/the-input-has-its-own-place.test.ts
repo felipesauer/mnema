@@ -22,8 +22,11 @@
  *   - THE AREA DEGRADES BY HEIGHT, and that is what keeps this delivery from opening a
  *     hole. The region went from three rows to five, and the height at which the layout
  *     library gives up on redrawing PART of the screen — and writes, inside what it does
- *     instead, the one erase this product refuses to write — moves with it. Measured
- *     again, in both directions, and the number went DOWN.
+ *     instead, the one erase this product refuses — moves with it. Measured again, in both
+ *     directions, and the number went DOWN. ⚠️ AND THE BOUNDARY USED TO BE READ OFF THAT
+ *     ERASE, which no longer reaches a terminal at any height: it is translated on the way
+ *     out (`src/repl/page.ts`, `theEraseAsAScroll`). What it is read off now is the ANSWER —
+ *     a page carried into the scrollback where no page could have been turned.
  *   - THE BADGE DOES NOT LIE. The worst level when the trees disagree, by the function
  *     that already folds them; nothing at all when there is no record to fold.
  *   - THE HINT FITS. Asserted against the width of a terminal rather than against a
@@ -49,7 +52,14 @@ import { here } from '../src/wiring/context.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { DEFAULT_REQUIREMENT, levelSeverity, VERIFY_VERB } from '../src/wiring/verify.js';
 import { ESC, fakeTerminal, hooksNothing, until, withoutLayout } from './support/console.js';
-import { inPty as drive, type Fixture, opensAConsole, type Ran, type Step } from './support/pty.js';
+import {
+  carriedPages,
+  inPty as drive,
+  type Fixture,
+  opensAConsole,
+  type Ran,
+  type Step,
+} from './support/pty.js';
 import { screenOf } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
@@ -77,7 +87,10 @@ const PROMPT = 'mnema>';
 /** Ctrl-C, which abandons the row being typed. Spelled as an escape, for the same reason. */
 const CLEARS_THE_LINE = '\u0003';
 
-/** The sequence that erases the caller's history. It is not this product's to write. */
+/**
+ * ⛔ The sequence that erases the caller's history. It may not reach a terminal this surface is
+ * drawing on, at any height (`src/repl/page.ts`, `theEraseAsAScroll`).
+ */
 const ERASES_THE_HISTORY = `${ESC}[3J`;
 
 /**
@@ -806,30 +819,42 @@ describe('a terminal without the height gets less area, down to the bare prompt'
     ).toBe(false);
   }, 240_000);
 
-  it('⚠️ and the height the library erases the caller’s history at is one row', async () => {
+  it('⚠️ and the height the library starts the whole page over at is one row', async () => {
     // A MEASUREMENT AND A BOUNDARY, and it is the LIBRARY'S rather than this product's.
-    // Below a certain height it stops redrawing part of the page and redraws all of it,
-    // with a sequence that carries the one erase this product refuses to write. Pinned in
+    // Below a certain height it stops redrawing part of the page and starts the whole page
+    // over, with a sequence that carries the one erase this product refuses. Pinned in
     // both directions, so the boundary cannot move in silence — which is what caught it
     // moving when the width rule landed (see {@link TOO_SHORT_TO_REDRAW_IN_PART}).
+    //
+    // ⚠️ AND WHAT IT IS READ OFF CHANGED, and the case is renamed for it. It was read off the
+    // ERASE, which is the byte the library reached the terminal with; that byte is answered on the
+    // way out now (`src/repl/page.ts`, `theEraseAsAScroll`) and reaches nobody at any height, so a
+    // bracket made of it would be two absences and no boundary. What is read instead is the ANSWER:
+    // starting the page over is answered with a page carried into the scrollback, so at a fixed
+    // height — where nothing can turn a page — a count above the one the session opened with IS the
+    // library having given up (`support/pty.ts`, {@link carriedPages}).
     const short = await inPty({
       columns: WIDE_ENOUGH_FOR_THE_HINT,
       rows: TOO_SHORT_TO_REDRAW_IN_PART,
       steps: [opens, leaves],
     });
-    expect(short.bytes, 'the library no longer erases the history that low').toContain(
-      ERASES_THE_HISTORY,
-    );
+    expect(
+      carriedPages(short.bytes),
+      'the library no longer starts the page over that low',
+    ).toBeGreaterThan(1);
     const taller = await inPty({
       columns: WIDE_ENOUGH_FOR_THE_HINT,
       rows: TOO_SHORT_TO_REDRAW_IN_PART + 1,
       steps: [opens, leaves],
     });
-    expect(taller.bytes, 'the boundary did not move with the area').not.toContain(
-      ERASES_THE_HISTORY,
-    );
-    // Both sessions really opened, so the difference above is the height and nothing else.
-    for (const ran of [short, taller]) expect(ran.bytes).toContain(PROMPT);
+    expect(carriedPages(taller.bytes), 'the boundary did not move with the area').toBe(1);
+    // ⛔ AND NEITHER OF THEM COST THE CALLER A ROW OF THEIR HISTORY, which is the promise the
+    // bracket above used to be the exception to.
+    for (const ran of [short, taller]) {
+      expect(ran.bytes, 'the history was erased').not.toContain(ERASES_THE_HISTORY);
+      // Both sessions really opened, so the difference above is the height and nothing else.
+      expect(ran.bytes).toContain(PROMPT);
+    }
   }, 240_000);
 
   it('⚠️ and a window too narrow for the hint does not reach it at any height', async () => {
@@ -840,12 +865,11 @@ describe('a terminal without the height gets less area, down to the bare prompt'
       rows: TOO_SHORT_TO_REDRAW_IN_PART,
       steps: [opens, leaves],
     });
-    expect(shortest.bytes, 'the boundary is still reached without the hint').not.toContain(
-      ERASES_THE_HISTORY,
-    );
+    expect(carriedPages(shortest.bytes), 'the boundary is still reached without the hint').toBe(1);
     // Not vacuous: the session really opened on that terminal, and the hint really is too
     // wide for it — so the absence above is the hint's missing row and not a dead probe.
     expect(shortest.bytes).toContain(PROMPT);
+    expect(shortest.bytes, 'the history was erased').not.toContain(ERASES_THE_HISTORY);
     expect(widthOf(tips())).toBeGreaterThan(TOO_NARROW_FOR_THE_HINT);
   }, 240_000);
 
@@ -865,12 +889,14 @@ describe('a terminal without the height gets less area, down to the bare prompt'
       rows: TOO_SHORT_TO_REDRAW_IN_PART,
       steps: [opens, leaves],
     });
-    expect(keepsIt.bytes, `${wide} columns: the hint's row stopped counting`).toContain(
-      ERASES_THE_HISTORY,
-    );
-    expect(losesIt.bytes, `${wide - 1} columns: a hint that would fold was drawn`).not.toContain(
-      ERASES_THE_HISTORY,
-    );
+    expect(
+      carriedPages(keepsIt.bytes),
+      `${wide} columns: the hint's row stopped counting`,
+    ).toBeGreaterThan(1);
+    expect(
+      carriedPages(losesIt.bytes),
+      `${wide - 1} columns: a hint that would fold was drawn`,
+    ).toBe(1);
 
     // AND AT THE WIDTH THE FRONT KEEPS ITS RECORD AT, so the number is comparable with the
     // two deliveries before this one: it was TWO rows there when the hint folded in two, it
@@ -885,15 +911,18 @@ describe('a terminal without the height gets less area, down to the bare prompt'
       rows: TOO_SHORT_TO_REDRAW_IN_PART + 1,
       steps: [opens, leaves],
     });
-    expect(recorded.bytes, `${WHERE_IT_WAS_RECORDED} columns, one row`).toContain(
-      ERASES_THE_HISTORY,
-    );
-    expect(oneTaller.bytes, `${WHERE_IT_WAS_RECORDED} columns, two rows`).not.toContain(
-      ERASES_THE_HISTORY,
-    );
+    expect(
+      carriedPages(recorded.bytes),
+      `${WHERE_IT_WAS_RECORDED} columns, one row`,
+    ).toBeGreaterThan(1);
+    expect(carriedPages(oneTaller.bytes), `${WHERE_IT_WAS_RECORDED} columns, two rows`).toBe(1);
     // Every one of them really opened, so each answer above is about a height and a width
-    // rather than about a session that died.
-    for (const ran of [keepsIt, losesIt, recorded, oneTaller]) expect(ran.bytes).toContain(PROMPT);
+    // rather than about a session that died. ⛔ AND NONE OF THEM ERASED THE CALLER'S HISTORY, at
+    // either side of either boundary.
+    for (const ran of [keepsIt, losesIt, recorded, oneTaller]) {
+      expect(ran.bytes).toContain(PROMPT);
+      expect(ran.bytes, 'the history was erased').not.toContain(ERASES_THE_HISTORY);
+    }
     // And the width that keeps it really is narrower than the one the case above uses, so
     // the two are measuring different points rather than the same one twice.
     expect(wide).toBeLessThan(WIDE_ENOUGH_FOR_THE_HINT);

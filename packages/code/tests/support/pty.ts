@@ -189,6 +189,39 @@ function theSizeIsTheOneAskedFor(
 export const FRAME_IS_DRAWN = '\u001b[?2026l';
 
 /**
+ * HOW MANY PAGES A SESSION HAS CARRIED INTO THE SCROLLBACK — the cursor put on the last row of the
+ * device BY NUMBER, which is what every row written after it scrolls off the top.
+ *
+ * ONE READING AND FIVE FILES, and it is here for the reason the header of this file gives: it was
+ * written out twice, and this delivery gave three more cases a use for it. Two spellings of *how
+ * many pages went up* is how one of them quietly stops counting one of the two things that carry
+ * one.
+ *
+ * THE HEIGHT IS LEFT OPEN because a page is carried at whatever height the device has when it is
+ * carried — a page turned after the caller made their window shorter is carried at the NEW height,
+ * so a count naming one height reads it as nought.
+ *
+ * ⚠️ AND THERE ARE TWO THINGS THAT CARRY ONE, which is what this delivery added and what no
+ * reading can separate:
+ *
+ *   - the console TURNS a page, when the drawing this terminal would get is not the one on the
+ *     screen (`repl/console.ts`, `followTheTerminal`);
+ *   - and the DOOR answers the library, when the library gives up on redrawing part of the screen
+ *     and starts the whole page over. What it starts over with carries the erase of the caller's
+ *     history inside it, and the answer to that is this product's own way of emptying a page —
+ *     which is carrying one into the scrollback (`repl/page.ts`, `theEraseAsAScroll`).
+ *
+ * They are the same operation, so they are the same bytes; nothing in a stream tells them apart,
+ * and that is not a gap but what an honest answer costs. What it buys a case is a reading of the
+ * library's own frontier that survives the door: at a fixed height, where no page can be turned, a
+ * count above one is the library having given up and the door having answered.
+ */
+export function carriedPages(bytes: string): number {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: the escape IS the subject.
+  return (bytes.match(/\u001b\[\d+;1H/g) ?? []).length;
+}
+
+/**
  * WHETHER A WHOLE FRAME HAS BEEN DRAWN since `prompt` was last written.
  *
  * ⚠️ FIVE FILES WAITED FOR THE PROMPT INSTEAD, and a prompt is written in the MIDDLE of a
