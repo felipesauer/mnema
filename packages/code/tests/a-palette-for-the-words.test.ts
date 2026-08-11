@@ -55,6 +55,7 @@ import {
   aFrameAfter,
   aFrameWithout,
   arrivedSince,
+  carriedPages,
   inPty as drive,
   type Fixture,
   opensAConsole,
@@ -1372,10 +1373,16 @@ describe('a page without the room shows fewer, and says how many it could not', 
  * the palette's OWN budget (`repl/palette.ts`, `paletteRowsFor`), which is what is left over, so
  * the region is bounded exactly where it was. The keystrokes below are the ones that could move
  * it: the key that opens the list, and the arrow that MARKS a row in it.
+ *
+ * ⚠️ AND *THE ERASE* IS WHAT THE BOUNDARY USED TO BE READ OFF, IN EVERY SENTENCE ABOVE. It does not
+ * reach a terminal at any height any more — it is translated on the way out (`repl/page.ts`,
+ * `theEraseAsAScroll`) — so the sentences survive as what they were always about, which is the
+ * height the library gives up on redrawing PART of the page at, and the reading is the ANSWER to
+ * its giving up: a page carried into the scrollback where nothing could have turned one.
  */
 const TOO_SHORT_TO_REDRAW_IN_PART = 1;
 
-describe('opening the palette does not move the height the library erases at', () => {
+describe('opening the palette does not move the height the library starts the page over at', () => {
   for (const columns of [60, 100]) {
     it(`reaches it at the same row with the palette open, at ${columns} columns`, async () => {
       const short = await inPty({
@@ -1388,9 +1395,16 @@ describe('opening the palette does not move the height the library erases at', (
           leaves,
         ],
       });
-      expect(short.bytes, `${columns}: the boundary moved with the palette`).toContain(
-        ERASES_THE_HISTORY,
-      );
+      // ⚠️ THE BOUNDARY USED TO BE READ OFF THE ERASE and it is read off the ANSWER now: the
+      // sequence the library starts the whole page over with is translated on the way out
+      // (`src/repl/page.ts`, `theEraseAsAScroll`), so the erase reaches no terminal at any height
+      // and a bracket made of it would be two absences. What the translation writes instead is a
+      // page carried into the scrollback, and at a fixed height nothing else can carry one
+      // (`support/pty.ts`, `carriedPages`).
+      expect(
+        carriedPages(short.bytes),
+        `${columns}: the boundary moved with the palette`,
+      ).toBeGreaterThan(1);
 
       for (const rows of [TOO_SHORT_TO_REDRAW_IN_PART + 1, 4, 8]) {
         const taller = await inPty({
@@ -1411,11 +1425,14 @@ describe('opening the palette does not move the height the library erases at', (
             leaves,
           ],
         });
-        expect(taller.bytes, `${columns}x${rows} with the palette open`).not.toContain(
+        expect(carriedPages(taller.bytes), `${columns}x${rows} with the palette open`).toBe(1);
+        expect(taller.bytes, `${columns}x${rows} never opened`).toContain(PROMPT);
+        // ⛔ AND NOT ONE ROW OF THE CALLER'S HISTORY WAS ERASED, on either side of the boundary.
+        expect(taller.bytes, `${columns}x${rows}: the history was erased`).not.toContain(
           ERASES_THE_HISTORY,
         );
-        expect(taller.bytes, `${columns}x${rows} never opened`).toContain(PROMPT);
       }
+      expect(short.bytes, `${columns}: the history was erased`).not.toContain(ERASES_THE_HISTORY);
       // Not vacuous: the hint IS drawn at this width, which is what makes the region two
       // rows and the boundary reachable at all.
       expect(widthOf(tips()), `${columns}`).toBeLessThanOrEqual(columns);

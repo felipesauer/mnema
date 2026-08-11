@@ -25,6 +25,17 @@
  *     reference does not use it either (measured: zero occurrences). And the first is not
  *     wanted either, because what it does with the rows it erases is not the same on
  *     every emulator.
+ *
+ *     ⚠️ *NOT WANTED* WAS TRUE OF WHAT THIS FILE WRITES AND FALSE OF WHAT REACHES THE
+ *     CALLER, and the difference is a sequence somebody ELSE asks for. The layout library
+ *     starts the page over with both of them in one write when the region it last drew is
+ *     as tall as the window the caller now has, so refusing to write them left them
+ *     reaching the terminal anyway. They are TRANSLATED now rather than refused
+ *     ({@link theEraseAsAScroll}): the screen erase becomes the scroll below, which is
+ *     the same empty screen by this file's own third way, and the history erase becomes
+ *     nothing at all. Refusing the second ALONE is not available and it is not a
+ *     preference either — the two arrive in one write, and a library that believes it
+ *     cleared the page paints over rows that are still on it.
  *   - SCROLLING, which is this. Writing a row with nothing on it at the bottom of the
  *     page moves everything up by one, and the row that leaves the top goes into the
  *     scrollback — that is the ONE operation defined to feed it, which is exactly why its
@@ -106,9 +117,15 @@
  * twenty-six pairs, and the rule has no exception: the erase appears exactly when the region last
  * drawn is as tall as the new window. From forty rows the frontier is at twenty-three, which is
  * the region a page that has just opened leaves; after a shrink that carries the flow off the top,
- * ONE row is enough. Declared and asserted as a hole rather than hidden
- * (`tests/the-page-follows-the-terminal.test.ts`, *a window made SHORTER reaches the erase*), which
- * carries the frontier and what it will take to close it.
+ * ONE row is enough.
+ *
+ * AND THE HOLE IS CLOSED WITHOUT THE COMPARISON MOVING, which is the whole shape of the answer:
+ * the library goes on asking at exactly the same frontier, and what it asks for is answered on the
+ * way out instead of being avoided on the way in ({@link theEraseAsAScroll}). The rule above is
+ * still the rule — it is what says WHICH windows ask — and what changed is that asking no longer
+ * costs the caller anything: the erase is nought on every pair of the frontier, and what was on
+ * the screen is in the scrollback rather than gone (`tests/the-page-follows-the-terminal.test.ts`,
+ * *a window made SHORTER asks for the erase, and the caller's history survives it*).
  *
  * THE ROW UNDER THE AREA IS THE LAYOUT'S, and it is the one row the page stops short of.
  * It is the same row `area.ts` keeps so that the region is redrawn in PART
@@ -143,6 +160,28 @@ const A_BLANK_ROW = '\n';
 
 /** What ends a sequence that puts the cursor somewhere. */
 const PUT_THE_CURSOR = 'H';
+
+/**
+ * WHAT ERASES THE SCREEN THE SESSION IS ON — every row of it, in place.
+ *
+ * It is not this file's way of emptying a page and never was: what a terminal does with the
+ * rows it erases is not defined, so the rows are simply not there any more on some emulators
+ * and blanked in place on others. This product empties a page by SCROLLING it
+ * ({@link carriedIntoTheScrollback}), which is the one operation whose effect is the same
+ * everywhere. It is named here because the LIBRARY writes it, and something has to answer.
+ */
+const ERASES_THE_SCREEN = `${ESC}[2J`;
+
+/**
+ * ⛔ WHAT ERASES THE CALLER'S HISTORY — the rows above the screen, which a scroll put there and
+ * nothing brings back.
+ *
+ * It is the one sequence this product refuses, for the reason at the top of this file, and the
+ * refusal is now enforced on the way OUT rather than by nobody writing it: this is the string the
+ * door looks for ({@link theEraseAsAScroll}), which is why the module that explains the refusal is
+ * also the only one that names it (`tests/the-console-on-ink.test.ts`).
+ */
+const ERASES_THE_HISTORY = `${ESC}[3J`;
 
 /** Back to the top-left corner. It MOVES the cursor; it erases nothing. */
 const THE_TOP = `${ESC}[${PUT_THE_CURSOR}`;
@@ -257,4 +296,54 @@ export function theGap(page: ThePage): number {
 export function carriedIntoTheScrollback(rows: number): string {
   if (rows <= 0) return '';
   return theLastRow(rows) + A_BLANK_ROW.repeat(rows) + THE_TOP;
+}
+
+/**
+ * BYTES ON THEIR WAY TO THE CALLER'S TERMINAL, WITH THE ERASE WRITTEN THIS PRODUCT'S WAY — the
+ * screen erase as the scroll above, and the history erase as nothing at all.
+ *
+ * IT IS HERE BECAUSE SOMEBODY ELSE ASKS FOR IT. Every other way this file empties a page is a
+ * page this file was asked for; this one is the LAYOUT LIBRARY starting the page over on its own,
+ * out of its own memory of the frame it last drew, and it decides that before anything of this
+ * surface runs at the new size (`console.ts`, {@link ThePage}). So there is no frame to compose
+ * differently and no size to ask again: the only place left is the one the bytes have to pass
+ * through on the way out, and this is the answer they are given there.
+ *
+ * TRANSLATED AND NOT DROPPED, and the difference is what the library then believes. It writes the
+ * page again immediately after, out of everything it was keeping, and it writes it from the top —
+ * so a screen erase merely taken away leaves the old rows underneath the new ones, which is a page
+ * with two pages on it. The scroll answers the same request honestly: the screen really is empty
+ * afterwards, the cursor really is at the top, and what was on it is ABOVE rather than gone.
+ *
+ * THE TWO ARE ONE DECISION AND STILL TWO RULES, which is what makes this total rather than a
+ * pattern match. They arrive in one write today (`ansi-escapes`, `clearTerminal`: the screen, the
+ * history, then the top-left corner), so a rule about the contiguous three would answer today's
+ * library and nothing else. A rule per sequence answers whatever order they come in, either of
+ * them alone, and both of them split across two writes — and the composition over the sequence the
+ * library actually writes is exactly one scroll followed by the corner it asked for.
+ *
+ * ⛔ WHAT IT CANNOT ANSWER is a sequence split INSIDE itself: a caller who wrote `ESC[` in one
+ * call and `3J` in the next would get both through, because this reads one call's worth of bytes
+ * and holds nothing between them. Nothing writes that way — the library concatenates one constant
+ * into one write and this surface writes the output of one function — and the measurement is the
+ * proof rather than the claim: the erase is nought across every pair of the frontier, which a
+ * library that split its own sequence would not be
+ * (`tests/the-page-follows-the-terminal.test.ts`).
+ *
+ * A page nobody reported a height for is a page there is nothing to scroll, which
+ * {@link carriedIntoTheScrollback} already answers with nothing — so a request to erase the
+ * screen on a device that says nothing about itself is dropped rather than guessed at. It cannot
+ * arrive: the library reaches this path only after comparing its frame against a viewport it read
+ * off a terminal.
+ */
+export function theEraseAsAScroll(bytes: string, rows: number): string {
+  // THE COMMON CASE IS EVERY FRAME OF EVERY SESSION, so it is one scan and no allocation: a
+  // keystroke's frame has neither sequence in it, and what this function is for happens at most
+  // twice for a window the caller resized.
+  if (!bytes.includes(ERASES_THE_SCREEN) && !bytes.includes(ERASES_THE_HISTORY)) return bytes;
+  return bytes
+    .split(ERASES_THE_SCREEN)
+    .join(carriedIntoTheScrollback(rows))
+    .split(ERASES_THE_HISTORY)
+    .join('');
 }

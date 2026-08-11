@@ -70,7 +70,14 @@ import { CLEAR, LEAVE } from '../src/session-words.js';
 import { VERSION } from '../src/version.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC } from './support/console.js';
-import { inPty as drive, type Fixture, opensAConsole, type Ran, type Step } from './support/pty.js';
+import {
+  carriedPages,
+  inPty as drive,
+  type Fixture,
+  opensAConsole,
+  type Ran,
+  type Step,
+} from './support/pty.js';
 import {
   endsAtTheFoot,
   firstDrawnRow,
@@ -85,6 +92,12 @@ const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 
 /** What the caller types in front of, as the layout writes it: trimmed at the end. */
 const PROMPT = 'mnema>';
+
+/**
+ * ⛔ The sequence that erases the caller's history above the screen. It may not reach a terminal
+ * this surface is drawing on, at any geometry (`src/repl/page.ts`).
+ */
+const ERASES_THE_HISTORY = `${ESC}[3J`;
 
 /**
  * The first row of the drawing of the name a terminal this wide gets, as the layout writes it —
@@ -221,17 +234,10 @@ const heightBecomes = (columns: number, rows: number): Step => ({
 });
 
 /**
- * HOW MANY PAGES A SESSION HAS CARRIED INTO THE SCROLLBACK — the cursor put on the last row of the
- * device BY NUMBER, which is what every row written after it scrolls off the top.
- *
- * It is written once per page by one function and by nothing else (`repl/page.ts`,
- * `carriedIntoTheScrollback`), at whatever height the page was turned at — so a count over the
- * sequence with the height left open is a count of this product's pages and of nothing the layout
- * does. Counting what is ON the page instead would answer for the library, which rewrites what it
- * is keeping whenever its region will not fit.
+ * ⚠️ AND THE READING LEFT THIS FILE, for the reason `support/pty.ts` gives where it now lives: it
+ * was written out here and in `tests/the-page-follows-the-terminal.test.ts`, and there are two
+ * things that carry a page now rather than one.
  */
-const carriedPages = (bytes: string): number =>
-  (bytes.match(new RegExp(`${ESC}\\[\\d+;1H`, 'g')) ?? []).length;
 
 /**
  * THE STEP THAT ASKS FOR AN ANSWER LONGER THAN THE OPENING LEFT ROOM FOR, and what says
@@ -514,7 +520,17 @@ describe('all three callers of the page leave the input at the foot', () => {
      *     this delivery's; it is the rule the delivery before it left standing.
      */
     readonly predicts: 'the leftover is unchanged' | 'the flow is gone' | 'the page is turned';
-    /** How many pages the whole session carries into the scrollback, the opening included. */
+    /**
+     * How many pages the whole session carries into the scrollback, the opening included.
+     *
+     * ⚠️ AND IT IS NO LONGER ONLY THE PAGES THIS CONSOLE TURNED. Where the new window is no taller
+     * than the region the library last drew, the library gives up on redrawing PART of the screen
+     * and starts the whole page over with a sequence that carries the erase of the caller's history
+     * inside it — and that sequence is answered on the way out with this product's own way of
+     * emptying a page, which is carrying one into the scrollback (`src/repl/page.ts`,
+     * `theEraseAsAScroll`). Same operation, same bytes, so a count cannot tell an ask from a turn.
+     * One pair of this table reaches that frontier and its number says so.
+     */
     readonly pages: number;
   }
 
@@ -523,20 +539,23 @@ describe('all three callers of the page leave the input at the foot', () => {
    * told apart: three where the flow outlasts the loss, one where it does not, and one where the
    * drawing gives way. All five were measured before they were written down.
    *
-   * ⛔ AND ONE OF THEM REPRODUCES A DEFECT THESE CASES CANNOT SEE, which is worth saying here
+   * ⚠️ AND ONE OF THEM REPRODUCED A DEFECT THESE CASES COULD NOT SEE, which is worth saying here
    * rather than only where it is asserted: at forty-eight rows the region the layout redraws is
    * thirty-one, so a window made twenty-four is a window shorter than the frame already on it —
-   * and the library answers that by redrawing the whole screen, with the erase of the caller's
-   * history inside the sequence. This case has driven exactly that geometry since it was written
-   * and has been green throughout, because what it reads is the SCREEN and the loss is in the
-   * BYTES. Measured, declared and asserted as a hole in
-   * `tests/the-page-follows-the-terminal.test.ts` (*a window made SHORTER reaches the erase*).
+   * and the library answered that by redrawing the whole screen, with the erase of the caller's
+   * history inside the sequence. This case drove exactly that geometry from the day it was written
+   * and was green throughout, because what it reads is the SCREEN and the loss was in the BYTES.
+   * That is closed (`tests/the-page-follows-the-terminal.test.ts`, *a window made SHORTER asks for
+   * the erase*), and what it leaves behind here is the pair's page count: the answer to an ask is a
+   * page carried into the scrollback, so the pair that reaches the frontier costs TWO of them on top
+   * of the one the opening carried. The page count of every other pair is untouched, which is what
+   * says the door answers where the library asks and nowhere else.
    */
   const SHORTENED: readonly Shortened[] = [
     { tall: 40, short: 30, predicts: 'the leftover is unchanged', pages: 1 },
     { tall: 34, short: 30, predicts: 'the leftover is unchanged', pages: 1 },
     { tall: 30, short: 24, predicts: 'the leftover is unchanged', pages: 1 },
-    { tall: 48, short: 24, predicts: 'the flow is gone', pages: 1 },
+    { tall: 48, short: 24, predicts: 'the flow is gone', pages: 3 },
     { tall: 30, short: 20, predicts: 'the page is turned', pages: 2 },
   ];
 
@@ -580,6 +599,14 @@ describe('all three callers of the page leave the input at the foot', () => {
       // that opened, and a second only where the height gave the mark away.
       expect(carriedPages(ran.bytes), `${where}: pages carried into the scrollback`).toBe(
         pair.pages,
+      );
+      // ⛔ AND NOT ONE ROW OF THE CALLER'S HISTORY WAS ERASED AT ANY OF THEM, which is the half
+      // this file was blind to for three deliveries: it reads the SCREEN, and what the pair at the
+      // frontier destroyed was above it. It is asked here now, of the bytes, at every pair — the
+      // file whose fixture already drove the geometry is the one that should have been able to say
+      // so (`tests/the-page-follows-the-terminal.test.ts` owns the frontier itself).
+      expect(ran.bytes, `${where}: the caller's history was erased`).not.toContain(
+        ERASES_THE_HISTORY,
       );
       // AND THE REASON IS THE MODEL'S, read off the leftover rather than off the foot: three
       // different answers, so a console that reached the foot by another road cannot pass all

@@ -15,13 +15,17 @@
  *   - THE OCCURRENCE LANDS IN THE SCROLLBACK, like every line the session says. Never in
  *     the region the layout redraws: that region has a budget, and a list growing inside
  *     it walks the console into the height at which the library stops redrawing PART of
- *     the screen and starts redrawing all of it — with the erase this product refuses to
- *     write inside the sequence (`a-page-that-opens-clean.test.ts` measures that boundary
- *     in both directions). It is asserted twice, and only the second one has teeth: the
- *     arrangement from the badge down is compared before and after, which a region that
- *     grew UPWARDS would survive (measured — a mutation that put the occurrences in the
- *     palette left that case green); and the session is then run ON the boundary, where
- *     one more row of region IS the erase, with the height bracketed rather than assumed.
+ *     the screen and starts redrawing all of it — the whole page rewritten over the
+ *     caller's, with the erase this product refuses inside the sequence it does it with
+ *     (`a-page-that-opens-clean.test.ts` measures that boundary in both directions). It is
+ *     asserted twice, and only the second one has teeth: the arrangement from the badge
+ *     down is compared before and after, which a region that grew UPWARDS would survive
+ *     (measured — a mutation that put the occurrences in the palette left that case green);
+ *     and the session is then run ON the boundary, where one more row of region IS that
+ *     path, with the height bracketed rather than assumed. ⚠️ THE BOUNDARY USED TO BE
+ *     BRACKETED BY THE ERASE ITSELF, and the erase never reaches a terminal now — it is
+ *     translated on the way out (`src/repl/page.ts`, `theEraseAsAScroll`) — so what brackets
+ *     it is the library's own replay of what it keeps.
  *   - WHAT WAS ALREADY SAID IS NOT UNSAID. An occurrence about a record named ABOVE on the
  *     page lands UNDER it, because a surface whose whole argument is that the scrollback
  *     is the feature may not rewrite it.
@@ -95,14 +99,27 @@ const ROWS = 40;
 const ERASES_THE_HISTORY = '\u001b[3J';
 
 /**
+ * WHAT THE OPENING ALWAYS SAYS, whatever the terminal is like — and therefore how many times the
+ * library has written the page again out of everything it keeps.
+ *
+ * It is the signature of the path on which the library gives up on redrawing PART of the screen:
+ * that path replays what it holds, and nothing else on any path does.
+ */
+const THE_OPENING = 'a session over this project';
+
+/**
  * THE SHORTEST TERMINAL ON WHICH THE LAYOUT STILL REDRAWS PART OF THE PAGE, in rows.
  *
  * Measured rather than chosen, and BRACKETED by the case that uses it: at this height the
- * erase never appears, and one row below it does. It is where the region a session redraws
- * — the row being typed and the hint under it — stops fitting under the viewport, so it is
- * the height at which one extra row of region becomes the erase this product refuses to
- * write. `a-page-that-opens-clean.test.ts` is where the boundary itself is pinned, in both
- * directions and at several widths.
+ * library redraws the rows it owns, and one row below it gives up and redraws the whole page.
+ * It is where the region a session redraws — the row being typed and the hint under it —
+ * stops fitting under the viewport. `a-page-that-opens-clean.test.ts` is where the boundary
+ * itself is pinned, in both directions and at several widths.
+ *
+ * ⚠️ IT WAS BRACKETED BY THE ERASE — *at this height the erase never appears, and one row below it
+ * does* — and the erase no longer appears at either. What the library asks for is translated on the
+ * way out (`src/repl/page.ts`, `theEraseAsAScroll`), so the bracket is read off the library's own
+ * REPLAY of what it keeps instead, which is the other thing it does on that path.
  */
 const SHORTEST_THAT_REDRAWS_IN_PART = 2;
 
@@ -355,13 +372,24 @@ describe('a session shows what another process wrote while it was open', () => {
     expect(atTheBoundary.bytes, 'the occurrence never landed').toContain('task.created');
     expect(atTheBoundary.bytes).not.toContain(ERASES_THE_HISTORY);
     // ONE ROW SHORTER, the library really does give up — which is what says the height
-    // above is the boundary and not simply a roomy terminal.
+    // above is the boundary and not simply a roomy terminal. ⚠️ IT USED TO BE READ OFF THE ERASE
+    // and it is read off the library's own REPLAY now: the erase is answered on the way out at
+    // every height, so a bracket made of it would be two absences and no boundary.
     const shorter = await inPty(fixture(), {
       columns: WIDE_ENOUGH_FOR_THE_HINT,
       rows: SHORTEST_THAT_REDRAWS_IN_PART - 1,
       steps: [opensAConsole(PROMPT), leaves],
     });
-    expect(shorter.bytes, 'the library no longer erases the history').toContain(ERASES_THE_HISTORY);
+    const replays = (bytes: string): number => bytes.split(THE_OPENING).length - 1;
+    expect(
+      replays(shorter.bytes),
+      'the library no longer gives up on part of the page',
+    ).toBeGreaterThan(replays(atTheBoundary.bytes));
+    // ⛔ AND IT COSTS THE CALLER NOTHING WHEN IT DOES, which is the promise the bracket used to be
+    // the exception to.
+    expect(shorter.bytes, 'the history was erased below the boundary').not.toContain(
+      ERASES_THE_HISTORY,
+    );
   }, 240_000);
 
   /** The instant the record carries for `id`, read off the record rather than guessed. */

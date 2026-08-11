@@ -52,6 +52,7 @@ import { runVerify } from '../src/commands/verify.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { EXIT_SIGNALS } from '../src/repl/leaving.js';
+import { carriedIntoTheScrollback, theEraseAsAScroll } from '../src/repl/page.js';
 import { badgeLine, openSession, tips } from '../src/repl/session.js';
 import { LEAVE } from '../src/session-words.js';
 import { here } from '../src/wiring/context.js';
@@ -60,6 +61,7 @@ import { DEFAULT_REQUIREMENT } from '../src/wiring/verify.js';
 import { decodedWhole } from './support/arriving.js';
 import { ESC, fakeTerminal, hooksNothing, until, withoutLayout } from './support/console.js';
 import { arrivedSince, sizedTo, theDeviceWasTheSizeAskedFor } from './support/pty.js';
+import { screenOf } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
@@ -76,6 +78,20 @@ const CARET_HIDDEN = `${ESC}[?25l`;
 const CARET_SHOWN = `${ESC}[?25h`;
 /** The page a full-screen program takes. This console must never touch it. */
 const ALTERNATE_SCREEN = `${ESC}[?1049`;
+
+/** ⛔ The sequence that erases the caller's history above the screen. */
+const ERASES_THE_HISTORY = `${ESC}[3J`;
+/** What the library writes when it gives up on redrawing PART of the page. */
+const REDRAWS_EVERYTHING = `${ESC}[2J`;
+/**
+ * THE WHOLE OF WHAT THE LIBRARY WRITES TO START THE PAGE OVER: erase the screen, erase the
+ * history above it, and back to the top — one contiguous sequence, assembled by the library's
+ * own escape module and written in one call (`ansi-escapes`, `clearTerminal`).
+ */
+const CLEARS_THE_TERMINAL = `${REDRAWS_EVERYTHING}${ERASES_THE_HISTORY}${ESC}[H`;
+
+/** What a caller had on their screen before any of this. Text, so a screen can be asked. */
+const WHAT_THE_CALLER_HAD = 'A-LINE-THE-CALLER-HAD';
 
 /**
  * The two keystrokes that are BYTES rather than signals while the terminal is raw.
@@ -795,13 +811,43 @@ const ADDED_UP_A_LINE = 'a line put together out of pieces, by addition';
 const COMPOSING = [REACHED_FOR_A_LINE, TYPED_A_TEXT, TEMPLATED_A_LINE, ADDED_UP_A_LINE];
 
 /**
- * The two erases no module of this session may write: the screen, and the history above it.
+ * The two erases: the screen, and the history above it.
  *
  * Named by what ends the sequence rather than by the whole of it, because the whole of it
  * is assembled at three sites out of an escape and a bracket — a scan for the finished
  * bytes would miss every one of them.
  */
 const ERASES = ['2J', '3J'];
+
+/**
+ * THE ONE MODULE THAT MAY NAME THEM, and the one that answers for them.
+ *
+ * ⚠️ THE BAN USED TO BE THAT NOBODY NAMED THEM AT ALL, and this delivery re-decided it rather
+ * than removing it. What falsified the old form is that the sequence reaches the caller without
+ * this surface writing it: the layout library starts the page over with both erases in one write
+ * when the region it last drew is as tall as the window the caller now has, and it decides that
+ * before anything of ours runs at the new size. Refusing to SPELL a sequence does not refuse the
+ * sequence — and a door that translates one has to be able to look for it.
+ *
+ * SO THE RULE IS NOW *NOBODY WRITES THEM, AND EXACTLY ONE MODULE ANSWERS FOR THEM*, which is
+ * strictly stronger than the old one: the old form was satisfied by every module of the session,
+ * including the ones with no opinion about a page, and it left the erase reaching the terminal.
+ * This one names the answering module, asserts every other module is silent, and asserts what the
+ * answer IS — that what comes back out of it holds neither of them, whatever went in.
+ */
+const ANSWERS_FOR_THE_ERASE = 'page.ts';
+
+/**
+ * THE MODULE THAT MOUNTS THE LAYOUT, which is the one that owns the caller's streams.
+ *
+ * Named rather than derived, unlike {@link laysOut} below, and the difference is what each list
+ * is for: that one is a CORPUS a rule applies to, so a file joining it has to join it silently;
+ * this is a SINGULAR — the whole rule is that there is one of it — so naming it is the assertion.
+ */
+const MOUNTS_THE_LAYOUT = 'console.ts';
+
+/** What the caller's own device is wrapped in, so that one place answers for every byte. */
+const THE_DOOR = 'theWayOut';
 
 /**
  * Which of the bans a source breaks.
@@ -916,24 +962,146 @@ describe('no component composes a line; it only positions one the renderer produ
     expect(modulesOf('repl').length).toBeGreaterThan(4);
   });
 
-  it('never erases the page or the history above it, in any module of the session', () => {
+  it('names the erase in ONE module of the session, and in no other', () => {
     // ⛔ THE SISTER OF THE BAN ABOVE, and it arrived with the page that opens clean. There
     // are two ways to make a screen empty: erase it, or scroll it away. Only the second is
     // defined to put what was there into the scrollback, which is why it is the one this
     // console uses — and the erase that takes the HISTORY with it (`3J`) is the caller's
     // own log of what they were doing before they opened a session, which is not ours to
-    // delete. Judged over the CODE, so the module that explains the ban may name it.
+    // delete. Judged over the CODE, so prose cannot be read as a spelling
+    // ({@link ANSWERS_FOR_THE_ERASE} says which delivery re-decided this and why).
+    const named = modulesOf('repl').filter((file) => {
+      const code = withoutComments(readFileSync(join(SRC, 'repl', file), 'utf-8'));
+      return ERASES.some((erase) => code.includes(erase));
+    });
+    expect(named, 'the erase is named somewhere other than the module that answers for it').toEqual(
+      [ANSWERS_FOR_THE_ERASE],
+    );
+    // AND IT NAMES BOTH, which is what makes the exception one module rather than one sequence:
+    // they arrive in the same write, so an answer that knew only one of them would let the other
+    // through (`repl/page.ts`, `theEraseAsAScroll`).
+    const answers = withoutComments(
+      readFileSync(join(SRC, 'repl', ANSWERS_FOR_THE_ERASE), 'utf-8'),
+    );
+    for (const erase of ERASES) {
+      expect(answers, `the module that answers does not name ${erase}`).toContain(erase);
+      // Not vacuous: the scan would accuse the line an author would write.
+      expect(withoutComments(`const CLEAR_IT = ESC + '[${erase}';`)).toContain(erase);
+    }
+    // And the corpus is real rather than a directory nobody put anything in.
+    expect(modulesOf('repl').length).toBeGreaterThan(4);
+  });
+
+  it('answers with bytes that hold neither of them, whatever went in', () => {
+    // THE OTHER HALF OF THE RE-DECIDED BAN, and it is the half with the teeth: the module above
+    // is allowed to NAME the erase because it is the one that refuses it, and what says it
+    // refuses it is what comes back out. Asked over every shape the sequence can arrive in,
+    // including the two that no library writes today — either erase on its own — because a rule
+    // per sequence is what makes this total rather than a match on one library's constant.
+    const rows = 24;
+    const scroll = carriedIntoTheScrollback(rows);
+    const cases: readonly { readonly what: string; readonly given: string }[] = [
+      { what: 'the library’s own sequence', given: CLEARS_THE_TERMINAL },
+      { what: 'the screen erase alone', given: REDRAWS_EVERYTHING },
+      { what: 'the history erase alone', given: ERASES_THE_HISTORY },
+      { what: 'the sequence twice in one write', given: CLEARS_THE_TERMINAL + CLEARS_THE_TERMINAL },
+      { what: 'a frame with the sequence in the middle', given: `up${CLEARS_THE_TERMINAL}down` },
+      // ⛔ THE SPLIT, and it is the reason the rule is per sequence rather than per triple: the
+      // two erases arrive in ONE write today, so a door that matched the contiguous three would
+      // answer this library and nothing else. Each half is answered on its own here.
+      { what: 'the screen erase in one write', given: `${REDRAWS_EVERYTHING}${ESC}[H` },
+      { what: 'the history erase in the next', given: ERASES_THE_HISTORY },
+    ];
+    for (const one of cases) {
+      const answered = theEraseAsAScroll(one.given, rows);
+      for (const erase of ERASES) {
+        expect(answered, `${one.what}: ${erase} came out of the door`).not.toContain(erase);
+      }
+      // AND THE SCREEN ERASE BECAME THE SCROLL rather than being dropped, which is the whole
+      // decision: a library that believes it cleared the page paints over rows that are still on
+      // it. The history erase leaves nothing behind, because there is nothing honest to put there.
+      expect(
+        answered.includes(scroll),
+        `${one.what}: the screen erase did not become a scroll`,
+      ).toBe(one.given.includes(REDRAWS_EVERYTHING));
+    }
+    // AND A FRAME WITH NEITHER IN IT IS THE SAME BYTES, which is every frame of every session:
+    // the door is on the pipe, so anything it changed here it would change on every keystroke.
+    const ordinary = `${ESC}[2K${PROMPT} verify${ESC}[?25l`;
+    expect(theEraseAsAScroll(ordinary, rows), 'an ordinary frame came back different').toBe(
+      ordinary,
+    );
+  });
+
+  it('puts a byte on the caller’s device in ONE place, and hands the layout the door', () => {
+    // A2 AND A3 TOGETHER, AS A PROPERTY OF THE SOURCE. A door in a pipe is worth exactly what
+    // the pipe is worth: a second writer on the raw device would be a second mouth with nothing
+    // in front of it, and the erase would go out through it while every case about the door
+    // stayed green. So the raw device is written to ONCE in the whole session — inside the door —
+    // and everything else writes through {@link THE_DOOR}, which ends at that one statement.
+    //
+    // ⚠️ IT IS THE RAW DEVICE THAT IS COUNTED AND NOT `.write(`, and the difference is the whole
+    // point: the door has to be written THROUGH, so a count of every write would forbid using it.
+    const writesToTheDevice = (code: string): number =>
+      (code.match(/\bstdout\.write\(/g) ?? []).length;
+    let mouths = 0;
     for (const file of modulesOf('repl')) {
       const code = withoutComments(readFileSync(join(SRC, 'repl', file), 'utf-8'));
-      for (const erase of ERASES) expect(code, `${file} writes ${erase}`).not.toContain(erase);
+      const found = writesToTheDevice(code);
+      if (found > 0)
+        expect([file, found], 'a module of the session is a second mouth').toEqual([
+          MOUNTS_THE_LAYOUT,
+          1,
+        ]);
+      mouths += found;
     }
-    // Not vacuous: the ban is over a real corpus, it would accuse the line an author would
-    // write, and the module whose whole subject this is NAMES both sequences in its prose.
-    expect(modulesOf('repl').length).toBeGreaterThan(4);
-    for (const erase of ERASES) {
-      expect(withoutComments(`const CLEAR_IT = ESC + '[${erase}';`)).toContain(erase);
-      expect(readFileSync(join(SRC, 'repl', 'page.ts'), 'utf-8')).toContain(erase);
-    }
+    expect(mouths, 'the caller’s device is written to somewhere other than the door').toBe(1);
+    const driver = withoutComments(readFileSync(join(SRC, 'repl', MOUNTS_THE_LAYOUT), 'utf-8'));
+    // AND THE ONE STATEMENT IS THE TRANSLATION, which is what makes the count above about the
+    // door rather than about a coincidence: the bytes handed to the device came out of it.
+    expect(
+      /\bstdout\.write\(\s*(?:\/\/[^\n]*\n\s*)*typeof chunk === 'string' \? theEraseAsAScroll\(/.test(
+        driver,
+      ),
+      'the one write to the device does not go through the translation',
+    ).toBe(true);
+    // AND THE LAYOUT IS HANDED THE DOOR RATHER THAN THE DEVICE. It is the library that writes the
+    // sequence, so a `render` given the caller's own stream is the whole defect back again.
+    expect(driver, 'the layout was handed the caller’s own device').not.toMatch(
+      /stdout:\s*stdout\b|^\s*stdout,$/m,
+    );
+    expect(driver, 'the layout was not handed the door').toContain(`stdout: ${THE_DOOR}`);
+    // NOT VACUOUS, IN BOTH DIRECTIONS: the scan finds the relapse an author would write, and it
+    // finds the door being written THROUGH acceptable — which is what every other writer does.
+    expect(writesToTheDevice('stdout.write(carriedIntoTheScrollback(rows));')).toBe(1);
+    expect(writesToTheDevice(`${THE_DOOR}.write(carriedIntoTheScrollback(rows));`)).toBe(0);
+    expect(driver, 'nothing writes through the door at all').toContain(`${THE_DOOR}.write(`);
+  });
+
+  it('⛔ scrolling FEEDS the caller’s history where erasing destroys it', () => {
+    // THE DIFFERENCE THE TRANSLATION IS FOR, read off a screen rather than argued: both answers
+    // leave an EMPTY page, which is what the library asked for, and only one of them leaves what
+    // was on it one scroll away. Deterministic, in process, on the same screen model every case
+    // of this surface reads (`support/screen.ts`).
+    const rows = 10;
+    const columns = 40;
+    const theirs = `${WHAT_THE_CALLER_HAD}\r\n`.repeat(rows);
+    const scrolled = screenOf(theirs + theEraseAsAScroll(CLEARS_THE_TERMINAL, rows), columns, rows);
+    // WHAT THE LIBRARY ASKED FOR: an empty page, at the top of it.
+    expect(scrolled.text, 'the page was not emptied').not.toContain(WHAT_THE_CALLER_HAD);
+    expect(scrolled.cursor, 'the page was not emptied at the top').toEqual({ row: 0, column: 0 });
+    // AND WHAT IT DESTROYED, KEPT: the rows are above, which is the promise this product makes.
+    expect(scrolled.aboveText, 'the caller’s page was not carried above').toContain(
+      WHAT_THE_CALLER_HAD,
+    );
+    // ⛔ AND THE CONTROL, which is the sequence the library writes with nothing done to it: the
+    // same empty page, and the history GONE. Without this the case above is satisfied by a model
+    // that keeps everything, and the whole delivery would be measuring nothing.
+    const erased = screenOf(theirs + CLEARS_THE_TERMINAL, columns, rows);
+    expect(erased.text, 'the control did not empty the page').not.toContain(WHAT_THE_CALLER_HAD);
+    expect(erased.aboveText, 'the control did not destroy the history').not.toContain(
+      WHAT_THE_CALLER_HAD,
+    );
   });
 });
 

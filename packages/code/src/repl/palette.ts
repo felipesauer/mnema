@@ -39,7 +39,9 @@
  * HOW MANY ROWS THERE ARE IS NOT DECIDED HERE. The palette is part of the region the
  * layout redraws, and that region has a budget for two measured reasons — past a certain
  * height the library stops redrawing part of the screen and redraws all of it, with a
- * sequence that carries the one erase this product refuses to write; and a region taller
+ * sequence that carries the one erase this product refuses — answered on the way out rather than
+ * avoided, so what it costs is the page rewritten (`page.ts`, `theEraseAsAScroll`); and a region
+ * taller
  * than what the page has left over pushes the caller's own page into the scrollback, which
  * nothing undoes. So the arithmetic is `area.ts`'s, this receives the answer as `room`, and
  * what it owes in exchange is HONESTY: whenever it draws a row at all, what it shows plus

@@ -12,8 +12,16 @@
  * SO THIS IS A SCREEN, and it is deliberately the smallest one that can answer: a grid,
  * a cursor, and the sequences this product and its layout library actually write —
  * moving, erasing a row, erasing the display, and the newline at the bottom that scrolls.
- * A row that scrolls off the top is GONE from it, which is exactly the fact under test:
- * it went into the scrollback, which is not the screen and is not this model's business.
+ *
+ * ⚠️ AND A ROW THAT SCROLLED OFF THE TOP USED TO BE GONE FROM IT, written here in those words:
+ * *it went into the scrollback, which is not the screen and is not this model's business*. WHAT
+ * FALSIFIED IT is a promise that is only ABOUT the scrollback. Where a row went when it left the
+ * top is the difference between the two ways to empty a page — a scroll puts it above, an erase
+ * destroys it — and a model that discarded it answers the same thing for both, so the case that
+ * says *what was on the screen is above* could not be written at all. The rows that leave are
+ * KEPT now ({@link Screen.above}), in the order they left; erasing the screen adds none of them,
+ * and the sequence that erases the history EMPTIES them, which is the whole of what it does. It
+ * is still not the screen: nothing that reads {@link Screen.rows} sees a row of it.
  *
  * IT IS AN INSTRUMENT, AND IT IS PROVED BEFORE IT IS BELIEVED. A model that quietly did
  * nothing would say the page is clean about every page there is, so the case that uses it
@@ -204,6 +212,23 @@ export interface Screen {
   /** The same rows with their trailing blanks off, joined — what a reader reads. */
   readonly text: string;
   /**
+   * WHAT IS ABOVE THE SCREEN: every row that left the top, in the order it left — the caller's
+   * scrollback, which is the thing this product's whole page design is about.
+   *
+   * IT IS ONLY EVER FED BY A SCROLL, and that is the fact it exists to make observable. A
+   * terminal puts a row into the scrollback when it is pushed off the top and at no other time
+   * ({@link down}), so a page emptied by erasing adds nothing to this and a page emptied by
+   * scrolling adds all of it — which is the difference between destroying what a caller was
+   * reading and moving it one scroll away (`src/repl/page.ts`).
+   *
+   * AND THE SEQUENCE THAT ERASES THE HISTORY EMPTIES IT, because that is literally what it does.
+   * Modelling it as nothing would leave a case unable to tell *we scrolled* from *we erased and
+   * nobody noticed*.
+   */
+  readonly above: readonly string[];
+  /** {@link above}, trailing blanks off and joined — what a reader finds by scrolling up. */
+  readonly aboveText: string;
+  /**
    * WHERE THE CARET IS LEFT, in rows from the top of the screen and columns from its
    * left edge.
    *
@@ -361,6 +386,8 @@ export function theLineAndTheEmptiness(screen: Screen, line: string): TheLineAnd
 /** Where the cursor is, and what is under it. */
 interface Grid {
   readonly cells: string[][];
+  /** Every row that has been pushed off the top, oldest first. See {@link Screen.above}. */
+  readonly carried: string[];
   row: number;
   column: number;
 }
@@ -372,6 +399,7 @@ export function screenOf(bytes: string, columns: number, rows: number): Screen {
   theStreamWasDecodedWhole(bytes, columns);
   const grid: Grid = {
     cells: Array.from({ length: rows }, () => Array.from({ length: columns }, () => BLANK)),
+    carried: [],
     row: 0,
     column: 0,
   };
@@ -392,6 +420,8 @@ export function screenOf(bytes: string, columns: number, rows: number): Screen {
   return {
     rows: lines,
     text: lines.map((line) => line.replace(/ +$/, '')).join('\n'),
+    above: grid.carried,
+    aboveText: grid.carried.map((line) => line.replace(/ +$/, '')).join('\n'),
     cursor: { row: grid.row, column: grid.column },
   };
 }
@@ -420,14 +450,21 @@ function printable(byte: string, grid: Grid, columns: number, rows: number): voi
   grid.column += 1;
 }
 
-/** One row further down, scrolling the whole page when there is no further down. */
+/**
+ * One row further down, scrolling the whole page when there is no further down.
+ *
+ * AND THIS IS THE ONE PLACE THE SCROLLBACK IS FED, because a scroll is the one thing that feeds
+ * it: the row that leaves the top goes above, and nothing else there ever puts anything there
+ * ({@link Screen.above}).
+ */
 function down(grid: Grid, rows: number): void {
   if (grid.row + 1 < rows) {
     grid.row += 1;
     return;
   }
-  grid.cells.shift();
-  grid.cells.push(Array.from({ length: (grid.cells[0] as string[]).length }, () => BLANK));
+  const left = grid.cells.shift() as string[];
+  grid.carried.push(left.join(''));
+  grid.cells.push(Array.from({ length: left.length }, () => BLANK));
 }
 
 /**
@@ -514,9 +551,16 @@ function sequence(bytes: string, at: number, grid: Grid, columns: number, rows: 
 
 /** Erases part of the page: from the cursor down, up to it, or all of it. */
 function eraseDisplay(how: number, grid: Grid, columns: number, rows: number): void {
-  // 3 is the SCROLLBACK, which is not on the screen and therefore not modelled — and it
-  // is the one sequence this product refuses to write at all.
-  if (how === 3) return;
+  // ⛔ 3 IS THE HISTORY ABOVE THE SCREEN, and it EMPTIES it. ⚠️ It used to be modelled as nothing
+  // at all, on the grounds that the scrollback is not the screen and that this product refuses to
+  // write the sequence anyway. Both halves stopped holding: the door translates it now rather than
+  // nobody writing it (`src/repl/page.ts`, `theEraseAsAScroll`), so a case has to be able to tell
+  // a page that was SCROLLED from one that was erased — and a model that shrugged at this would
+  // answer *the caller's history is intact* for the very bytes that destroy it.
+  if (how === 3) {
+    grid.carried.length = 0;
+    return;
+  }
   const blank = (row: number): void => {
     grid.cells[row] = Array.from({ length: columns }, () => BLANK);
   };

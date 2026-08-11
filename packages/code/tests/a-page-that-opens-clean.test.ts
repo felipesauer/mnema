@@ -398,42 +398,63 @@ describe('the page opens clean, and what was on it is one scroll up', () => {
     expect(ran.bytes).toContain(VERIFIED);
   }, 120_000);
 
-  it('⚠️ except on a terminal too short for the rows the layout redraws', async () => {
+  it('⚠️ including on a terminal too short for the rows the layout redraws', async () => {
     // A MEASUREMENT AND A BOUNDARY, and it is the LIBRARY'S rather than this product's.
     // On a terminal shorter than the region it redraws, the layout stops redrawing part of
     // the page and redraws all of it — and the sequence it uses for that carries, inside
-    // it, the very one this product refuses to write. Nothing of ours writes it (guarded
-    // over the source in `the-console-on-ink.test.ts`), and on an ordinary terminal it
-    // never appears. Pinned in both directions so the boundary cannot move in silence: if
-    // a future version of the library stops doing it, this case goes red and gets deleted.
+    // it, the very one this product refuses. Pinned in both directions so the boundary
+    // cannot move in silence.
+    //
+    // ⚠️ AND THE CASE IS INVERTED AND RENAMED. It was `except on a terminal too short for the
+    // rows the layout redraws`, and what it asserted is that the erase DID reach the terminal
+    // there — the exception to the promise above, declared where it happens. It is not an
+    // exception any more: the sequence is translated on the way out, into the scroll this
+    // product empties a page with (`src/repl/console.ts`, `theWayOut`). So the promise has no
+    // exception at any height, and what this case still pins is that the LIBRARY has not
+    // stopped asking.
+    //
+    // WHAT THE ASK IS READ OFF is the replay: on that path the library writes the page again
+    // out of everything it was keeping, so the opening arrives more than once on a terminal
+    // this short and exactly once on a terminal one row taller. That reading is untouched by
+    // the door, which is what makes it the bracket now that the erase is gone from the bytes.
     //
     // THE HEIGHT AND THE WIDTH ARE BOTH MEASURED, and both have moved — see
     // {@link TOO_SHORT_TO_REDRAW_IN_PART} for which delivery moved which. Measured again
     // rather than carried over, in `tests/the-input-has-its-own-place.test.ts`.
     //
-    // ⛔ AND THE HEIGHT A SESSION OPENS AT IS NOT THE ONLY WAY TO THE SAME PATH, which is the
-    // hole this file's own boundary could not see: the library compares the frame it LAST drew
-    // against the viewport the caller has NOW, so a window made SHORTER carries a frame that was
-    // legal when it was written over the boundary — at any size, and after one row when a shrink
-    // has already carried the flow off the top. Every case here opens at a size and never changes
-    // it, so none of them reaches it. Measured, declared and asserted where a resize is the
-    // subject (`tests/the-page-follows-the-terminal.test.ts`, *a window made SHORTER reaches the
-    // erase*), which carries the frontier as a table.
+    // AND THE HEIGHT A SESSION OPENS AT IS NOT THE ONLY WAY TO THE SAME PATH: the library
+    // compares the frame it LAST drew against the viewport the caller has NOW, so a window made
+    // SHORTER carries a frame that was legal when it was written over the boundary — at any size,
+    // and after one row when a shrink has already carried the flow off the top. Every case here
+    // opens at a size and never changes it, so none of them reaches it that way. That road is
+    // measured where a resize is the subject (`tests/the-page-follows-the-terminal.test.ts`).
     const tall = await inPty({
       columns: WIDE_ENOUGH_FOR_THE_HINT,
       rows: 24,
       steps: [opens, leaves],
     });
     expect(tall.bytes, 'an ordinary terminal saw it').not.toContain(ERASES_THE_HISTORY);
+    expect(tall.bytes, 'an ordinary terminal saw the screen erased').not.toContain(
+      REDRAWS_EVERYTHING,
+    );
     const short = await inPty({
       columns: WIDE_ENOUGH_FOR_THE_HINT,
       rows: TOO_SHORT_TO_REDRAW_IN_PART,
       steps: [opens, leaves],
     });
-    expect(short.bytes, 'the library no longer redraws everything').toContain(REDRAWS_EVERYTHING);
-    expect(short.bytes, 'the library no longer erases the history with it').toContain(
+    // ⛔ THE PROMISE, AT THE ONE HEIGHT THAT USED TO BE THE EXCEPTION TO IT.
+    expect(short.bytes, 'the erase reached a terminal one row tall').not.toContain(
       ERASES_THE_HISTORY,
     );
+    expect(short.bytes, 'the screen erase reached it').not.toContain(REDRAWS_EVERYTHING);
+    // AND THE LIBRARY REALLY DID ASK, or the absence above is the absence of the path: it replays
+    // what it was keeping on the short terminal and not on the taller one.
+    const replays = (bytes: string): number => bytes.split(OPENED).length - 1;
+    expect(
+      replays(short.bytes),
+      'the library stopped giving up on part of the page',
+    ).toBeGreaterThan(replays(tall.bytes));
+    expect(replays(tall.bytes), 'an ordinary terminal replayed its page').toBe(1);
     // Both sessions really opened, so the difference above is the height and nothing else.
     for (const ran of [tall, short]) expect(ran.bytes).toContain(PROMPT);
   }, 180_000);
@@ -538,12 +559,20 @@ describe('the word that clears gives back the page the session opened with', () 
     expect(ran.bytes.slice(0, cleared), 'the caller never typed a verb').toContain(SAID);
     expect(ran.bytes.slice(cleared), 'what was cleared came back').not.toContain(SAID);
     // And the terminal really was short enough to reach that path: what the library does
-    // on such a frame is redraw the WHOLE screen, which is a sequence it does not write
-    // otherwise — so its presence is what says the frames after the clearing were of that
+    // on such a frame is write out everything it is keeping, which it does on no other kind
+    // of frame — so its presence is what says the frames after the clearing were of that
     // kind rather than ordinary ones.
-    expect(ran.bytes.slice(cleared), 'the library never redrew everything').toContain(
-      REDRAWS_EVERYTHING,
-    );
+    //
+    // ⚠️ THE WITNESS USED TO BE THE SCREEN ERASE, `ESC[2J`, and it was the right one while that
+    // was the sequence the library reached the terminal with. It is answered on the way out now
+    // (`src/repl/page.ts`, `theEraseAsAScroll`), so a case that looked for it would be looking for
+    // a byte the caller can no longer receive — and reading its absence as *the frames were
+    // ordinary*, which is the shape of instrument that reads a fix as a defect. What replaced it is
+    // the other half of the same path and the half this case is actually about: the REPLAY.
+    expect(
+      times(ran.bytes.slice(cleared), OPENED),
+      'the library never wrote out what it was keeping',
+    ).toBeGreaterThan(0);
     expect(ran.bytes.slice(cleared)).toContain(PROMPT);
   }, 120_000);
 });
