@@ -1067,8 +1067,14 @@ const asksTheDevice = (code: string): string[] =>
  *
  * WHAT IT CANNOT SEE is a reading laundered through a local: `const rows = howTall()` and then
  * `kept = rows` is two statements and this reads one. That is the limit of a scan over text, and
- * it is why the guard is a PAIR — this says nothing is kept, and the cases in a pty say a drag
- * costs no page, which is what a kept height would cost.
+ * it is why the guard is a PAIR — this says WHICH names are kept, and the cases in a pty say a drag
+ * costs no page, which is what a kept height that DECIDED one would cost.
+ *
+ * ⚠️ IT ANSWERED FOR *nothing is kept*, AND IT STOPPED BEING ABLE TO. A terminal that shrinks
+ * carries rows off the top of the page and says nothing, and how many is a DIFFERENCE — so the
+ * console has to hold the height it last saw to answer it at all (`repl/console.ts`,
+ * `whatTheWindowTook`). This scan is unchanged; what changed is that the case reading it names two
+ * and says what separates them, which is whether a kept number can turn a page.
  */
 function remembersTheDevice(code: string): string[] {
   const kept = [...code.matchAll(/\blet\s+(\w+)/g)].map((found) => found[1] as string);
@@ -1147,36 +1153,69 @@ describe('the FRAME asks how big the terminal is in one place, and it follows it
     // scrolled off the top do not come back — so a place that added to the flow without moving that
     // number would place every frame after it short of the foot, which is the defect this pairing
     // exists to prevent. Two places write the flow: a line that lands, and a page that is turned.
-    // FOUR move the number: those two, and the CAP — what the frame left room for — which is
-    // read on the way out of every frame and once on the way out of the FIRST one. ⚠️ IT WAS
-    // THREE, and the fourth is the opening: a page whose opening is longer than the screen has
-    // already scrolled by the time the layout has drawn it, so a console that waited for the
-    // next keystroke to notice budgeted that one keystroke against rows in the scrollback —
-    // measured at a hundred by eight, where the list the first key asked for was cut to nothing
-    // and the second identical key press drew it.
+    // FIVE move the number: those two, the CAP — what the frame left room for — which is
+    // read on the way out of every frame and once on the way out of the FIRST one, and what a
+    // window the caller made SHORTER carried off the top. ⚠️ IT WAS THREE, then FOUR: the fourth
+    // is the opening, because a page whose opening is longer than the screen has already scrolled
+    // by the time the layout has drawn it — measured at a hundred by eight, where the list the
+    // first key asked for was cut to nothing and the second identical key press drew it. ⚠️ AND THE
+    // FIFTH IS THE DEVICE ITSELF: a terminal that shrinks anchors what is on it at the FOOT, so
+    // rows leave the screen with nothing written at all, and the cap cannot see it — the frame
+    // fitted, and the screen it fitted on stopped existing. Measured as the input left as many rows
+    // above the foot as the window lost (`tests/the-prompt-sits-at-the-foot.test.ts`).
     expect(times(source, 'past = '), 'the flow is written somewhere else as well').toBe(2);
     expect(times(source, 'flowOnScreen ='), 'the rows on the screen are set somewhere else').toBe(
-      4,
+      5,
     );
     // AND THE CAP ITSELF IS ONE FUNCTION, which is what makes the two readings of it one answer:
     // the first frame and every frame after it ask the same question of the same subtraction.
     expect(times(source, 'function whatTheFrameLeft'), 'the cap is worked out twice').toBe(1);
     expect(times(source, 'flowOnScreen +='), 'the rows on the screen grow somewhere else').toBe(1);
+    // AND SO IS WHAT A SHORTER WINDOW TOOK, for the same reason and one more: it is the only place
+    // the height a resize is measured AGAINST is read or written, so the pair — take the loss, keep
+    // the new height — cannot come apart. Three mentions and no fourth: born, read, written.
+    expect(times(source, 'function whatTheWindowTook'), 'the loss is worked out twice').toBe(1);
+    expect(times(source, 'whatTheWindowTook();'), 'the loss is taken somewhere else as well').toBe(
+      1,
+    );
+    expect(
+      times(source, 'theHeightLastSeen'),
+      'the height a resize is measured against has a second reader',
+    ).toBe(3);
     // ⚠️ AND IT COUNTED A HEIGHT THE PAGE REMEMBERED — `placedAt =`, twice: born with the page
     // that opened and written again wherever one was turned. THE PREMISE WAS THAT A PAGE IS A
     // DRAWING AND A PLACEMENT, so the guard on a resize had a half the drawing could not answer
     // and that half needed a number kept between frames. It is gone, and a count of ZERO for it
     // is not written here: a ban on a name nobody can write is a guard that cannot go red. What
-    // replaces it is the RULE the removal leaves — nothing this console keeps between frames is a
-    // measurement of the device — and it is asked of every name kept, by the discriminant rather
-    // than by that one name.
+    // replaces it is the RULE the removal leaves, asked of every name kept, by the discriminant
+    // rather than by that one name.
+    //
+    // ⚠️ AND THE RULE WAS *NOTHING THIS CONSOLE KEEPS BETWEEN FRAMES IS A MEASUREMENT OF THE
+    // DEVICE*, WHICH IS TOO STRONG BY ONE — and this guard is what said so, in red, the moment the
+    // second name appeared. WHAT FALSIFIED IT is a question that cannot be asked of one reading:
+    // how many rows a terminal that SHRANK took off the top is a DIFFERENCE, so answering it needs
+    // the height before as well as the height now (`repl/console.ts`, `whatTheWindowTook`). What
+    // the rule was really about survives, and it is about what a kept number is allowed to DECIDE:
+    //
+    //   - `opened` is a DRAWING and not a measurement — composed from the two readings and held as
+    //     what was composed (`repl/panel.ts`, `Opening`) — and it is what the page is turned by.
+    //   - `theHeightLastSeen` is a measurement, and it decides NOTHING about the page. It is
+    //     subtracted from a number this console already holds; no byte is written for it and no
+    //     page can be turned by it. `placedAt` was the opposite of that in exactly one way that
+    //     mattered: it was the second half of the guard that turned pages, which is why a drag of
+    //     a window edge cost one per step.
+    //
+    // SO THE LIST IS TWO NAMES AND THE ORDER IS THE SOURCE'S, and what keeps it a rule rather than
+    // an exception is the count of readers beside it above: the height has ONE reader, and it is
+    // the subtraction.
     const remembered = remembersTheDevice(source);
     expect(remembered, 'a measurement of the device is remembered between frames').toEqual([
       'opened',
+      'theHeightLastSeen',
     ]);
-    // AND THE ONE THING THAT IS KEPT IS A DRAWING RATHER THAN A NUMBER, which is what makes the
-    // list above the rule and not an exception: the opening is composed FROM the two measurements
-    // and what is held is what was composed (`repl/panel.ts`, `Opening`).
+    // AND THE FIRST OF THEM IS A DRAWING RATHER THAN A NUMBER, which is the half of the old rule
+    // that did not fall: the opening is composed FROM the two measurements and what is held is what
+    // was composed (`repl/panel.ts`, `Opening`).
     expect(source, 'the opening is not composed where it is kept').toMatch(
       /let opened: Opening = openingFor\(/,
     );

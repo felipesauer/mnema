@@ -406,8 +406,9 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * put it there.
    *
    * SO WHAT IS ON THE SCREEN IS FOLLOWED RATHER THAN RECOMPUTED. It GROWS by what lands
-   * ({@link land}), it is CAPPED by what the frame just drawn left room for ({@link moved}), and
-   * it is reset to the whole flow when the page is turned, because a page that is turned is
+   * ({@link land}), it is CAPPED by what the frame just drawn left room for ({@link moved}), it
+   * LOSES what a window the caller made SHORTER carried off the top ({@link whatTheWindowTook}),
+   * and it is reset to the whole flow when the page is turned, because a page that is turned is
    * written again from the top ({@link thePageAgain}).
    *
    * AND IT HAS TWO READERS ON A FRAME, WHICH IS WHY IT IS READ ONCE ({@link showing}). The
@@ -426,6 +427,19 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * has one subtraction to do.
    */
   let flowOnScreen = opened.rows;
+
+  /**
+   * HOW TALL THE TERMINAL WAS WHEN IT WAS LAST LOOKED AT — the BEFORE a change of height is
+   * measured against, and the second thing this console holds between frames.
+   *
+   * ⚠️ IT IS NOT THE HEIGHT A PAGE WAS PLACED AT, and the difference is what each one is FOR. That
+   * one was remembered in order to decide whether to turn the page, which is why a window dragged
+   * by its edge cost a page per step of the drag; this decides nothing about the page and can
+   * never turn one. What it answers is a question nothing else here can: how many rows the
+   * terminal took away, which is a difference and therefore needs two readings
+   * ({@link whatTheWindowTook}).
+   */
+  let theHeightLastSeen = howTall();
 
   let shown: Shown = showing();
   // AND THE FIRST FRAME IS READ ON THE WAY OUT LIKE EVERY OTHER ONE. A page whose opening is
@@ -452,6 +466,53 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
       flowOnScreen,
       Math.max(0, howTall() - BELOW_THE_VIEWPORT - frame.gap - frame.area.height),
     );
+  }
+
+  /**
+   * WHAT A WINDOW THE CALLER MADE SHORTER TOOK OFF THE TOP OF THE FLOW — one subtraction, and the
+   * height kept for the next one.
+   *
+   * A TERMINAL THAT SHRINKS ANCHORS ITS CONTENT AT THE FOOT, which is the fact the whole of this
+   * is: the rows that leave go off the TOP, into the caller's scrollback, and nothing tells the
+   * program it happened. So the flow a reader can see is shorter by exactly what the window lost,
+   * and a page placed against the flow it HAD is placed that many rows short of the foot — the
+   * leftover is `rows − flow − area − 1` (`page.ts`, {@link theGap}), so a flow too big by ten
+   * makes a leftover too small by ten and the region is drawn ten rows high.
+   *
+   * MEASURED, AND THE TWO NUMBERS ARE THE SAME NUMBER: at a hundred columns, forty rows made
+   * thirty left the input TEN rows above the foot, thirty-four made thirty FOUR, and thirty made
+   * twenty-four SIX — the rows the window lost, in every pair
+   * (`tests/the-prompt-sits-at-the-foot.test.ts`).
+   *
+   * ⚠️ THE CAP DOES NOT CATCH IT, and that is why this is a second subtraction rather than a fix
+   * to the first. {@link whatTheFrameLeft} limits the flow by what the FRAME left room for, which
+   * is the same page seen from the other side; what the terminal carried off is not a frame that
+   * did not fit — the frame fitted, on a screen that then became a different screen.
+   *
+   * GROWING TAKES NOTHING, and it is measured rather than assumed: a window made taller
+   * re-anchors itself, because the terminal adds rows with nothing on them UNDER the frame and the
+   * region is at the foot again — swept up five heights, with the leftover growing by exactly what
+   * the window did (same file).
+   *
+   * AND NO PAGE IS TURNED FOR IT. This is arithmetic over a number this console already holds; it
+   * writes no byte and carries no screen away, which is what tells it apart from the placement
+   * that was taken out ({@link followTheTerminal}).
+   *
+   * IN FACT IT MAKES THE REDRAW FREE, and that is the sharpest way to say what the defect was.
+   * Where the flow outlasts the loss, both `rows` and `flow` fall by the same number, so the
+   * leftover comes out EXACTLY as it was and the frame the layout is asked for is the frame already
+   * on the screen — which is right, because a terminal that anchored its content at the foot left
+   * the region at the foot. The library writes nothing for a frame that did not change, so a
+   * shorter window now costs zero bytes where it used to cost 668, 620 and 576 at the three pairs.
+   * The old shortfall was not a redraw that failed to happen: it was a WRONG frame written over a
+   * right one.
+   */
+  function whatTheWindowTook(): void {
+    // THE HEIGHT IS READ ONCE, for the reason the frame reads it once: the two things this does
+    // with it are one question about one device, and a caller can resize between two readings.
+    const rows = howTall();
+    flowOnScreen = Math.max(0, flowOnScreen - Math.max(0, theHeightLastSeen - rows));
+    theHeightLastSeen = rows;
   }
 
   /** What the layout is looking at, as one value. Rebuilt whenever anything moved. */
@@ -652,7 +713,13 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     // foot. WHAT FALSIFIED IT IS THE LEFTOVER MOVING INTO THE FRAME (`page.ts`, {@link theGap}):
     // the rows under the flow are drawn WITH the area now, and {@link resized} rebuilds the
     // frame at once — before this is ever asked — so the input is back at the foot without a
-    // page being turned at all. What the second half cost is a page per STEP of a drag: a
+    // page being turned at all. ⚠️ AND THAT WAS TRUE OF A WINDOW THAT GREW AND NOT OF ONE THAT
+    // SHRANK, which the delivery that removed the second half asserted as an open hole with its
+    // number: rebuilding the frame is not enough when the terminal has taken rows off the TOP of
+    // the page, because the flow it is rebuilt against is then too long by exactly what left. What
+    // closed it is a subtraction and still not a placement ({@link whatTheWindowTook}) — so the
+    // sentence above is whole now, in both directions, and this is the note that says which half of
+    // it was standing on its own. What the second half cost is a page per STEP of a drag: a
     // window dragged by its edge delivers a size per step, and only steps closer together than
     // {@link AFTER_THE_LAST_CHANGE} coalesce, which a hand dragging a corner never is. Measured
     // on the binary, twelve steps of two rows from a hundred by twenty-four: TWELVE pages, one
@@ -686,11 +753,21 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   /**
    * The terminal changed size — the page follows it, once the size has SETTLED.
    *
-   * Nothing is decided here. Every change starts the wait over, and what happens at the
-   * end of it is {@link followTheTerminal}'s to decide, which is why a drag costs one page
-   * at most however many sizes it delivered, and none at all when it moved no glyph.
+   * Nothing about the PAGE is decided here. Every change starts the wait over, and what happens at
+   * the end of it is {@link followTheTerminal}'s to decide, which is why a drag costs one page at
+   * most however many sizes it delivered, and none at all when it moved no glyph.
+   *
+   * ⚠️ IT SAID *nothing is decided here*, WHICH IS TOO WIDE BY ONE SUBTRACTION. How many rows a
+   * terminal that SHRANK carried off the top is a difference between two readings of the device, so
+   * it can only be answered while both are known — which is here, and it is the reason this is the
+   * one place the height a resize is measured against is written ({@link whatTheWindowTook}). It
+   * turns no page and writes no byte, so the sentence is true of everything it was about.
    */
   function resized(): void {
+    // WHAT THE TERMINAL CARRIED OFF IS SUBTRACTED FIRST, before anything is drawn against the flow:
+    // a window that shrank took rows off the top and the frame this is about to rebuild is placed
+    // against what is LEFT ({@link whatTheWindowTook}).
+    whatTheWindowTook();
     // THE INPUT AREA IS ANSWERED AT ONCE, and only the page waits. Which arrangement the
     // area is in is decided per frame out of what this rebuilds — nothing is carried into
     // the scrollback and no page is turned for it, so there is nothing for a wait to
