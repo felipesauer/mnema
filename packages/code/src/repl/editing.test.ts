@@ -16,6 +16,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { PREFIX, WHAT_EACH_WORD_DOES } from '../session-words.js';
 import type { Completer } from './complete.js';
 import {
   type Editing,
@@ -25,6 +26,7 @@ import {
   type Typed,
   typeKey,
 } from './editing.js';
+import { NOBODY } from './palette.js';
 
 /** A key with nothing held down: what typing one character looks like. */
 function press(input: string, held: Partial<Keystroke> = {}): Keystroke {
@@ -38,6 +40,7 @@ function press(input: string, held: Partial<Keystroke> = {}): Keystroke {
     upArrow: false,
     downArrow: false,
     tab: false,
+    escape: false,
     ctrl: false,
     ...held,
   };
@@ -261,6 +264,235 @@ describe('Tab takes what every candidate agrees on, and never chooses', () => {
     const then = typing([...characters('ver'), press('', { tab: true }), press('i')], OFFERS);
     expect(then.offered).toEqual([]);
   });
+});
+
+// ---------------------------------------------------------------------------
+// The list of words is something you choose FROM
+// ---------------------------------------------------------------------------
+
+/**
+ * A completer shaped like the session's own: the words a slash lists, and one verb.
+ *
+ * THE WORDS ARE THE PRODUCT'S rather than three strings invented here, because the cases below
+ * are about a list a slash really opens — a fixture with words the completer could not produce
+ * would make every answer here about a console that cannot exist. The verb is what makes the
+ * list more than one vocabulary, which is the shape the palette really has (`palette.ts`).
+ *
+ * It sorts by the word and narrows by prefix, which is what the real one does (`complete.ts`,
+ * `matching`).
+ */
+const THE_SESSIONS_WORDS: Completer = (line) => {
+  const word = /\s$/.test(line) ? '' : (line.split(/\s+/).pop() ?? '');
+  const words = [
+    ...Object.entries(WHAT_EACH_WORD_DOES).map(([spelling, description]) => ({
+      word: spelling,
+      description,
+    })),
+    { word: 'search', description: 'find what has been recorded' },
+  ].sort((one, other) => (one.word < other.word ? -1 : 1));
+  return [words.filter((candidate) => candidate.word.startsWith(word)), word];
+};
+
+/**
+ * EVERY WORD THE LIST SHOWS ON A BARE SLASH, in the order it shows them.
+ *
+ * Asked with the EMPTY line rather than with the slash, which is what the palette asks: a bare
+ * prefix asks what an empty row asks, so the list under it holds the verb as well as the words
+ * that begin with a slash (`palette.ts`, `offeredBy`).
+ */
+const OPENED_BY_THE_SLASH = THE_SESSIONS_WORDS('')[0].map((offer) => offer.word);
+
+/** The words of the session inside that list — the ones a slash could narrow to. */
+const LISTED = OPENED_BY_THE_SLASH.filter((word) => word.startsWith(PREFIX));
+
+/** The row a caller has opened the list on, with one of its words picked. */
+const PICKED_ONE: Editing = {
+  ...NOTHING_TYPED,
+  typed: PREFIX,
+  at: PREFIX.length,
+  picked: LISTED[1] as string,
+};
+
+/** What one key does to that row: the row it leaves, and what is picked on it. */
+function after(stroke: Keystroke, from: Editing = PICKED_ONE): Editing {
+  const what = typeKey(from, stroke, THE_SESSIONS_WORDS);
+  if (what.does === 'leave') throw new Error('the session left');
+  return what.editing;
+}
+
+describe('the arrows move through the list, and Return takes what they landed on', () => {
+  it('has a list to be about, with more than one word in it', () => {
+    // THE INSTRUMENT FIRST. Every case below is about a list of at least three words with a
+    // middle one picked, and a fixture that had narrowed to one would make "the ends hold" and
+    // "it moves" the same answer.
+    expect(LISTED.length).toBeGreaterThan(2);
+    expect(PICKED_ONE.picked).toBe(LISTED[1]);
+  });
+
+  it('picks nothing until an arrow says so, and Return still hands the row over', () => {
+    // ⛔ THE HALF THAT KEEPS EVERY OTHER KEY WORKING. The list is open on a bare slash the
+    // moment it is typed, so a palette that picked its first row on opening would make Return
+    // fill the row instead of submitting — and `/exit` typed in full would stop leaving.
+    const opened = after(press(PREFIX), NOTHING_TYPED);
+    expect(opened.typed).toBe(PREFIX);
+    expect(opened.picked).toBe(NOBODY);
+    const whole = typeKey(
+      { ...NOTHING_TYPED, typed: LISTED[1] as string, at: (LISTED[1] as string).length },
+      press('', { return: true }),
+      THE_SESSIONS_WORDS,
+    );
+    expect(whole).toMatchObject({ does: 'submit', line: LISTED[1] });
+  });
+
+  it('moves in both directions, and the ends hold rather than wrapping', () => {
+    expect(after(press('', { downArrow: true })).picked).toBe(LISTED[2]);
+    expect(after(press('', { upArrow: true })).picked).toBe(LISTED[0]);
+    // THE ENDS. Up from the first row stays on it, and Down from the last stays there — the list
+    // is CUT to the room a terminal has, so a wrap would jump to a row nobody can see.
+    const first = { ...PICKED_ONE, picked: LISTED[0] as string };
+    expect(after(press('', { upArrow: true }), first).picked).toBe(LISTED[0]);
+    const last = { ...PICKED_ONE, picked: OPENED_BY_THE_SLASH.at(-1) as string };
+    expect(after(press('', { downArrow: true }), last).picked).toBe(OPENED_BY_THE_SLASH.at(-1));
+  });
+
+  it('takes the first with Down and the last with Up when nothing is picked yet', () => {
+    // The two ends, which is what leaves neither arrow dead on a list nobody has moved through.
+    const nothing = { ...PICKED_ONE, picked: NOBODY };
+    expect(after(press('', { downArrow: true }), nothing).picked).toBe(OPENED_BY_THE_SLASH[0]);
+    expect(after(press('', { upArrow: true }), nothing).picked).toBe(OPENED_BY_THE_SLASH.at(-1));
+  });
+
+  it('browses what was typed before when there is no list open', () => {
+    // THE OTHER MEANING OF THE SAME KEY, and it is the one that was there first. A row with no
+    // list on it is the ordinary case, and the arrows have to go on doing what they did.
+    const remembered = [...characters('verify'), press('', { return: true })];
+    const back = typing([...remembered, press('', { upArrow: true })], THE_SESSIONS_WORDS);
+    expect(back.typed).toBe('verify');
+    expect(back.picked).toBe(NOBODY);
+  });
+
+  it('fills the row with the picked word, and does NOT run it', () => {
+    // T-d, AND IT IS THE ONE DECISION OF THIS DELIVERY A CALLER WOULD FEEL. Half the verbs take
+    // arguments, and the Return that submits is the same key: a pick that ran the word would
+    // take the line away before the caller could finish it.
+    const what = typeKey(PICKED_ONE, press('', { return: true }), THE_SESSIONS_WORDS);
+    expect(what.does, 'Return ran the picked word instead of typing it').toBe('edit');
+    if (what.does !== 'edit') throw new Error('unreachable');
+    expect(what.editing.typed).toBe(LISTED[1]);
+    expect(what.editing.at).toBe((LISTED[1] as string).length);
+    // AND THE PICK IS SPENT: the word is still offered — it is the row now — so a pick left
+    // standing would make the next Return fill the row with what is already on it, and the
+    // caller could never submit a word they had picked.
+    expect(what.editing.picked).toBe(NOBODY);
+    const again = typeKey(what.editing, press('', { return: true }), THE_SESSIONS_WORDS);
+    expect(again, 'a picked word could never be submitted').toMatchObject({
+      does: 'submit',
+      line: LISTED[1],
+    });
+  });
+
+  it('leaves no slash behind when what was picked off one is a verb', () => {
+    // THE BARE PREFIX ASKS WHAT AN EMPTY LINE ASKS, so the list under it holds the verbs too —
+    // and a verb taken from it has to land as a line that can run. What is replaced is the word
+    // the completer was answering about, which on that row is the slash itself.
+    const verb = { ...PICKED_ONE, picked: 'search' };
+    expect(after(press('', { return: true }), verb).typed).toBe('search');
+  });
+
+  it('shuts the list on Escape, and the row goes back to what it was', () => {
+    const shut = after(press('', { escape: true }));
+    expect(shut.typed).toBe('');
+    expect(shut.picked).toBe(NOBODY);
+    expect(shut.offered).toEqual([]);
+  });
+
+  it('keeps a pick a filter still shows, and drops one it excludes', () => {
+    // THE CASE THE WHOLE SHAPE OF THIS WAS CHOSEN FOR. What is picked is a WORD, so narrowing
+    // the list cannot move the mark to a neighbour: the pick survives exactly while the list
+    // still holds it.
+    const narrowed = (letter: string): Editing => after(press(letter));
+    const keeps = (LISTED[1] as string).slice(PREFIX.length, PREFIX.length + 1);
+    const excludes = (LISTED[0] as string).slice(PREFIX.length, PREFIX.length + 1);
+    expect(keeps, 'the two letters do not tell the words apart').not.toBe(excludes);
+    expect(narrowed(keeps).picked).toBe(LISTED[1]);
+    expect(narrowed(excludes).picked).toBe(NOBODY);
+    // NOT VACUOUS: the excluding letter really does leave a list, with the OTHER word in it — so
+    // the pick was dropped by the filter rather than by there being nothing to show.
+    expect(THE_SESSIONS_WORDS(`${PREFIX}${excludes}`)[0].map((offer) => offer.word)).toContain(
+      LISTED[0],
+    );
+  });
+
+  it('does not bring a pick back to life the next time the list is opened', () => {
+    // ⚠️ THE GHOST, and it is what the pick being SETTLED after every key prevents. Kept on the
+    // value instead, a word picked before the row was cleared would be marked again the moment
+    // the same list reopened — and Return would fill the row with a choice the caller had not
+    // made in the list they are looking at.
+    const cleared = after(press('u', { ctrl: true }));
+    expect(cleared.picked).toBe(NOBODY);
+    const again = after(press(PREFIX), cleared);
+    expect(again.typed).toBe(PREFIX);
+    expect(again.picked, 'a pick came back from a list that had been shut').toBe(NOBODY);
+  });
+});
+
+/**
+ * WHAT EVERY KEY OF THIS LANGUAGE LEAVES BEHIND on a row with a list open and a word picked —
+ * one entry per FIELD of a keystroke, and the fields are read off a keystroke rather than listed.
+ *
+ * IT IS THE TOTALITY, AND IT IS WHY IT IS A TABLE. The pick is settled after every key
+ * ({@link typeKey}), so every key has an answer to *what is picked now* whether anybody thought
+ * about it or not: three of them mean something of their own (the two arrows move, Return takes),
+ * two shut the list, and the rest leave the pick to the list the new row produces. A key added to
+ * the language has to say which it is, or the case below fails on the count.
+ *
+ * The row is a bare slash with the SECOND word picked, so a move is visible in both directions
+ * and neither end is being tested by accident.
+ */
+const WHAT_EACH_KEY_LEAVES: {
+  readonly [K in keyof Keystroke]: { readonly typed: string; readonly picked: string };
+} = {
+  // A character narrows the list, and the word picked is still in it.
+  input: { typed: `${PREFIX}e`, picked: LISTED[1] as string },
+  // The pick is taken: the row becomes the word, and nothing is picked any more.
+  return: { typed: LISTED[1] as string, picked: NOBODY },
+  // Backspace takes the slash itself back, which is the list shut.
+  backspace: { typed: '', picked: NOBODY },
+  // Delete has nothing under the caret at the end of the row.
+  delete: { typed: PREFIX, picked: LISTED[1] as string },
+  // The caret moves and the list does not, so what is picked does not either.
+  leftArrow: { typed: PREFIX, picked: LISTED[1] as string },
+  rightArrow: { typed: PREFIX, picked: LISTED[1] as string },
+  // The two that move: one word back, and one word on.
+  upArrow: { typed: PREFIX, picked: LISTED[0] as string },
+  downArrow: { typed: PREFIX, picked: LISTED[2] as string },
+  // A Tab on a bare slash has no prefix to add — the words agree on nothing — so it leaves the
+  // row and the pick where they were.
+  tab: { typed: PREFIX, picked: LISTED[1] as string },
+  // The two that shut it: Escape, and the chord that clears the row.
+  escape: { typed: '', picked: NOBODY },
+  ctrl: { typed: '', picked: NOBODY },
+};
+
+describe('every key of this language says what it leaves picked', () => {
+  it('answers for all of them, and for no key that does not exist', () => {
+    // ⚠️ THE COUNT IS THE GUARD. A key added to {@link Keystroke} is a key with an answer to
+    // *what is picked now* whether or not anybody wrote one down, and a table read against the
+    // keystroke's own fields is what turns that into a red case instead of a silent behaviour.
+    expect(Object.keys(WHAT_EACH_KEY_LEAVES).sort()).toEqual(Object.keys(press('')).sort());
+  });
+
+  for (const [key, left] of Object.entries(WHAT_EACH_KEY_LEAVES)) {
+    it(`${key}: leaves “${left.typed}” with “${left.picked}” picked`, () => {
+      // The chord is pressed with the letter that clears the row, which is the one a chord can
+      // do to a list; a chord this session has no use for changes nothing at all and is asserted
+      // above with the rest of them.
+      const stroke =
+        key === 'input' ? press('e') : press(key === 'ctrl' ? 'u' : '', { [key]: true });
+      const row = after(stroke);
+      expect({ typed: row.typed, picked: row.picked }).toEqual(left);
+    });
+  }
 });
 
 describe('a chunk of input is the keystrokes it stands for', () => {
