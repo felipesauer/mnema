@@ -415,27 +415,27 @@ function withoutComments(source: string): string {
 }
 
 describe('everything that gives a session a terminal of a chosen size checks that it got one', () => {
-  it('is these four drivers, and a fifth would be accused', () => {
+  it('is these three drivers, and a fourth would be accused', () => {
     // ⚠️ A1, AND THE ACHADO IS THE COUNT. The instrument's own header says it is ONE file
-    // because it is one instrument — and there are FOUR programs that hand a session a
-    // terminal, each with its own runner and its own `stty`. Three of them replay screens.
-    // Found by the discriminant rather than by a list, which is exactly why the number is
-    // four and not the one the header describes.
+    // because it is one instrument — and there were FOUR programs that hand a session a
+    // terminal, each with its own runner and its own `stty`. Found by the discriminant rather
+    // than by a list, which is exactly why the number was four and not the one the header
+    // describes.
+    // ⚠️ AND IT IS THREE NOW. The copy in `the-page-follows-the-terminal.test.ts` went back to
+    // the shared instrument, and what made it worth taking out was a step that has to WAIT
+    // rather than watch: an absence — no page carried away for a height — is waited OUT, so a
+    // step needs to be able to do something before its question is asked, which the copy had no
+    // way of expressing. The count going DOWN is what this case is for as much as it going up.
     const driving = testsUnder(TESTS)
       .filter((file) => readFileSync(file, 'utf-8').includes(DRIVES_A_TERMINAL))
       .map((file) => file.slice(TESTS.length))
       .sort();
     expect(driving).toEqual(
-      [
-        'a-page-that-opens-clean.test.ts',
-        'support/pty.ts',
-        'the-console-on-ink.test.ts',
-        'the-page-follows-the-terminal.test.ts',
-      ].sort(),
+      ['a-page-that-opens-clean.test.ts', 'support/pty.ts', 'the-console-on-ink.test.ts'].sort(),
     );
     // AND EVERY ONE OF THEM ASKS THE DEVICE WHAT IT BECAME, through the one function that
     // knows how — a driver that wrote its own `stty rows` line and never read it back is
-    // the state all four were in, and the state a fifth would arrive in.
+    // the state all four were in, and the state a fourth would arrive in.
     for (const file of driving) {
       const source = readFileSync(join(TESTS, file), 'utf-8');
       expect(source, `${file} sizes its terminal without saying so`).toContain('sizedTo(');
@@ -453,7 +453,7 @@ describe('everything that gives a session a terminal of a chosen size checks tha
     expect(spelling, 'the sizing line is spelled in more than one place').toEqual([
       join('support', 'pty.ts'),
     ]);
-    // The scan really read something, and the instrument itself is one of the four.
+    // The scan really read something, and the instrument itself is one of the three.
     expect(driving.length, 'no driver was found at all').toBeGreaterThan(0);
     expect(driving, 'the shared instrument is not among them').toContain('support/pty.ts');
     // AND THE SCAN DOES NOT ACCUSE ITSELF, which is the whole reason its two needles are

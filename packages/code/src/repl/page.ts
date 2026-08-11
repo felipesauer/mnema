@@ -84,7 +84,10 @@
  * them back — so the flow this subtracts is the flow ON THE SCREEN and not the flow the session
  * has said ({@link ThePage.flow}). Measured, before it was: at a hundred by thirty a list opened
  * and shut left the input fourteen rows above the foot, on a page that had scrolled thirteen rows
- * away and been placed as though it had not.
+ * away and been placed as though it had not. ⚠️ AND OUTGROWING THE SCREEN WAS NAMED AS THE WAY IT
+ * HAPPENS, which is one of two: a terminal the caller made SHORTER anchors what is on it at the
+ * foot, so the top of the flow goes into the scrollback with nothing written at all
+ * (`console.ts`, `whatTheWindowTook`).
  *
  * AND THE BOUNDARY IS KEPT BY THE ROW IT WAS ALWAYS KEPT BY, which is why this costs the erase
  * nothing. The region is the leftover and the area, and the leftover is what is left over after
@@ -164,7 +167,12 @@ export interface ThePage {
    * halves: the flow is what the page opens with plus what has been said under it, and a
    * caller who had to add them up before asking was a caller who could get the addition
    * wrong. It is one number now, and it is FOLLOWED rather than added up — it grows by what
-   * lands and is capped by what the frame left room for, both of them in the console that asks.
+   * lands, it is capped by what the frame left room for, and it gives up what a window the
+   * caller made SHORTER carried off the top, all of them in the console that asks
+   * (`console.ts`, `whatTheWindowTook`). ⚠️ THE COUNT SAID *both of them* and there are three: a
+   * terminal that shrinks anchors its content at the foot, so rows leave the screen for a reason
+   * that has nothing to do with what the page outgrew — measured as the input left as many rows
+   * above the foot as the window lost, in every pair where the flow was longer than the loss.
    *
    * ⚠️ AND IT WAS KNOWN A SECOND WAY, which went with the premise above: a frame whose area had
    * given rows back worked the flow out BACKWARDS, from where the area was anchored, because

@@ -53,6 +53,7 @@ import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC } from './support/console.js';
 import {
   aFrameAfter,
+  aFrameWithout,
   arrivedSince,
   inPty as drive,
   type Fixture,
@@ -762,10 +763,16 @@ describe('a slash opens the list on the screen, and typing narrows it', () => {
       rows,
       steps: [
         opens,
-        { types: PREFIX, until: (bytes) => bytes.includes(gone[0] as string), what: 'listed them' },
+        // ⚠️ AND BOTH WAITS ARE ABOUT WHAT THE STEP CAUSED, which neither was: the first read the
+        // WHOLE stream, and the second waited for `/c` — which the LIST already holds, because
+        // `/clear` starts with it. So the second step was over before the key was drawn, and the
+        // screen below was read with the un-narrowed list on it: measured red in a whole-suite run
+        // under load and green on its own. Narrowing is something GOING, so the wait is the shared
+        // instrument's (`support/pty.ts`, `aFrameWithout`).
+        { types: PREFIX, until: arrivedSince(gone[0] as string), what: 'listed them' },
         {
           types: 'c',
-          until: (bytes) => bytes.includes(`${PREFIX}c`),
+          until: aFrameWithout(PROMPT, gone[0] as string),
           what: 'narrowed what it listed',
         },
         leaves,
@@ -1082,10 +1089,12 @@ describe('Return takes the picked word, and Escape shuts the list', () => {
         { types: PREFIX, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
         { types: MOVES_DOWN, until: marks(first), what: 'marked the first word' },
         { types: '\r', until: arrivedSince(`${PROMPT} ${first}`), what: 'took the word' },
+        // ⚠️ AND THE WAIT FOR THE LIST TO HAVE GONE IS THE SHARED INSTRUMENT'S, because spelled out
+        // here it was true before the key had been drawn: measured, *the list is still open* in a
+        // whole-suite run and green on its own (`support/pty.ts`, `aFrameWithout`).
         {
           types: SHUTS_THE_LIST,
-          until: (bytes, since) =>
-            aFrameAfter(PROMPT)(bytes) && !bytes.slice(since).includes(ONLY_A_LIST_SAYS),
+          until: aFrameWithout(PROMPT, ONLY_A_LIST_SAYS),
           what: 'shut the list',
         },
         leaves,

@@ -68,6 +68,7 @@ import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC } from './support/console.js';
 import {
   aFrameAfter,
+  aFrameWithout,
   arrivedSince,
   inPty as drive,
   type Fixture,
@@ -339,7 +340,9 @@ const LISTS_THE_WORDS = '/';
  * THE TOLERANT FORM, and it is the one a sweep over HEIGHTS needs: on a terminal of three rows the
  * palette is cut to nothing at all, so a step waiting for a word of the list would wait forever.
  * Every case that uses this one asserts an ABSENCE, which a frame with no list in it satisfies
- * honestly.
+ * honestly. ⚠️ AND ONE USED IT WHILE ASSERTING A PRESENCE, which is what
+ * {@link opensTheListAndWaitsForTheCut} is: the promise in the sentence before this one was made
+ * here and broken one screenful below it.
  */
 const opensTheList: Step = { types: LISTS_THE_WORDS, until: aFrameAfter(PROMPT), what: 'listed' };
 
@@ -360,17 +363,41 @@ const opensTheListAndWaitsForIt: Step = {
 };
 
 /**
+ * The same key, waiting for the row that ACCOUNTS FOR WHAT HAD NO ROOM — for the one case whose
+ * subject is a list that did not fit.
+ *
+ * ⚠️ IT IS THE SITE THE REPAIR ABOVE DID NOT REACH, and the paragraph above says why in advance:
+ * every case on the tolerant form asserts an ABSENCE, and this one asserts a PRESENCE. Measured in
+ * a whole-suite run of the delivery that narrowed the resize guard: the step ended on a frame the
+ * palette was not in, and the case read a screen with the record, the prompt and the hint on it
+ * and no list at all — *the list was not cut, so nothing here is about a cut list* — while the
+ * same case was green on its own three times over. Nothing of the product is in that difference;
+ * what is in it is a step that waited for something other than what it was about.
+ */
+const opensTheListAndWaitsForTheCut: Step = {
+  ...opensTheList,
+  until: (bytes, since) => SAYS_WHAT_IT_CUT.test(bytes.slice(since)),
+  what: 'listed with a row for what it could not show',
+};
+
+/**
  * Shuts it again, by taking back the key that opened it — and waits for a frame that does NOT
  * hold the list.
  *
  * THE OTHER HALF OF THE SAME REPAIR, and it cannot be `arrivedSince` because what it waits for is
- * an absence: the frame the keystroke causes is one the palette is not written into at all. So it
- * is a frame after the prompt AND nothing of the list in what has arrived since.
+ * an absence: the frame the keystroke causes is one the palette is not written into at all.
+ *
+ * ⚠️ AND IT WAS SPELLED OUT HERE AND WAS TRUE BEFORE THE KEY HAD BEEN DRAWN. `aFrameAfter(PROMPT)`
+ * approves the frame that arrived BEFORE the keystroke, and *nothing of the list in what arrived*
+ * is satisfied by an EMPTY slice — so under load this step ended on the frame that still had the
+ * list on it: measured, *cycle 10: the list was open* at a hundred by thirty in a whole-suite run,
+ * green on its own. The rule is one function now, and it is the shared instrument's
+ * (`support/pty.ts`, {@link aFrameWithout}): an absence is waited for in two parts, and the first
+ * is the PRESENCE of a frame this step caused.
  */
 const shutsTheList: Step = {
   types: RUBS_OUT,
-  until: (bytes, since) =>
-    aFrameAfter(PROMPT)(bytes) && !bytes.slice(since).includes(ONLY_THE_LIST_SAYS),
+  until: aFrameWithout(PROMPT, ONLY_THE_LIST_SAYS),
   what: 'shut the list',
 };
 
@@ -604,7 +631,11 @@ describe('the list of words takes its room out of the emptiness', () => {
     const ran = await inPty({
       columns,
       rows,
-      steps: [opens, opensTheList, { ...leaves, types: `${ABANDONS_THE_LINE}${LEAVE}\r` }],
+      steps: [
+        opens,
+        opensTheListAndWaitsForTheCut,
+        { ...leaves, types: `${ABANDONS_THE_LINE}${LEAVE}\r` },
+      ],
     });
     const listed = screenOf(ran.bytes.slice(0, ran.at[1] as number), columns, rows);
     // THE LIST WAS REALLY CUT, and it says so — the row that accounts for what had no room.
