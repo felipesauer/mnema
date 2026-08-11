@@ -66,5 +66,8 @@ describe('the CLI loads the MCP server only for the verb that serves it', () => 
     });
     expect(built.server).toBeDefined();
     expect(typeof built.connect).toBe('function');
-  });
+    // WHAT IT WAITS ON IS THE IMPORT IT EXISTS TO PROVE: the module graph behind the server
+    // is loaded and transformed here, once, and no other case in this file pays it. 611 ms
+    // on a quiet machine and 1307 ms with the suite running at a load of seventeen.
+  }, 60_000);
 });

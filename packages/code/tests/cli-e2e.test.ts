@@ -3356,7 +3356,12 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
     expect(third).toContain('Write the rollback section first');
     expect(third).toContain(another);
     expect(third.split('\n')).toHaveLength(first.split('\n').length + 1);
-  });
+    // THE WAIT IS THE CLOCK, and it is spent on purpose: `pastTheSecond` spins until the
+    // wall clock crosses a second, which is anything from nothing to a full second
+    // depending on where in the second the case started. Two runs of the same suite
+    // measured it at 108 ms and 1090 ms, and the difference between them is the spin —
+    // so a reading that called the second one slow would be reading the clock, not the case.
+  }, 60_000);
 
   it('is what `mnema brief > AGENTS.md` writes, and `diff` is what finds it stale', async () => {
     // The recipe, played out: redirect the document into a file, and the file matches

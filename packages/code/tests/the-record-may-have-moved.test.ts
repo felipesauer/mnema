@@ -216,7 +216,12 @@ describe('the seven steps that were measured', () => {
     expect(cli('search')).toContain('5 record(s)');
 
     closeSession(session);
-  });
+    // SEVEN STEPS, AND FOUR OF THEM ARE A WHOLE PROCESS: the ladder is only a ladder
+    // because the writes come from outside the session, so each `cli(…)` pays node's start
+    // over again. 443 ms on a quiet machine and 2018 ms with the suite running at a load of
+    // seventeen — the highest any case here reaches without a ceiling of its own, and the
+    // ceiling is here to say WHICH case that is when a busier machine crosses five seconds.
+  }, 60_000);
 });
 
 describe('the warm cache is still warm', () => {
@@ -265,7 +270,10 @@ describe('every way a chain can move is seen', () => {
 
     expect(seen(session)).toBe(2);
     closeSession(session);
-  });
+    // TWO PROCESSES, and the second one founds a whole second installation before it writes
+    // — which is the case: a tail nobody had seen. 257 ms quiet, 1135 ms at a load of
+    // seventeen.
+  }, 60_000);
 
   it('a rotation — the same tail, a segment file that did not exist before', () => {
     // The one move that does not make a file bigger: the writer seals the
