@@ -338,11 +338,21 @@ describe('a prefix that names several lists them, each beside the line it came f
   }, 240_000);
 
   it('says how many it had no room for, and the number adds up to all of them', async () => {
-    // THE CUT IS THE PALETTE'S OWN and it is measured here rather than assumed: the rows
-    // are budgeted against what is left over the row being typed, and whenever it draws a
-    // row at all, what it shows plus what it says is left over is everything there was.
+    // THE CUT IS THE PALETTE'S OWN and it is measured here rather than assumed: the rows are
+    // budgeted against what the PAGE has left over under the flow (`repl/area.ts`,
+    // `AreaRequest.flow` — it was what is left over the row being typed, which is what let a
+    // list take the top of a page), and whenever it draws a row at all, what it shows plus what
+    // it says is left over is everything there was.
+    //
+    // ⚠️ THE HEIGHT WAS EIGHT ROWS, and the delivery that budgeted the list against the page
+    // moved what that size means: a page eight rows tall spends all of them on the opening and
+    // the input, so the list gets the two rows the chrome gives up — the account of what had no
+    // room, and the row of keys. That is honest and it is not what THIS case is about, which is
+    // a list that shows SOME and names the rest. Sixteen rows is where the page has both, and
+    // the size where it has only the account is asserted where it belongs
+    // (`a-palette-for-the-words.test.ts`).
     const columns = 100;
-    const rows = 8;
+    const rows = 16;
     const shared = sharedBy(shown.map((record) => record.id));
     const ran = await inPty({
       columns,

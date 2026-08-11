@@ -410,6 +410,14 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * it is reset to the whole flow when the page is turned, because a page that is turned is
    * written again from the top ({@link thePageAgain}).
    *
+   * AND IT HAS TWO READERS ON A FRAME, WHICH IS WHY IT IS READ ONCE ({@link showing}). The
+   * emptiness under the flow is what is left of the page (`page.ts`), and the LIST of words is
+   * cut to that same leftover (`area.ts`) — one subtraction each, over one number. While only
+   * the first of them read it, a list of words was budgeted against the whole SCREEN and took
+   * the rows the flow was standing on: measured on the binary, at a hundred by thirty and at
+   * eighty by twenty-four, one opening of the list carried the drawing of the name into the
+   * scrollback for good.
+   *
    * ⚠️ AND IT IS NOT THE MECHANISM THAT WAS TAKEN OUT, which asked the same question backwards.
    * That one worked the flow out from where the area HAD been anchored and repaired the
    * difference by landing more empty lines in the flow — so the flow grew by its own leftover,
@@ -420,7 +428,31 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   let flowOnScreen = opened.rows;
 
   let shown: Shown = showing();
+  // AND THE FIRST FRAME IS READ ON THE WAY OUT LIKE EVERY OTHER ONE. A page whose opening is
+  // longer than the screen has ALREADY scrolled by the time the layout has drawn it, so the
+  // flow this console holds is longer than the flow a reader can see — and it was corrected on
+  // the first keystroke rather than here, which made that keystroke the one frame budgeted
+  // against rows in the scrollback. Measured at a hundred by eight, where the opening spends
+  // the whole page: the list of words the first key asked for was cut to NOTHING, and the
+  // second identical key press drew it (`whatTheFrameLeft`).
+  flowOnScreen = whatTheFrameLeft(shown);
   const watchers = new Set<() => void>();
+
+  /**
+   * HOW MUCH OF THE FLOW A FRAME LEFT ON THE SCREEN — what is above it, and no more.
+   *
+   * ONE FUNCTION AND TWO CALLERS, which are the first frame and every frame after it. The
+   * frame is drawn at the FOOT, so the flow has the rows above it: a frame that did not fit
+   * scrolled the difference away, and a frame with a leftover in it did not move anything at
+   * all — the same subtraction the leftover is, read the other way round, which is why it is
+   * not a second answer.
+   */
+  function whatTheFrameLeft(frame: Shown): number {
+    return Math.min(
+      flowOnScreen,
+      Math.max(0, howTall() - BELOW_THE_VIEWPORT - frame.gap - frame.area.height),
+    );
+  }
 
   /** What the layout is looking at, as one value. Rebuilt whenever anything moved. */
   function showing(): Shown {
@@ -430,6 +462,13 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     // readings of a device that a caller can resize between them is a frame built out of two
     // different terminals.
     const rows = howTall();
+    // HOW MUCH OF THE FLOW IS ON THE SCREEN, read ONCE for the whole frame — and this is the
+    // reading that matters, because two things subtract it: how much room is left over for the
+    // list of words (`area.ts`) and how much is left over for the emptiness under the flow
+    // (`page.ts`). They are two halves of one page, so two readings of a number that GROWS as
+    // lines land would be the area and the gap placing the same frame against two different
+    // pages ({@link flowOnScreen}).
+    const onScreen = flowOnScreen;
     // WHAT THE PALETTE WOULD SHOW, before anything says how much of it there is room for.
     // A pure function over the row being typed and what a Tab last offered (`palette.ts`),
     // so nothing is held between frames and nothing goes stale. What a SLASH opens is asked
@@ -451,6 +490,12 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
       // count that left the second out would budget a region one row shorter than the one
       // drawn (`palette.ts`, `paletteRowsFor`).
       palette: paletteRowsFor(offers),
+      // AND WHAT THE PAGE HAS ALREADY SPENT, which is what the list is cut to. A list budgeted
+      // against the SCREEN takes rows the flow is standing on, and what it takes goes into the
+      // scrollback and does not come back when the list shuts — measured on the binary before
+      // this line existed, at a hundred by thirty and at eighty by twenty-four: one opening of
+      // the list and the drawing of the name was gone for good.
+      flow: onScreen,
     });
     return {
       past,
@@ -465,8 +510,9 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
       // THE FLOW IT SUBTRACTS IS THE FLOW ON THE SCREEN and not the flow the session has said:
       // rows the terminal has already scrolled away are in the caller's scrollback, and a
       // leftover that counted them would place the frame that many rows short of the foot
-      // ({@link flowOnScreen}).
-      gap: theGap({ rows, flow: flowOnScreen, area: area.height }),
+      // ({@link flowOnScreen}). It is the SAME reading the area was budgeted with, and the
+      // sameness is the point: what the list takes is what this gives up.
+      gap: theGap({ rows, flow: onScreen, area: area.height }),
       present: prompt + editing.typed,
       // COMPOSED WITH THE ROOM THE AREA GAVE IT, and cut to it — by the module that puts
       // the rows together, which is the only place a cut may happen. What it could not fit
@@ -505,14 +551,8 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    */
   function moved(): void {
     shown = showing();
-    // AND WHAT THE FRAME LEFT ROOM FOR IS WHAT IS STILL ON THE SCREEN. The frame is drawn at the
-    // foot, so the flow has the rows above it and no more: a frame that did not fit scrolled the
-    // difference away, and a frame with a leftover in it did not move anything at all — which is
-    // the same subtraction read the other way round, and why it is not a second answer.
-    flowOnScreen = Math.min(
-      flowOnScreen,
-      Math.max(0, howTall() - BELOW_THE_VIEWPORT - shown.gap - shown.area.height),
-    );
+    // AND WHAT THE FRAME LEFT ROOM FOR IS WHAT IS STILL ON THE SCREEN ({@link whatTheFrameLeft}).
+    flowOnScreen = whatTheFrameLeft(shown);
     for (const watcher of watchers) watcher();
   }
 

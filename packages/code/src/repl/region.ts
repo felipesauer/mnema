@@ -615,9 +615,17 @@ function theRecord(panel: Panel): ReactNode {
  * is the case this surface had before there was a leftover, and it draws what it drew then.
  *
  * HOW MANY IS NOT A FUNCTION OF WHAT THE SESSION SAID but of what is still on the screen, and the
- * difference is a page that scrolled: a list too long for the room a page has to spare still costs
- * the flow its top rows, and the frame after it has to be placed against what SURVIVED
- * (`console.ts`, `flowOnScreen`). Nothing of that is decided here — the number arrives.
+ * difference is a page that scrolled: what went off the top is in the caller's scrollback, and the
+ * frame after it has to be placed against what SURVIVED (`console.ts`, `flowOnScreen`). Nothing of
+ * that is decided here — the number arrives.
+ *
+ * ⚠️ AND IT SAID *a list too long for the room a page has to spare still costs the flow its top
+ * rows*, which was true and is the residual this frontier then closed. The list was budgeted
+ * against the SCREEN, so on a page with little to spare it took the difference off the top —
+ * measured, at a hundred by thirty and at eighty by twenty-four, as the drawing of the name going
+ * on the first keystroke. It is budgeted against this leftover now (`area.ts`,
+ * `AreaRequest.flow`), so a list that does not fit shows fewer words and says how many rather than
+ * spending the page.
  */
 function theLeftover(many: number): ReactNode {
   return many > 0 ? node(Box, { key: 'leftover', minHeight: many }) : null;

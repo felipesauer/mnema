@@ -95,6 +95,16 @@ const PAINTED = new RegExp(`${ESC}\\[[0-9;]*m`, 'g');
 const NOTHING_IS_CUT = 160;
 
 /**
+ * A PAGE WITH NOTHING ON IT — how many rows of the flow the area is asked about here.
+ *
+ * The list of words takes its rows out of what the page has LEFT OVER (`repl/area.ts`,
+ * `AreaRequest.flow`), so every number in this file is about the height of a terminal alone,
+ * which is what it was about before that field existed. The cases about a page with something
+ * on it are `the-list-is-a-window.test.ts`.
+ */
+const NOTHING_SAID_YET = 0;
+
+/**
  * A SENTENCE ONLY THE LIST SAYS, so a screen can be asked whether it is open.
  *
  * Read off the vocabulary rather than retyped: it is what the session says about the word that
@@ -520,8 +530,11 @@ describe('the pick is a word, and the ends of the list hold', () => {
   });
 
   it('holds at both ends rather than wrapping round', () => {
-    // The list is CUT to the room a terminal has (see the budget above), so a wrap would put the
-    // mark on a row the caller cannot see.
+    // ⚠️ THE REASON WAS *the list is CUT to the room a terminal has, so a wrap would put the mark
+    // on a row the caller cannot see*, and the window falsified it: what is drawn follows the
+    // pick now (`repl/palette.ts`, `theWindow`), so a wrapped pick would be drawn. The decision
+    // stands on the list instead of on the drawing — the ends of it are where the vocabulary
+    // ends, and a caller holding a key down finds that out by arriving at it.
     expect(theNextPicked(offers, words[0] as string, -1)).toBe(words[0]);
     expect(theNextPicked(offers, words.at(-1) as string, 1)).toBe(words.at(-1));
   });
@@ -558,7 +571,9 @@ const HINT_IS = widthOf(tips());
 const BADGE_IS = widthOf(badgeLine('fully-signed'));
 
 describe('a row of the area the terminal would fold is not drawn at all', () => {
-  const tall = { rows: 40, palette: 0 };
+  // A PAGE WITH NOTHING ON IT: these cases are about WIDTH, and the flow is the other
+  // measurement the area takes (`repl/area.ts`, `AreaRequest.flow`).
+  const tall = { rows: 40, palette: 0, flow: NOTHING_SAID_YET };
 
   it('draws the hint at its own width and not one column under it', () => {
     const at = (columns: number) => areaFor({ ...tall, columns, badge: BADGE_IS, hint: HINT_IS });
@@ -588,15 +603,24 @@ describe('a row of the area the terminal would fold is not drawn at all', () => 
 });
 
 // ---------------------------------------------------------------------------
-// The budget: the palette is cut by what is left over the prompt
+// The budget: the palette is cut by what is left over the row being typed — on a page
+// with nothing on it. What a page with something on it leaves is
+// `the-list-is-a-window.test.ts`.
 // ---------------------------------------------------------------------------
 
-describe('the palette gets what is left over the row being typed, and never more', () => {
+describe('the palette gets what is left over on a page with nothing on it, and never more', () => {
   it('is cut by the height, and the cut is reported rather than taken', () => {
     const wanted = 20;
     const columns = 100;
     const roomAt = (rows: number) =>
-      areaFor({ rows, columns, badge: BADGE_IS, hint: HINT_IS, palette: wanted }).palette;
+      areaFor({
+        rows,
+        columns,
+        badge: BADGE_IS,
+        hint: HINT_IS,
+        palette: wanted,
+        flow: NOTHING_SAID_YET,
+      }).palette;
     // Tall enough for all of it, and then one row less at a time.
     //
     // ⚠️ EVERY NUMBER BELOW A ROW SMALLER THAN IT WAS, AND THE ROW IS THE PALETTE'S OWN
@@ -613,7 +637,14 @@ describe('the palette gets what is left over the row being typed, and never more
     // The region never grows past the boundary: whatever the height, what the area takes
     // leaves the library a row to work in.
     for (const rows of [3, 4, 6, 10, 24, 40]) {
-      const area = areaFor({ rows, columns, badge: BADGE_IS, hint: HINT_IS, palette: wanted });
+      const area = areaFor({
+        rows,
+        columns,
+        badge: BADGE_IS,
+        hint: HINT_IS,
+        palette: wanted,
+        flow: NOTHING_SAID_YET,
+      });
       expect(area.height, `${rows}`).toBeLessThanOrEqual(rows - 1);
     }
   });
@@ -623,8 +654,9 @@ describe('the palette gets what is left over the row being typed, and never more
     // both it is the badge and the rules that go — the same call the single row of
     // candidates already forced, made explicit now the list can be long.
     const columns = 100;
-    const shut = areaFor({ rows: 8, columns, badge: BADGE_IS, hint: HINT_IS, palette: 0 });
-    const open = areaFor({ rows: 8, columns, badge: BADGE_IS, hint: HINT_IS, palette: 20 });
+    const at = { rows: 8, columns, badge: BADGE_IS, hint: HINT_IS, flow: NOTHING_SAID_YET };
+    const shut = areaFor({ ...at, palette: 0 });
+    const open = areaFor({ ...at, palette: 20 });
     expect(shut.form).toBe('full');
     expect(open.form).toBe('bare');
     expect(open.palette).toBeGreaterThan(0);
@@ -1240,39 +1272,67 @@ describe('the mark survives what changes around it', () => {
   }, 240_000);
 });
 
-describe('a terminal without the height shows fewer, and says how many it could not', () => {
-  it('names a number that adds up to everything there was', async () => {
-    // THE NUMBER IS ASSERTED AGAINST THE TOTAL rather than written down: what is on the
-    // screen plus what the last row names is every word the session offers.
-    const columns = 100;
-    const rows = 8;
-    const offers = everythingOffered();
-    const ran = await inPty({
-      columns,
-      rows,
-      steps: [
-        opens,
-        {
-          types: COMPLETES,
-          until: (bytes) => bytes.includes(CUT),
-          what: 'said it had no room for the rest',
-        },
-        leaves,
-      ],
-    });
-    const screen = screenOf(ran.bytes.slice(0, ran.at[1] as number), columns, rows);
-    const listed = rowsNaming(
-      screen,
-      offers.map((offer) => offer.word),
-    );
-    const said = screen.rows.find((row) => row.trimStart().startsWith(CUT));
-    expect(said, `no row said how many had no room:\n${screen.text}`).toBeDefined();
-    const missing = Number(/(\d+)/.exec(said as string)?.[1]);
-    expect(listed.length + missing, `${listed.length} shown, ${missing} named`).toBe(offers.length);
-    // Not vacuous: it really did leave some out, and it really did show some.
-    expect(missing).toBeGreaterThan(0);
-    expect(listed.length).toBeGreaterThan(0);
-  }, 180_000);
+describe('a page without the room shows fewer, and says how many it could not', () => {
+  // TWO SIZES, AND THEY ARE THE TWO REGIMES OF THE SAME PROMISE. ⚠️ THIS WAS ONE CASE AT A
+  // HUNDRED BY EIGHT, and it asserted that some were shown AND some were named — which is
+  // what a list cut to the SCREEN did at that size. The list is cut to what the PAGE has left
+  // over now (`repl/area.ts`, `AreaRequest.flow`), so the case that pinned "some are shown"
+  // gained a size where the page really has some to spare.
+  //
+  // ⚠️ AND THE SHORT ONE ASSERTED THAT NOTHING WAS SHOWN, which is the premise the floor
+  // falsified — and it was written down here as the other half of a promise rather than as the
+  // defect it was: *at eight rows the opening spends the whole page: what is left over is the
+  // chrome the list takes back, which is two rows, and two rows are the account and the row of
+  // keys*. Both sentences were true of the arithmetic and neither was a promise worth keeping: a
+  // list that draws `… 18 not shown` and NOT ONE WORD answers *what can I type* with *eighteen
+  // things, none of them*, and a key that draws no word is indistinguishable from a key that does
+  // nothing. There is a floor of one word under the leftover now (`repl/area.ts`,
+  // `roomForThePalette`), so what the two sizes are two regimes OF has moved: it is how MANY are
+  // shown — a page with room shows what it has room for, and a page with none shows one.
+  for (const [rows, shown] of [
+    [30, 8],
+    [8, 1],
+  ] as const) {
+    it(`names a number that adds up to everything there was, at 100x${rows}`, async () => {
+      // THE NUMBER IS ASSERTED AGAINST THE TOTAL rather than written down: what is on the
+      // screen plus what the last row names is every word the session offers.
+      const columns = 100;
+      const offers = everythingOffered();
+      const ran = await inPty({
+        columns,
+        rows,
+        steps: [
+          opens,
+          {
+            types: COMPLETES,
+            until: (bytes) => bytes.includes(CUT),
+            what: 'said it had no room for the rest',
+          },
+          leaves,
+        ],
+      });
+      const screen = screenOf(ran.bytes.slice(0, ran.at[1] as number), columns, rows);
+      const listed = rowsNaming(
+        screen,
+        offers.map((offer) => offer.word),
+      );
+      const said = screen.rows.find((row) => row.trimStart().startsWith(CUT));
+      expect(said, `no row said how many had no room:\n${screen.text}`).toBeDefined();
+      const missing = Number(/(\d+)/.exec(said as string)?.[1]);
+      expect(listed.length + missing, `${listed.length} shown, ${missing} named`).toBe(
+        offers.length,
+      );
+      // Not vacuous: it really did leave some out, and the two sizes really are the two
+      // regimes rather than one measured twice. ⚠️ THE SECOND OF THESE WAS A YES-OR-NO — *some
+      // are shown* — and it is a COUNT now, because with a floor under the list both sizes show
+      // some and what tells them apart is how many.
+      expect(missing).toBeGreaterThan(0);
+      expect(listed.length, `${rows}: ${listed.length} shown`).toBe(shown);
+      // ⛔ AND THE PAGE DID NOT PAY FOR THE LIST at either size, which is what the cut buys:
+      // the row the caller types on is still the last one the layout leaves.
+      endsAtTheFoot(screen, rows, `100x${rows} with a cut list`);
+    }, 180_000);
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -1285,7 +1345,10 @@ describe('a terminal without the height shows fewer, and says how many it could 
  * The palette is that thing — eighteen rows on a Tab — so if a budget were going to reopen
  * the hole the last two deliveries closed, this is where it would show. It does not: the
  * boundary is ONE row with the palette open and one row with it shut, and the palette is
- * CUT to what is left over the prompt rather than pushing the region past it.
+ * CUT to what is left over rather than pushing the region past it. ⚠️ WHAT IT IS CUT TO
+ * MOVED — it was what is left over the PROMPT and it is what is left over the FLOW
+ * (`repl/area.ts`, `AreaRequest.flow`) — and the boundary did not, because the flow can only
+ * ever make the cut deeper.
  *
  * BOTH WIDTHS ARE MEASURED, AND THE SECOND IS THE ONE THAT WAS IN DOUBT. Shortening the
  * hint gave it back to a sixty-column window, which grows that region by a row — so
@@ -1297,9 +1360,9 @@ describe('a terminal without the height shows fewer, and says how many it could 
  *
  * ⚠️ AND THE LIST IS ONE ROW TALLER THAN WHEN THIS WAS WRITTEN — the keys that move it are said
  * under it now — so the question had to be asked again rather than inherited: the row comes out of
- * the palette's OWN budget (`repl/palette.ts`, `paletteRowsFor`), which is what is left over the
- * prompt, so the region is bounded exactly where it was. The keystrokes below are the ones that
- * could move it: the key that opens the list, and the arrow that MARKS a row in it.
+ * the palette's OWN budget (`repl/palette.ts`, `paletteRowsFor`), which is what is left over, so
+ * the region is bounded exactly where it was. The keystrokes below are the ones that could move
+ * it: the key that opens the list, and the arrow that MARKS a row in it.
  */
 const TOO_SHORT_TO_REDRAW_IN_PART = 1;
 

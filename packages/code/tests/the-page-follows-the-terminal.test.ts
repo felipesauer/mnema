@@ -1065,11 +1065,20 @@ describe('the FRAME asks how big the terminal is in one place, and it follows it
     // scrolled off the top do not come back — so a place that added to the flow without moving that
     // number would place every frame after it short of the foot, which is the defect this pairing
     // exists to prevent. Two places write the flow: a line that lands, and a page that is turned.
-    // Three move the number: those two, and the frame that caps it at what it left room for.
+    // FOUR move the number: those two, and the CAP — what the frame left room for — which is
+    // read on the way out of every frame and once on the way out of the FIRST one. ⚠️ IT WAS
+    // THREE, and the fourth is the opening: a page whose opening is longer than the screen has
+    // already scrolled by the time the layout has drawn it, so a console that waited for the
+    // next keystroke to notice budgeted that one keystroke against rows in the scrollback —
+    // measured at a hundred by eight, where the list the first key asked for was cut to nothing
+    // and the second identical key press drew it.
     expect(times(source, 'past = '), 'the flow is written somewhere else as well').toBe(2);
     expect(times(source, 'flowOnScreen ='), 'the rows on the screen are set somewhere else').toBe(
-      3,
+      4,
     );
+    // AND THE CAP ITSELF IS ONE FUNCTION, which is what makes the two readings of it one answer:
+    // the first frame and every frame after it ask the same question of the same subtraction.
+    expect(times(source, 'function whatTheFrameLeft'), 'the cap is worked out twice').toBe(1);
     expect(times(source, 'flowOnScreen +='), 'the rows on the screen grow somewhere else').toBe(1);
     // AND THE HEIGHT THE PAGE WAS PLACED AT IS RECORDED WHERE THE PAGE IS TURNED. It is the
     // half of the resize guard the drawing cannot answer (`repl/panel.ts`, `sameOpening`), so

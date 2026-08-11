@@ -39,10 +39,12 @@
  *   - THE ORDER ON THE SCREEN: the box, then the emptiness, then the input.
  *   - THE LIST OPENED AND SHUT TEN TIMES OVER, at three sizes, which is the defect above and the
  *     case this file is for: the input at the foot in every one of them, and the box on the first
- *     row wherever the page had room to spare for the list. Where it did not — the list wants
- *     twenty-one rows and eighty by twenty-four has ONE to spare — the box still goes, because
- *     what the palette is budgeted against is the room over the prompt rather than the leftover.
- *     That is a decision this delivery did not touch, and the table asserts it where it is true.
+ *     row. ⚠️ AND THE BOX WAS ASKED FOR AT ONE SIZE OF THE THREE, because at the other two it
+ *     went: the palette was budgeted against the room over the PROMPT rather than against the
+ *     leftover, so a list wanting twenty-one rows on a page with two to spare took the other
+ *     nineteen off the top. The delivery after this one cut the list to the leftover instead
+ *     (`repl/area.ts`, `AreaRequest.flow`), the third column of the table went red as it was
+ *     written to, and the box is asked for at all three sizes now.
  *   - ⛔ AND THE ERASE, still absent, bracketed at the height where the library writes it — with
  *     the list open, which is the region at its tallest.
  */
@@ -207,7 +209,12 @@ describe('the gap is what the flow does not fill', () => {
         for (const badge of BADGES) {
           for (const palette of [0, 1, 7, 20, 80]) {
             for (const flow of [0, 1, 5, 14, 200]) {
-              const area = areaFor({ rows, columns, badge, hint: HINT, palette });
+              // ONE FLOW, TWO SUBTRACTIONS, and the sweep hands the same number to both — which
+              // is what the console does on a frame (`repl/console.ts`, `onScreen`). The area
+              // budgets the list of words against what the page has left over and the leftover
+              // is the rest of that same subtraction, so a case that fed them two different
+              // numbers would be measuring a page that does not exist.
+              const area = areaFor({ rows, columns, badge, hint: HINT, palette, flow });
               const at = `${columns}x${rows} flow ${flow} palette ${palette} badge ${badge}`;
               const region = theGap({ rows, flow, area: area.height }) + area.height;
               // THE SUM IS THE PAGE MINUS THE FLOW, or the area alone when there is no page
@@ -418,6 +425,28 @@ function emptyRowsAbove(screen: Screen): number {
     .filter((row) => row.trim().length === 0).length;
 }
 
+/**
+ * HOW MANY WORDS OF THE LIST ARE DRAWN — the rows between the blank one over the palette and the
+ * row that accounts for what had no room.
+ *
+ * COUNTED BY POSITION AND NOT BY VOCABULARY, which is what keeps it in this file: what a word of
+ * the list IS belongs to the palette, and a case here that knew the verbs of this product would
+ * be a second reading of a list built somewhere else (`the-list-is-a-window.test.ts` counts them
+ * against the offers, because that is what that file is about). Both ends are the palette's own —
+ * the account row it draws when it cut, and the blank row the area spends over it
+ * (`repl/area.ts`, `ABOVE_THE_PALETTE`) — so nothing above the list can be counted into it.
+ *
+ * NOTHING WAS CUT MEANS THERE IS NO SUCH ROW, and the answer is then a refusal rather than a
+ * zero: this instrument cannot tell where a list that fits ends, and the caller asks it only
+ * where the list is cut.
+ */
+function wordsOfTheListOn(screen: Screen): number | undefined {
+  const account = screen.rows.findIndex((row) => row.trimStart().startsWith(CUT));
+  if (account < 0) return undefined;
+  const above = screen.rows.slice(0, account);
+  return above.length - 1 - above.map((row) => row.trim().length === 0).lastIndexOf(true);
+}
+
 // ---------------------------------------------------------------------------
 // The order on the screen: the box, the emptiness, the input
 // ---------------------------------------------------------------------------
@@ -562,9 +591,11 @@ describe('the list of words takes its room out of the emptiness', () => {
 
   it('⚠️ fits a list too long for the room, and says how many it could not show', async () => {
     // ⚠️ THE ADVERSARIAL CASE OF THIS DELIVERY: a list that does not fit. The palette's budget is
-    // what is left over the row being typed (`repl/area.ts`), and the emptiness is what it grows
-    // into — so on a terminal with barely any room the list is CUT, and the question is whether
-    // the region still ends where the layout leaves it or whether the cut list pushes past.
+    // what is left over UNDER THE FLOW (`repl/area.ts`, `AreaRequest.flow`) — it was what is left
+    // over the row being typed, which is the residual the delivery after this one closed — and the
+    // emptiness is what it grows into, so on a page with barely any room the list is CUT and the
+    // question is whether the region still ends where the layout leaves it or whether the cut list
+    // pushes past.
     //
     // A SHORT TERMINAL AND A WIDE ONE, chosen so the list really is cut: at ten rows there is room
     // for a handful of the words there are.
@@ -592,21 +623,31 @@ describe('the list of words takes its room out of the emptiness', () => {
     );
   }, 240_000);
 
-  // THREE SIZES, AND THE THIRD COLUMN IS THE RESIDUAL. The list of words wants twenty-one rows
-  // (twenty words and the blank row over them), and what pays for them is the room the page has to
-  // spare: twenty-one at a hundred and twenty by forty, SEVEN at a hundred by thirty, ONE at eighty
-  // by twenty-four. Where the room is not enough the difference still comes off the screen and the
-  // box still goes — the palette is budgeted against the room over the PROMPT rather than against
-  // the leftover (`repl/area.ts`), which is a decision this delivery did not touch.
+  // ⚠️ THREE SIZES, AND THE THIRD COLUMN WAS THE RESIDUAL — it is gone, and this is what it
+  // said: *where the room is not enough the difference still comes off the screen and the box
+  // still goes, because the palette is budgeted against the room over the PROMPT rather than
+  // against the leftover; red the day the list is cut to the room*. That day is the delivery
+  // this file now describes: the list is cut to what the page has left over UNDER THE FLOW
+  // (`repl/area.ts`, `AreaRequest.flow`), so the two sizes that used to lose the drawing keep
+  // it — measured, and the column really did go red before it went away.
   //
-  // WHAT HOLDS AT EVERY SIZE IS THE ANCHOR, and that is the half that is not a residual: the input
-  // comes back to the foot however much of the flow the list cost. The case is a table so the two
-  // halves cannot be confused for one another — and so that a delivery which cuts the list to the
-  // leftover instead turns the third column red and has to say so.
-  for (const [columns, rows, theOpeningStays] of [
-    [120, 40, true],
-    [100, 30, false],
-    [80, 24, false],
+  // WHAT THE THREE SIZES ARE FOR IS UNCHANGED: the list wants twenty rows and one over them,
+  // and what the page has to spare is twenty-three at a hundred and twenty by forty, EIGHT at a
+  // hundred by thirty and TWO at eighty by twenty-four. So the same list is drawn whole, cut to
+  // eight words, and cut to two — three regimes of one arithmetic, with the anchor and the
+  // drawing asserted in all of them.
+  //
+  // ⚠️ AND THE THIRD COLUMN IS HOW MANY WORDS EACH OF THEM DRAWS, which is what the delivery
+  // after this one may not move. A floor was put under the list so that a key pressed on a page
+  // with NOTHING to spare still answers with a word (`repl/area.ts`, `roomForThePalette`), and
+  // the whole safety of a floor is that it is not a reservation: where the page has room the
+  // leftover is what it always was, so these numbers are the same on both sides of it —
+  // measured, on the binary of each. A page that had room and now draws MORE is the floor having
+  // become a floor for everybody, which is what this column would go red for.
+  for (const [columns, rows, wordsDrawn] of [
+    [120, 40, undefined],
+    [100, 30, 8],
+    [80, 24, 2],
   ] as const) {
     it(`⚠️ comes back to the foot through ten openings at ${columns}x${rows}`, async () => {
       // ⛔ THE DEFECT, AND IT IS THE WHOLE REASON THIS DELIVERY EXISTS. This case used to assert
@@ -658,10 +699,10 @@ describe('the list of words takes its room out of the emptiness', () => {
         expect(emptyRowsAbove(screen), `${what}: the emptiness is in two places`).toBe(
           theGapOn(screen, PROMPT),
         );
-        if (!theOpeningStays) continue;
         // THE BOX IS ON THE FIRST ROW — the defect, and the promise. Not merely present: the top
         // edge is the row that goes first when a page is pushed up, so the row it is on is the
-        // measurement.
+        // measurement. ⚠️ AND IT WAS ASKED AT ONE SIZE OF THE THREE, because at the other two the
+        // list took the rows off the top of the page; it is asked at all three now.
         expect(openingBeginsOn(screen, columns), `${what}: the mark is not on the first row`).toBe(
           0,
         );
@@ -675,9 +716,8 @@ describe('the list of words takes its room out of the emptiness', () => {
       expect(theGapOn(listed, PROMPT), 'the list took no room at all').toBeLessThan(
         theGapOn(shut, PROMPT),
       );
-      // AND THE RESIDUAL IS ASSERTED WHERE IT IS TRUE: a page with less room to spare than the list
-      // wants loses the box on the first opening, and does not get it back — scrolling is not
-      // undone by anything. Named rather than hidden, and red the day the list is cut to the room.
+      // AND THE PAGE OPENED WITH ITS MARK, so the walk above is about a drawing that was there to
+      // lose rather than about one that never arrived.
       expect(
         openingBeginsOn(screenOf(ran.bytes.slice(0, ran.at[0] as number), columns, rows), columns),
         'the page opened without its mark',
@@ -686,11 +726,24 @@ describe('the list of words takes its room out of the emptiness', () => {
       // up by a list keeps the opening's LAST rows on the screen — measured at a hundred by
       // thirty, the sentence under the panel was on row 2 while the top of the drawing was in the
       // scrollback. A case that asked whether the opening was gone ALTOGETHER would be asserting
-      // something else and would pass on a frame with half a drawing on it.
+      // something else and would pass on a frame with half a drawing on it. So after twenty
+      // openings the row is still the FIRST one.
+      expect(openingBeginsOn(shut, columns), 'the opening did not survive').toBe(0);
+      // AND THE LIST REALLY WAS CUT AT THE TWO SIZES WITHOUT THE ROOM FOR IT, or "the drawing
+      // stayed" is a page where nothing was ever asked of the room. Read off the screen with the
+      // list OPEN: the row that accounts for what had no room is there at eighty by twenty-four
+      // and at a hundred by thirty, and absent at a hundred and twenty by forty, where the whole
+      // list fits.
+      expect(SAYS_WHAT_IT_CUT.test(listed.text), `${columns}x${rows}: the list was cut`).toBe(
+        rows < 40,
+      );
+      // ⚠️ AND IT DRAWS THE SAME WORDS IT DREW BEFORE THERE WAS A FLOOR UNDER IT, which is the
+      // half a floor is dangerous for: a floor that had become a RESERVATION would show here as
+      // one of these numbers going UP, on a page that never needed one.
       expect(
-        openingBeginsOn(shut, columns),
-        `the opening ${theOpeningStays ? 'did not survive' : 'survived'}`,
-      ).toBe(theOpeningStays ? 0 : -1);
+        wordsOfTheListOn(listed),
+        `${columns}x${rows}: the list drew a different number of words`,
+      ).toBe(wordsDrawn);
     }, 240_000);
   }
 });
