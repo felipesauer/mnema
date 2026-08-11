@@ -34,9 +34,37 @@
  * It answers the key that was just pressed, so on a terminal that cannot hold both it is
  * the badge and the rules that give way — the same call the single row of candidates
  * already forced, made explicit now that the list can be long. What the palette may never
- * do is take the row being typed or crowd the region past the boundary above: it is cut to
- * what is left over the floor, and the cut is REPORTED, so what it cannot show it says
- * (`palette.ts`).
+ * do is take the row being typed or crowd the region past the boundary above, and the cut
+ * is REPORTED, so what it cannot show it says (`palette.ts`).
+ *
+ * ⚠️ AND WHAT IT WAS CUT TO WAS THE SCREEN, which is the premise this delivery falsified. It
+ * was written here in these words — *it is cut to what is left over the floor* — and the floor
+ * was measured against the whole viewport, which really did keep the REGION short of the
+ * screen. What it could not keep is the PAGE: everything the session has already said is
+ * above the region, so a list cut to twenty rows on a page with four to spare takes the other
+ * sixteen off the top of the caller's own screen, and nothing un-scrolls. Measured on the
+ * merged binary, at a hundred by thirty and at eighty by twenty-four: ONE opening of the list
+ * and the drawing of the name was gone for good, on the first keystroke a person presses to
+ * see what they can type. So what is left over is counted UNDER THE FLOW
+ * ({@link AreaRequest.flow}), and the two measurements it takes are named in the next
+ * paragraph.
+ *
+ * ⚠️ AND WHAT IS LEFT OVER IS A PREFERENCE AND NOT THE WHOLE RULE, which is the second premise
+ * this frontier had to correct. Cutting the list to the page was measured on a page that had
+ * just opened, where there is room to spare; on the page a session spends its life on — one
+ * ordinary verb printed — there is none, and the list drew the count of what had no room and
+ * NOT ONE WORD. So the room is a preference with a FLOOR of one word under it and the
+ * library's own limit over it ({@link roomForThePalette}), and the floor bites exactly where
+ * it costs nothing: on a page with nothing to spare, what it takes is the top of the flow,
+ * which is one scroll away in the caller's own scrollback.
+ *
+ * THE LIST IS BUDGETED BY THE PAGE AND THE ARRANGEMENT BY THE SCREEN, and that is one
+ * decision rather than two measures that disagree. The chrome is the FLOOR of this area and
+ * has to be STABLE: a badge and two rules that came and went as the session printed would be
+ * the foot of the page changing shape on every line landed. The list is the only part that
+ * GROWS, and it grows on a keystroke — so it takes what the page has left over the floor, and
+ * the chrome takes what is left after the list ({@link formFor}). A list open is therefore the
+ * one thing that can still make an arrangement give way, which is what it has always been.
  *
  * WIDTH IS THE OTHER MEASUREMENT, AND IT WAS MISSING. The arithmetic counted a row per
  * thing to draw and the terminal counted two whenever a thing was wider than the screen —
@@ -87,6 +115,30 @@ export interface AreaRequest {
   readonly hint: number;
   /** How many rows the palette would like. Zero when it is not open. */
   readonly palette: number;
+  /**
+   * HOW MANY ROWS OF THE FLOW ARE ON THE SCREEN — everything the session has already said
+   * that a reader can still SEE, in rows rather than in lines.
+   *
+   * IT IS THE OTHER HALF OF THE PAGE, and it is here because the palette is the only thing
+   * this file answers that GROWS. The rest of the area is a floor and some chrome, chosen by
+   * the height of the terminal and by nothing else; the list is as long as there are words,
+   * and the rows it takes have to come from somewhere. They come from what the page has left
+   * over ({@link BELOW_THE_VIEWPORT}, `page.ts`, `theGap`) — which is the same subtraction
+   * the emptiness under the flow is, one row deeper.
+   *
+   * IT IS THE FLOW ON THE SCREEN AND NOT THE FLOW THE SESSION HAS SAID, and the difference is
+   * a page that scrolled: rows the terminal has already carried into the scrollback are not
+   * rows this area may grow into. The console follows the one and not the other
+   * (`console.ts`, `flowOnScreen`), and hands the SAME number to both readers on a frame —
+   * two answers to *how much of the flow is on the screen* would be the emptiness and the
+   * area disagreeing about one page.
+   *
+   * ZERO IS A PAGE WITH NOTHING ON IT, and it is what the opening asks with (`session.ts`):
+   * at that moment nothing has landed, and with no palette open the number cannot change the
+   * answer. Every number this file gave before this field existed is the answer it gives at
+   * zero, which is what makes the field additive rather than a new arithmetic.
+   */
+  readonly flow: number;
 }
 
 /** Which arrangement the terminal has room for, and the numbers that follow from it. */
@@ -139,6 +191,19 @@ const HINT = 1;
  * and saying so is the point of writing it down: the debt is here rather than there.
  */
 const ABOVE_THE_PALETTE = 1;
+
+/**
+ * WHAT IT TAKES TO DRAW ONE WORD OF THE LIST — three rows, and they are read off what the
+ * palette does with them rather than chosen: the word, the row that accounts for everything
+ * with no room, and the row that says which keys move the list (`palette.ts`, `paletteFor`).
+ * At two rows the account and the keys fill both and no word is drawn at all.
+ *
+ * IT IS A FLOOR AND NOT A RESERVATION, and the difference is the whole of why it is safe: it is
+ * what the list gets when the page has nothing to spare, never what it is held to when the page
+ * has more. A key that draws no word is indistinguishable from a key that does nothing, and
+ * *nineteen things, none of them* is a worse answer than *one of nineteen*.
+ */
+const A_WORD = 3;
 
 /**
  * How much shorter than the viewport a region has to be to be redrawn in PART.
@@ -219,10 +284,19 @@ function aboveIn(form: AreaForm, drawing: Drawing): number {
  * that reserved a row for a badge nobody has would count a row nothing draws, and every
  * number this file answers with would be one too many. A badge too wide for the window is
  * the same absence by the same construction.
+ *
+ * WHAT IT HAS TO FIT IN IS THE SCREEN WHILE THE LIST IS SHUT AND THE PAGE WHILE IT IS OPEN,
+ * and the asymmetry is the decision above rather than a special case: the chrome is stable
+ * because nothing but a list can make it give way, and a list may not push the page. With no
+ * palette the two are the same question asked of a page that has none of the area's rows in
+ * it yet, so nothing about a session that prints reaches this — which is exactly the
+ * property that was wanted. With one, the list has already been cut to what the page has
+ * left over the FLOOR ({@link roomForThePalette}), so the bare form always fits and the
+ * ladder is asking which chrome fits on top of it.
  */
 function formFor(request: AreaRequest, drawing: Drawing): AreaForm {
-  const fits = (form: AreaForm): boolean =>
-    heightOf(form, drawing) + BELOW_THE_VIEWPORT <= request.rows;
+  const within = drawing.palette === 0 ? request.rows : request.rows - request.flow;
+  const fits = (form: AreaForm): boolean => heightOf(form, drawing) + BELOW_THE_VIEWPORT <= within;
   if (drawing.badge && fits('full')) return 'full';
   if (fits('ruled')) return 'ruled';
   // The floor, answered whatever the height: a terminal too short for the row being typed
@@ -246,29 +320,66 @@ function onOneRow(width: number, columns: number): boolean {
 }
 
 /**
+ * HOW MANY ROWS THE PALETTE MAY HAVE — a PREFERENCE, a FLOOR and a CEILING, in that order of
+ * softness, and never more than the list asked for.
+ *
+ * ONE FUNCTION AND ONE SITE, because the three are one rule and they answer three different
+ * questions:
+ *
+ *   - THE PREFERENCE IS WHAT THE PAGE HAS LEFT OVER, under the flow and over the area's own
+ *     floor. It is what the list takes wherever there is anything to take, and taking it costs
+ *     the caller nothing at all: those rows are the emptiness the region redraws (`page.ts`),
+ *     so the list grows into them and the page does not move.
+ *   - THE FLOOR IS ONE WORD, and it is what the list gets when the page has nothing to spare:
+ *     {@link A_WORD} rows, which is a word, the count of what had no room, and the row of keys.
+ *   - THE CEILING IS THE LIBRARY'S AND IT DOES NOT BEND: what is left of the SCREEN over the
+ *     floor. Past it the region is as tall as the viewport and the layout stops redrawing part
+ *     of the screen — the one path that carries the erase this product refuses to write. The
+ *     floor may reach it and may not pass it.
+ *
+ * ⚠️ THE FLOOR WAS LEFT OUT, AND THE PREMISE FOR LEAVING IT OUT WAS HALF-MEASURED. It was
+ * argued that a floor *carries the top of the drawing away, which is the defect this closes* —
+ * true on a page that has just opened, where the drawing is on the screen and the page has
+ * rows to spare anyway, and FALSE where the floor actually bites. What bites is a page with
+ * nothing left over, and on that page the drawing has already scrolled away with the flow: what
+ * the floor takes is the top of the FLOW, which is in the caller's scrollback and one scroll
+ * away. Measured on the binary, at a hundred and twenty by forty and by thirty: after ONE
+ * ordinary verb the list drew `… 19 not shown` and NOT ONE WORD, which is a console answering
+ * *what can I type* with *nineteen things, none of them*. The rare loss was traded for a daily
+ * one.
+ *
+ * SO THE PREFERENCE IS UNTOUCHED WHERE IT WAS RIGHT: a page with room to spare answers exactly
+ * what it answered before the floor came back, because `max(floor, spare)` is `spare` there.
+ *
+ * ⚠️ AND AT A FLOW OF ZERO on a terminal with room for a word, every answer is still the one
+ * this gave before the flow existed — `rows − 1 − floor − 1` — which is what the cases that pin
+ * those numbers read.
+ *
+ * THE BLANK ROW COMES OFF ALL THREE FIRST, because the palette does not get to spend a row the
+ * drawing is going to take.
+ */
+function roomForThePalette(request: AreaRequest, floor: number): number {
+  const ceiling = Math.max(0, request.rows - BELOW_THE_VIEWPORT - floor - ABOVE_THE_PALETTE);
+  const spare = Math.max(0, ceiling - request.flow);
+  const least = Math.min(request.palette, A_WORD);
+  return Math.min(request.palette, ceiling, Math.max(least, spare));
+}
+
+/**
  * The area for a terminal of a given size: the form, what is in it, where the caret goes,
  * and how tall the whole of it is.
  *
- * Pure, and asked again on every frame. It reads four numbers, so a caller that held the
- * answer would be holding a stale one the moment a Tab offered a word or a window moved.
+ * Pure, and asked again on every frame. It reads five numbers, so a caller that held the
+ * answer would be holding a stale one the moment a Tab offered a word, a line landed or a
+ * window moved.
  */
 export function areaFor(request: AreaRequest): Area {
   const hint = onOneRow(request.hint, request.columns);
-  // WHAT IS LEFT OVER THE FLOOR is what the palette may have, and the floor is the bare
-  // form without it: the row being typed, and the hint when there is one. So a palette
-  // never pushes the region past the boundary the whole of this file exists to keep, and
-  // a palette longer than the screen is CUT rather than drawn off the top.
-  //
-  // THE BLANK ROW COMES OFF IT FIRST, because the palette does not get to spend a row the
-  // drawing is going to take. A terminal with room for one row of the list gets that row and
-  // its separation; one with room for neither gets no palette, which is the same absence a
-  // terminal that offered nothing gets.
   const floor = TYPED + (hint ? HINT : 0);
-  const room = Math.max(0, request.rows - BELOW_THE_VIEWPORT - floor - ABOVE_THE_PALETTE);
   const drawing: Drawing = {
     badge: onOneRow(request.badge, request.columns),
     hint,
-    palette: Math.min(request.palette, room),
+    palette: roomForThePalette(request, floor),
   };
   const form = formFor(request, drawing);
   return {
