@@ -189,6 +189,46 @@ function theSizeIsTheOneAskedFor(
 export const FRAME_IS_DRAWN = '\u001b[?2026l';
 
 /**
+ * WHAT THE LAYOUT WRITES WHEN A FRAME BEGINS: the start of the synchronized update it wraps the
+ * whole frame in.
+ *
+ * The sister of {@link FRAME_IS_DRAWN}, and it is exported for the same reason: where a frame
+ * BEGINS is not where the chunk before its end begins. Bytes that are nobody's frame land in
+ * between — the runner's own echo before the session started, the modes the console asks the
+ * terminal for, the transcript on the way out — and a count that started at the previous
+ * boundary counts those too.
+ */
+export const A_FRAME_BEGINS = '\u001b[?2026h';
+
+/**
+ * ⛔ HOW MANY ROWS EACH FRAME OF A STREAM PUTS ON THE PAGE, one number per frame.
+ *
+ * THE ONE READING OF *how tall is a frame*, and it is one because it is easy to get wrong in a
+ * way that accuses the product. Measured wrongly once, inside this delivery: cutting the stream
+ * on the frame boundary alone and counting the newlines of each chunk reported a NINE-row frame
+ * on an eight-row screen — and the ninth row was `TTY=/dev/pts/0`, the runner's own echo, which
+ * is in the first chunk because the first chunk starts at the beginning of the stream and not at
+ * the beginning of a frame. A guard that says *the product wrote a frame taller than the screen*
+ * when it did not is worse than no guard.
+ *
+ * SO A FRAME IS FROM ITS OWN BEGINNING TO ITS OWN END ({@link A_FRAME_BEGINS},
+ * {@link FRAME_IS_DRAWN}), and a chunk with no beginning in it is not a frame and is not counted.
+ *
+ * IT IS WHAT SAYS A FRAME NEVER OUTGREW ITS SCREEN, which is the one thing a page made of three
+ * regions may not do: a frame one row taller than the terminal scrolls it, and the fixed region
+ * at the top goes with the scroll (`tests/the-screen-is-ours.test.ts`).
+ */
+export function rowsOfTheFrames(bytes: string): readonly number[] {
+  const rows: number[] = [];
+  for (const chunk of bytes.split(FRAME_IS_DRAWN).slice(0, -1)) {
+    const begins = chunk.lastIndexOf(A_FRAME_BEGINS);
+    if (begins < 0) continue;
+    rows.push(chunk.slice(begins).split('\n').length);
+  }
+  return rows;
+}
+
+/**
  * HOW MANY PAGES A SESSION HAS CARRIED INTO THE SCROLLBACK — the cursor put on the last row of the
  * device BY NUMBER, which is what every row written after it scrolls off the top.
  *

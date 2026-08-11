@@ -64,6 +64,9 @@ import { FRAME_IS_DRAWN } from './pty.js';
 /** One escape byte, written as an escape so no control byte enters a source file. */
 const ESC = '\u001b';
 
+/** The sequence that gives the caller's own screen back. See {@link theScreenBeforeLeaving}. */
+const GIVES_THE_SCREEN_BACK = `${ESC}[?1049l`;
+
 /** What a row is made of before anything is written on it. */
 const BLANK = ' ';
 
@@ -145,11 +148,27 @@ export function everyWidthDrawnOn(rows: readonly string[]): readonly number[] {
  * rules says nothing about a width, and a locator that fell back to the end of the stream would
  * be the index again, wearing a better name.
  */
-export function theSettledScreen(bytes: string, columns: number, rows: number): Screen {
-  const ends = theFrame(bytes, (frame) => everyWidthDrawnOn([frame]).includes(columns), 'last');
+export function theSettledScreen(
+  bytes: string,
+  columns: number,
+  rows: number,
+  // AND, WHERE THE SUBJECT IS NARROWER THAN A SIZE, something the frame has to be SHOWING. The
+  // last frame at a width is the page as the session ended at it, which is the right answer for
+  // *the page after the resize* and the wrong one for *the page after the resize, with the list
+  // still open* — by the time a session leaves, the list is shut. Naming what the frame holds is
+  // the same idea one notch finer: still a property of the frame, still nothing about where it is.
+  holds?: string,
+): Screen {
+  const ends = theFrame(
+    bytes,
+    (frame) =>
+      everyWidthDrawnOn([frame]).includes(columns) &&
+      (holds === undefined || frame.includes(holds)),
+    'last',
+  );
   if (ends < 0) {
     throw new Error(
-      `no frame in this stream was drawn ${columns} columns wide, so there is no settled page ` +
+      `no frame in this stream was drawn ${columns} columns wide${holds === undefined ? '' : ` with ${JSON.stringify(holds)} on it`}, so there is no settled page ` +
         `to read at that size. The width is read off the rules the input area sits between, ` +
         `which every frame of this console writes — so either the session never reached that ` +
         `size, or it drew an arrangement with no rules in it. Reading the end of the stream ` +
@@ -204,6 +223,28 @@ function theFrame(bytes: string, is: (frame: string) => boolean, which: 'first' 
     found = at;
   }
   return found;
+}
+
+/**
+ * ⛔ THE PAGE AS THE SESSION LEFT IT — everything up to the sequence that gives the caller's
+ * screen back.
+ *
+ * THE THIRD LOCATOR, and it is here for the pages the other two cannot name. A page whose input
+ * area has no rules says nothing about a width ({@link theSettledScreen} refuses it, rightly),
+ * and a page whose subject is *the shape of the frame* has no text to be found by
+ * ({@link theFirstScreenWith}). What every session has is an END, and it is written in the bytes
+ * rather than counted: the alternate screen is given back exactly once.
+ */
+export function theScreenBeforeLeaving(bytes: string, columns: number, rows: number): Screen {
+  const back = bytes.lastIndexOf(GIVES_THE_SCREEN_BACK);
+  if (back < 0) {
+    throw new Error(
+      `this session never gave the screen back, so there is no page it left. Either it is still ` +
+        `running, or it died where nothing of ours runs — and a replay of the whole stream would ` +
+        `be a page nobody ever saw.`,
+    );
+  }
+  return screenOf(bytes.slice(0, back), columns, rows);
 }
 
 /**

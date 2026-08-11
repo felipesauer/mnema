@@ -342,7 +342,13 @@ describe('a prefix that names several lists them, each beside the line it came f
       ],
     });
 
-    const screen = screenOf(ran.bytes.slice(0, ran.at[3] as number), columns, rows);
+    // ⚠️ FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended: the subject is the
+    // page WITH THE LIST OF RECORDS ON IT, so the frame to read is the first one that has the
+    // typed prefix on the row — which is the frame the completion produced. A step ends wherever
+    // the stream happened to be quiet, and on a loaded machine that is before the list arrived;
+    // the red was then an empty list, which accuses the completer for something the instrument
+    // did (`support/screen.ts`, {@link theFirstScreenWith}).
+    const screen = theFirstScreenWith(ran.bytes, `${PROMPT} show ${shared}`, columns, rows);
     // EVERY ONE OF THEM IS A ROW OF THE PALETTE, under the row being typed — the id, and
     // beside it the rest of the line the record was named on. A list of bare ids that all
     // begin alike would be a list nobody can choose from, which is why the gloss is the

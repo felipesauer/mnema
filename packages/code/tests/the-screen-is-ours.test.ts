@@ -70,9 +70,9 @@ import {
   aFrameSince,
   inPty as drive,
   type Fixture,
-  FRAME_IS_DRAWN,
   opensAConsole,
   type Ran,
+  rowsOfTheFrames,
   type Step,
 } from './support/pty.js';
 import {
@@ -701,15 +701,14 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
     const after = ran.bytes.slice(ran.at[1] as number);
     // EVERY FRAME, CUT ON THE BOUNDARY THE LIBRARY WRITES, and each one measured in the rows it
     // puts on the page.
-    const frames = after.split(FRAME_IS_DRAWN).slice(0, -1);
-    const tallest = frames.reduce((most, frame) => Math.max(most, frame.split('\n').length), 0);
+    const frames = rowsOfTheFrames(after);
     expect(
       frames.length,
       'the resize drew no frame at all, so nothing was measured',
     ).toBeGreaterThan(0);
     expect(
-      tallest,
-      `a frame of ${tallest} rows was written onto a 24-row screen`,
+      Math.max(...frames),
+      `a frame of ${Math.max(...frames)} rows was written onto a 24-row screen`,
     ).toBeLessThanOrEqual(24);
     // ⛔ AND THE PAGE IS WHOLE AFTERWARDS, which is what the frames above are for.
     const settled = theSettledScreen(ran.bytes, 80, 24);

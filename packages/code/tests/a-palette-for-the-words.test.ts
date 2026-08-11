@@ -60,9 +60,16 @@ import {
   type Fixture,
   opensAConsole,
   type Ran,
+  rowsOfTheFrames,
   type Step,
 } from './support/pty.js';
-import { fillsTheScreen, type Screen, screenOf, theSettledScreen } from './support/screen.js';
+import {
+  fillsTheScreen,
+  type Screen,
+  screenOf,
+  theScreenBeforeLeaving,
+  theSettledScreen,
+} from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = new URL('../dist/cli.js', import.meta.url).pathname;
@@ -1239,7 +1246,7 @@ describe('the mark survives what changes around it', () => {
     // on a loaded machine an index reads the page from BEFORE the resize — and the red then says
     // *the resize lost what the caller had picked*, which is an accusation against the product
     // for something the instrument did (`support/screen.ts`, {@link theSettledScreen}).
-    const after = theSettledScreen(ran.bytes, narrower, rows);
+    const after = theSettledScreen(ran.bytes, narrower, rows, PICK);
     expect(pickedOn(after), 'the resize lost what the caller had picked').toBe(first);
     fillsTheScreen(after, rows, 'the page after a resize with a pick on it');
   }, 240_000);
@@ -1392,6 +1399,12 @@ describe('⚠️ opening the palette never makes the frame outgrow the screen', 
             // the whole stream was over before the key was pressed
             // (`support/pty.ts`, `arrivedSince`).
             { types: PREFIX, until: arrivedSince(PREFIX), what: 'opened the palette' },
+            // ⚠️ AND THESE TWO WAIT FOR NOTHING ON PURPOSE, which is a thing to say out loud
+            // rather than a shortcut. A Tab on a list that is already open can leave the page
+            // exactly as it was, and the layout writes NOTHING for a frame identical to the one
+            // on the screen — so a step waiting for a frame here waits for ever. What makes the
+            // case honest is not the wait but the READ: it does not depend on where a step ended
+            // at all ({@link theFirstScreenWith}).
             { types: COMPLETES, until: () => true, what: 'was asked for the words' },
             // AND WITH A ROW OF IT MARKED, which is the keystroke this delivery added: a mark
             // that had grown the region would be seen here and nowhere else.
@@ -1399,9 +1412,24 @@ describe('⚠️ opening the palette never makes the frame outgrow the screen', 
             leaves,
           ],
         });
-        const screen = screenOf(ran.bytes.slice(0, ran.at[3] as number), columns, rows);
+        // ⚠️ AND IT IS ASKED OF EVERY FRAME rather than of one screen found by an index. The
+        // subject is that no key can make the frame outgrow the screen, and a single screen read
+        // at a step boundary answers about one frame and about whichever one the machine's load
+        // happened to leave under the boundary. Cut on the sequence the layout closes a frame
+        // with, every frame of the run is measured — the ones with the list open among them.
+        const frames = rowsOfTheFrames(ran.bytes);
+        expect(frames.length, `${columns}x${rows}: no frame was drawn at all`).toBeGreaterThan(1);
+        expect(
+          Math.max(...frames),
+          `${columns}x${rows}: a frame of ${Math.max(...frames)} rows on a ${rows}-row screen`,
+        ).toBeLessThanOrEqual(rows);
+        // AND THE PAGE THE SESSION LEFT IS WHOLE. ⚠️ IT WAS FOUND BY THE WIDTH IT WAS DRAWN AT
+        // and that locator REFUSED these sizes, correctly: at eight rows the area is the bare
+        // form, which has no rules — and the rules are what a width is read off. What every
+        // session has instead is an end (`support/screen.ts`, {@link theScreenBeforeLeaving}).
+        const screen = theScreenBeforeLeaving(ran.bytes, columns, rows);
         expect(screen.alternate, `${columns}x${rows}: the screen stopped being ours`).toBe(true);
-        fillsTheScreen(screen, rows, `${columns}x${rows} with the list open`);
+        fillsTheScreen(screen, rows, `${columns}x${rows} after the list`);
         // ⛔ AND NOT ONE ROW OF THE CALLER'S HISTORY WAS ERASED — with the witness that the
         // library really did ask, so the absence is merited rather than vacuous.
         expect(ran.bytes, `${columns}x${rows}: the history was erased`).not.toContain(
