@@ -23,6 +23,16 @@
  * the way out. Under the viewport by one row, it is not — so the threshold is where the
  * behaviour changes and not where a drawing looks cramped.
  *
+ * ⛔ AND FITTING THE VIEWPORT IT IS DRAWN ON IS NECESSARY AND NOT SUFFICIENT, which a window the
+ * caller makes SHORTER is what falsifies. The library asks the question TWICE about one frame:
+ * once about the frame it is drawing, which is what this arithmetic answers, and once about the
+ * frame it LAST drew against the viewport of the moment — and the second is asked again on every
+ * change of size, so a region that was one row short of its own screen is over the boundary as
+ * soon as that screen becomes shorter. Nothing here can answer it: the frame it judges is already
+ * on the page. Measured, declared and asserted as a hole where a resize is the subject
+ * (`tests/the-page-follows-the-terminal.test.ts`), which is also where the frontier is written
+ * down.
+ *
  * EVERY ROW THE AREA WILL DRAW IS COUNTED, including the ones that come and go. THIS USED
  * TO BE ONE ROW — the words a Tab could not choose between — and what replaced it is a
  * LIST: the palette, which is as many rows as there are words to show and is opened by a

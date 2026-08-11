@@ -522,6 +522,15 @@ describe('all three callers of the page leave the input at the foot', () => {
    * THE FIVE PAIRS, and they are five rather than one because the three answers above have to be
    * told apart: three where the flow outlasts the loss, one where it does not, and one where the
    * drawing gives way. All five were measured before they were written down.
+   *
+   * ⛔ AND ONE OF THEM REPRODUCES A DEFECT THESE CASES CANNOT SEE, which is worth saying here
+   * rather than only where it is asserted: at forty-eight rows the region the layout redraws is
+   * thirty-one, so a window made twenty-four is a window shorter than the frame already on it —
+   * and the library answers that by redrawing the whole screen, with the erase of the caller's
+   * history inside the sequence. This case has driven exactly that geometry since it was written
+   * and has been green throughout, because what it reads is the SCREEN and the loss is in the
+   * BYTES. Measured, declared and asserted as a hole in
+   * `tests/the-page-follows-the-terminal.test.ts` (*a window made SHORTER reaches the erase*).
    */
   const SHORTENED: readonly Shortened[] = [
     { tall: 40, short: 30, predicts: 'the leftover is unchanged', pages: 1 },

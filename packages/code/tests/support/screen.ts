@@ -316,6 +316,48 @@ export function theGapOn(screen: Screen, prompt: string): number {
   return gap;
 }
 
+/**
+ * WHERE A LINE IS AGAINST THE EMPTINESS — the one reading of *has the page PLACED this line?*
+ *
+ * THE TWO PLACES THE SAME TEXT CAN BE, and telling them apart is the whole of it. What the
+ * caller is typing is drawn in the region the layout redraws, at the FOOT of the page; a line
+ * the page has landed is the last row of the FLOW, above the emptiness (`src/repl/page.ts`). So
+ * the text of a row being typed and the text of the same row once it has landed are the same
+ * bytes in two different places, and *the line is on the screen* does not say which.
+ *
+ * ⚠️ AND A STEP THAT WAITED FOR THE TEXT WAS WAITING FOR THE WRONG ONE OF THEM. Abandoning a row
+ * redraws the frame FIRST and lands the line on the turn after it, so a step that ended on the
+ * frame it caused ended before the page had placed anything — and the case then read a screen
+ * with the line still in the input area, which is a red that says *36 is not less than 10* and
+ * mentions nothing about a race. Measured: red in about half of the whole-suite runs under load,
+ * green eighteen times out of eighteen on its own. It is the amarra this bench already carries —
+ * a step waits for what it CAUSED — and the cause here is the landing rather than the frame.
+ *
+ * SO THE STEP AND THE ASSERTION ASK THIS ONE FUNCTION. Two readings of *where the line is* is how
+ * a step comes to approve the very screen the assertion refuses, which is exactly what happened
+ * (`tests/the-gap-goes-under-the-box.test.ts`, *lands what the session says INTO the emptiness*).
+ */
+export interface TheLineAndTheEmptiness {
+  /** The first row the line is on, and −1 when it is nowhere on the screen. */
+  readonly landedOn: number;
+  /** The first row of the screen with nothing on it. */
+  readonly emptyFrom: number;
+  /**
+   * WHETHER THE PAGE HAS PLACED IT: the line is on the screen, and it is ABOVE the emptiness.
+   *
+   * A line in the input area is below it, at the foot; a line the flow has taken is above it, at
+   * the end of the page. There is no third place for it to be.
+   */
+  readonly placed: boolean;
+}
+
+/** {@link TheLineAndTheEmptiness}, read off one screen. */
+export function theLineAndTheEmptiness(screen: Screen, line: string): TheLineAndTheEmptiness {
+  const landedOn = screen.rows.findIndex((row) => row.includes(line));
+  const emptyFrom = screen.rows.findIndex((row) => row.trim().length === 0);
+  return { landedOn, emptyFrom, placed: landedOn >= 0 && landedOn < emptyFrom };
+}
+
 /** Where the cursor is, and what is under it. */
 interface Grid {
   readonly cells: string[][];
