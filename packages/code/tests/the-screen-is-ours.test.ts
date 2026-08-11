@@ -70,6 +70,7 @@ import {
   aFrameSince,
   inPty as drive,
   type Fixture,
+  FRAME_IS_DRAWN,
   opensAConsole,
   type Ran,
   type Step,
@@ -80,6 +81,7 @@ import {
   promptRow,
   type Screen,
   screenOf,
+  theSettledScreen,
 } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
@@ -646,8 +648,13 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
         leaves,
       ],
     });
-    sizes.forEach((size, index) => {
-      const screen = screenAt(ran, 2 + index, size.columns, size.rows);
+    sizes.forEach((size) => {
+      // ⚠️ FOUND BY THE WIDTH IT WAS DRAWN AT rather than by where the step ended, and this case
+      // is the one that taught the lesson. A resize produces more than one frame and a step ends
+      // wherever the stream was quiet, so on a loaded machine `ran.at[2 + index]` reads the page
+      // from BEFORE the resize — and the red says *the opening is not on the page*, which names
+      // neither the index nor the load (`support/screen.ts`, {@link theSettledScreen}).
+      const screen = theSettledScreen(ran.bytes, size.columns, size.rows);
       const where = `${size.columns}x${size.rows}`;
       // THE TOP REGION BEGINS ON THE FIRST ROW, which is the claim a resize can falsify — and
       // NOT that a given row of it stays put: which arrangement a width has room for is the
@@ -660,6 +667,55 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
       expect(screen.above, `${where}: a resize fed the caller’s scrollback`).toEqual([]);
     });
     theHistorySurvived(ran, 'a session resized three times');
+  }, 240_000);
+
+  it('⛔ writes no frame taller than the screen it is on, not even a transient one', async () => {
+    // ⛔ THE GUARD THIS DELIVERY DID NOT HAVE, and the defect it was missing is the sharpest one
+    // the model can produce. A frame that declares its own height is written onto whatever screen
+    // exists WHEN IT IS WRITTEN — and the layout library keeps its own watch on the size, which
+    // is SYNCHRONOUS: it lays the tree out again and writes it without React having re-rendered
+    // anything. So a shrink used to write the OLD height onto the NEW screen before the corrected
+    // frame followed. Measured, 120×40 to 80×24: **40 rows written onto a 24-row screen**, which
+    // overflows by sixteen and scrolls the page — the top region off the top, for one frame.
+    //
+    // NOTHING ON THE SETTLED PAGE SHOWS IT. The corrected frame redraws every row from the top,
+    // so a case that reads the page after the size settles is answered *correct* either way; what
+    // sees it is a case that reads the FRAMES. That is why this one counts rows in the stream
+    // rather than looking at a screen.
+    //
+    // THE SLICE IS TAKEN BEFORE THE RESIZE, which is the one way an index is honest here: it is
+    // the boundary of a step that had already SETTLED, so nothing the resize caused can be in
+    // front of it. Everything after it is the resize's own frames and the frames of a session
+    // that only ever got shorter — so a boundary that drifts can only add correct frames, never
+    // hide a wrong one.
+    const ran = await inPty({
+      columns: 120,
+      rows: 40,
+      steps: [
+        opens,
+        submits(says(0)),
+        { resize: { columns: 80, rows: 24 }, until: aFrameSince(PROMPT), what: 'was made shorter' },
+        leaves,
+      ],
+    });
+    const after = ran.bytes.slice(ran.at[1] as number);
+    // EVERY FRAME, CUT ON THE BOUNDARY THE LIBRARY WRITES, and each one measured in the rows it
+    // puts on the page.
+    const frames = after.split(FRAME_IS_DRAWN).slice(0, -1);
+    const tallest = frames.reduce((most, frame) => Math.max(most, frame.split('\n').length), 0);
+    expect(
+      frames.length,
+      'the resize drew no frame at all, so nothing was measured',
+    ).toBeGreaterThan(0);
+    expect(
+      tallest,
+      `a frame of ${tallest} rows was written onto a 24-row screen`,
+    ).toBeLessThanOrEqual(24);
+    // ⛔ AND THE PAGE IS WHOLE AFTERWARDS, which is what the frames above are for.
+    const settled = theSettledScreen(ran.bytes, 80, 24);
+    expect(firstDrawnRow(settled), 'the top region left the screen').toBe(0);
+    fillsTheScreen(settled, 24, 'the page after a shrink');
+    theHistorySurvived(ran, 'a session made shorter');
   }, 240_000);
 });
 

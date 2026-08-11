@@ -62,7 +62,7 @@ import {
   type Ran,
   type Step,
 } from './support/pty.js';
-import { fillsTheScreen, type Screen, screenOf } from './support/screen.js';
+import { fillsTheScreen, type Screen, screenOf, theSettledScreen } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = new URL('../dist/cli.js', import.meta.url).pathname;
@@ -1234,7 +1234,12 @@ describe('the mark survives what changes around it', () => {
         leaves,
       ],
     });
-    const after = screenOf(ran.bytes.slice(0, ran.at[3] as number), narrower, rows);
+    // ⚠️ FOUND BY THE WIDTH IT WAS DRAWN AT rather than by where the step ended: a resize
+    // produces more than one frame, and a step ends wherever the stream happened to be quiet, so
+    // on a loaded machine an index reads the page from BEFORE the resize — and the red then says
+    // *the resize lost what the caller had picked*, which is an accusation against the product
+    // for something the instrument did (`support/screen.ts`, {@link theSettledScreen}).
+    const after = theSettledScreen(ran.bytes, narrower, rows);
     expect(pickedOn(after), 'the resize lost what the caller had picked').toBe(first);
     fillsTheScreen(after, rows, 'the page after a resize with a pick on it');
   }, 240_000);

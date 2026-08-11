@@ -74,7 +74,7 @@
  */
 
 import { render } from 'ink';
-import { createElement } from 'react';
+import { createElement, type ReactElement } from 'react';
 import type { Line } from '../presentation/line.js';
 import type { Render } from '../presentation/render.js';
 import { areaFor } from './area.js';
@@ -399,6 +399,8 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   let drawnAt = { columns: howWide(), rows: howTall() };
   /** How many rows the middle region had on the frame that is on the screen. */
   let theRoom = 0;
+  /** The layout, once it is up. See the assignment at the foot of this function. */
+  let mounted: ReturnType<typeof render> | undefined;
   let opened: Opening = openingFor(drawnAt.columns, drawnAt.rows);
 
   /**
@@ -822,6 +824,23 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    */
   function resized(): void {
     moved();
+    // ⛔ AND THE TREE IS RE-RENDERED HERE, SYNCHRONOUSLY, WHICH IS THE HALF THAT CANNOT BE LEFT
+    // TO A SCHEDULER. Telling the watchers is what React answers with an update, and React
+    // decides WHEN — at the end of the task, after every listener on this event has run. The
+    // library's own listener is one of those, and it is synchronous: it lays the tree out again
+    // and writes it, without React having re-rendered anything. So a value rebuilt above and a
+    // frame written from the tree below can be two different sizes, and on a frame that declares
+    // its own height the difference is a frame TALLER than the screen it is written onto.
+    //
+    // MEASURED, shrinking 120×40 to 80×24: the resize wrote **40 rows onto a 24-row screen**
+    // first — sixteen rows of overflow, which scrolls the page and carries the top region off it
+    // — and the correct 24-row frame second. Arming this watch before the library's was not
+    // enough on its own, and that is the whole reason this line exists rather than an ordering
+    // comment: the ordering decides who runs first, and this decides what the tree HOLDS when
+    // they do. Re-rendering is synchronous by the library's own contract in this mode
+    // (`updateContainerSync` and a flush), so the frame the library then writes is the frame for
+    // the screen that exists.
+    mounted?.rerender(theFrame());
   }
 
   const watched: Watched = {
@@ -834,6 +853,27 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     },
     pressed,
   };
+
+  // ⛔ THE FRAME FOLLOWS THE TERMINAL, AND THIS WATCH GOES ON BEFORE THE LAYOUT IS MOUNTED — the
+  // order is the whole of it, and it is measured rather than tidy.
+  //
+  // ⚠️ IT WAS ARMED SECOND, with the reason written out: *the library keeps its own watch on the
+  // same event and recalculates the frame it is redrawing, so arming this one second is what puts
+  // this frame in front of a library that has already agreed about how wide the screen is.* That
+  // was true of a console whose frame was a few rows at the foot of the caller's page. It is
+  // FALSE of a frame that declares its own height: the library's watch is SYNCHRONOUS — it lays
+  // the tree out again and writes it, without React having re-rendered anything — so a listener
+  // armed after it lets the library write the OLD height onto the NEW screen. Measured, shrinking
+  // 120×40 to 80×24: the first frame of the resize was **40 rows written onto a 24-row screen**,
+  // which overflows by sixteen and scrolls the page; the correct 24-row frame came after it, so
+  // the settled page was right and the transient one had carried the top region off the screen.
+  // On a quiet machine the second frame lands inside the instrument's own settling window and
+  // nothing is seen; under load it is what a reader sees, and what a case reads.
+  //
+  // Armed first, the value the layout reads is rebuilt before the library asks the tree for a
+  // frame, so the frame the library writes is the one for the screen that exists
+  // (`tests/the-screen-is-ours.test.ts`, *writes no frame taller than the screen it is on*).
+  stdout.on('resize', resized);
 
   // ⛔ THE WHEEL IS ASKED FOR BEFORE THE LAYOUT IS MOUNTED, and the order is forced rather than
   // tidy. A mode is the TERMINAL's and not a buffer's, so it makes no difference to the device
@@ -849,7 +889,18 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   // device would be the hole the door exists to close.
   theWayOut.write(WATCHING_THE_WHEEL);
 
-  const app = render(createElement(Region, { watched, tips: tips.text, badge: badge.text }), {
+  /**
+   * The whole page as one element — asked for again whenever the tree has to be rebuilt without
+   * waiting for a scheduler ({@link resized}).
+   *
+   * ONE COMPOSITION AND TWO CALLERS, which is what keeps the frame drawn on a resize from being
+   * a different frame from the one mounted: the props are the two things resolved once when the
+   * session opened, and everything that moves is read through {@link Watched}.
+   */
+  const theFrame = (): ReactElement =>
+    createElement(Region, { watched, tips: tips.text, badge: badge.text });
+
+  const app = render(theFrame(), {
     stdin,
     // THE DOOR AND NOT THE DEVICE: what the library writes when it starts the page over carries
     // the one sequence this product refuses, in the alternate screen exactly as outside it, and
@@ -878,12 +929,6 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     alternateScreen: true,
   });
 
-  // THE FRAME FOLLOWS THE TERMINAL, and the watch goes on AFTER the layout is up: the
-  // library keeps its own on the same event and recalculates the frame it is redrawing, so
-  // arming this one second is what puts this frame in front of a library that has already
-  // agreed about how wide the screen is.
-  stdout.on('resize', resized);
-
   // AND THE PAGE FOLLOWS THE RECORD.
   const watching = setInterval(landWhatHappened, HOW_OFTEN_THE_RECORD_IS_ASKED);
   // Watching is no reason for the process to stay up: with everything else that holds it
@@ -891,6 +936,12 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   watching.unref();
 
   const disarm = armLeaving(leaving, restore);
+
+  // WHAT THE RESIZE RE-RENDERS THROUGH, held only once the layout is up: the watch is armed
+  // BEFORE the library is mounted, so between those two lines there is an instant with a
+  // listener and no tree — and a caller who resized in it would otherwise be answered by a
+  // reference that does not exist yet.
+  mounted = app;
 
   return { land, closed };
 }

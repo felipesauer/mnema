@@ -59,6 +59,7 @@
  */
 
 import { expect } from 'vitest';
+import { FRAME_IS_DRAWN } from './pty.js';
 
 /** One escape byte, written as an escape so no control byte enters a source file. */
 const ESC = '\u001b';
@@ -119,6 +120,90 @@ export function everyWidthDrawnOn(rows: readonly string[]): readonly number[] {
     at = end;
   }
   return widths;
+}
+
+/**
+ * ⛔ THE PAGE AS IT SETTLED AT A GIVEN WIDTH — found by what the frames CONTAIN, never by where
+ * they are in the stream.
+ *
+ * ⚠️ THIS IS THE INSTRUMENT A WHOLE CLASS OF CASES WAS MISSING, and the class is precise: a step
+ * WAITS for the frame it caused, and then the case READS by index — `ran.at[3]`. The wait is
+ * right; the index is not what the wait guarantees. A resize produces more than one frame, the
+ * boundary a step ends on is wherever the stream happened to be quiet, and a machine under load
+ * puts that boundary between two frames instead of after both. What the case then replays is the
+ * page BEFORE the thing it is about, and the red says *the opening is not on the page* or
+ * *nothing on it was drawn 70 columns wide* — a symptom that names neither the index nor the
+ * load. Measured on a loaded machine: three cases, three different symptoms, one cause.
+ *
+ * SO THE FRAME IS FOUND BY ITS WIDTH, which is a property of the frame and not of the clock. The
+ * two rules the input area sits between run the whole way across the terminal, so the length of
+ * one IS the width the process read off its device ({@link everyWidthDrawnOn}) — and every frame
+ * this console writes is a whole page, so every frame carries them. The LAST frame drawn that
+ * wide is the page after the size settled, whatever else the stream did around it.
+ *
+ * ⛔ IT ACCUSES RATHER THAN GUESSING when there is no such frame: a page whose input area has no
+ * rules says nothing about a width, and a locator that fell back to the end of the stream would
+ * be the index again, wearing a better name.
+ */
+export function theSettledScreen(bytes: string, columns: number, rows: number): Screen {
+  const ends = theFrame(bytes, (frame) => everyWidthDrawnOn([frame]).includes(columns), 'last');
+  if (ends < 0) {
+    throw new Error(
+      `no frame in this stream was drawn ${columns} columns wide, so there is no settled page ` +
+        `to read at that size. The width is read off the rules the input area sits between, ` +
+        `which every frame of this console writes — so either the session never reached that ` +
+        `size, or it drew an arrangement with no rules in it. Reading the end of the stream ` +
+        `instead would be an index by another name.`,
+    );
+  }
+  return screenOf(bytes.slice(0, ends), columns, rows);
+}
+
+/**
+ * ⛔ THE PAGE AS SOON AS IT FIRST SHOWED SOMETHING — the other half of the same idea, for the
+ * cases whose subject is an effect landing rather than a size settling.
+ *
+ * THE FIRST FRAME AND NOT THE LAST, and the difference is what each is about: a size is settled
+ * by the LAST frame drawn at it, and an effect has landed by the FIRST frame that shows it.
+ * Reading the last would answer with the end of the session, which is the index again.
+ */
+export function theFirstScreenWith(
+  bytes: string,
+  what: string,
+  columns: number,
+  rows: number,
+): Screen {
+  const ends = theFrame(bytes, (frame) => frame.includes(what), 'first');
+  if (ends < 0) {
+    throw new Error(
+      `no frame in this stream ever showed ${JSON.stringify(what)}, so there is no page to read ` +
+        `it off. Either the session never drew it, or it is spelled here in a way the page ` +
+        `never was — a fold puts a break in the middle of a row, and a row carrying style ` +
+        `carries escapes between its characters.`,
+    );
+  }
+  return screenOf(bytes.slice(0, ends), columns, rows);
+}
+
+/**
+ * WHERE A FRAME ENDS IN THE STREAM, for the first or the last one that answers `is` — and −1
+ * when none does.
+ *
+ * ONE WALKER AND TWO READINGS, which is what keeps *where a frame ends* from being spelled twice:
+ * the boundary is the sequence that closes the layout's synchronized update (`support/pty.ts`,
+ * `FRAME_IS_DRAWN`), and a second spelling of it is a second idea of which bytes belong to which
+ * frame.
+ */
+function theFrame(bytes: string, is: (frame: string) => boolean, which: 'first' | 'last'): number {
+  let at = 0;
+  let found = -1;
+  for (const frame of bytes.split(FRAME_IS_DRAWN)) {
+    at += frame.length + FRAME_IS_DRAWN.length;
+    if (!is(frame)) continue;
+    if (which === 'first') return at;
+    found = at;
+  }
+  return found;
 }
 
 /**

@@ -53,7 +53,7 @@ import { REPL_VERB } from '../src/wiring/repl.js';
 import { DEFAULT_REQUIREMENT, levelSeverity, VERIFY_VERB } from '../src/wiring/verify.js';
 import { ESC, fakeTerminal, hooksNothing, until, withoutLayout } from './support/console.js';
 import { inPty as drive, type Fixture, opensAConsole, type Ran, type Step } from './support/pty.js';
-import { screenOf } from './support/screen.js';
+import { screenOf, theSettledScreen } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
@@ -671,7 +671,13 @@ describe('the two rules are as wide as the terminal, and follow it when it chang
         leaves,
       ],
     });
-    const screen = screenOf(ran.bytes.slice(0, ran.at[1] as number), 70, rows);
+    // ⚠️ FOUND BY THE WIDTH IT WAS DRAWN AT, not by where the step ended. A resize produces more
+    // than one frame and a step ends wherever the stream was quiet, so an index puts this read
+    // between them on a loaded machine — and what came back was the page at the OLD width, which
+    // the screen model then refused by name (*nothing on it was drawn 70 columns wide*). The
+    // wait above is right; the index was not what the wait guaranteed
+    // (`support/screen.ts`, {@link theSettledScreen}).
+    const screen = theSettledScreen(ran.bytes, 70, rows);
     for (const rule of rulesAroundTheInput(screen)) {
       expect(isRule(rule), 'the input is not between two rules after the resize').toBe(true);
       expect([...rule.replace(/ +$/, '')].length, 'a rule kept the old width').toBe(70);

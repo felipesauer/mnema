@@ -39,7 +39,7 @@ import {
   type Ran,
   type Step,
 } from './support/pty.js';
-import { screenOf } from './support/screen.js';
+import { screenOf, theFirstScreenWith } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = new URL('../dist/cli.js', import.meta.url).pathname;
@@ -294,13 +294,19 @@ describe('a record on the screen can be typed back, whole', () => {
 
     // WHAT THE ROW BECAME: the whole id, typed for the caller, and not a character of it
     // short. This is the assertion the defect was measured against.
-    const completed = screenOf(ran.bytes.slice(0, ran.at[3] as number), columns, rows);
+    // ⚠️ FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended. The wait above is
+    // right and the index after it is not what the wait guarantees: a step ends wherever the
+    // stream happened to be quiet, so on a loaded machine this read lands on the page from
+    // BEFORE the key took effect — and the red is then *expected 'mnema>' to be 'mnema> show …'*,
+    // which accuses the completer for something the instrument did
+    // (`support/screen.ts`, {@link theFirstScreenWith}).
+    const completed = theFirstScreenWith(ran.bytes, `show ${chosen.id}`, columns, rows);
     expect(rowBeingTyped(completed), completed.text).toBe(`${PROMPT} show ${chosen.id}`);
 
     // AND WHAT THE READ SAID ABOUT IT. `show` over the row is the whole point: a
     // completion that produced a value the next line refuses would have moved the dead
     // end rather than closed it.
-    const answered = screenOf(ran.bytes.slice(0, ran.at[4] as number), columns, rows);
+    const answered = theFirstScreenWith(ran.bytes, chosen.title, columns, rows);
     expect(answered.text).toContain(chosen.title);
     expect(answered.text).not.toContain('No record');
   }, 240_000);
@@ -457,7 +463,13 @@ describe('what it offers is what the session showed, and never the record', () =
       `something was offered for a record nobody named:\n${refused.text}`,
     ).toEqual([]);
 
-    const completed = screenOf(ran.bytes.slice(0, ran.at[4] as number), columns, rows);
+    // ⚠️ FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended. The wait above is
+    // right and the index after it is not what the wait guarantees: a step ends wherever the
+    // stream happened to be quiet, so on a loaded machine this read lands on the page from
+    // BEFORE the key took effect — and the red is then *expected 'mnema>' to be 'mnema> show …'*,
+    // which accuses the completer for something the instrument did
+    // (`support/screen.ts`, {@link theFirstScreenWith}).
+    const completed = theFirstScreenWith(ran.bytes, `show ${present.id}`, columns, rows);
     expect(rowBeingTyped(completed), completed.text).toBe(`${PROMPT} show ${present.id}`);
   }, 240_000);
 
