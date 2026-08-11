@@ -228,8 +228,9 @@ describe('the list of words is cut to what the page has left over', () => {
     //
     //   - THE CEILING, which does not bend. The region is never as tall as the viewport, because
     //     that is the height at which the library redraws the WHOLE screen with the erase this
-    //     product refuses to write inside the sequence. The floor may REACH it and may not pass
-    //     it, and the count below says how often it reaches.
+    //     product refuses inside the sequence — answered on the way out rather than avoided, so
+    //     what the path costs is the page rewritten (`src/repl/page.ts`, `theEraseAsAScroll`). The
+    //     floor may REACH it and may not pass it, and the count below says how often it reaches.
     //   - THE PAGE, which is charged only when it had nothing. A page with as much left over as
     //     one word of list costs pays NOTHING for opening one — the rows come out of the
     //     emptiness, which is what the first half of this file bought — and no page anywhere
@@ -357,7 +358,8 @@ describe('the list of words is cut to what the page has left over', () => {
         rows - BELOW_THE_VIEWPORT + whatOneWordOfListCosts(),
       );
       // ⛔ AND THE REGION IS STILL SHORT OF THE VIEWPORT, which is the limit that does not bend:
-      // past it the library redraws the whole screen with the erase this product will not write.
+      // past it the library redraws the whole screen with a sequence carrying the erase this
+      // product will not write — answered at the pipe now, at the cost of the page rewritten.
       expect(open.height + BELOW_THE_VIEWPORT, `${rows}`).toBeLessThanOrEqual(rows);
     }
   });

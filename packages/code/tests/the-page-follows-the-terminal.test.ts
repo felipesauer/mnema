@@ -74,6 +74,7 @@ import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC, fakeTerminal, hooksNothing, until, withoutLayout } from './support/console.js';
 import {
   arrivedSince,
+  carriedPages,
   inPty as drive,
   type Fixture,
   FRAME_IS_DRAWN,
@@ -452,18 +453,11 @@ const TALL = 40;
 const CARRIES_THE_PAGE = `${ESC}[${TALL};1H`;
 
 /**
- * How many pages a session has carried into the scrollback, at ANY height.
- *
- * ⚠️ THE CONSTANT ABOVE NAMES ONE HEIGHT, and that was enough while only a width could turn
- * a page: every page was carried at the height the console opened at. A page turned after
- * the caller made their window shorter is carried at the NEW height, so counting the one
- * sequence would count it as zero — the shape of instrument that reads a defect as a
- * success. The sequence is written by one function and by nothing else (`repl/page.ts`),
- * whatever height it names.
+ * ⚠️ AND THE READING ITSELF LEFT THIS FILE. It was written out here and once more in
+ * `tests/the-prompt-sits-at-the-foot.test.ts`, and this delivery gave three more cases a use for
+ * it — so it is the instrument's now (`support/pty.ts`, {@link carriedPages}), which is also where
+ * the second thing that carries a page is written down: the door answering the library.
  */
-const carriedPages = (bytes: string): number =>
-  (bytes.match(new RegExp(`${ESC}\\[\\d+;1H`, 'g')) ?? []).length;
-
 /**
  * The LAST row on the page that says what the session is — the arrangement most recently drawn.
  *
@@ -505,6 +499,24 @@ describe('the page follows the drawing, and once per drag', () => {
     const { terminal, close } = await opened(200);
     const pages = () => carriedPages(terminal.bytes());
     expect(pages(), 'the page was never opened').toBe(1);
+    // AND A DRAG THAT ENDS WHERE IT STARTED COSTS NOTHING, which was true of the guard before this
+    // delivery and is still true: it never became "a resize event happened".
+    //
+    // ⚠️ IT USED TO BE THE LAST HALF OF THIS CASE AND IT IS THE FIRST NOW, and the excursion is
+    // five rows rather than fourteen. Neither is about this guard: what a count of pages carried
+    // away can no longer separate is a page TURNED from the library ASKING to start the page over
+    // ({@link carriedPages}), and the geometry this case had walked into by the end of it asks on
+    // any shrink at all. Measured — every drag delivered in ONE tick subtracts the whole
+    // difference from the flow on the screen (`repl/console.ts`, `whatTheWindowTook`), so a page
+    // dragged up to sixty and back to forty-four believes it has nothing above the region and the
+    // region is then forty-three rows of a forty-four-row screen. So the half that needs exact
+    // teeth is asked FIRST, on a page whose flow is the one it opened with, where the region is
+    // thirty-one and an excursion to thirty-five is on this side of the frontier. What happens on
+    // the other side of it is the subject of the section below, at every geometry of the frontier.
+    terminal.resize(200, 35);
+    terminal.resize(200, 40);
+    await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
+    expect(pages(), 'a drag back to the height on the screen turned a page').toBe(1);
     // ⚠️ THE HEIGHTS IT USED WERE THIRTY, TWENTY AND TEN, and an earlier delivery falsified the
     // premise under them: the name gave way when the DRAWING was taller than the terminal, so
     // nothing but a four-row window could move a glyph. It gives way when the PAGE stops fitting
@@ -531,13 +543,6 @@ describe('the page follows the drawing, and once per drag', () => {
       besideTheMark(lastTitle(terminal.bytes()), 200).trim(),
       'the arrangement moved',
     ).toContain(OPENED);
-    // AND A DRAG THAT ENDS WHERE IT STARTED COSTS NOTHING EITHER, which was true of the guard
-    // before this delivery and is still true: it never became "a resize event happened".
-    terminal.resize(200, 30);
-    terminal.resize(200, 44);
-    await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
-    expect(pages(), 'a drag back to the height on the screen turned a page').toBe(1);
-
     // ⚠️ AND HERE IS A HALF THAT WAS INVERTED BY THE DELIVERY BEFORE THIS ONE. It read
     // `terminal.resize(199)` and asserted another page, on the sentence *the width still does
     // it* — and it did, because the box was drawn corner to corner and one column narrower was
@@ -574,9 +579,21 @@ describe('the page follows the drawing, and once per drag', () => {
     const widest = drawnAcross(74).reduce((most, row) => (row.length > most.length ? row : most));
     expect(terminal.bytes(), 'the widest form was not on the wide terminal').toContain(widest);
     const before = terminal.bytes().length;
+    const pagesBefore = pages();
     terminal.resize(74, 4);
     await new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING));
-    expect(pages(), 'a height that gives the mark away did not turn the page').toBe(3);
+    // ⚠️ THE COUNT USED TO BE EXACT HERE — `toBe(3)` — and it cannot be any more, for the reason
+    // {@link carriedPages} carries: four rows is far under the height at which the library gives up
+    // on redrawing part of the page, so the door answers its asks with the very bytes a turn writes.
+    // Measured, three where the turn is one. What is asserted is that the count MOVED and, under
+    // it, the turn's own observable — a shorter mark on the page — which the asks cannot produce.
+    expect(pages(), 'a height that gives the mark away did not turn the page').toBeGreaterThan(
+      pagesBefore,
+    );
+    // ⛔ AND NOT ONE ROW OF THE CALLER'S HISTORY WAS ERASED to get there, on a stream that is not
+    // even a device: the door is on the pipe rather than on a terminal, so it answers here too.
+    expect(times(terminal.bytes(), ERASES_THE_HISTORY), 'the history was erased').toBe(0);
+    expect(times(terminal.bytes(), REDRAWS_EVERYTHING), 'the screen was erased').toBe(0);
     // And it is a SHORTER mark that was drawn, so the page turned for the reason claimed.
     // Read from the LAST opening on the page rather than from everything written after the
     // resize: on a terminal this short the library writes out everything it is keeping,
@@ -809,19 +826,26 @@ describe('a drag of the window edge costs the caller what the drawing costs, and
 });
 
 // ---------------------------------------------------------------------------
-// ⛔ And a window made SHORTER reaches the one erase this product refuses to write
+// A window made SHORTER asks for the erase, and the caller's history survives it
 // ---------------------------------------------------------------------------
 
 /**
  * ⛔ THE SEQUENCE THAT ERASES THE CALLER'S HISTORY above the screen — the lines a scroll put
  * there, which nothing brings back.
  *
- * It is the one sequence this product refuses to write, and the refusal is not taste: the
- * history above the session belongs to the caller, and a product that reads a record has no
- * business deleting the log of what they were doing before they opened it (`repl/page.ts`).
- * The RULE is owned by `tests/a-page-that-opens-clean.test.ts`, which measures the boundary at
- * which the library reaches for it by HEIGHT; what this file adds is the other way to reach
- * the same path, which is a height the caller RESIZED to.
+ * It is the one sequence this product refuses, and the refusal is not taste: the history above
+ * the session belongs to the caller, and a product that reads a record has no business deleting
+ * the log of what they were doing before they opened it (`repl/page.ts`). The RULE is owned by
+ * `tests/a-page-that-opens-clean.test.ts`, which measures the boundary at which the library
+ * reaches for it by HEIGHT; what this file adds is the other way to reach the same path, which is
+ * a height the caller RESIZED to.
+ *
+ * ⚠️ AND *REFUSES TO WRITE* WAS THE WHOLE PROMISE AND IT WAS NOT ENOUGH — which is the premise
+ * the section below used to assert as a hole and now asserts as a property. Nothing of this
+ * surface ever wrote it; the LIBRARY did, out of its own memory of the frame it last drew, and no
+ * frame this surface composes can stop it. It is answered on the way out now
+ * (`repl/page.ts`, `theEraseAsAScroll`), so what this constant measures is an absence in the
+ * bytes a real terminal received rather than an absence in our sources.
  */
 const ERASES_THE_HISTORY = `${ESC}[3J`;
 
@@ -833,11 +857,12 @@ const REDRAWS_EVERYTHING = `${ESC}[2J`;
  * history above it, and back to the top — one contiguous sequence, assembled by the library's
  * own escape module and written in one call.
  *
- * IT IS HERE SO THE ERASE CAN BE ATTRIBUTED. An erase counted on its own says a byte was
- * written; an erase that arrived INSIDE this says who wrote it, and the two counts being equal
- * is what tells a library that gave up on part of the screen apart from a surface that reached
- * for the sequence itself. It is also what makes the two erases inseparable on this path: they
- * are one write, so a decision about the screen erase alone is not available here.
+ * ⚠️ IT WAS HERE SO THE ERASE COULD BE ATTRIBUTED — an erase counted on its own said a byte was
+ * written, and an erase that arrived INSIDE this said who wrote it. There is nothing to attribute
+ * any more, because there is nothing to count: what it names is now an ABSENCE, and the absence is
+ * of the whole sequence rather than of either half. It is still what makes the two erases
+ * inseparable on this path — they are one write, so a decision about the screen erase alone was
+ * never available — which is why the door answers both (`repl/page.ts`, `theEraseAsAScroll`).
  */
 const CLEARS_THE_TERMINAL = `${REDRAWS_EVERYTHING}${ERASES_THE_HISTORY}${ESC}[H`;
 
@@ -880,14 +905,32 @@ const abandonsAndLeaves: Step = { ...leaves, types: `${CLEARS_THE_LINE}${LEAVE}\
 interface Shrunk {
   /** How many rows the library thought it owned on the frame before the resize. */
   readonly region: number;
-  /** ⛔ How many times the caller's history was erased. */
+  /** ⛔ How many times the caller's history was erased — nought, at every geometry there is. */
   readonly erases: number;
-  /** How many times the whole screen was erased with it. */
+  /** How many times the whole screen was erased with it. Nought, for the same reason. */
   readonly redraws: number;
-  /** How many of the erases arrived inside the library's own sequence. */
+  /** ⛔ How many times the library's own sequence reached the terminal whole. */
   readonly sequences: number;
-  /** How many times the opening was written again over the page. */
+  /**
+   * HOW MANY TIMES THE OPENING WAS WRITTEN AGAIN OVER THE PAGE — which is the library's own
+   * signature of having ASKED to start the page over, and it survives the door untouched.
+   *
+   * It is the replay of what the library keeps (`ink`, `fullStaticOutput`), written immediately
+   * after the sequence the door translated. So it is the reading that says the frontier has not
+   * moved: the library goes on giving up at exactly the heights it gave up at before, and what
+   * changed is only what its giving up COSTS the caller.
+   */
   readonly openings: number;
+  /**
+   * HOW MANY PAGES WERE CARRIED INTO THE SCROLLBACK while the window was being made shorter —
+   * which is what the door wrote in place of the erase.
+   *
+   * THE SAME BYTES A PAGE TURN WRITES, and that is not a confusion to resolve: the door answers
+   * the library's request to empty the page with this product's own way of emptying one
+   * (`repl/page.ts`, `carriedIntoTheScrollback`), so it is the same operation and therefore the
+   * same bytes. What distinguishes them is who asked, and nothing here needs to know.
+   */
+  readonly pages: number;
 }
 
 /**
@@ -911,57 +954,74 @@ async function shrunkTo(from: number, to: number, prints = false): Promise<Shrun
   const during = ran.bytes.slice(before, ran.at[base + 2] as number);
   return {
     region: theRegionBefore(ran.bytes.slice(key, before)),
-    erases: times(during, ERASES_THE_HISTORY),
-    redraws: times(during, REDRAWS_EVERYTHING),
-    sequences: times(during, CLEARS_THE_TERMINAL),
+    // ⛔ THE TWO ERASES AND THE SEQUENCE ARE COUNTED OVER THE WHOLE RUN and not over the step,
+    // which is the one reading that cannot be raced: the promise is that neither ever reaches this
+    // terminal, and a count cut at a step boundary would be a promise about a slice.
+    erases: times(ran.bytes, ERASES_THE_HISTORY),
+    redraws: times(ran.bytes, REDRAWS_EVERYTHING),
+    sequences: times(ran.bytes, CLEARS_THE_TERMINAL),
     openings: times(during, OPENED),
+    pages: carriedPages(during),
   };
 }
 
 /**
- * ⛔ A HOLE, DECLARED AND ASSERTED RATHER THAN HIDDEN, exactly as the delivery before this one
- * declared the input left above the foot: what is written down here is the behaviour MEASURED,
- * with the rule that predicts it, so the day it is closed these cases go red and get inverted
- * rather than quietly stopping to measure anything.
+ * ⚠️ A HOLE THAT IS NOW A PROPERTY, AND THE CASES ARE INVERTED AND RENAMED RATHER THAN DELETED.
+ * They were `⛔ a window made SHORTER reaches the erase, and the caller's history goes with it`,
+ * and they asserted the erase HAPPENING, with the rule that predicted which windows produced it —
+ * declared as a hole so that closing it would go red instead of unnoticed. It did.
  *
- * WHAT THE DEFECT IS. The region the layout redraws is the emptiness under the flow and the
+ * WHAT THE DEFECT WAS. The region the layout redraws is the emptiness under the flow and the
  * input area (`repl/page.ts`, `theGap`), so on a page with room to spare it is nearly as tall as
  * the screen — one row short of it, which is the boundary this surface keeps at every height.
  * The library decides whether to redraw the WHOLE screen by comparing the height of the frame it
  * LAST drew against the viewport the caller has NOW, so a window the caller makes shorter turns
  * a frame that was legal when it was written into a frame that is over the boundary, and the
- * sequence it starts over with carries the erase inside it.
+ * sequence it starts over with carried the erase inside it.
  *
- * SO NOTHING THIS SURFACE COMPOSES CAN AVOID IT, and that is the finding rather than the
- * symptom. The comparison is against a frame that is already on the screen, so it is decided
- * before anything of ours runs on the new size: the library keeps its own watch on the device
- * and renders first. The only frame that escapes the comparison is one exactly as tall as the
- * viewport, which is the whole screen — the bargain the alternate screen makes, refused here for
- * the reason `repl/page.ts` gives.
+ * AND NOTHING THIS SURFACE COMPOSES COULD AVOID IT, which is why the fix is not in a frame. The
+ * comparison is against a frame that is already on the screen, so it is decided before anything of
+ * ours runs on the new size: the library keeps its own watch on the device and renders first. The
+ * only frame that escapes the comparison is one exactly as tall as the viewport, which is the whole
+ * screen — the bargain the alternate screen makes, refused for the reason `repl/page.ts` gives.
+ *
+ * SO WHAT CHANGED IS THE PIPE AND NOT THE PAGE. The bytes the library decided on still have to
+ * leave through a stream this surface owns, and there they are translated: the screen erase into
+ * the scroll this product empties a page with, the erase of the caller's history into nothing
+ * (`repl/console.ts`, `theWayOut`). The RULE below is unchanged and is still asserted — it is what
+ * says which windows ASK — and every count of an erase is now a nought.
  */
-describe('⛔ a window made SHORTER reaches the erase, and the caller’s history goes with it', () => {
+describe('a window made SHORTER asks for the erase, and the caller’s history survives it', () => {
   /**
-   * THE PAIRS, and the last column is the RULE rather than an outcome: the erase appears exactly
-   * when the region the library last drew is as tall as the window the caller now has. Measured
-   * on the binary over twenty-six pairs, including growing, one-row steps and sequences, with no
-   * exception — the boundary from forty rows is at twenty-three, which is the region a page that
-   * has just opened leaves.
+   * THE PAIRS, and the last column is the RULE rather than an outcome: the library gives up on
+   * redrawing part of the page exactly when the region it last drew is as tall as the window the
+   * caller now has. Measured on the binary over twenty-six pairs, including growing, one-row steps
+   * and sequences, with no exception — the boundary from forty rows is at twenty-three, which is
+   * the region a page that has just opened leaves.
+   *
+   * ⚠️ THE COLUMN WAS CALLED `erases` AND IT IS CALLED `asks` NOW, which is the whole difference
+   * this delivery makes: the same windows reach the same path in the library, and what comes out
+   * of the pipe is a scroll instead of an erase. The rows either side of the frontier are kept —
+   * twenty-four is under it and twenty-three is exactly on it — because a table with only one side
+   * of a boundary on it is a table that cannot tell a frontier from a floor.
    */
   const SHRUNK: readonly {
     readonly from: number;
     readonly to: number;
-    readonly erases: boolean;
+    readonly asks: boolean;
   }[] = [
-    { from: 40, to: 24, erases: false },
-    { from: 40, to: 22, erases: true },
-    { from: 40, to: 20, erases: true },
-    { from: 40, to: 16, erases: true },
-    { from: 40, to: 8, erases: true },
-    { from: 48, to: 24, erases: true },
-    { from: 30, to: 5, erases: true },
+    { from: 40, to: 24, asks: false },
+    { from: 40, to: 23, asks: true },
+    { from: 40, to: 22, asks: true },
+    { from: 40, to: 20, asks: true },
+    { from: 40, to: 16, asks: true },
+    { from: 40, to: 12, asks: true },
+    { from: 40, to: 8, asks: true },
+    { from: 48, to: 24, asks: true },
+    { from: 30, to: 5, asks: true },
   ];
 
-  it('⛔ writes it on every pair whose new window is no taller than the region last drawn', async () => {
+  it('lets none of it out, on every pair whose new window is no taller than the region last drawn', async () => {
     for (const pair of SHRUNK) {
       const ran = await shrunkTo(pair.from, pair.to);
       const at = `${pair.from} to ${pair.to}`;
@@ -971,32 +1031,48 @@ describe('⛔ a window made SHORTER reaches the erase, and the caller’s histor
       expect(
         ran.region >= pair.to,
         `${at}: the region the library last drew was ${ran.region} rows`,
-      ).toBe(pair.erases);
-      // ⛔ AND THE BYTES. This is the assertion that inverts the day the hole is closed.
-      expect(ran.erases > 0, `${at}: the history was erased ${ran.erases} times`).toBe(pair.erases);
-      // AND IT IS THE LIBRARY THAT WROTE IT, never this surface: every erase arrived inside the
-      // one sequence the library starts a page over with, and the screen erase came with it.
-      expect(ran.sequences, `${at}: an erase arrived outside the library's own sequence`).toBe(
-        ran.erases,
+      ).toBe(pair.asks);
+      // ⛔ AND THE BYTES A REAL TERMINAL RECEIVED. This is the assertion that inverted: it read
+      // `.toBe(pair.erases)` and it reads nought at every geometry now, on the side of the
+      // frontier that asks and on the side that does not.
+      expect(ran.erases, `${at}: the history was erased ${ran.erases} times`).toBe(0);
+      expect(ran.redraws, `${at}: the screen was erased ${ran.redraws} times`).toBe(0);
+      expect(ran.sequences, `${at}: the library's own sequence reached the terminal`).toBe(0);
+      // AND THE FRONTIER HAS NOT MOVED, which is what says the nought above is a door and not a
+      // library that stopped asking: the replay of everything the library was keeping is its own
+      // signature of the full redraw, and it is there on exactly the pairs the rule predicts.
+      expect(ran.openings > 0, `${at}: the library did not replay the page it was keeping`).toBe(
+        pair.asks,
       );
-      expect(ran.redraws, `${at}: the two erases came apart`).toBe(ran.erases);
-      // AND WHAT THE CALLER SEES OF IT is their page written again over the erased screen, out of
-      // everything the library was keeping — which is the symptom the complaint came with.
-      if (pair.erases) {
-        expect(ran.openings, `${at}: nothing was replayed over the erased page`).toBeGreaterThan(0);
-      }
+      // AND WHAT WENT OUT IN PLACE OF THE ERASE IS A PAGE CARRIED INTO THE SCROLLBACK, once per
+      // ask — so the count of the answer equals the count of the question.
+      expect(
+        ran.pages,
+        `${at}: the erase was answered ${ran.pages} times for ${ran.openings}`,
+      ).toBe(ran.openings);
+      expect(ran.pages > 0, `${at}: nothing was written in place of the erase`).toBe(pair.asks);
     }
   }, 600_000);
 
-  it('⛔ and ONE row is enough, once a shrink has carried the flow off the top', async () => {
+  it('⛔ and ONE row no longer takes it, once a shrink has carried the flow off the top', async () => {
     // THE SHARPEST FORM OF THE DEFECT, and it is a SEQUENCE rather than a size: a window made
     // much shorter carries the flow into the scrollback, so what is left on the page is the
     // emptiness — and a window made tall again is then almost all region, because the flow the
     // terminal took is not on the screen to be subtracted (`repl/console.ts`,
     // `whatTheWindowTook`). From there ONE row is a shrink past the boundary.
     //
+    // ⚠️ AND IT IS INVERTED AND RENAMED: it was `⛔ and ONE row is enough, once a shrink has
+    // carried the flow off the top`, and it asserted the erase arriving on the last leg. The LEGS
+    // are untouched, because what they measure is the library's memory rather than the door's
+    // answer: the frontier still moves with the flow, so the one-row shrink still ASKS. What is
+    // nought now is the cost.
+    //
     // MEASURED: a hundred by forty made twenty-four writes nothing at all; made forty again the
-    // region is thirty-nine rows; and forty to THIRTY-NINE erases the caller's history.
+    // region is thirty-nine rows; and forty to THIRTY-NINE asks the library to start the page over.
+    //
+    // AND IT IS A SEQUENCE OF THREE RESIZES IN ONE SESSION — shrink, grow, shrink — which is the
+    // other half this case is for: the erase is nought across all of them together and not only
+    // pair by pair.
     const columns = 100;
     const ran = await inPty({
       columns,
@@ -1018,20 +1094,29 @@ describe('⛔ a window made SHORTER reaches the erase, and the caller’s histor
     // read for a leg are the bytes of step `key`, and what the resize wrote is the bytes of the
     // step after it.
     const legs = [
-      { what: '40 to 24', to: 24, key: 1, erases: false },
-      { what: '24 to 40', to: 40, key: 3, erases: false },
-      { what: '40 to 39', to: 39, key: 5, erases: true },
+      { what: '40 to 24', to: 24, key: 1, asks: false },
+      { what: '24 to 40', to: 40, key: 3, asks: false },
+      { what: '40 to 39', to: 39, key: 5, asks: true },
     ];
     const regionOf = (leg: { readonly key: number }): number =>
       theRegionBefore(ran.bytes.slice(ran.at[leg.key - 1] as number, ran.at[leg.key] as number));
     for (const leg of legs) {
       const region = regionOf(leg);
       const during = ran.bytes.slice(ran.at[leg.key] as number, ran.at[leg.key + 1] as number);
-      expect(region >= leg.to, `${leg.what}: the region was ${region} rows`).toBe(leg.erases);
-      expect(times(during, ERASES_THE_HISTORY) > 0, `${leg.what}: the history was erased`).toBe(
-        leg.erases,
+      expect(region >= leg.to, `${leg.what}: the region was ${region} rows`).toBe(leg.asks);
+      // AND THE FRONTIER IS STILL WHERE IT WAS, read off the library's own replay: the one-row
+      // shrink asks, and neither of the two before it does.
+      expect(times(during, OPENED) > 0, `${leg.what}: the library replayed the page`).toBe(
+        leg.asks,
       );
+      // AND THE ANSWER IS A SCROLL, on exactly the leg that asked.
+      expect(carriedPages(during) > 0, `${leg.what}: a page was carried away`).toBe(leg.asks);
     }
+    // ⛔ AND NOT ONE ERASE ACROSS THREE RESIZES. This is the assertion that inverted, and it is
+    // asked of the whole session rather than leg by leg, because a sequence is what the defect
+    // needed: nothing about the pairs alone reaches the one-row form.
+    expect(times(ran.bytes, ERASES_THE_HISTORY), 'the history was erased').toBe(0);
+    expect(times(ran.bytes, REDRAWS_EVERYTHING), 'the screen was erased').toBe(0);
     // NOT VACUOUS: the last leg really is a one-row shrink of a window that grew back to the
     // height it started at, so the difference between the first leg and the last is the SEQUENCE
     // and nothing about the size.
@@ -1041,7 +1126,63 @@ describe('⛔ a window made SHORTER reaches the erase, and the caller’s histor
     ).toBeGreaterThan(regionOf(legs[0] as { readonly key: number }));
   }, 300_000);
 
-  it('⚠️ it is the REGION and not the panel: the same shrink is clean once the session has printed', async () => {
+  it('⛔ carries what was on the screen ABOVE it, row for row, in the order it was in', async () => {
+    // THE HALF THAT DISTINGUISHES *WE SCROLLED* FROM *WE DID NOT ERASE*, and it is asked of the
+    // TEXT rather than of the absence of a byte. A door that dropped the sequence would satisfy
+    // every count above and leave the caller's page destroyed all the same — the library writes the
+    // page again from the top immediately afterwards, over whatever is still there.
+    //
+    // WHAT IS ASSERTED IS AN IDENTITY: the rows the terminal put into the scrollback while the
+    // window was being made shorter ARE the rows that were on the screen, in that order. That is
+    // what a page carried away means (`repl/page.ts`), and it is the strongest form available —
+    // stronger than *some text of mine is above*, which a page that scrolled for any other reason
+    // would satisfy.
+    //
+    // AND THE PAIR IS ONE THAT ASKS, with an answer on the page: forty-eight rows made twenty-four
+    // is the geometry the delivery before this one found already driven and already green in
+    // `tests/the-prompt-sits-at-the-foot.test.ts`, because that case reads the SCREEN and the loss
+    // was in the bytes.
+    const columns = 100;
+    const to = 24;
+    const ran = await inPty({
+      columns,
+      rows: 48,
+      steps: [
+        opens,
+        { types: 'verify\r', until: arrivedSince(VERIFIED), what: 'answered' },
+        echoes('v'),
+        dragged(columns, to),
+        abandonsAndLeaves,
+      ],
+    });
+    // BOTH SCREENS ARE READ AT THE HEIGHT THE RESIZE'S OWN BYTES WERE WRITTEN FOR, which is what
+    // makes the two readings comparable: the question is what the step CARRIED, so the before and
+    // the after have to be the same instrument on the same page.
+    const before = screenOf(ran.bytes.slice(0, ran.at[2] as number), columns, to);
+    const after = screenOf(ran.bytes.slice(0, ran.at[3] as number), columns, to);
+    expect(
+      after.above.slice(before.above.length, before.above.length + to),
+      'the rows carried above are not the rows that were on the screen',
+    ).toEqual([...before.rows]);
+    // AND IT REALLY IS A WHOLE PAGE, not a row or two the terminal happened to push: the count is
+    // at least the height of the window, and nothing was taken OUT of the scrollback.
+    expect(
+      after.above.length - before.above.length,
+      'less than a page was carried into the scrollback',
+    ).toBeGreaterThanOrEqual(to);
+    // AND THE SCREEN THE ROWS CAME OFF WAS A REAL PAGE rather than two empty things being equal.
+    expect(before.text, 'nothing was on the page the rows were carried off').toContain(PROMPT);
+    // AND IN THE CALLER'S OWN TERMS: what they typed was on their forty-eight-row window, and it is
+    // above the twenty-four-row one they are left with. The echo is the one mark only a caller can
+    // put on a page — the panel says what the record is on every page there is.
+    expect(
+      screenOf(ran.bytes.slice(0, ran.at[2] as number), columns, 48).text,
+      'the caller never typed a verb',
+    ).toContain(SAID);
+    expect(after.aboveText, 'what the caller typed is not above').toContain(SAID);
+  }, 300_000);
+
+  it('⚠️ it is the REGION and not the panel: the same shrink asks on one page and not on the other', async () => {
     // THE PROBE THAT DISCRIMINATED THE CAUSE, kept as a case because it is the only thing that
     // tells two explanations of the same bytes apart. The other one was that the frame answering
     // the resize carries the PANEL of the taller window, so the region reaches the height of the
@@ -1050,13 +1191,31 @@ describe('⛔ a window made SHORTER reaches the erase, and the caller’s histor
     //
     // WHAT MOVES IS THE FLOW. The region is what the page has left over, so an answer printed
     // under the opening makes it SHORTER by exactly the rows the answer took — and the same
-    // shrink that erases the history on a page that has just opened writes nothing at all on a
-    // page with an answer on it. A cause that lived in the panel could not move with the flow.
+    // shrink that makes the library give up on a page that has just opened leaves it redrawing in
+    // PART on a page with an answer on it. A cause that lived in the panel could not move with the
+    // flow.
+    //
+    // ⚠️ THE OBSERVABLE IS THE ASK AND NO LONGER THE ERASE, and the case is renamed for it: the
+    // erase is nought on both runs now, so a discriminant made of it would say the two pages are
+    // the same. What discriminates is the library's own replay of everything it was keeping, which
+    // is what it does on the path the erase used to arrive by.
     const fresh = await shrunkTo(40, 22);
     const printed = await shrunkTo(40, 22, true);
     // THE SAME PAIR, THE OPPOSITE ANSWER, and the rule accounts for both.
-    expect(fresh.erases, 'the fresh page did not erase the history').toBeGreaterThan(0);
-    expect(printed.erases, 'the printed page erased the history').toBe(0);
+    expect(fresh.openings, 'the fresh page did not make the library give up').toBeGreaterThan(0);
+    expect(printed.openings, 'the printed page made the library give up').toBe(0);
+    // AND THE ONE THAT ASKED WAS ANSWERED WITH A SCROLL, which is the elo between the two halves
+    // of this file: the ask is the library's and the answer is the door's.
+    expect(fresh.pages, 'the ask was not answered with a page carried away').toBe(fresh.openings);
+    expect(printed.pages, 'a page was carried away for nothing').toBe(0);
+    // ⛔ AND NEITHER RUN COST THE CALLER A ROW OF THEIR HISTORY.
+    for (const [what, ran] of [
+      ['fresh', fresh],
+      ['printed', printed],
+    ] as const) {
+      expect(ran.erases, `${what}: the history was erased`).toBe(0);
+      expect(ran.redraws, `${what}: the screen was erased`).toBe(0);
+    }
     // AND THE REGION IS WHAT DIFFERS: shorter by what the answer landed, and the boundary with
     // it. Both readings are the library's own memory rather than this file's arithmetic.
     expect(printed.region, 'the answer did not take rows out of the region').toBeLessThan(
