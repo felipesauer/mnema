@@ -410,6 +410,15 @@ describe('the page opens clean, and what was on it is one scroll up', () => {
     // THE HEIGHT AND THE WIDTH ARE BOTH MEASURED, and both have moved — see
     // {@link TOO_SHORT_TO_REDRAW_IN_PART} for which delivery moved which. Measured again
     // rather than carried over, in `tests/the-input-has-its-own-place.test.ts`.
+    //
+    // ⛔ AND THE HEIGHT A SESSION OPENS AT IS NOT THE ONLY WAY TO THE SAME PATH, which is the
+    // hole this file's own boundary could not see: the library compares the frame it LAST drew
+    // against the viewport the caller has NOW, so a window made SHORTER carries a frame that was
+    // legal when it was written over the boundary — at any size, and after one row when a shrink
+    // has already carried the flow off the top. Every case here opens at a size and never changes
+    // it, so none of them reaches it. Measured, declared and asserted where a resize is the
+    // subject (`tests/the-page-follows-the-terminal.test.ts`, *a window made SHORTER reaches the
+    // erase*), which carries the frontier as a table.
     const tall = await inPty({
       columns: WIDE_ENOUGH_FOR_THE_HINT,
       rows: 24,

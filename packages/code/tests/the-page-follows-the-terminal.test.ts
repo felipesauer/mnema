@@ -76,6 +76,7 @@ import {
   arrivedSince,
   inPty as drive,
   type Fixture,
+  FRAME_IS_DRAWN,
   opensAConsole,
   type Ran,
   type Step,
@@ -805,6 +806,265 @@ describe('a drag of the window edge costs the caller what the drawing costs, and
     expect(screen.text, 'the caller never typed a verb').toContain(SAID);
     endsAtTheFoot(screen, to, `${columns}x${to}, dragged over an answer`);
   }, 240_000);
+});
+
+// ---------------------------------------------------------------------------
+// ⛔ And a window made SHORTER reaches the one erase this product refuses to write
+// ---------------------------------------------------------------------------
+
+/**
+ * ⛔ THE SEQUENCE THAT ERASES THE CALLER'S HISTORY above the screen — the lines a scroll put
+ * there, which nothing brings back.
+ *
+ * It is the one sequence this product refuses to write, and the refusal is not taste: the
+ * history above the session belongs to the caller, and a product that reads a record has no
+ * business deleting the log of what they were doing before they opened it (`repl/page.ts`).
+ * The RULE is owned by `tests/a-page-that-opens-clean.test.ts`, which measures the boundary at
+ * which the library reaches for it by HEIGHT; what this file adds is the other way to reach
+ * the same path, which is a height the caller RESIZED to.
+ */
+const ERASES_THE_HISTORY = `${ESC}[3J`;
+
+/** What the library writes when it gives up on redrawing PART of the page and redraws all of it. */
+const REDRAWS_EVERYTHING = `${ESC}[2J`;
+
+/**
+ * THE WHOLE OF WHAT THE LIBRARY WRITES TO START THE PAGE OVER: erase the screen, erase the
+ * history above it, and back to the top — one contiguous sequence, assembled by the library's
+ * own escape module and written in one call.
+ *
+ * IT IS HERE SO THE ERASE CAN BE ATTRIBUTED. An erase counted on its own says a byte was
+ * written; an erase that arrived INSIDE this says who wrote it, and the two counts being equal
+ * is what tells a library that gave up on part of the screen apart from a surface that reached
+ * for the sequence itself. It is also what makes the two erases inseparable on this path: they
+ * are one write, so a decision about the screen erase alone is not available here.
+ */
+const CLEARS_THE_TERMINAL = `${REDRAWS_EVERYTHING}${ERASES_THE_HISTORY}${ESC}[H`;
+
+/** What the library writes to take back one row it redrew. One per row it thinks it owns. */
+const TAKES_A_ROW_BACK = `${ESC}[2K`;
+
+/**
+ * HOW MANY ROWS THE LIBRARY THOUGHT IT OWNED on the frame before this slice — read off the
+ * erases the FIRST frame of the slice opens with, and off nothing else.
+ *
+ * IT IS THE LIBRARY'S OWN MEMORY AND NOT OUR ARITHMETIC, which is the whole reason it is read
+ * out of the bytes instead of computed: every frame begins by taking back the rows the frame
+ * before it wrote, one {@link TAKES_A_ROW_BACK} per row of what it last held (`ink`,
+ * `log-update`), so the count is the number the library is about to compare against the
+ * viewport. The line the trailing newline adds is taken off, because the library counts the
+ * rows of what it wrote and this counts the erases of it.
+ *
+ * WHERE A FRAME ENDS IS THE INSTRUMENT'S (`support/pty.ts`, {@link FRAME_IS_DRAWN}) rather than
+ * spelled here: a second idea of which bytes belong to which frame is a count that quietly
+ * measures two of them.
+ */
+function theRegionBefore(slice: string): number {
+  return times(slice.split(FRAME_IS_DRAWN)[0] ?? '', TAKES_A_ROW_BACK) - 1;
+}
+
+/** One key pressed, and the frame it caused. The row it lands on is abandoned before leaving. */
+const echoes = (what: string): Step => ({
+  types: what,
+  until: arrivedSince(what),
+  what: `echoed ${what}`,
+});
+
+/**
+ * The step this section ends with: the row being typed is abandoned first, because there is a
+ * keystroke on it and `v/exit` is not a word.
+ */
+const abandonsAndLeaves: Step = { ...leaves, types: `${CLEARS_THE_LINE}${LEAVE}\r` };
+
+/** What one shrink of the window wrote, and what the library was holding when it happened. */
+interface Shrunk {
+  /** How many rows the library thought it owned on the frame before the resize. */
+  readonly region: number;
+  /** ⛔ How many times the caller's history was erased. */
+  readonly erases: number;
+  /** How many times the whole screen was erased with it. */
+  readonly redraws: number;
+  /** How many of the erases arrived inside the library's own sequence. */
+  readonly sequences: number;
+  /** How many times the opening was written again over the page. */
+  readonly openings: number;
+}
+
+/**
+ * Opens a session at `from` rows, presses one key, and makes the window `to` rows — reading
+ * what the library was holding before the resize and what it wrote for it.
+ *
+ * THE KEY IS THE INSTRUMENT AND NOT AN ACTION. The opening frame erases nothing, because there
+ * was no frame before it; the frame a keystroke causes opens by taking back the rows of the one
+ * before it, which is the only place the library says how tall it thinks its region is. Typing
+ * moves no row of the page, so the number it reveals is the page's own.
+ */
+async function shrunkTo(from: number, to: number, prints = false): Promise<Shrunk> {
+  const columns = 100;
+  const steps: Step[] = [opens];
+  if (prints) steps.push({ types: 'verify\r', until: arrivedSince(VERIFIED), what: 'answered' });
+  steps.push(echoes('v'), dragged(columns, to), abandonsAndLeaves);
+  const ran = await inPty({ columns, rows: from, steps });
+  const base = prints ? 1 : 0;
+  const key = ran.at[base] as number;
+  const before = ran.at[base + 1] as number;
+  const during = ran.bytes.slice(before, ran.at[base + 2] as number);
+  return {
+    region: theRegionBefore(ran.bytes.slice(key, before)),
+    erases: times(during, ERASES_THE_HISTORY),
+    redraws: times(during, REDRAWS_EVERYTHING),
+    sequences: times(during, CLEARS_THE_TERMINAL),
+    openings: times(during, OPENED),
+  };
+}
+
+/**
+ * ⛔ A HOLE, DECLARED AND ASSERTED RATHER THAN HIDDEN, exactly as the delivery before this one
+ * declared the input left above the foot: what is written down here is the behaviour MEASURED,
+ * with the rule that predicts it, so the day it is closed these cases go red and get inverted
+ * rather than quietly stopping to measure anything.
+ *
+ * WHAT THE DEFECT IS. The region the layout redraws is the emptiness under the flow and the
+ * input area (`repl/page.ts`, `theGap`), so on a page with room to spare it is nearly as tall as
+ * the screen — one row short of it, which is the boundary this surface keeps at every height.
+ * The library decides whether to redraw the WHOLE screen by comparing the height of the frame it
+ * LAST drew against the viewport the caller has NOW, so a window the caller makes shorter turns
+ * a frame that was legal when it was written into a frame that is over the boundary, and the
+ * sequence it starts over with carries the erase inside it.
+ *
+ * SO NOTHING THIS SURFACE COMPOSES CAN AVOID IT, and that is the finding rather than the
+ * symptom. The comparison is against a frame that is already on the screen, so it is decided
+ * before anything of ours runs on the new size: the library keeps its own watch on the device
+ * and renders first. The only frame that escapes the comparison is one exactly as tall as the
+ * viewport, which is the whole screen — the bargain the alternate screen makes, refused here for
+ * the reason `repl/page.ts` gives.
+ */
+describe('⛔ a window made SHORTER reaches the erase, and the caller’s history goes with it', () => {
+  /**
+   * THE PAIRS, and the last column is the RULE rather than an outcome: the erase appears exactly
+   * when the region the library last drew is as tall as the window the caller now has. Measured
+   * on the binary over twenty-six pairs, including growing, one-row steps and sequences, with no
+   * exception — the boundary from forty rows is at twenty-three, which is the region a page that
+   * has just opened leaves.
+   */
+  const SHRUNK: readonly {
+    readonly from: number;
+    readonly to: number;
+    readonly erases: boolean;
+  }[] = [
+    { from: 40, to: 24, erases: false },
+    { from: 40, to: 22, erases: true },
+    { from: 40, to: 20, erases: true },
+    { from: 40, to: 16, erases: true },
+    { from: 40, to: 8, erases: true },
+    { from: 48, to: 24, erases: true },
+    { from: 30, to: 5, erases: true },
+  ];
+
+  it('⛔ writes it on every pair whose new window is no taller than the region last drawn', async () => {
+    for (const pair of SHRUNK) {
+      const ran = await shrunkTo(pair.from, pair.to);
+      const at = `${pair.from} to ${pair.to}`;
+      // THE RULE, ASKED OF THE LIBRARY'S OWN MEMORY. It is asserted first because it is the
+      // premise the row of the table rests on: a pair whose region came out other than measured
+      // is a pair that is no longer about the boundary.
+      expect(
+        ran.region >= pair.to,
+        `${at}: the region the library last drew was ${ran.region} rows`,
+      ).toBe(pair.erases);
+      // ⛔ AND THE BYTES. This is the assertion that inverts the day the hole is closed.
+      expect(ran.erases > 0, `${at}: the history was erased ${ran.erases} times`).toBe(pair.erases);
+      // AND IT IS THE LIBRARY THAT WROTE IT, never this surface: every erase arrived inside the
+      // one sequence the library starts a page over with, and the screen erase came with it.
+      expect(ran.sequences, `${at}: an erase arrived outside the library's own sequence`).toBe(
+        ran.erases,
+      );
+      expect(ran.redraws, `${at}: the two erases came apart`).toBe(ran.erases);
+      // AND WHAT THE CALLER SEES OF IT is their page written again over the erased screen, out of
+      // everything the library was keeping — which is the symptom the complaint came with.
+      if (pair.erases) {
+        expect(ran.openings, `${at}: nothing was replayed over the erased page`).toBeGreaterThan(0);
+      }
+    }
+  }, 600_000);
+
+  it('⛔ and ONE row is enough, once a shrink has carried the flow off the top', async () => {
+    // THE SHARPEST FORM OF THE DEFECT, and it is a SEQUENCE rather than a size: a window made
+    // much shorter carries the flow into the scrollback, so what is left on the page is the
+    // emptiness — and a window made tall again is then almost all region, because the flow the
+    // terminal took is not on the screen to be subtracted (`repl/console.ts`,
+    // `whatTheWindowTook`). From there ONE row is a shrink past the boundary.
+    //
+    // MEASURED: a hundred by forty made twenty-four writes nothing at all; made forty again the
+    // region is thirty-nine rows; and forty to THIRTY-NINE erases the caller's history.
+    const columns = 100;
+    const ran = await inPty({
+      columns,
+      rows: 40,
+      steps: [
+        opens,
+        echoes('v'),
+        dragged(columns, 24),
+        echoes('e'),
+        dragged(columns, 40),
+        echoes('r'),
+        dragged(columns, 39),
+        echoes('i'),
+        abandonsAndLeaves,
+      ],
+    });
+    // WHICH STEP IS WHICH, and it is the KEYSTROKE that names a leg: the frame it caused is where
+    // the library says how tall its region was, and the resize is the step after it. So the rows
+    // read for a leg are the bytes of step `key`, and what the resize wrote is the bytes of the
+    // step after it.
+    const legs = [
+      { what: '40 to 24', to: 24, key: 1, erases: false },
+      { what: '24 to 40', to: 40, key: 3, erases: false },
+      { what: '40 to 39', to: 39, key: 5, erases: true },
+    ];
+    const regionOf = (leg: { readonly key: number }): number =>
+      theRegionBefore(ran.bytes.slice(ran.at[leg.key - 1] as number, ran.at[leg.key] as number));
+    for (const leg of legs) {
+      const region = regionOf(leg);
+      const during = ran.bytes.slice(ran.at[leg.key] as number, ran.at[leg.key + 1] as number);
+      expect(region >= leg.to, `${leg.what}: the region was ${region} rows`).toBe(leg.erases);
+      expect(times(during, ERASES_THE_HISTORY) > 0, `${leg.what}: the history was erased`).toBe(
+        leg.erases,
+      );
+    }
+    // NOT VACUOUS: the last leg really is a one-row shrink of a window that grew back to the
+    // height it started at, so the difference between the first leg and the last is the SEQUENCE
+    // and nothing about the size.
+    expect(
+      regionOf(legs[2] as { readonly key: number }),
+      'the region did not grow with the window',
+    ).toBeGreaterThan(regionOf(legs[0] as { readonly key: number }));
+  }, 300_000);
+
+  it('⚠️ it is the REGION and not the panel: the same shrink is clean once the session has printed', async () => {
+    // THE PROBE THAT DISCRIMINATED THE CAUSE, kept as a case because it is the only thing that
+    // tells two explanations of the same bytes apart. The other one was that the frame answering
+    // the resize carries the PANEL of the taller window, so the region reaches the height of the
+    // screen — and the panel is identical in both runs below, drawn at the same width and the
+    // same height, out of the same bytes.
+    //
+    // WHAT MOVES IS THE FLOW. The region is what the page has left over, so an answer printed
+    // under the opening makes it SHORTER by exactly the rows the answer took — and the same
+    // shrink that erases the history on a page that has just opened writes nothing at all on a
+    // page with an answer on it. A cause that lived in the panel could not move with the flow.
+    const fresh = await shrunkTo(40, 22);
+    const printed = await shrunkTo(40, 22, true);
+    // THE SAME PAIR, THE OPPOSITE ANSWER, and the rule accounts for both.
+    expect(fresh.erases, 'the fresh page did not erase the history').toBeGreaterThan(0);
+    expect(printed.erases, 'the printed page erased the history').toBe(0);
+    // AND THE REGION IS WHAT DIFFERS: shorter by what the answer landed, and the boundary with
+    // it. Both readings are the library's own memory rather than this file's arithmetic.
+    expect(printed.region, 'the answer did not take rows out of the region').toBeLessThan(
+      fresh.region,
+    );
+    expect(fresh.region >= 22, 'the fresh region was under the boundary').toBe(true);
+    expect(printed.region >= 22, 'the printed region was over the boundary').toBe(false);
+  }, 300_000);
 });
 
 // ---------------------------------------------------------------------------

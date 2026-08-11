@@ -178,8 +178,15 @@ function theSizeIsTheOneAskedFor(
  * synchronized update is written on every path there is, which is what makes it the frame's
  * boundary rather than a symptom of one. Spelled by its code point, like every unusual byte
  * in this repository.
+ *
+ * EXPORTED BECAUSE A CASE THAT COUNTS WHAT ONE FRAME WROTE HAS TO CUT THE STREAM INTO FRAMES,
+ * and where a frame ENDS is this and nothing else. It is the same reading {@link aFrameAfter}
+ * makes, handed over rather than spelled a second time: how many rows the library thought it
+ * owned is read off the erases the NEXT frame opens with, so a second spelling of the boundary
+ * would be a second idea of which bytes belong to which frame
+ * (`tests/the-page-follows-the-terminal.test.ts`, `theRegionBefore`).
  */
-const FRAME_IS_DRAWN = '\u001b[?2026l';
+export const FRAME_IS_DRAWN = '\u001b[?2026l';
 
 /**
  * WHETHER A WHOLE FRAME HAS BEEN DRAWN since `prompt` was last written.

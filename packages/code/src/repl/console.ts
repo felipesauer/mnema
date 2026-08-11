@@ -112,6 +112,16 @@
  * short of the screen however short the flow is, at every height (`page.ts`, measured and
  * bracketed). A region that grew with what a session had to SAY has no such bound, which is why
  * an occurrence still lands in the flow.
+ *
+ * ⛔ AND THE BOUND IS AGAINST THE SCREEN THE FRAME WAS DRAWN ON, which is the half of that
+ * sentence a window the caller makes SHORTER falsifies. The library judges the frame it LAST drew
+ * against the viewport of the moment, so a region one row short of its own screen is over the
+ * boundary as soon as the caller drags the bottom edge up past it — and it is the library's own
+ * watch on the device that answers first, before anything here runs at the new size. So the erase
+ * this surface refuses to write is reached without this surface writing it, and no frame this file
+ * composes can avoid it. Measured, declared and asserted as a hole
+ * (`tests/the-page-follows-the-terminal.test.ts`, *a window made SHORTER reaches the erase*), which
+ * carries the frontier.
  */
 
 import { render } from 'ink';
@@ -506,6 +516,14 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * shorter window now costs zero bytes where it used to cost 668, 620 and 576 at the three pairs.
    * The old shortfall was not a redraw that failed to happen: it was a WRONG frame written over a
    * right one.
+   *
+   * ⛔ AND FREE IS WHAT IT COSTS ON THIS SIDE OF A BOUNDARY THAT IS NOT THIS FILE'S. Where the new
+   * window is no taller than the region the library last drew, the library does not write nothing:
+   * it writes the whole page again, out of everything it was keeping, and the sequence it starts
+   * over with carries the erase of the caller's history inside it — measured as the opening
+   * replayed up to three times for one drag of the bottom edge. Nothing about this subtraction
+   * causes it and nothing about it can avoid it; it is declared where a resize is the subject
+   * (`tests/the-page-follows-the-terminal.test.ts`).
    */
   function whatTheWindowTook(): void {
     // THE HEIGHT IS READ ONCE, for the reason the frame reads it once: the two things this does
