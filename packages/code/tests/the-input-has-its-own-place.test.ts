@@ -156,6 +156,12 @@ const showingEverything = {
   badge: widthOf(badgeLine('fully-signed')),
   hint: widthOf(tips()),
   palette: 0,
+  // A PAGE WITH NOTHING ON IT, which is what leaves the HEIGHT the only thing these cases
+  // vary — and it is also where every number below comes from: the list of words is budgeted
+  // against what the page has left over (`repl/area.ts`, `AreaRequest.flow`), so a request
+  // with a flow in it would be asking about a shorter page rather than about a shorter
+  // terminal. The cases about the flow are `the-list-is-a-window.test.ts`.
+  flow: 0,
 };
 
 describe('the area has forms, and the tallest one that fits is the one drawn', () => {

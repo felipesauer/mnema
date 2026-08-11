@@ -168,10 +168,27 @@ const AT_THE_EDGE = 0;
  *
  * The list of words is what a keystroke opens, and the opening is what is on the screen
  * before there has been one. Counting rows for it here would budget the page against a
- * region no caller has yet — and when a caller does open it, it is cut to what is left over
- * the row being typed rather than allowed to push anything off the top (`area.ts`).
+ * region no caller has yet.
+ *
+ * ⚠️ AND IT SAID THE LIST WAS *cut to what is left over the row being typed rather than
+ * allowed to push anything off the top*, which was two claims and the second was false: what
+ * was left over was measured against the SCREEN, so a list twenty rows tall on a page with
+ * four to spare pushed sixteen rows of the opening into the scrollback on the first keystroke.
+ * It is cut to what is left over the FLOW now (`area.ts`, `AreaRequest.flow`), and the second
+ * claim is true for the first time.
  */
 const NOTHING_OFFERED_YET = 0;
+
+/**
+ * How many rows of the flow are on the screen while the page is being opened: none.
+ *
+ * A PAGE BEING COMPOSED HAS NOTHING ON IT YET, and this is the honest reading rather than a
+ * value chosen to be safe: the question here is how many rows the area under the opening will
+ * spend, asked so the drawing of the name can be chosen to fit above it (`bannerFor`). With no
+ * palette open the flow cannot change that answer at all — what it budgets is the list — so
+ * this is a number that says what is true rather than one the arithmetic depends on.
+ */
+const NOTHING_LANDED_YET = 0;
 
 /**
  * THE THREE CLAUSES OF THE HINT, and each one is a KEY and what that key gives (see
@@ -404,6 +421,7 @@ export async function openSession(request: SessionRequest): Promise<void> {
         badge: badge.width,
         hint: hint.width,
         palette: NOTHING_OFFERED_YET,
+        flow: NOTHING_LANDED_YET,
       }).height + BELOW_THE_VIEWPORT;
     return drawnWith(
       bannerFor({

@@ -37,12 +37,18 @@
  * anywhere, by this module or any other.
  *
  * HOW MANY ROWS THERE ARE IS NOT DECIDED HERE. The palette is part of the region the
- * layout redraws, and that region has a budget for a measured reason — past a certain
+ * layout redraws, and that region has a budget for two measured reasons — past a certain
  * height the library stops redrawing part of the screen and redraws all of it, with a
- * sequence that carries the one erase this product refuses to write. So the arithmetic is
- * `area.ts`'s, this receives the answer as `room`, and what it owes in exchange is
- * HONESTY: whenever it draws a row at all, what it shows plus what it says is left over
- * adds up to everything there was. It never quietly shows fewer.
+ * sequence that carries the one erase this product refuses to write; and a region taller
+ * than what the page has left over pushes the caller's own page into the scrollback, which
+ * nothing undoes. So the arithmetic is `area.ts`'s, this receives the answer as `room`, and
+ * what it owes in exchange is HONESTY: whenever it draws a row at all, what it shows plus
+ * what it says is left over adds up to everything there was. It never quietly shows fewer.
+ *
+ * AND WHAT IT SHOWS IS A WINDOW ONTO THE OFFERS RATHER THAN THE FIRST OF THEM
+ * ({@link theWindow}), which is what a cut list needs to stay navigable: the arrows walk the
+ * whole vocabulary, so a drawing that only ever showed the beginning of it left the mark on a
+ * row nobody drew as soon as the pick went past the room.
  *
  * AND IT IS A LIST YOU CAN CHOOSE FROM, WHICH IS ONE MARK AND ONE ROW MORE. The list said
  * what could be typed and left the typing to the caller; what it lacked was the thing every
@@ -150,10 +156,16 @@ export function thePicked(offers: readonly CompletionWord[], picked: string): st
 /**
  * WHERE AN ARROW LEAVES THE PICK: one step from wherever it is, and the ends HOLD.
  *
- * They hold rather than wrap because this list is not a carousel: it is as long as the
- * vocabulary and it is CUT to the room there is (see {@link paletteFor}), so a Down that
- * jumped from the last visible row back to the first would be jumping over rows the caller
- * cannot see.
+ * They hold rather than wrap because a list is not a carousel: the ends of it are where the
+ * vocabulary ends, and a caller holding a key down finds that out by ARRIVING at it rather
+ * than by watching the list start over.
+ *
+ * ⚠️ THE REASON GIVEN WAS THE CUT, AND THE WINDOW FALSIFIED IT. It was written here that a
+ * Down which jumped from the last visible row back to the first *would be jumping over rows
+ * the caller cannot see* — true while what was drawn was the FIRST offers and nothing else,
+ * and false now: the drawn rows are a window that follows the pick ({@link theWindow}), so a
+ * wrapped pick would be drawn like any other. The decision did not move and its argument did:
+ * what is left is about the list rather than about the drawing, which is the sturdier half.
  *
  * WITH NOTHING PICKED, DOWN TAKES THE FIRST AND UP TAKES THE LAST — the two ends, which is
  * what every menu does and the only answer that leaves neither arrow dead. It is also why
@@ -184,6 +196,55 @@ export function theNextPicked(
  */
 export function paletteRowsFor(offers: readonly CompletionWord[]): number {
   return offers.length === 0 ? 0 : offers.length + THE_KEYS;
+}
+
+/**
+ * WHICH OFFERS ARE DRAWN: a WINDOW over them, as long as the room allows, and it HOLDS THE
+ * PICK.
+ *
+ * ⚠️ IT WAS THE FIRST N OFFERS, and that is the defect this replaces rather than a shape that
+ * was outgrown. A list cut to ten rows on a vocabulary of twenty said so honestly and left the
+ * other ten UNREACHABLE: the arrows walk the whole vocabulary ({@link theNextPicked}), so the
+ * eleventh of them put the pick on a word nothing drew — measured on the merged binary at a
+ * hundred and twenty by sixteen, where the eleventh Down left the screen with no marked row at
+ * all while Return went on taking a word the caller could not see.
+ *
+ * IT IS DERIVED AND NEVER REMEMBERED, like everything else about the pick. The window is a
+ * function of the offers, the room and the one picked WORD — so it cannot go stale between two
+ * frames, and a filter that narrows the list cannot leave it pointing at a row that has moved.
+ * That is the same discipline that makes the mark itself safe ({@link thePicked}).
+ *
+ * WHERE IT SITS IS THE LEAST IT CAN BE, which is what makes it a window rather than a page: it
+ * begins at the first offer until the pick would fall past its last row, and from then on it
+ * ends ON the pick. So a list nobody has moved through shows what it always showed, and a
+ * caller walking down it scrolls the list by exactly the rows they moved. The alternative —
+ * pages that flip — would show three new words for one step and is what the console this was
+ * measured against does; a window that FOLLOWS is what the arrows deserve, and it is one
+ * clamp instead of two.
+ *
+ * THE ROW THAT SAYS WHAT HAD NO ROOM IS COUNTED HERE, because it is one of the rows the room
+ * has to pay for: a window of everything but one is a list that shows one fewer than a list
+ * that fits. What that row SAYS is the total less what is drawn, wherever the window is —
+ * above it and below it in one number, which is a count a reader can check by adding up what
+ * they can see ({@link paletteFor}).
+ */
+export function theWindow(
+  offers: readonly CompletionWord[],
+  room: number,
+  picked: string,
+): readonly CompletionWord[] {
+  if (offers.length === 0 || room <= 0) return [];
+  // WHAT IS LEFT FOR THE LIST once the row that says which keys move it has its own — and the
+  // KEYS are what gives way on a palette with room for a single row, rather than the account of
+  // what had no room. A row that said how to move a list nobody can see would be the one thing
+  // this file may not draw: furniture where the honesty goes.
+  const forTheList = Math.max(1, room - THE_KEYS);
+  // The row that keeps the palette honest is counted against the same room, so a palette
+  // that says what it left out shows one fewer than one that has everything.
+  const many = offers.length <= forTheList ? offers.length : forTheList - 1;
+  const at = offers.findIndex((offer) => offer.word === thePicked(offers, picked));
+  const from = Math.max(0, at - many + 1);
+  return offers.slice(from, from + many);
 }
 
 /**
@@ -308,15 +369,11 @@ function rowsOf(request: PaletteRequest): readonly Line[] {
     return `${glyphs.slice(0, forTheDescription - 1).join('')}${CUT}`;
   };
 
-  // WHAT IS LEFT FOR THE LIST once the row that says which keys move it has its own — and the
-  // KEYS are what gives way on a palette with room for a single row, rather than the account of
-  // what had no room. A row that said how to move a list nobody can see would be the one thing
-  // this file may not draw: furniture where the honesty goes.
-  const forTheList = Math.max(1, room - THE_KEYS);
-  const enough = offers.length <= forTheList;
-  // The row that keeps the palette honest is counted against the same room, so a palette
-  // that says what it left out shows one fewer than one that has everything.
-  const shown = enough ? offers : offers.slice(0, forTheList - 1);
+  // WHICH OFFERS ARE DRAWN: the window over them, which holds the pick and is as long as the
+  // room allows ({@link theWindow}). Everything about how many rows that is lives there, so
+  // this reads the answer and never a second arithmetic about it.
+  const shown = theWindow(offers, room, picked);
+  const enough = shown.length === offers.length;
   const rows = shown.map((offer) =>
     said(markFor(offer.word), offer.word, within(offer.description)),
   );

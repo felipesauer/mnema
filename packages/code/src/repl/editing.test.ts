@@ -347,8 +347,11 @@ describe('the arrows move through the list, and Return takes what they landed on
   it('moves in both directions, and the ends hold rather than wrapping', () => {
     expect(after(press('', { downArrow: true })).picked).toBe(LISTED[2]);
     expect(after(press('', { upArrow: true })).picked).toBe(LISTED[0]);
-    // THE ENDS. Up from the first row stays on it, and Down from the last stays there — the list
-    // is CUT to the room a terminal has, so a wrap would jump to a row nobody can see.
+    // THE ENDS. Up from the first row stays on it, and Down from the last stays there. ⚠️ THE
+    // REASON WAS *the list is CUT to the room a terminal has, so a wrap would jump to a row
+    // nobody can see*, and the window falsified it: what is drawn follows the pick now
+    // (`palette.ts`, `theWindow`), so a wrapped pick would be drawn like any other. What is left
+    // is about the list — the ends of it are where the vocabulary ends.
     const first = { ...PICKED_ONE, picked: LISTED[0] as string };
     expect(after(press('', { upArrow: true }), first).picked).toBe(LISTED[0]);
     const last = { ...PICKED_ONE, picked: OPENED_BY_THE_SLASH.at(-1) as string };
