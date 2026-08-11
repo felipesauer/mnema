@@ -63,7 +63,7 @@ import {
   toTheTail,
   toTheTop,
 } from '../src/repl/scrolling.js';
-import { LEAVE } from '../src/session-words.js';
+import { CLEAR, LEAVE } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC } from './support/console.js';
 import {
@@ -477,6 +477,35 @@ describe('the console takes the screen and draws three regions on it', () => {
     // ⛔ AND THE CALLER'S OWN BUFFER IS STILL WHOLE.
     expect(printed.above, 'a row went into the caller’s scrollback').toEqual([]);
     theHistorySurvived(ran, 'a session that printed more than the screen holds');
+  }, 240_000);
+
+  it('⛔ gives back the page that opened when the caller asks for a clean one', async () => {
+    // ⚠️ THIS PROMISE OUTLIVED THE MODEL AND ALMOST LOST ITS GUARD. *A clean page is the page
+    // the session opened with* was asserted where a clean page was MADE — a screen of the
+    // caller's carried into their scrollback and the opening written over it
+    // (`a-page-that-opens-clean.test.ts`, gone with that machinery). Clearing is the ROLL being
+    // emptied now (`src/repl/scrolling.ts`), and a mutation that emptied it to NOTHING instead
+    // of back to the opening scored zero reds across the whole bench. This is that zero closed.
+    const columns = 100;
+    const rows = 24;
+    const ran = await inPty({
+      columns,
+      rows,
+      steps: [opens, submits(says(0)), submits(`${CLEAR}`), leaves],
+    });
+    const said = screenAt(ran, 1, columns, rows);
+    const cleared = screenAt(ran, 2, columns, rows);
+    // WHAT THE SESSION SAID IS GONE FROM THE PAGE, which is what the word means.
+    expect(said.text, 'the session never said anything to clear').toContain(`${PROMPT} ${says(0)}`);
+    expect(cleared.text, 'what the session said survived the clean page').not.toContain(
+      `${PROMPT} ${says(0)}`,
+    );
+    // AND THE OPENING IS BACK, both halves of it: the arrangement at the top, which never left,
+    // and the line it lands, which is put back on the roll (`src/repl/panel.ts`, `Opening.above`).
+    expect(cleared.text, 'the arrangement is not on the clean page').toContain(OPENED);
+    expect(cleared.text, 'the opening’s own line is not on the clean page').toContain(OLDEST);
+    fillsTheScreen(cleared, rows, 'the clean page');
+    theHistorySurvived(ran, 'a session that cleared its page');
   }, 240_000);
 });
 
