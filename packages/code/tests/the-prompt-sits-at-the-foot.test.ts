@@ -35,6 +35,26 @@
  *   - THE THREE CALLERS: the page that opens, the word that clears, and a caller who resized
  *     their window. One that did not anchor would be the defect that only shows up later.
  *   - THE CARET, which is placed at an offset INTO the region that moved down the page.
+ *
+ * ⚠️ AND A CALLER WHO ONLY CHANGED THE HEIGHT WAS HALF A PROMISE, WHICH IS CLOSED — and the note
+ * stays because what it got WRONG is the interesting half. It was written here that a shorter
+ * window leaves the input above the foot because *the layout redraws its region where it already
+ * is*, and that closing it would take an absolute re-anchor of the kind a page turn writes
+ * (`repl/page.ts`, `carriedIntoTheScrollback`). WHAT FALSIFIED IT IS THE ARITHMETIC: the shortfall
+ * was IDENTICAL, row for row, to what the window lost — six, four and ten rows at three pairs —
+ * and a terminal that shrinks anchors its content at the FOOT, so the rows that leave go off the
+ * top into the scrollback and nothing tells the program. The flow this console thought was on the
+ * screen was too long by exactly that, the leftover under it too short by exactly that, and the
+ * region drawn that many rows high. So it is one subtraction and no re-anchor at all
+ * (`repl/console.ts`, `whatTheWindowTook`), and no page is turned for a height any more than
+ * before. Five pairs are swept below, one session each, and the ⛔ case that asserted the hole
+ * with its number is the first of them — inverted and renamed rather than silenced.
+ *
+ * AND THE ANSWER TURNED OUT TO BE NO BYTES AT ALL, which is worth reading as the real shape of the
+ * defect: with the flow told what it lost, the frame asked for is the frame already on the screen,
+ * and a library writes nothing for a frame that did not change. A shorter window used to cost 668,
+ * 620 and 576 bytes at those three pairs — a wrong frame written over a right one — and costs
+ * nought.
  */
 
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
@@ -49,6 +69,7 @@ import { tips } from '../src/repl/session.js';
 import { CLEAR, LEAVE } from '../src/session-words.js';
 import { VERSION } from '../src/version.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
+import { ESC } from './support/console.js';
 import { inPty as drive, type Fixture, opensAConsole, type Ran, type Step } from './support/pty.js';
 import {
   endsAtTheFoot,
@@ -171,6 +192,46 @@ const leaves: Step = {
 
 /** How many times `what` occurs in `text`. */
 const times = (text: string, what: string): number => text.split(what).length - 1;
+
+/**
+ * How long to leave the console alone after a resize for it to have followed the size: two and a
+ * half times the tenth of a second it waits after the last change (`repl/console.ts`,
+ * `AFTER_THE_LAST_CHANGE`), which is the wait it takes before it decides anything at all.
+ *
+ * The ratio is not what makes it enough — the MUTATION is. With the half of the resize guard that
+ * this delivery removed put back, the sweep below counts a page per height.
+ */
+const LONGER_THAN_SETTLING = 250;
+
+/**
+ * ONE HEIGHT OF A SWEEP: the window becomes this size, and the console is then left alone for
+ * longer than it waits before following one.
+ *
+ * ⚠️ THE WAIT IS THE INSTRUMENT AND NOT A CONVENIENCE. What the cases below assert is partly an
+ * ABSENCE — no page carried into the scrollback for a height — and an absence has no byte to wait
+ * for: a step that ended on the next frame would be a step the amortiser had not run out on, so
+ * the sweep would be one decision rather than five and a console that turned a page for every
+ * height would answer exactly like one that turns none.
+ */
+const heightBecomes = (columns: number, rows: number): Step => ({
+  resize: { columns, rows },
+  does: () => new Promise((resolve) => setTimeout(resolve, LONGER_THAN_SETTLING)),
+  until: () => true,
+  what: `waited out ${columns}x${rows}`,
+});
+
+/**
+ * HOW MANY PAGES A SESSION HAS CARRIED INTO THE SCROLLBACK — the cursor put on the last row of the
+ * device BY NUMBER, which is what every row written after it scrolls off the top.
+ *
+ * It is written once per page by one function and by nothing else (`repl/page.ts`,
+ * `carriedIntoTheScrollback`), at whatever height the page was turned at — so a count over the
+ * sequence with the height left open is a count of this product's pages and of nothing the layout
+ * does. Counting what is ON the page instead would answer for the library, which rewrites what it
+ * is keeping whenever its region will not fit.
+ */
+const carriedPages = (bytes: string): number =>
+  (bytes.match(new RegExp(`${ESC}\\[\\d+;1H`, 'g')) ?? []).length;
 
 /**
  * THE STEP THAT ASKS FOR AN ANSWER LONGER THAN THE OPENING LEFT ROOM FOR, and what says
@@ -360,59 +421,259 @@ describe('all three callers of the page leave the input at the foot', () => {
     }
   }, 240_000);
 
-  it('⚠️ follows a window that only changed HEIGHT, both ways', async () => {
-    // THE ACHADO OF THIS DELIVERY, and it is the geometry where the promise was not kept. The
-    // page is turned for a resize only when the OPENING the terminal would get differs from
-    // the one on the screen, and a window made taller by rows no glyph depends on is the same
-    // opening — so nothing was written at all. Measured, before the guard was widened: at a
-    // hundred by thirty dragged to forty the byte stream was IDENTICAL on either side of the
-    // resize, and the input stayed eleven rows above the foot.
+  it('⚠️ stays at the foot up five heights of a TALLER window, with no page turned', async () => {
+    // ⚠️ THIS CASE IS THE INVERSE OF THE ONE IT REPLACES AND IT IS RENAMED RATHER THAN EDITED. It
+    // was `follows a window that only changed HEIGHT, both ways`, and it waited for the page to be
+    // TURNED for a height: it was the achado of the delivery that put the input here, on the
+    // premise that *a page is a drawing AND a placement* — the rows under the flow are what the
+    // height leaves over, so a page placed at one height was misplaced at another whatever was
+    // drawn on it. Measured then: at a hundred by thirty dragged to forty not one byte was
+    // written, and the input stayed eleven rows above the foot.
     //
-    // BOTH WAYS IN ONE RUN, because the two directions are different mechanisms as far as the
-    // terminal is concerned — growing leaves rows over and shrinking takes them away — and a
-    // guard that only noticed one of them would be half a fix.
+    // WHAT FALSIFIED IT is where those rows went. They are part of the region the layout redraws
+    // now (`repl/page.ts`, `theGap`) and the frame is rebuilt on the signal itself, before the
+    // page is even asked about (`repl/console.ts`, `resized`) — so the leftover follows the height
+    // AT ONCE and the input is back at the foot with nothing carried into the scrollback. THIS
+    // CASE IS WHAT PAYS FOR THE REMOVAL, which is why it sweeps rather than asserts one pair: what
+    // it costs to turn a page for every height is twelve pages of the caller's history for one
+    // drag of a window edge (`tests/the-page-follows-the-terminal.test.ts`).
+    //
+    // TALLER ONLY, AND THE OTHER DIRECTION IS THE CASE BELOW — which is a hole rather than a
+    // promise, and says so.
     const columns = 100;
-    const short = 30;
-    const tall = 40;
+    const heights = [24, 28, 34, 40, 48] as const;
+    const [from, ...taller] = heights;
     const ran = await inPty({
       columns,
-      rows: short,
-      steps: [
-        opens,
-        {
-          resize: { columns, rows: tall },
-          until: (bytes) => times(bytes, OPENED) > 1,
-          what: 'drew the page again at the new height',
-        },
-        {
-          resize: { columns, rows: short },
-          until: (bytes) => times(bytes, OPENED) > 2,
-          what: 'drew the page again back at the old height',
-        },
-        leaves,
-      ],
+      rows: from,
+      steps: [opens, ...taller.map((rows) => heightBecomes(columns, rows)), leaves],
     });
-    const grown = screenOf(ran.bytes.slice(0, ran.at[1] as number), columns, tall);
-    const shrunk = screenOf(ran.bytes.slice(0, ran.at[2] as number), columns, short);
-    endsAtTheFoot(grown, tall, 'the page that followed a taller window');
-    endsAtTheFoot(shrunk, short, 'the page that followed a shorter window');
-    // AND NOTHING A PANEL CAN SEE MOVED, which is what makes this the placement rather than
-    // the drawing: the width never changed, and the drawing on the taller screen is the one
-    // that was on the shorter — so a guard that only compared openings would have refused
-    // both of these, and did.
-    for (const [screen, what] of [
-      [grown, 'the taller page'],
-      [shrunk, 'the shorter page'],
-    ] as const) {
-      expect(screen.rows[0], `${what} opened cut`).toContain(theFirstRowOfTheMark(columns));
-      expect(theGapOn(screen, PROMPT), `${what} has nothing left over`).toBeGreaterThan(0);
+    // ONE PAGE FOR THE WHOLE SWEEP, and it is the one that opened: four heights, four decisions,
+    // no screen of the caller's carried away.
+    expect(carriedPages(ran.bytes), 'a height carried a page into the scrollback').toBe(1);
+    let before = { rows: from as number, gap: 0 };
+    for (const [at, rows] of heights.entries()) {
+      const screen = screenOf(ran.bytes.slice(0, ran.at[at] as number), columns, rows);
+      const gap = theGapOn(screen, PROMPT);
+      // THE INPUT IS ON THE LAST ROW THE LAYOUT LEAVES, at every height of the sweep.
+      endsAtTheFoot(screen, rows, `${columns}x${rows}`);
+      // AND THE PAGE IS WHOLE: the first row of the mark is the first row of the screen, so this
+      // is not a page whose top went into the scrollback and read as anchored.
+      expect(screen.rows[0], `${columns}x${rows}: the page opened cut`).toContain(
+        theFirstRowOfTheMark(columns),
+      );
+      // AND THE LEFTOVER IS THE ONE THE NEW HEIGHT CALLS FOR, which is the mechanism rather than
+      // the symptom: the rows with nothing on them grew by exactly the rows the window did, so
+      // the page really was placed against the terminal it is on and not against the one it
+      // opened on. It is asked of every step, because a leftover that followed only the first
+      // would be a console that recomposed once.
+      if (at > 0) {
+        expect(gap - before.gap, `${columns}x${rows}: the leftover did not follow the height`).toBe(
+          rows - before.rows,
+        );
+      }
+      expect(gap, `${columns}x${rows}: nothing was left over`).toBeGreaterThan(0);
+      before = { rows, gap };
     }
-    // Not vacuous: the two pages really were placed at different heights, so this is not one
-    // screen read twice at two sizes. The taller window has ten more rows and no more to draw
-    // on them, so its leftover is ten rows longer.
-    expect(
-      theGapOn(grown, PROMPT),
-      'the taller window was left over no more than the shorter one',
-    ).toBe(theGapOn(shrunk, PROMPT) + (tall - short));
+    // AND THE DRAWING NEVER MOVED, which is what makes the count of pages above the answer to
+    // *a height that moves no glyph costs nothing* rather than to *a height costs nothing*: at a
+    // hundred columns every height of this sweep opens with the same form, so a page turned here
+    // could only have been turned for the placement.
+    expect(times(ran.bytes, OPENED), 'the opening was written again for a height').toBe(1);
+  }, 240_000);
+
+  /**
+   * ONE PAIR OF HEIGHTS THE CALLER'S WINDOW SHRANK BETWEEN, and what the model says happens to it.
+   *
+   * ⚠️ THE PAIRS ARE ONE SESSION EACH, and that is a finding of the delivery before this rather
+   * than a preference: a sweep of several heights inside ONE session accumulates whatever the
+   * previous step got wrong, and it MISREAD a step — it read a pair as off the foot where a session
+   * of its own found it AT the foot. A pair is a session.
+   *
+   * WHAT `predicts` IS FOR is that the answer is not "nought" three times over. The subtraction is
+   * `flow − (before − now)` held at nought from below (`repl/console.ts`, `whatTheWindowTook`), so
+   * the leftover under the flow — `rows − flow − area − 1` — comes out three different ways, and a
+   * case that only asked for the foot would be green for a console that got there by accident.
+   */
+  interface Shortened {
+    /** The height the session opened at. */
+    readonly tall: number;
+    /** The height the caller's window became. */
+    readonly short: number;
+    /**
+     * WHAT THE MODEL SAYS THE PAGE DOES, as one of exactly three things:
+     *
+     *   - `the leftover is unchanged` — the window lost FEWER rows than the flow had on the
+     *     screen. Both `rows` and `flow` fall by the same number, so the subtraction that makes
+     *     them fall together leaves the leftover EXACTLY as it was. That is the strongest of the
+     *     three: it is the arithmetic, not the outcome.
+     *   - `the flow is gone` — the window lost at least the whole flow. The subtraction holds at
+     *     nought, so the page is a leftover and an area and nothing above them.
+     *   - `the page is turned` — the height gave the DRAWING away, so the page follows it and is
+     *     written again from the top, which re-anchors everything by construction. Nothing here is
+     *     this delivery's; it is the rule the delivery before it left standing.
+     */
+    readonly predicts: 'the leftover is unchanged' | 'the flow is gone' | 'the page is turned';
+    /** How many pages the whole session carries into the scrollback, the opening included. */
+    readonly pages: number;
+  }
+
+  /**
+   * THE FIVE PAIRS, and they are five rather than one because the three answers above have to be
+   * told apart: three where the flow outlasts the loss, one where it does not, and one where the
+   * drawing gives way. All five were measured before they were written down.
+   */
+  const SHORTENED: readonly Shortened[] = [
+    { tall: 40, short: 30, predicts: 'the leftover is unchanged', pages: 1 },
+    { tall: 34, short: 30, predicts: 'the leftover is unchanged', pages: 1 },
+    { tall: 30, short: 24, predicts: 'the leftover is unchanged', pages: 1 },
+    { tall: 48, short: 24, predicts: 'the flow is gone', pages: 1 },
+    { tall: 30, short: 20, predicts: 'the page is turned', pages: 2 },
+  ];
+
+  for (const pair of SHORTENED) {
+    it(`⚠️ comes back to the foot when the window is made SHORTER, ${pair.tall} to ${pair.short}`, async () => {
+      // ⚠️ THIS CASE IS THE INVERSE OF THE ONE IT REPLACES AND IT IS RENAMED RATHER THAN EDITED. It
+      // was `⛔ leaves the input above the foot when the window is made SHORTER, by the rows it
+      // lost`, and it asserted the shortfall AS A NUMBER — ten rows at a hundred by forty made
+      // thirty — so that closing the hole would go red instead of unnoticed. It did.
+      //
+      // WHAT THE HOLE WAS, and it is not what the case it replaces said. That one read the bytes
+      // and blamed the redraw: *the layout redraws its region relative to where it already is*, no
+      // absolute position anywhere in the stream, so only a page turn could re-anchor it. WHAT
+      // FALSIFIED THAT is the arithmetic sitting in plain sight — the shortfall was IDENTICAL to
+      // what the window lost, in every pair where it appeared (ten, four and six rows). A terminal
+      // that shrinks anchors its content at the foot: the rows that leave go off the TOP, into the
+      // caller's scrollback, and nothing tells the program. So the flow this console believed was
+      // on the screen was too long by exactly the loss, the leftover under it too short by exactly
+      // the loss, and the region drawn exactly that many rows high. One subtraction, no re-anchor,
+      // and no page turned for a height (`repl/console.ts`, `whatTheWindowTook`).
+      //
+      // AND THE FRAME'S OWN CAP COULD NOT HAVE DONE IT, which is why it is a second subtraction:
+      // it limits the flow by what the FRAME left room for, and the frame FITTED — the screen it
+      // fitted on is what stopped existing.
+      const columns = 100;
+      const { tall, short } = pair;
+      const ran = await inPty({
+        columns,
+        rows: tall,
+        steps: [opens, heightBecomes(columns, short), leaves],
+      });
+      const opened = screenOf(ran.bytes.slice(0, ran.at[0] as number), columns, tall);
+      const shrunk = screenOf(ran.bytes.slice(0, ran.at[1] as number), columns, short);
+      const where = `${columns}x${tall} made ${short}`;
+      // THE PAGE THE SESSION OPENED WITH WAS AT THE FOOT, or the pair says nothing about what a
+      // resize did: a case whose BEFORE was already wrong would read its own fixture.
+      endsAtTheFoot(opened, tall, `${where}, before`);
+      // AND THE INPUT IS AT THE FOOT OF THE SHORTER WINDOW. This is the observable that inverted.
+      endsAtTheFoot(shrunk, short, where);
+      // AND WHAT IT COST IN PAGES IS WHAT THE DRAWING COSTS AND NOTHING MORE — one for the page
+      // that opened, and a second only where the height gave the mark away.
+      expect(carriedPages(ran.bytes), `${where}: pages carried into the scrollback`).toBe(
+        pair.pages,
+      );
+      // AND THE REASON IS THE MODEL'S, read off the leftover rather than off the foot: three
+      // different answers, so a console that reached the foot by another road cannot pass all
+      // three.
+      switch (pair.predicts) {
+        case 'the leftover is unchanged': {
+          // THE PREDICTION, AND IT IS THE ARITHMETIC ITSELF: the height fell by the loss and the
+          // flow on the screen fell by the same loss, so `rows − flow − area − 1` is untouched.
+          expect(theGapOn(shrunk, PROMPT), `${where}: the leftover did not stay what it was`).toBe(
+            theGapOn(opened, PROMPT),
+          );
+          // AND THE FLOW REALLY DID OUTLAST THE LOSS, which is what makes this pair the case it
+          // claims to be: there is still something of the flow above the leftover.
+          expect(firstDrawnRow(shrunk), `${where}: nothing of the flow survived`).toBe(0);
+          // AND IT COST THE CALLER NOT ONE BYTE, which is the sharpest thing this delivery has to
+          // say and it is not a saving — it is the DEFECT, named. The frame the layout is asked for
+          // after the subtraction is the frame already on the screen, because a terminal that
+          // anchored its content at the foot left the region at the foot and both sides of
+          // `rows − flow − area − 1` fell by the same number. A library writes nothing for a frame
+          // that did not change. So the shortfall was never a redraw that failed to happen: it was
+          // a WRONG frame written over a right one — 668, 620 and 576 bytes at these three pairs,
+          // measured, and nought now.
+          expect(
+            (ran.at[1] as number) - (ran.at[0] as number),
+            `${where}: a shorter window was answered with bytes`,
+          ).toBe(0);
+          break;
+        }
+        case 'the flow is gone': {
+          // THE OTHER END OF THE SUBTRACTION: it is held at nought, so the page is the leftover
+          // and the area and nothing above them — the first thing drawn is where the run of
+          // nothing ends.
+          expect(firstDrawnRow(shrunk), `${where}: something of the flow is still there`).toBe(
+            theGapOn(shrunk, PROMPT),
+          );
+          // AND THE LOSS REALLY WAS BIGGER THAN THE FLOW, or this is the case above in disguise:
+          // the leftover a flow of nothing leaves is bigger than the one it had.
+          expect(
+            theGapOn(shrunk, PROMPT),
+            `${where}: the leftover is the one an unclamped flow leaves`,
+          ).toBeLessThan(theGapOn(opened, PROMPT));
+          break;
+        }
+        case 'the page is turned': {
+          // NOTHING OF THIS IS THE SUBTRACTION'S. The page was written again from the top, which
+          // re-anchors it by construction — the bytes that carry a page away put the cursor on the
+          // last row of the device BY NUMBER — so the page begins on the first row of the screen.
+          expect(
+            firstDrawnRow(shrunk),
+            `${where}: the page turned and did not start at the top`,
+          ).toBe(0);
+          // AND IT REALLY WAS THE DRAWING THAT GAVE WAY, which is the one thing that may turn a
+          // page: the opening is in the stream twice, and the form the taller window drew is not on
+          // the screen any more. ⚠️ IT ASKED FOR THE FIRST ROW OF THE MARK ON ROW ZERO, which is
+          // the assertion this pair cannot make: the mark it names is the one an unconstrained page
+          // draws, and a window this short is exactly a window that does not get it.
+          expect(times(ran.bytes, OPENED), `${where}: the opening was not written again`).toBe(2);
+          expect(shrunk.text, `${where}: the drawing did not give way`).not.toContain(
+            theFirstRowOfTheMark(columns),
+          );
+          break;
+        }
+        default:
+          // NOT AN UNREACHABLE BRANCH TO SATISFY A COMPILER. A type error in a `.test.ts` leaves
+          // both the build and the suite green, so exhaustiveness here is a RUNTIME question: a
+          // sixth pair with a fourth prediction would assert nothing at all and pass.
+          throw new Error(`${where}: nothing is asserted for ${String(pair.predicts)}`);
+      }
+    }, 240_000);
+  }
+
+  it('⚠️ comes back to the foot of a shorter window once the session has printed', async () => {
+    // A13, AND IT IS THE STATE OF THE FIXTURE THAT MAKES IT A DIFFERENT CASE. A page that has just
+    // opened is the least representative instant of a session — the flow is the opening and nothing
+    // else — and this series has already lost a whole hole by measuring there. What an ANSWER
+    // changes here is which side of the subtraction bites: the flow is twenty-eight rows on the
+    // taller window instead of sixteen, so the loss is nowhere near it and the clamp at nought
+    // cannot be what puts the input at the foot.
+    const columns = 100;
+    const tall = 40;
+    const short = 30;
+    const ran = await inPty({
+      columns,
+      rows: tall,
+      steps: [opens, asks(0), heightBecomes(columns, short), leaves],
+    });
+    const answered = screenOf(ran.bytes.slice(0, ran.at[1] as number), columns, tall);
+    const shrunk = screenOf(ran.bytes.slice(0, ran.at[2] as number), columns, short);
+    // THE SESSION REALLY HAD PRINTED, or this is the case above with more waiting in it.
+    expect(answered.text, 'the caller never asked anything').toContain(`${NAMED} eight`);
+    endsAtTheFoot(answered, tall, 'answered');
+    endsAtTheFoot(shrunk, short, 'answered, then made shorter');
+    expect(carriedPages(ran.bytes), 'a shorter window carried a page into the scrollback').toBe(1);
+    // AND THE LEFTOVER IS UNCHANGED, which is the model's prediction wherever the flow outlasts
+    // the loss — the same assertion the first three pairs make, on a page with an answer on it.
+    expect(theGapOn(shrunk, PROMPT), 'the leftover did not stay what it was').toBe(
+      theGapOn(answered, PROMPT),
+    );
+    // AND THE CLAMP IS NOT WHAT DID IT: the leftover here is SMALLER than the loss, so a flow held
+    // at nought would have left far more room than this and the foot would have been reached by
+    // the other road.
+    expect(theGapOn(shrunk, PROMPT), 'the leftover is as big as the loss').toBeLessThan(
+      tall - short,
+    );
   }, 240_000);
 });
