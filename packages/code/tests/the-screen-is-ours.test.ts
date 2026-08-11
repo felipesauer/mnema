@@ -81,6 +81,8 @@ import {
   promptRow,
   type Screen,
   screenOf,
+  theFirstScreenWith,
+  theScreenBeforeLeaving,
   theSettledScreen,
 } from './support/screen.js';
 
@@ -401,7 +403,22 @@ function says(which: number): string {
   return `saying-${which}`;
 }
 
-/** The screen as it was at the end of step `at`, replayed at the size it was driven at. */
+/**
+ * The screen as it was at the end of step `at`, replayed at the size it was driven at.
+ *
+ * ⚠️ READING BY POSITION IS ONLY HONEST AFTER A STEP THAT DRAWS EXACTLY ONE FRAME, and that is
+ * measured rather than assumed. A step ends where the stream went quiet, so a step that draws
+ * TWO frames can leave the boundary between them — and what is replayed is then the page from
+ * before the thing the case is about. Measured, per event, at a hundred and twenty by forty:
+ *
+ *   - a key, an arrow, a notch of the wheel — **one** frame each;
+ *   - a whole line submitted — **two** (the echo lands, then the answer);
+ *   - a resize — **two**, because the layout library keeps its own watch and it is synchronous.
+ *
+ * SO THIS IS USED AFTER KEYS AND AFTER THE OPENING, and nowhere else. Every read whose step is a
+ * resize or a submitted line finds its page by what the page HOLDS instead
+ * (`support/screen.ts`, `theSettledScreen`, `theFirstScreenWith`, `theFirstScreenWhere`).
+ */
 function screenAt(ran: Ran, at: number, columns: number, rows: number): Screen {
   return screenOf(ran.bytes.slice(0, ran.at[at] as number), columns, rows);
 }
@@ -459,7 +476,9 @@ describe('the console takes the screen and draws three regions on it', () => {
     steps.push(leaves);
     const ran = await inPty({ columns, rows, steps });
     const opened = screenAt(ran, 0, columns, rows);
-    const printed = screenAt(ran, ENOUGH_TO_OVERFLOW, columns, rows);
+    // AND THE PRINTED PAGE IS THE ONE THAT SETTLED, found by the width it was drawn at rather
+    // than by the boundary of a step that draws two frames ({@link screenAt}).
+    const printed = theSettledScreen(ran.bytes, columns, rows);
     // THE ROW EACH REGION IS ON, before and after — which is the whole requirement, in one
     // assertion each. In the model this replaces, the first of these fell off the top of the
     // screen and the second one was held down by arithmetic that had to be corrected four times.
@@ -495,8 +514,12 @@ describe('the console takes the screen and draws three regions on it', () => {
       rows,
       steps: [opens, submits(says(0)), submits(`${CLEAR}`), leaves],
     });
-    const said = screenAt(ran, 1, columns, rows);
-    const cleared = screenAt(ran, 2, columns, rows);
+    // BOTH PAGES FOUND BY WHAT THEY HOLD: a submitted line draws two frames, so the boundary of
+    // its step is not a page ({@link screenAt}). The page that SAID something is the first one
+    // the echo is on; the page after the word that clears is the one the session left, because
+    // nothing lands after it.
+    const said = theFirstScreenWith(ran.bytes, `${PROMPT} ${says(0)}`, columns, rows);
+    const cleared = theScreenBeforeLeaving(ran.bytes, columns, rows);
     // WHAT THE SESSION SAID IS GONE FROM THE PAGE, which is what the word means.
     expect(said.text, 'the session never said anything to clear').toContain(`${PROMPT} ${says(0)}`);
     expect(cleared.text, 'what the session said survived the clean page').not.toContain(

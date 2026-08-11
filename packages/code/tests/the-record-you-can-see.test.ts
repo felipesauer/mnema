@@ -39,7 +39,7 @@ import {
   type Ran,
   type Step,
 } from './support/pty.js';
-import { screenOf, theFirstScreenWith } from './support/screen.js';
+import { theFirstScreenWhere, theFirstScreenWith } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = new URL('../dist/cli.js', import.meta.url).pathname;
@@ -398,7 +398,9 @@ describe('a prefix that names several lists them, each beside the line it came f
       ],
     });
 
-    const screen = screenOf(ran.bytes.slice(0, ran.at[3] as number), columns, rows);
+    // ⚠️ FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended — the rule this file
+    // now holds throughout (`support/screen.ts`, {@link theFirstScreenWith}).
+    const screen = theFirstScreenWith(ran.bytes, CUT, columns, rows);
     const listed = screen.rows.filter((row) => row.trimStart().startsWith('019'));
     const said = screen.rows.find((row) => row.trimStart().startsWith(CUT));
     expect(said, `no row said how many had no room:\n${screen.text}`).toBeDefined();
@@ -453,7 +455,9 @@ describe('what it offers is what the session showed, and never the record', () =
       ],
     });
 
-    const refused = screenOf(ran.bytes.slice(0, ran.at[3] as number), columns, rows);
+    // ⚠️ FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended — the rule this file
+    // now holds throughout (`support/screen.ts`, {@link theFirstScreenWith}).
+    const refused = theFirstScreenWith(ran.bytes, `${PROMPT} show ${missing}`, columns, rows);
     expect(rowBeingTyped(refused), refused.text).toBe(`${PROMPT} show ${missing}`);
     // Neither the id nor the title of that record is anywhere on the screen — a menu that
     // had gone and looked would have put one of the two there.
@@ -509,8 +513,20 @@ describe('what it offers is what the session showed, and never the record', () =
       ],
     });
 
-    const screen = screenOf(ran.bytes.slice(0, ran.at[3] as number), columns, rows);
-    expect(rowBeingTyped(screen), screen.text).toBe(`${PROMPT} show ${hidden.id}`);
+    // ⚠️ FOUND BY THE PAGE'S OWN PROPERTY, and this case is why that locator exists. It was the
+    // last index left in the file and it went red twice in three loaded runs; the obvious repair
+    // — the first frame whose bytes hold `mnema> show <id>` — is AMBIGUOUS here, because the
+    // session ran that very line earlier and the roll kept its echo. The two are the same
+    // characters in two places, and only a PAGE can say which is the row being typed
+    // (`support/screen.ts`, {@link theFirstScreenWhere}).
+    const typed = `${PROMPT} show ${hidden.id}`;
+    const screen = theFirstScreenWhere(
+      ran.bytes,
+      columns,
+      rows,
+      (page) => rowBeingTyped(page) === typed,
+    );
+    expect(rowBeingTyped(screen), screen.text).toBe(typed);
   }, 240_000);
 
   it('offers no record where a verb goes, however many it has named', async () => {
@@ -535,7 +551,9 @@ describe('what it offers is what the session showed, and never the record', () =
       ],
     });
 
-    const screen = screenOf(ran.bytes.slice(0, ran.at[3] as number), columns, rows);
+    // ⚠️ FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended — the rule this file
+    // now holds throughout (`support/screen.ts`, {@link theFirstScreenWith}).
+    const screen = theFirstScreenWith(ran.bytes, 'find what has been recorded', columns, rows);
     // The palette is open — the verbs are listed — and no row of it is a record.
     expect(screen.text, screen.text).toContain('search');
     const listed = screen.rows.filter((row) => row.trimStart().startsWith('019'));

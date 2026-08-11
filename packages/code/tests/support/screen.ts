@@ -226,6 +226,44 @@ function theFrame(bytes: string, is: (frame: string) => boolean, which: 'first' 
 }
 
 /**
+ * ⛔ THE PAGE AS SOON AS THE PAGE ITSELF ANSWERS `is` — the locator for the cases whose subject
+ * cannot be told from the bytes of one frame.
+ *
+ * ⚠️ IT IS THE THIRD ANSWER TO ONE QUESTION AND IT EXISTS BECAUSE THE SECOND WAS AMBIGUOUS.
+ * {@link theFirstScreenWith} finds the first frame whose BYTES hold something, which is enough
+ * while that something can be in one place — and the row a caller is typing is not such a place.
+ * What the session SAID is on the roll, so `mnema> show <id>` is on the page twice over once the
+ * caller has run that line: once as the echo the roll kept, and once on the row being typed. A
+ * marker cannot tell them apart; the PAGE can, because on the page one of them is the last row
+ * carrying the prompt and the other is not. Measured: the case that completes a record the
+ * session had already shown went red with the drawing of the name as its message, because the
+ * frame it was handed was the one where the echo first appeared.
+ *
+ * SO THE PREDICATE IS OVER THE SCREEN, which means replaying one for every frame until it holds.
+ * That is the expensive locator of the three and it is the one to reach for last: a stream is
+ * tens of kilobytes and a session is tens of frames, so it costs a replay per frame and nothing
+ * that matters — but a case that can be answered by the bytes of a frame should be.
+ */
+export function theFirstScreenWhere(
+  bytes: string,
+  columns: number,
+  rows: number,
+  is: (screen: Screen) => boolean,
+): Screen {
+  let at = 0;
+  for (const chunk of bytes.split(FRAME_IS_DRAWN).slice(0, -1)) {
+    at += chunk.length + FRAME_IS_DRAWN.length;
+    const screen = screenOf(bytes.slice(0, at), columns, rows);
+    if (is(screen)) return screen;
+  }
+  throw new Error(
+    `no frame in this stream ever drew a page the case would accept. Every frame was replayed ` +
+      `and the question was asked of each — so either the session never reached that page, or ` +
+      `what the question asks for is not what a page of this console can be.`,
+  );
+}
+
+/**
  * ⛔ THE PAGE AS THE SESSION LEFT IT — everything up to the sequence that gives the caller's
  * screen back.
  *
