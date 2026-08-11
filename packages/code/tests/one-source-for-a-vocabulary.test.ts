@@ -611,7 +611,12 @@ describe('the gate still owns the vocabulary', () => {
     // A legal action on the same task still moves it, so the case above is about the
     // WORD and not about a move that stopped working.
     expect(cli('task', 'move', 'submit', id).out).toContain('READY');
-  });
+    // FOUR PROCESSES OF THE REAL BINARY — the `init`, the task, the refusal and the legal
+    // move — and each pays node's start over again: 464 ms on a machine at rest, 1048 ms
+    // with the rest of the suite running beside it. The ceiling is here to NAME that, not
+    // to tighten it: at the default five seconds a busy machine goes red saying only that
+    // something timed out, which is the reading this line exists to prevent.
+  }, 60_000);
 
   it('refuses a value outside a set in the product’s voice, naming the set', () => {
     // The three flags whose set is now declared and whose refusal is unchanged — one per
@@ -626,5 +631,9 @@ describe('the gate still owns the vocabulary', () => {
     expect(cli('search', '--kind', 'nonsense').out).toContain(
       `Invalid --kind "nonsense". Use one of: ${SEARCH_KINDS.join(', ')}.`,
     );
-  });
+    // FOUR MORE PROCESSES, an `init` and one refusal per place the check lives: 436 ms on a
+    // machine at rest, 961 ms with the rest of the suite beside it. What it waits on is node
+    // starting four times, which is what the case is FOR — a refusal is only proved where a
+    // caller would meet it.
+  }, 60_000);
 });
