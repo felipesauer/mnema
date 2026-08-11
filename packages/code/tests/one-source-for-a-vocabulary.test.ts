@@ -170,9 +170,14 @@ function quoted(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
 }
 
+/** The pattern that holds `phrase` as WORDS, not inside longer ones. */
+function asWords(phrase: string): RegExp {
+  return new RegExp(`(^|[^\\w-])${quoted(phrase)}($|[^\\w-])`);
+}
+
 /** Whether `text` holds `phrase` as WORDS, not inside longer ones. */
 function names(text: string, phrase: string): boolean {
-  return new RegExp(`(^|[^\\w-])${quoted(phrase)}($|[^\\w-])`).test(text);
+  return asWords(phrase).test(text);
 }
 
 // ---------------------------------------------------------------------------
@@ -417,6 +422,54 @@ function membersOf(array: string): readonly string[] {
   );
 }
 
+/** One shape a hand-typed list takes, and how a hit on it reads. */
+interface Shape {
+  /** The hit without the literal — `[scope] public, private`. */
+  readonly says: string;
+  /** What it is recognised by. */
+  readonly pattern: RegExp;
+}
+
+/**
+ * EVERY SHAPE A HAND-TYPED LIST TAKES, BUILT ONCE.
+ *
+ * None of them depends on the literal being read — only on the vocabulary — so they are made
+ * here rather than inside the walk. They used to be made inside it, per literal: 1550
+ * literals against 1022 shapes is 1,584,100 `RegExp` objects for 1022 distinct patterns, and
+ * compiling them was 82% of what the scan cost — 1029 ms against 181 ms for the same walk
+ * over the same sources, returning the same hits.
+ *
+ * Reusing one pattern across literals is safe because none of them is global: `test` on a
+ * non-global pattern keeps no position between calls, so a literal cannot be searched from
+ * where the previous one left off.
+ */
+const HAND_TYPED: readonly Shape[] = Object.entries(VOCABULARIES).flatMap(([vocabulary, values]) =>
+  values.flatMap((first) =>
+    values.flatMap((second) => {
+      if (first === second) return [];
+      return [
+        // As WORDS: `stdout and installs` holds `out and in` and is a sentence
+        // about a stream, and `submit_review` holds `submit` — a scan without
+        // boundaries accuses the wrong lines and gets switched off.
+        ...JOINS.map((join) => ({
+          says: `[${vocabulary}] ${first}${join}${second}`,
+          pattern: asWords(`${first}${join}${second}`),
+        })),
+        // The same list with each member's gloss wedged in after it. The gloss may
+        // hold commas of its own ("this machine, this project"), so what separates
+        // the two members is a parenthesis and then a join — and the parenthesis
+        // must not itself contain one, or the shape would jump over a whole clause.
+        {
+          says: `[${vocabulary}] ${first} (…), ${second}`,
+          pattern: new RegExp(
+            `(^|[^\\w-])${quoted(first)} \\([^()]*\\)(?:,| or | and |, or |, and ) ?${quoted(second)}($|[^\\w-])`,
+          ),
+        },
+      ];
+    }),
+  ),
+);
+
 /**
  * Every place in `source` where somebody typed a vocabulary out instead of reading it.
  *
@@ -444,29 +497,8 @@ function handTypedLists(source: string): readonly string[] {
   const code = codeOf(source);
   for (const literal of code.match(LITERAL) ?? []) {
     if (literal.includes('…')) continue;
-    for (const [vocabulary, values] of Object.entries(VOCABULARIES)) {
-      for (const first of values) {
-        for (const second of values) {
-          if (first === second) continue;
-          for (const join of JOINS) {
-            // As WORDS: `stdout and installs` holds `out and in` and is a sentence
-            // about a stream, and `submit_review` holds `submit` — a scan without
-            // boundaries accuses the wrong lines and gets switched off.
-            const pair = `${first}${join}${second}`;
-            if (names(literal, pair)) found.push(`[${vocabulary}] ${pair} — ${literal}`);
-          }
-          // The same list with each member's gloss wedged in after it. The gloss may
-          // hold commas of its own ("this machine, this project"), so what separates
-          // the two members is a parenthesis and then a join — and the parenthesis
-          // must not itself contain one, or the shape would jump over a whole clause.
-          const glossed = new RegExp(
-            `(^|[^\\w-])${quoted(first)} \\([^()]*\\)(?:,| or | and |, or |, and ) ?${quoted(second)}($|[^\\w-])`,
-          );
-          if (glossed.test(literal)) {
-            found.push(`[${vocabulary}] ${first} (…), ${second} — ${literal}`);
-          }
-        }
-      }
+    for (const shape of HAND_TYPED) {
+      if (shape.pattern.test(literal)) found.push(`${shape.says} — ${literal}`);
     }
   }
   for (const array of code.match(LITERAL_ARRAY) ?? []) {
