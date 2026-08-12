@@ -163,9 +163,30 @@ afterAll(() => {
   rmSync(sandbox, { recursive: true, force: true });
 });
 
+/**
+ * A TERMINAL WITH ROOM FOR EVERY ARRANGEMENT DOWN IT — the other axis, held still.
+ *
+ * ⚠️ EVERY CASE IN THIS FILE ASKS ABOUT A WIDTH, and until this delivery that was the only
+ * measurement an arrangement was chosen by. It is chosen by both now: the panel is the FIXED
+ * region at the top of the screen, so it may take at most a share of the way down as well
+ * (`repl/panel.ts`, `panelFor`) — and a console opened at the default height would have had the
+ * richest form ruled out by the axis this file is not about, which is a ladder about heights
+ * wearing a case about widths.
+ *
+ * SO IT IS A SIZE AND NEVER A THRESHOLD, exactly as the widths sampled below are: it is tall
+ * enough that every form is affordable down it, so the only thing that moves a form in this
+ * file is the width. Where the HEIGHT gives a form up is searched for in
+ * `the-opening-fits-the-height.test.ts`, and no number here is that threshold.
+ */
+const ROOMY = 64;
+
 /** What a console drew, opened on a terminal `columns` wide and left again. */
-async function openedAt(columns: number, render: Render = renderPlain): Promise<string> {
-  const terminal = fakeTerminal({ columns });
+async function openedAt(
+  columns: number,
+  render: Render = renderPlain,
+  rows: number = ROOMY,
+): Promise<string> {
+  const terminal = fakeTerminal({ columns, rows });
   const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
   const closed = openSession({
     io,
@@ -641,7 +662,15 @@ const A_WINDOW = { widest: 140, narrowest: 40 } as const;
  */
 const A_WORKING_TERMINAL = 120;
 
-/** The scan, done once and kept: about a hundred openings, twenty milliseconds each. */
+/**
+ * The scan, done once and kept: about a hundred openings, twenty milliseconds each.
+ *
+ * EVERY ONE OF THEM ON A TERMINAL WITH ROOM DOWN IT ({@link ROOMY}), so what the ladder holds
+ * is the width a form gives way at and nothing else. ⚠️ Opened at the default height, the walk
+ * came back with two forms rather than three — the arrangement that stacks the text under the
+ * mark costs fifteen rows, which is more than a forty-row screen may spend on chrome, so the
+ * middle rung was ruled out by the axis this file is not about.
+ */
 let theLadder: Map<number, PanelForm> | undefined;
 async function everyWidth(): Promise<ReadonlyMap<number, PanelForm>> {
   if (theLadder !== undefined) return theLadder;
@@ -841,6 +870,10 @@ describe('the form comes out of the content, and the narrowest still says the es
     const made = (columns: number) =>
       panelFor({
         columns,
+        // AND A HEIGHT WITH ROOM FOR EVERY FORM, so the only thing that moves the answer is the
+        // width this case searches over ({@link ROOMY}). A form gives way on either measurement
+        // now, and a request that left this one out would be searching a ladder two axes deep.
+        rows: ROOMY,
         render: renderPlain,
         title: statement('a title'),
         mark: [statement('MARK')],

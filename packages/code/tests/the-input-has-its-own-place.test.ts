@@ -795,8 +795,22 @@ const _TOO_NARROW_FOR_THE_HINT = 40;
 /** The width the two deliveries before this one recorded the boundary at. */
 const _WHERE_IT_WAS_RECORDED = 60;
 
-/** A height with no room for a rule, and enough for the row being typed and its hint. */
-const SHORT_ENOUGH_FOR_THE_BARE_FORM = 4;
+/**
+ * A height with no room for a rule, and enough for the row being typed and its hint.
+ *
+ * ⚠️ IT WAS FOUR, AND FOUR ROWS WERE ENOUGH FOR THE BARE FORM ONLY BECAUSE OF WHAT WAS ABOVE IT.
+ * The area is chosen against what is LEFT of the screen under the region above it (`repl/
+ * area.ts`, `within`), and the opening used to take fifteen rows at this width whatever the
+ * height — so on a four-row terminal there was nothing left and the area was on its floor. The
+ * opening may hold at most a THIRD of the screen now (`repl/panel.ts`, `panelFor`), which on
+ * four rows is one and on any screen at all leaves the area two thirds: the ladder is the area's
+ * own again, and its floor is where its own arithmetic puts it — a rule, the row being typed, a
+ * rule and the hint are four rows, so three is the first height that cannot hold them.
+ *
+ * WHICH IS A FINDING AS MUCH AS A NUMBER: no terminal a person opens can squeeze the input area
+ * any more. It gives way at three rows and nowhere else.
+ */
+const SHORT_ENOUGH_FOR_THE_BARE_FORM = 3;
 
 describe('a terminal without the height gets less area, down to the bare prompt', () => {
   it('draws the rules and the badge when there is room, and neither when there is not', async () => {
