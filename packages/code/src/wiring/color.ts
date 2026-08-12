@@ -57,6 +57,16 @@
  * not for the badly folded line their terminal would otherwise give them. See
  * {@link chooseRenderer} for how the two compose.
  *
+ * AND THE ANSWER HAS A SECOND CONSUMER NOW, WHICH IS NOT ONE OF OURS. Everything above is
+ * about the lines this product COMPOSES; the interactive page also has edges, a mark and a
+ * title that a layout library draws, and that library resolves their colour by its own
+ * detection. Its detection has no entry for `NO_COLOR` at all — measured on a real terminal,
+ * a session with the variable set wrote thirty-two accents and not one byte from the
+ * renderer above — so a page obeyed the caller in half and the library in the other half.
+ * The precedence did not move and no bridge was invented: the answer this file already
+ * reaches is handed to the library through the channel the library does read, once, before
+ * a byte of it is loaded ({@link paintsAtAll}, and `repl/painting.ts` for the channel).
+ *
  * NOTHING HERE READS THE ENVIRONMENT. The inputs arrive as a value ({@link
  * Capability}), read at the entry where the process actually is (`cli.ts`), which is
  * what lets the precedence be asserted case by case as a pure function — and what lets
@@ -74,6 +84,7 @@
  */
 
 import { foldedAt } from '../presentation/folded.js';
+import type { Line } from '../presentation/line.js';
 import { renderPlain } from '../presentation/plain.js';
 import type { Render } from '../presentation/render.js';
 import { renderStyled } from '../presentation/styled.js';
@@ -156,6 +167,46 @@ export function chooseRenderer(capability: Capability): Render {
   const painting = paintingFor(capability);
   const { isTty, columns } = capability;
   return isTty && columns > 0 ? foldedAt(columns, painting) : painting;
+}
+
+/**
+ * THE LINE THE RULE IS MEASURED ON: one part, in a role that always carries a weight.
+ *
+ * `label` is BOLD in the painting renderer and bare in the plain one
+ * (`presentation/styled.ts`, `OPENED_BY`), and a part that opens nothing comes back
+ * untouched — so a probe built out of a `field` would report *this rule does not paint*
+ * about the renderer that paints everything. That is the one way {@link paintsAtAll} can
+ * go quietly wrong, so it is pinned by a case rather than left to inspection
+ * (`tests/one-authority-over-colour.test.ts`).
+ *
+ * Short on purpose: a rule the caller folds is still the rule, and a probe long enough to
+ * break would be measuring the fold instead of the paint.
+ */
+const A_PAINTED_LINE: Line = { indent: 0, parts: [{ role: 'label', text: 'colour' }] };
+
+/**
+ * WHETHER A RULE PAINTS AT ALL — asked of the RULE, on bytes, and never of the capability
+ * a second time.
+ *
+ * IT EXISTS BECAUSE THE DECISION HAS A SECOND CONSUMER NOW, and it is not one of ours: the
+ * layout library draws the page's own edges, its mark and its title, and it decides their
+ * colour by its own detection unless it is told (`repl/painting.ts` for what it reads and
+ * why). Something has to hand it the answer this file already worked out.
+ *
+ * ASKED OF THE RENDERER RATHER THAN OF THE {@link Capability}, which is the whole shape of
+ * it. A boolean resolved beside the renderer would be a SECOND spelling of one decision —
+ * two readings of one rule is exactly how a surface comes to have two opinions about
+ * colour, which is the defect this answer exists to close, and re-reading the capability
+ * at another instant would be the second reading {@link rendererAtEachWidth} is built to
+ * prevent. What comes back here is a measurement of the very renderer the invocation was
+ * given, so the library and the page cannot disagree about what was decided.
+ *
+ * TOTAL OVER WHAT {@link chooseRenderer} RETURNS, painted or plain, folded or not: the
+ * fold wraps whichever renderer it was handed and changes no escape, so a folded painting
+ * answers the same as the painting inside it.
+ */
+export function paintsAtAll(render: Render): boolean {
+  return render(A_PAINTED_LINE) !== renderPlain(A_PAINTED_LINE);
 }
 
 /**

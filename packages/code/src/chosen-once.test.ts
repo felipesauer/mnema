@@ -426,6 +426,11 @@ describe('nothing else decides which renderer', () => {
       'gate.ts',
       'inset.ts',
       'leaving.ts',
+      // IT NAMES NO RENDERER AND IT IS ABOUT COLOUR, which is exactly the distinction this
+      // case draws: it hands the answer this wiring already reached to the layout library,
+      // on the channel that library reads, and never asks the question itself
+      // (`repl/painting.ts`, and `tests/one-authority-over-colour.test.ts` for the sites).
+      'painting.ts',
       'palette.ts',
       'panel.ts',
       'pointing.ts',

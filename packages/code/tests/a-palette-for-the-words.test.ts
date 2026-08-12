@@ -1626,15 +1626,25 @@ describe('the mark survives what changes around it', () => {
       ran.bytes.slice(ran.at[from] as number, ran.at[to] as number).includes(`${opensWith}${PICK}`);
     expect(painted(withColour, 1, 2), 'the mark was drawn without the accent').toBe(true);
     expect(painted(without, 1, 2), 'the accent survived NO_COLOR').toBe(false);
-    // NOT VACUOUS: the session with no colour is still a painted page — the layout draws the
-    // rules and dims the list out of its own vocabulary — so the absence above is about the
-    // MARK and not about a page that has no escapes at all.
+    // NOT VACUOUS — AND THE INSTRUMENT IT USED FOR THAT IS GONE. It read: *the session with no
+    // colour is still a painted page — the layout draws the rules and dims the list out of its
+    // own vocabulary — so the absence above is about the MARK and not about a page that has no
+    // escapes at all*. That page no longer exists: a caller who asks for no colour now gets
+    // none of it, the layout's own accent included, because this product hands its answer to
+    // that library on the channel the library reads (`src/repl/painting.ts`, and
+    // `one-authority-over-colour.test.ts` for both directions of it).
+    //
+    // WHAT REPLACES IT IS THE SAME PROTECTION FROM THE OTHER SIDE: the frames the absence was
+    // read off DREW the mark, so they are frames with a mark on them rather than frames with
+    // nothing in them — and the page they are is quiet all the way through, which is the
+    // stronger half of what the old sentence was reaching for.
     const paint = new RegExp(PAINTED.source, 'g');
     const quiet = without.bytes.slice(without.at[1] as number, without.at[2] as number);
+    expect(quiet, 'the frames the absence was read off never drew the mark').toContain(PICK);
     expect(
       (quiet.match(paint) ?? []).length,
-      'the page with no colour has no paint at all',
-    ).toBeGreaterThan(0);
+      'colour survived NO_COLOR somewhere on the page',
+    ).toBe(0);
   }, 300_000);
 });
 
