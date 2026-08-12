@@ -52,7 +52,8 @@ import { renderPlain, widthOf } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { openConsole } from '../src/repl/console.js';
 import { verbsOffered } from '../src/repl/gate.js';
-import { about, whatItRefuses } from '../src/repl/session.js';
+import { about, standingLine, whatItRefuses } from '../src/repl/session.js';
+import { standing } from '../src/repl/standing.js';
 import { ABOUT, CLEAR, LEAVE } from '../src/session-words.js';
 import { type Capability, rendererAtEachWidth, rendererFor } from '../src/wiring/color.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
@@ -89,6 +90,17 @@ const TALL_ENOUGH = 40;
 
 let sandbox: string;
 let project: string;
+/**
+ * A PROJECT NESTED DEEPLY ENOUGH THAT THE LINE SAYING WHERE THE SESSION STANDS DOES NOT FIT.
+ *
+ * ⚠️ THE OPENING'S OWN SENTENCE USED TO BE THE SUBJECT, AND NO WINDOW CAN FOLD IT ANY MORE. It
+ * is seventy-seven columns wide and the narrowest window a console is drawn on is eighty
+ * (`src/repl/floor.ts`), so the case that watched it fold at seventy is watching something no
+ * caller can produce. What still folds — and what a caller really does have — is the row that
+ * says where the session is standing: it is a PATH, so a directory a few levels down is wider
+ * than the window, and it is part of the opening in exactly the way the sentence was.
+ */
+let deep: string;
 let environment: NodeJS.ProcessEnv;
 const before = { cwd: process.cwd(), env: { ...process.env } };
 
@@ -115,6 +127,19 @@ beforeAll(async () => {
 
   await shell('init');
   await shell('task', 'the task the window is resized over');
+
+  // AND THE DEEP ONE, for the half of the opening a window at the floor still folds ({@link deep}).
+  deep = join(
+    sandbox,
+    'a-directory-nested-deeply-enough-that-the-row-saying-where-this-session',
+    'is-standing-does-not-fit-across-a-window-at-the-floor-of-the-console',
+    'project',
+  );
+  mkdirSync(deep, { recursive: true });
+  process.chdir(deep);
+  await shell('init');
+  await shell('task', 'the task the deep project is opened over');
+  process.chdir(project);
 
   environment = {
     ...process.env,
@@ -156,8 +181,15 @@ function theWordsItPrints(): readonly Line[] {
  * the page whose renderer could be right for the report and wrong for the header. How many
  * verbs it names comes from the same function the session counts them with, so this is the
  * product's own line and not a copy of it.
+ *
+ * ⚠️ AND NOTHING READS IT ANY MORE, WHICH IS THE FLOOR'S DOING RATHER THAN A CASE GIVING UP. The
+ * sentence is seventy-seven columns wide and the narrowest window a console is drawn on is eighty
+ * (`src/repl/floor.ts`), so no caller can produce the fold this measured. The subject moved to
+ * the other line the opening lands that a real window can be narrower than — the row saying where
+ * the session is standing, which is a path ({@link deep}) — and this is kept because it is where
+ * the sentence's own width can still be read off the product.
  */
-function theLineItOpensWith(): Line {
+function _theLineItOpensWith(): Line {
   const built = buildProgram(quiet, [], renderPlain);
   return whatItRefuses(verbsOffered(built.verbs, REPL_VERB).length)[0] as Line;
 }
@@ -222,8 +254,9 @@ async function inPty(options: {
   readonly columns: number;
   readonly rows: number;
   readonly steps: readonly Step[];
+  readonly project?: string;
 }): Promise<Ran> {
-  return drive(fixture(), options);
+  return drive({ ...fixture(), project: options.project ?? project }, options);
 }
 
 /** The step every session begins with. */
@@ -272,7 +305,13 @@ const resizedTo = (columns: number): Step => ({
 
 describe('the fold follows the window the caller is looking at', () => {
   it('prints across the whole terminal after they maximise it', async () => {
-    const narrow = 70;
+    // ⚠️ THE NARROW END WAS SEVENTY COLUMNS AND NO CONSOLE IS DRAWN THERE. The number said
+    // nothing but *narrow enough that the widest row folds*; under eighty by twenty-four the
+    // frame is a screen saying the window is too small (`src/repl/floor.ts`), so a session driven
+    // at seventy never draws a rule and the page cannot be found at all. The floor's own width is
+    // the narrowest one there is, and the widest row this session prints is ninety-nine columns —
+    // so it still folds there, which is the only property the number ever had to have.
+    const narrow = 80;
     const wide = 200;
     // A13: the page has already PRINTED and already been resized when it is measured. A page
     // that has just opened is the one instant at which this defect does not exist, which is how
@@ -307,8 +346,9 @@ describe('the fold follows the window the caller is looking at', () => {
   }, 240_000);
 
   it('folds to the new width after they narrow it, with its own indent', async () => {
+    // THE NARROW END IS THE FLOOR, for the reason the case above gives.
     const wide = 200;
-    const narrow = 70;
+    const narrow = 80;
     const ran = await inPty({
       columns: wide,
       rows: TALL_ENOUGH,
@@ -336,17 +376,34 @@ describe('the fold follows the window the caller is looking at', () => {
   it('folds the line the page OPENS with to the terminal it is drawn on', async () => {
     // ⚠️ THE OPENING IS THE HALF A CASE ABOUT THE REPORT CANNOT SEE, and it went unnoticed once:
     // composing it with a renderer that was not the frame's left every case above green, because
-    // what they read is what a VERB printed. The opening's own sentence lands on the roll like
-    // any other line and folds like any other line — it is just composed one layer up.
+    // what they read is what a VERB printed. The opening's own lines land on the roll like any
+    // other line and fold like any other line — they are just composed one layer up.
+    //
+    // ⚠️ THE LINE WAS THE OPENING'S SENTENCE AND IT IS THE ROW SAYING WHERE THE SESSION STANDS,
+    // because the floor took the sentence out of reach: it is seventy-seven columns wide and no
+    // console is drawn under eighty (`src/repl/floor.ts`), so nothing a caller can do folds it.
+    // The row that says where they are standing is a PATH, and a project a few directories down
+    // is wider than any window ({@link deep}) — same half of the opening, same renderer, and a
+    // shape a caller really has.
+    //
+    // AND THE LINE IS THE PRODUCT'S OWN, composed by the function the session composes it with
+    // over the directory the session will be opened in — never rebuilt here, for the reason every
+    // other subject on this bench is read rather than retyped (`repl/session.ts`, `standingLine`).
     const wide = 200;
-    const narrow = 70;
-    const sentence = theLineItOpensWith();
-    const broken = foldedInto(sentence, narrow);
-    expect(broken.length, 'the opening sentence does not fold at this width').toBeGreaterThan(1);
+    const narrow = 80;
+    process.chdir(deep);
+    const row = standingLine(standing())[0] as Line;
+    process.chdir(project);
+    const broken = foldedInto(row, narrow);
+    expect(
+      broken.length,
+      'the row saying where it stands does not fold at the floor',
+    ).toBeGreaterThan(1);
 
     const ran = await inPty({
       columns: wide,
       rows: TALL_ENOUGH,
+      project: deep,
       // AND THE PAGE IS STARTED OVER AFTER THE RESIZE, which is what puts the opening back on the
       // roll at the size the window is NOW: the lines it landed when the session opened were
       // rendered for the terminal it opened on, and those are history rather than a defect.
@@ -365,7 +422,7 @@ describe('the fold follows the window the caller is looking at', () => {
       whereTheRowsAre(page, broken),
       `the opening is not folded at ${narrow}: ${broken.join(' / ')}`,
     ).toBeGreaterThanOrEqual(0);
-    expect(page).not.toContain(renderPlain(sentence));
+    expect(page).not.toContain(renderPlain(row));
   }, 240_000);
 });
 
@@ -379,10 +436,15 @@ describe('no frame holds two widths, at any size the caller stops at', () => {
     // drawn at (`support/screen.ts`, `theSettledScreen`), so reading it at that width is already
     // half the question; the other half is that the CONTENT on it folded at the same number.
     // Both halves in one answer, at every size rather than at the end of the sequence.
-    // THE THREE ARE CHOSEN SO THE WIDEST ROW FOLDS DIFFERENTLY AT EACH: it breaks in one place
-    // at eighty, in another at sixty, and not at all at a hundred and forty. Three sizes that
-    // all left it whole would be one assertion asked three times.
-    const sizes = [80, 60, 140];
+    // THE THREE ARE CHOSEN SO THE WIDEST ROW FOLDS DIFFERENTLY AT EACH: it breaks in one place at
+    // eighty, in another at ninety, and not at all at a hundred and forty. Three sizes that all
+    // left it whole would be one assertion asked three times.
+    // ⚠️ THE NARROWEST WAS SIXTY AND IT IS EIGHTY, and the two that follow moved with it: under
+    // eighty by twenty-four no page is drawn at all (`src/repl/floor.ts`), so a size under the
+    // floor is a size the console never draws a rule at — and the rules are what a page is found
+    // by. The sizes are the floor and two above it, and the widest row (ninety-nine columns)
+    // still folds at two of the three.
+    const sizes = [80, 90, 140];
     const ran = await inPty({
       columns: 110,
       rows: TALL_ENOUGH,

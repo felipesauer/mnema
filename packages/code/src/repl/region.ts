@@ -13,6 +13,14 @@
  * together are exactly as tall as the terminal, on every frame — which is what makes the first
  * and the last fixed at all.
  *
+ * ⚠️ AND THERE IS A SECOND FRAME NOW, WHICH THIS FILE USED TO SAY THERE COULD NOT BE. The page
+ * was three regions at EVERY size, because every ladder under it was total — a narrower terminal
+ * got a smaller drawing, a shorter one got fewer rows of area, and the bottom rung always fitted.
+ * There is a FLOOR under all of it (`floor.ts`): below eighty by twenty-four the console does not
+ * lay a page out, and what is drawn is a screen saying the size the window has and the size the
+ * console needs. It is one branch, over one discriminant, at the top of {@link Region} — and
+ * everything under it is untouched, because a page that is not laid out has no regions to place.
+ *
  * ⚠️ AND IT WAS THE OPPOSITE OF THAT, WHICH IS THE MODEL THIS DELIVERY REPLACED. What the
  * session said used to be written ONCE, into a region the library keeps and never redraws, and
  * the caller's own scrollback was the roll: a line that left the top of the screen went into
@@ -179,8 +187,48 @@ const IN_THE_MIDDLE = 'center';
  */
 const THE_MARGIN = 'hard';
 
+/**
+ * WHICH OF THE TWO PAGES THIS FRAME IS, and it is a discriminant rather than a flag on one
+ * value.
+ *
+ * ⛔ A WINDOW UNDER THE FLOOR IS NOT A CONSOLE WITH FIELDS MISSING. Below eighty by twenty-four
+ * the console does not lay a page out at all — no arrangement is chosen, no area is budgeted, no
+ * window onto the roll is cut ({@link Floored}, `floor.ts`) — so a single value carrying an empty
+ * panel, an empty window and an area of nought would be this file being handed numbers nobody
+ * worked out. The two shapes are two shapes, and the layout branches on which it was given.
+ */
+export type Shown = Showing | Floored;
+
+/**
+ * ⛔ WHAT A WINDOW UNDER THE FLOOR IS SHOWN: the lines saying so, and the size they are drawn
+ * at.
+ *
+ * IT IS A FRAME LIKE ANY OTHER — as wide and as tall as the device, written in place, over
+ * whatever the session had already said. Nothing is cleared and nothing is given back: the roll
+ * is where it was, and the frame after the window grows is the console again with everything on
+ * it (`console.ts`).
+ */
+export interface Floored {
+  /** Which page this is. */
+  readonly draws: 'floor';
+  /**
+   * The floor screen, one already-rendered line each.
+   *
+   * Composed and rendered before it arrives, like every other line here: what it says is a
+   * function of the size, and the size is read where every number on a frame is read
+   * (`floor.ts`, `console.ts`).
+   */
+  readonly said: readonly string[];
+  /** How wide the window is, out of the one reading the frame was built from. */
+  readonly columns: number;
+  /** How tall it is, out of the same reading. */
+  readonly rows: number;
+}
+
 /** Everything the console is showing, as one value read at one instant. */
-export interface Shown {
+export interface Showing {
+  /** Which page this is. */
+  readonly draws: 'console';
   /**
    * THE TOP REGION: the arrangement the page opens with, or nothing when this terminal has no
    * room for one.
@@ -358,12 +406,33 @@ export function Region({
     // into. What is outside it is CLIPPED rather than allowed to push — a frame one row taller
     // than the terminal scrolls the page, and the top region moving is the defect this whole
     // model exists to remove.
+    //
+    // ⛔ AND THE SAME IS TRUE OF THE FLOOR SCREEN, which is what makes it a screen rather than
+    // something printed: it is written in place, at the size of the window, over whatever was
+    // on the page. What it says is longer than a very small window, and the clip is what
+    // answers that — the rows a reader needs least are the ones that go (`floor.ts`).
     {
       flexDirection: 'column',
       width: shown.columns > 0 ? shown.columns : undefined,
       height: shown.rows > 0 ? shown.rows : undefined,
       overflow: 'hidden',
     },
+    // ⛔ THE ONE BRANCH ON THIS SURFACE THAT IS NOT ABOUT A FORM. Every other choice here is
+    // which arrangement there is room for; this is whether there is a page at all
+    // (`floor.ts`, {@link Floored}).
+    ...(shown.draws === 'floor' ? rows(shown.said) : theThreeRegions(shown, tips, badge)),
+  );
+}
+
+/**
+ * THE CONSOLE ITSELF: the opening at the top, the window onto the roll under it, and the input
+ * area at the foot.
+ *
+ * It is a function of the value rather than the body of {@link Region} because the frame has two
+ * shapes now, and the shape a window under the floor gets is not this one with parts left out.
+ */
+function theThreeRegions(shown: Showing, tips: string, badge: string): readonly ReactNode[] {
+  return [
     shown.panel === undefined ? null : node(Header, { panel: shown.panel }),
     node(Middle, { window: shown.window }),
     node(Present, {
@@ -373,7 +442,7 @@ export function Region({
       tips,
       badge,
     }),
-  );
+  ];
 }
 
 /**
@@ -397,9 +466,13 @@ export function Region({
  * A DEVICE THAT REPORTS NO HEIGHT GETS NO CARET AT ALL. The frame is not the screen there — it
  * is whatever its content is — so there is no row to count back from, and a position invented
  * against a height nobody reported would put the caret somewhere nothing is drawn.
+ *
+ * ⛔ AND NEITHER DOES A WINDOW UNDER THE FLOOR, for a sharper reason than the height: there is
+ * no row being typed on that page at all, so a caret would be pointing at a column of a line
+ * nobody is writing ({@link Floored}).
  */
 function theCaretOn(shown: Shown): { readonly x: number; readonly y: number } | undefined {
-  if (shown.rows <= 0) return undefined;
+  if (shown.draws === 'floor' || shown.rows <= 0) return undefined;
   return { x: shown.column, y: shown.rows - shown.area.height + shown.area.above + 1 };
 }
 
@@ -416,6 +489,10 @@ function theCaretOn(shown: Shown): { readonly x: number; readonly y: number } | 
  * A terminal too narrow for either arrangement gets none, which is decided before this
  * component is reached (`panel.ts`, `session.ts`) — so there is no third branch here, and the
  * narrow case is not a drawing but the absence of one, with the same lines on the roll instead.
+ * ⚠️ IT SAID *TOO NARROW OR TOO SHORT* AND THE SECOND HALF IS UNREACHABLE: a window under the
+ * floor has no page at all ({@link Floored}), and every window above it has the rows for the
+ * cheapest arrangement. What can still be too narrow is a window narrower than the widest row the
+ * arrangement holds.
  *
  * ⚠️ THERE WAS A BOX AROUND IT, drawn corner to corner, with the title laid on its top edge
  * in three pieces — a stub of border, the title with a space on each side, and the rest

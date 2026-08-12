@@ -71,6 +71,14 @@
  * ⛔ WHAT IT MAY STILL NOT BE is a rewrite of what is above: a fact about a line the caller has
  * already read lands UNDER it, because the one promise of this surface is that what has been
  * said is not unsaid.
+ *
+ * ⛔ AND THERE IS A FLOOR UNDER ALL OF IT. Every arrangement above degrades — a smaller drawing,
+ * no arrangement at all, an input area without its badge or its rules — and every one of those
+ * ladders was total, so a page was drawn at any size a device reported. Below eighty by
+ * twenty-four it is not: the frame is a SCREEN saying what the window has and what the console
+ * needs (`floor.ts`), the session goes on, the roll is untouched, and the page comes back by
+ * itself when the window grows. It is asked once, at the top of {@link showing}, out of the same
+ * one reading of the device every other number on the frame comes from.
  */
 
 import { render } from 'ink';
@@ -82,6 +90,7 @@ import { areaFor } from './area.js';
 import type { Completer } from './complete.js';
 import { type Editing, type Keystroke, keystrokesOf, NOTHING_TYPED, typeKey } from './editing.js';
 import { withoutTheHistoryErase } from './erasing.js';
+import { theFloorScreenFor, theWindowServes } from './floor.js';
 import type { AfterLine } from './gate.js';
 import { armLeaving, type Leaving } from './leaving.js';
 import { offeredBy, paletteFor, paletteRowsFor } from './palette.js';
@@ -452,18 +461,35 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * ⛔ THE SIZE THE FRAME ON THE SCREEN WAS COMPOSED FOR — every number on that frame's
    * geometry, and now its FOLD as well, comes out of this pair.
    *
-   * It is kept by {@link theOpening}, which is asked with the size at the top of every frame
-   * ({@link showing}), so after that call this is that frame's size whether the opening was
-   * recomposed or not. That is what lets {@link renderLine} answer *how wide is the page* with
-   * no second reading of anything.
+   * It is written at the top of every frame ({@link showing}), before anything is composed, so
+   * after that line this is that frame's size. That is what lets {@link renderLine} answer *how
+   * wide is the page* with no second reading of anything.
    *
-   * ⚠️ IT WAS TWO READINGS OF THE DEVICE — `{ columns: theSize()[0], rows: theSize()[1] }` —
+   * ⚠️ IT WAS KEPT BY {@link theOpening}, AND THE FLOOR IS WHAT SEPARATED THE TWO. This pair was
+   * the opening's cache key as well as the frame's size, which is one variable doing two jobs and
+   * true only while every frame composed an opening. A window under the floor composes none
+   * (`floor.ts`) — so a size that stayed here would have been the size of the last frame that
+   * DID, and the one line of the floor screen that folds would have folded to a window nobody was
+   * looking at. Two names now: this is the frame's, and the cache has its own
+   * ({@link composedAt}).
+   *
+   * ⚠️ AND IT WAS TWO READINGS OF THE DEVICE — `{ columns: theSize()[0], rows: theSize()[1] }` —
    * which is the very shape {@link theSize} exists to make impossible, at the one line that
    * predates it. A caller who resized between the two calls opened a session whose first frame
    * was the width of one terminal and the height of another. One reading, destructured.
    */
   const first = theSize();
   let drawnAt = { columns: first[0], rows: first[1] };
+  /**
+   * THE SIZE {@link opened} WAS COMPOSED FOR — the opening cache's own key, and nothing about
+   * the frame.
+   *
+   * It is separate from {@link drawnAt} so that the pair *this is the opening for that size*
+   * cannot come apart: a frame that composes no opening moves the frame's size and leaves this
+   * one where the last composition left it, which is what makes the cache answer honestly on the
+   * way back.
+   */
+  let composedAt = { columns: first[0], rows: first[1] };
   /**
    * THE MIDDLE REGION AS THE FRAME ON THE SCREEN WAS LAID OUT: how many rows it had, and how
    * wide they were.
@@ -508,8 +534,8 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * caller who drags back and forth pays one composition per size they stop at.
    */
   function theOpening(columns: number, rows: number): Opening {
-    if (columns === drawnAt.columns && rows === drawnAt.rows) return opened;
-    drawnAt = { columns, rows };
+    if (columns === composedAt.columns && rows === composedAt.rows) return opened;
+    composedAt = { columns, rows };
     opened = openingFor(columns, rows);
     return opened;
   }
@@ -564,6 +590,25 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     // readings of a device the caller can resize between them is a frame built out of two
     // different terminals ({@link theSize}).
     const [columns, rows] = theSize();
+    // ⛔ AND THE FIRST THING ASKED OF THAT PAIR IS WHETHER IT SERVES AT ALL — the floor, applied
+    // at its one site (`floor.ts`, {@link theWindowServes}). Everything below this line is
+    // arithmetic about a page, and a window under the floor does not get one: it gets a screen
+    // saying what it has and what the console needs. Nothing is composed, nothing is budgeted
+    // and nothing is cut, which is what *the console does not try to draw* means.
+    //
+    // ⛔ AND NOTHING IS FORGOTTEN EITHER. The roll is untouched — this returns a different
+    // FRAME, not a different session — so the region the roll was last cut to ({@link theMiddle})
+    // is still the one a line lands in, and the frame drawn when the window grows again is the
+    // console with everything on it.
+    drawnAt = { columns, rows };
+    if (!theWindowServes(columns, rows)) {
+      return {
+        draws: 'floor',
+        said: theFloorScreenFor({ columns, rows, render: renderLine }),
+        columns,
+        rows,
+      };
+    }
     const opening = theOpening(columns, rows);
     // WHAT THE PALETTE WOULD SHOW, before anything says how much of it there is room for.
     // A pure function over the row being typed and what a Tab last offered (`palette.ts`),
@@ -609,6 +654,17 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     // the panel put them there, and a panel dropped HERE is dropped from the page altogether.
     // That is a hole this delivery closed the road to rather than the hole itself — declared,
     // and reachable by nothing this file can do to a terminal.
+    //
+    // ⛔ AND IT IS REMOVABLE, WHICH IS SAID HERE RATHER THAN ACTED ON. The floor under the window
+    // puts it further out of reach than it already was (`floor.ts`) — nothing is drawn under
+    // twenty-four rows, and an arrangement may hold at most a third of the screen — but the
+    // argument that it can never be false is older and does not need the floor: the palette is
+    // budgeted so that the area never takes more than what is left under the region above it
+    // (`area.ts`, `roomForThePalette`), so `under` is at least `opening.above` by construction
+    // whenever there is a panel at all. Taking it out belongs to the delivery that re-derives
+    // those two budgets together, because what makes it safe is THEIR arithmetic and not this
+    // line's; removing it here would be trading a comparison per frame for a promise held in
+    // another file.
     const drawn = opening.panel !== undefined && opening.above <= under;
     // HOW MANY ROWS THE MIDDLE REGION HAS, and this one number is an ESTIMATE where every other
     // number on this frame is exact. What the middle really gets is what the other two leave,
@@ -628,6 +684,9 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     // it has them at — one answer, from the module that keeps the roll (`scrolling.ts`).
     const window = theWindowOn(scrolling, room, columns);
     return {
+      // WHICH OF THE TWO PAGES THIS IS. The other one is the frame a window under the floor gets,
+      // and the layout branches on this rather than on a field being empty (`region.ts`).
+      draws: 'console',
       panel: drawn ? opening.panel : undefined,
       window,
       // BOTH MEASUREMENTS OF THE SCREEN, out of the one reading taken at the top of this frame.

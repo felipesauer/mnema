@@ -771,8 +771,14 @@ export function whatItRefuses(reads: number): readonly Line[] {
  * the distinction `aside` already draws (`presentation/detail.ts`). It is also what the
  * reference the panel was drawn from does with a path and an identity, and for the same
  * reason: they are what a reader glances at once and then skips past.
+ *
+ * Exported for the reason {@link tips} is: it is the one line of the opening a WINDOW can be
+ * narrower than — a path is as long as the directory somebody is working in — so it is the
+ * subject of the case that says the opening folds to the terminal it is drawn on, and a case
+ * that rebuilt it here would be a second composition of it
+ * (`tests/one-width-per-frame.test.ts`).
  */
-function standingLine(where: Standing): readonly Line[] {
+export function standingLine(where: Standing): readonly Line[] {
   const known = [where.project, where.identity].filter((value) => value !== undefined);
   return known.length === 0 ? [] : [aside(known.join(BETWEEN_CLAUSES))];
 }

@@ -29,6 +29,13 @@
  * loses the rules; what is left is the row being typed and the hint under it, which is what a
  * session has always had.
  *
+ * ⚠️ AND *A TERMINAL* MEANT ANY TERMINAL, which is the premise a floor under the window took
+ * away. This file was written on the rule every ladder of this surface was written on — whatever
+ * the size, there is a rung — and what that produced at the bottom was a prompt with the product's
+ * identity gone from the screen. Under eighty by twenty-four nothing is laid out at all now
+ * (`floor.ts`), so the forms below `full` are reached by what is DRAWN rather than by how small a
+ * window is: a list of words that grows, or a window too narrow for the badge to be one row.
+ *
  * WHAT IT HAS TO FIT IN IS THE SCREEN LESS THE REGION ABOVE IT ({@link AreaRequest.header}),
  * and that is one rule where there used to be two. The top region is fixed: it is the same
  * height for a terminal of a given size whatever the session says, so an arrangement chosen
@@ -73,6 +80,15 @@
  *     console drew before the input had a place of its own, and the floor: it is
  *     answered whatever the height, because a terminal too short for it is a terminal
  *     too short for a prompt.
+ *
+ * ⚠️ AND THE HEIGHT NO LONGER WALKS THIS LADDER, which is worth saying where the ladder is
+ * defined rather than leaving a reader to work it out. There is a FLOOR under the window
+ * (`floor.ts`): no page is laid out under eighty by twenty-four, the region above may hold at most
+ * a third of the screen (`panel.ts`), and the whole of the `full` form is five rows — so on every
+ * window a caller can open, the height alone answers `full`. What still reaches the rungs under it
+ * is the LIST of words growing into what is left ({@link roomForThePalette}) and a window too
+ * narrow for the badge to be one row. The arithmetic is unchanged and it is still total; what
+ * changed is which of its answers a device can produce.
  */
 export type AreaForm = 'full' | 'ruled' | 'bare';
 
