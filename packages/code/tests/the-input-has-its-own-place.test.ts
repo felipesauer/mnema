@@ -46,6 +46,7 @@ import { renderPlain, widthOf } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { statement } from '../src/presentation/verdict.js';
 import { areaFor } from '../src/repl/area.js';
+import { THE_FLOOR } from '../src/repl/floor.js';
 import { badgeLine, openSession, theSessionsOwnWords, tips } from '../src/repl/session.js';
 import { ABOUT, LEAVE, PREFIX, SESSION_WORDS } from '../src/session-words.js';
 import { here } from '../src/wiring/context.js';
@@ -639,7 +640,15 @@ function rulesAroundTheInput(screen: { readonly rows: readonly string[] }): stri
 }
 
 describe('the two rules are as wide as the terminal, and follow it when it changes', () => {
-  for (const columns of [60, 100, 140]) {
+  // ⚠️ THE NARROWEST OF THE THREE WAS SIXTY COLUMNS, AND NO CONSOLE IS DRAWN THERE ANY MORE. The
+  // width was picked as an ordinary narrow window, on the premise every ladder of this surface
+  // was written on: whatever the size, some arrangement is drawn. There is a FLOOR under the
+  // window now (`src/repl/floor.ts`) — under eighty by twenty-four the frame is a screen saying
+  // so, with no input area and therefore no rules — so sixty columns stopped being a width this
+  // case can measure anything at. It is the floor's own width instead, which is the narrowest
+  // window there IS a rule on, and the case is stronger for it: the run has to reach the last
+  // column of the smallest console anybody can open.
+  for (const columns of [80, 100, 140]) {
     it(`runs from the first column to column ${columns} of ${columns}`, async () => {
       const rows = 40;
       const ran = await inPty({ columns, rows, steps: [opens, leaves] });
@@ -657,15 +666,21 @@ describe('the two rules are as wide as the terminal, and follow it when it chang
   }
 
   it('measures the new width after the caller resizes their window', async () => {
+    // ⚠️ IT SHRANK TO SEVENTY COLUMNS, WHICH IS NOW UNDER THE FLOOR. The number said nothing but
+    // *narrower than it was*; what a caller drags to under eighty columns gets a screen saying the
+    // window is too small (`src/repl/floor.ts`, `tests/a-floor-under-the-window.test.ts`), and a
+    // page with no input area on it has no rule to measure. It shrinks to the floor's own width
+    // instead — still a shrink, still a redraw, and now the narrowest one there is.
     const rows = 40;
+    const narrower = 80;
     const ran = await inPty({
       columns: 120,
       rows,
       steps: [
         opens,
         {
-          resize: { columns: 70, rows },
-          until: (bytes) => times(bytes, RUN.repeat(70)) > 0,
+          resize: { columns: narrower, rows },
+          until: (bytes) => times(bytes, RUN.repeat(narrower)) > 0,
           what: 'drew the rules again after shrinking',
         },
         leaves,
@@ -677,10 +692,10 @@ describe('the two rules are as wide as the terminal, and follow it when it chang
     // the screen model then refused by name (*nothing on it was drawn 70 columns wide*). The
     // wait above is right; the index was not what the wait guaranteed
     // (`support/screen.ts`, {@link theSettledScreen}).
-    const screen = theSettledScreen(ran.bytes, 70, rows);
+    const screen = theSettledScreen(ran.bytes, narrower, rows);
     for (const rule of rulesAroundTheInput(screen)) {
       expect(isRule(rule), 'the input is not between two rules after the resize').toBe(true);
-      expect([...rule.replace(/ +$/, '')].length, 'a rule kept the old width').toBe(70);
+      expect([...rule.replace(/ +$/, '')].length, 'a rule kept the old width').toBe(narrower);
     }
   }, 180_000);
 });
@@ -809,16 +824,35 @@ const _WHERE_IT_WAS_RECORDED = 60;
  *
  * WHICH IS A FINDING AS MUCH AS A NUMBER: no terminal a person opens can squeeze the input area
  * any more. It gives way at three rows and nowhere else.
+ *
+ * ⚠️ AND NO TERMINAL CAN BE THREE ROWS TALL AT ALL NOW, which is what took this number out of the
+ * case below. There is a FLOOR under the window (`src/repl/floor.ts`): under eighty by twenty-four
+ * the frame is a screen saying so, and a three-row session draws no area of any form. So the
+ * height ladder is the area's own arithmetic and nothing a device can walk — the rungs under
+ * `full` are reached by a LIST that grows into the region instead
+ * (`a-palette-for-the-words.test.ts`), and the ladder itself is asserted as the pure function it
+ * is, at the top of this file. The number is kept because it is where the arithmetic still gives
+ * way, and it is unread because nothing can be that size.
  */
-const SHORT_ENOUGH_FOR_THE_BARE_FORM = 3;
+const _SHORT_ENOUGH_FOR_THE_BARE_FORM = 3;
 
-describe('a terminal without the height gets less area, down to the bare prompt', () => {
-  it('draws the rules and the badge when there is room, and neither when there is not', async () => {
-    // A CASE PER FORM, on a screen. One width throughout, so the only thing that differs
-    // between the runs is the height — and it is a width that has room for the HINT,
-    // because the hint is a row of the arrangement and a window that drops it is a window
-    // measuring a different ladder. ⚠️ It used to be sixty columns, which stopped being
-    // such a width when the area learned to leave out a row the terminal would fold.
+describe('every terminal a caller can open gets the whole area', () => {
+  it('draws the rules and the badge at forty rows and at the floor alike', async () => {
+    // ⚠️ IT WAS A CASE PER FORM AND IT IS A CASE PER HEIGHT, and the floor is what changed it. The
+    // second half of this case drove a THREE-ROW terminal and read the bare arrangement off it —
+    // no rules, no badge, a prompt and a hint — because every ladder of this surface was total and
+    // a page was drawn at any size a device reported. Under eighty by twenty-four there is no page
+    // now (`src/repl/floor.ts`), so the shortest window this can be asked of is the floor, and
+    // what it answers there is `full`: the arrangement holds at most a third of the screen
+    // (`repl/panel.ts`), which leaves the area two thirds of twenty-four rows, and the whole of it
+    // is five. The height ladder is unchanged and it is asserted where it is a function of two
+    // numbers, at the top of this file.
+    //
+    // ONE WIDTH THROUGHOUT, so the only thing that differs between the runs is the height — and it
+    // is a width with room for the HINT, because the hint is a row of the arrangement and a window
+    // that drops it is a window measuring a different ladder. ⚠️ It used to be sixty columns,
+    // which stopped being such a width when the area learned to leave out a row the terminal would
+    // fold.
     const columns = WIDE_ENOUGH_FOR_THE_HINT;
     const drawn = async (rows: number) => {
       const ran = await inPty({ columns, rows, steps: [opens, leaves] });
@@ -831,13 +865,15 @@ describe('a terminal without the height gets less area, down to the bare prompt'
       'the full form has no badge',
     ).toBe(true);
 
-    const bare = await drawn(SHORT_ENOUGH_FOR_THE_BARE_FORM);
-    expect(bare.text, 'the short terminal never opened a prompt').toContain(PROMPT);
-    expect(rulesOn(bare), 'a rule survived into the bare form').toHaveLength(0);
+    // ⛔ AND AT THE FLOOR, which is the whole point of there being one: the smallest window
+    // anybody can open is not a degraded console, it is the console.
+    const atTheFloor = await drawn(THE_FLOOR.rows);
+    expect(atTheFloor.text, 'the floor never opened a prompt').toContain(PROMPT);
+    expect(rulesOn(atTheFloor), 'the floor lost the rules').toHaveLength(2);
     expect(
-      bare.rows.some((row) => row.includes(MARK)),
-      'a badge survived it',
-    ).toBe(false);
+      atTheFloor.rows.some((row) => row.includes(MARK)),
+      'the floor lost the badge',
+    ).toBe(true);
   }, 240_000);
 
   // ⚠️ THREE CASES STOOD HERE AND ALL THREE DIED WITH THE BOUNDARY THEY MEASURED, which is the

@@ -35,6 +35,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
 import { bannerFor } from '../src/presentation/banner.js';
 import { renderPlain } from '../src/presentation/plain.js';
+import { THE_FLOOR } from '../src/repl/floor.js';
 import { theSessionsOwnWords } from '../src/repl/session.js';
 import { ABOUT, LEAVE, PREFIX } from '../src/session-words.js';
 import { VERSION } from '../src/version.js';
@@ -1037,7 +1038,11 @@ describe('the console spends only part of the screen it opens on', () => {
  * is spread across the sizes those thresholds separate, and where each one is is still searched
  * for rather than written down ({@link theHeightItGivesWayAt}).
  */
-const A_LADDER_OF_HEIGHTS: readonly number[] = [50, 40, 24, 16];
+// ⚠️ THE SHORTEST OF THESE WAS SIXTEEN ROWS AND NO CONSOLE IS DRAWN THERE. A floor under the
+// window (`repl/floor.ts`) means nothing is laid out under eighty by twenty-four, so a session
+// driven at sixteen rows draws the screen that says so and no drawing of the name at all. The
+// ladder is four heights a caller really has, ending at the floor.
+const A_LADDER_OF_HEIGHTS: readonly number[] = [50, 40, 30, 24];
 
 /**
  * THE SHORTEST SCREEN A GIVEN DRAWING IS STILL CHOSEN ON, at a width — searched by halving,
@@ -1064,9 +1069,14 @@ async function theHeightItGivesWayAt(
     const at = forms.findIndex((form) => form.join('\n') === drawn.join('\n'));
     return at !== -1 && at <= wanted;
   };
-  let low = 1;
+  // ⚠️ THE SEARCH USED TO REACH DOWN TO ONE ROW, AND IT STOPS AT THE FLOOR. Under eighty by
+  // twenty-four there is no page to read a drawing off (`repl/floor.ts`), so a height under it is
+  // not a height this ladder has an answer at — and a drawing that is still chosen AT the floor
+  // is one whose give-way height is out of reach, which is an absence rather than a number.
+  let low = THE_FLOOR.rows;
   let high = 70;
   if (!(await richEnough(high))) return undefined;
+  if (await richEnough(low)) return undefined;
   while (high - low > 1) {
     const middle = Math.floor((low + high) / 2);
     if (await richEnough(middle)) high = middle;
@@ -1169,11 +1179,15 @@ describe('the drawing gives way so the page fits, rather than the page being cut
     }
     // AND THE FLOOR IS ANSWERED WHATEVER THE HEIGHT, which is what keeps the ladder total: the
     // name is still drawn on a screen too short for any arrangement at all.
-    const tiny = await openedAt(columns, 10);
-    expect(tiny.drawing.length, 'a screen too short for an arrangement drew nothing').toBe(1);
-    expect(tiny.drawing.join('').toLowerCase(), 'the floor stopped saying the name').toContain(
-      'mnema',
-    );
+    //
+    // ⚠️ IT WAS ASKED OF A CONSOLE AT TEN ROWS AND IT IS ASKED OF THE MODULE. A screen that short
+    // has no page on it now (`repl/floor.ts`), so the rung is out of a device's reach — and it is
+    // still the rung, because what it protects is the one thing this banner exists to say. The
+    // demand is what makes it the floor: a page that needs more rows than the screen has refuses
+    // every drawing, and what is left is the name.
+    const tiny = bannerFor({ columns, rows: 10, needs: () => 100 }).map(renderPlain);
+    expect(tiny.length, 'a screen too short for an arrangement drew nothing').toBe(1);
+    expect(tiny.join('').toLowerCase(), 'the floor stopped saying the name').toContain('mnema');
   }, 300_000);
 
   it('draws the biggest form on a terminal with the room for it, and not on one without', async () => {

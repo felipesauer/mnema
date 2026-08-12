@@ -74,8 +74,7 @@
  *     group whose subcommand wrote would need a row of its own here.
  */
 
-import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import { Command } from 'commander';
@@ -85,6 +84,7 @@ import { renderPlain } from '../src/presentation/plain.js';
 import { registerVerbs } from '../src/wiring/index.js';
 import type { PinnedRun } from '../src/wiring/run-pin.js';
 import type { Declared, RecordEffect } from '../src/wiring/verb.js';
+import { held } from './support/the-record-held.js';
 
 // ---------------------------------------------------------------------------
 // What the program declares
@@ -239,52 +239,10 @@ const RECORDS_NOTHING: Readonly<Record<string, string>> = {
 // What reached the record
 // ---------------------------------------------------------------------------
 
-/** A sealed segment of a tail: `NNNNNN.jsonl`, which is where events live. */
-const SEGMENT = /^\d{6}\.jsonl$/;
-
-/** Key material, wherever a tree or the key root keeps it. */
-const KEY_MATERIAL = /\.(pub|key|enroll|inst|anchor)$/;
-
-/** Everything under `dir`, as absolute paths. */
-function filesUnder(dir: string): string[] {
-  const found: string[] = [];
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) found.push(...filesUnder(path));
-    else found.push(path);
-  }
-  return found;
-}
-
-/**
- * What the record holds right now: how many events are in it, and what its key material
- * is.
- *
- * The events are counted by READING THE LINES of every segment file in the sandbox, not
- * by asking the product to replay them. A count derived from the same code the verbs run
- * would move with it, and a verb that wrote an event the reader skipped would come out
- * even. The key material is hashed by path and content, so a key minted, adopted or
- * installed by a read is a change too — the other half of what "changes the record"
- * means.
- */
-function held(dir: string): { events: number; keys: string } {
-  let events = 0;
-  const keys = createHash('sha256');
-  for (const path of filesUnder(dir).sort()) {
-    const name = basename(path);
-    if (SEGMENT.test(name)) {
-      events += readFileSync(path, 'utf-8')
-        .split('\n')
-        .filter((line) => line.trim().length > 0).length;
-    }
-    if (KEY_MATERIAL.test(name)) {
-      keys.update(`${path}:`);
-      keys.update(readFileSync(path));
-      keys.update('\n');
-    }
-  }
-  return { events, keys: keys.digest('hex') };
-}
+// ⚠️ WHAT THE RECORD HOLDS WAS SPELLED HERE AND IT IS ONE INSTRUMENT NOW. The same rule was
+// written out in `a-terminal-of-its-own.test.ts`, and a third case needed it — so the counting of
+// events and the hashing of key material moved to one place, where the argument above about what
+// it counts and what it deliberately does not lives with it (`support/the-record-held.ts`).
 
 /** One verb, exercised: what it declared, and what its invocation did to the record. */
 interface Exercised {

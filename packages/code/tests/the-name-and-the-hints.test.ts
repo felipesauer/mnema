@@ -68,6 +68,7 @@ import { runVerify } from '../src/commands/verify.js';
 import { bannerFor } from '../src/presentation/banner.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
+import { THE_FLOOR } from '../src/repl/floor.js';
 import { openSession, tips } from '../src/repl/session.js';
 import { CLEAR, LEAVE, PREFIX, SESSION_WORDS } from '../src/session-words.js';
 import { here } from '../src/wiring/context.js';
@@ -547,6 +548,25 @@ const COSTS_NOTHING = (): number => 0;
 const drawn = (columns: number): string[] =>
   bannerFor({ columns, rows: TALL, needs: COSTS_NOTHING }).map(renderPlain);
 
+/**
+ * EVERY DRAWING OF THE NAME THERE IS, biggest first — walked off the module rather than written
+ * down.
+ *
+ * A form is what a width answers with, so the forms are what the answers CHANGE at. It is the
+ * same walk `the-opening-fits-the-height.test.ts` makes and for the same reason: a list written
+ * out here would be a second copy of the art, and the first thing it would do is go stale. The
+ * rows are trimmed at the end because that is how a layout writes them.
+ */
+function everyDrawing(): readonly (readonly string[])[] {
+  const forms: string[][] = [];
+  for (let columns = 200; columns >= 0; columns -= 1) {
+    const form = drawn(columns).map((row) => row.trimEnd());
+    const last = forms[forms.length - 1];
+    if (last === undefined || last.join('\n') !== form.join('\n')) forms.push(form);
+  }
+  return forms;
+}
+
 // ---------------------------------------------------------------------------
 // The name, and how much of it fits
 // ---------------------------------------------------------------------------
@@ -620,11 +640,25 @@ describe('the width the banner is chosen at is the terminal’s own', () => {
   it('draws the tall form on a wide terminal and the letterspaced one on a narrow one', async () => {
     // THE ELO. The forms above are a function of a number; this is the number coming off
     // the device the session was handed, which is the half a pure case cannot see.
+    // ⚠️ THE NARROW END WAS TWENTY COLUMNS AND IT IS THE FLOOR. There is a floor under the window
+    // now (`repl/floor.ts`): under eighty by twenty-four no page is laid out at all, so a session
+    // opened at twenty draws the screen that says so and no drawing of the name at all. The
+    // narrowest window there IS answers the same question — it gets a smaller drawing than a wide
+    // one, and it gets the one its own width allows.
     const wide = await openedAt(200);
     expect(wide).toContain(drawn(200)[0] as string);
-    const narrow = await openedAt(20);
-    expect(narrow).toContain('M N E M A');
-    expect(narrow).not.toContain(INK);
+    const narrow = await openedAt(THE_FLOOR.columns);
+    // ⛔ AND WHAT THE NARROW ONE GOT IS A FORM OF THIS MODULE'S, found by asking which of them
+    // is on the page rather than by naming one: which drawing a window gets is answered by the
+    // SIZE and not by the width alone — the arrangement around it may hold at most a third of the
+    // screen (`repl/panel.ts`) — so a case naming the form the width allows would be asserting
+    // half of the rule.
+    const on = (page: string): readonly string[] | undefined =>
+      everyDrawing().find((form) => form.every((row) => page.includes(row)));
+    expect(on(narrow), 'no drawing of the name is on the narrow page').toBeDefined();
+    expect(on(narrow), 'the floor got the drawing a wide terminal gets').not.toEqual(
+      on(wide) as readonly string[],
+    );
   }, 120_000);
 });
 

@@ -556,7 +556,12 @@ describe('nothing on the page is a frame, at any size', () => {
     // WHAT THIS DELIVERY REMOVED, asked as an absence — and asked across the whole ladder,
     // because the frame was drawn by the two arranged forms and not by the landed one: a sweep
     // that only looked at wide terminals would be looking at one of the three answers.
-    for (const columns of [200, 140, 120, 102, 80, 48, 46, 40, 30]) {
+    // ⚠️ THE FOUR NARROWEST OF THESE ARE GONE WITH THE FLOOR: forty-eight, forty-six, forty and
+    // thirty are windows no console is drawn on any more (`repl/floor.ts`), so what a sweep over
+    // them would be reading is the screen that says the window is too small. The sweep is over
+    // the widths a caller can open, and the landed form — the one the frame was never drawn by —
+    // is asked of the arithmetic instead ({@link theFrameOn} over `panelLines`, below).
+    for (const columns of [200, 140, 120, 102, 80]) {
       const rows = openingRows(await openedAt(columns));
       expect(theFrameOn(rows), `${columns}: ${theFrameOn(rows).join('; ')}`).toEqual([]);
       // And the page really was drawn, so the absence is about a drawing rather than an empty
@@ -648,7 +653,15 @@ describe('what the panel says about a tree is a prefix of what verify says', () 
  * predicate that goes false and true again lands wherever the halving took it. The window is
  * wide enough to hold both edges and the case below asserts that it does.
  */
-const A_WINDOW = { widest: 140, narrowest: 40 } as const;
+// ⚠️ THE NARROW END WAS FORTY AND IT IS THE FLOOR. Under eighty by twenty-four no page is laid
+// out at all (`repl/floor.ts`), so a console opened narrower than this draws the screen that says
+// so and no arrangement of any form — a ladder walked below the floor would be walking over
+// windows nobody can open. What that costs this file is the LAST rung: at eighty the arrangement
+// still fits across, so the two arranged forms are what a device can walk to, and the rung under
+// them is reached by the CONTENT being wider than the window instead. It is asserted where a
+// width can be asked for rather than opened at — under this describe, and in the arithmetic's own
+// case at the foot of this file.
+const A_WINDOW = { widest: 140, narrowest: 80 } as const;
 
 /**
  * A TERMINAL A PERSON OPENS — a hundred and twenty columns, and it is a SIZE rather than a
@@ -725,7 +738,7 @@ describe('the form comes out of the content, and the narrowest still says the es
     }
   }, 120_000);
 
-  it('draws all three, and never a richer one on a narrower terminal', async () => {
+  it('draws the two a window can hold, and never a richer one on a narrower terminal', async () => {
     // ⚠️ THIS CASE HAS BEEN WRITTEN THREE TIMES AND THE ART MOVED IT EVERY TIME. It began as
     // `never a richer one on a narrower terminal` over five sampled widths; a seventy-column
     // drawing FALSIFIED that, because a terminal wide enough to be given the art was not
@@ -745,8 +758,13 @@ describe('the form comes out of the content, and the narrowest still says the es
     // observation: the drawing only gets simpler as the terminal narrows, and where it does
     // not, the ART has to be what changed. The loop rules on every step of the ladder; that
     // no step needs the excuse today is the assertion under it.
+    // ⚠️ IT SAID `all three` AND THE WINDOW HOLDS TWO. The third rung is what a panel gets when
+    // its content does not fit ACROSS, and with this project's lines that happens under eighty
+    // columns — where no page is drawn at all now (`repl/floor.ts`). So the ladder a device can
+    // walk has two rungs on it, and the third is asked where a width can be ASKED FOR rather
+    // than opened at, under this loop.
     const ladder = await everyWidth();
-    expect(new Set(ladder.values())).toEqual(new Set(['columns', 'stacked', 'bare']));
+    expect(new Set(ladder.values())).toEqual(new Set(['columns', 'stacked']));
     let boughtArtInstead = 0;
     let steps = 0;
     for (let columns = A_WINDOW.widest; columns > A_WINDOW.narrowest; columns -= 1) {
@@ -770,7 +788,24 @@ describe('the form comes out of the content, and the narrowest still says the es
     // hundred steps rather than about an empty loop — and the window really holds three
     // different forms, asserted above, so the ladder it walked is not one answer repeated.
     expect(steps).toBe(A_WINDOW.widest - A_WINDOW.narrowest);
-    expect(new Set(ladder.values()).size).toBe(3);
+    expect(new Set(ladder.values()).size).toBe(2);
+    // ⛔ AND THE THIRD RUNG IS STILL THERE, reached by the content rather than by a window nobody
+    // can open: a row the arrangement holds that is wider than the window gives the arrangement
+    // up, and the row that says where a session is standing is a PATH — so a caller working a few
+    // directories down really does get this. Asked of the arithmetic, at the narrowest window
+    // there is.
+    expect(
+      panelFor({
+        columns: A_WINDOW.narrowest,
+        rows: ROOMY,
+        render: renderPlain,
+        title: statement('a title'),
+        mark: [statement('MARK')],
+        standing: [statement('w'.repeat(A_WINDOW.narrowest + 1))],
+        record: [statement('The record')],
+      }).form,
+      'a panel whose own row is wider than the window kept its arrangement',
+    ).toBe('bare');
   }, 180_000);
 
   it('stands in two columns on the terminal a person opens, with the biggest art in it', async () => {
@@ -810,10 +845,11 @@ describe('the form comes out of the content, and the narrowest still says the es
     // witness. Nothing is drawn to an edge now, so the property is asked of the rows the panel
     // really has: none of them is WIDER than the terminal, which is the invariant the form was
     // ever chosen for (`panel.ts`, `panelRows`: nothing inside an arrangement folds).
-    for (const [form, richness] of [
-      ['columns', RICHNESS.columns],
-      ['stacked', RICHNESS.stacked],
-    ] as const) {
+    // ⚠️ IT WALKED BOTH ARRANGED FORMS AND IT WALKS ONE. Where the STACKED form gives way is under
+    // eighty columns for this project's lines, and no console is drawn there (`repl/floor.ts`) —
+    // so the width it gives way at is a width a device cannot be asked for. It is searched for on
+    // the arithmetic instead, over both forms, in the last case of this file.
+    for (const [form, richness] of [['columns', RICHNESS.columns]] as const) {
       const edge = await narrowestFor(richness);
       const page = await openedAt(edge);
       expect(formOf(page, edge), `${form} at ${edge}`).toBe(form);
@@ -836,10 +872,17 @@ describe('the form comes out of the content, and the narrowest still says the es
     }
   }, 300_000);
 
-  it('says the name, where it is and what the record is, with no arrangement at all', async () => {
+  it('says the name, where it is and what the record is, at the narrowest window there is', async () => {
     // The floor. A terminal too narrow for an arrangement loses the placing and not a fact —
     // the same lines, in the same order, landed the way every other line of this session lands.
-    const page = stripped(withoutLayout(await openedAt(40)));
+    //
+    // ⚠️ IT WAS DRIVEN AT FORTY COLUMNS, where nothing is drawn any more (`repl/floor.ts`). What
+    // it asked is asked at the narrowest window a console IS drawn on: the four facts are on the
+    // page whatever the arrangement, which is the half that was ever about the record. Which form
+    // a window of that width gets is the ladder's question and it is asked above; that the landed
+    // rung says the same things in the same order is the arithmetic's, and the case at the foot of
+    // this file searches it.
+    const page = stripped(withoutLayout(await openedAt(A_WINDOW.narrowest)));
     expect(theFrameOn(page.split('\n'))).toEqual([]);
     expect(page).toContain(OPENED);
     expect(page).toContain(project);
@@ -1013,7 +1056,9 @@ describe('the chrome costs the drawing of the name and nothing more', () => {
     // can beat by rearranging, it is the height of the art. Under the mark the panel costs the
     // art PLUS the text, which is more \u2014 so the floor holds at every width and the arrangement
     // is what decides how far above it the panel sits.
-    for (const columns of [200, A_WORKING_TERMINAL, 80, 60, 48, 46, 40]) {
+    // ⚠️ THE FOUR NARROWEST WIDTHS WENT WITH THE FLOOR, exactly as they did in the sweep for a
+    // frame: sixty and under is a window with no page on it (`repl/floor.ts`).
+    for (const columns of [200, A_WORKING_TERMINAL, 102, 90, 80]) {
       const page = await openedAt(columns);
       expect(openingRows(page).length, `${columns}`).toBeGreaterThanOrEqual(
         drawnAt(columns).length,

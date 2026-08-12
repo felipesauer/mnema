@@ -60,6 +60,32 @@ const NOTHING_IS_CUT = 160;
 /** What every record the session is asked about has in its title. */
 const NAMED = 'names';
 
+/**
+ * THE RECORDS THE FIXTURE HOLDS — enough of them that a window at the floor cannot show them all.
+ *
+ * The names are ordinals and nothing depends on them; what the number has to be is larger than
+ * the rows a list gets on the shortest window a console is drawn on, which is what puts the CUT
+ * inside reach of a size a caller really has ({@link THE_RECORDS} is read, never counted twice).
+ */
+const THE_RECORDS: readonly string[] = [
+  'one',
+  'two',
+  'three',
+  'four',
+  'five',
+  'six',
+  'seven',
+  'eight',
+  'nine',
+  'ten',
+  'eleven',
+  'twelve',
+  'thirteen',
+  'fourteen',
+  'fifteen',
+  'sixteen',
+];
+
 /** And what the one it is NOT asked about has instead. */
 const UNNAMED = 'a record nobody asks about';
 
@@ -112,7 +138,15 @@ beforeAll(async () => {
 
   await shell('init');
   const made: Record[] = [];
-  for (const which of ['one', 'two', 'three', 'four', 'five', 'six']) {
+  // ⚠️ THERE WERE SIX OF THEM AND THERE ARE SIXTEEN, and the floor under the window is what
+  // decided the number. The case that measures the list saying how many it had NO ROOM for used
+  // to reach that regime by driving a short terminal — a hundred columns by eight — and no
+  // console is drawn there any more (`src/repl/floor.ts`). Above the floor the shortest window is
+  // twenty-four rows, which leaves the list about fifteen: with six records nothing can ever be
+  // cut, so the regime is reached by having MORE RECORDS THAN A WINDOW HAS ROWS instead of by a
+  // window nobody can open. Everything else here is a count off this list rather than a number,
+  // so the sixteen travel into every case unedited.
+  for (const which of THE_RECORDS) {
     made.push(await task(`the console ${NAMED} this one ${which}`));
   }
   // The list a search answers with is newest first, and the cases read it in that order.
@@ -371,17 +405,17 @@ describe('a prefix that names several lists them, each beside the line it came f
     // `AreaRequest.header`), and whenever it draws a row at all, what it shows plus what it says
     // is left over is everything there was.
     //
-    // ⚠️ THE HEIGHT HAS MOVED THREE TIMES AND EACH TIME BECAUSE THE ROOM DID. It was eight rows
-    // while the list was budgeted against what the page had left over; sixteen once the list was
-    // cut to the leftover under the flow; fourteen once the leftover was measured under the fixed
-    // region at the top. It is EIGHT again, and what moved it is that region's own share: the
-    // arrangement is drawn only while it fits inside a third of the screen (`repl/panel.ts`,
-    // `panelFor`), and at a hundred columns it does not at any of these heights — so what used to
-    // sit above the list is on the roll, the list has fifteen rows more to work with, and at
-    // fourteen there is room for every one of the six. Measured on a real terminal rather than
-    // derived: at eight rows the list shows some of them and names the rest, which is the case.
-    const columns = 100;
-    const rows = 8;
+    // ⚠️ THE HEIGHT HAS MOVED FOUR TIMES AND ONLY THE LAST ONE WAS NOT ABOUT THE ROOM. It was
+    // eight rows while the list was budgeted against what the page had left over; sixteen once the
+    // list was cut to the leftover under the flow; fourteen once the leftover was measured under
+    // the fixed region at the top; eight again once that region was held to a third of the screen.
+    // What moved it this time is the FLOOR under the window (`src/repl/floor.ts`): eight rows is
+    // not a console at all any more. So the regime is reached from the other side — the shortest
+    // window there is, with more records in the fixture than the list has rows on it
+    // ({@link THE_RECORDS}) — and what it measures is unchanged. Measured on a real terminal
+    // rather than derived: at the floor the list shows some of them and names the rest.
+    const columns = 80;
+    const rows = 24;
     const shared = sharedBy(shown.map((record) => record.id));
     const ran = await inPty({
       columns,

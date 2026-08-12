@@ -1331,14 +1331,21 @@ describe('a page without the room shows fewer, and says how many it could not', 
   // to come DOWN to keep the two regimes: a page with room shows what it has room for, a page
   // with less shows fewer. Measured on a real terminal rather than derived, and both counts are
   // still asserted against the total rather than written down.
+  // ⚠️ AND BOTH SIZES MOVED A THIRD TIME, for a reason that is not the geometry's: there is a
+  // FLOOR under the window now (`src/repl/floor.ts`), and twenty by ten and a hundred by ten are
+  // both under it — a session driven at either draws the screen that says so and no list at all.
+  // The two regimes survive above the floor because the list is twenty rows tall and what is left
+  // for it is the screen less the region at the top: at eighty columns the arrangement holds six
+  // of them, so twenty-four rows leave thirteen words and twenty-eight leave seventeen. Measured
+  // on a real terminal rather than derived, and both counts are still asserted against the total.
   for (const [rows, shown] of [
-    [20, 9],
-    [10, 5],
+    [24, 13],
+    [28, 17],
   ] as const) {
-    it(`names a number that adds up to everything there was, at 100x${rows}`, async () => {
+    it(`names a number that adds up to everything there was, at 80x${rows}`, async () => {
       // THE NUMBER IS ASSERTED AGAINST THE TOTAL rather than written down: what is on the
       // screen plus what the last row names is every word the session offers.
-      const columns = 100;
+      const columns = 80;
       const offers = everythingOffered();
       const ran = await inPty({
         columns,
@@ -1372,7 +1379,7 @@ describe('a page without the room shows fewer, and says how many it could not', 
       expect(listed.length, `${rows}: ${listed.length} shown`).toBe(shown);
       // ⛔ AND THE PAGE DID NOT PAY FOR THE LIST at either size, which is what the cut buys:
       // the row the caller types on is still the last one the layout leaves.
-      fillsTheScreen(screen, rows, `100x${rows} with a cut list`);
+      fillsTheScreen(screen, rows, `${columns}x${rows} with a cut list`);
     }, 180_000);
   }
 });
@@ -1395,9 +1402,14 @@ describe('⚠️ opening the palette never makes the frame outgrow the screen', 
   // frame ends on the last row of the terminal with the list open, and not one row of the
   // caller's history is erased — with the library's own request as the witness that the
   // absence is merited (`src/repl/erasing.ts`, `erasesTheScreen`).
-  for (const columns of [60, 100]) {
+  // ⚠️ THE SIZES MOVED WITH THE FLOOR AND NOT WITH THIS PROMISE. Sixty columns, eight rows and
+  // twelve rows are all under the shortest window a console is drawn on (`src/repl/floor.ts`), so
+  // a session driven at any of them draws the screen that says so — and a frame with no list on it
+  // says nothing about whether a list can make the frame outgrow the screen. What is left is the
+  // floor's own width and three heights above it, which is where a caller can really open one.
+  for (const columns of [80, 100]) {
     it(`ends on the last row with the list open, at ${columns} columns`, async () => {
-      for (const rows of [8, 12, 24, 40]) {
+      for (const rows of [24, 30, 40]) {
         const ran = await inPty({
           columns,
           rows,

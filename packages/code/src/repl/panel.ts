@@ -84,6 +84,14 @@ import type { Render } from '../presentation/render.js';
  * reason it can be reached and not a second form. The two questions are *does it fit across*
  * and *does it fit inside its share of the way down* ({@link panelFor}); the answer to either
  * being no drops one rung, and the rung under the last one is the same lines on the roll.
+ *
+ * ⚠️ AND THE SHORT SCREEN IS NO LONGER ONE OF THE TWO WAYS THERE. A floor under the window
+ * (`floor.ts`) means no page is laid out under twenty-four rows, and the cheapest arrangement
+ * costs six — one row of drawing and the five the text beside it takes — which wants eighteen. So
+ * `bare` is reached ACROSS: a window narrower than the widest row the arrangement holds, and the
+ * widest is usually the one that says where the session is standing, which is a path. The rule
+ * did not move and neither did this ladder; what moved is which of the two questions a device can
+ * still answer no to.
  */
 export type PanelForm = 'columns' | 'stacked' | 'bare';
 
@@ -406,6 +414,11 @@ function rowsOfTheForm(form: PanelForm, mark: number, beside: number): number {
  * lines that are allowed to fold, and the floor of this ladder has to be answered at every
  * width there is — the same shape of floor the drawing of the name has (`presentation/
  * banner.ts`, which still says the name in a terminal too narrow for anything).
+ *
+ * ⚠️ THE LADDER IS STILL TOTAL AND THE WIDTHS UNDER EIGHTY ARE NO LONGER ASKED, because nothing
+ * is laid out on a window that narrow (`floor.ts`). It is answered at every width for the reason
+ * it always was — a function of a number has to answer for the number — and not because a device
+ * can be any width there is.
  */
 function columnsOfTheForm(form: PanelForm, mark: number, beside: number): number {
   switch (form) {
