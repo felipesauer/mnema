@@ -207,6 +207,23 @@ export interface Shown {
    */
   readonly window: readonly string[];
   /**
+   * HOW WIDE THE CALLER'S TERMINAL IS, asked of the DEVICE in the same breath as the height.
+   *
+   * ⚠️ IT WAS THE LIBRARY'S TO KNOW AND THAT IS WHAT A RESIZE FALSIFIED. The frame declared its
+   * HEIGHT and left its width to the library, which sets the root of the layout from its own
+   * reading of the device — and the two readings do not happen at the same instant. On a resize
+   * the console rebuilds this value and re-renders synchronously, before the library has had its
+   * own listener run: the tree then has the NEW height and the root still has the OLD width, so
+   * the frame comes out with rules a hundred and twenty columns long on an eighty-column screen,
+   * which the terminal folds — and a folded frame is a frame taller than the screen. Measured on
+   * a loaded machine: a shrink wrote `24 rows / 120 columns` before the two correct frames.
+   *
+   * SO THE FRAME DECLARES BOTH OF ITS MEASUREMENTS. They come from one reading of one device on
+   * one frame (`console.ts`, `showing`), so there is no instant at which the page is half one
+   * size and half another.
+   */
+  readonly columns: number;
+  /**
    * HOW TALL THE CALLER'S TERMINAL IS, asked of the DEVICE by the module that owns the streams
    * and handed over as the height of the frame.
    *
@@ -343,6 +360,7 @@ export function Region({
     // model exists to remove.
     {
       flexDirection: 'column',
+      width: shown.columns > 0 ? shown.columns : undefined,
       height: shown.rows > 0 ? shown.rows : undefined,
       overflow: 'hidden',
     },

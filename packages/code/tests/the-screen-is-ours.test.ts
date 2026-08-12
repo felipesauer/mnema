@@ -76,6 +76,7 @@ import {
   type Step,
 } from './support/pty.js';
 import {
+  drewAt,
   fillsTheScreen,
   firstDrawnRow,
   promptRow,
@@ -663,10 +664,16 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
         // representative instant there is: the middle region is empty, so a window that came out
         // the wrong height would look identical to one that came out right.
         submits(says(0)),
+        // ⚠️ AND EACH STEP WAITS FOR THE SIZE TO HAVE BEEN DRAWN, not merely for a frame. A
+        // frame names nothing about a size, so under load the frames still arriving from the
+        // step before end this one — and the next size is then set on top of a size the console
+        // never got to draw. Measured in the full suite on a loaded machine: the read was refused
+        // with *no frame in this stream was drawn 80 columns wide*, which was true and was the
+        // case's own doing (`support/screen.ts`, {@link drewAt}).
         ...sizes.map((size) => ({
           resize: size,
-          until: aFrameSince(PROMPT),
-          what: `resized to ${size.columns}x${size.rows}`,
+          until: drewAt(size.columns),
+          what: `drew at ${size.columns}x${size.rows}`,
         })),
         leaves,
       ],

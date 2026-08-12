@@ -339,6 +339,29 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   const howTall = (): number => stdout.rows ?? NO_HEIGHT;
 
   /**
+   * ⛔ BOTH MEASUREMENTS OF THE DEVICE, IN ONE READING — how wide and how tall, asked once.
+   *
+   * ⚠️ THEY WERE TWO QUESTIONS AND A CALLER CAN RESIZE BETWEEN THEM. The two above are separate
+   * getters and each of them asks the operating system: a size that changes between the first and
+   * the second gives a frame half one terminal and half another. This file's own doc has warned
+   * about exactly that shape — *two readings of a device that a caller can resize between them is
+   * a frame built out of two different terminals* — and then read the device twice. Measured on a
+   * loaded machine, three sizes set back to back: a frame came out **24 rows by 120 columns**,
+   * which is the height of the first size and the width of the second, and no terminal was ever
+   * that shape. What it costs on a screen is a row too wide, which the terminal folds — and a
+   * folded frame is a frame taller than the screen it is on.
+   *
+   * SO THE DEVICE IS ASKED ONCE, by the one call that answers both. A stream that cannot be asked
+   * that way is answered by the two getters, which is what a pair of streams standing in for a
+   * terminal is: it has no size to change under the reading (`tests/support/console.ts`).
+   */
+  const theSize = (): readonly [number, number] => {
+    const asked = stdout.getWindowSize?.();
+    if (asked === undefined) return [howWide(), howTall()];
+    return [asked[0] ?? NO_WIDTH, asked[1] ?? NO_HEIGHT];
+  };
+
+  /**
    * ⛔ EVERY BYTE THIS SESSION WRITES, AND THE ONE PLACE THE ERASE IS ANSWERED — the caller's own
    * device, with one door in front of the only method that puts anything on it.
    *
@@ -396,7 +419,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   }
 
   /** The size the opening on the screen was composed for, and the opening itself. */
-  let drawnAt = { columns: howWide(), rows: howTall() };
+  let drawnAt = { columns: theSize()[0], rows: theSize()[1] };
   /** How many rows the middle region had on the frame that is on the screen. */
   let theRoom = 0;
   /** The layout, once it is up. See the assignment at the foot of this function. */
@@ -463,11 +486,10 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * file used to hold were for.
    */
   function showing(): Shown {
-    // THE SIZE IS READ ONCE FOR THE WHOLE FRAME, and both halves of it here: a frame built out
-    // of two readings of a device the caller can resize between them is a frame built out of two
-    // different terminals.
-    const columns = howWide();
-    const rows = howTall();
+    // THE SIZE IS READ ONCE FOR THE WHOLE FRAME, and in ONE question: a frame built out of two
+    // readings of a device the caller can resize between them is a frame built out of two
+    // different terminals ({@link theSize}).
+    const [columns, rows] = theSize();
     const opening = theOpening(columns, rows);
     // WHAT THE PALETTE WOULD SHOW, before anything says how much of it there is room for.
     // A pure function over the row being typed and what a Tab last offered (`palette.ts`),
@@ -521,6 +543,11 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     return {
       panel: drawn ? opening.panel : undefined,
       window,
+      // BOTH MEASUREMENTS OF THE SCREEN, out of the one reading taken at the top of this frame.
+      // The width is here for the same reason the height is: the frame IS the screen, and a
+      // frame that declared one of the two left the other to the library's own reading, taken at
+      // another instant (`region.ts`, {@link Shown.columns}).
+      columns,
       rows,
       present: prompt + editing.typed,
       // COMPOSED WITH THE ROOM THE AREA GAVE IT, and cut to it — by the module that puts

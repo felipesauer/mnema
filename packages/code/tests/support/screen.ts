@@ -126,6 +126,37 @@ export function everyWidthDrawnOn(rows: readonly string[]): readonly number[] {
 }
 
 /**
+ * ⛔ WHAT SAYS A RESIZE HAPPENED: the console DREW at that width, since the step began.
+ *
+ * ⚠️ THE STEP USED TO WAIT FOR A FRAME, AND A FRAME NAMES NOTHING ABOUT A SIZE. That is the
+ * amarra this bench already carries — a step waits for what it CAUSED — applied to the one event
+ * it had not been applied to. Under load the frames of the step before can still be arriving, so
+ * *a frame arrived since this step began* is answered by somebody else's frame; the step then
+ * ends, the next size is set, and the size in between is never drawn at all. Measured on a loaded
+ * machine, in the full suite: the locator refused the read with *no frame in this stream was
+ * drawn 80 columns wide*, and it was right — the console never drew at eighty, because by the
+ * time it ran the terminal was already something else.
+ *
+ * ⛔ AND THE CONSOLE IS RIGHT TO SKIP IT. The geometry is read at the moment of the drawing, so
+ * a size the terminal held for a few milliseconds and left is a size no frame owes anything to —
+ * that is what *treat a resize as a signal to render again rather than as a source of truth*
+ * buys, and it is what a caller dragging a window edge relies on. What was wrong is a case that
+ * asked for the page at a size it never let the console reach.
+ *
+ * SO THE WAIT IS THE SIZE ITSELF. The two rules the input area sits between run the whole way
+ * across the terminal, so a run of them that long IS the console having drawn at that width
+ * ({@link everyWidthDrawnOn}) — and a step that waits for it cannot end before the size it asked
+ * for is on the page, nor can the next size be set on top of it.
+ *
+ * ⛔ IT IS ONLY AVAILABLE WHERE THE INPUT AREA HAS RULES, which is every arrangement but the bare
+ * one. A window too short for the rules draws none, and a step waiting for one there would wait
+ * for ever — so the sizes a case drives with this are sizes with room for them.
+ */
+export function drewAt(columns: number): (bytes: string, since: number) => boolean {
+  return (bytes, since) => everyWidthDrawnOn([bytes.slice(since)]).includes(columns);
+}
+
+/**
  * ⛔ THE PAGE AS IT SETTLED AT A GIVEN WIDTH — found by what the frames CONTAIN, never by where
  * they are in the stream.
  *
