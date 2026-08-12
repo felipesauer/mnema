@@ -31,7 +31,7 @@
 
 import type { ReferenceGraph } from '@mnema/copilot';
 import { fact, subjectLine } from './detail.js';
-import { itemLine } from './items.js';
+import { asScope, itemLine } from './items.js';
 import type { Render } from './render.js';
 
 /** The lines a reference graph prints for a person. */
@@ -61,7 +61,11 @@ export function referenceReport(render: Render, graph: ReferenceGraph): string[]
     link.from === graph.id || link.to === graph.id;
   const written = (link: ReferenceGraph['links'][number]) => {
     const rel = link.rel !== undefined ? `${link.role}:${link.rel}` : link.role;
-    const tree = `[${link.scope}]`;
+    // THE TREE IS THE COLUMN NOBODY READS, on the line of an edge: every edge of a graph
+    // resolved from one project answers the same word, and it is the last field of the
+    // row (`items.ts`, `asScope`). The brackets are this report's own punctuation and
+    // they stay inside the column, exactly as the padding does in a report that pads.
+    const tree = asScope(`[${link.scope}]`);
     if (link.from === graph.id) return render(itemLine([`→ ${rel}`, label(link.to), tree]));
     if (link.to === graph.id) return render(itemLine([`← ${rel}`, label(link.from), tree]));
     return render(itemLine([`${label(link.from)} → ${rel} → ${label(link.to)}`, tree]));

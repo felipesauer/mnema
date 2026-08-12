@@ -52,6 +52,7 @@ import { renderPlain, widthOf } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { openConsole } from '../src/repl/console.js';
 import { verbsOffered } from '../src/repl/gate.js';
+import { BEFORE_THE_BAR, insideTheMargin, THE_INSET } from '../src/repl/inset.js';
 import { about, standingLine, whatItRefuses } from '../src/repl/session.js';
 import { standing } from '../src/repl/standing.js';
 import { ABOUT, CLEAR, LEAVE } from '../src/session-words.js';
@@ -194,14 +195,41 @@ function _theLineItOpensWith(): Line {
   return whatItRefuses(verbsOffered(built.verbs, REPL_VERB).length)[0] as Line;
 }
 
-/** The rows the product's own fold breaks a line into at a given width. */
+/**
+ * The rows the product's own fold breaks a line into on a terminal of a given width.
+ *
+ * THE WIDTH IT FOLDS AT IS NOT THE TERMINAL'S, and that is what the page's own margin cost this
+ * helper. What the session says is drawn inside a margin with a guide down it
+ * (`src/repl/inset.ts`), so the columns a line really has are the terminal's less that — and the
+ * console folds to exactly this number (`src/repl/console.ts`, `renderOnTheRoll`). A case that
+ * folded at the terminal's width would be asserting a break no window produces, which is the
+ * shape of red that says nothing about the product.
+ */
 function foldedInto(line: Line, columns: number): readonly string[] {
-  return foldedAt(columns, renderPlain)(line).split('\n');
+  return foldedAt(insideTheMargin(columns), renderPlain)(line).split('\n');
 }
 
-/** A screen's rows with their trailing blanks off — what a reader sees on each. */
+/**
+ * The glyph the guide down the margin is drawn out of — spelled by code point, like every other
+ * unusual byte in this repository.
+ */
+const THE_GUIDE = '\u2502';
+
+/**
+ * A row of the page with the margin taken off — what the row SAYS, without the page's own edge.
+ *
+ * Every row of the roll begins with the same four columns: two blank, the guide, and one more
+ * blank (`src/repl/inset.ts`). They are chrome and no part of the line, so a comparison against a
+ * composed line has to take them off — and only off the rows that HAVE them, because a row of the
+ * input area and a row with nothing on it never did.
+ */
+function withoutTheMargin(row: string): string {
+  return [...row][BEFORE_THE_BAR] === THE_GUIDE ? row.slice(THE_INSET) : row;
+}
+
+/** A screen's rows, margin off and trailing blanks off — what a reader sees on each. */
 function rowsOf(screen: Screen): readonly string[] {
-  return screen.rows.map((row) => row.replace(/ +$/, ''));
+  return screen.rows.map((row) => withoutTheMargin(row).replace(/ +$/, ''));
 }
 
 /**

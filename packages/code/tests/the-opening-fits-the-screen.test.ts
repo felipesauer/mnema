@@ -990,11 +990,21 @@ async function openedAt(
  * terminal has had since before they were on screens), a common laptop window, and a large
  * one — the last because a count that only held where the defect was measured is a count
  * that moved a case rather than the product.
+ *
+ * AND EVERY NUMBER IN IT MOVED ONCE, WHICH IS WHAT THE TABLE IS FOR. The page shows its seams
+ * now: a RULE closes the top region, a blank row of breath sits under it, and what the session
+ * says is drawn inside a margin (`repl/region.ts`, `repl/inset.ts`). What this counts is rows
+ * with something on them, so the rule is one more at every size and the row of breath is none —
+ * a hundred by thirty and a hundred and twenty by forty each gained exactly that one. EIGHTY BY
+ * TWENTY-FOUR GAINED TWO, and the second is the margin: the sentence the session lands under
+ * the panel is seventy-six columns and the page has seventy-six inside its margin, so at that
+ * one size it folds onto a second row. Both are what the seams cost, and both are here rather
+ * than in a sentence about them.
  */
 const THE_SCREEN: readonly { columns: number; rows: number; takes: number }[] = [
-  { columns: 80, rows: 24, takes: 11 },
-  { columns: 100, rows: 30, takes: 12 },
-  { columns: 120, rows: 40, takes: 15 },
+  { columns: 80, rows: 24, takes: 13 },
+  { columns: 100, rows: 30, takes: 13 },
+  { columns: 120, rows: 40, takes: 16 },
 ];
 
 describe('the console spends only part of the screen it opens on', () => {
@@ -1211,8 +1221,15 @@ describe('the drawing gives way so the page fits, rather than the page being cut
     // and fifteen rows want a screen of forty-five to stay inside their share. A hundred and
     // twenty is a width where the biggest drawing costs nine rows rather than fifteen, so the
     // only thing that separates these two runs is the height, which is what the case says.
+    // AND THE ROOMY SCREEN GREW BY THE SEAM. It was a hundred and twenty by THIRTY, where nine
+    // rows of art fitted a third of the screen; the top region is the arrangement AND the rule
+    // that closes it AND the row of breath under that (`repl/panel.ts`, `THE_SEAM`), so eleven
+    // rows want thirty-three. The pair is still one width and two heights — the only thing that
+    // separates the two runs is the height, which is what this case says — and it is still a
+    // size and its (near) half rather than a threshold: where the drawing gives way is searched
+    // for in the ladder above.
     const biggest = drawnAcross(WIDE);
-    const roomy = await openedAt(120, 30);
+    const roomy = await openedAt(120, 36);
     expect(roomy.drawing, 'the biggest drawing is on no terminal at all').toEqual(biggest);
     expect(roomy.whole, 'the biggest drawing opened cut').toBe(true);
 
@@ -1513,7 +1530,21 @@ describe('the panel has one section in it, and the art is the only thing drawn',
     expect(under, 'no sentence under the panel').toBeGreaterThan(0);
     const opening = screen.rows.slice(0, under);
     expect(opening.length, 'the opening has no rows').toBeGreaterThan(3);
-    for (const row of opening) {
+    // AND THE ONE RUN IN THOSE ROWS IS THE SEAM, which is what the page showing its seams cost
+    // this reading. It said NO row of the opening holds a run, and that was a statement about
+    // the PANEL — the drawing of the name and the text beside it draw none of their own, which
+    // is the half that survives whole. What is between those rows and the sentence under them
+    // now is the rule that CLOSES the region (`repl/region.ts`, `theTop`), and it is a row of
+    // nothing but the run — so it is taken out by what it IS rather than by where it is, and
+    // everything else is asked exactly as before.
+    const isRule = (row: string): boolean => {
+      const drawn = row.replace(/ +$/, '');
+      return drawn.length > 0 && [...drawn].every((glyph) => glyph === RUN);
+    };
+    expect(opening.filter(isRule), 'the top region is not closed by exactly one rule').toHaveLength(
+      1,
+    );
+    for (const row of opening.filter((row) => !isRule(row))) {
       expect(
         [...row].some((glyph) => glyph === RUN),
         `a run of glyphs is drawn in the opening: ${row}`,

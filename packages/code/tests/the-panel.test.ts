@@ -50,6 +50,7 @@ import { renderPlain } from '../src/presentation/plain.js';
 import type { Render } from '../src/presentation/render.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { statement } from '../src/presentation/verdict.js';
+import { BEFORE_THE_BAR, THE_INSET } from '../src/repl/inset.js';
 import { type PanelForm, panelFor } from '../src/repl/panel.js';
 import { openSession, tips } from '../src/repl/session.js';
 import { LEAVE } from '../src/session-words.js';
@@ -99,6 +100,16 @@ const RUN = '\u2500';
 
 /** Ctrl-C, which abandons the row being typed. Spelled out, for the same reason. */
 const CLEARS_THE_LINE = '\u0003';
+
+/**
+ * WHAT THE SEAM UNDER THE ARRANGEMENT COSTS: the rule that closes the top region and the row of
+ * breath under it.
+ *
+ * Spelled here rather than imported, exactly as the share is in the case about heights: the
+ * module states the same two rows (`repl/panel.ts`, `THE_SEAM`), and a case that imported the
+ * number would agree with it whatever it said.
+ */
+const THE_SEAM = 2;
 
 /** How deep a line of a section sits under its heading — the session's own constant. */
 const UNDER_A_HEADING = 1;
@@ -257,9 +268,17 @@ function openingRows(page: string): string[] {
  *   - A CORNER IS ALWAYS A FRAME. Nothing else on this surface turns a corner, and all four
  *     are asked rather than one, because absence has to be asked of every character the thing
  *     is made of where presence only ever needed one.
- *   - A SIDE IS THE VERTICAL IN THE SAME COLUMN OF TWO ROWS RUNNING. A rule of a frame runs
- *     down; a vertical of the art is in a different column on every row of it, and a row of
- *     text holds none.
+ *   - A SIDE IS THE VERTICAL IN THE SAME COLUMN OF TWO ROWS RUNNING, IN ANY COLUMN BUT THE
+ *     PAGE'S OWN. A rule of a frame runs down; a vertical of the art is in a different column on
+ *     every row of it, and a row of text holds none.
+ *
+ *     THE EXCEPTION IS NEW AND IT IS NAMED RATHER THAN LOOSENED. The page draws a GUIDE down the
+ *     margin of what the session says — the line an editor runs down the left of a file
+ *     (`repl/region.ts`, `bar`; `repl/inset.ts`) — and it is a vertical in one column of every
+ *     row of the roll, which is exactly the shape this rule was written to catch. What tells the
+ *     two apart is the column: the guide is at the page's own edge and never anywhere else, so a
+ *     box drawn around anything still puts a side somewhere this accuses, and its corners are
+ *     caught by the rule above whatever it does.
  *
  * A run of {@link RUN} is NOT accused, and that is deliberate rather than an omission: an edge
  * made of it ends at corners, which the first rule already catches, and the two rules the
@@ -276,6 +295,7 @@ function theFrameOn(rows: readonly string[]): string[] {
     const above = [...(rows[at - 1] as string)];
     const below = [...(rows[at] as string)];
     for (let column = 0; column < Math.min(above.length, below.length); column++) {
+      if (column === BEFORE_THE_BAR) continue;
       if (above[column] === RULE && below[column] === RULE) {
         found.push(`a side down column ${column} of rows ${at - 1} and ${at}`);
       }
@@ -307,7 +327,11 @@ function formOf(page: string, columns: number): PanelForm {
   const title = rows.find((row) => row.includes(SAYS_WHAT_IT_IS));
   expect(title, 'nothing on the page says what the session is').toBeDefined();
   const art = drawnAt(columns).filter((row) => row.trim().length > 0);
-  if (art.some((row) => (title as string).startsWith(row))) return 'columns';
+  // AND THE ROW IS READ FROM INSIDE THE MARGIN. Everything the session says is drawn inside the
+  // page's own left edge now (`repl/inset.ts`), the arrangement included, so a row of the two-
+  // column form begins with the margin and THEN with the art. What the reading is about did not
+  // move: what only that form has is the art and the text on one row.
+  if (art.some((row) => (title as string).slice(THE_INSET).startsWith(row))) return 'columns';
   const heading = rows.findIndex((row) => row.includes(THE_RECORD));
   expect(heading, 'the record has no section on this page').toBeGreaterThan(0);
   return (rows[heading - 1] as string).trim().length === 0 ? 'stacked' : 'bare';
@@ -1044,10 +1068,15 @@ describe('the chrome costs the drawing of the name and nothing more', () => {
     // THE NARROWEST IS SEARCHED FOR rather than written down, for the reason the whole of this
     // file is: the threshold is the CONTENT's, so a project whose path is a character longer
     // moves it. A number here would be a case that passes on one sandbox and not another.
+    // AND THE SEAM IS THE ONE THING THAT JOINED THE DRAWING. The rows this reads are the top
+    // region's, and the region is the arrangement AND the rule that closes it AND the row of
+    // breath under it (`repl/region.ts`, `theTop`) — so what it spends is the drawing plus two,
+    // and never one more than that. The property is unchanged: nothing but the mark's own rows
+    // grows with the drawing.
     for (const columns of [200, 140, A_WORKING_TERMINAL, await narrowestFor(RICHNESS.columns)]) {
       const page = await openedAt(columns);
       expect(formOf(page, columns), `${columns}`).toBe('columns');
-      expect(openingRows(page), `${columns}`).toHaveLength(drawnAt(columns).length);
+      expect(openingRows(page), `${columns}`).toHaveLength(drawnAt(columns).length + THE_SEAM);
     }
   }, 300_000);
 

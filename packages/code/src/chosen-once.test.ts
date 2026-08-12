@@ -424,6 +424,7 @@ describe('nothing else decides which renderer', () => {
       'floor.ts',
       'following.ts',
       'gate.ts',
+      'inset.ts',
       'leaving.ts',
       'palette.ts',
       'panel.ts',

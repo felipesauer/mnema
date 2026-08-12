@@ -193,9 +193,12 @@ it started asking what the position MEANS instead.
 
 This section used to say colour meant two things, and that a state would never be one of
 them *because states are categories and a hue per category is noise*. The rule held and
-the classification did not: a `scope` is a category and is still plain, while a state is
-a position in a cycle whose exits differ, which is why sixteen states collapse into three
-hues instead of sixteen. It also used to say the colour was a task's alone, which was
+the classification did not: a state is a position in a cycle whose exits differ, which is
+why sixteen states collapse into three hues instead of sixteen. The rule that survived is
+the one about hues: no tree is told from another by colour, and the `scope` column carries
+none. What it does carry is the DIMMING an id and a date carry — a column that answers the
+same word on every row of a reading is a column a reader has to look past, and taking the
+weight off it is what makes the title beside it the subject of the line. It also used to say the colour was a task's alone, which was
 true of the code and never of the rule. Asserted end to end in
 `a-state-is-a-position.test.ts`, and the derivations from the tables of moves in `core`'s
 `disposition.test.ts` and `copilot`'s.

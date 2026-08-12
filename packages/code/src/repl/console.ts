@@ -35,12 +35,27 @@
  *     on the way out ({@link theTranscriptBack}), because the caller's history ending with what
  *     the session said is the promise the refusal of the alternate screen was protecting.
  *
- * IT COMPOSES NOTHING A READER SEES EXCEPT THE ECHO. Every line that lands here arrives
- * already rendered, out of the same `presentation/` and the same renderer every other
- * invocation of this product uses. This file writes exactly ONE string of its own, and it
- * is INPUT rather than report: the ECHO of what the caller typed — the prompt and their
- * own words, the way a terminal shows what you sent. It is not a fact about the record and
- * it does not go through a renderer, for the same reason the prompt never did.
+ * IT COMPOSES NOTHING A READER SEES, and the ECHO is what that sentence used to make an
+ * exception for. It read: *this file writes exactly ONE string of its own, and it is INPUT
+ * rather than report — the prompt and what the caller typed, the way a terminal shows what you
+ * sent. It is not a fact about the record and it does not go through a renderer, for the same
+ * reason the prompt never did.* Both halves of the reason were true and the conclusion did not
+ * follow. What falsified it is what a caller SEES: a session is scrolled by looking for the
+ * line you asked in among the answer to it, and a concatenated string has no parts — so
+ * nothing could weigh it, nothing could paint it, and the one row on the page that is the
+ * caller's own read at exactly the weight of everything around it.
+ *
+ * SO THE ECHO IS A LINE LIKE EVERY OTHER (`presentation/echo.ts`), composed there, rendered
+ * here, landed through the same door. What it buys is three things a string could not have:
+ * the prompt carries the accent this product is marked by, `NO_COLOR` silences it through the
+ * rule that answers every other line, and a long paste folds between words instead of being
+ * broken at the margin by the terminal. What it costs is nothing a reader can measure: the
+ * plain rendering is the prompt followed by the line, byte for byte.
+ *
+ * WHAT IS STILL NOT COMPOSED THROUGH A RENDERER IS THE ROW BEING TYPED, and the old sentence's
+ * reason survives there whole: the caret is an offset in COLUMNS into that row, so escapes a
+ * terminal does not print would be arithmetic this file has to do to put it where the caller's
+ * fingers are ({@link Showing.present}, {@link Showing.column}).
  *
  * IT USED TO WRITE A SECOND ONE, and that is what the palette took away: the row of words
  * a Tab could not choose between was joined here, out of the tokens and a separator this
@@ -83,6 +98,7 @@
 
 import { render } from 'ink';
 import { createElement, type ReactElement } from 'react';
+import { echoLine } from '../presentation/echo.js';
 import type { Line } from '../presentation/line.js';
 import type { Render } from '../presentation/render.js';
 import type { RenderingAt } from '../wiring/color.js';
@@ -92,6 +108,7 @@ import { type Editing, type Keystroke, keystrokesOf, NOTHING_TYPED, typeKey } fr
 import { withoutTheHistoryErase } from './erasing.js';
 import { theFloorScreenFor, theWindowServes } from './floor.js';
 import type { AfterLine } from './gate.js';
+import { insideTheMargin } from './inset.js';
 import { armLeaving, type Leaving } from './leaving.js';
 import { offeredBy, paletteFor, paletteRowsFor } from './palette.js';
 import type { Opening } from './panel.js';
@@ -310,8 +327,8 @@ export interface OpenConsole {
   /** Land one already-rendered line in what the session has said. */
   readonly land: (line: string) => void;
   /**
-   * HOW A LINE BECOMES BYTES ON THE PAGE AS IT IS DRAWN NOW — the frame's own width,
-   * answered by the one thing that has asked the device for it.
+   * HOW A LINE BECOMES BYTES ON THE PAGE AS IT IS DRAWN NOW — the width the ROLL has,
+   * answered by the one thing that has asked the device for anything.
    *
    * IT IS THE SISTER OF {@link land} AND IT IS HANDED BACK FOR THE SAME REASON: a line
    * reaches the page as bytes, so it is rendered before it lands, and whoever renders it has
@@ -319,10 +336,13 @@ export interface OpenConsole {
    * the width the last one was drawn at — a resize is a redraw, so the page a verb is about
    * to print onto has already been laid out at the size the device now has.
    *
-   * ONE WIDTH PER FRAME is what this buys, and it is the promise the whole of this file's
-   * geometry already makes about every other number on the page: the rules, the badge, the
-   * arrangement and the window are cut to one reading of the device ({@link theSize}), and
-   * the fold was the last number that was not.
+   * ONE READING PER FRAME is what this buys, and it is the promise the whole of this file's
+   * geometry makes about every other number on the page: the rules, the badge, the arrangement
+   * and the window come out of one reading of the device ({@link theSize}), and the fold was
+   * the last number that did not. IT SAID *ONE WIDTH*, and the page's own margin is what made
+   * that too narrow a word — what a verb prints lands inside it and the rules are drawn corner
+   * to corner, so there are two widths and one reading (`inset.ts`,
+   * {@link renderOnTheRoll}).
    */
   readonly render: Render;
   /** Resolves once the caller has left and the terminal is theirs again. */
@@ -507,16 +527,42 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   let opened: Opening = openingFor(drawnAt.columns, drawnAt.rows);
 
   /**
-   * HOW A LINE BECOMES BYTES ON THE PAGE AS IT IS DRAWN NOW — the rule, asked for the width
-   * of the frame and for no other number.
+   * HOW A LINE OF THE FRAME BECOMES BYTES — the rule, asked for the width of the SCREEN and for
+   * no other number.
    *
-   * ONE FUNCTION AND EVERY DRAWER CALLS IT. The palette's rows go through it on the frame that
-   * composes them, and the session's own verbs go through it between frames
-   * ({@link OpenConsole.render}) — so a report and the rules under it cannot come out of two
-   * different terminals. The width is {@link drawnAt}'s, which is the same number the
-   * arrangement, the window and the input area were cut to, and never a second reading.
+   * WHAT GOES THROUGH IT IS WHAT IS DRAWN CORNER TO CORNER: the rows of the palette, cut and
+   * refused against the same width by the module that composes them (`palette.ts`), and the
+   * screen a window under the floor gets, whose rows are built to fit the window they say is
+   * too small (`floor.ts`). Neither is inside the page's margin, so neither is folded to
+   * anything narrower.
+   *
+   * IT SAID *ONE FUNCTION AND EVERY DRAWER CALLS IT*, and what falsified it is the page having
+   * a left edge. What the session SAYS lands inside a margin ({@link renderOnTheRoll},
+   * `inset.ts`), so a line of the roll folded to the width of the terminal would be broken again
+   * — at the margin, mid-word — by a layout that has four fewer columns to put it in. There are
+   * two widths on a frame now and ONE READING behind both: {@link drawnAt}, taken once at the
+   * top of the frame, and a subtraction. What the sentence was protecting is untouched — no
+   * number here comes from a second question to the device.
    */
   const renderLine: Render = (line) => renderingAt(drawnAt.columns)(line);
+
+  /**
+   * HOW A LINE OF THE ROLL BECOMES BYTES — the same rule, asked for the width the page has
+   * INSIDE its margin.
+   *
+   * EVERYTHING THE SESSION SAYS GOES THROUGH THIS: what a verb prints between frames
+   * ({@link OpenConsole.render}), what somebody else appended while the caller was watching, and
+   * the ECHO of what they typed ({@link echoed}). The opening's own lines are folded to the same
+   * number where they are composed (`session.ts`), because they land on the roll like everything
+   * else.
+   *
+   * IT IS THE SAME NUMBER THE ROLL IS MEASURED BY ({@link theMiddle}), and that is the half that
+   * cannot be allowed to drift: how many rows a line takes is a function of the width it is
+   * drawn at, so a roll folded to one width and measured at another hands the window more lines
+   * than the region has rows — and the region is clipped, which loses the newest line at the
+   * bottom rather than the oldest at the top.
+   */
+  const renderOnTheRoll: Render = (line) => renderingAt(insideTheMargin(drawnAt.columns))(line);
 
   /**
    * THE OPENING FOR THE SIZE THE DEVICE HAS RIGHT NOW — composed again only when the size is
@@ -679,10 +725,19 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     // same region (`scrolling.ts`, `backAtMost`) — both of them answered after the frame has been
     // built, on a keystroke. They are the numbers this window was cut to, read rather than worked
     // out a second time.
-    theMiddle = { room, columns };
+    //
+    // AND ITS WIDTH IS THE PAGE'S, NOT THE SCREEN'S. What the session says is drawn inside the
+    // margin (`inset.ts`), so how many rows a line of the roll takes is a function of what the
+    // margin leaves — the same number it was folded to ({@link renderOnTheRoll}). Measured at the
+    // screen's width instead, a line four columns too long for the region would be counted as one
+    // row and drawn as two, and the region is clipped at the BOTTOM: the line a caller has just
+    // asked for is the one that goes.
+    theMiddle = { room, columns: insideTheMargin(columns) };
     // WHAT A READER CAN SEE OF THE ROLL, cut to the rows the middle region has and to the width
-    // it has them at — one answer, from the module that keeps the roll (`scrolling.ts`).
-    const window = theWindowOn(scrolling, room, columns);
+    // it has them at — one answer, from the module that keeps the roll (`scrolling.ts`). Both
+    // numbers are the ones just written down, so what is cut and what a later keystroke scrolls
+    // are measured by one pair.
+    const window = theWindowOn(scrolling, theMiddle.room, theMiddle.columns);
     return {
       // WHICH OF THE TWO PAGES THIS IS. The other one is the frame a window under the floor gets,
       // and the layout branches on this rather than on a field being empty (`region.ts`).
@@ -737,6 +792,30 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     // they do, and part-way up they are left exactly where they were reading (`scrolling.ts`).
     scrolling = landedIn(scrolling, line, theMiddle.room, theMiddle.columns);
     moved();
+  }
+
+  /**
+   * WHAT THE CALLER SENT, LANDED — the prompt and their own words, composed, rendered and put
+   * on the roll like every other line.
+   *
+   * ONE FUNCTION AND THREE CALLERS, and the three are the three ways a row leaves the input:
+   * submitted, abandoned with Ctrl-C, and still on the row when the end of the input arrives.
+   * They each wrote `land(prompt + …)` of their own, which is one string built in three places
+   * — and a string has no parts, so nothing downstream could weigh it, paint it or fold it
+   * between words.
+   *
+   * WHAT IT IS COMPOSED OF IS NOT DECIDED HERE (`presentation/echo.ts`). This file passes the
+   * prompt it was handed and the text the caller typed, and what comes back is a LINE — which
+   * is what lets the same renderer that answers `NO_COLOR` for every report answer it for this
+   * too, and what keeps the promise that this module composes nothing a reader sees.
+   *
+   * THE FOURTH SITE THAT PUTS THE TWO TOGETHER IS NOT AN ECHO and does not come through here:
+   * the row being TYPED ({@link showing}, `present`) is drawn in the input area, plain, because
+   * the caret is an offset in columns into it. Two places, two shapes, and the difference is
+   * that only one of them has a caret in it.
+   */
+  function echoed(typed: string): void {
+    land(renderOnTheRoll(echoLine(prompt, typed)));
   }
 
   /**
@@ -932,7 +1011,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
         editing = what.editing;
         moved();
         turn = turn.then(() => {
-          if (!left) land(prompt + abandoned);
+          if (!left) echoed(abandoned);
         });
         return;
       }
@@ -942,7 +1021,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
         moved();
         turn = turn.then(async () => {
           if (left) return;
-          land(prompt + line);
+          echoed(line);
           switch (await answer(line)) {
             case 'leave':
               leave();
@@ -959,7 +1038,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
       case 'leave':
         // The end of the input is the end of the session, and the row it was typed on
         // still belongs on the page: a terminal shows what you sent, whatever it was.
-        land(prompt + editing.typed);
+        echoed(editing.typed);
         leave();
         return;
     }
@@ -1116,5 +1195,5 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   // reference that does not exist yet.
   mounted = app;
 
-  return { land, closed, render: renderLine };
+  return { land, closed, render: renderOnTheRoll };
 }

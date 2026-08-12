@@ -38,6 +38,7 @@ import { type CliIo, run } from '../src/cli.js';
 import { bannerFor } from '../src/presentation/banner.js';
 import { fact, subjectLine } from '../src/presentation/detail.js';
 import { renderPlain } from '../src/presentation/plain.js';
+import { THE_INSET } from '../src/repl/inset.js';
 import { type Opening, openingFor, type PanelForm, panelFor } from '../src/repl/panel.js';
 import { ABOUT } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
@@ -289,6 +290,16 @@ const openingAt = (columns: number, rows: number): Opening =>
 const A_THIRD_OF = (rows: number): number => Math.floor(rows / 3);
 
 /**
+ * WHAT THE SEAM UNDER AN ARRANGEMENT COSTS: the rule that closes the top region, and the row of
+ * breath between it and the first thing the session says.
+ *
+ * SPELLED HERE FOR THE REASON THE SHARE ABOVE IS: the module states the same two rows as a
+ * constant of its own (`repl/panel.ts`, `THE_SEAM`), and a case that imported the number would
+ * agree with it whatever it said.
+ */
+const THE_SEAM = 2;
+
+/**
  * THE SEVEN GEOMETRIES OF THE INVENTORY, and what each of them gets.
  *
  * THEY ARE SIZES AND NEVER THRESHOLDS. Each is a window somebody really has — the terminal
@@ -317,8 +328,12 @@ const THE_GEOMETRIES: readonly {
   // drawing there is no arrangement at all, and the console draws a smaller one instead.
   { columns: 80, rows: 24, form: 'bare' },
   { columns: 100, rows: 24, form: 'bare' },
-  // A window with the room for the two columns down as well as across: nine rows of thirty.
-  { columns: 120, rows: 30, form: 'columns' },
+  // A window with the room for the two columns ACROSS and not down. IT ANSWERED `columns` AND
+  // THE SEAM IS WHAT TOOK IT: the top region is the arrangement AND the rule that closes it and
+  // the row of breath under that (`repl/panel.ts`, `THE_SEAM`), so the biggest drawing costs
+  // eleven rows rather than nine and its share wants thirty-three. The rule did not move — a
+  // third of the screen, chrome and all — and what moved is what the chrome is.
+  { columns: 120, rows: 30, form: 'bare' },
   { columns: 190, rows: 64, form: 'columns' },
   // A tmux pane, and a narrow window — neither has the rows for an arrangement.
   { columns: 60, rows: 20, form: 'bare' },
@@ -337,8 +352,11 @@ describe('the arrangement is chosen by the height as well as the width', () => {
     // heights, and the same height answers differently at two widths. A table of one answer
     // repeated seven times would pass every assertion above.
     expect(new Set(THE_GEOMETRIES.map(({ form }) => form)).size).toBeGreaterThan(1);
-    expect(formAt(120, 30)).not.toBe(formAt(120, 24));
-    expect(formAt(120, 30)).not.toBe(formAt(40, 30));
+    // THE PAIRS MOVED UP THE TABLE with the seam: at a hundred and twenty by thirty the biggest
+    // drawing's arrangement no longer fits its share, so the width that still discriminates the
+    // HEIGHT is one with the rows for eleven of chrome.
+    expect(formAt(190, 64)).not.toBe(formAt(190, 24));
+    expect(formAt(190, 64)).not.toBe(formAt(40, 64));
   });
 
   it('walks the same three forms down the screen, and the last rung fits every size', () => {
@@ -409,7 +427,10 @@ describe('the arrangement is chosen by the height as well as the width', () => {
     // NOT VACUOUS: the chrome really is spent somewhere — a bound satisfied by a panel that had
     // shrunk to nothing everywhere would say nothing at all — and it is spent right up against
     // the bound at the size where the form gives way.
-    const spent = openingAt(200, 30).above;
+    // AT A SCREEN WITH THE ROOM FOR THE BIGGEST ARRANGEMENT, which is thirty-three rows since
+    // the seam joined it — thirty spends nothing at all now, and a sweep read there would be a
+    // non-vacuity case that had quietly become vacuous.
+    const spent = openingAt(200, 40).above;
     expect(spent, 'no size in the sweep spends any rows on chrome').toBeGreaterThan(0);
     // AND THE BOUND IS REACHED, which is what makes it a THRESHOLD rather than a ceiling nothing
     // ever comes near: at the shortest screen the arrangement survives on, what it spends is
@@ -496,19 +517,25 @@ function theAnswerOn(ran: Ran, columns: number, rows: number): Screen {
  * and the four that were left showed the tail of the answer with the list of verbs and the
  * heading that closes it both past the top of the window.
  */
-const SHOWS_OF_THE_ANSWER = 7;
+const SHOWS_OF_THE_ANSWER = 5;
 
 /**
  * WHAT THE ARRANGEMENT COSTS ON THAT SCREEN — the second stick, and the one that says the
  * identity survived.
  *
- * Six rows: the name drawn on one, and beside it what the session is, where it is standing, and
- * the record's section under its blank row. THE FIRST TRY AT THIS DELIVERY MADE IT NOUGHT —
- * the arrangement was given up whole and the identity went on the roll with the drawing, which
- * is the one thing a header may not do. What buys it back is the DRAWING giving way instead: at
- * this width the letterspaced name is what fits beside the text inside the share.
+ * Eight rows: the name drawn on one, and beside it what the session is, where it is standing,
+ * and the record's section under its blank row — six — and then the SEAM, which is the rule that
+ * closes the region and the row of breath under it (`repl/region.ts`, `theTop`). THE FIRST TRY AT
+ * THIS DELIVERY MADE IT NOUGHT — the arrangement was given up whole and the identity went on the
+ * roll with the drawing, which is the one thing a header may not do. What buys it back is the
+ * DRAWING giving way instead: at this width the letterspaced name is what fits beside the text
+ * inside the share.
+ *
+ * IT WAS SIX AND THE SEAM PUT IT AT EIGHT, which is exactly a third of twenty-four — the bound,
+ * reached rather than approached, on the screen everybody has. What it costs the reader is the
+ * two rows the stick above lost.
  */
-const THE_ARRANGEMENT_COSTS = 6;
+const THE_ARRANGEMENT_COSTS = 8;
 
 describe('the answer a caller asked for is on the page, on the screen everybody has', () => {
   it('shows the list of verbs at eighty by twenty-four, where it showed none of it', async () => {
@@ -621,7 +648,10 @@ describe('the answer a caller asked for is on the page, on the screen everybody 
     const asked = theAnswerOn(ran, columns, rows);
     // THE ARRANGEMENT IS THE TWO-COLUMN ONE, judged by what only that one has: the row that says
     // what the session is BEGINS with a row of the art, because it sits beside it.
-    const beside = asked.rows.find((row) => row.includes(OPENED)) as string;
+    // AND THE ROW IS READ FROM INSIDE THE MARGIN, which is what the page's left edge cost this
+    // reading: everything the session says is drawn inside it, the drawing included
+    // (`repl/inset.ts`), so the row begins with the margin and then with the art.
+    const beside = (asked.rows.find((row) => row.includes(OPENED)) as string).slice(THE_INSET);
     expect(
       ART.some((row) => beside.startsWith(row)),
       'the text is not beside the mark on a screen with the room for it',
@@ -635,11 +665,15 @@ describe('the answer a caller asked for is on the page, on the screen everybody 
       rowsOfTheListOn(asked, THE_DRAWING.length),
       'the answer is not on the page',
     ).toBeGreaterThan(SHOWS_OF_THE_ANSWER);
-    // AND WHAT IT SPENDS IS THE DRAWING'S OWN HEIGHT, which is the elo between the arithmetic
-    // this file's table is over and the console a caller really opens: the shape composed above
-    // costs what the product's own opening costs at this size.
+    // AND WHAT IT SPENDS IS THE DRAWING'S OWN HEIGHT AND THE SEAM, which is the elo between the
+    // arithmetic this file's table is over and the console a caller really opens: the shape
+    // composed above costs what the product's own opening costs at this size. IT WAS THE
+    // DRAWING'S HEIGHT ALONE, and the two rows that joined it are the rule closing the region and
+    // the row of breath under it (`repl/panel.ts`, `THE_SEAM`) — chrome, counted where the
+    // drawing's rows are counted, because a row the layout draws and the arithmetic does not know
+    // about is a frame taller than the screen.
     expect(openingAt(columns, rows).above, 'the arrangement costs something else here').toBe(
-      THE_DRAWING.length,
+      THE_DRAWING.length + THE_SEAM,
     );
     expect(openingAt(columns, rows).above).toBeLessThanOrEqual(A_THIRD_OF(rows));
   }, 240_000);

@@ -73,12 +73,20 @@ export function indentOf(depth: number): string {
  * from. It is stated rather than omitted because the totality is what makes this
  * table the record of the surface's punctuation.
  *
- * `id` and `when` take a COLUMN's separator, exactly, and the identical entries are
- * the point rather than a duplication to collapse: the two are refinements of `field`
- * for the styled renderer to dim (see `line.ts`), and a list whose id column joined
- * its neighbour by anything else would be a list whose bytes changed the day a call
- * site said what a column was. Every transcript this product is pinned by was
- * recorded before either role existed.
+ * `id`, `when` and `scope` take a COLUMN's separator, exactly, and the identical entries
+ * are the point rather than a duplication to collapse: the three are refinements of
+ * `field` for the styled renderer to dim (see `line.ts`), and a list whose id column
+ * joined its neighbour by anything else would be a list whose bytes changed the day a
+ * call site said what a column was. Every transcript this product is pinned by was
+ * recorded before any of the three existed.
+ *
+ * `prompt` and `typed` take NOTHING, and that is a byte rather than a taste. The echo is
+ * what a caller sent, shown back to them the way a terminal shows it — the prompt they
+ * typed in front of and their own words — and the prompt carries the space it has always
+ * ended in inside its own text (`repl/session.ts`, `PROMPT`). A separator here would put
+ * a second one there, so what the console lands would stop being what the caller sent:
+ * the plain rendering of an echo IS the prompt followed by the line, byte for byte, and
+ * `echo.test.ts` asserts exactly that over the values a row being typed can hold.
  *
  * `state` takes ONE space, and that is the byte it already had. A task's position used
  * to be concatenated into the title beside it — `` `${title}${state}` `` — with the
@@ -103,8 +111,11 @@ const PRECEDED_BY: { readonly [R in Role]: string } = {
   field: '  ',
   id: '  ',
   when: '  ',
+  scope: '  ',
   state: ' ',
   subject: '  ·  ',
+  prompt: '',
+  typed: '',
 };
 
 /**

@@ -269,6 +269,29 @@ const THE_TITLE = 1;
 export const BETWEEN_SECTIONS = 1;
 
 /**
+ * THE SEAM UNDER THE ARRANGEMENT: the rule that closes the top region, and the one row of
+ * breath between that rule and the first thing the session says.
+ *
+ * IT IS COUNTED HERE AND DRAWN IN `region.ts` ({@link theTop}), and what makes that safe is
+ * the reason rather than the arrangement — the same one the blank row over the palette is kept
+ * by (`area.ts`, `ABOVE_THE_PALETTE`): the arithmetic and the drawing have to agree about the
+ * geometry, and a row the layout draws and this file does not count is a frame one row taller
+ * than the screen it is on.
+ *
+ * IT IS PART OF WHAT THE CHROME COSTS, which is the half that had to be decided rather than
+ * added. The share this arrangement is allowed ({@link A_THIRD}) is a share of the caller's
+ * SCREEN held by something that says nothing about the record — and a rule and a blank row
+ * hold a screen exactly as a row of the drawing does. So they are inside
+ * {@link rowsOfTheForm}, which is what both the choice and the budget read, and a window that
+ * can no longer afford the drawing it had gets the next one down rather than a page whose
+ * chrome quietly grew by two.
+ *
+ * NOTHING FOR THE FORM THAT IS NOT AN ARRANGEMENT. There is no top region on a terminal too
+ * narrow for one, so there is no seam: a rule with nothing above it divides one thing.
+ */
+const THE_SEAM = 2;
+
+/**
  * WHAT THE PAGE OPENS WITH on a terminal of a given width: the arrangement, or the absence
  * of one and the same lines instead.
  *
@@ -365,8 +388,9 @@ function besideTheMark(standing: number, record: number): number {
 }
 
 /**
- * HOW MANY ROWS OF THE SCREEN A FORM TAKES FOR EVER: the mark, and the text either beside it
- * or under it — and none at all for the one that is not an arrangement.
+ * HOW MANY ROWS OF THE SCREEN A FORM TAKES FOR EVER: the mark, the text either beside it or
+ * under it, and the seam that closes the region — and none at all for the one that is not an
+ * arrangement.
  *
  * THE ONE PLACE THIS IS ANSWERED, and both readers of it are what makes that worth saying:
  * the CHOICE asks it of a form it has not settled on yet ({@link panelFor}), and the page asks
@@ -394,9 +418,9 @@ function besideTheMark(standing: number, record: number): number {
 function rowsOfTheForm(form: PanelForm, mark: number, beside: number): number {
   switch (form) {
     case 'columns':
-      return Math.max(mark, beside);
+      return Math.max(mark, beside) + THE_SEAM;
     case 'stacked':
-      return mark + beside;
+      return mark + beside + THE_SEAM;
     case 'bare':
       return 0;
   }

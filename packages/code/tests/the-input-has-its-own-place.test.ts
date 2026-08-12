@@ -610,9 +610,12 @@ const times = (text: string, what: string): number => text.split(what).length - 
 /**
  * Whether a row of a screen is a rule and NOTHING else.
  *
- * That is the discriminant between the input's rules and the panel's: the box has its
- * frame at both ends of every row of it, so a row made of nothing but the run belongs to
- * the area.
+ * IT WAS THE DISCRIMINANT BETWEEN THE INPUT'S RULES AND THE PANEL'S — the box had its frame at
+ * both ends of every row of it, so a row made of nothing but the run belonged to the area — and
+ * the box has been gone for two deliveries. What it tells apart now is a SEAM of the page from
+ * everything else on it, and there are three: the rule that closes the top region, and the two
+ * the row being typed sits between (`src/repl/region.ts`, `theTop` and `Present`). Which of the
+ * three a row is is a question of POSITION, and that is {@link rulesAroundTheInput}'s.
  */
 function isRule(row: string): boolean {
   const drawn = row.replace(/ +$/, '');
@@ -639,7 +642,7 @@ function rulesAroundTheInput(screen: { readonly rows: readonly string[] }): stri
   return [screen.rows[typed - 1] as string, screen.rows[typed + 1] as string];
 }
 
-describe('the two rules are as wide as the terminal, and follow it when it changes', () => {
+describe('the rules are as wide as the terminal, and follow it when it changes', () => {
   // THE NARROWEST OF THE THREE WAS SIXTY COLUMNS, AND NO CONSOLE IS DRAWN THERE ANY MORE. The
   // width was picked as an ordinary narrow window, on the premise every ladder of this surface
   // was written on: whatever the size, some arrangement is drawn. There is a FLOOR under the
@@ -660,8 +663,18 @@ describe('the two rules are as wide as the terminal, and follow it when it chang
         expect(isRule(rule), `${columns}: the input is not between two rules`).toBe(true);
         expect([...rule.replace(/ +$/, '')].length, `${columns}: a rule stops short`).toBe(columns);
       }
-      // And there are two of them on the page and no more, on a page drawn once.
-      expect(rulesOn(screen), `${columns}: not two rules`).toHaveLength(2);
+      // AND THERE ARE THREE OF THEM ON THE PAGE AND NO MORE, on a page drawn once. IT WAS TWO,
+      // and the third is the seam that closes the top region — the same drawing, in the same
+      // hue, put where the arrangement ends (`src/repl/region.ts`, `theTop`). What the count is
+      // still worth is what it always was: a page whose rules had multiplied would be a page
+      // drawn twice, and a page missing one would be a region with no edge.
+      expect(rulesOn(screen), `${columns}: not three rules`).toHaveLength(3);
+      // And the odd one out is ABOVE the input's two, which is what makes it the top region's.
+      const [first] = rulesOn(screen);
+      expect(
+        screen.rows.indexOf(first as string),
+        `${columns}: the first rule is not above the row being typed`,
+      ).toBeLessThan(screen.rows.map((row) => row.includes(PROMPT)).lastIndexOf(true) - 1);
     }, 120_000);
   }
 
@@ -765,7 +778,7 @@ describe('the caret is left on the row being typed, under everything drawn over 
     expect(screen.cursor.column).toBe([...`${PROMPT} ${typed}`].length);
     // Not vacuous: there really is something drawn above that row inside the region, so a
     // caret put at the top of it would have landed somewhere else.
-    expect(rulesOn(screen)).toHaveLength(2);
+    expect(rulesOn(screen)).toHaveLength(3);
     expect(screen.rows.some((line) => line.includes(MARK))).toBe(true);
   }, 180_000);
 });
@@ -859,7 +872,7 @@ describe('every terminal a caller can open gets the whole area', () => {
       return screenOf(ran.bytes.slice(0, ran.at[0] as number), columns, rows);
     };
     const full = await drawn(40);
-    expect(rulesOn(full), 'the full form has no rules').toHaveLength(2);
+    expect(rulesOn(full), 'the full form has no rules').toHaveLength(3);
     expect(
       full.rows.some((row) => row.includes(MARK)),
       'the full form has no badge',
@@ -869,7 +882,7 @@ describe('every terminal a caller can open gets the whole area', () => {
     // anybody can open is not a degraded console, it is the console.
     const atTheFloor = await drawn(THE_FLOOR.rows);
     expect(atTheFloor.text, 'the floor never opened a prompt').toContain(PROMPT);
-    expect(rulesOn(atTheFloor), 'the floor lost the rules').toHaveLength(2);
+    expect(rulesOn(atTheFloor), 'the floor lost the rules').toHaveLength(3);
     expect(
       atTheFloor.rows.some((row) => row.includes(MARK)),
       'the floor lost the badge',

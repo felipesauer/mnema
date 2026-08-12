@@ -30,7 +30,7 @@
 import type { PatternProvenance } from '@mnema/copilot';
 import { A_PERSON, oneLine } from '../served-patterns.js';
 import { consultedLine } from './consultation.js';
-import { asId, column, itemLine } from './items.js';
+import { asId, asScope, column, itemLine } from './items.js';
 import type { Render } from './render.js';
 
 /** The width the state column is padded to, so the trees below it line up. */
@@ -66,9 +66,14 @@ export function provenanceReport(
           // The id leads and it is also the column a reader skips — it is here to be
           // copied into `mnema show`, and saying so is what lets the NAME be what the
           // line reads as. The state and the tree are padded categories, not ranks.
+          //
+          // AND THE TREE SAYS SO NOW, which is the one of the two a reader really does
+          // skip: a list of patterns visible from here answers `public` down the whole
+          // column. The PADDING is untouched — what the marker says is what the column
+          // IS, never how it is written, so the names below it go on lining up.
           asId(pattern.id),
           column(pattern.state, STATE_WIDTH),
-          column(pattern.scope, SCOPE_WIDTH),
+          asScope(column(pattern.scope, SCOPE_WIDTH)),
           oneLine(pattern.name),
           '·',
           acts.join(' · '),
