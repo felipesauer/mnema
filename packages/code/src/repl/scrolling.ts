@@ -22,6 +22,13 @@
  * nothing here knows what a line says — a line arrives as bytes a renderer already produced,
  * exactly as it does everywhere else on this surface.
  *
+ * ⛔ AND HOW MANY ROWS THE REGION HAS ARRIVES, which is the one thing that changed about that
+ * sentence and does not weaken it. How far back a reader may walk cannot be answered without it
+ * — the end of the roll is where the window is already FULL, and a window is rows rather than
+ * lines ({@link backAtMost}) — so the two numbers travel in from the console, which is the file
+ * that asked the device. Nothing here reads one, and every function that decides where the ends
+ * are is handed the same pair the window is cut to.
+ *
  * HOW FAR BACK IS COUNTED FROM THE TAIL, and that is the decision the rest falls out of.
  * Counted from the TOP it would have to be corrected every time the ceiling dropped a line, and
  * a correction that is forgotten is a view that jumps under a reader's eyes; counted from the
@@ -135,7 +142,12 @@ export function rowsForTheLine(line: string, columns: number): number {
  * tail is where the new line is; a reader who walked back is one line FURTHER back, which is the
  * same words on the same rows.
  */
-export function landedIn(scrolling: Scrolling, line: string): Scrolling {
+export function landedIn(
+  scrolling: Scrolling,
+  line: string,
+  room: number,
+  columns: number,
+): Scrolling {
   const said = [...scrolling.said, line].slice(-THE_CEILING);
   // ONE LINE FURTHER BACK FOR A READER WHO HAD WALKED BACK, and none at all for one at the tail
   // — which is the same rule twice rather than a branch: what is held still is the CONTENT, and
@@ -144,13 +156,53 @@ export function landedIn(scrolling: Scrolling, line: string): Scrolling {
   // AND THE CEILING NEEDS NOTHING BESIDE IT. When a line falls off the top for every line that
   // lands, the roll's length does not change and every surviving line's distance from the tail
   // is one greater — which is exactly what this adds, so the reader is left on the same words.
-  const back = scrolling.back === 0 ? 0 : Math.min(backAtMost(said), scrolling.back + 1);
+  //
+  // ⚠️ AND THIS IS A PLACE WHERE HOW FAR BACK A READER MAY BE IS DECIDED, which is why the
+  // measure reaches it: while the roll is growing the ceiling grows with it and the clamp never
+  // bites, and at {@link THE_CEILING} the oldest line falls off for every line that lands — so
+  // the one step this adds is the one step that could put a reader past the end.
+  const back =
+    scrolling.back === 0 ? 0 : Math.min(backAtMost(said, room, columns), scrolling.back + 1);
   return { said, back };
 }
 
-/** The furthest back a reader can walk: everything but the line the window opens on. */
-function backAtMost(said: readonly string[]): number {
-  return Math.max(0, said.length - 1);
+/**
+ * ⛔ THE FURTHEST BACK A READER CAN WALK: everything but the lines the window is ALREADY
+ * SHOWING, which is NOUGHT when the whole roll fits in the region.
+ *
+ * ⚠️ IT WAS *everything but the line the window opens on* — `said.length - 1` — AND THAT
+ * PREMISE IS FALSE. It read the roll as though a window were one line tall, so a reader could
+ * walk back as far as there are lines minus one; and the window is taken from the END backwards
+ * ({@link theWindowOn}), so every line of `back` past the true ceiling moves the window's LAST
+ * line one further up while nothing arrives at its top to replace it. On a roll that fits
+ * entirely in the region there is nothing above to bring down at all, so a notch of the wheel
+ * simply ERASED three lines from the foot of the page. Measured on a real terminal, 190 by 64,
+ * a session that had printed: twenty-three rows with text, then twenty, then seventeen — the
+ * caller's own words gone from the bottom of a page they had asked to see MORE of.
+ *
+ * SO THE CEILING IS COUNTED IN WHAT A WINDOW HOLDS, from the oldest line forwards: as many of
+ * them as fit in `room` rows at this width, and the ceiling is the rest. At the ceiling the
+ * window opens on the oldest line and is FULL, which is what walking to the top means; below it
+ * every line of `back` trades one line at the foot for one at the head, which is what scrolling
+ * means.
+ *
+ * IT IS THE SAME ARITHMETIC THE WINDOW ITSELF DOES and it is written once, so the clamp and the
+ * window cannot acquire different ideas of where the end is: the first line is taken whatever it
+ * costs — a line taller than the region is still drawn — and the rest only while they fit. A
+ * region with no rows at all is left where it has always been, one line short of the roll's
+ * length: nothing is drawn there ({@link theWindowOn} answers with nothing), so there is no
+ * window for a ceiling to be counted in.
+ */
+export function backAtMost(said: readonly string[], room: number, columns: number): number {
+  let fits = 0;
+  let used = 0;
+  for (const line of said) {
+    const rows = rowsForTheLine(line, columns);
+    if (fits > 0 && used + rows > room) break;
+    used += rows;
+    fits += 1;
+  }
+  return Math.max(0, said.length - fits);
 }
 
 /**
@@ -161,15 +213,35 @@ function backAtMost(said: readonly string[]): number {
  * scrolling and a notch of a wheel from acquiring different ideas of where the ends are.
  * How MANY lines each of them is worth is the console's to say, because a page is a function
  * of how tall the region is and only the console has asked the device.
+ *
+ * ⚠️ AND WHERE THE END IS IS A FUNCTION OF THE REGION TOO, which is what this used to decide
+ * without it. The rows the window has and the width it has them at arrive from the console —
+ * the same two numbers {@link theWindowOn} is cut to — and both answers come out of one
+ * function ({@link backAtMost}), because a clamp and a window that measured the end separately
+ * is exactly the divergence the paragraph above is about.
  */
-export function scrolledBy(scrolling: Scrolling, by: number): Scrolling {
-  const back = Math.max(0, Math.min(backAtMost(scrolling.said), scrolling.back + by));
+export function scrolledBy(
+  scrolling: Scrolling,
+  by: number,
+  room: number,
+  columns: number,
+): Scrolling {
+  const back = Math.max(
+    0,
+    Math.min(backAtMost(scrolling.said, room, columns), scrolling.back + by),
+  );
   return back === scrolling.back ? scrolling : { ...scrolling, back };
 }
 
-/** The reader at the oldest line this console still holds. */
-export function toTheTop(scrolling: Scrolling): Scrolling {
-  return scrolledBy(scrolling, backAtMost(scrolling.said));
+/**
+ * The reader at the oldest line this console still holds, with the window FULL under it.
+ *
+ * ⚠️ IT WENT AS FAR BACK AS THERE ARE LINES and that put the oldest line alone on a page with
+ * room for a dozen ({@link backAtMost}): Home is *show me the top of the roll*, not *show me one
+ * line of it*. Same ceiling, same function.
+ */
+export function toTheTop(scrolling: Scrolling, room: number, columns: number): Scrolling {
+  return scrolledBy(scrolling, backAtMost(scrolling.said, room, columns), room, columns);
 }
 
 /** The reader back at the tail, following whatever lands next. */
@@ -209,7 +281,13 @@ export function theWindowOn(
   columns: number,
 ): readonly string[] {
   if (room <= 0 || scrolling.said.length === 0) return [];
-  const last = scrolling.said.length - Math.min(scrolling.back, backAtMost(scrolling.said));
+  // THE CEILING IS APPLIED HERE TOO, and it is not a second opinion: it is the same function the
+  // clamp uses ({@link backAtMost}), asked at the size of THIS frame. A reader who walked to the
+  // top of a narrow window and then WIDENED it is standing further back than the wider window
+  // has anywhere to stand, and the state is not corrected until they next move — so a window
+  // that took the number as given would drop lines off its own foot for one frame.
+  const last =
+    scrolling.said.length - Math.min(scrolling.back, backAtMost(scrolling.said, room, columns));
   const window: string[] = [];
   let used = 0;
   for (let at = last - 1; at >= 0; at -= 1) {

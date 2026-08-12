@@ -51,6 +51,7 @@ import { type CliIo, run } from '../src/cli.js';
 import { erasesTheScreen, withoutTheHistoryErase } from '../src/repl/erasing.js';
 import { fromTheMouse, THE_WHEEL_BACK, WATCHING_THE_WHEEL } from '../src/repl/pointing.js';
 import {
+  backAtMost,
   landedIn,
   NOTHING_SAID,
   rowsForTheLine,
@@ -97,14 +98,20 @@ const PROMPT = 'mnema>';
 const OPENED = 'a session over this project';
 
 /**
- * THE FIRST WORDS OF THE OLDEST LINE ON THE ROLL — the one sentence the opening LANDS.
+ * THE OLDEST LINE ON THE ROLL — the end of the one sentence the opening LANDS.
  *
  * ⛔ AN OPENING IS TWO HALVES AND THEY GO TO TWO PLACES (`src/repl/panel.ts`, `Opening.above`):
  * the arrangement is chrome and stays in the fixed region at the top, and this is what the
  * session SAYS, so it goes on the roll where everything else it says goes. Which is why walking
  * to the top of the roll ends here rather than on the first thing a caller typed.
+ *
+ * ⚠️ IT WAS THE FIRST WORDS OF THAT SENTENCE — `It runs the` — AND THEY ARE NOT ONLY ITS. The
+ * session refuses a word it does not run with *It runs the reads of the record* (`src/repl/
+ * gate.ts`), so every page below that shows a refusal answers *the oldest line is here* whether
+ * it is or not — and the case that walks to the top submits three lines the session refuses. The
+ * end of the sentence is on the roll and nowhere else.
  */
-const OLDEST = 'It runs the';
+const OLDEST = 'refuses the ones that write';
 
 /** ⛔ The sequence that erases the caller's history. It is not ours to write, in any buffer. */
 const ERASES_THE_HISTORY = `${ESC}[3J`;
@@ -129,6 +136,25 @@ const TO_THE_TAIL = `${ESC}[F`;
 
 /** How many times `verify` is run to put more on the roll than a screen can hold. */
 const ENOUGH_TO_OVERFLOW = 3;
+
+/**
+ * HOW MANY LINES ARE SUBMITTED ONTO A WINDOW WITH FAR MORE ROOM THAN THEM — the other fixture,
+ * for the end of the roll where there is nothing to scroll to.
+ *
+ * FOUR RATHER THAN ONE, and the number is the arithmetic of the defect: a notch of the wheel is
+ * worth three lines (`src/repl/console.ts`), so a roll of nine lines loses three of them per
+ * notch and the count on the page names the loss. One line would be gone in a single notch and
+ * the case could not tell *three at a time* from *all of it at once*.
+ */
+const ENOUGH_TO_FILL = 4;
+
+/**
+ * Backspace, as a terminal sends it — what takes a letter back off the row being typed.
+ *
+ * Spelled by its code point, like every control byte in this repository: a raw one in a
+ * source file is a character an edit destroys without anybody seeing it happen.
+ */
+const ERASE = '\u007f';
 
 /** How many `times` occurs in `text`. */
 function times(text: string, what: string): number {
@@ -174,10 +200,26 @@ describe('the erase of the caller’s history is taken out and nothing else is',
 // The roll: what is kept, what is shown, and what falls off the top
 // ---------------------------------------------------------------------------
 
+/**
+ * THE REGION EVERY LINE OF A FIXTURE LANDS IN, and it is deliberately arbitrary.
+ *
+ * How far back a reader may stand is bounded by what the window SHOWS, so landing a line takes
+ * the region (`src/repl/scrolling.ts`, {@link landedIn}). Every line the helper below lands,
+ * though, lands under a reader AT THE TAIL — and the tail is nought whatever the window holds,
+ * so no number here can change what is built. A case about the ceiling names its own region at
+ * the point it asks about one.
+ */
+const ANY_REGION = { room: 10, columns: 80 } as const;
+
+/** How many lines one notch of the wheel is worth (`src/repl/console.ts`, `A_NOTCH`). */
+const A_NOTCH = 3;
+
 /** A roll with `many` lines on it, each naming its own number so a window can be identified. */
 function said(many: number, wide = 1): Scrolling {
   let roll = NOTHING_SAID;
-  for (let at = 0; at < many; at += 1) roll = landedIn(roll, `line-${at}`.padEnd(wide, '.'));
+  for (let at = 0; at < many; at += 1) {
+    roll = landedIn(roll, `line-${at}`.padEnd(wide, '.'), ANY_REGION.room, ANY_REGION.columns);
+  }
   return roll;
 }
 
@@ -186,7 +228,11 @@ describe('the roll the middle region is a window onto', () => {
     const roll = said(10);
     expect(theWindowOn(roll, 3, 80)).toEqual(['line-7', 'line-8', 'line-9']);
     // A LINE THAT LANDS IS SEEN, because the reader is at the tail and the tail is where it went.
-    expect(theWindowOn(landedIn(roll, 'line-10'), 3, 80)).toEqual(['line-8', 'line-9', 'line-10']);
+    expect(theWindowOn(landedIn(roll, 'line-10', 3, 80), 3, 80)).toEqual([
+      'line-8',
+      'line-9',
+      'line-10',
+    ]);
     // A window taller than the roll shows all of it and asks for no more.
     expect(theWindowOn(said(2), 9, 80)).toEqual(['line-0', 'line-1']);
     // And a region with no rows shows nothing rather than one line anyway.
@@ -196,14 +242,14 @@ describe('the roll the middle region is a window onto', () => {
   it('⛔ does not move a reader who has walked back, however much lands', () => {
     // THE PROMISE THE CALLER ASKED FOR IN AS MANY WORDS. Content new to a session that is being
     // READ may not pull the page out from under whoever is reading it.
-    const walked = scrolledBy(said(10), 4);
+    const walked = scrolledBy(said(10), 4, 3, 80);
     const seen = theWindowOn(walked, 3, 80);
     expect(seen).toEqual(['line-3', 'line-4', 'line-5']);
     // ⚠️ AND THE READER WALKS ONE FURTHER BACK FOR EVERY LINE THAT LANDS, which is what holds
     // the CONTENT still: a distance from the tail is a distance from something that moves.
-    expect(landedIn(walked, 'later-0').back).toBe(walked.back + 1);
+    expect(landedIn(walked, 'later-0', 3, 80).back).toBe(walked.back + 1);
     let landing = walked;
-    for (let at = 0; at < 5; at += 1) landing = landedIn(landing, `later-${at}`);
+    for (let at = 0; at < 5; at += 1) landing = landedIn(landing, `later-${at}`, 3, 80);
     expect(theWindowOn(landing, 3, 80), 'new output jumped a reader who had walked back').toEqual(
       seen,
     );
@@ -214,15 +260,83 @@ describe('the roll the middle region is a window onto', () => {
 
   it('stops at both ends rather than running off either', () => {
     const roll = said(6);
-    // Past the oldest line is the oldest line.
-    expect(theWindowOn(scrolledBy(roll, 99), 3, 80)).toEqual(['line-0']);
-    expect(theWindowOn(toTheTop(roll), 3, 80)).toEqual(theWindowOn(scrolledBy(roll, 99), 3, 80));
+    // ⚠️ PAST THE OLDEST LINE IS THE OLDEST LINE AT THE TOP OF A FULL WINDOW, and this case used
+    // to expect `['line-0']` — the whole of a three-row region spent on one line, with two rows
+    // of nothing under it. That expectation was the defect written down: the end of a roll is
+    // where the window is FULL, not where the roll runs out ({@link backAtMost}).
+    expect(theWindowOn(scrolledBy(roll, 99, 3, 80), 3, 80)).toEqual(['line-0', 'line-1', 'line-2']);
+    expect(theWindowOn(toTheTop(roll, 3, 80), 3, 80)).toEqual(
+      theWindowOn(scrolledBy(roll, 99, 3, 80), 3, 80),
+    );
     // Past the tail is the tail.
-    expect(theWindowOn(scrolledBy(scrolledBy(roll, 2), -99), 3, 80)).toEqual(
+    expect(theWindowOn(scrolledBy(scrolledBy(roll, 2, 3, 80), -99, 3, 80), 3, 80)).toEqual(
       theWindowOn(roll, 3, 80),
     );
     // A roll with nothing on it cannot be walked at all.
-    expect(scrolledBy(NOTHING_SAID, 5).back).toBe(0);
+    expect(scrolledBy(NOTHING_SAID, 5, 3, 80).back).toBe(0);
+  });
+
+  it('⛔ 🆕 refuses to walk back at all when the whole roll is already on the page', () => {
+    // ⛔ THE DEFECT THIS DELIVERY IS ABOUT, in the smallest form it has. The window is taken from
+    // the END backwards, so a `back` the region cannot pay for takes a line off the FOOT of the
+    // page and brings nothing down from above — and above a roll that fits entirely there is
+    // nothing to bring. What the caller saw was their own output vanishing three lines at a time
+    // from a page they had asked to see more of.
+    const roll = said(4);
+    const room = 9;
+    expect(
+      theWindowOn(roll, room, 80),
+      'the fixture does not fit in the region, so this case is about something else',
+    ).toEqual([...roll.said]);
+    // THE CEILING IS NOUGHT: there is nowhere to walk back TO.
+    expect(backAtMost(roll.said, room, 80)).toBe(0);
+    for (const notches of [1, 2, 3]) {
+      const walked = scrolledBy(roll, A_NOTCH * notches, room, 80);
+      expect(
+        walked.back,
+        `${notches} notch(es) of the wheel moved a reader who had nowhere to go`,
+      ).toBe(0);
+      expect(
+        theWindowOn(walked, room, 80),
+        `${notches} notch(es) of the wheel took ${A_NOTCH * notches} lines off the foot of the page`,
+      ).toEqual([...roll.said]);
+      // AND THE VALUE ITSELF IS THE SAME ONE, which is what makes the frame identical rather than
+      // merely equal: a no-op that rebuilt the state would be a redraw of the page on every notch.
+      expect(walked, 'a wheel that moves nothing still produced a new roll').toBe(roll);
+    }
+    // AND HOME IS THE SAME ANSWER, because it is the same ceiling.
+    expect(theWindowOn(toTheTop(roll, room, 80), room, 80)).toEqual([...roll.said]);
+  });
+
+  it('🆕 walks back to a window that is FULL at the oldest line, and no further', () => {
+    // THE OTHER END, WHICH IS WHAT THE FIX ABOVE COULD HAVE BOUGHT ITSELF WITH: a roll with more
+    // on it than the region holds still walks all the way to its first line.
+    const roll = said(10);
+    const room = 3;
+    expect(
+      backAtMost(roll.said, room, 80),
+      'the ceiling is not the lines the window cannot show',
+    ).toBe(7);
+    expect(theWindowOn(toTheTop(roll, room, 80), room, 80)).toEqual(['line-0', 'line-1', 'line-2']);
+    // AND EVERY LINE OF `back` UNDER THE CEILING TRADES ONE LINE AT THE FOOT FOR ONE AT THE HEAD,
+    // which is what scrolling IS — asserted by the window rather than by the number.
+    expect(theWindowOn(scrolledBy(roll, 1, room, 80), room, 80)).toEqual([
+      'line-6',
+      'line-7',
+      'line-8',
+    ]);
+    // A REGION THAT GREW FINDS THE READER LESS FAR BACK THAN IT LEFT THEM, and the window says so
+    // rather than the state: the ceiling of the taller window is lower, so the same `back` is
+    // clamped where it is READ ({@link theWindowOn}) — which is the resize a reader who walked to
+    // the top and then dragged their window taller does.
+    const top = toTheTop(roll, room, 80);
+    expect(theWindowOn(top, 5, 80), 'a taller window dropped lines off its own foot').toEqual([
+      'line-0',
+      'line-1',
+      'line-2',
+      'line-3',
+      'line-4',
+    ]);
   });
 
   it('counts a line that FOLDS as the rows it takes, so a window is rows and not lines', () => {
@@ -248,6 +362,39 @@ describe('the roll the middle region is a window onto', () => {
     expect(rowsOfTheWindow(theWindowOn(roll, 4, 200), 200)).toBeLessThanOrEqual(4);
     expect(rowsOfTheWindow(theWindowOn(roll, 4, 60), 60)).toBeLessThanOrEqual(4);
     expect(theWindowOn(roll, 4, 60).length).toBeLessThan(theWindowOn(roll, 4, 200).length);
+    // 🆕 AND THE CEILING FALLS IN THE SAME PROPORTION, because it is counted in what a window
+    // HOLDS rather than in lines: a four-row region takes four of these lines at two hundred
+    // columns and two of them at sixty, so there are two more of them to walk back through.
+    expect(backAtMost(roll.said, 4, 200), 'the ceiling counted rows the window cannot hold').toBe(
+      2,
+    );
+    expect(backAtMost(roll.said, 4, 60), 'the fold did not count towards the ceiling').toBe(4);
+    // ASSERTED BY WHAT THE TOP OF THE ROLL LOOKS LIKE, which is the reader's own reading of it:
+    // the oldest line, and as many after it as the region can pay for at this width.
+    expect(theWindowOn(toTheTop(roll, 4, 60), 4, 60)).toEqual(roll.said.slice(0, 2));
+    expect(theWindowOn(toTheTop(roll, 4, 200), 4, 200)).toEqual(roll.said.slice(0, 4));
+  });
+
+  it('🆕 keeps a reader inside the ceiling when the roll drops its oldest line', () => {
+    // ⚠️ THE SITE THE LIST OF SITES DID NOT HAVE. Where a reader may stand is decided in four
+    // places and the fourth is the one nobody scrolls with: a line LANDING walks a reader who had
+    // walked back one further, so the content under their eyes stands still — and while the roll
+    // is growing the ceiling grows with it, so the step is free. At {@link THE_CEILING} the roll
+    // cannot grow: the oldest line falls off for every line that lands, so that one step is a
+    // step past the end. It costs nothing on a page — the window clamps what it reads — and it
+    // leaves the STATE holding a number no gesture can undo but a scroll all the way forward.
+    const room = 3;
+    const full = said(THE_CEILING);
+    const top = toTheTop(full, room, 80);
+    expect(top.back).toBe(THE_CEILING - room);
+    const landed = landedIn(top, 'newest', room, 80);
+    expect(landed.said.length, 'the roll grew past its own ceiling').toBe(THE_CEILING);
+    expect(
+      landed.back,
+      'a line that landed walked a reader further back than the roll still reaches',
+    ).toBe(THE_CEILING - room);
+    // AND THE PAGE IS THE TOP OF WHAT SURVIVED: the oldest line the ceiling left, window full.
+    expect(theWindowOn(landed, room, 80)).toEqual(['line-1', 'line-2', 'line-3']);
   });
 
   it('🆕 keeps a ceiling, and what falls off the top stops being reachable by scrolling', () => {
@@ -259,7 +406,7 @@ describe('the roll the middle region is a window onto', () => {
     expect(over.said.length, 'the roll grew past its own ceiling').toBe(THE_CEILING);
     // ASSERTED BY WHAT STOPS BEING REACHABLE rather than by the length alone: walking as far back
     // as the roll allows lands on the line the ceiling left, and the ones before it are gone.
-    expect(theWindowOn(toTheTop(over), 1, 80)).toEqual(['line-25']);
+    expect(theWindowOn(toTheTop(over, 1, 80), 1, 80)).toEqual(['line-25']);
     expect(over.said.includes('line-24'), 'a line past the ceiling survived').toBe(false);
     // AND THE TAIL IS UNTOUCHED, so the ceiling took from the right end.
     expect(theWindowOn(over, 1, 80)).toEqual([`line-${THE_CEILING + 24}`]);
@@ -273,7 +420,7 @@ describe('the roll the middle region is a window onto', () => {
     expect(theTranscript(said(3))).toEqual(['line-0', 'line-1', 'line-2']);
     expect(theTranscript(NOTHING_SAID)).toEqual([]);
     // A reader part-way up the roll changes what is SHOWN and never what is kept.
-    expect(theTranscript(scrolledBy(said(3), 2))).toEqual(theTranscript(said(3)));
+    expect(theTranscript(scrolledBy(said(3), 2, 1, 80))).toEqual(theTranscript(said(3)));
   });
 });
 
@@ -427,6 +574,19 @@ function screenAt(ran: Ran, at: number, columns: number, rows: number): Screen {
 /** Which row a piece of text is on, and −1 when it is nowhere. */
 function rowOf(screen: Screen, what: string): number {
   return screen.rows.findIndex((row) => row.includes(what));
+}
+
+/**
+ * HOW MANY ROWS OF THE PAGE HAVE ANYTHING ON THEM — the caller's own reading of the defect below.
+ *
+ * *The text simply disappears from the middle* is a statement about a COUNT: a page with
+ * twenty-three rows of words on it that answers a scroll with twenty is a page that lost three,
+ * whatever else moved. It is asked beside the whole-page comparison rather than instead of it,
+ * because the count is what names the symptom in the message and the comparison is what proves
+ * the page did not move at all.
+ */
+function rowsWithText(screen: Screen): number {
+  return screen.rows.filter((row) => row.trim().length > 0).length;
 }
 
 /**
@@ -604,6 +764,124 @@ describe('the middle region scrolls, and the two fixed regions do not', () => {
       expect(typed(screen), `${what} put something on the row being typed`).toBe(PROMPT);
     }
     theHistorySurvived(ran, 'a session that scrolled');
+  }, 240_000);
+
+  it('⛔ 🆕 answers the wheel with nothing at all when the whole page already fits', async () => {
+    // ⛔ THE CASE THE CALLER FOUND, IN HIS OWN WORDS: *the mouse scroll makes the text simply
+    // disappear from the middle*. He had a big window and a session that had printed less than it
+    // holds, and every notch of the wheel took three lines off the FOOT of the page — the window
+    // is taken from the end backwards, so a `back` the region cannot pay for shortens it from
+    // below and brings nothing down from above, because above a roll that fits there is nothing.
+    // Measured here before the fix, at 190 by 64: twenty-three rows with text, then twenty, then
+    // seventeen — his own output gone from a page he had asked to see more of.
+    const columns = 190;
+    const rows = 64;
+    const steps: Step[] = [opens];
+    // ⚠️ MEASURED AFTER PRINTING, because a page that has just opened is the least representative
+    // instant there is — and four lines of it, so that a notch worth three lines is a loss the
+    // count can name rather than the whole of the roll at once.
+    for (let at = 0; at < ENOUGH_TO_FILL; at += 1) steps.push(submits(says(at)));
+    // ⚠️ EACH NOTCH IS ITS OWN STEP AND NONE OF THEM WAITS FOR A FRAME. What is under test is a
+    // gesture that draws NOTHING: the layout writes nothing for a frame identical to the one on
+    // the screen, so a step waiting for one here would wait for ever once the defect is gone
+    // (`support/pty.ts`, {@link aFrameSince}). The wait is the stream going quiet, and what makes
+    // that honest is the step after them — a key that really does redraw, waited for properly, so
+    // every byte the three notches could have written is in front of it.
+    for (let at = 0; at < 3; at += 1) {
+      steps.push({ types: WHEEL_UP, until: () => true, what: `turned the wheel ${at + 1}` });
+    }
+    steps.push(presses('typed a letter', 'x'));
+    steps.push({ types: `${ERASE}${LEAVE}\r`, until: () => true, what: 'left' });
+    const ran = await inPty({ columns, rows, steps });
+    const printed = screenAt(ran, ENOUGH_TO_FILL, columns, rows);
+    // THE PAGE THIS IS ABOUT IS THE ONE THAT HAD ANSWERED, said out loud rather than assumed: an
+    // index is honest here only if the page at it is the printed one ({@link screenAt}).
+    expect(printed.text, 'the page read is not the one the last line was answered on').toContain(
+      says(ENOUGH_TO_FILL - 1),
+    );
+    // ⛔ AND THE WHOLE ROLL IS ON IT, which is the premise the case rests on: the oldest line the
+    // session said is still on the page, so there is nothing above the window to scroll to.
+    expect(
+      printed.text,
+      'the roll outgrew the window, so this case is about the other end of it',
+    ).toContain(OLDEST);
+    for (let notch = 1; notch <= 3; notch += 1) {
+      const screen = screenAt(ran, ENOUGH_TO_FILL + notch, columns, rows);
+      expect(
+        rowsWithText(screen),
+        `${notch} notch(es) of the wheel: the page went from ${rowsWithText(printed)} rows with text to ${rowsWithText(screen)}`,
+      ).toBe(rowsWithText(printed));
+      expect(screen.rows, `${notch} notch(es) of the wheel changed the page`).toEqual(printed.rows);
+    }
+    // ⛔ AND NOT ONE FRAME WAS WRITTEN FOR ANY OF THEM. This is the byte-level half of the same
+    // claim and the one a race cannot fake: bytes are ordered, so anything the three notches wrote
+    // is inside this slice, which ends on a frame that was waited for. The one frame in it is the
+    // letter's own — nought would mean the letter never drew and the measurement is vacuous.
+    const gesture = ran.bytes.slice(
+      ran.at[ENOUGH_TO_FILL] as number,
+      ran.at[ENOUGH_TO_FILL + 4] as number,
+    );
+    expect(
+      rowsOfTheFrames(gesture).length,
+      'the wheel redrew a page that had nowhere to scroll',
+    ).toBe(1);
+    theHistorySurvived(ran, 'a session that turned the wheel on a page that fits');
+  }, 240_000);
+
+  it('⛔ 🆕 walks a roll bigger than the window to its first line, with the window full', async () => {
+    // ⛔ THE OPPOSITE END, WHICH IS WHAT THE CASE ABOVE COULD HAVE BOUGHT ITSELF WITH. A ceiling
+    // that stopped a reader early would answer the complaint and cost the affordance: whoever has
+    // more roll than region must still reach the first line of it. And *reach* is the whole of the
+    // claim — the oldest line at the top of a FULL window, not alone on a page with room for four,
+    // which is what Home did before this and is the same defect wearing a key.
+    const columns = 100;
+    const rows = 24;
+    const ran = await inPty({
+      columns,
+      rows,
+      steps: [
+        opens,
+        submits(says(0)),
+        submits(says(1)),
+        submits(says(2)),
+        presses('turned the wheel to the top', WHEEL_UP.repeat(20)),
+        presses('went back to the tail', TO_THE_TAIL),
+        presses('went to the top', TO_THE_TOP),
+        leaves,
+      ],
+    });
+    const printed = screenAt(ran, 3, columns, rows);
+    const wheeled = screenAt(ran, 4, columns, rows);
+    const tail = screenAt(ran, 5, columns, rows);
+    const top = screenAt(ran, 6, columns, rows);
+    // THE ROLL REALLY DID OUTGROW THE WINDOW, or every assertion below is about the case above:
+    // the oldest line is off the page at the tail.
+    expect(
+      printed.text,
+      'the whole roll still fits, so nothing here is about walking back',
+    ).not.toContain(OLDEST);
+    // ⛔ THE WHEEL REACHES THE FIRST LINE OF THE ROLL — asserted by the line, not by a count.
+    expect(wheeled.text, 'the wheel no longer reaches the oldest line on the roll').toContain(
+      OLDEST,
+    );
+    // ⛔ AND THE WINDOW UNDER IT IS FULL, which is the half a ceiling one line too high would
+    // still pass: the lines that FOLLOW the oldest one are on the page with it. Before this, the
+    // top of the roll was the oldest line alone with three rows of nothing under it.
+    expect(
+      wheeled.text,
+      'the oldest line is on the page alone: the window did not fill under it',
+    ).toContain(`${PROMPT} ${says(0)}`);
+    // AND THE TAIL IS STILL THERE TO COME BACK TO, so the walk above is a window that moved
+    // rather than a roll that stopped growing.
+    expect(tail.rows, 'End did not come back to the page the session had printed').toEqual(
+      printed.rows,
+    );
+    // ⛔ AND HOME IS THE SAME PLACE BY ANOTHER ROAD, which is what one ceiling in one function
+    // buys: the key and the wheel cannot acquire different ideas of where the end is.
+    expect(top.rows, 'Home and the wheel disagree about where the top of the roll is').toEqual(
+      wheeled.rows,
+    );
+    theHistorySurvived(ran, 'a session that walked a roll bigger than its window');
   }, 240_000);
 
   it('⛔ does not jump a reader who has walked back when something new lands', async () => {
