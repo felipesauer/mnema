@@ -23,10 +23,9 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, join } from 'node:path';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo, run } from '../src/cli.js';
@@ -41,6 +40,7 @@ import { LEAVE, SESSION_WORDS } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import type { Declared } from '../src/wiring/verb.js';
 import { fakeTerminal, hooksNothing, until } from './support/console.js';
+import { held } from './support/the-record-held.js';
 
 /** `packages/code/src`, for the guard that reads the session's own source. */
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
@@ -71,49 +71,10 @@ function verbsThat(effect: Declared['effect']): string[] {
 // What reached the record
 // ---------------------------------------------------------------------------
 
-/** A sealed segment of a tail: `NNNNNN.jsonl`, which is where events live. */
-const SEGMENT = /^\d{6}\.jsonl$/;
-/** Key material, wherever a tree or the key root keeps it. */
-const KEY_MATERIAL = /\.(pub|key|enroll|inst|anchor)$/;
-
-/** Everything under `dir`, as absolute paths. */
-function filesUnder(dir: string): string[] {
-  const found: string[] = [];
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) found.push(...filesUnder(path));
-    else found.push(path);
-  }
-  return found;
-}
-
-/**
- * What the record holds right now: how many events, and what its key material is.
- *
- * The events are counted by READING THE LINES of every segment, never by asking the
- * product to replay them — a count derived from the code under test would move with it.
- * The cache a read rebuilds is deliberately not counted: the question is whether the
- * session can reach the RECORD, not whether it touched the disk (see
- * `every-verb-says-if-it-writes.test.ts` for the argument in full).
- */
-function held(dir: string): { events: number; keys: string } {
-  let events = 0;
-  const keys = createHash('sha256');
-  for (const path of filesUnder(dir).sort()) {
-    const name = basename(path);
-    if (SEGMENT.test(name)) {
-      events += readFileSync(path, 'utf-8')
-        .split('\n')
-        .filter((line) => line.trim().length > 0).length;
-    }
-    if (KEY_MATERIAL.test(name)) {
-      keys.update(`${path}:`);
-      keys.update(readFileSync(path));
-      keys.update('\n');
-    }
-  }
-  return { events, keys: keys.digest('hex') };
-}
+// ⚠️ WHAT THE RECORD HOLDS WAS SPELLED HERE AND IT IS ONE INSTRUMENT NOW. The same rule was
+// written out in `every-verb-says-if-it-writes.test.ts`, and a third case needed it — so the
+// counting of events and the hashing of key material moved to one place, where the argument for
+// what it counts and what it deliberately does not lives with it (`support/the-record-held.ts`).
 
 // ---------------------------------------------------------------------------
 // The fixture
@@ -527,6 +488,7 @@ describe('the session writes no history anywhere', () => {
       'console.ts',
       'editing.ts',
       'erasing.ts',
+      'floor.ts',
       'following.ts',
       'gate.ts',
       'leaving.ts',

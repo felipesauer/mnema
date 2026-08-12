@@ -96,6 +96,20 @@ const ENDS_THE_ANSWER = 'again';
 
 let sandbox: string;
 let project: string;
+/**
+ * A PROJECT WHOSE OWN PATH IS WIDER THAN THE WINDOW — the fixture the floor of the ladder needs.
+ *
+ * ⚠️ THE LAST RUNG USED TO BE REACHED BY MAKING THE WINDOW SHORT, and that is the premise the
+ * floor took away: a sixteen-row terminal draws no page at all now (`src/repl/floor.ts`), so a
+ * case driven at one measures the screen that says so. The rung is still reachable and it is
+ * reached by the OTHER measurement — the panel is given up when what it holds does not fit ACROSS
+ * the window, and one of the things it holds is where the session is STANDING, which is a path.
+ *
+ * SO THE PATH IS THE FIXTURE. Nothing about the product is arranged for: a caller working in a
+ * deeply nested directory on a window at the floor really does have an opening the arrangement
+ * cannot hold, and what this case is about is that they lose nothing by it.
+ */
+let deep: string;
 let environment: NodeJS.ProcessEnv;
 const before = { cwd: process.cwd(), env: { ...process.env } };
 
@@ -116,6 +130,21 @@ beforeAll(async () => {
   const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
   await run(['init'], io);
   await run(['task', 'the task the opening is measured over'], io);
+
+  // AND THE SECOND PROJECT, DEEP ENOUGH THAT ITS PATH DOES NOT FIT: the arrangement is chosen
+  // against the widest row it holds, and the row that says where the session is standing is one of
+  // them ({@link deep}).
+  deep = join(
+    sandbox,
+    'a-directory-nested-deeply-enough-that-its-own-path',
+    'does-not-fit-across-a-window-at-the-floor',
+    'project',
+  );
+  mkdirSync(deep, { recursive: true });
+  process.chdir(deep);
+  await run(['init'], io);
+  await run(['task', 'the task the floor of the ladder is measured over'], io);
+  process.chdir(project);
 
   environment = {
     ...process.env,
@@ -141,13 +170,14 @@ const fixture = (): Fixture => ({
   environment,
 });
 
-/** Runs `mnema repl` on a pseudo-terminal of a given size. */
+/** Runs `mnema repl` on a pseudo-terminal of a given size, over one of the two projects. */
 async function inPty(options: {
   readonly columns: number;
   readonly rows: number;
   readonly steps: readonly Step[];
+  readonly project?: string;
 }): Promise<Ran> {
-  return drive(fixture(), options);
+  return drive({ ...fixture(), project: options.project ?? project }, options);
 }
 
 /** The step every session begins with: the console open, and its first frame DRAWN. */
@@ -523,14 +553,25 @@ describe('the answer a caller asked for is on the page, on the screen everybody 
 
   it('⛔ keeps what left the top on the roll, one walk back', async () => {
     // A SCREEN WITH NO ROOM FOR AN ARRANGEMENT AT ALL, which is the floor of the ladder and the
-    // case this promise is about. Sixteen rows: the cheapest arrangement there is costs six —
-    // one row of drawing and the five the text beside it takes — and six rows want eighteen of
-    // screen. Under that there is no drawing small enough, so the whole opening is landed on the
-    // roll and the reader walks back to it. It is a SIZE and not a threshold; where the last
-    // arrangement gives way is searched for in `the-opening-fits-the-screen.test.ts`.
+    // case this promise is about.
+    //
+    // ⚠️ IT WAS A SHORT SCREEN AND IT IS A DEEP PATH, and what moved it is the floor under the
+    // window. Sixteen rows used to be the way here: the cheapest arrangement costs six, six rows
+    // want eighteen of screen, and under that no drawing is small enough — so the whole opening
+    // landed on the roll. A sixteen-row window draws no page at all now
+    // (`src/repl/floor.ts`), so that size measures the screen which says so and nothing about
+    // this promise. The other measurement still reaches the rung: the arrangement is given up when
+    // what it holds does not fit ACROSS the window, and the row saying where the session is
+    // standing is a PATH ({@link deep}). It is a SIZE and not a threshold either way; where the
+    // last arrangement gives way is searched for in `the-opening-fits-the-screen.test.ts`.
     const columns = 100;
-    const rows = 16;
-    const ran = await inPty({ columns, rows, steps: [opens, asks, walksToTheTop, leaves] });
+    const rows = 24;
+    const ran = await inPty({
+      columns,
+      rows,
+      project: deep,
+      steps: [opens, asks, walksToTheTop, leaves],
+    });
     const asked = theAnswerOn(ran, columns, rows);
     // THE OPENING REALLY DID LEAVE THE PAGE, or there is nothing to walk back to: neither what
     // the session is nor the sentence it lands under the mark is on the page after the answer.
