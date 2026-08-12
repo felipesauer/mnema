@@ -569,7 +569,7 @@ describe('the loop is wired to the gate and to the tree', () => {
     };
     const closed = openSession({
       io,
-      render: renderPlain,
+      renderingAt: () => renderPlain,
       self: REPL_VERB,
       input: terminal.stdin,
       output: terminal.stdout,

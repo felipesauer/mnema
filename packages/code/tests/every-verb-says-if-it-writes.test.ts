@@ -101,7 +101,12 @@ import type { Declared, RecordEffect } from '../src/wiring/verb.js';
 function declared(): readonly Declared[] {
   const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
   const pinnedRun: PinnedRun = () => undefined;
-  return registerVerbs(new Command(), { io, render: renderPlain, pinnedRun });
+  return registerVerbs(new Command(), {
+    io,
+    render: renderPlain,
+    renderingAt: () => renderPlain,
+    pinnedRun,
+  });
 }
 
 const DECLARED = declared();
