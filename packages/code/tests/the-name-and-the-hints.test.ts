@@ -70,11 +70,11 @@ import { renderPlain } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { THE_FLOOR } from '../src/repl/floor.js';
 import { openSession, tips } from '../src/repl/session.js';
-import { CLEAR, LEAVE, PREFIX, SESSION_WORDS } from '../src/session-words.js';
+import { CLEAR, PREFIX, SESSION_WORDS } from '../src/session-words.js';
 import { here } from '../src/wiring/context.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { DEFAULT_REQUIREMENT } from '../src/wiring/verify.js';
-import { ESC, fakeTerminal, hooksNothing, until } from './support/console.js';
+import { ENDS_THE_INPUT, ESC, fakeTerminal, hooksNothing, until } from './support/console.js';
 
 /** `packages/code/src`, for the guards that read the surface's own source. */
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
@@ -325,7 +325,7 @@ async function openedAt(
     }
   }
   if (watching > 0) await new Promise((resolve) => setTimeout(resolve, watching));
-  terminal.type(`${LEAVE}\r`);
+  terminal.type(ENDS_THE_INPUT);
   await closed;
   return terminal.bytes();
 }
@@ -378,7 +378,7 @@ async function resizedThrough(columns: number, widths: readonly number[]): Promi
     terminal.resize(width);
     await until(() => terminal.bytes().length > grown, `drew again at ${width}`);
   }
-  terminal.type(`${LEAVE}\r`);
+  terminal.type(ENDS_THE_INPUT);
   await closed;
   return terminal.bytes();
 }
@@ -434,7 +434,7 @@ async function readingWhileTyping(typed: string, answered?: string): Promise<Tou
   // Whatever was typed is abandoned before the word that leaves is: half a verb still on
   // the row would swallow it, and the session would never come back.
   terminal.type(CLEARS_THE_LINE);
-  terminal.type(`${LEAVE}\r`);
+  terminal.type(ENDS_THE_INPUT);
   await closed;
   return paths;
 }
@@ -497,7 +497,7 @@ async function readingWhileCompleting(tabs: number): Promise<{
   const paths = [...watched.touched] as Touched[];
   const row = terminal.bytes();
   terminal.type(CLEARS_THE_LINE);
-  terminal.type(`${LEAVE}\r`);
+  terminal.type(ENDS_THE_INPUT);
   await closed;
   return { paths, row };
 }

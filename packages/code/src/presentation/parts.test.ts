@@ -29,7 +29,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { aside, fact, statedFact, subjectLine } from './detail.js';
 import { echoLine } from './echo.js';
-import { asId, asScope, asWhen, itemLine } from './items.js';
+import { asId, asPick, asScope, asWhen, itemLine } from './items.js';
 import { type Line, ROLES, type Role, SEVERITIES, type Severity } from './line.js';
 import { renderPlain } from './plain.js';
 import { asState } from './state.js';
@@ -68,6 +68,10 @@ describe('every role has something that produces it', () => {
     echoLine('mnema> ', 'search'),
     echoLine('mnema> ', 'sear'),
     echoLine('mnema> ', ''),
+    // THE MARK ON A PICKED ROW, which is the second part of a line that is chrome rather
+    // than a fact. It arrives PADDED, the way the console composes it (`repl/palette.ts`),
+    // because what the role says is what the column IS and not how wide it is drawn.
+    itemLine([asPick('\u276f'), 'search', 'a read']),
     statedFact('a title', asState('DONE')),
     statedFact('a title', asState('DRAFT')),
     subjectLine('task the-id', 'public'),
@@ -75,7 +79,7 @@ describe('every role has something that produces it', () => {
     fact('mnema key enroll <the line>', 2),
     // The line that says what a reader can DO rather than what is true. It is the
     // second producer of `detail`, which used to be the argument of one function.
-    aside('`/help` says what it runs'),
+    aside('`/` and a letter list the words'),
     statement('ALLOWED', 'submit t-1 → READY'),
     statement('local integrity verified; 1 tail(s)'),
     statement('ALLOWED', 'submit t-1 → READY', 'good'),

@@ -96,6 +96,13 @@ export function indentOf(depth: number): string {
  * table, which is what the state is NOT (it belongs to the title it rides). Pinned by
  * `forms.test.ts` on the bytes, and by the golden over the whole surface.
  *
+ * `pick` takes NOTHING, and it is the second entry nothing reads: the mark is the first
+ * part of the row it is on (`repl/palette.ts`), where there is nothing to separate it from,
+ * exactly like a `label`. It is stated for the reason the label's is — the totality is what
+ * makes this table the record of the surface's punctuation — and the byte it does NOT take
+ * is what keeps the plain rendering of a marked row identical to the unmarked one, glyph for
+ * glyph: what is under the mark on every other row is the same column, padded.
+ *
  * `clause` is the ONE entry that is not punctuation this surface chose. The chain's
  * one-line verdict is a sentence of clauses separated by `; `, and it hands `verify`
  * those clauses rather than the string; the `; ` here is what puts them back in the
@@ -116,6 +123,7 @@ const PRECEDED_BY: { readonly [R in Role]: string } = {
   subject: '  ·  ',
   prompt: '',
   typed: '',
+  pick: '',
 };
 
 /**

@@ -32,11 +32,20 @@
  * which is the shape this series exists to remove.
  */
 
-import { ABOUT, CLEAR, LEAVE } from '../session-words.js';
+import { CLEAR, PREFIX, THE_KEY_THAT_LEAVES } from '../session-words.js';
 import type { Declared } from '../wiring/verb.js';
 
-/** Whether the session goes on after a line, closes, or starts the page over. */
-export type AfterLine = 'go on' | 'leave' | 'clear';
+/**
+ * Whether the session goes on after a line, or starts the page over.
+ *
+ * IT HAD A THIRD ANSWER AND THE THIRD WENT WITH `/exit`. A typed line could END the
+ * session, so the console had an arm for it; the way out is a KEY now
+ * ({@link THE_KEY_THAT_LEAVES}), and the key does not come through here at all — it ends the
+ * INPUT, which the console reads off the row rather than off a line it ran
+ * (`repl/editing.ts`, `repl/console.ts`). An answer nothing can produce is an arm nothing
+ * reaches, which is the shape this repository has paid for four times.
+ */
+export type AfterLine = 'go on' | 'clear';
 
 /** What the session does with one typed line. Closed, and total over what can be typed. */
 export type Disposition =
@@ -44,10 +53,6 @@ export type Disposition =
   | { readonly does: 'nothing' }
   /** The line names a read. It is parsed, by the program the declarations came from. */
   | { readonly does: 'run'; readonly argv: readonly string[] }
-  /** {@link LEAVE}, or the end of input. The session closes. */
-  | { readonly does: 'leave' }
-  /** {@link ABOUT}. The session says what it runs. */
-  | { readonly does: 'about' }
   /**
    * {@link CLEAR}. The page starts over: what was on it goes into the scrollback and the
    * opening is drawn again. The session itself goes on, and nothing is read to do it.
@@ -101,8 +106,6 @@ export function dispositionOf(line: string, verbs: readonly Declared[], self: st
   // Nothing survived the tokenizer, which a line of quotes alone can do.
   const first = argv[0];
   if (first === undefined) return { does: 'nothing' };
-  if (first === LEAVE) return excess(first, argv) ?? { does: 'leave' };
-  if (first === ABOUT) return excess(first, argv) ?? { does: 'about' };
   if (first === CLEAR) return excess(first, argv) ?? { does: 'clear' };
 
   const offered = verbsOffered(verbs, self);
@@ -117,20 +120,24 @@ export function dispositionOf(line: string, verbs: readonly Declared[], self: st
     return {
       does: 'refuse',
       sentence: `\`${first}\` can change the record, and this session only reads it`,
-      detail: `Leave with \`${LEAVE}\` and run \`mnema ${first}\` from your shell.`,
+      detail: `Leave with ${THE_KEY_THAT_LEAVES} and run \`mnema ${first}\` from your shell.`,
     };
   }
   if (first === self) {
     return {
       does: 'refuse',
       sentence: 'A session is already open here',
-      detail: `Leave this one with \`${LEAVE}\` before opening another.`,
+      detail: `Leave this one with ${THE_KEY_THAT_LEAVES} before opening another.`,
     };
   }
+  // AND THIS ONE USED TO POINT AT A WORD. It said the reads were listed by `/help`, which
+  // was true until the list became a key: what answers *what can I type* now is the palette,
+  // and a refusal that named a word the session no longer answers to would be the one thing
+  // this surface may not do — send a caller somewhere that refuses them again.
   return {
     does: 'refuse',
     sentence: `This session does not run \`${first}\``,
-    detail: `It runs the reads of the record — \`${ABOUT}\` lists them.`,
+    detail: `It runs the reads of the record — \`${PREFIX}\` and a letter list them.`,
   };
 }
 

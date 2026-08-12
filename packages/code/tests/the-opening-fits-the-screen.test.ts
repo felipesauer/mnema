@@ -37,7 +37,7 @@ import { bannerFor } from '../src/presentation/banner.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { THE_FLOOR } from '../src/repl/floor.js';
 import { theSessionsOwnWords } from '../src/repl/session.js';
-import { ABOUT, LEAVE, PREFIX } from '../src/session-words.js';
+import { PREFIX } from '../src/session-words.js';
 import { VERSION } from '../src/version.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import {
@@ -46,6 +46,7 @@ import {
   inPty as drive,
   endOf,
   type Fixture,
+  leavesTheSession,
   opensAConsole,
   type Ran,
   type Step,
@@ -185,11 +186,7 @@ async function inPty(options: {
 const opens: Step = opensAConsole(PROMPT);
 
 /** The step every session ends with. */
-const leaves: Step = {
-  types: `${LEAVE}\r`,
-  until: (bytes) => bytes.lastIndexOf(PROMPT) > bytes.indexOf(LEAVE),
-  what: 'left',
-};
+const leaves: Step = leavesTheSession;
 
 // ---------------------------------------------------------------------------
 // The four forms, and the ladder they make across a terminal
@@ -1306,17 +1303,25 @@ describe('the caret opens on the prompt, and the first keystroke does not move i
 // ---------------------------------------------------------------------------
 
 describe('the word the box named is still there, behind the key that lists the words', () => {
-  it('is nowhere on the opening, and on the screen as soon as the key is pressed', async () => {
+  it('is nowhere on the opening, and on the screen as soon as a word is being typed', async () => {
     // WHAT THE SECOND SECTION TOOK WITH IT, asked as both halves in ONE run. The box used
     // to carry a section saying that a word lists the verbs; it was the third place this
     // console said so, and the only one a caller cannot get back to after ten reads. What
-    // may not happen is the word becoming unreachable — so the same session is asked for it.
+    // may not happen is the vocabulary becoming unreachable — so the same session is asked
+    // for it.
+    //
+    // AND THE KEY IS THE PREFIX AND A LETTER, WHICH IS WHAT MOVED. A slash alone used to
+    // open the whole list; it opens nothing now, because a bare slash is a caller asking
+    // what exists rather than writing a word (`src/repl/palette.ts`, `offeredBy`). One
+    // letter behind it is a word being written, and the list is what it can still become.
     const columns = 100;
     const rows = 40;
-    const listed = theSessionsOwnWords().find((entry) => entry.word === ABOUT);
-    expect(listed, `${ABOUT} is not one of the session's own words`).toBeDefined();
+    const listed = theSessionsOwnWords()[0];
+    expect(listed, 'the session answers to no word at all').toBeDefined();
+    const word = (listed as { word: string }).word;
     const gloss = (listed as { description: string }).description;
     expect(gloss.length, 'the word has nothing to be listed with').toBeGreaterThan(3);
+    const narrows = word.slice(PREFIX.length, PREFIX.length + 1);
 
     const ran = await inPty({
       columns,
@@ -1324,7 +1329,7 @@ describe('the word the box named is still there, behind the key that lists the w
       steps: [
         opens,
         {
-          types: PREFIX,
+          types: `${PREFIX}${narrows}`,
           until: (bytes) => bytes.includes(gloss),
           what: 'listed the words the session answers to',
         },
@@ -1338,12 +1343,12 @@ describe('the word the box named is still there, behind the key that lists the w
     // The instrument first: the opening really is on the screen.
     expect(opening.text, 'the session never opened').toContain(OPENED);
     // GONE FROM THE PAGE: neither the word nor the sentence the section said about it.
-    expect(opening.text, `the opening still names ${ABOUT}`).not.toContain(ABOUT);
+    expect(opening.text, `the opening still names ${word}`).not.toContain(word);
     expect(opening.text, 'the opening still carries the section').not.toContain(gloss);
     // AND ONE KEYSTROKE AWAY: the key the hint names opens the list, and the word is in it
     // with what it does beside it.
-    expect(asked.text, `${PREFIX} did not list ${ABOUT}`).toContain(ABOUT);
-    expect(asked.text, `${ABOUT} was listed without what it does`).toContain(gloss);
+    expect(asked.text, `${PREFIX}${narrows} did not list ${word}`).toContain(word);
+    expect(asked.text, `${word} was listed without what it does`).toContain(gloss);
   }, 180_000);
 });
 

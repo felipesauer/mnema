@@ -13,7 +13,7 @@
 import { Command, Option } from 'commander';
 import { describe, expect, it } from 'vitest';
 import { completionTree } from '../completion/tree.js';
-import { ABOUT, LEAVE, PREFIX, SESSION_WORDS } from '../session-words.js';
+import { CLEAR, PREFIX, SESSION_WORDS } from '../session-words.js';
 import type { Declared } from '../wiring/verb.js';
 import { completerFor } from './complete.js';
 import { argvOf, dispositionOf, verbsOffered } from './gate.js';
@@ -130,11 +130,23 @@ describe('a session offers the reads and nothing else', () => {
     expect(said).toMatchObject({ does: 'refuse', sentence: 'A session is already open here' });
   });
 
-  it('leaves, says what it runs, and does neither when a word is typed after', () => {
-    expect(on(LEAVE)).toEqual({ does: 'leave' });
-    expect(on(ABOUT)).toEqual({ does: 'about' });
-    expect(on(`${LEAVE} now`).does).toBe('refuse');
-    expect(on(`${ABOUT} me`).does).toBe('refuse');
+  it('starts the page over, and does not when a word is typed after', () => {
+    // IT WAS THREE WORDS AND IT IS ONE. `/exit` and `/help` were the other two, and both
+    // are gone: the way out is the key that ends the input, and what the session runs is
+    // the list a slash and a letter open (`palette.ts`). What survives is the word no key
+    // answers — and the rule that a word of the session's own takes nothing after it,
+    // which is what the second half of this case has always been about.
+    expect(on(CLEAR)).toEqual({ does: 'clear' });
+    expect(on(`${CLEAR} now`).does).toBe('refuse');
+    // AND THE TWO WORDS THAT WENT ARE REFUSED LIKE ANY OTHER WORD THE SESSION DOES NOT
+    // RUN, which is the half a removal has to assert: a word left half-alive would be a
+    // gate answering to something no list offers and no help names.
+    for (const gone of [`${PREFIX}help`, `${PREFIX}exit`]) {
+      expect(on(gone), gone).toMatchObject({
+        does: 'refuse',
+        sentence: `This session does not run \`${gone}\``,
+      });
+    }
   });
 
   it('does nothing with a blank line, and refuses a line it cannot read', () => {
@@ -150,10 +162,8 @@ describe('a session offers the reads and nothing else', () => {
     // The union is closed and the function is total over a string; this is the witness
     // that the cases here actually cover it, rather than five of them landing on the
     // same refusal.
-    const reached = new Set(
-      ['', 'look', 'write', 'smuggle', LEAVE, ABOUT].map((line) => on(line).does),
-    );
-    expect([...reached].sort()).toEqual(['about', 'leave', 'nothing', 'refuse', 'run']);
+    const reached = new Set(['', 'look', 'write', 'smuggle', CLEAR].map((line) => on(line).does));
+    expect([...reached].sort()).toEqual(['clear', 'nothing', 'refuse', 'run']);
   });
 });
 
@@ -192,7 +202,7 @@ describe('tab offers what the session runs', () => {
     // Named rather than implied: the write is what a menu must not carry, because a
     // word offered by Tab and refused by the next line is the surface contradicting
     // itself in two keystrokes. And `help` — commander's own implicit command — is
-    // absent for the same reason: this session answers with {@link ABOUT}.
+    // absent for the same reason: this session does not run it.
     expect(hits).not.toContain('write');
     expect(hits).not.toContain('help');
     expect(hits).not.toContain(SELF);
@@ -200,9 +210,22 @@ describe('tab offers what the session runs', () => {
 
   it('narrows to the prefix, and offers nothing when nothing matches', () => {
     expect(wordsOf('lo')).toEqual(['look']);
-    expect(wordsOf(PREFIX)).toEqual([...SESSION_WORDS].sort());
     expect(wordsOf('zzz')).toEqual([]);
     expect(complete('lo')[1]).toBe('lo');
+  });
+
+  it('reads the slash as a KEY, so what follows it narrows BOTH vocabularies', () => {
+    // THE ONE PLACE THE PREFIX IS UNDERSTOOD. A bare slash asks what an empty line asks,
+    // and a slash with a letter behind it narrows by that letter — over the session's own
+    // words AND over the verbs, which is what makes the list the slash opens the list of
+    // everything that can be typed rather than a menu of three words.
+    expect(wordsOf(PREFIX)).toEqual([...SESSION_WORDS, 'look', 'read'].sort());
+    expect(wordsOf(`${PREFIX}l`)).toEqual(['look']);
+    expect(wordsOf(`${PREFIX}c`)).toEqual([CLEAR]);
+    // AND THE WORD IT ANSWERS ABOUT IS THE WHOLE OF WHAT WAS TYPED, slash included: that
+    // is what a Tab or a Return replaces, so picking a verb off a slash leaves none behind
+    // (`editing.ts`, `taking`).
+    expect(complete(`${PREFIX}l`)[1]).toBe(`${PREFIX}l`);
   });
 
   it('offers a verb’s flags, and the values a declaration enumerates', () => {

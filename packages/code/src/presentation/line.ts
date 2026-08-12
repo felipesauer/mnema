@@ -67,6 +67,15 @@
  *     (a title), which is why its separator is a single space and not a column's two
  *     (see `plain.ts`). It was inside that field until this role existed, and a part
  *     cannot paint what is inside another one.
+ *   - `pick` — the mark on the row a caller CHOSE in the console's list of words
+ *     (`repl/palette.ts`). It is the second part that is chrome rather than a fact, and it
+ *     joined for the reason `prompt` did: it says *this is the row you are on* and nothing
+ *     about the record, so it takes the accent and no weight. The COLUMN is what carries
+ *     the answer — a glyph in the text of the row, padded on every other row, so a reader
+ *     in a pipe or on a monochrome terminal still knows which row it is — and the hue is a
+ *     second axis over it rather than the carrier. That is why it is a role at all: a
+ *     drawing that painted the row itself would need the layout to know WHICH row is
+ *     picked, which is a second model of the pick beside the one that decides it.
  *   - `subject` — one part of {@link subjectLine}, which reads as a heading rather
  *     than as the columns of a table.
  *   - `clause` — one clause of a verdict that arrives in SEVERAL, after the first. The
@@ -133,6 +142,7 @@ export const ROLES = [
   'subject',
   'prompt',
   'typed',
+  'pick',
 ] as const;
 
 /** What a part is on its line. Closed: see {@link ROLES} for what it excludes. */

@@ -64,13 +64,14 @@ import {
   toTheTail,
   toTheTop,
 } from '../src/repl/scrolling.js';
-import { CLEAR, LEAVE } from '../src/session-words.js';
+import { CLEAR } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
-import { ESC } from './support/console.js';
+import { ENDS_THE_INPUT, ESC } from './support/console.js';
 import {
   aFrameSince,
   inPty as drive,
   type Fixture,
+  leavesTheSession,
   opensAConsole,
   type Ran,
   rowsOfTheFrames,
@@ -558,7 +559,7 @@ async function inPty(options: {
 const opens: Step = opensAConsole(PROMPT);
 
 /** The step every session ends with. */
-const leaves: Step = { types: `${LEAVE}\r`, until: () => true, what: 'left' };
+const leaves: Step = leavesTheSession;
 
 /** A step that types something and waits for the frame it caused. */
 function presses(what: string, keys: string): Step {
@@ -842,7 +843,7 @@ describe('the middle region scrolls, and the two fixed regions do not', () => {
       steps.push({ types: WHEEL_UP, until: () => true, what: `turned the wheel ${at + 1}` });
     }
     steps.push(presses('typed a letter', 'x'));
-    steps.push({ types: `${ERASE}${LEAVE}\r`, until: () => true, what: 'left' });
+    steps.push({ types: `${ERASE}${ENDS_THE_INPUT}`, until: () => true, what: 'left' });
     const ran = await inPty({ columns, rows, steps });
     const printed = screenAt(ran, ENOUGH_TO_FILL, columns, rows);
     // THE PAGE THIS IS ABOUT IS THE ONE THAT HAD ANSWERED, said out loud rather than assumed: an

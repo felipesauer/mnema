@@ -29,8 +29,9 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
 import { CUT } from '../src/repl/palette.js';
-import { CLEAR, PREFIX } from '../src/session-words.js';
+import { CLEAR } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
+import { ENDS_THE_INPUT } from './support/console.js';
 import {
   aFrameSince,
   inPty as drive,
@@ -227,9 +228,11 @@ const opens: Step = opensAConsole(PROMPT);
 
 /** The step every session ends with. */
 const leaves: Step = {
-  types: `${CLEARS_THE_LINE}${PREFIX}exit\r`,
+  // THE ROW IS ABANDONED FIRST, then the key that ends the input: the way out is a keystroke
+  // and a row with characters on it is not the end of anything.
+  types: `${CLEARS_THE_LINE}${ENDS_THE_INPUT}`,
   what: 'left',
-  until: (bytes) => bytes.lastIndexOf(PROMPT) > bytes.indexOf(`${PREFIX}exit`),
+  until: () => true,
 };
 
 /**
@@ -383,17 +386,28 @@ describe('a prefix that names several lists them, each beside the line it came f
     // the red was then an empty list, which accuses the completer for something the instrument
     // did (`support/screen.ts`, {@link theFirstScreenWith}).
     const screen = theFirstScreenWith(ran.bytes, `${PROMPT} show ${shared}`, columns, rows);
-    // EVERY ONE OF THEM IS A ROW OF THE PALETTE, under the row being typed — the id, and
+    // EVERY ROW OF THE PALETTE IS ONE OF THEM, under the row being typed — the id, and
     // beside it the rest of the line the record was named on. A list of bare ids that all
     // begin alike would be a list nobody can choose from, which is why the gloss is the
     // rest of the row rather than a decoration.
+    //
+    // IT SAID *EVERY ONE OF THEM* AND ASSERTED THE COUNT, which is what the ceiling took: the
+    // list draws four and says how many it left out (`src/repl/palette.ts`, `AT_MOST`), so
+    // sixteen records are four rows and a number. What the case is about is untouched — a row
+    // is an id AND what it was named on — and it is now asked of every row there is, with the
+    // count of the rest asserted against the total below.
     const listed = screen.rows.filter((row) => row.trimStart().startsWith('019'));
-    expect(listed, screen.text).toHaveLength(shown.length);
-    for (const record of shown) {
-      const row = listed.find((line) => line.trimStart().startsWith(record.id));
-      expect(row, `${record.id} is not listed:\n${screen.text}`).toBeDefined();
-      expect(row, record.id).toContain(record.title);
+    expect(listed.length, screen.text).toBeGreaterThan(0);
+    for (const row of listed) {
+      const record = shown.find((named) => row.trimStart().startsWith(named.id));
+      expect(record, `a row of the list is not one of the records:\n${row}`).toBeDefined();
+      expect(row, (record as Record).id).toContain((record as Record).title);
     }
+    // AND WHAT IS NOT DRAWN IS COUNTED, so the four rows are not four records quietly standing
+    // in for sixteen.
+    const said = screen.rows.find((row) => row.trimStart().startsWith(CUT));
+    const missing = Number(/(\d+)/.exec(said as string)?.[1]);
+    expect(listed.length + missing, `${listed.length} shown, ${missing} named`).toBe(shown.length);
     // AND THE ROW BEING TYPED GREW TO WHAT THEY ALL AGREE ON, which is what a Tab that
     // cannot choose still does: it types the shared prefix and shows the choice.
     expect(rowBeingTyped(screen)).toBe(`${PROMPT} show ${sharedBy(ids)}`);
@@ -578,8 +592,12 @@ describe('what it offers is what the session showed, and never the record', () =
           // A Tab on an empty row is a caller asking what a LINE can start with, and a
           // line starts with a word this session runs. An id answers to nothing.
           types: COMPLETES,
-          until: (bytes) =>
-            bytes.lastIndexOf('find what has been recorded') > bytes.lastIndexOf(CLEAR),
+          // WHAT IT WAITS FOR IS A ROW THE LIST REALLY DRAWS. It used to be the description
+          // of `search`, and the ceiling put that verb off the page: four offers are drawn
+          // now and the rest are counted (`src/repl/palette.ts`, `AT_MOST`). The row that is
+          // always there is the account of the rest, and the word the session answers to
+          // itself sorts first, so both are witnesses that the list is open.
+          until: (bytes, since) => bytes.slice(since).includes(CUT),
           what: 'offered the words a line starts with',
         },
         leaves,
@@ -588,9 +606,10 @@ describe('what it offers is what the session showed, and never the record', () =
 
     // FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended — the rule this file
     // now holds throughout (`support/screen.ts`, {@link theFirstScreenWith}).
-    const screen = theFirstScreenWith(ran.bytes, 'find what has been recorded', columns, rows);
-    // The palette is open — the verbs are listed — and no row of it is a record.
-    expect(screen.text, screen.text).toContain('search');
+    const screen = theFirstScreenWith(ran.bytes, CUT, columns, rows);
+    // The palette is open — the words a line can start with are listed — and no row of it is
+    // a record.
+    expect(screen.text, screen.text).toContain(CLEAR);
     const listed = screen.rows.filter((row) => row.trimStart().startsWith('019'));
     expect(listed, `the top level offered a record:\n${screen.text}`).toEqual([]);
   }, 240_000);

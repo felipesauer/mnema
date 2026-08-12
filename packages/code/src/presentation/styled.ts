@@ -130,6 +130,11 @@ const ACCENT = '\u001b[35m';
  *     page rather than a fact about the record, so it takes the accent and no weight: an
  *     echo emboldened at both ends would be a row shouting where a reader is looking for
  *     the words they typed.
+ *   - `pick` — bare, and the second role that carries a HUE of its own
+ *     ({@link TINTED_BY}). The mark on the row a caller chose is the console's own
+ *     punctuation rather than a fact, so it takes the accent; what it does NOT take is a
+ *     weight, because the glyph is already the whole answer and an emboldened mark would be
+ *     the row shouting about being the row.
  *   - `typed` — bold, exactly like the `label` it is a refinement of, and the sameness is
  *     the point rather than a duplication to collapse. A caller scrolling a session is
  *     looking for the line they asked, in among the answer to it, and that is the same
@@ -147,6 +152,7 @@ const OPENED_BY: { readonly [R in Role]: string } = {
   state: '',
   prompt: '',
   typed: BOLD,
+  pick: '',
 };
 
 /**
@@ -185,6 +191,7 @@ const TINTED_BY: { readonly [R in Role]: string } = {
   state: '',
   prompt: ACCENT,
   typed: '',
+  pick: ACCENT,
 };
 
 /**

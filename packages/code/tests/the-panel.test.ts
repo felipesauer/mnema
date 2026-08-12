@@ -53,11 +53,17 @@ import { statement } from '../src/presentation/verdict.js';
 import { BEFORE_THE_BAR, THE_INSET } from '../src/repl/inset.js';
 import { type PanelForm, panelFor } from '../src/repl/panel.js';
 import { openSession, tips } from '../src/repl/session.js';
-import { LEAVE } from '../src/session-words.js';
+
 import { here } from '../src/wiring/context.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { DEFAULT_REQUIREMENT, treeHeadline } from '../src/wiring/verify.js';
-import { fakeTerminal, hooksNothing, until, withoutLayout } from './support/console.js';
+import {
+  ENDS_THE_INPUT,
+  fakeTerminal,
+  hooksNothing,
+  until,
+  withoutLayout,
+} from './support/console.js';
 
 /** `packages/code/src`, for the guard that reads the product's own source. */
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
@@ -214,7 +220,7 @@ async function openedAt(
   // The bytes still hold it — the whole roll is written onto the caller's own buffer when the
   // session leaves — but only once it HAS left. The prompt is on every page there is.
   await until(() => terminal.bytes().includes(PROMPT), 'opened');
-  terminal.type(`${LEAVE}\r`);
+  terminal.type(ENDS_THE_INPUT);
   await closed;
   return terminal.bytes();
 }
@@ -990,9 +996,22 @@ describe('the panel is the plain panel, wrapped, and it is drawn once', () => {
     // around a part. IT SAID `frame and all`, and there is no frame; what the sentence needed
     // is that the layout puts glyphs on the page of its own, and the art and the gaps are
     // still that.
+    //
+    // AND THE TRAILING SPACES ARE TAKEN OFF EACH ROW, which is not a weakening of the
+    // comparison but the one difference that is nobody's renderer. The last thing a session
+    // writes is the echo of the row it was left on, and the way out is now a KEY on an EMPTY
+    // row — so that echo is the prompt and nothing else, and the prompt ends in a space. A row
+    // ending in a real space is trimmed on its way to the page; the same row with an escape
+    // after that space is not. So the plain page ends `mnema>` and the painted one `mnema> `,
+    // and what the two renderers SAID is identical either way — which is the promise.
     const plain = await openedAt(200);
     const painted = await openedAt(200, renderStyled);
-    expect(stripped(withoutLayout(painted))).toBe(stripped(withoutLayout(plain)));
+    const rowsOf = (bytes: string): string =>
+      stripped(withoutLayout(bytes))
+        .split('\n')
+        .map((row) => row.replace(/ +$/, ''))
+        .join('\n');
+    expect(rowsOf(painted)).toBe(rowsOf(plain));
     // Not vacuous: the painted one really carries escapes the plain one does not.
     expect(sgrOf(painted).length).toBeGreaterThan(sgrOf(plain).length);
   }, 120_000);
@@ -1020,7 +1039,7 @@ describe('the panel is the plain panel, wrapped, and it is drawn once', () => {
       await until(() => terminal.bytes().length > grown, `redrew after ${key}`);
     }
     terminal.type(CLEARS_THE_LINE);
-    terminal.type(`${LEAVE}\r`);
+    terminal.type(ENDS_THE_INPUT);
     await closed;
     const page = stripped(withoutLayout(terminal.bytes()));
     // THE PANEL IS DRAWN ON EVERY FRAME, and this case is the inversion of what it asserted.

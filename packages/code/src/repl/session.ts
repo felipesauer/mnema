@@ -28,6 +28,18 @@
  *     nothing that changes what the session is looking at. One session, one project,
  *     resolved from the directory it was opened in.
  *
+ * THE REPORT `/help` PRINTED IS GONE, AND WHAT TOOK IT IS THE LIST rather than a shorter
+ * report. It composed the verbs this session runs out of their own declarations, one row
+ * each, under two headings — the same table the palette draws, except that it was a REPORT:
+ * it landed on the roll, it scrolled away behind the answers a caller then asked for, and
+ * you had to know the word `/help` before you could ask for it at all. The list under the
+ * prompt says the same sentence about the same verb, beside the word, while the word is
+ * being typed (`palette.ts`). What went with it is the three facts it ended on, and each of
+ * them is still said where a caller MEETS it rather than in a report they have to ask for: a
+ * write is refused by name with the line to run outside the session (`gate.ts`), the way out
+ * is the row under the prompt ({@link tips}), and what `/clear` does is the gloss beside it
+ * in the list (`session-words.ts`).
+ *
  * ONE PROGRAM PER LINE, and it is deliberate rather than lazy. commander keeps what it
  * parsed on the command object, so a program reused across lines would answer the
  * second `search` with the first one's `--limit`. Building one costs the declarations
@@ -59,19 +71,16 @@ import { runVerify } from '../commands/verify.js';
 import { type CompletionWord, completionTree } from '../completion/tree.js';
 import { bannerFor } from '../presentation/banner.js';
 import { aside, fact, subjectLine } from '../presentation/detail.js';
-import { column, itemLine } from '../presentation/items.js';
 import type { Line } from '../presentation/line.js';
 import { occurrenceLine } from '../presentation/occurrence.js';
 import { widthOf } from '../presentation/plain.js';
 import type { Render } from '../presentation/render.js';
 import { statement } from '../presentation/verdict.js';
-import { ABOUT, CLEAR, LEAVE, PREFIX, WHAT_EACH_WORD_DOES } from '../session-words.js';
+import { PREFIX, THE_KEY_THAT_LEAVES, WHAT_EACH_WORD_DOES } from '../session-words.js';
 import { VERSION } from '../version.js';
 import type { RenderingAt } from '../wiring/color.js';
 import { here } from '../wiring/context.js';
-import { writeLines } from '../wiring/io.js';
 import { reportUsage } from '../wiring/report.js';
-import type { Declared } from '../wiring/verb.js';
 import { DEFAULT_REQUIREMENT, levelSeverity, treeHeadline, VERIFY_VERB } from '../wiring/verify.js';
 import { areaFor } from './area.js';
 import { asTheSession } from './asking.js';
@@ -93,9 +102,6 @@ import { type Standing, standing } from './standing.js';
  * to do column arithmetic over to put the caret in the right place.
  */
 const PROMPT = 'mnema> ';
-
-/** How wide the verb column of {@link ABOUT} is — the longest verb, and a space after it. */
-const VERB_WIDTH = 16;
 
 /**
  * What separates the two facts of the status line, and the words of a tip from the next.
@@ -219,26 +225,33 @@ const WHATEVER_THE_HEIGHT = Number.MAX_SAFE_INTEGER;
  *
  * THE FIRST ONE USED TO NAME `/help`, AND IT USED TO BE FORBIDDEN TO NAME THE SLASH.
  * The rule was right and it was about a promise: a hint naming an affordance that does not
- * answer is the console lying to the reader who cannot check, and until this delivery the
- * slash answered nothing on its own — you had to type a whole word behind it. It opens the
- * palette now, so the promise is kept, and the case that held the ban is inverted rather
- * than deleted (`tests/the-input-has-its-own-place.test.ts`).
+ * answer is the console lying to the reader who cannot check, and until the palette existed
+ * the slash answered nothing on its own — you had to type a whole word behind it. It opened
+ * the palette then, so the promise was kept, and the case that held the ban is inverted
+ * rather than deleted (`tests/the-input-has-its-own-place.test.ts`).
  *
- * AND THE LAST ONE USED TO NAME `/exit`, WHICH THE FIRST CLAUSE NOW DELIVERS. A hint
- * that says where the list of words IS does not also have to teach a word from it — that
- * is the economy the reference this console was measured against has, and it became true
- * here only once the palette existed. What is left is the keystroke, which is in no list.
- * The saving is measured rather than felt: seventy-four columns to fifty-three, which is
- * the difference between a hint an eighty-column terminal keeps and one a sixty-column
- * terminal keeps — and below its own width the area draws no hint at all (`area.ts`).
+ * AND IT SAID `\`/\` lists the words`, WHICH IS THE PROMISE THIS DELIVERY TOOK BACK BY
+ * HALF. A bare slash is a caller asking what there IS, and the answer to that is every verb
+ * of the product at once; a slash with a letter behind it is a verb being written, and the
+ * list of what it could still become is an answer to a question somebody asked. So the list
+ * opens on the LETTER (`palette.ts`, `offeredBy`), and the clause says both keystrokes
+ * because a hint that still said the slash alone listed anything would be the console
+ * promising what it no longer does — which is the exact ban this paragraph is about, and it
+ * would be the surface breaking it in its own favour.
+ *
+ * AND THE LAST ONE USED TO NAME `/exit`, AND NOW IT IS THE ONLY WAY OUT THERE IS. It was
+ * already the honest half of that pair — the word was a second spelling of the same
+ * keystroke — and what the word cost was a line of the list, a line of the help and an arm
+ * of the gate. What is left is the keystroke, which is in no list and cannot be looked up,
+ * which is exactly what a hint is for.
  *
  * AND `Tab completes` KEEPS NO QUALIFIER, WHICH IS PRECISION RATHER THAN BREVITY. A Tab
  * offers the verbs AND the words the session answers to itself, so `Tab for verbs` would
  * be shorter and false.
  */
-const WHAT_THE_SLASH_DOES = `\`${PREFIX}\` lists the words`;
+const WHAT_THE_SLASH_DOES = `\`${PREFIX}\` and a letter list the words`;
 const TAB_COMPLETES = 'Tab completes';
-const HOW_TO_LEAVE = 'Ctrl-D leaves';
+const HOW_TO_LEAVE = `${THE_KEY_THAT_LEAVES} leaves`;
 
 /**
  * WHAT THE RULE IS ASKED WITH FOR A LINE THAT MAY NOT FOLD: no screen to fold to.
@@ -703,11 +716,6 @@ export async function typedLine(line: string, session: Session): Promise<AfterLi
   switch (what.does) {
     case 'nothing':
       return 'go on';
-    case 'leave':
-      return 'leave';
-    case 'about':
-      writeLines(io, about(built.verbs, self).map(render));
-      return 'go on';
     case 'clear':
       // What a clean page IS belongs to the console: nothing here is read, said or
       // composed for it, which is the whole of why it costs nothing.
@@ -812,18 +820,19 @@ export function standingLine(where: Standing): readonly Line[] {
  * is the one affordance a caller cannot guess by typing; and the way out, which is the
  * thing nobody wants to look for.
  *
- * IT NAMED TWO WORDS AND IT NAMES NONE. The first clause used to be `/help` and the last
- * used to be `/exit`, and the palette is what took both: the slash opens the list they are
- * IN, so a hint that pointed at the list and then quoted an item from it would be spending
- * a clause on what the clause beside it already hands over. Nothing was lost — both moved
- * one keystroke closer — and what is left in the hint is three keystrokes, which are in no
- * list and cannot be looked up.
+ * IT NAMED TWO WORDS AND IT NAMES NONE, and neither of those words exists any more. The first
+ * clause used to be `/help` and the last used to be `/exit`; the palette took the first — the
+ * list says what the session runs, beside every word of it — and the key that ends the input
+ * took the second. So what is left in the hint is three KEYSTROKES, which are in no list and
+ * cannot be looked up, and that is the whole rule for what belongs on this row.
  *
- * AND THE SAVING IS THE POINT, because this row has a WIDTH rule over it now: a hint the
- * terminal would fold is not drawn at all (`area.ts`), so every column it does not spend is
- * a narrower terminal that still gets it. Seventy-four columns to fifty-three, measured —
- * the difference between a hint an eighty-column terminal keeps and one a sixty-column
- * terminal keeps.
+ * WHAT IT COSTS IS MEASURED, because this row has a WIDTH rule over it: a hint the terminal
+ * would fold is not drawn at all (`area.ts`), so every column it spends is a narrower terminal
+ * that loses it. Seventy-four columns before the palette, fifty-three with two words dropped,
+ * and SIXTY-FIVE now that the first clause names two keystrokes instead of one — which is a row
+ * every window this console draws on keeps, because no page is laid out under eighty columns
+ * (`floor.ts`). The twelve columns buy the one thing the shorter clause got wrong: it said the
+ * slash alone listed the words, and it does not.
  *
  * IT PROMISES NOTHING THAT IS NOT THERE. A row under the prompt is the most believed
  * sentence on the surface, and a hint naming an affordance that does not answer yet would
@@ -938,35 +947,4 @@ export function badgeLine(level: ProvenLevel): Line {
     levelSeverity(level),
     AT_THE_EDGE,
   );
-}
-
-/**
- * What {@link ABOUT} answers: the verbs this session runs, and how to leave it.
- *
- * Composed from the DECLARATIONS, so a read added tomorrow is listed the day it exists
- * and its one-line description is the same one `--help` prints. It is the session's
- * answer and not the program's on purpose: `mnema --help` lists every verb there is,
- * eleven of which this session refuses, and a menu of what you cannot have is worse
- * than no menu.
- *
- * Exported for the reason {@link tips} and {@link badgeLine} are: these are the widest rows
- * this session prints, so they are what a case about FOLDING has to be measured against, and
- * a case that retyped them would go stale the day a verb's description changes
- * (`tests/one-width-per-frame.test.ts`).
- */
-export function about(verbs: readonly Declared[], self: string): readonly Line[] {
-  const offered = verbsOffered(verbs, self);
-  const described = verbs.filter((verb) => offered.includes(verb.command.name()));
-  return [
-    subjectLine('This session reads the record'),
-    ...described.map((verb) =>
-      itemLine([column(verb.command.name(), VERB_WIDTH), verb.command.description()]),
-    ),
-    subjectLine('And it does not write'),
-    fact('A verb that can change the record is refused, and named, and told where to run.'),
-    fact(`Leave with \`${LEAVE}\`, or Ctrl-D. Ctrl-C clears the line you are typing.`),
-    fact(
-      `\`${CLEAR}\` starts the page over. What was on it is one scroll up, and the record is not read again.`,
-    ),
-  ];
 }

@@ -435,7 +435,12 @@ describe('nothing else decides which renderer', () => {
       'session.ts',
       'standing.ts',
     ]);
-    expect(readFileSync(join(HERE, 'repl', 'session.ts'), 'utf-8')).toContain('writeLines(io,');
+    // AND THE WITNESS THAT IT PRINTS USED TO BE `writeLines(io,`, which was the report
+    // `/help` wrote. That word is gone — the list under the prompt answers it now — so the
+    // line it wrote is gone with it, and a witness left pointing at it would have made this
+    // case red for a reason that has nothing to do with what it is about. What the session
+    // still writes, and what it has always written more of, is refusals.
+    expect(readFileSync(join(HERE, 'repl', 'session.ts'), 'utf-8')).toContain('reportUsage(');
   });
 
   it('read the modules it claims to have read', () => {

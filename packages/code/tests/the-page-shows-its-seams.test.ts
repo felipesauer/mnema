@@ -38,18 +38,25 @@ import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo, run } from '../src/cli.js';
 import { foldedAt } from '../src/presentation/folded.js';
-import type { Line } from '../src/presentation/line.js';
 import { renderPlain, widthOf } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
+import { dispositionOf } from '../src/repl/gate.js';
 import { BEFORE_THE_BAR, insideTheMargin, THE_INSET } from '../src/repl/inset.js';
-import { about, openSession } from '../src/repl/session.js';
-import { ABOUT, LEAVE } from '../src/session-words.js';
+import { openSession } from '../src/repl/session.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
-import { fakeTerminal, hooksNothing, until, withoutLayout } from './support/console.js';
+import { refusalSentence } from '../src/wiring/report.js';
+import {
+  ENDS_THE_INPUT,
+  fakeTerminal,
+  hooksNothing,
+  until,
+  withoutLayout,
+} from './support/console.js';
 import {
   aFrameSince,
   inPty as drive,
   type Fixture,
+  leavesTheSession,
   opensAConsole,
   type Step,
 } from './support/pty.js';
@@ -157,10 +164,19 @@ async function inPty(options: {
   return drive(fixture, options);
 }
 
+/**
+ * THE WRITE A SESSION REFUSES, and a fragment of the refusal that is inside one part of it.
+ *
+ * The fragment is short on purpose: what the session prints is folded between WORDS at the
+ * width of the page, so a long one could be looked for across two rows.
+ */
+const A_WRITE = 'task';
+const IN_THE_REFUSAL = 'from your shell.';
+
 /** The step every session begins with, the one that asks a verb, and the one that leaves. */
 const opens: Step = opensAConsole(PROMPT);
 const asks: Step = { types: `${A_VERB}\r`, until: aFrameSince(PROMPT), what: `asked ${A_VERB}` };
-const leaves: Step = { types: `${LEAVE}\r`, until: () => true, what: 'left' };
+const leaves: Step = leavesTheSession;
 
 /**
  * A session driven in THIS process over a pair of streams, and every byte it wrote.
@@ -187,7 +203,7 @@ async function drivenHere(typed: readonly string[]): Promise<string> {
     terminal.type(`${line}\r`);
     await until(() => stripped(terminal.bytes()).includes(`${PROMPT} ${line}`), `typed ${line}`);
   }
-  terminal.type(`${LEAVE}\r`);
+  terminal.type(ENDS_THE_INPUT);
   await closed;
   return terminal.bytes();
 }
@@ -472,11 +488,16 @@ describe('the margin takes columns of the page and never a character of a line',
   it('puts every row of the widest answer on the page whole, at the narrowest window', async () => {
     const columns = 80;
     const rows = 24;
-    // THE WIDEST THING THE SESSION SAYS, asked of the product rather than retyped: the list of
-    // verbs, composed by the function the session composes it with.
+    // THE WIDEST THING THE SESSION SAYS, asked of the product rather than retyped. IT WAS THE
+    // TABLE `/help` PRINTED and that word is gone — the list under the prompt answers it, and a
+    // list is CUT to the terminal rather than folded by it. What is left that a fold has
+    // anything to do to is the REFUSAL of a write, composed off the declaration by the one
+    // funnel every no on this surface goes through (`src/repl/gate.ts`, `src/wiring/report.ts`).
     const built = buildProgram(quiet, [], renderPlain);
-    const lines = about(built.verbs, REPL_VERB);
-    const widest = [...lines].sort((one, other) => widthOf(other) - widthOf(one))[0] as Line;
+    const refused = dispositionOf(A_WRITE, built.verbs, REPL_VERB);
+    expect(refused.does, `\`${A_WRITE}\` is not refused by this session`).toBe('refuse');
+    if (refused.does !== 'refuse') throw new Error('unreachable');
+    const widest = refusalSentence(refused.sentence, refused.detail);
     expect(widthOf(widest), 'the widest line already fits inside the margin').toBeGreaterThan(
       insideTheMargin(columns),
     );
@@ -488,11 +509,11 @@ describe('the margin takes columns of the page and never a character of a line',
       rows,
       steps: [
         opens,
-        { types: `${ABOUT}\r`, until: aFrameSince(PROMPT), what: `asked ${ABOUT}` },
+        { types: `${A_WRITE}\r`, until: aFrameSince(PROMPT), what: `asked for ${A_WRITE}` },
         leaves,
       ],
     });
-    const screen = theSettledScreen(ran.bytes, columns, rows, 'And it does not write');
+    const screen = theSettledScreen(ran.bytes, columns, rows, IN_THE_REFUSAL);
     // EVERY ROW OF THE FOLD IS ON THE PAGE, in order, each of them inside the margin — so
     // nothing was cut, nothing was clipped, and the break is the product's own rather than the
     // terminal's.

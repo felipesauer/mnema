@@ -1,11 +1,13 @@
 /**
  * THE PALETTE — the words a caller could type next, each beside what it is.
  *
- * A session answers to two vocabularies that share one line of input: the words it
- * answers to ITSELF, which begin with a slash, and the VERBS of this product. Both were
- * already discoverable and neither was legible: the words needed `/help` typed first, and
- * a Tab that could not decide printed a row of bare tokens with nothing to say what any
- * of them was. This is the one list both of them are shown in.
+ * A session answers to two vocabularies that share one line of input: the word it answers to
+ * ITSELF, which begins with a slash, and the VERBS of this product. Both were already
+ * discoverable and neither was legible: the verbs needed `/help` typed first, and a Tab that
+ * could not decide printed a row of bare tokens with nothing to say what any of them was.
+ * This is the one list both of them are shown in — and it is what took `/help` away, because
+ * a report that lists the verbs is a worse answer than a list that narrows to the one being
+ * typed.
  *
  * ONE MECHANISM, ONE LIST, AND TWO KEYS THAT ASK FOR IT. IT WAS ONE MECHANISM AND TWO
  * ANSWERS, and this paragraph said so: *a slash opens the session's own vocabulary and
@@ -15,8 +17,8 @@
  * type. WHAT REPLACES IT is the completer's answer, whichever key asked — the verbs and the
  * session's own words together, in one list built in one place ({@link Completer},
  * `complete.ts`), with the words that begin with a slash inside it rather than beside it. The
- * slash is a KEY here and not a filter: on a line that is nothing but the prefix it asks the
- * same question an empty line asks, which is what makes the two answers one.
+ * slash is a KEY and not a letter of the word behind it, which is what makes the two answers
+ * one: `/t` asks what `t` asks ({@link offeredBy}, `complete.ts`).
  *
  * THE SLASH ONLY COUNTS AS THE FIRST CHARACTER OF THE LINE. Inside a path, an argument or
  * a quoted string it is a character like any other, and a palette that opened there would
@@ -25,7 +27,9 @@
  * IT IS COMPOSED HERE AND CUT HERE, and both halves are the point. The rows are built out
  * of the two functions every list of this product is built out of (`presentation/items.ts`
  * — `column` pads the left one, `itemLine` joins them), so a palette is the same table
- * `/help` prints and not a second idea of what a column is. And where a description is
+ * every reading of this product prints and not a second idea of what a column is. IT SAID
+ * *the same table `/help` prints*, and the comparison outlived its subject: that report is
+ * gone and this list is what answers the question it answered. And where a description is
  * too long for the terminal it is cut HERE, where the line is put together, never in the
  * layout: the rule that a component may not compose a line does not bend for a cut.
  *
@@ -66,16 +70,24 @@
  * while the word it names is still among the offers ({@link thePicked}), and it stops being
  * real the moment a keystroke narrows it away.
  *
- * THE MARK IS A COLUMN AND THE COLOUR IS NOT AN AXIS AT ALL. This product paints with the
- * eight colours a reader's own theme defines (`presentation/styled.ts`), so a hue is a weaker
- * signal here than in the console this was measured against, which picks its highlight out of
- * a palette of 256; and a mark works in monochrome, in a pipe, and for a reader who does not
- * separate two tones. So the picked row carries {@link PICK} in a column of its own and every
- * other row carries a blank one — which is what keeps the table lined up — and NOTHING in the
- * drawing changes weight or hue. The second axis is refused rather than forgotten: the rows
- * are dimmed by the layout (`region.ts`), one Text for all of them, so painting the picked row
- * differently would mean the layout knowing WHICH row is picked, and a selection that lives in
- * the layout is a second model of it beside this one.
+ * THE MARK IS A COLUMN, AND THE COLOUR IS A SECOND AXIS OVER IT. This paragraph used to end
+ * *and the colour is not an axis at all*, on an argument that was right about what it
+ * defended and wrong about what it excluded: this product paints with the eight colours a
+ * reader's own theme defines, so a hue is a weaker signal here than in the console this was
+ * measured against, which picks its highlight out of a palette of 256 — and a mark works in
+ * monochrome, in a pipe, and for a reader who does not separate two tones. All of that is why
+ * the COLUMN may never go: the picked row carries {@link PICK} in a column of its own and
+ * every other row carries a blank one, so which row it is survives every reader.
+ *
+ * WHAT THE ARGUMENT COULD NOT SUPPORT is the step from *the hue is not the carrier* to *there
+ * is no hue*. The mark is chrome — it says which row you are on and nothing about the record
+ * — so it takes the one accent this surface spends, as a ROLE
+ * (`presentation/line.ts`, `pick`), which is what makes it disappear under `NO_COLOR` while
+ * the column stays exactly where it was. And it is a role rather than a drawing for the
+ * reason the old sentence gave: the rows are dimmed by the layout (`region.ts`), one Text for
+ * all of them, so painting the picked ROW would mean the layout knowing which row is picked —
+ * a second model of the pick beside the one that decides it. A part of a line knowing what it
+ * is costs the layout nothing.
  *
  * THE KEYS THAT MOVE IT ARE SAID UNDER IT, and that is the row this module gained. It arrives
  * composed, like a hint anywhere else on this surface (`session.ts`, `pickingTips`), and it is
@@ -84,7 +96,7 @@
  */
 
 import type { CompletionWord } from '../completion/tree.js';
-import { column, itemLine } from '../presentation/items.js';
+import { asPick, type Column, column, itemLine } from '../presentation/items.js';
 import type { Line } from '../presentation/line.js';
 import { widthOf } from '../presentation/plain.js';
 import type { Render } from '../presentation/render.js';
@@ -131,11 +143,36 @@ const NOT_SHOWN = 'not shown';
 /** The gap between the word and what it is. One column of the table, so `column` pads it. */
 const AFTER_THE_WORD = 1;
 
+/**
+ * HOW MANY OFFERS ARE DRAWN AT MOST — four, whatever the terminal has room for.
+ *
+ * IT IS A CEILING AND NOT A BUDGET, which is the whole of the difference: the room a
+ * terminal has is still what CUTS the list (`area.ts`), and this is what stops the list from
+ * taking a room it has. A caller asked for it in as many words — *only 4 commands rendered on
+ * the screen, with the arrows moving through the detail* — and the shape it names is the one
+ * the console this surface was measured against has: a short window with a whole vocabulary
+ * behind it, rather than a page of everything.
+ *
+ * WHAT MAKES A CEILING AFFORDABLE IS THE WINDOW. The arrows walk the whole vocabulary
+ * ({@link theNextPicked}) and what is drawn FOLLOWS the pick ({@link theWindow}), so four
+ * rows are four rows of a list a caller can reach the end of; a cut of four with the FIRST
+ * four drawn would be a menu with fourteen words nobody can get to, which is the defect the
+ * window replaced.
+ *
+ * AND WHAT IT COSTS IS SAID ON THE PAGE. The row that names how many had no room is drawn
+ * whenever this bites, so the list never quietly shows fewer than there are — the ceiling
+ * changes how many are shown and not what the palette claims.
+ */
+const AT_MOST = 4;
+
 /** How wide the column the mark sits in is: as wide as the mark, and read off the mark. */
 const AS_WIDE_AS_THE_MARK = [...PICK].length;
 
 /** The row that says which keys move the list. One row, whenever the list has any. */
 const THE_KEYS = 1;
+
+/** The row that says how many offers had no room. One row, whenever some had none. */
+const THE_ACCOUNT = 1;
 
 /**
  * WHICH OFFER IS PICKED, and nothing when the caller has picked none of them.
@@ -189,15 +226,24 @@ export function theNextPicked(
 }
 
 /**
- * HOW MANY ROWS A PALETTE OF THESE OFFERS WANTS: one each, and one for the keys under them.
+ * HOW MANY ROWS A PALETTE OF THESE OFFERS WANTS: one per offer it may draw, one for the
+ * account of the rest when there is one, and one for the keys under them.
  *
  * ONE FUNCTION, TWO READERS, and they are the two halves of the same row count: the area
  * budgets the region with it (`console.ts` → `area.ts`) and {@link paletteFor} spends what the
  * budget answers. A `+ 1` written at the first of those and not the second is a region one row
  * taller than what is drawn in it, which puts the caret and the foot of the page a row out.
+ *
+ * IT ASKED FOR A ROW PER OFFER, and that is what the ceiling changed ({@link AT_MOST}): a
+ * vocabulary of eighteen asked for nineteen rows and got whatever the screen could give, so
+ * how many words a caller saw was a function of how tall their window was. It asks for six
+ * now at every height — four words, the row that names the rest, and the keys — which is what
+ * makes *four* a promise rather than *what fits*.
  */
 export function paletteRowsFor(offers: readonly CompletionWord[]): number {
-  return offers.length === 0 ? 0 : offers.length + THE_KEYS;
+  if (offers.length === 0) return 0;
+  const shown = Math.min(offers.length, AT_MOST);
+  return shown + (offers.length > shown ? THE_ACCOUNT : 0) + THE_KEYS;
 }
 
 /**
@@ -229,6 +275,11 @@ export function paletteRowsFor(offers: readonly CompletionWord[]): number {
  * that fits. What that row SAYS is the total less what is drawn, wherever the window is —
  * above it and below it in one number, which is a count a reader can check by adding up what
  * they can see ({@link paletteFor}).
+ *
+ * AND HOW LONG IT MAY BE HAS A SECOND LIMIT NOW, which is a CEILING and not a budget: four
+ * offers, whatever the room ({@link AT_MOST}). The two are the same arithmetic asked twice —
+ * what the screen can hold and what the list may take of it — and the smaller answer wins, so
+ * a short terminal still shows fewer than four and a tall one never shows five.
  */
 export function theWindow(
   offers: readonly CompletionWord[],
@@ -241,9 +292,11 @@ export function theWindow(
   // what had no room. A row that said how to move a list nobody can see would be the one thing
   // this file may not draw: furniture where the honesty goes.
   const forTheList = Math.max(1, room - THE_KEYS);
-  // The row that keeps the palette honest is counted against the same room, so a palette
-  // that says what it left out shows one fewer than one that has everything.
-  const many = offers.length <= forTheList ? offers.length : forTheList - 1;
+  // WHETHER THE WHOLE VOCABULARY IS DRAWN: it fits the room AND it is within the ceiling. Both
+  // halves in one question, because what follows from either is the same — the row that says
+  // how many had no room, spent out of the same rows the offers are drawn in.
+  const whole = offers.length <= Math.min(forTheList, AT_MOST);
+  const many = whole ? offers.length : Math.min(AT_MOST, forTheList - THE_ACCOUNT);
   const at = offers.findIndex((offer) => offer.word === thePicked(offers, picked));
   const from = Math.max(0, at - many + 1);
   return offers.slice(from, from + many);
@@ -263,18 +316,28 @@ export function theWindow(
  * line* even so, because the completer was already answering that question with the verbs in
  * it. So the answer is ASKED rather than composed, and there is one list.
  *
- * THE BARE PREFIX ASKS WHAT AN EMPTY LINE ASKS, and that is the whole of the difference
- * between a key and a word. A slash with nothing behind it is the caller asking to be shown
- * what there is; a slash with a letter behind it is a word of the session being typed, and the
- * completer narrows to the words that really start that way. Nothing is filtered twice.
+ * THE LIST OPENS ON THE LETTER AND NOT ON THE BARE SLASH, and the sentence that used to be
+ * here is what this delivery took back: *the bare prefix asks what an empty line asks*. It
+ * did, and what it produced was every verb of the product on the screen for a keystroke a
+ * caller may have typed for any reason — a menu of everything, answering a question nobody had
+ * finished asking. A slash ALONE is *what exists*; a slash with a letter behind it is a verb
+ * being WRITTEN, and a list of what that verb could still be is an answer to something. So the
+ * bare prefix is a character on the row like any other, and what stands on it is whatever a
+ * Tab left — which is how a caller who really does want the whole list still gets it, by
+ * asking for it.
+ *
+ * WHAT IS ASKED IS THE WHOLE OF WHAT WAS TYPED, slash included, because the completer is where
+ * the prefix is understood (`complete.ts`): the slash is a KEY at the start of a line, so `/t`
+ * narrows to the verbs beginning with `t` and to any word of the session that does. Nothing is
+ * filtered twice, and there is still one list.
  */
 export function offeredBy(
   typed: string,
   offered: readonly CompletionWord[],
   asked: Completer,
 ): readonly CompletionWord[] {
-  if (!typed.startsWith(PREFIX)) return offered;
-  const [hits] = asked(typed === PREFIX ? '' : typed);
+  if (!typed.startsWith(PREFIX) || typed === PREFIX) return offered;
+  const [hits] = asked(typed);
   return hits;
 }
 
@@ -346,18 +409,30 @@ function rowsOf(request: PaletteRequest): readonly Line[] {
   // glyph: an unpicked row is padded to the same width by the same function the words are
   // padded with, which is what keeps the second column lined up down the whole list. A mark
   // added to the picked row alone would move that row three columns right of its neighbours.
-  const said = (mark: string, word: string, description: string): Line =>
+  const said = (mark: string | Column, word: string, description: string): Line =>
     description.length === 0
-      ? itemLine([column(mark, AS_WIDE_AS_THE_MARK), word])
-      : itemLine([column(mark, AS_WIDE_AS_THE_MARK), column(word, width), description]);
-  /** The mark for one row: the glyph on the picked word, and a blank column on every other. */
-  const markFor = (word: string): string => (word === thePicked(offers, picked) ? PICK : NOBODY);
+      ? itemLine([mark, word])
+      : itemLine([mark, column(word, width), description]);
+  /**
+   * The mark for one row: the glyph on the picked word, and a blank column on every other.
+   *
+   * THE PICKED ONE SAYS WHAT IT IS AND THE OTHERS DO NOT, which is the whole of what the role
+   * buys and the reason it is not on both. A blank column is padding — it holds the table
+   * open — and a renderer told it was a mark would wrap two spaces in the escapes that paint
+   * one, on every row of every list, saying nothing to anybody. The bytes of an unmarked row
+   * are the bytes it always had.
+   */
+  const markFor = (word: string): string | Column =>
+    word === thePicked(offers, picked)
+      ? asPick(column(PICK, AS_WIDE_AS_THE_MARK))
+      : column(NOBODY, AS_WIDE_AS_THE_MARK);
 
   // HOW MUCH ROOM A DESCRIPTION HAS, asked of the renderer rather than added up here: a
   // row whose description is one glyph long, less that glyph, is exactly what the indent,
   // the padding and the separator cost. So the answer survives a change to any of the
   // three, and no number about how a line is punctuated is written down in this file.
-  const frame = widthOf(said(PICK, offers[0]?.word ?? '', CUT)) - [...CUT].length;
+  const frame =
+    widthOf(said(column(PICK, AS_WIDE_AS_THE_MARK), offers[0]?.word ?? '', CUT)) - [...CUT].length;
   const forTheDescription = columns - frame;
   // A terminal with no room for a description is a terminal the table does not fit on,
   // and a table drawn without its second column would be dropping what it says with no

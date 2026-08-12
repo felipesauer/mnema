@@ -20,6 +20,21 @@ import { decodedWhole } from './arriving.js';
 /** One escape byte, written as an escape so no control byte enters a source file. */
 export const ESC = '\u001b';
 
+/**
+ * THE KEY THAT ENDS THE INPUT, as a terminal sends it — Ctrl-D, and the ONE way out of a
+ * session.
+ *
+ * Spelled by its code point, like every other control byte here. IT WAS A WORD AT MOST OF THE
+ * SITES THAT NOW READ THIS — `/exit`, typed and submitted — and the word is gone: what a caller
+ * types is the reads of the record, and the way out is the keystroke every console has answered
+ * to since before this one existed (`src/session-words.ts`, `THE_KEY_THAT_LEAVES`).
+ *
+ * CTRL-D RATHER THAN A WORD IS ALSO WHAT THESE CASES WANT, which is why two files had already
+ * moved before the word went: a submitted word is ECHOED onto the roll, so the last page a case
+ * reads is one line further down than the page the caller saw.
+ */
+export const ENDS_THE_INPUT = '\u0004';
+
 /** How wide and how tall a fake terminal is unless a caller says otherwise. */
 const COLUMNS = 200;
 const ROWS = 40;
