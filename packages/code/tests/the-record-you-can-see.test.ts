@@ -371,16 +371,17 @@ describe('a prefix that names several lists them, each beside the line it came f
     // `AreaRequest.header`), and whenever it draws a row at all, what it shows plus what it says
     // is left over is everything there was.
     //
-    // ⚠️ THE HEIGHT HAS MOVED TWICE AND FOR TWO DIFFERENT REASONS. It was eight rows while the
-    // list was budgeted against what the page had left over; it was sixteen once the list was
-    // cut to the leftover under the flow. It is FOURTEEN now, and what moved it is the model:
-    // the list is cut to what the screen has left under the fixed region at the top
-    // (`repl/area.ts`, `AreaRequest.header`), and at sixteen rows there is room for every one of
-    // the six — which would make this case about a list that fits rather than about one that
-    // says what it could not show. The size where it has only the account is asserted where it
-    // belongs (`a-palette-for-the-words.test.ts`).
+    // ⚠️ THE HEIGHT HAS MOVED THREE TIMES AND EACH TIME BECAUSE THE ROOM DID. It was eight rows
+    // while the list was budgeted against what the page had left over; sixteen once the list was
+    // cut to the leftover under the flow; fourteen once the leftover was measured under the fixed
+    // region at the top. It is EIGHT again, and what moved it is that region's own share: the
+    // arrangement is drawn only while it fits inside a third of the screen (`repl/panel.ts`,
+    // `panelFor`), and at a hundred columns it does not at any of these heights — so what used to
+    // sit above the list is on the roll, the list has fifteen rows more to work with, and at
+    // fourteen there is room for every one of the six. Measured on a real terminal rather than
+    // derived: at eight rows the list shows some of them and names the rest, which is the case.
     const columns = 100;
-    const rows = 14;
+    const rows = 8;
     const shared = sharedBy(shown.map((record) => record.id));
     const ran = await inPty({
       columns,

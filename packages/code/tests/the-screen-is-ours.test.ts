@@ -108,8 +108,13 @@ const OPENED = 'a session over this project';
  * ⚠️ IT WAS THE FIRST WORDS OF THAT SENTENCE — `It runs the` — AND THEY ARE NOT ONLY ITS. The
  * session refuses a word it does not run with *It runs the reads of the record* (`src/repl/
  * gate.ts`), so every page below that shows a refusal answers *the oldest line is here* whether
- * it is or not — and the case that walks to the top submits three lines the session refuses. The
- * end of the sentence is on the roll and nowhere else.
+ * it is or not — and the cases that walk to the top submit nothing but lines the session
+ * refuses. The end of the sentence is on the roll and nowhere else.
+ *
+ * ⚠️ AND IT IS THE OLDEST LINE ONLY WHERE THERE IS AN ARRANGEMENT. On a screen with no room for
+ * one, the two halves of the opening go to the SAME place and the oldest line on the roll is the
+ * first row of the drawing ({@link THREE_REGIONS} says which sizes those are, and
+ * `the-opening-fits-the-height.test.ts` asks what is at the top of the roll there).
  */
 const OLDEST = 'refuses the ones that write';
 
@@ -134,8 +139,36 @@ const PAGE_DOWN = `${ESC}[6~`;
 const TO_THE_TOP = `${ESC}[H`;
 const TO_THE_TAIL = `${ESC}[F`;
 
-/** How many times `verify` is run to put more on the roll than a screen can hold. */
-const ENOUGH_TO_OVERFLOW = 3;
+/**
+ * ⚠️ A WINDOW WITH THREE REGIONS ON IT — the size every case about the fixed regions is driven
+ * at, and it used to be a hundred by twenty-four.
+ *
+ * WHAT MOVED IT IS THE OPENING'S OWN SHARE. The region at the top holds at most a third of the
+ * screen now (`src/repl/panel.ts`, `panelFor`): the arrangement this session opens with costs
+ * fifteen rows under the mark and nine beside it, so twenty-four rows have room for NEITHER and
+ * the whole opening goes on the roll instead — which is a page with two regions, and every case
+ * below about a region that does not move would be a case about a region that is not there.
+ *
+ * IT IS A SIZE AND NOT A THRESHOLD. It is a window somebody has, with a row to spare over what
+ * the arrangement costs; where the arrangement gives way is searched for one height at a time in
+ * `the-opening-fits-the-height.test.ts`, and no number here is that answer.
+ */
+const THREE_REGIONS = { columns: 120, rows: 30 } as const;
+
+/**
+ * HOW MANY LINES A SESSION SAYS BEFORE THE ROLL OUTGROWS THE WINDOW IT IS SHOWN IN.
+ *
+ * ⚠️ IT WAS THREE, and the arithmetic under it is the same arithmetic as the size above: the
+ * middle region was four rows while the arrangement held fifteen, so three answers filled it
+ * twice over. The arrangement is nine rows of thirty here, the input area five, and the middle
+ * is the sixteen that are left — and a refused line is worth two rows, so nine of them are
+ * nineteen and the roll clears the window by three.
+ *
+ * MEASURED RATHER THAN CALCULATED, which is what every case that uses it then asserts: each one
+ * says out loud that something really did go past the top, so a window that grew again turns
+ * this into a red rather than into a case about a page nothing happened to.
+ */
+const ENOUGH_TO_OVERFLOW = 9;
 
 /**
  * HOW MANY LINES ARE SUBMITTED ONTO A WINDOW WITH FAR MORE ROOM THAN THEM — the other fixture,
@@ -533,6 +566,18 @@ function presses(what: string, keys: string): Step {
 }
 
 /**
+ * ENOUGH LINES TO PUT MORE ON THE ROLL THAN THE WINDOW SHOWS — one step each, each one a
+ * different line ({@link submits} says why).
+ *
+ * ONE FIXTURE AND THREE CASES, because every case about a WALK needs somewhere to walk to and
+ * the three had it written out separately — two lines here, three there — which is three ideas
+ * of how big the roll has to be, all of them wrong the moment the window changes height.
+ */
+function saidEnoughToScroll(): Step[] {
+  return Array.from({ length: ENOUGH_TO_OVERFLOW }, (_, at) => submits(says(at)));
+}
+
+/**
  * A step that submits a line and waits for the frame its answer produced.
  *
  * ⚠️ EVERY LINE HAS TO BE A DIFFERENT ONE, and that is a property of the model rather than a
@@ -611,8 +656,7 @@ function theHistorySurvived(ran: Ran, what: string): void {
 
 describe('the console takes the screen and draws three regions on it', () => {
   it('⛔ takes the alternate screen once, gives it back once, and fills it', async () => {
-    const columns = 100;
-    const rows = 24;
+    const { columns, rows } = THREE_REGIONS;
     const ran = await inPty({ columns, rows, steps: [opens, leaves] });
     expect(times(ran.bytes, TAKES_THE_SCREEN), 'the screen was not taken exactly once').toBe(1);
     expect(times(ran.bytes, GIVES_THE_SCREEN_BACK), 'the screen was not given back once').toBe(1);
@@ -630,11 +674,8 @@ describe('the console takes the screen and draws three regions on it', () => {
   }, 240_000);
 
   it('⛔ leaves the top and the bottom exactly where they were, however much is printed', async () => {
-    const columns = 100;
-    const rows = 24;
-    const steps: Step[] = [opens];
-    for (let at = 0; at < ENOUGH_TO_OVERFLOW; at += 1) steps.push(submits(says(at)));
-    steps.push(leaves);
+    const { columns, rows } = THREE_REGIONS;
+    const steps: Step[] = [opens, ...saidEnoughToScroll(), leaves];
     const ran = await inPty({ columns, rows, steps });
     const opened = screenAt(ran, 0, columns, rows);
     // AND THE PRINTED PAGE IS THE ONE THAT SETTLED, found by the width it was drawn at rather
@@ -668,8 +709,7 @@ describe('the console takes the screen and draws three regions on it', () => {
     // (`a-page-that-opens-clean.test.ts`, gone with that machinery). Clearing is the ROLL being
     // emptied now (`src/repl/scrolling.ts`), and a mutation that emptied it to NOTHING instead
     // of back to the opening scored zero reds across the whole bench. This is that zero closed.
-    const columns = 100;
-    const rows = 24;
+    const { columns, rows } = THREE_REGIONS;
     const ran = await inPty({
       columns,
       rows,
@@ -701,15 +741,13 @@ describe('the console takes the screen and draws three regions on it', () => {
 
 describe('the middle region scrolls, and the two fixed regions do not', () => {
   it('walks back with PgUp and the wheel, comes back with PgDn and End', async () => {
-    const columns = 100;
-    const rows = 24;
+    const { columns, rows } = THREE_REGIONS;
     const ran = await inPty({
       columns,
       rows,
       steps: [
         opens,
-        submits(says(0)),
-        submits(says(1)),
+        ...saidEnoughToScroll(),
         presses('walked a page back', PAGE_UP),
         presses('walked a page forward', PAGE_DOWN),
         presses('turned the wheel back', WHEEL_UP.repeat(2)),
@@ -719,12 +757,20 @@ describe('the middle region scrolls, and the two fixed regions do not', () => {
       ],
     });
     const at = (step: number): Screen => screenAt(ran, step, columns, rows);
-    const printed = at(2);
-    const back = at(3);
-    const forward = at(4);
-    const wheeled = at(5);
-    const tail = at(6);
-    const top = at(7);
+    // EACH PAGE BY WHAT ITS STEP DID, counted off the last line the session said rather than
+    // written out: how many lines it takes to outgrow the window is a fixture ({@link
+    // ENOUGH_TO_OVERFLOW}), and an index written down beside it is an index that goes stale.
+    const printed = at(ENOUGH_TO_OVERFLOW);
+    const back = at(ENOUGH_TO_OVERFLOW + 1);
+    const forward = at(ENOUGH_TO_OVERFLOW + 2);
+    const wheeled = at(ENOUGH_TO_OVERFLOW + 3);
+    const tail = at(ENOUGH_TO_OVERFLOW + 4);
+    const top = at(ENOUGH_TO_OVERFLOW + 5);
+    // AND THE ROLL REALLY DID OUTGROW THE WINDOW, or every assertion below is about a page with
+    // nowhere to scroll: the oldest line the opening lands is off the top at the tail.
+    expect(printed.text, 'the whole roll still fits, so nothing here is a walk').not.toContain(
+      OLDEST,
+    );
     // WALKING BACK SHOWS SOMETHING THE TAIL DID NOT, which is what a scroll IS.
     expect(back.text, 'PgUp showed the same window as the tail').not.toBe(printed.text);
     // AND IT COMES BACK TO EXACTLY WHAT IT LEFT.
@@ -834,26 +880,23 @@ describe('the middle region scrolls, and the two fixed regions do not', () => {
     // more roll than region must still reach the first line of it. And *reach* is the whole of the
     // claim — the oldest line at the top of a FULL window, not alone on a page with room for four,
     // which is what Home did before this and is the same defect wearing a key.
-    const columns = 100;
-    const rows = 24;
+    const { columns, rows } = THREE_REGIONS;
     const ran = await inPty({
       columns,
       rows,
       steps: [
         opens,
-        submits(says(0)),
-        submits(says(1)),
-        submits(says(2)),
-        presses('turned the wheel to the top', WHEEL_UP.repeat(20)),
+        ...saidEnoughToScroll(),
+        presses('turned the wheel to the top', WHEEL_UP.repeat(40)),
         presses('went back to the tail', TO_THE_TAIL),
         presses('went to the top', TO_THE_TOP),
         leaves,
       ],
     });
-    const printed = screenAt(ran, 3, columns, rows);
-    const wheeled = screenAt(ran, 4, columns, rows);
-    const tail = screenAt(ran, 5, columns, rows);
-    const top = screenAt(ran, 6, columns, rows);
+    const printed = screenAt(ran, ENOUGH_TO_OVERFLOW, columns, rows);
+    const wheeled = screenAt(ran, ENOUGH_TO_OVERFLOW + 1, columns, rows);
+    const tail = screenAt(ran, ENOUGH_TO_OVERFLOW + 2, columns, rows);
+    const top = screenAt(ran, ENOUGH_TO_OVERFLOW + 3, columns, rows);
     // THE ROLL REALLY DID OUTGROW THE WINDOW, or every assertion below is about the case above:
     // the oldest line is off the page at the tail.
     expect(
@@ -885,15 +928,13 @@ describe('the middle region scrolls, and the two fixed regions do not', () => {
   }, 240_000);
 
   it('⛔ does not jump a reader who has walked back when something new lands', async () => {
-    const columns = 100;
-    const rows = 24;
+    const { columns, rows } = THREE_REGIONS;
     const ran = await inPty({
       columns,
       rows,
       steps: [
         opens,
-        submits(says(0)),
-        submits(says(1)),
+        ...saidEnoughToScroll(),
         presses('walked back', PAGE_UP),
         // ⚠️ THE LINE IS TYPED AND SUBMITTED AS TWO STEPS, and that is forced by what the case
         // is about rather than by taste: a line landing under a reader who has walked back
@@ -901,15 +942,15 @@ describe('the middle region scrolls, and the two fixed regions do not', () => {
         // frame waits for ever. Typing it changes the row being typed and submitting it changes
         // that row back, so each half is a frame — and the frame the second one produces is the
         // one under test.
-        presses('typed a line while walked back', says(2)),
+        presses('typed a line while walked back', says(ENOUGH_TO_OVERFLOW)),
         presses('submitted it while walked back', '\r'),
         presses('went back to the tail', TO_THE_TAIL),
         leaves,
       ],
     });
-    const walked = screenAt(ran, 3, columns, rows);
-    const landed = screenAt(ran, 5, columns, rows);
-    const tail = screenAt(ran, 6, columns, rows);
+    const walked = screenAt(ran, ENOUGH_TO_OVERFLOW + 1, columns, rows);
+    const landed = screenAt(ran, ENOUGH_TO_OVERFLOW + 3, columns, rows);
+    const tail = screenAt(ran, ENOUGH_TO_OVERFLOW + 4, columns, rows);
     // THE WINDOW IS WHERE THE READER LEFT IT. What landed went onto the roll, under what they are
     // reading, and the page did not move.
     expect(landed.text, 'new output pulled the page out from under a reader').toBe(walked.text);
@@ -928,10 +969,17 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
   it('keeps the three regions where they belong, narrowing and widening in sequence', async () => {
     const columns = 120;
     const rows = 40;
+    // ⚠️ ONE OF THE THREE WAS EIGHTY BY TWENTY-FOUR AND ANOTHER NINETY BY THIRTY, and neither
+    // has an arrangement any more: the opening may hold a third of the screen at most, and it
+    // costs more than that at both ({@link THREE_REGIONS}). What this case is about is the three
+    // regions surviving a resize, so the sequence is three sizes that HAVE three regions — the
+    // narrowing and the widening are what it asserts, and a size with the opening on the roll is
+    // the subject of `the-opening-fits-the-height.test.ts` instead. The transition to eighty by
+    // twenty-four is still driven, in the case under this one, where what is read is the frames.
     const sizes = [
-      { columns: 80, rows: 24 },
+      { columns: 110, rows: 30 },
+      { columns: 190, rows: 64 },
       { columns: 120, rows: 40 },
-      { columns: 90, rows: 30 },
     ] as const;
     const ran = await inPty({
       columns,
@@ -1056,7 +1104,16 @@ describe('the way out gives the screen back and the transcript with it', () => {
     expect(left.beneath, 'the caller’s buffer does not hold what the session said').toContain(echo);
     // IN THE ORDER THE SESSION SAID IT, which is what makes the transcript greppable rather than
     // merely present: the echo of the verb comes before the verdict it produced.
-    const verdict = 'local integrity verified';
+    //
+    // ⚠️ THE MARKER WAS `local integrity verified` AND THE OPENING SAYS THAT TOO. It said it
+    // before this delivery as well — in the arrangement at the top, which is not on the roll and
+    // therefore not in the transcript — and the opening lands on the roll whole at sizes with no
+    // room for an arrangement, so the first occurrence became the opening's own and the order
+    // read backwards. What is looked for is a clause only the VERB prints: the panel has room
+    // for one line per tree and shows the clause that IS the verdict, dropping the ones that
+    // qualify it (`src/repl/session.ts`, and the case in `the-panel.test.ts` that asserts the
+    // panel's line is a prefix of the verb's).
+    const verdict = 'tail(s)';
     expect(left.beneath.indexOf(echo), 'the transcript is out of order').toBeLessThan(
       left.beneath.indexOf(verdict),
     );

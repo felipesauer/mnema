@@ -1321,9 +1321,19 @@ describe('a page without the room shows fewer, and says how many it could not', 
   // at every height, and eight rows is a screen with no room for a list at all rather than a
   // screen that shows one word. Both counts are read off the product and asserted against the
   // total, which is what keeps them honest as the geometry moves.
+  // ⚠️ AND BOTH SIZES MOVED AGAIN, for the reason the counts here have always moved: what the
+  // list has room for is what the page has left over, and this delivery gave the page fifteen
+  // rows back. The opening's arrangement is drawn only while it fits inside a third of the
+  // screen (`repl/panel.ts`, `panelFor`), and at a hundred columns it does not at either of
+  // these heights — so the region above the list is nought instead of fifteen, the list has that
+  // much more room, and the taller of the two sizes stopped cutting the list AT ALL. Measured on
+  // a real terminal, at a hundred columns: thirty rows now show every word there is, and sixteen
+  // show eleven of nineteen. The two regimes are kept by moving DOWN — a page with room shows
+  // what it has room for, a page with less shows fewer — and both are still asserted against the
+  // total rather than written down.
   for (const [rows, shown] of [
-    [30, 10],
-    [16, 5],
+    [20, 15],
+    [10, 5],
   ] as const) {
     it(`names a number that adds up to everything there was, at 100x${rows}`, async () => {
       // THE NUMBER IS ASSERTED AGAINST THE TOTAL rather than written down: what is on the

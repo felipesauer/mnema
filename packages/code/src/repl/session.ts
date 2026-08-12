@@ -409,18 +409,35 @@ export async function openSession(request: SessionRequest): Promise<void> {
    * PURE, AND THAT IS THE POINT OF IT BEING A FUNCTION. The console calls it for the size the
    * device has at the moment of the drawing, and keeps the answer while that size does not move
    * (`console.ts`, `theOpening`). Nothing is read: the lines above already exist, and the
-   * answers that depend on the size are which drawing there is ROOM for (`panelFor`, width) and
-   * how much of the name is DRAWN (`bannerFor`, both). A recomposition that asked the record
-   * again could make the panel say something different halfway through a session — and the
-   * reads are counted rather than promised (`tests/the-name-and-the-hints.test.ts`).
+   * answers that depend on the size are which arrangement there is ROOM for (`panelFor`) and
+   * how much of the name is DRAWN (`bannerFor`) — ⚠️ and the first of those took the WIDTH
+   * alone until the arrangement was measured against the screen it is fixed on. Both take the
+   * pair now, out of the one reading. A recomposition that asked the record again could make
+   * the panel say something different halfway through a session — and the reads are counted
+   * rather than promised (`tests/the-name-and-the-hints.test.ts`).
    */
   const theOpening = (columns: number, rows: number): Opening => {
     // THE PAGE WITH A GIVEN DRAWING IN IT, composed rather than estimated — and that is what
     // keeps the arithmetic out of a circle. The mark's WIDTH is what decides whether the text
-    // goes beside it, and the arrangement is what decides whether the mark's rows are added to
-    // the text's or shared with them; both are settled the moment the opening exists.
+    // goes beside it, its HEIGHT is most of what the arrangement costs, and the arrangement is
+    // what decides whether the mark's rows are added to the text's or shared with them; all of
+    // it is settled the moment the opening exists.
+    //
+    // ⛔ BOTH MEASUREMENTS TRAVEL TOGETHER FROM HERE, and they are the two this function was
+    // handed rather than two readings of a device: a panel chosen against one terminal and an
+    // area budgeted against another are two frames, and the console has already paid for that
+    // shape once (`console.ts`, `theSize`).
     const drawnWith = (mark: readonly Line[]): Opening =>
-      openingFor({ columns, render, title, mark, standing: where, record, beneath: refuses });
+      openingFor({
+        columns,
+        rows,
+        render,
+        title,
+        mark,
+        standing: where,
+        record,
+        beneath: refuses,
+      });
     // WHAT THE PAGE SPENDS THAT NO DRAWING CHANGES: the input area at the bottom, in
     // whichever arrangement this terminal has room for.
     const underneath = areaFor({

@@ -1300,11 +1300,25 @@ describe('everything that chooses a shape by the size of the terminal is one of 
     expect(rulesOnTheSize('const tall = (): number => rows;')).toBe(false);
   });
 
-  it('and the name is the only one that rules on both', () => {
-    // WHAT THIS DELIVERY CHANGED, said as a property of the source: the panel rules on a
-    // width, the area and the palette on what they were already ruling on, and the name is
-    // the one place that had to learn a second measurement — because it is the one drawing
-    // that is neither reflowed nor scrolled.
+  it('and two of them rule on both: the name, and the arrangement it is drawn in', () => {
+    // ⚠️ THIS CASE WAS `AND THE NAME IS THE ONLY ONE THAT RULES ON BOTH`, and it asserted in as
+    // many words that the panel did NOT rule on a height. The reason given was that the name is
+    // "the one drawing that is neither reflowed nor scrolled" — and the panel is the other one.
+    // WHAT FALSIFIED IT IS WHERE THE ARRANGEMENT ENDED UP: it is the fixed region at the top of
+    // the screen, redrawn on every frame and never scrolled, so its rows are rows the session's
+    // answers can never be given. Measured on this surface's own fixture at eighty by
+    // twenty-four: fifteen rows of arrangement, five of input area, four left — and `/help`
+    // showed the last four rows of what it printed with none of the verbs on the screen.
+    //
+    // SO THE PROPERTY IS THE PAIR RATHER THAN THE ONE, and it is still a property of the source:
+    // the two things that are DRAWN AND HELD rule on both measurements, and the two that are
+    // reflowed with what they are in — the input area's arrangement and the fold — rule on the
+    // one they are cut by. The thresholds are different kinds and each says which it is: the
+    // name and the fold give way at their own measurement, and the arrangement gives way across
+    // at its content's width and down at a SHARE of the screen (`repl/panel.ts`, `A_THIRD`),
+    // because nothing down there folds or is cut and no measurement of the drawing answers *how
+    // much of a caller's screen may this hold for ever*.
+    //
     // ONE SPELLING OF THE OPERATOR, shared with the scan above: two regular expressions for
     // one rule is how the pair comes to disagree, and this one already did — the scan was
     // taught not to accuse a fat arrow and this copy was not.
@@ -1313,11 +1327,29 @@ describe('everything that chooses a shape by the size of the terminal is one of 
         withoutComments(readFileSync(join(SRC, file), 'utf-8')),
       );
     const banner = join('presentation', 'banner.ts');
+    const panel = join('repl', 'panel.ts');
     expect(rulesOn(banner, 'columns'), 'the name stopped ruling on the width').toBe(true);
     expect(rulesOn(banner, 'rows'), 'the name does not rule on the height').toBe(true);
-    expect(rulesOn(join('repl', 'panel.ts'), 'rows'), 'the panel started ruling on height').toBe(
-      false,
-    );
+    expect(rulesOn(panel, 'columns'), 'the arrangement stopped ruling on the width').toBe(true);
+    expect(rulesOn(panel, 'rows'), 'the arrangement does not rule on the height').toBe(true);
+    // AND THE OTHER THREE SPELL ONE MEASUREMENT EACH, which is what keeps the sentence above a
+    // distinction rather than a list: a case that only named the two would be satisfied by every
+    // module on this surface learning a second axis.
+    //
+    // ⛔ WHAT THIS SCAN SEES IS A MEASUREMENT NAMED IN THE COMPARISON, never a rule about one.
+    // The input area really does give way by height — it is the reason it has forms at all — and
+    // it is spelled against what is LEFT of the screen under the region above (`repl/area.ts`,
+    // `within`), which no pattern over the words `columns` and `rows` can find. So the three
+    // below are asserted as what they SPELL, and the instrument's own blindness is written here
+    // rather than left for a reader to mistake for a finding.
+    for (const one of [
+      join('repl', 'area.ts'),
+      join('repl', 'palette.ts'),
+      join('presentation', 'folded.ts'),
+    ]) {
+      expect(rulesOn(one, 'columns'), `${one}: stopped spelling a rule on the width`).toBe(true);
+      expect(rulesOn(one, 'rows'), `${one}: spells a rule on the height`).toBe(false);
+    }
   });
 });
 

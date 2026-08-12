@@ -4,7 +4,17 @@
  * The console opens with the name drawn, and beside it what the session is, where it is
  * standing and what the record is. That is a drawing with a WIDTH, and a terminal too narrow
  * to hold the two side by side has to be given them one over the other. So there are three
- * forms, the widest one that fits is the one drawn, and this file is the measurement.
+ * forms, the richest one that fits is the one drawn, and this file is the measurement.
+ *
+ * ⚠️ AND IT FITS ON TWO MEASUREMENTS, WHERE IT USED TO FIT ON ONE. Every sentence in this file
+ * asked how WIDE a form was and none of them asked how TALL, and what falsified that is the
+ * arrangement being FIXED: it is drawn at the top of every frame and never scrolls, so its rows
+ * are rows the session's answers can never have. Measured on the fixture this surface is tested
+ * over, at eighty by twenty-four: the arrangement spent FIFTEEN of the twenty-four rows, the
+ * input area five, and the reader was left four — so a caller who asked what the session runs
+ * was shown the last four rows of the answer and none of the verbs. What the height buys the
+ * chooser is one more way for a form to not fit ({@link panelFor}), and the degradation that was
+ * already there does the rest.
  *
  * ⚠️ THERE WAS A BOX AROUND ALL OF IT, and this file was the arithmetic of the box: a title
  * on its top border, two columns with a rule between them, and a border that cost two
@@ -69,13 +79,81 @@ import type { Render } from '../presentation/render.js';
  * the text is beside the mark or under it, and whether the whole of it was measured to fit
  * across this terminal — which is what `bare` says it was not, and why its lines are landed
  * where a line the terminal may FOLD belongs ({@link openingFor}).
+ *
+ * ⚠️ AND `bare` IS WHAT A SCREEN TOO SHORT FOR AN ARRANGEMENT GETS TOO, which is the second
+ * reason it can be reached and not a second form. The two questions are *does it fit across*
+ * and *does it fit inside its share of the way down* ({@link panelFor}); the answer to either
+ * being no drops one rung, and the rung under the last one is the same lines on the roll.
  */
 export type PanelForm = 'columns' | 'stacked' | 'bare';
+
+/**
+ * The three forms, richest first — the order the choice below walks.
+ *
+ * IT IS A LIST RATHER THAN A CHAIN OF CONDITIONS, and the reason is the shape the banner
+ * already answers in (`presentation/banner.ts`, `FORMS`): the ladder is walked, the first rung
+ * that fits is the answer, and the last rung is the floor that fits whatever the size. Written
+ * as nested ternaries — which is what this was — a third question about a form is a third
+ * branch in an expression that already had two, and the two measurements would be asked in
+ * different places.
+ */
+const THE_FORMS: readonly PanelForm[] = ['columns', 'stacked', 'bare'];
+
+/**
+ * HOW MUCH OF THE SCREEN THE CHROME MAY TAKE, as a divisor: one part in three.
+ *
+ * IT IS A NUMBER SOMEBODY CHOSE, which every other threshold on this surface refuses to be —
+ * so it is chosen out loud rather than quietly. The other thresholds can be the content's own
+ * measurement because what they rule on is whether something is DRAWN whole or folded; this
+ * one rules on how much of a caller's screen a thing that says nothing about the record may
+ * hold, and there is no measurement of the drawing that answers that. What the three is
+ * defensible by:
+ *
+ *   - WHAT THIS PANEL WAS MEASURED AGAINST spends FOUR rows of chrome and writes its name, its
+ *     build and its context in text beside its logo ({@link BETWEEN_COLUMNS} has the rest of
+ *     that measurement). Four of twenty-four is one row under a sixth; a third is twice as
+ *     generous as the reference and still a bound.
+ *   - ON THE SCREEN EVERYBODY HAS, twenty-four rows, a third is eight and the input area takes
+ *     about five — so what is left for the answer a caller asked for is around eleven rows
+ *     rather than four.
+ *   - AND THE PEOPLE WHO LIVE IN TWENTY-FOUR ROWS are the ones in a tmux pane, an editor's
+ *     embedded terminal or an ssh session, which is not a degenerate size to be tolerated but
+ *     the ordinary one.
+ */
+const A_THIRD = 3;
+
+/**
+ * Whether an arrangement of a given height is inside its share of a screen this tall.
+ *
+ * THE SHARE IS SPELLED AGAINST THE SCREEN rather than as a number of rows worked out first,
+ * and that is deliberate: `chrome * 3 <= rows` and `chrome <= ⌊rows / 3⌋` are the same
+ * statement about whole rows, and only the first says what it is measured against in the
+ * expression that decides. A rounded number computed above and compared below is a threshold
+ * one edit away from being a constant nobody can trace back to a screen.
+ *
+ * A DEVICE THAT REPORTED NO HEIGHT keeps only the form that costs nothing, for the reason the
+ * width gives about the same silence: a height nobody reported is not a height to guess at,
+ * and a fixed region drawn against a guess is the one thing that cannot be scrolled back to.
+ */
+function withinItsShare(chrome: number, rows: number): boolean {
+  return chrome * A_THIRD <= rows;
+}
 
 /** What the panel is made of, as lines, before anything decides how much fits. */
 export interface PanelRequest {
   /** How wide the terminal is, asked of the DEVICE by whoever opens the session. */
   readonly columns: number;
+  /**
+   * HOW TALL IT IS, asked of the same device in the same reading — never in a second one.
+   *
+   * ⛔ TWO NUMBERS TAKEN AT TWO INSTANTS ARE TWO TERMINALS, which is the rule the whole
+   * geometry of this surface rests on and which the console learnt by measuring a frame that
+   * came out twenty-four rows by a hundred and twenty when no terminal was ever that shape
+   * (`console.ts`, `theSize`). So the pair arrives together, from the one place that asks the
+   * device anything, exactly as it arrives at the drawing of the name (`presentation/
+   * banner.ts`).
+   */
+  readonly rows: number;
   /** How a line becomes bytes, resolved once for the whole session. */
   readonly render: Render;
   /** What the session is: the product, the build, and what a caller is looking at. */
@@ -210,12 +288,19 @@ export interface Opening {
    * always claimed it is, *the same lines landed the way every other line of this session lands*,
    * rather than a third drawing.
    *
-   * NOUGHT FOR A TERMINAL TOO NARROW FOR AN ARRANGEMENT, which is the case that forced the
+   * NOUGHT FOR A TERMINAL WITH NO ROOM FOR AN ARRANGEMENT, which is the case that forced the
    * split. A drawing that does not fit used to scroll away one row at a time and the reader kept
    * whatever was at the bottom of it; a fixed region that does not fit can only be CLIPPED, and
    * a clipped drawing loses the rows that say what the session is and what the record proved. On
    * the roll it loses nothing at all — the reader sees the end of it and scrolls back for the
    * rest.
+   *
+   * ⚠️ AND *NO ROOM* MEANT TOO NARROW, which is the premise this delivery took a second half
+   * away from. A screen with the width for an arrangement and not the HEIGHT for it drew one
+   * anyway, and it stayed drawn: fifteen rows of a twenty-four-row terminal, for ever, so the
+   * answer to whatever the caller typed got four. The nought is now reached from either
+   * measurement ({@link panelFor}), and what it means here did not move — everything that is not
+   * a fixed region goes on the roll, and the roll can be scrolled.
    */
   readonly above: number;
 }
@@ -244,30 +329,89 @@ export interface Opening {
  * and the record's section under a blank row.
  *
  * ONE FUNCTION FOR BOTH FORMS, because it is the same three groups in both — what differs is
- * whether they sit beside the mark or under it, which is {@link panelRows}' one branch.
+ * whether they sit beside the mark or under it, which is {@link rowsOfTheForm}' one branch.
+ *
+ * ⚠️ IT TOOK A PANEL AND IT TAKES THE TWO COUNTS, and that is what let the height into the
+ * choice at all: the form is what a {@link Panel} is built WITH, so a measurement that could
+ * only be made once there was one could not be an input to choosing it. The counts are the same
+ * numbers either way — a group's rows are its lines, whether they have been rendered yet or not.
  */
-function besideTheMark(panel: Panel): number {
-  return THE_TITLE + panel.standing.length + BETWEEN_SECTIONS + panel.record.length;
+function besideTheMark(standing: number, record: number): number {
+  return THE_TITLE + standing + BETWEEN_SECTIONS + record;
 }
 
 /**
- * How many rows the arrangement takes: the mark, and the text either beside it or under it.
+ * HOW MANY ROWS OF THE SCREEN A FORM TAKES FOR EVER: the mark, and the text either beside it
+ * or under it — and none at all for the one that is not an arrangement.
  *
- * ⚠️ IT WAS `boxRows` AND IT COUNTED THE FRAME — a row for the title's border, a row for the
- * bottom edge, and the taller of the mark-and-place against the record in between. It is
- * renamed because it counts a different thing: there are no edges, and the title is a row of
- * the text rather than a row of a border. Measured at a hundred and twenty by forty, on the
+ * ⛔ THE ONE PLACE THIS IS ANSWERED, and both readers of it are what makes that worth saying:
+ * the CHOICE asks it of a form it has not settled on yet ({@link panelFor}), and the page asks
+ * it of the form that was settled on ({@link panelRows}). Two arithmetics would be an
+ * arrangement chosen as though it cost one thing and budgeted against as though it cost
+ * another, which is the same class of defect as the column costs this file already pulled
+ * together ({@link BETWEEN_COLUMNS}).
+ *
+ * ⚠️ IT WAS `panelRows` AND IT BRANCHED ON A PANEL, and before that it was `boxRows` and it
+ * counted a frame — a row for the title's border, a row for the bottom edge, and the taller of
+ * the mark-and-place against the record in between. There are no edges, and the title is a row
+ * of the text rather than a row of a border. Measured at a hundred and twenty by forty, on the
  * fixture this surface is tested over: twelve rows, of which nine survive.
+ *
+ * NOUGHT FOR `bare`, and it is the same nought {@link Opening.above} means rather than a second
+ * one: the form is what a terminal with no room gets, its lines go on the roll, and a fixed
+ * region it does not have costs no rows. It is answered here rather than by a caller's ternary
+ * so that the ladder can be walked without a rung that has to be special-cased.
  *
  * NOTHING IN AN ARRANGEMENT FOLDS, and that is by construction rather than by luck: the form
  * was chosen because its content fits across this terminal, the gap between the columns
  * counted ({@link panelFor}), so every row in here is one row. The lines of a `bare` opening
  * had no such choice made for them, which is why they are counted differently below.
  */
+function rowsOfTheForm(form: PanelForm, mark: number, beside: number): number {
+  switch (form) {
+    case 'columns':
+      return Math.max(mark, beside);
+    case 'stacked':
+      return mark + beside;
+    case 'bare':
+      return 0;
+  }
+}
+
+/**
+ * HOW MANY COLUMNS A FORM NEEDS ACROSS: the mark and the text with the gap between them, or
+ * the wider of the two, or nothing at all.
+ *
+ * THE OTHER HALF OF {@link rowsOfTheForm}, and it is a function of the same shape for the same
+ * reason: the choice asks it of every rung of the ladder, and a width worked out inside a
+ * chain of conditions could not be asked that way.
+ *
+ * NOUGHT FOR `bare`, which is what makes the ladder total: there is no terminal too narrow for
+ * lines that are allowed to fold, and the floor of this ladder has to be answered at every
+ * width there is — the same shape of floor the drawing of the name has (`presentation/
+ * banner.ts`, which still says the name in a terminal too narrow for anything).
+ */
+function columnsOfTheForm(form: PanelForm, mark: number, beside: number): number {
+  switch (form) {
+    case 'columns':
+      return mark + BETWEEN_COLUMNS + beside;
+    case 'stacked':
+      return Math.max(mark, beside);
+    case 'bare':
+      return 0;
+  }
+}
+
+/**
+ * How many rows of the screen this panel's arrangement takes — the form's own cost, asked of
+ * the one function that answers it.
+ */
 function panelRows(panel: Panel): number {
-  return panel.form === 'columns'
-    ? Math.max(panel.mark.length, besideTheMark(panel))
-    : panel.mark.length + besideTheMark(panel);
+  return rowsOfTheForm(
+    panel.form,
+    panel.mark.length,
+    besideTheMark(panel.standing.length, panel.record.length),
+  );
 }
 
 /**
@@ -327,13 +471,17 @@ export interface OpeningRequest extends PanelRequest {
  */
 export function openingFor(request: OpeningRequest): Opening {
   const panel = panelFor(request);
-  // A terminal too narrow for an arrangement gets none, and the same lines land instead —
-  // which is why the layout has two forms and not three.
+  // A terminal with no room for an arrangement gets none, and the same lines land instead —
+  // which is why the layout has two forms and not three. ⚠️ IT SAID *TOO NARROW* AND THERE ARE
+  // TWO WAYS TO HAVE NO ROOM NOW: too narrow across, or an arrangement that would take more of
+  // the way down than the chrome's share ({@link panelFor}).
   const bare = panel.form === 'bare';
   const landed: readonly Line[] = bare
     ? [...request.mark, request.title, ...request.standing, ...request.record, ...request.beneath]
     : request.beneath;
-  const above = bare ? 0 : panelRows(panel);
+  // THE FORM'S OWN COST, ASKED OF THE FORM — nought for the one that is not an arrangement, and
+  // that nought is the function's answer rather than a ternary here ({@link rowsOfTheForm}).
+  const above = panelRows(panel);
   return {
     panel: bare ? undefined : panel,
     lines: [...(bare ? panelLines(panel) : []), ...request.beneath.map(request.render)],
@@ -367,12 +515,30 @@ function widest(lines: readonly Line[]): number {
 }
 
 /**
- * The panel for a terminal `columns` wide: the widest form that fits, and its lines as
- * bytes.
+ * The panel for a terminal of a given SIZE: the richest form that fits across it and inside
+ * the chrome's share of the way down it, and its lines as bytes.
  *
- * `columns` is asked of the DEVICE by whoever opens the session and handed in, for the
- * reason the banner gives: nothing that composes a line may look at a terminal, and this
- * does not compose one.
+ * ⚠️ A FORM USED TO GIVE WAY WHEN IT DID NOT FIT, AND *FIT* MEANT ACROSS. The premise under
+ * that was the one the whole file was written on — that the arrangement is a DRAWING and a
+ * drawing's question is its width — and what falsified it is where the drawing ended up: it is
+ * the fixed region at the top of the screen, redrawn on every frame and never scrolled, so
+ * every row of it is a row the session's answers can never be given. Measured on this
+ * surface's own fixture at eighty by twenty-four: fifteen rows of arrangement, five of input
+ * area, four left for the answer — and `/help` showed the last four rows of what it printed,
+ * with none of the verbs on the screen. Nothing about the width rule moved; a second question
+ * was added beside it, and the same three forms answer both.
+ *
+ * THE TWO QUESTIONS ARE NOT THE SAME KIND OF THRESHOLD, which is why one of them is a number.
+ * Across, the threshold is the CONTENT'S own width, never a number somebody chose — a row
+ * wider than the terminal would be folded, and nothing inside an arrangement may fold. Down,
+ * nothing is folded and nothing is cut: every form fits down a screen of any ordinary height,
+ * so the content's own measurement answers nothing at all. What is being ruled on is how much
+ * of a caller's screen a region that says nothing about the record may hold for ever, and that
+ * is a share rather than a fit ({@link A_THIRD}).
+ *
+ * THE SIZE IS ASKED OF THE DEVICE by whoever opens the session and handed in, both halves of
+ * it in one reading, for the reason the banner gives: nothing that composes a line may look at
+ * a terminal, and this does not compose one.
  *
  * THIS USED TO SAY IT WAS ANSWERED ONCE, when the session opened, and that "a panel that
  * redrew itself narrower on a resize would be rewriting what the caller can scroll back
@@ -389,23 +555,28 @@ function widest(lines: readonly Line[]): number {
  *
  * ⚠️ AND THE FRAME THAT FALSIFIED IT IS GONE, WHICH DOES NOT PUT THE OLD SENTENCE BACK. It
  * is asked for whichever size the device has when a frame is built, because the FORM is a
- * function of the width and a terminal that narrowed past the threshold has the wrong one on
- * its screen. What keeps that from being a composition per keystroke is that the ANSWER is kept
- * for the size it was asked at, which is a cache rather than a delay (`repl/console.ts`,
+ * function of that size and a terminal dragged past either threshold has the wrong one on its
+ * screen — a window made SHORTER is now as much a reason to answer again as one made narrower.
+ * What keeps that from being a composition per keystroke is that the ANSWER is kept for the
+ * size it was asked at, which is a cache rather than a delay (`repl/console.ts`,
  * `theOpening`).
  */
 export function panelFor(request: PanelRequest): Panel {
-  const { columns, render, title, mark, standing, record } = request;
+  const { columns, rows, render, title, mark, standing, record } = request;
   const left = widest(mark);
   // WHAT THE SESSION IS, WHERE IT IS STANDING AND WHAT THE RECORD IS are one column: three
   // groups of rows, so the column is as wide as the widest row of the three. ⚠️ THE PLACE USED
   // TO BE ON THE LEFT, under the mark, and the title on the border above both — so this was the
   // record's width alone and the border's own cost was added to it.
   const right = Math.max(widthOf(title), widest(standing), widest(record));
-  const sideBySide = left + BETWEEN_COLUMNS + right;
-  const oneOverTheOther = Math.max(left, right);
-  const form: PanelForm =
-    sideBySide <= columns ? 'columns' : oneOverTheOther <= columns ? 'stacked' : 'bare';
+  const beside = besideTheMark(standing.length, record.length);
+  // THE LADDER, WALKED — and the two questions asked of every rung rather than of some of them.
+  // The floor answers yes to both whatever the size, so this is total by construction and the
+  // fallback is the same rung said twice rather than a case nothing covers.
+  const fits = (form: PanelForm): boolean =>
+    columnsOfTheForm(form, left, right) <= columns &&
+    withinItsShare(rowsOfTheForm(form, mark.length, beside), rows);
+  const form: PanelForm = THE_FORMS.find(fits) ?? 'bare';
   return {
     form,
     title: render(title),
