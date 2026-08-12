@@ -539,8 +539,20 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     const under = Math.max(0, rows - area.height);
     // WHETHER THERE IS ROOM FOR THE ARRANGEMENT AT ALL, and the answer is all of it or none of
     // it. Half a drawing is a page saying something about the product that is not true of it; an
-    // absence is an absence, and the lines are on the roll either way. It cannot happen on a
-    // terminal anybody opens — the drawing is chosen so the whole page fits (`session.ts`).
+    // absence is an absence, and the lines are on the roll either way.
+    //
+    // ⛔ IT IS THE LAST RESORT AND IT IS NO LONGER THE RULE, which is worth saying because it
+    // reads like one. What decides how much of the screen the arrangement may hold is the
+    // arrangement's own choice: it is drawn only when it fits inside a SHARE of the height
+    // (`panel.ts`, `panelFor`), and a share of a screen always leaves the input area the rest —
+    // so this comparison cannot be false for an arrangement that exists. It is kept because what
+    // it prevents is a CLIPPED drawing, which is the one thing a fixed region can fail as, and a
+    // guard against that is worth a comparison per frame.
+    //
+    // ⚠️ AND WHAT IT DOES IS NOT WHAT THE `bare` FORM DOES: those lines are on the roll because
+    // the panel put them there, and a panel dropped HERE is dropped from the page altogether.
+    // That is a hole this delivery closed the road to rather than the hole itself — declared,
+    // and reachable by nothing this file can do to a terminal.
     const drawn = opening.panel !== undefined && opening.above <= under;
     // HOW MANY ROWS THE MIDDLE REGION HAS, and this one number is an ESTIMATE where every other
     // number on this frame is exact. What the middle really gets is what the other two leave,

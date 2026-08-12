@@ -965,6 +965,16 @@ async function openedAt(
  *     as drawn, and it is genuinely blank now. So one of the two rows at eighty by twenty-four is
  *     the console drawing less and the other is this instrument seeing what was always there.
  *
+ * ⚠️ AND THE TWO SHORT SIZES FELL AGAIN, BY NINE AND BY EIGHT, while the tall one did not move
+ * a row — which is the shape of this delivery in one table. What the arrangement at the top may
+ * hold is a SHARE of the screen now (`repl/panel.ts`, `panelFor`), and a drawing whose
+ * arrangement wants more than its share gives way to a smaller drawing (`repl/session.ts`, the
+ * question `bannerFor` is asked). At eighty by twenty-four the nine-row art cost fifteen rows of
+ * arrangement, which is more than a third of the screen, so the letterspaced name is drawn
+ * instead and the whole opening costs eleven rows rather than twenty. At a hundred and twenty by
+ * forty the art fits inside the share, nothing gives way, and the count is the one it has been
+ * through three deliveries.
+ *
  * ⚠️ AND WHAT THE LEFTOVER ROWS ARE HAS MOVED TWICE, while every number in the table stayed
  * put. They used to be the rows UNDER the page — screen a reader still had, which is what
  * "leaves" meant. The delivery that anchored the input at the foot spent them as blank rows
@@ -981,8 +991,8 @@ async function openedAt(
  * that moved a case rather than the product.
  */
 const THE_SCREEN: readonly { columns: number; rows: number; takes: number }[] = [
-  { columns: 80, rows: 24, takes: 20 },
-  { columns: 100, rows: 30, takes: 20 },
+  { columns: 80, rows: 24, takes: 11 },
+  { columns: 100, rows: 30, takes: 12 },
   { columns: 120, rows: 40, takes: 15 },
 ];
 
@@ -1018,8 +1028,56 @@ describe('the console spends only part of the screen it opens on', () => {
  * them, and where one form gives way to the next is searched for rather than written here.
  * The shortest is the last one at which anything fits at all, which is a fact about this
  * product's own opening rather than about a terminal.
+ *
+ * ⚠️ THEY WERE 24, 19, 18 AND 15, and every one of them now draws the same thing — which is
+ * what a delivery that moves a threshold does to a ladder written against the old one. The
+ * drawing gives way when its ARRANGEMENT wants more than its share of the screen, and the share
+ * is a third: at eighty columns the nine-row art needs a screen of forty-five rows to keep its
+ * arrangement, the five-row art thirty-three, and the letterspaced name eighteen. So the ladder
+ * is spread across the sizes those thresholds separate, and where each one is is still searched
+ * for rather than written down ({@link theHeightItGivesWayAt}).
  */
-const A_LADDER_OF_HEIGHTS: readonly number[] = [24, 19, 18, 15];
+const A_LADDER_OF_HEIGHTS: readonly number[] = [50, 40, 24, 16];
+
+/**
+ * THE SHORTEST SCREEN A GIVEN DRAWING IS STILL CHOSEN ON, at a width — searched by halving,
+ * and `undefined` for a drawing this width never answers with.
+ *
+ * IT IS A SEARCH AND NOT A TABLE for the reason every threshold on this surface is searched
+ * for: a number written here is a number that drifts away from the product the day the art or
+ * the text beside it changes by a row. What makes halving honest is the property the case
+ * asserts next to it — the ladder only ever gets simpler as the screen gets shorter — so
+ * *is this screen at least as rich as that drawing* is monotone in the height.
+ *
+ * HOW RICH A DRAWING IS is its place in the module's own order, which is the same order the
+ * width ladder is walked in ({@link everyForm}): the first is the biggest, and a page whose
+ * drawing is earlier in that list is a page that answered with something richer.
+ */
+async function theHeightItGivesWayAt(
+  drawing: readonly string[],
+  columns: number,
+): Promise<number | undefined> {
+  const forms = everyForm();
+  const wanted = forms.findIndex((form) => form.join('\n') === drawing.join('\n'));
+  const richEnough = async (rows: number): Promise<boolean> => {
+    const drawn = (await openedAt(columns, rows)).drawing;
+    const at = forms.findIndex((form) => form.join('\n') === drawn.join('\n'));
+    return at !== -1 && at <= wanted;
+  };
+  let low = 1;
+  let high = 70;
+  if (!(await richEnough(high))) return undefined;
+  while (high - low > 1) {
+    const middle = Math.floor((low + high) / 2);
+    if (await richEnough(middle)) high = middle;
+    else low = middle;
+  }
+  // AND IT IS THIS DRAWING RATHER THAN A RICHER ONE at the height found: the search is over
+  // "at least as rich as", so the shortest screen for the biggest drawing is also a screen the
+  // second one is never given.
+  const drawn = (await openedAt(columns, high)).drawing;
+  return drawn.join('\n') === drawing.join('\n') ? high : undefined;
+}
 
 describe('the drawing gives way so the page fits, rather than the page being cut', () => {
   it('never draws what the width alone allows, and the opening is whole at every height', async () => {
@@ -1066,6 +1124,58 @@ describe('the drawing gives way so the page fits, rather than the page being cut
     );
   }, 180_000);
 
+  it('⛔ gives each drawing up at the height its own arrangement stops fitting in', async () => {
+    // ⛔ THE AXIS THAT NEVER FIRED, EXERCISED. This module's own doc recorded the defect in as
+    // many words — *the tallest form was five rows, `5 <= rows` is true on every terminal
+    // anybody has, and the axis chose nothing at any size a person opens* — and the delivery
+    // that answered it made the question *does the PAGE fit*, which a page whose arrangement had
+    // already been given up answers YES to more easily than one that kept it. So the axis still
+    // chose nothing, for a second reason, and there was no case here that could have said so.
+    //
+    // WHAT IT IS MEASURED AGAINST NOW is the arrangement's share of the screen: a drawing whose
+    // arrangement would hold more than a third of the rows is a drawing this screen cannot
+    // afford, whatever the page would cost with it gone (`repl/panel.ts`, `theShortestScreenFor`;
+    // `repl/session.ts`, the question `bannerFor` is asked). That threshold fires at sizes people
+    // really open, and this is the ladder it makes.
+    //
+    // SEARCHED, ONE ROW AT A TIME, AND NEVER WRITTEN DOWN — the same mould as the width ladder
+    // above: at the height a drawing gives way at it is drawn, one row shorter it is not, and
+    // the ladder only ever gets simpler as the screen gets shorter.
+    const columns = 80;
+    const ladder: { readonly drawing: readonly string[]; readonly at: number }[] = [];
+    // EVERY DRAWING BUT THE FLOOR, which is the exception the width ladder makes for the same
+    // reason: the name typed is answered at every height there is, including heights with no
+    // room for an arrangement at all, because the one thing this banner exists to say may not be
+    // dropped. Where the floor is answered is asserted under the loop instead.
+    for (const form of everyForm().slice(0, -1)) {
+      const at = await theHeightItGivesWayAt(form, columns);
+      if (at === undefined) continue;
+      ladder.push({ drawing: form, at });
+      expect((await openedAt(columns, at)).drawing, `${at} rows`).toEqual(form);
+      expect((await openedAt(columns, at - 1)).drawing, `${at - 1} rows`).not.toEqual(form);
+    }
+    // ⛔ MORE THAN ONE DRAWING IS REACHABLE BY THE HEIGHT ALONE, which is the whole of what was
+    // missing: at one width, four heights, three different drawings. Before this delivery this
+    // list would have had ONE entry — the biggest drawing, at the shortest screen that fits
+    // anything at all — because nothing else could ever be chosen by a height.
+    expect(ladder.length, 'the height chooses no drawing at any size').toBeGreaterThan(1);
+    // AND THE LADDER GOES ONE WAY: a drawing further down the list gives way on a shorter
+    // screen, so a taller terminal never gets a simpler drawing than a shorter one.
+    for (let at = 1; at < ladder.length; at += 1) {
+      expect(
+        (ladder[at] as { at: number }).at,
+        'a simpler drawing needs a taller screen than the one above it',
+      ).toBeLessThan((ladder[at - 1] as { at: number }).at);
+    }
+    // AND THE FLOOR IS ANSWERED WHATEVER THE HEIGHT, which is what keeps the ladder total: the
+    // name is still drawn on a screen too short for any arrangement at all.
+    const tiny = await openedAt(columns, 10);
+    expect(tiny.drawing.length, 'a screen too short for an arrangement drew nothing').toBe(1);
+    expect(tiny.drawing.join('').toLowerCase(), 'the floor stopped saying the name').toContain(
+      'mnema',
+    );
+  }, 300_000);
+
   it('draws the biggest form on a terminal with the room for it, and not on one without', async () => {
     // THE ELO FOR THE BIGGEST FORM, and the answer to the question an earlier delivery's
     // mechanism failed: does this one ever fire on a screen a person has? Both halves in one
@@ -1077,15 +1187,22 @@ describe('the drawing gives way so the page fits, rather than the page being cut
     //
     // ⚠️ THE SECOND HALF USED TO ASK AN ORDINARY TWENTY-FOUR-ROW TERMINAL, and the drawing is
     // what falsified that: nine rows of art fit a screen eleven did not, so a page a person
-    // opens most often is now on the side that KEEPS the biggest form. The heights are a size
-    // and its half rather than a threshold — where the form gives way is searched for in the
-    // ladder above, one height at a time.
+    // opens most often was on the side that KEPT the biggest form. The heights are a size and
+    // its half rather than a threshold — where the form gives way is searched for in the ladder
+    // above, one height at a time.
+    //
+    // ⚠️ AND BOTH SIZES MOVED WIDER, WHICH IS THE SAME CORRECTION SEEN FROM THE OTHER END. They
+    // were a hundred columns, where the biggest art cannot stand BESIDE the text — the two
+    // columns want a hundred and four — so its arrangement is the stacked one at fifteen rows,
+    // and fifteen rows want a screen of forty-five to stay inside their share. A hundred and
+    // twenty is a width where the biggest drawing costs nine rows rather than fifteen, so the
+    // only thing that separates these two runs is the height, which is what the case says.
     const biggest = drawnAcross(WIDE);
-    const roomy = await openedAt(100, 30);
+    const roomy = await openedAt(120, 30);
     expect(roomy.drawing, 'the biggest drawing is on no terminal at all').toEqual(biggest);
     expect(roomy.whole, 'the biggest drawing opened cut').toBe(true);
 
-    const ordinary = await openedAt(100, 15);
+    const ordinary = await openedAt(120, 24);
     expect(
       ordinary.drawing,
       'the biggest drawing was kept on a screen without the room',
@@ -1300,11 +1417,25 @@ describe('everything that chooses a shape by the size of the terminal is one of 
     expect(rulesOnTheSize('const tall = (): number => rows;')).toBe(false);
   });
 
-  it('and the name is the only one that rules on both', () => {
-    // WHAT THIS DELIVERY CHANGED, said as a property of the source: the panel rules on a
-    // width, the area and the palette on what they were already ruling on, and the name is
-    // the one place that had to learn a second measurement — because it is the one drawing
-    // that is neither reflowed nor scrolled.
+  it('and two of them rule on both: the name, and the arrangement it is drawn in', () => {
+    // ⚠️ THIS CASE WAS `AND THE NAME IS THE ONLY ONE THAT RULES ON BOTH`, and it asserted in as
+    // many words that the panel did NOT rule on a height. The reason given was that the name is
+    // "the one drawing that is neither reflowed nor scrolled" — and the panel is the other one.
+    // WHAT FALSIFIED IT IS WHERE THE ARRANGEMENT ENDED UP: it is the fixed region at the top of
+    // the screen, redrawn on every frame and never scrolled, so its rows are rows the session's
+    // answers can never be given. Measured on this surface's own fixture at eighty by
+    // twenty-four: fifteen rows of arrangement, five of input area, four left — and `/help`
+    // showed the last four rows of what it printed with none of the verbs on the screen.
+    //
+    // SO THE PROPERTY IS THE PAIR RATHER THAN THE ONE, and it is still a property of the source:
+    // the two things that are DRAWN AND HELD rule on both measurements, and the two that are
+    // reflowed with what they are in — the input area's arrangement and the fold — rule on the
+    // one they are cut by. The thresholds are different kinds and each says which it is: the
+    // name and the fold give way at their own measurement, and the arrangement gives way across
+    // at its content's width and down at a SHARE of the screen (`repl/panel.ts`, `A_THIRD`),
+    // because nothing down there folds or is cut and no measurement of the drawing answers *how
+    // much of a caller's screen may this hold for ever*.
+    //
     // ONE SPELLING OF THE OPERATOR, shared with the scan above: two regular expressions for
     // one rule is how the pair comes to disagree, and this one already did — the scan was
     // taught not to accuse a fat arrow and this copy was not.
@@ -1313,11 +1444,29 @@ describe('everything that chooses a shape by the size of the terminal is one of 
         withoutComments(readFileSync(join(SRC, file), 'utf-8')),
       );
     const banner = join('presentation', 'banner.ts');
+    const panel = join('repl', 'panel.ts');
     expect(rulesOn(banner, 'columns'), 'the name stopped ruling on the width').toBe(true);
     expect(rulesOn(banner, 'rows'), 'the name does not rule on the height').toBe(true);
-    expect(rulesOn(join('repl', 'panel.ts'), 'rows'), 'the panel started ruling on height').toBe(
-      false,
-    );
+    expect(rulesOn(panel, 'columns'), 'the arrangement stopped ruling on the width').toBe(true);
+    expect(rulesOn(panel, 'rows'), 'the arrangement does not rule on the height').toBe(true);
+    // AND THE OTHER THREE SPELL ONE MEASUREMENT EACH, which is what keeps the sentence above a
+    // distinction rather than a list: a case that only named the two would be satisfied by every
+    // module on this surface learning a second axis.
+    //
+    // ⛔ WHAT THIS SCAN SEES IS A MEASUREMENT NAMED IN THE COMPARISON, never a rule about one.
+    // The input area really does give way by height — it is the reason it has forms at all — and
+    // it is spelled against what is LEFT of the screen under the region above (`repl/area.ts`,
+    // `within`), which no pattern over the words `columns` and `rows` can find. So the three
+    // below are asserted as what they SPELL, and the instrument's own blindness is written here
+    // rather than left for a reader to mistake for a finding.
+    for (const one of [
+      join('repl', 'area.ts'),
+      join('repl', 'palette.ts'),
+      join('presentation', 'folded.ts'),
+    ]) {
+      expect(rulesOn(one, 'columns'), `${one}: stopped spelling a rule on the width`).toBe(true);
+      expect(rulesOn(one, 'rows'), `${one}: spells a rule on the height`).toBe(false);
+    }
   });
 });
 
@@ -1358,10 +1507,17 @@ describe('the panel has one section in it, and the art is the only thing drawn',
     }
     // Not vacuous, in two directions: the art really is in those rows, so what is being read is
     // the panel's — and the page really does draw a run somewhere, which is the input area's.
-    expect(
-      opening.some((row) => row.includes(INK)),
-      'the mark is not in the opening',
-    ).toBe(true);
+    //
+    // ⚠️ THE ART WAS FOUND BY ITS INK, and a glyph is what this file's own header warns against
+    // looking for: *a case that looked for one glyph could not tell the letterspaced form from
+    // the typed one*. At this size the console draws the letterspaced name now — the nine-row
+    // art's arrangement wants more than its share of twenty-four rows (`repl/panel.ts`) — and
+    // there is not a block on the page. Which drawing it is is asked of the module that draws
+    // them, so no case here has to know.
+    const drawn = everyForm().find((form) =>
+      form.every((row) => opening.some((page) => page.includes(row))),
+    );
+    expect(drawn, 'no drawing of the name is in the opening').toBeDefined();
     expect(
       screen.rows.slice(under).some((row) => [...row.trim()].every((glyph) => glyph === RUN)),
       'the input area drew no rule at all',

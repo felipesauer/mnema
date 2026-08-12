@@ -79,7 +79,7 @@ import type { Drawn } from './console.js';
 import { followingTheRecord } from './following.js';
 import { type AfterLine, argvOf, dispositionOf, verbsOffered } from './gate.js';
 import type { Leaving } from './leaving.js';
-import { type Opening, openingFor } from './panel.js';
+import { type Opening, openingFor, theShortestScreenFor } from './panel.js';
 import { whatTheSessionShowed } from './seen.js';
 import { type Standing, standing } from './standing.js';
 
@@ -195,6 +195,18 @@ const NOTHING_OFFERED_YET = 0;
  * area any more, so the field it fills is a different field (`area.ts`, `AreaRequest.header`).
  */
 const NOTHING_ABOVE_YET = 0;
+
+/**
+ * A HEIGHT NO ARRANGEMENT CAN BUST — what the opening is composed against when the question is
+ * *what would this drawing's arrangement COST*, rather than *does it fit*.
+ *
+ * The two questions are asked of the same function and only the second one is about a terminal
+ * (`panel.ts`, `panelFor`): a form is chosen by the width AND by its share of the height, so a
+ * height nothing can exceed leaves the width as the only judge and the answer is the
+ * arrangement's own cost. It is a number rather than a flag because the arithmetic it feeds is
+ * a comparison, and a flag would be a second way for that comparison not to happen.
+ */
+const WHATEVER_THE_HEIGHT = Number.MAX_SAFE_INTEGER;
 
 /**
  * THE THREE CLAUSES OF THE HINT, and each one is a KEY and what that key gives (see
@@ -409,18 +421,35 @@ export async function openSession(request: SessionRequest): Promise<void> {
    * PURE, AND THAT IS THE POINT OF IT BEING A FUNCTION. The console calls it for the size the
    * device has at the moment of the drawing, and keeps the answer while that size does not move
    * (`console.ts`, `theOpening`). Nothing is read: the lines above already exist, and the
-   * answers that depend on the size are which drawing there is ROOM for (`panelFor`, width) and
-   * how much of the name is DRAWN (`bannerFor`, both). A recomposition that asked the record
-   * again could make the panel say something different halfway through a session — and the
-   * reads are counted rather than promised (`tests/the-name-and-the-hints.test.ts`).
+   * answers that depend on the size are which arrangement there is ROOM for (`panelFor`) and
+   * how much of the name is DRAWN (`bannerFor`) — ⚠️ and the first of those took the WIDTH
+   * alone until the arrangement was measured against the screen it is fixed on. Both take the
+   * pair now, out of the one reading. A recomposition that asked the record again could make
+   * the panel say something different halfway through a session — and the reads are counted
+   * rather than promised (`tests/the-name-and-the-hints.test.ts`).
    */
   const theOpening = (columns: number, rows: number): Opening => {
     // THE PAGE WITH A GIVEN DRAWING IN IT, composed rather than estimated — and that is what
     // keeps the arithmetic out of a circle. The mark's WIDTH is what decides whether the text
-    // goes beside it, and the arrangement is what decides whether the mark's rows are added to
-    // the text's or shared with them; both are settled the moment the opening exists.
-    const drawnWith = (mark: readonly Line[]): Opening =>
-      openingFor({ columns, render, title, mark, standing: where, record, beneath: refuses });
+    // goes beside it, its HEIGHT is most of what the arrangement costs, and the arrangement is
+    // what decides whether the mark's rows are added to the text's or shared with them; all of
+    // it is settled the moment the opening exists.
+    //
+    // ⛔ BOTH MEASUREMENTS TRAVEL TOGETHER FROM HERE, and they are the two this function was
+    // handed rather than two readings of a device: a panel chosen against one terminal and an
+    // area budgeted against another are two frames, and the console has already paid for that
+    // shape once (`console.ts`, `theSize`).
+    const drawnWith = (mark: readonly Line[], within: number = rows): Opening =>
+      openingFor({
+        columns,
+        rows: within,
+        render,
+        title,
+        mark,
+        standing: where,
+        record,
+        beneath: refuses,
+      });
     // WHAT THE PAGE SPENDS THAT NO DRAWING CHANGES: the input area at the bottom, in
     // whichever arrangement this terminal has room for.
     const underneath = areaFor({
@@ -435,7 +464,35 @@ export async function openSession(request: SessionRequest): Promise<void> {
       bannerFor({
         columns,
         rows,
-        needs: (drawing) => drawnWith(drawing).rows + underneath,
+        // HOW TALL A SCREEN A GIVEN DRAWING NEEDS — the taller of two demands, and the second one
+        // is what this delivery had to add.
+        //
+        // ⚠️ IT ASKED ONE QUESTION AND THE QUESTION ANSWERED ITSELF. It was *how many rows does
+        // the PAGE need with this drawing in it*, and the answer was measured on the page the
+        // drawing would really produce — including the case where the arrangement had already
+        // been given up for busting its share, which is a page with NO fixed region at all and
+        // therefore the cheapest page there is. So the biggest drawing was kept precisely
+        // BECAUSE it had cost the arrangement: at eighty by twenty-four, nine rows of art plus
+        // the text under it came to twenty-two of the twenty-four when the two were landed on
+        // the roll, `22 <= 24` was true, and nothing ever made the art give way. A rule whose
+        // threshold is satisfied by the damage it is meant to prevent is worse than no rule.
+        //
+        // SO WHAT IS ASKED IS ABOUT THE ARRANGEMENT THIS DRAWING WOULD PRODUCE. The opening is
+        // composed a second time with NO CEILING on the height ({@link WHATEVER_THE_HEIGHT}),
+        // which is the form the WIDTH alone allows — what the arrangement would cost if it were
+        // drawn — and the share says the shortest screen that may hold it (`panel.ts`,
+        // `theShortestScreenFor`). A drawing whose arrangement wants more than its share is a
+        // drawing this screen cannot afford, whatever the page would cost with it gone.
+        //
+        // BOTH DEMANDS, BECAUSE THEY ARE DIFFERENT FAILURES. A page taller than the screen opens
+        // with its own top in the scrollback; an arrangement over its share holds rows the
+        // caller's answers never get back. The taller of the two is the screen this drawing
+        // needs, and `bannerFor` compares it with the one there is.
+        needs: (drawing) =>
+          Math.max(
+            drawnWith(drawing).rows + underneath,
+            theShortestScreenFor(drawnWith(drawing, WHATEVER_THE_HEIGHT).above),
+          ),
       }),
     );
   };

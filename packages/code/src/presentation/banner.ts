@@ -35,10 +35,30 @@
  * a PARCEL — what the session is, the place it is standing, what the record is, the
  * sentence under it and the input area all take rows too — and a form that asked "do I
  * fit?" ignored every other addend and answered yes. So the question asked on this axis is
- * whether the PAGE fits with this drawing in it, and this module may not answer that one:
- * it is asked of whoever composes the page ({@link BannerRequest.needs}). Pinned in both
- * directions in `tests/the-opening-fits-the-screen.test.ts`, where the size a form gives
- * way at is searched for rather than written down.
+ * asked of whoever composes the page ({@link BannerRequest.needs}), and this module may not
+ * answer it. Pinned in both directions in `tests/the-opening-fits-the-screen.test.ts`, where
+ * the size a form gives way at is searched for rather than written down.
+ *
+ * ⚠️ AND THE AXIS STILL CHOSE NOTHING, FOR A SECOND REASON, WHICH IS WHAT IT NOW RULES ON. The
+ * question handed in was *does the PAGE fit with this drawing in it*, and a page answers that
+ * more easily the more of itself it has given up: a drawing too big for the arrangement around
+ * it makes the console drop the arrangement and land those lines on the roll, which is a page
+ * with no fixed region at all and therefore the cheapest page there is. Measured on the terminal
+ * everybody has, at eighty by twenty-four: the nine-row drawing landed the whole opening on the
+ * roll, the page came to twenty-two of the twenty-four rows, `22 <= 24` was true, and the
+ * biggest drawing was kept BECAUSE it had cost the arrangement. So the threshold fired on no
+ * screen, twice over, for two different reasons — and the second is the sharper lesson: a rule
+ * satisfied by the damage it exists to prevent is worse than no rule.
+ *
+ * WHAT IT IS MEASURED AGAINST NOW IS THE ARRANGEMENT the drawing would be put in. The region at
+ * the top of that console is FIXED — drawn on every frame, never scrolled — so it may hold at
+ * most a share of the screen (`repl/panel.ts`), and what arrives here is the taller of two
+ * demands: the rows the page needs, and the shortest screen on which this drawing's arrangement
+ * would still be inside that share. Nothing about this module moved: it is still the biggest
+ * form whose width fits and whose demand the screen meets, it still knows no rule about
+ * arrangements, and the number is still somebody else's answer (`repl/session.ts`). What changed
+ * is that the number can now say no — and the ladder it makes down the height is walked, one row
+ * at a time, in `tests/the-opening-fits-the-screen.test.ts`.
  *
  * IT IS THE THIRD PLACE THIS SURFACE CHOOSES A FORM BY A MEASUREMENT, and the only one
  * that chooses by both: the panel picks by width (`repl/panel.ts`) and the input area by
@@ -246,9 +266,17 @@ export interface BannerRequest {
   /** How tall it is, asked of the same device in the same place. */
   readonly rows: number;
   /**
-   * HOW MANY ROWS THE PAGE NEEDS with a given drawing of the name in it — what the session
-   * is, where it is standing, what the record is, the sentence under it, the input area at
-   * the bottom, and the row the layout keeps free.
+   * HOW TALL A SCREEN A GIVEN DRAWING OF THE NAME NEEDS — the shortest one this drawing may be
+   * put on at all.
+   *
+   * ⚠️ IT WAS *HOW MANY ROWS THE PAGE NEEDS WITH THIS DRAWING IN IT*, and the rename is the
+   * correction rather than a wording: a page is cheapest when the arrangement around the drawing
+   * has already been given up, so a demand measured on the page alone was met most easily by the
+   * drawing that had done the most damage (the header of this file has the measurement). What is
+   * asked for is the taller of two demands — the rows the page takes, and the shortest screen on
+   * which this drawing's arrangement is still within the share a fixed region may hold — so a
+   * drawing that would cost the ARRANGEMENT is refused by the same comparison that refuses one
+   * that would cost the page.
    *
    * IT IS A QUESTION THIS MODULE MAY NOT ANSWER, and that is the whole shape of the height
    * rule. Nothing in `presentation/` may look at a terminal or know what an arrangement
@@ -267,8 +295,8 @@ export interface BannerRequest {
 }
 
 /**
- * The banner for a terminal of a given size: the biggest form that fits across it and
- * leaves the page fitting down it, and the name when none does.
+ * The banner for a terminal of a given size: the biggest form that fits across it and that the
+ * screen is tall enough for, and the name when none is.
  *
  * THE SIZE IS ASKED OF THE DEVICE by whoever opens the session and handed in — nothing in
  * `presentation/` may look at a terminal, because a line whose bytes depended on where they
