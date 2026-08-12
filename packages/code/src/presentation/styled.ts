@@ -64,6 +64,29 @@ const YELLOW = '\u001b[33m';
 const DEFAULT_HUE = '\u001b[39m';
 
 /**
+ * THE ACCENT: SGR 35, magenta — the one hue on this surface that is not news, and the
+ * only one a ROLE carries rather than a severity.
+ *
+ * IT IS THE PRODUCT'S MARK AND NOT A VERDICT, which is what keeps the promise above whole
+ * rather than making an exception to it. Red, green and yellow say how bad the news is;
+ * magenta says *this is mnema*. It is what the console's own rules are drawn in
+ * (`repl/region.ts`, `ACCENT`), and the only thing here that takes it is the PROMPT of an
+ * echo — the console showing a caller what they sent (`echo.ts`). Nothing about the
+ * record is ever wrapped in it, and nothing wrapped in it says anything a reader could
+ * lose: strip the escapes and the prompt is still there, spelled out, which is the same
+ * argument the three severities are painted under.
+ *
+ * AND IT IS THE SECOND SPELLING OF ONE ACCENT, which is the risk this constant carries
+ * and the reason it is named here rather than left as a number. The layout says the WORD
+ * `magenta` to the library that draws the rules; this says the escape a terminal reads.
+ * Two spellings of one decision is how a surface comes to have two accents, so they are
+ * not left agreeing by inspection: the echo's prompt is asserted to be wrapped in the
+ * very escapes a rule of the input area carries, on the bytes of one frame
+ * (`tests/the-page-shows-its-seams.test.ts`).
+ */
+const ACCENT = '\u001b[35m';
+
+/**
  * What opens each role, and the empty string for a role written bare.
  *
  * Total over {@link Role} by type — the same rule the separator table keeps, for the
@@ -71,7 +94,7 @@ const DEFAULT_HUE = '\u001b[39m';
  * a fallback chose, and a surface would acquire an emphasis nobody decided on. A role
  * added to the union without an entry here does not build.
  *
- * The seven, and the convention each follows:
+ * The ten, and the convention each follows:
  *
  *   - `label` — bold. It leads the line and it is what a reader scanning a log for a
  *     refusal reads first, which is the one thing git, gh and kubectl all embolden.
@@ -94,12 +117,23 @@ const DEFAULT_HUE = '\u001b[39m';
  *     next. That travels on the other axis — three of the five dispositions carry a
  *     severity and two carry none (see `state.ts`) — so a state with nothing to report
  *     comes out byte for byte the plain line, which is most of them.
- *   - `id` and `when` — dim, and they are the reason this map was worth extending. A
- *     list of hits is columns of `field` that all weigh the same, so nothing in it
- *     stood out; dimming the two columns nobody READS makes the title beside them the
- *     line's subject, WITHOUT painting the title. It is emphasis by subtraction, which
- *     is the only kind that scales to six lists (see `line.ts` for why no third
- *     column joined them).
+ *   - `id`, `when` and `scope` — dim, and they are the reason this map was worth
+ *     extending. A list of hits is columns of `field` that all weigh the same, so nothing
+ *     in it stood out; dimming the columns nobody READS makes the title beside them the
+ *     line's subject, WITHOUT painting the title. It is emphasis by subtraction, which is
+ *     the only kind that scales to six lists. IT WAS TWO, AND THIS FILE POINTED AT
+ *     `line.ts` FOR *why no third column joined them* — the scope is that third, it
+ *     joined for this entry's own argument rather than for one of its own, and `line.ts`
+ *     is where the premise it falsified is written out.
+ *   - `prompt` — bare, and it is the one role that carries a HUE of its own
+ *     ({@link TINTED_BY}). What a caller typed in front of is the product's mark on the
+ *     page rather than a fact about the record, so it takes the accent and no weight: an
+ *     echo emboldened at both ends would be a row shouting where a reader is looking for
+ *     the words they typed.
+ *   - `typed` — bold, exactly like the `label` it is a refinement of, and the sameness is
+ *     the point rather than a duplication to collapse. A caller scrolling a session is
+ *     looking for the line they asked, in among the answer to it, and that is the same
+ *     thing a reader scanning a log for a refusal is doing.
  */
 const OPENED_BY: { readonly [R in Role]: string } = {
   label: BOLD,
@@ -109,11 +143,54 @@ const OPENED_BY: { readonly [R in Role]: string } = {
   clause: DIM,
   id: DIM,
   when: DIM,
+  scope: DIM,
   state: '',
+  prompt: '',
+  typed: BOLD,
 };
 
 /**
- * What each severity paints, and it is the whole use of hue on this surface.
+ * What each role TINTS, and the empty string for every role that carries no hue of its
+ * own — which is all of them but one.
+ *
+ * Total over {@link Role} by type, exactly like the two tables it sits between, and for
+ * the third time the same reason: a role whose hue nobody stated would be painted by
+ * whatever a fallback chose.
+ *
+ * IT IS A SECOND TABLE AND NOT A SECOND AXIS. Hue on this surface means one of two
+ * things, and they may not meet: how bad the NEWS is, which is the call site's to say and
+ * is {@link PAINTED_BY}; and *this is the product*, which is the accent and belongs to
+ * the thing that says nothing about the record at all ({@link ACCENT}). A part that
+ * carries news is painted by the news — the severity is read first below — and nothing
+ * that takes the accent can carry one: an echo is what a caller sent, and a console
+ * cannot have an opinion about it.
+ *
+ * THE DOC ABOVE {@link PAINTED_BY} SAID HUE WAS *the whole use of hue on this surface*,
+ * and this is what falsified it. It was true while every hue this file wrote was a
+ * severity; the accent was spent by the LAYOUT, in the layout's own vocabulary, on things
+ * a renderer never saw. The echo is the first line of the page that is chrome and a LINE
+ * at once — it is composed and rendered like everything else, which is what makes a caller
+ * who asked for no colour get none of this either — so the accent had to become sayable
+ * here. What did not move is the count: one accent, none of the three severities.
+ */
+const TINTED_BY: { readonly [R in Role]: string } = {
+  label: '',
+  subject: '',
+  field: '',
+  detail: '',
+  clause: '',
+  id: '',
+  when: '',
+  scope: '',
+  state: '',
+  prompt: ACCENT,
+  typed: '',
+};
+
+/**
+ * What each severity paints — the use of hue this surface was built around, and one of
+ * the two it has ({@link TINTED_BY} is the other, and says what falsified the sentence
+ * that used to end this line: *and it is the whole use of hue on this surface*).
  *
  * Total over {@link Severity} by type, for the third time and the same reason: a
  * severity a call site could set and this map had no entry for would be news reported
@@ -144,7 +221,14 @@ const PAINTED_BY: { readonly [S in Severity]: string } = {
 
 /**
  * One part as the bytes it occupies: its text, wrapped in its role's weight and then
- * in its severity's hue.
+ * in its hue — the severity's where it has one, and the role's own where it does not.
+ *
+ * THE NEWS WINS, and the order is the decision rather than an accident of the `??`. A
+ * part that carries a severity is reporting something a reader has to act on, and a part
+ * that carries the accent is saying which product they are looking at; if one part could
+ * ever be both, the news is the half that may not be overwritten. Nothing produces such a
+ * part today — the accent's one role is the echo's prompt, and no call site gives it a
+ * severity — so this line states an order rather than resolving a collision.
  *
  * A part that opens NOTHING is returned untouched — not wrapped in an empty pair — so
  * the styled line of a list of plain columns is byte for byte the plain one, and the
@@ -163,7 +247,7 @@ const PAINTED_BY: { readonly [S in Severity]: string } = {
  */
 function painted(part: Part): string {
   const weight = OPENED_BY[part.role];
-  const hue = part.severity === undefined ? '' : PAINTED_BY[part.severity];
+  const hue = part.severity === undefined ? TINTED_BY[part.role] : PAINTED_BY[part.severity];
   if (weight === '' && hue === '') return part.text;
   const closer = `${hue === '' ? '' : DEFAULT_HUE}${weight === '' ? '' : NORMAL}`;
   return `${weight}${hue}${part.text}${closer}`;

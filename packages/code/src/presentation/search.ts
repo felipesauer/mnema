@@ -18,7 +18,7 @@
 import type { RecordSearch } from '@mnema/copilot';
 import { SEARCH_KINDS } from '@mnema/core';
 import { oneLine } from '../served-patterns.js';
-import { asId, asWhen, itemLine } from './items.js';
+import { asId, asScope, asWhen, itemLine } from './items.js';
 import type { Render } from './render.js';
 import { asState } from './state.js';
 
@@ -48,9 +48,14 @@ export function searchReport(
     lines.push('');
     lines.push(`${kind} (${group.length})`);
     for (const hit of group) {
-      // The id and the date SAY what they are. This line is where four columns used
-      // to weigh the same, and the two nobody reads are what a reader had to look
+      // The id, the tree and the date SAY what they are. This line is where four columns
+      // used to weigh the same, and the three nobody reads are what a reader had to look
       // past to reach the title (see `presentation/items.ts`).
+      //
+      // THE TREE WAS THE LAST OF THE THREE TO SAY SO, and this list is where it shows
+      // worst: the hits are grouped by kind and a session is opened inside one project,
+      // so the column answers `public` on every row of every group, at exactly the weight
+      // of the title beside it.
       //
       // AND THE STATE IS A PART OF ITS OWN NOW, where it used to be concatenated into
       // the title. The reason written here for keeping it plain was that a state is a
@@ -67,7 +72,7 @@ export function searchReport(
         render(
           itemLine([
             asId(hit.id),
-            hit.scope,
+            asScope(hit.scope),
             asWhen(hit.at.slice(0, DATE_LENGTH)),
             oneLine(hit.title),
             ...(state !== undefined ? [asState(state)] : []),

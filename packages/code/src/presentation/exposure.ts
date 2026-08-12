@@ -21,7 +21,7 @@
 
 import type { Exposure } from '@mnema/copilot';
 import { fact } from './detail.js';
-import { asId, asWhen, itemLine } from './items.js';
+import { asId, asScope, asWhen, itemLine } from './items.js';
 import type { Render } from './render.js';
 
 /** How many characters of an instant are the date — what a list column shows. */
@@ -50,7 +50,7 @@ export function exposureReport(render: Render, report: Exposure): string[] {
     lines.push(
       render(
         itemLine([
-          finding.scope,
+          asScope(finding.scope),
           asWhen(finding.at.slice(0, DATE_LENGTH)),
           finding.kind,
           asId(finding.id),

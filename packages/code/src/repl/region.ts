@@ -78,10 +78,22 @@
  * AND THERE IS NO FRAME LEFT TO CARRY THE ACCENT. The box went — the console this was drawn
  * from writes its name and its context as text beside its logo and draws none — so what the
  * accent is spent on is the two things it was always really on: the MARK and the TITLE, which
- * say what the product is and nothing about the record. The rules the input area sits between
- * are the third and they are the frame's last surviving siblings ({@link rule}). The rule did
- * not change and the count did not change: ONE hue, spent in this file, and none of the three
- * severities.
+ * say what the product is and nothing about the record.
+ *
+ * AND THE EDGES ARE THE SEAMS OF THE PAGE, WHICH USED TO BE *the frame's last surviving
+ * siblings*: two rules around the input row, and nothing else. There are four edges now and
+ * every one of them says where a region begins or what a region holds — a rule closing the top
+ * region ({@link theTop}), the two the input area sits between, and the guide down the margin
+ * of what the session says ({@link bar}). They are all the same two drawings in the same hue,
+ * which is what keeps four edges from being four decisions. The count that matters did not
+ * move: ONE hue, spent in this file, and none of the three severities.
+ *
+ * AND THE PAGE HAS A LEFT EDGE NOW. What the session says — the arrangement at the top and the
+ * roll under it — sits inside a margin, and the margin is a shared statement rather than a
+ * padding chosen here: it is DRAWN here, the roll is folded and measured against what it
+ * leaves, and the arrangement is chosen to fit across the same number (`inset.ts`). The input
+ * area is outside it, because its rules are what say how wide the terminal is and the caret is
+ * a column into the row being typed.
  *
  * SO COLOUR ON THIS SURFACE HAS TWO AXES NOW, and they may not meet. DATA is painted by
  * severity and by nothing else, which is `presentation/styled.ts` and unchanged. CHROME
@@ -93,6 +105,17 @@
  * of the product is a better reason than alphabetical luck. Nothing about the rule moved:
  * `tests/the-panel.test.ts` holds both halves, exactly one hue in this file and it is none of
  * the three severities.
+ *
+ * AND THE ACCENT IS SAYABLE IN TWO ALPHABETS NOW, which is the one thing about that rule this
+ * delivery did move. *Spent here* meant spent in this file, because everything the accent was
+ * on was DRAWN — a border, in the library's own vocabulary, on a component. The echo is chrome
+ * and a LINE at once: it is what a caller sent, so it is composed and rendered like every other
+ * line, which is what makes `NO_COLOR` silence it — and a renderer cannot be handed the word
+ * `magenta`, it writes an escape. So the same one hue is now written twice, once as a word here
+ * and once as SGR 35 there (`presentation/styled.ts`, `ACCENT`), and the two are held together
+ * on the bytes rather than by inspection: the echo's prompt is asserted to be wrapped in the
+ * very escapes a rule of this file's drawing carries
+ * (`tests/the-page-shows-its-seams.test.ts`).
  */
 
 import { Box, Text, useCursor, useInput } from 'ink';
@@ -103,6 +126,7 @@ import type { Keystroke } from './editing.js';
 // form reads them. THEY WERE COPIED, and the copy was defended in as many words — *two
 // copies of these numbers is two panels, one of which fits* — which named the risk and then
 // took it. One constant, two readers.
+import { AFTER_THE_BAR, BEFORE_THE_BAR, THE_INSET } from './inset.js';
 import { BETWEEN_COLUMNS, BETWEEN_SECTIONS, type Panel } from './panel.js';
 
 /**
@@ -433,7 +457,7 @@ export function Region({
  */
 function theThreeRegions(shown: Showing, tips: string, badge: string): readonly ReactNode[] {
   return [
-    shown.panel === undefined ? null : node(Header, { panel: shown.panel }),
+    ...(shown.panel === undefined ? [] : theTop(shown.panel)),
     node(Middle, { window: shown.window }),
     node(Present, {
       present: shown.present,
@@ -443,6 +467,35 @@ function theThreeRegions(shown: Showing, tips: string, badge: string): readonly 
       badge,
     }),
   ];
+}
+
+/**
+ * THE WHOLE TOP REGION: the arrangement, the rule that closes it, and one row of breath
+ * under that.
+ *
+ * THE REGION IS WHAT IS FIXED AND THE SEAM IS PART OF IT, which is why these three travel
+ * together rather than the rule being a child of the drawing. A terminal with no room for an
+ * arrangement gets NO top region at all ({@link Showing.panel}), and a rule with nothing above
+ * it would be a seam between the top of the screen and everything else — a line dividing one
+ * thing.
+ *
+ * THE RULE IS THE SAME FUNCTION THE INPUT AREA'S TWO ARE ({@link rule}), and that is the
+ * decision rather than a saving. There are three regions and one separator: a second way to
+ * draw a line across the page would be a second thing to keep in step with the first, and
+ * the accent, the style of the edge and the width would each have two places to be right in.
+ *
+ * THE BREATH IS ONE ROW AND NOT TWO. It is what a caller asked for in as many words — a small
+ * margin under the banner, so the first thing the session says does not sit against the rule —
+ * and one row is what the page can afford: the shortest window this console draws on has
+ * twenty-four rows, the chrome may hold a third of them (`panel.ts`), and every row of chrome
+ * comes out of what the answer a caller asked for is given.
+ *
+ * BOTH ROWS ARE COUNTED WHERE THE ARRANGEMENT'S ARE (`panel.ts`, `rowsOfTheForm`). A row this
+ * file draws and that file does not count is a frame one row taller than the screen it is drawn
+ * on, which is the same rule the blank row over the palette is kept by.
+ */
+function theTop(panel: Panel): readonly ReactNode[] {
+  return [node(Header, { panel }), rule(), breathing()];
 }
 
 /**
@@ -515,10 +568,15 @@ function Header({ panel }: { readonly panel: Panel }): ReactNode {
     // what the product is called. It cannot happen on a terminal anybody opens — the arrangement
     // is chosen to fit and there is none at all when it cannot be (`panel.ts`) — and it is said
     // here so that the case which cannot happen does not happen by pushing the prompt off.
+    // AND IT SITS INSIDE THE PAGE'S OWN MARGIN, exactly as what the session says does
+    // (`inset.ts`). The arrangement was CHOSEN against the width that leaves — the composer
+    // asks for the opening at the same number (`session.ts`) — so nothing here is narrowed
+    // after the fact: the drawing that fits is the drawing that was measured to fit.
     {
       flexDirection: panel.form === 'columns' ? 'row' : 'column',
       flexShrink: 1,
       overflow: 'hidden',
+      paddingLeft: THE_INSET,
     },
     ...(panel.form === 'columns' ? sideBySide(panel) : oneOverTheOther(panel)),
   );
@@ -551,9 +609,31 @@ function Header({ panel }: { readonly panel: Panel }): ReactNode {
  *     makes it: `hard` is a break at the margin and nothing else — no word wrapping, which
  *     would be this file deciding where a sentence divides. Same glyphs on the same rows, and a
  *     library that knows how many rows there are.
+ *
+ * AND THE BAR IS BESIDE IT, which is the one thing this function gained. The row is the bar
+ * and the line, in that order, with a column between them ({@link bar}, `inset.ts`) — and the
+ * bar is as tall as the row rather than one row tall, because a line the roll handed over
+ * already folded is two rows on the page and a guide that stopped half way down one would be
+ * pointing at the first half of a sentence.
+ *
+ * IT IS DRAWN PER LINE AND NOT DOWN THE REGION, and that is the difference between a guide and
+ * a border. What is below the last line of the window is ROOM TO SPARE — the region is as tall
+ * as the two fixed ones leave, whatever the session has said — and a bar running through it
+ * would be the page claiming the emptiness is transcript. It is also what keeps a blank row on
+ * this page blank, which is how everything that measures this surface tells the page from the
+ * space under it.
  */
 function landed(line: string, index: number): ReactNode {
-  return node(Box, { key: String(index), minHeight: 1 }, node(Text, { wrap: THE_MARGIN }, line));
+  return node(
+    Box,
+    { key: String(index), minHeight: 1 },
+    bar(),
+    node(
+      Box,
+      { paddingLeft: AFTER_THE_BAR, flexGrow: 1, flexShrink: 1 },
+      node(Text, { wrap: THE_MARGIN }, line),
+    ),
+  );
 }
 
 /**
@@ -588,7 +668,18 @@ function Middle({ window }: { readonly window: readonly string[] }): ReactNode {
     // input. Measured, when it was the other way round: at a hundred and twenty by forty the
     // page opened with twenty-one blank rows at the TOP and the drawing shoved down against the
     // input, so the first thing there was to read was the last thing on the screen.
-    { flexDirection: 'column', flexGrow: 1, flexShrink: 1, overflow: 'hidden' },
+    //
+    // AND THE MARGIN IS THE REGION'S, not each row's: it is the page's left edge and the whole
+    // of what the session says sits inside it (`inset.ts`). What is drawn IN it is the bar, and
+    // that is a row's ({@link landed}) — the margin is where the page begins and the bar is
+    // beside what there is to read.
+    {
+      flexDirection: 'column',
+      flexGrow: 1,
+      flexShrink: 1,
+      overflow: 'hidden',
+      paddingLeft: BEFORE_THE_BAR,
+    },
     ...window.map((line, index) => landed(line, index)),
   );
 }
@@ -742,7 +833,10 @@ function theRecord(panel: Panel): ReactNode {
  * the run of glyphs is the library's. A string of dashes typed here would be text a component
  * put on the page. They are CHROME and they take the one accent this file spends. THIS SAID
  * *exactly as the one inside the panel is* and *like the frame they are the siblings of*, and
- * the panel has neither: the frame went, and these two are the only edges left on the surface.
+ * the panel has neither: the frame went. IT THEN SAID THESE TWO WERE *the only edges left on
+ * the surface*, and what falsified that is the page showing its seams — the top region is
+ * closed by a rule of its own and the roll has a guide down its margin, both drawn by the
+ * functions these two are drawn by ({@link theTop}, {@link bar}).
  */
 function Present({
   present,
@@ -824,6 +918,33 @@ function rule(): ReactNode {
     borderColor: ACCENT,
     borderBottom: false,
     borderLeft: false,
+    borderRight: false,
+  });
+}
+
+/**
+ * The guide down the margin of one landed row: a box with nothing in it and its LEFT edge on.
+ *
+ * IT IS THE RULE TURNED, and it is drawn the same way for the same reason: the run of glyphs
+ * is the library's, out of the same set of edges ({@link BORDER}) and in the same accent, so a
+ * page has one idea of what a line the console draws looks like. A string of pipes typed here
+ * would be text a component put on the page.
+ *
+ * AS TALL AS THE ROW IT IS IN, by construction rather than by a number: a child of a row takes
+ * the row's height unless it is told otherwise, and the row is as tall as the line beside it —
+ * one for most, two for a line the fold broke. Nothing here counts a row.
+ *
+ * WHAT IT IS FOR is what a caller asked for by drawing it on a screenshot: the guide an editor
+ * runs down the left of a file, marking the region that is theirs to read. It says nothing
+ * about the record and carries no fact, which is what makes it CHROME and lets it take the one
+ * accent this file spends.
+ */
+function bar(): ReactNode {
+  return node(Box, {
+    borderStyle: BORDER,
+    borderColor: ACCENT,
+    borderTop: false,
+    borderBottom: false,
     borderRight: false,
   });
 }

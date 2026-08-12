@@ -32,7 +32,7 @@
 import type { Line, Part, Severity } from './line.js';
 
 /**
- * The roles a COLUMN of a list may take: the ordinary value, the two a call site can
+ * The roles a COLUMN of a list may take: the ordinary value, the three a call site can
  * say it is handing over, and the one that rides another.
  *
  * It is a SUBSET of the line's roles, and the narrowing is the point: a `label` or a
@@ -48,7 +48,7 @@ import type { Line, Part, Severity } from './line.js';
  * own is not a position in the table — it is the ability to carry a hue while the title
  * beside it does not.
  */
-export type ColumnRole = 'field' | 'id' | 'when' | 'state';
+export type ColumnRole = 'field' | 'id' | 'when' | 'scope' | 'state';
 
 /**
  * One column of a list, with what it is said rather than left to be guessed.
@@ -69,10 +69,12 @@ export interface Column {
 /**
  * This column is an ID — a handle to copy into the next command, not prose to read.
  *
- * The two markers exist because six lists hand over ids and instants POSITIONALLY, in
+ * The markers exist because six lists hand over ids, instants and trees POSITIONALLY, in
  * an array, and the shape threw away what each call site already knew. Saying it costs
  * a caller one word and buys the renderer the one distinction that makes a list
- * scannable (see `line.ts` for why these two and no third).
+ * scannable. IT SAID *these two and no third*, and pointed at `line.ts` for the argument;
+ * the third is {@link asScope}, and `line.ts` is where the premise it falsified is
+ * written out.
  */
 export function asId(text: string): Column {
   return { role: 'id', text };
@@ -81,6 +83,29 @@ export function asId(text: string): Column {
 /** This column is an INSTANT — when it happened, which a reader scans past. */
 export function asWhen(text: string): Column {
   return { role: 'when', text };
+}
+
+/**
+ * This column is the TREE a record lives in — which is nearly always the same word on
+ * every row of the list it is in.
+ *
+ * THE THIRD MARKER, AND THE ARGUMENT IS THE FIRST TWO'S rather than one of its own: a
+ * column nobody reads is a column a reader has to look past to reach the title. It is the
+ * strongest case of that there is, and it is the one a print of this surface caught — a
+ * reading over one project answers `public`, `public`, `public` down the page, at exactly
+ * the weight of the titles beside it.
+ *
+ * WHAT IT IS NOT is a hue per tree. Telling the three apart would take one colour each,
+ * and that is refused here as it always was (`line.ts`); what this asks for is the
+ * opposite — that the word stops competing at all.
+ *
+ * It takes the text the call site composed rather than a scope value, so a report that
+ * pads its column or brackets it keeps its own bytes: what the marker says is what the
+ * column IS, never how it is written (see {@link column}, and `references.ts` for the
+ * bracketed form).
+ */
+export function asScope(text: string): Column {
+  return { role: 'scope', text };
 }
 
 /**
