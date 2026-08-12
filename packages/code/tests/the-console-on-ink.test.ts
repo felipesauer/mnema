@@ -55,12 +55,19 @@ import { withoutTheHistoryErase } from '../src/repl/erasing.js';
 import { EXIT_SIGNALS } from '../src/repl/leaving.js';
 import { THE_WHEEL_BACK, WATCHING_THE_WHEEL } from '../src/repl/pointing.js';
 import { badgeLine, openSession, tips } from '../src/repl/session.js';
-import { LEAVE } from '../src/session-words.js';
+
 import { here } from '../src/wiring/context.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { DEFAULT_REQUIREMENT } from '../src/wiring/verify.js';
 import { decodedWhole } from './support/arriving.js';
-import { ESC, fakeTerminal, hooksNothing, until, withoutLayout } from './support/console.js';
+import {
+  ENDS_THE_INPUT,
+  ESC,
+  fakeTerminal,
+  hooksNothing,
+  until,
+  withoutLayout,
+} from './support/console.js';
 import { arrivedSince, sizedTo, theDeviceWasTheSizeAskedFor } from './support/pty.js';
 import { screenOf } from './support/screen.js';
 
@@ -107,7 +114,8 @@ const WHAT_THE_CALLER_HAD = 'A-LINE-THE-CALLER-HAD';
  * survives an edit made around it.
  */
 const CTRL_C = '\u0003';
-const CTRL_D = '\u0004';
+/** The key that ends the input, read from the one place this bench spells it. */
+const CTRL_D = ENDS_THE_INPUT;
 
 /** How tall and how wide the pty is made. Wide, so nothing the terminal folds is read. */
 const PTY_ROWS = 40;
@@ -361,26 +369,21 @@ function times(text: string, what: string): number {
 // ---------------------------------------------------------------------------
 
 describe('the console gives the terminal back, whichever way the session ends', () => {
-  it('on the word that leaves, after answering', async () => {
-    const ran = await inPty({
-      entry: [CLI, REPL_VERB],
-      types: ['verify\r'],
-      waitFor: 'local integrity verified',
-      thenTypes: [`${LEAVE}\r`],
-    });
-    // It really ran a verb inside the console first — a session that gave the terminal
-    // back before doing anything would pass the assertions below and be useless.
-    expect(ran.bytes).toContain('local integrity verified');
-    expectTheTerminalCameBack(ran, LEAVE);
-  }, 120_000);
-
-  it('on Ctrl-D, which is the end of the input rather than a word', async () => {
+  it('on the key that ends the input, after answering', async () => {
+    // THERE WERE TWO CASES HERE AND THERE IS ONE. The first left by the WORD `/exit` and the
+    // second by Ctrl-D, which were two ways out and are now one: the word is gone from the
+    // vocabulary, and the key that always did the same thing is the way out
+    // (`src/session-words.ts`). What the two asserted was identical — the terminal comes back
+    // — so what is left is the case, not both of them under two names.
     const ran = await inPty({
       entry: [CLI, REPL_VERB],
       types: ['verify\r'],
       waitFor: 'local integrity verified',
       thenTypes: [CTRL_D],
     });
+    // It really ran a verb inside the console first — a session that gave the terminal
+    // back before doing anything would pass the assertions below and be useless.
+    expect(ran.bytes).toContain('local integrity verified');
     expectTheTerminalCameBack(ran, 'Ctrl-D');
   }, 120_000);
 
@@ -395,7 +398,7 @@ describe('the console gives the terminal back, whichever way the session ends', 
       entry: [CLI, REPL_VERB],
       types: [abandoned],
       waitFor: abandoned,
-      thenTypes: [CTRL_C, 'verify\r', `${LEAVE}\r`],
+      thenTypes: [CTRL_C, 'verify\r', ENDS_THE_INPUT],
     });
     expect(ran.bytes).toContain('local integrity verified');
     // And the abandoned line was never run: the session refuses a word no verb answers
@@ -625,7 +628,7 @@ async function inTheConsole(
       still = 0;
     }
   }
-  terminal.type(`${LEAVE}\r`);
+  terminal.type(ENDS_THE_INPUT);
   await closed;
   return {
     opening,
@@ -697,10 +700,17 @@ describe('the same verbs, the same lines, another place', () => {
     expect(verdict).toContain(`${ESC}[32m`);
   }, 120_000);
 
-  it('answers three lines pasted at once, in the order they were pasted', async () => {
+  it('answers the lines of one paste in the order they were pasted', async () => {
     // A terminal hands over everything that arrived since it was last read, so a paste
-    // is one chunk with the line breaks inside it. Three verbs answered interleaved over
+    // is one chunk with the line breaks inside it. Two verbs answered interleaved over
     // one record is the defect this shape exists to prevent.
+    //
+    // IT WAS THREE LINES AND THE THIRD WAS THE WORD THAT LEAVES, which is how the case knew
+    // the paste had been answered: the session closed after the last of them. There is no such
+    // word, and the KEY that replaces it is not a line — it is the end of the input, answered
+    // where it is read rather than behind the queue of lines waiting to be run. So a paste
+    // ending in it would close the session with the lines still queued, and what the case waits
+    // for is the ANSWER instead.
     const terminal = fakeTerminal();
     const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
     const closed = openSession({
@@ -713,7 +723,9 @@ describe('the same verbs, the same lines, another place', () => {
       leaving: hooksNothing,
     });
     await until(() => terminal.bytes().includes('a session over this project'), 'opened');
-    terminal.type(`verify\raccountability\r${LEAVE}\r`);
+    terminal.type('verify\raccountability\r');
+    await until(() => terminal.bytes().includes(`${PROMPT} accountability`), 'answered the paste');
+    terminal.type(ENDS_THE_INPUT);
     await closed;
     const page = terminal.bytes();
     expect(page).toContain(`${PROMPT} verify`);
@@ -771,7 +783,7 @@ describe('the same verbs, the same lines, another place', () => {
     });
     await until(() => terminal.bytes().includes('a session over this project'), 'opened');
     expect([...hooked].sort()).toEqual(['exit', ...EXIT_SIGNALS].sort());
-    terminal.type(`${LEAVE}\r`);
+    terminal.type(ENDS_THE_INPUT);
     await closed;
     // And off again, so a second session in this process does not find the first one's.
     expect([...unhooked].sort()).toEqual([...hooked].sort());
@@ -794,7 +806,7 @@ describe('the same verbs, the same lines, another place', () => {
     });
     await until(() => terminal.bytes().includes('a session over this project'), 'opened');
     expect(terminal.raw()).toBe(true);
-    terminal.type(`${LEAVE}\r`);
+    terminal.type(ENDS_THE_INPUT);
     await closed;
     expect(terminal.raw()).toBe(false);
   }, 120_000);

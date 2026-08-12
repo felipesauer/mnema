@@ -43,12 +43,19 @@ import { buildProgram, type CliIo, run } from '../src/cli.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { asTheSession } from '../src/repl/asking.js';
 import { typedLine } from '../src/repl/session.js';
-import { LEAVE } from '../src/session-words.js';
+
 import { ACTOR_HELP } from '../src/wiring/options.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { everyCommandOf } from '../src/wiring/usage.js';
 import type { Declared } from '../src/wiring/verb.js';
-import { inPty as drive, type Fixture, opensAConsole, type Ran, type Step } from './support/pty.js';
+import {
+  inPty as drive,
+  type Fixture,
+  leavesTheSession,
+  opensAConsole,
+  type Ran,
+  type Step,
+} from './support/pty.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = new URL('../dist/cli.js', import.meta.url).pathname;
@@ -199,11 +206,7 @@ async function inPty(steps: readonly Step[]): Promise<Ran> {
 
 /** The step every session begins with, and the one it ends with. */
 const opens: Step = opensAConsole(PROMPT);
-const leaves: Step = {
-  types: `${LEAVE}\r`,
-  what: 'left',
-  until: (bytes) => bytes.lastIndexOf(PROMPT) > bytes.indexOf(LEAVE),
-};
+const leaves: Step = leavesTheSession;
 
 /** The identity the PANEL is showing: the first one written after the project's path. */
 function onThePanel(bytes: string): string {

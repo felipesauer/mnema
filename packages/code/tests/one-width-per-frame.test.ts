@@ -51,19 +51,21 @@ import type { Line } from '../src/presentation/line.js';
 import { renderPlain, widthOf } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { openConsole } from '../src/repl/console.js';
-import { verbsOffered } from '../src/repl/gate.js';
+import { dispositionOf, verbsOffered } from '../src/repl/gate.js';
 import { BEFORE_THE_BAR, insideTheMargin, THE_INSET } from '../src/repl/inset.js';
-import { about, standingLine, whatItRefuses } from '../src/repl/session.js';
+import { standingLine, whatItRefuses } from '../src/repl/session.js';
 import { standing } from '../src/repl/standing.js';
-import { ABOUT, CLEAR, LEAVE } from '../src/session-words.js';
+import { CLEAR } from '../src/session-words.js';
 import { type Capability, rendererAtEachWidth, rendererFor } from '../src/wiring/color.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
-import { fakeTerminal, hooksNothing, until } from './support/console.js';
+import { refusalSentence } from '../src/wiring/report.js';
+import { ENDS_THE_INPUT, fakeTerminal, hooksNothing, until } from './support/console.js';
 import {
   aFrameSince,
   arrivedSince,
   inPty as drive,
   type Fixture,
+  leavesTheSession,
   opensAConsole,
   type Ran,
   type Step,
@@ -79,8 +81,28 @@ const SRC = fileURLToPath(new URL('../src', import.meta.url));
 /** What the caller types in front of, as the layout writes it. */
 const PROMPT = 'mnema>';
 
-/** A row of the word that lists what the session runs — the heading of its second half. */
-const AND_IT_REFUSES = 'And it does not write';
+/**
+ * THE WIDEST THING THIS SESSION SAYS, and what makes it say it.
+ *
+ * IT WAS THE REPORT `/help` PRINTED — a table of every verb the session runs, whose rows were
+ * the widest this console ever wrote — and that word is gone: the list under the prompt answers
+ * it now, and a list is CUT to the terminal rather than folded by it (`src/repl/palette.ts`).
+ * What is left that a fold has anything to do to is the REFUSAL of a write: it names the verb,
+ * says why, and gives the line to run outside the session, which comes to well over a hundred
+ * columns on every write there is.
+ *
+ * It is a better subject than the report was for the one reason this file cares about: it is
+ * composed by the product out of a declaration (`src/repl/gate.ts`, `src/wiring/report.ts`), it
+ * PAINTS — it is a refusal, so it carries a label and a severity — and its width is a function
+ * of a verb's name rather than of anything written here.
+ */
+const A_WRITE = 'task';
+/**
+ * ONE WORD AND NOT A PHRASE, for the reason this whole file is about: the refusal is the widest
+ * line the session says, so at the narrow end of every case here it is FOLDED — between words
+ * (`src/presentation/folded.ts`) — and a phrase can arrive with a row break inside it.
+ */
+const AND_IT_REFUSES = 'shell.';
 
 /** How tall every window in this file is. The subject is the WIDTH, so nothing else moves. */
 const TALL_ENOUGH = 40;
@@ -162,16 +184,19 @@ afterAll(() => {
 // ---------------------------------------------------------------------------
 
 /**
- * EVERY LINE THE SESSION PRINTS FOR THE WORD THAT LISTS WHAT IT RUNS — the product's own,
- * composed off the same registration the session composes them off.
+ * EVERY LINE THE SESSION PRINTS WHEN IT REFUSES A WRITE — the product's own, composed off the
+ * same registration the session refuses by.
  *
- * These are the widest rows this console ever writes and they are the ones the complaint was
- * about, which is why they are the subject. Read rather than retyped: a description edited
- * tomorrow travels into every case below, and a copy would be a fixture asserting what the
- * page said last month (`repl/session.ts`, `about`).
+ * Read rather than retyped, which is the property that matters here: a refusal reworded
+ * tomorrow travels into every case below, and a copy would be a fixture asserting what the page
+ * said last month (`repl/gate.ts`, `wiring/report.ts`).
  */
 function theWordsItPrints(): readonly Line[] {
-  return about(buildProgram(quiet, [], renderPlain).verbs, REPL_VERB);
+  const built = buildProgram(quiet, [], renderPlain);
+  const what = dispositionOf(A_WRITE, built.verbs, REPL_VERB);
+  expect(what.does, `\`${A_WRITE}\` is not refused by this session`).toBe('refuse');
+  if (what.does !== 'refuse') throw new Error('unreachable');
+  return [refusalSentence(what.sentence, what.detail)];
 }
 
 /**
@@ -291,11 +316,7 @@ async function inPty(options: {
 const opens: Step = opensAConsole(PROMPT);
 
 /** The step every session ends with. */
-const leaves: Step = {
-  types: `${LEAVE}\r`,
-  until: (bytes) => bytes.lastIndexOf(PROMPT) > bytes.indexOf(LEAVE),
-  what: 'left',
-};
+const leaves: Step = leavesTheSession;
 
 /**
  * THE PAGE STARTED OVER, so that what is read next was printed at the size the window is NOW.
@@ -313,11 +334,11 @@ const startsOver: Step = {
   what: 'started the page over',
 };
 
-/** The caller asks what the session runs, and the answer lands whole. */
+/** The caller asks for a write, and the refusal lands whole. */
 const asksWhatItRuns: Step = {
-  types: `${ABOUT}\r`,
+  types: `${A_WRITE}\r`,
   until: arrivedSince(AND_IT_REFUSES),
-  what: 'printed what it runs',
+  what: 'refused a write',
 };
 
 /** The window becomes this wide, and the console has DRAWN at it. */
@@ -572,11 +593,14 @@ describe('the frame is composed for a size the device really answered with', () 
       saw: () => undefined,
       happened: () => [],
       complete: () => [[], ''],
-      answer: async () => 'leave',
+      // A LINE THE SESSION GOES ON AFTER, because a line can no longer end one: the way out is
+      // the key that ends the input, and it is read off the ROW rather than off what a line
+      // answered (`src/repl/gate.ts`, `AfterLine`).
+      answer: async () => 'go on',
       leaving: hooksNothing,
     });
     await until(() => composed.length > 0, 'composed an opening');
-    terminal.type('x\r');
+    terminal.type(`x\r${ENDS_THE_INPUT}`);
     await page.closed;
 
     // THE FIRST FRAME IS ONE OF THE TERMINALS THE DEVICE NAMED, whole. With two readings it is

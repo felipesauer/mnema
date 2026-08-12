@@ -31,7 +31,7 @@
  */
 
 import type { Command } from 'commander';
-import { WHAT_EACH_WORD_DOES } from '../session-words.js';
+import { THE_KEY_THAT_LEAVES, WHAT_EACH_WORD_DOES } from '../session-words.js';
 import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
 /** How deep the words sit in the help, and how far the gloss is from the widest of them. */
@@ -81,6 +81,12 @@ export function registerRepl(program: Command, wiring: Wiring): Declared {
         'itself declares what it can do, so one added tomorrow is refused too.',
         '',
         ...theWordsItAnswersTo(),
+        '',
+        // HOW IT ENDS, WHICH THIS HELP USED TO SAY BY LISTING A WORD. The way out was
+        // `/exit`, so the block above carried it; the way out is a keystroke now, and a
+        // declaration that named no way to leave an interactive session would be the one
+        // omission a reader cannot recover by typing something and reading the answer.
+        `${THE_KEY_THAT_LEAVES} ends the session; Ctrl-C clears the line you are typing.`,
         '',
         'It needs a terminal at both ends and refuses without one: reading commands from a',
         'pipe would be a second way to run the same verbs. The history lives in this',

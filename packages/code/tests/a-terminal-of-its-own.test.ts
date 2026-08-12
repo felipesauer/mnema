@@ -36,10 +36,10 @@ import { completerFor } from '../src/repl/complete.js';
 import { dispositionOf, verbsOffered } from '../src/repl/gate.js';
 import { whatTheSessionShowed } from '../src/repl/seen.js';
 import { openSession, theSessionsOwnWords, typedLine } from '../src/repl/session.js';
-import { LEAVE, SESSION_WORDS } from '../src/session-words.js';
+import { SESSION_WORDS } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import type { Declared } from '../src/wiring/verb.js';
-import { fakeTerminal, hooksNothing, until } from './support/console.js';
+import { ENDS_THE_INPUT, fakeTerminal, hooksNothing, until } from './support/console.js';
 import { held } from './support/the-record-held.js';
 
 /** `packages/code/src`, for the guard that reads the session's own source. */
@@ -553,7 +553,7 @@ describe('the loop is wired to the gate and to the tree', () => {
       'answered the completed line',
     );
 
-    terminal.type(`${LEAVE}\r`);
+    terminal.type(ENDS_THE_INPUT);
     await closed;
     const page = terminal.bytes();
     // The banner is the session's own, and it counts the reads it offers rather than

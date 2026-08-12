@@ -47,8 +47,14 @@ import type { Line, Part, Severity } from './line.js';
  * where the columns are passed and lands beside the field it rides. What it needs of its
  * own is not a position in the table — it is the ability to carry a hue while the title
  * beside it does not.
+ *
+ * `pick` is the one column of the subset that belongs to a list nobody records: the mark on
+ * the row a caller chose in the console (`repl/palette.ts`). It is a COLUMN in the strict
+ * sense — every row of that list carries one, padded to the same width, which is what keeps
+ * the words under it lined up — and it is in the subset for the reason `state` is: what it
+ * needs of its own is a hue the row beside it does not have.
  */
-export type ColumnRole = 'field' | 'id' | 'when' | 'scope' | 'state';
+export type ColumnRole = 'field' | 'id' | 'when' | 'scope' | 'state' | 'pick';
 
 /**
  * One column of a list, with what it is said rather than left to be guessed.
@@ -106,6 +112,24 @@ export function asWhen(text: string): Column {
  */
 export function asScope(text: string): Column {
   return { role: 'scope', text };
+}
+
+/**
+ * This column is the MARK on the row a caller PICKED — the console's own punctuation, and
+ * the one marker here that is not about the record at all.
+ *
+ * IT IS THE COLUMN THAT MAKES IT WORK AND THE HUE THAT MAKES IT QUICK, in that order. The
+ * glyph is in the text of the row, so a reader in a pipe, on a monochrome terminal or with
+ * the paint switched off reads which row it is off the same bytes; the accent the renderer
+ * gives this role (`styled.ts`) is a second axis over that and carries nothing of its own. A
+ * marker that painted the row instead would be a mark half those readers cannot see.
+ *
+ * It takes the text the call site composed — the glyph PADDED to the width of the column —
+ * for the reason {@link asScope} does: what the marker says is what the column IS, never how
+ * it is written, and the padding is what keeps the second column of the list in one place.
+ */
+export function asPick(text: string): Column {
+  return { role: 'pick', text };
 }
 
 /**

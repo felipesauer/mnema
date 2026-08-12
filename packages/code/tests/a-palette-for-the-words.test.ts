@@ -33,7 +33,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo, run } from '../src/cli.js';
 import type { CompletionWord } from '../src/completion/tree.js';
 import { completionTree } from '../src/completion/tree.js';
+import { echoLine } from '../src/presentation/echo.js';
 import { renderPlain, widthOf } from '../src/presentation/plain.js';
+import { renderStyled } from '../src/presentation/styled.js';
 import { areaFor } from '../src/repl/area.js';
 import { type Completer, completerFor } from '../src/repl/complete.js';
 import { erasesTheScreen } from '../src/repl/erasing.js';
@@ -49,9 +51,9 @@ import {
   thePicked,
 } from '../src/repl/palette.js';
 import { badgeLine, pickingTips, theSessionsOwnWords, tips } from '../src/repl/session.js';
-import { CLEAR, LEAVE, PREFIX, SESSION_WORDS } from '../src/session-words.js';
+import { CLEAR, PREFIX, SESSION_WORDS } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
-import { ESC } from './support/console.js';
+import { ENDS_THE_INPUT, ESC } from './support/console.js';
 import {
   aFrameAfter,
   aFrameWithout,
@@ -100,6 +102,9 @@ const ERASES_THE_HISTORY = `${ESC}[3J`;
  * refused at the door of this repository (and rightly: it is a byte a reader cannot see).
  */
 const PAINTED = new RegExp(`${ESC}\\[[0-9;]*m`, 'g');
+
+/** A line with everything that paints taken off it — what a pipe would have received. */
+const stripped = (line: string): string => line.replace(PAINTED, '');
 
 /** How wide a terminal has to be for nothing in these lists to be cut. */
 const NOTHING_IS_CUT = 160;
@@ -223,7 +228,6 @@ function theCompleter(): Completer {
 // ---------------------------------------------------------------------------
 
 describe('one palette, one list, and the slash counts only at the start of the line', () => {
-  const words = theSessionsOwnWords();
   const tabOffered: readonly CompletionWord[] = [
     { word: 'search', description: 'a read' },
     { word: 'show', description: 'another read' },
@@ -234,44 +238,70 @@ describe('one palette, one list, and the slash counts only at the start of the l
   const wordsOf = (offers: readonly CompletionWord[]): readonly string[] =>
     offers.map((offer) => offer.word);
 
-  it('opens the whole list on a slash — the words and the verbs, in one answer', () => {
-    // THIS CASE SAID *opens the session's own words on a slash*, and asserted the palette
-    // was those three words. That is the defect this delivery closes rather than a property to
-    // keep: the slash listed three words, a Tab listed sixteen verbs and the three words, and a
-    // console with two menus has no list of what you can type. So the slash asks what an empty
-    // line asks, and the answer is one list with the slash's own words inside it.
-    const listed = wordsOf(offeredBy(PREFIX, [], asked));
-    expect(listed, 'the slash lists a list of its own').toEqual(wordsOf(asked('')[0]));
-    for (const word of [CLEAR, LEAVE]) expect(listed, word).toContain(word);
-    // Not vacuous: the list really is both vocabularies rather than either one of them.
-    expect(listed.length).toBeGreaterThan(words.length);
-    expect(listed.some((word) => !word.startsWith(PREFIX))).toBe(true);
+  it('opens NOTHING on a bare slash, which is what the letter behind it does', () => {
+    // THIS CASE SAID *opens the whole list on a slash*, and asserted the palette was every
+    // word there is. That is the promise this delivery took back by half, and the half it took
+    // is the one nobody asked for: a bare slash is a caller asking WHAT EXISTS, and answering
+    // it with every verb of the product is a menu of everything for a keystroke nobody had
+    // finished. A slash with a letter behind it is a verb being WRITTEN, and a list of what it
+    // could still be is an answer to something.
+    expect(offeredBy(PREFIX, [], asked), 'a bare slash opened the list').toEqual([]);
+    // AND THE LETTER OPENS IT, over BOTH vocabularies: the slash is a key rather than a letter
+    // of the word behind it, so `/c` reaches the verbs beginning with `c` and the session's own
+    // word that does (`complete.ts`, `theStem`).
+    const narrowed = wordsOf(offeredBy(`${PREFIX}c`, [], asked));
+    expect(narrowed.length, 'the letter opened nothing').toBeGreaterThan(0);
+    expect(narrowed, 'the session\u2019s own word is not in the list').toContain(CLEAR);
+    expect(
+      narrowed.some((word) => !word.startsWith(PREFIX)),
+      'no verb is in the list',
+    ).toBe(true);
+    // AND IT IS THE COMPLETER'S OWN ANSWER, whichever key asked — nothing is filtered twice.
+    expect(narrowed).toEqual(wordsOf(asked(`${PREFIX}c`)[0]));
   });
 
   it('narrows to the words that can still be typed as the caller types them', () => {
     // Narrowing REDUCES, and to the words that really start that way rather than to a
     // number: the case reads the vocabulary rather than counting to one.
-    const whole = offeredBy(PREFIX, [], asked);
-    const narrowed = offeredBy(`${PREFIX}c`, [], asked);
+    const whole = offeredBy(`${PREFIX}c`, [], asked);
+    const narrowed = offeredBy(`${PREFIX}cl`, [], asked);
     expect(narrowed.length).toBeLessThan(whole.length);
-    expect(wordsOf(narrowed)).toEqual(
-      words.map((entry) => entry.word).filter((word) => word.startsWith(`${PREFIX}c`)),
-    );
-    // Not vacuous: there is more than one word to narrow away from, and what survives is
-    // a real word with a real gloss.
-    expect(words.length).toBeGreaterThan(1);
-    expect(narrowed.length).toBeGreaterThan(0);
+    expect(wordsOf(narrowed)).toEqual([CLEAR]);
+    // Not vacuous: there was more than one word to narrow away from, and what survives is a
+    // real word with a real gloss.
+    expect(whole.length).toBeGreaterThan(1);
     for (const offer of narrowed) expect(offer.description.length).toBeGreaterThan(3);
+  });
+
+  it('neither of the two words that went is offered anywhere', () => {
+    // THE REMOVAL, ASKED OF THE LIST. `/help` and `/exit` are not in the vocabulary any more —
+    // the list IS the help, and the key that ends the input is the way out — so no keystroke
+    // can put either of them on the screen. Asked over every prefix of each word, because a
+    // word half-removed shows up under the letters nobody thought to type.
+    for (const gone of [`${PREFIX}help`, `${PREFIX}exit`]) {
+      for (let at = PREFIX.length + 1; at <= gone.length; at += 1) {
+        const typed = gone.slice(0, at);
+        expect(wordsOf(offeredBy(typed, [], asked)), typed).not.toContain(gone);
+      }
+      // And a Tab on the whole word answers with nothing at all, which is what a word the
+      // session does not run looks like from here.
+      expect(asked(gone)[0], gone).toEqual([]);
+    }
+    // Not vacuous: the same walk over a word that IS offered finds it at every prefix.
+    for (let at = PREFIX.length + 1; at <= CLEAR.length; at += 1) {
+      const typed = CLEAR.slice(0, at);
+      expect(wordsOf(offeredBy(typed, [], asked)), typed).toContain(CLEAR);
+    }
   });
 
   it('offers nothing for a slash that is not the first character', () => {
     // A slash inside a path, an argument or a word is a character like any other. Both
     // halves are asserted: the palette is shut, and it is shut BECAUSE of the position —
     // the same characters at the start of the line do open it.
-    for (const line of [`show a${PREFIX}b`, `search ${PREFIX}help`, `a${PREFIX}`]) {
+    for (const line of [`show a${PREFIX}b`, `search ${PREFIX}clear`, `a${PREFIX}`]) {
       expect(offeredBy(line, [], asked), line).toEqual([]);
     }
-    expect(offeredBy(`${PREFIX}help`, [], asked).length).toBe(1);
+    expect(offeredBy(`${PREFIX}cl`, [], asked).length).toBe(1);
     // AND IT DOES NOT SUPPRESS WHAT A TAB OFFERED, WHICH IS THE OTHER HALF AND THE ONE
     // THE FIRST DRAFT OF THIS CASE MISSED. Reading the slash anywhere in the line is a
     // mutation that leaves every assertion above green — asking about a whole line that has a
@@ -288,11 +318,16 @@ describe('one palette, one list, and the slash counts only at the start of the l
     expect(offeredBy('s', [], asked)).toEqual([]);
   });
 
-  it('lets the slash win over what a Tab left, because the slash is live', () => {
-    // Typing a slash after an ambiguous Tab is a caller asking a different question. Both
-    // answers exist here, so this says which one is given.
-    expect(offeredBy(PREFIX, tabOffered, asked)).toEqual(offeredBy(PREFIX, [], asked));
-    expect(offeredBy(PREFIX, tabOffered, asked)).not.toEqual(tabOffered);
+  it('lets a word being typed win over what a Tab left, because it is live', () => {
+    // Typing a slash and a letter after an ambiguous Tab is a caller asking a different
+    // question. Both answers exist here, so this says which one is given.
+    const typed = `${PREFIX}c`;
+    expect(offeredBy(typed, tabOffered, asked)).toEqual(offeredBy(typed, [], asked));
+    expect(offeredBy(typed, tabOffered, asked)).not.toEqual(tabOffered);
+    // AND THE BARE SLASH IS NOT A QUESTION, so what a Tab left stands under it: a caller who
+    // really does want the whole list asks for it, and the key that asks is the one that has
+    // always asked. Without this the slash would SWALLOW a Tab pressed on the same row.
+    expect(offeredBy(PREFIX, tabOffered, asked)).toEqual(tabOffered);
   });
 });
 
@@ -336,7 +371,16 @@ function saidToBeMissing(rows: readonly string[]): number | undefined {
 }
 
 describe('the palette is two columns, and the only thing it cuts is a description', () => {
-  const offers = everythingOffered();
+  /**
+   * A LIST WITHIN THE CEILING, so that every row drawn is an OFFER.
+   *
+   * These cases are about the TABLE — a row per offer, the second column lined up, and the one
+   * thing that is ever shortened — and the ceiling put a row of a different kind at the bottom
+   * of a list of everything ({@link atMost}): the account of what had no room, which carries
+   * the same mark a cut does and is not an offer. What is asked here is unchanged; what it is
+   * asked OF is a list the ceiling does not bite on.
+   */
+  const offers = everythingOffered().slice(0, atMost());
 
   it('puts every offer on one row, with what it is beside it', () => {
     const rows = rowsFor(offers, paletteRowsFor(offers), NOTHING_IS_CUT);
@@ -349,9 +393,10 @@ describe('the palette is two columns, and the only thing it cuts is a descriptio
       expect(row, offer.word).toContain(offer.word);
       if (offer.description.length > 0) expect(row, offer.word).toContain(offer.description);
     }
-    // The corpus is real: this product has more than a handful of reads, and every one of
-    // them has something to say about itself.
-    expect(offers.length).toBeGreaterThan(10);
+    // The corpus is real: it is the head of a vocabulary of more than a handful of reads, and
+    // every one of them has something to say about itself.
+    expect(offers.length).toBeGreaterThan(1);
+    expect(everythingOffered().length).toBeGreaterThan(10);
     expect(offers.every((offer) => offer.description.length > 0)).toBe(true);
   });
 
@@ -464,8 +509,102 @@ describe('whenever it draws a row, what it shows plus what it names is everythin
   });
 
   it('says nothing when everything fits, so the row is a signal and not furniture', () => {
-    const rows = rowsFor(offers, paletteRowsFor(offers), NOTHING_IS_CUT);
+    // A LIST WITHIN THE CEILING, which is what *everything fits* means now: the room a
+    // terminal has is not the only limit any more ({@link AT_MOST}), so a list of eighteen
+    // says how many it left out at every height there is. Read off the product rather than
+    // written down — the ceiling is not this file's number.
+    const few = offers.slice(0, atMost());
+    const rows = rowsFor(few, paletteRowsFor(few), NOTHING_IS_CUT);
+    expect(listIn(rows)).toHaveLength(few.length);
     expect(saidToBeMissing(listIn(rows))).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The ceiling: four offers, whatever the terminal has room for
+// ---------------------------------------------------------------------------
+
+/**
+ * HOW MANY OFFERS THE PALETTE DRAWS AT MOST, read off the product rather than written here.
+ *
+ * The ceiling is a decision of the module that draws the list, so a case that typed the number
+ * would be asserting its own arithmetic — and the number a reader wants to see is what the
+ * PRODUCT does with a vocabulary bigger than the ceiling on a screen with room to spare.
+ */
+function atMost(): number {
+  const room = 100;
+  return listIn(rowsFor(everythingOffered(), room, NOTHING_IS_CUT)).length - 1;
+}
+
+describe('the list shows four offers, and the room a terminal has can only make it fewer', () => {
+  const offers = everythingOffered();
+
+  it('shows the same four at every height a caller can open', () => {
+    // THE CASE THAT TELLS *four* FROM *what fits*. One height cannot: a list cut to the screen
+    // shows whatever the screen leaves, and at any single size that number can be four by
+    // luck. Three heights, an ordinary window and two much taller ones, and the answer does
+    // not move.
+    const shownAt = (rows: number): number => {
+      const room = areaFor({
+        rows,
+        columns: NOTHING_IS_CUT,
+        badge: BADGE_IS,
+        hint: HINT_IS,
+        palette: paletteRowsFor(offers),
+        header: NOTHING_ABOVE_YET,
+      }).palette;
+      const drawn = listIn(rowsFor(offers, room, NOTHING_IS_CUT));
+      return drawn.length - (saidToBeMissing(drawn) === undefined ? 0 : 1);
+    };
+    /** More rows than the tallest window here, so what answers is the SCREEN and not the ask. */
+    const MORE_THAN_ANY_SCREEN = 500;
+    const heights = [24, 40, 64];
+    const counts = heights.map((rows) => shownAt(rows));
+    expect(new Set(counts).size, `the height decided how many: ${counts.join(', ')}`).toBe(1);
+    expect(counts[0]).toBe(atMost());
+    // NOT VACUOUS: the room really does grow with the height, so the counts above are equal
+    // because of the ceiling and not because the three windows are the same window.
+    const roomAt = (rows: number): number =>
+      areaFor({
+        rows,
+        columns: NOTHING_IS_CUT,
+        badge: BADGE_IS,
+        hint: HINT_IS,
+        palette: MORE_THAN_ANY_SCREEN,
+        header: NOTHING_ABOVE_YET,
+      }).palette;
+    expect(roomAt(64)).toBeGreaterThan(roomAt(24));
+  });
+
+  it('asks for the same rows at every height, so the area cannot budget more', () => {
+    // THE OTHER END OF THE SAME RULE. What the area budgets is what the palette ASKS for
+    // (`repl/area.ts`), so a ceiling applied when the rows are drawn and not when they are
+    // counted would be a region taller than what is drawn in it — the caret and the foot of
+    // the page a row out.
+    // The account of what had no room, and the row that says which keys move the list: one
+    // row each, and they are the two rows a list of this size has beyond its offers.
+    const beyondTheOffers = 2;
+    expect(paletteRowsFor(offers)).toBe(atMost() + beyondTheOffers);
+    expect(offers.length, 'the vocabulary is within the ceiling anyway').toBeGreaterThan(atMost());
+  });
+
+  it('shows what there is when there is less than the ceiling', () => {
+    // A CEILING AND NOT A QUOTA: a list of two is two rows, not two rows and two blanks.
+    for (const many of [1, 2, atMost()]) {
+      const few = offers.slice(0, many);
+      const drawn = listIn(rowsFor(few, paletteRowsFor(few), NOTHING_IS_CUT));
+      expect(drawn, `${many}`).toHaveLength(many);
+      expect(saidToBeMissing(drawn), `${many}`).toBeUndefined();
+    }
+  });
+
+  it('shows fewer than the ceiling when the room is the smaller limit', () => {
+    // AND THE ROOM STILL CUTS, which is what makes it a second limit rather than a
+    // replacement: at three rows the list is one offer, the account of the rest and the keys,
+    // exactly as it was before there was a ceiling.
+    const drawn = listIn(rowsFor(offers, 3, NOTHING_IS_CUT));
+    expect(drawn.length - 1).toBeLessThan(atMost());
+    expect(saidToBeMissing(drawn)).toBe(offers.length - 1);
   });
 });
 
@@ -507,10 +646,16 @@ describe('the mark says which row is picked, and it is a column of the table', (
   it('keeps the second column lined up, mark or no mark', () => {
     // THE MARK IS A COLUMN, and this is what says so: a glyph put on the picked row alone would
     // move that row right of its neighbours by the width of the mark and its separator.
-    const withMark = listIn(rowsFor(offers, paletteRowsFor(offers), NOTHING_IS_CUT, picked));
-    const without = listIn(rowsFor(offers, paletteRowsFor(offers), NOTHING_IS_CUT));
+    //
+    // A LIST WITHIN THE CEILING, so that every row of what is drawn is an OFFER: with more
+    // offers than the ceiling the last row is the account of the rest, and a case that looked
+    // for the fifth offer's description in it would be reading a row about a different thing
+    // ({@link atMost}).
+    const shown = offers.slice(0, atMost());
+    const withMark = listIn(rowsFor(shown, paletteRowsFor(shown), NOTHING_IS_CUT, picked));
+    const without = listIn(rowsFor(shown, paletteRowsFor(shown), NOTHING_IS_CUT));
     const at = (rows: readonly string[]): number[] =>
-      rows.map((row, index) => row.indexOf((offers[index] as CompletionWord).description));
+      rows.map((row, index) => row.indexOf((shown[index] as CompletionWord).description));
     expect(new Set(at(withMark)).size, 'a mark moved the column it is beside').toBe(1);
     expect(at(withMark)).toEqual(at(without));
     // AND THE WORDS DID NOT MOVE EITHER, which is the same statement about the first column.
@@ -529,6 +674,46 @@ describe('the mark says which row is picked, and it is a column of the table', (
     expect(row, 'the mark is an escape rather than a glyph').not.toContain(ESC);
     // AND IT IS ONE GLYPH WIDE, so what pads an unmarked row is what the mark takes.
     expect([...PICK]).toHaveLength(1);
+  });
+
+  it('paints the mark and nothing else, and paints it as a PART of the line', () => {
+    // THE SECOND AXIS, AND IT IS OVER THE COLUMN RATHER THAN INSTEAD OF IT. This module used
+    // to say *the colour is not an axis at all*; what that argument really supported is that
+    // the hue may not be the CARRIER — which the case above holds — and it was read as a ban
+    // on hue. The mark is chrome, so it takes the one accent this surface spends, as a role
+    // (`presentation/line.ts`, `pick`).
+    const painted = paletteFor({
+      offers,
+      room: paletteRowsFor(offers),
+      columns: NOTHING_IS_CUT,
+      render: renderStyled,
+      picked,
+      picking: THE_KEYS,
+    });
+    const row = painted.find((line) => stripped(line).trimStart().startsWith(PICK)) as string;
+    expect(row, 'no row of the painted list carries the mark').toBeDefined();
+    // THE ACCENT IS ON THE MARK, and it is the accent this surface already spends rather than
+    // a hue chosen here: the same escapes the echo's prompt is wrapped in (`presentation/
+    // styled.ts`, `ACCENT`), read off a line the product composes rather than typed.
+    const accent = renderStyled(echoLine(PROMPT, ''));
+    const opens = accent.slice(0, accent.indexOf(PROMPT));
+    expect(opens, 'the accent is not an escape at all').toContain(ESC);
+    expect(row, 'the mark is not painted in the accent').toContain(`${opens}${PICK}`);
+    // AND NOTHING ELSE ON THE ROW IS: strip what wraps the mark and the row is the plain one,
+    // byte for byte — the word, the padding and what the word is, exactly as a pipe gets them.
+    const plain = rowsFor(offers, paletteRowsFor(offers), NOTHING_IS_CUT, picked).find((line) =>
+      line.trimStart().startsWith(PICK),
+    ) as string;
+    expect(stripped(row)).toBe(plain);
+    // AND THE COLUMN IS IN BOTH, which is what makes the hue an addition rather than the
+    // answer: the glyph is in the text either way, and the rows around it are padded to the
+    // same width by the same function.
+    expect(stripped(row).indexOf(PICK)).toBe(plain.indexOf(PICK));
+    // NOT VACUOUS: an UNPICKED row carries no escape at all, so the paint above is the mark's
+    // and not something every row of a painted list has.
+    const others = painted.filter((line) => line !== row && line !== renderStyled(THE_KEYS));
+    expect(others.length).toBeGreaterThan(1);
+    for (const other of others) expect(other, 'an unmarked row is painted too').not.toContain(ESC);
   });
 });
 
@@ -700,11 +885,17 @@ async function inPty(options: {
 /** The step every session begins with. */
 const opens: Step = opensAConsole(PROMPT);
 
-/** The step every session ends with. */
+/**
+ * The step every session ends with: the row abandoned, then the key that ends the input.
+ *
+ * IT WAS A WORD — `/exit`, typed and submitted — and the word is gone from the vocabulary.
+ * The row is still cleared first, for the reason it always was: the key that leaves is the END
+ * of the input, and a row with characters on it is not the end of anything.
+ */
 const leaves: Step = {
-  types: `${CLEARS_THE_LINE}${PREFIX}exit\r`,
+  types: `${CLEARS_THE_LINE}${ENDS_THE_INPUT}`,
   what: 'left',
-  until: (bytes) => bytes.lastIndexOf(PROMPT) > bytes.indexOf(`${PREFIX}exit`),
+  until: () => true,
 };
 
 /**
@@ -728,18 +919,22 @@ function rowsNaming(
   });
 }
 
-describe('a slash opens the list on the screen, and typing narrows it', () => {
-  it('shows the session’s own words, each with what it does', async () => {
+describe('a slash and a letter open the list on the screen, and typing narrows it', () => {
+  it('shows the session\u2019s own words, each with what it does', async () => {
     const columns = NOTHING_IS_CUT;
     const rows = 40;
     const words = theSessionsOwnWords();
+    // THE LETTER IS THE ONE THE SESSION'S OWN WORD BEGINS WITH, read off the vocabulary: what
+    // this case is about is the words the session answers to, and the row that reaches them is
+    // the prefix with the first letter of one behind it.
+    const narrows = (words[0] as CompletionWord).word.slice(PREFIX.length, PREFIX.length + 1);
     const ran = await inPty({
       columns,
       rows,
       steps: [
         opens,
         {
-          types: PREFIX,
+          types: `${PREFIX}${narrows}`,
           until: (bytes) => words.every((entry) => bytes.includes(entry.description)),
           what: 'listed the words the session answers to',
         },
@@ -751,7 +946,7 @@ describe('a slash opens the list on the screen, and typing narrows it', () => {
       screen,
       words.map((entry) => entry.word),
     );
-    expect(listed, 'the slash listed nothing').toHaveLength(words.length);
+    expect(listed, 'the letter listed nothing').toHaveLength(words.length);
     for (const entry of words) {
       const row = listed.find((line) => line.trimStart().startsWith(entry.word)) as string;
       expect(row, entry.word).toBeDefined();
@@ -759,12 +954,61 @@ describe('a slash opens the list on the screen, and typing narrows it', () => {
     }
   }, 180_000);
 
+  it('opens nothing at all on a bare slash', async () => {
+    // THE OTHER HALF OF THE SAME KEY, ON A SCREEN. A slash alone used to put every verb of the
+    // product on the page; it is a character on the row now, and the page under it is the page
+    // that was there.
+    const columns = NOTHING_IS_CUT;
+    const rows = 40;
+    const offers = everythingOffered();
+    const ran = await inPty({
+      columns,
+      rows,
+      steps: [
+        opens,
+        {
+          types: PREFIX,
+          until: arrivedSince(`${PROMPT} ${PREFIX}`),
+          what: 'typed a bare slash',
+        },
+        { types: 'c', until: arrivedSince(ONLY_A_LIST_SAYS), what: 'typed the letter' },
+        leaves,
+      ],
+    });
+    const bare = screenOf(ran.bytes.slice(0, ran.at[1] as number), columns, rows);
+    const narrowed = screenOf(ran.bytes.slice(0, ran.at[2] as number), columns, rows);
+    // THE ROW REALLY WAS TYPED, so the absence below is about the list rather than about a
+    // keystroke that never arrived.
+    expect(bare.text, 'the slash was never echoed').toContain(`${PROMPT} ${PREFIX}`);
+    expect(
+      rowsNaming(
+        bare,
+        offers.map((offer) => offer.word),
+      ),
+      'a bare slash opened the list',
+    ).toHaveLength(0);
+    // AND THE LETTER OPENS IT, on the same run: what tells the two apart is one keystroke.
+    expect(
+      rowsNaming(
+        narrowed,
+        offers.map((offer) => offer.word),
+      ).length,
+      'the letter opened nothing',
+    ).toBeGreaterThan(0);
+  }, 180_000);
+
   it('narrows to what is still possible as the caller types', async () => {
     const columns = NOTHING_IS_CUT;
     const rows = 40;
-    const words = theSessionsOwnWords().map((entry) => entry.word);
-    const survives = words.filter((word) => word.startsWith(`${PREFIX}c`));
-    const gone = words.filter((word) => !word.startsWith(`${PREFIX}c`));
+    // WHAT THE TWO ROWS OFFER, asked of the completer the console asks: the case is about a
+    // list GOING somewhere, so both ends of the narrowing are read rather than written down.
+    const asked = theCompleter();
+    const wordsAt = (line: string): readonly string[] => asked(line)[0].map((hit) => hit.word);
+    const word = (theSessionsOwnWords()[0] as CompletionWord).word;
+    const opening = word.slice(0, PREFIX.length + 1);
+    const then = word.slice(opening.length, opening.length + 1);
+    const survives = wordsAt(opening + then);
+    const gone = wordsAt(opening).filter((offer) => !survives.includes(offer));
     // The instrument first: there is something to narrow away, and something to keep.
     expect(survives.length).toBeGreaterThan(0);
     expect(gone.length).toBeGreaterThan(0);
@@ -780,9 +1024,9 @@ describe('a slash opens the list on the screen, and typing narrows it', () => {
         // screen below was read with the un-narrowed list on it: measured red in a whole-suite run
         // under load and green on its own. Narrowing is something GOING, so the wait is the shared
         // instrument's (`support/pty.ts`, `aFrameWithout`).
-        { types: PREFIX, until: arrivedSince(gone[0] as string), what: 'listed them' },
+        { types: opening, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed them' },
         {
-          types: 'c',
+          types: then,
           until: aFrameWithout(PROMPT, gone[0] as string),
           what: 'narrowed what it listed',
         },
@@ -834,6 +1078,12 @@ describe('a Tab shows the verbs with the description the declaration gives them'
     // THE ELO, END TO END. The description on the screen is compared to the bytes the
     // BUILT BINARY prints for `--help`, so nothing here is a sentence somebody retyped —
     // and a verb reworded in its declaration moves both sides at once.
+    //
+    // AND WHAT IS ON THE SCREEN IS FOUR OF THEM, WHICH IS THE CEILING. A Tab offers the whole
+    // vocabulary and the list draws four of it and says how many it left out
+    // (`src/repl/palette.ts`, `AT_MOST`), so the screen is asked about the rows it really has
+    // and the whole vocabulary is compared where every one of them can be: against the same
+    // `--help`, off the value both the screen and the shell read.
     const columns = NOTHING_IS_CUT;
     const rows = 40;
     const offers = everythingOffered();
@@ -850,8 +1100,8 @@ describe('a Tab shows the verbs with the description the declaration gives them'
         opens,
         {
           types: COMPLETES,
-          until: (bytes) => offers.every((offer) => bytes.includes(offer.word)),
-          what: 'offered every word it runs',
+          until: arrivedSince(CUT),
+          what: 'offered what it runs, and said what had no room',
         },
         leaves,
       ],
@@ -861,31 +1111,45 @@ describe('a Tab shows the verbs with the description the declaration gives them'
       screen,
       offers.map((offer) => offer.word),
     );
-    expect(listed, 'the Tab listed nothing').toHaveLength(offers.length);
+    expect(listed, 'the Tab listed nothing').toHaveLength(atMost());
 
+    // WHAT IS ON THE SCREEN SAYS WHAT THE DECLARATION SAYS, row by row.
     let checked = 0;
     for (const offer of offers) {
-      const row = listed.find((line) => line.trimStart().startsWith(offer.word)) as string;
-      expect(row, offer.word).toBeDefined();
+      const row = listed.find((line) => line.trimStart().startsWith(offer.word));
+      if (row === undefined) continue;
       expect(row, offer.word).toContain(offer.description);
-      // And for a VERB, the same sentence is what the shell's own help prints.
-      if (offer.word.startsWith(PREFIX)) continue;
-      expect(help, `--help does not say this about ${offer.word}`).toContain(offer.description);
       checked += 1;
     }
-    // Not vacuous: most of the list is verbs, and every one of them was compared.
-    expect(checked).toBeGreaterThan(10);
+    expect(checked, 'no row of the list was compared at all').toBe(listed.length);
+
+    // AND EVERY VERB THERE IS SAYS IT, which is the half a ceiling took off the screen: the
+    // list and the shell read one value (`src/completion/tree.ts`), so this is the elo for the
+    // whole vocabulary rather than for the four that fitted.
+    let verbs = 0;
+    for (const offer of offers) {
+      if (offer.word.startsWith(PREFIX)) continue;
+      expect(help, `--help does not say this about ${offer.word}`).toContain(offer.description);
+      verbs += 1;
+    }
+    expect(verbs).toBeGreaterThan(10);
   }, 240_000);
 });
 
 describe('the two keys open one list, and it stands off the row under it', () => {
   it('lists the same words whether a slash or a Tab asked, with a blank row over them', async () => {
     // THE PROMISE OF THIS DELIVERY, ASKED OF A SCREEN AND NOT OF A FUNCTION. Both keys go
-    // through one function now (`palette.ts`, `offeredBy`), so a case over that function can
+    // through one function (`palette.ts`, `offeredBy`), so a case over that function can
     // only restate the implementation; what a caller MET was two menus — the slash listed
     // three words, a Tab listed those three and sixteen verbs — and the only place that is
     // observable is the page. So the same session is asked twice and the two screens are
     // compared with each other.
+    //
+    // AND THE TWO ROWS ARE THE SAME ROW, which is what the bare slash stopped being able to
+    // say. A slash alone opens nothing now, so the question *do the two keys answer alike*
+    // has to be asked where both of them answer: a caller typing a letter, and a caller
+    // typing the same letter behind a slash. The slash is a KEY rather than a letter of the
+    // word (`complete.ts`, `theStem`), so those two rows are the same question.
     //
     // AND THE BLANK ROW IS ASKED HERE for the same reason: the list used to begin on the row
     // directly over the badge, so it read as a continuation of what was above it rather than
@@ -893,7 +1157,11 @@ describe('the two keys open one list, and it stands off the row under it', () =>
     // string, empty or otherwise — so a screen is the only place it exists.
     const columns = NOTHING_IS_CUT;
     const rows = 40;
-    const offers = everythingOffered();
+    const asked = theCompleter();
+    const letter = 's';
+    const offers = asked(letter)[0];
+    expect(offers.length, 'the letter narrows to nothing').toBeGreaterThan(1);
+    expect(offers.length, 'the letter reaches more than the ceiling').toBeLessThanOrEqual(atMost());
     // AND A LINE IS LANDED BEFORE THE KEY IS PRESSED, which is not scenery: the page is
     // PLACED with rows that have nothing on them, so that the input ends on the last row the
     // layout leaves, and since those rows go under the flow (`repl/page.ts`) the row above the
@@ -902,7 +1170,7 @@ describe('the two keys open one list, and it stands off the row under it', () =>
     // the non-vacuity below is a statement about the separation again rather than about a screen
     // with room to spare. It is abandoned rather than run, because one line is all it takes.
     const typed = 'x';
-    const listedBy = async (key: string): Promise<readonly string[]> => {
+    const listedBy = async (keys: string): Promise<readonly string[]> => {
       const ran = await inPty({
         columns,
         rows,
@@ -922,8 +1190,8 @@ describe('the two keys open one list, and it stands off the row under it', () =>
             what: 'landed the abandoned line',
           },
           {
-            types: key,
-            until: (bytes) => offers.every((offer) => bytes.includes(offer.word)),
+            types: keys,
+            until: (bytes) => offers.every((offer) => bytes.includes(offer.description)),
             what: 'listed what can be typed',
           },
           leaves,
@@ -938,10 +1206,10 @@ describe('the two keys open one list, and it stands off the row under it', () =>
       // where the palette begins depends on how tall the box above it is, and this case is
       // about the row before it whatever that is.
       const first = screen.rows.indexOf(listed[0] as string);
-      expect(first, `${key}: the list is not on the screen`).toBeGreaterThan(0);
+      expect(first, `${keys}: the list is not on the screen`).toBeGreaterThan(0);
       expect(
         (screen.rows[first - 1] as string).trim(),
-        `${key}: the list has no blank row over it`,
+        `${keys}: the list has no blank row over it`,
       ).toBe('');
       // NOT VACUOUS, AND THE WITNESS FOR IT CHANGED. It used to be the row above THAT: with one
       // line landed the page had no room to spare, so the row two above the list was the landed
@@ -955,23 +1223,20 @@ describe('the two keys open one list, and it stands off the row under it', () =>
       // `ABOVE_THE_PALETTE`), and a row drawn and not counted — or counted and not drawn — puts
       // the input off the last row the layout leaves. So the separation is asserted by the anchor,
       // which no amount of spare room can satisfy by accident.
-      fillsTheScreen(screen, rows, `${key}: with the list open`);
+      fillsTheScreen(screen, rows, `${keys}: with the list open`);
       // And what is above the whole run of emptiness really is the page rather than the top of
       // the screen, so the list is not being read on an empty page.
       const above = screen.rows.slice(0, first).findLastIndex((row) => row.trim().length > 0);
-      expect(above, `${key}: nothing at all is above the list`).toBeGreaterThanOrEqual(0);
+      expect(above, `${keys}: nothing at all is above the list`).toBeGreaterThanOrEqual(0);
       return listed.map((row) => row.trimStart().split(/\s{2,}/)[0] as string);
     };
 
-    const bySlash = await listedBy(PREFIX);
-    const byTab = await listedBy(COMPLETES);
+    const bySlash = await listedBy(`${PREFIX}${letter}`);
+    const byTab = await listedBy(`${letter}${COMPLETES}`);
     expect(bySlash, 'the two keys answer with two lists').toEqual(byTab);
-    // And the ONE list is everything there is to type: the verbs, and the words the session
-    // answers to itself, which is what neither key used to show on its own.
+    // And the ONE list is everything that word can still become, which is what neither key
+    // used to show on its own.
     expect([...bySlash].sort()).toEqual(offers.map((offer) => offer.word).sort());
-    expect(bySlash).toContain(CLEAR);
-    expect(bySlash).toContain(LEAVE);
-    expect(bySlash.some((word) => !word.startsWith(PREFIX))).toBe(true);
   }, 300_000);
 });
 
@@ -1004,13 +1269,18 @@ function prompts(screen: Screen): number {
  * A step that waits for the MARK to arrive on a given word's row.
  *
  * The mark, two spaces and the word, contiguous: the layout draws a row as one string, so the
- * separator between the mark's column and the word is in the same write. It is `arrivedSince`
- * rather than a predicate over the whole stream because the mark is in every frame from the first
- * arrow on — what a step has to know is that a frame arrived because of ITS keystroke
- * (`support/pty.ts`).
+ * separator between the mark's column and the word is in the same write. It is about what
+ * arrived SINCE the step began rather than about the whole stream, because the mark is in every
+ * frame from the first arrow on — what a step has to know is that a frame arrived because of ITS
+ * keystroke (`support/pty.ts`).
+ *
+ * AND THE PAINT COMES OUT FIRST, which is what this delivery had to add: the mark carries the
+ * accent now (`src/repl/palette.ts`), so the glyph and the word beside it are no longer a run of
+ * bytes on the wire — there is a closer between them. Measured as three cases waiting out their
+ * whole budget for a mark that was on the screen the whole time.
  */
 function marks(word: string): (bytes: string, since: number) => boolean {
-  return arrivedSince(`${PICK}  ${word}`);
+  return arrivedUnpainted(`${PICK}  ${word}`);
 }
 
 describe('the arrows move the mark, and the ends of the list hold', () => {
@@ -1025,7 +1295,10 @@ describe('the arrows move the mark, and the ends of the list hold', () => {
       rows,
       steps: [
         opens,
-        { types: PREFIX, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
+        // THE KEY THAT OPENS THE WHOLE LIST IS THE TAB, and it is the one that can: a slash
+        // needs a letter behind it now, and a letter narrows to the words that start with it.
+        // What this case is about is the ENDS of the vocabulary, so it asks for all of it.
+        { types: COMPLETES, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
         { types: MOVES_UP, until: marks(last), what: 'marked the last word' },
         // THE END HOLDS, AND WHAT IS ASSERTED IS AN ABSENCE — so the step waits for a frame
         // rather than for something in one: a Down that wrapped WOULD write a frame, and the
@@ -1050,6 +1323,47 @@ describe('the arrows move the mark, and the ends of the list hold', () => {
     expect(last).not.toBe(before);
   }, 240_000);
 
+  it('reaches every word of a list four rows long, and marks a row that is drawn', async () => {
+    // THE DEFECT A CEILING WOULD BRING BACK, walked to the END rather than stepped once. The
+    // arrows move through the whole vocabulary and four rows of it are drawn, so a drawing that
+    // showed the FIRST four would leave the mark on a row nobody drew from the fifth Down on —
+    // which is exactly what happened here before the window followed the pick, measured on the
+    // merged binary. One step cannot catch it; this presses Down as many times as there are
+    // offers and reads the screen after every one of them.
+    const columns = NOTHING_IS_CUT;
+    const rows = 40;
+    const offers = everythingOffered();
+    const words = offers.map((offer) => offer.word);
+    const steps: Step[] = [
+      opens,
+      { types: COMPLETES, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
+    ];
+    for (const [at, word] of words.entries()) {
+      steps.push({ types: MOVES_DOWN, until: marks(word), what: `stepped to ${at + 1}: ${word}` });
+    }
+    steps.push(leaves);
+    const ran = await inPty({ columns, rows, steps });
+
+    // EVERY STEP: the mark is on the word the arrows have reached, and that row is ON THE
+    // SCREEN — the second half is the one a window that did not follow would fail.
+    for (const [at, word] of words.entries()) {
+      const screen = screenOf(ran.bytes.slice(0, ran.at[at + 2] as number), columns, rows);
+      expect(pickedOn(screen), `step ${at + 1} lost the mark`).toBe(word);
+      expect(markedOn(screen), `step ${at + 1} marked a row nobody drew`).toBeDefined();
+      // AND THE LIST IS STILL FOUR ROWS AND STILL HONEST: what it shows plus what it says is
+      // left over is everything there was, at every position of the walk.
+      const listed = rowsNaming(screen, words);
+      expect(listed.length, `step ${at + 1} drew ${listed.length} rows`).toBe(atMost());
+      const said = screen.rows.find((row) => row.trimStart().startsWith(CUT));
+      const missing = Number(/(\d+)/.exec(said as string)?.[1]);
+      expect(listed.length + missing, `step ${at + 1}: what it drew plus what it named`).toBe(
+        words.length,
+      );
+    }
+    // NOT VACUOUS: the walk really did go past what a page of four rows can show.
+    expect(words.length).toBeGreaterThan(atMost());
+  }, 300_000);
+
   it('holds at the other end too, and keeps the list showing everything', async () => {
     const columns = NOTHING_IS_CUT;
     const rows = 40;
@@ -1060,7 +1374,7 @@ describe('the arrows move the mark, and the ends of the list hold', () => {
       rows,
       steps: [
         opens,
-        { types: PREFIX, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
+        { types: COMPLETES, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
         { types: MOVES_DOWN, until: marks(first), what: 'marked the first word' },
         { types: MOVES_UP, until: aFrameAfter(PROMPT), what: 'was asked to step past the start' },
         leaves,
@@ -1072,13 +1386,13 @@ describe('the arrows move the mark, and the ends of the list hold', () => {
       first,
     );
     expect(pickedOn(at(3)), 'an Up walked off the start of the list').toBe(first);
-    // AND MOVING THROUGH IT DOES NOT CHANGE WHAT IT SHOWS: the same words, and the row of keys
-    // still under them.
+    // AND MOVING THROUGH IT DOES NOT CHANGE WHAT IT SHOWS: the same number of words, and the
+    // row of keys still under them.
     const listed = rowsNaming(
       at(3),
       offers.map((offer) => offer.word),
     );
-    expect(listed, 'the mark cost the list a row').toHaveLength(offers.length);
+    expect(listed, 'the mark cost the list a row').toHaveLength(atMost());
     expect(at(3).text, 'the keys that move the list are not said under it').toContain(
       renderPlain(pickingTips()).trim(),
     );
@@ -1100,7 +1414,7 @@ describe('Return takes the picked word, and Escape shuts the list', () => {
       rows,
       steps: [
         opens,
-        { types: PREFIX, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
+        { types: COMPLETES, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
         { types: MOVES_DOWN, until: marks(first), what: 'marked the first word' },
         { types: '\r', until: arrivedSince(`${PROMPT} ${first}`), what: 'took the word' },
         // AND THE WAIT FOR THE LIST TO HAVE GONE IS THE SHARED INSTRUMENT'S, because spelled out
@@ -1142,20 +1456,26 @@ describe('Return takes the picked word, and Escape shuts the list', () => {
     // AND THE OTHER HALF OF THE SAME QUESTION — a filter that EXCLUDES the picked word — is
     // asserted where a value can be read: nothing is picked afterwards and Return hands the row
     // over exactly as it does on a list nobody moved through (`src/repl/editing.test.ts`).
+    //
+    // THE ROW IS THE PREFIX AND A LETTER, because that is what opens a list at all now: the
+    // word this narrows to is the session's own, so the letter is read off it.
     const columns = NOTHING_IS_CUT;
     const rows = 40;
-    const offers = everythingOffered();
-    const first = offers[0]?.word as string;
-    const letter = first[PREFIX.length] as string;
+    const word = (theSessionsOwnWords()[0] as CompletionWord).word;
+    const opening = word.slice(0, PREFIX.length + 1);
+    const then = word.slice(opening.length, opening.length + 1);
+    const asked = theCompleter();
+    const offers = asked(opening)[0];
+    expect(offers.length, 'the letter narrows to one word already').toBeGreaterThan(1);
     const ran = await inPty({
       columns,
       rows,
       steps: [
         opens,
-        { types: PREFIX, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
-        { types: MOVES_DOWN, until: marks(first), what: 'marked the first word' },
-        { types: letter, until: arrivedSince(letter), what: 'narrowed the list' },
-        { types: '\r', until: arrivedSince(`${PROMPT} ${first}`), what: 'took what was left' },
+        { types: opening, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
+        { types: MOVES_DOWN, until: marks(word), what: 'marked the first word' },
+        { types: then, until: arrivedSince(then), what: 'narrowed the list' },
+        { types: '\r', until: arrivedSince(`${PROMPT} ${word}`), what: 'took what was left' },
         leaves,
       ],
     });
@@ -1168,9 +1488,9 @@ describe('Return takes the picked word, and Escape shuts the list', () => {
       offers.map((offer) => offer.word),
     );
     expect(listed.length, 'the filter narrowed nothing').toBeLessThan(offers.length);
-    expect(pickedOn(narrowed), 'the filter lost a pick it was still showing').toBe(first);
+    expect(pickedOn(narrowed), 'the filter lost a pick it was still showing').toBe(word);
     expect(taken.text, 'Return did not bring the word that was left').toContain(
-      `${PROMPT} ${first}`,
+      `${PROMPT} ${word}`,
     );
     expect(prompts(taken), 'Return ran the word instead of typing it').toBe(1);
   }, 240_000);
@@ -1237,11 +1557,11 @@ describe('the mark survives what changes around it', () => {
       rows,
       steps: [
         opens,
-        { types: PREFIX, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
+        { types: COMPLETES, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
         { types: MOVES_DOWN, until: marks(first), what: 'marked the first word' },
         {
           resize: { columns: narrower, rows },
-          until: arrivedSince(`${PICK}  ${first}`),
+          until: marks(first),
           what: 'was resized with a word picked',
         },
         leaves,
@@ -1257,105 +1577,82 @@ describe('the mark survives what changes around it', () => {
     fillsTheScreen(after, rows, 'the page after a resize with a pick on it');
   }, 240_000);
 
-  it('spends no colour, so a session with none still shows which row it is', async () => {
-    // THE REASON THE MARK IS A GLYPH AND NOT A HUE, asked of a real device twice over. The
-    // session is driven with colour switched off at the environment — what a pipe, a CI log and
-    // `--color=never` get — and the mark is still on the screen; and the paint on the frame that
-    // MOVED the mark is the same paint as on the frame that opened the list, so nothing about
-    // being picked is carried by a hue or a weight.
-    //
-    // AND SWITCHING COLOUR OFF DOES NOT MAKE THE PAGE PLAIN, which this case measured and is
-    // worth writing down rather than asserting past: the capability the environment resolves is
-    // the RECORD's renderer (`wiring/color.ts`), and the layout dims the palette and paints the
-    // accent out of its own (`repl/region.ts`). So a page with `NO_COLOR` set still carries the
-    // dim of the list and the magenta of the rules — 44 sequences of it, measured. That is a
-    // decision this delivery did not take and did not touch; what it means here is that the claim
-    // is *the pick spends no colour*, which is what the mark rests on, rather than *the page has
-    // none*, which is not true today.
+  it('paints the mark in a session that has colour, and marks the row in one that has none', async () => {
+    // THE DECISION THIS DELIVERY REVOKED, and the shape of the case that held the old one. It
+    // read *the pick spends no colour*, and it compared the paint on the frame that moved the
+    // mark with the paint on the frame that opened the list: equal sets meant the mark was the
+    // whole of the difference. The argument under it was right about what it defended — a hue
+    // is a weak signal here, and a mark has to work in a pipe, in monochrome and for a reader
+    // who does not separate two tones — and it was read as a ban. The hue is a SECOND axis
+    // over the column now, so what is asked is BOTH halves, on two real sessions.
     const columns = NOTHING_IS_CUT;
     const rows = 40;
     const offers = everythingOffered();
     const first = offers[0]?.word as string;
-    const ran = await drive(
+    const walk = (): readonly Step[] => [
+      opens,
+      { types: COMPLETES, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
+      { types: MOVES_DOWN, until: marks(first), what: 'marked the first word' },
+      leaves,
+    ];
+    const withColour = await inPty({ columns, rows, steps: walk() });
+    const without = await drive(
       { ...fixture(), environment: { ...environment, NO_COLOR: '1' } },
-      {
+      { columns, rows, steps: walk() },
+    );
+
+    // THE COLUMN IS IN BOTH, which is the half that may never go: the glyph is in the text of
+    // the row, so the mark is on the screen whether or not anything painted it.
+    for (const [ran, said] of [
+      [withColour, 'with colour'],
+      [without, 'with none'],
+    ] as const) {
+      const screen = screenOf(
+        (ran as Ran).bytes.slice(0, (ran as Ran).at[2] as number),
         columns,
         rows,
-        steps: [
-          opens,
-          { types: PREFIX, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
-          { types: MOVES_DOWN, until: marks(first), what: 'marked the first word' },
-          leaves,
-        ],
-      },
-    );
-    const screen = screenOf(ran.bytes.slice(0, ran.at[2] as number), columns, rows);
-    expect(pickedOn(screen), 'the mark is not on the screen without colour').toBe(first);
-    // THE PICK ADDED NO PAINT. The frame the arrow caused and the frame that opened the list are
-    // compared by the SET of sequences that change how a glyph looks: equal sets mean the mark is
-    // the whole of the difference a reader is being shown.
-    const paintIn = (from: number, to: number): Set<string> =>
-      new Set(ran.bytes.slice(ran.at[from] as number, ran.at[to] as number).match(PAINTED) ?? []);
-    expect(paintIn(1, 2), 'the pick was painted rather than marked').toEqual(paintIn(0, 1));
-    // NOT VACUOUS: there IS paint on both of those frames, so the comparison is over something.
-    expect(paintIn(1, 2).size).toBeGreaterThan(0);
-  }, 240_000);
+      );
+      expect(pickedOn(screen), `the mark is not on the screen ${said}`).toBe(first);
+    }
+
+    // AND THE HUE IS ON THE MARK IN ONE OF THEM AND NOWHERE IN THE OTHER. The accent is read
+    // off a line the product composes rather than typed here (`src/presentation/styled.ts`), and
+    // what is looked for is the accent IMMEDIATELY BEFORE the glyph — the mark painted, rather
+    // than a page that happens to carry the hue somewhere (the rules of the input area are drawn
+    // in it, on every frame of both sessions).
+    const accent = renderStyled(echoLine(PROMPT, ''));
+    const opensWith = accent.slice(0, accent.indexOf(PROMPT));
+    const painted = (ran: Ran, from: number, to: number): boolean =>
+      ran.bytes.slice(ran.at[from] as number, ran.at[to] as number).includes(`${opensWith}${PICK}`);
+    expect(painted(withColour, 1, 2), 'the mark was drawn without the accent').toBe(true);
+    expect(painted(without, 1, 2), 'the accent survived NO_COLOR').toBe(false);
+    // NOT VACUOUS: the session with no colour is still a painted page — the layout draws the
+    // rules and dims the list out of its own vocabulary — so the absence above is about the
+    // MARK and not about a page that has no escapes at all.
+    const paint = new RegExp(PAINTED.source, 'g');
+    const quiet = without.bytes.slice(without.at[1] as number, without.at[2] as number);
+    expect(
+      (quiet.match(paint) ?? []).length,
+      'the page with no colour has no paint at all',
+    ).toBeGreaterThan(0);
+  }, 300_000);
 });
 
-describe('a page without the room shows fewer, and says how many it could not', () => {
-  // TWO SIZES, AND THEY ARE THE TWO REGIMES OF THE SAME PROMISE. THIS WAS ONE CASE AT A
-  // HUNDRED BY EIGHT, and it asserted that some were shown AND some were named — which is
-  // what a list cut to the SCREEN did at that size. The list is cut to what the PAGE has left
-  // over now (`repl/area.ts`, `AreaRequest.flow`), so the case that pinned "some are shown"
-  // gained a size where the page really has some to spare.
+describe('a page shows four, says how many it could not, and does it at every height', () => {
+  // TWO SIZES, AND THEY USED TO BE TWO REGIMES OF THE SAME PROMISE — a page with room showed
+  // what it had room for and a shorter one showed fewer, so the counts here moved every time
+  // the geometry did: eleven and fifteen, before that thirteen and seventeen, before that
+  // fifteen and nineteen. Every one of those numbers was *what fitted*, which is the thing a
+  // caller could not predict and did not ask for.
   //
-  // AND THE SHORT ONE ASSERTED THAT NOTHING WAS SHOWN, which is the premise the floor
-  // falsified — and it was written down here as the other half of a promise rather than as the
-  // defect it was: *at eight rows the opening spends the whole page: what is left over is the
-  // chrome the list takes back, which is two rows, and two rows are the account and the row of
-  // keys*. Both sentences were true of the arithmetic and neither was a promise worth keeping: a
-  // list that draws `… 18 not shown` and NOT ONE WORD answers *what can I type* with *eighteen
-  // things, none of them*, and a key that draws no word is indistinguishable from a key that does
-  // nothing. There is a floor of one word under the leftover now (`repl/area.ts`,
-  // `roomForThePalette`), so what the two sizes are two regimes OF has moved: it is how MANY are
-  // shown — a page with room shows what it has room for, and a page with none shows one.
-  //
-  // AND THE SECOND SIZE MOVED FROM EIGHT ROWS TO SIXTEEN, which is the model rather than a
-  // number retuned. Rows the list takes used to come out of what the PAGE had left over under
-  // everything the session had said; they come out of the middle region now, which is a WINDOW
-  // and costs the page nothing (`repl/area.ts`, `repl/scrolling.ts`) — so a list has more room
-  // at every height, and eight rows is a screen with no room for a list at all rather than a
-  // screen that shows one word. Both counts are read off the product and asserted against the
-  // total, which is what keeps them honest as the geometry moves.
-  // AND BOTH SIZES MOVED AGAIN, for the reason the counts here have always moved: what the
-  // list has room for is what the page has left over. The region above it is no longer whatever
-  // the biggest drawing costs — it is at most a THIRD of the screen, and a drawing whose
-  // arrangement wants more than that gives way to a smaller drawing (`repl/panel.ts`,
-  // `panelFor`; `repl/session.ts`). At a hundred columns that is six rows rather than fifteen at
-  // twenty rows of screen, and nothing at all at ten, where no arrangement fits inside a third
-  // and the whole opening is on the roll. So the list has more room at both, and both sizes had
-  // to come DOWN to keep the two regimes: a page with room shows what it has room for, a page
-  // with less shows fewer. Measured on a real terminal rather than derived, and both counts are
-  // still asserted against the total rather than written down.
-  // AND BOTH SIZES MOVED A THIRD TIME, for a reason that is not the geometry's: there is a
-  // FLOOR under the window now (`src/repl/floor.ts`), and twenty by ten and a hundred by ten are
-  // both under it — a session driven at either draws the screen that says so and no list at all.
-  // The two regimes survive above the floor because the list is twenty rows tall and what is left
-  // for it is the screen less the region at the top: at eighty columns the arrangement holds six
-  // of them, so twenty-four rows leave thirteen words and twenty-eight leave seventeen. Measured
-  // on a real terminal rather than derived, and both counts are still asserted against the total.
-  // AND BOTH LOST TWO, WHICH IS THE SEAM. The region at the top is the arrangement AND the rule
-  // that closes it AND the row of breath under that (`src/repl/panel.ts`, `THE_SEAM`), so it
-  // holds eight of the rows at eighty columns rather than six — and the list is budgeted against
-  // what is left of the screen under it (`src/repl/area.ts`, `roomForThePalette`). The two
-  // regimes are untouched; each shows two words fewer and says so in the row that names the rest.
-  for (const [rows, shown] of [
-    [24, 11],
-    [28, 15],
-  ] as const) {
+  // THERE IS A CEILING NOW, so the two sizes are the same answer twice ({@link atMost}): four
+  // offers, and a row saying how many had no room. What the two sizes are FOR is exactly that —
+  // a claim about *four* rather than about *what fits* needs more than one height, and a third
+  // is asked of the same product where a screen is not needed (the case over `areaFor` above).
+  // The number is still read off the product rather than written down, and what it names is
+  // still asserted against the TOTAL.
+  for (const rows of [24, 28]) {
     it(`names a number that adds up to everything there was, at 80x${rows}`, async () => {
-      // THE NUMBER IS ASSERTED AGAINST THE TOTAL rather than written down: what is on the
-      // screen plus what the last row names is every word the session offers.
       const columns = 80;
       const offers = everythingOffered();
       const ran = await inPty({
@@ -1382,12 +1679,11 @@ describe('a page without the room shows fewer, and says how many it could not', 
       expect(listed.length + missing, `${listed.length} shown, ${missing} named`).toBe(
         offers.length,
       );
-      // Not vacuous: it really did leave some out, and the two sizes really are the two
-      // regimes rather than one measured twice. THE SECOND OF THESE WAS A YES-OR-NO — *some
-      // are shown* — and it is a COUNT now, because with a floor under the list both sizes show
-      // some and what tells them apart is how many.
+      // Not vacuous: it really did leave some out.
       expect(missing).toBeGreaterThan(0);
-      expect(listed.length, `${rows}: ${listed.length} shown`).toBe(shown);
+      // AND IT IS THE CEILING RATHER THAN THE HEIGHT that decided how many, which is what the
+      // second size is here to say.
+      expect(listed.length, `${rows}: ${listed.length} shown`).toBe(atMost());
       // AND THE PAGE DID NOT PAY FOR THE LIST at either size, which is what the cut buys:
       // the row the caller types on is still the last one the layout leaves.
       fillsTheScreen(screen, rows, `${columns}x${rows} with a cut list`);

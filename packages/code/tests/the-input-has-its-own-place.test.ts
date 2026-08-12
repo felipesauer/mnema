@@ -48,12 +48,26 @@ import { statement } from '../src/presentation/verdict.js';
 import { areaFor } from '../src/repl/area.js';
 import { THE_FLOOR } from '../src/repl/floor.js';
 import { badgeLine, openSession, theSessionsOwnWords, tips } from '../src/repl/session.js';
-import { ABOUT, LEAVE, PREFIX, SESSION_WORDS } from '../src/session-words.js';
+import { PREFIX, SESSION_WORDS } from '../src/session-words.js';
 import { here } from '../src/wiring/context.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { DEFAULT_REQUIREMENT, levelSeverity, VERIFY_VERB } from '../src/wiring/verify.js';
-import { ESC, fakeTerminal, hooksNothing, until, withoutLayout } from './support/console.js';
-import { inPty as drive, type Fixture, opensAConsole, type Ran, type Step } from './support/pty.js';
+import {
+  ENDS_THE_INPUT,
+  ESC,
+  fakeTerminal,
+  hooksNothing,
+  until,
+  withoutLayout,
+} from './support/console.js';
+import {
+  inPty as drive,
+  type Fixture,
+  leavesTheSession,
+  opensAConsole,
+  type Ran,
+  type Step,
+} from './support/pty.js';
 import { screenOf, theSettledScreen } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
@@ -285,7 +299,7 @@ async function openedAt(columns: number, rows = 40): Promise<string> {
   });
   await until(() => terminal.bytes().includes(PROMPT), 'opened');
   terminal.type(CLEARS_THE_LINE);
-  terminal.type(`${LEAVE}\r`);
+  terminal.type(ENDS_THE_INPUT);
   await closed;
   return terminal.bytes();
 }
@@ -502,7 +516,7 @@ describe('the badge says what the record proved, and the verb that says the rest
     });
     await until(() => terminal.bytes().includes(PROMPT), 'opened');
     terminal.type(CLEARS_THE_LINE);
-    terminal.type(`${LEAVE}\r`);
+    terminal.type(ENDS_THE_INPUT);
     await closed;
     // Read off the page with everything a LAYOUT writes taken out, and only that: the
     // sequence that hides the caret opens the frame the badge is redrawn in, and it is not
@@ -554,21 +568,23 @@ describe('the hint is short enough to be one row, and promises nothing that is n
     expect(quoted, 'the hint no longer names the key that lists the words').toContain(PREFIX);
   });
 
-  it('does not name the word it moved into the list, because the list is where it is', () => {
-    // WHAT MAKES THREE ENOUGH, AND WHAT CHANGED. Three clauses went over two deliveries —
-    // the word that clears the page, the key that clears the line, and now the word that
-    // lists the verbs — and every one of them is one keystroke away behind the clause that
-    // stayed. IT USED TO ASSERT THE OPPOSITE: that the hint still named `/help`. What
-    // falsified it is that the slash lists `/help` itself, so naming both would be the hint
-    // spending a clause on what the clause beside it opens.
-    expect(renderPlain(tips())).not.toContain(ABOUT);
-    // THE ELO, so the absence above is a move and not a loss: the word really is in the
-    // vocabulary the prefix opens, with something to say about it.
+  it('names no word of the session at all, because the list is where they are', () => {
+    // WHAT MAKES THREE ENOUGH, AND WHAT CHANGED. Three clauses went over three deliveries —
+    // the word that clears the page, the key that clears the line, and the word that listed
+    // the verbs — and every one of them is one keystroke away behind the clause that stayed.
+    // IT USED TO ASSERT THE OPPOSITE: that the hint still named `/help`. What falsified it
+    // first is that the slash listed `/help` itself; what falsifies it now is that `/help`
+    // does not exist — the list IS the answer that word used to print.
+    const said = renderPlain(tips());
+    for (const word of SESSION_WORDS) expect(said, `the hint names ${word}`).not.toContain(word);
+    // THE ELO, so the absence above is a move and not a loss: every word the session answers
+    // to is in the vocabulary the prefix opens, with something to say about it.
     const words = theSessionsOwnWords();
-    const listed = words.find((entry) => entry.word === ABOUT);
-    expect(listed, `${ABOUT} is not in what the prefix lists`).toBeDefined();
-    expect((listed as { description: string }).description.length).toBeGreaterThan(3);
-    for (const entry of words) expect(entry.word.startsWith(PREFIX), entry.word).toBe(true);
+    expect(words.map((entry) => entry.word).sort()).toEqual([...SESSION_WORDS].sort());
+    for (const entry of words) {
+      expect(entry.word.startsWith(PREFIX), entry.word).toBe(true);
+      expect(entry.description.length, entry.word).toBeGreaterThan(3);
+    }
   });
 });
 
@@ -598,11 +614,7 @@ async function inPty(options: {
 const opens: Step = opensAConsole(PROMPT);
 
 /** The step every session ends with. */
-const leaves: Step = {
-  types: `${LEAVE}\r`,
-  until: (bytes) => bytes.lastIndexOf(PROMPT) > bytes.indexOf(LEAVE),
-  what: 'left',
-};
+const leaves: Step = leavesTheSession;
 
 /** How many times `what` occurs in `text`. */
 const times = (text: string, what: string): number => text.split(what).length - 1;
