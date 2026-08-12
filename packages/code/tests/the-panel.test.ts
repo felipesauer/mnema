@@ -190,7 +190,7 @@ async function openedAt(
   const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
   const closed = openSession({
     io,
-    render,
+    renderingAt: () => render,
     self: REPL_VERB,
     input: terminal.stdin,
     output: terminal.stdout,
@@ -938,7 +938,7 @@ describe('the panel is the plain panel, wrapped, and it is drawn once', () => {
     const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
     const closed = openSession({
       io,
-      render: renderPlain,
+      renderingAt: () => renderPlain,
       self: REPL_VERB,
       input: terminal.stdin,
       output: terminal.stdout,

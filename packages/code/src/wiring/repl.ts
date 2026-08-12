@@ -64,7 +64,7 @@ export const REPL_VERB = 'repl';
 
 /** Registers `mnema repl` on the program. */
 export function registerRepl(program: Command, wiring: Wiring): Declared {
-  const { io, render } = wiring;
+  const { io, renderingAt } = wiring;
   const repl = program
     .command(REPL_VERB)
     .description('open an interactive session that reads this project')
@@ -94,7 +94,11 @@ export function registerRepl(program: Command, wiring: Wiring): Declared {
       const { openSession } = await import('../repl/session.js');
       await openSession({
         io,
-        render,
+        // THE RULE RATHER THAN AN ANSWER TO IT, and this verb is the only one handed it.
+        // A session outlives the window it opened in, so how wide the screen is is not a
+        // fact this invocation can resolve once the way the flag and the environment are
+        // (`wiring/color.ts`); the page asks for the width of the frame it is drawing.
+        renderingAt,
         self: REPL_VERB,
         input: process.stdin,
         output: process.stdout,

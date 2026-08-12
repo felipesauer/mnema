@@ -26,7 +26,14 @@ import { IdentityUnavailableError } from '@mnema/core';
 import { Command, CommanderError, Option } from 'commander';
 import type { Render } from './presentation/render.js';
 import { VERSION } from './version.js';
-import { COLOR_HELP, COLOR_WHENS, type ColorWhen, rendererFor } from './wiring/color.js';
+import {
+  COLOR_HELP,
+  COLOR_WHENS,
+  type ColorWhen,
+  type RenderingAt,
+  rendererAtEachWidth,
+  rendererFor,
+} from './wiring/color.js';
 import { registerVerbs } from './wiring/index.js';
 import { type CliIo, processIo } from './wiring/io.js';
 import { refusalLine, refusalSentence } from './wiring/report.js';
@@ -143,14 +150,26 @@ export function buildProgram(
   // always got (`wiring/color.ts`). A stream that reported no width answers zero, which
   // is what the rule reads as "no screen to fold to" — a width nobody reported is not a
   // width to guess at.
-  const resolved =
-    render ??
-    rendererFor(() => ({
-      when: program.opts<{ color: ColorWhen }>().color,
-      env: process.env,
-      isTty: process.stdout.isTTY === true,
-      columns: process.stdout.columns ?? 0,
-    }));
+  //
+  // ⛔ ONE READING OF THE CAPABILITY AND TWO DOORS ONTO IT. The rule is asked for a WIDTH
+  // ({@link rendererAtEachWidth}) and the renderer every verb is handed is that rule asked
+  // for this terminal's own — so the flag, the two variables and whether the destination is
+  // a terminal are read exactly once, and the width is the one input a caller can change
+  // while the process runs. A second factory beside this one would be a second reading of
+  // the same stream at another instant, which is two terminals.
+  const renderingAt: RenderingAt =
+    render === undefined
+      ? rendererAtEachWidth(() => ({
+          when: program.opts<{ color: ColorWhen }>().color,
+          env: process.env,
+          isTty: process.stdout.isTTY === true,
+          columns: process.stdout.columns ?? 0,
+        }))
+      : // A CALLER THAT HANDED US ONE HAS ALREADY ANSWERED IT, at every width there is:
+        // the session builds a program per typed line and passes the renderer the page is
+        // being drawn with, and a `--color` typed inside it changes nothing.
+        () => render;
+  const resolved = render ?? rendererFor(renderingAt);
 
   // The open session's run, resolved lazily and at most once (see
   // {@link pinnedRunResolver}). A verb asks it when it STAMPS a run, and forwards what
@@ -168,7 +187,7 @@ export function buildProgram(
   // other; both are lazy, so the order costs nothing at run time.
   const pinnedRun = pinnedRunResolver({ io, render: resolved });
 
-  const verbs = registerVerbs(program, { io, render: resolved, pinnedRun });
+  const verbs = registerVerbs(program, { io, render: resolved, renderingAt, pinnedRun });
 
   // AFTER the verbs, and over all of them at once: the parser's own refusals, said
   // the way this surface says every other one (see `wiring/usage.ts`). It walks what

@@ -49,6 +49,7 @@
 
 import type { Command } from 'commander';
 import type { Render } from '../presentation/render.js';
+import type { RenderingAt } from './color.js';
 import type { CliIo } from './io.js';
 import type { PinnedRun } from './run-pin.js';
 
@@ -67,6 +68,20 @@ export interface Wiring {
    * is how the surface would end up with a hundred answers to it.
    */
   readonly render: Render;
+  /**
+   * THE SAME ANSWER, ASKED FOR A WIDTH — how a line becomes bytes on a screen of a given
+   * size, rather than on the one this process happens to be on (`color.ts`).
+   *
+   * ONE VERB TAKES IT AND THE REST ARE HANDED {@link render}, which is the difference
+   * between a report and a PAGE. A verb prints and exits, so the terminal it read cannot
+   * change under it; `repl` opens a session that outlives the window it opened in, and a
+   * caller who maximises theirs is a caller whose next line has to fold to the new width.
+   * It travels here rather than being built by the verb because the capability behind it is
+   * this INVOCATION'S — the flag, the environment and the stream — read once at the entry
+   * where the process is, and a session that resolved its own would answer with the defaults
+   * of the program it builds per typed line.
+   */
+  readonly renderingAt: RenderingAt;
   /** The open session's run, resolved at most once per command. */
   readonly pinnedRun: PinnedRun;
 }

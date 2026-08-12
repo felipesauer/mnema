@@ -289,7 +289,7 @@ async function openedAt(
   const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
   const closed = openSession({
     io,
-    render: renderPlain,
+    renderingAt: () => renderPlain,
     self: REPL_VERB,
     input: terminal.stdin,
     output: terminal.stdout,
@@ -359,7 +359,7 @@ async function resizedThrough(columns: number, widths: readonly number[]): Promi
   const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
   const closed = openSession({
     io,
-    render: renderPlain,
+    renderingAt: () => renderPlain,
     self: REPL_VERB,
     input: terminal.stdin,
     output: terminal.stdout,
@@ -395,7 +395,7 @@ async function readingWhileTyping(typed: string, answered?: string): Promise<Tou
   const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
   const closed = openSession({
     io,
-    render: renderPlain,
+    renderingAt: () => renderPlain,
     self: REPL_VERB,
     input: terminal.stdin,
     output: terminal.stdout,
@@ -460,7 +460,7 @@ async function readingWhileCompleting(tabs: number): Promise<{
   const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
   const closed = openSession({
     io,
-    render: renderPlain,
+    renderingAt: () => renderPlain,
     self: REPL_VERB,
     input: terminal.stdin,
     output: terminal.stdout,
