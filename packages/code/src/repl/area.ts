@@ -7,7 +7,7 @@
  * BOTTOM of the three regions the page is made of — always at the foot, never moving, and
  * redrawn on every frame like the other two (`region.ts`).
  *
- * ⚠️ AND THIS FILE USED TO BE ABOUT A BOUNDARY THAT NO LONGER EXISTS. Every number in it was
+ * AND THIS FILE USED TO BE ABOUT A BOUNDARY THAT NO LONGER EXISTS. Every number in it was
  * chosen against one rule of the layout library: a region as tall as the viewport is redrawn
  * WHOLE, with a sequence carrying the erase of the caller's history inside it, and a region one
  * row shorter is redrawn in PART. So the area gave a row back, the opening was budgeted against
@@ -29,7 +29,7 @@
  * loses the rules; what is left is the row being typed and the hint under it, which is what a
  * session has always had.
  *
- * ⚠️ AND *A TERMINAL* MEANT ANY TERMINAL, which is the premise a floor under the window took
+ * AND *A TERMINAL* MEANT ANY TERMINAL, which is the premise a floor under the window took
  * away. This file was written on the rule every ladder of this surface was written on — whatever
  * the size, there is a rung — and what that produced at the bottom was a prompt with the product's
  * identity gone from the screen. Under eighty by twenty-four nothing is laid out at all now
@@ -45,7 +45,7 @@
  * list that takes the whole middle gives the whole middle back on the next key, and nothing
  * scrolled away in between.
  *
- * ⚠️ WHICH IS WHY THE PALETTE HAS ONE LIMIT WHERE IT USED TO HAVE THREE. It was a PREFERENCE
+ * WHICH IS WHY THE PALETTE HAS ONE LIMIT WHERE IT USED TO HAVE THREE. It was a PREFERENCE
  * (what the page had left over), a FLOOR (one word, because a page with nothing to spare drew
  * the count of what had no room and not one word) and a CEILING (the library's boundary). The
  * preference and the floor were both about rows that were about to be lost — on a page whose
@@ -81,7 +81,7 @@
  *     answered whatever the height, because a terminal too short for it is a terminal
  *     too short for a prompt.
  *
- * ⚠️ AND THE HEIGHT NO LONGER WALKS THIS LADDER, which is worth saying where the ladder is
+ * AND THE HEIGHT NO LONGER WALKS THIS LADDER, which is worth saying where the ladder is
  * defined rather than leaving a reader to work it out. There is a FLOOR under the window
  * (`floor.ts`): no page is laid out under eighty by twenty-four, the region above may hold at most
  * a third of the screen (`panel.ts`), and the whole of the `full` form is five rows — so on every
@@ -116,7 +116,7 @@ export interface AreaRequest {
    * HOW MANY ROWS THE REGION ABOVE TAKES — the fixed top of the page, which is the opening
    * (`panel.ts`).
    *
-   * ⚠️ IT WAS THE FLOW ON THE SCREEN, and the two are opposites rather than variants. That one
+   * IT WAS THE FLOW ON THE SCREEN, and the two are opposites rather than variants. That one
    * was everything the session had said that a reader could still see: it GREW as lines landed,
    * it shrank when a window carried rows off the top, and it had to be followed from frame to
    * frame because scrolling cannot be undone. This one is a function of the terminal's size and
@@ -238,7 +238,7 @@ function aboveIn(form: AreaForm, drawing: Drawing): number {
  * number this file answers with would be one too many. A badge too wide for the window is
  * the same absence by the same construction.
  *
- * ⚠️ IT ASKED TWO QUESTIONS AND IT ASKS ONE. The old rule measured the chrome against the whole
+ * IT ASKED TWO QUESTIONS AND IT ASKS ONE. The old rule measured the chrome against the whole
  * SCREEN while the list was shut and against the page while it was open, because the chrome had
  * to be stable as a session printed and the list had to be stopped from pushing the page off
  * the top. There is no page to push now: what a session says is a window onto a roll of its own
@@ -274,7 +274,7 @@ function onOneRow(width: number, columns: number): boolean {
  * HOW MANY ROWS THE PALETTE MAY HAVE — what is left of the screen under the region above and
  * over the area's own floor, and never more than the list asked for.
  *
- * ⚠️ IT WAS THREE LIMITS AND IT IS ONE, and what took the other two away is the model rather
+ * IT WAS THREE LIMITS AND IT IS ONE, and what took the other two away is the model rather
  * than a simplification. The PREFERENCE was what the page had left over: taking more than that
  * carried the top of the page into the caller's scrollback, permanently, so the list was held
  * to the emptiness. The FLOOR was one word underneath it, because holding the list to a page

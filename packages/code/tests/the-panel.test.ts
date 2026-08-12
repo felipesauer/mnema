@@ -2,7 +2,7 @@
  * THE PANEL THE CONSOLE OPENS WITH — the name drawn, the text beside it, and the decisions
  * it forced.
  *
- * ⚠️ IT WAS A BOX WITH A TITLE ON ITS BORDER, and this file was written around the frame:
+ * IT WAS A BOX WITH A TITLE ON ITS BORDER, and this file was written around the frame:
  * which rows were the box's, which of the two boxed forms was drawn, how wide the frame ran.
  * THE FRAME IS GONE — the console this was measured against writes its name, its build and
  * its context as text beside its logo and draws none — so every one of those questions had to
@@ -70,7 +70,7 @@ const PROMPT = 'mnema>';
 /**
  * WHERE THE ROW THAT SAYS WHAT THE SESSION IS BEGINS — the first few characters of it.
  *
- * ⚠️ THE WHOLE SENTENCE USED TO BE THE MARKER, and a fold is what falsified it. The layout
+ * THE WHOLE SENTENCE USED TO BE THE MARKER, and a fold is what falsified it. The layout
  * breaks a row too wide for the terminal AT THE MARGIN now, which is what a terminal does to it
  * anyway — the difference is that the break is in the BYTES rather than only on the screen
  * (`repl/region.ts`, `THE_MARGIN`). At forty-six columns the title is forty-nine characters, so
@@ -166,7 +166,7 @@ afterAll(() => {
 /**
  * A TERMINAL WITH ROOM FOR EVERY ARRANGEMENT DOWN IT — the other axis, held still.
  *
- * ⚠️ EVERY CASE IN THIS FILE ASKS ABOUT A WIDTH, and until this delivery that was the only
+ * EVERY CASE IN THIS FILE ASKS ABOUT A WIDTH, and until this delivery that was the only
  * measurement an arrangement was chosen by. It is chosen by both now: the panel is the FIXED
  * region at the top of the screen, so it may take at most a share of the way down as well
  * (`repl/panel.ts`, `panelFor`) — and a console opened at the default height would have had the
@@ -197,7 +197,7 @@ async function openedAt(
     interactive: true,
     leaving: hooksNothing,
   });
-  // ⚠️ IT WAITED FOR THE TITLE, and a terminal too narrow for an arrangement never draws one:
+  // IT WAITED FOR THE TITLE, and a terminal too narrow for an arrangement never draws one:
   // the opening's LINES are on the roll and the middle region shows its tail, so on a narrow
   // screen the title is one scroll up rather than on the page (`repl/panel.ts`, `Opening.above`).
   // The bytes still hold it — the whole roll is written onto the caller's own buffer when the
@@ -229,7 +229,7 @@ function rowsOf(page: string): string[] {
  * THE ROWS OF THE OPENING: from the first row with anything on it down to the sentence the
  * session lands under the panel.
  *
- * ⚠️ IT WAS `boxRows`, AND THE FRAME WAS THE INSTRUMENT: a row of the box began at the left
+ * IT WAS `boxRows`, AND THE FRAME WAS THE INSTRUMENT: a row of the box began at the left
  * edge of the screen with a corner or a side, which no row inside it ever did. There is no
  * frame to ask, so what bounds the panel is what is above it and what is below it — a page
  * that has been carried into the scrollback and the one sentence that is landed rather than
@@ -287,7 +287,7 @@ function theFrameOn(rows: readonly string[]): string[] {
 /**
  * Which arrangement is on the page, judged by what only that arrangement has.
  *
- * ⚠️ IT WAS JUDGED BY THE FRAME, twice over, and both readings are gone with it. It counted
+ * IT WAS JUDGED BY THE FRAME, twice over, and both readings are gone with it. It counted
  * the rules on one row first — three of them meant a column on each side of a divider — and
  * the art put as many as it liked on a row of its own; then it looked for a rule running
  * THROUGH the box, which is true of a frame whatever the art is made of and is true of nothing
@@ -415,7 +415,7 @@ function titleRow(page: string): string {
  * THE ACCENT AND THE ESCAPE THAT GIVES THE FOREGROUND BACK, read off the one row on the page
  * that carries nothing but them: a rule of the input area.
  *
- * ⚠️ IT WAS READ OFF THE BOX'S TOP EDGE — `boxLine`, found by the corner — and that worked for
+ * IT WAS READ OFF THE BOX'S TOP EDGE — `boxLine`, found by the corner — and that worked for
  * a reason the frame's departure took away: a border is nothing but accent, so the first two
  * escapes on that row were the accent and its closer, adjacent. Every row the accent is on now
  * also carries a WEIGHT, because everything the panel paints came through a renderer that
@@ -456,7 +456,7 @@ function rowHolding(page: string, what: string): string {
  * Asking which characters the accent is around, rather than whether the accent is on the
  * row at all, is the only question worth asking here: what may not happen is the accent around
  * a word of the RECORD, and a row can carry chrome and a fact at once — the title's row does,
- * beside the mark. ⚠️ THE REASON GIVEN USED TO BE THE FRAME — *a row of the box has the frame at
+ * beside the mark. THE REASON GIVEN USED TO BE THE FRAME — *a row of the box has the frame at
  * each end of it* — and the frame is gone; the question it justified is the one that survived.
  */
 function accented(row: string, accent: string, closer: string): string[] {
@@ -505,7 +505,7 @@ describe('the chrome spends exactly one hue, and it is none of the three severit
     // renderer itself — what a severity ADDS to a line that has none — so nothing here is a
     // number somebody typed.
     //
-    // ⚠️ THE ACCENT USED TO BE READ OFF THE BOX'S TOP EDGE, and where it is read from now is
+    // THE ACCENT USED TO BE READ OFF THE BOX'S TOP EDGE, and where it is read from now is
     // {@link theAccent}, which says why.
     const page = await openedAt(200, renderStyled);
     const [accent, closer] = theAccent(page);
@@ -523,7 +523,7 @@ describe('the chrome spends exactly one hue, and it is none of the three severit
     // and the mark. A layout that had stopped painting would satisfy the loop above saying
     // nothing.
     //
-    // ⚠️ THE THIRD USED TO BE THE FRAME, and it was asserted by looking for a run of nothing
+    // THE THIRD USED TO BE THE FRAME, and it was asserted by looking for a run of nothing
     // but the frame's own glyph inside an accented span. There is no frame, so what is asked is
     // the pair that is left — and the title is the one that MOVED into the switch this
     // delivery, so a layout that had stopped painting it would go red here rather than quietly.
@@ -531,9 +531,9 @@ describe('the chrome spends exactly one hue, and it is none of the three severit
       accented(titleRow(page), accent as string, closer as string).map(stripped),
       'what the session is is not painted',
     ).toContainEqual(expect.stringContaining(OPENED));
-    // ⚠️ THE MARK USED TO BE FOUND BY ITS GLYPH, and a change of drawing is what falsified
+    // THE MARK USED TO BE FOUND BY ITS GLYPH, and a change of drawing is what falsified
     // that: the widest form was inked with diagonals rather than with blocks, so a page two
-    // hundred columns wide held no full block at all. ⚠️ AND THE DRAWING AFTER IT IS FULL OF
+    // hundred columns wide held no full block at all. AND THE DRAWING AFTER IT IS FULL OF
     // BLOCKS AGAIN, which is exactly why the glyph is not what this asks: the art has changed
     // twice under this case and both times the answer to *which glyph is the mark made of*
     // moved. What the drawing IS is asked of the module that draws it, at the size this page
@@ -556,7 +556,7 @@ describe('nothing on the page is a frame, at any size', () => {
     // WHAT THIS DELIVERY REMOVED, asked as an absence — and asked across the whole ladder,
     // because the frame was drawn by the two arranged forms and not by the landed one: a sweep
     // that only looked at wide terminals would be looking at one of the three answers.
-    // ⚠️ THE FOUR NARROWEST OF THESE ARE GONE WITH THE FLOOR: forty-eight, forty-six, forty and
+    // THE FOUR NARROWEST OF THESE ARE GONE WITH THE FLOOR: forty-eight, forty-six, forty and
     // thirty are windows no console is drawn on any more (`repl/floor.ts`), so what a sweep over
     // them would be reading is the screen that says the window is too small. The sweep is over
     // the widths a caller can open, and the landed form — the one the frame was never drawn by —
@@ -565,7 +565,7 @@ describe('nothing on the page is a frame, at any size', () => {
       const rows = openingRows(await openedAt(columns));
       expect(theFrameOn(rows), `${columns}: ${theFrameOn(rows).join('; ')}`).toEqual([]);
       // And the page really was drawn, so the absence is about a drawing rather than an empty
-      // slice of rows. ⚠️ THE ROWS ARE JOINED WITHOUT THE BREAK, because the layout folds a row
+      // slice of rows. THE ROWS ARE JOINED WITHOUT THE BREAK, because the layout folds a row
       // too wide for the terminal at the margin — the same characters on two rows, which is what
       // a terminal does to them anyway ({@link SAYS_WHAT_IT_IS}).
       expect(rows.join(''), `${columns}: nothing was drawn`).toContain(OPENED);
@@ -582,7 +582,7 @@ describe('nothing on the page is a frame, at any size', () => {
     // side with no corner.
     expect(theFrameOn([`${CORNERS[0]}${RUN.repeat(4)}`])).toHaveLength(1);
     expect(theFrameOn([`${RULE} a`, `${RULE} b`])).toHaveLength(1);
-    // ⛔ AND IT ACCUSES NEITHER OF THE TWO THINGS THIS SURFACE REALLY DRAWS. The input area's
+    // AND IT ACCUSES NEITHER OF THE TWO THINGS THIS SURFACE REALLY DRAWS. The input area's
     // rules are runs of the horizontal with nothing at either end, and the art is one edit away
     // from holding the vertical again — in a different column on every row, which is what tells
     // it from a side.
@@ -646,14 +646,14 @@ describe('what the panel says about a tree is a prefix of what verify says', () 
  * The widths this file walks, and the form the console draws at each of them — scanned
  * once, because every question below is about the same ladder.
  *
- * ⚠️ IT WAS A BINARY SEARCH, on the premise that a wider terminal never gets a simpler
+ * IT WAS A BINARY SEARCH, on the premise that a wider terminal never gets a simpler
  * drawing. WHAT FALSIFIED IT is the fourth form of the name: a terminal wide enough for the
  * biggest drawing buys a drawing wider than a box has room for, so there is a band where the
  * box is given up and the art is landed bare — and a search that halves an interval over a
  * predicate that goes false and true again lands wherever the halving took it. The window is
  * wide enough to hold both edges and the case below asserts that it does.
  */
-// ⚠️ THE NARROW END WAS FORTY AND IT IS THE FLOOR. Under eighty by twenty-four no page is laid
+// THE NARROW END WAS FORTY AND IT IS THE FLOOR. Under eighty by twenty-four no page is laid
 // out at all (`repl/floor.ts`), so a console opened narrower than this draws the screen that says
 // so and no arrangement of any form — a ladder walked below the floor would be walking over
 // windows nobody can open. What that costs this file is the LAST rung: at eighty the arrangement
@@ -679,8 +679,8 @@ const A_WORKING_TERMINAL = 120;
  * The scan, done once and kept: about a hundred openings, twenty milliseconds each.
  *
  * EVERY ONE OF THEM ON A TERMINAL WITH ROOM DOWN IT ({@link ROOMY}), so what the ladder holds
- * is the width a form gives way at and nothing else. ⚠️ Opened at the default height, the walk
- * came back with two forms rather than three — the arrangement that stacks the text under the
+ * is the width a form gives way at and nothing else. OPENED AT THE DEFAULT HEIGHT, THE WALK
+ * CAME BACK WITH TWO FORMS RATHER THAN THREE — the arrangement that stacks the text under the
  * mark costs fifteen rows, which is more than a forty-row screen may spend on chrome, so the
  * middle rung was ruled out by the axis this file is not about.
  */
@@ -713,14 +713,14 @@ describe('the form comes out of the content, and the narrowest still says the es
   it('puts the ONE section IN THE ARRANGEMENT, heading and all', async () => {
     // What the panel is FOR, asserted where the panel is.
     //
-    // ⚠️ IT USED TO SAY `both sections`, and the second was `Hints` — a heading over one
+    // IT USED TO SAY `both sections`, and the second was `Hints` — a heading over one
     // sentence naming the word that lists the verbs. It went, and this case is renamed
     // rather than shortened: what a caller can type is said under the prompt, where it
     // does not scroll away, and a panel that repeated it was the copy nobody could see after
     // ten reads. So the assertion is now two-sided — the record's section is in the panel,
     // and nothing of the second one is.
     //
-    // ⚠️ AND `INSIDE THE BOX` BECAME `IN THE ARRANGEMENT`, which is the rename the frame's
+    // AND `INSIDE THE BOX` BECAME `IN THE ARRANGEMENT`, which is the rename the frame's
     // departure forced: the rows were found by the box's own sides, and they are bounded by
     // what is above and below the panel now ({@link openingRows}).
     const rows = openingRows(await openedAt(200));
@@ -739,7 +739,7 @@ describe('the form comes out of the content, and the narrowest still says the es
   }, 120_000);
 
   it('draws the two a window can hold, and never a richer one on a narrower terminal', async () => {
-    // ⚠️ THIS CASE HAS BEEN WRITTEN THREE TIMES AND THE ART MOVED IT EVERY TIME. It began as
+    // THIS CASE HAS BEEN WRITTEN THREE TIMES AND THE ART MOVED IT EVERY TIME. It began as
     // `never a richer one on a narrower terminal` over five sampled widths; a seventy-column
     // drawing FALSIFIED that, because a terminal wide enough to be given the art was not
     // always wide enough to put a BOX around it, so there was a band — one column of the
@@ -747,7 +747,7 @@ describe('the form comes out of the content, and the narrowest still says the es
     // missed it, so it was rewritten to walk every width in the window and to allow the
     // exception on one condition: where a narrower terminal is richer, the ART is what grew.
     //
-    // ⚠️ AND THE EXCEPTION IS GONE, WHICH IS WHY THE NAME IS THE FIRST ONE AGAIN. Measured:
+    // AND THE EXCEPTION IS GONE, WHICH IS WHY THE NAME IS THE FIRST ONE AGAIN. Measured:
     // the drawing is fifty columns now and the line under it — a project's path and an
     // identity — is about forty-nine, so giving the art up buys the column almost nothing and
     // the stacked form is unreachable either way. The band closed by ARITHMETIC rather than by
@@ -758,7 +758,7 @@ describe('the form comes out of the content, and the narrowest still says the es
     // observation: the drawing only gets simpler as the terminal narrows, and where it does
     // not, the ART has to be what changed. The loop rules on every step of the ladder; that
     // no step needs the excuse today is the assertion under it.
-    // ⚠️ IT SAID `all three` AND THE WINDOW HOLDS TWO. The third rung is what a panel gets when
+    // IT SAID `all three` AND THE WINDOW HOLDS TWO. The third rung is what a panel gets when
     // its content does not fit ACROSS, and with this project's lines that happens under eighty
     // columns — where no page is drawn at all now (`repl/floor.ts`). So the ladder a device can
     // walk has two rungs on it, and the third is asked where a width can be ASKED FOR rather
@@ -789,7 +789,7 @@ describe('the form comes out of the content, and the narrowest still says the es
     // different forms, asserted above, so the ladder it walked is not one answer repeated.
     expect(steps).toBe(A_WINDOW.widest - A_WINDOW.narrowest);
     expect(new Set(ladder.values()).size).toBe(2);
-    // ⛔ AND THE THIRD RUNG IS STILL THERE, reached by the content rather than by a window nobody
+    // AND THE THIRD RUNG IS STILL THERE, reached by the content rather than by a window nobody
     // can open: a row the arrangement holds that is wider than the window gives the arrangement
     // up, and the row that says where a session is standing is a PATH — so a caller working a few
     // directories down really does get this. Asked of the arithmetic, at the narrowest window
@@ -839,13 +839,13 @@ describe('the form comes out of the content, and the narrowest still says the es
     // it fits across the terminal; one column narrower it is not that form any more. Nothing in
     // this case knows how wide anything is.
     //
-    // ⚠️ WHAT `FITS` MEANT WAS THE FRAME, and the frame is what this delivery removed. It read
+    // WHAT `FITS` MEANT WAS THE FRAME, and the frame is what this delivery removed. It read
     // the widths of the box's own rows, refused a ragged one, and asserted that they were the
     // width of the TERMINAL — the box was drawn corner to corner, so its own edge was the
     // witness. Nothing is drawn to an edge now, so the property is asked of the rows the panel
     // really has: none of them is WIDER than the terminal, which is the invariant the form was
     // ever chosen for (`panel.ts`, `panelRows`: nothing inside an arrangement folds).
-    // ⚠️ IT WALKED BOTH ARRANGED FORMS AND IT WALKS ONE. Where the STACKED form gives way is under
+    // IT WALKED BOTH ARRANGED FORMS AND IT WALKS ONE. Where the STACKED form gives way is under
     // eighty columns for this project's lines, and no console is drawn there (`repl/floor.ts`) —
     // so the width it gives way at is a width a device cannot be asked for. It is searched for on
     // the arithmetic instead, over both forms, in the last case of this file.
@@ -853,7 +853,7 @@ describe('the form comes out of the content, and the narrowest still says the es
       const edge = await narrowestFor(richness);
       const page = await openedAt(edge);
       expect(formOf(page, edge), `${form} at ${edge}`).toBe(form);
-      // ⚠️ THE ESCAPES COME OFF FIRST, and they did not have to before. The layout folds a row
+      // THE ESCAPES COME OFF FIRST, and they did not have to before. The layout folds a row
       // too wide for the terminal at the margin now, and a fold RE-OPENS the style on the
       // continuation row — so a painted row carries more escape bytes than it used to and a
       // count of characters answers wider than the terminal is. What is being asked is columns.
@@ -876,7 +876,7 @@ describe('the form comes out of the content, and the narrowest still says the es
     // The floor. A terminal too narrow for an arrangement loses the placing and not a fact —
     // the same lines, in the same order, landed the way every other line of this session lands.
     //
-    // ⚠️ IT WAS DRIVEN AT FORTY COLUMNS, where nothing is drawn any more (`repl/floor.ts`). What
+    // IT WAS DRIVEN AT FORTY COLUMNS, where nothing is drawn any more (`repl/floor.ts`). What
     // it asked is asked at the narrowest window a console IS drawn on: the four facts are on the
     // page whatever the arrangement, which is the half that was ever about the record. Which form
     // a window of that width gets is the ladder's question and it is asked above; that the landed
@@ -887,7 +887,7 @@ describe('the form comes out of the content, and the narrowest still says the es
     expect(page).toContain(OPENED);
     expect(page).toContain(project);
     expect(page).toContain(VERIFIED);
-    // ⚠️ IT ALSO ASKED FOR THE `Hints` HEADING HERE, and the comment said why it was the
+    // IT ALSO ASKED FOR THE `Hints` HEADING HERE, and the comment said why it was the
     // heading rather than the sentence under it: the row that never scrolls away says the
     // same words, so looking for THEM would be looking at the wrong row — measured, by a
     // mutation that dropped the section and left this case green. The section is gone on
@@ -942,7 +942,7 @@ describe('the form comes out of the content, and the narrowest still says the es
       expect(made(edge).form, `${form} at ${edge}`).toBe(form);
       expect(made(edge - 1).form, `${form} at ${edge - 1}`).toBe(simpler);
     }
-    // ⚠️ AND IT ASKED THE PANEL FOR THE TERMINAL'S WIDTH HERE — *the width the box is DRAWN
+    // AND IT ASKED THE PANEL FOR THE TERMINAL'S WIDTH HERE — *the width the box is DRAWN
     // at, the other of the two questions, and the one the layout reads*. There is no second
     // question: the panel carried the terminal's width because the box was drawn corner to
     // corner, and nothing is drawn to an edge. The field is gone, so the assertion is gone with
@@ -963,7 +963,7 @@ describe('the panel is the plain panel, wrapped, and it is drawn once', () => {
     // The promise three colour deliveries made, on the richest shape this surface has. The
     // ARRANGEMENT is in BOTH — it is the layout's and not the renderer's — so what stripping
     // leaves is the same drawing either way, and what differs is only what a renderer put
-    // around a part. ⚠️ IT SAID `frame and all`, and there is no frame; what the sentence needed
+    // around a part. IT SAID `frame and all`, and there is no frame; what the sentence needed
     // is that the layout puts glyphs on the page of its own, and the art and the gaps are
     // still that.
     const plain = await openedAt(200);
@@ -999,7 +999,7 @@ describe('the panel is the plain panel, wrapped, and it is drawn once', () => {
     terminal.type(`${LEAVE}\r`);
     await closed;
     const page = stripped(withoutLayout(terminal.bytes()));
-    // ⚠️ THE PANEL IS DRAWN ON EVERY FRAME, and this case is the inversion of what it asserted.
+    // THE PANEL IS DRAWN ON EVERY FRAME, and this case is the inversion of what it asserted.
     // It said the panel was written ONCE however many frames a caller caused, because it was
     // landed into a region the layout wrote and never took back — which is exactly what made it
     // CONTENT, and content rises off the top of a screen as soon as enough is printed. It is the
@@ -1007,7 +1007,7 @@ describe('the panel is the plain panel, wrapped, and it is drawn once', () => {
     // frame — and that is what buys the thing the old shape could not have, which is a drawing
     // that is still there after ten thousand lines.
     //
-    // ⚠️ THE SECOND COUNT WAS THE CORNER, and it was the whole witness that a DRAWING rather than
+    // THE SECOND COUNT WAS THE CORNER, and it was the whole witness that a DRAWING rather than
     // a line had been written. The art is what says that now — asked of the module that draws it,
     // so a fifth form moves this case with it.
     const widest = drawnAt(200).reduce((most, row) => (row.length > most.length ? row : most));
@@ -1017,12 +1017,12 @@ describe('the panel is the plain panel, wrapped, and it is drawn once', () => {
       frames,
     );
     // The frames really happened: the row under the prompt was written once per keystroke.
-    // ⚠️ THE WITNESS USED TO BE A CLAUSE OF THE HINT, and the hint stopped saying it: it
+    // THE WITNESS USED TO BE A CLAUSE OF THE HINT, and the hint stopped saying it: it
     // names the KEY that lists the session's words now rather than one of the words. The
     // witness is the hint itself, composed by the module that composes it, so a reworded
     // hint moves the case with it instead of quietly counting to zero.
     expect(frames, 'no frame was drawn per keystroke').toBeGreaterThan(typed.length);
-    // ⚠️ AND THE LAST LINE SAID *what was drawn once really was a box*, by looking for the run
+    // AND THE LAST LINE SAID *what was drawn once really was a box*, by looking for the run
     // the border was made of. There is one on the page still and it is not the panel's — it is a
     // rule of the input AREA, which is redrawn every frame — so keeping it would have been this
     // case counting the wrong region. What it is for is that the DRAWING is there, and the row
@@ -1056,7 +1056,7 @@ describe('the chrome costs the drawing of the name and nothing more', () => {
     // can beat by rearranging, it is the height of the art. Under the mark the panel costs the
     // art PLUS the text, which is more \u2014 so the floor holds at every width and the arrangement
     // is what decides how far above it the panel sits.
-    // ⚠️ THE FOUR NARROWEST WIDTHS WENT WITH THE FLOOR, exactly as they did in the sweep for a
+    // THE FOUR NARROWEST WIDTHS WENT WITH THE FLOOR, exactly as they did in the sweep for a
     // frame: sixty and under is a window with no page on it (`repl/floor.ts`).
     for (const columns of [200, A_WORKING_TERMINAL, 102, 90, 80]) {
       const page = await openedAt(columns);

@@ -108,7 +108,7 @@ const BETWEEN_CLAUSES = ' · ';
 /**
  * The product, and what this session is — the first row of the text beside the mark.
  *
- * ⚠️ IT WAS THE BOX'S TITLE, laid on the frame's top edge. The frame is gone; the words did
+ * IT WAS THE BOX'S TITLE, laid on the frame's top edge. The frame is gone; the words did
  * not change and neither did the order they are in.
  */
 const NAME = 'mnema';
@@ -133,7 +133,7 @@ const WHICH_BUILD = `v${VERSION}`;
 /**
  * What the panel's ONE section is called.
  *
- * ⚠️ THERE WERE TWO OF THEM, and the second was called `Hints`: a heading over the one
+ * THERE WERE TWO OF THEM, and the second was called `Hints`: a heading over the one
  * affordance the panel named. It went because the row under the prompt already says where
  * every word of the session is — the palette the slash opens — and the panel's copy was the
  * one that scrolls off the top and never comes back. The heading is kept for the section
@@ -171,7 +171,7 @@ const AT_THE_EDGE = 0;
  * before there has been one. Counting rows for it here would budget the page against a
  * region no caller has yet.
  *
- * ⚠️ AND IT SAID THE LIST WAS *cut to what is left over the row being typed rather than
+ * AND IT SAID THE LIST WAS *cut to what is left over the row being typed rather than
  * allowed to push anything off the top*, which was two claims and the second was false: what
  * was left over was measured against the SCREEN, so a list twenty rows tall on a page with
  * four to spare pushed sixteen rows of the opening into the scrollback on the first keystroke.
@@ -190,7 +190,7 @@ const NOTHING_OFFERED_YET = 0;
  * open the number cannot change the answer at all — what it budgets is the list — so this says
  * what is true rather than standing in for something.
  *
- * ⚠️ IT WAS THE FLOW ON THE SCREEN, and it meant a different thing that happened to be nought
+ * IT WAS THE FLOW ON THE SCREEN, and it meant a different thing that happened to be nought
  * at the same moment: everything the session had said that a reader could still see, which at
  * the opening is nothing because nothing has landed. What a session says is not above the input
  * area any more, so the field it fills is a different field (`area.ts`, `AreaRequest.header`).
@@ -216,14 +216,14 @@ const WHATEVER_THE_HEIGHT = Number.MAX_SAFE_INTEGER;
  * The first is built out of the PREFIX every word of the session begins with rather than
  * out of a word, because what it names is the keystroke and not a command.
  *
- * ⚠️ THE FIRST ONE USED TO NAME `/help`, AND IT USED TO BE FORBIDDEN TO NAME THE SLASH.
+ * THE FIRST ONE USED TO NAME `/help`, AND IT USED TO BE FORBIDDEN TO NAME THE SLASH.
  * The rule was right and it was about a promise: a hint naming an affordance that does not
  * answer is the console lying to the reader who cannot check, and until this delivery the
  * slash answered nothing on its own — you had to type a whole word behind it. It opens the
  * palette now, so the promise is kept, and the case that held the ban is inverted rather
  * than deleted (`tests/the-input-has-its-own-place.test.ts`).
  *
- * ⚠️ AND THE LAST ONE USED TO NAME `/exit`, WHICH THE FIRST CLAUSE NOW DELIVERS. A hint
+ * AND THE LAST ONE USED TO NAME `/exit`, WHICH THE FIRST CLAUSE NOW DELIVERS. A hint
  * that says where the list of words IS does not also have to teach a word from it — that
  * is the economy the reference this console was measured against has, and it became true
  * here only once the palette existed. What is left is the keystroke, which is in no list.
@@ -231,7 +231,7 @@ const WHATEVER_THE_HEIGHT = Number.MAX_SAFE_INTEGER;
  * the difference between a hint an eighty-column terminal keeps and one a sixty-column
  * terminal keeps — and below its own width the area draws no hint at all (`area.ts`).
  *
- * ⛔ AND `Tab completes` KEEPS NO QUALIFIER, WHICH IS PRECISION RATHER THAN BREVITY. A Tab
+ * AND `Tab completes` KEEPS NO QUALIFIER, WHICH IS PRECISION RATHER THAN BREVITY. A Tab
  * offers the verbs AND the words the session answers to itself, so `Tab for verbs` would
  * be shorter and false.
  */
@@ -274,7 +274,7 @@ export interface Session {
   /**
    * How a line becomes bytes: the renderer for THE PAGE AS IT IS DRAWN NOW.
    *
-   * ⚠️ IT WAS *RESOLVED ONCE FOR THE WHOLE SESSION*, which is the sentence a maximised window
+   * IT WAS *RESOLVED ONCE FOR THE WHOLE SESSION*, which is the sentence a maximised window
    * falsified. Which colours a line carries is still one answer for the whole session — that
    * is the flag, the environment and the terminal, and none of them moves — but how wide the
    * screen is does, and a line folded to the width the session OPENED at is a report in a
@@ -380,7 +380,7 @@ export async function openSession(request: SessionRequest): Promise<void> {
   // goes through this, so a caller who maximises their window gets their next report across
   // the whole of it.
   //
-  // ⛔ BEFORE THE CONSOLE IS UP IT ANSWERS *NO SCREEN TO FOLD TO*, which is not a default to
+  // BEFORE THE CONSOLE IS UP IT ANSWERS *NO SCREEN TO FOLD TO*, which is not a default to
   // fall back on: it is the honest answer to *how wide is the page* before there is one. The
   // console is opened at the foot of this function and nothing composed above it renders
   // through this — the two rows of chrome ask the rule themselves, for the same width and by
@@ -431,7 +431,7 @@ export async function openSession(request: SessionRequest): Promise<void> {
   // terminal would fold, and the opening, which is budgeted against the area under it.
   const hint = drawn(tips(), renderingAt(NO_SCREEN_TO_FOLD_TO));
   // THE WORDS THE SESSION ANSWERS TO ITSELF, read ONCE and handed to ONE thing: the
-  // completer, which puts them in the same list as the verbs. ⚠️ THEY WENT TO THE CONSOLE AS
+  // completer, which puts them in the same list as the verbs. THEY WENT TO THE CONSOLE AS
   // WELL, so that a slash could be answered out of them, and that is what made the two keys
   // show two different menus — the slash three words, a Tab fourteen. One reader, one list.
   const vocabulary = theSessionsOwnWords();
@@ -452,13 +452,13 @@ export async function openSession(request: SessionRequest): Promise<void> {
    * WHAT THE PAGE OPENS WITH on a terminal of a given SIZE — and the only thing on this
    * surface the size of the terminal decides.
    *
-   * ⚠️ IT USED TO TAKE THE WIDTH ALONE, and the doc here said a width was "the only thing
+   * IT USED TO TAKE THE WIDTH ALONE, and the doc here said a width was "the only thing
    * on this surface a width decides". What falsified it is the drawing: the name gives way
    * by height as well now (`presentation/banner.ts`), because a drawing whose PAGE is taller
    * than the screen is a drawing already in the scrollback before anything is typed.
    * So both measurements arrive, by the same path, from the one place that asks the device.
    *
-   * ⚠️ AND THE HEIGHT RULE IT ARRIVED WITH WAS THE WRONG ONE, which is what this function
+   * AND THE HEIGHT RULE IT ARRIVED WITH WAS THE WRONG ONE, which is what this function
    * now carries. The name gave way when the DRAWING was taller than the terminal, and five
    * rows against twenty-four never is — measured, and the axis chose nothing at any size a
    * person opens. What the drawing costs is one ADDEND of what the page costs: what the
@@ -466,7 +466,7 @@ export async function openSession(request: SessionRequest): Promise<void> {
    * input area are the others, and only the first depends on which form is drawn. So the
    * question asked here is whether the WHOLE page fits.
    *
-   * ⚠️ AND IT ASKED FOR A ROW TO SPARE, which is the premise this delivery took away. The row
+   * AND IT ASKED FOR A ROW TO SPARE, which is the premise this delivery took away. The row
    * was the layout library's boundary: a region as tall as the viewport was redrawn WHOLE, with
    * the erase of the caller's history inside the sequence, so the opening was budgeted one row
    * short of the screen. The console owns the screen now and its frame IS the viewport on every
@@ -477,7 +477,7 @@ export async function openSession(request: SessionRequest): Promise<void> {
    * device has at the moment of the drawing, and keeps the answer while that size does not move
    * (`console.ts`, `theOpening`). Nothing is read: the lines above already exist, and the
    * answers that depend on the size are which arrangement there is ROOM for (`panelFor`) and
-   * how much of the name is DRAWN (`bannerFor`) — ⚠️ and the first of those took the WIDTH
+   * how much of the name is DRAWN (`bannerFor`) — and the first of those took the WIDTH
    * alone until the arrangement was measured against the screen it is fixed on. Both take the
    * pair now, out of the one reading. A recomposition that asked the record again could make
    * the panel say something different halfway through a session — and the reads are counted
@@ -490,7 +490,7 @@ export async function openSession(request: SessionRequest): Promise<void> {
     // what decides whether the mark's rows are added to the text's or shared with them; all of
     // it is settled the moment the opening exists.
     //
-    // ⛔ BOTH MEASUREMENTS TRAVEL TOGETHER FROM HERE, and they are the two this function was
+    // BOTH MEASUREMENTS TRAVEL TOGETHER FROM HERE, and they are the two this function was
     // handed rather than two readings of a device: a panel chosen against one terminal and an
     // area budgeted against another are two frames, and the console has already paid for that
     // shape once (`console.ts`, `theSize`).
@@ -527,7 +527,7 @@ export async function openSession(request: SessionRequest): Promise<void> {
         // HOW TALL A SCREEN A GIVEN DRAWING NEEDS — the taller of two demands, and the second one
         // is what this delivery had to add.
         //
-        // ⚠️ IT ASKED ONE QUESTION AND THE QUESTION ANSWERED ITSELF. It was *how many rows does
+        // IT ASKED ONE QUESTION AND THE QUESTION ANSWERED ITSELF. It was *how many rows does
         // the PAGE need with this drawing in it*, and the answer was measured on the page the
         // drawing would really produce — including the case where the arrangement had already
         // been given up for busting its share, which is a page with NO fixed region at all and
@@ -727,10 +727,10 @@ export async function typedLine(line: string, session: Session): Promise<AfterLi
  * stating a number, so it cannot go stale.
  *
  * IT IS NOT ONE OF THE PANEL'S OWN ROWS, AND THAT IS MEASURED RATHER THAN AESTHETIC — but not
- * for the reason this paragraph used to give. ⚠️ IT SAID that inside the panel's right-hand
+ * for the reason this paragraph used to give. IT SAID that inside the panel's right-hand
  * column the sentence "would push the box past eighty columns", and that was false from the
  * moment the box stopped being as wide as its content: it was drawn corner to corner, so the
- * width of the box was the TERMINAL'S and nothing inside it could push it anywhere. ⚠️ AND
+ * width of the box was the TERMINAL'S and nothing inside it could push it anywhere. AND
  * THERE IS NO BOX AT ALL NOW, which does not put the first argument back — it removes the
  * subject of it.
  *
@@ -804,7 +804,7 @@ export function standingLine(where: Standing): readonly Line[] {
  * is the one affordance a caller cannot guess by typing; and the way out, which is the
  * thing nobody wants to look for.
  *
- * ⚠️ IT NAMED TWO WORDS AND IT NAMES NONE. The first clause used to be `/help` and the last
+ * IT NAMED TWO WORDS AND IT NAMES NONE. The first clause used to be `/help` and the last
  * used to be `/exit`, and the palette is what took both: the slash opens the list they are
  * IN, so a hint that pointed at the list and then quoted an item from it would be spending
  * a clause on what the clause beside it already hands over. Nothing was lost — both moved
@@ -817,7 +817,7 @@ export function standingLine(where: Standing): readonly Line[] {
  * the difference between a hint an eighty-column terminal keeps and one a sixty-column
  * terminal keeps.
  *
- * ⛔ IT PROMISES NOTHING THAT IS NOT THERE. A row under the prompt is the most believed
+ * IT PROMISES NOTHING THAT IS NOT THERE. A row under the prompt is the most believed
  * sentence on the surface, and a hint naming an affordance that does not answer yet would
  * be the console lying to the one reader who cannot check.
  *
@@ -899,7 +899,7 @@ export function theSessionsOwnWords(): readonly CompletionWord[] {
  * the day the shape changes — which is exactly the case that compares what a verb says
  * inside the console to what it says at a shell (`tests/the-console-on-ink.test.ts`).
  *
- * ⚠️ THIS USED TO SAY *IT CARRIES NO HUE, AND THAT IS A DECISION RATHER THAN AN OMISSION*,
+ * THIS USED TO SAY *IT CARRIES NO HUE, AND THAT IS A DECISION RATHER THAN AN OMISSION*,
  * on three arguments: that a row redrawn on every keystroke and sitting in the corner of
  * every session would be a hue that is always on, that the level is painted where it is
  * RULED ON and this row only names it, and that leaving it unpainted made it the one line

@@ -6,7 +6,7 @@
  * to hold the two side by side has to be given them one over the other. So there are three
  * forms, the richest one that fits is the one drawn, and this file is the measurement.
  *
- * ⚠️ AND IT FITS ON TWO MEASUREMENTS, WHERE IT USED TO FIT ON ONE. Every sentence in this file
+ * AND IT FITS ON TWO MEASUREMENTS, WHERE IT USED TO FIT ON ONE. Every sentence in this file
  * asked how WIDE a form was and none of them asked how TALL, and what falsified that is the
  * arrangement being FIXED: it is drawn at the top of every frame and never scrolls, so its rows
  * are rows the session's answers can never have. Measured on the fixture this surface is tested
@@ -16,7 +16,7 @@
  * chooser is one more way for a form to not fit ({@link panelFor}), and the degradation that was
  * already there does the rest.
  *
- * ⚠️ THERE WAS A BOX AROUND ALL OF IT, and this file was the arithmetic of the box: a title
+ * THERE WAS A BOX AROUND ALL OF IT, and this file was the arithmetic of the box: a title
  * on its top border, two columns with a rule between them, and a border that cost two
  * columns on the sides and two rows at the ends. THE FRAME IS GONE, and it went for the
  * reason it was drawn for — the console it was measured against does not have one. Measured
@@ -26,13 +26,13 @@
  * content stacked instead of beside. What is left is NINE, and nine is the height of the
  * drawing of the name — so the chrome now costs the mark and nothing else.
  *
- * ⚠️ THE RIGHT-HAND SIDE HELD TWO SECTIONS AND HOLDS ONE. The second was `Hints`, and what
+ * THE RIGHT-HAND SIDE HELD TWO SECTIONS AND HOLDS ONE. The second was `Hints`, and what
  * it said was that a word lists the verbs — which the row under the prompt says too, out of
  * the palette a slash opens, in a place that never scrolls away. Two sentences about one
  * session is a thing this bench has paid for; the one that survives is the one a caller can
  * still see after ten reads.
  *
- * ⚠️ HOW WIDE THE BOX WAS DRAWN USED TO BE THE OTHER QUESTION HERE, and it was answered with
+ * HOW WIDE THE BOX WAS DRAWN USED TO BE THE OTHER QUESTION HERE, and it was answered with
  * the width of the TERMINAL — corner to corner, the way the reference did it before it stopped
  * drawing a frame at all. That question has no subject any more: nothing this file measures is
  * drawn to an edge, so the only width question left is the one that was always the content's,
@@ -74,18 +74,18 @@ import type { Render } from '../presentation/render.js';
  *   - `bare` — the same lines, in the same order, landed the way every other line of this
  *     session lands, which is what it printed before there was a panel at all.
  *
- * ⚠️ THE FIRST TWO WERE `the box` AND `the box, one column`, and the third was `no box`. The
+ * THE FIRST TWO WERE `the box` AND `the box, one column`, and the third was `no box`. The
  * frame is gone from all three, so what tells them apart is the ARRANGEMENT alone: whether
  * the text is beside the mark or under it, and whether the whole of it was measured to fit
  * across this terminal — which is what `bare` says it was not, and why its lines are landed
  * where a line the terminal may FOLD belongs ({@link openingFor}).
  *
- * ⚠️ AND `bare` IS WHAT A SCREEN TOO SHORT FOR AN ARRANGEMENT GETS TOO, which is the second
+ * AND `bare` IS WHAT A SCREEN TOO SHORT FOR AN ARRANGEMENT GETS TOO, which is the second
  * reason it can be reached and not a second form. The two questions are *does it fit across*
  * and *does it fit inside its share of the way down* ({@link panelFor}); the answer to either
  * being no drops one rung, and the rung under the last one is the same lines on the roll.
  *
- * ⚠️ AND THE SHORT SCREEN IS NO LONGER ONE OF THE TWO WAYS THERE. A floor under the window
+ * AND THE SHORT SCREEN IS NO LONGER ONE OF THE TWO WAYS THERE. A floor under the window
  * (`floor.ts`) means no page is laid out under twenty-four rows, and the cheapest arrangement
  * costs six — one row of drawing and the five the text beside it takes — which wants eighteen. So
  * `bare` is reached ACROSS: a window narrower than the widest row the arrangement holds, and the
@@ -134,7 +134,7 @@ const A_THIRD = 3;
  * THE SHORTEST SCREEN AN ARRANGEMENT OF THIS MANY ROWS MAY BE DRAWN ON — the share, read from
  * the other end.
  *
- * ⛔ IT IS EXPORTED BECAUSE THE CHOICE OF THE DRAWING NEEDS IT, and that is the A3 shape rather
+ * IT IS EXPORTED BECAUSE THE CHOICE OF THE DRAWING NEEDS IT, and that is the A3 shape rather
  * than a convenience. The name gives way when the page it is on stops working
  * (`presentation/banner.ts`), and what "stops working" means is now partly this rule: a drawing
  * so tall that the arrangement around it would bust its share is a drawing that costs the
@@ -170,7 +170,7 @@ export interface PanelRequest {
   /**
    * HOW TALL IT IS, asked of the same device in the same reading — never in a second one.
    *
-   * ⛔ TWO NUMBERS TAKEN AT TWO INSTANTS ARE TWO TERMINALS, which is the rule the whole
+   * TWO NUMBERS TAKEN AT TWO INSTANTS ARE TWO TERMINALS, which is the rule the whole
    * geometry of this surface rests on and which the console learnt by measuring a frame that
    * came out twenty-four rows by a hundred and twenty when no terminal was ever that shape
    * (`console.ts`, `theSize`). So the pair arrives together, from the one place that asks the
@@ -197,7 +197,7 @@ export interface Panel {
   /**
    * What the session is — the first of the three rows that go beside the mark.
    *
-   * ⚠️ IT WAS ON THE BOX'S TOP BORDER, and it is a row like the two under it now. It was
+   * IT WAS ON THE BOX'S TOP BORDER, and it is a row like the two under it now. It was
    * never a different string: what changed is where it lands, which is what took the box's
    * own width out of this file altogether.
    */
@@ -214,7 +214,7 @@ export interface Panel {
  * THE GAP BETWEEN THE MARK AND THE TEXT BESIDE IT, in columns — the one measurement of the
  * arrangement that is not a length of something.
  *
- * ⚠️ IT WAS FIVE COLUMNS IN THREE CONSTANTS: two before the rule that divided the columns,
+ * IT WAS FIVE COLUMNS IN THREE CONSTANTS: two before the rule that divided the columns,
  * the rule's own column, and two after it. The rule is gone, so what is left of the five is
  * the four the drawing already spent on either side of it — a subtraction rather than a
  * number somebody picked. It is ONE constant rather than two of the same value, for the
@@ -222,14 +222,14 @@ export interface Panel {
  * how far apart two columns sit is one decision, and the two halves of it were only ever
  * two because there was something between them.
  *
- * ⚠️ AND THREE OTHERS WENT WITH THE FRAME. `BORDER` was the two columns the border took,
+ * AND THREE OTHERS WENT WITH THE FRAME. `BORDER` was the two columns the border took,
  * `INSIDE` the two between the border and its content, and `AROUND_TITLE` the five the title
  * cost on the top edge — a stub of border, a space on each side, and the corner after it. That
  * last one was a FLOOR on both forms, because a box narrower than its own title is a box whose
  * name does not fit on it; the title is inside the arrangement now, so its width is measured
  * with the two rows it sits above and floors nothing of its own.
  *
- * EXPORTED, AND READ BY THE DRAWING. ⚠️ THE COLUMN COSTS USED TO BE COPIED — this file said so,
+ * EXPORTED, AND READ BY THE DRAWING. THE COLUMN COSTS USED TO BE COPIED — this file said so,
  * in as many words: *two copies of these numbers is two panels, one of which fits* — and the
  * copy was the justification rather than the mechanism. One constant with two readers is what
  * the rule this bench states everywhere else asks for, and the drawing imports it
@@ -240,12 +240,12 @@ export const BETWEEN_COLUMNS = 4;
 /**
  * The title, which is ONE row wherever it goes: beside the mark, or over it.
  *
- * ⚠️ IT WAS `TITLE_ROW` AND IT MEANT THE BOX'S TOP EDGE — the row the title was laid on,
+ * IT WAS `TITLE_ROW` AND IT MEANT THE BOX'S TOP EDGE — the row the title was laid on,
  * which the frame would have drawn whether there was a title or not. It is renamed because it
  * is a different row: the frame is gone, so this is the title's own row and it exists because
  * the title does.
  *
- * ⚠️ AND `UNDER_THE_BOX` WENT WITH THE FRAME. It was the bottom edge, one row under everything
+ * AND `UNDER_THE_BOX` WENT WITH THE FRAME. It was the bottom edge, one row under everything
  * inside; there is nothing to close, so it is one of the three rows the chrome no longer costs.
  */
 const THE_TITLE = 1;
@@ -253,7 +253,7 @@ const THE_TITLE = 1;
 /**
  * The blank row over the record's section — what separates it from the group above it.
  *
- * ⚠️ IT WAS THE STACKED FORM'S ALONE, on a premise this delivery falsified: *there is no such
+ * IT WAS THE STACKED FORM'S ALONE, on a premise this delivery falsified: *there is no such
  * row in the two-column form, where nothing precedes the section*. That was true while the
  * right-hand column held the record and nothing else. The title and the place are in it now,
  * so something precedes the section in BOTH forms — and a section that started on the next row
@@ -305,7 +305,7 @@ export interface Opening {
   /**
    * HOW MANY ROWS THE FIXED TOP REGION TAKES — the arrangement, and nothing else.
    *
-   * ⛔ THE TWO HALVES OF AN OPENING GO TO TWO DIFFERENT PLACES, and this is the number that says
+   * THE TWO HALVES OF AN OPENING GO TO TWO DIFFERENT PLACES, and this is the number that says
    * where the boundary is. The ARRANGEMENT is chrome: it is drawn at the top of the screen on
    * every frame and it never moves. The LINES are what the session SAYS, so they go on the roll
    * with everything else it says — which is also what makes the `bare` form what its own doc has
@@ -319,7 +319,7 @@ export interface Opening {
    * the roll it loses nothing at all — the reader sees the end of it and scrolls back for the
    * rest.
    *
-   * ⚠️ AND *NO ROOM* MEANT TOO NARROW, which is the premise this delivery took a second half
+   * AND *NO ROOM* MEANT TOO NARROW, which is the premise this delivery took a second half
    * away from. A screen with the width for an arrangement and not the HEIGHT for it drew one
    * anyway, and it stayed drawn: fifteen rows of a twenty-four-row terminal, for ever, so the
    * answer to whatever the caller typed got four. The nought is now reached from either
@@ -330,7 +330,7 @@ export interface Opening {
 }
 
 /**
- * ⚠️ WHETHER TWO OPENINGS WERE THE SAME DRAWING used to be asked here, and nothing asks it any
+ * WHETHER TWO OPENINGS WERE THE SAME DRAWING used to be asked here, and nothing asks it any
  * more.
  *
  * IT EXISTED TO DECIDE WHETHER TO TURN A PAGE. The console lived in the caller's own buffer, so
@@ -355,7 +355,7 @@ export interface Opening {
  * ONE FUNCTION FOR BOTH FORMS, because it is the same three groups in both — what differs is
  * whether they sit beside the mark or under it, which is {@link rowsOfTheForm}' one branch.
  *
- * ⚠️ IT TOOK A PANEL AND IT TAKES THE TWO COUNTS, and that is what let the height into the
+ * IT TOOK A PANEL AND IT TAKES THE TWO COUNTS, and that is what let the height into the
  * choice at all: the form is what a {@link Panel} is built WITH, so a measurement that could
  * only be made once there was one could not be an input to choosing it. The counts are the same
  * numbers either way — a group's rows are its lines, whether they have been rendered yet or not.
@@ -368,14 +368,14 @@ function besideTheMark(standing: number, record: number): number {
  * HOW MANY ROWS OF THE SCREEN A FORM TAKES FOR EVER: the mark, and the text either beside it
  * or under it — and none at all for the one that is not an arrangement.
  *
- * ⛔ THE ONE PLACE THIS IS ANSWERED, and both readers of it are what makes that worth saying:
+ * THE ONE PLACE THIS IS ANSWERED, and both readers of it are what makes that worth saying:
  * the CHOICE asks it of a form it has not settled on yet ({@link panelFor}), and the page asks
  * it of the form that was settled on ({@link panelRows}). Two arithmetics would be an
  * arrangement chosen as though it cost one thing and budgeted against as though it cost
  * another, which is the same class of defect as the column costs this file already pulled
  * together ({@link BETWEEN_COLUMNS}).
  *
- * ⚠️ IT WAS `panelRows` AND IT BRANCHED ON A PANEL, and before that it was `boxRows` and it
+ * IT WAS `panelRows` AND IT BRANCHED ON A PANEL, and before that it was `boxRows` and it
  * counted a frame — a row for the title's border, a row for the bottom edge, and the taller of
  * the mark-and-place against the record in between. There are no edges, and the title is a row
  * of the text rather than a row of a border. Measured at a hundred and twenty by forty, on the
@@ -415,7 +415,7 @@ function rowsOfTheForm(form: PanelForm, mark: number, beside: number): number {
  * width there is — the same shape of floor the drawing of the name has (`presentation/
  * banner.ts`, which still says the name in a terminal too narrow for anything).
  *
- * ⚠️ THE LADDER IS STILL TOTAL AND THE WIDTHS UNDER EIGHTY ARE NO LONGER ASKED, because nothing
+ * THE LADDER IS STILL TOTAL AND THE WIDTHS UNDER EIGHTY ARE NO LONGER ASKED, because nothing
  * is laid out on a window that narrow (`floor.ts`). It is answered at every width for the reason
  * it always was — a function of a number has to answer for the number — and not because a device
  * can be any width there is.
@@ -447,14 +447,14 @@ function panelRows(panel: Panel): number {
  * How many rows of a terminal `columns` wide some lines take — one each, and more for
  * every one that FOLDS.
  *
- * ⚠️ THIS IS THE HALF THE FIRST ARITHMETIC HERE DID NOT HAVE, and a real screen is what
+ * THIS IS THE HALF THE FIRST ARITHMETIC HERE DID NOT HAVE, and a real screen is what
  * found it: at sixty columns the sentence under the box is seventy-six columns long, so it
  * is two rows, and a page counted as though it were one opened with its own top already in
  * the scrollback. It is the rule the input area has had since it learnt about width — a row
  * the terminal would fold is not one row (`area.ts`) — asked of the lines the box does not
  * cover.
  *
- * ⚠️ AND IT DID THE ARITHMETIC ITSELF, which is what the renderer that folds falsified. It
+ * AND IT DID THE ARITHMETIC ITSELF, which is what the renderer that folds falsified. It
  * read `ceil(widthOf(line) / columns)` — the terminal's own rule, fill and break at the
  * margin — and a product that folds between words with a hanging indent does not break
  * there: a continuation holds fewer characters than the first row, so a line can take one
@@ -501,7 +501,7 @@ export interface OpeningRequest extends PanelRequest {
 export function openingFor(request: OpeningRequest): Opening {
   const panel = panelFor(request);
   // A terminal with no room for an arrangement gets none, and the same lines land instead —
-  // which is why the layout has two forms and not three. ⚠️ IT SAID *TOO NARROW* AND THERE ARE
+  // which is why the layout has two forms and not three. IT SAID *TOO NARROW* AND THERE ARE
   // TWO WAYS TO HAVE NO ROOM NOW: too narrow across, or an arrangement that would take more of
   // the way down than the chrome's share ({@link panelFor}).
   const bare = panel.form === 'bare';
@@ -528,7 +528,7 @@ export function openingFor(request: OpeningRequest): Opening {
  * panel at all. So the order lives here, once, and the two arranged forms are the only place
  * anything is placed.
  *
- * ⚠️ THE TITLE USED TO COME FIRST, and the frame is what put it there: it was on the box's top
+ * THE TITLE USED TO COME FIRST, and the frame is what put it there: it was on the box's top
  * border, which is above everything by construction. It is the first row BESIDE the mark now,
  * so the reading order of the arrangement is the mark and then the text — and this is that
  * order rather than a second one, which is what keeps a terminal that lost the arrangement
@@ -547,7 +547,7 @@ function widest(lines: readonly Line[]): number {
  * The panel for a terminal of a given SIZE: the richest form that fits across it and inside
  * the chrome's share of the way down it, and its lines as bytes.
  *
- * ⚠️ A FORM USED TO GIVE WAY WHEN IT DID NOT FIT, AND *FIT* MEANT ACROSS. The premise under
+ * A FORM USED TO GIVE WAY WHEN IT DID NOT FIT, AND *FIT* MEANT ACROSS. The premise under
  * that was the one the whole file was written on — that the arrangement is a DRAWING and a
  * drawing's question is its width — and what falsified it is where the drawing ended up: it is
  * the fixed region at the top of the screen, redrawn on every frame and never scrolled, so
@@ -582,7 +582,7 @@ function widest(lines: readonly Line[]): number {
  * record behind `record` is still the one the session paid for when it opened (the read counter
  * in `tests/the-name-and-the-hints.test.ts`).
  *
- * ⚠️ AND THE FRAME THAT FALSIFIED IT IS GONE, WHICH DOES NOT PUT THE OLD SENTENCE BACK. It
+ * AND THE FRAME THAT FALSIFIED IT IS GONE, WHICH DOES NOT PUT THE OLD SENTENCE BACK. It
  * is asked for whichever size the device has when a frame is built, because the FORM is a
  * function of that size and a terminal dragged past either threshold has the wrong one on its
  * screen — a window made SHORTER is now as much a reason to answer again as one made narrower.
@@ -594,7 +594,7 @@ export function panelFor(request: PanelRequest): Panel {
   const { columns, rows, render, title, mark, standing, record } = request;
   const left = widest(mark);
   // WHAT THE SESSION IS, WHERE IT IS STANDING AND WHAT THE RECORD IS are one column: three
-  // groups of rows, so the column is as wide as the widest row of the three. ⚠️ THE PLACE USED
+  // groups of rows, so the column is as wide as the widest row of the three. THE PLACE USED
   // TO BE ON THE LEFT, under the mark, and the title on the border above both — so this was the
   // record's width alone and the border's own cost was added to it.
   const right = Math.max(widthOf(title), widest(standing), widest(record));

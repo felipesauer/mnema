@@ -2,7 +2,7 @@
  * A FLOOR UNDER THE WINDOW — the shortest terminal this console draws a page on, and what a
  * window under it is shown instead.
  *
- * ⚠️ EVERY LADDER ON THIS SURFACE WAS TOTAL, AND THAT IS THE PREMISE THIS FILE TAKES AWAY. The
+ * EVERY LADDER ON THIS SURFACE WAS TOTAL, AND THAT IS THE PREMISE THIS FILE TAKES AWAY. The
  * drawing of the name gave way to a smaller drawing and finally to the name; the arrangement at
  * the top gave way to the same lines on the roll; the input area dropped its badge and then its
  * rules; the list of words showed fewer and said how many it could not. Each of those files says
@@ -11,7 +11,7 @@
  * There is a floor now (`src/repl/floor.ts`): below eighty by twenty-four the console does not
  * lay a page out at all.
  *
- * ⛔ AND FORCING THE WINDOW IS NOT THE OTHER OPTION. The sequence that asks a terminal to resize
+ * AND FORCING THE WINDOW IS NOT THE OTHER OPTION. The sequence that asks a terminal to resize
  * its own text area exists, and it is refused on two grounds: it is disableable by whoever built
  * the terminal, whose own security guidance is to refuse to implement it, and the terminal this
  * product is developed on had a denial of service exactly there. The last case in this file scans
@@ -107,7 +107,7 @@ let environment: NodeJS.ProcessEnv;
 const before = { cwd: process.cwd(), env: { ...process.env } };
 
 beforeAll(async () => {
-  // ⛔ ITS OWN SANDBOX, and nothing of this repository's own record is touched: a case that
+  // ITS OWN SANDBOX, and nothing of this repository's own record is touched: a case that
   // opened a session where it stands would be measuring a project it is also changing.
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-floor-'));
   project = join(sandbox, 'project');
@@ -161,7 +161,7 @@ async function inPty(options: {
 /**
  * A WHOLE FRAME THIS STEP CAUSED, WITH `what` ON IT.
  *
- * ⚠️ THE USUAL WAIT CANNOT BE USED HERE AND THE REASON IS THE SUBJECT. Every other step of this
+ * THE USUAL WAIT CANNOT BE USED HERE AND THE REASON IS THE SUBJECT. Every other step of this
  * bench waits for a finished frame carrying the PROMPT, because the row being typed is rewritten
  * by every frame the layout draws — and the floor screen has no row being typed at all. So what a
  * step waits for is the screen's own heading, arriving since the step began, at a frame boundary:
@@ -182,10 +182,10 @@ const opensTheFloorScreen: Step = {
 const opens: Step = opensAConsole(PROMPT);
 
 /**
- * ⛔ WHAT IS TYPED ONCE THE WINDOW HAS GROWN BACK — the mark that tells the page after the
+ * WHAT IS TYPED ONCE THE WINDOW HAS GROWN BACK — the mark that tells the page after the
  * crossing from the page before it.
  *
- * ⚠️ AND IT IS HERE BECAUSE A MUTATION WENT UNCAUGHT WITHOUT IT. The page after the window grew
+ * AND IT IS HERE BECAUSE A MUTATION WENT UNCAUGHT WITHOUT IT. The page after the window grew
  * back was found as *the last frame drawn a hundred columns wide with the answer on it*, and the
  * frames BEFORE the shrink are all of those too — so a console that emptied its roll while the
  * floor screen was up passed the case, on a frame from before the crossing. Nothing else in the
@@ -209,7 +209,7 @@ const leaves: Step = { types: THE_KEY_THAT_LEAVES, until: () => true, what: 'lef
 /**
  * The step that leaves a session with something on the row being typed.
  *
- * ⚠️ THE KEY THAT LEAVES IS THE END OF THE INPUT and a row with characters on it is not the end
+ * THE KEY THAT LEAVES IS THE END OF THE INPUT and a row with characters on it is not the end
  * of anything: measured, the session went on running and the driver waited out its whole budget.
  * So the row is abandoned first — which is what the key that clears it does — and the key that
  * leaves then reads as the end it is.
@@ -238,7 +238,7 @@ describe('the floor is eighty by twenty-four, and it is a function of both measu
     // AND THE PAIR THE MODULE NAMES IS THE PAIR THE WALK FOUND, which is what keeps the constant
     // from drifting away from the rule that reads it.
     expect([narrowest, shortest]).toEqual([THE_FLOOR.columns, THE_FLOOR.rows]);
-    // ⛔ AND IT IS BOTH MEASUREMENTS AND NOT ONE. A window one column narrow fails at any height,
+    // AND IT IS BOTH MEASUREMENTS AND NOT ONE. A window one column narrow fails at any height,
     // and one row short fails at any width — so neither number can stand in for the other, which
     // is the vacuity a floor on the width alone would pass.
     expect(theWindowServes(narrowest - 1, 400), 'one column short, on a tall window').toBe(false);
@@ -301,7 +301,7 @@ describe('the floor screen says both numbers and names the axis that falls short
   });
 
   it('says the session is still there, which is what makes it a screen and not an error', () => {
-    // ⛔ THE ROW THIS SCREEN WOULD BE DISHONEST WITHOUT. A reader looking at a page that stopped
+    // THE ROW THIS SCREEN WOULD BE DISHONEST WITHOUT. A reader looking at a page that stopped
     // being the console has no way of knowing whether the session survived, and one who guesses
     // wrong kills it.
     expect(floorRowsAt(40, 10).join('\n')).toContain('still open');
@@ -322,24 +322,24 @@ describe('a window under the floor gets the screen, and the window at it gets th
     [THE_FLOOR.columns - 1, THE_FLOOR.rows],
     [THE_FLOOR.columns, THE_FLOOR.rows - 1],
   ] as const) {
-    it(`⛔ draws the floor screen at ${columns}x${rows}, with its own axis on it`, async () => {
+    it(`draws the floor screen at ${columns}x${rows}, with its own axis on it`, async () => {
       const ran = await inPty({ columns, rows, steps: [opensTheFloorScreen, leaves] });
       // THE PAGE, replayed up to the frame the opening step approved — the floor screen is the
       // whole frame, so there is nothing else on it to find it by.
       const screen = screenOf(ran.bytes.slice(0, ran.at[0] as number), columns, rows);
       expect(screen.alternate, 'the session did not take the screen').toBe(true);
-      // ⛔ EVERY ROW THE MODULE COMPOSED IS ON THE PAGE, which is the elo between the two.
+      // EVERY ROW THE MODULE COMPOSED IS ON THE PAGE, which is the elo between the two.
       for (const row of floorRowsAt(columns, rows)) {
         expect(screen.text, `a row of the floor screen is missing: ${row}`).toContain(row.trim());
       }
-      // ⛔ AND THE CONSOLE IS NOT ON IT AT ALL. This is the half that says the console did not
+      // AND THE CONSOLE IS NOT ON IT AT ALL. This is the half that says the console did not
       // DRAW: no row being typed, and nothing the opening says.
       expect(screen.text, 'the console drew a prompt under the floor').not.toContain(PROMPT);
       expect(screen.text, 'the console drew its opening under the floor').not.toContain(OPENED);
     }, 240_000);
   }
 
-  it('⛔ draws the console at exactly the floor, which is where the boundary is', async () => {
+  it('draws the console at exactly the floor, which is where the boundary is', async () => {
     const { columns, rows } = THE_FLOOR;
     const ran = await inPty({ columns, rows, steps: [opens, asks, leaves] });
     // FOUND BY THE WIDTH IT WAS DRAWN AT: the two rules the input area sits between run the whole
@@ -353,7 +353,7 @@ describe('a window under the floor gets the screen, and the window at it gets th
     expect(screen.text, 'what the caller asked for is not on the page').toContain(
       CLOSES_THE_ANSWER,
     );
-    // ⛔ AND THE FLOOR SCREEN IS NOWHERE IN THE WHOLE RUN, not merely off this page: one row
+    // AND THE FLOOR SCREEN IS NOWHERE IN THE WHOLE RUN, not merely off this page: one row
     // narrower drew it, and this size may not.
     expect(ran.bytes, 'the floor screen was drawn at the floor').not.toContain(THE_HEADING);
   }, 240_000);
@@ -364,7 +364,7 @@ describe('a window under the floor gets the screen, and the window at it gets th
 // ---------------------------------------------------------------------------
 
 describe('the floor is crossed in both directions and the session survives it', () => {
-  it('⛔ shows the screen when the window shrinks and the roll when it grows back', async () => {
+  it('shows the screen when the window shrinks and the roll when it grows back', async () => {
     const columns = 100;
     const rows = 30;
     const ran = await inPty({
@@ -393,14 +393,14 @@ describe('the floor is crossed in both directions and the session survives it', 
         clearsAndLeaves,
       ],
     });
-    // ⛔ THE FLOOR SCREEN WAS DRAWN BY THE SHRINK, and it is read out of what arrived while the
+    // THE FLOOR SCREEN WAS DRAWN BY THE SHRINK, and it is read out of what arrived while the
     // step was happening rather than off a page replayed at the small size: everything above the
     // shrink was drawn a hundred columns wide, so a replay onto a seventy-column screen would be
     // a page carrying two terminals — which is the one thing the screen model refuses by name.
     const shrank = ran.bytes.slice(ran.at[1] as number, ran.at[2] as number);
     expect(shrank, 'the shrink did not draw the floor screen').toContain(THE_HEADING);
     expect(shrank, 'the floor screen did not say what the window had become').toContain('70x20');
-    // ⛔ AND THE PAGE AFTER IT GREW BACK IS THE CONSOLE, WITH WHAT WAS SAID BEFORE THE SHRINK
+    // AND THE PAGE AFTER IT GREW BACK IS THE CONSOLE, WITH WHAT WAS SAID BEFORE THE SHRINK
     // STILL ON IT. The line is one the ROLL is carrying — the opening says nothing like it — so a
     // console that had started over would be red here, and one that re-read the record could not
     // put it back.
@@ -412,7 +412,7 @@ describe('the floor is crossed in both directions and the session survives it', 
     expect(back.text, 'the opening did not come back').toContain(OPENED);
   }, 300_000);
 
-  it('⛔ neither dies nor writes: the word that leaves still works, and nothing was added', async () => {
+  it('neither dies nor writes: the word that leaves still works, and nothing was added', async () => {
     // THE MEASUREMENT, around the whole crossing. What is counted is the events in every tail of
     // every tree and the key material on the machine (`support/the-record-held.ts`).
     const started = held(sandbox);
@@ -442,7 +442,7 @@ describe('the floor is crossed in both directions and the session survives it', 
     // THE SESSION LEFT BY THE WORD: the echo of it is on the page, and the screen went back.
     expect(ran.bytes, 'the word that leaves was never echoed').toContain('/exit');
     expect(ran.bytes, 'the session never gave the screen back').toContain(`${ESC}[?1049l`);
-    // ⛔ AND THE RECORD GAINED NOTHING, on either half of what *changed the record* means.
+    // AND THE RECORD GAINED NOTHING, on either half of what *changed the record* means.
     const ended = held(sandbox);
     expect(ended.events, 'the session appended to the record').toBe(started.events);
     expect(ended.keys, 'the session touched the key material').toBe(started.keys);
@@ -453,7 +453,7 @@ describe('the floor is crossed in both directions and the session survives it', 
     expect(held(sandbox).events, 'the instrument cannot see a write').toBe(started.events + 1);
   }, 300_000);
 
-  it('⛔ composes no opening under the floor, and hands the roll back whole', async () => {
+  it('composes no opening under the floor, and hands the roll back whole', async () => {
     // IN PROCESS, AND DETERMINISTIC — the half a pseudo-terminal cannot answer. *The console does
     // not try to draw* is not *what it drew is different*: nothing is composed at all, and the
     // way to see that is to count the compositions.
@@ -485,7 +485,7 @@ describe('the floor is crossed in both directions and the session survives it', 
 
     terminal.resize(70, 20);
     await until(() => terminal.bytes().includes(THE_HEADING), 'drew the floor screen');
-    // ⛔ NOT ONE COMPOSITION FOR THE WINDOW UNDER THE FLOOR. The opening is the expensive half of
+    // NOT ONE COMPOSITION FOR THE WINDOW UNDER THE FLOOR. The opening is the expensive half of
     // a frame — the drawing of the name is chosen by composing every candidate — and a page that
     // is not drawn may not pay for it.
     expect(composed.length, 'an opening was composed under the floor').toBe(beforeTheShrink);
@@ -507,7 +507,7 @@ describe('the floor is crossed in both directions and the session survives it', 
 // ---------------------------------------------------------------------------
 
 describe('the floor screen goes through the same renderer as every line of this product', () => {
-  it('⛔ carries no colour with NO_COLOR set, and carries some without it', async () => {
+  it('carries no colour with NO_COLOR set, and carries some without it', async () => {
     const columns = THE_FLOOR.columns - 1;
     const rows = THE_FLOOR.rows;
     const steps = [opensTheFloorScreen, leaves];
@@ -525,7 +525,7 @@ describe('the floor screen goes through the same renderer as every line of this 
         THE_HEADING,
       );
     }
-    // ⛔ AND WHAT DIFFERS IS THE PAINT. The frame the screen was drawn on carries no sequence that
+    // AND WHAT DIFFERS IS THE PAINT. The frame the screen was drawn on carries no sequence that
     // changes how a glyph looks when colour is off — and it carries some when it is on, which is
     // what keeps the absence from being a page that was never painted anyway.
     const paintOn = (ran: Ran): string[] =>
@@ -554,7 +554,7 @@ const RULES_ON_ROOM =
 const ASKS_THE_FLOOR = /theWindowServes|THE_FLOOR/;
 
 /**
- * ⛔ WHAT ASKING A TERMINAL TO RESIZE ITSELF LOOKS LIKE, spelled every way this repository spells
+ * WHAT ASKING A TERMINAL TO RESIZE ITSELF LOOKS LIKE, spelled every way this repository spells
  * an escape: the byte itself, the two escaped forms, and the constant the bench writes it with.
  *
  * It is read over the RAW source rather than over the code, because the sequence would be a
@@ -566,7 +566,7 @@ const RESIZES_THE_WINDOW = /(?:\u001b|\\u001b|\\x1b|\\033|\$\{ESC\})\s*\[\s*8\s*
 
 describe('the floor is asked in one place, and every site that rules on room is named', () => {
   it('names the module that answers the floor and the one that asks it, and nothing else', () => {
-    // ⛔ A3: THE FLOOR IS ONE FUNCTION WITH ONE SITE. A second comparison of a size against the
+    // A3: THE FLOOR IS ONE FUNCTION WITH ONE SITE. A second comparison of a size against the
     // floor would be a second floor, and the two would disagree the first time one of them moved.
     const naming = sourceFiles(SRC)
       .filter((file) => ASKS_THE_FLOOR.test(codeOnly(readFileSync(file, 'utf-8'))))
@@ -584,7 +584,7 @@ describe('the floor is asked in one place, and every site that rules on room is 
     expect(sourceFiles(SRC).length).toBeGreaterThan(50);
   });
 
-  it('⛔ A1: enumerates every site that decides whether there is room to draw', () => {
+  it('A1: enumerates every site that decides whether there is room to draw', () => {
     // THE SITES ARE FOUND BY THE DISCRIMINANT and then named, with what each of them rules on.
     // The list this delivery was handed had five — the floor, the console's last-resort guard,
     // the area, the panel and the drawing of the name — and the scan finds more. The extras are
@@ -614,7 +614,7 @@ describe('the floor is asked in one place, and every site that rules on room is 
       'repl/region.ts',
       // how much of the roll fills the middle region
       'repl/scrolling.ts',
-      // ⚠️ AND THE SITE THE HANDED-DOWN LIST DID NOT HAVE, which is the finding this case exists
+      // AND THE SITE THE HANDED-DOWN LIST DID NOT HAVE, which is the finding this case exists
       // for: the renderer every verb is given decides whether a line FOLDS at all from the width
       // the entry read (`isTty && columns > 0`). It is not on this surface and not in a frame —
       // it is one door up — so a delivery reasoning about *what fits* from the repl alone would
@@ -623,8 +623,8 @@ describe('the floor is asked in one place, and every site that rules on room is 
     ]);
   });
 
-  it('⛔ emits no sequence that resizes the caller’s window, in any module or any run', async () => {
-    // ⛔ THE DECISION THIS DELIVERY RESTS ON, made checkable. Nothing in this product asks a
+  it('emits no sequence that resizes the caller’s window, in any module or any run', async () => {
+    // THE DECISION THIS DELIVERY RESTS ON, made checkable. Nothing in this product asks a
     // terminal to change its own size: the sequence is disableable by whoever built the terminal,
     // the field's own guidance is to refuse to implement it, and it carried a denial of service
     // on the terminal this product is developed on.

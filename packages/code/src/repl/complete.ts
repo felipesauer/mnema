@@ -17,7 +17,7 @@
  * advertising what it will not do. It also refuses to descend — `task <TAB>` offers
  * nothing at all, rather than the subcommands of a verb this session cannot reach.
  *
- * ⚠️ IT SAID *WHAT IS NEVER OFFERED IS AN ID*, and it named exactly what would have to
+ * IT SAID *WHAT IS NEVER OFFERED IS AN ID*, and it named exactly what would have to
  * change: an id is in no declaration, the only way to know one is to READ the record, and
  * inside a session that would be affordable for the first time — the floor is already
  * paid — and was still refused, because it is a different promise (a menu of the record,
@@ -110,7 +110,7 @@ export function completerFor(
    * The node a caller is typing inside, walking only where this session may go — and
    * NOTHING AT ALL when the walk started with a verb this session refuses.
    *
-   * ⚠️ IT ANSWERED WITH AN EMPTY NODE, and the two answers are no longer the same. An
+   * IT ANSWERED WITH AN EMPTY NODE, and the two answers are no longer the same. An
    * empty node is a level with nothing declared in it, and a level now offers the records
    * the session has named as well; a verb this session cannot reach has no level to be
    * inside of, so `task <TAB>` has to keep offering nothing at all rather than becoming a

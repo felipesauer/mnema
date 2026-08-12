@@ -119,7 +119,7 @@ export function withoutLayout(bytes: string): string {
       // And putting the cursor somewhere absolute, which is what the layout does with the
       // caret at the end of a frame. It PLACES and says nothing, so it goes with the rest.
       .replace(new RegExp(`${ESC}\\[\\d*(?:;\\d*)?H`, 'g'), '')
-      // ⚠️ AND THE MODES THE CONSOLE ASKS THE TERMINAL FOR, which were not here because the
+      // AND THE MODES THE CONSOLE ASKS THE TERMINAL FOR, which were not here because the
       // console asked for none. It takes the SCREEN now and turns the wheel on
       // (`repl/console.ts`, `repl/pointing.ts`), so three switches are written before the first
       // frame — and a reader that left them in would find them at the START of the first row,

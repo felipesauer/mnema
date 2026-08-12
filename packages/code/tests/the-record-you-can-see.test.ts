@@ -138,7 +138,7 @@ beforeAll(async () => {
 
   await shell('init');
   const made: Record[] = [];
-  // ⚠️ THERE WERE SIX OF THEM AND THERE ARE SIXTEEN, and the floor under the window is what
+  // THERE WERE SIX OF THEM AND THERE ARE SIXTEEN, and the floor under the window is what
   // decided the number. The case that measures the list saying how many it had NO ROOM for used
   // to reach that regime by driving a short terminal — a hundred columns by eight — and no
   // console is drawn there any more (`src/repl/floor.ts`). Above the floor the shortest window is
@@ -235,7 +235,7 @@ const leaves: Step = {
 /**
  * The read that puts the records on the page, and what says it has answered.
  *
- * ⚠️ IT WAITED FOR EVERY ID TO BE IN THE BYTES, and a window is what falsified that. What the
+ * IT WAITED FOR EVERY ID TO BE IN THE BYTES, and a window is what falsified that. What the
  * session says goes on a roll and the middle region shows the TAIL of it (`repl/scrolling.ts`),
  * so on a terminal with a few rows to spare the ids at the top of the answer are on the roll and
  * never on the screen — and a step waiting for all of them waits for ever. It waits for the
@@ -266,7 +266,7 @@ const _times = (text: string, what: string): number => text.split(what).length -
  * that were cleared with the page would take every case below to zero rows and be seen at
  * once.
  *
- * ⚠️ IT WAITED FOR A PAGE TO BE CARRIED INTO THE SCROLLBACK, and there are no pages to carry.
+ * IT WAITED FOR A PAGE TO BE CARRIED INTO THE SCROLLBACK, and there are no pages to carry.
  * A clean page used to mean a screen of the caller's own scrolled away and the opening written
  * over it, so the bytes that did it were what said the word had been answered; the console
  * draws on a screen of its own now and clearing is the ROLL being emptied
@@ -328,7 +328,7 @@ describe('a record on the screen can be typed back, whole', () => {
 
     // WHAT THE ROW BECAME: the whole id, typed for the caller, and not a character of it
     // short. This is the assertion the defect was measured against.
-    // ⚠️ FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended. The wait above is
+    // FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended. The wait above is
     // right and the index after it is not what the wait guarantees: a step ends wherever the
     // stream happened to be quiet, so on a loaded machine this read lands on the page from
     // BEFORE the key took effect — and the red is then *expected 'mnema>' to be 'mnema> show …'*,
@@ -376,7 +376,7 @@ describe('a prefix that names several lists them, each beside the line it came f
       ],
     });
 
-    // ⚠️ FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended: the subject is the
+    // FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended: the subject is the
     // page WITH THE LIST OF RECORDS ON IT, so the frame to read is the first one that has the
     // typed prefix on the row — which is the frame the completion produced. A step ends wherever
     // the stream happened to be quiet, and on a loaded machine that is before the list arrived;
@@ -405,7 +405,7 @@ describe('a prefix that names several lists them, each beside the line it came f
     // `AreaRequest.header`), and whenever it draws a row at all, what it shows plus what it says
     // is left over is everything there was.
     //
-    // ⚠️ THE HEIGHT HAS MOVED FOUR TIMES AND ONLY THE LAST ONE WAS NOT ABOUT THE ROOM. It was
+    // THE HEIGHT HAS MOVED FOUR TIMES AND ONLY THE LAST ONE WAS NOT ABOUT THE ROOM. It was
     // eight rows while the list was budgeted against what the page had left over; sixteen once the
     // list was cut to the leftover under the flow; fourteen once the leftover was measured under
     // the fixed region at the top; eight again once that region was held to a third of the screen.
@@ -433,7 +433,7 @@ describe('a prefix that names several lists them, each beside the line it came f
       ],
     });
 
-    // ⚠️ FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended — the rule this file
+    // FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended — the rule this file
     // now holds throughout (`support/screen.ts`, {@link theFirstScreenWith}).
     const screen = theFirstScreenWith(ran.bytes, CUT, columns, rows);
     const listed = screen.rows.filter((row) => row.trimStart().startsWith('019'));
@@ -490,7 +490,7 @@ describe('what it offers is what the session showed, and never the record', () =
       ],
     });
 
-    // ⚠️ FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended — the rule this file
+    // FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended — the rule this file
     // now holds throughout (`support/screen.ts`, {@link theFirstScreenWith}).
     const refused = theFirstScreenWith(ran.bytes, `${PROMPT} show ${missing}`, columns, rows);
     expect(rowBeingTyped(refused), refused.text).toBe(`${PROMPT} show ${missing}`);
@@ -498,7 +498,7 @@ describe('what it offers is what the session showed, and never the record', () =
     // had gone and looked would have put one of the two there.
     expect(refused.text).not.toContain(hidden.id);
     expect(refused.text).not.toContain(UNNAMED);
-    // ⚠️ AND NOTHING AT ALL WAS LISTED, which is the half the first draft of this case
+    // AND NOTHING AT ALL WAS LISTED, which is the half the first draft of this case
     // missed. A memory that answered without narrowing to what was typed would leave the
     // row exactly as it is above and open a palette of six records the caller did not ask
     // about — every assertion so far passes on that. The page was cleared, so a row that
@@ -508,7 +508,7 @@ describe('what it offers is what the session showed, and never the record', () =
       `something was offered for a record nobody named:\n${refused.text}`,
     ).toEqual([]);
 
-    // ⚠️ FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended. The wait above is
+    // FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended. The wait above is
     // right and the index after it is not what the wait guarantees: a step ends wherever the
     // stream happened to be quiet, so on a loaded machine this read lands on the page from
     // BEFORE the key took effect — and the red is then *expected 'mnema>' to be 'mnema> show …'*,
@@ -548,7 +548,7 @@ describe('what it offers is what the session showed, and never the record', () =
       ],
     });
 
-    // ⚠️ FOUND BY THE PAGE'S OWN PROPERTY, and this case is why that locator exists. It was the
+    // FOUND BY THE PAGE'S OWN PROPERTY, and this case is why that locator exists. It was the
     // last index left in the file and it went red twice in three loaded runs; the obvious repair
     // — the first frame whose bytes hold `mnema> show <id>` — is AMBIGUOUS here, because the
     // session ran that very line earlier and the roll kept its echo. The two are the same
@@ -586,7 +586,7 @@ describe('what it offers is what the session showed, and never the record', () =
       ],
     });
 
-    // ⚠️ FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended — the rule this file
+    // FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended — the rule this file
     // now holds throughout (`support/screen.ts`, {@link theFirstScreenWith}).
     const screen = theFirstScreenWith(ran.bytes, 'find what has been recorded', columns, rows);
     // The palette is open — the verbs are listed — and no row of it is a record.

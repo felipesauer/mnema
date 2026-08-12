@@ -5,7 +5,7 @@ import { canonicalId, mintedIdsIn, mintId } from './id.js';
 /**
  * Whether a value is written the way an id is — asked of the PRODUCT's recognizer.
  *
- * ⚠️ THIS FILE WROTE ITS OWN PATTERN FOR IT, and that was one reading of the form too
+ * THIS FILE WROTE ITS OWN PATTERN FOR IT, and that was one reading of the form too
  * many. A regex beside a generator is a fixture that can go wrong in both directions —
  * accept a value nothing here can produce, or refuse one just produced — and it says
  * nothing about whichever of the two the product itself uses. There is one shape in this

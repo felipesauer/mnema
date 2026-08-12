@@ -24,7 +24,7 @@
  *   - NOTHING IS LOST. What leaves the top goes on the ROLL, which is where everything else the
  *     session says goes — asserted by walking to the top of it and finding the drawing there.
  *
- * ⚠️ AND THE TALL SCREEN MAY NOT PAY FOR IT. A share is a bound and not a target: a terminal
+ * AND THE TALL SCREEN MAY NOT PAY FOR IT. A share is a bound and not a target: a terminal
  * with the room draws exactly what it drew before, so the last case here is the one that would
  * go red if the budget were spent as though it were a cost.
  */
@@ -99,7 +99,7 @@ let project: string;
 /**
  * A PROJECT WHOSE OWN PATH IS WIDER THAN THE WINDOW — the fixture the floor of the ladder needs.
  *
- * ⚠️ THE LAST RUNG USED TO BE REACHED BY MAKING THE WINDOW SHORT, and that is the premise the
+ * THE LAST RUNG USED TO BE REACHED BY MAKING THE WINDOW SHORT, and that is the premise the
  * floor took away: a sixteen-row terminal draws no page at all now (`src/repl/floor.ts`), so a
  * case driven at one measures the screen that says so. The rung is still reachable and it is
  * reached by the OTHER measurement — the panel is given up when what it holds does not fit ACROSS
@@ -114,7 +114,7 @@ let environment: NodeJS.ProcessEnv;
 const before = { cwd: process.cwd(), env: { ...process.env } };
 
 beforeAll(async () => {
-  // ⛔ ITS OWN SANDBOX, and nothing of this repository's own record is touched: a case that
+  // ITS OWN SANDBOX, and nothing of this repository's own record is touched: a case that
   // opened a session where it stands would be measuring a project it is also changing.
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-height-'));
   project = join(sandbox, 'project');
@@ -223,7 +223,7 @@ function rowOf(screen: Screen, what: string): number {
  * arrangement across, and they are written here as the measurement they were taken at rather
  * than derived — a session's title is its build and its context, and a place is a path.
  *
- * ⛔ WHAT TIES IT TO THE PRODUCT IS THE PAIR OF CASES ON A REAL TERMINAL BELOW, which ask the
+ * WHAT TIES IT TO THE PRODUCT IS THE PAIR OF CASES ON A REAL TERMINAL BELOW, which ask the
  * same questions of a console opened on a pseudo-terminal over a real project. If this shape
  * ever stops being the product's, those go red — a table alone would go on answering about a
  * panel nobody has.
@@ -281,7 +281,7 @@ const openingAt = (columns: number, rows: number): Opening =>
 /**
  * HOW MUCH OF THE SCREEN THE CHROME MAY TAKE: one row in three, rounded down.
  *
- * ⛔ SPELLED HERE RATHER THAN IMPORTED, and that is the whole worth of this constant: the
+ * SPELLED HERE RATHER THAN IMPORTED, and that is the whole worth of this constant: the
  * module states the same rule as *three of them fit in the screen*, and a case that imported
  * its number would agree with it whatever it said. Two spellings of one decision is the one
  * duplication this bench asks for.
@@ -295,12 +295,12 @@ const A_THIRD_OF = (rows: number): number => Math.floor(rows / 3);
  * every machine has had for fifty years, a laptop, a tmux pane, a full screen — and where a
  * form gives way is SEARCHED FOR in the case under this one rather than written down in it.
  *
- * ⚠️ FIVE OF THE SEVEN ANSWERED `stacked` OR `columns` BEFORE THIS DELIVERY, because the width
+ * FIVE OF THE SEVEN ANSWERED `stacked` OR `columns` BEFORE THIS DELIVERY, because the width
  * was the only question asked: at eighty by twenty-four the text went under the mark and
  * fifteen rows of the screen stopped being the reader's for the rest of the session. What
  * changed is the answer at the short sizes and nothing at the tall ones.
  *
- * ⛔ AND EVERY ROW OF IT IS ABOUT ONE DRAWING — the biggest there is, held still. That is what
+ * AND EVERY ROW OF IT IS ABOUT ONE DRAWING — the biggest there is, held still. That is what
  * makes it a table about this rule rather than about the console: on a screen with no room for
  * the biggest drawing's arrangement it is the DRAWING that gives way, and the console opens
  * with a smaller one and keeps its arrangement (`session.ts`, and the case below on a real
@@ -433,7 +433,7 @@ describe('the arrangement is chosen by the height as well as the width', () => {
  * landmark: every row above it on the page is a row of the LIST, and a page that does not hold
  * the heading at all is a page whose whole answer went past the top of the window.
  *
- * ⛔ NOUGHT IS WHAT THE DEFECT LOOKED LIKE, and it is the reason this reads a landmark rather
+ * NOUGHT IS WHAT THE DEFECT LOOKED LIKE, and it is the reason this reads a landmark rather
  * than matching what a verb's row looks like: at eighty by twenty-four the console showed the
  * last four rows of a thirty-four-row answer, which were the sentences under that heading and
  * nothing else. A count of rows that LOOK like a verb would have said nought as well and would
@@ -445,7 +445,7 @@ function rowsOfTheListOn(screen: Screen, under: number): number {
 }
 
 /**
- * ⛔ HOW MANY ROWS AT THE TOP OF THE PAGE DID NOT MOVE — which is what *fixed region* MEANS,
+ * HOW MANY ROWS AT THE TOP OF THE PAGE DID NOT MOVE — which is what *fixed region* MEANS,
  * asked of two pages of one session rather than of an arithmetic.
  *
  * The arrangement is drawn again on every frame at the top of the screen and the roll under it
@@ -453,7 +453,7 @@ function rowsOfTheListOn(screen: Screen, under: number): number {
  * the window. It is measured this way rather than by counting what the panel says it costs
  * because the two can disagree, and the one a reader has is the page.
  *
- * ⛔ NOUGHT IS AN ANSWER AND NOT A FAILURE: on a screen with no room for an arrangement the
+ * NOUGHT IS AN ANSWER AND NOT A FAILURE: on a screen with no room for an arrangement the
  * whole opening is on the roll, so the first row moves with everything else.
  */
 function theFixedRowsBetween(opened: Screen, later: Screen): number {
@@ -463,10 +463,10 @@ function theFixedRowsBetween(opened: Screen, later: Screen): number {
 }
 
 /**
- * ⛔ THE PAGE AS IT SETTLED ONCE THE WHOLE OF WHAT `/help` SAYS HAD LANDED — found by what the
+ * THE PAGE AS IT SETTLED ONCE THE WHOLE OF WHAT `/help` SAYS HAD LANDED — found by what the
  * page HOLDS, never by where the step ended in the stream.
  *
- * ⚠️ THE FRAME AT THE WIDTH IS NOT THE ONE THIS CASE IS ABOUT, which is the one refinement the
+ * THE FRAME AT THE WIDTH IS NOT THE ONE THIS CASE IS ABOUT, which is the one refinement the
  * usual locator needed here. {@link theSettledScreen} answers with the LAST frame drawn at a
  * size, and the last thing a driven session does is LEAVE: the key that leaves puts the row
  * being typed on the roll on its way out, so the page it answers with is the answer's page
@@ -491,7 +491,7 @@ function theAnswerOn(ran: Ran, columns: number, rows: number): Screen {
  * pseudo-terminal at eighty by twenty-four.
  *
  * IT IS NOT DERIVED FROM ANYTHING, which is the whole point of writing it down: a delivery that
- * changes what the console spends has to come here and say so. ⚠️ BEFORE THIS DELIVERY IT WAS
+ * changes what the console spends has to come here and say so. BEFORE THIS DELIVERY IT WAS
  * NOUGHT — the arrangement held fifteen of the twenty-four rows for ever, the input area five,
  * and the four that were left showed the tail of the answer with the list of verbs and the
  * heading that closes it both past the top of the window.
@@ -503,7 +503,7 @@ const SHOWS_OF_THE_ANSWER = 7;
  * identity survived.
  *
  * Six rows: the name drawn on one, and beside it what the session is, where it is standing, and
- * the record's section under its blank row. ⚠️ THE FIRST TRY AT THIS DELIVERY MADE IT NOUGHT —
+ * the record's section under its blank row. THE FIRST TRY AT THIS DELIVERY MADE IT NOUGHT —
  * the arrangement was given up whole and the identity went on the roll with the drawing, which
  * is the one thing a header may not do. What buys it back is the DRAWING giving way instead: at
  * this width the letterspaced name is what fits beside the text inside the share.
@@ -511,7 +511,7 @@ const SHOWS_OF_THE_ANSWER = 7;
 const THE_ARRANGEMENT_COSTS = 6;
 
 describe('the answer a caller asked for is on the page, on the screen everybody has', () => {
-  it('⛔ shows the list of verbs at eighty by twenty-four, where it showed none of it', async () => {
+  it('shows the list of verbs at eighty by twenty-four, where it showed none of it', async () => {
     const columns = 80;
     const rows = 24;
     const ran = await inPty({ columns, rows, steps: [opens, asks, leaves] });
@@ -520,18 +520,18 @@ describe('the answer a caller asked for is on the page, on the screen everybody 
     // happened to be quiet ({@link theAnswerOn}).
     const opened = theFirstScreenWith(ran.bytes, UNDER_THE_PANEL, columns, rows);
     const asked = theAnswerOn(ran, columns, rows);
-    // ⛔ THE REGION AT THE TOP DID NOT MOVE, which is what makes the rows under it the window:
+    // THE REGION AT THE TOP DID NOT MOVE, which is what makes the rows under it the window:
     // measured as the rows the two pages share ({@link theFixedRowsBetween}).
     const fixed = theFixedRowsBetween(opened, asked);
     expect(fixed, 'the arrangement is not fixed at the top of this screen').toBe(
       THE_ARRANGEMENT_COSTS,
     );
-    // ⛔ THE DEFECT, CLOSED: the list is on the page UNDER that region, and the count is the
+    // THE DEFECT, CLOSED: the list is on the page UNDER that region, and the count is the
     // stick above. It was nought.
     expect(rowsOfTheListOn(asked, fixed), 'the list of verbs is not on the page').toBe(
       SHOWS_OF_THE_ANSWER,
     );
-    // ⛔ AND WHAT THE SIX ROWS HOLD IS THE IDENTITY, not the logo: the fixed rows say what the
+    // AND WHAT THE SIX ROWS HOLD IS THE IDENTITY, not the logo: the fixed rows say what the
     // session is, where it is standing and what the record proved — on the page that has printed,
     // which is where the old console had lost all three.
     const chrome = asked.rows.slice(0, fixed).join('\n');
@@ -539,7 +539,7 @@ describe('the answer a caller asked for is on the page, on the screen everybody 
     expect(chrome, 'the fixed region does not say where it is standing').toContain('mnid:');
     expect(chrome, 'the fixed region does not say what the record is').toContain('The record');
     expect(chrome, 'the fixed region does not say what the record proved').toContain(VERIFIED);
-    // ⛔ AND A DRAWING OF THE NAME IS STILL IN IT — a SMALLER one, which is the whole mechanism:
+    // AND A DRAWING OF THE NAME IS STILL IN IT — a SMALLER one, which is the whole mechanism:
     // what gives way is the ART and never what identifies. Which drawing it is is asked of the
     // module that draws them, so a fifth form moves this case with it.
     const drawn = everyDrawing().find((form) => form.every((row) => chrome.includes(row)));
@@ -551,11 +551,11 @@ describe('the answer a caller asked for is on the page, on the screen everybody 
     );
   }, 240_000);
 
-  it('⛔ keeps what left the top on the roll, one walk back', async () => {
+  it('keeps what left the top on the roll, one walk back', async () => {
     // A SCREEN WITH NO ROOM FOR AN ARRANGEMENT AT ALL, which is the floor of the ladder and the
     // case this promise is about.
     //
-    // ⚠️ IT WAS A SHORT SCREEN AND IT IS A DEEP PATH, and what moved it is the floor under the
+    // IT WAS A SHORT SCREEN AND IT IS A DEEP PATH, and what moved it is the floor under the
     // window. Sixteen rows used to be the way here: the cheapest arrangement costs six, six rows
     // want eighteen of screen, and under that no drawing is small enough — so the whole opening
     // landed on the roll. A sixteen-row window draws no page at all now
@@ -610,7 +610,7 @@ describe('the answer a caller asked for is on the page, on the screen everybody 
     ).toBe(0);
   }, 240_000);
 
-  it('⛔ draws the whole arrangement on a screen with the room for it, drawing and all', async () => {
+  it('draws the whole arrangement on a screen with the room for it, drawing and all', async () => {
     // THE OTHER DIRECTION, which is what keeps the share a BOUND rather than a cost: a terminal
     // with the rows for the arrangement gets exactly the arrangement it got before this
     // delivery — the text beside the mark, the biggest drawing, and the top region fixed at the

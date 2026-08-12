@@ -71,7 +71,7 @@ function verbsThat(effect: Declared['effect']): string[] {
 // What reached the record
 // ---------------------------------------------------------------------------
 
-// ⚠️ WHAT THE RECORD HOLDS WAS SPELLED HERE AND IT IS ONE INSTRUMENT NOW. The same rule was
+// WHAT THE RECORD HOLDS WAS SPELLED HERE AND IT IS ONE INSTRUMENT NOW. The same rule was
 // written out in `every-verb-says-if-it-writes.test.ts`, and a third case needed it — so the
 // counting of events and the hashing of key material moved to one place, where the argument for
 // what it counts and what it deliberately does not lives with it (`support/the-record-held.ts`).

@@ -239,7 +239,7 @@ const RECORDS_NOTHING: Readonly<Record<string, string>> = {
 // What reached the record
 // ---------------------------------------------------------------------------
 
-// ⚠️ WHAT THE RECORD HOLDS WAS SPELLED HERE AND IT IS ONE INSTRUMENT NOW. The same rule was
+// WHAT THE RECORD HOLDS WAS SPELLED HERE AND IT IS ONE INSTRUMENT NOW. The same rule was
 // written out in `a-terminal-of-its-own.test.ts`, and a third case needed it — so the counting of
 // events and the hashing of key material moved to one place, where the argument above about what
 // it counts and what it deliberately does not lives with it (`support/the-record-held.ts`).

@@ -510,7 +510,10 @@ describe('the session says how many projects it chose from', () => {
       'verify',
       'make sure',
       'check that',
-      '⚠',
+      // Spelled by its code point rather than written out: the alarm glyphs are banned from
+      // this workspace's source (`tests/the-prose-carries-its-own-emphasis.test.ts`), and a
+      // literal one here would be the last occurrence in the tree.
+      String.fromCodePoint(0x26a0),
     ]) {
       expect(where).not.toContain(alarm);
     }

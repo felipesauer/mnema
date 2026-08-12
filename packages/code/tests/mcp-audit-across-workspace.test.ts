@@ -35,7 +35,7 @@
  *   distilled by whoever is doing the work that kept reopening, so a candidate list
  *   pooled across projects points a person at somebody else's work.
  *
- * ⚠️ HOW THE FIXTURES ARE BUILT, and why it cannot be otherwise: an agent CANNOT
+ * HOW THE FIXTURES ARE BUILT, and why it cannot be otherwise: an agent CANNOT
  * produce an exposure finding through the surfaces. The content door and this audit
  * call the same `detectSecrets`, and the placeholder the door leaves is guarded
  * against re-matching — so a screened record is genuinely clean for the audit, by

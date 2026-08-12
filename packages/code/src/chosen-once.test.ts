@@ -163,7 +163,7 @@ describe('the line folds only where there is a screen to fold it to', () => {
     chooseRenderer(capability)(long).includes('\n');
 
   it('hands a pipe the SAME renderer it always had, whatever it reports', () => {
-    // ⛔ THE INVARIANT, and it is asserted by IDENTITY rather than by comparing bytes: a
+    // THE INVARIANT, and it is asserted by IDENTITY rather than by comparing bytes: a
     // pipe, a file, a CI log and the recorded transcript get `renderPlain` itself, so
     // there is no arithmetic between the line and the stream for a fold to slip into.
     // The width is set anyway in the second case — a stream that reported one without

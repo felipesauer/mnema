@@ -43,7 +43,7 @@
  * command it is helping you type would be a worse defect than the one this file exists to
  * fix.
  *
- * ⚠️ AND THAT PARAGRAPH USED TO SAY *NEVER OFFERED* WITHOUT THE *HERE*, which stopped
+ * AND THAT PARAGRAPH USED TO SAY *NEVER OFFERED* WITHOUT THE *HERE*, which stopped
  * being true one consumer over. The console offers ids now, and the reason it may is that
  * it does not have this file's problem: a session has already PUT records on its own page,
  * so it completes what it has said rather than asking what exists (`repl/seen.ts`). The

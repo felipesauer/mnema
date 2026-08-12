@@ -44,7 +44,7 @@
  * renderer that folds between words with a hanging indent (`presentation/folded.ts`), and a
  * pipe, a file, a CI log and the recorded transcript get exactly the bytes they got before.
  *
- * ⚠️ IT IS NOT THE SAME SHAPE OF DECISION AS THE FOUR ABOVE, AND THIS SAID IT WAS. The
+ * IT IS NOT THE SAME SHAPE OF DECISION AS THE FOUR ABOVE, AND THIS SAID IT WAS. The
  * sentence read *one answer per invocation, resolved from what the process can see and handed
  * down*, and the four things the precedence reads cannot change under a running process while
  * the fifth can: a caller drags the corner of their window. For a verb that prints and exits
@@ -172,7 +172,7 @@ export type RenderingAt = (columns?: number) => Render;
 /**
  * The rule, ready to be asked at any width: WHICH RENDERER for a screen this wide.
  *
- * ⛔ THE COLOUR IS STILL ONE ANSWER PER INVOCATION and only the WIDTH moves, which is the
+ * THE COLOUR IS STILL ONE ANSWER PER INVOCATION and only the WIDTH moves, which is the
  * whole shape of this. The flag, the two variables and whether the destination is a terminal
  * are read ONCE — a session whose first answer was painted and whose tenth was not would be
  * one line's worth of doubt about every line in the scrollback — and they are the four things
@@ -212,7 +212,7 @@ export function rendererAtEachWidth(read: () => Capability): RenderingAt {
  * change inside one command — a report whose first half was styled and second half was
  * not would be one line's worth of doubt about every other line.
  *
- * ⚠️ IT SAID THE WIDTH WAS RESOLVED ONCE TOO, AND THAT IS TRUE HERE AND WAS FALSE ONE VERB
+ * IT SAID THE WIDTH WAS RESOLVED ONCE TOO, AND THAT IS TRUE HERE AND WAS FALSE ONE VERB
  * OVER. The paragraph named the limit and declared it acceptable: *the SESSION is a single
  * invocation that outlives the window it opened in, so a caller who narrows their terminal
  * mid-session gets lines folded to the width the session opened at until they leave* — and

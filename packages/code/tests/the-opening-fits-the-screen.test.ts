@@ -198,7 +198,7 @@ const leaves: Step = {
 /**
  * A PAGE THAT COSTS NOTHING, so nothing but the WIDTH can decide which drawing is answered.
  *
- * ⚠️ HOLDING THE HEIGHT STILL USED TO BE ENOUGH. The name gave way when the drawing was
+ * HOLDING THE HEIGHT STILL USED TO BE ENOUGH. The name gave way when the drawing was
  * taller than the terminal, so a tall enough terminal kept the biggest form whatever else
  * was on the page. It gives way when the PAGE stops fitting now, and what a page costs is
  * answered by whoever composes one (`presentation/banner.ts`) — so a case about the width
@@ -230,7 +230,7 @@ const ROOMY = 40;
  * neighbour is a glyph an edit destroys without anybody seeing it happen. It is the file's
  * own {@link INK}, so the two cannot come to name different blocks.
  *
- * ⚠️ THERE WERE FOUR, and three of them were the isometric drawing's. That drawing is not a
+ * THERE WERE FOUR, and three of them were the isometric drawing's. That drawing is not a
  * mask any more — it is not in the file at all — so the substitutions it needed went with it
  * and one entry is what the masks that are left need.
  */
@@ -326,7 +326,7 @@ describe('the name has four drawings, and the widest that fits across is the one
     //   - NO ROW ENDS IN A BLANK. The layout trims the end of every row it writes, so a form
     //     padded on the right would arrive somewhere narrower than the arithmetic that chose
     //     it thinks it is — and the generator the biggest drawing came from pads.
-    //   - EVERY GLYPH IS ASCII OR ONE OF THE EIGHT. ⚠️ IT USED TO BE *ONE OF THE FOUR*, and
+    //   - EVERY GLYPH IS ASCII OR ONE OF THE EIGHT. IT USED TO BE *ONE OF THE FOUR*, and
     //     the four were substitutions: every form was an ASCII mask, so an unusual byte in a
     //     drawing could only have come from the table that inks one. The biggest drawing is
     //     written out now, blocks and all, and what replaces that reasoning is the
@@ -404,14 +404,14 @@ function masksIn(source: string): readonly (readonly string[])[] {
 /**
  * THE ART, AS A SECOND COPY — the nine rows of the biggest drawing, written out.
  *
- * ⚠️ IT IS A GOLDEN AND IT IS HERE BECAUSE A ROUND TRIP COULD NOT BE ONE. While the biggest
+ * IT IS A GOLDEN AND IT IS HERE BECAUSE A ROUND TRIP COULD NOT BE ONE. While the biggest
  * form was a mask, the mask in the source and the drawing that came back were ONE artifact:
  * the second was the first with four substitutions made, so a mark changed in the mask
  * changed both and they went on agreeing. Measured rather than reasoned — a mutation that
  * turned one stroke of the first letter round left the whole suite green. What makes an edit
  * to the art LOUD is a copy that does not derive from it.
  *
- * ⚠️ AND THE COPY WAS ASCII, AND THIS IS WHERE THAT STOPS. The reason given was *the copy is
+ * AND THE COPY WAS ASCII, AND THIS IS WHERE THAT STOPS. The reason given was *the copy is
  * ASCII for the same reason the mask is: a reader sees the shape, and a diff shows which
  * stroke moved* — and the drawing this now holds is inked with eight blocks and shades, whose
  * mask a reader cannot see the shape in at all (` ###_ _###% ###_    # %#####`, measured by
@@ -442,7 +442,7 @@ describe('every drawing but the biggest is a mask inked, and every mask is ASCII
     // order — a regular expression that matched nothing would otherwise pass this whole case
     // by having nothing to compare.
     //
-    // ⚠️ IT USED TO BE ONE MASK PER FORM. The biggest drawing is written out rather than
+    // IT USED TO BE ONE MASK PER FORM. The biggest drawing is written out rather than
     // masked, because eight marks is a mask a reader cannot see the shape in — so the masks
     // are the forms UNDER it, and what holds the biggest one is the copy above and the
     // enumeration of the eight glyphs.
@@ -513,14 +513,14 @@ describe('every drawing but the biggest is a mask inked, and every mask is ASCII
 
 describe('a session has opened when its frame is finished, not when its prompt is written', () => {
   it('answers no to a prompt with a frame still in flight, and yes at the boundary', () => {
-    // ⚠️ THE INSTRUMENT WAITED FOR THE PROMPT, and a prompt is written in the MIDDLE of a
+    // THE INSTRUMENT WAITED FOR THE PROMPT, and a prompt is written in the MIDDLE of a
     // frame — the rows under it and the caret's own position come after. Three cases of this
     // surface went red on it during this delivery, none of them about a prompt: a caret one
     // row below the one it opens on, and the input area's two rules missing from a screen
     // replayed from half a frame. The opening is a third taller on a terminal with room for
     // the biggest drawing, which is what made the split reads likely enough to see.
     //
-    // ⛔ AND IT IS PINNED HERE RATHER THAN BY A MUTATION OF THE SUITE. Putting the old
+    // AND IT IS PINNED HERE RATHER THAN BY A MUTATION OF THE SUITE. Putting the old
     // condition back leaves every case GREEN on a quiet machine — it is a race, and a race
     // does not answer a single run. What is deterministic is the predicate itself, so that
     // is what is asserted: the bytes of a frame that has not ended, and the bytes of one
@@ -548,14 +548,14 @@ describe('a session has opened when its frame is finished, not when its prompt i
   });
 
   it('ends the step where its question said yes, not where the buffer had got to', async () => {
-    // ⚠️ THE PREDICATE WAS THE HALF THAT WAS WRONG, AND THE CUT POINT WAS THE OTHER. The
+    // THE PREDICATE WAS THE HALF THAT WAS WRONG, AND THE CUT POINT WAS THE OTHER. The
     // question was asked at one instant and the length was taken at another, after a pause
     // that only watched the stream stop growing — so a write that stalled MID-FRAME for
     // longer than the pause ended the step at a point the question would have refused. That
     // is what stayed red in the whole suite and green on its own after the predicate was
     // fixed: the correction had reached the site, and there were two sites.
     //
-    // ⛔ AND IT IS PINNED ON BYTES BUILT BY HAND rather than on a run. A race does not answer
+    // AND IT IS PINNED ON BYTES BUILT BY HAND rather than on a run. A race does not answer
     // a single run — measured on this very delivery, six runs of the affected files went
     // green with the broken condition in place. What is deterministic is the arithmetic: a
     // stream that stops mid-frame may not be a cut point, and one that stops at a boundary
@@ -604,15 +604,15 @@ describe('a session has opened when its frame is finished, not when its prompt i
     expect(cut).toBe(finished.length);
   });
 
-  it('⚠️ refuses a sentence the OPENING said, and takes the same sentence from the verb', async () => {
-    // ⚠️ THE OTHER WAY A STEP ENDS TOO EARLY, and it is not about frames at all: the string it
+  it('refuses a sentence the OPENING said, and takes the same sentence from the verb', async () => {
+    // THE OTHER WAY A STEP ENDS TOO EARLY, and it is not about frames at all: the string it
     // waits for is one THE PANEL ALREADY WROTE. The opening prints the record's verdict on
     // every page there is, so three steps that typed `verify` and waited for *"local integrity
     // verified"* anywhere in the stream were satisfied by the drawing — and the case they fed
     // asserted the ECHO, which is the one thing only a caller can put on a page. It went red
     // once in two runs of the whole suite and green three times out of three on its own.
     //
-    // ⛔ AND IT IS PINNED ON BYTES BUILT BY HAND, for the reason the case above is: a race does
+    // AND IT IS PINNED ON BYTES BUILT BY HAND, for the reason the case above is: a race does
     // not answer a single run. What is deterministic is the predicate — a sentence that was
     // already there when the step began is not this step's answer, and the same sentence
     // arriving after it is.
@@ -622,7 +622,7 @@ describe('a session has opened when its frame is finished, not when its prompt i
     const opening = `box${said}(T1/T2/T4)${PROMPT} `;
     const since = opening.length;
 
-    // ⚠️ WHAT THE OLD PREDICATE ANSWERED, written out here rather than imported, because it is
+    // WHAT THE OLD PREDICATE ANSWERED, written out here rather than imported, because it is
     // what this case exists to refuse: over the whole stream, the opening alone says yes.
     const overTheWholeStream = (bytes: string): boolean => bytes.includes(said);
     expect(overTheWholeStream(opening), 'the opening does not say it, so there is no trap').toBe(
@@ -655,24 +655,24 @@ describe('a session has opened when its frame is finished, not when its prompt i
     expect(answered(opening.slice(0, cut), since)).toBe(false);
   });
 
-  it('⚠️ asks every wait about what the caller caused, in each of the drivers that wait', () => {
-    // ⚠️ THE OTHER HALF, AND IT SCORED ZERO. The question above is only as good as the number
+  it('asks every wait about what the caller caused, in each of the drivers that wait', () => {
+    // THE OTHER HALF, AND IT SCORED ZERO. The question above is only as good as the number
     // handed to it, and mutating the DRIVER to hand `0` instead of where the step began left
     // every case green — the rule was proved in the predicate and unguarded in the three
     // places that feed it. This is the site count, and there are THREE: the shared instrument
     // and two files that drive a pty of their own.
     //
-    // ⚠️ FOUND BY THE DISCRIMINANT, AND THE FIRST DISCRIMINANT WAS TOO NARROW. It was
+    // FOUND BY THE DISCRIMINANT, AND THE FIRST DISCRIMINANT WAS TOO NARROW. It was
     // `step.until(` — *a driver is a file that asks a STEP its own question* — and that named
     // three. Two more drive a pty without a step at all, and one of them waits for
     // *"local integrity verified"* in four places, which is the very sentence the panel writes.
     // What every pty driver DOES have is the size check, because a reading taken against a
     // device of unknown size is not a reading (`support/pty.ts`); so that is the discriminant,
-    // and it named five. ⚠️ IT NAMES FOUR NOW: the copy in `the-page-follows-the-terminal.test.ts`
+    // and it named five. IT NAMES FOUR NOW: the copy in `the-page-follows-the-terminal.test.ts`
     // went back to the shared instrument, because a step that has to WAIT — an absence is waited
     // OUT, not watched for — is something the copy had no way to express. The rule is unchanged
     // and one site fewer holds it.
-    // ⚠️ AND THREE NOW, which is the count going down for a blunter reason:
+    // AND THREE NOW, which is the count going down for a blunter reason:
     // `a-page-that-opens-clean.test.ts` is GONE. Its whole subject was a page opened by scrolling
     // the caller's own screen into their scrollback, and the console draws on a screen of its own
     // — there is no page of theirs to carry away and nothing the file could still be asking. What
@@ -714,7 +714,7 @@ describe('a session has opened when its frame is finished, not when its prompt i
       expect(codeOnly(source), `${name}: waits without the rule`).toContain('arrivedSince(');
     }
 
-    // ⚠️ AND IT IS READ AFTER THE DEVICE IS SETTLED, not anywhere in the file. The first draft
+    // AND IT IS READ AFTER THE DEVICE IS SETTLED, not anywhere in the file. The first draft
     // of this guard compared against the whole source and accused the shared instrument for
     // DEFINING `resizedTo` above the loop that calls it — an instrument that accuses the
     // innocent, which this bench has now paid for twice. The scope is what the driver does once
@@ -722,13 +722,13 @@ describe('a session has opened when its frame is finished, not when its prompt i
     // loop only some of them have.
     const drivingIn = (source: string): string => {
       const code = codeOnly(source);
-      // ⚠️ THE CALL AND NOT THE NAME. Anchoring on the bare name put the scope at the shared
+      // THE CALL AND NOT THE NAME. Anchoring on the bare name put the scope at the shared
       // instrument's own DEFINITION of the check, above every function in the file, so the
       // definition of `resizedTo` fell inside the scope and this guard accused the innocent for a
       // third time. An instrument that can accuse three ways needs its own cases.
       const at = code.indexOf('await theDeviceWasTheSizeAskedFor(');
       expect(at, 'a driver that never awaited the size of its device').toBeGreaterThan(-1);
-      // ⚠️ AND IT ENDS WHERE THE DRIVER DOES. Running the scope to the end of the FILE swept in
+      // AND IT ENDS WHERE THE DRIVER DOES. Running the scope to the end of the FILE swept in
       // everything below it, and one of these files holds cases driven in process — on a pair of
       // fake streams rather than on a device — which wait for the opening on purpose and have no
       // keystroke to be scoped against. The guard accused them: a fourth way to accuse the
@@ -742,7 +742,7 @@ describe('a session has opened when its frame is finished, not when its prompt i
     /**
      * WHAT EACH `step.until(…)` IS HANDED, one string per call.
      *
-     * ⚠️ IT WAS A REGULAR EXPRESSION and it read the wrong thing: `[^)]*` stops at the FIRST
+     * IT WAS A REGULAR EXPRESSION and it read the wrong thing: `[^)]*` stops at the FIRST
      * close paren, so `step.until(arriving.text(), since)` came back as `arriving.text(` — an
      * argument list with no comma in it, and the guard accused a driver that was correct. The
      * parens are walked instead, which is the only way to read a call whose arguments are
@@ -791,7 +791,7 @@ describe('a session has opened when its frame is finished, not when its prompt i
           ', since',
         );
       }
-      // ⚠️ AND NOTHING AFTER THE FIRST KEYSTROKE READS THE WHOLE STREAM. This is the half that
+      // AND NOTHING AFTER THE FIRST KEYSTROKE READS THE WHOLE STREAM. This is the half that
       // scored ZERO: reverting one driver's wait to the unscoped form left every other
       // reading of this rule satisfied — the number was still read, still before the writing,
       // and the rule was still imported. What is more, the compiler did not catch the local it
@@ -844,7 +844,7 @@ describe('a session has opened when its frame is finished, not when its prompt i
 /**
  * WHERE THE PAGE IS ON A SCREEN: the first row with anything on it, and the last.
  *
- * ⚠️ IT WAS ONE NUMBER — *how many rows from the top have anything on them* — and it was the
+ * IT WAS ONE NUMBER — *how many rows from the top have anything on them* — and it was the
  * same as the page's own height for as long as the page was drawn from the top of the screen.
  * That is what the delivery which anchored the input at the FOOT falsified
  * (`repl/page.ts`, `tests/the-prompt-sits-at-the-foot.test.ts`): the page is placed with as
@@ -853,7 +853,7 @@ describe('a session has opened when its frame is finished, not when its prompt i
  * two rows are returned rather than the count, and every reading below says which end it
  * means — a count from the top cannot be written by accident any more.
  *
- * ⚠️ AND THE TWO ROWS ARE NO LONGER A HEIGHT EITHER, which the delivery that moved those blank
+ * AND THE TWO ROWS ARE NO LONGER A HEIGHT EITHER, which the delivery that moved those blank
  * rows UNDER the box falsified in turn: they are between the page and the input now, so the
  * distance from the first drawn row to the last is the whole screen bar the row the layout keeps
  * — at every size, whatever is drawn. What the first row is still good for is whether the top of
@@ -877,12 +877,12 @@ function thePageOn(screen: { readonly rows: readonly string[] }): {
  * top is the first row of the MARK. What the drawing is is asked of the module that draws it, so
  * a case cannot come to look for a glyph the art stopped using.
  *
- * ⚠️ IT WAS THE ROW THAT NAMES THE BUILD, and the frame is what made that the top: the version
+ * IT WAS THE ROW THAT NAMES THE BUILD, and the frame is what made that the top: the version
  * was on the box's top border, so the highest row of the opening and the row naming the build
  * were one row. The build is beside the mark now — so the top is the art, and that the build is
  * on the screen at all is asked separately.
  *
- * ⚠️ AND BEFORE THAT IT WAS ROW ZERO, which the anchoring falsified: the rows above the page are
+ * AND BEFORE THAT IT WAS ROW ZERO, which the anchoring falsified: the rows above the page are
  * blank, so `rows[0]` is drawn on no terminal with room to spare and this read would answer
  * *cut* on every one of them ({@link thePageOn}).
  */
@@ -909,7 +909,7 @@ async function openedAt(
     drawing,
     // HOW MANY ROWS THE CONSOLE DRAWS ON, which is what it costs a reader.
     //
-    // ⚠️ IT WAS THE DISTANCE FROM THE FIRST DRAWN ROW TO THE LAST, and that was the same number
+    // IT WAS THE DISTANCE FROM THE FIRST DRAWN ROW TO THE LAST, and that was the same number
     // for as long as the page and the input area were next to each other. The delivery that put
     // the emptiness BETWEEN them falsified it: corner to corner is the whole screen now, at
     // every size. Counted rather than spanned, the table below did not move by a row — which is
@@ -931,14 +931,14 @@ async function openedAt(
  * row to the opening has to come here and say so, which is the whole point of writing it
  * down.
  *
- * ⚠️ THERE WAS A FOURTH COLUMN AND IT IS GONE. It held what the same measurement answered
+ * THERE WAS A FOURTH COLUMN AND IT IS GONE. It held what the same measurement answered
  * before an earlier delivery, and every row asserted the count had gone DOWN. What falsified
  * it is the art: a drawing the name is asked for can be taller than the one before it, so on
  * a terminal with room for it the opening is BIGGER than it was, on purpose. The promise that
  * replaces "it got smaller" is the one the file is named after and the one a reader can
  * check — the opening FITS, whole, with the input area under it.
  *
- * ⚠️ AND THE COUNT MOVED IN BOTH DIRECTIONS AT ONCE, which is the achado of the delivery that
+ * AND THE COUNT MOVED IN BOTH DIRECTIONS AT ONCE, which is the achado of the delivery that
  * changed the drawing. The new art is SMALLER on both measurements — nine rows by fifty
  * columns against eleven by seventy — and *smaller art costs fewer rows* is nonetheless false:
  *
@@ -951,7 +951,7 @@ async function openedAt(
  *     big one. The opening is still whole and there is still a row over — what a reader loses
  *     is four rows of the record, and what they gain is the mark. It is a declared cost.
  *
- * ⚠️ AND THE DELIVERY THAT TOOK THE FRAME OFF MOVED EVERY ROW OF THE TABLE DOWN, which is the
+ * AND THE DELIVERY THAT TOOK THE FRAME OFF MOVED EVERY ROW OF THE TABLE DOWN, which is the
  * first time it has moved in one direction. Measured on the same fixture with the output wiped on
  * both sides: 18 to 15 at a hundred and twenty by forty, and 22 to 20 at both of the others. Two
  * things account for it and they are worth separating, because only the first is rows the console
@@ -966,7 +966,7 @@ async function openedAt(
  *     as drawn, and it is genuinely blank now. So one of the two rows at eighty by twenty-four is
  *     the console drawing less and the other is this instrument seeing what was always there.
  *
- * ⚠️ AND THE TWO SHORT SIZES FELL AGAIN, BY NINE AND BY EIGHT, while the tall one did not move
+ * AND THE TWO SHORT SIZES FELL AGAIN, BY NINE AND BY EIGHT, while the tall one did not move
  * a row — which is the shape of this delivery in one table. What the arrangement at the top may
  * hold is a SHARE of the screen now (`repl/panel.ts`, `panelFor`), and a drawing whose
  * arrangement wants more than its share gives way to a smaller drawing (`repl/session.ts`, the
@@ -976,7 +976,7 @@ async function openedAt(
  * forty the art fits inside the share, nothing gives way, and the count is the one it has been
  * through three deliveries.
  *
- * ⚠️ AND WHAT THE LEFTOVER ROWS ARE HAS MOVED TWICE, while every number in the table stayed
+ * AND WHAT THE LEFTOVER ROWS ARE HAS MOVED TWICE, while every number in the table stayed
  * put. They used to be the rows UNDER the page — screen a reader still had, which is what
  * "leaves" meant. The delivery that anchored the input at the foot spent them as blank rows
  * ABOVE it, and the one after that moved them UNDER THE BOX, which is where they are: between
@@ -1030,7 +1030,7 @@ describe('the console spends only part of the screen it opens on', () => {
  * The shortest is the last one at which anything fits at all, which is a fact about this
  * product's own opening rather than about a terminal.
  *
- * ⚠️ THEY WERE 24, 19, 18 AND 15, and every one of them now draws the same thing — which is
+ * THEY WERE 24, 19, 18 AND 15, and every one of them now draws the same thing — which is
  * what a delivery that moves a threshold does to a ladder written against the old one. The
  * drawing gives way when its ARRANGEMENT wants more than its share of the screen, and the share
  * is a third: at eighty columns the nine-row art needs a screen of forty-five rows to keep its
@@ -1038,7 +1038,7 @@ describe('the console spends only part of the screen it opens on', () => {
  * is spread across the sizes those thresholds separate, and where each one is is still searched
  * for rather than written down ({@link theHeightItGivesWayAt}).
  */
-// ⚠️ THE SHORTEST OF THESE WAS SIXTEEN ROWS AND NO CONSOLE IS DRAWN THERE. A floor under the
+// THE SHORTEST OF THESE WAS SIXTEEN ROWS AND NO CONSOLE IS DRAWN THERE. A floor under the
 // window (`repl/floor.ts`) means nothing is laid out under eighty by twenty-four, so a session
 // driven at sixteen rows draws the screen that says so and no drawing of the name at all. The
 // ladder is four heights a caller really has, ending at the floor.
@@ -1069,7 +1069,7 @@ async function theHeightItGivesWayAt(
     const at = forms.findIndex((form) => form.join('\n') === drawn.join('\n'));
     return at !== -1 && at <= wanted;
   };
-  // ⚠️ THE SEARCH USED TO REACH DOWN TO ONE ROW, AND IT STOPS AT THE FLOOR. Under eighty by
+  // THE SEARCH USED TO REACH DOWN TO ONE ROW, AND IT STOPS AT THE FLOOR. Under eighty by
   // twenty-four there is no page to read a drawing off (`repl/floor.ts`), so a height under it is
   // not a height this ladder has an answer at — and a drawing that is still chosen AT the floor
   // is one whose give-way height is out of reach, which is an absence rather than a number.
@@ -1134,8 +1134,8 @@ describe('the drawing gives way so the page fits, rather than the page being cut
     );
   }, 180_000);
 
-  it('⛔ gives each drawing up at the height its own arrangement stops fitting in', async () => {
-    // ⛔ THE AXIS THAT NEVER FIRED, EXERCISED. This module's own doc recorded the defect in as
+  it('gives each drawing up at the height its own arrangement stops fitting in', async () => {
+    // THE AXIS THAT NEVER FIRED, EXERCISED. This module's own doc recorded the defect in as
     // many words — *the tallest form was five rows, `5 <= rows` is true on every terminal
     // anybody has, and the axis chose nothing at any size a person opens* — and the delivery
     // that answered it made the question *does the PAGE fit*, which a page whose arrangement had
@@ -1164,7 +1164,7 @@ describe('the drawing gives way so the page fits, rather than the page being cut
       expect((await openedAt(columns, at)).drawing, `${at} rows`).toEqual(form);
       expect((await openedAt(columns, at - 1)).drawing, `${at - 1} rows`).not.toEqual(form);
     }
-    // ⛔ MORE THAN ONE DRAWING IS REACHABLE BY THE HEIGHT ALONE, which is the whole of what was
+    // MORE THAN ONE DRAWING IS REACHABLE BY THE HEIGHT ALONE, which is the whole of what was
     // missing: at one width, four heights, three different drawings. Before this delivery this
     // list would have had ONE entry — the biggest drawing, at the shortest screen that fits
     // anything at all — because nothing else could ever be chosen by a height.
@@ -1180,7 +1180,7 @@ describe('the drawing gives way so the page fits, rather than the page being cut
     // AND THE FLOOR IS ANSWERED WHATEVER THE HEIGHT, which is what keeps the ladder total: the
     // name is still drawn on a screen too short for any arrangement at all.
     //
-    // ⚠️ IT WAS ASKED OF A CONSOLE AT TEN ROWS AND IT IS ASKED OF THE MODULE. A screen that short
+    // IT WAS ASKED OF A CONSOLE AT TEN ROWS AND IT IS ASKED OF THE MODULE. A screen that short
     // has no page on it now (`repl/floor.ts`), so the rung is out of a device's reach — and it is
     // still the rung, because what it protects is the one thing this banner exists to say. The
     // demand is what makes it the floor: a page that needs more rows than the screen has refuses
@@ -1195,17 +1195,17 @@ describe('the drawing gives way so the page fits, rather than the page being cut
     // mechanism failed: does this one ever fire on a screen a person has? Both halves in one
     // case, at ONE width, so the only thing that moved between them is the height.
     //
-    // ⚠️ AND IT IS THE OPPOSITE FAILURE TO WATCH FOR. A drawing that is never chosen is the
+    // AND IT IS THE OPPOSITE FAILURE TO WATCH FOR. A drawing that is never chosen is the
     // same defect as a threshold that never fires, so the case that says where it IS chosen
     // has to say where it is NOT beside it.
     //
-    // ⚠️ THE SECOND HALF USED TO ASK AN ORDINARY TWENTY-FOUR-ROW TERMINAL, and the drawing is
+    // THE SECOND HALF USED TO ASK AN ORDINARY TWENTY-FOUR-ROW TERMINAL, and the drawing is
     // what falsified that: nine rows of art fit a screen eleven did not, so a page a person
     // opens most often was on the side that KEPT the biggest form. The heights are a size and
     // its half rather than a threshold — where the form gives way is searched for in the ladder
     // above, one height at a time.
     //
-    // ⚠️ AND BOTH SIZES MOVED WIDER, WHICH IS THE SAME CORRECTION SEEN FROM THE OTHER END. They
+    // AND BOTH SIZES MOVED WIDER, WHICH IS THE SAME CORRECTION SEEN FROM THE OTHER END. They
     // were a hundred columns, where the biggest art cannot stand BESIDE the text — the two
     // columns want a hundred and four — so its arrangement is the stacked one at fifteen rows,
     // and fifteen rows want a screen of forty-five to stay inside their share. A hundred and
@@ -1365,7 +1365,7 @@ function rulesOnTheSize(source: string): boolean {
 /**
  * The comparison itself: an operator, then a measurement of the terminal.
  *
- * ⚠️ IT USED TO BEGIN `(<=|<|>=|>)` AND IT ACCUSED AN ARROW. `=> rows + 1` is a fat arrow
+ * IT USED TO BEGIN `(<=|<|>=|>)` AND IT ACCUSED AN ARROW. `=> rows + 1` is a fat arrow
  * followed by an accumulator, and the `>` of it read as a module ruling on a height — the
  * panel started counting the rows an opening takes in this delivery, and the scan named it
  * as a fifth place that DECIDES by one. An instrument that accuses is the other half of an
@@ -1381,7 +1381,7 @@ describe('everything that chooses a shape by the size of the terminal is one of 
     // extends — *a form gives way at its own measurement, never at a number somebody chose*
     // — is applied in more than one place, so the places are FOUND rather than recalled.
     //
-    // ⚠️ THE FOURTH IS THE ACHADO. The design of this delivery counted three: the name by
+    // THE FOURTH IS THE ACHADO. The design of this delivery counted three: the name by
     // width, the panel by width, the input area by height. The palette is the fourth, and
     // it rules the same way — a row the terminal would fold is not drawn, and the threshold
     // is the row's own width.
@@ -1395,7 +1395,7 @@ describe('everything that chooses a shape by the size of the terminal is one of 
     //   - `repl/palette.ts`         — `a-palette-for-the-words.test.ts`, over a grid of
     //                                  every room and every width.
     //
-    // ⚠️ AND THE FIFTH IS THE ACHADO OF THE DELIVERY AFTER THIS ONE, found by this scan
+    // AND THE FIFTH IS THE ACHADO OF THE DELIVERY AFTER THIS ONE, found by this scan
     // rather than by anybody's list: `presentation/folded.ts`, the renderer that folds a
     // line to the terminal. It rules twice and both thresholds are the same rule again —
     // a row gives way when it is wider than the screen, and the hanging INDENT gives way
@@ -1432,7 +1432,7 @@ describe('everything that chooses a shape by the size of the terminal is one of 
   });
 
   it('and two of them rule on both: the name, and the arrangement it is drawn in', () => {
-    // ⚠️ THIS CASE WAS `AND THE NAME IS THE ONLY ONE THAT RULES ON BOTH`, and it asserted in as
+    // THIS CASE WAS `AND THE NAME IS THE ONLY ONE THAT RULES ON BOTH`, and it asserted in as
     // many words that the panel did NOT rule on a height. The reason given was that the name is
     // "the one drawing that is neither reflowed nor scrolled" — and the panel is the other one.
     // WHAT FALSIFIED IT IS WHERE THE ARRANGEMENT ENDED UP: it is the fixed region at the top of
@@ -1467,7 +1467,7 @@ describe('everything that chooses a shape by the size of the terminal is one of 
     // distinction rather than a list: a case that only named the two would be satisfied by every
     // module on this surface learning a second axis.
     //
-    // ⛔ WHAT THIS SCAN SEES IS A MEASUREMENT NAMED IN THE COMPARISON, never a rule about one.
+    // WHAT THIS SCAN SEES IS A MEASUREMENT NAMED IN THE COMPARISON, never a rule about one.
     // The input area really does give way by height — it is the reason it has forms at all — and
     // it is spelled against what is LEFT of the screen under the region above (`repl/area.ts`,
     // `within`), which no pattern over the words `columns` and `rows` can find. So the three
@@ -1499,7 +1499,7 @@ describe('the panel has one section in it, and the art is the only thing drawn',
     // the only run of glyphs the panel draws. `tests/the-page-follows-the-terminal.test.ts` asks
     // the same thing of the arrangement that puts the text beside it.
     //
-    // ⚠️ THE ROWS USED TO BE FOUND BY THE FRAME — every row beginning with the box's side — and
+    // THE ROWS USED TO BE FOUND BY THE FRAME — every row beginning with the box's side — and
     // each was read between its two ends. There is no frame: the rows are the ones between the
     // top of the screen and the sentence the session lands under the panel, and they are read
     // whole. Which also means the two rules the INPUT area draws have to be outside them, and
@@ -1522,7 +1522,7 @@ describe('the panel has one section in it, and the art is the only thing drawn',
     // Not vacuous, in two directions: the art really is in those rows, so what is being read is
     // the panel's — and the page really does draw a run somewhere, which is the input area's.
     //
-    // ⚠️ THE ART WAS FOUND BY ITS INK, and a glyph is what this file's own header warns against
+    // THE ART WAS FOUND BY ITS INK, and a glyph is what this file's own header warns against
     // looking for: *a case that looked for one glyph could not tell the letterspaced form from
     // the typed one*. At this size the console draws the letterspaced name now — the nine-row
     // art's arrangement wants more than its share of twenty-four rows (`repl/panel.ts`) — and

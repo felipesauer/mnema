@@ -74,7 +74,7 @@ const SEARCH_ORDER: readonly Scope[] = ['public', 'private', 'global'];
  * called at most once per searched tree, in the search order, and not at all for
  * trees the context does not have.
  *
- * ⚠️ A probe that reads a PROJECTION rather than the raw chain answers about
+ * A probe that reads a PROJECTION rather than the raw chain answers about
  * entities the projection holds, and a projection holds only COMPLETE ones (a
  * birth is two appends: the record and its initial transition). A tree carrying
  * a truncated birth — the record with no transition — is located by a replaying

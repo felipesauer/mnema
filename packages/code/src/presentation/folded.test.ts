@@ -20,7 +20,7 @@
  * is wrong, the comparison FAILS rather than quietly passing, which is the property an
  * instrument in this repository has to have before it is believed.
  *
- * ⚠️ AND IT HAS EXACTLY ONE BLIND INPUT, which is measured rather than supposed: a field
+ * AND IT HAS EXACTLY ONE BLIND INPUT, which is measured rather than supposed: a field
  * whose own text holds a break followed by the very spaces a continuation is indented by.
  * The split cannot tell that break from one the fold made, so it answers wrongly — and it
  * answers wrongly by going red. The fold is not wrong there, and the case that says so
@@ -244,7 +244,7 @@ describe('the break goes between words', () => {
   });
 
   it('splits a word only when the word is the only thing there is', () => {
-    // ⛔ THE ONE CASE THAT BREAKS MID-WORD, and it breaks there because there is nowhere
+    // THE ONE CASE THAT BREAKS MID-WORD, and it breaks there because there is nowhere
     // else: a word wider than the room has no space to be taken after. Both halves are
     // asserted — that the first row is exactly full, and that the second one carries the
     // rest — because a fold that dropped the tail would be a fold that truncated.
@@ -265,7 +265,7 @@ describe('the break goes between words', () => {
   });
 
   it('loses nothing even where the instrument cannot put the line back', () => {
-    // ⚠️ THE ONE INPUT THE UNFOLD ABOVE CANNOT READ, measured rather than imagined: a field
+    // THE ONE INPUT THE UNFOLD ABOVE CANNOT READ, measured rather than imagined: a field
     // whose own text holds a break followed by exactly what a continuation is indented by.
     // Splitting on that pair takes out a break the ACTOR wrote, so the instrument answers
     // wrongly — and it answers wrongly by going RED, which is the property that makes it
@@ -560,7 +560,7 @@ describe('every line the CLI writes survives the fold', () => {
   }, 60_000);
 
   it('leaves the document and the machine channel alone at any width', async () => {
-    // ⛔ TWO OUTPUTS THIS MAY NOT REACH, and neither is protected by a flag: they are
+    // TWO OUTPUTS THIS MAY NOT REACH, and neither is protected by a flag: they are
     // protected by never being handed to a renderer at all. `brief` is form D — markdown
     // composed as strings, for a file an agent host reads — and `--json` is what a script
     // parses, where an inserted break is a parse error. Asserted with the fold FORCED, at

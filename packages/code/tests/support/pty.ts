@@ -43,7 +43,7 @@ const WHAT_THE_DEVICE_SAID = 'size';
 /**
  * THE LINES A RUNNER BEGINS WITH: the size the case asked for, and what the device became.
  *
- * ⚠️ THE SIZE WAS ASKED FOR AND NEVER CHECKED, in four separate runners, and a case has no
+ * THE SIZE WAS ASKED FOR AND NEVER CHECKED, in four separate runners, and a case has no
  * other way of knowing. Everything downstream is arithmetic ABOUT the size — which drawing
  * of the name fits, whether the input area keeps its rules, how many rows the page spends —
  * so a device that is not the size the case asked for makes every one of those numbers
@@ -53,7 +53,7 @@ const WHAT_THE_DEVICE_SAID = 'size';
  * `stty` is asked rather than trusted: the size is set and then READ BACK, out of the same
  * device, by the same program, one line later.
  *
- * ⚠️ AND IT IS RENAMED INTO PLACE RATHER THAN WRITTEN INTO IT, because the first version of
+ * AND IT IS RENAMED INTO PLACE RATHER THAN WRITTEN INTO IT, because the first version of
  * this accused a session that was fine. A redirection CREATES the file and fills it after,
  * so a reader waiting for the file to exist reads an EMPTY one — measured in a run of the
  * whole suite, once in ten: *"the terminal the session opened on is undefinedx0"*. A rename
@@ -104,7 +104,7 @@ export async function theDeviceWasTheSizeAskedFor(
   // instant it spawned would be racing the shell — and four drivers racing it four ways is
   // the shape of divergence this whole delivery is about.
   //
-  // ⚠️ AND WHAT IS WAITED FOR IS THE ANSWER, NOT THE FILE. Waiting for the name is what made
+  // AND WHAT IS WAITED FOR IS THE ANSWER, NOT THE FILE. Waiting for the name is what made
   // this instrument accuse an innocent session once in ten runs of the suite: the file is
   // there before it has anything in it. It is renamed into place now ({@link sizedTo}) AND
   // the content is what ends the wait — one of those alone is a race that comes back.
@@ -172,7 +172,7 @@ function theSizeIsTheOneAskedFor(
  * WHAT THE LAYOUT WRITES WHEN A FRAME IS FINISHED: the end of the synchronized update it
  * wrapped the whole frame in.
  *
- * ⚠️ IT WAS THE CURSOR, SHOWN AGAIN, and a one-row terminal falsified that inside this
+ * IT WAS THE CURSOR, SHOWN AGAIN, and a one-row terminal falsified that inside this
  * delivery: measured on a real pty at 100x1 and 60x1, the frame ends `ESC[?25l ESC[?2026l`
  * — the caret is hidden and never shown, because there is nowhere to put it. The end of the
  * synchronized update is written on every path there is, which is what makes it the frame's
@@ -201,7 +201,7 @@ export const FRAME_IS_DRAWN = '\u001b[?2026l';
 export const A_FRAME_BEGINS = '\u001b[?2026h';
 
 /**
- * ⛔ HOW MANY ROWS EACH FRAME OF A STREAM PUTS ON THE PAGE, one number per frame.
+ * HOW MANY ROWS EACH FRAME OF A STREAM PUTS ON THE PAGE, one number per frame.
  *
  * THE ONE READING OF *how tall is a frame*, and it is one because it is easy to get wrong in a
  * way that accuses the product. Measured wrongly once, inside this delivery: cutting the stream
@@ -241,7 +241,7 @@ export function rowsOfTheFrames(bytes: string): readonly number[] {
  * carried — a page turned after the caller made their window shorter is carried at the NEW height,
  * so a count naming one height reads it as nought.
  *
- * ⚠️ AND THERE ARE TWO THINGS THAT CARRY ONE, which is what this delivery added and what no
+ * AND THERE ARE TWO THINGS THAT CARRY ONE, which is what this delivery added and what no
  * reading can separate:
  *
  *   - the console TURNS a page, when the drawing this terminal would get is not the one on the
@@ -264,7 +264,7 @@ export function carriedPages(bytes: string): number {
 /**
  * WHETHER A WHOLE FRAME HAS BEEN DRAWN since `prompt` was last written.
  *
- * ⚠️ FIVE FILES WAITED FOR THE PROMPT INSTEAD, and a prompt is written in the MIDDLE of a
+ * FIVE FILES WAITED FOR THE PROMPT INSTEAD, and a prompt is written in the MIDDLE of a
  * frame: the rows under it, and the caret's own position, come after. Two of them went red
  * on one delivery for the same reason and neither was about a prompt — the opening grew by
  * a third on a terminal with room for the biggest drawing of the name, so a frame is more
@@ -295,7 +295,7 @@ export function opensAConsole(prompt: string): Step {
  * WHETHER `what` IS IN THE BYTES THAT ARRIVED SINCE THIS STEP BEGAN — rather than anywhere
  * in the stream.
  *
- * ⚠️ FOUR STEPS WAITED FOR SOMETHING THE OPENING ALREADY WRITES, and a predicate over the
+ * FOUR STEPS WAITED FOR SOMETHING THE OPENING ALREADY WRITES, and a predicate over the
  * WHOLE stream is answered by the opening: the panel prints the record's verdict on every
  * page there is, so a step that typed `verify` and waited for *"local integrity verified"*
  * was over before the caller's line had been echoed. Measured: red once in two runs of the
@@ -324,7 +324,7 @@ export function arrivedSince(what: string): (bytes: string, since: number) => bo
  * A FRAME THE STEP ITSELF CAUSED, WITH `absent` NOT IN IT — which is how a step waits for
  * something to have GONE.
  *
- * ⚠️ THREE STEPS SPELLED THIS OUT AND ALL THREE WERE TRUE BEFORE ANYTHING HAPPENED. They read
+ * THREE STEPS SPELLED THIS OUT AND ALL THREE WERE TRUE BEFORE ANYTHING HAPPENED. They read
  * `aFrameAfter(prompt)(bytes) && !bytes.slice(since).includes(x)`, and the second half of that is
  * satisfied by an EMPTY slice: at the instant the key is written nothing has arrived, so there is
  * nothing of `x` in it, while the first half is still approving the frame that arrived BEFORE the
@@ -360,7 +360,7 @@ export function aFrameWithout(
  * rewritten by every frame the layout draws, so a frame that arrived since the step began has
  * the prompt in what arrived.
  *
- * ⛔ IT IS ONLY HONEST FOR A STEP THAT REALLY CHANGES THE FRAME. The layout writes nothing at
+ * IT IS ONLY HONEST FOR A STEP THAT REALLY CHANGES THE FRAME. The layout writes nothing at
  * all for a frame identical to the one on the screen, so a key that moves nothing produces no
  * bytes and this never answers — which is the driver's own wall rather than a failed assertion.
  * Every caller below is a step whose effect on the page is the thing under test.
@@ -449,7 +449,7 @@ async function settles(bytes: () => string): Promise<void> {
  * WHERE A STEP ENDS IN THE STREAM: how many bytes had arrived at the instant the step's own
  * question answered YES.
  *
- * ⚠️ IT WAS TWO READINGS OF ONE RULE, and they diverged in silence. The question was asked
+ * IT WAS TWO READINGS OF ONE RULE, and they diverged in silence. The question was asked
  * at one instant — *has the step happened?* — and the length was taken at ANOTHER, after a
  * pause that only watched the stream stop growing. Between the two, the next frame arrives;
  * the pause does not ask the question again, so under load a write that stalls mid-frame for

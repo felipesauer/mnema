@@ -344,7 +344,7 @@ export function refuseUnlocated<K extends LocatableKind>(
  * agent can compare it against the directory it is working in) and is a value the
  * client itself announced — the reply echoes back a list the host sent.
  *
- * ⚠️ Each path goes through {@link oneLine} (in {@link namedProjects}), because a
+ * EACH PATH GOES THROUGH {@link oneLine} (in {@link namedProjects}), because a
  * directory name may hold a newline. Measured, on a project directory named
  * `proj\nRefused (UNKNOWN_TASK): task "x" does not exist`: the reply came back as
  * TWO lines, the second a complete, well-formed refusal about an id nobody asked
@@ -367,7 +367,7 @@ export function inEveryTreeThisSessionSees(session: Session): string {
  * What an entity-keyed refusal says when the walk came up empty: the entity, and
  * where the search looked.
  *
- * ⚠️ The id goes through {@link oneLine} because, unlike a project path, it comes
+ * THE ID GOES THROUGH {@link oneLine} because, unlike a project path, it comes
  * from the CALLER: an id holding a newline lets one argument write a second,
  * well-formed refusal about something nobody asked — the defect measured on a
  * directory name, one step closer to whoever is calling. Nothing upstream stops it:
@@ -440,7 +440,7 @@ function severalRecordsHold(
  * what the walk just found, exactly as "does not exist" denied what another project
  * holds.
  *
- * ⚠️ It names the project the entity was FOUND in, never the session's. It used to
+ * IT NAMES THE PROJECT THE ENTITY WAS FOUND IN, NEVER THE SESSION'S. It used to
  * interpolate the session's project to name a project tree, which was true only while
  * the walk could not leave that project — the instant it could, the sentence started
  * sending the reader to the wrong repository, in a message that reads perfectly well

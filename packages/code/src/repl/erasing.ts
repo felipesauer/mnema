@@ -1,12 +1,12 @@
 /**
- * ⛔ THE ONE SEQUENCE THIS PRODUCT WILL NOT LET REACH THE CALLER'S TERMINAL — the erase of
+ * THE ONE SEQUENCE THIS PRODUCT WILL NOT LET REACH THE CALLER'S TERMINAL — the erase of
  * the history above the screen — and the door that stops it.
  *
  * THE HISTORY ABOVE THE SESSION BELONGS TO THE CALLER. A product that reads a record has no
  * business deleting the log of what they were doing before they opened it, and `ESC[3J` is
  * exactly that deletion: it empties the scrollback of the buffer, and nothing brings it back.
  *
- * ⚠️ AND TAKING THE SCREEN DOES NOT MAKE IT HARMLESS, which is the premise this delivery
+ * AND TAKING THE SCREEN DOES NOT MAKE IT HARMLESS, which is the premise this delivery
  * falsified and the reason this file survived a model it was written for. It was written down
  * here that inside the alternate screen there is *no history to destroy*. That is true of the
  * SCREEN erase and false of the HISTORY erase: the alternate screen has no scrollback of its
@@ -24,7 +24,7 @@
  * a screen erase: the alternate screen is ours, it holds nothing of the caller's, and erasing
  * it is what the library means. So the `2J` PASSES, untouched, and the `3J` alone is taken out.
  *
- * ⚠️ AND WHAT WAS HERE INSTEAD IS GONE WITH THE MODEL. This file used to be the page itself:
+ * AND WHAT WAS HERE INSTEAD IS GONE WITH THE MODEL. This file used to be the page itself:
  * how many rows with nothing on them go between what the session has said and the input area,
  * and the bytes that carry a whole screen of the caller's into their own scrollback so the
  * console could open on an empty one. Both were arithmetic against a console that lived in the
@@ -32,7 +32,7 @@
  * own roll now (`scrolling.ts`), so there is no page to carry away and no leftover to count —
  * the three regions are exactly as tall as the terminal, by construction, on every frame.
  *
- * ⛔ WHAT IT CANNOT ANSWER is a sequence split INSIDE itself: a caller who wrote `ESC[` in one
+ * WHAT IT CANNOT ANSWER is a sequence split INSIDE itself: a caller who wrote `ESC[` in one
  * call and `3J` in the next would get both through, because this reads one call's worth of
  * bytes and holds nothing between them. Nothing writes that way — the library concatenates one
  * constant into one write and this surface writes the output of one function — and the
@@ -61,7 +61,7 @@ const ESC = '\u001b';
 const ERASES_THE_SCREEN = `${ESC}[2J`;
 
 /**
- * ⛔ WHAT ERASES THE CALLER'S HISTORY — the rows above the screen, which a scroll put there
+ * WHAT ERASES THE CALLER'S HISTORY — the rows above the screen, which a scroll put there
  * and nothing brings back.
  *
  * It is the one sequence this product refuses, in every buffer, for the reason at the top of
@@ -81,7 +81,7 @@ const ERASES_THE_HISTORY = `${ESC}[3J`;
  * differently and no size to ask again: the only place left is the one the bytes have to pass
  * through on the way out, and this is the answer they are given there.
  *
- * ⚠️ IT USED TO TRANSLATE RATHER THAN REMOVE, and the two halves parted company when the
+ * IT USED TO TRANSLATE RATHER THAN REMOVE, and the two halves parted company when the
  * console took the screen. The screen erase became a scroll — the same empty screen, with what
  * was on it moved one scroll up instead of destroyed — because the screen was the caller's.
  * It is not any more, so a translation would be this file answering a request the library made
@@ -106,7 +106,7 @@ export function withoutTheHistoryErase(bytes: string): string {
  * WHETHER SOME BYTES CARRY THE ERASE OF THE SCREEN — asked by the cases that have to prove the
  * library really did reach the path this door is on.
  *
- * ⚠️ A GUARD OVER AN ABSENCE GOES VACUOUS WHEN THE PATH STOPS BEING WALKED, and that is the
+ * A GUARD OVER AN ABSENCE GOES VACUOUS WHEN THE PATH STOPS BEING WALKED, and that is the
  * whole reason this is exported. *No history erase reached the caller* is satisfied by a
  * session that never made the library want one, so a case that asserts it without also
  * asserting that the library ASKED is a case that would stay green if the door were deleted.

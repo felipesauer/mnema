@@ -7,7 +7,7 @@
  * a Tab that could not decide printed a row of bare tokens with nothing to say what any
  * of them was. This is the one list both of them are shown in.
  *
- * ONE MECHANISM, ONE LIST, AND TWO KEYS THAT ASK FOR IT. ⚠️ IT WAS ONE MECHANISM AND TWO
+ * ONE MECHANISM, ONE LIST, AND TWO KEYS THAT ASK FOR IT. IT WAS ONE MECHANISM AND TWO
  * ANSWERS, and this paragraph said so: *a slash opens the session's own vocabulary and
  * narrows it as the caller types; a Tab that could not choose opens whatever the completer
  * offered*. Two answers is what a reader met: the slash listed three words and a Tab listed
@@ -162,7 +162,7 @@ export function thePicked(offers: readonly CompletionWord[], picked: string): st
  * vocabulary ends, and a caller holding a key down finds that out by ARRIVING at it rather
  * than by watching the list start over.
  *
- * ⚠️ THE REASON GIVEN WAS THE CUT, AND THE WINDOW FALSIFIED IT. It was written here that a
+ * THE REASON GIVEN WAS THE CUT, AND THE WINDOW FALSIFIED IT. It was written here that a
  * Down which jumped from the last visible row back to the first *would be jumping over rows
  * the caller cannot see* — true while what was drawn was the FIRST offers and nothing else,
  * and false now: the drawn rows are a window that follows the pick ({@link theWindow}), so a
@@ -204,7 +204,7 @@ export function paletteRowsFor(offers: readonly CompletionWord[]): number {
  * WHICH OFFERS ARE DRAWN: a WINDOW over them, as long as the room allows, and it HOLDS THE
  * PICK.
  *
- * ⚠️ IT WAS THE FIRST N OFFERS, and that is the defect this replaces rather than a shape that
+ * IT WAS THE FIRST N OFFERS, and that is the defect this replaces rather than a shape that
  * was outgrown. A list cut to ten rows on a vocabulary of twenty said so honestly and left the
  * other ten UNREACHABLE: the arrows walk the whole vocabulary ({@link theNextPicked}), so the
  * eleventh of them put the pick on a word nothing drew — measured on the merged binary at a
@@ -257,7 +257,7 @@ export function theWindow(
  * with one, the Tab's offers stand when it does not, and an empty answer is a palette that is
  * not open.
  *
- * ⚠️ IT FILTERED A VOCABULARY OF ITS OWN, and that is what made the two keys answer with two
+ * IT FILTERED A VOCABULARY OF ITS OWN, and that is what made the two keys answer with two
  * different lists. It was handed the session's words and narrowed them against the whole line
  * — right about the narrowing, and a second reading of *what can be typed at the start of a
  * line* even so, because the completer was already answering that question with the verbs in

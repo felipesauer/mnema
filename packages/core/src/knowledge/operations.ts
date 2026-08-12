@@ -356,7 +356,7 @@ export interface LinkInput {
  * and the relation `rel`. Both `subject` and `target` are references to
  * already-minted ids (canonicalized, never minted here).
  *
- * ⚠️ Unlike {@link supersedeDecision}, this does NOT refuse a dangling target.
+ * UNLIKE {@link supersedeDecision}, THIS DOES NOT REFUSE A DANGLING TARGET.
  * A link is legitimately cross-tree — a private memory may point at a public
  * task — and the writer sees only its own tree, so it cannot confirm the target
  * exists globally. The link is an asserted fact; a target absent from the

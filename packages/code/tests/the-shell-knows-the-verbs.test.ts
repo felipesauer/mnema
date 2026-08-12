@@ -26,7 +26,7 @@
  *     declaration enumerates — and then as its consequence: none of the ten transitions
  *     is in any script, and the ten are read out of the sentence that names them rather
  *     than typed here.
- *     ⚠️ THE ID HALF OF THAT IS ABOUT A SHELL AND NOT ABOUT THE PRODUCT, and it stopped
+ *     THE ID HALF OF THAT IS ABOUT A SHELL AND NOT ABOUT THE PRODUCT, and it stopped
  *     being about the product the day the console started completing one. The two are not
  *     in tension and the difference is the whole reason: a session has already PUT records
  *     on its own page and completes what it SAID (`repl/seen.ts`), while a script here is

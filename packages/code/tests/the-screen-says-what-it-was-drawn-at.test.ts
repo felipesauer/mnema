@@ -25,7 +25,7 @@
  *     for, which is what makes the two comparable at all.
  *   - THE MODEL PERFORMED EVERY SEQUENCE IT WAS GIVEN. A scroll it did not perform is a
  *     page one row out, silently.
- *   - THE STREAM ARRIVED WHOLE. ⚠️ AND THIS IS THE ONE THAT WAS ACTUALLY WRONG. A pty is
+ *   - THE STREAM ARRIVED WHOLE. AND THIS IS THE ONE THAT WAS ACTUALLY WRONG. A pty is
  *     read in chunks and five places decoded them one chunk at a time; a boundary inside the
  *     three bytes of a rule's glyph leaves two replacement characters where there was one,
  *     the row is a column too wide, the terminal folds it, and the page has a row nobody
@@ -66,7 +66,7 @@ const HALF_A_CHARACTER = '\ufffd';
  * byte in this repository's sources, and for the reason `support/screen.ts` gives where it names
  * the same glyph: a run is one keystroke away from a hyphen.
  *
- * ⚠️ THERE WERE FOUR MORE AND THEY WERE A FRAME'S CORNERS. The panel was a BOX and this fixture
+ * THERE WERE FOUR MORE AND THEY WERE A FRAME'S CORNERS. The panel was a BOX and this fixture
  * drew one; the frame is gone from the product, so a fixture that kept drawing one would be
  * feeding the instrument a shape nothing can produce — which is how a branch stays green after
  * the thing it was for has been deleted.
@@ -82,7 +82,7 @@ const RUN = '\u2500';
  * is the drawing this product opens with, reduced to what is being measured: a delivery that
  * changed it would change this, which is the point.
  *
- * ⚠️ IT WAS A BOX: corner to corner, with a title cutting its top edge in two, and a rule under
+ * IT WAS A BOX: corner to corner, with a title cutting its top edge in two, and a rule under
  * it. All three shapes were the frame's — and the frame is what the delivery that took it off
  * removed from the product, so two of the instrument's three branches went with it
  * (`support/screen.ts`, {@link everyWidthDrawnOn}).
@@ -142,7 +142,7 @@ describe('a screen says what width it was drawn at, and refuses to be read at an
   });
 
   it('measures the drawing rather than the number it was asked for', () => {
-    // ⚠️ THE MUTATION THIS CASE IS THE OTHER HALF OF: a measurement that answered `columns`
+    // THE MUTATION THIS CASE IS THE OTHER HALF OF: a measurement that answered `columns`
     // would agree with the replay about every page there is, and the guard above would be
     // vacuous while looking exactly the same. So the measurement is asked to MOVE while the
     // screen it is read on stands still — the box is drawn one column narrower, and the
@@ -243,8 +243,8 @@ describe('a screen keeps what left the top, because where a row went is the whol
     expect(erased.above, 'erasing the screen fed the scrollback').toEqual([]);
   });
 
-  it('⛔ empties the scrollback on the sequence that erases the history', () => {
-    // ⚠️ THIS MODEL USED TO DO NOTHING AT ALL ABOUT `ESC[3J`, on the grounds that the scrollback is
+  it('empties the scrollback on the sequence that erases the history', () => {
+    // THIS MODEL USED TO DO NOTHING AT ALL ABOUT `ESC[3J`, on the grounds that the scrollback is
     // not the screen and that this product refuses to write the sequence anyway. Both halves
     // stopped holding: the door translates it now rather than nobody writing it
     // (`src/repl/page.ts`, `theEraseAsAScroll`), so a case has to be able to tell a page that was
@@ -262,7 +262,7 @@ describe('a screen keeps what left the top, because where a row went is the whol
 
 describe('a screen refuses a stream that was decoded in pieces, and says that is what it is', () => {
   it('accuses a run with a replacement character in it, and says what it costs', () => {
-    // ⚠️ THE DEFECT THE WHOLE DELIVERY WENT LOOKING FOR, and it is the instrument's own. The
+    // THE DEFECT THE WHOLE DELIVERY WENT LOOKING FOR, and it is the instrument's own. The
     // pty is read in chunks and every driver accumulated them one decode at a time, so a
     // chunk boundary inside the three bytes of a rule's glyph destroys it and leaves TWO
     // replacements where there was one character. The row is then one column wider than the
@@ -308,7 +308,7 @@ describe('a character that arrives in two chunks is one character', () => {
   };
 
   it('keeps the glyph a rule is made of, cut at either byte', () => {
-    // ⛔ AND IT IS CUT BY HAND rather than by a chunk boundary that has to be waited for. The
+    // AND IT IS CUT BY HAND rather than by a chunk boundary that has to be waited for. The
     // defect this closes was red in about eight runs of the suite in ten and green in the
     // other two; a race does not answer a single run, and the arithmetic does. So the stream
     // is told exactly where to break, at every place there is to break a three-byte glyph.
@@ -376,7 +376,7 @@ describe('a character that arrives in two chunks is one character', () => {
 
 describe('the device says its size in one piece, or the instrument says it does not know', () => {
   it('never reads a half-written answer as a size', async () => {
-    // ⚠️ THE INSTRUMENT ACCUSED AN INNOCENT SESSION, once in ten runs of the whole suite:
+    // THE INSTRUMENT ACCUSED AN INNOCENT SESSION, once in ten runs of the whole suite:
     // `the terminal the session opened on is undefinedx0`. A redirection CREATES the file
     // and fills it afterwards, and the wait was for the NAME — so the answer read was an
     // empty one, and an empty one parses as a size nobody has.
@@ -423,7 +423,7 @@ function testsUnder(dir: string): string[] {
  * What a file that drives a pseudo-terminal of its own does, and what a file that changes
  * the size of one while a session is running on it does.
  *
- * ⚠️ SPELLED IN PIECES, AND THAT IS NOT DECORATION. Written whole, each of these needles is
+ * SPELLED IN PIECES, AND THAT IS NOT DECORATION. Written whole, each of these needles is
  * in THIS file — so the scan below found itself, called itself a driver and demanded that it
  * size a terminal it never opens. An instrument that accuses is the other half of an
  * instrument that stays silent, and this bench has had both; a needle assembled at run time
@@ -437,7 +437,7 @@ const RESIZES_A_TERMINAL = `'-${'F'}'`;
  * What a file that READS BYTES OFF A STREAM does — and it is a different question from the
  * two above, which is the whole reason it is asked separately.
  *
- * ⚠️ THE LIST SAID FOUR DRIVERS AND THE DISCRIMINANT SAYS FIVE. A driver is a program that
+ * THE LIST SAID FOUR DRIVERS AND THE DISCRIMINANT SAYS FIVE. A driver is a program that
  * spawns a terminal; the rule about decoding is about anything that takes bytes in CHUNKS,
  * and the fake terminal (`support/console.ts`) takes them without spawning anything. It
  * could not corrupt a character today — what is written into it is written whole — but "it
@@ -456,18 +456,18 @@ function withoutComments(source: string): string {
 
 describe('everything that gives a session a terminal of a chosen size checks that it got one', () => {
   it('is these three drivers, and a fourth would be accused', () => {
-    // ⚠️ A1, AND THE ACHADO IS THE COUNT. The instrument's own header says it is ONE file
+    // A1, AND THE ACHADO IS THE COUNT. The instrument's own header says it is ONE file
     // because it is one instrument — and there were FOUR programs that hand a session a
     // terminal, each with its own runner and its own `stty`. Found by the discriminant rather
     // than by a list, which is exactly why the number was four and not the one the header
     // describes.
-    // ⚠️ AND IT IS THREE NOW. The copy in `the-page-follows-the-terminal.test.ts` went back to
+    // AND IT IS THREE NOW. The copy in `the-page-follows-the-terminal.test.ts` went back to
     // the shared instrument, and what made it worth taking out was a step that has to WAIT
     // rather than watch: an absence — no page carried away for a height — is waited OUT, so a
     // step needs to be able to do something before its question is asked, which the copy had no
     // way of expressing. The count going DOWN is what this case is for as much as it going up.
     //
-    // ⚠️ AND IT IS TWO NOW, which is the count going down a second time and for a blunter
+    // AND IT IS TWO NOW, which is the count going down a second time and for a blunter
     // reason: `a-page-that-opens-clean.test.ts` is GONE. Its whole subject was a page opened by
     // scrolling the caller's own screen into their scrollback, and the console draws on a screen
     // of its own — so there is no page of the caller's to carry away and nothing the file could

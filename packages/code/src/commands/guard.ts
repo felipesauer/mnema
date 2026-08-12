@@ -30,7 +30,7 @@
  * prefix of an identity the record knows — and a whole one costs nothing, because
  * only a prefix makes this open the other trees to find out what it names.
  *
- * ⚠️ IT SAID *THE CLI* HAS NO SESSION, and `mnema repl` is one. A session resolves the
+ * IT SAID *THE CLI* HAS NO SESSION, and `mnema repl` is one. A session resolves the
  * identity this installation recorded from local material, with no writer opened, so it
  * fills this flag in at its own prompt (`repl/asking.ts`) — the `who` it fills is the
  * one on its own panel, and a `--which` typed against it is checked exactly as one typed

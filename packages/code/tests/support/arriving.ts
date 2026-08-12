@@ -2,7 +2,7 @@
  * BYTES ARRIVE IN CHUNKS AND A CHARACTER DOES NOT — the one place a stream is turned back
  * into text.
  *
- * ⚠️ IT IS HERE BECAUSE EVERY READER DID IT ITSELF, AND ALL OF THEM WERE WRONG. A `data`
+ * IT IS HERE BECAUSE EVERY READER DID IT ITSELF, AND ALL OF THEM WERE WRONG. A `data`
  * event hands over however many bytes happened to be readable, and five places wrote
  * `bytes += chunk.toString('utf-8')` — one decode per chunk. A character that spans a chunk
  * boundary is then decoded as two halves, and each half becomes the replacement character.

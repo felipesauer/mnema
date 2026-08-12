@@ -1220,7 +1220,7 @@ export function runSkillsTool(session: Session, input: { id?: string } = {}): Sk
       // The clause after it states the RULE, not a claim about this record — which is
       // what keeps the sentence true of a state the workflow has never had.
       //
-      // ⚠️ The id goes through {@link oneLine}, like every other refusal that echoes a
+      // THE ID GOES THROUGH {@link oneLine}, like every other refusal that echoes a
       // caller's argument (`notInAnyProject`, `notFoundInSessionTrees`): a refusal is
       // read as ONE line, so an id holding a newline writes a second, well-formed
       // refusal about something nobody asked. This and `read_record`'s
@@ -1523,7 +1523,7 @@ export type SearchToolResult =
  * world. Every hit says which project holds it, which is what makes filtering the
  * reader's option instead of ours.
  *
- * ⚠️ It carries a limit the answer now has to state: the merged ranking is an
+ * IT CARRIES A LIMIT THE ANSWER NOW HAS TO STATE: the merged ranking is an
  * approximation across corpora, and `limit` can fill the list from one project and
  * leave a sibling's matches out entirely. The constant half is in this description and
  * in `searchRecords`; the per-answer half is the `hidden` field, present only when a
@@ -1650,7 +1650,7 @@ export function runReadRecordTool(session: Session, input: { id: string }): Read
  * project nobody opened, and a partial clone of one that was, both hold records this
  * cannot see. What is reported is the search.
  *
- * ⚠️ The id goes through {@link oneLine}, because unlike a project path it comes from
+ * THE ID GOES THROUGH {@link oneLine}, because unlike a project path it comes from
  * the CALLER. A refusal is read as one line, so an id holding a newline lets the
  * argument write a second, well-formed refusal about something nobody asked — the
  * defect measured on a directory name, one step closer to whoever is calling.

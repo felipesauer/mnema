@@ -22,7 +22,7 @@
  *     down is compared before and after, which a region that grew UPWARDS would survive
  *     (measured — a mutation that put the occurrences in the palette left that case green);
  *     and the session is then run ON the boundary, where one more row of region IS that
- *     path, with the height bracketed rather than assumed. ⚠️ THE BOUNDARY USED TO BE
+ *     path, with the height bracketed rather than assumed. THE BOUNDARY USED TO BE
  *     BRACKETED BY THE ERASE ITSELF, and the erase never reaches a terminal now — it is
  *     translated on the way out (`src/repl/page.ts`, `theEraseAsAScroll`) — so what brackets
  *     it is the library's own replay of what it keeps.
@@ -81,7 +81,7 @@ const THE_AGENT = 'the-agent-that-wrote-it';
  * WHAT THE VERDICT OF A GOOD TREE SAYS — one spelling, read by the step that waits for the
  * verb's answer and by the case that counts what was said.
  *
- * ⚠️ THE TWO USED TO SPELL IT DIFFERENTLY, and that is what made this run flaky: the step
+ * THE TWO USED TO SPELL IT DIFFERENTLY, and that is what made this run flaky: the step
  * waited for `integrity`, and the OPENING PANEL already says it. So the step could end on the
  * opening frame — before the verb had answered — and the case under it then read one occurrence
  * where the finished page has two. It went red once in a full-suite run and passed on its own
@@ -116,7 +116,7 @@ const _THE_OPENING = 'a session over this project';
  * stops fitting under the viewport. `a-page-that-opens-clean.test.ts` is where the boundary
  * itself is pinned, in both directions and at several widths.
  *
- * ⚠️ IT WAS BRACKETED BY THE ERASE — *at this height the erase never appears, and one row below it
+ * IT WAS BRACKETED BY THE ERASE — *at this height the erase never appears, and one row below it
  * does* — and the erase no longer appears at either. What the library asks for is translated on the
  * way out (`src/repl/page.ts`, `theEraseAsAScroll`), so the bracket is read off the library's own
  * REPLAY of what it keeps instead, which is the other thing it does on that path.
@@ -210,7 +210,7 @@ const times = (text: string, what: string): number => text.split(what).length - 
  * EVERYTHING THE SESSION SAID, ONCE EACH AND IN ORDER — the bytes written after the console
  * gave the caller's screen back.
  *
- * ⚠️ THE STREAM STOPPED BEING A PAGE, which is what every count in this file had to move for.
+ * THE STREAM STOPPED BEING A PAGE, which is what every count in this file had to move for.
  * While the console lived in the caller's own buffer a line was written once and never taken
  * back, so *how many times is this in the bytes* and *how many times did the session say it*
  * were the same question. Every frame is the whole screen now, so a line is in the bytes once
@@ -291,7 +291,7 @@ describe('a session shows what another process wrote while it was open', () => {
     expect(ran.bytes).toContain(first);
     expect(ran.bytes).toContain(second);
     expect(ran.bytes).toContain(THE_AGENT);
-    // ⚠️ COUNTED ON THE TRANSCRIPT AND NOT IN THE STREAM, and the difference is the model: every
+    // COUNTED ON THE TRANSCRIPT AND NOT IN THE STREAM, and the difference is the model: every
     // frame redraws the whole screen, so a line the session said once is in the bytes once per
     // keystroke. What the session SAID, once each and in order, is what it writes onto the
     // caller's own buffer on the way out ({@link transcript}).
@@ -311,22 +311,22 @@ describe('a session shows what another process wrote while it was open', () => {
     // record moved is above the occurrences on the page; anything that redrew the
     // scrollback to make room for them would put it in the stream a second time.
     //
-    // ⚠️ IT COUNTED THE OCCURRENCES OF THE SENTENCE AND EXPECTED ONE, and that was wrong
+    // IT COUNTED THE OCCURRENCES OF THE SENTENCE AND EXPECTED ONE, and that was wrong
     // about the page rather than about the product: the opening panel states the same
     // verdict, so the session says it twice before anything moves. What the case is really
     // about is the DIFFERENCE — as many times after the occurrences as before them.
-    // ⚠️ AND IT IS READ OFF THE TRANSCRIPT, which is where "said once" is a question with an
+    // AND IT IS READ OFF THE TRANSCRIPT, which is where "said once" is a question with an
     // answer. In the stream every line is redrawn on every frame; on the caller's own buffer
     // each one appears exactly as often as the session said it ({@link transcript}).
     const said = THE_VERDICT;
-    // ONCE — the verb's answer. ⚠️ IT WAS TWICE, the panel's and the verb's, because the panel
+    // ONCE — the verb's answer. IT WAS TWICE, the panel's and the verb's, because the panel
     // was landed like a line; the arrangement is a REGION now and never goes on the roll
     // (`repl/panel.ts`, `Opening.above`), so the transcript holds only what was said.
     expect(times(transcript(ran.bytes), said), said).toBe(1);
     // And the one sentence the opening does land, which is written once for a session and is
     // the discriminant this suite already uses for "nothing was said twice".
     expect(times(transcript(ran.bytes), 'It runs the')).toBe(1);
-    // ⛔ NOR THE ERASE. The one sequence this product refuses to write is the one that takes
+    // NOR THE ERASE. The one sequence this product refuses to write is the one that takes
     // the caller's own history with it, in any buffer — and a region that grew past the
     // viewport is how it would arrive without anybody asking for it.
     expect(ran.bytes).not.toContain('\u001b[3J');
@@ -338,7 +338,7 @@ describe('a session shows what another process wrote while it was open', () => {
     // is the arrangement from the badge DOWN — the two rules, the row being typed, the hint
     // — which is what would move if an occurrence had landed among them.
     //
-    // ⚠️ IT DOES NOT COVER A ROW ADDED ABOVE THE BADGE, and that is written here rather
+    // IT DOES NOT COVER A ROW ADDED ABOVE THE BADGE, and that is written here rather
     // than left implied: the palette opens there, so a region that grew UPWARDS would leave
     // this reading identical. Measured — a mutation that put the occurrences in the palette
     // left this case green. The half with teeth is the boundary case below.
@@ -356,7 +356,7 @@ describe('a session shows what another process wrote while it was open', () => {
     expect(ran.bytes.lastIndexOf(PROMPT)).toBeGreaterThan(ran.bytes.indexOf(`${PREFIX}exit`));
   });
 
-  // ⚠️ A CASE STOOD HERE AND IT DIED WITH THE BOUNDARY IT BRACKETED. It ran the session at the
+  // A CASE STOOD HERE AND IT DIED WITH THE BOUNDARY IT BRACKETED. It ran the session at the
   // shortest height where the layout still redrew PART of the page and one row below it, to prove
   // an occurrence landing could not push the region over the height at which the library redraws
   // the WHOLE screen — the path whose sequence carries the erase of the caller's history.
@@ -426,7 +426,7 @@ const LEVEL_MARK = '◉';
  * the last row anything is written on, which is the hint. An occurrence landing inside it
  * would put a row between those two that the reading before it does not have.
  *
- * ⚠️ IT WAS "EVERY ROW FROM THE PROMPT DOWN", and that measured the wrong thing twice: the
+ * IT WAS "EVERY ROW FROM THE PROMPT DOWN", and that measured the wrong thing twice: the
  * ECHO of a submitted line carries the prompt too and sits in the scrollback, and the blank
  * rows under the frame are as many as the page has not filled yet — so the reading moved
  * with how much the session had said rather than with the shape of the region.
@@ -565,13 +565,13 @@ const modulesIn = (dir: string): string[] =>
   readdirSync(join(SRC, dir)).filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'));
 
 describe('the cadence is the one that already existed', () => {
-  it('⚠️ waits for the record on the one cadence the console has left', () => {
+  it('waits for the record on the one cadence the console has left', () => {
     const source = sourceOf('repl', 'console.ts');
     // EVERY TIMER OF THIS FILE, found by what a timer IS rather than by a list: the delay
     // each one is given has to be the constant, so a second number cannot be introduced
     // beside it without this going red.
     //
-    // ⚠️ IT WAS TWO READERS OF ONE CONSTANT AND IT IS ONE, which is the count going DOWN and is
+    // IT WAS TWO READERS OF ONE CONSTANT AND IT IS ONE, which is the count going DOWN and is
     // as much what this case is for. The same number was how long the terminal's size had to
     // stop changing before the page was drawn again — a drag delivered a size every two or three
     // milliseconds and each of them TURNED A PAGE, so the wait existed to coalesce them. Nothing
