@@ -67,6 +67,7 @@ import type { Render } from '../presentation/render.js';
 import { statement } from '../presentation/verdict.js';
 import { ABOUT, CLEAR, LEAVE, PREFIX, WHAT_EACH_WORD_DOES } from '../session-words.js';
 import { VERSION } from '../version.js';
+import type { RenderingAt } from '../wiring/color.js';
 import { here } from '../wiring/context.js';
 import { writeLines } from '../wiring/io.js';
 import { reportUsage } from '../wiring/report.js';
@@ -239,6 +240,19 @@ const TAB_COMPLETES = 'Tab completes';
 const HOW_TO_LEAVE = 'Ctrl-D leaves';
 
 /**
+ * WHAT THE RULE IS ASKED WITH FOR A LINE THAT MAY NOT FOLD: no screen to fold to.
+ *
+ * TWO CALLERS AND ONE ARGUMENT. The badge and the hint are CHROME — one row each, in the
+ * corner above the input and under the row being typed — and the area draws neither unless it
+ * fits on one row of this terminal (`area.ts`, `onOneRow`), so a fold there could never have
+ * had anything to do and a folded one would be a corner of the console broken in half. The
+ * renderer this file hands out BEFORE the console exists answers with it for the neighbouring
+ * reason: no device has been asked how wide the page is, and a width nobody reported is not a
+ * width to guess at (`wiring/color.ts`).
+ */
+const NO_SCREEN_TO_FOLD_TO = 0;
+
+/**
  * THE THREE CLAUSES OF THE ROW UNDER THE LIST, in the same shape as the three above: a KEY, and
  * what that key gives (see {@link pickingTips} for why they are beside the list rather than in
  * the row under the prompt).
@@ -257,7 +271,16 @@ const ESCAPE_SHUTS = 'Esc shuts the list';
 export interface Session {
   /** Where a command's output goes — the caller's own port. */
   readonly io: CliIo;
-  /** How a line becomes bytes, resolved once for the whole session. */
+  /**
+   * How a line becomes bytes: the renderer for THE PAGE AS IT IS DRAWN NOW.
+   *
+   * ⚠️ IT WAS *RESOLVED ONCE FOR THE WHOLE SESSION*, which is the sentence a maximised window
+   * falsified. Which colours a line carries is still one answer for the whole session — that
+   * is the flag, the environment and the terminal, and none of them moves — but how wide the
+   * screen is does, and a line folded to the width the session OPENED at is a report in a
+   * column down the left of a wide window. So the width is the console's to say, on every
+   * frame, and this is the door onto it ({@link openSession}).
+   */
   readonly render: Render;
   /** The name the session's own verb was registered under (see {@link verbsOffered}). */
   readonly self: string;
@@ -287,7 +310,18 @@ export interface Session {
  * speaking as somebody else, and the whole argument for filling it at all is that the
  * value is this installation's own.
  */
-export interface SessionRequest extends Omit<Session, 'identity'> {
+export interface SessionRequest extends Omit<Session, 'identity' | 'render'> {
+  /**
+   * HOW A LINE BECOMES BYTES ON A SCREEN OF A GIVEN WIDTH — the rule, rather than one
+   * answer to it (`wiring/color.ts`).
+   *
+   * A SESSION MAY NOT BE HANDED A RENDERER, and that is the whole of what this delivery
+   * changed: it outlives the window it opened in, so the width is not a fact the entry can
+   * resolve on its behalf. What the entry DOES resolve is everything else — the flag, the two
+   * conventional variables and whether the destination is a terminal — and those travel inside
+   * this, read once, so a `--color` typed on a line inside the session still changes nothing.
+   */
+  readonly renderingAt: RenderingAt;
   /** Where the keystrokes come from. */
   readonly input: NodeJS.ReadStream;
   /** The page the console draws on. Not where a report goes — that is the console. */
@@ -310,15 +344,20 @@ export type { AfterLine };
  * for mistyping a word.
  */
 export async function openSession(request: SessionRequest): Promise<void> {
-  const { io, render, self, input, output, interactive, leaving } = request;
+  const { io, renderingAt, self, input, output, interactive, leaving } = request;
 
   // The refusal, in the product's own voice, before anything is opened. It says what
   // to do instead, because a caller who piped something in wanted an answer and there
   // is one: the verb, typed directly. It goes to the caller's own port and not to a
   // console, because the decision not to open one is what is being reported.
+  //
+  // AND IT IS RENDERED FOR THIS INVOCATION'S OWN TERMINAL, which is the one place in this
+  // file that asks the rule with no width: there is no page and there is not going to be
+  // one, so this is a report by a verb that prints and exits, and it takes the same answer
+  // every other such verb takes (`wiring/color.ts`).
   if (!interactive) {
     reportUsage(
-      { io, render },
+      { io, render: renderingAt() },
       `\`mnema ${self}\` is an interactive session and this is not a terminal`,
       'Run the verb itself — `mnema <verb>` — when input or output is a pipe, a file or a log.',
     );
@@ -335,6 +374,19 @@ export async function openSession(request: SessionRequest): Promise<void> {
     err: (line) => land(line),
     fail: () => undefined,
   };
+  // AND HOW THOSE LINES BECOME BYTES, by the same detour and for the same reason: the width
+  // a line folds to is the width of the frame it is about to land on, and only the console
+  // has asked the device (`console.ts`, {@link OpenConsole.render}). Everything a verb prints
+  // goes through this, so a caller who maximises their window gets their next report across
+  // the whole of it.
+  //
+  // ⛔ BEFORE THE CONSOLE IS UP IT ANSWERS *NO SCREEN TO FOLD TO*, which is not a default to
+  // fall back on: it is the honest answer to *how wide is the page* before there is one. The
+  // console is opened at the foot of this function and nothing composed above it renders
+  // through this — the two rows of chrome ask the rule themselves, for the same width and by
+  // the same argument ({@link NO_SCREEN_TO_FOLD_TO}).
+  let renderOn: Render = renderingAt(NO_SCREEN_TO_FOLD_TO);
+  const render: Render = (line) => renderOn(line);
   // WHERE THE SESSION IS STANDING, resolved once and read by two things: the line the
   // opening draws, and every line the caller then types. It is one `readdir` and one
   // small file, and no writer is opened to get it (`standing.ts`) — which is what makes
@@ -370,11 +422,14 @@ export async function openSession(request: SessionRequest): Promise<void> {
   // takes about a fact it does not have, and the same one the panel's record section takes.
   // The WIDTH goes with it because the area needs both and only the composer can measure
   // one: a rendered line carries escapes a screen does not print (see `Drawn`).
-  const badge = drawn(proved === undefined ? undefined : badgeLine(proved.level), render);
+  const badge = drawn(
+    proved === undefined ? undefined : badgeLine(proved.level),
+    renderingAt(NO_SCREEN_TO_FOLD_TO),
+  );
   // What the caller can do, rendered ONCE for the same reason the badge is — and measured
   // here as well, because two things read the width: the area, which draws no hint the
   // terminal would fold, and the opening, which is budgeted against the area under it.
-  const hint = drawn(tips(), render);
+  const hint = drawn(tips(), renderingAt(NO_SCREEN_TO_FOLD_TO));
   // THE WORDS THE SESSION ANSWERS TO ITSELF, read ONCE and handed to ONE thing: the
   // completer, which puts them in the same list as the verbs. ⚠️ THEY WENT TO THE CONSOLE AS
   // WELL, so that a slash could be answered out of them, and that is what made the two keys
@@ -443,7 +498,12 @@ export async function openSession(request: SessionRequest): Promise<void> {
       openingFor({
         columns,
         rows: within,
-        render,
+        // AND THE RENDERER IS THE ONE FOR THAT WIDTH, out of the same number the arrangement is
+        // chosen by rather than out of a renderer resolved when the process opened. It is asked
+        // here rather than closed over because this whole function is a function OF the size:
+        // an opening composed for two hundred columns whose lines were folded to seventy is the
+        // defect this delivery is named after, one region up.
+        render: renderingAt(columns),
         title,
         mark,
         standing: where,
@@ -502,7 +562,7 @@ export async function openSession(request: SessionRequest): Promise<void> {
     stdin: input,
     stdout: output,
     prompt: PROMPT,
-    render,
+    renderingAt,
     openingFor: theOpening,
     // Rendered ONCE, above, and handed over as bytes: the tips say nothing about the
     // record, so nothing can happen inside the session that changes what they say. The
@@ -527,6 +587,10 @@ export async function openSession(request: SessionRequest): Promise<void> {
     leaving,
   });
   land = page.land;
+  // AND HOW A LINE BECOMES BYTES, for the same reason the door onto the page is taken from
+  // here: what a verb prints is folded to the width of the frame it is landing on, and the
+  // console is the one thing that has asked the device how wide that is.
+  renderOn = page.render;
   await page.closed;
 }
 
@@ -682,8 +746,13 @@ export async function typedLine(line: string, session: Session): Promise<AfterLi
  * the scrollback and stays there, so a caller who scrolls to the top of a long session
  * finds the drawing, this sentence and the project the whole thing was about. It is part
  * of what the page OPENS with, so a caller who clears the page finds it there too.
+ *
+ * Exported for the reason {@link about} is, and it earns it separately: it is the one line the
+ * OPENING lands on the roll, so it is the subject of the only case that can say the page a
+ * session opens with folds to the terminal it is being drawn on
+ * (`tests/one-width-per-frame.test.ts`).
  */
-function whatItRefuses(reads: number): readonly Line[] {
+export function whatItRefuses(reads: number): readonly Line[] {
   return [
     fact(`It runs the ${reads} verbs that read the record, and refuses the ones that write.`),
   ];
@@ -865,8 +934,13 @@ export function badgeLine(level: ProvenLevel): Line {
  * answer and not the program's on purpose: `mnema --help` lists every verb there is,
  * eleven of which this session refuses, and a menu of what you cannot have is worse
  * than no menu.
+ *
+ * Exported for the reason {@link tips} and {@link badgeLine} are: these are the widest rows
+ * this session prints, so they are what a case about FOLDING has to be measured against, and
+ * a case that retyped them would go stale the day a verb's description changes
+ * (`tests/one-width-per-frame.test.ts`).
  */
-function about(verbs: readonly Declared[], self: string): readonly Line[] {
+export function about(verbs: readonly Declared[], self: string): readonly Line[] {
   const offered = verbsOffered(verbs, self);
   const described = verbs.filter((verb) => offered.includes(verb.command.name()));
   return [

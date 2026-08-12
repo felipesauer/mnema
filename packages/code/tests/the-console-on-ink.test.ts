@@ -591,7 +591,7 @@ async function inTheConsole(
   const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
   const closed = openSession({
     io,
-    render,
+    renderingAt: () => render,
     self: REPL_VERB,
     input: terminal.stdin,
     output: terminal.stdout,
@@ -694,7 +694,7 @@ describe('the same verbs, the same lines, another place', () => {
     const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
     const closed = openSession({
       io,
-      render: renderPlain,
+      renderingAt: () => renderPlain,
       self: REPL_VERB,
       input: terminal.stdin,
       output: terminal.stdout,
@@ -719,7 +719,7 @@ describe('the same verbs, the same lines, another place', () => {
     const said: string[] = [];
     await openSession({
       io: { out: () => undefined, err: (line) => said.push(line), fail: () => undefined },
-      render: renderPlain,
+      renderingAt: () => renderPlain,
       self: REPL_VERB,
       input: terminal.stdin,
       output: terminal.stdout,
@@ -743,7 +743,7 @@ describe('the same verbs, the same lines, another place', () => {
     const unhooked: string[] = [];
     const closed = openSession({
       io: { out: () => undefined, err: () => undefined, fail: () => undefined },
-      render: renderPlain,
+      renderingAt: () => renderPlain,
       self: REPL_VERB,
       input: terminal.stdin,
       output: terminal.stdout,
@@ -774,7 +774,7 @@ describe('the same verbs, the same lines, another place', () => {
     const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
     const closed = openSession({
       io,
-      render: renderPlain,
+      renderingAt: () => renderPlain,
       self: REPL_VERB,
       input: terminal.stdin,
       output: terminal.stdout,

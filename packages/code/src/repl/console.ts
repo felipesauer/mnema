@@ -77,6 +77,7 @@ import { render } from 'ink';
 import { createElement, type ReactElement } from 'react';
 import type { Line } from '../presentation/line.js';
 import type { Render } from '../presentation/render.js';
+import type { RenderingAt } from '../wiring/color.js';
 import { areaFor } from './area.js';
 import type { Completer } from './complete.js';
 import { type Editing, type Keystroke, keystrokesOf, NOTHING_TYPED, typeKey } from './editing.js';
@@ -167,16 +168,24 @@ export interface ConsoleRequest {
   /** What the caller types in front of. Not a report, and so not rendered. */
   readonly prompt: string;
   /**
-   * How a line becomes bytes, resolved once for the whole session.
+   * How a line becomes bytes on a screen of a GIVEN WIDTH — the rule, and not one answer to
+   * it (`wiring/color.ts`).
    *
-   * IT IS HERE FOR ONE THING AND THE REASON IS THE KEYSTROKE. Everything else this file
-   * receives arrives already rendered, because it is composed once and never changes; the
-   * PALETTE cannot be, because which words it shows depends on what has been typed and
-   * how wide each row may be depends on the window. So it is composed on the frame that
-   * needs it (`palette.ts`) and turned into bytes with this — which is the same thing the
-   * opening does one layer up, and is not this file composing anything.
+   * ⚠️ IT WAS A RENDERER, *resolved once for the whole session*, AND THIS FILE IS WHY THAT
+   * BROKE. A session outlives the window it opened in: a caller who maximises theirs gets a
+   * frame whose rules, badge and arrangement measure the new terminal and whose CONTENT is
+   * still folded to the width the process opened at, which is one frame carrying two widths.
+   * This file is the only thing on the surface that asks the device how wide the page is
+   * ({@link theSize}), so it is the only thing that can answer the rule — and the answer it
+   * gives out is for the frame it is drawing ({@link OpenConsole.render}).
+   *
+   * IT IS ASKED FOR THE PALETTE HERE, and for nothing else in this file: everything else
+   * arrives already rendered. What the palette shows depends on what has been typed and how
+   * wide each row may be depends on the window, so it is composed on the frame that needs it
+   * (`palette.ts`) and turned into bytes with the frame's own renderer — which is the same
+   * thing the opening does one layer up, and is not this file composing anything.
    */
-  readonly render: Render;
+  readonly renderingAt: RenderingAt;
   /**
    * What the caller can do, already rendered, for the region at the foot.
    *
@@ -291,6 +300,22 @@ export interface ConsoleRequest {
 export interface OpenConsole {
   /** Land one already-rendered line in what the session has said. */
   readonly land: (line: string) => void;
+  /**
+   * ⛔ HOW A LINE BECOMES BYTES ON THE PAGE AS IT IS DRAWN NOW — the frame's own width,
+   * answered by the one thing that has asked the device for it.
+   *
+   * IT IS THE SISTER OF {@link land} AND IT IS HANDED BACK FOR THE SAME REASON: a line
+   * reaches the page as bytes, so it is rendered before it lands, and whoever renders it has
+   * to fold it to the width of the frame it is about to land on. Between two frames that is
+   * the width the last one was drawn at — a resize is a redraw, so the page a verb is about
+   * to print onto has already been laid out at the size the device now has.
+   *
+   * ONE WIDTH PER FRAME is what this buys, and it is the promise the whole of this file's
+   * geometry already makes about every other number on the page: the rules, the badge, the
+   * arrangement and the window are cut to one reading of the device ({@link theSize}), and
+   * the fold was the last number that was not.
+   */
+  readonly render: Render;
   /** Resolves once the caller has left and the terminal is theirs again. */
   readonly closed: Promise<void>;
 }
@@ -304,7 +329,7 @@ export interface OpenConsole {
  * one path onto the page and not a special one for the first three rows.
  */
 export function openConsole(request: ConsoleRequest): OpenConsole {
-  const { stdin, stdout, prompt, render: renderLine, tips, badge, picking } = request;
+  const { stdin, stdout, prompt, renderingAt, tips, badge, picking } = request;
   const { openingFor, saw, happened, complete, answer, leaving } = request;
 
   /**
@@ -320,8 +345,13 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * the capability every verb is handed and that is resolved once, where the process is
    * (`wiring/color.ts`). Nothing here comes from that reading and nothing there comes from
    * this one, which is why it is two answers to two questions rather than the defect the
-   * sentence was written against — and a THIRD is still refused
-   * (`tests/the-screen-is-ours.test.ts`).
+   * sentence was written against.
+   *
+   * ⚠️ AND *A THIRD IS STILL REFUSED* NAMED A TEST THAT REFUSED NOTHING. It pointed at
+   * `tests/the-screen-is-ours.test.ts`, which holds the one WRITE onto the caller's device and
+   * says nothing about who READS its size — so the claim was a sentence rather than a guard for
+   * two deliveries. It is one now: `tests/one-width-per-frame.test.ts` names the two files that
+   * ask a device how big it is, over this surface's own source with the prose blanked.
    */
   const howWide = (): number => stdout.columns ?? NO_WIDTH;
 
@@ -418,8 +448,22 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     );
   }
 
-  /** The size the opening on the screen was composed for, and the opening itself. */
-  let drawnAt = { columns: theSize()[0], rows: theSize()[1] };
+  /**
+   * ⛔ THE SIZE THE FRAME ON THE SCREEN WAS COMPOSED FOR — every number on that frame's
+   * geometry, and now its FOLD as well, comes out of this pair.
+   *
+   * It is kept by {@link theOpening}, which is asked with the size at the top of every frame
+   * ({@link showing}), so after that call this is that frame's size whether the opening was
+   * recomposed or not. That is what lets {@link renderLine} answer *how wide is the page* with
+   * no second reading of anything.
+   *
+   * ⚠️ IT WAS TWO READINGS OF THE DEVICE — `{ columns: theSize()[0], rows: theSize()[1] }` —
+   * which is the very shape {@link theSize} exists to make impossible, at the one line that
+   * predates it. A caller who resized between the two calls opened a session whose first frame
+   * was the width of one terminal and the height of another. One reading, destructured.
+   */
+  const first = theSize();
+  let drawnAt = { columns: first[0], rows: first[1] };
   /**
    * THE MIDDLE REGION AS THE FRAME ON THE SCREEN WAS LAID OUT: how many rows it had, and how
    * wide they were.
@@ -435,6 +479,18 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   /** The layout, once it is up. See the assignment at the foot of this function. */
   let mounted: ReturnType<typeof render> | undefined;
   let opened: Opening = openingFor(drawnAt.columns, drawnAt.rows);
+
+  /**
+   * ⛔ HOW A LINE BECOMES BYTES ON THE PAGE AS IT IS DRAWN NOW — the rule, asked for the width
+   * of the frame and for no other number.
+   *
+   * ONE FUNCTION AND EVERY DRAWER CALLS IT. The palette's rows go through it on the frame that
+   * composes them, and the session's own verbs go through it between frames
+   * ({@link OpenConsole.render}) — so a report and the rules under it cannot come out of two
+   * different terminals. The width is {@link drawnAt}'s, which is the same number the
+   * arrangement, the window and the input area were cut to, and never a second reading.
+   */
+  const renderLine: Render = (line) => renderingAt(drawnAt.columns)(line);
 
   /**
    * THE OPENING FOR THE SIZE THE DEVICE HAS RIGHT NOW — composed again only when the size is
@@ -1001,5 +1057,5 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   // reference that does not exist yet.
   mounted = app;
 
-  return { land, closed };
+  return { land, closed, render: renderLine };
 }

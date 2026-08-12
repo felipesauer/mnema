@@ -275,7 +275,7 @@ async function openedAt(columns: number, rows = 40): Promise<string> {
   const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
   const closed = openSession({
     io,
-    render: renderPlain,
+    renderingAt: () => renderPlain,
     self: REPL_VERB,
     input: terminal.stdin,
     output: terminal.stdout,
@@ -492,7 +492,7 @@ describe('the badge says what the record proved, and the verb that says the rest
     const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
     const closed = openSession({
       io,
-      render: renderStyled,
+      renderingAt: () => renderStyled,
       self: REPL_VERB,
       input: terminal.stdin,
       output: terminal.stdout,
