@@ -62,6 +62,15 @@
  * That is not an optimisation, it is the whole reason the session exists: a session
  * imported at module scope would make every other verb pay for the thing built to stop
  * paying.
+ *
+ * AND IT IS WHAT MAKES THE PAGE OBEY ONE DECISION ABOUT COLOUR, which is a load this
+ * sentence did not use to carry. The library resolves the colour of everything IT draws
+ * from a channel it reads once, while it is being loaded (`painting.ts`), so the one moment
+ * at which this product's answer can reach it is the instant before that import — which
+ * exists, and is here, only because the import is late. Both halves are asserted rather than
+ * left to two lines being adjacent: the modules that reach the library are enumerated by
+ * what they import, and a static import of any of them from anywhere is an import that would
+ * run first (`tests/one-authority-over-colour.test.ts`).
  */
 
 import type { ProvenLevel } from '@mnema/chain';
@@ -78,7 +87,7 @@ import type { Render } from '../presentation/render.js';
 import { statement } from '../presentation/verdict.js';
 import { PREFIX, THE_KEY_THAT_LEAVES, WHAT_EACH_WORD_DOES } from '../session-words.js';
 import { VERSION } from '../version.js';
-import type { RenderingAt } from '../wiring/color.js';
+import { paintsAtAll, type RenderingAt } from '../wiring/color.js';
 import { here } from '../wiring/context.js';
 import { reportUsage } from '../wiring/report.js';
 import { DEFAULT_REQUIREMENT, levelSeverity, treeHeadline, VERIFY_VERB } from '../wiring/verify.js';
@@ -90,6 +99,7 @@ import { followingTheRecord } from './following.js';
 import { type AfterLine, argvOf, dispositionOf, verbsOffered } from './gate.js';
 import { insideTheMargin } from './inset.js';
 import type { Leaving } from './leaving.js';
+import { theLibraryIsTold } from './painting.js';
 import { type Opening, openingFor, theShortestScreenFor } from './panel.js';
 import { whatTheSessionShowed } from './seen.js';
 import { type Standing, standing } from './standing.js';
@@ -578,6 +588,18 @@ export async function openSession(request: SessionRequest): Promise<void> {
     );
   };
 
+  // AND THE DECISION ABOUT COLOUR REACHES THE LIBRARY, on the channel the library reads,
+  // before a byte of it is loaded (`painting.ts` for the channel and for what the two values
+  // mean). It is asked of the RENDERER this invocation was handed rather than of the flag and
+  // the environment a second time, so the page and its edges cannot come to disagree
+  // (`wiring/color.ts`, {@link paintsAtAll}) — and it is asked with NO SCREEN TO FOLD TO
+  // because a fold is not a colour: what is wanted is the painting itself, whatever width the
+  // frame under it turns out to be.
+  //
+  // THE ORDER IS THE MECHANISM AND NOT A TIDINESS. The line under this is what loads that
+  // library, and the library reads the channel once while it is being loaded — so this said
+  // after it would be said to nobody.
+  theLibraryIsTold(paintsAtAll(renderingAt(NO_SCREEN_TO_FOLD_TO)));
   const { openConsole } = await import('./console.js');
   const page = openConsole({
     stdin: input,

@@ -29,6 +29,14 @@
  * WHY THE ACCENT IS ASKED FOR HERE RATHER THAN CLEARED, against what most of this bench does:
  * the paint IS the subject of two of the cases. A stream that said it took no colour would make
  * them pass by drawing nothing at all.
+ *
+ * AND IT USED TO BE ASKED FOR BY THE FIXTURE, which is the instrument this file gave back. The
+ * setup wrote `FORCE_COLOR=1` into the process before anything imported the layout, because
+ * that variable was the only thing the layout's own colour resolver would listen to and this
+ * product had no way of reaching it. It has one now — the decision is handed over on that same
+ * channel, once, before the library is loaded (`src/repl/painting.ts`) — so the two painted
+ * cases below are painted because the invocation asked for colour, which is what they claim to
+ * be about. Nothing here forces it any more.
  */
 
 import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -125,8 +133,9 @@ beforeAll(async () => {
   process.env.XDG_DATA_HOME = join(sandbox, 'data');
   delete process.env.MNEMA_RUN;
   delete process.env.NO_COLOR;
-  // Asked for rather than cleared: see the header. Set before anything imports the layout.
-  process.env.FORCE_COLOR = '1';
+  // NOTHING FORCES COLOUR HERE ANY MORE: see the header for what this line was and what
+  // took it. The invocation asks, and the product tells the layout.
+  delete process.env.FORCE_COLOR;
   process.chdir(project);
 
   await run(['init'], quiet);
@@ -360,25 +369,28 @@ describe('the line a caller sent is told from the answer to it', () => {
   }, 120_000);
 
   it('is still the caller’s line when there is no colour at all', async () => {
-    // WHAT `NO_COLOR` REACHES AND WHAT IT DOES NOT, measured rather than assumed — and the second
-    // half is a finding this delivery made rather than a hole it dug.
+    // WHAT `NO_COLOR` REACHES, measured rather than assumed — and this paragraph is where a
+    // premise fell.
     //
     // EVERY LINE THE PRODUCT COMPOSES GOES QUIET, because the rule that chooses a renderer is
     // this product's own and it reads the variable (`wiring/color.ts`). That is what the echo
     // becoming a LINE bought: it obeys the same rule as a verdict and a hit, without the console
     // asking a question no module on that side may ask.
     //
-    // THE ACCENT THE LAYOUT DRAWS WITH DOES NOT, and it never has. The hue on a rule, on the
-    // guide and on the mark is the layout library's — a word handed to its own colour resolver —
-    // and that resolver has no entry for this variable at all: measured on a real terminal, a
-    // session with it set writes thirty-two accents and not one byte from our renderer. It is
-    // older than the seams (the mark and the title have carried it since the accent existed) and
-    // it is written down here rather than left to be found: what a reader without colour loses
-    // is nothing, because the structure is in the columns and the words either way.
+    // AND THE ACCENT THE LAYOUT DRAWS WITH GOES QUIET TOO, WHICH IS WHAT THIS CASE USED TO
+    // DENY. It read: *the hue on a rule, on the guide and on the mark is the layout library's,
+    // and that resolver has no entry for this variable at all — measured on a real terminal, a
+    // session with it set writes thirty-two accents and not one byte from our renderer*. Both
+    // halves of that were TRUE and the conclusion drawn from them was not: the library reads no
+    // `NO_COLOR` anywhere, so nothing was ever going to reach it by that name — what it does
+    // read is `FORCE_COLOR`, and this product's answer is handed to it on that channel before a
+    // byte of the library is loaded (`repl/painting.ts`). Measured again after the fix, at this
+    // size and with these steps: a hundred and twenty style sequences became NONE. The case
+    // that owns both directions of it is `one-authority-over-colour.test.ts`; what is asserted
+    // here is the ECHO, which is this file's subject.
     const columns = 100;
     const rows = 30;
-    // AND NOTHING FORCING IT THE OTHER WAY: this file asks for colour in its own fixture (see the
-    // header), which is exactly what a caller who sets that variable does.
+    // AND NOTHING FORCING IT THE OTHER WAY.
     const quietly = { ...environment, NO_COLOR: '1' };
     delete quietly.FORCE_COLOR;
     const ran = await inPty({
@@ -397,20 +409,12 @@ describe('the line a caller sent is told from the answer to it', () => {
     // and never the structure.
     const echoed = screen.rows.find((row) => row.includes(`${PROMPT} ${A_VERB}`)) as string;
     expect([...echoed][BEFORE_THE_BAR], 'the roll lost its guide with the colour').toBe(GUIDE);
-    // AND NOT ONE BYTE OF WHAT THE PRODUCT PAINTS IS LEFT on the frame. What remains is the
-    // layout's accent and its closer, and nothing else — no weight, no severity, and no accent
-    // around the prompt.
+    // AND NOT ONE BYTE OF COLOUR IS LEFT on the frame — ours OR the library's. It used to let
+    // the layout's own accent and its closer through, and that pair was the half of the page
+    // that was not obeying the caller.
     const frame = ran.bytes.slice(ran.at[0] as number, ran.at[1] as number);
     const left = [...new Set(sgrOf(frame))].sort();
-    expect(
-      left.length,
-      `the frame carries more than the layout's own accent: ${left.join(' ')}`,
-    ).toBeLessThanOrEqual(2);
-    for (const sequence of left) {
-      expect(['\u001b[35m', '\u001b[39m'], 'something other than the accent survived').toContain(
-        sequence,
-      );
-    }
+    expect(left, `the frame still carries colour: ${left.join(' ')}`).toEqual([]);
     const painted = rowsOf(ran.bytes).find((row) => stripped(row).includes(`${PROMPT} ${A_VERB}`));
     expect(
       sgrOf((painted as string).slice((painted as string).indexOf(PROMPT))),

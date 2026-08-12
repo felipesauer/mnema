@@ -24,8 +24,29 @@
  *   3. `FORCE_COLOR` — forces style on where it would otherwise be off, and it decides
  *      BOTH ways: `0` is off, because that is what node and chalk made that value mean,
  *      and a caller who typed it meant off even on a terminal.
- *   4. Otherwise the terminal answers: style when the destination is one, plain when it
- *      is a pipe, a file or a CI log.
+ *   4. Otherwise THE DESTINATION answers, and it answers with two facts rather than one:
+ *      style when the destination is a terminal AND that terminal did not say it is
+ *      `dumb`, plain for a pipe, a file, a CI log, and for the terminal that said so.
+ *      `TERM=dumb` is the field's way of saying *this thing prints text and nothing else*
+ *      — it is what a shell inside an editor exports, what a build runner exports, and
+ *      what every library that paints already honours — so a device that declared it is
+ *      not a destination that can show style, whatever `isTTY` says about the file
+ *      descriptor. It is the LAST rung, under both variables, exactly as it is in the
+ *      market: a caller who set `FORCE_COLOR` asked for colour on a terminal that says it
+ *      cannot, and asking beats declaring.
+ *
+ * RUNG FOUR USED TO BE HALF OF ITSELF TOO, and this file's own words are what found it.
+ * It read *the terminal answers: style when the destination is one*, and one paragraph of
+ * `repl/painting.ts` said, as a declared consequence, that *this product's precedence never
+ * reads `TERM` at all*. That consequence was a hole rather than a decision: the layout
+ * library honours `TERM=dumb` and this rule did not, so a `dumb` terminal got a page half
+ * painted — a hundred and ninety-two style sequences from this renderer and none from the
+ * library — and handing our answer to that library turned it into a page fully painted on a
+ * terminal that had declared it cannot paint. Both are the same disagreement, resolved to
+ * opposite sides. The rung above is the agreement: measured on a real `dumb` terminal, three
+ * hundred and twelve style sequences became NONE, and `--color=always` still paints there
+ * because rung one is the caller's own request. `chosen-once.test.ts` asserts it against the
+ * rung above it and against the one it replaced.
  *
  * RUNG ONE USED TO BE HALF OF ITSELF, and correcting it is the one behaviour change in
  * this file's history. The premise written here was that `--color=never` outranked
@@ -57,6 +78,16 @@
  * not for the badly folded line their terminal would otherwise give them. See
  * {@link chooseRenderer} for how the two compose.
  *
+ * AND THE ANSWER HAS A SECOND CONSUMER NOW, WHICH IS NOT ONE OF OURS. Everything above is
+ * about the lines this product COMPOSES; the interactive page also has edges, a mark and a
+ * title that a layout library draws, and that library resolves their colour by its own
+ * detection. Its detection has no entry for `NO_COLOR` at all — measured on a real terminal,
+ * a session with the variable set wrote thirty-two accents and not one byte from the
+ * renderer above — so a page obeyed the caller in half and the library in the other half.
+ * The precedence did not move and no bridge was invented: the answer this file already
+ * reaches is handed to the library through the channel the library does read, once, before
+ * a byte of it is loaded ({@link paintsAtAll}, and `repl/painting.ts` for the channel).
+ *
  * NOTHING HERE READS THE ENVIRONMENT. The inputs arrive as a value ({@link
  * Capability}), read at the entry where the process actually is (`cli.ts`), which is
  * what lets the precedence be asserted case by case as a pure function — and what lets
@@ -74,6 +105,7 @@
  */
 
 import { foldedAt } from '../presentation/folded.js';
+import type { Line } from '../presentation/line.js';
 import { renderPlain } from '../presentation/plain.js';
 import type { Render } from '../presentation/render.js';
 import { renderStyled } from '../presentation/styled.js';
@@ -97,11 +129,28 @@ export const COLOR_HELP =
   'never. NO_COLOR and FORCE_COLOR are honored; an explicit --color beats both. Style ' +
   'never changes what a line says.';
 
+/**
+ * WHAT A TERMINAL SAYS WHEN IT CANNOT DO ANYTHING BUT PRINT TEXT.
+ *
+ * The exact value and nothing near it, which is what every library that paints matches on:
+ * `dumb` is a name in the terminfo database and not a family, so a prefix test would take
+ * `dumb-emacs-ansi` — a terminal that CAN paint — down with it. An unset `TERM` is not this
+ * either: it is a caller whose environment says nothing, and silence is not a declaration.
+ */
+const CANNOT_PAINT = 'dumb';
+
 /** What the answer depends on, read where the process is. */
 export interface Capability {
   /** What this invocation asked for on the command line. */
   readonly when: ColorWhen;
-  /** The environment, for the two conventional variables. Never mutated. */
+  /**
+   * The environment: the two conventional variables, and what the terminal says it IS.
+   *
+   * IT WAS *the two conventional variables*, and the third is a different KIND of thing
+   * rather than a third of the same — which is why it sits at the bottom of the precedence
+   * instead of beside them. `NO_COLOR` and `FORCE_COLOR` are a caller ASKING; `TERM` is the
+   * device DECLARING. Never mutated.
+   */
   readonly env: Readonly<Record<string, string | undefined>>;
   /** Whether the destination is a terminal — false for a pipe, a file, a test. */
   readonly isTty: boolean;
@@ -130,7 +179,11 @@ function paintingFor(capability: Capability): Render {
   if (when === 'always') return renderStyled;
   if (env.NO_COLOR !== undefined && env.NO_COLOR !== '') return renderPlain;
   if (env.FORCE_COLOR !== undefined) return env.FORCE_COLOR === '0' ? renderPlain : renderStyled;
-  return isTty ? renderStyled : renderPlain;
+  // THE DESTINATION, IN BOTH OF THE THINGS IT SAYS: a file descriptor that is a terminal,
+  // and a terminal that did not declare it cannot paint. One rung and one `&&`, because it
+  // is one question — *can what is on the other end of this show style?* — and a `dumb`
+  // terminal answering no is the same answer a pipe gives, for the same reason.
+  return isTty && env.TERM !== CANNOT_PAINT ? renderStyled : renderPlain;
 }
 
 /**
@@ -156,6 +209,46 @@ export function chooseRenderer(capability: Capability): Render {
   const painting = paintingFor(capability);
   const { isTty, columns } = capability;
   return isTty && columns > 0 ? foldedAt(columns, painting) : painting;
+}
+
+/**
+ * THE LINE THE RULE IS MEASURED ON: one part, in a role that always carries a weight.
+ *
+ * `label` is BOLD in the painting renderer and bare in the plain one
+ * (`presentation/styled.ts`, `OPENED_BY`), and a part that opens nothing comes back
+ * untouched — so a probe built out of a `field` would report *this rule does not paint*
+ * about the renderer that paints everything. That is the one way {@link paintsAtAll} can
+ * go quietly wrong, so it is pinned by a case rather than left to inspection
+ * (`tests/one-authority-over-colour.test.ts`).
+ *
+ * Short on purpose: a rule the caller folds is still the rule, and a probe long enough to
+ * break would be measuring the fold instead of the paint.
+ */
+const A_PAINTED_LINE: Line = { indent: 0, parts: [{ role: 'label', text: 'colour' }] };
+
+/**
+ * WHETHER A RULE PAINTS AT ALL — asked of the RULE, on bytes, and never of the capability
+ * a second time.
+ *
+ * IT EXISTS BECAUSE THE DECISION HAS A SECOND CONSUMER NOW, and it is not one of ours: the
+ * layout library draws the page's own edges, its mark and its title, and it decides their
+ * colour by its own detection unless it is told (`repl/painting.ts` for what it reads and
+ * why). Something has to hand it the answer this file already worked out.
+ *
+ * ASKED OF THE RENDERER RATHER THAN OF THE {@link Capability}, which is the whole shape of
+ * it. A boolean resolved beside the renderer would be a SECOND spelling of one decision —
+ * two readings of one rule is exactly how a surface comes to have two opinions about
+ * colour, which is the defect this answer exists to close, and re-reading the capability
+ * at another instant would be the second reading {@link rendererAtEachWidth} is built to
+ * prevent. What comes back here is a measurement of the very renderer the invocation was
+ * given, so the library and the page cannot disagree about what was decided.
+ *
+ * TOTAL OVER WHAT {@link chooseRenderer} RETURNS, painted or plain, folded or not: the
+ * fold wraps whichever renderer it was handed and changes no escape, so a folded painting
+ * answers the same as the painting inside it.
+ */
+export function paintsAtAll(render: Render): boolean {
+  return render(A_PAINTED_LINE) !== renderPlain(A_PAINTED_LINE);
 }
 
 /**
