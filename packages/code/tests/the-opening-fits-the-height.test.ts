@@ -50,7 +50,7 @@ import {
   type Ran,
   type Step,
 } from './support/pty.js';
-import { type Screen, theFirstScreenWhere } from './support/screen.js';
+import { type Screen, theFirstScreenWhere, theFirstScreenWith } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
@@ -70,6 +70,9 @@ const UNDER_THE_PANEL = 'It runs the';
 
 /** The heading that CLOSES what `/help` answers — everything above it is the list of verbs. */
 const CLOSES_THE_ANSWER = 'And it does not write';
+
+/** What the chain says about a tree in order, and the opening's record section repeats. */
+const VERIFIED = 'local integrity verified';
 
 /**
  * The key that walks the roll to its oldest line, as a terminal sends it — built from the
@@ -212,6 +215,31 @@ const OF_THE_PRODUCTS_SHAPE = {
 /** The drawing of the name as a screen receives it: its rows, with no row padded at its end. */
 const ART: readonly string[] = THE_DRAWING.map((line) => renderPlain(line).trimEnd());
 
+/**
+ * EVERY DRAWING OF THE NAME THERE IS, biggest first — walked off the module rather than written
+ * down.
+ *
+ * A form is what a width answers with, so the forms are what the answers CHANGE at: the ladder
+ * is walked from a terminal wider than anything down to one with no width at all, and each new
+ * answer is a form. The page is answered as costing nothing, which holds the HEIGHT out of it —
+ * what is wanted here is the set of drawings, not which one a screen gets.
+ *
+ * Written out instead, this list would be a second copy of the art, and the first thing it would
+ * do is go stale. It is the same walk `the-opening-fits-the-screen.test.ts` makes, for the same
+ * reason.
+ */
+function everyDrawing(): readonly (readonly string[])[] {
+  const forms: string[][] = [];
+  for (let columns = 200; columns >= 0; columns -= 1) {
+    const form = bannerFor({ columns, rows: 200, needs: () => 0 }).map((line) =>
+      renderPlain(line).trimEnd(),
+    );
+    const last = forms[forms.length - 1];
+    if (last === undefined || last.join('\n') !== form.join('\n')) forms.push(form);
+  }
+  return forms;
+}
+
 /** The arrangement this rule chooses for a terminal of a given size, and nothing else. */
 const formAt = (columns: number, rows: number): PanelForm =>
   panelFor({ ...OF_THE_PRODUCTS_SHAPE, columns, rows }).form;
@@ -241,14 +269,22 @@ const A_THIRD_OF = (rows: number): number => Math.floor(rows / 3);
  * was the only question asked: at eighty by twenty-four the text went under the mark and
  * fifteen rows of the screen stopped being the reader's for the rest of the session. What
  * changed is the answer at the short sizes and nothing at the tall ones.
+ *
+ * ⛔ AND EVERY ROW OF IT IS ABOUT ONE DRAWING — the biggest there is, held still. That is what
+ * makes it a table about this rule rather than about the console: on a screen with no room for
+ * the biggest drawing's arrangement it is the DRAWING that gives way, and the console opens
+ * with a smaller one and keeps its arrangement (`session.ts`, and the case below on a real
+ * terminal at eighty by twenty-four). So `bare` in this table means *this drawing cannot be
+ * arranged here*, which is the question the panel answers, and never *the console gives up*.
  */
 const THE_GEOMETRIES: readonly {
   readonly columns: number;
   readonly rows: number;
   readonly form: PanelForm;
 }[] = [
-  // The screen everybody has. Too narrow for the two columns, and fifteen rows of arrangement
-  // is more than a third of twenty-four — so the whole of it goes on the roll.
+  // The screen everybody has. Too narrow for the two columns with THIS drawing beside them, and
+  // fifteen rows of arrangement is more than a third of twenty-four — so with the biggest
+  // drawing there is no arrangement at all, and the console draws a smaller one instead.
   { columns: 80, rows: 24, form: 'bare' },
   { columns: 100, rows: 24, form: 'bare' },
   // A window with the room for the two columns down as well as across: nine rows of thirty.
@@ -373,9 +409,27 @@ describe('the arrangement is chosen by the height as well as the width', () => {
  * nothing else. A count of rows that LOOK like a verb would have said nought as well and would
  * have said it about a pattern rather than about the page.
  */
-function rowsOfTheListOn(screen: Screen): number {
+function rowsOfTheListOn(screen: Screen, under: number): number {
   const closes = rowOf(screen, CLOSES_THE_ANSWER);
-  return closes < 0 ? 0 : closes;
+  return closes < 0 ? 0 : Math.max(0, closes - under);
+}
+
+/**
+ * ⛔ HOW MANY ROWS AT THE TOP OF THE PAGE DID NOT MOVE — which is what *fixed region* MEANS,
+ * asked of two pages of one session rather than of an arithmetic.
+ *
+ * The arrangement is drawn again on every frame at the top of the screen and the roll under it
+ * scrolls, so the rows the two pages share at the top are the chrome and the rows below them are
+ * the window. It is measured this way rather than by counting what the panel says it costs
+ * because the two can disagree, and the one a reader has is the page.
+ *
+ * ⛔ NOUGHT IS AN ANSWER AND NOT A FAILURE: on a screen with no room for an arrangement the
+ * whole opening is on the roll, so the first row moves with everything else.
+ */
+function theFixedRowsBetween(opened: Screen, later: Screen): number {
+  let fixed = 0;
+  while (fixed < opened.rows.length && opened.rows[fixed] === later.rows[fixed]) fixed += 1;
+  return fixed;
 }
 
 /**
@@ -404,7 +458,7 @@ function theAnswerOn(ran: Ran, columns: number, rows: number): Screen {
 
 /**
  * WHAT THE ORDINARY SCREEN SHOWS OF THE ANSWER — a measuring stick, taken on a real
- * pseudo-terminal.
+ * pseudo-terminal at eighty by twenty-four.
  *
  * IT IS NOT DERIVED FROM ANYTHING, which is the whole point of writing it down: a delivery that
  * changes what the console spends has to come here and say so. ⚠️ BEFORE THIS DELIVERY IT WAS
@@ -412,35 +466,70 @@ function theAnswerOn(ran: Ran, columns: number, rows: number): Screen {
  * and the four that were left showed the tail of the answer with the list of verbs and the
  * heading that closes it both past the top of the window.
  */
-const SHOWS_OF_THE_ANSWER = 12;
+const SHOWS_OF_THE_ANSWER = 7;
+
+/**
+ * WHAT THE ARRANGEMENT COSTS ON THAT SCREEN — the second stick, and the one that says the
+ * identity survived.
+ *
+ * Six rows: the name drawn on one, and beside it what the session is, where it is standing, and
+ * the record's section under its blank row. ⚠️ THE FIRST TRY AT THIS DELIVERY MADE IT NOUGHT —
+ * the arrangement was given up whole and the identity went on the roll with the drawing, which
+ * is the one thing a header may not do. What buys it back is the DRAWING giving way instead: at
+ * this width the letterspaced name is what fits beside the text inside the share.
+ */
+const THE_ARRANGEMENT_COSTS = 6;
 
 describe('the answer a caller asked for is on the page, on the screen everybody has', () => {
   it('⛔ shows the list of verbs at eighty by twenty-four, where it showed none of it', async () => {
     const columns = 80;
     const rows = 24;
     const ran = await inPty({ columns, rows, steps: [opens, asks, leaves] });
-    // THE PAGE FOUND BY WHAT IT HOLDS, never by where the step ended in the stream: a submitted
+    // BOTH PAGES FOUND BY WHAT THEY HOLD, never by where a step ended in the stream: a submitted
     // line draws more than one frame, and the boundary a step settles on is wherever the stream
     // happened to be quiet ({@link theAnswerOn}).
+    const opened = theFirstScreenWith(ran.bytes, UNDER_THE_PANEL, columns, rows);
     const asked = theAnswerOn(ran, columns, rows);
-    // ⛔ THE DEFECT, CLOSED: the list is on the page, and the count is the stick above.
-    expect(rowsOfTheListOn(asked), 'the list of verbs is not on the page').toBe(
+    // ⛔ THE REGION AT THE TOP DID NOT MOVE, which is what makes the rows under it the window:
+    // measured as the rows the two pages share ({@link theFixedRowsBetween}).
+    const fixed = theFixedRowsBetween(opened, asked);
+    expect(fixed, 'the arrangement is not fixed at the top of this screen').toBe(
+      THE_ARRANGEMENT_COSTS,
+    );
+    // ⛔ THE DEFECT, CLOSED: the list is on the page UNDER that region, and the count is the
+    // stick above. It was nought.
+    expect(rowsOfTheListOn(asked, fixed), 'the list of verbs is not on the page').toBe(
       SHOWS_OF_THE_ANSWER,
     );
-    // AND THE MECHANISM THAT PAID FOR IT, on the same page: the arrangement is not drawn at this
-    // size, so the drawing of the name is not on the screen — it is on the roll, which the case
-    // under this one walks back to.
-    expect(asked.text, 'the drawing is still holding rows of this screen').not.toContain(
-      ART[0] as string,
+    // ⛔ AND WHAT THE SIX ROWS HOLD IS THE IDENTITY, not the logo: the fixed rows say what the
+    // session is, where it is standing and what the record proved — on the page that has printed,
+    // which is where the old console had lost all three.
+    const chrome = asked.rows.slice(0, fixed).join('\n');
+    expect(chrome, 'the fixed region does not say what the session is').toContain(OPENED);
+    expect(chrome, 'the fixed region does not say where it is standing').toContain('mnid:');
+    expect(chrome, 'the fixed region does not say what the record is').toContain('The record');
+    expect(chrome, 'the fixed region does not say what the record proved').toContain(VERIFIED);
+    // ⛔ AND A DRAWING OF THE NAME IS STILL IN IT — a SMALLER one, which is the whole mechanism:
+    // what gives way is the ART and never what identifies. Which drawing it is is asked of the
+    // module that draws them, so a fifth form moves this case with it.
+    const drawn = everyDrawing().find((form) => form.every((row) => chrome.includes(row)));
+    expect(drawn, 'no drawing of the name survived in the fixed region').toBeDefined();
+    expect(drawn, 'the biggest drawing is still holding rows of this screen').not.toEqual(ART);
+    // AND THE SHARE HOLDS ON THE REAL PAGE and not only in the arithmetic.
+    expect(fixed, 'the region at the top is over its share of the screen').toBeLessThanOrEqual(
+      A_THIRD_OF(rows),
     );
-    // AND THE BUDGET HOLDS ON THE REAL PAGE and not only in the arithmetic: what the console
-    // spends above the window at this size is nothing at all, which is under a third of it.
-    expect(openingAt(columns, rows).above, 'the arrangement is drawn at this size').toBe(0);
   }, 240_000);
 
   it('⛔ keeps what left the top on the roll, one walk back', async () => {
-    const columns = 80;
-    const rows = 24;
+    // A SCREEN WITH NO ROOM FOR AN ARRANGEMENT AT ALL, which is the floor of the ladder and the
+    // case this promise is about. Sixteen rows: the cheapest arrangement there is costs six —
+    // one row of drawing and the five the text beside it takes — and six rows want eighteen of
+    // screen. Under that there is no drawing small enough, so the whole opening is landed on the
+    // roll and the reader walks back to it. It is a SIZE and not a threshold; where the last
+    // arrangement gives way is searched for in `the-opening-fits-the-screen.test.ts`.
+    const columns = 100;
+    const rows = 16;
     const ran = await inPty({ columns, rows, steps: [opens, asks, walksToTheTop, leaves] });
     const asked = theAnswerOn(ran, columns, rows);
     // THE OPENING REALLY DID LEAVE THE PAGE, or there is nothing to walk back to: neither what
@@ -464,8 +553,20 @@ describe('the answer a caller asked for is on the page, on the screen everybody 
       rowOf(top, OPENED),
     );
     expect(top.text, 'the record’s section is not on the roll').toContain('The record');
-    // AND THE DRAWING WITH IT, which is the half a reader would notice first.
-    expect(top.rows[0], 'the drawing is not at the top of the roll').toContain(ART[0] as string);
+    expect(top.text, 'what the record proved is not on the roll').toContain(VERIFIED);
+    // AND THE DRAWING WITH IT, which is the half a reader would notice first: whichever one this
+    // screen was given, its first row is the first row of the roll.
+    const drawn = everyDrawing().find((form) => top.text.includes(form[0] as string));
+    expect(drawn, 'no drawing of the name is on the roll').toBeDefined();
+    expect(top.rows[0], 'the drawing is not at the top of the roll').toContain(
+      (drawn as readonly string[])[0] as string,
+    );
+    // AND NOTHING WAS FIXED AT THE TOP OF THIS SCREEN, which is what makes the walk necessary
+    // rather than decorative: the first row moved with everything else.
+    expect(
+      theFixedRowsBetween(asked, top),
+      'something was fixed at the top, so this is not the floor',
+    ).toBe(0);
   }, 240_000);
 
   it('⛔ draws the whole arrangement on a screen with the room for it, drawing and all', async () => {
@@ -489,9 +590,10 @@ describe('the answer a caller asked for is on the page, on the screen everybody 
       expect(asked.text, `a row of the drawing is missing: ${row}`).toContain(row);
     }
     // AND THE ANSWER IS ON THE PAGE UNDER IT, whole — which is what the room was for.
-    expect(rowsOfTheListOn(asked), 'the answer is not on the page').toBeGreaterThan(
-      SHOWS_OF_THE_ANSWER,
-    );
+    expect(
+      rowsOfTheListOn(asked, THE_DRAWING.length),
+      'the answer is not on the page',
+    ).toBeGreaterThan(SHOWS_OF_THE_ANSWER);
     // AND WHAT IT SPENDS IS THE DRAWING'S OWN HEIGHT, which is the elo between the arithmetic
     // this file's table is over and the console a caller really opens: the shape composed above
     // costs what the product's own opening costs at this size.

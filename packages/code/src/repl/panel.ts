@@ -123,20 +123,36 @@ const THE_FORMS: readonly PanelForm[] = ['columns', 'stacked', 'bare'];
 const A_THIRD = 3;
 
 /**
- * Whether an arrangement of a given height is inside its share of a screen this tall.
+ * THE SHORTEST SCREEN AN ARRANGEMENT OF THIS MANY ROWS MAY BE DRAWN ON — the share, read from
+ * the other end.
+ *
+ * ⛔ IT IS EXPORTED BECAUSE THE CHOICE OF THE DRAWING NEEDS IT, and that is the A3 shape rather
+ * than a convenience. The name gives way when the page it is on stops working
+ * (`presentation/banner.ts`), and what "stops working" means is now partly this rule: a drawing
+ * so tall that the arrangement around it would bust its share is a drawing that costs the
+ * ARRANGEMENT, which is the one thing the opening exists to keep. The composer asks that
+ * question with this function (`session.ts`), so there is one statement of the share with two
+ * readers rather than a number copied into the question.
  *
  * THE SHARE IS SPELLED AGAINST THE SCREEN rather than as a number of rows worked out first,
  * and that is deliberate: `chrome * 3 <= rows` and `chrome <= ⌊rows / 3⌋` are the same
  * statement about whole rows, and only the first says what it is measured against in the
  * expression that decides. A rounded number computed above and compared below is a threshold
  * one edit away from being a constant nobody can trace back to a screen.
+ */
+export function theShortestScreenFor(chrome: number): number {
+  return chrome * A_THIRD;
+}
+
+/**
+ * Whether an arrangement of a given height is inside its share of a screen this tall.
  *
  * A DEVICE THAT REPORTED NO HEIGHT keeps only the form that costs nothing, for the reason the
  * width gives about the same silence: a height nobody reported is not a height to guess at,
  * and a fixed region drawn against a guess is the one thing that cannot be scrolled back to.
  */
 function withinItsShare(chrome: number, rows: number): boolean {
-  return chrome * A_THIRD <= rows;
+  return theShortestScreenFor(chrome) <= rows;
 }
 
 /** What the panel is made of, as lines, before anything decides how much fits. */
