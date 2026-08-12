@@ -671,6 +671,12 @@ describe('a session has opened when its frame is finished, not when its prompt i
     // went back to the shared instrument, because a step that has to WAIT — an absence is waited
     // OUT, not watched for — is something the copy had no way to express. The rule is unchanged
     // and one site fewer holds it.
+    // ⚠️ AND THREE NOW, which is the count going down for a blunter reason:
+    // `a-page-that-opens-clean.test.ts` is GONE. Its whole subject was a page opened by scrolling
+    // the caller's own screen into their scrollback, and the console draws on a screen of its own
+    // — there is no page of theirs to carry away and nothing the file could still be asking. What
+    // replaced it drives the pty through the shared instrument
+    // (`the-screen-is-ours.test.ts`), which is why the list did not grow to make up for it.
     const drivers = readdirSync(TESTS)
       .filter((name) => name.endsWith('.ts'))
       .map((name) => ({ name, source: readFileSync(join(TESTS, name), 'utf-8') }))
@@ -684,14 +690,13 @@ describe('a session has opened when its frame is finished, not when its prompt i
       )
       .filter(({ source }) => codeOnly(source).includes('theDeviceWasTheSizeAskedFor('));
     expect(drivers.map(({ name }) => name).sort(), 'a pty driver appeared or went away').toEqual([
-      'a-page-that-opens-clean.test.ts',
       join('support', 'pty.ts'),
       'the-console-on-ink.test.ts',
       'the-screen-says-what-it-was-drawn-at.test.ts',
     ]);
 
     // WHICH OF THEM WAIT FOR SOMETHING THE CALLER CAUSED, which is what the rule is about. One
-    // of the four does not: it writes bytes at a decoder and asserts what came back, so it has
+    // of the three does not: it writes bytes at a decoder and asserts what came back, so it has
     // no marker to be answered early about. It is NAMED rather than filtered out silently — a
     // driver that stopped waiting would otherwise leave this list quietly.
     const WAITS_FOR_NOTHING_THE_CALLER_CAUSED = 'the-screen-says-what-it-was-drawn-at.test.ts';
@@ -702,8 +707,8 @@ describe('a session has opened when its frame is finished, not when its prompt i
       ),
       `${WAITS_FOR_NOTHING_THE_CALLER_CAUSED} started waiting for something, so it needs the rule`,
     ).not.toContain('until(() =>');
-    // AND THE OTHER THREE ALL USE THE ONE RULE. This is the A3 half: three drivers, one function
-    // that says what the question means.
+    // AND THE OTHER TWO BOTH USE THE ONE RULE. This is the A3 half: one function that says what
+    // the question means, and every driver that waits asks it.
     for (const { name, source } of waiting) {
       expect(codeOnly(source), `${name}: waits without the rule`).toContain('arrivedSince(');
     }
@@ -827,7 +832,7 @@ describe('a session has opened when its frame is finished, not when its prompt i
         .map(({ name }) => name)
         .sort(),
       'the drivers that ask a step its question changed',
-    ).toEqual(['a-page-that-opens-clean.test.ts', join('support', 'pty.ts')]);
+    ).toEqual([join('support', 'pty.ts')]);
   });
 });
 

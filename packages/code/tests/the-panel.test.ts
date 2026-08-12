@@ -64,6 +64,21 @@ const SRC = fileURLToPath(new URL('../src', import.meta.url));
 /** What the opening always says, whatever the terminal is like. */
 const OPENED = 'a session over this project';
 
+/** What the caller types in front of — the one thing on every page, at every width. */
+const PROMPT = 'mnema>';
+
+/**
+ * WHERE THE ROW THAT SAYS WHAT THE SESSION IS BEGINS — the first few characters of it.
+ *
+ * ⚠️ THE WHOLE SENTENCE USED TO BE THE MARKER, and a fold is what falsified it. The layout
+ * breaks a row too wide for the terminal AT THE MARGIN now, which is what a terminal does to it
+ * anyway — the difference is that the break is in the BYTES rather than only on the screen
+ * (`repl/region.ts`, `THE_MARGIN`). At forty-six columns the title is forty-nine characters, so
+ * *a session over this project* arrives split across two rows and a search for it finds nothing.
+ * What is searched for instead is the START of the row, which cannot be folded away.
+ */
+const SAYS_WHAT_IT_IS = 'mnema  ·  v';
+
 /**
  * WHAT A FRAME IS MADE OF: the four corners it turns at, the vertical its sides run down,
  * and the horizontal its edges run along.
@@ -161,7 +176,12 @@ async function openedAt(columns: number, render: Render = renderPlain): Promise<
     interactive: true,
     leaving: hooksNothing,
   });
-  await until(() => terminal.bytes().includes(OPENED), 'opened');
+  // ⚠️ IT WAITED FOR THE TITLE, and a terminal too narrow for an arrangement never draws one:
+  // the opening's LINES are on the roll and the middle region shows its tail, so on a narrow
+  // screen the title is one scroll up rather than on the page (`repl/panel.ts`, `Opening.above`).
+  // The bytes still hold it — the whole roll is written onto the caller's own buffer when the
+  // session leaves — but only once it HAS left. The prompt is on every page there is.
+  await until(() => terminal.bytes().includes(PROMPT), 'opened');
   terminal.type(`${LEAVE}\r`);
   await closed;
   return terminal.bytes();
@@ -263,7 +283,7 @@ function theFrameOn(rows: readonly string[]): string[] {
  */
 function formOf(page: string, columns: number): PanelForm {
   const rows = openingRows(page);
-  const title = rows.find((row) => row.includes(OPENED));
+  const title = rows.find((row) => row.includes(SAYS_WHAT_IT_IS));
   expect(title, 'nothing on the page says what the session is').toBeDefined();
   const art = drawnAt(columns).filter((row) => row.trim().length > 0);
   if (art.some((row) => (title as string).startsWith(row))) return 'columns';
@@ -519,8 +539,10 @@ describe('nothing on the page is a frame, at any size', () => {
       const rows = openingRows(await openedAt(columns));
       expect(theFrameOn(rows), `${columns}: ${theFrameOn(rows).join('; ')}`).toEqual([]);
       // And the page really was drawn, so the absence is about a drawing rather than an empty
-      // slice of rows.
-      expect(rows.join('\n'), `${columns}: nothing was drawn`).toContain(OPENED);
+      // slice of rows. ⚠️ THE ROWS ARE JOINED WITHOUT THE BREAK, because the layout folds a row
+      // too wide for the terminal at the margin — the same characters on two rows, which is what
+      // a terminal does to them anyway ({@link SAYS_WHAT_IT_IS}).
+      expect(rows.join(''), `${columns}: nothing was drawn`).toContain(OPENED);
     }
   }, 300_000);
 
@@ -766,7 +788,11 @@ describe('the form comes out of the content, and the narrowest still says the es
       const edge = await narrowestFor(richness);
       const page = await openedAt(edge);
       expect(formOf(page, edge), `${form} at ${edge}`).toBe(form);
-      const rows = openingRows(page).map(widthOf);
+      // ⚠️ THE ESCAPES COME OFF FIRST, and they did not have to before. The layout folds a row
+      // too wide for the terminal at the margin now, and a fold RE-OPENS the style on the
+      // continuation row — so a painted row carries more escape bytes than it used to and a
+      // count of characters answers wider than the terminal is. What is being asked is columns.
+      const rows = openingRows(page).map((row) => widthOf(stripped(row)));
       // BOTH HALVES IN ONE NUMBER, and that is why it is an equality rather than a bound: the
       // width a form gives way at IS the width its widest row takes, so `not wider than the
       // terminal` and `not vacuously narrower` are the same assertion. A bound alone would be
@@ -886,7 +912,7 @@ describe('the panel is the plain panel, wrapped, and it is drawn once', () => {
       interactive: true,
       leaving: hooksNothing,
     });
-    await until(() => terminal.bytes().includes(OPENED), 'opened');
+    await until(() => terminal.bytes().includes(PROMPT), 'opened');
     const typed = 'searc';
     for (const key of typed) {
       const grown = terminal.bytes().length;
@@ -897,24 +923,29 @@ describe('the panel is the plain panel, wrapped, and it is drawn once', () => {
     terminal.type(`${LEAVE}\r`);
     await closed;
     const page = stripped(withoutLayout(terminal.bytes()));
-    // What the session is is said once, and so is the widest row of the art.
+    // ⚠️ THE PANEL IS DRAWN ON EVERY FRAME, and this case is the inversion of what it asserted.
+    // It said the panel was written ONCE however many frames a caller caused, because it was
+    // landed into a region the layout wrote and never took back — which is exactly what made it
+    // CONTENT, and content rises off the top of a screen as soon as enough is printed. It is the
+    // fixed top REGION now (`repl/region.ts`), so it is redrawn with the other two on every
+    // frame — and that is what buys the thing the old shape could not have, which is a drawing
+    // that is still there after ten thousand lines.
     //
-    // ⚠️ THE SECOND WAS THE CORNER, counted once, and it was the whole witness that a DRAWING
-    // rather than a line had been written. The art is what says that now — asked of the module
-    // that draws it, so a fifth form moves this case with it.
-    expect(times(page, OPENED)).toBe(1);
-    expect(
-      times(
-        page,
-        drawnAt(200).reduce((most, row) => (row.length > most.length ? row : most)),
-      ),
-    ).toBe(1);
+    // ⚠️ THE SECOND COUNT WAS THE CORNER, and it was the whole witness that a DRAWING rather than
+    // a line had been written. The art is what says that now — asked of the module that draws it,
+    // so a fifth form moves this case with it.
+    const widest = drawnAt(200).reduce((most, row) => (row.length > most.length ? row : most));
+    const frames = times(page, renderPlain(tips()).trim());
+    expect(times(page, OPENED), 'the panel is not redrawn with the rest of the frame').toBe(frames);
+    expect(times(page, widest), 'the drawing is not redrawn with the rest of the frame').toBe(
+      frames,
+    );
     // The frames really happened: the row under the prompt was written once per keystroke.
     // ⚠️ THE WITNESS USED TO BE A CLAUSE OF THE HINT, and the hint stopped saying it: it
     // names the KEY that lists the session's words now rather than one of the words. The
     // witness is the hint itself, composed by the module that composes it, so a reworded
     // hint moves the case with it instead of quietly counting to zero.
-    expect(times(page, renderPlain(tips()).trim())).toBeGreaterThan(typed.length);
+    expect(frames, 'no frame was drawn per keystroke').toBeGreaterThan(typed.length);
     // ⚠️ AND THE LAST LINE SAID *what was drawn once really was a box*, by looking for the run
     // the border was made of. There is one on the page still and it is not the panel's — it is a
     // rule of the input AREA, which is redrawn every frame — so keeping it would have been this

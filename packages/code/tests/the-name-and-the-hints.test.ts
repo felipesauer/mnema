@@ -93,6 +93,9 @@ const DIM = `${ESC}[2m`;
 /** What the opening always says, whatever the terminal is like. */
 const OPENED = 'a session over this project';
 
+/** What the caller types in front of — the one thing on every page, at every width. */
+const PROMPT = 'mnema>';
+
 /**
  * Ctrl-C, which abandons the row being typed.
  *
@@ -293,10 +296,22 @@ async function openedAt(
     interactive: true,
     leaving: hooksNothing,
   });
-  await until(() => terminal.bytes().includes(OPENED), 'opened');
+  // ⚠️ IT WAITED FOR THE TITLE, and a terminal too narrow for an arrangement never draws one:
+  // the opening's LINES are on the roll, and the middle region shows its tail, so on a narrow
+  // screen the title is one scroll up rather than on the page (`repl/panel.ts`, `Opening.above`).
+  // The prompt is on every page there is.
+  await until(() => terminal.bytes().includes(PROMPT), 'opened');
   for (const line of typed) {
-    const grown = terminal.bytes().length;
-    terminal.type(`${line}\r`);
+    // ⚠️ THE LINE AND THE RETURN ARE TWO WRITES, and that is forced by what the layout does with
+    // a frame it has already drawn: it writes NOTHING for one that is identical, and a word that
+    // clears the page leaves exactly the page that was on it before the word was typed. So a
+    // whole line submitted in one write produces no bytes at all, and a wait for growth waits
+    // for ever. Typing changes the row being typed; the Return changes it back.
+    let grown = terminal.bytes().length;
+    terminal.type(line);
+    await until(() => terminal.bytes().length > grown, `typed ${line}`);
+    grown = terminal.bytes().length;
+    terminal.type('\r');
     await until(() => terminal.bytes().length > grown, `answered ${line}`);
     // The turn is serialized, so the next line waits for this one — and the wait is on
     // the page having stopped growing rather than on a fixed pause.
@@ -325,7 +340,7 @@ async function openedAt(
  * a resize nothing happened for, and the case built on it could not go red.
  */
 const TALL = 40;
-const CARRIES_THE_PAGE = `${ESC}[${TALL};1H`;
+const _CARRIES_THE_PAGE = `${ESC}[${TALL};1H`;
 
 /**
  * What a console drew, opened at `columns` and then resized to each of `widths` in turn.
@@ -353,12 +368,14 @@ async function resizedThrough(columns: number, widths: readonly number[]): Promi
   });
   await until(() => terminal.bytes().includes(OPENED), 'opened');
   for (const width of widths) {
-    const turned = times(terminal.bytes(), CARRIES_THE_PAGE);
+    // ⚠️ IT WAITED FOR A PAGE TO BE TURNED, and there are no pages to turn. A width that
+    // changed the arrangement used to carry a screen of the caller's into their scrollback and
+    // write the opening over it; the opening is a REGION now, composed for the size the device
+    // has at the moment of the drawing (`repl/console.ts`, `theOpening`), so what a resize
+    // causes is a frame like any other. So the wait is on the stream having answered at all.
+    const grown = terminal.bytes().length;
     terminal.resize(width);
-    await until(
-      () => times(terminal.bytes(), CARRIES_THE_PAGE) > turned,
-      `turned the page at ${width}`,
-    );
+    await until(() => terminal.bytes().length > grown, `drew again at ${width}`);
   }
   terminal.type(`${LEAVE}\r`);
   await closed;
@@ -386,11 +403,19 @@ async function readingWhileTyping(typed: string, answered?: string): Promise<Tou
     leaving: hooksNothing,
   });
   await until(() => terminal.bytes().includes(OPENED), 'opened');
-  const grown = terminal.bytes().length;
+  let grown = terminal.bytes().length;
   watched.touched = [];
   watched.on = true;
-  terminal.type(typed);
-  await until(() => terminal.bytes().length > grown, 'redrew');
+  // THE LINE AND THE RETURN ARE TWO WRITES, for the reason {@link openedAt} gives: the layout
+  // writes nothing at all for a frame identical to the one on the screen.
+  const withoutReturn = typed.replace(/\r$/, '');
+  terminal.type(withoutReturn);
+  await until(() => terminal.bytes().length > grown, 'took what was typed');
+  if (typed !== withoutReturn) {
+    grown = terminal.bytes().length;
+    terminal.type('\r');
+    await until(() => terminal.bytes().length > grown, 'redrew');
+  }
   if (answered !== undefined) {
     await until(() => terminal.bytes().includes(answered), `answered with ${answered}`);
   }
@@ -608,14 +633,23 @@ describe('the width the banner is chosen at is the terminal’s own', () => {
 // ---------------------------------------------------------------------------
 
 describe('the drawing stays in the scrollback and the tips stay on the screen', () => {
-  it('writes the banner once and the tips on every frame', async () => {
+  it('⚠️ writes the banner on EVERY frame, exactly as it writes the tips', async () => {
+    // ⚠️ THIS CASE SAID *writes the banner ONCE and the tips on every frame*, and the whole of
+    // this delivery is the inversion of it. The banner was landed like a line, into a region the
+    // layout wrote once and never took back, and the tips were redrawn — so *once* against *many*
+    // was the discriminant between what is kept and what is redrawn. Both are REGIONS now: the
+    // banner is the fixed top of the screen and the tips are the last row of the fixed bottom,
+    // and every frame draws all three regions. What that buys is the thing the old shape could
+    // not have — the banner is on the screen after ten thousand lines, because it is drawn there
+    // rather than left there.
     const page = await openedAt(200, ['verify', 'skills']);
     // It really was a session that did some work, or the counts below are about nothing.
     expect(page).toContain('local integrity verified');
-    // THE DISCRIMINANT, and it is one number against the other: both are lines the
-    // session composed, and the only difference between them is where they land.
-    for (const row of drawn(200)) expect(times(page, row), row).toBe(1);
-    expect(times(page, renderPlain(tips()))).toBeGreaterThan(1);
+    // ONE NUMBER AGAINST THE OTHER, still — and now they are the SAME number, which is the
+    // claim: the drawing of the name is redrawn as often as the row that says what to type.
+    const tipped = times(page, renderPlain(tips()));
+    expect(tipped, 'the tips were not redrawn').toBeGreaterThan(1);
+    for (const row of drawn(200)) expect(times(page, row), row).toBe(tipped);
   }, 120_000);
 
   it('says what the caller can do, in the weight this surface means by secondary', () => {
@@ -789,17 +823,24 @@ describe('the opening reads the record once, and a redraw never reads it', () =>
     const thrice = await reading(async () => {
       // THREE WIDTHS THAT EACH CROSS A THRESHOLD: down to where the text has no room beside the
       // mark, back up to where it has, and down to where there is no arrangement at all.
-      drew = await resizedThrough(200, [90, 200, 46]);
+      drew = await resizedThrough(200, [90, 200, 20]);
     });
     const once = await reading(async () => {
       await openedAt(200);
     });
     expect(ofTheRecord(once).length, 'the opening read nothing at all').toBeGreaterThan(0);
     expect(ofTheRecord(thrice)).toEqual(ofTheRecord(once));
-    // THE INSTRUMENT FIRST, and it is here because it was WRONG once: three pages really
-    // were turned, on top of the one the session opened with. Without this the case passes
+    // THE INSTRUMENT FIRST, and it is here because it was WRONG once: without it the case passes
     // on a console that never got round to redrawing anything, which is what it did.
-    expect(times(drew, CARRIES_THE_PAGE), 'the page was never turned').toBe(1 + 3);
+    //
+    // ⚠️ IT COUNTED PAGES CARRIED INTO THE SCROLLBACK, and nothing is carried anywhere: a width
+    // that changes the arrangement is a frame drawn at the new size (`repl/console.ts`). So the
+    // evidence moved INTO the helper, where it is a wait that throws by name: it does not return
+    // until the console has answered every one of the widths with bytes
+    // ({@link resizedThrough}, *drew again at 90*). What is left to assert here is that the
+    // session really drew the widest arrangement at all, so the reads counted are a session's
+    // and not a stillbirth's.
+    expect(drew, 'the wide drawing never reached the page').toContain(drawn(200)[0] as string);
   }, 180_000);
 
   it('and the counter would have seen one, which is what makes the absence a fact', async () => {
