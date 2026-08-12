@@ -13,7 +13,7 @@
  * together are exactly as tall as the terminal, on every frame — which is what makes the first
  * and the last fixed at all.
  *
- * ⚠️ AND THERE IS A SECOND FRAME NOW, WHICH THIS FILE USED TO SAY THERE COULD NOT BE. The page
+ * AND THERE IS A SECOND FRAME NOW, WHICH THIS FILE USED TO SAY THERE COULD NOT BE. The page
  * was three regions at EVERY size, because every ladder under it was total — a narrower terminal
  * got a smaller drawing, a shorter one got fewer rows of area, and the bottom rung always fitted.
  * There is a FLOOR under all of it (`floor.ts`): below eighty by twenty-four the console does not
@@ -21,7 +21,7 @@
  * console needs. It is one branch, over one discriminant, at the top of {@link Region} — and
  * everything under it is untouched, because a page that is not laid out has no regions to place.
  *
- * ⚠️ AND IT WAS THE OPPOSITE OF THAT, WHICH IS THE MODEL THIS DELIVERY REPLACED. What the
+ * AND IT WAS THE OPPOSITE OF THAT, WHICH IS THE MODEL THIS DELIVERY REPLACED. What the
  * session said used to be written ONCE, into a region the library keeps and never redraws, and
  * the caller's own scrollback was the roll: a line that left the top of the screen went into
  * their history, where they could scroll back to it. So the opening was CONTENT — the first
@@ -32,7 +32,7 @@
  * shrinking window carried away, a window onto the list of words. Each closed one symptom and
  * the next appeared beside it.
  *
- * ⚠️ AND THE ARGUMENT AGAINST TAKING THE SCREEN WAS WRITTEN HERE, in as many words: *the
+ * AND THE ARGUMENT AGAINST TAKING THE SCREEN WAS WRITTEN HERE, in as many words: *the
  * alternate screen DISCARDS the scrollback when the program exits, which is the opposite of a
  * session whose whole output a caller wants to keep reading afterwards*. It was not wrong, it
  * was incomplete — the cost it named is real, and it is PAID rather than avoided: everything
@@ -75,7 +75,7 @@
  * hint — everything that says something about what is written down — arrives with the
  * weight and the hue its renderer gave it and leaves with the same ones.
  *
- * ⚠️ AND THERE IS NO FRAME LEFT TO CARRY THE ACCENT. The box went — the console this was drawn
+ * AND THERE IS NO FRAME LEFT TO CARRY THE ACCENT. The box went — the console this was drawn
  * from writes its name and its context as text beside its logo and draws none — so what the
  * accent is spent on is the two things it was always really on: the MARK and the TITLE, which
  * say what the product is and nothing about the record. The rules the input area sits between
@@ -86,7 +86,7 @@
  * SO COLOUR ON THIS SURFACE HAS TWO AXES NOW, and they may not meet. DATA is painted by
  * severity and by nothing else, which is `presentation/styled.ts` and unchanged. CHROME
  * is painted by ONE accent, spent here, and the accent is MAGENTA — the hue this product
- * is marked by. ⚠️ IT WAS CYAN, AND THE ARGUMENT FOR IT WAS *chosen by elimination rather
+ * is marked by. IT WAS CYAN, AND THE ARGUMENT FOR IT WAS *chosen by elimination rather
  * than by taste*: red, green and yellow are the three severities, blue is a link, and cyan
  * was what was left. Elimination NARROWS and it does not choose — magenta survives the same
  * elimination, so what the argument really said was that any survivor would do, and the mark
@@ -100,7 +100,7 @@ import { createElement as node, type ReactNode, useSyncExternalStore } from 'rea
 import type { Area } from './area.js';
 import type { Keystroke } from './editing.js';
 // THE TWO MEASUREMENTS OF THE ARRANGEMENT, read from where the arithmetic that chooses the
-// form reads them. ⚠️ THEY WERE COPIED, and the copy was defended in as many words — *two
+// form reads them. THEY WERE COPIED, and the copy was defended in as many words — *two
 // copies of these numbers is two panels, one of which fits* — which named the risk and then
 // took it. One constant, two readers.
 import { BETWEEN_COLUMNS, BETWEEN_SECTIONS, type Panel } from './panel.js';
@@ -109,12 +109,12 @@ import { BETWEEN_COLUMNS, BETWEEN_SECTIONS, type Panel } from './panel.js';
  * The one hue this layout spends, on the things it draws — the mark, what the session is, and
  * the two rules the input area sits between.
  *
- * ⚠️ IT WAS SPENT ON A FRAME: the panel's border, the rule down the middle of it and the title
+ * IT WAS SPENT ON A FRAME: the panel's border, the rule down the middle of it and the title
  * laid on its top edge. The frame is gone and the hue is not — what it is on is what the frame
  * was around.
  *
  * MAGENTA, and it is the mark of the product rather than the survivor of an elimination.
- * ⚠️ THE DOC HERE SAID *cyan by elimination* and the elimination is unchanged — the three
+ * THE DOC HERE SAID *cyan by elimination* and the elimination is unchanged — the three
  * severities have red, green and yellow, so a frame in any of them would read as a verdict
  * about what it frames, and blue is a link. What that argument could not do is CHOOSE: it
  * leaves cyan and magenta both admissible, and this product is marked in one of the two.
@@ -126,7 +126,7 @@ const ACCENT = 'magenta';
  * How an EDGE is drawn — the library's own set, asked for by the only thing on this surface
  * that still has one: the two rules the input area sits between.
  *
- * ⚠️ IT WAS `How the box is drawn` AND IT NAMED THE PANEL'S FRAME. The frame is gone — the
+ * IT WAS `How the box is drawn` AND IT NAMED THE PANEL'S FRAME. The frame is gone — the
  * console this was measured against writes its name and its context as text beside its logo
  * and draws no box at all — so what is left of the set is the top edge of a box with nothing
  * in it, which is how a rule across the terminal is drawn ({@link rule}). The four constants
@@ -151,13 +151,13 @@ const AT_THE_FAR_END = 'flex-end';
 /**
  * THE MIDDLE — where the text beside the mark sits down the height the mark gave the row.
  *
- * ⚠️ IT ARRANGED BOTH COLUMNS AND IT ARRANGES ONE. ACROSS the left column its groups used to
+ * IT ARRANGED BOTH COLUMNS AND IT ARRANGES ONE. ACROSS the left column its groups used to
  * sit in the middle of the widest of them, because the mark and the line under it were both in
  * there and one of the two was always much the wider. The place moved to the other column, so
  * the left one holds the drawing and nothing else — a column with one group in it has nothing
  * to centre, and an alignment kept there would be a word that could never change an answer.
  *
- * DOWN THE TEXT COLUMN it stayed, and it is the half with a measurement behind it. ⚠️ THE
+ * DOWN THE TEXT COLUMN it stayed, and it is the half with a measurement behind it. THE
  * SECTION SAT AT THE TOP and nothing said so — its top row lined up with the top row of the
  * drawing because that is where a column starts, not because anybody chose it. Measured at a
  * hundred and forty columns: fourteen rows of box, three of them the record, and NINE blank
@@ -170,7 +170,7 @@ const AT_THE_FAR_END = 'flex-end';
 const IN_THE_MIDDLE = 'center';
 
 /**
- * ⛔ WHERE A LINE TOO WIDE FOR THE SCREEN IS BROKEN: at the margin, and nowhere else.
+ * WHERE A LINE TOO WIDE FOR THE SCREEN IS BROKEN: at the margin, and nowhere else.
  *
  * IT IS THE LIBRARY'S OWN NAME FOR *break at the width and do not look for a word*, and both
  * halves of that are the decision. Breaking at the margin is what a TERMINAL does to a line that
@@ -179,7 +179,7 @@ const IN_THE_MIDDLE = 'center';
  * folded is a frame the library believes is shorter than it is, and on a page that is exactly the
  * screen that one row is the difference between writing in place and scrolling.
  *
- * ⛔ AND WORD WRAPPING IS REFUSED, which is what the other half rules out. Where a sentence
+ * AND WORD WRAPPING IS REFUSED, which is what the other half rules out. Where a sentence
  * divides is a decision about what a line SAYS, and this surface has one place for that
  * (`presentation/folded.ts`, which folds between words with the continuation indented, before a
  * line ever reaches here). A layout that broke at a space would be a second such place — the
@@ -191,7 +191,7 @@ const THE_MARGIN = 'hard';
  * WHICH OF THE TWO PAGES THIS FRAME IS, and it is a discriminant rather than a flag on one
  * value.
  *
- * ⛔ A WINDOW UNDER THE FLOOR IS NOT A CONSOLE WITH FIELDS MISSING. Below eighty by twenty-four
+ * A WINDOW UNDER THE FLOOR IS NOT A CONSOLE WITH FIELDS MISSING. Below eighty by twenty-four
  * the console does not lay a page out at all — no arrangement is chosen, no area is budgeted, no
  * window onto the roll is cut ({@link Floored}, `floor.ts`) — so a single value carrying an empty
  * panel, an empty window and an area of nought would be this file being handed numbers nobody
@@ -200,7 +200,7 @@ const THE_MARGIN = 'hard';
 export type Shown = Showing | Floored;
 
 /**
- * ⛔ WHAT A WINDOW UNDER THE FLOOR IS SHOWN: the lines saying so, and the size they are drawn
+ * WHAT A WINDOW UNDER THE FLOOR IS SHOWN: the lines saying so, and the size they are drawn
  * at.
  *
  * IT IS A FRAME LIKE ANY OTHER — as wide and as tall as the device, written in place, over
@@ -233,12 +233,12 @@ export interface Showing {
    * THE TOP REGION: the arrangement the page opens with, or nothing when this terminal has no
    * room for one.
    *
-   * ⚠️ IT USED TO BE THE FIRST ITEM OF WHAT WAS KEPT, above every line the session had said,
+   * IT USED TO BE THE FIRST ITEM OF WHAT WAS KEPT, above every line the session had said,
    * and that is what made it CONTENT: enough output and it rose off the screen for good, which
    * is the defect the whole of this delivery is about. It is a region of its own now, drawn on
    * every frame at the top of the screen, and nothing the session says can move it.
    *
-   * ⛔ AND IT IS THE ARRANGEMENT ALONE. The LINES an opening lands are on the roll with
+   * AND IT IS THE ARRANGEMENT ALONE. The LINES an opening lands are on the roll with
    * everything else the session said (`scrolling.ts`), which is what the narrow case forced: a
    * fixed region that does not fit can only be CLIPPED, and a clipped drawing loses exactly the
    * rows that say what the session is and what the record proved. On the roll it loses nothing —
@@ -257,7 +257,7 @@ export interface Showing {
   /**
    * HOW WIDE THE CALLER'S TERMINAL IS, asked of the DEVICE in the same breath as the height.
    *
-   * ⚠️ IT WAS THE LIBRARY'S TO KNOW AND THAT IS WHAT A RESIZE FALSIFIED. The frame declared its
+   * IT WAS THE LIBRARY'S TO KNOW AND THAT IS WHAT A RESIZE FALSIFIED. The frame declared its
    * HEIGHT and left its width to the library, which sets the root of the layout from its own
    * reading of the device — and the two readings do not happen at the same instant. On a resize
    * the console rebuilds this value and re-renders synchronously, before the library has had its
@@ -275,7 +275,7 @@ export interface Showing {
    * HOW TALL THE CALLER'S TERMINAL IS, asked of the DEVICE by the module that owns the streams
    * and handed over as the height of the frame.
    *
-   * ⛔ IT IS THE ONE NUMBER THAT MAKES THE THREE REGIONS FIXED, and it is a number rather than
+   * IT IS THE ONE NUMBER THAT MAKES THE THREE REGIONS FIXED, and it is a number rather than
    * an arrangement for a reason the library forces. The frame is laid out to exactly this
    * height, so the middle takes whatever the other two leave and the whole is the screen — which
    * is what the library needs to write the frame IN PLACE instead of appending a row under it.
@@ -291,7 +291,7 @@ export interface Showing {
    * THE PALETTE: the words a caller could type next, one already-composed row each, top
    * first. Empty when there is none open.
    *
-   * ⚠️ IT USED TO BE `candidates`, AND IT USED TO BE ONE STRING. What a Tab could not
+   * IT USED TO BE `candidates`, AND IT USED TO BE ONE STRING. What a Tab could not
    * choose between was joined into a row of bare tokens; it is a list of rows now, with a
    * column saying what each word is, and it is opened by a slash as well as by a Tab
    * (`palette.ts`). Renamed rather than redefined, because a field that keeps its
@@ -340,7 +340,7 @@ export interface Watched {
  * nothing that happens inside a session changes either, so putting them in the value rebuilt
  * on every keystroke would have said they might.
  *
- * ⚠️ THE OPENING USED TO BE A PROP TOO, then it joined the watched value, and now it is watched
+ * THE OPENING USED TO BE A PROP TOO, then it joined the watched value, and now it is watched
  * for a different reason than the one it joined for. It joined because a caller who narrowed
  * their window past a threshold got the page again with a different arrangement, on a new
  * identity — a page TURN. There are no pages to turn: it is watched because it is a REGION,
@@ -377,7 +377,7 @@ export function Region({
   // and the rows of the area over the row being typed — and every one of those numbers is
   // counted where it is answered ({@link Shown.above}, `area.ts`).
   //
-  // ⚠️ IT WAS HANDED OVER IN AN EFFECT, AND AN EFFECT IS ONE FRAME LATE. Measured: the
+  // IT WAS HANDED OVER IN AN EFFECT, AND AN EFFECT IS ONE FRAME LATE. Measured: the
   // caret opened three rows BELOW the prompt — where the terminal leaves it after the last
   // row of a frame — and corrected itself on the first keystroke. The library keeps what it
   // is handed in a ref and pushes it to the page during the COMMIT (`ink`, `useCursor`: an
@@ -388,7 +388,7 @@ export function Region({
   // ref rather than state, so nothing is rendered twice for it
   // (`tests/the-opening-fits-the-screen.test.ts` compares the opening with the frame after
   // one keystroke: they used to disagree).
-  // ⚠️ AND IT IS COUNTED UP FROM THE FOOT RATHER THAN DOWN FROM THE TOP, which is the one way
+  // AND IT IS COUNTED UP FROM THE FOOT RATHER THAN DOWN FROM THE TOP, which is the one way
   // it can be exact. Counted downwards it would be the top region plus the middle one, and
   // neither of those is a number this side of the layout knows: how many rows a drawing really
   // takes is the library's arithmetic over what it was handed, and a console that predicted it
@@ -400,14 +400,14 @@ export function Region({
 
   return node(
     Box,
-    // ⛔ THE FRAME IS THE SCREEN, and this is where that is said. Everything else about the
+    // THE FRAME IS THE SCREEN, and this is where that is said. Everything else about the
     // three regions follows from it: the two fixed ones take what they take, the middle takes
     // what is left, and there is no row under the last one for the library to write a newline
     // into. What is outside it is CLIPPED rather than allowed to push — a frame one row taller
     // than the terminal scrolls the page, and the top region moving is the defect this whole
     // model exists to remove.
     //
-    // ⛔ AND THE SAME IS TRUE OF THE FLOOR SCREEN, which is what makes it a screen rather than
+    // AND THE SAME IS TRUE OF THE FLOOR SCREEN, which is what makes it a screen rather than
     // something printed: it is written in place, at the size of the window, over whatever was
     // on the page. What it says is longer than a very small window, and the clip is what
     // answers that — the rows a reader needs least are the ones that go (`floor.ts`).
@@ -417,7 +417,7 @@ export function Region({
       height: shown.rows > 0 ? shown.rows : undefined,
       overflow: 'hidden',
     },
-    // ⛔ THE ONE BRANCH ON THIS SURFACE THAT IS NOT ABOUT A FORM. Every other choice here is
+    // THE ONE BRANCH ON THIS SURFACE THAT IS NOT ABOUT A FORM. Every other choice here is
     // which arrangement there is room for; this is whether there is a page at all
     // (`floor.ts`, {@link Floored}).
     ...(shown.draws === 'floor' ? rows(shown.said) : theThreeRegions(shown, tips, badge)),
@@ -446,7 +446,7 @@ function theThreeRegions(shown: Showing, tips: string, badge: string): readonly 
 }
 
 /**
- * ⚠️ WHERE THE CARET GOES, WITH THE LIBRARY'S OWN OFF-BY-ONE ANSWERED — one row lower than the
+ * WHERE THE CARET GOES, WITH THE LIBRARY'S OWN OFF-BY-ONE ANSWERED — one row lower than the
  * row it is meant to be on.
  *
  * THE LIBRARY MOVES THE CARET UP FROM THE BOTTOM, and it says in its own words what it is
@@ -467,7 +467,7 @@ function theThreeRegions(shown: Showing, tips: string, badge: string): readonly 
  * is whatever its content is — so there is no row to count back from, and a position invented
  * against a height nobody reported would put the caret somewhere nothing is drawn.
  *
- * ⛔ AND NEITHER DOES A WINDOW UNDER THE FLOOR, for a sharper reason than the height: there is
+ * AND NEITHER DOES A WINDOW UNDER THE FLOOR, for a sharper reason than the height: there is
  * no row being typed on that page at all, so a caret would be pointing at a column of a line
  * nobody is writing ({@link Floored}).
  */
@@ -489,12 +489,12 @@ function theCaretOn(shown: Shown): { readonly x: number; readonly y: number } | 
  * A terminal too narrow for either arrangement gets none, which is decided before this
  * component is reached (`panel.ts`, `session.ts`) — so there is no third branch here, and the
  * narrow case is not a drawing but the absence of one, with the same lines on the roll instead.
- * ⚠️ IT SAID *TOO NARROW OR TOO SHORT* AND THE SECOND HALF IS UNREACHABLE: a window under the
+ * IT SAID *TOO NARROW OR TOO SHORT* AND THE SECOND HALF IS UNREACHABLE: a window under the
  * floor has no page at all ({@link Floored}), and every window above it has the rows for the
  * cheapest arrangement. What can still be too narrow is a window narrower than the widest row the
  * arrangement holds.
  *
- * ⚠️ THERE WAS A BOX AROUND IT, drawn corner to corner, with the title laid on its top edge
+ * THERE WAS A BOX AROUND IT, drawn corner to corner, with the title laid on its top edge
  * in three pieces — a stub of border, the title with a space on each side, and the rest
  * running to the corner. All of it is gone: the reference this panel was measured against
  * writes its name, its build and its context as text beside its logo and draws no frame, and
@@ -503,7 +503,7 @@ function theCaretOn(shown: Shown): { readonly x: number; readonly y: number } | 
  * columns of border and gap, and the arrangement that had to be chosen around them — and what
  * replaces it costs the drawing of the name and nothing more.
  *
- * ⚠️ AND WITH IT WENT THE WIDTH. The box took the terminal's, so this component was handed one;
+ * AND WITH IT WENT THE WIDTH. The box took the terminal's, so this component was handed one;
  * nothing here is drawn to an edge now, so every row is as wide as what is on it and the panel
  * has no width to be told (`panel.ts`, {@link Panel}).
  */
@@ -536,7 +536,7 @@ function Header({ panel }: { readonly panel: Panel }): ReactNode {
  *     lines would arrive with the separations gone. Measured against two reads of this
  *     product that do exactly that.
  *   - BROKEN AT THE MARGIN BY THE LAYOUT AND NEVER BY THE TERMINAL, which is the half this
- *     delivery inverted. ⚠️ IT USED TO BE *AS WIDE AS THE LINE IS LONG*, with the reason
+ *     delivery inverted. IT USED TO BE *AS WIDE AS THE LINE IS LONG*, with the reason
  *     written out: the line arrives already folded between words with the continuation
  *     indented (`presentation/folded.ts`), so a layout that re-wrapped it would fold it twice
  *     and the second fold is the one at the margin. WHAT FALSIFIED IT IS WHO COUNTS. A box as
@@ -559,7 +559,7 @@ function landed(line: string, index: number): ReactNode {
 /**
  * THE MIDDLE REGION: the part of the roll a reader can see, and the emptiness under it.
  *
- * ⛔ IT IS A WINDOW AND NOT A LIST THAT GROWS, and that distinction is the one this surface has
+ * IT IS A WINDOW AND NOT A LIST THAT GROWS, and that distinction is the one this surface has
  * been paying for since it had two regions. A region whose height followed what a session had
  * to SAY walks into the height at which the library stops redrawing part of the screen; a
  * region whose height is what the terminal has left after the two fixed ones cannot, at any
@@ -578,7 +578,7 @@ function landed(line: string, index: number): ReactNode {
 function Middle({ window }: { readonly window: readonly string[] }): ReactNode {
   return node(
     Box,
-    // ⛔ IT TAKES WHAT THE OTHER TWO LEAVE, and that is a property of the layout rather than a
+    // IT TAKES WHAT THE OTHER TWO LEAVE, and that is a property of the layout rather than a
     // number anybody works out. The frame is the screen and the two fixed regions are as tall as
     // their content, so this one growing into the rest is what makes the arithmetic exact
     // without anybody predicting how many rows a drawing takes.
@@ -599,7 +599,7 @@ function Middle({ window }: { readonly window: readonly string[] }): ReactNode {
  * `accented` is the CHROME switch and it is false for everything that says something about
  * the record. What it is true for is the two things that say nothing about it: the mark — the
  * name drawn, which carries no fact — and the title, which says what the product and the
- * session are. ⚠️ IT WAS TRUE FOR THE MARK ALONE, and the border and the title on it were
+ * session are. IT WAS TRUE FOR THE MARK ALONE, and the border and the title on it were
  * painted where they were drawn; with the border gone the title is a row like any other, so
  * the switch is what carries the accent onto it. There is no third, and that is checked rather
  * than intended (`tests/the-panel.test.ts`).
@@ -652,7 +652,7 @@ function sideBySide(panel: Panel): ReactNode[] {
  * mark.
  *
  * THE MARK IS FIRST, and it is the same reading order the other form has across the screen
- * rather than a second one: the drawing, then what the session is. ⚠️ THE TITLE USED TO BE
+ * rather than a second one: the drawing, then what the session is. THE TITLE USED TO BE
  * FIRST here, because the frame drew it above everything.
  */
 function oneOverTheOther(panel: Panel): ReactNode[] {
@@ -663,7 +663,7 @@ function oneOverTheOther(panel: Panel): ReactNode[] {
  * WHAT THE SESSION IS, WHERE IT IS STANDING, AND WHAT THE RECORD IS — the three groups that
  * go beside the mark, in that order, in both arrangements.
  *
- * ⚠️ THE FIRST OF THEM WAS ON THE BOX'S TOP BORDER and the second was under the mark. Moving
+ * THE FIRST OF THEM WAS ON THE BOX'S TOP BORDER and the second was under the mark. Moving
  * them here is the whole of what the frame's departure bought: the drawing is nine rows and
  * the text is five, so text BESIDE the mark costs the page the mark alone, and text under it
  * cost the page both.
@@ -691,14 +691,14 @@ function group(key: string, lines: readonly string[], accented = false): ReactNo
  * WHAT THE RECORD IS: the one section of the panel, and everything it says that is not the
  * name, the build or the place.
  *
- * A BLANK ROW OVER IT, IN BOTH ARRANGEMENTS. ⚠️ IT WAS THE STACKED FORM'S ALONE, on a premise
+ * A BLANK ROW OVER IT, IN BOTH ARRANGEMENTS. IT WAS THE STACKED FORM'S ALONE, on a premise
  * this delivery falsified: *beside the mark there is nothing above it and its top row lines up
  * with the top of the drawing*. That was true while the column held the record and nothing
  * else. What the session is and where it is standing are above it in both forms now, so a
  * section that started on the next row would read as part of the group before it either way —
  * and the argument the two forms differed by is the same argument that now applies to both.
  *
- * ⚠️ IT USED TO BE TWO SECTIONS WITH A RULE BETWEEN THEM, and this was `sections`. The
+ * IT USED TO BE TWO SECTIONS WITH A RULE BETWEEN THEM, and this was `sections`. The
  * second section said what to type; it went because the row under the prompt says it too,
  * in the place that does not scroll away (`session.ts`, `tips`). The rule went WITH it —
  * with one section there is nothing left to divide — and the function is renamed rather
@@ -740,7 +740,7 @@ function theRecord(panel: Panel): ReactNode {
  *
  * THE RULES ARE DRAWN AND NOT WRITTEN: a box with nothing in it and one edge switched on, so
  * the run of glyphs is the library's. A string of dashes typed here would be text a component
- * put on the page. They are CHROME and they take the one accent this file spends. ⚠️ THIS SAID
+ * put on the page. They are CHROME and they take the one accent this file spends. THIS SAID
  * *exactly as the one inside the panel is* and *like the frame they are the siblings of*, and
  * the panel has neither: the frame went, and these two are the only edges left on the surface.
  */

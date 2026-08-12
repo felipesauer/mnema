@@ -13,7 +13,7 @@
  * a cursor, and the sequences this product and its layout library actually write —
  * moving, erasing a row, erasing the display, and the newline at the bottom that scrolls.
  *
- * ⚠️ AND A ROW THAT SCROLLED OFF THE TOP USED TO BE GONE FROM IT, written here in those words:
+ * AND A ROW THAT SCROLLED OFF THE TOP USED TO BE GONE FROM IT, written here in those words:
  * *it went into the scrollback, which is not the screen and is not this model's business*. WHAT
  * FALSIFIED IT is a promise that is only ABOUT the scrollback. Where a row went when it left the
  * top is the difference between the two ways to empty a page — a scroll puts it above, an erase
@@ -28,7 +28,7 @@
  * renders the screen from BEFORE the session opened and finds the caller's output on it
  * (`tests/a-page-that-opens-clean.test.ts`).
  *
- * ⚠️ AND IT USED TO SAY THAT ANYTHING IT DID NOT UNDERSTAND WAS SKIPPED RATHER THAN
+ * AND IT USED TO SAY THAT ANYTHING IT DID NOT UNDERSTAND WAS SKIPPED RATHER THAN
  * PRINTED, "which is the safe direction: an unhandled escape becomes nothing on the page
  * instead of becoming text that was never there". That is true of a glyph and it is the
  * OPPOSITE of true for a sequence that moves something. A scroll this model did not
@@ -38,7 +38,7 @@
  * ({@link CHANGES_ONLY_HOW_IT_LOOKS}), and everything outside it is accused
  * (`tests/the-screen-says-what-it-was-drawn-at.test.ts`).
  *
- * ⚠️ AND IT USED TO MODEL ONE SCREEN, which is what the console taking the alternate buffer
+ * AND IT USED TO MODEL ONE SCREEN, which is what the console taking the alternate buffer
  * falsified. A terminal has TWO — the caller's own, with a scrollback under it, and an
  * alternate one that has none and is cleared on the way in — and every promise this delivery
  * makes is about which of the two something landed on. So there are two grids here
@@ -48,7 +48,7 @@
  * answer *the caller's page is intact* and *the transcript came back* identically whether either
  * was true.
  *
- * ⚠️ AND THE OTHER HALF: A REPLAY IS NOT A TERMINAL, and the size is the seam. This model
+ * AND THE OTHER HALF: A REPLAY IS NOT A TERMINAL, and the size is the seam. This model
  * is handed the size the CASE asked for, and the bytes were written by a process that read
  * the size from a DEVICE. When those two are not the same number, every row under the first
  * thing that folds is off — and the case fails on a count, which says nothing about the
@@ -77,7 +77,7 @@ const BLANK = ' ';
  * repository: a run is one keystroke away from a hyphen, and a character a reader cannot tell
  * from a neighbouring one is a character an edit destroys without anybody seeing it happen.
  *
- * ⚠️ THERE WERE FOUR MORE, and they were the corners a frame turns at: the panel used to be a
+ * THERE WERE FOUR MORE, and they were the corners a frame turns at: the panel used to be a
  * BOX, drawn corner to corner, so an edge bounded by two of them was a width and the two halves
  * of a title-cut top edge were neither. The frame is gone from the product
  * (`src/repl/region.ts`), so a corner cannot appear on a page this replays — and a branch that
@@ -94,7 +94,7 @@ const RUN = '\u2500';
  * process read off its device. Nothing here knows what that number ought to be; it answers what
  * is there.
  *
- * ⚠️ THE FRAME WAS THE WITNESS TOO, and it was the richer half of this measurement: the box was
+ * THE FRAME WAS THE WITNESS TOO, and it was the richer half of this measurement: the box was
  * drawn corner to corner, so its bottom edge gave a width whatever the input area did. What is
  * left is one witness rather than two — which is a REDUCTION and is written down as one, because
  * a page with no input area on it can no longer say what it was drawn at.
@@ -105,7 +105,7 @@ const RUN = '\u2500';
  * measurement works in BOTH directions — a rule narrower than the replay ends in blanks,
  * and one wider than it ends on the row below.
  *
- * WHAT COUNTS IS A MAXIMAL RUN of {@link RUN}, and its width is its own length. ⚠️ IT USED TO
+ * WHAT COUNTS IS A MAXIMAL RUN of {@link RUN}, and its width is its own length. IT USED TO
  * DEPEND ON WHAT BOUNDED IT — corner to corner was the run plus two, one end only was not a width
  * at all — and neither case can occur on a page without a frame.
  */
@@ -126,9 +126,9 @@ export function everyWidthDrawnOn(rows: readonly string[]): readonly number[] {
 }
 
 /**
- * ⛔ WHAT SAYS A RESIZE HAPPENED: the console DREW at that width, since the step began.
+ * WHAT SAYS A RESIZE HAPPENED: the console DREW at that width, since the step began.
  *
- * ⚠️ THE STEP USED TO WAIT FOR A FRAME, AND A FRAME NAMES NOTHING ABOUT A SIZE. That is the
+ * THE STEP USED TO WAIT FOR A FRAME, AND A FRAME NAMES NOTHING ABOUT A SIZE. That is the
  * amarra this bench already carries — a step waits for what it CAUSED — applied to the one event
  * it had not been applied to. Under load the frames of the step before can still be arriving, so
  * *a frame arrived since this step began* is answered by somebody else's frame; the step then
@@ -137,7 +137,7 @@ export function everyWidthDrawnOn(rows: readonly string[]): readonly number[] {
  * drawn 80 columns wide*, and it was right — the console never drew at eighty, because by the
  * time it ran the terminal was already something else.
  *
- * ⛔ AND THE CONSOLE IS RIGHT TO SKIP IT. The geometry is read at the moment of the drawing, so
+ * AND THE CONSOLE IS RIGHT TO SKIP IT. The geometry is read at the moment of the drawing, so
  * a size the terminal held for a few milliseconds and left is a size no frame owes anything to —
  * that is what *treat a resize as a signal to render again rather than as a source of truth*
  * buys, and it is what a caller dragging a window edge relies on. What was wrong is a case that
@@ -148,7 +148,7 @@ export function everyWidthDrawnOn(rows: readonly string[]): readonly number[] {
  * ({@link everyWidthDrawnOn}) — and a step that waits for it cannot end before the size it asked
  * for is on the page, nor can the next size be set on top of it.
  *
- * ⛔ IT IS ONLY AVAILABLE WHERE THE INPUT AREA HAS RULES, which is every arrangement but the bare
+ * IT IS ONLY AVAILABLE WHERE THE INPUT AREA HAS RULES, which is every arrangement but the bare
  * one. A window too short for the rules draws none, and a step waiting for one there would wait
  * for ever — so the sizes a case drives with this are sizes with room for them.
  */
@@ -157,10 +157,10 @@ export function drewAt(columns: number): (bytes: string, since: number) => boole
 }
 
 /**
- * ⛔ THE PAGE AS IT SETTLED AT A GIVEN WIDTH — found by what the frames CONTAIN, never by where
+ * THE PAGE AS IT SETTLED AT A GIVEN WIDTH — found by what the frames CONTAIN, never by where
  * they are in the stream.
  *
- * ⚠️ THIS IS THE INSTRUMENT A WHOLE CLASS OF CASES WAS MISSING, and the class is precise: a step
+ * THIS IS THE INSTRUMENT A WHOLE CLASS OF CASES WAS MISSING, and the class is precise: a step
  * WAITS for the frame it caused, and then the case READS by index — `ran.at[3]`. The wait is
  * right; the index is not what the wait guarantees. A resize produces more than one frame, the
  * boundary a step ends on is wherever the stream happened to be quiet, and a machine under load
@@ -175,7 +175,7 @@ export function drewAt(columns: number): (bytes: string, since: number) => boole
  * this console writes is a whole page, so every frame carries them. The LAST frame drawn that
  * wide is the page after the size settled, whatever else the stream did around it.
  *
- * ⛔ IT ACCUSES RATHER THAN GUESSING when there is no such frame: a page whose input area has no
+ * IT ACCUSES RATHER THAN GUESSING when there is no such frame: a page whose input area has no
  * rules says nothing about a width, and a locator that fell back to the end of the stream would
  * be the index again, wearing a better name.
  */
@@ -210,7 +210,7 @@ export function theSettledScreen(
 }
 
 /**
- * ⛔ THE PAGE AS SOON AS IT FIRST SHOWED SOMETHING — the other half of the same idea, for the
+ * THE PAGE AS SOON AS IT FIRST SHOWED SOMETHING — the other half of the same idea, for the
  * cases whose subject is an effect landing rather than a size settling.
  *
  * THE FIRST FRAME AND NOT THE LAST, and the difference is what each is about: a size is settled
@@ -257,10 +257,10 @@ function theFrame(bytes: string, is: (frame: string) => boolean, which: 'first' 
 }
 
 /**
- * ⛔ THE PAGE AS SOON AS THE PAGE ITSELF ANSWERS `is` — the locator for the cases whose subject
+ * THE PAGE AS SOON AS THE PAGE ITSELF ANSWERS `is` — the locator for the cases whose subject
  * cannot be told from the bytes of one frame.
  *
- * ⚠️ IT IS THE THIRD ANSWER TO ONE QUESTION AND IT EXISTS BECAUSE THE SECOND WAS AMBIGUOUS.
+ * IT IS THE THIRD ANSWER TO ONE QUESTION AND IT EXISTS BECAUSE THE SECOND WAS AMBIGUOUS.
  * {@link theFirstScreenWith} finds the first frame whose BYTES hold something, which is enough
  * while that something can be in one place — and the row a caller is typing is not such a place.
  * What the session SAID is on the roll, so `mnema> show <id>` is on the page twice over once the
@@ -295,7 +295,7 @@ export function theFirstScreenWhere(
 }
 
 /**
- * ⛔ THE PAGE AS THE SESSION LEFT IT — everything up to the sequence that gives the caller's
+ * THE PAGE AS THE SESSION LEFT IT — everything up to the sequence that gives the caller's
  * screen back.
  *
  * THE THIRD LOCATOR, and it is here for the pages the other two cannot name. A page whose input
@@ -376,7 +376,7 @@ const HALF_A_CHARACTER = '\ufffd';
 /**
  * ACCUSES A STREAM THAT WAS DECODED IN PIECES.
  *
- * ⚠️ THIS IS THE DEFECT THE WHOLE DELIVERY WENT LOOKING FOR, and it is the instrument's own.
+ * THIS IS THE DEFECT THE WHOLE DELIVERY WENT LOOKING FOR, and it is the instrument's own.
  * A pty is read in chunks and five places accumulated them one decode per chunk. The glyph a rule is made of is THREE bytes, so a chunk boundary that
  * lands inside one destroys it and leaves TWO replacements where there was one character.
  * The row is then one column WIDER than the terminal, the terminal folds it, and the page
@@ -427,7 +427,7 @@ export interface Screen {
   /**
    * THE CALLER'S OWN BUFFER, whichever one is showing — trailing blanks off and joined.
    *
-   * ⛔ IT IS THE ONE PLACE THE TRANSCRIPT CAN BE READ, and reading it anywhere else would be
+   * IT IS THE ONE PLACE THE TRANSCRIPT CAN BE READ, and reading it anywhere else would be
    * reading it off a screen that is about to be thrown away. While the session is up this is
    * whatever the caller had before it opened, untouched; after the session has given the screen
    * back, it is that plus everything the session said (`src/repl/scrolling.ts`).
@@ -470,7 +470,7 @@ export interface Screen {
 /**
  * THE FIRST ROW OF THE SCREEN WITH ANYTHING ON IT — where the page begins.
  *
- * ⚠️ IT WAS THE INSTRUMENT THE ANCHORING WAS READ WITH, and it stopped being one: while the
+ * IT WAS THE INSTRUMENT THE ANCHORING WAS READ WITH, and it stopped being one: while the
  * rows with nothing on them went OVER the opening, how far down the page began WAS the
  * placement, and the case that proved a page was anchored asserted this was not zero. The rows
  * go under the flow now, so the box is on the first row at every size and this answers zero on
@@ -499,7 +499,7 @@ export function promptRow(screen: Screen, prompt: string): number {
  * ACCUSES A SCREEN WHOSE FRAME DOES NOT FILL IT — the input area's last row is not the last
  * row of the terminal.
  *
- * ⚠️ IT WAS `endsAtTheFoot` AND IT ALLOWED EXACTLY ONE ROW UNDER THE AREA, and it is renamed
+ * IT WAS `endsAtTheFoot` AND IT ALLOWED EXACTLY ONE ROW UNDER THE AREA, and it is renamed
  * because the number it asserts INVERTED. That row was the layout library's: it writes a
  * newline after the last row of every frame, and the area's arithmetic kept a row back so the
  * region stayed shorter than the viewport and was redrawn in PART. On a screen the console owns
@@ -530,7 +530,7 @@ export function fillsTheScreen(screen: Screen, rows: number, what: string): void
  * IT IS FOUND BY WALKING UP FROM THE ROW BEING TYPED, past everything that is drawn, to the
  * first thing that is not: the rows of the area above the input, and then the run.
  *
- * ⚠️ THE WALK USED TO HAVE A THIRD LEG, and it was *whatever of the flow has been said since the
+ * THE WALK USED TO HAVE A THIRD LEG, and it was *whatever of the flow has been said since the
  * page was placed — because what the session says lands UNDER the leftover, so the run does not
  * have to touch the area to be the one*. That was true while the rows were lines of the flow:
  * they were appended when the page was placed, so a line said afterwards landed below them. The
@@ -540,7 +540,7 @@ export function fillsTheScreen(screen: Screen, rows: number, what: string): void
  * (`tests/the-gap-goes-under-the-box.test.ts`). The walk is unchanged and the leg is simply never
  * taken: what it stepped over cannot be there.
  *
- * ⚠️ IT IS NOT THE PLACEMENT WITH A LIST OPEN, and the reason is the area's rather than this
+ * IT IS NOT THE PLACEMENT WITH A LIST OPEN, and the reason is the area's rather than this
  * instrument's: the palette has a row with nothing on it OVER it, which belongs to the region
  * the layout redraws (`src/repl/area.ts`, `ABOVE_THE_PALETTE`) — so the walk stops there and
  * answers about the list instead. Every caller that measures a placement measures it with the
@@ -567,7 +567,7 @@ export function theGapOn(screen: Screen, prompt: string): number {
  * the text of a row being typed and the text of the same row once it has landed are the same
  * bytes in two different places, and *the line is on the screen* does not say which.
  *
- * ⚠️ AND A STEP THAT WAITED FOR THE TEXT WAS WAITING FOR THE WRONG ONE OF THEM. Abandoning a row
+ * AND A STEP THAT WAITED FOR THE TEXT WAS WAITING FOR THE WRONG ONE OF THEM. Abandoning a row
  * redraws the frame FIRST and lands the line on the turn after it, so a step that ended on the
  * frame it caused ended before the page had placed anything — and the case then read a screen
  * with the line still in the input area, which is a red that says *36 is not less than 10* and
@@ -641,7 +641,7 @@ function onScreen(grid: Grid): Buffer {
  * THE PRIVATE MODES THIS MODEL DELIBERATELY DOES NOTHING ABOUT, and the reason it is safe to
  * do nothing about each.
  *
- * ⚠️ EVERY PRIVATE SEQUENCE USED TO BE SKIPPED, on the grounds that *a mode changes nothing on
+ * EVERY PRIVATE SEQUENCE USED TO BE SKIPPED, on the grounds that *a mode changes nothing on
  * the page*. That was true of the modes the console wrote then and it is false of the one it
  * writes now: `?1049` SWITCHES THE BUFFER, which is the largest thing anything can do to a
  * page. A model that shrugged at it would replay the session's whole page onto the caller's own
@@ -662,7 +662,7 @@ function onScreen(grid: Grid): Buffer {
 const MODES_THAT_DRAW_NOTHING = new Set([25, 1000, 1006, 2026]);
 
 /**
- * ⛔ THE MODE THAT SWITCHES THE BUFFER — save the cursor, go to the alternate screen and clear
+ * THE MODE THAT SWITCHES THE BUFFER — save the cursor, go to the alternate screen and clear
  * it; and on the way back, restore the caller's buffer and the cursor with it.
  *
  * It is the one private mode this model ACTS on, because it is the one that moves a page.
@@ -746,7 +746,7 @@ function printable(byte: string, grid: Grid, columns: number, rows: number): voi
 /**
  * One row further down, scrolling the whole page when there is no further down.
  *
- * ⛔ AND WHERE THE ROW THAT LEAVES GOES IS THE WHOLE POINT OF THERE BEING TWO BUFFERS. Off the
+ * AND WHERE THE ROW THAT LEAVES GOES IS THE WHOLE POINT OF THERE BEING TWO BUFFERS. Off the
  * top of the caller's own it goes into their scrollback, which is the one thing that ever feeds
  * it ({@link Screen.above}); off the top of the alternate one it is DISCARDED, because the
  * alternate buffer has no history — which is exactly why a program that takes it pollutes
@@ -769,7 +769,7 @@ function down(grid: Grid, rows: number): void {
  *
  * Only the CSI family is understood, which is the only family this product's layout writes.
  *
- * ⚠️ ANYTHING ELSE USED TO BE STEPPED OVER, and the header of this file says what falsified
+ * ANYTHING ELSE USED TO BE STEPPED OVER, and the header of this file says what falsified
  * that: a sequence outside CSI is not a sequence that does nothing. `ESC M` scrolls the page
  * backwards, `ESC 7` and `ESC 8` put the cursor somewhere and fetch it back, and `ESC ]`
  * opens a string that runs until its own terminator — stepped over one byte at a time, the
@@ -876,7 +876,7 @@ function privateMode(body: string, final: string, grid: Grid, columns: number, r
 }
 
 /**
- * ⛔ INTO THE ALTERNATE SCREEN AND BACK OUT — what `?1049` means, in the words of the
+ * INTO THE ALTERNATE SCREEN AND BACK OUT — what `?1049` means, in the words of the
  * specification: *save the cursor, then switch to the alternate screen buffer, CLEARING IT
  * FIRST*; and on the way out, switch back and restore the cursor.
  *
@@ -907,8 +907,8 @@ function theAlternateScreen(entering: boolean, grid: Grid, columns: number, rows
 
 /** Erases part of the page: from the cursor down, up to it, or all of it. */
 function eraseDisplay(how: number, grid: Grid, columns: number, rows: number): void {
-  // ⛔ 3 IS THE HISTORY ABOVE THE SCREEN, and it EMPTIES it — the caller's own, from WHICHEVER
-  // buffer is showing. ⚠️ It used to be modelled as nothing at all, on the grounds that the
+  // 3 IS THE HISTORY ABOVE THE SCREEN, and it EMPTIES it — the caller's own, from WHICHEVER
+  // buffer is showing. IT USED TO BE MODELLED AS NOTHING AT ALL, on the grounds that the
   // scrollback is not the screen. It is the one thing this whole surface promises about, and a
   // model that shrugged at this would answer *the caller's history is intact* for the very
   // bytes that destroy it. It is not the alternate buffer's history either: that buffer has

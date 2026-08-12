@@ -8,7 +8,7 @@
  *   - THE BANNER IS THE ONE PLACE A WIDTH DECIDES WHAT IS PRINTED. Everything else this
  *     surface writes is as wide as it is and is FOLDED to the screen rather than cut: a
  *     column pads and never truncates, because a value cut to fit is a value a reader
- *     cannot check. ⚠️ This used to say the TERMINAL folded it, on purpose, and
+ *     cannot check. THIS USED TO SAY THE TERMINAL FOLDED IT, on purpose, and
  *     `presentation/folded.ts` falsified the second half of that: the product folds, and
  *     what is on purpose is that it never CUTS. The first half of the sentence is what
  *     this file pins, and it did not move — a width still decides what is printed in
@@ -41,7 +41,7 @@
  *     so what it sees is only what typing causes, and typing a verb in the same window is
  *     what proves it would have seen one.
  *
- * ⚠️ AND THE INSTRUMENT NOW TELLS A READ FROM A QUESTION, which is a sharpening rather than
+ * AND THE INSTRUMENT NOW TELLS A READ FROM A QUESTION, which is a sharpening rather than
  * a loosening, and it is what following the record required. A session ASKS, ten times a
  * second, whether the chain has grown — one `readdir` per tail and one `stat` on that
  * tail's last segment, and nothing opened (`chain/freshness.ts`). Counting that as a read
@@ -297,13 +297,13 @@ async function openedAt(
     interactive: true,
     leaving: hooksNothing,
   });
-  // ⚠️ IT WAITED FOR THE TITLE, and a terminal too narrow for an arrangement never draws one:
+  // IT WAITED FOR THE TITLE, and a terminal too narrow for an arrangement never draws one:
   // the opening's LINES are on the roll, and the middle region shows its tail, so on a narrow
   // screen the title is one scroll up rather than on the page (`repl/panel.ts`, `Opening.above`).
   // The prompt is on every page there is.
   await until(() => terminal.bytes().includes(PROMPT), 'opened');
   for (const line of typed) {
-    // ⚠️ THE LINE AND THE RETURN ARE TWO WRITES, and that is forced by what the layout does with
+    // THE LINE AND THE RETURN ARE TWO WRITES, and that is forced by what the layout does with
     // a frame it has already drawn: it writes NOTHING for one that is identical, and a word that
     // clears the page leaves exactly the page that was on it before the word was typed. So a
     // whole line submitted in one write produces no bytes at all, and a wait for growth waits
@@ -334,8 +334,8 @@ async function openedAt(
  * How tall a console this file opens is, and the bytes that carry ITS page away.
  *
  * The second is what says a page was really turned (`repl/page.ts` writes it, and nothing
- * else does), and waiting for it is what makes the helper below honest. ⚠️ Its first
- * draft waited for the stream to GROW, which it does the instant a terminal changes size
+ * else does), and waiting for it is what makes the helper below honest. ITS FIRST
+ * DRAFT WAITED FOR THE STREAM TO GROW, which it does the instant a terminal changes size
  * — the layout library redraws the row being typed on its own — and then went on to the
  * next width before this product had done anything at all. Every resize in that case was
  * a resize nothing happened for, and the case built on it could not go red.
@@ -350,7 +350,7 @@ const _CARRIES_THE_PAGE = `${ESC}[${TALL};1H`;
  * opening and a page turned — which is exactly the thing that must not cost a read. Each
  * width is waited out until the page has really been turned for it.
  *
- * ⚠️ EACH WIDTH HAS TO CHANGE THE DRAWING, and that is what the frame's departure made a
+ * EACH WIDTH HAS TO CHANGE THE DRAWING, and that is what the frame's departure made a
  * requirement. Any two widths used to differ, because the box was drawn corner to corner; nothing
  * is drawn to an edge now, so a width that moves no glyph turns no page (`repl/panel.ts`,
  * `sameOpening`) and a step waiting for one waits forever — measured, at a hundred and sixty.
@@ -369,7 +369,7 @@ async function resizedThrough(columns: number, widths: readonly number[]): Promi
   });
   await until(() => terminal.bytes().includes(OPENED), 'opened');
   for (const width of widths) {
-    // ⚠️ IT WAITED FOR A PAGE TO BE TURNED, and there are no pages to turn. A width that
+    // IT WAITED FOR A PAGE TO BE TURNED, and there are no pages to turn. A width that
     // changed the arrangement used to carry a screen of the caller's into their scrollback and
     // write the opening over it; the opening is a REGION now, composed for the size the device
     // has at the moment of the drawing (`repl/console.ts`, `theOpening`), so what a resize
@@ -527,7 +527,7 @@ const times = (text: string, what: string): number => text.split(what).length - 
 /**
  * A PAGE THAT COSTS NOTHING, so nothing but the width can decide which form is drawn.
  *
- * ⚠️ THIS USED TO BE THE HEIGHT ALONE. The banner gave way when the DRAWING was taller than
+ * THIS USED TO BE THE HEIGHT ALONE. The banner gave way when the DRAWING was taller than
  * the terminal, so holding the height at {@link TALL} was enough to keep it out of the way.
  * It gives way when the PAGE stops fitting now (`presentation/banner.ts`), and what a page
  * costs is answered by whoever composes one — so the way to hold the other axis still is to
@@ -574,7 +574,7 @@ function everyDrawing(): readonly (readonly string[])[] {
 /**
  * How wide a drawing is: its widest row.
  *
- * ⚠️ THE FIRST ROW USED TO STAND IN FOR THIS, and it was true of every form there was: the
+ * THE FIRST ROW USED TO STAND IN FOR THIS, and it was true of every form there was: the
  * five-row one is a rectangle, so its first row is as wide as the drawing. The biggest one is
  * not — its widest rows are in the middle — so a case that measured the first would give way
  * one column early and call it the art's own width. It has been true of two different biggest
@@ -586,7 +586,7 @@ const widthOf = (form: readonly string[]): number =>
 
 describe('the name is drawn, and how much of it depends on the terminal', () => {
   it('draws the five-row form on a terminal too narrow for the biggest one', () => {
-    // ⚠️ THIS CASE SAID *draws the tall form when it fits* AND ASKED A WIDE TERMINAL. What
+    // THIS CASE SAID *draws the tall form when it fits* AND ASKED A WIDE TERMINAL. What
     // falsified it is a fourth drawing: the widest form is not the five-row block any more, so
     // that block is what a terminal one column too narrow for the biggest one gets, and asking
     // two hundred columns for it would be asking for something else entirely. Which drawing is
@@ -640,7 +640,7 @@ describe('the width the banner is chosen at is the terminal’s own', () => {
   it('draws the tall form on a wide terminal and the letterspaced one on a narrow one', async () => {
     // THE ELO. The forms above are a function of a number; this is the number coming off
     // the device the session was handed, which is the half a pure case cannot see.
-    // ⚠️ THE NARROW END WAS TWENTY COLUMNS AND IT IS THE FLOOR. There is a floor under the window
+    // THE NARROW END WAS TWENTY COLUMNS AND IT IS THE FLOOR. There is a floor under the window
     // now (`repl/floor.ts`): under eighty by twenty-four no page is laid out at all, so a session
     // opened at twenty draws the screen that says so and no drawing of the name at all. The
     // narrowest window there IS answers the same question — it gets a smaller drawing than a wide
@@ -648,7 +648,7 @@ describe('the width the banner is chosen at is the terminal’s own', () => {
     const wide = await openedAt(200);
     expect(wide).toContain(drawn(200)[0] as string);
     const narrow = await openedAt(THE_FLOOR.columns);
-    // ⛔ AND WHAT THE NARROW ONE GOT IS A FORM OF THIS MODULE'S, found by asking which of them
+    // AND WHAT THE NARROW ONE GOT IS A FORM OF THIS MODULE'S, found by asking which of them
     // is on the page rather than by naming one: which drawing a window gets is answered by the
     // SIZE and not by the width alone — the arrangement around it may hold at most a third of the
     // screen (`repl/panel.ts`) — so a case naming the form the width allows would be asserting
@@ -667,8 +667,8 @@ describe('the width the banner is chosen at is the terminal’s own', () => {
 // ---------------------------------------------------------------------------
 
 describe('the drawing stays in the scrollback and the tips stay on the screen', () => {
-  it('⚠️ writes the banner on EVERY frame, exactly as it writes the tips', async () => {
-    // ⚠️ THIS CASE SAID *writes the banner ONCE and the tips on every frame*, and the whole of
+  it('writes the banner on EVERY frame, exactly as it writes the tips', async () => {
+    // THIS CASE SAID *writes the banner ONCE and the tips on every frame*, and the whole of
     // this delivery is the inversion of it. The banner was landed like a line, into a region the
     // layout wrote once and never took back, and the tips were redrawn — so *once* against *many*
     // was the discriminant between what is kept and what is redrawn. Both are REGIONS now: the
@@ -702,7 +702,7 @@ describe('the drawing stays in the scrollback and the tips stay on the screen', 
     // gives back exactly the plain line.
     const said = renderPlain(tips());
     expect(said.length).toBeGreaterThan(0);
-    // ⚠️ THIS USED TO SAY IT NAMED A WORD THE SESSION ANSWERS TO, and the hint stopped
+    // THIS USED TO SAY IT NAMED A WORD THE SESSION ANSWERS TO, and the hint stopped
     // naming any of them. What falsified it is the palette: the slash opens the list those
     // words are IN, so a hint that pointed at the list and then quoted an item out of it
     // would be spending a clause on what the clause beside it already hands over. The
@@ -767,7 +767,7 @@ describe('the opening reads the record once, and a redraw never reads it', () =>
     // a number about this machine; it is asserted as the READS, against the only thing
     // that can say what one verify's worth of them is: one verify.
     //
-    // ⚠️ AND IT USED TO BE THE WHOLE OF WHAT THE OPENING PAID. A session follows the record
+    // AND IT USED TO BE THE WHOLE OF WHAT THE OPENING PAID. A session follows the record
     // now, and to tell what happens NEXT from what was already there it takes the seq each
     // tail ENDS at — one entry, off the end of the tail, whatever the history weighs
     // (`repl/following.ts`). So the exception has a second half and it has a NUMBER: one
@@ -867,7 +867,7 @@ describe('the opening reads the record once, and a redraw never reads it', () =>
     // THE INSTRUMENT FIRST, and it is here because it was WRONG once: without it the case passes
     // on a console that never got round to redrawing anything, which is what it did.
     //
-    // ⚠️ IT COUNTED PAGES CARRIED INTO THE SCROLLBACK, and nothing is carried anywhere: a width
+    // IT COUNTED PAGES CARRIED INTO THE SCROLLBACK, and nothing is carried anywhere: a width
     // that changes the arrangement is a frame drawn at the new size (`repl/console.ts`). So the
     // evidence moved INTO the helper, where it is a wait that throws by name: it does not return
     // until the console has answered every one of the widths with bytes

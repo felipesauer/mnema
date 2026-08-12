@@ -23,7 +23,7 @@
  *     hole. The region went from three rows to five, and the height at which the layout
  *     library gives up on redrawing PART of the screen — and writes, inside what it does
  *     instead, the one erase this product refuses — moves with it. Measured again, in both
- *     directions, and the number went DOWN. ⚠️ AND THE BOUNDARY USED TO BE READ OFF THAT
+ *     directions, and the number went DOWN. AND THE BOUNDARY USED TO BE READ OFF THAT
  *     ERASE, which no longer reaches a terminal at any height: it is translated on the way
  *     out (`src/repl/page.ts`, `theEraseAsAScroll`). What it is read off now is the ANSWER —
  *     a page carried into the scrollback where no page could have been turned.
@@ -82,8 +82,8 @@ const PROMPT = 'mnema>';
 const CLEARS_THE_LINE = '\u0003';
 
 /**
- * ⛔ The sequence that erases the caller's history. It may not reach a terminal this surface is
- * drawing on, at any height (`src/repl/page.ts`, `theEraseAsAScroll`).
+ * The sequence that erases the caller's history. IT MAY NOT REACH A TERMINAL THIS SURFACE IS
+ * DRAWING ON, at any height (`src/repl/page.ts`, `theEraseAsAScroll`).
  */
 const _ERASES_THE_HISTORY = `${ESC}[3J`;
 
@@ -163,7 +163,7 @@ const showingEverything = {
   badge: widthOf(badgeLine('fully-signed')),
   hint: widthOf(tips()),
   palette: 0,
-  // ⚠️ NOTHING ABOVE THE AREA, and the field it fills is not the field it used to. It was the
+  // NOTHING ABOVE THE AREA, and the field it fills is not the field it used to. It was the
   // FLOW on the screen — everything the session had said that a reader could still see, which
   // GREW as lines landed — because the list of words was budgeted against what the page had
   // left over. What a session says is not above the input area any anymore: it is a window onto
@@ -177,7 +177,7 @@ describe('the area has forms, and the tallest one that fits is the one drawn', (
   it('gives up the badge first, then the rules, and never the row being typed', () => {
     // THE LADDER, at the heights that choose each rung. What is asserted is WHERE each
     // form gives way — one row below its own threshold — rather than how tall it is.
-    // ⚠️ AND EVERY RUNG CAME DOWN A ROW, which is the boundary this delivery removed rather
+    // AND EVERY RUNG CAME DOWN A ROW, which is the boundary this delivery removed rather
     // than a threshold anybody re-tuned. A form used to have to fit with ONE ROW TO SPARE,
     // because a region as tall as the viewport was one the library redrew whole — with the
     // erase of the caller's history inside the sequence. The console owns the screen now and its
@@ -210,7 +210,7 @@ describe('the area has forms, and the tallest one that fits is the one drawn', (
     // they were not there would be arithmetic about a region that is not the one on the
     // screen, which is the exact shape of instrument this bench has been wrong with.
     //
-    // ⚠️ AND THERE IS ONE MORE ROW THAN THERE ARE WORDS, which is what this delivery added:
+    // AND THERE IS ONE MORE ROW THAN THERE ARE WORDS, which is what this delivery added:
     // the list stands off what is under it by a blank row, so an OPEN palette costs its rows
     // plus one. It is the same rule as everything else here — a row the layout draws is a row
     // this arithmetic counts — and the shape of defect it prevents is the caret one row away
@@ -242,10 +242,10 @@ describe('the area has forms, and the tallest one that fits is the one drawn', (
     expect(bare.above).toBe(0);
     expect(ruled.above - bare.above).toBe(1);
     expect(full.above - ruled.above).toBe(1);
-    // ⚠️ ONE ROW OF PALETTE PUTS TWO ROWS OVER THE PROMPT, and that is what this delivery
+    // ONE ROW OF PALETTE PUTS TWO ROWS OVER THE PROMPT, and that is what this delivery
     // changed: the list stands off what is under it by a blank row, and the caret has to be
     // told about a row that is drawn whether or not anything is written on it.
-    // ⚠️ AND THE THIRD REQUEST USED TO BE A SHORT TERMINAL, which stopped being able to
+    // AND THE THIRD REQUEST USED TO BE A SHORT TERMINAL, which stopped being able to
     // answer the question: with the blank row counted, one row of palette on a terminal of
     // four or six rows changes the FORM as well — the trade the area makes when it cannot hold
     // both (`a-palette-for-the-words.test.ts`) — and a difference measured across two forms is
@@ -446,7 +446,7 @@ describe('the badge says what the record proved, and the verb that says the rest
   }, 120_000);
 
   it('carries the hue its level reads as, in each of the three outcomes', () => {
-    // ⚠️ THIS CASE USED TO ASSERT THE OPPOSITE — that the badge carries no style at all —
+    // THIS CASE USED TO ASSERT THE OPPOSITE — that the badge carries no style at all —
     // and it is renamed rather than edited, because a conserto that inverts an observable
     // leaves every device built on the old name asserting the new behaviour by accident.
     // What fell is in `repl/session.ts`, `badgeLine`: an unpainted corner is quiet while
@@ -538,7 +538,7 @@ describe('the hint is short enough to be one row, and promises nothing that is n
   });
 
   it('quotes only what the session answers to, which is its words and the key that lists them', () => {
-    // ⚠️ THIS CASE USED TO BE `names no word the session does not answer to`, AND IT USED
+    // THIS CASE USED TO BE `names no word the session does not answer to`, AND IT USED
     // TO BAN THE PREFIX. The rule it held was right and it was about a PROMISE: a row under
     // the prompt is the most believed sentence on the surface, so a hint naming an
     // affordance that does not answer would be the console lying to the one reader who
@@ -558,7 +558,7 @@ describe('the hint is short enough to be one row, and promises nothing that is n
     // WHAT MAKES THREE ENOUGH, AND WHAT CHANGED. Three clauses went over two deliveries —
     // the word that clears the page, the key that clears the line, and now the word that
     // lists the verbs — and every one of them is one keystroke away behind the clause that
-    // stayed. ⚠️ IT USED TO ASSERT THE OPPOSITE: that the hint still named `/help`. What
+    // stayed. IT USED TO ASSERT THE OPPOSITE: that the hint still named `/help`. What
     // falsified it is that the slash lists `/help` itself, so naming both would be the hint
     // spending a clause on what the clause beside it opens.
     expect(renderPlain(tips())).not.toContain(ABOUT);
@@ -640,7 +640,7 @@ function rulesAroundTheInput(screen: { readonly rows: readonly string[] }): stri
 }
 
 describe('the two rules are as wide as the terminal, and follow it when it changes', () => {
-  // ⚠️ THE NARROWEST OF THE THREE WAS SIXTY COLUMNS, AND NO CONSOLE IS DRAWN THERE ANY MORE. The
+  // THE NARROWEST OF THE THREE WAS SIXTY COLUMNS, AND NO CONSOLE IS DRAWN THERE ANY MORE. The
   // width was picked as an ordinary narrow window, on the premise every ladder of this surface
   // was written on: whatever the size, some arrangement is drawn. There is a FLOOR under the
   // window now (`src/repl/floor.ts`) — under eighty by twenty-four the frame is a screen saying
@@ -666,7 +666,7 @@ describe('the two rules are as wide as the terminal, and follow it when it chang
   }
 
   it('measures the new width after the caller resizes their window', async () => {
-    // ⚠️ IT SHRANK TO SEVENTY COLUMNS, WHICH IS NOW UNDER THE FLOOR. The number said nothing but
+    // IT SHRANK TO SEVENTY COLUMNS, WHICH IS NOW UNDER THE FLOOR. The number said nothing but
     // *narrower than it was*; what a caller drags to under eighty columns gets a screen saying the
     // window is too small (`src/repl/floor.ts`, `tests/a-floor-under-the-window.test.ts`), and a
     // page with no input area on it has no rule to measure. It shrinks to the floor's own width
@@ -686,7 +686,7 @@ describe('the two rules are as wide as the terminal, and follow it when it chang
         leaves,
       ],
     });
-    // ⚠️ FOUND BY THE WIDTH IT WAS DRAWN AT, not by where the step ended. A resize produces more
+    // FOUND BY THE WIDTH IT WAS DRAWN AT, not by where the step ended. A resize produces more
     // than one frame and a step ends wherever the stream was quiet, so an index puts this read
     // between them on a loaded machine — and what came back was the page at the OLD width, which
     // the screen model then refused by name (*nothing on it was drawn 70 columns wide*). The
@@ -753,7 +753,7 @@ describe('the caret is left on the row being typed, under everything drawn over 
     expect(screen.cursor.row, 'the caret is not on the row being typed').toBe(row);
     // ON THE ROW, AND AT THE END OF WHAT WAS TYPED.
     //
-    // ⚠️ THIS WAS A RANGE, and the doc here said why: "the library applies a cursor position
+    // THIS WAS A RANGE, and the doc here said why: "the library applies a cursor position
     // on the frame AFTER the one that moved it, so the column trails the last keystroke by
     // one character… it is the library's, it is older than this area". The measurement was
     // right and the attribution was wrong. It was OURS: the position was handed over in a
@@ -778,7 +778,7 @@ describe('the caret is left on the row being typed, under everything drawn over 
  * THE HEIGHT THE LIBRARY GIVES UP AT, MEASURED AGAIN ON EVERY DELIVERY THAT TOUCHES THE
  * REGION — and it turned out to be a function of ONE thing.
  *
- * ⚠️ IT USED TO SAY TWO ROWS AT SIXTY COLUMNS, pinned in both directions, and it was right
+ * IT USED TO SAY TWO ROWS AT SIXTY COLUMNS, pinned in both directions, and it was right
  * when it was written. The WIDTH rule (`repl/area.ts`) is what moved it, and the whole
  * story is the hint's own width: a hint the terminal would FOLD is not drawn, so a window
  * that loses the hint has a one-row region and the library never reaches the boundary
@@ -813,7 +813,7 @@ const _WHERE_IT_WAS_RECORDED = 60;
 /**
  * A height with no room for a rule, and enough for the row being typed and its hint.
  *
- * ⚠️ IT WAS FOUR, AND FOUR ROWS WERE ENOUGH FOR THE BARE FORM ONLY BECAUSE OF WHAT WAS ABOVE IT.
+ * IT WAS FOUR, AND FOUR ROWS WERE ENOUGH FOR THE BARE FORM ONLY BECAUSE OF WHAT WAS ABOVE IT.
  * The area is chosen against what is LEFT of the screen under the region above it (`repl/
  * area.ts`, `within`), and the opening used to take fifteen rows at this width whatever the
  * height — so on a four-row terminal there was nothing left and the area was on its floor. The
@@ -825,7 +825,7 @@ const _WHERE_IT_WAS_RECORDED = 60;
  * WHICH IS A FINDING AS MUCH AS A NUMBER: no terminal a person opens can squeeze the input area
  * any more. It gives way at three rows and nowhere else.
  *
- * ⚠️ AND NO TERMINAL CAN BE THREE ROWS TALL AT ALL NOW, which is what took this number out of the
+ * AND NO TERMINAL CAN BE THREE ROWS TALL AT ALL NOW, which is what took this number out of the
  * case below. There is a FLOOR under the window (`src/repl/floor.ts`): under eighty by twenty-four
  * the frame is a screen saying so, and a three-row session draws no area of any form. So the
  * height ladder is the area's own arithmetic and nothing a device can walk — the rungs under
@@ -838,7 +838,7 @@ const _SHORT_ENOUGH_FOR_THE_BARE_FORM = 3;
 
 describe('every terminal a caller can open gets the whole area', () => {
   it('draws the rules and the badge at forty rows and at the floor alike', async () => {
-    // ⚠️ IT WAS A CASE PER FORM AND IT IS A CASE PER HEIGHT, and the floor is what changed it. The
+    // IT WAS A CASE PER FORM AND IT IS A CASE PER HEIGHT, and the floor is what changed it. The
     // second half of this case drove a THREE-ROW terminal and read the bare arrangement off it —
     // no rules, no badge, a prompt and a hint — because every ladder of this surface was total and
     // a page was drawn at any size a device reported. Under eighty by twenty-four there is no page
@@ -850,7 +850,7 @@ describe('every terminal a caller can open gets the whole area', () => {
     //
     // ONE WIDTH THROUGHOUT, so the only thing that differs between the runs is the height — and it
     // is a width with room for the HINT, because the hint is a row of the arrangement and a window
-    // that drops it is a window measuring a different ladder. ⚠️ It used to be sixty columns,
+    // that drops it is a window measuring a different ladder. IT USED TO BE SIXTY COLUMNS,
     // which stopped being such a width when the area learned to leave out a row the terminal would
     // fold.
     const columns = WIDE_ENOUGH_FOR_THE_HINT;
@@ -865,7 +865,7 @@ describe('every terminal a caller can open gets the whole area', () => {
       'the full form has no badge',
     ).toBe(true);
 
-    // ⛔ AND AT THE FLOOR, which is the whole point of there being one: the smallest window
+    // AND AT THE FLOOR, which is the whole point of there being one: the smallest window
     // anybody can open is not a degraded console, it is the console.
     const atTheFloor = await drawn(THE_FLOOR.rows);
     expect(atTheFloor.text, 'the floor never opened a prompt').toContain(PROMPT);
@@ -876,7 +876,7 @@ describe('every terminal a caller can open gets the whole area', () => {
     ).toBe(true);
   }, 240_000);
 
-  // ⚠️ THREE CASES STOOD HERE AND ALL THREE DIED WITH THE BOUNDARY THEY MEASURED, which is the
+  // THREE CASES STOOD HERE AND ALL THREE DIED WITH THE BOUNDARY THEY MEASURED, which is the
   // one thing worth writing down about them. They pinned the height at which the layout library
   // stops redrawing PART of the page and starts the whole page over — *one row*, then *not at any
   // height without the hint*, then *and it moves with the hint, to the column* — because that

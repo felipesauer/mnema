@@ -13,7 +13,7 @@
  * `items.ts`: a column pads and never truncates). The name is the exception because a
  * smaller drawing of the same word is still the same word.
  *
- * ⚠️ IT SAID THE TERMINAL DID THE FOLDING, and that is what `presentation/folded.ts`
+ * IT SAID THE TERMINAL DID THE FOLDING, and that is what `presentation/folded.ts`
  * falsified — the product folds now, between words and with the continuation indented,
  * and the terminal only gets rows that fit. Nothing about the rule below moved: what makes
  * the name an exception is that it may be CUT, and cutting is still the one thing no line
@@ -22,7 +22,7 @@
  * a number somebody chose, which is what keeps the rule from drifting away from the art
  * the day a letter changes.
  *
- * AND IT DEGRADES BY HEIGHT, WHICH IS NOT THE SAME RULE ON THE OTHER MEASUREMENT. ⚠️ IT WAS
+ * AND IT DEGRADES BY HEIGHT, WHICH IS NOT THE SAME RULE ON THE OTHER MEASUREMENT. IT WAS
  * WRITTEN AS THOUGH IT WERE, and the paragraph here said the threshold was "the form's own
  * HEIGHT for the same reason it is the form's own width on the other". WHAT FALSIFIED IT IS
  * A MEASUREMENT: the tallest form was five rows, `5 <= rows` is true on every terminal
@@ -39,7 +39,7 @@
  * answer it. Pinned in both directions in `tests/the-opening-fits-the-screen.test.ts`, where
  * the size a form gives way at is searched for rather than written down.
  *
- * ⚠️ AND THE AXIS STILL CHOSE NOTHING, FOR A SECOND REASON, WHICH IS WHAT IT NOW RULES ON. The
+ * AND THE AXIS STILL CHOSE NOTHING, FOR A SECOND REASON, WHICH IS WHAT IT NOW RULES ON. The
  * question handed in was *does the PAGE fit with this drawing in it*, and a page answers that
  * more easily the more of itself it has given up: a drawing too big for the arrangement around
  * it makes the console drop the arrangement and land those lines on the roll, which is a page
@@ -95,7 +95,7 @@
  * produces; the console's opening panel paints this drawing and the row that says what the
  * session is in one accent, and that accent is CHROME — it is the layout's, it is spent in one
  * place, and it is a hue no severity uses (`repl/region.ts`, and the guard in
- * `tests/the-panel.test.ts`). ⚠️ IT USED TO PAINT A BORDER AND A TITLE ON IT as well, and the
+ * `tests/the-panel.test.ts`). IT USED TO PAINT A BORDER AND A TITLE ON IT as well, and the
  * frame is gone; the rule did not move, only what there is to spend it on. Nothing in this
  * module knows about it: the drawing is the
  * same parts either way, and a caller that puts it anywhere else gets a heading.
@@ -111,7 +111,7 @@ import { widthOf as widthOfLine } from './plain.js';
  * cannot see in a source file survives every edit made around it. FULL BLOCK, and the mask
  * it fills is ASCII to the byte.
  *
- * ⚠️ THERE WERE FOUR OF THEM, and the other three were the two diagonals and the vertical
+ * THERE WERE FOUR OF THEM, and the other three were the two diagonals and the vertical
  * that the isometric drawing's slashes and pipes became. That drawing is not in this file
  * any more, so the substitutions it needed went with it — and one of the three was the very
  * glyph the box's frame is drawn with, which is what made four cases of this surface have to
@@ -128,7 +128,7 @@ const INK = '\u2588';
  * is what lets one table serve every mask without a form having to say which substitutions
  * are its.
  *
- * ⚠️ IT HELD FOUR SUBSTITUTIONS AND IT HOLDS ONE, because the drawing that needed the other
+ * IT HELD FOUR SUBSTITUTIONS AND IT HOLDS ONE, because the drawing that needed the other
  * three is no longer written as a mask at all ({@link THE_BLOCKS}). One entry rather than
  * none: the five-row form is still a mask, and a table with one key is what keeps the inking
  * in one place for whichever mask is written next.
@@ -141,7 +141,7 @@ const INKED: { readonly [mark: string]: string } = {
  * THE BIGGEST DRAWING, AS THE DRAWING — nine rows of blocks and shades, fifty columns, and
  * the one form in this file that is not written as a mask.
  *
- * ⚠️ IT WOULD HAVE BEEN A MASK, AND THIS DRAWING IS WHAT FALSIFIED THE PREMISE THAT SAID SO.
+ * IT WOULD HAVE BEEN A MASK, AND THIS DRAWING IS WHAT FALSIFIED THE PREMISE THAT SAID SO.
  * Every form here has been written as *characters an editor renders at one width and a diff
  * can show*, and the argument under that rule is that a reader sees the FORM. This one is
  * inked with EIGHT different blocks and shades: as a mask its first row reads
@@ -160,7 +160,7 @@ const INKED: { readonly [mark: string]: string } = {
  *   - LOWER HALF BLOCK U+2584, UPPER HALF BLOCK U+2580
  *   - RIGHT HALF BLOCK U+2590, LEFT HALF BLOCK U+258C
  *
- * ⚠️ THEY ARE EAST ASIAN AMBIGUOUS, and that is the DECLARED RISK the one block has carried
+ * THEY ARE EAST ASIAN AMBIGUOUS, and that is the DECLARED RISK the one block has carried
  * since the first drawing rather than a new one: a terminal set to a CJK locale draws them
  * two cells wide, while {@link widthOf} counts what `plain.ts` counts, so the drawing would
  * be twice as wide as everything that measured it thinks. Closing it means a character-width
@@ -194,7 +194,7 @@ const THE_BLOCKS: readonly string[] = [
  * to a diff. One mark is a mask that shows the form; eight marks is the drawing above, which
  * is why that one is written out.
  *
- * ⚠️ IT STOPPED BEING THE BIGGEST FORM AND IT DID NOT GO. It covers the band between the
+ * IT STOPPED BEING THE BIGGEST FORM AND IT DID NOT GO. It covers the band between the
  * biggest drawing's fifty columns and the nine of the letterspaced name — a terminal of
  * forty-something columns is in that band — and with the biggest one put in its place there
  * would be nothing at all between fifty columns and nine.
@@ -269,7 +269,7 @@ export interface BannerRequest {
    * HOW TALL A SCREEN A GIVEN DRAWING OF THE NAME NEEDS — the shortest one this drawing may be
    * put on at all.
    *
-   * ⚠️ IT WAS *HOW MANY ROWS THE PAGE NEEDS WITH THIS DRAWING IN IT*, and the rename is the
+   * IT WAS *HOW MANY ROWS THE PAGE NEEDS WITH THIS DRAWING IN IT*, and the rename is the
    * correction rather than a wording: a page is cheapest when the arrangement around the drawing
    * has already been given up, so a demand measured on the page alone was met most easily by the
    * drawing that had done the most damage (the header of this file has the measurement). What is
@@ -284,7 +284,7 @@ export interface BannerRequest {
    * entirely (`repl/panel.ts`, `repl/area.ts`) — so what arrives here is the ANSWER, asked of
    * whoever composes the page.
    *
-   * ⚠️ IT IS ASKED PER CANDIDATE RATHER THAN ONCE, and that is not an economy missed. What
+   * IT IS ASKED PER CANDIDATE RATHER THAN ONCE, and that is not an economy missed. What
    * the page costs is not this drawing's height plus a constant: with the text BESIDE the mark
    * the drawing shares its rows with it and the taller of the two is what is paid, and a
    * drawing wide enough to force the stacked arrangement is measured inside a different shape
@@ -309,7 +309,7 @@ export interface BannerRequest {
  * that redrew itself on a resize would be rewriting history the caller can scroll back
  * to". What falsified it was the box the drawing sat inside: it was as wide as the
  * TERMINAL, so a terminal the caller narrowed folded the whole frame in half, and the
- * console draws the page again at the new width. ⚠️ THE BOX IS GONE AND THE ANSWER IS THE
+ * console draws the page again at the new width. THE BOX IS GONE AND THE ANSWER IS THE
  * SAME ONE: which ARRANGEMENT the width has room for is still a function of the width, so a
  * terminal narrowed past that threshold still has the wrong page on it. The argument survives
  * and it is the

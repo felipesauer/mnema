@@ -151,7 +151,7 @@ export function buildProgram(
   // is what the rule reads as "no screen to fold to" — a width nobody reported is not a
   // width to guess at.
   //
-  // ⛔ ONE READING OF THE CAPABILITY AND TWO DOORS ONTO IT. The rule is asked for a WIDTH
+  // ONE READING OF THE CAPABILITY AND TWO DOORS ONTO IT. The rule is asked for a WIDTH
   // ({@link rendererAtEachWidth}) and the renderer every verb is handed is that rule asked
   // for this terminal's own — so the flag, the two variables and whether the destination is
   // a terminal are read exactly once, and the width is the one input a caller can change

@@ -11,7 +11,7 @@
  * arrangement, no badge, no rules and one word of a list is not a smaller console, it is a
  * prompt with the product's identity gone from the screen.
  *
- * ⛔ AND FORCING THE WINDOW IS OUT. The sequence exists — `CSI 8 ; height ; width t`, which
+ * AND FORCING THE WINDOW IS OUT. The sequence exists — `CSI 8 ; height ; width t`, which
  * asks a terminal to resize its text area — and it is refused here on two grounds rather than
  * one. It is DISABLEABLE by whoever built the terminal, and the field's own security guidance is
  * that a terminal should refuse to implement it at all, for the reason a web page may not resize
@@ -25,7 +25,7 @@
  * floor the console does not draw a worse page — it draws THIS one, which says the size the
  * window has, the size the console needs, and which of the two measurements falls short.
  *
- * ⛔ IT IS A SCREEN AND NOT A REFUSAL, and every part of that is deliberate. The session stays
+ * IT IS A SCREEN AND NOT A REFUSAL, and every part of that is deliberate. The session stays
  * open, nothing is written to the record, nothing is read again, and the page comes back BY
  * ITSELF when the window grows — because somebody who drags an edge by accident may not lose
  * the session for it. What they had said is untouched: the roll is kept by the console
@@ -54,7 +54,7 @@ import type { Render } from '../presentation/render.js';
  * terminal (`tests/the-opening-fits-the-height.test.ts`). It is not a size the layout tolerates:
  * it is the size the layout was tuned against.
  *
- * ⛔ WHAT IT BUYS IS AN ASSUMPTION. Every ladder above this floor may now be written for a
+ * WHAT IT BUYS IS AN ASSUMPTION. Every ladder above this floor may now be written for a
  * screen that is at least this big, instead of degrading for ever towards a page nobody would
  * accept. What the bottom rungs of those ladders become is a question for the delivery that
  * moves them, not something this file may quietly decide — so nothing below the floor was
@@ -63,7 +63,7 @@ import type { Render } from '../presentation/render.js';
 export const THE_FLOOR = { columns: 80, rows: 24 } as const;
 
 /**
- * ⛔ DOES THIS WINDOW SERVE? — the one place the floor is applied, over the pair the device
+ * DOES THIS WINDOW SERVE? — the one place the floor is applied, over the pair the device
  * answered with.
  *
  * ONE FUNCTION AND ONE CALLER, which is the shape this bench asks for wherever a rule has to
@@ -113,7 +113,7 @@ function count(many: number, one: string, more: string): string {
 /**
  * WHICH OF THE TWO MEASUREMENTS FALLS SHORT, and by how much.
  *
- * ⛔ IT IS THE HALF A NUMBER ALONE DOES NOT GIVE. A screen that says *make your window bigger*
+ * IT IS THE HALF A NUMBER ALONE DOES NOT GIVE. A screen that says *make your window bigger*
  * makes the reader guess which edge to drag and how far, and a screen that says only what it
  * needs makes them measure what they have. Both are on the page above this line; this says what
  * the difference IS, which is the same thing every refusal of this product does — say what

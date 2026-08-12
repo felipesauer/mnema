@@ -48,8 +48,8 @@
  * on a fresh machine) that the surface must not own. So the actor is a REQUIRED
  * `--actor` flag: the derivation takes it as a parameter, and passing it keeps
  * the read truly read-only. (next-actions needs no actor — its answer is a
- * property of the task's state, not of who asks.) ⚠️ This said *the CLI* has no
- * session, and `mnema repl` is one: it resolves that identity from local material
+ * property of the task's state, not of who asks.) THIS SAID *THE CLI* HAS NO
+ * SESSION, and `mnema repl` is one: it resolves that identity from local material
  * with no writer opened and fills the flag in at its own prompt
  * (`repl/asking.ts`). Every declaration here is unchanged, and so is the reason
  * for it — a verb typed at a shell asks for the actor as it always has.

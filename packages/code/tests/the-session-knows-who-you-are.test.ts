@@ -451,7 +451,7 @@ describe('every command that requires an identity is served, and nothing else is
     // into "which of them are mine" — in the caller's name, with nothing on screen saying
     // so. It is the shape closest to the rule and the one it must not touch.
     //
-    // ⚠️ IT IS HELD HERE BY BOTH HALVES AT ONCE — the flag is spelled `--who` AND it is
+    // IT IS HELD HERE BY BOTH HALVES AT ONCE — the flag is spelled `--who` AND it is
     // optional — so this case cannot say which half is doing the work, and measured on a
     // mutation that dropped the requirement it stayed green. The half about a flag that
     // asks for the ASKER and is merely optional is exercised where such a declaration can
