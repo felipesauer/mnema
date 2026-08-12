@@ -18,6 +18,8 @@
  *   | `--color=never`, `FORCE_COLOR=1`  |    120 |     0 |
  *   | `--color=never` alone             |      0 |     0 |
  *   | `--color=always`, `NO_COLOR=1`    |    312 |   312 |
+ *   | `TERM=dumb`                       |    192 |     0 |
+ *   | `TERM=dumb`, `--color=always`     |    312 |   312 |
  *
  * The hundred and twenty were sixty accents and sixty closers — every one of them the
  * library's, and not one byte from our renderer.
@@ -44,6 +46,12 @@
  *     `process.argv` finds no `--color` on a test runner's command line. So the chrome on
  *     that page is painted for one reason only. Measured on that page, nine rules drawn
  *     across it: **nought of the nine painted before, nine of the nine after**.
+ *   - AND THE TERMINAL'S OWN WORD. `TERM=dumb` is where the two authorities disagreed in
+ *     BOTH directions: the library honoured it and this product's precedence did not read
+ *     `TERM` at all, so the page was half painted — and delivering our answer without
+ *     reading it painted the page whole on a device that had declared it cannot. The rung
+ *     is in the precedence now, under both variables, and the page is quiet. The pair-by-
+ *     pair ordering is `src/chosen-once.test.ts`; what is asked here is the PAGE.
  *   - AND THE SITES, BY THE DISCRIMINANT. Not a list of files: the modules that load the
  *     library are found by what they IMPORT, and the channel is found by its own name.
  */
@@ -243,6 +251,36 @@ describe('a caller who asked for no colour gets none of it, anywhere on the page
     // the library's — so what the flag turned off was the library and not the fixture.
     const loud = await inPty({ ...A_SESSION, environment: asked });
     expect(loud.bytes, 'the variable alone paints nothing').toContain(ACCENT);
+  }, 300_000);
+
+  it('takes a `dumb` terminal at its word, on the whole page and on both halves', async () => {
+    // THE RUNG THE OTHER TWO CASES DO NOT REACH, and the one where the two authorities used
+    // to disagree in BOTH directions. `TERM=dumb` is a real terminal declaring it prints
+    // text and nothing else. The layout library has always honoured it and this product's
+    // precedence did not, so the page came out half painted — a hundred and ninety-two
+    // style sequences from this renderer and none from the library. Handing our answer over
+    // without reading `TERM` made it three hundred and twelve, which is the same
+    // disagreement resolved to the other side. Reading it is the agreement.
+    const dumb = { ...environment, TERM: 'dumb' };
+    const ran = await inPty({ ...A_SESSION, environment: dumb });
+    const left = sgrOf(ran.bytes);
+    expect(
+      left.length,
+      `a terminal that said it cannot paint was painted: ${[...new Set(left)].join(' ')}`,
+    ).toBe(0);
+    // AND IT IS A PAGE, not a session that never got there: the verb answered and the edges
+    // are drawn. The glyphs are what a `dumb` terminal can show; the escapes are not.
+    expect(ran.bytes, 'the session never answered the verb').toContain('record(s)');
+    expect(ran.bytes, 'the page has no edges left').toContain(RUN);
+
+    // AND THE CALLER'S OWN REQUEST STILL OUTRANKS THE DEVICE, which is what keeps this a
+    // rung and not a ban: `--color=always` on the same terminal paints, chrome included.
+    // It is also the non-vacuity of the zero above — the same fixture, one flag apart.
+    const asked = await inPty({ ...A_SESSION, environment: dumb, asked: '--color=always' });
+    expect(sgrOf(asked.bytes).length, 'the flag lost to the terminal').toBeGreaterThan(0);
+    expect(asked.bytes, 'the chrome stayed bare where the caller asked for colour').toContain(
+      ACCENT,
+    );
   }, 300_000);
 });
 

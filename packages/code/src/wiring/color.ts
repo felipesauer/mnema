@@ -24,8 +24,29 @@
  *   3. `FORCE_COLOR` — forces style on where it would otherwise be off, and it decides
  *      BOTH ways: `0` is off, because that is what node and chalk made that value mean,
  *      and a caller who typed it meant off even on a terminal.
- *   4. Otherwise the terminal answers: style when the destination is one, plain when it
- *      is a pipe, a file or a CI log.
+ *   4. Otherwise THE DESTINATION answers, and it answers with two facts rather than one:
+ *      style when the destination is a terminal AND that terminal did not say it is
+ *      `dumb`, plain for a pipe, a file, a CI log, and for the terminal that said so.
+ *      `TERM=dumb` is the field's way of saying *this thing prints text and nothing else*
+ *      — it is what a shell inside an editor exports, what a build runner exports, and
+ *      what every library that paints already honours — so a device that declared it is
+ *      not a destination that can show style, whatever `isTTY` says about the file
+ *      descriptor. It is the LAST rung, under both variables, exactly as it is in the
+ *      market: a caller who set `FORCE_COLOR` asked for colour on a terminal that says it
+ *      cannot, and asking beats declaring.
+ *
+ * RUNG FOUR USED TO BE HALF OF ITSELF TOO, and this file's own words are what found it.
+ * It read *the terminal answers: style when the destination is one*, and one paragraph of
+ * `repl/painting.ts` said, as a declared consequence, that *this product's precedence never
+ * reads `TERM` at all*. That consequence was a hole rather than a decision: the layout
+ * library honours `TERM=dumb` and this rule did not, so a `dumb` terminal got a page half
+ * painted — a hundred and ninety-two style sequences from this renderer and none from the
+ * library — and handing our answer to that library turned it into a page fully painted on a
+ * terminal that had declared it cannot paint. Both are the same disagreement, resolved to
+ * opposite sides. The rung above is the agreement: measured on a real `dumb` terminal, three
+ * hundred and twelve style sequences became NONE, and `--color=always` still paints there
+ * because rung one is the caller's own request. `chosen-once.test.ts` asserts it against the
+ * rung above it and against the one it replaced.
  *
  * RUNG ONE USED TO BE HALF OF ITSELF, and correcting it is the one behaviour change in
  * this file's history. The premise written here was that `--color=never` outranked
@@ -108,11 +129,28 @@ export const COLOR_HELP =
   'never. NO_COLOR and FORCE_COLOR are honored; an explicit --color beats both. Style ' +
   'never changes what a line says.';
 
+/**
+ * WHAT A TERMINAL SAYS WHEN IT CANNOT DO ANYTHING BUT PRINT TEXT.
+ *
+ * The exact value and nothing near it, which is what every library that paints matches on:
+ * `dumb` is a name in the terminfo database and not a family, so a prefix test would take
+ * `dumb-emacs-ansi` — a terminal that CAN paint — down with it. An unset `TERM` is not this
+ * either: it is a caller whose environment says nothing, and silence is not a declaration.
+ */
+const CANNOT_PAINT = 'dumb';
+
 /** What the answer depends on, read where the process is. */
 export interface Capability {
   /** What this invocation asked for on the command line. */
   readonly when: ColorWhen;
-  /** The environment, for the two conventional variables. Never mutated. */
+  /**
+   * The environment: the two conventional variables, and what the terminal says it IS.
+   *
+   * IT WAS *the two conventional variables*, and the third is a different KIND of thing
+   * rather than a third of the same — which is why it sits at the bottom of the precedence
+   * instead of beside them. `NO_COLOR` and `FORCE_COLOR` are a caller ASKING; `TERM` is the
+   * device DECLARING. Never mutated.
+   */
   readonly env: Readonly<Record<string, string | undefined>>;
   /** Whether the destination is a terminal — false for a pipe, a file, a test. */
   readonly isTty: boolean;
@@ -141,7 +179,11 @@ function paintingFor(capability: Capability): Render {
   if (when === 'always') return renderStyled;
   if (env.NO_COLOR !== undefined && env.NO_COLOR !== '') return renderPlain;
   if (env.FORCE_COLOR !== undefined) return env.FORCE_COLOR === '0' ? renderPlain : renderStyled;
-  return isTty ? renderStyled : renderPlain;
+  // THE DESTINATION, IN BOTH OF THE THINGS IT SAYS: a file descriptor that is a terminal,
+  // and a terminal that did not declare it cannot paint. One rung and one `&&`, because it
+  // is one question — *can what is on the other end of this show style?* — and a `dumb`
+  // terminal answering no is the same answer a pipe gives, for the same reason.
+  return isTty && env.TERM !== CANNOT_PAINT ? renderStyled : renderPlain;
 }
 
 /**

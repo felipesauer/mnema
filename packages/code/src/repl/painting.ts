@@ -39,15 +39,25 @@
  *     telling the library `1` where it would have said `2` or `3` on its own cannot move a
  *     byte. This slice is about WHO DECIDES, never about what is painted or in which hue.
  *
- * WHAT IT CHANGES ON A TERMINAL THAT SAYS IT CANNOT PAINT, said out loud because it is the
- * one place a page moves for a caller who asked for nothing. That library refuses colour on a
- * `TERM=dumb` device and this product's precedence never reads `TERM` at all — it asks whether
- * the destination is a terminal — so the two disagreed and the page came out half painted:
- * measured, a hundred and ninety-two style sequences from our renderer and NOT ONE from the
- * library, on a device with real chrome on it. It is three hundred and twelve now, which is
- * the same page every other terminal gets. That is the decision this file exists to deliver
- * rather than a side effect of it: a caller who wants no colour on a `TERM=dumb` machine has
- * `NO_COLOR`, `FORCE_COLOR=0` and `--color=never`, and all three now reach the whole page.
+ * A TERMINAL THAT SAYS IT CANNOT PAINT WAS THE ONE PLACE THIS MOVED A PAGE, AND IT IS CLOSED.
+ * This paragraph declared the move and defended it, and the defence was wrong. It read: *that
+ * library refuses colour on a `TERM=dumb` device and this product's precedence never reads
+ * `TERM` at all — it asks whether the destination is a terminal — so the two disagreed and the
+ * page came out half painted: measured, a hundred and ninety-two style sequences from our
+ * renderer and NOT ONE from the library. It is three hundred and twelve now, which is the same
+ * page every other terminal gets.* The measurement was right and the conclusion was not.
+ * `TERM=dumb` is the field's declaration that a device prints text and nothing else — it is
+ * what a shell inside an editor exports and what a build runner exports — so a page painted
+ * corner to corner on one is not agreement, it is the SAME disagreement resolved to the wrong
+ * side. Delivering our answer there only moved which half was wrong.
+ *
+ * WHAT CLOSED IT IS THE SENTENCE THIS PARAGRAPH USED AS ITS PREMISE: *the precedence never
+ * reads `TERM`*. That was the hole. It reads it now, as the last rung — the destination
+ * answers with two facts, a terminal and a terminal that did not say it is `dumb`
+ * (`wiring/color.ts`) — so the product decides `no colour` there and this module carries that
+ * decision to the library, which already agreed. Measured on a real `dumb` terminal: three
+ * hundred and twelve style sequences became NONE, and `--color=always` still paints, because
+ * the caller's own request is the rung above everything.
  *
  * WHEN IT HAS TO BE SAID IS THE ONE THING A READER CANNOT SEE FROM THE CALL. That library
  * reads the variable ONCE, while its own module graph is being loaded, and fixes a level it

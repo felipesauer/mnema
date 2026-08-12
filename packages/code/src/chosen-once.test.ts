@@ -118,23 +118,63 @@ describe('the precedence is the conventional one', () => {
     expect(chooseRenderer(asked('auto', {}, false))).toBe(renderPlain);
   });
 
+  it('takes a terminal that says it is `dumb` at its word, and only that word', () => {
+    // THE OTHER HALF OF THE LAST RUNG. `TERM=dumb` is the field's way of saying *this
+    // prints text and nothing else* — a shell inside an editor, a build runner — and every
+    // library that paints already honours it. A file descriptor being a terminal is not the
+    // whole of whether the destination can show style, and this is the half that was
+    // missing: the layout library obeyed the word and this rule did not, so a `dumb`
+    // terminal got a page half painted (`repl/painting.ts` says what that measured).
+    expect(chooseRenderer(asked('auto', { TERM: 'dumb' }, true))).toBe(renderPlain);
+    // AND ONLY THAT WORD. `dumb` is a terminfo NAME, not a family, so a prefix test would
+    // take a terminal that paints down with it — and an unset `TERM` is a caller who said
+    // nothing, which is not a declaration.
+    expect(chooseRenderer(asked('auto', { TERM: 'dumb-emacs-ansi' }, true))).toBe(renderStyled);
+    expect(chooseRenderer(asked('auto', { TERM: 'xterm-256color' }, true))).toBe(renderStyled);
+    expect(chooseRenderer(asked('auto', {}, true))).toBe(renderStyled);
+  });
+
+  it('lets both variables and the flag outrank a `dumb` terminal — asking beats declaring', () => {
+    // IT IS THE LAST RUNG AND IT IS UNDER EVERYTHING, which is the market's ordering and
+    // not ours: a caller who set `FORCE_COLOR` asked for colour on a terminal that says it
+    // cannot, and that is the whole use of the variable. `--color=always` is the same
+    // request from this invocation, one rung higher still.
+    expect(chooseRenderer(asked('always', { TERM: 'dumb' }, true))).toBe(renderStyled);
+    expect(chooseRenderer(asked('auto', { TERM: 'dumb', FORCE_COLOR: '1' }, true))).toBe(
+      renderStyled,
+    );
+    // And the two that already said no keep saying it, which is what makes the rung an
+    // agreement rather than a fourth opinion.
+    expect(chooseRenderer(asked('never', { TERM: 'dumb' }, true))).toBe(renderPlain);
+    expect(chooseRenderer(asked('auto', { TERM: 'dumb', NO_COLOR: '1' }, true))).toBe(renderPlain);
+  });
+
   it('never paints without a terminal unless something ASKED — over the whole space', () => {
     // The question the cases above answer one at a time, asked of every input at once:
-    // is there a way to style a pipe that nobody requested? That is the failure that
-    // reaches a CI log and a redirected file, and the one the recorded transcript would
-    // pay for. Small enough to enumerate: three flags × three states of one variable ×
-    // four of the other × two destinations.
+    // is there a way to style a destination that cannot show it and that nobody asked to
+    // paint? That is the failure that reaches a CI log and a redirected file, and the one
+    // the recorded transcript would pay for. Small enough to enumerate: three flags × three
+    // states of one variable × four of the other × three of the terminal's own word × two
+    // destinations.
+    //
+    // THE TERMINAL'S WORD IS IN THE SPACE, and it widened the property rather than adding a
+    // row to it: *a destination that can show style* is now a terminal that did not say it
+    // is `dumb`, so an enumeration that left `TERM` out would keep passing over the rung it
+    // is about.
     const whens: ColorWhen[] = ['auto', 'always', 'never'];
     let styled = 0;
     for (const when of whens) {
       for (const noColor of [undefined, '', '1']) {
         for (const forceColor of [undefined, '', '0', '1']) {
-          for (const isTty of [false, true]) {
-            const env = { NO_COLOR: noColor, FORCE_COLOR: forceColor };
-            if (chooseRenderer({ when, env, isTty, columns: 0 }) !== renderStyled) continue;
-            styled++;
-            const wanted = when === 'always' || (forceColor !== undefined && forceColor !== '0');
-            expect(wanted || isTty, JSON.stringify({ when, env, isTty })).toBe(true);
+          for (const term of [undefined, 'dumb', 'xterm-256color']) {
+            for (const isTty of [false, true]) {
+              const env = { NO_COLOR: noColor, FORCE_COLOR: forceColor, TERM: term };
+              if (chooseRenderer({ when, env, isTty, columns: 0 }) !== renderStyled) continue;
+              styled++;
+              const wanted = when === 'always' || (forceColor !== undefined && forceColor !== '0');
+              const canShow = isTty && term !== 'dumb';
+              expect(wanted || canShow, JSON.stringify({ when, env, isTty })).toBe(true);
+            }
           }
         }
       }
