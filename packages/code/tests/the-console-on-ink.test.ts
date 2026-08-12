@@ -579,9 +579,17 @@ function saidAbout(all: string, line: string): string[] {
   const rows = withoutLayout(all.slice(back)).split('\n');
   // The tail after the last newline: not a row, an artefact of splitting on one.
   rows.pop();
-  const echoed = rows.indexOf(`${PROMPT} ${line}`);
+  // AND THE ECHO IS FOUND WITH ITS ESCAPES OFF, which is what the echo becoming a composed
+  // LINE cost this locator. It used to be the one row of the page a renderer never touched, so
+  // its bytes were the prompt and the words, contiguous; it is parts now — the prompt in the
+  // accent, what the caller typed in bold (`presentation/echo.ts`) — so a search of the raw row
+  // finds nothing at all whenever the console is painting. What is SLICED is still the rows
+  // themselves, escapes and all, because the comparison this feeds is about those bytes.
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: the escape IS what is taken out.
+  const bare = rows.map((row) => row.replace(/\u001b\[[0-9;]*m/g, ''));
+  const echoed = bare.indexOf(`${PROMPT} ${line}`);
   expect(echoed, `the transcript does not hold the echo of ${line}`).toBeGreaterThanOrEqual(0);
-  const next = rows.findIndex((row, at) => at > echoed && row.startsWith(PROMPT));
+  const next = bare.findIndex((row, at) => at > echoed && row.startsWith(PROMPT));
   return rows.slice(echoed + 1, next < 0 ? rows.length : next);
 }
 

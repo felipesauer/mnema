@@ -56,6 +56,7 @@ import {
   aFrameAfter,
   aFrameWithout,
   arrivedSince,
+  arrivedUnpainted,
   inPty as drive,
   type Fixture,
   opensAConsole,
@@ -914,7 +915,10 @@ describe('the two keys open one list, and it stands off the row under it', () =>
           },
           {
             types: CLEARS_THE_LINE,
-            until: arrivedSince(`${PROMPT} ${typed}`),
+            // WITH THE PAINT OUT, because what this waits for is the line LANDING rather than
+            // the row being typed: an echo is composed and painted (`src/presentation/echo.ts`),
+            // so its bytes are not a run on the wire ({@link arrivedUnpainted}).
+            until: arrivedUnpainted(`${PROMPT} ${typed}`),
             what: 'landed the abandoned line',
           },
           {
@@ -1190,7 +1194,9 @@ describe('a list of one, a list of none, and the arrows in both', () => {
         // offered — which is where the arrows go back to doing what they always did.
         {
           types: `${CLEARS_THE_ROW}xyzzy\r`,
-          until: arrivedSince(`${PROMPT} xyzzy`),
+          // AND THIS ONE WAITS FOR THE ECHO TOO: a submitted line clears the row it was typed
+          // on, so the only place those words are is the roll, painted.
+          until: arrivedUnpainted(`${PROMPT} xyzzy`),
           what: 'submitted a line nothing answers to',
         },
         { types: MOVES_UP, until: arrivedSince(`${PROMPT} xyzzy`), what: 'browsed back to it' },
@@ -1338,9 +1344,14 @@ describe('a page without the room shows fewer, and says how many it could not', 
   // for it is the screen less the region at the top: at eighty columns the arrangement holds six
   // of them, so twenty-four rows leave thirteen words and twenty-eight leave seventeen. Measured
   // on a real terminal rather than derived, and both counts are still asserted against the total.
+  // AND BOTH LOST TWO, WHICH IS THE SEAM. The region at the top is the arrangement AND the rule
+  // that closes it AND the row of breath under that (`src/repl/panel.ts`, `THE_SEAM`), so it
+  // holds eight of the rows at eighty columns rather than six — and the list is budgeted against
+  // what is left of the screen under it (`src/repl/area.ts`, `roomForThePalette`). The two
+  // regimes are untouched; each shows two words fewer and says so in the row that names the rest.
   for (const [rows, shown] of [
-    [24, 13],
-    [28, 17],
+    [24, 11],
+    [28, 15],
   ] as const) {
     it(`names a number that adds up to everything there was, at 80x${rows}`, async () => {
       // THE NUMBER IS ASSERTED AGAINST THE TOTAL rather than written down: what is on the

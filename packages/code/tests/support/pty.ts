@@ -321,6 +321,32 @@ export function arrivedSince(what: string): (bytes: string, since: number) => bo
 }
 
 /**
+ * THE SAME QUESTION WITH THE PAINT TAKEN OUT — what a step waits for when what it is waiting
+ * for is a line the product COMPOSED.
+ *
+ * IT IS THE ECHO THAT FORCED IT. What a caller sent is a line with parts now — the prompt in
+ * the accent this product is marked by, their own words in a weight of their own
+ * (`src/presentation/echo.ts`) — so `mnema> x` is not a run of bytes on the wire any more, and a
+ * step waiting for one waits for ever. The row being TYPED is still plain, so a step about the
+ * input area goes on asking {@link arrivedSince}; this is for the ones about what LANDED.
+ *
+ * ONLY THE STYLE IS TAKEN OUT, never every escape: what is left is where each glyph goes, which
+ * is what makes the answer about the page rather than about the paint.
+ */
+export function arrivedUnpainted(what: string): (bytes: string, since: number) => boolean {
+  return (bytes, since) => bytes.slice(since).replace(PAINT, '').includes(what);
+}
+
+/**
+ * WHAT A RENDERER PAINTS WITH: every SGR sequence, and nothing else that an escape can be.
+ *
+ * Built from a code point rather than written with the byte in it, which is what keeps a control
+ * character out of a source this repository has to be able to read — and out of the one lint rule
+ * that exists to say so.
+ */
+const PAINT = new RegExp(`${String.fromCodePoint(0x1b)}\\[[0-9;]*m`, 'g');
+
+/**
  * A FRAME THE STEP ITSELF CAUSED, WITH `absent` NOT IN IT — which is how a step waits for
  * something to have GONE.
  *

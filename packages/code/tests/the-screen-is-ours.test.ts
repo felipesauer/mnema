@@ -719,7 +719,12 @@ describe('the console takes the screen and draws three regions on it', () => {
     // its step is not a page ({@link screenAt}). The page that SAID something is the first one
     // the echo is on; the page after the word that clears is the one the session left, because
     // nothing lands after it.
-    const said = theFirstScreenWith(ran.bytes, `${PROMPT} ${says(0)}`, columns, rows);
+    // AND THE ECHO IS FOUND BY WHAT THE CALLER TYPED RATHER THAN BY THE WHOLE ROW. The echo is
+    // a composed line now — the prompt in the accent, the words in a weight of their own
+    // (`src/presentation/echo.ts`) — so the two are not contiguous bytes of a frame, and a
+    // locator over the FRAME cannot strip escapes it is searching. What the caller typed is
+    // unique to this run, so it names the frame exactly as the whole row did.
+    const said = theFirstScreenWith(ran.bytes, says(0), columns, rows);
     const cleared = theScreenBeforeLeaving(ran.bytes, columns, rows);
     // WHAT THE SESSION SAID IS GONE FROM THE PAGE, which is what the word means.
     expect(said.text, 'the session never said anything to clear').toContain(`${PROMPT} ${says(0)}`);
@@ -1087,11 +1092,19 @@ describe('the way out gives the screen back and the transcript with it', () => {
     // layout library treats everything written while it is tearing down as disposable and says
     // so, so a transcript written as a last frame or as a print inside the teardown would be
     // thrown away with the alternate screen. Asserted by POSITION rather than by presence.
-    const gaveItBack = ran.bytes.lastIndexOf(GIVES_THE_SCREEN_BACK);
+    //
+    // WITH THE STYLE OFF, and BOTH indices out of the same string: the transcript carries the
+    // echo, the echo is a composed line, and its prompt is wrapped in the accent
+    // (`src/presentation/echo.ts`) — so the row is not contiguous in the raw stream. Taking the
+    // style out of the whole stream moves every index by the same bytes, which is what keeps a
+    // comparison BETWEEN two of them true.
+    // biome-ignore lint/suspicious/noControlCharactersInRegex: the escape IS what is taken out.
+    const unpainted = ran.bytes.replace(/\u001b\[[0-9;]*m/g, '');
+    const gaveItBack = unpainted.lastIndexOf(GIVES_THE_SCREEN_BACK);
     expect(gaveItBack, 'the screen was never given back').toBeGreaterThan(0);
     const echo = `${PROMPT} verify`;
     expect(
-      ran.bytes.lastIndexOf(echo),
+      unpainted.lastIndexOf(echo),
       'the transcript was written before the screen was given back',
     ).toBeGreaterThan(gaveItBack);
     // AND THE MOUSE WAS GIVEN BACK TOO, before the screen: a terminal left reporting the mouse

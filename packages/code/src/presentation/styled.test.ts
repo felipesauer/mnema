@@ -28,7 +28,8 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../cli.js';
 import { aside, fact, statedFact, subjectLine } from './detail.js';
-import { asId, asWhen, column, itemLine } from './items.js';
+import { echoLine } from './echo.js';
+import { asId, asScope, asWhen, column, itemLine } from './items.js';
 import type { Line } from './line.js';
 import { renderPlain } from './plain.js';
 import { asState } from './state.js';
@@ -46,7 +47,7 @@ const ESC = '\u001b';
  * control character is the thing the lint refuses — and it refuses it for the reason
  * that made this file necessary: a control byte in source is invisible to a reader.
  */
-const SGR = new RegExp(`${ESC}\\[(?:1|2|22|31|32|33|39)m`, 'g');
+const SGR = new RegExp(`${ESC}\\[(?:1|2|22|31|32|33|35|39)m`, 'g');
 
 /** One styled line with this renderer's own escapes taken back out. */
 const stripped = (text: string): string => text.replace(SGR, '');
@@ -58,10 +59,15 @@ const stripped = (text: string): string => text.replace(SGR, '');
  * covers `31` would have taken the actor's own bytes out of the styled line and then
  * compared the scrubbed result against an unscrubbed plain one — which is exactly the
  * vacuous comparison the header of this file warns about, arriving through the fixture
- * instead of through the renderer. Magenta, because nothing in `styled.ts` emits it;
- * the day something does, this constant moves again and the cases below say so.
+ * instead of through the renderer.
+ *
+ * IT WAS MAGENTA, *because nothing in `styled.ts` emits it; the day something does, this
+ * constant moves again and the cases below say so*. Something does: the accent a prompt
+ * carries is SGR 35, so magenta became ours exactly as red did, and this is that day. Cyan
+ * now, and the same sentence stands over it — a hue the renderer does not write, which is
+ * what the constant is FOR.
  */
-const ACTOR_ESCAPE = `${ESC}[35m`;
+const ACTOR_ESCAPE = `${ESC}[36m`;
 
 describe('the styled line is the plain line, wrapped', () => {
   /**
@@ -144,6 +150,19 @@ describe('the styled line is the plain line, wrapped', () => {
     // colon. It is dim, so it is in the painted half, and the words are the same in
     // both renderings — which is the whole promise, on the surface's newest shape.
     aside('`/exit` or Ctrl-D leaves'),
+    // The TREE said by the call site, bare and padded — the third column nobody reads. The
+    // padded one is the shape a report that lines its columns up hands over, and the padding
+    // has to stay inside the wrap for the same reason a trailing space does above.
+    itemLine([asId('an-id'), asScope('public'), asWhen('2026-08-05'), 'a title']),
+    itemLine([asId('an-id'), asScope(column('public', 7)), 'a name']),
+    // The ECHO, in the three shapes a row leaves the input in — and it is the newest shape
+    // on this surface as well as the only one that is not about the record. The last of the
+    // three is a caller pressing Return on an empty row, which wraps a part holding nothing:
+    // the same trap the empty and the padded parts above are here for, on a part that is
+    // painted rather than bare.
+    echoLine('mnema> ', 'search --kind task'),
+    echoLine('mnema> ', ' sear '),
+    echoLine('mnema> ', ''),
   ];
 
   it('says exactly what the plain line says, for every shape', () => {
@@ -156,15 +175,16 @@ describe('the styled line is the plain line, wrapped', () => {
     // The other half. Without this, a renderer that returned the plain string would
     // pass the case above on every line in the corpus.
     //
-    // TWENTY-TWO of the thirty-two, and exactly the ones holding a role or a severity
+    // TWENTY-SEVEN of the thirty-seven, and exactly the ones holding a role or a severity
     // that shows: the three subject lines, the eight statements, the four clause
     // statements, the two lists with a said column, the FOUR states whose disposition is
-    // news, and the aside. The other ten are bare `field` and bare `state` — a fact, a
-    // plain column, an empty part, a blank line, an advancing task, a superseded decision
-    // — and they are byte for byte the plain line by design, which is what the last case
-    // in this block asserts on purpose.
+    // news, the aside, the two lists whose TREE is said, and the three echoes. The other
+    // ten are bare `field` and bare `state` — a fact, a plain column, an empty part, a
+    // blank line, an advancing task, a superseded decision — and they are byte for byte
+    // the plain line by design, which is what the last case in this block asserts on
+    // purpose.
     const painted = corpus.filter((line) => renderStyled(line) !== renderPlain(line));
-    expect(painted.length).toBe(22);
+    expect(painted.length).toBe(27);
   });
 
   it('leaves what an actor wrote alone, escape and all', () => {
@@ -234,6 +254,26 @@ describe('the styled line is the plain line, wrapped', () => {
       '  a title \u001b[32m(adopted)\u001b[39m',
     );
     expect(renderStyled(itemLine(['a title', asState('rejected')]))).toBe('  a title (rejected)');
+    // THE THIRD DIM COLUMN, between the two that were already dim — and the two spaces on
+    // each side of it stay outside every wrap, which is what keeps the plain bytes, and
+    // therefore the recorded transcript, exactly where they were.
+    expect(
+      renderStyled(itemLine([asId('an-id'), asScope('public'), asWhen('2026-08-05'), 'a title'])),
+    ).toBe(
+      '  \u001b[2man-id\u001b[22m  \u001b[2mpublic\u001b[22m  ' +
+        '\u001b[2m2026-08-05\u001b[22m  a title',
+    );
+    // THE ECHO, byte for byte: the prompt in the accent and closed by the foreground, then
+    // what the caller typed in bold and closed by the intensity — and NOTHING between them,
+    // because the space the prompt ends in is inside the prompt's own text.
+    expect(renderStyled(echoLine('mnema> ', 'search'))).toBe(
+      '\u001b[35mmnema> \u001b[39m\u001b[1msearch\u001b[22m',
+    );
+    // AND THE ACCENT IS NOT A SEVERITY: none of the three hues a verdict can carry is on
+    // this line, which is the half that says the two axes did not meet.
+    for (const severity of ['\u001b[31m', '\u001b[32m', '\u001b[33m']) {
+      expect(renderStyled(echoLine('mnema> ', 'search'))).not.toContain(severity);
+    }
   });
 
   it('costs a list of columns nothing at all', () => {

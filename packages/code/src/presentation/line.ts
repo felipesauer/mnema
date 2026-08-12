@@ -48,6 +48,17 @@
  *     A DATE, you copy one or skip past it. Dimming them is what makes the title
  *     beside them the thing the eye lands on, which is what `git log --oneline` does
  *     with a hash and `gh pr list` with a number.
+ *   - `scope` — the tree a listed record lives in, and it is the THIRD column nobody
+ *     reads. It joined the two above for their reason and not for one of its own: a
+ *     `search` over a project prints `public` on every row of every group, so the
+ *     column is a constant a reader has to look PAST to reach the title. See below for
+ *     the premise this falsified, which was written in this file and was about a
+ *     different question.
+ *   - `prompt` and `typed` — the two parts of the ECHO, which is the console showing a
+ *     caller what they sent (`echo.ts`). They are refinements of the same kind the two
+ *     columns above are: what a renderer does with them is what it already does with
+ *     something else, and what they buy is a call site saying which half of the row is
+ *     the product's own mark and which half is the caller's words.
  *   - `state` — a record's position in its workflow, wherever a reading shows one. THIS
  *     USED TO SAY A TASK'S, and what falsified it is `state.ts` reaching the other two
  *     machines: a decision's and a pattern's position ride this same role in this same
@@ -66,13 +77,15 @@
  *     `field`: a clause sits where a detail sits and reads as secondary, and what it
  *     needs of its own is the `; ` that separates it from the clause before it.
  *
- * THE TWO COLUMN ROLES ARE REFINEMENTS OF `field`, and that is a constraint and not a
+ * THE THREE COLUMN ROLES ARE REFINEMENTS OF `field`, and that is a constraint and not a
  * preference. A separator is a function of the role ALONE (see `PRECEDED_BY`), so a
  * role that joined its neighbour one way inside a list and another inside a heading
- * could not exist. `id` and `when` take a column's two spaces — which is what keeps
- * the plain renderer's bytes, and therefore the recorded transcript, identical. It is
- * also why the id in `show`'s heading and the instants inside `show`'s facts stay
- * unmarked: neither is a column, and marking one would move a byte.
+ * could not exist. `id`, `when` and `scope` take a column's two spaces — which is what
+ * keeps the plain renderer's bytes, and therefore the recorded transcript, identical. It
+ * is also why the id in `show`'s heading and the instants inside `show`'s facts stay
+ * unmarked: neither is a column, and marking one would move a byte. The scope in that
+ * same heading stays a `subject` for exactly that reason: it is half of what the heading
+ * SAYS, not a column a reader scans past.
  *
  * WHAT IS STILL NOT HERE, and what falsified the premise that used to be. This list
  * used to say that "an id, a state, a verdict and an emphasis" were all things a
@@ -85,15 +98,25 @@
  * IT ALSO SAID A STATE WAS NOT A ROLE, and that half fell over too. The reason given
  * was: *a `state`, a tree and a title are CATEGORIES rather than ranks, so telling them
  * apart means one hue per value, and five hues in a list is noise*. THE RULE SURVIVED
- * AND THE CLASSIFICATION OF THE STATE DID NOT. A tree and a title really are categories
- * — three trees with no order and no consequence between them — and neither is a role
- * today for exactly that reason. A workflow state is not one: it is a POSITION IN A
- * CYCLE, and the transition table gives each position a structurally different set of
- * exits, so the product's sixteen states across three machines collapse to six
- * DISPOSITIONS and those to three hues (see `state.ts`, and `core`'s `disposition.ts`
- * and `copilot`'s `decisions.ts` and `skills.ts` for the derivations). One hue per value
- * was never the alternative. The day someone wants a tree apart, the old sentence still
- * answers them.
+ * AND THE CLASSIFICATION OF THE STATE DID NOT. A workflow state is not a category: it is
+ * a POSITION IN A CYCLE, and the transition table gives each position a structurally
+ * different set of exits, so the product's sixteen states across three machines collapse
+ * to six DISPOSITIONS and those to three hues (see `state.ts`, and `core`'s
+ * `disposition.ts` and `copilot`'s `decisions.ts` and `skills.ts` for the derivations).
+ * One hue per value was never the alternative.
+ *
+ * AND THE TREE IS A ROLE NOW, WHICH THE SENTENCE ABOVE SAID IT WOULD NEVER BE: *a tree
+ * and a title really are categories — three trees with no order and no consequence
+ * between them — and neither is a role today for exactly that reason*, followed by *the
+ * day someone wants a tree apart, the old sentence still answers them*. IT ANSWERED A
+ * QUESTION NOBODY ASKED. The question it refused is *tell the three trees apart*, which
+ * would take one hue per value and is still refused: `scope` carries no hue, and
+ * `public`, `private` and `global` come out of the renderer looking exactly alike. What
+ * is asked instead is the question `id` and `when` already answered — a column nobody
+ * READS, dimmed so the title beside it is the subject of the line — and a scope is the
+ * strongest case of it there is, because a reading over one project prints the same word
+ * on every row it has. Emphasis by SUBTRACTION needs no order between the values it
+ * subtracts, which is what makes the categories argument beside the point.
  *
  * The union is derived from this tuple so the roles can be walked at run time:
  * `parts.test.ts` calls every primitive and refuses a role no primitive produces.
@@ -105,8 +128,11 @@ export const ROLES = [
   'field',
   'id',
   'when',
+  'scope',
   'state',
   'subject',
+  'prompt',
+  'typed',
 ] as const;
 
 /** What a part is on its line. Closed: see {@link ROLES} for what it excludes. */

@@ -79,6 +79,7 @@ import { completerFor } from './complete.js';
 import type { Drawn } from './console.js';
 import { followingTheRecord } from './following.js';
 import { type AfterLine, argvOf, dispositionOf, verbsOffered } from './gate.js';
+import { insideTheMargin } from './inset.js';
 import type { Leaving } from './leaving.js';
 import { type Opening, openingFor, theShortestScreenFor } from './panel.js';
 import { whatTheSessionShowed } from './seen.js';
@@ -496,14 +497,21 @@ export async function openSession(request: SessionRequest): Promise<void> {
     // shape once (`console.ts`, `theSize`).
     const drawnWith = (mark: readonly Line[], within: number = rows): Opening =>
       openingFor({
-        columns,
+        // NOT THE TERMINAL'S WIDTH, BUT THE PAGE'S. Both halves of an opening are drawn inside
+        // the margin the console keeps to the left of everything it says (`inset.ts`,
+        // `region.ts`): the arrangement, at the top of the screen, and the lines it lands on
+        // the roll. So the width every question below is asked at is what the margin leaves —
+        // an arrangement chosen against the whole terminal would be four columns too wide for
+        // the box it is drawn in, and a line folded to the whole terminal would be broken again
+        // at the margin by the layout.
+        columns: insideTheMargin(columns),
         rows: within,
         // AND THE RENDERER IS THE ONE FOR THAT WIDTH, out of the same number the arrangement is
         // chosen by rather than out of a renderer resolved when the process opened. It is asked
         // here rather than closed over because this whole function is a function OF the size:
         // an opening composed for two hundred columns whose lines were folded to seventy is the
         // defect this delivery is named after, one region up.
-        render: renderingAt(columns),
+        render: renderingAt(insideTheMargin(columns)),
         title,
         mark,
         standing: where,

@@ -491,6 +491,7 @@ describe('the session writes no history anywhere', () => {
       'floor.ts',
       'following.ts',
       'gate.ts',
+      'inset.ts',
       'leaving.ts',
       'palette.ts',
       'panel.ts',

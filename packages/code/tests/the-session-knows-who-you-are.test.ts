@@ -259,7 +259,14 @@ describe('a verb that asks for an identity is answered by the session that has o
     ]);
     // THE ECHO IS THE CALLER'S LINE. A session that echoed the line it assembled would be
     // showing somebody a line they did not write, on the row they are reading back.
-    expect(ran.bytes).toContain(`${PROMPT} status`);
+    //
+    // WITH THE ESCAPES OFF, because the echo is a composed line now: the prompt carries the
+    // accent and what was typed carries a weight (`presentation/echo.ts`), so the two are not
+    // contiguous bytes on the wire and a search of the raw stream finds neither. What is asked
+    // is what a READER sees, which is what this case was always about.
+    // biome-ignore lint/suspicious/noControlCharactersInRegex: the escape IS what is taken out.
+    const said = ran.bytes.replace(/\u001b\[[0-9;]*m/g, '');
+    expect(said).toContain(`${PROMPT} status`);
     // And the flag is nowhere on the page at all — not in the echo, not in a refusal.
     expect(ran.bytes).not.toContain('--actor');
   }, 180_000);
