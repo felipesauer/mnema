@@ -106,7 +106,7 @@ const NOTHING_IS_CUT = 160;
 /**
  * NOTHING ABOVE THE AREA — how tall the fixed region at the top is taken to be here.
  *
- * ⚠️ IT WAS THE FLOW, and the field it fills is not the field it used to. The list took its rows
+ * IT WAS THE FLOW, and the field it fills is not the field it used to. The list took its rows
  * out of what the PAGE had left over under everything the session had said, so the number GREW
  * as lines landed; what a session says is a window onto a roll now, inside the middle region, so
  * what the list is budgeted against is the ARRANGEMENT at the top (`repl/area.ts`,
@@ -234,7 +234,7 @@ describe('one palette, one list, and the slash counts only at the start of the l
     offers.map((offer) => offer.word);
 
   it('opens the whole list on a slash — the words and the verbs, in one answer', () => {
-    // ⚠️ THIS CASE SAID *opens the session's own words on a slash*, and asserted the palette
+    // THIS CASE SAID *opens the session's own words on a slash*, and asserted the palette
     // was those three words. That is the defect this delivery closes rather than a property to
     // keep: the slash listed three words, a Tab listed sixteen verbs and the three words, and a
     // console with two menus has no list of what you can type. So the slash asks what an empty
@@ -271,7 +271,7 @@ describe('one palette, one list, and the slash counts only at the start of the l
       expect(offeredBy(line, [], asked), line).toEqual([]);
     }
     expect(offeredBy(`${PREFIX}help`, [], asked).length).toBe(1);
-    // ⚠️ AND IT DOES NOT SUPPRESS WHAT A TAB OFFERED, WHICH IS THE OTHER HALF AND THE ONE
+    // AND IT DOES NOT SUPPRESS WHAT A TAB OFFERED, WHICH IS THE OTHER HALF AND THE ONE
     // THE FIRST DRAFT OF THIS CASE MISSED. Reading the slash anywhere in the line is a
     // mutation that leaves every assertion above green — asking about a whole line that has a
     // verb in it answers with nothing either way — and what it really breaks is the OTHER
@@ -423,7 +423,7 @@ describe('whenever it draws a row, what it shows plus what it names is everythin
           expect([...row].length, `${room}/${columns}`).toBeLessThanOrEqual(columns);
         // And it never draws more rows than it was given room for.
         expect(rows.length, `${room}/${columns}`).toBeLessThanOrEqual(room);
-        // ⛔ AND IT DRAWS EXACTLY WHAT THE AREA BUDGETED, which is the property the caret and
+        // AND IT DRAWS EXACTLY WHAT THE AREA BUDGETED, which is the property the caret and
         // the foot of the page rest on: the same function answers how many rows the list wants
         // and how many it spends (`repl/palette.ts`, `paletteRowsFor`), so a row drawn and not
         // counted — the shape a row of KEYS added to one side alone would have — is a page whose
@@ -446,7 +446,7 @@ describe('whenever it draws a row, what it shows plus what it names is everythin
   });
 
   it('spends a row on saying so, rather than showing one more and going quiet', () => {
-    // ⚠️ THE NUMBERS MOVED BY ONE ROW, AND THE ROW IS THE KEYS'. Three rows of room is now one
+    // THE NUMBERS MOVED BY ONE ROW, AND THE ROW IS THE KEYS'. Three rows of room is now one
     // offer, the account of the rest, and the row that says which keys move the list — so what
     // it names is one more than it used to be. The count is still asserted against the TOTAL
     // rather than written down, which is what keeps it a measurement.
@@ -517,7 +517,7 @@ describe('the mark says which row is picked, and it is a column of the table', (
   });
 
   it('is in the TEXT of the row, which is what makes it work with no colour', () => {
-    // ⛔ THE DECISION THIS DELIVERY TOOK ON PURPOSE. This product paints with the eight colours a
+    // THE DECISION THIS DELIVERY TOOK ON PURPOSE. This product paints with the eight colours a
     // reader's theme defines, so a hue is a weak signal; the mark is a glyph in the line, so it
     // survives a pipe, `--color=never`, a monochrome terminal and a reader who does not separate
     // two tones. The renderer here is the PLAIN one — what all three of those get — and the mark
@@ -541,7 +541,7 @@ describe('the pick is a word, and the ends of the list hold', () => {
   });
 
   it('holds at both ends rather than wrapping round', () => {
-    // ⚠️ THE REASON WAS *the list is CUT to the room a terminal has, so a wrap would put the mark
+    // THE REASON WAS *the list is CUT to the room a terminal has, so a wrap would put the mark
     // on a row the caller cannot see*, and the window falsified it: what is drawn follows the
     // pick now (`repl/palette.ts`, `theWindow`), so a wrapped pick would be drawn. The decision
     // stands on the list instead of on the drawing — the ends of it are where the vocabulary
@@ -634,7 +634,7 @@ describe('the palette gets what is left over on a page with nothing on it, and n
       }).palette;
     // Tall enough for all of it, and then one row less at a time.
     //
-    // ⚠️ EVERY NUMBER IS A ROW BIGGER THAN IT WAS, AND THE ROW IS THE LIBRARY'S BOUNDARY. The
+    // EVERY NUMBER IS A ROW BIGGER THAN IT WAS, AND THE ROW IS THE LIBRARY'S BOUNDARY. The
     // area used to be held one row short of the viewport, because a region as tall as the
     // viewport was one the library redrew whole — with the erase of the caller's history inside
     // the sequence. The console owns the screen and its frame IS the viewport on every frame, so
@@ -645,7 +645,7 @@ describe('the palette gets what is left over on a page with nothing on it, and n
     expect(roomAt(10)).toBe(10 - 1 - 1 - 1);
     expect(roomAt(5)).toBe(2);
     expect(roomAt(3)).toBe(0);
-    // ⛔ AND THE FRAME NEVER OUTGROWS THE SCREEN, which is what replaces the old boundary:
+    // AND THE FRAME NEVER OUTGROWS THE SCREEN, which is what replaces the old boundary:
     // whatever the height, what the area takes leaves the two regions above it a page to be on.
     for (const rows of [3, 4, 6, 10, 24, 40]) {
       const area = areaFor({
@@ -709,7 +709,7 @@ const leaves: Step = {
 /**
  * Every row of a screen that begins, after the indent, with one of these words.
  *
- * ⚠️ A MARKED ROW STILL NAMES ITS WORD, and this helper did not know it. The picked row carries
+ * A MARKED ROW STILL NAMES ITS WORD, and this helper did not know it. The picked row carries
  * the mark in a column BEFORE the word (`repl/palette.ts`), so a scan that read the row's first
  * token as the word missed exactly the row the caller had chosen — measured, as two cases of this
  * file counting one row fewer than the list had. The mark is taken off the front before the
@@ -773,7 +773,7 @@ describe('a slash opens the list on the screen, and typing narrows it', () => {
       rows,
       steps: [
         opens,
-        // ⚠️ AND BOTH WAITS ARE ABOUT WHAT THE STEP CAUSED, which neither was: the first read the
+        // AND BOTH WAITS ARE ABOUT WHAT THE STEP CAUSED, which neither was: the first read the
         // WHOLE stream, and the second waited for `/c` — which the LIST already holds, because
         // `/clear` starts with it. So the second step was over before the key was drawn, and the
         // screen below was read with the un-narrowed list on it: measured red in a whole-suite run
@@ -893,7 +893,7 @@ describe('the two keys open one list, and it stands off the row under it', () =>
     const columns = NOTHING_IS_CUT;
     const rows = 40;
     const offers = everythingOffered();
-    // ⚠️ AND A LINE IS LANDED BEFORE THE KEY IS PRESSED, which is not scenery: the page is
+    // AND A LINE IS LANDED BEFORE THE KEY IS PRESSED, which is not scenery: the page is
     // PLACED with rows that have nothing on them, so that the input ends on the last row the
     // layout leaves, and since those rows go under the flow (`repl/page.ts`) the row above the
     // list's own blank one is one of THEM on a page nothing has been said on. What the session
@@ -939,7 +939,7 @@ describe('the two keys open one list, and it stands off the row under it', () =>
         (screen.rows[first - 1] as string).trim(),
         `${key}: the list has no blank row over it`,
       ).toBe('');
-      // NOT VACUOUS, AND ⚠️ THE WITNESS FOR IT CHANGED. It used to be the row above THAT: with one
+      // NOT VACUOUS, AND THE WITNESS FOR IT CHANGED. It used to be the row above THAT: with one
       // line landed the page had no room to spare, so the row two above the list was the landed
       // line and the blank row between them could only be the palette's. What falsified it is the
       // delivery that took the FRAME off the panel: the opening is three rows shorter at this
@@ -1099,7 +1099,7 @@ describe('Return takes the picked word, and Escape shuts the list', () => {
         { types: PREFIX, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
         { types: MOVES_DOWN, until: marks(first), what: 'marked the first word' },
         { types: '\r', until: arrivedSince(`${PROMPT} ${first}`), what: 'took the word' },
-        // ⚠️ AND THE WAIT FOR THE LIST TO HAVE GONE IS THE SHARED INSTRUMENT'S, because spelled out
+        // AND THE WAIT FOR THE LIST TO HAVE GONE IS THE SHARED INSTRUMENT'S, because spelled out
         // here it was true before the key had been drawn: measured, *the list is still open* in a
         // whole-suite run and green on its own (`support/pty.ts`, `aFrameWithout`).
         {
@@ -1241,7 +1241,7 @@ describe('the mark survives what changes around it', () => {
         leaves,
       ],
     });
-    // ⚠️ FOUND BY THE WIDTH IT WAS DRAWN AT rather than by where the step ended: a resize
+    // FOUND BY THE WIDTH IT WAS DRAWN AT rather than by where the step ended: a resize
     // produces more than one frame, and a step ends wherever the stream happened to be quiet, so
     // on a loaded machine an index reads the page from BEFORE the resize — and the red then says
     // *the resize lost what the caller had picked*, which is an accusation against the product
@@ -1252,13 +1252,13 @@ describe('the mark survives what changes around it', () => {
   }, 240_000);
 
   it('spends no colour, so a session with none still shows which row it is', async () => {
-    // ⛔ THE REASON THE MARK IS A GLYPH AND NOT A HUE, asked of a real device twice over. The
+    // THE REASON THE MARK IS A GLYPH AND NOT A HUE, asked of a real device twice over. The
     // session is driven with colour switched off at the environment — what a pipe, a CI log and
     // `--color=never` get — and the mark is still on the screen; and the paint on the frame that
     // MOVED the mark is the same paint as on the frame that opened the list, so nothing about
     // being picked is carried by a hue or a weight.
     //
-    // ⚠️ AND SWITCHING COLOUR OFF DOES NOT MAKE THE PAGE PLAIN, which this case measured and is
+    // AND SWITCHING COLOUR OFF DOES NOT MAKE THE PAGE PLAIN, which this case measured and is
     // worth writing down rather than asserting past: the capability the environment resolves is
     // the RECORD's renderer (`wiring/color.ts`), and the layout dims the palette and paints the
     // accent out of its own (`repl/region.ts`). So a page with `NO_COLOR` set still carries the
@@ -1297,13 +1297,13 @@ describe('the mark survives what changes around it', () => {
 });
 
 describe('a page without the room shows fewer, and says how many it could not', () => {
-  // TWO SIZES, AND THEY ARE THE TWO REGIMES OF THE SAME PROMISE. ⚠️ THIS WAS ONE CASE AT A
+  // TWO SIZES, AND THEY ARE THE TWO REGIMES OF THE SAME PROMISE. THIS WAS ONE CASE AT A
   // HUNDRED BY EIGHT, and it asserted that some were shown AND some were named — which is
   // what a list cut to the SCREEN did at that size. The list is cut to what the PAGE has left
   // over now (`repl/area.ts`, `AreaRequest.flow`), so the case that pinned "some are shown"
   // gained a size where the page really has some to spare.
   //
-  // ⚠️ AND THE SHORT ONE ASSERTED THAT NOTHING WAS SHOWN, which is the premise the floor
+  // AND THE SHORT ONE ASSERTED THAT NOTHING WAS SHOWN, which is the premise the floor
   // falsified — and it was written down here as the other half of a promise rather than as the
   // defect it was: *at eight rows the opening spends the whole page: what is left over is the
   // chrome the list takes back, which is two rows, and two rows are the account and the row of
@@ -1314,14 +1314,14 @@ describe('a page without the room shows fewer, and says how many it could not', 
   // `roomForThePalette`), so what the two sizes are two regimes OF has moved: it is how MANY are
   // shown — a page with room shows what it has room for, and a page with none shows one.
   //
-  // ⚠️ AND THE SECOND SIZE MOVED FROM EIGHT ROWS TO SIXTEEN, which is the model rather than a
+  // AND THE SECOND SIZE MOVED FROM EIGHT ROWS TO SIXTEEN, which is the model rather than a
   // number retuned. Rows the list takes used to come out of what the PAGE had left over under
   // everything the session had said; they come out of the middle region now, which is a WINDOW
   // and costs the page nothing (`repl/area.ts`, `repl/scrolling.ts`) — so a list has more room
   // at every height, and eight rows is a screen with no room for a list at all rather than a
   // screen that shows one word. Both counts are read off the product and asserted against the
   // total, which is what keeps them honest as the geometry moves.
-  // ⚠️ AND BOTH SIZES MOVED AGAIN, for the reason the counts here have always moved: what the
+  // AND BOTH SIZES MOVED AGAIN, for the reason the counts here have always moved: what the
   // list has room for is what the page has left over. The region above it is no longer whatever
   // the biggest drawing costs — it is at most a THIRD of the screen, and a drawing whose
   // arrangement wants more than that gives way to a smaller drawing (`repl/panel.ts`,
@@ -1331,7 +1331,7 @@ describe('a page without the room shows fewer, and says how many it could not', 
   // to come DOWN to keep the two regimes: a page with room shows what it has room for, a page
   // with less shows fewer. Measured on a real terminal rather than derived, and both counts are
   // still asserted against the total rather than written down.
-  // ⚠️ AND BOTH SIZES MOVED A THIRD TIME, for a reason that is not the geometry's: there is a
+  // AND BOTH SIZES MOVED A THIRD TIME, for a reason that is not the geometry's: there is a
   // FLOOR under the window now (`src/repl/floor.ts`), and twenty by ten and a hundred by ten are
   // both under it — a session driven at either draws the screen that says so and no list at all.
   // The two regimes survive above the floor because the list is twenty rows tall and what is left
@@ -1372,12 +1372,12 @@ describe('a page without the room shows fewer, and says how many it could not', 
         offers.length,
       );
       // Not vacuous: it really did leave some out, and the two sizes really are the two
-      // regimes rather than one measured twice. ⚠️ THE SECOND OF THESE WAS A YES-OR-NO — *some
+      // regimes rather than one measured twice. THE SECOND OF THESE WAS A YES-OR-NO — *some
       // are shown* — and it is a COUNT now, because with a floor under the list both sizes show
       // some and what tells them apart is how many.
       expect(missing).toBeGreaterThan(0);
       expect(listed.length, `${rows}: ${listed.length} shown`).toBe(shown);
-      // ⛔ AND THE PAGE DID NOT PAY FOR THE LIST at either size, which is what the cut buys:
+      // AND THE PAGE DID NOT PAY FOR THE LIST at either size, which is what the cut buys:
       // the row the caller types on is still the last one the layout leaves.
       fillsTheScreen(screen, rows, `${columns}x${rows} with a cut list`);
     }, 180_000);
@@ -1388,8 +1388,8 @@ describe('a page without the room shows fewer, and says how many it could not', 
 // The boundary, measured again with the palette open
 // ---------------------------------------------------------------------------
 
-describe('⚠️ opening the palette never makes the frame outgrow the screen', () => {
-  // ⚠️ THIS BLOCK MEASURED A BOUNDARY THAT NO LONGER EXISTS, and what it was for is worth
+describe('opening the palette never makes the frame outgrow the screen', () => {
+  // THIS BLOCK MEASURED A BOUNDARY THAT NO LONGER EXISTS, and what it was for is worth
   // keeping: the palette is the tallest thing the bottom region holds — eighteen rows on a Tab —
   // so if a budget were going to reopen the hole two deliveries closed, this is where it would
   // show. It used to prove that by bracketing the height at which the layout library stops
@@ -1402,7 +1402,7 @@ describe('⚠️ opening the palette never makes the frame outgrow the screen', 
   // frame ends on the last row of the terminal with the list open, and not one row of the
   // caller's history is erased — with the library's own request as the witness that the
   // absence is merited (`src/repl/erasing.ts`, `erasesTheScreen`).
-  // ⚠️ THE SIZES MOVED WITH THE FLOOR AND NOT WITH THIS PROMISE. Sixty columns, eight rows and
+  // THE SIZES MOVED WITH THE FLOOR AND NOT WITH THIS PROMISE. Sixty columns, eight rows and
   // twelve rows are all under the shortest window a console is drawn on (`src/repl/floor.ts`), so
   // a session driven at any of them draws the screen that says so — and a frame with no list on it
   // says nothing about whether a list can make the frame outgrow the screen. What is left is the
@@ -1415,13 +1415,13 @@ describe('⚠️ opening the palette never makes the frame outgrow the screen', 
           rows,
           steps: [
             opens,
-            // ⚠️ WHAT THIS KEYSTROKE PUT ON THE PAGE, and not the character anywhere in the
+            // WHAT THIS KEYSTROKE PUT ON THE PAGE, and not the character anywhere in the
             // stream: the opening writes a slash three ways over — the project's path, the
             // record's `T1/T2/T4`, and the hint that names this very key — so a predicate over
             // the whole stream was over before the key was pressed
             // (`support/pty.ts`, `arrivedSince`).
             { types: PREFIX, until: arrivedSince(PREFIX), what: 'opened the palette' },
-            // ⚠️ AND THESE TWO WAIT FOR NOTHING ON PURPOSE, which is a thing to say out loud
+            // AND THESE TWO WAIT FOR NOTHING ON PURPOSE, which is a thing to say out loud
             // rather than a shortcut. A Tab on a list that is already open can leave the page
             // exactly as it was, and the layout writes NOTHING for a frame identical to the one
             // on the screen — so a step waiting for a frame here waits for ever. What makes the
@@ -1434,7 +1434,7 @@ describe('⚠️ opening the palette never makes the frame outgrow the screen', 
             leaves,
           ],
         });
-        // ⚠️ AND IT IS ASKED OF EVERY FRAME rather than of one screen found by an index. The
+        // AND IT IS ASKED OF EVERY FRAME rather than of one screen found by an index. The
         // subject is that no key can make the frame outgrow the screen, and a single screen read
         // at a step boundary answers about one frame and about whichever one the machine's load
         // happened to leave under the boundary. Cut on the sequence the layout closes a frame
@@ -1445,14 +1445,14 @@ describe('⚠️ opening the palette never makes the frame outgrow the screen', 
           Math.max(...frames),
           `${columns}x${rows}: a frame of ${Math.max(...frames)} rows on a ${rows}-row screen`,
         ).toBeLessThanOrEqual(rows);
-        // AND THE PAGE THE SESSION LEFT IS WHOLE. ⚠️ IT WAS FOUND BY THE WIDTH IT WAS DRAWN AT
+        // AND THE PAGE THE SESSION LEFT IS WHOLE. IT WAS FOUND BY THE WIDTH IT WAS DRAWN AT
         // and that locator REFUSED these sizes, correctly: at eight rows the area is the bare
         // form, which has no rules — and the rules are what a width is read off. What every
         // session has instead is an end (`support/screen.ts`, {@link theScreenBeforeLeaving}).
         const screen = theScreenBeforeLeaving(ran.bytes, columns, rows);
         expect(screen.alternate, `${columns}x${rows}: the screen stopped being ours`).toBe(true);
         fillsTheScreen(screen, rows, `${columns}x${rows} after the list`);
-        // ⛔ AND NOT ONE ROW OF THE CALLER'S HISTORY WAS ERASED — with the witness that the
+        // AND NOT ONE ROW OF THE CALLER'S HISTORY WAS ERASED — with the witness that the
         // library really did ask, so the absence is merited rather than vacuous.
         expect(ran.bytes, `${columns}x${rows}: the history was erased`).not.toContain(
           ERASES_THE_HISTORY,
@@ -1498,7 +1498,7 @@ function literalsOf(code: string): string[] {
  * Whether a source writes the mark AS a mark — a literal that is the glyph and nothing
  * else.
  *
- * ⚠️ THE FIRST FORM OF THIS SCAN LOOKED FOR THE GLYPH ANYWHERE IN THE FILE, and it
+ * THE FIRST FORM OF THIS SCAN LOOKED FOR THE GLYPH ANYWHERE IN THE FILE, and it
  * accused seven modules on its first run. Every one of them was innocent: the glyph is
  * ordinary punctuation in a sentence, and `mnema observe --help` says "a task, decision,
  * …" the way English does. An instrument that fires on prose says nothing about code, and
@@ -1556,7 +1556,7 @@ function marksARow(source: string): boolean {
 /**
  * A literal's content with its `\uXXXX` escapes resolved.
  *
- * ⚠️ WITHOUT IT THE SCAN FOUND NOTHING AT ALL, which is how it was caught: the one module that
+ * WITHOUT IT THE SCAN FOUND NOTHING AT ALL, which is how it was caught: the one module that
  * draws the mark NAMES it by its code point rather than typing it, so a comparison against the
  * raw glyph accused nobody and would have gone on accusing nobody however many modules started
  * drawing marks. A guard that cannot fire is worse than no guard, and this is the line that makes

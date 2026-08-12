@@ -22,14 +22,14 @@
  * in hand, it cost what it cost once, and a prompt that then demanded it be typed back
  * would be a surface asking a question it had already answered.
  *
- * ⛔ IT IS A DEFAULT AND NEVER A DECISION. What the caller typed WINS, always: asking
+ * IT IS A DEFAULT AND NEVER A DECISION. What the caller typed WINS, always: asking
  * about another identity is a legitimate thing to do at an audit prompt, and the value
  * here only fills the silence. And when the session knows nobody — outside a project, or
  * on a machine whose key root names no single key — nothing is filled and the verb asks
  * the way it always has, in the same words. Inventing an identity would be worse than
  * the question.
  *
- * ⛔ AND IT TYPES WHAT THE PAGE SHOWS, byte for byte: the short form the panel is drawn
+ * AND IT TYPES WHAT THE PAGE SHOWS, byte for byte: the short form the panel is drawn
  * with. That is the whole of why it needs no rule of its own about what a good value is —
  * the line it produces is the line the caller would have typed by copying what was in
  * front of them, so it earns the same answer, including the refusals. A prefix two

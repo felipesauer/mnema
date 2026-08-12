@@ -337,7 +337,7 @@ describe('the arrows move through the list, and Return takes what they landed on
   });
 
   it('picks nothing until an arrow says so, and Return still hands the row over', () => {
-    // ⛔ THE HALF THAT KEEPS EVERY OTHER KEY WORKING. The list is open on a bare slash the
+    // THE HALF THAT KEEPS EVERY OTHER KEY WORKING. The list is open on a bare slash the
     // moment it is typed, so a palette that picked its first row on opening would make Return
     // fill the row instead of submitting — and `/exit` typed in full would stop leaving.
     const opened = after(press(PREFIX), NOTHING_TYPED);
@@ -354,7 +354,7 @@ describe('the arrows move through the list, and Return takes what they landed on
   it('moves in both directions, and the ends hold rather than wrapping', () => {
     expect(after(press('', { downArrow: true })).picked).toBe(LISTED[2]);
     expect(after(press('', { upArrow: true })).picked).toBe(LISTED[0]);
-    // THE ENDS. Up from the first row stays on it, and Down from the last stays there. ⚠️ THE
+    // THE ENDS. Up from the first row stays on it, and Down from the last stays there. THE
     // REASON WAS *the list is CUT to the room a terminal has, so a wrap would jump to a row
     // nobody can see*, and the window falsified it: what is drawn follows the pick now
     // (`palette.ts`, `theWindow`), so a wrapped pick would be drawn like any other. What is left
@@ -434,7 +434,7 @@ describe('the arrows move through the list, and Return takes what they landed on
   });
 
   it('does not bring a pick back to life the next time the list is opened', () => {
-    // ⚠️ THE GHOST, and it is what the pick being SETTLED after every key prevents. Kept on the
+    // THE GHOST, and it is what the pick being SETTLED after every key prevents. Kept on the
     // value instead, a word picked before the row was cleared would be marked again the moment
     // the same list reopened — and Return would fill the row with a choice the caller had not
     // made in the list they are looking at.
@@ -482,7 +482,7 @@ const WHAT_EACH_KEY_LEAVES: {
   // The two that shut it: Escape, and the chord that clears the row.
   escape: { typed: '', picked: NOBODY },
   ctrl: { typed: '', picked: NOBODY },
-  // ⛔ THE FOUR THAT MOVE THE WINDOW AND NOT THE ROW, and this is exactly the answer the count
+  // THE FOUR THAT MOVE THE WINDOW AND NOT THE ROW, and this is exactly the answer the count
   // above exists to force somebody to write down. What they move is which part of the roll a
   // reader is looking at, which is not a question about the line being typed at all — so the row
   // is what it was and the pick is what the list under it still holds (`repl/console.ts`,
@@ -496,7 +496,7 @@ const WHAT_EACH_KEY_LEAVES: {
 
 describe('every key of this language says what it leaves picked', () => {
   it('answers for all of them, and for no key that does not exist', () => {
-    // ⚠️ THE COUNT IS THE GUARD. A key added to {@link Keystroke} is a key with an answer to
+    // THE COUNT IS THE GUARD. A key added to {@link Keystroke} is a key with an answer to
     // *what is picked now* whether or not anybody wrote one down, and a table read against the
     // keystroke's own fields is what turns that into a red case instead of a silent behaviour.
     expect(Object.keys(WHAT_EACH_KEY_LEAVES).sort()).toEqual(Object.keys(press('')).sort());

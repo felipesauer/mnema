@@ -52,7 +52,7 @@
  * case — a fold that disagreed with itself about where a line breaks would put a terminal
  * and a CI log one row apart.
  *
- * ⚠️ ONE COUNT DIVERGES FROM {@link widthOf}, deliberately, and it is worth naming: a
+ * ONE COUNT DIVERGES FROM {@link widthOf}, deliberately, and it is worth naming: a
  * FIELD may hold an escape byte an actor wrote (it is text, and the content door screens
  * for credentials rather than for control bytes). `widthOf` counts those bytes as
  * characters; this file counts them as the nothing a terminal draws. The fold is the one
@@ -176,7 +176,7 @@ function fitsWithin(cells: readonly Cell[], from: number, room: number): number 
  * there is. It is the one case that splits a word, and it is the case the terminal applies
  * to every line.
  *
- * ⚠️ THE SPACES A ROW OPENS WITH ARE NOT A PLACE TO BREAK, and a first draft of this that
+ * THE SPACES A ROW OPENS WITH ARE NOT A PLACE TO BREAK, and a first draft of this that
  * did not know it produced a row holding nothing but the indent: a line at depth one whose
  * first word was wider than the room broke after the depth, so the screen got two spaces,
  * a break, and then the word — a blank row bought at the price of the room it was supposed
@@ -283,7 +283,7 @@ export function foldedAt(columns: number, render: Render): Render {
  * about to draw will take, so that the drawing of the name can give way before the top of
  * the box ends up in the scrollback (`repl/panel.ts`).
  *
- * ⚠️ IT USED TO BE ARITHMETIC — `ceil(widthOf(line) / columns)`, which is what a TERMINAL
+ * IT USED TO BE ARITHMETIC — `ceil(widthOf(line) / columns)`, which is what a TERMINAL
  * does: fill the row, break at the margin, start again at column zero. That was the right
  * count while the terminal was the thing folding, and this renderer falsified it: a
  * continuation is indented, so it holds fewer characters than the first row and a line can

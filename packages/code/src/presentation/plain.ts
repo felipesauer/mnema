@@ -164,7 +164,7 @@ export const renderPlain: Render = renderWith((part) => part.text);
  * the widest of them fits the terminal (`repl/panel.ts`), and the input area and the
  * palette, which drop what a window is too narrow for.
  *
- * ⚠️ AND THE SENTENCE THAT USED TO END THIS PARAGRAPH IS FALSE. It read: *nothing that
+ * AND THE SENTENCE THAT USED TO END THIS PARAGRAPH IS FALSE. It read: *nothing that
  * writes a line asks — a report is as wide as it is and the TERMINAL folds it, ON PURPOSE,
  * because a value cut to fit is a value a reader cannot check.* What falsified it is that
  * the argument is about CUTTING and it was standing in for a decision about FOLDING, and

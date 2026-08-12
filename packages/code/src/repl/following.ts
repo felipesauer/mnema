@@ -38,12 +38,12 @@
  * the record the session opened over; anything after it is an occurrence, and a caller
  * sees it.
  *
- * ⛔ ONLY THIS PROJECT'S TREES. What it follows is what the opening's `verify` covered —
+ * ONLY THIS PROJECT'S TREES. What it follows is what the opening's `verify` covered —
  * the committed tree and this machine's private one — and never another project of the
  * workspace: a read that spans projects is a full replay of each, which is a cost of a
  * different order, and doing it on a clock would be worse.
  *
- * ⛔ AND IT RULES ON NOTHING. Two equal extents mean "nothing observable moved", never
+ * AND IT RULES ON NOTHING. Two equal extents mean "nothing observable moved", never
  * "the chain is intact" — a rewrite that preserves a file's size moves no mark, and
  * tampering is `verify`'s subject, which recomputes hashes and checks signatures. The
  * badge in the corner says what the record proved when the session opened, and the word

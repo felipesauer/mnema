@@ -39,7 +39,7 @@
  * affordable: the list is on the screen or it is not, and the keys that move it are written
  * under it while it is (`session.ts`, `pickingTips`).
  *
- * ⛔ AND RETURN NEVER RUNS WHAT THE ARROWS LANDED ON. A pick puts the word on the row and
+ * AND RETURN NEVER RUNS WHAT THE ARROWS LANDED ON. A pick puts the word on the row and
  * stops there, because half the verbs of this product take arguments and the Return that
  * submits is the same key: a pick that ran the word would take away the caller's chance to
  * finish the line. It is also why nothing is picked until an arrow says so — on a palette
@@ -89,7 +89,7 @@ export interface Keystroke {
    * below leaves the row exactly as it found it for all four, which is what the console relies
    * on when it answers them and then does nothing else.
    *
-   * ⚠️ THE CARET'S OWN ENDS ARE Ctrl-A AND Ctrl-E and they always were, so nothing was taken
+   * THE CARET'S OWN ENDS ARE Ctrl-A AND Ctrl-E and they always were, so nothing was taken
    * from the row to give these two their meaning: a console that lives on one screen has a
    * second axis a console that scrolled the caller's terminal did not, and Home and End are what
    * a hand already reaches for on it.
@@ -130,7 +130,7 @@ export interface Editing {
    * What Tab last offered when it could not decide, each with what it is. Cleared by the
    * next key.
    *
-   * ⚠️ IT USED TO BE `candidates`, AND A LIST OF BARE WORDS. It is renamed rather than
+   * IT USED TO BE `candidates`, AND A LIST OF BARE WORDS. It is renamed rather than
    * widened in place, because the console draws it now as a list of two columns rather
    * than as a row of tokens (`palette.ts`) — and a field that keeps its spelling while
    * what it holds changes leaves everything that read it asserting the new shape by
@@ -448,7 +448,7 @@ function moving(editing: Editing, complete: Completer, step: number): Editing {
  * session word, `/cl` grown into one, and `task mo` with only its last word touched — without a
  * branch anywhere for the slash.
  *
- * ⚠️ AND IT IS WHY PICKING A VERB OFF A BARE SLASH LEAVES NO SLASH BEHIND. The bare prefix asks
+ * AND IT IS WHY PICKING A VERB OFF A BARE SLASH LEAVES NO SLASH BEHIND. The bare prefix asks
  * what an empty line asks (`palette.ts`), so the list under it holds the verbs as well as the
  * session's own words; the word being replaced there is the slash itself, so a picked verb lands
  * on a row of its own rather than behind a prefix that would make it unrunnable.
@@ -552,7 +552,7 @@ function browsing(editing: Editing, step: number): Editing {
  * omission: a Tab that leaves a list is a row like any other, and whether the word the caller
  * had picked is still in that list is settled where every key's is ({@link typeKey}).
  *
- * ⚠️ IT INSERTED THE AGREED SUFFIX AND IT REPLACES THE WHOLE WORD NOW ({@link taking}), which is
+ * IT INSERTED THE AGREED SUFFIX AND IT REPLACES THE WHOLE WORD NOW ({@link taking}), which is
  * the same bytes by construction — everything the candidates agree on begins with what was
  * typed — and one function instead of two: a Tab and a pick put a word on the row in exactly the
  * same way, and the way is the part that is easy to get subtly wrong.

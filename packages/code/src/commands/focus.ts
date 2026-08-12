@@ -19,7 +19,7 @@
  * accountability` or the bootstrap — never from `mnema verify`, which the flag's
  * help used to name and which prints no identity at all.
  *
- * ⚠️ IT SAID *THE CLI HAS NONE*, AND THE CLI HAS ONE NOW. `mnema repl` is a session,
+ * IT SAID *THE CLI HAS NONE*, AND THE CLI HAS ONE NOW. `mnema repl` is a session,
  * and it names the identity this installation recorded for the tree from LOCAL
  * material, with no writer opened (`repl/standing.ts`) — so at that prompt the flag is
  * filled in for the caller, who would otherwise be typing back the value the box above

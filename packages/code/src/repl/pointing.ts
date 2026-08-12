@@ -14,13 +14,13 @@
  * twenty-three columns, and a terminal wider than that would report a click on the wrong side
  * of the page.
  *
- * ⛔ AND `?1002`/`?1003` ARE REFUSED. They add MOTION — the pointer moving, with a button
+ * AND `?1002`/`?1003` ARE REFUSED. They add MOTION — the pointer moving, with a button
  * held or without one — which is what a program needs for hover and for dragging and which
  * this page has neither of. What they cost is a report per cell the pointer crosses, on a
  * process whose whole job is to answer a keystroke. The console this page was measured from
  * turns them OFF and turns exactly these two on; that is measurement rather than preference.
  *
- * ⚠️ THE COST OF ASKING AT ALL IS DECLARED AND IT IS NOT SMALL. A terminal that is reporting
+ * THE COST OF ASKING AT ALL IS DECLARED AND IT IS NOT SMALL. A terminal that is reporting
  * the mouse to an application stops doing its OWN thing with it, and its own thing is
  * SELECT-AND-COPY. Copying what the console said is an auditor's gesture and auditing is half
  * of what this product is for, so this is a real loss rather than a theoretical one. What
@@ -51,7 +51,7 @@ export const WATCHING_THE_WHEEL = `${ESC}[?1000h${ESC}[?1006h`;
 /**
  * WHAT GIVES IT BACK, in the order that undoes the order above.
  *
- * ⛔ IT IS PART OF GIVING THE TERMINAL BACK, and it belongs to the same set as raw mode and
+ * IT IS PART OF GIVING THE TERMINAL BACK, and it belongs to the same set as raw mode and
  * the hidden caret: a terminal left reporting the mouse fills the caller's next shell with
  * escape sequences every time they move the pointer. So it is written on every way this
  * process can stop and not only on the polite one (`leaving.ts`).

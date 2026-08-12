@@ -25,7 +25,7 @@
  * must not own. So the actor is a required flag, exactly as it is on the two context
  * reads that came before, and passing it keeps the read truly read-only.
  *
- * ⚠️ IT SAID *THE CLI HAS NO SESSION*, and this verb is where that stopped being true in
+ * IT SAID *THE CLI HAS NO SESSION*, and this verb is where that stopped being true in
  * a way anybody could feel: `status` typed at the console's prompt was answered with a
  * demand for the identity the box two rows above it was naming. A session resolves that
  * identity from local material with no writer opened, so it fills the flag in

@@ -1,7 +1,7 @@
 /**
  * WHAT THE RECORD HOLDS RIGHT NOW — the one reading of *did anything reach the chain?*
  *
- * ⚠️ IT WAS WRITTEN OUT TWICE AND A THIRD CASE NEEDED IT, which is the shape this bench keeps
+ * IT WAS WRITTEN OUT TWICE AND A THIRD CASE NEEDED IT, which is the shape this bench keeps
  * paying for: two spellings of one measurement is how one of them quietly stops counting
  * something. The two were byte-for-byte the same rule — `every-verb-says-if-it-writes.test.ts`,
  * where every verb of the surface is exercised and counted around, and

@@ -31,7 +31,7 @@
  *   - AND NOBODY ELSE ASKS A DEVICE HOW WIDE IT IS. Two files do, for two different questions,
  *     and a third would be a third answer on one page.
  *
- * ⛔ WHAT IS NOT ASSERTED, said out loud so a pass is not read as covering it: a line already on
+ * WHAT IS NOT ASSERTED, said out loud so a pass is not read as covering it: a line already on
  * the roll is NOT re-folded when the window changes. It was rendered for the terminal it was
  * printed on, and that is a true record of a page that really was that wide — the same posture
  * the screen model takes about a replay (`support/screen.ts`,
@@ -93,7 +93,7 @@ let project: string;
 /**
  * A PROJECT NESTED DEEPLY ENOUGH THAT THE LINE SAYING WHERE THE SESSION STANDS DOES NOT FIT.
  *
- * ⚠️ THE OPENING'S OWN SENTENCE USED TO BE THE SUBJECT, AND NO WINDOW CAN FOLD IT ANY MORE. It
+ * THE OPENING'S OWN SENTENCE USED TO BE THE SUBJECT, AND NO WINDOW CAN FOLD IT ANY MORE. It
  * is seventy-seven columns wide and the narrowest window a console is drawn on is eighty
  * (`src/repl/floor.ts`), so the case that watched it fold at seventy is watching something no
  * caller can produce. What still folds — and what a caller really does have — is the row that
@@ -182,7 +182,7 @@ function theWordsItPrints(): readonly Line[] {
  * verbs it names comes from the same function the session counts them with, so this is the
  * product's own line and not a copy of it.
  *
- * ⚠️ AND NOTHING READS IT ANY MORE, WHICH IS THE FLOOR'S DOING RATHER THAN A CASE GIVING UP. The
+ * AND NOTHING READS IT ANY MORE, WHICH IS THE FLOOR'S DOING RATHER THAN A CASE GIVING UP. The
  * sentence is seventy-seven columns wide and the narrowest window a console is drawn on is eighty
  * (`src/repl/floor.ts`), so no caller can produce the fold this measured. The subject moved to
  * the other line the opening lands that a real window can be narrower than — the row saying where
@@ -272,7 +272,7 @@ const leaves: Step = {
 /**
  * THE PAGE STARTED OVER, so that what is read next was printed at the size the window is NOW.
  *
- * ⚠️ IT IS HERE BECAUSE THE SAME WORD TWICE PRODUCES NO FRAME. The layout writes nothing at all
+ * IT IS HERE BECAUSE THE SAME WORD TWICE PRODUCES NO FRAME. The layout writes nothing at all
  * for a frame identical to the one on the screen, and a window filled by one copy of this report
  * is filled by the next copy in exactly the same rows — measured: the step that typed the word a
  * second time waited out the whole budget and the session was fine. Starting the page over
@@ -305,7 +305,7 @@ const resizedTo = (columns: number): Step => ({
 
 describe('the fold follows the window the caller is looking at', () => {
   it('prints across the whole terminal after they maximise it', async () => {
-    // ⚠️ THE NARROW END WAS SEVENTY COLUMNS AND NO CONSOLE IS DRAWN THERE. The number said
+    // THE NARROW END WAS SEVENTY COLUMNS AND NO CONSOLE IS DRAWN THERE. The number said
     // nothing but *narrow enough that the widest row folds*; under eighty by twenty-four the
     // frame is a screen saying the window is too small (`src/repl/floor.ts`), so a session driven
     // at seventy never draws a rule and the page cannot be found at all. The floor's own width is
@@ -374,12 +374,12 @@ describe('the fold follows the window the caller is looking at', () => {
   }, 240_000);
 
   it('folds the line the page OPENS with to the terminal it is drawn on', async () => {
-    // ⚠️ THE OPENING IS THE HALF A CASE ABOUT THE REPORT CANNOT SEE, and it went unnoticed once:
+    // THE OPENING IS THE HALF A CASE ABOUT THE REPORT CANNOT SEE, and it went unnoticed once:
     // composing it with a renderer that was not the frame's left every case above green, because
     // what they read is what a VERB printed. The opening's own lines land on the roll like any
     // other line and fold like any other line — they are just composed one layer up.
     //
-    // ⚠️ THE LINE WAS THE OPENING'S SENTENCE AND IT IS THE ROW SAYING WHERE THE SESSION STANDS,
+    // THE LINE WAS THE OPENING'S SENTENCE AND IT IS THE ROW SAYING WHERE THE SESSION STANDS,
     // because the floor took the sentence out of reach: it is seventy-seven columns wide and no
     // console is drawn under eighty (`src/repl/floor.ts`), so nothing a caller can do folds it.
     // The row that says where they are standing is a PATH, and a project a few directories down
@@ -408,7 +408,7 @@ describe('the fold follows the window the caller is looking at', () => {
       // roll at the size the window is NOW: the lines it landed when the session opened were
       // rendered for the terminal it opened on, and those are history rather than a defect.
       //
-      // ⚠️ SOMETHING IS PRINTED FIRST, AND IT IS THE STEP RATHER THAN THE SUBJECT. Starting the
+      // SOMETHING IS PRINTED FIRST, AND IT IS THE STEP RATHER THAN THE SUBJECT. Starting the
       // page over on a page that holds nothing but the opening is a frame identical to the one on
       // the screen, and the library writes nothing at all for one of those — so the step would
       // wait for ever and a mutation would come back as the driver's wall instead of as this
@@ -439,7 +439,7 @@ describe('no frame holds two widths, at any size the caller stops at', () => {
     // THE THREE ARE CHOSEN SO THE WIDEST ROW FOLDS DIFFERENTLY AT EACH: it breaks in one place at
     // eighty, in another at ninety, and not at all at a hundred and forty. Three sizes that all
     // left it whole would be one assertion asked three times.
-    // ⚠️ THE NARROWEST WAS SIXTY AND IT IS EIGHTY, and the two that follow moved with it: under
+    // THE NARROWEST WAS SIXTY AND IT IS EIGHTY, and the two that follow moved with it: under
     // eighty by twenty-four no page is drawn at all (`src/repl/floor.ts`), so a size under the
     // floor is a size the console never draws a rule at — and the rules are what a page is found
     // by. The sizes are the floor and two above it, and the widest row (ninety-nine columns)
@@ -502,7 +502,7 @@ describe('no frame holds two widths, at any size the caller stops at', () => {
 
 describe('the frame is composed for a size the device really answered with', () => {
   it('asks the device ONCE for the size the first frame is built at', async () => {
-    // ⚠️ THIS IS THE SITE THE SWEEP FOUND AND NO CASE COVERED. The console's own doc says a frame
+    // THIS IS THE SITE THE SWEEP FOUND AND NO CASE COVERED. The console's own doc says a frame
     // built out of two readings of a device the caller can resize between them is a frame built
     // out of two different terminals — and the line that seeds the size read it twice
     // (`{ columns: theSize()[0], rows: theSize()[1] }`), which is the one line older than the
@@ -551,7 +551,7 @@ describe('the frame is composed for a size the device really answered with', () 
     terminal.type('x\r');
     await page.closed;
 
-    // ⛔ THE FIRST FRAME IS ONE OF THE TERMINALS THE DEVICE NAMED, whole. With two readings it is
+    // THE FIRST FRAME IS ONE OF THE TERMINALS THE DEVICE NAMED, whole. With two readings it is
     // the width of the first and the height of the second — a shape no terminal was ever.
     expect(composed[0], 'the first frame is half one terminal and half another').toEqual(
       answers[0],
@@ -590,7 +590,7 @@ describe('the colour is one answer per invocation and the width is not', () => {
   });
 
   it('reads the capability ONCE, however many widths it is asked for', () => {
-    // ⛔ THE HALF THAT MAY NOT MOVE. The flag, the two variables and whether the destination is
+    // THE HALF THAT MAY NOT MOVE. The flag, the two variables and whether the destination is
     // a terminal are this invocation's, and a session whose first answer was painted and whose
     // tenth was not would be one line's worth of doubt about every line in the scrollback.
     const long = theWidestLine();
@@ -657,7 +657,7 @@ const ASKS_A_DEVICE = /stdout\.(columns|rows)|getWindowSize/;
 
 describe('two files ask a device for its size, and a third would be a third answer', () => {
   it('names the entry and the console, and nothing else', () => {
-    // ⛔ THE PREMISE THE WHOLE DELIVERY RESTS ON. The entry reads the width because whether a
+    // THE PREMISE THE WHOLE DELIVERY RESTS ON. The entry reads the width because whether a
     // line folds is part of the capability every verb is handed, resolved where the process is;
     // the console reads it because the frame IS the screen and every number on it comes out of
     // one reading. Those are two answers to two questions. A THIRD would be a number nobody

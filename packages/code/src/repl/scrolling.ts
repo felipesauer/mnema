@@ -8,7 +8,7 @@
  * a terminal used to do for free — keep what left the top, and give it back when somebody
  * scrolled — is this file.
  *
- * ⚠️ IT WAS REFUSED FOR THAT REASON AND THE REFUSAL IS REVOKED, and the argument was not
+ * IT WAS REFUSED FOR THAT REASON AND THE REFUSAL IS REVOKED, and the argument was not
  * wrong, it was incomplete. It said: *the alternate screen has no scrollback, so whoever
  * takes it has to build their own rolling, and it throws away everything the session said
  * on the way out*. Both halves are still true. What changed is that the first half became a
@@ -22,7 +22,7 @@
  * nothing here knows what a line says — a line arrives as bytes a renderer already produced,
  * exactly as it does everywhere else on this surface.
  *
- * ⛔ AND HOW MANY ROWS THE REGION HAS ARRIVES, which is the one thing that changed about that
+ * AND HOW MANY ROWS THE REGION HAS ARRIVES, which is the one thing that changed about that
  * sentence and does not weaken it. How far back a reader may walk cannot be answered without it
  * — the end of the roll is where the window is already FULL, and a window is rows rather than
  * lines ({@link backAtMost}) — so the two numbers travel in from the console, which is the file
@@ -35,7 +35,7 @@
  * tail, *following the tail* is the single value nought rather than a flag beside a number that
  * can disagree with it, and the ceiling costs nothing.
  *
- * ⚠️ AND THE FIRST VERSION OF THAT SENTENCE ENDED *so dropping the oldest line moves nothing at
+ * AND THE FIRST VERSION OF THAT SENTENCE ENDED *so dropping the oldest line moves nothing at
  * all*, WHICH LEFT OUT THE END IT MATTERS AT. A distance from the tail is a distance from
  * something that MOVES: land a line and the same number names the line after the one a reader
  * was looking at, so five lines landing walked their page five lines forward — which is exactly
@@ -63,7 +63,7 @@ import { withoutSequences } from '../presentation/folded.js';
  * this process can pay once; a thousand is four screenfuls of `timeline` and would bite in an
  * ordinary afternoon.
  *
- * ⛔ AND WHAT FALLS OFF IS NOT THE RECORD. What this holds is what was SHOWN — bytes on their
+ * AND WHAT FALLS OFF IS NOT THE RECORD. What this holds is what was SHOWN — bytes on their
  * way to a screen. The record is in `.mnema/`, signed, and every line above can be read back
  * out of it by the verb that produced it. The ceiling costs a reader a scroll, never a fact.
  *
@@ -111,7 +111,7 @@ export const NOTHING_SAID: Scrolling = { said: [], back: 0 };
  * surface makes about width — a glyph that takes two columns is counted as one, and what that
  * costs is a window one row short rather than one row over, which is the safe direction.
  *
- * ⚠️ AND A LINE CAN ALREADY BE SEVERAL ROWS BEFORE ANY TERMINAL FOLDS IT, which is the half the
+ * AND A LINE CAN ALREADY BE SEVERAL ROWS BEFORE ANY TERMINAL FOLDS IT, which is the half the
  * first version of this left out. What lands here is what the product's own renderer produced,
  * and that renderer FOLDS: a report too wide for the session's window arrives with newlines
  * inside it, broken between words with the continuation indented (`presentation/folded.ts`). So
@@ -136,7 +136,7 @@ export function rowsForTheLine(line: string, columns: number): number {
  * The session said one more line: it goes at the end, the ceiling takes the oldest when
  * there is no room, and the reader is left exactly where they were standing.
  *
- * ⛔ NOTHING HERE MOVES WHAT A READER IS LOOKING AT, and that is the promise the caller asked
+ * NOTHING HERE MOVES WHAT A READER IS LOOKING AT, and that is the promise the caller asked
  * for in as many words: content new to a session that is being READ may not pull the page out
  * from under whoever is reading it. A reader at the tail is at the tail afterwards, because the
  * tail is where the new line is; a reader who walked back is one line FURTHER back, which is the
@@ -157,7 +157,7 @@ export function landedIn(
   // lands, the roll's length does not change and every surviving line's distance from the tail
   // is one greater — which is exactly what this adds, so the reader is left on the same words.
   //
-  // ⚠️ AND THIS IS A PLACE WHERE HOW FAR BACK A READER MAY BE IS DECIDED, which is why the
+  // AND THIS IS A PLACE WHERE HOW FAR BACK A READER MAY BE IS DECIDED, which is why the
   // measure reaches it: while the roll is growing the ceiling grows with it and the clamp never
   // bites, and at {@link THE_CEILING} the oldest line falls off for every line that lands — so
   // the one step this adds is the one step that could put a reader past the end.
@@ -167,10 +167,10 @@ export function landedIn(
 }
 
 /**
- * ⛔ THE FURTHEST BACK A READER CAN WALK: everything but the lines the window is ALREADY
+ * THE FURTHEST BACK A READER CAN WALK: everything but the lines the window is ALREADY
  * SHOWING, which is NOUGHT when the whole roll fits in the region.
  *
- * ⚠️ IT WAS *everything but the line the window opens on* — `said.length - 1` — AND THAT
+ * IT WAS *everything but the line the window opens on* — `said.length - 1` — AND THAT
  * PREMISE IS FALSE. It read the roll as though a window were one line tall, so a reader could
  * walk back as far as there are lines minus one; and the window is taken from the END backwards
  * ({@link theWindowOn}), so every line of `back` past the true ceiling moves the window's LAST
@@ -214,7 +214,7 @@ export function backAtMost(said: readonly string[], room: number, columns: numbe
  * How MANY lines each of them is worth is the console's to say, because a page is a function
  * of how tall the region is and only the console has asked the device.
  *
- * ⚠️ AND WHERE THE END IS IS A FUNCTION OF THE REGION TOO, which is what this used to decide
+ * AND WHERE THE END IS IS A FUNCTION OF THE REGION TOO, which is what this used to decide
  * without it. The rows the window has and the width it has them at arrive from the console —
  * the same two numbers {@link theWindowOn} is cut to — and both answers come out of one
  * function ({@link backAtMost}), because a clamp and a window that measured the end separately
@@ -236,7 +236,7 @@ export function scrolledBy(
 /**
  * The reader at the oldest line this console still holds, with the window FULL under it.
  *
- * ⚠️ IT WENT AS FAR BACK AS THERE ARE LINES and that put the oldest line alone on a page with
+ * IT WENT AS FAR BACK AS THERE ARE LINES and that put the oldest line alone on a page with
  * room for a dozen ({@link backAtMost}): Home is *show me the top of the roll*, not *show me one
  * line of it*. Same ceiling, same function.
  */
