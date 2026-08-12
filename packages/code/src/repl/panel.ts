@@ -577,8 +577,11 @@ function widest(lines: readonly Line[]): number {
  * the fixed region at the top of the screen, redrawn on every frame and never scrolled, so
  * every row of it is a row the session's answers can never be given. Measured on this
  * surface's own fixture at eighty by twenty-four: fifteen rows of arrangement, five of input
- * area, four left for the answer — and `/help` showed the last four rows of what it printed,
- * with none of the verbs on the screen. Nothing about the width rule moved; a second question
+ * area, four left for the answer — and the longest read of the record showed the last four rows
+ * of what it printed, with the whole of the rest above the top of the window. (The measurement
+ * was taken with `/help`, which was the longest thing the session said and is no longer a word
+ * at all; what replaced it as the subject is a read, and the arithmetic it produced is the
+ * same.) Nothing about the width rule moved; a second question
  * was added beside it, and the same three forms answer both.
  *
  * THE TWO QUESTIONS ARE NOT THE SAME KIND OF THRESHOLD, which is why one of them is a number.

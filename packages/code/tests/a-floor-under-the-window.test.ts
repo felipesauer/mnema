@@ -43,9 +43,15 @@ import { fact } from '../src/presentation/detail.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { openConsole } from '../src/repl/console.js';
 import { THE_FLOOR, theFloorScreenFor, theWindowServes } from '../src/repl/floor.js';
-import { ABOUT } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
-import { ESC, fakeTerminal, hooksNothing, until, withoutLayout } from './support/console.js';
+import {
+  ENDS_THE_INPUT,
+  ESC,
+  fakeTerminal,
+  hooksNothing,
+  until,
+  withoutLayout,
+} from './support/console.js';
 import {
   aFrameSince,
   inPty as drive,
@@ -71,11 +77,27 @@ const PROMPT = 'mnema>';
 /** What the opening always says on a window that serves, and never on one that does not. */
 const OPENED = 'a session over this project';
 
-/** The heading that CLOSES what `/help` answers — a line only the ROLL can be carrying. */
-const CLOSES_THE_ANSWER = 'And it does not write';
+/**
+ * A LINE ONLY THE ROLL CAN BE CARRYING — the LAST line of a read this session answers.
+ *
+ * IT WAS A HEADING OF WHAT `/help` ANSWERED, and that word is gone: the list under the prompt
+ * says what the session runs, and a list is drawn in the area rather than landed on the roll.
+ * What replaces it is a real READ of the record, so the subject is a session ANSWERING rather
+ * than a session describing itself.
+ *
+ * THE LAST LINE OF THE ANSWER AND NOT THE FIRST, because the middle region is a WINDOW onto
+ * the roll and shows the TAIL of it: an answer taller than the window has its own heading one
+ * scroll up, and a case that looked for it would be looking off the page.
+ *
+ * AND IT IS THE LABEL WITHOUT ITS COLON, for the reason the heading above is the row it is: the
+ * line is a statement, so a renderer that paints wraps the label in escapes and the colon after
+ * it is on the far side of them. What is contiguous on the wire is the label's own text.
+ */
+const A_READ = 'antipatterns';
+const CLOSES_THE_ANSWER = 'deprecated skills';
 
 /** The key that leaves, as a terminal sends it. Spelled by its code point, like every other. */
-const THE_KEY_THAT_LEAVES = '\u0004';
+const THE_KEY_THAT_LEAVES = ENDS_THE_INPUT;
 
 /** Everything that changes how a glyph looks: colour and weight, and nothing about position. */
 const PAINTED = new RegExp(`${ESC}\\[[0-9;]*m`, 'g');
@@ -195,8 +217,12 @@ const opens: Step = opensAConsole(PROMPT);
  */
 const TYPED_AFTER = 'typed-after-the-window-grew-back';
 
-/** The caller asks what the session runs, which is the longest thing it says. */
-const asks: Step = { types: `${ABOUT}\r`, until: aFrameSince(PROMPT), what: `asked ${ABOUT}` };
+/** The caller asks for the longest thing this session says. */
+const asks: Step = {
+  types: `${A_READ}\r`,
+  until: aFrameSaying(CLOSES_THE_ANSWER),
+  what: `asked ${A_READ}`,
+};
 
 /**
  * The step every session ends with.
@@ -433,14 +459,20 @@ describe('the floor is crossed in both directions and the session survives it', 
           until: aFrameSince(PROMPT),
           what: 'was made big enough again',
         },
-        // AND THE WORD, TYPED — not the key. What is being asked is whether the session is still
-        // ANSWERING after the crossing, and the key that leaves is handled a layer above the
-        // gate; the word goes through the whole of it.
-        { types: '/exit\r', until: () => true, what: 'was told to leave' },
+        // AND A LINE IS TYPED AND ANSWERED FIRST — not only the key. What is being asked is
+        // whether the session is still ANSWERING after the crossing, and the key that leaves is
+        // handled a layer above the gate; a read goes through the whole of it. IT WAS THE WORD
+        // THAT LEAVES, which did both at once and no longer exists: the way out is a keystroke,
+        // so the two halves are two steps.
+        { types: `${A_READ}\r`, until: aFrameSaying(CLOSES_THE_ANSWER), what: 'was answered' },
+        leaves,
       ],
     });
-    // THE SESSION LEFT BY THE WORD: the echo of it is on the page, and the screen went back.
-    expect(ran.bytes, 'the word that leaves was never echoed').toContain('/exit');
+    // THE SESSION ANSWERED AFTER THE CROSSING, and then left: the answer is on the page, and
+    // the screen went back.
+    expect(ran.bytes, 'the read after the crossing was never answered').toContain(
+      CLOSES_THE_ANSWER,
+    );
     expect(ran.bytes, 'the session never gave the screen back').toContain(`${ESC}[?1049l`);
     // AND THE RECORD GAINED NOTHING, on either half of what *changed the record* means.
     const ended = held(sandbox);
@@ -475,7 +507,9 @@ describe('the floor is crossed in both directions and the session survives it', 
       saw: () => undefined,
       happened: () => [],
       complete: () => [[], ''],
-      answer: async () => 'leave',
+      // A LINE THE SESSION GOES ON AFTER, because a line can no longer end one: the way out is
+      // the key that ends the input (`src/repl/gate.ts`, `AfterLine`).
+      answer: async () => 'go on',
       leaving: hooksNothing,
     });
     await until(() => composed.length > 0, 'composed an opening');
@@ -497,7 +531,7 @@ describe('the floor is crossed in both directions and the session survives it', 
     const sinceTheFloor = (): string =>
       terminal.bytes().slice(terminal.bytes().lastIndexOf(THE_HEADING));
     await until(() => withoutLayout(sinceTheFloor()).includes(said), 'drew the roll again');
-    terminal.type('x\r');
+    terminal.type(ENDS_THE_INPUT);
     await page.closed;
   }, 60_000);
 });

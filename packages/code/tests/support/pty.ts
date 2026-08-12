@@ -28,6 +28,7 @@ import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect } from 'vitest';
 import { decodedWhole } from './arriving.js';
+import { ENDS_THE_INPUT } from './console.js';
 
 /**
  * Where a runner leaves the DEVICE'S OWN answer about how big it is.
@@ -290,6 +291,15 @@ export function aFrameAfter(prompt: string): (bytes: string) => boolean {
 export function opensAConsole(prompt: string): Step {
   return { until: aFrameAfter(prompt), what: 'opened its console' };
 }
+
+/**
+ * The step every driven session ends with.
+ *
+ * IT WAITS FOR NOTHING, and that is honest rather than lazy: what it is waiting for is the
+ * process to END, which is what the driver waits out after the last step — a predicate over
+ * the bytes would be waiting for a frame the session may never draw on its way out.
+ */
+export const leavesTheSession: Step = { types: ENDS_THE_INPUT, until: () => true, what: 'left' };
 
 /**
  * WHETHER `what` IS IN THE BYTES THAT ARRIVED SINCE THIS STEP BEGAN — rather than anywhere

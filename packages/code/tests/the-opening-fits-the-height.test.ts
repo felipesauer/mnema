@@ -40,7 +40,6 @@ import { fact, subjectLine } from '../src/presentation/detail.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { THE_INSET } from '../src/repl/inset.js';
 import { type Opening, openingFor, type PanelForm, panelFor } from '../src/repl/panel.js';
-import { ABOUT } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC } from './support/console.js';
 import {
@@ -69,8 +68,16 @@ const OPENED = 'a session over this project';
  */
 const UNDER_THE_PANEL = 'It runs the';
 
-/** The heading that CLOSES what `/help` answers — everything above it is the list of verbs. */
-const CLOSES_THE_ANSWER = 'And it does not write';
+/**
+ * THE HEADING THAT CLOSES THE ANSWER — everything above it is the rest of the document.
+ *
+ * IT WAS A HEADING OF WHAT `/help` PRINTED, and that word is gone: what the session runs is the
+ * list under the prompt now, and a list is drawn in the input area rather than landed on the
+ * roll — so it says nothing about how much of an ANSWER a page shows. What replaces it is a real
+ * read of the record, and the longest one there is (`brief`), which is what these cases have
+ * always needed: an answer taller than the window.
+ */
+const CLOSES_THE_ANSWER = '## Patterns adopted';
 
 /** What the chain says about a tree in order, and the opening's record section repeats. */
 const VERIFIED = 'local integrity verified';
@@ -83,13 +90,13 @@ const VERIFIED = 'local integrity verified';
 const TO_THE_TOP = `${ESC}[H`;
 
 /**
- * THE LAST WORD OF THE LAST SENTENCE `/help` SAYS — how a case knows the whole answer landed.
+ * THE LAST WORD OF THE LAST SENTENCE THE ANSWER SAYS — how a case knows the whole of it landed.
  *
  * ONE WORD AND NOT A PHRASE, because the product folds a row too wide for the terminal BETWEEN
  * words (`src/presentation/folded.ts`): a phrase can arrive split across two rows and be found
  * nowhere in the bytes of a frame, and a word cannot.
  */
-const ENDS_THE_ANSWER = 'again';
+const ENDS_THE_ANSWER = 'over.';
 
 // ---------------------------------------------------------------------------
 // The fixture
@@ -184,8 +191,20 @@ async function inPty(options: {
 /** The step every session begins with: the console open, and its first frame DRAWN. */
 const opens: Step = opensAConsole(PROMPT);
 
-/** The caller asks what the session runs — the read this whole delivery came out of. */
-const asks: Step = { types: `${ABOUT}\r`, until: aFrameSince(PROMPT), what: `asked ${ABOUT}` };
+/**
+ * The caller asks for the longest thing this session says.
+ *
+ * IT WAS `/help`, THE WORD THAT LISTED THE VERBS, and that word is gone — the list under the
+ * prompt answers it, and a list is drawn in the area rather than landed on the roll. What this
+ * delivery came out of is an ANSWER long enough to push the opening off the page, and the
+ * longest answer this session gives is a read of the record.
+ */
+const A_LONG_READ = 'brief';
+const asks: Step = {
+  types: `${A_LONG_READ}\r`,
+  until: aFrameSince(PROMPT),
+  what: `asked ${A_LONG_READ}`,
+};
 
 /** The caller walks the roll back to its oldest line. */
 const walksToTheTop: Step = {
@@ -516,8 +535,14 @@ function theAnswerOn(ran: Ran, columns: number, rows: number): Screen {
  * NOUGHT — the arrangement held fifteen of the twenty-four rows for ever, the input area five,
  * and the four that were left showed the tail of the answer with the list of verbs and the
  * heading that closes it both past the top of the window.
+ *
+ * IT WAS FIVE AND IT IS SIX, and the delivery that moved it is the one that took `/help` away:
+ * what a caller asks for here is a READ of the record now, and the two answers are different
+ * shapes — the rows above the closing heading are the document's rather than one verb each. The
+ * page did not gain a row; the answer above it changed. Measured on a real terminal, at the size
+ * everybody has.
  */
-const SHOWS_OF_THE_ANSWER = 5;
+const SHOWS_OF_THE_ANSWER = 6;
 
 /**
  * WHAT THE ARRANGEMENT COSTS ON THAT SCREEN — the second stick, and the one that says the
@@ -609,7 +634,7 @@ describe('the answer a caller asked for is on the page, on the screen everybody 
     // the walk ended in the stream. The page after the walk is the one carrying both the top of
     // the opening and the echo of what was typed; the page it opened with carried the first
     // without the second, which is what tells the two apart.
-    const echoed = `${PROMPT} ${ABOUT}`;
+    const echoed = `${PROMPT} ${A_LONG_READ}`;
     const top = theFirstScreenWhere(
       ran.bytes,
       columns,

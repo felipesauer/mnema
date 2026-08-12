@@ -58,6 +58,7 @@
 
 import { spellingsOf } from '../completion/lookups.js';
 import type { CompletionNode, CompletionTree, CompletionWord } from '../completion/tree.js';
+import { PREFIX } from '../session-words.js';
 
 /**
  * What a Tab is answered with: the candidates, each with what it is, and the word they
@@ -154,7 +155,15 @@ export function completerFor(
     // At the top level the offer is the session's: the reads, and the words the session
     // answers to itself. An id is not a word a line can start with, so no record is
     // offered here.
-    if (node === root) return [matching(top, word), word];
+    //
+    // AND THE PREFIX IS A KEY HERE, WHICH IS THE ONE PLACE IT IS UNDERSTOOD. A line that
+    // begins with a slash is a word of THIS level being written, so what narrows the list is
+    // what follows it: `/t` offers the verbs beginning with `t`, and `/c` offers `/clear`
+    // beside them ({@link theStem}). What comes BACK is the whole of what was typed, slash
+    // included, because that is the word a caller's Tab or Return replaces
+    // (`editing.ts`, `taking`) — so picking a verb off a slash leaves no slash behind, and
+    // picking the session's own word puts its own spelling on the row.
+    if (node === root) return [matching(top, word, theStem), word];
 
     // Below it, whatever the declaration says goes there — and then the records this
     // session has already named, which is where an argument of this product usually
@@ -168,6 +177,20 @@ export function completerFor(
 }
 
 /**
+ * A word with the prefix that makes it the session's own taken off the front, and any
+ * other word unchanged.
+ *
+ * ONE FUNCTION, READ ON BOTH SIDES OF ONE COMPARISON, and that is what makes the slash a key
+ * rather than a letter: it is applied to what the caller typed AND to every candidate, so
+ * `/c` reaches `/clear` by its own spelling and `completion` by dropping a slash neither of
+ * them is being compared with. Two readings — stripping one side only — would be a menu that
+ * offers a word the next keystroke narrows away.
+ */
+function theStem(word: string): string {
+  return word.startsWith(PREFIX) ? word.slice(PREFIX.length) : word;
+}
+
+/**
  * The candidates a word could still become, sorted, without repeats.
  *
  * Sorted because the order a Tab shows is the order a reader scans, and the tree's own
@@ -178,11 +201,21 @@ export function completerFor(
  *
  * The first spelling of a repeated word wins, which is what keeps a described one from
  * being shadowed by the same word offered again from somewhere with nothing to say.
+ *
+ * HOW A CANDIDATE IS READ IS THE CALLER'S, and it is the whole of what the top level needs
+ * of its own ({@link theStem}). It is a function rather than a flag because what it says is
+ * *how these two spellings are compared*, and the default — compare them as they are — is
+ * what every level below the first does.
  */
-function matching(words: readonly CompletionWord[], word: string): readonly CompletionWord[] {
+function matching(
+  words: readonly CompletionWord[],
+  word: string,
+  reading: (spelling: string) => string = (spelling) => spelling,
+): readonly CompletionWord[] {
+  const wanted = reading(word);
   const found = new Map<string, CompletionWord>();
   for (const candidate of words) {
-    if (!candidate.word.startsWith(word)) continue;
+    if (!reading(candidate.word).startsWith(wanted)) continue;
     if (!found.has(candidate.word)) found.set(candidate.word, candidate);
   }
   return [...found.values()].sort((one, other) =>

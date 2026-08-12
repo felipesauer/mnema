@@ -1023,9 +1023,6 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
           if (left) return;
           echoed(line);
           switch (await answer(line)) {
-            case 'leave':
-              leave();
-              return;
             case 'clear':
               cleared();
               return;

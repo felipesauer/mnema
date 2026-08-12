@@ -115,7 +115,12 @@ describe('the words the session answers to are composed, never typed', () => {
     // The corpus is real, and it really holds the words — they are built from the prefix
     // in the one module that owns them, which is why not one file above spells one.
     expect(production().length).toBeGreaterThan(50);
-    expect(SESSION_WORDS.length).toBeGreaterThan(1);
+    // THERE WERE THREE OF THESE WORDS AND THERE IS ONE, which is what this line had to give
+    // up: `/help` and `/exit` went to the two keys that already answered them (the list under
+    // the prompt, and the end of the input). What the scan is about is untouched — a word that
+    // exists is composed from the prefix and typed nowhere — and it is as strong over one word
+    // as over three, because the ban is on the PREFIX applied to every word there is.
+    expect(SESSION_WORDS.length).toBeGreaterThan(0);
     for (const word of SESSION_WORDS) expect(word.startsWith(PREFIX)).toBe(true);
   });
 

@@ -55,10 +55,10 @@ import { runVerify } from '../src/commands/verify.js';
 import { occurrenceLine } from '../src/presentation/occurrence.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { followingTheRecord } from '../src/repl/following.js';
-import { PREFIX } from '../src/session-words.js';
 import { here } from '../src/wiring/context.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { DEFAULT_REQUIREMENT } from '../src/wiring/verify.js';
+import { ENDS_THE_INPUT, ESC } from './support/console.js';
 import { type Fixture, inPty, opensAConsole, type Ran, type Step } from './support/pty.js';
 import { screenOf } from './support/screen.js';
 
@@ -277,9 +277,9 @@ describe('a session shows what another process wrote while it was open', () => {
           second = id;
         }),
         {
-          types: `${CLEARS_THE_LINE}${PREFIX}exit\r`,
+          types: `${CLEARS_THE_LINE}${ENDS_THE_INPUT}`,
           what: 'left',
-          until: (bytes) => bytes.lastIndexOf(PROMPT) > bytes.indexOf(`${PREFIX}exit`),
+          until: () => true,
         },
       ],
     });
@@ -351,9 +351,15 @@ describe('a session shows what another process wrote while it was open', () => {
   });
 
   it('goes on answering the caller afterwards', () => {
-    // The session left by the word that leaves, which is only reachable if the prompt was
-    // still taking keystrokes after everything above.
-    expect(ran.bytes.lastIndexOf(PROMPT)).toBeGreaterThan(ran.bytes.indexOf(`${PREFIX}exit`));
+    // THE WITNESS USED TO BE THE ECHO OF THE WORD THAT LEAVES, and there is no such word: the
+    // way out is a key, and a key on an empty row echoes nothing to look for. What says the
+    // same thing more strongly is that the session ENDED at all — it read the keystroke,
+    // unwound, and gave the screen back — after the occurrences had landed on its page.
+    const gave = ran.bytes.lastIndexOf(`${ESC}[?1049l`);
+    expect(gave, 'the session never gave the screen back').toBeGreaterThan(-1);
+    expect(gave, 'the occurrence landed after the session had gone').toBeGreaterThan(
+      ran.bytes.indexOf(second),
+    );
   });
 
   // A CASE STOOD HERE AND IT DIED WITH THE BOUNDARY IT BRACKETED. It ran the session at the
