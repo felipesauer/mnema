@@ -420,8 +420,18 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
 
   /** The size the opening on the screen was composed for, and the opening itself. */
   let drawnAt = { columns: theSize()[0], rows: theSize()[1] };
-  /** How many rows the middle region had on the frame that is on the screen. */
-  let theRoom = 0;
+  /**
+   * THE MIDDLE REGION AS THE FRAME ON THE SCREEN WAS LAID OUT: how many rows it had, and how
+   * wide they were.
+   *
+   * ⛔ THE PAIR AND NOT THE HEIGHT ALONE, because the two questions the roll asks of a region
+   * need both. How many lines a page of scrolling is worth is rows ({@link aPage}); how far back
+   * a reader may walk is *how many of the oldest lines FILL those rows*, and a line's height is a
+   * function of the width it is drawn at (`scrolling.ts`, `backAtMost`). They are one value out
+   * of one reading of the device, for the reason {@link theSize} exists: two numbers taken at two
+   * instants are two terminals.
+   */
+  let theMiddle = { room: 0, columns: 0 };
   /** The layout, once it is up. See the assignment at the foot of this function. */
   let mounted: ReturnType<typeof render> | undefined;
   let opened: Opening = openingFor(drawnAt.columns, drawnAt.rows);
@@ -457,7 +467,15 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * the lines already exist, composed once when the session opened (`session.ts`).
    */
   function theOpeningOnTheRoll(): Scrolling {
-    return opened.lines.reduce(landedIn, NOTHING_SAID);
+    // THE REGION IS HANDED OVER HERE TOO, and what it decides is nothing at all: what it bounds
+    // is how far back a READER is, and every line below lands under one standing at the tail
+    // (`scrolling.ts`, {@link landedIn}). It is written out rather than passed as the reducer
+    // itself because `reduce` hands its callback the index and the array, which is two numbers
+    // this signature would take for a region.
+    return opened.lines.reduce(
+      (roll, line) => landedIn(roll, line, theMiddle.room, theMiddle.columns),
+      NOTHING_SAID,
+    );
   }
 
   /**
@@ -532,11 +550,12 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     // and never a frame that is not the screen — because the frame's height is declared rather
     // than added up.
     const room = under - (drawn ? opening.above : 0);
-    // HOW MANY ROWS THE MIDDLE HAS, kept for the one reader that is not this frame: a page of
-    // scrolling is a page of THE MIDDLE, and the key that asks for one is answered after the
-    // frame has been built ({@link aPage}). It is the same number the window was cut to, read
-    // rather than worked out a second time.
-    theRoom = room;
+    // WHAT THE MIDDLE IS, kept for the readers that are not this frame: a page of scrolling is a
+    // page of THE MIDDLE ({@link aPage}), and where the ends of the roll are is a function of the
+    // same region (`scrolling.ts`, `backAtMost`) — both of them answered after the frame has been
+    // built, on a keystroke. They are the numbers this window was cut to, read rather than worked
+    // out a second time.
+    theMiddle = { room, columns };
     // WHAT A READER CAN SEE OF THE ROLL, cut to the rows the middle region has and to the width
     // it has them at — one answer, from the module that keeps the roll (`scrolling.ts`).
     const window = theWindowOn(scrolling, room, columns);
@@ -589,7 +608,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     saw(line);
     // AND IT GOES ON THE ROLL. Whether a reader SEES it is the roll's own answer: at the tail
     // they do, and part-way up they are left exactly where they were reading (`scrolling.ts`).
-    scrolling = landedIn(scrolling, line);
+    scrolling = landedIn(scrolling, line, theMiddle.room, theMiddle.columns);
     moved();
   }
 
@@ -602,7 +621,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * would overshoot on a short window and undershoot on a tall one.
    */
   function scrolled(by: number): void {
-    scrolling = scrolledBy(scrolling, by);
+    scrolling = scrolledBy(scrolling, by, theMiddle.room, theMiddle.columns);
     moved();
   }
 
@@ -617,7 +636,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * and therefore the same in both directions, whatever the lines at either end do.
    */
   function aPage(): number {
-    return Math.max(1, theRoom);
+    return Math.max(1, theMiddle.room);
   }
 
   /**
@@ -766,7 +785,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
       return;
     }
     if (stroke.home) {
-      scrolling = toTheTop(scrolling);
+      scrolling = toTheTop(scrolling, theMiddle.room, theMiddle.columns);
       moved();
       return;
     }
