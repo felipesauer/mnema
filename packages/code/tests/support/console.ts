@@ -116,10 +116,16 @@ export function withoutLayout(bytes: string): string {
       .split(`${ESC}[2K`)
       .join('')
       .replace(new RegExp(`${ESC}\\[\\d*[ABG]`, 'g'), '')
-      // And putting the cursor somewhere absolute, which is how the page is opened
-      // clean: the console goes to the last row, scrolls a page, and comes back to the
-      // top (`repl/page.ts`). It PLACES and says nothing, so it goes with the rest.
+      // And putting the cursor somewhere absolute, which is what the layout does with the
+      // caret at the end of a frame. It PLACES and says nothing, so it goes with the rest.
       .replace(new RegExp(`${ESC}\\[\\d*(?:;\\d*)?H`, 'g'), '')
+      // ⚠️ AND THE MODES THE CONSOLE ASKS THE TERMINAL FOR, which were not here because the
+      // console asked for none. It takes the SCREEN now and turns the wheel on
+      // (`repl/console.ts`, `repl/pointing.ts`), so three switches are written before the first
+      // frame — and a reader that left them in would find them at the START of the first row,
+      // where they make it two dozen characters wider than the terminal it was drawn on.
+      // Measured: a case asserting the widest row of an arrangement read 53 on a 49-column page.
+      .replace(new RegExp(`${ESC}\\[\\?\\d+[hl]`, 'g'), '')
   );
 }
 

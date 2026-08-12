@@ -466,13 +466,18 @@ describe('everything that gives a session a terminal of a chosen size checks tha
     // rather than watch: an absence — no page carried away for a height — is waited OUT, so a
     // step needs to be able to do something before its question is asked, which the copy had no
     // way of expressing. The count going DOWN is what this case is for as much as it going up.
+    //
+    // ⚠️ AND IT IS TWO NOW, which is the count going down a second time and for a blunter
+    // reason: `a-page-that-opens-clean.test.ts` is GONE. Its whole subject was a page opened by
+    // scrolling the caller's own screen into their scrollback, and the console draws on a screen
+    // of its own — so there is no page of the caller's to carry away and nothing the file could
+    // still be asking (`the-screen-is-ours.test.ts` is what replaced it, and it drives the pty
+    // through the shared instrument).
     const driving = testsUnder(TESTS)
       .filter((file) => readFileSync(file, 'utf-8').includes(DRIVES_A_TERMINAL))
       .map((file) => file.slice(TESTS.length))
       .sort();
-    expect(driving).toEqual(
-      ['a-page-that-opens-clean.test.ts', 'support/pty.ts', 'the-console-on-ink.test.ts'].sort(),
-    );
+    expect(driving).toEqual(['support/pty.ts', 'the-console-on-ink.test.ts'].sort());
     // AND EVERY ONE OF THEM ASKS THE DEVICE WHAT IT BECAME, through the one function that
     // knows how — a driver that wrote its own `stty rows` line and never read it back is
     // the state all four were in, and the state a fourth would arrive in.

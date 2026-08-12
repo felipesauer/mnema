@@ -40,6 +40,13 @@ function press(input: string, held: Partial<Keystroke> = {}): Keystroke {
     upArrow: false,
     downArrow: false,
     tab: false,
+    // THE FOUR KEYS THAT MOVE THE WINDOW rather than the row. They are spelled here because
+    // this stand-in is the WHOLE keystroke — a value built out of some of the fields would let
+    // a reducer arm that reads one of them go unasserted (`src/repl/editing.ts`).
+    pageUp: false,
+    pageDown: false,
+    home: false,
+    end: false,
     escape: false,
     ctrl: false,
     ...held,
@@ -475,6 +482,16 @@ const WHAT_EACH_KEY_LEAVES: {
   // The two that shut it: Escape, and the chord that clears the row.
   escape: { typed: '', picked: NOBODY },
   ctrl: { typed: '', picked: NOBODY },
+  // ⛔ THE FOUR THAT MOVE THE WINDOW AND NOT THE ROW, and this is exactly the answer the count
+  // above exists to force somebody to write down. What they move is which part of the roll a
+  // reader is looking at, which is not a question about the line being typed at all — so the row
+  // is what it was and the pick is what the list under it still holds (`repl/console.ts`,
+  // `repl/scrolling.ts`). They reach no arm of the reducer, and this table is where that is
+  // ASSERTED rather than assumed.
+  pageUp: { typed: PREFIX, picked: LISTED[1] as string },
+  pageDown: { typed: PREFIX, picked: LISTED[1] as string },
+  home: { typed: PREFIX, picked: LISTED[1] as string },
+  end: { typed: PREFIX, picked: LISTED[1] as string },
 };
 
 describe('every key of this language says what it leaves picked', () => {

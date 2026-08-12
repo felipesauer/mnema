@@ -194,54 +194,50 @@ export interface Opening {
    * lands under it is. A caller counting the lines would be counting a value the
    * terminal is about to fold, which is the arithmetic this field exists to stop
    * ({@link openingFor}).
+   *
+   * IT IS THE WHOLE OPENING AND NOT THE FIXED PART OF IT, which is what the drawing of the name
+   * is chosen against: whether the page FITS is a question about all of it at once
+   * (`session.ts`, `bannerFor`), whichever half of it is drawn where.
    */
   readonly rows: number;
+  /**
+   * HOW MANY ROWS THE FIXED TOP REGION TAKES — the arrangement, and nothing else.
+   *
+   * ⛔ THE TWO HALVES OF AN OPENING GO TO TWO DIFFERENT PLACES, and this is the number that says
+   * where the boundary is. The ARRANGEMENT is chrome: it is drawn at the top of the screen on
+   * every frame and it never moves. The LINES are what the session SAYS, so they go on the roll
+   * with everything else it says — which is also what makes the `bare` form what its own doc has
+   * always claimed it is, *the same lines landed the way every other line of this session lands*,
+   * rather than a third drawing.
+   *
+   * NOUGHT FOR A TERMINAL TOO NARROW FOR AN ARRANGEMENT, which is the case that forced the
+   * split. A drawing that does not fit used to scroll away one row at a time and the reader kept
+   * whatever was at the bottom of it; a fixed region that does not fit can only be CLIPPED, and
+   * a clipped drawing loses the rows that say what the session is and what the record proved. On
+   * the roll it loses nothing at all — the reader sees the end of it and scrolls back for the
+   * rest.
+   */
+  readonly above: number;
 }
 
 /**
- * Whether two openings are the same drawing — asked by whoever has one on the screen and
- * has just composed another.
+ * ⚠️ WHETHER TWO OPENINGS WERE THE SAME DRAWING used to be asked here, and nothing asks it any
+ * more.
  *
- * IT EXISTS BECAUSE THE SIZE STOPPED BEING THE QUESTION. The console used to know a page
- * was stale by comparing the WIDTH it was drawn for against the width the terminal has,
- * on the premise that nothing else could move a glyph of it. The name gives way by HEIGHT
- * now (`presentation/banner.ts`), so the premise is gone — and the answer that replaces it
- * is not "either measurement moved" but the one that was always underneath: is what would
- * be drawn what is drawn? A window dragged from forty rows to ten changes no glyph; one
- * dragged to four changes the mark, and that is a page.
+ * IT EXISTED TO DECIDE WHETHER TO TURN A PAGE. The console lived in the caller's own buffer, so
+ * changing what the opening looked like meant carrying a screen of theirs into their scrollback
+ * and writing the new one over it — an expensive, visible, irreversible act — and this was the
+ * one guard in front of it: is what would be drawn what is drawn? A window dragged from forty
+ * rows to ten changes no glyph, and a page turned for it was a page turned for nothing.
  *
- * ⚠️ AND IT ONLY STARTED ANSWERING THAT QUESTION WHEN THE FRAME WENT. The panel carried the
- * terminal's own width as a field, because the box was drawn corner to corner and every
- * column of the window was a column of the drawing — so this comparison said "not the same"
- * for every width there is, and the sentence above was a rule the value could not keep.
- * Nothing is drawn to an edge now, so a window one column narrower really is the same page,
- * and a WIDTH reaches this comparison only through the two things it can still move: which
- * arrangement there is room for, and how many rows the sentence under it folds into
- * ({@link openingFor}).
- *
- * ⚠️ AND IT WAS WRITTEN HERE THAT IT WAS NO LONGER THE WHOLE QUESTION A CALLER ASKS, on the
- * premise that *a page is now a drawing AND a placement*: the delivery that put the input at the
- * FOOT of the terminal made the rows under the flow a function of the height, so the console
- * asked this AND the height it had last turned a page at. THAT PREMISE IS GONE, and what
- * falsified it is where the leftover went: those rows are drawn with the redrawn region now
- * (`repl/page.ts`, `theGap`), so a window that only changed height is answered by the very next
- * frame and there is no placement left for a page to be stale for. What the second half cost was
- * a page per step of a drag — twelve, measured, against two for the same drag along the width.
- * So this is the WHOLE question again, and the console asks nothing beside it
- * (`repl/console.ts`, `followTheTerminal`; `tests/the-page-follows-the-terminal.test.ts`).
- *
- * COMPARED AS A WHOLE rather than field by field, and that is the point of it being here
- * rather than at the call site: a field added to the panel tomorrow is a field this
- * comparison cannot forget, which is the shape of defect a hand-written list of fields
- * produces. Both values come out of {@link panelFor} and {@link Opening}, so the keys are
- * in the same order and the comparison is over the same shape twice.
- *
- * It is cheap by construction: an opening is the dozen or so lines the box holds, already
- * bytes, and it is asked once per settled resize rather than per frame.
+ * THERE ARE NO PAGES TO TURN. The opening is a REGION now, redrawn with the other two on every
+ * frame at the size the device has at that instant (`console.ts`, `region.ts`), so a drawing
+ * that did not change is a frame the layout library writes no bytes for — which is the same
+ * saving, made by the library, without anybody comparing anything. What replaced the guard is a
+ * cache on the COMPOSITION, keyed by the size it was composed at, and that answers a different
+ * question: not *should the page turn* but *has this already been worked out*
+ * (`console.ts`, `theOpening`).
  */
-export function sameOpening(one: Opening, other: Opening): boolean {
-  return JSON.stringify(one) === JSON.stringify(other);
-}
 
 /**
  * How many rows the text beside the mark takes: what the session is, where it is standing,
@@ -337,10 +333,12 @@ export function openingFor(request: OpeningRequest): Opening {
   const landed: readonly Line[] = bare
     ? [...request.mark, request.title, ...request.standing, ...request.record, ...request.beneath]
     : request.beneath;
+  const above = bare ? 0 : panelRows(panel);
   return {
     panel: bare ? undefined : panel,
     lines: [...(bare ? panelLines(panel) : []), ...request.beneath.map(request.render)],
-    rows: (bare ? 0 : panelRows(panel)) + foldedRows(landed, request.columns),
+    rows: above + foldedRows(landed, request.columns),
+    above,
   };
 }
 
@@ -382,21 +380,19 @@ function widest(lines: readonly Line[]): number {
  * was as wide as its own content, a terminal that shrank to eighty columns still had room
  * for it, and not redrawing cost nothing. Corner to corner, a session opened at a hundred
  * and twenty columns and shrunk to seventy is eight rows the terminal folds in half —
- * not-redrawing became the broken drawing. So the answer is asked again whenever the width
- * changes, and what the old sentence was protecting is protected by something else: the
- * page is carried into the scrollback before the new one is drawn, so nothing the caller
- * could scroll back to is rewritten, and this function is CALLED again rather than being a
- * value somebody mutated. It is still pure, it still reads nothing, and the record behind
- * `record` is still the one the session paid for when it opened
- * (`tests/the-page-follows-the-terminal.test.ts`, and the read counter in
- * `tests/the-name-and-the-hints.test.ts`).
+ * not-redrawing became the broken drawing. So the answer is asked again whenever the size
+ * changes, and what the old sentence was protecting is protected by something else: nothing
+ * the caller could scroll back to is on this screen at all, and this function is CALLED again
+ * rather than being a value somebody mutated. It is still pure, it still reads nothing, and the
+ * record behind `record` is still the one the session paid for when it opened (the read counter
+ * in `tests/the-name-and-the-hints.test.ts`).
  *
  * ⚠️ AND THE FRAME THAT FALSIFIED IT IS GONE, WHICH DOES NOT PUT THE OLD SENTENCE BACK. It
- * is asked again on every settled resize, exactly as it is above, because the FORM is a
+ * is asked for whichever size the device has when a frame is built, because the FORM is a
  * function of the width and a terminal that narrowed past the threshold has the wrong one on
- * its screen. What changed is only how OFTEN the answer differs: nothing is drawn to an edge,
- * so a window one column narrower is the same arrangement and the console draws nothing at all
- * ({@link sameOpening}).
+ * its screen. What keeps that from being a composition per keystroke is that the ANSWER is kept
+ * for the size it was asked at, which is a cache rather than a delay (`repl/console.ts`,
+ * `theOpening`).
  */
 export function panelFor(request: PanelRequest): Panel {
   const { columns, render, title, mark, standing, record } = request;

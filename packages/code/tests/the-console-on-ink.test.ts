@@ -51,8 +51,9 @@ import { type CliIo, run } from '../src/cli.js';
 import { runVerify } from '../src/commands/verify.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
+import { withoutTheHistoryErase } from '../src/repl/erasing.js';
 import { EXIT_SIGNALS } from '../src/repl/leaving.js';
-import { carriedIntoTheScrollback, theEraseAsAScroll } from '../src/repl/page.js';
+import { THE_WHEEL_BACK, WATCHING_THE_WHEEL } from '../src/repl/pointing.js';
 import { badgeLine, openSession, tips } from '../src/repl/session.js';
 import { LEAVE } from '../src/session-words.js';
 import { here } from '../src/wiring/context.js';
@@ -76,8 +77,6 @@ const PROMPT = 'mnema>';
 /** Taking the caret away, and giving it back. */
 const CARET_HIDDEN = `${ESC}[?25l`;
 const CARET_SHOWN = `${ESC}[?25h`;
-/** The page a full-screen program takes. This console must never touch it. */
-const ALTERNATE_SCREEN = `${ESC}[?1049`;
 
 /** ⛔ The sequence that erases the caller's history above the screen. */
 const ERASES_THE_HISTORY = `${ESC}[3J`;
@@ -89,6 +88,9 @@ const REDRAWS_EVERYTHING = `${ESC}[2J`;
  * own escape module and written in one call (`ansi-escapes`, `clearTerminal`).
  */
 const CLEARS_THE_TERMINAL = `${REDRAWS_EVERYTHING}${ERASES_THE_HISTORY}${ESC}[H`;
+/** Into the screen a full-screen program takes, and back out of it. */
+const TAKES_THE_SCREEN = `${ESC}[?1049h`;
+const GIVES_THE_SCREEN_BACK = `${ESC}[?1049l`;
 
 /** What a caller had on their screen before any of this. Text, so a screen can be asked. */
 const WHAT_THE_CALLER_HAD = 'A-LINE-THE-CALLER-HAD';
@@ -328,9 +330,27 @@ function expectTheTerminalCameBack(ran: Ran, what: string): void {
     ran.usable,
     `${what}: the terminal is not usable — ${ran.afterwards.slice(0, 200)}`,
   ).toEqual({ echo: true, canonical: true });
-  // The page the caller was on is the page they are still on. A full-screen program
-  // would have switched buffers, and switching back throws the scrollback away.
-  expect(ran.bytes, `${what}: took the alternate screen`).not.toContain(ALTERNATE_SCREEN);
+  // ⚠️ AND THE PAGE THE CALLER WAS ON USED TO BE THE PAGE THEY WERE STILL ON, asserted as the
+  // alternate screen never being taken at all — *a full-screen program would have switched
+  // buffers, and switching back throws the scrollback away*. The console takes it now, and the
+  // half that was load-bearing is the half this asserts instead: it is taken ONCE and GIVEN BACK
+  // once, on every way out there is. A session that died inside the alternate screen would leave
+  // the caller looking at a page that is not theirs, with no way back but `reset`.
+  expect(times(ran.bytes, TAKES_THE_SCREEN), `${what}: did not take the screen once`).toBe(1);
+  expect(times(ran.bytes, GIVES_THE_SCREEN_BACK), `${what}: did not give the screen back`).toBe(1);
+  expect(
+    ran.bytes.lastIndexOf(GIVES_THE_SCREEN_BACK),
+    `${what}: gave the screen back before taking it`,
+  ).toBeGreaterThan(ran.bytes.lastIndexOf(TAKES_THE_SCREEN));
+  // ⛔ AND THE WHEEL GOES BACK WITH IT, for the reason raw mode does: a terminal left reporting
+  // the mouse fills the caller's next shell with escapes every time they move the pointer.
+  expect(times(ran.bytes, WATCHING_THE_WHEEL), `${what}: did not ask for the wheel`).toBe(1);
+  expect(times(ran.bytes, THE_WHEEL_BACK), `${what}: did not give the wheel back`).toBe(1);
+}
+
+/** How many times `what` occurs in `text`. */
+function times(text: string, what: string): number {
+  return text.split(what).length - 1;
 }
 
 // ---------------------------------------------------------------------------
@@ -459,7 +479,7 @@ const RUN = '\u2500';
  * pedantry: two of the reads compared below separate their sections with blank lines, and
  * every string ends with the empty one.
  */
-function isTips(row: string): boolean {
+function _isTips(row: string): boolean {
   const text = stripped(row);
   return text.length > 0 && TIPS.endsWith(text);
 }
@@ -478,7 +498,7 @@ function theBadge(): string {
 }
 
 /** Whether a row is the console's own badge, at whatever column the width put it. */
-function isBadge(row: string): boolean {
+function _isBadge(row: string): boolean {
   const text = stripped(row).trim();
   return text.length > 0 && theBadge().endsWith(text);
 }
@@ -498,7 +518,7 @@ function isBadge(row: string): boolean {
  * input sits between are the only runs on the page at all (`tests/the-panel.test.ts` asks the
  * absence of the other kind).
  */
-function isRule(row: string): boolean {
+function _isRule(row: string): boolean {
   const text = stripped(row).replace(/ +$/, '');
   return text.length > 0 && [...text].every((glyph) => glyph === RUN);
 }
@@ -520,49 +540,46 @@ function isRule(row: string): boolean {
  * compared to what the same verb says at a shell, so a row wrongly kept and a row wrongly
  * dropped both come out as an inequality.
  */
-/** Whether a row is one the input area draws rather than one the session said. */
-function ownedByTheArea(row: string): boolean {
-  return row.startsWith(PROMPT) || isTips(row) || isBadge(row) || isRule(row);
-}
+/**
+ * ⚠️ TWO INSTRUMENTS LIVED HERE AND BOTH WENT WITH THE MODEL, and saying which is the point of
+ * writing it down. `ownedByTheArea` told a row the input area had drawn from a row a verb had
+ * said, and `whereTheRoomIs` told a run of empty rows the FRAME had reserved from a blank line a
+ * verb really printed. Both were sieves over a page whose lines were written once and never
+ * redrawn: a row was in the bytes exactly as often as it was on the screen, so position was an
+ * answer. Every frame is the whole screen now, so a row is in the bytes once per keystroke and
+ * position answers nothing. What replaced them reads the transcript instead
+ * ({@link saidAbout}), which is a source the model gave rather than a sieve the model allowed.
+ */
 
 /**
- * WHICH OF THESE ROWS ARE THE ROOM THE PAGE HAS TO SPARE — the rows with nothing on them that
- * put the input at the foot, told apart from a blank line a verb really printed.
+ * WHAT THE SESSION SAID IN ANSWER TO ONE LINE — read off the TRANSCRIPT rather than off the
+ * frames.
  *
- * ⚠️ IT WAS `withoutThePlacement`, AND IT TOOK THEM OFF THE END. The rows used to be lines of the
- * FLOW: appended, so always its tail, so *what a verb said is everything before the last row that
- * has something on it* — which is what that function did, and it is now false. The room is part
- * of the region the layout REDRAWS (`repl/page.ts`, `repl/region.ts`), so it is written above the
- * area on every frame, which puts it in the middle of what a session landed as well as at the
- * end. Measured on the case below: twenty rows with nothing on them arrived BEFORE a verb's two
- * lines, and trimming the end could not see them.
+ * ⚠️ IT USED TO BE READ OFF THE PAGE, and that is the instrument this delivery replaced. While
+ * the console lived in the caller's buffer, a line the session said was written ONCE and never
+ * taken back, so the bytes were the page and what a verb said could be sieved out of them by
+ * position — everything that was not the input area and not a row the frame had reserved. Every
+ * frame redraws the whole screen now, so the same sieve answers with the page repeated once per
+ * keystroke: measured, forty-two rows where the verb said two.
  *
- * SO IT IS STILL POSITION AND STILL EXACT, one step further: the room is what sits immediately
- * above a row of the AREA — or above more room. A frame is the room and then the area, always in
- * that order, so a run of empty rows that ends where the area begins is a frame's own and a run
- * that ends anywhere else is a verb's. The end of the stream counts as the area's, because the
- * last thing written to a page is a frame.
+ * SO THE READING MOVED TO WHERE THE ANSWER IS UNAMBIGUOUS. On the way out the console writes
+ * everything it said onto the caller's own buffer, in order, with nothing of the layout in it
+ * (`repl/scrolling.ts`, `repl/console.ts`) — which is both the honest source for this comparison
+ * and the promise that made taking the screen affordable at all. Reading it here is therefore
+ * two things at once: the sieve, and a witness that the transcript is complete and in order.
  *
- * ⚠️ AND IT WOULD STILL HIDE A VERB WHOSE LAST LINE IS BLANK, which is why the shell's own answer
- * is asserted not to end in one: a read of this product that ended with a blank line would be
- * immediately above a frame, and so indistinguishable from room.
+ * The answer is the rows BETWEEN the echo of the line and the next thing the caller typed, which
+ * is what the shell would have printed for the same verb and nothing else.
  */
-function whereTheRoomIs(rows: readonly string[]): readonly boolean[] {
-  const room = new Array<boolean>(rows.length).fill(false);
-  for (let at = rows.length - 1; at >= 0; at -= 1) {
-    const under = rows[at + 1];
-    room[at] =
-      rows[at] === '' && (under === undefined || ownedByTheArea(under) || room[at + 1] === true);
-  }
-  return room;
-}
-
-function landed(bytes: string): string[] {
-  const rows = withoutLayout(bytes).split('\n');
+function saidAbout(all: string, line: string): string[] {
+  const back = all.lastIndexOf(GIVES_THE_SCREEN_BACK);
+  const rows = withoutLayout(all.slice(back)).split('\n');
   // The tail after the last newline: not a row, an artefact of splitting on one.
   rows.pop();
-  const room = whereTheRoomIs(rows);
-  return rows.filter((row, at) => !ownedByTheArea(row) && room[at] !== true);
+  const echoed = rows.indexOf(`${PROMPT} ${line}`);
+  expect(echoed, `the transcript does not hold the echo of ${line}`).toBeGreaterThanOrEqual(0);
+  const next = rows.findIndex((row, at) => at > echoed && row.startsWith(PROMPT));
+  return rows.slice(echoed + 1, next < 0 ? rows.length : next);
 }
 
 /** Drives a console over `typed` in this process and answers with what it drew. */
@@ -601,7 +618,7 @@ async function inTheConsole(
   await closed;
   return {
     opening,
-    answers: landed(terminal.bytes().slice(opening.length)),
+    answers: saidAbout(terminal.bytes(), typed[0] as string),
     all: terminal.bytes(),
   };
 }
@@ -835,7 +852,7 @@ const ERASES = ['2J', '3J'];
  * This one names the answering module, asserts every other module is silent, and asserts what the
  * answer IS — that what comes back out of it holds neither of them, whatever went in.
  */
-const ANSWERS_FOR_THE_ERASE = 'page.ts';
+const ANSWERS_FOR_THE_ERASE = 'erasing.ts';
 
 /**
  * THE MODULE THAT MOUNTS THE LAYOUT, which is the one that owns the caller's streams.
@@ -951,13 +968,26 @@ describe('no component composes a line; it only positions one the renderer produ
     expect(withoutComments("const d = 'a b';")).toContain("'a b'");
   });
 
-  it('never takes the alternate screen, in any module of the session', () => {
-    // ⛔ Measured, and the reason the first design was abandoned: the alternate screen
-    // discards the scrollback on the way out, and the scrollback is the feature.
+  it('⚠️ takes the alternate screen in ONE place, and by the library’s own option', () => {
+    // ⚠️ THIS CASE SAID THE OPPOSITE, in as many words: *never takes the alternate screen, in
+    // any module of the session* — because the alternate screen discards the scrollback on the
+    // way out and the scrollback was the feature. The scrollback is not the roll any more
+    // (`repl/scrolling.ts`), the console keeps its own and writes it back to the caller's buffer
+    // when it leaves, and taking the screen is what makes a fixed header possible at all. So the
+    // ban is INVERTED, and what is left of it is a count: one module asks, and it asks the
+    // library rather than writing the sequence.
+    const asked = modulesOf('repl').filter((file) =>
+      withoutComments(readFileSync(join(SRC, 'repl', file), 'utf-8')).includes('alternateScreen'),
+    );
+    expect(asked, 'the screen is taken somewhere other than the module that mounts').toEqual([
+      MOUNTS_THE_LAYOUT,
+    ]);
+    // ⛔ AND NOBODY WRITES THE SEQUENCE. It is an option of the call that mounts, so a module
+    // spelling `1049` would be a second way in — and a second teardown beside the one the
+    // library already runs, which is exactly the shape of hole this bench keeps paying for.
     for (const file of modulesOf('repl')) {
-      const source = readFileSync(join(SRC, 'repl', file), 'utf-8');
-      expect(source, file).not.toContain('alternateScreen');
-      expect(source, file).not.toContain('1049');
+      const code = withoutComments(readFileSync(join(SRC, 'repl', file), 'utf-8'));
+      expect(code, `${file} writes the sequence instead of asking for it`).not.toContain('1049');
     }
     expect(modulesOf('repl').length).toBeGreaterThan(4);
   });
@@ -978,8 +1008,8 @@ describe('no component composes a line; it only positions one the renderer produ
       [ANSWERS_FOR_THE_ERASE],
     );
     // AND IT NAMES BOTH, which is what makes the exception one module rather than one sequence:
-    // they arrive in the same write, so an answer that knew only one of them would let the other
-    // through (`repl/page.ts`, `theEraseAsAScroll`).
+    // they arrive in the same write, and the module has to tell them apart in order to let one
+    // of them through (`repl/erasing.ts`, `withoutTheHistoryErase`).
     const answers = withoutComments(
       readFileSync(join(SRC, 'repl', ANSWERS_FOR_THE_ERASE), 'utf-8'),
     );
@@ -992,14 +1022,18 @@ describe('no component composes a line; it only positions one the renderer produ
     expect(modulesOf('repl').length).toBeGreaterThan(4);
   });
 
-  it('answers with bytes that hold neither of them, whatever went in', () => {
-    // THE OTHER HALF OF THE RE-DECIDED BAN, and it is the half with the teeth: the module above
-    // is allowed to NAME the erase because it is the one that refuses it, and what says it
-    // refuses it is what comes back out. Asked over every shape the sequence can arrive in,
-    // including the two that no library writes today — either erase on its own — because a rule
-    // per sequence is what makes this total rather than a match on one library's constant.
-    const rows = 24;
-    const scroll = carriedIntoTheScrollback(rows);
+  it('⚠️ answers with bytes that hold the screen erase and never the history one', () => {
+    // ⚠️ THIS CASE ASKED FOR NEITHER OF THEM, and half of it is falsified. While the console
+    // lived in the caller's own buffer, the rows a screen erase destroyed were rows they might
+    // still want, so it was TRANSLATED into a scroll — the same empty page, with what was on it
+    // one scroll up. The console owns its screen now: every row a screen erase reaches was drawn
+    // by this session, and the library only ever writes it immediately before drawing the page
+    // again. So the rule is one instead of two, and the case has to assert BOTH directions or it
+    // would pass on a door that removed everything.
+    //
+    // Asked over every shape the sequence can arrive in, including the two no library writes
+    // today — either erase on its own — because a rule per sequence is what makes this total
+    // rather than a match on one library's constant.
     const cases: readonly { readonly what: string; readonly given: string }[] = [
       { what: 'the library’s own sequence', given: CLEARS_THE_TERMINAL },
       { what: 'the screen erase alone', given: REDRAWS_EVERYTHING },
@@ -1013,22 +1047,22 @@ describe('no component composes a line; it only positions one the renderer produ
       { what: 'the history erase in the next', given: ERASES_THE_HISTORY },
     ];
     for (const one of cases) {
-      const answered = theEraseAsAScroll(one.given, rows);
-      for (const erase of ERASES) {
-        expect(answered, `${one.what}: ${erase} came out of the door`).not.toContain(erase);
-      }
-      // AND THE SCREEN ERASE BECAME THE SCROLL rather than being dropped, which is the whole
-      // decision: a library that believes it cleared the page paints over rows that are still on
-      // it. The history erase leaves nothing behind, because there is nothing honest to put there.
+      const answered = withoutTheHistoryErase(one.given);
+      expect(answered, `${one.what}: the history erase came out of the door`).not.toContain(
+        ERASES_THE_HISTORY,
+      );
+      // AND THE SCREEN ERASE CAME THROUGH, which is the direction that keeps the door from being
+      // a door onto nothing: a library that believes it cleared the page and did not paints over
+      // rows that are still on it.
       expect(
-        answered.includes(scroll),
-        `${one.what}: the screen erase did not become a scroll`,
+        answered.includes(REDRAWS_EVERYTHING),
+        `${one.what}: the screen erase was taken away too`,
       ).toBe(one.given.includes(REDRAWS_EVERYTHING));
     }
     // AND A FRAME WITH NEITHER IN IT IS THE SAME BYTES, which is every frame of every session:
     // the door is on the pipe, so anything it changed here it would change on every keystroke.
     const ordinary = `${ESC}[2K${PROMPT} verify${ESC}[?25l`;
-    expect(theEraseAsAScroll(ordinary, rows), 'an ordinary frame came back different').toBe(
+    expect(withoutTheHistoryErase(ordinary), 'an ordinary frame came back different').toBe(
       ordinary,
     );
   });
@@ -1060,7 +1094,7 @@ describe('no component composes a line; it only positions one the renderer produ
     // AND THE ONE STATEMENT IS THE TRANSLATION, which is what makes the count above about the
     // door rather than about a coincidence: the bytes handed to the device came out of it.
     expect(
-      /\bstdout\.write\(\s*(?:\/\/[^\n]*\n\s*)*typeof chunk === 'string' \? theEraseAsAScroll\(/.test(
+      /\bstdout\.write\(\s*(?:\/\/[^\n]*\n\s*)*typeof chunk === 'string' \? withoutTheHistoryErase\(/.test(
         driver,
       ),
       'the one write to the device does not go through the translation',
@@ -1073,33 +1107,55 @@ describe('no component composes a line; it only positions one the renderer produ
     expect(driver, 'the layout was not handed the door').toContain(`stdout: ${THE_DOOR}`);
     // NOT VACUOUS, IN BOTH DIRECTIONS: the scan finds the relapse an author would write, and it
     // finds the door being written THROUGH acceptable — which is what every other writer does.
-    expect(writesToTheDevice('stdout.write(carriedIntoTheScrollback(rows));')).toBe(1);
-    expect(writesToTheDevice(`${THE_DOOR}.write(carriedIntoTheScrollback(rows));`)).toBe(0);
+    expect(writesToTheDevice('stdout.write(WATCHING_THE_WHEEL);')).toBe(1);
+    expect(writesToTheDevice(`${THE_DOOR}.write(WATCHING_THE_WHEEL);`)).toBe(0);
     expect(driver, 'nothing writes through the door at all').toContain(`${THE_DOOR}.write(`);
   });
 
-  it('⛔ scrolling FEEDS the caller’s history where erasing destroys it', () => {
-    // THE DIFFERENCE THE TRANSLATION IS FOR, read off a screen rather than argued: both answers
-    // leave an EMPTY page, which is what the library asked for, and only one of them leaves what
-    // was on it one scroll away. Deterministic, in process, on the same screen model every case
-    // of this surface reads (`support/screen.ts`).
+  it('⛔ the alternate screen feeds NOTHING, and the history erase destroys what is there', () => {
+    // ⚠️ THIS CASE COMPARED A SCROLL WITH AN ERASE, because emptying a page by scrolling it was
+    // how this console opened one: both leave an empty screen and only one of them leaves what
+    // was on it one scroll away. There is no scroll to compare — the console does not empty the
+    // caller's page, it draws on a different one — and what replaces the comparison is the pair
+    // that matters now: a session on the alternate screen adds NOTHING to the caller's history,
+    // and the sequence this door removes would empty it from inside that same screen.
+    //
+    // Deterministic, in process, on the same screen model every case of this surface reads
+    // (`support/screen.ts`).
     const rows = 10;
     const columns = 40;
     const theirs = `${WHAT_THE_CALLER_HAD}\r\n`.repeat(rows);
-    const scrolled = screenOf(theirs + theEraseAsAScroll(CLEARS_THE_TERMINAL, rows), columns, rows);
-    // WHAT THE LIBRARY ASKED FOR: an empty page, at the top of it.
-    expect(scrolled.text, 'the page was not emptied').not.toContain(WHAT_THE_CALLER_HAD);
-    expect(scrolled.cursor, 'the page was not emptied at the top').toEqual({ row: 0, column: 0 });
-    // AND WHAT IT DESTROYED, KEPT: the rows are above, which is the promise this product makes.
-    expect(scrolled.aboveText, 'the caller’s page was not carried above').toContain(
+    // A SESSION'S WHOLE PAGE, drawn on the screen it took, over and over.
+    const ours = `${TAKES_THE_SCREEN}${`a row of the session\r\n`.repeat(rows * 3)}`;
+    const before = screenOf(theirs, columns, rows);
+    const during = screenOf(theirs + ours, columns, rows);
+    expect(during.alternate, 'the session did not take the screen').toBe(true);
+    expect(during.text, 'the session’s page is not on the screen').toContain(
+      'a row of the session',
+    );
+    // ⛔ AND THIRTY ROWS OF SCROLLING ON IT ADDED NOT ONE ROW TO THE CALLER'S HISTORY — compared
+    // against what was in it before the session opened rather than against nothing, because the
+    // caller's own output had already fed it and a case asking for emptiness would be asking the
+    // fixture to be quiet rather than the session.
+    expect(during.above, 'a row of the session went into the caller’s history').toEqual(
+      before.above,
+    );
+    expect(during.beneath, 'the caller’s own page was written on').toContain(WHAT_THE_CALLER_HAD);
+    // AND IT COMES BACK, which is what makes the absence above a preservation rather than a
+    // model that simply lost the caller's page.
+    const after = screenOf(theirs + ours + GIVES_THE_SCREEN_BACK, columns, rows);
+    expect(after.alternate).toBe(false);
+    expect(after.text, 'the caller’s page did not come back').toContain(WHAT_THE_CALLER_HAD);
+    // ⛔ AND THE CONTROL: the sequence the door removes, issued from INSIDE the alternate screen,
+    // empties the history the case above says survives. Without this the assertion is satisfied
+    // by a model that keeps everything, and the door would be measuring nothing.
+    const scrolledOff = `${WHAT_THE_CALLER_HAD}\r\n`.repeat(rows * 2);
+    const kept = screenOf(scrolledOff + ours, columns, rows);
+    expect(kept.aboveText, 'nothing of the caller’s was in their history to destroy').toContain(
       WHAT_THE_CALLER_HAD,
     );
-    // ⛔ AND THE CONTROL, which is the sequence the library writes with nothing done to it: the
-    // same empty page, and the history GONE. Without this the case above is satisfied by a model
-    // that keeps everything, and the whole delivery would be measuring nothing.
-    const erased = screenOf(theirs + CLEARS_THE_TERMINAL, columns, rows);
-    expect(erased.text, 'the control did not empty the page').not.toContain(WHAT_THE_CALLER_HAD);
-    expect(erased.aboveText, 'the control did not destroy the history').not.toContain(
+    const destroyed = screenOf(scrolledOff + ours + ERASES_THE_HISTORY, columns, rows);
+    expect(destroyed.aboveText, 'the control did not destroy the history').not.toContain(
       WHAT_THE_CALLER_HAD,
     );
   });

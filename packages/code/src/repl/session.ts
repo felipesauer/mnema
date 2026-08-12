@@ -72,7 +72,7 @@ import { writeLines } from '../wiring/io.js';
 import { reportUsage } from '../wiring/report.js';
 import type { Declared } from '../wiring/verb.js';
 import { DEFAULT_REQUIREMENT, levelSeverity, treeHeadline, VERIFY_VERB } from '../wiring/verify.js';
-import { areaFor, BELOW_THE_VIEWPORT } from './area.js';
+import { areaFor } from './area.js';
 import { asTheSession } from './asking.js';
 import { completerFor } from './complete.js';
 import type { Drawn } from './console.js';
@@ -174,21 +174,27 @@ const AT_THE_EDGE = 0;
  * allowed to push anything off the top*, which was two claims and the second was false: what
  * was left over was measured against the SCREEN, so a list twenty rows tall on a page with
  * four to spare pushed sixteen rows of the opening into the scrollback on the first keystroke.
- * It is cut to what is left over the FLOW now (`area.ts`, `AreaRequest.flow`), and the second
- * claim is true for the first time.
+ * NOTHING IS PUSHED ANYWHERE NOW — the list grows into the middle region, which is a window
+ * onto a roll rather than the roll itself (`area.ts`, `scrolling.ts`) — so the sentence is
+ * true of both halves and for a reason the arithmetic no longer has to keep.
  */
 const NOTHING_OFFERED_YET = 0;
 
 /**
- * How many rows of the flow are on the screen while the page is being opened: none.
+ * How many rows the region above the input area takes while the page is being opened: none.
  *
- * A PAGE BEING COMPOSED HAS NOTHING ON IT YET, and this is the honest reading rather than a
- * value chosen to be safe: the question here is how many rows the area under the opening will
- * spend, asked so the drawing of the name can be chosen to fit above it (`bannerFor`). With no
- * palette open the flow cannot change that answer at all — what it budgets is the list — so
- * this is a number that says what is true rather than one the arithmetic depends on.
+ * THE QUESTION HERE IS WHAT THAT REGION SHOULD BE, so its own height cannot be an input to it:
+ * the input area is measured in order to choose a drawing of the name that fits above it
+ * (`bannerFor`), and a drawing that had to be known first would be a circle. With no palette
+ * open the number cannot change the answer at all — what it budgets is the list — so this says
+ * what is true rather than standing in for something.
+ *
+ * ⚠️ IT WAS THE FLOW ON THE SCREEN, and it meant a different thing that happened to be nought
+ * at the same moment: everything the session had said that a reader could still see, which at
+ * the opening is nothing because nothing has landed. What a session says is not above the input
+ * area any more, so the field it fills is a different field (`area.ts`, `AreaRequest.header`).
  */
-const NOTHING_LANDED_YET = 0;
+const NOTHING_ABOVE_YET = 0;
 
 /**
  * THE THREE CLAUSES OF THE HINT, and each one is a KEY and what that key gives (see
@@ -391,18 +397,22 @@ export async function openSession(request: SessionRequest): Promise<void> {
    * person opens. What the drawing costs is one ADDEND of what the page costs: what the
    * session is, where it is standing, what the record is, the sentence under it and the
    * input area are the others, and only the first depends on which form is drawn. So the
-   * question asked here is whether the WHOLE page fits, with a row to spare, and the row is
-   * the one the layout keeps (`area.ts`, {@link BELOW_THE_VIEWPORT}) rather than a margin
-   * somebody thought looked right.
+   * question asked here is whether the WHOLE page fits.
    *
-   * PURE, AND THAT IS THE POINT OF IT BEING A FUNCTION. The console calls it when the page
-   * opens and again whenever the caller has finished resizing their window, and between
-   * those two calls nothing is read: the lines above already exist, and the answers that
-   * depend on the size are which drawing there is ROOM for (`panelFor`, width) and how much
-   * of the name is DRAWN (`bannerFor`, both). A recomposition that asked the record again
-   * could make the panel say something different halfway through a session, which is worse
-   * than costing a tenth of a second — and the reads are counted rather than promised
-   * (`tests/the-name-and-the-hints.test.ts`).
+   * ⚠️ AND IT ASKED FOR A ROW TO SPARE, which is the premise this delivery took away. The row
+   * was the layout library's boundary: a region as tall as the viewport was redrawn WHOLE, with
+   * the erase of the caller's history inside the sequence, so the opening was budgeted one row
+   * short of the screen. The console owns the screen now and its frame IS the viewport on every
+   * frame — that is what three fixed regions means — so there is no boundary to stay under and
+   * the page is budgeted against the whole terminal (`area.ts`).
+   *
+   * PURE, AND THAT IS THE POINT OF IT BEING A FUNCTION. The console calls it for the size the
+   * device has at the moment of the drawing, and keeps the answer while that size does not move
+   * (`console.ts`, `theOpening`). Nothing is read: the lines above already exist, and the
+   * answers that depend on the size are which drawing there is ROOM for (`panelFor`, width) and
+   * how much of the name is DRAWN (`bannerFor`, both). A recomposition that asked the record
+   * again could make the panel say something different halfway through a session — and the
+   * reads are counted rather than promised (`tests/the-name-and-the-hints.test.ts`).
    */
   const theOpening = (columns: number, rows: number): Opening => {
     // THE PAGE WITH A GIVEN DRAWING IN IT, composed rather than estimated — and that is what
@@ -412,17 +422,15 @@ export async function openSession(request: SessionRequest): Promise<void> {
     const drawnWith = (mark: readonly Line[]): Opening =>
       openingFor({ columns, render, title, mark, standing: where, record, beneath: refuses });
     // WHAT THE PAGE SPENDS THAT NO DRAWING CHANGES: the input area at the bottom, in
-    // whichever arrangement this terminal has room for, and the row the library needs left
-    // over to redraw that area in PART rather than redrawing the whole screen.
-    const underneath =
-      areaFor({
-        rows,
-        columns,
-        badge: badge.width,
-        hint: hint.width,
-        palette: NOTHING_OFFERED_YET,
-        flow: NOTHING_LANDED_YET,
-      }).height + BELOW_THE_VIEWPORT;
+    // whichever arrangement this terminal has room for.
+    const underneath = areaFor({
+      rows,
+      columns,
+      badge: badge.width,
+      hint: hint.width,
+      palette: NOTHING_OFFERED_YET,
+      header: NOTHING_ABOVE_YET,
+    }).height;
     return drawnWith(
       bannerFor({
         columns,
