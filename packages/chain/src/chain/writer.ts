@@ -48,6 +48,7 @@ import {
 import { linesFromEnd } from './lines.js';
 import { lastTailCheckpoint, orderedSegments, readTailTip } from './store.js';
 import { serializeTailProof, signTailProof } from './tailproof.js';
+import { unprovenWaiverReason } from './waiver.js';
 
 /** Seal a segment once it grows past this many bytes (segments rotate by size). */
 export const DEFAULT_MAX_SEGMENT_BYTES = 4 * 1024 * 1024;
@@ -117,6 +118,18 @@ export class ChainWriter {
     if (existsSync(path)) return;
     const proof = signTailProof(this.tailId, this.keyPair);
     writeFileSync(path, `${serializeTailProof(proof)}\n`, 'utf-8');
+  }
+
+  /**
+   * The tail this writer owns — `<fingerprint>-<installationId>`.
+   *
+   * Exposed for the one rule that is about a tail's IDENTITY rather than its
+   * contents: a waiver may not name the tail it is written to, and an operation
+   * that wants to refuse that in words (rather than meet the writer's throw) has to
+   * be able to ask which tail it is about to write to.
+   */
+  get tail(): string {
+    return this.tailId;
   }
 
   /**
@@ -229,6 +242,7 @@ export class ChainWriter {
    */
   append(event: CatalogEvent): Entry {
     refuseUnreadable(event);
+    this.refuseUnprovenWaiver(event);
     if (this.segmentBytes >= this.maxSegmentBytes) {
       this.segment += 1;
       this.segmentBytes = 0;
@@ -273,7 +287,10 @@ export class ChainWriter {
    */
   appendAll(events: readonly CatalogEvent[]): Entry[] {
     if (events.length === 0) return [];
-    for (const event of events) refuseUnreadable(event);
+    for (const event of events) {
+      refuseUnreadable(event);
+      this.refuseUnprovenWaiver(event);
+    }
     if (this.segmentBytes >= this.maxSegmentBytes) {
       this.segment += 1;
       this.segmentBytes = 0;
@@ -301,6 +318,38 @@ export class ChainWriter {
 
     this.maybeCheckpoint();
     return entries;
+  }
+
+  /**
+   * Refuses a waiver whose claims the disk does not bear out, BEFORE it is sealed.
+   *
+   * It sits beside {@link refuseUnreadable} and for the same reason — the two
+   * append doors are every way onto a tail, so a check here holds for every writing
+   * path there is — but it asks a question that function cannot: the rule is about
+   * what is on DISK, and only the writer knows the layout and the tail it is landing
+   * on. That is also why it is a method and not a free function.
+   *
+   * IT IS THE WRITE SIDE ONLY, deliberately. The reader's rule cannot include it:
+   * a waiver outlives the tail it names, so a read applying this check would refuse
+   * the waiver a moment after it became true, and one unreadable line refuses the
+   * whole tail forever. See waiver.ts.
+   *
+   * It THROWS, on the same argument the unreadable refusal throws on: every field it
+   * checks is one the writing operation read off the disk itself, so a mismatch means
+   * a producer assembled a claim it did not take from the record — a bug here, not an
+   * input somebody got wrong.
+   */
+  private refuseUnprovenWaiver(event: CatalogEvent): void {
+    const reason = unprovenWaiverReason({
+      layout: this.layout,
+      upcasters: this.upcasters,
+      event,
+      ownTail: this.tailId,
+    });
+    if (reason === undefined) return;
+    throw new EventParseError(
+      `refusing to seal a waiver the record does not bear out: ${reason}. Nothing was appended.`,
+    );
   }
 
   /**

@@ -190,6 +190,9 @@ export const SUBJECT_TEXT: { readonly [K in EventKind]: FieldNature } = {
   'skill.created': 'identifier',
   'skill.transitioned': 'identifier',
   'skill.consulted': 'prose',
+  // DERIVED from the record: the anchor a waiver names is read off the pruned
+  // tail's own last event, never handed in. No caller can put anything in it.
+  'tail.pruned': 'identifier',
 };
 
 /**
@@ -264,6 +267,15 @@ export const PAYLOAD_TEXT: {
   // not vacuous cover — the kind's SUBJECT is prose, and that is where its one
   // caller-supplied string is answered for.
   'skill.consulted': {},
+  // The `tail` is a caller's string and it is still an IDENTIFIER, by the rule this
+  // file states rather than by how it is spelled: the write door refuses the waiver
+  // unless the record holds that exact tail, so what gets stored came out of the
+  // record — the same case as a transition's subject. `throughHash` is read off the
+  // disk by the operation and is compared byte for byte when the note is later held
+  // against a copy of the tail, so a scrubber there would destroy the evidence. Only
+  // `reason` is a caller's prose. (`eventCount` is a number and is no field of this
+  // table: there is nothing textual to screen.)
+  'tail.pruned': { tail: 'identifier', throughHash: 'identifier', reason: 'prose' },
 };
 
 /**
@@ -293,7 +305,7 @@ export function fieldNature(kind: EventKind, path: string): FieldNature | undefi
  *
  * The two shared envelope fields (`which`, `run`) are NOT here, and their absence is
  * the point: they are the same two on every kind, so a guard that drove them
- * per-kind would prove the same thing sixteen times and still say nothing about a
+ * per-kind would prove the same thing on every kind there is and still say nothing about a
  * kind that omits them legitimately. They are driven on their own axis, across the
  * whole surface at once, which is the shape that caught `which` in the first place.
  */

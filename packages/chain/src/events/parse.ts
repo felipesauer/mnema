@@ -67,6 +67,7 @@ const PAYLOAD_FIELDS: { readonly [K in CatalogEvent['kind']]: readonly string[] 
   // No payload field at all: a consultation is entirely envelope. The empty
   // list is what makes ANY payload key on this kind a rejected line.
   'skill.consulted': [],
+  'tail.pruned': ['tail', 'throughHash', 'eventCount', 'reason'],
 };
 
 /** The proof/context fields a transition's `fields` object may carry. */
@@ -189,7 +190,7 @@ function validateEnvelope(event: CatalogEvent): RebuiltEnvelope {
 }
 
 /** A rebuilt payload value: scalars, the valued `null` of a birth, or nested fields. */
-type PayloadValue = string | null | TransitionFields;
+type PayloadValue = string | number | null | TransitionFields;
 
 function validatePayload(event: CatalogEvent): Record<string, PayloadValue> {
   const kind = event.kind;
@@ -329,6 +330,30 @@ function validatePayload(event: CatalogEvent): Record<string, PayloadValue> {
       // rebuild is a fresh empty object, so a forged key on the stored line is
       // dropped here AND fails the "stored bytes equal recomputed bytes" check.
       return {};
+    case 'tail.pruned': {
+      requireString(kind, 'payload.tail', event.payload.tail);
+      requireString(kind, 'payload.throughHash', event.payload.throughHash);
+      // The catalog's first numeric payload field, and the rule on it is the
+      // reader's alone: a count of events in a tail that no longer exists is a
+      // claim nothing on disk can be compared against once the cut has happened,
+      // so what CAN be said is that it is a whole number of at least one. Zero is
+      // refused because a tail with no events has no head to name either — the
+      // write door refuses that tail outright, so no honest producer can reach it.
+      requirePositiveInteger(kind, 'payload.eventCount', event.payload.eventCount);
+      requireString(kind, 'payload.reason', event.payload.reason);
+      // WHAT IS DELIBERATELY NOT CHECKED HERE: whether the named tail is on disk.
+      // That is the WRITE-side rule (see `unprovenWaiverReason`), and it must never
+      // become a read-side one: the waiver exists to survive the cut, so the moment
+      // the tail it names is gone, a reader applying the write rule would refuse
+      // the waiver — and refusing one line refuses the whole tail it lives on,
+      // permanently. The one rule the two sides DO share is the shape above.
+      return {
+        tail: event.payload.tail,
+        throughHash: event.payload.throughHash,
+        eventCount: event.payload.eventCount,
+        reason: event.payload.reason,
+      };
+    }
     default:
       // Exhaustiveness: adding a kind without an arm fails the build.
       return assertNever(event);
@@ -415,6 +440,21 @@ function requireString(kind: string, field: string, value: unknown): void {
 
 function requireOptionalString(kind: string, field: string, value: unknown): void {
   if (value !== undefined) requireString(kind, field, value);
+}
+
+/**
+ * Requires a whole number of at least one.
+ *
+ * A count is the one payload value in this catalog that is not text, and every way
+ * a number can be almost-a-number is a way two readers could disagree about the
+ * same line: a float, a `-0`, a `1e3`, a NaN. Canonicalization already refuses the
+ * non-finite ones; this refuses the rest, so a count that reached the chain is a
+ * count that means what it says.
+ */
+function requirePositiveInteger(kind: string, field: string, value: unknown): void {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 1) {
+    throw new EventParseError(`event "${kind}" needs a whole number of at least 1 at ${field}`);
+  }
 }
 
 /** Requires a non-empty string or an explicit `null` (a valued absence). */
