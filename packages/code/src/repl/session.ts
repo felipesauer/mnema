@@ -110,11 +110,22 @@ import { whatTheSessionShowed } from './seen.js';
 import { type Standing, standing } from './standing.js';
 
 /**
- * What a caller types in front of.
+ * What a caller types in front of — the text, and the space it ends in.
  *
- * Plain, and it is the one string on this surface a renderer never sees: it is not a
- * report and it carries no fact. A painted prompt would be escape bytes the console has
- * to do column arithmetic over to put the caret in the right place.
+ * IT WAS *the one string on this surface a renderer never sees*, with the reason written
+ * out: *it is not a report and it carries no fact. A painted prompt would be escape bytes
+ * the console has to do column arithmetic over to put the caret in the right place.* Both
+ * halves were wrong in different ways. Carrying no fact is what makes it CHROME, which is a
+ * reason to paint it rather than a reason not to — it is the mark of the product, and it is
+ * the one role the accent is spent on (`presentation/styled.ts`). And the arithmetic never
+ * ran over the composed row at all: the console counts the caret's column over this string
+ * and over what was typed, the two values it is handed (`repl/console.ts`, `Shown.column`).
+ *
+ * SO IT IS RENDERED IN BOTH PLACES IT APPEARS, out of one line with two parts
+ * (`presentation/echo.ts`) — the echo the roll keeps, and the row under the caller's fingers.
+ * The spelling and the trailing space are untouched by that: the space is inside this text
+ * because the parts of an echo take no separator, which is what makes the plain rendering the
+ * prompt followed by the line, byte for byte (`presentation/plain.ts`, `PRECEDED_BY`).
  */
 const PROMPT = 'mnema> ';
 

@@ -210,12 +210,35 @@ export function theSettledScreen(
 }
 
 /**
+ * WHAT A RENDERER PAINTS WITH, taken out — every SGR sequence, and nothing else an escape can
+ * be.
+ *
+ * Built from the code point rather than written with the byte in it, which is what keeps a
+ * control character out of a source this repository has to be able to read.
+ */
+const PAINT = new RegExp(`${ESC}\\[[0-9;]*m`, 'g');
+
+/** Some bytes with the style taken out and every other escape left where it was. */
+function unpainted(bytes: string): string {
+  return bytes.replace(PAINT, '');
+}
+
+/**
  * THE PAGE AS SOON AS IT FIRST SHOWED SOMETHING — the other half of the same idea, for the
  * cases whose subject is an effect landing rather than a size settling.
  *
  * THE FIRST FRAME AND NOT THE LAST, and the difference is what each is about: a size is settled
  * by the LAST frame drawn at it, and an effect has landed by the FIRST frame that shows it.
  * Reading the last would answer with the end of the session, which is the index again.
+ *
+ * AND IT ASKS WITH THE STYLE TAKEN OUT, which its own error message used to name as the way a
+ * caller could be wrong: *a row carrying style carries escapes between its characters*. What it
+ * is asked is what a frame SHOWED, and a reader is shown glyphs — a terminal consumes the
+ * escapes. It was true of every caller until the row being typed became a composed line, and
+ * then two of them were asking for a run of bytes no frame has ever carried
+ * (`src/repl/console.ts`, `renderTyped`). ONLY the style comes out and never every escape, which
+ * is the same line {@link Step} waits by (`support/pty.ts`, `arrivedUnpainted`): what is left is
+ * where each glyph goes, so the answer is about the page rather than about the paint.
  */
 export function theFirstScreenWith(
   bytes: string,
@@ -223,7 +246,7 @@ export function theFirstScreenWith(
   columns: number,
   rows: number,
 ): Screen {
-  const ends = theFrame(bytes, (frame) => frame.includes(what), 'first');
+  const ends = theFrame(bytes, (frame) => unpainted(frame).includes(what), 'first');
   if (ends < 0) {
     throw new Error(
       `no frame in this stream ever showed ${JSON.stringify(what)}, so there is no page to read ` +

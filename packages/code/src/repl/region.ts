@@ -309,7 +309,15 @@ export interface Showing {
    * on a screen where nothing is supposed to move.
    */
   readonly rows: number;
-  /** The row being typed: the prompt and what is on it, already put together. */
+  /**
+   * The row being typed: the prompt and what is on it, already composed and already rendered.
+   *
+   * IT SAID *already put together*, and that was a concatenation the console made itself. It
+   * is a line with parts now, through the same renderer every other line here arrives from
+   * (`repl/console.ts`, `renderTyped`) — so what is on it may carry escapes, and this file
+   * neither reads them nor counts them. Where the caret goes is {@link Showing.column}, which
+   * is counted somewhere else and over something else.
+   */
   readonly present: string;
   /**
    * THE PALETTE: the words a caller could type next, one already-composed row each, top

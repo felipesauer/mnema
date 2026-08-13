@@ -552,30 +552,34 @@ function sources(): readonly { readonly where: string; readonly code: string }[]
 }
 
 describe('A1: every site that echoes, every site that draws an edge, every site that lists a tree', () => {
-  it('puts the prompt in front of what was typed in ONE place, and it is not the echo', () => {
+  it('puts the prompt in front of what was typed in ONE shape, in both places it happens', () => {
     // THE DISCRIMINANT IS THE COMPOSITION, never a list of files: anything that puts the prompt
     // and the caller's words together. THE ECHO USED TO BE THREE OF THEM — `land(prompt + line)`
-    // at the three ways a row leaves the input — and they are one call to one function now
-    // (`repl/console.ts`, `echoed`).
+    // at the three ways a row leaves the input — and the ROW BEING TYPED was a fourth, with the
+    // reason written out: *it may not become a composed line, because the caret is an offset in
+    // columns into it and escapes a terminal does not print would be arithmetic on the one number
+    // that has to be exact.* The number is counted over the prompt and the typed text and never
+    // over the composed row, so that reason was about a string nothing measured — and the row is
+    // the same line now (`repl/console.ts`, `renderTyped`,
+    // `tests/the-prompt-is-painted-where-you-type.test.ts`).
     const composing = /\bprompt\s*\+|\+\s*prompt\b/;
     const found = sources().filter((file) => composing.test(file.code));
-    expect(found.map((file) => file.where)).toEqual(['repl/console.ts']);
-    // AND THE ONE THAT IS LEFT IS THE FINDING, rather than a site the list forgot: it is the row
-    // being TYPED, drawn in the input area, and it may not become a composed line — the caret is
-    // an offset in columns into it, and escapes a terminal does not print would be arithmetic on
-    // the one number that has to be exact.
-    const console_ = (found[0] as { code: string }).code;
-    expect(console_.match(/\bprompt\s*\+/g), 'more than one site composes with the prompt').toEqual(
-      ['prompt +'],
-    );
-    expect(console_).toContain('present: prompt + editing.typed');
-    // AND THE ECHO ITSELF IS ONE CALL TO ONE FUNCTION, with the shape somewhere else entirely.
+    expect(
+      found.map((file) => file.where),
+      'a prompt is glued to a line somewhere',
+    ).toEqual([]);
+    // AND BOTH PLACES ASK ONE FUNCTION FOR THE SHAPE, with the shape somewhere else entirely.
     const echoing = sources().filter((file) => /echoLine\(/.test(file.code));
     expect(echoing.map((file) => file.where).sort()).toEqual([
       'presentation/echo.ts',
       'repl/console.ts',
     ]);
-    expect((console_.match(/echoLine\(/g) ?? []).length, 'the echo is composed twice').toBe(1);
+    // TWICE, AND THE TWO ARE THE TWO ROWS: the echo that lands on the roll when a line leaves the
+    // input, and the row the caller is still writing. A third would be a third idea of what a
+    // prompt and a line look like together.
+    const console_ = (echoing.find((file) => file.where === 'repl/console.ts') as { code: string })
+      .code;
+    expect((console_.match(/echoLine\(/g) ?? []).length, 'a third row is composed').toBe(2);
   });
 
   it('draws every edge of the page out of one module, and composes none of them', () => {

@@ -61,6 +61,7 @@ import {
   withoutLayout,
 } from './support/console.js';
 import {
+  arrivedUnpainted,
   inPty as drive,
   type Fixture,
   leavesTheSession,
@@ -764,8 +765,11 @@ describe('the caret is left on the row being typed, under everything drawn over 
       steps: [
         opens,
         {
+          // WITH THE PAINT TAKEN OUT, because the row being typed is a line this product
+          // composes now — the prompt in the accent, the words in a weight of their own — so
+          // `mnema> ver` is not a run of bytes on the wire (`tests/support/pty.ts`).
           types: typed,
-          until: (bytes) => bytes.includes(`${PROMPT} ${typed}`),
+          until: arrivedUnpainted(`${PROMPT} ${typed}`),
           what: 'echoed what was typed',
         },
         { types: CLEARS_THE_LINE, until: (bytes) => bytes.length > 0, what: 'abandoned the row' },
