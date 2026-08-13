@@ -40,9 +40,9 @@ import { join } from 'node:path';
 import type { Command } from 'commander';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo, run } from '../src/cli.js';
-import { THE_FLOOR } from '../src/repl/floor.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { asTheSession } from '../src/repl/asking.js';
+import { THE_FLOOR } from '../src/repl/floor.js';
 import { typedLine } from '../src/repl/session.js';
 
 import { ACTOR_HELP } from '../src/wiring/options.js';

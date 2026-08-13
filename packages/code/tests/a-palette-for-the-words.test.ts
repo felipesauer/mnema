@@ -31,7 +31,6 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo, run } from '../src/cli.js';
-import { THE_FLOOR } from '../src/repl/floor.js';
 import type { CompletionWord } from '../src/completion/tree.js';
 import { completionTree } from '../src/completion/tree.js';
 import { echoLine } from '../src/presentation/echo.js';
@@ -40,6 +39,7 @@ import { renderStyled } from '../src/presentation/styled.js';
 import { areaFor } from '../src/repl/area.js';
 import { type Completer, completerFor } from '../src/repl/complete.js';
 import { erasesTheScreen } from '../src/repl/erasing.js';
+import { THE_FLOOR } from '../src/repl/floor.js';
 import { verbsOffered } from '../src/repl/gate.js';
 import {
   CUT,
@@ -246,9 +246,7 @@ describe('one palette, one list, and the slash counts only at the start of the l
     // page falsified: a bar with a slash in it and nothing under it is somebody asking what there
     // is, and nothing is the wrong answer. What made the old fear groundless is the CEILING: four
     // rows and an account of the rest, which is a preview rather than a menu of everything.
-    expect(offeredBy(PREFIX, [], asked), 'a bare slash opened nothing').toEqual(
-      asked(PREFIX)[0],
-    );
+    expect(offeredBy(PREFIX, [], asked), 'a bare slash opened nothing').toEqual(asked(PREFIX)[0]);
     expect(offeredBy(PREFIX, [], asked).length, 'the whole list is empty').toBeGreaterThan(4);
     // AND THE LETTER OPENS IT, over BOTH vocabularies: the slash is a key rather than a letter
     // of the word behind it, so `/c` reaches the verbs beginning with `c` and the session's own
@@ -1017,9 +1015,7 @@ describe('a slash and a letter open the list on the screen, and typing narrows i
     // FOUR ROWS AND NOT THE WHOLE VOCABULARY, which is what makes this a PREVIEW: the ceiling
     // is the list's own and the account of the rest is on the page beside it.
     expect(onTheBare, 'a bare slash opened nothing').toHaveLength(atMost());
-    expect(offers.length, 'the vocabulary is no bigger than the ceiling').toBeGreaterThan(
-      atMost(),
-    );
+    expect(offers.length, 'the vocabulary is no bigger than the ceiling').toBeGreaterThan(atMost());
     expect(bare.text, 'the bare slash did not say what it had no room for').toContain(CUT);
     // AND THE LETTER NARROWS IT rather than opening a second list: every row still on the page
     // is a row that was offered before the letter was typed.
