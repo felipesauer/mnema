@@ -35,13 +35,22 @@
  * what a session landed, and `echo.test.ts` asserts it over the values a row being typed
  * can hold — nothing, a word, a paste with a break in it, a run of spaces.
  *
- * WHAT IT IS NOT is the row being TYPED. That row is drawn in the input area, at the foot
- * of the page, and it is handed to the layout as bytes with no style at all — because the
- * caret is an offset in COLUMNS into it, and escapes a terminal does not print would be
- * arithmetic the console has to do to put the caret where the caller's fingers are
- * (`repl/console.ts`, `Shown.present` and `Shown.column`). The echo is what the roll
- * keeps once the line has been sent; the two say the same words in two places, and only
- * one of them has a caret in it.
+ * AND THE ROW BEING TYPED IS THIS LINE TOO, which is the paragraph this file had to take
+ * back. IT READ: *what it is not is the row being TYPED. That row is drawn in the input area,
+ * at the foot of the page, and it is handed to the layout as bytes with no style at all —
+ * because the caret is an offset in COLUMNS into it, and escapes a terminal does not print
+ * would be arithmetic the console has to do to put the caret where the caller's fingers are.*
+ * WHAT FALSIFIED IT is the arithmetic itself: the console counts that column over the prompt
+ * and over what was typed, which are the two values it was handed, and never over the row it
+ * composes (`repl/console.ts`, `Shown.column`). There was no escape in the sum to begin with.
+ *
+ * What the reason was really protecting is the FOLD, and that survives whole: the row being
+ * typed is the one line of that page rendered for no width, because a break of ours inside the
+ * row a caller is writing is a break the terminal was going to make at the margin anyway
+ * (`repl/console.ts`, `renderTyped`). So the same two parts are composed here for both — the
+ * roll keeps one once the line has been sent, and the other is under the caller's fingers —
+ * and the prompt carries the same accent in both places, which is what a caller asked for after
+ * seeing it in one of them.
  */
 
 import type { Line } from './line.js';

@@ -52,10 +52,20 @@
  * broken at the margin by the terminal. What it costs is nothing a reader can measure: the
  * plain rendering is the prompt followed by the line, byte for byte.
  *
- * WHAT IS STILL NOT COMPOSED THROUGH A RENDERER IS THE ROW BEING TYPED, and the old sentence's
- * reason survives there whole: the caret is an offset in COLUMNS into that row, so escapes a
- * terminal does not print would be arithmetic this file has to do to put it where the caller's
- * fingers are ({@link Showing.present}, {@link Showing.column}).
+ * AND THE ROW BEING TYPED IS COMPOSED THE SAME WAY, which is the sentence this file got wrong
+ * twice. It read: *what is still not composed through a renderer is the row being typed, and the
+ * old sentence's reason survives there whole: the caret is an offset in COLUMNS into that row, so
+ * escapes a terminal does not print would be arithmetic this file has to do to put it where the
+ * caller's fingers are.* The premise is that the caret is counted over the row that is DRAWN, and
+ * it was false of this file's own arithmetic: the column is counted over the prompt and the typed
+ * text ({@link Showing.column}), which are the values the caller handed over, and it never
+ * touched the composed string at all. So painting the row costs the caret nothing — measured on a
+ * real terminal at two widths and nine cases, every column and every row identical to the ones
+ * the plain row produced (`tests/the-prompt-is-painted-where-you-type.test.ts`). What the reason
+ * was really protecting is the FOLD, and that is answered where it arises
+ * ({@link renderTyped}): this row is the one line of the page that is left for the terminal to
+ * break, so it is rendered for no width and the escapes go through a layout that measures columns
+ * rather than bytes.
  *
  * IT USED TO WRITE A SECOND ONE, and that is what the palette took away: the row of words
  * a Tab could not choose between was joined here, out of the tokens and a separator this
@@ -142,6 +152,17 @@ const NO_WIDTH = 0;
 const NO_HEIGHT = 0;
 
 /**
+ * THE WIDTH THE ROW BEING TYPED IS RENDERED FOR: none at all.
+ *
+ * It is the rule's own vocabulary rather than a flag of ours — a line rendered for a screen
+ * whose width nobody reported is not folded (`wiring/color.ts`) — and it is a second constant
+ * beside {@link NO_WIDTH} rather than the same one because the two say different things: that
+ * one is a device that did not answer, and this is a row this console deliberately does not
+ * fold ({@link renderTyped}).
+ */
+const NOT_FOLDED = 0;
+
+/**
  * How often the record is asked whether it moved, in milliseconds.
  *
  * A tenth of a second, which is the threshold below which a person reads a response as
@@ -191,7 +212,17 @@ export interface ConsoleRequest {
   readonly stdin: NodeJS.ReadStream;
   /** The screen the console takes, and the stream the transcript goes back on. */
   readonly stdout: NodeJS.WriteStream;
-  /** What the caller types in front of. Not a report, and so not rendered. */
+  /**
+   * What the caller types in front of — the text of it, and nothing about how it is drawn.
+   *
+   * IT SAID *not a report, and so not rendered*, and the first half is still true while the
+   * second no longer follows from it. What is rendered is not what is a report: it is what
+   * a caller SEES, and this string is on the page twice — under their fingers and in the
+   * transcript above ({@link showing}, {@link echoed}) — so it goes through the rule that
+   * answers `NO_COLOR` for every other line rather than around it. It arrives here as text
+   * for exactly that reason: how it is painted is a role in a table
+   * (`presentation/styled.ts`) and never a byte written beside it.
+   */
   readonly prompt: string;
   /**
    * How a line becomes bytes on a screen of a GIVEN WIDTH — the rule, and not one answer to
@@ -565,6 +596,30 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   const renderOnTheRoll: Render = (line) => renderingAt(insideTheMargin(drawnAt.columns))(line);
 
   /**
+   * HOW THE ROW BEING TYPED BECOMES BYTES — the same rule as every other line on this page,
+   * asked for NO WIDTH.
+   *
+   * IT IS THE ONE LINE OF THE PAGE THAT MAY NOT FOLD, and that is why it is a third door rather
+   * than {@link renderLine}. What a caller is in the middle of writing is broken by the
+   * TERMINAL, at the margin, exactly as a shell breaks it — and a fold of ours would put a
+   * newline and a hanging indent inside the row the caret is a column into. Measured before
+   * anything was painted, at a hundred columns with a hundred and twenty characters typed: the
+   * row is taken to the margin and the caret comes back on the row under it. That number is the
+   * one this delivery had to leave where it was, and it is a case rather than a claim
+   * (`tests/the-prompt-is-painted-where-you-type.test.ts`).
+   *
+   * THE COLOUR IS THE SESSION'S OWN, and the width does not touch it: the flag, the two
+   * variables and the terminal are read once per invocation and no width is among them
+   * (`wiring/color.ts`). So `NO_COLOR` silences this row through the same rule that silences
+   * every other line, which is the whole reason it goes through a renderer at all.
+   *
+   * ASKED ONCE, unlike the two above. They are asked per frame because the width they fold to
+   * moves under a caller who drags the corner of their window; this one folds to nothing at
+   * every size, so a second answer could only be the same answer.
+   */
+  const renderTyped: Render = renderingAt(NOT_FOLDED);
+
+  /**
    * THE OPENING FOR THE SIZE THE DEVICE HAS RIGHT NOW — composed again only when the size is
    * not the one it was last composed for.
    *
@@ -750,7 +805,13 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
       // another instant (`region.ts`, {@link Shown.columns}).
       columns,
       rows,
-      present: prompt + editing.typed,
+      // WHAT THE CALLER IS TYPING, COMPOSED AND RENDERED LIKE EVERY OTHER LINE — the same
+      // {@link echoLine} the roll's echo is made of, so the prompt they type in front of carries
+      // the accent in the place it is under their eyes and not only in the transcript above it.
+      // It used to be `prompt + editing.typed`, a string built here, and what that cost is what
+      // a caller reported about the echo one delivery earlier: the same `mnema>` came out of the
+      // console two ways.
+      present: renderTyped(echoLine(prompt, editing.typed)),
       // COMPOSED WITH THE ROOM THE AREA GAVE IT, and cut to it — by the module that puts
       // the rows together, which is the only place a cut may happen. What it could not fit
       // it says (`palette.ts`).
@@ -770,6 +831,13 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
       // In characters rather than in string offsets: the caret is a column on a screen,
       // and the offset the editor keeps is into a string that can hold more than one
       // code unit per character.
+      //
+      // AND IT IS COUNTED OVER THE VALUES AND NEVER OVER THE ROW ABOVE, which is what let that
+      // row be painted at all. The two summands are the prompt this console was handed and the
+      // text the caller typed — neither of them the composed string — so an escape a renderer
+      // put around either is not a column here. Summing the length of `present` instead is the
+      // one mutation that breaks this, and it is a case rather than a comment
+      // (`tests/the-prompt-is-painted-where-you-type.test.ts`).
       column: [...prompt].length + [...editing.typed.slice(0, editing.at)].length,
       area,
     };
@@ -809,10 +877,14 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * is what lets the same renderer that answers `NO_COLOR` for every report answer it for this
    * too, and what keeps the promise that this module composes nothing a reader sees.
    *
-   * THE FOURTH SITE THAT PUTS THE TWO TOGETHER IS NOT AN ECHO and does not come through here:
-   * the row being TYPED ({@link showing}, `present`) is drawn in the input area, plain, because
-   * the caret is an offset in columns into it. Two places, two shapes, and the difference is
-   * that only one of them has a caret in it.
+   * THE OTHER SITE THAT PUTS THE TWO TOGETHER IS NOT AN ECHO and does not come through here:
+   * the row being TYPED ({@link showing}, `present`). IT SAID THAT ROW WAS *plain, because the
+   * caret is an offset in columns into it*, and the column is counted over the prompt and the
+   * typed text rather than over the row — so the reason was about a string this file never
+   * measured. It is the same {@link echoLine} now, through a renderer of its own
+   * ({@link renderTyped}), which is what makes the prompt under the caller's eyes the one they
+   * read back in the transcript. Two places, one shape, and the difference is that only one of
+   * them has a caret in it — and only one of them is left for the terminal to fold.
    */
   function echoed(typed: string): void {
     land(renderOnTheRoll(echoLine(prompt, typed)));
