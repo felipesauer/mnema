@@ -545,6 +545,16 @@ recorded against the session, once per skill, so the record can later show which
 work was informed by which pattern. It records that the pattern was *read*, never
 that it was followed; nothing observable here can tell those apart.
 
+**All of them, or all of their names.** Asking with no id used to hand over every
+adopted body however many there were — over a record of 40 patterns of the median
+size that is one reply of 146,431 bytes, and 40 consultations recorded for a reader
+that had asked for none of them. So the bodies are weighed against what one read
+costs (20 KiB, the budget the published skills specification puts on activating a
+single pattern), and over that line the reply carries the **names**, says that it did
+and how many there are, and records nothing — a name is not a pattern, and nobody
+consulted text they were not handed. The body of the one that matters is still one
+call by id away, served whole and with no ceiling.
+
 **What arrives by default is what governs.** Asking with no id returns the adopted
 patterns and nothing else, which is the one thing the design protects: a candidate
 handed over unasked would be a candidate read as an instruction. Asking by id also

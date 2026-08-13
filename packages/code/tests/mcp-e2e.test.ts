@@ -1351,6 +1351,7 @@ describe('MCP session + tools — unit', () => {
     // because the same agent proposed, reviewed and adopted the pattern.
     expect(result).toEqual({
       ok: true,
+      served: 'bodies',
       skills: [
         {
           id,
@@ -1450,7 +1451,7 @@ describe('MCP session + tools — unit', () => {
     if (!gone.ok) throw new Error('setup: deprecate refused');
 
     // The list no longer carries it…
-    expect(runSkillsTool(session)).toEqual({ ok: true, skills: [] });
+    expect(runSkillsTool(session)).toEqual({ ok: true, served: 'bodies', skills: [] });
     // …and asking by id says what happened, without the body.
     const refused = runSkillsTool(session, { id });
     expect(refused).toMatchObject({ ok: false, code: 'NOT_SERVED' });
@@ -1654,7 +1655,7 @@ describe('MCP session + tools — unit', () => {
     if (!turnedDown.ok) throw new Error('setup: reject refused');
     const before = digest(sandbox);
 
-    expect(runSkillsTool(session)).toEqual({ ok: true, skills: [] });
+    expect(runSkillsTool(session)).toEqual({ ok: true, served: 'bodies', skills: [] });
     expect(runSkillsTool(session, { id: created.id })).toMatchObject({ ok: false });
     expect(runSkillsTool(session, { id: 'sk-nowhere' })).toMatchObject({ ok: false });
 
@@ -1737,6 +1738,7 @@ describe('MCP session + tools — unit', () => {
 
     expect(result).toEqual({
       ok: true,
+      served: 'bodies',
       skills: [
         {
           id,

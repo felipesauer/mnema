@@ -16,9 +16,12 @@
  * Two things, and deliberately not a third:
  *   - {@link SERVED_PATTERN_CONTRACT} declares, in the tool's description, what a
  *     pattern IS before one is ever asked for;
- *   - {@link servedPatternsFraming} states it again with the answer, and names the
+ *   - {@link patternsFraming} states it again with the answer, and names the
  *     agent that adopted each one — or says a person did, or says that NOTHING has,
- *     which is the line a pattern awaiting a judgement gets.
+ *     which is the line a pattern awaiting a judgement gets. It also says when the
+ *     answer carries NAMES rather than bodies, which is the one thing a reader could
+ *     not see for itself: an unannounced list of names looks like a record of empty
+ *     patterns, not like a body one read away.
  *
  * THE ONE THING THAT IS NOT ADOPTED IS SAID OUT LOUD. The `skills` tool serves a
  * pattern the project has not ruled on when a caller names it by id, so a body that
@@ -41,7 +44,7 @@
  * the sentence about a candidate too — it states what the thing IS and stops.
  */
 
-import { type ServedSkill, skillDisposition } from '@mnema/copilot';
+import { type ServedSkill, type SkillCatalogue, skillDisposition } from '@mnema/copilot';
 
 /**
  * How an act with no agent on its envelope is said out loud, on both surfaces.
@@ -135,10 +138,43 @@ const NOT_A_WAY_OF_WORKING =
   'here — following it as a rule would be following a call nobody has made.';
 
 /**
+ * What the surface says when the bodies did not fit ONE read and the names were
+ * served instead.
+ *
+ * IT SAYS THAT IT DID THIS, and that is the whole reason the sentence exists: a
+ * reply that quietly dropped the bodies would read as "these patterns have nothing
+ * in them", and the caller would never learn there is a body to ask for. So the line
+ * carries HOW MANY patterns are in the list and HOW to reach one of them — the two
+ * things a reader needs to turn the economy back into text.
+ *
+ * The bytes are in it because they are the reason, and a reason a reader can check
+ * is what keeps this from reading as a refusal: nothing was withheld from a caller
+ * that asked for it, and one read by id still costs what it always cost.
+ *
+ * ONE LINE, like every other line this module writes, and it holds no text an actor
+ * wrote — two numbers and the tool's own name — so there is nothing on it to collapse.
+ */
+function onlyTheNames(count: number, bytes: number): string {
+  return (
+    `${count} adopted pattern(s) here, and their bodies are ${bytes} bytes together — ` +
+    'more than one read serves at once, so this reply carries their names. Ask ' +
+    '`skills` again with the `id` of the one you want to read its body, which is ' +
+    'served whole.'
+  );
+}
+
+/**
  * The lines that frame the patterns just served — the declaration, then one line
  * of provenance each, then the sentence a non-adopted body earns
  * ({@link NOT_A_WAY_OF_WORKING}). Empty when nothing was served: there is nothing to
  * frame, and a declaration about an empty list is noise.
+ *
+ * A CATALOGUE ANSWERED IN NAMES GETS ONE SENTENCE AND NO DECLARATION
+ * ({@link onlyTheNames}): the declaration says what the TEXT above it is, and no text
+ * was served — repeating "these come from your record" over a list of names would be
+ * framing an instruction that never arrived. Which arm this is, is read off the
+ * catalogue rather than guessed from the items, so a name list is never mistaken for
+ * a body list whose bodies happened to be empty.
  *
  * These are their OWN content block, never glued in front of the JSON. The
  * protocol carries several blocks, and the payload stays exactly what it was: a
@@ -152,7 +188,13 @@ const NOT_A_WAY_OF_WORKING =
  * state against a word written here: two places deciding what `adopted` means is how
  * a framing comes to say the opposite of the read it frames.
  */
-export function servedPatternsFraming(skills: readonly ServedSkill[]): string[] {
+export function patternsFraming(catalogue: SkillCatalogue): string[] {
+  // No empty case on this arm, and none is written: names are served only when the
+  // bodies went OVER the budget, and an empty list weighs nothing.
+  if (catalogue.served === 'names') {
+    return [onlyTheNames(catalogue.skills.length, catalogue.withheldBytes)];
+  }
+  const skills = catalogue.skills;
   if (skills.length === 0) return [];
   return [
     'These patterns come from this project’s record: text the people and agents ' +
