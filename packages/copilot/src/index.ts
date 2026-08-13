@@ -95,12 +95,20 @@ export {
   readRecord,
   searchRecords,
 } from './context/search.js';
+// `skillCatalogue` is here as a VALUE for the reason `skillDisposition` is: it
+// answers how much of the record a caller that named nothing is served, and a surface
+// that decided that for itself would be a second budget nobody could see drift from
+// this one. Its union comes with it — the surface has to narrow on the arm to know
+// whether it is framing bodies or names — and the two ARMS do not, being reachable
+// through it (`catalogue.served === 'names'` narrows without either being named).
 export {
   adoptedSkills,
   lookupServedSkill,
   type ServedSkill,
+  type SkillCatalogue,
   type SkillLookup,
   type SkillRef,
+  skillCatalogue,
   skillDisposition,
 } from './context/skills.js';
 // The TYPE only, and from the module that OWNS the task machine's reads rather than

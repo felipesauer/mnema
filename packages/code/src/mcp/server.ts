@@ -84,7 +84,7 @@ import {
   replacementNotice,
 } from '../recorded-content.js';
 import { REFERENCE_DIRECTIONS } from '../reference-directions.js';
-import { oneLine, SERVED_PATTERN_CONTRACT, servedPatternsFraming } from '../served-patterns.js';
+import { oneLine, patternsFraming, SERVED_PATTERN_CONTRACT } from '../served-patterns.js';
 import { VERSION } from '../version.js';
 import {
   actionsRequiring,
@@ -976,8 +976,12 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'Read the patterns (skills) recorded here — the reusable recipe, checklist ' +
         'or convention itself, not just its name. ' +
         'Call it with no `id` (an empty argument object) to get every ADOPTED ' +
-        'pattern with its body: those are the ways of working this project and ' +
-        'machine have settled on, and nothing else arrives that way. Call it with an ' +
+        'pattern: those are the ways of working this project and ' +
+        'machine have settled on, and nothing else arrives that way. That answer ' +
+        'carries the BODIES when they fit in one read, and their NAMES when they do ' +
+        'not — it says which it did, and how many there are, so a list of names is ' +
+        'an invitation to ask for the one you need by `id` and never a record of ' +
+        'empty patterns. Call it with an ' +
         '`id` to get that one, which is also how you read a pattern that is still ' +
         '`proposed` or `reviewed` — every item `bootstrap` lists as awaiting a ' +
         'judgement — because a pattern cannot be ruled on without being read. Each ' +
@@ -996,7 +1000,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           .optional()
           .describe(
             'A single skill id to read — the only way to reach one awaiting a ' +
-              'ruling; omitted, every adopted pattern.',
+              'ruling, and the way to a body the mass answer served only the name ' +
+              'of; omitted, every adopted pattern.',
           ),
       },
     },
@@ -1012,16 +1017,19 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      // Serving a pattern RECORDS a consultation, so this read is also a write —
-      // and the one report a write must never swallow is what it replaced. The
-      // agent name rides on that fact's envelope like any other, so if it held a
-      // credential this reply is where the caller can still rotate it.
+      // Serving a BODY records a consultation, so this read is also a write — and the
+      // one report a write must never swallow is what it replaced. The agent name
+      // rides on that fact's envelope like any other, so if it held a credential this
+      // reply is where the caller can still rotate it. (An answer of names served no
+      // body and wrote nothing, so there is nothing for this to report — it is empty
+      // rather than skipped, which is one branch fewer to get wrong.)
       const notice = replacementNotice(result.replaced);
-      // The payload FIRST, then the framing, then the notice. The bodies are the
+      // The payload FIRST, then the framing, then the notice. The patterns are the
       // answer; the framing is a statement about the answer (what a pattern is, who
-      // adopted each one, and what a pattern nobody adopted is), and it travels as its
-      // own block so the payload stays parseable on its own.
-      const framing = servedPatternsFraming(result.skills);
+      // adopted each one, what a pattern nobody adopted is, and whether the bodies
+      // fit in this read at all), and it travels as its own block so the payload
+      // stays parseable on its own.
+      const framing = patternsFraming(result);
       return {
         content: [
           { type: 'text', text: JSON.stringify(result.skills, null, 2) },

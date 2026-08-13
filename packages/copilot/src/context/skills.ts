@@ -25,6 +25,13 @@
  * waiting ones. The split is not ours: a prompt or model registry serves the
  * production label by default and a candidate only to whoever names the version.
  *
+ * AND THE MASS READ HAS A CEILING, which is the other thing a caller that names
+ * nothing gets. {@link skillCatalogue} weighs the bodies against one read's budget and
+ * answers either all of them or all the NAMES — never a chosen subset. The premise
+ * that fell is that the list asked with no id costs whatever the record happens to
+ * hold; what falsified it is a measurement (40 median patterns came back at 146,431 B,
+ * and recorded 40 consultations for a reader that had asked for none of them).
+ *
  * THE PREMISE THIS FALSIFIES was written here, and the falsification is the reason
  * the rule moved. This module used to say "AND NO READ OF THE AGENT'S SURFACE SERVES
  * ONE OF THOSE BODIES", and read the refusal as protecting the body. It protected
@@ -270,6 +277,11 @@ export type SkillLookup =
  * The state is the BUCKET each row was read under, not a second reading of the
  * projection — the same thing {@link skillsAwaitingJudgement} does, for the same
  * reason: the indexed read already knows the answer.
+ *
+ * IT ANSWERS WITH EVERY BODY AND THAT IS NOT WHAT A SURFACE SERVES. How much a
+ * caller that named nothing is handed is {@link skillCatalogue}'s question, asked of
+ * this list: this one says WHICH patterns govern, that one says whether their bodies
+ * fit in a single read. Two questions, and the one place each is answered.
  */
 export function adoptedSkills(caches: readonly ProjectionCache[]): ServedSkill[] {
   const all: ServedSkill[] = [];
@@ -279,6 +291,93 @@ export function adoptedSkills(caches: readonly ProjectionCache[]): ServedSkill[]
     }
   }
   return all.sort(byNameThenId);
+}
+
+/**
+ * The bytes ONE mass read may spend on bodies — and the number is DERIVED, not
+ * picked.
+ *
+ * It is what the skills specification published outside this project budgets for ONE
+ * activation of ONE pattern: "Instructions (< 5000 tokens recommended)", the whole of
+ * a `SKILL.md` loaded when that skill is activated. At the four-characters-per-token
+ * ratio that is ~20,000 bytes, taken here as 20 KiB. The rule it encodes: serving N
+ * bodies to a caller that named NONE must not cost more than the market spends
+ * serving the one a caller DID name — otherwise the mass read is strictly worse than
+ * the N reads by id this module already answers, and the cheapest thing an agent
+ * could do with it is never call it.
+ *
+ * WHAT IT WEIGHS IS THE BODIES and not the whole answer, because the ids and the
+ * names are served either way: the bodies are exactly what the two arms of
+ * {@link skillCatalogue} differ by. The byte is the same byte the content door
+ * measures on the way IN (`Buffer.byteLength`, `core`'s `screen.ts`) — one product,
+ * one meaning for a byte.
+ *
+ * It is not a knob, and no option reaches it: a ceiling a caller can raise is a
+ * ceiling every caller raises, and what would be left is documentation of a default
+ * nobody runs. It is written ONCE, here — a second copy of the number anywhere in the
+ * workspace is what `the-bodies-fit-one-read.test.ts` accuses.
+ */
+const BODY_BUDGET = 20 * 1024;
+
+/**
+ * What a caller that named NO id is served: every body, or every name.
+ *
+ * Two arms and no third, which is the decision rather than a shape: serving "the K
+ * that fit" would mean choosing WHICH, and a cut with no criterion is worse than the
+ * list of names — the caller cannot see what was left out, and the consultation
+ * recorded for the ones that made it would assert that a subset nobody chose informed
+ * the work.
+ */
+export type SkillCatalogue =
+  /** Under budget: the bodies, exactly as {@link adoptedSkills} answered them. */
+  | { readonly served: 'bodies'; readonly skills: readonly ServedSkill[] }
+  /**
+   * Over budget: the same patterns BY NAME, and the bytes of the bodies that were
+   * weighed and not served — the number that says why this arm was taken, and the
+   * one a surface can put in the sentence it frames the names with.
+   */
+  | {
+      readonly served: 'names';
+      readonly skills: readonly SkillRef[];
+      readonly withheldBytes: number;
+    };
+
+/**
+ * The patterns a caller that named none is served: every body when they fit in
+ * {@link BODY_BUDGET} together, and every NAME when they do not.
+ *
+ * WHAT IT FALLS BACK TO IS A LAYER THAT ALREADY EXISTS. The names are what the
+ * opening context and the committed brief have always carried ({@link bootstrap},
+ * `brief`: id and name, never the body), so a caller over budget gets no new shape
+ * to handle — it gets the index, and the body stays one read by id away, where it is
+ * served whole and with no ceiling at all.
+ *
+ * THE PREMISE THIS FALSIFIES was that a mass read costs what the record happens to
+ * hold. Measured against a project with 40 adopted patterns of the market's MEDIAN
+ * size (3,427 B), the answer came back at 146,431 B — 24.8× the opening context over
+ * the same patterns, and ~18% of a 200k-token window in one call. The cost was never
+ * the whole of it: that call also recorded 40 consultations, so the record asserted
+ * that forty patterns informed work an agent had read two of. Serving names records
+ * nothing, which is what makes `skill.consulted` true again.
+ *
+ * A single body over the budget takes the names arm too, and that is the rule
+ * working rather than an edge: the content door lets a 64 KiB body IN, and a caller
+ * that never named it is the caller this ceiling is for.
+ *
+ * The bodies are dropped by MAPPING and not by typing — a `ServedSkill` satisfies
+ * `SkillRef`, so handing the list straight across would compile and carry every
+ * pattern's whole text at run time. The same drop, for the same reason, as the
+ * committed brief's.
+ */
+export function skillCatalogue(skills: readonly ServedSkill[]): SkillCatalogue {
+  let bytes = 0;
+  for (const skill of skills) bytes += Buffer.byteLength(skill.body, 'utf8');
+  if (bytes <= BODY_BUDGET) return { served: 'bodies', skills };
+  return {
+    served: 'names',
+    skills: skills.map(({ id, name }) => ({ id, name })),
+    withheldBytes: bytes,
+  };
 }
 
 /**

@@ -1351,6 +1351,7 @@ describe('MCP session + tools — unit', () => {
     // because the same agent proposed, reviewed and adopted the pattern.
     expect(result).toEqual({
       ok: true,
+      served: 'bodies',
       skills: [
         {
           id,
@@ -1450,7 +1451,7 @@ describe('MCP session + tools — unit', () => {
     if (!gone.ok) throw new Error('setup: deprecate refused');
 
     // The list no longer carries it…
-    expect(runSkillsTool(session)).toEqual({ ok: true, skills: [] });
+    expect(runSkillsTool(session)).toEqual({ ok: true, served: 'bodies', skills: [] });
     // …and asking by id says what happened, without the body.
     const refused = runSkillsTool(session, { id });
     expect(refused).toMatchObject({ ok: false, code: 'NOT_SERVED' });
@@ -1534,6 +1535,11 @@ describe('MCP session + tools — unit', () => {
     // one half of the old rule that was ever protecting anything.
     expect(result.ok).toBe(true);
     if (!result.ok) return;
+    // THE ARM IS PINNED, and it is not decoration: the two assertions below prove an
+    // absence, and an answer that served only NAMES would satisfy them without
+    // serving anything at all. This record is small on purpose — one one-line body —
+    // so the case keeps testing the rule it names rather than the ceiling next door.
+    expect(result.served).toBe('bodies');
     expect(result.skills.map((s) => s.id)).toEqual([live]);
     const serialized = JSON.stringify(result);
     expect(serialized).not.toContain('the proposed way');
@@ -1654,7 +1660,7 @@ describe('MCP session + tools — unit', () => {
     if (!turnedDown.ok) throw new Error('setup: reject refused');
     const before = digest(sandbox);
 
-    expect(runSkillsTool(session)).toEqual({ ok: true, skills: [] });
+    expect(runSkillsTool(session)).toEqual({ ok: true, served: 'bodies', skills: [] });
     expect(runSkillsTool(session, { id: created.id })).toMatchObject({ ok: false });
     expect(runSkillsTool(session, { id: 'sk-nowhere' })).toMatchObject({ ok: false });
 
@@ -1737,6 +1743,7 @@ describe('MCP session + tools — unit', () => {
 
     expect(result).toEqual({
       ok: true,
+      served: 'bodies',
       skills: [
         {
           id,
