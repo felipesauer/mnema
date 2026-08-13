@@ -1020,7 +1020,7 @@ $ mnema status --actor <anchor> --json
 |       "startedAt": "<at:24>",
 |       "goal": "read the record back",
 |       "thisSession": false,
-|       "ageSeconds": 0
+|       "ageSeconds": <seconds>
 |     },
 |     "focus": {
 |       "actor": "<anchor>",
@@ -1033,7 +1033,7 @@ $ mnema status --actor <anchor> --json
 |           "startedAt": "<at:24>",
 |           "goal": "read the record back",
 |           "thisSession": false,
-|           "ageSeconds": 0
+|           "ageSeconds": <seconds>
 |         }
 |       ]
 |     }
@@ -1094,7 +1094,7 @@ $ mnema focus --actor <anchor> --json
 |       "startedAt": "<at:24>",
 |       "goal": "read the record back",
 |       "thisSession": false,
-|       "ageSeconds": 0
+|       "ageSeconds": <seconds>
 |     }
 |   ]
 | }
@@ -1112,7 +1112,7 @@ $ mnema resume --actor <anchor> --json
 |     "startedAt": "<at:24>",
 |     "goal": "read the record back",
 |     "thisSession": false,
-|     "ageSeconds": 0
+|     "ageSeconds": <seconds>
 |   },
 |   "focus": {
 |     "actor": "<anchor>",
@@ -1125,7 +1125,7 @@ $ mnema resume --actor <anchor> --json
 |         "startedAt": "<at:24>",
 |         "goal": "read the record back",
 |         "thisSession": false,
-|         "ageSeconds": 0
+|         "ageSeconds": <seconds>
 |       }
 |     ]
 |   }
