@@ -361,7 +361,12 @@ describe('tab offers what the session runs, over the real tree', () => {
     // palette draws its second column from and is asserted where the palette is
     // (`tests/a-palette-for-the-words.test.ts`).
     const hits = complete('')[0].map((hit) => hit.word);
-    expect(hits).toEqual([...offered, ...SESSION_WORDS].sort());
+    // AND IN THE ORDER A CALLER READS THEM IN: the verbs of this product first, the words the
+    // session answers to itself after them, each group by its own spelling. It said
+    // `[...offered, ...SESSION_WORDS].sort()`, which is one comparison over the whole set —
+    // and a slash sorts ahead of every letter, so that put the session's word at the head of a
+    // list whose first four rows are all a caller sees (`src/repl/complete.ts`, `theOrder`).
+    expect(hits).toEqual([...[...offered].sort(), ...[...SESSION_WORDS].sort()]);
     for (const write of verbsThat('mutates')) expect(hits, write).not.toContain(write);
     // A LINE DOES NOT START WITH AN ID, so the top level offers none however many the
     // session has named.

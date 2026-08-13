@@ -101,6 +101,13 @@ export function completerFor(
   // run is a question about declarations and not about prose; what each of those verbs is
   // comes from the tree, which read it off the same declaration `--help` prints. A verb
   // the tree does not describe is offered undescribed rather than dropped.
+  //
+  // WHAT ORDER THEY COME OUT IN IS NOT THIS LINE'S, however it reads. The two vocabularies
+  // arrive as a SET, and where each word of them sorts is decided once, for every level, by
+  // the one comparator ({@link theOrder}) — so this says which words there are and never
+  // which of them a caller reads first. Reading the order off the concatenation as well
+  // would be two readings of one rule, and the day they disagreed the answer would depend on
+  // whether anything had been typed yet.
   const describes = new Map(root.commands.map((child) => [child.word, child.description]));
   const top: readonly CompletionWord[] = [
     ...offered.map((word) => ({ word, description: describes.get(word) ?? '' })),
@@ -195,9 +202,14 @@ function theStem(word: string): string {
  *
  * Sorted because the order a Tab shows is the order a reader scans, and the tree's own
  * order is the order the HELP lists — which puts the writes first and is exactly the
- * wrong shape for a menu that holds none of them. Sorted BY THE WORD and by nothing
- * else, in the order a string comparison gives, which is the order the bare tokens came
- * out in before they carried a description.
+ * wrong shape for a menu that holds none of them. In WHAT order is {@link theOrder}'s and
+ * nothing here has a second opinion about it.
+ *
+ * IT SAID *by the word and by nothing else, in the order a string comparison gives*, and
+ * that is the sentence the ceiling falsified: the list draws four offers whatever the
+ * screen has (`palette.ts`, `AT_MOST`), and a string comparison puts every word of the
+ * session ahead of every verb — so one of the four went to a word that is not a verb, and
+ * how many verbs a caller could see moved with the filter they had typed.
  *
  * The first spelling of a repeated word wins, which is what keeps a described one from
  * being shadowed by the same word offered again from somewhere with nothing to say.
@@ -218,7 +230,55 @@ function matching(
     if (!reading(candidate.word).startsWith(wanted)) continue;
     if (!found.has(candidate.word)) found.set(candidate.word, candidate);
   }
-  return [...found.values()].sort((one, other) =>
-    one.word < other.word ? -1 : one.word > other.word ? 1 : 0,
-  );
+  return [...found.values()].sort(theOrder);
+}
+
+/** Where a verb of this product sorts: ahead of everything the session answers to itself. */
+const A_VERB = 0;
+
+/** And where a word of the session sorts: after every verb, whatever its spelling. */
+const A_WORD_OF_THE_SESSION = 1;
+
+/**
+ * WHICH OF THE TWO VOCABULARIES A WORD IS OF, read off the PREFIX — the one thing that tells
+ * them apart, and the same character {@link theStem} takes off the front (`session-words.ts`).
+ *
+ * A verb of this product cannot begin with it and a word of the session cannot be without it,
+ * so this is a total question with no third answer rather than a guess about a spelling.
+ */
+function whichVocabulary(word: string): number {
+  return word.startsWith(PREFIX) ? A_WORD_OF_THE_SESSION : A_VERB;
+}
+
+/**
+ * WHERE ONE OFFER SORTS AGAINST ANOTHER: the verbs of this product first, the words the
+ * session answers to itself after them, and by the spelling inside each of the two.
+ *
+ * THE LIST HAS A CEILING AND THAT IS WHY THE ORDER IS A DECISION rather than a convention.
+ * Four offers are drawn whatever the screen has room for (`palette.ts`, `AT_MOST`), so the
+ * first four words of this order are the four a caller reads — and a slash sorts before every
+ * letter there is, which put the session's own word at the head of the list every time it was
+ * in it. A caller who typed a bare slash saw three verbs and a word of the session; a caller
+ * who typed a letter that narrows the session's word away saw four verbs. The list changed
+ * SIZE with the filter, in the only unit a reader is counting.
+ *
+ * SO THE VERBS GO FIRST AND THE COUNT STOPS MOVING: four verbs under every filter, and the
+ * list is the same height under all of them. The two other ways out bought one of those and
+ * not the other — reading the session's word by its stem, so it sorts among the letters, still
+ * spends one of the four wherever it lands; drawing it outside the four is a row more, so the
+ * height moves with what was typed.
+ *
+ * IT IS NOT A DEMOTION, AND THE WORD IS AS REACHABLE AS IT WAS: the arrows walk the whole
+ * vocabulary rather than the drawn rows (`palette.ts`, `theNextPicked`), and the letter that
+ * narrows to it puts it on the page with nothing above it. Leaving the first row is not
+ * leaving the list.
+ *
+ * THE ORDER INSIDE EACH GROUP IS THE ONE IT ALWAYS WAS — a string comparison, which is the
+ * order the bare tokens came out in before they carried a description. What moved is the order
+ * BETWEEN the two vocabularies, and nothing else did.
+ */
+function theOrder(one: CompletionWord, other: CompletionWord): number {
+  const group = whichVocabulary(one.word) - whichVocabulary(other.word);
+  if (group !== 0) return group;
+  return one.word < other.word ? -1 : one.word > other.word ? 1 : 0;
 }

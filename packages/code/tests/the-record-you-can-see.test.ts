@@ -28,8 +28,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
+import { renderPlain } from '../src/presentation/plain.js';
 import { THE_FLOOR } from '../src/repl/floor.js';
 import { CUT } from '../src/repl/palette.js';
+import { pickingTips } from '../src/repl/session.js';
 import { CLEAR } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { ENDS_THE_INPUT } from './support/console.js';
@@ -620,8 +622,7 @@ describe('what it offers is what the session showed, and never the record', () =
           // WHAT IT WAITS FOR IS A ROW THE LIST REALLY DRAWS. It used to be the description
           // of `search`, and the ceiling put that verb off the page: four offers are drawn
           // now and the rest are counted (`src/repl/palette.ts`, `AT_MOST`). The row that is
-          // always there is the account of the rest, and the word the session answers to
-          // itself sorts first, so both are witnesses that the list is open.
+          // always there is the account of the rest, whichever four words are above it.
           until: (bytes, since) => bytes.slice(since).includes(CUT),
           what: 'offered the words a line starts with',
         },
@@ -634,7 +635,14 @@ describe('what it offers is what the session showed, and never the record', () =
     const screen = theFirstScreenWith(ran.bytes, CUT, columns, rows);
     // The palette is open — the words a line can start with are listed — and no row of it is
     // a record.
-    expect(screen.text, screen.text).toContain(CLEAR);
+    //
+    // WHICH FOUR WORDS ARE DRAWN IS NOT THIS CASE'S BUSINESS, and it used to be: the witness
+    // was the word the session answers to itself, on the argument that it *sorts first*, and
+    // the order stopped putting it there (`src/repl/complete.ts`, `theOrder` — the verbs go
+    // ahead of it, so a list of the whole vocabulary draws four verbs and counts the rest).
+    // What says the palette is open at every order is the palette's OWN row: the keys that
+    // move it, which nothing else on this page draws.
+    expect(screen.text, screen.text).toContain(renderPlain(pickingTips()).trim());
     const listed = screen.rows.filter((row) => row.trimStart().startsWith('019'));
     expect(listed, `the top level offered a record:\n${screen.text}`).toEqual([]);
   }, 240_000);

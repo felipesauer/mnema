@@ -197,10 +197,16 @@ const AN_UNMISTAKABLE_ROW = [...THE_WHOLE_NAME].reduce((widest, row) =>
  */
 function everythingOffered(): readonly CompletionWord[] {
   const built = buildProgram(quiet, [], renderPlain);
+  // IT IS A SET HERE, AND IT USED TO BE SORTED. The cases below ask HOW MANY words there are and
+  // whether a row on a screen names one of them, never which comes first — and the sort was a
+  // reading of the product's order kept in this file, which is a thing to keep in step with a
+  // decision that lives somewhere else (`src/repl/complete.ts`, `theOrder`: the verbs first, the
+  // words the session answers to itself after them). What is asserted about the order is
+  // asserted where the list is (`tests/a-palette-for-the-words.test.ts`).
   return [
     ...verbsOffered(built.verbs, REPL_VERB).map((word) => ({ word, description: '' })),
     ...theSessionsOwnWords(),
-  ].sort((one, other) => (one.word < other.word ? -1 : one.word > other.word ? 1 : 0));
+  ];
 }
 
 /** The page a session opened at a size drew, as a screen. */
