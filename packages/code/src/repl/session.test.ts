@@ -198,7 +198,13 @@ describe('tab offers what the session runs', () => {
 
   it('offers the reads and the session’s own words, and not one write', () => {
     const hits = wordsOf('');
-    expect(hits).toEqual([...SESSION_WORDS, 'look', 'read'].sort());
+    // THE VERBS FIRST AND THE SESSION'S OWN WORDS AFTER THEM, which is what a string
+    // comparison over the whole set stopped saying: a slash sorts ahead of every letter, so
+    // this used to read `[...SESSION_WORDS, 'look', 'read'].sort()` and the word of the
+    // session came out at the head. Why the order is a decision rather than a convention is
+    // where the order is decided (`complete.ts`, `theOrder`), and what it buys a reader is
+    // asserted against the drawn rows (`tests/a-palette-for-the-words.test.ts`).
+    expect(hits).toEqual(['look', 'read', ...SESSION_WORDS]);
     // Named rather than implied: the write is what a menu must not carry, because a
     // word offered by Tab and refused by the next line is the surface contradicting
     // itself in two keystrokes. And `help` — commander's own implicit command — is
@@ -219,7 +225,7 @@ describe('tab offers what the session runs', () => {
     // and a slash with a letter behind it narrows by that letter — over the session's own
     // words AND over the verbs, which is what makes the list the slash opens the list of
     // everything that can be typed rather than a menu of three words.
-    expect(wordsOf(PREFIX)).toEqual([...SESSION_WORDS, 'look', 'read'].sort());
+    expect(wordsOf(PREFIX)).toEqual(['look', 'read', ...SESSION_WORDS]);
     expect(wordsOf(`${PREFIX}l`)).toEqual(['look']);
     expect(wordsOf(`${PREFIX}c`)).toEqual([CLEAR]);
     // AND THE WORD IT ANSWERS ABOUT IS THE WHOLE OF WHAT WAS TYPED, slash included: that
@@ -288,9 +294,7 @@ describe('tab finishes a record the session has already named', () => {
     expect(under).toEqual([SECOND, FIRST]);
     // A LINE DOES NOT START WITH A RECORD. The top level is what this session RUNS, and
     // an id is in no declaration and answers to nothing.
-    expect(complete('')[0].map((hit) => hit.word)).toEqual(
-      [...SESSION_WORDS, 'look', 'read'].sort(),
-    );
+    expect(complete('')[0].map((hit) => hit.word)).toEqual(['look', 'read', ...SESSION_WORDS]);
     expect(complete('019')[0]).toEqual([]);
   });
 

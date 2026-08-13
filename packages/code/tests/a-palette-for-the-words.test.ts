@@ -29,6 +29,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { Command } from 'commander';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo, run } from '../src/cli.js';
 import type { CompletionWord } from '../src/completion/tree.js';
@@ -123,13 +124,26 @@ const NOTHING_IS_CUT = 160;
 const NOTHING_ABOVE_YET = 0;
 
 /**
- * A SENTENCE ONLY THE LIST SAYS, so a screen can be asked whether it is open.
+ * A SENTENCE ONLY THE LIST SAYS, so a screen can be asked whether it is open — for the row that
+ * opened it.
  *
- * Read off the vocabulary rather than retyped: it is what the session says about the word that
- * clears the page, and the day that is reworded this moves with it.
+ * IT WAS THE GLOSS OF THE SESSION'S OWN WORD, one sentence for every case, and the order is what
+ * took that: the verbs sort ahead of it now (`src/repl/complete.ts`, `theOrder`) and the list
+ * draws four, so on a list of the WHOLE vocabulary that sentence is never on the page and a wait
+ * for it is a case that times out with the list open in front of it. Measured: six cases, all of
+ * them opening the list with a Tab.
+ *
+ * SO IT IS ASKED PER ROW, of the same completer the console asks: what the FIRST offer of that
+ * row is, which is a sentence the palette prints and nothing else on the page does. Read rather
+ * than retyped, so it moves the day a description is reworded — and it cannot go stale against
+ * the order, because it is the order's own answer.
  */
-const ONLY_A_LIST_SAYS = theSessionsOwnWords().find((entry) => entry.word === CLEAR)
-  ?.description as string;
+function whatTheListSays(typed: string): string {
+  const first = theCompleter()(typed)[0][0] as CompletionWord;
+  expect(first, `nothing is offered for ${JSON.stringify(typed)}`).toBeDefined();
+  expect(first.description.length, `the first offer for ${typed} says nothing`).toBeGreaterThan(3);
+  return first.description;
+}
 
 // ---------------------------------------------------------------------------
 // The fixture
@@ -185,20 +199,17 @@ afterAll(() => {
  *
  * Read rather than listed, so the cases below are about however many verbs this product
  * has today: the reads it runs, and the words it answers to itself.
+ *
+ * IT COMPOSED THE UNION AND SORTED IT, and that second half was a reading of the product's
+ * order kept here — harmless while the order was a string comparison over one set, and a
+ * fixture that lies the moment the order is a DECISION (`src/repl/complete.ts`, `theOrder`:
+ * the verbs first, the session's own words after them). Every case below that reads the
+ * first offer, or the fifth, would then be about a list this product does not compose. So
+ * the vocabulary is ASKED of the completer on an empty row, which is the same question a
+ * caller's key asks, and there is nothing here for the product to disagree with.
  */
 function everythingOffered(): readonly CompletionWord[] {
-  const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
-  const built = buildProgram(io, [], renderPlain);
-  const offered = verbsOffered(built.verbs, REPL_VERB);
-  const described = new Map(
-    (completionTree(built.program).nodes.find((node) => node.path === '')?.commands ?? []).map(
-      (child) => [child.word, child.description] as const,
-    ),
-  );
-  return [
-    ...offered.map((word) => ({ word, description: described.get(word) ?? '' })),
-    ...theSessionsOwnWords(),
-  ].sort((one, other) => (one.word < other.word ? -1 : one.word > other.word ? 1 : 0));
+  return theCompleter()('')[0];
 }
 
 /**
@@ -373,6 +384,26 @@ function saidToBeMissing(rows: readonly string[]): number | undefined {
   if (said === undefined) return undefined;
   const digits = /(\d+)/.exec(said);
   return digits === null ? undefined : Number(digits[1]);
+}
+
+/**
+ * THE WORDS THE LIST REALLY DRAWS, in the order their rows are in — which is what a reader
+ * counts, and not the same thing as what was offered.
+ *
+ * The row that accounts for what had no room is not one of them: it names a number rather than
+ * a word, and it is the one row of the list that begins with the mark that says there is more.
+ * The mark on the picked row IS taken off, so a walk through the list reads the same words at
+ * every position of it.
+ */
+function drawnFor(offers: readonly CompletionWord[], picked: string = NOBODY): string[] {
+  const rows = listIn(rowsFor(offers, paletteRowsFor(offers), NOTHING_IS_CUT, picked));
+  return rows
+    .filter((row) => !row.trimStart().startsWith(CUT))
+    .map((row) => {
+      const bare = row.trimStart();
+      const said = bare.startsWith(PICK) ? bare.slice(PICK.length).trimStart() : bare;
+      return said.split(/\s+/)[0] as string;
+    });
 }
 
 describe('the palette is two columns, and the only thing it cuts is a description', () => {
@@ -611,6 +642,165 @@ describe('the list shows four offers, and the room a terminal has can only make 
     expect(drawn.length - 1).toBeLessThan(atMost());
     expect(saidToBeMissing(drawn)).toBe(offers.length - 1);
   });
+
+  it('is FOUR, which is the number a caller asked for and not a number of ours', () => {
+    // THE NUMBER, WRITTEN DOWN ON PURPOSE, and every other case in this file reads it off the
+    // product instead ({@link atMost}) — deliberately, because a case that retyped it would be
+    // asserting its own arithmetic and would go red for a rewording rather than for a defect.
+    //
+    // IT WAS AN INTERNAL BUDGET AND IT IS A PROMISE NOW. A caller asked for it in as many words
+    // — *only 4 commands rendered on the screen, with the arrows moving through the detail* —
+    // and the delivery that put the verbs ahead of the session's own word was asked for because
+    // FOUR of them were not being drawn. A ceiling nobody pinned can be lowered by an edit that
+    // reads like tuning, and the promise would go with it in silence.
+    //
+    // WHAT LOWERING IT REALLY COSTS TODAY, measured on the whole package with the ceiling at
+    // three: four red, this case and three that name the number for other reasons — two rows of
+    // a real screen at the floor (`tests/the-floor-is-where-the-name-is-drawn.test.ts`, where a
+    // bare slash is asserted to draw four) and the pair of keys that must open the same list.
+    // So the number was not unpinned, and it was nowhere said to be a PROMISE: an incidental
+    // `toBe(4)` inside a case about navigability tells nobody why it may not be three.
+    const WHAT_THE_CALLER_ASKED_FOR = 4;
+    expect(atMost(), 'the ceiling is not what the caller asked for').toBe(
+      WHAT_THE_CALLER_ASKED_FOR,
+    );
+    // AND IT IS ASKED OF THE DRAWN ROWS TOO, because the number that matters is what a reader
+    // counts on the page rather than a constant the module holds.
+    expect(drawnFor(offers), 'the list does not draw four rows of words').toHaveLength(
+      WHAT_THE_CALLER_ASKED_FOR,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The order: the verbs first, and the words of the session after them
+// ---------------------------------------------------------------------------
+
+/**
+ * A DECLARATION OF THIS CASE'S OWN, offered through the product's OWN completer — five verbs
+ * behind one letter, and two more behind another.
+ *
+ * WHY IT IS NOT THE PRODUCT'S VOCABULARY: the question is what a filter does that still leaves
+ * MORE than four verbs, and this product has no such filter today — sixteen verbs, and the
+ * fullest letter (`s`) has exactly four behind it, so every narrowing of the real list is at or
+ * under the ceiling and the only list bigger than four is the whole one. Measured rather than
+ * assumed, and the case that asks it of the real vocabulary is the one above.
+ *
+ * WHAT IS REAL HERE IS EVERYTHING THAT DECIDES: `completerFor` is the product's, the words the
+ * session answers to itself are the product's, and the rows are drawn by the product's palette.
+ * The only thing invented is which verbs a program declares — which is the one thing that
+ * cannot be asserted about a vocabulary that has none.
+ */
+function aVocabularyWithMoreThanFourBehindALetter(): Completer {
+  const program = new Command('tool');
+  const declared = ['call', 'cancel', 'carry', 'case', 'catch', 'dig', 'drop'];
+  for (const word of declared) program.command(word).description(`what ${word} does`);
+  return completerFor(completionTree(program), declared, theSessionsOwnWords(), () => []);
+}
+
+describe('the verbs come first, and the words of the session come after them', () => {
+  const asked = theCompleter();
+  const wordsOf = (offers: readonly CompletionWord[]): readonly string[] =>
+    offers.map((offer) => offer.word);
+
+  it('draws four VERBS on a bare slash, and the session’s own word is not one of them', () => {
+    // THE COMPLAINT, IN THE UNIT IT WAS MADE IN. A slash sorts ahead of every letter, so the
+    // list a bare slash opened drew the session's own word and three verbs — and a caller
+    // reading the page counted the verbs.
+    const offers = offeredBy(PREFIX, [], asked);
+    const drawn = drawnFor(offers);
+    expect(drawn, `the bare slash drew ${drawn.join(', ')}`).toHaveLength(atMost());
+    expect(drawn, 'the session’s own word took one of the four').not.toContain(CLEAR);
+    for (const word of drawn) expect(word.startsWith(PREFIX), word).toBe(false);
+    // NOT VACUOUS IN THE ONE WAY THAT MATTERS: the word is still in the list. What changed is
+    // where it sorts, not whether it is offered — the absence above is about the four ROWS.
+    expect(wordsOf(offers), 'the word left the vocabulary').toContain(CLEAR);
+  });
+
+  it('draws the same four under a filter that leaves more than four verbs', () => {
+    // THE OTHER HALF OF THE COMPLAINT: the number of verbs on the page moved with the filter,
+    // because the filter decided whether the session's own word was competing for a row.
+    const over = aVocabularyWithMoreThanFourBehindALetter();
+    const whole = offeredBy(PREFIX, [], over);
+    const filtered = offeredBy(`${PREFIX}c`, [], over);
+    // The instrument first: the filter really narrows, and what survives it is still more than
+    // the ceiling — so both lists are cut and both are cut at the same place.
+    expect(filtered.length, 'the filter narrowed nothing').toBeLessThan(whole.length);
+    expect(filtered.length, 'the filter leaves no more than the ceiling').toBeGreaterThan(atMost());
+    expect(wordsOf(filtered), 'the filter narrowed the session’s own word away').toContain(CLEAR);
+
+    expect(drawnFor(filtered), 'the filter changed which four are drawn').toEqual(drawnFor(whole));
+    expect(drawnFor(filtered)).toHaveLength(atMost());
+    expect(drawnFor(filtered), 'the session’s own word took one of the four').not.toContain(CLEAR);
+  });
+
+  it('keeps the session’s own word reachable: the arrows arrive at it, and a letter offers it', () => {
+    // LEAVING THE FIRST ROW IS NOT LEAVING THE LIST, which is the whole of what this delivery
+    // had to hold on to. The arrows walk the WHOLE vocabulary rather than the drawn rows, and
+    // what is drawn follows the pick — so the word is one walk away and it is on the page when
+    // the walk reaches it.
+    const offers = offeredBy(PREFIX, [], asked);
+    let picked = NOBODY;
+    for (let step = 0; step < offers.length; step += 1) picked = theNextPicked(offers, picked, 1);
+    expect(picked, 'walking the list to its end did not reach the word').toBe(CLEAR);
+    expect(drawnFor(offers, CLEAR), 'the word is picked and nobody drew it').toContain(CLEAR);
+    // AND IT IS ONE STEP THE OTHER WAY, because it sorts at the end: an Up on a list nobody has
+    // moved through takes the last word there is (`repl/palette.ts`, `theNextPicked`).
+    expect(theNextPicked(offers, NOBODY, -1)).toBe(CLEAR);
+    // AND THE LETTER STILL OFFERS IT, drawn rather than merely offered.
+    const narrowed = offeredBy(CLEAR.slice(0, PREFIX.length + 1), [], asked);
+    expect(wordsOf(narrowed), 'the letter no longer offers the word').toContain(CLEAR);
+    expect(drawnFor(narrowed), 'the letter offers the word without drawing it').toContain(CLEAR);
+    // NOT VACUOUS: the walk really went past the four rows that are drawn.
+    expect(offers.length).toBeGreaterThan(atMost());
+  });
+
+  it('adds up to the whole vocabulary, the session’s own word included', () => {
+    // WHAT THE LIST OWES WHENEVER IT DRAWS A ROW: what it shows plus what it says it left out is
+    // everything there was. The order changed which side of that sum the session's own word is
+    // on, and it may not change the sum — a word that sorted out of the drawn rows and out of
+    // the count would be the list quietly showing fewer.
+    const offers = offeredBy(PREFIX, [], asked);
+    const rows = listIn(rowsFor(offers, paletteRowsFor(offers), NOTHING_IS_CUT));
+    const missing = saidToBeMissing(rows) as number;
+    expect(missing, 'nothing accounted for the words with no room').toBeGreaterThan(0);
+    expect(
+      drawnFor(offers).length + missing,
+      'the drawn and the counted are not all there is',
+    ).toBe(offers.length);
+    // AND THE TOTAL IT IS CHECKED AGAINST HOLDS THE WORD: the sum is over a vocabulary the
+    // session's own word is in, so it is one of the counted rather than one of the vanished.
+    expect(wordsOf(offers), 'the word is not in the vocabulary the sum is over').toContain(CLEAR);
+    expect(drawnFor(offers), 'the word is drawn as well as counted').not.toContain(CLEAR);
+  });
+
+  it('is the same height at two screen heights and under two filters', () => {
+    // THE HEIGHT IS WHAT THE OTHER TWO WAYS OUT WOULD HAVE COST. Drawing the session's own word
+    // BESIDE the four is a row more whenever it matches what was typed, so the list would grow
+    // and shrink under the caller's own keystrokes; this asks the two filters at two heights,
+    // because a claim about height that is made at one size is a claim about that size.
+    const over = aVocabularyWithMoreThanFourBehindALetter();
+    const both = [offeredBy(PREFIX, [], over), offeredBy(`${PREFIX}c`, [], over)];
+    for (const rows of [24, 40]) {
+      const drawn = both.map((offers) => {
+        const room = areaFor({
+          rows,
+          columns: NOTHING_IS_CUT,
+          badge: BADGE_IS,
+          hint: HINT_IS,
+          palette: paletteRowsFor(offers),
+          header: NOTHING_ABOVE_YET,
+        }).palette;
+        return rowsFor(offers, room, NOTHING_IS_CUT).length;
+      });
+      expect(new Set(drawn).size, `at ${rows} rows the filter changed the height`).toBe(1);
+      // The rows of a cut list: the four, the account of the rest, and the keys under them.
+      expect(drawn[0], `at ${rows} rows`).toBe(atMost() + 2);
+    }
+    // NOT VACUOUS: the two lists are two different lists, so the equal heights above are the
+    // ceiling's doing rather than the same question asked twice.
+    expect(both[0]?.length).not.toBe(both[1]?.length);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -664,7 +854,19 @@ describe('the mark says which row is picked, and it is a column of the table', (
     expect(new Set(at(withMark)).size, 'a mark moved the column it is beside').toBe(1);
     expect(at(withMark)).toEqual(at(without));
     // AND THE WORDS DID NOT MOVE EITHER, which is the same statement about the first column.
-    expect(withMark.map((row) => row.indexOf('/'))).toEqual(without.map((row) => row.indexOf('/')));
+    // FOUND BY THE WORD OF EACH ROW, and it used to be found by the slash — which reached one
+    // row, the session's own word, on the order that put it at the head of every list. The verbs
+    // go first now (`src/repl/complete.ts`, `theOrder`), so the four rows of this list are four
+    // verbs and `indexOf('/')` answers −1 on every one of them: the two sides of this comparison
+    // would be equal because neither holds anything, which is a guard that passes affirming
+    // nothing. Each row is asked where ITS word is, so the assertion cannot go empty.
+    const wordAt = (rows: readonly string[]): number[] =>
+      rows.map((row, index) => row.indexOf((shown[index] as CompletionWord).word));
+    expect(
+      wordAt(withMark).every((at) => at > 0),
+      'no row holds the word it is about',
+    ).toBe(true);
+    expect(wordAt(withMark)).toEqual(wordAt(without));
   });
 
   it('is in the TEXT of the row, which is what makes it work with no colour', () => {
@@ -1001,7 +1203,11 @@ describe('a slash and a letter open the list on the screen, and typing narrows i
           until: arrivedSince(`${PROMPT} ${PREFIX}`),
           what: 'typed a bare slash',
         },
-        { types: 'c', until: arrivedSince(ONLY_A_LIST_SAYS), what: 'typed the letter' },
+        {
+          types: 'c',
+          until: arrivedSince(whatTheListSays(`${PREFIX}c`)),
+          what: 'typed the letter',
+        },
         leaves,
       ],
     });
@@ -1053,7 +1259,7 @@ describe('a slash and a letter open the list on the screen, and typing narrows i
         // screen below was read with the un-narrowed list on it: measured red in a whole-suite run
         // under load and green on its own. Narrowing is something GOING, so the wait is the shared
         // instrument's (`support/pty.ts`, `aFrameWithout`).
-        { types: opening, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed them' },
+        { types: opening, until: arrivedSince(whatTheListSays(opening)), what: 'listed them' },
         {
           types: then,
           until: aFrameWithout(PROMPT, gone[0] as string),
@@ -1327,7 +1533,7 @@ describe('the arrows move the mark, and the ends of the list hold', () => {
         // THE KEY THAT OPENS THE WHOLE LIST IS THE TAB, and it is the one that can: a slash
         // needs a letter behind it now, and a letter narrows to the words that start with it.
         // What this case is about is the ENDS of the vocabulary, so it asks for all of it.
-        { types: COMPLETES, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
+        { types: COMPLETES, until: arrivedSince(whatTheListSays('')), what: 'listed the words' },
         { types: MOVES_UP, until: marks(last), what: 'marked the last word' },
         // THE END HOLDS, AND WHAT IS ASSERTED IS AN ABSENCE — so the step waits for a frame
         // rather than for something in one: a Down that wrapped WOULD write a frame, and the
@@ -1365,7 +1571,7 @@ describe('the arrows move the mark, and the ends of the list hold', () => {
     const words = offers.map((offer) => offer.word);
     const steps: Step[] = [
       opens,
-      { types: COMPLETES, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
+      { types: COMPLETES, until: arrivedSince(whatTheListSays('')), what: 'listed the words' },
     ];
     for (const [at, word] of words.entries()) {
       steps.push({ types: MOVES_DOWN, until: marks(word), what: `stepped to ${at + 1}: ${word}` });
@@ -1403,7 +1609,7 @@ describe('the arrows move the mark, and the ends of the list hold', () => {
       rows,
       steps: [
         opens,
-        { types: COMPLETES, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
+        { types: COMPLETES, until: arrivedSince(whatTheListSays('')), what: 'listed the words' },
         { types: MOVES_DOWN, until: marks(first), what: 'marked the first word' },
         { types: MOVES_UP, until: aFrameAfter(PROMPT), what: 'was asked to step past the start' },
         leaves,
@@ -1443,7 +1649,7 @@ describe('Return takes the picked word, and Escape shuts the list', () => {
       rows,
       steps: [
         opens,
-        { types: COMPLETES, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
+        { types: COMPLETES, until: arrivedSince(whatTheListSays('')), what: 'listed the words' },
         { types: MOVES_DOWN, until: marks(first), what: 'marked the first word' },
         { types: '\r', until: arrivedSince(`${PROMPT} ${first}`), what: 'took the word' },
         // AND THE WAIT FOR THE LIST TO HAVE GONE IS THE SHARED INSTRUMENT'S, because spelled out
@@ -1451,7 +1657,7 @@ describe('Return takes the picked word, and Escape shuts the list', () => {
         // whole-suite run and green on its own (`support/pty.ts`, `aFrameWithout`).
         {
           types: SHUTS_THE_LIST,
-          until: aFrameWithout(PROMPT, ONLY_A_LIST_SAYS),
+          until: aFrameWithout(PROMPT, whatTheListSays('')),
           what: 'shut the list',
         },
         leaves,
@@ -1469,7 +1675,7 @@ describe('Return takes the picked word, and Escape shuts the list', () => {
     // AND ESCAPE SHUTS IT AND GIVES THE ROW BACK — the row it was before the list was asked for,
     // which on a row that is nothing but a word of the session is an empty one.
     const shut = at(4);
-    expect(shut.text, 'the list is still open').not.toContain(ONLY_A_LIST_SAYS);
+    expect(shut.text, 'the list is still open').not.toContain(whatTheListSays(''));
     expect(shut.text, 'the row still holds what the pick put there').not.toContain(
       `${PROMPT} ${first}`,
     );
@@ -1496,20 +1702,33 @@ describe('Return takes the picked word, and Escape shuts the list', () => {
     const asked = theCompleter();
     const offers = asked(opening)[0];
     expect(offers.length, 'the letter narrows to one word already').toBeGreaterThan(1);
+    // HOW FAR DOWN THE WORD IS, ASKED OF THE LIST rather than assumed to be one step. It WAS one
+    // step, on an order that put the session's own word at the head of every list it was in; the
+    // verbs go first now (`src/repl/complete.ts`, `theOrder`), so a single Down marks a verb and
+    // this waited out its whole budget for a mark that was two rows below. Every step of the walk
+    // names the word it is stepping onto, so a red here says which row the arrows really reached.
+    const walk = offers.slice(0, offers.findIndex((offer) => offer.word === word) + 1);
+    expect(walk.at(-1)?.word, 'the picked word is not in the list the letter leaves').toBe(word);
     const ran = await inPty({
       columns,
       rows,
       steps: [
         opens,
-        { types: opening, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
-        { types: MOVES_DOWN, until: marks(word), what: 'marked the first word' },
+        { types: opening, until: arrivedSince(whatTheListSays(opening)), what: 'listed the words' },
+        ...walk.map((offer) => ({
+          types: MOVES_DOWN,
+          until: marks(offer.word),
+          what: `stepped onto ${offer.word}`,
+        })),
         { types: then, until: arrivedSince(then), what: 'narrowed the list' },
         { types: '\r', until: arrivedSince(`${PROMPT} ${word}`), what: 'took what was left' },
         leaves,
       ],
     });
-    const narrowed = screenOf(ran.bytes.slice(0, ran.at[3] as number), columns, rows);
-    const taken = screenOf(ran.bytes.slice(0, ran.at[4] as number), columns, rows);
+    /** Where a step ended, counted from the one that opened the list rather than written down. */
+    const after = (step: number): number => ran.at[step + walk.length] as number;
+    const narrowed = screenOf(ran.bytes.slice(0, after(2)), columns, rows);
+    const taken = screenOf(ran.bytes.slice(0, after(3)), columns, rows);
     // THE FILTER LEFT THE PICKED WORD, and the mark is still on it — which is the property the
     // pick being a word rather than a row number buys.
     const listed = rowsNaming(
@@ -1586,7 +1805,7 @@ describe('the mark survives what changes around it', () => {
       rows,
       steps: [
         opens,
-        { types: COMPLETES, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
+        { types: COMPLETES, until: arrivedSince(whatTheListSays('')), what: 'listed the words' },
         { types: MOVES_DOWN, until: marks(first), what: 'marked the first word' },
         {
           resize: { columns: narrower, rows },
@@ -1620,7 +1839,7 @@ describe('the mark survives what changes around it', () => {
     const first = offers[0]?.word as string;
     const walk = (): readonly Step[] => [
       opens,
-      { types: COMPLETES, until: arrivedSince(ONLY_A_LIST_SAYS), what: 'listed the words' },
+      { types: COMPLETES, until: arrivedSince(whatTheListSays('')), what: 'listed the words' },
       { types: MOVES_DOWN, until: marks(first), what: 'marked the first word' },
       leaves,
     ];
@@ -1942,6 +2161,77 @@ describe('the mark that says which row is picked is written in one place', () =>
       readFileSync(join(SRC, 'repl', 'palette.ts'), 'utf-8'),
     ).includes(PICK);
     expect(spelled, 'the mark is typed into the source rather than named').toBe(false);
+  });
+});
+
+/**
+ * Whether a source both HANDLES the offers and puts a list of them in an order.
+ *
+ * The two halves together are the discriminant: `.sort(` alone accuses every module that orders
+ * anything at all (a table of refusal codes, the entries of a directory), and naming the type
+ * alone accuses every module that carries an offer from one place to another. What is looked for
+ * is a source that could answer *which word a caller reads first*.
+ */
+function ordersTheOffers(source: string): boolean {
+  const code = withoutComments(source);
+  return code.includes('CompletionWord') && /\.sort\(/.test(code);
+}
+
+/** Whether a source handles the offers at all — the half that says the scan reached something. */
+function handlesTheOffers(source: string): boolean {
+  return withoutComments(source).includes('CompletionWord');
+}
+
+describe('what order the offers come out in is decided in one place', () => {
+  it('is the module that answers what can be typed, and no other source', () => {
+    // A1, BY THE DISCRIMINANT AND NOT BY A LIST. The order between the two vocabularies is a
+    // decision now (`repl/complete.ts`, `theOrder`) rather than whatever a string comparison
+    // gives, so a second module that ordered offers would be a second answer to *which four
+    // words a caller sees* — and the two would disagree the day either was edited.
+    const ordering = sourcesOf(SRC).filter((file) => ordersTheOffers(readFileSync(file, 'utf-8')));
+    expect(ordering.map((file) => file.slice(SRC.length + 1))).toEqual([
+      join('repl', 'complete.ts'),
+    ]);
+    // The scan reached the surface it is about: several modules handle offers, and only one of
+    // them orders any.
+    expect(
+      sourcesOf(SRC).filter((file) => handlesTheOffers(readFileSync(file, 'utf-8'))).length,
+    ).toBeGreaterThan(4);
+    // AND IT WOULD ACCUSE THE LINE A CAREFUL AUTHOR WOULD WRITE, without accusing a module that
+    // sorts something which is not an offer, or prose about either.
+    expect(ordersTheOffers('const shown: CompletionWord[] = [...offers].sort(byTheWord);')).toBe(
+      true,
+    );
+    expect(
+      ordersTheOffers('export const WORDED: readonly string[] = Object.keys(SAID).sort();'),
+    ).toBe(false);
+    expect(ordersTheOffers('/** a CompletionWord list is .sort(ed) where it is composed. */')).toBe(
+      false,
+    );
+  });
+
+  it('and what it does not reach is a CONCATENATION, which is named rather than left implied', () => {
+    // WHAT THE DISCRIMINANT ABOVE CANNOT SEE: an order that comes from putting one list after
+    // another instead of from sorting. There is one, and it is in the same module — the level
+    // BELOW the top puts the words a declaration says go there ahead of the records this session
+    // has already named (`repl/complete.ts`, the last line of the completer). It is the same
+    // shape as the rule this delivery wrote, arrived at from the other side and never
+    // re-litigated: this product's own words first, the other vocabulary after them.
+    //
+    // IT IS ASSERTED AS BEHAVIOUR rather than trusted to a scan, because that is the only form
+    // that survives the line being rewritten.
+    const tree = new Command('tool');
+    tree.command('look').description('a read').command('inside').description('a level below');
+    const record = '019fe236-3c8b-795a-a517-f5e55bae80de';
+    const under = completerFor(completionTree(tree), ['look'], theSessionsOwnWords(), () => [
+      { word: record, description: 'a record this session named' },
+    ]);
+    const offers = under('look ')[0].map((offer) => offer.word);
+    expect(offers.at(-1), 'a record is not last under a verb').toBe(record);
+    // Not vacuous: something of the declaration's own really is in that list, ahead of it.
+    expect(offers.length, 'the level below the top offered nothing but the record').toBeGreaterThan(
+      1,
+    );
   });
 });
 
