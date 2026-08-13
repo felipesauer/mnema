@@ -1535,6 +1535,11 @@ describe('MCP session + tools — unit', () => {
     // one half of the old rule that was ever protecting anything.
     expect(result.ok).toBe(true);
     if (!result.ok) return;
+    // THE ARM IS PINNED, and it is not decoration: the two assertions below prove an
+    // absence, and an answer that served only NAMES would satisfy them without
+    // serving anything at all. This record is small on purpose — one one-line body —
+    // so the case keeps testing the rule it names rather than the ceiling next door.
+    expect(result.served).toBe('bodies');
     expect(result.skills.map((s) => s.id)).toEqual([live]);
     const serialized = JSON.stringify(result);
     expect(serialized).not.toContain('the proposed way');

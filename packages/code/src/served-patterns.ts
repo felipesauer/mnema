@@ -69,7 +69,9 @@ export const SERVED_PATTERN_CONTRACT =
   'adopted, the agent that adopted it — or ' +
   `“${A_PERSON}” when someone adopted it directly with no agent. A pattern that is ` +
   'not adopted is one the project has not ruled on: it is served so the ruling can ' +
-  'be made on its text, and it is not how the work is done here.';
+  'be made on its text, and it is not how the work is done here. A reply that ' +
+  'carries only NAMES carries none of that: nothing was served to say it about, and ' +
+  'the `id` beside each name is how the pattern itself is asked for.';
 
 /**
  * `text` with every run of whitespace collapsed to one space — what makes a report

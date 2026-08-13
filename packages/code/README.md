@@ -539,8 +539,8 @@ cut never reads as "this is everything". The adopted patterns are the exception:
 every one is listed, so that list carries no total.
 
 The `skills` tool is what makes a recorded pattern usable: `bootstrap` lists the
-patterns by name, and the tool hands over the pattern itself, all the adopted ones
-or one by id. It is the one read that also writes — consulting a pattern is
+patterns by name, and the tool hands over the pattern itself — the adopted ones as a
+set, or one by id. It is the one read that also writes — consulting a pattern is
 recorded against the session, once per skill, so the record can later show which
 work was informed by which pattern. It records that the pattern was *read*, never
 that it was followed; nothing observable here can tell those apart.
