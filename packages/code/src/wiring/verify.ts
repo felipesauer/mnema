@@ -37,7 +37,13 @@
  * over a forged record.
  */
 
-import type { LevelRequirement, ProvenLevel, VerdictClause, VerifyResult } from '@mnema/chain';
+import type {
+  CensusNote,
+  LevelRequirement,
+  ProvenLevel,
+  VerdictClause,
+  VerifyResult,
+} from '@mnema/chain';
 import type { Command } from 'commander';
 import type { TreeReport } from '../commands/verify.js';
 import { fact } from '../presentation/detail.js';
@@ -212,12 +218,42 @@ function report(io: CliIo, render: Render, tree: TreeReport): void {
   }
   // The verdict's own honest clauses, laid out — the CLI never upgrades the guarantee.
   io.out(render(clauseStatement(tree.scope, said(tree.result))));
+  // The census, in the same shape as an issue and on the OTHER stream. Its clause has
+  // said "see census" since the day the notes existed and there was nowhere to see
+  // them: a reader was told a count and left with no way to learn WHICH key, or what
+  // the record says about it. They go to stdout because a note is not a break — it
+  // does not move the verdict and it does not move the exit — and stderr on this
+  // surface is where the evidence for a failure goes.
+  for (const note of tree.result.census) {
+    io.out(
+      render(fact(`census [${note.kind}] ${tree.scope} ${censusLocus(note)}: ${note.detail}`)),
+    );
+  }
   for (const issue of tree.result.issues) {
     io.err(
       render(
         fact(`issue [${issue.layer}] ${tree.scope} ${at(issue.tail, issue.seq)}: ${issue.detail}`),
       ),
     );
+  }
+}
+
+/**
+ * WHERE A CENSUS NOTE POINTS — total over the chain's union by type, so a third kind
+ * of observation does not compile until somebody says what a reader should go and
+ * look at. A note whose locus was guessed from whichever field happened to be there
+ * would send a reader to the wrong file, which is worse than not printing it.
+ *
+ * The two are different things and they name different things: one is about a KEY
+ * with no tail (so it names the fingerprint), the other about a TAIL whose last line
+ * was dropped (so it names the tail).
+ */
+function censusLocus(note: CensusNote): string {
+  switch (note.kind) {
+    case 'key-without-tail':
+      return note.fingerprint;
+    case 'partial-final-line':
+      return note.tail;
   }
 }
 

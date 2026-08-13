@@ -108,6 +108,7 @@ export {
   verifyChain,
   type WitnessStatus,
 } from './chain/verify.js';
+export { type TailStanding, type TailWaiver, tailStanding } from './chain/waiver.js';
 export {
   ChainWriter,
   DEFAULT_CHECKPOINT_EVERY,
@@ -133,6 +134,7 @@ export {
   skillConsulted,
   skillCreated,
   skillTransitioned,
+  tailPruned,
   taskBirth,
   taskCreated,
   taskTransitioned,
@@ -162,6 +164,7 @@ export {
   type SkillConsultedV1,
   type SkillCreatedV1,
   type SkillTransitionedV1,
+  type TailPrunedV1,
   type TaskCreatedV1,
   type TaskTransitionedV1,
   type TransitionFields,

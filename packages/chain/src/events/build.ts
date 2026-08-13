@@ -447,6 +447,33 @@ export function skillConsulted(envelope: EnvelopeInput): CatalogEvent {
 }
 
 /**
+ * Builds a `tail.pruned` event (subject = the ANCHOR the pruned tail spoke for).
+ *
+ * Every field of the payload is a claim ABOUT THE DISK, and none of them is checked
+ * here: a builder shapes an event, and the checking is the write door's
+ * (`unprovenWaiverReason`), which is where the disk is. A caller that assembles
+ * this by hand can therefore build a waiver that lies — and get it refused before
+ * anything is sealed, which is the same division of labour every other builder has
+ * with the reader's own validator.
+ */
+export function tailPruned(
+  envelope: EnvelopeInput,
+  payload: { tail: string; throughHash: string; eventCount: number; reason: string },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'tail.pruned',
+    ...envelopeFields(envelope),
+    payload: {
+      tail: payload.tail,
+      throughHash: payload.throughHash,
+      eventCount: payload.eventCount,
+      reason: payload.reason,
+    },
+  };
+}
+
+/**
  * Builds the pair of events a skill's birth always emits, in order: the
  * `skill.created` that proves it exists, then the birth `skill.transitioned`
  * (`from: null`, `action: "create"`) that establishes its initial state. The two

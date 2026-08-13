@@ -47,7 +47,7 @@ are the honest gaps, and the same external witness closes them:
 | Threat | Covered by |
 |---|---|
 | **Truncating a tail** — dropping the newest events off the end | Partly local. Checkpoints are chained, so dropping an *earlier* checkpoint while keeping a later one breaks the link and is caught (the later one's `prev` no longer resolves). But truncating off the *end* — dropping the last checkpoint and the events above it — leaves a shorter, internally consistent chain that verifies green: the hash chain cannot see events that are no longer there. `verify` already declares the window above the last checkpoint as unsigned (`fullySigned: false`, `uncheckpointedEvents`); end-truncation shrinks that window rather than tripping a break, so it is the residual an external witness closes. The verdict now NAMES how far it got: a shortened chain with some coverage left reads `verified (T1/T2/T4) up to the last checkpoint`, and one whose checkpoints went with the events reads `verified (T1 only) — no signature was checked`. It used to read `verified (T1/T2/T4)` in both cases, which was the sentence claiming a layer that had not run. *(A future direction: a consumer can seal a checkpoint at a meaningful boundary — the end of a run, a batch — so the residual at the points that matter is empty.)* |
-| **Deleting a whole tail** | Partly local. A committed public key is written before its machine's first event and names its tail, so deleting the tail while leaving the key shows up: `verify` crosses `keys/` against the tails present and flags the orphaned key — a signal to look, not a verdict (a key can also outlive its tail innocently). Deleting the tail *and* its key together leaves nothing on disk to cross — only an external witness sees the files that were removed. |
+| **Deleting a whole tail** | Partly local. A committed public key is written before its machine's first event and names its tail, so deleting the tail while leaving the key shows up: `verify` crosses `keys/` against the tails present and flags the orphaned key — a signal to look, not a verdict (a key can also outlive its tail innocently). What that signal could not say, until `tail.pruned` existed, is *which* of its three readings applied. A waiver written **before** the cut — while the tail is still there, so its head hash and event count are checked against the disk — makes the note name the account instead: who authorized it, how many events, through which head. It answers the third reading only; a merge that dropped a tail and a machine that never wrote produce no waiver and read exactly as they always did. Deleting the tail *and* its key together still leaves nothing on disk to cross — only an external witness sees the files that were removed. |
 | **Trusting the signing key's origin** | **Not covered by local crypto.** The fingerprint binding proves *self-consistency* — the key that signed is the one committed — not a tie to any outside identity. Someone who rewrites everything, mints a fresh key, re-signs, and publishes the new public key passes green. The anchor that closes this is the key's provenance in an external witness: a committed public key has a history there. |
 | **Ordering across tails** | Within one tail, ordering is unforgeable — the hash chain fixes it. Across tails, a merged timeline is deterministic but *conventional*: it is not a trusted clock, and each event's `at` is self-declared. An aggregated timeline is a weaker guarantee than the per-tail chain, and reads only as strong as the honesty of the machines that wrote it. |
 
@@ -57,7 +57,12 @@ mean every event is signed: events written after the last checkpoint rest on the
 hash chain alone, and `verify` reports that separately (`fullySigned`). Nor does
 it mean nothing was removed: an orphaned key surfaces as a census note
 (informational, never a failure), but a deletion that erased its own traces does
-not.
+not. A cut that was **authorized in advance** is the one case the note can now
+explain rather than merely flag — and a waiver is neither permission (anyone who
+can write can sign one; it records who did) nor a cure (a tail that is present and
+broken keeps every issue it had). It never touches `ok`, and it covers a whole tail
+only: cutting *part* of one produces the seq gap and the checkpoint cascade it
+always did.
 
 Reading two fields and adding them up is what nobody should have to do, so the
 result also carries the **level** it reached (`level`), and the one-line

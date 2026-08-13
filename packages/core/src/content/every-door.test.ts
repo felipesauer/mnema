@@ -268,7 +268,7 @@ describe('the content door runs at every write point', () => {
  *
  * `which` is the agent that executed a fact, and it is one of the two envelope
  * fields a CALLER supplies — `who` and `signerFp` come from a key, `at` from a
- * clock, and `subject` from a mint on eleven of the sixteen kinds. It is the worst
+ * clock, and `subject` from a mint on most of the kinds there are. It is the worst
  * of them for a credential: it is stamped on EVERY event of a session, so one dirty
  * value is as many disclosures as the session has facts, and over MCP it comes from
  * the client's announced name — nobody types it and nobody reads it.

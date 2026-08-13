@@ -220,6 +220,7 @@ $ mnema brief
 | of working here. The record holds none to hand over.
 $ mnema verify
 | public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; 1 committed key(s) without a tail (see census — informational, not a break); external witness (T3): not covered — enable an anchor or push to a shared remote
+|   census [key-without-tail] public <backup-key-fingerprint>: committed public key has no tail on disk — the tail may have been dropped (a botched merge), never written (an empty tail is not versioned), or removed
 | private: no record here — nothing has been written to this tree on this machine, so there is nothing to rule on
 
 ### a populated project
@@ -1238,6 +1239,7 @@ $ mnema brief
 | - **One slice per PR** · `<skill-slices>`
 $ mnema verify
 | public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; 1 committed key(s) without a tail (see census — informational, not a break); external witness (T3): not covered — enable an anchor or push to a shared remote
+|   census [key-without-tail] public <backup-key-fingerprint>: committed public key has no tail on disk — the tail may have been dropped (a botched merge), never written (an empty tail is not versioned), or removed
 | private: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; external witness (T3): not covered — enable an anchor or push to a shared remote
 
 ### one whole record of each kind

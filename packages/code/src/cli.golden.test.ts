@@ -41,7 +41,7 @@
 
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { memoryCaptured } from '@mnema/chain';
 import { resolveTrees } from '@mnema/core';
 import { openTreeForWriting } from '@mnema/core/write';
@@ -391,10 +391,18 @@ beforeAll(async () => {
   // prefix of the value (a hashed label, say) this substitution would miss it and
   // `assertNothingVolatile` would refuse the transcript rather than pin the lie.
   const short = name(anchor.slice(0, 'mnid:'.length + 8), 'anchor-short');
-  name(
+  const backupKeyPath = name(
     after(initiated, '  backup key: created and enrolled — private half at '),
     'backup-key-path',
   );
+  // The backup key's own fingerprint, which the census names on its own. `init`
+  // commits its public half and that key never writes a tail — it is meant to leave
+  // the machine — so `verify` has counted it as a key without a tail since the day
+  // the note existed. Now that the census SAYS which key, the value reaches the
+  // transcript outside the path it used to hide in, and a second unnamed fingerprint
+  // is what the fixture refuses. Taken from the path rather than looked up, so it
+  // stays a check: a path that stopped ending in the key's name would fail here.
+  name(basename(backupKeyPath, '.key'), 'backup-key-fingerprint');
   await mnema('writes', 'init');
 
   // ── Every read again, now over a project that holds nothing.

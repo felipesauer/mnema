@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { cpSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -20,6 +20,7 @@ import { orderedEvents } from '../projections/order.js';
 import { recordDecision, supersedeDecision } from '../workflow/decision-operations.js';
 import { enrollKey, foundIdentity, revokeKey } from '../workflow/identity-operations.js';
 import { createTask, transitionTask, type WriteContext } from '../workflow/operations.js';
+import { authorizeTailPrune } from '../workflow/prune-operations.js';
 import { endRun, startRun } from '../workflow/session-operations.js';
 import { createSkill, recordConsultation, reviewSkill } from '../workflow/skill-operations.js';
 import {
@@ -66,8 +67,8 @@ import { detectSecrets } from './secrets.js';
  * no marker (nothing poisoned it) and no placeholder (nothing cleaned it). That is
  * what keeps a total guard from becoming total damage.
  *
- * WHAT IS STILL A LIST HERE, said plainly. The DRIVERS are hand-written: sixteen
- * functions that know which operation writes which kind and what a legal setup for
+ * WHAT IS STILL A LIST HERE, said plainly. The DRIVERS are hand-written: one
+ * function per kind, each knowing which operation writes it and what a legal setup for
  * it looks like. That cannot be derived — it is the surface itself — so what is
  * derived instead is the OBLIGATION on each: the totality over kinds is checked
  * against `LATEST_VERSION` at runtime, and the totality over each kind's fields is
@@ -273,7 +274,48 @@ const DRIVERS: { readonly [K in EventKind]: Driver } = {
 
   'skill.consulted': (ctx, text) =>
     recordConsultation(ctx, { skill: text('subject'), which: text('which'), run: text('run') }),
+
+  'tail.pruned': (ctx, text) =>
+    // The only kind whose setup is another MACHINE: a waiver may not name the tail it
+    // is written to, so this puts a second tail in the tree first. Its `tail`,
+    // `throughHash` and subject are all read off that tail by the operation, so the
+    // only value this drives is the reason — and the sweep's other half is what
+    // checks the three it did not touch came through untouched.
+    authorizeTailPrune(ctx, {
+      tail: aSecondTailIn(ctx.layout.root),
+      reason: text('payload.reason'),
+      which: text('which'),
+      run: text('run'),
+    }),
 };
+
+/**
+ * Puts a second machine's tail into a chain root, the way an offline merge does:
+ * write it in a root of its own, then copy the tail directory and the public key
+ * that owns it across. Returns that tail's id.
+ *
+ * It exists because this is the one kind whose write is ABOUT another tail, and the
+ * refusal it would otherwise meet (`TAIL_IS_OWN`) is a rule of the product rather
+ * than an accident of the fixture.
+ */
+function aSecondTailIn(root: string): string {
+  const other = mkdtempSync(join(tmpdir(), 'mnema-field-other-'));
+  try {
+    const ctx: WriteContext = {
+      writer: openChainForWriting(other, { keyRoot: other }),
+      layout: { root: other },
+      upcasters,
+    };
+    landed(createTask(ctx, { title: 'work the other machine did' }));
+    const tail = ctx.writer.tail;
+    cpSync(join(other, 'tails', tail), join(root, 'tails', tail), { recursive: true });
+    const pub = `${ctx.writer.signerFingerprint}.pub`;
+    cpSync(join(other, 'keys', pub), join(root, 'keys', pub));
+    return tail;
+  } finally {
+    rmSync(other, { recursive: true, force: true });
+  }
+}
 
 /** One text leaf of an event, addressed the way the classification is keyed. */
 interface Leaf {
@@ -477,7 +519,7 @@ describe('the envelope’s own text goes through the door on every kind that car
   // are the same two on every kind rather than a property of any one payload — and
   // they are the worst place for a credential, being stamped on every event of a
   // session. They are driven on their own axis for that reason: per kind they would
-  // prove the same thing sixteen times and still say nothing about the surface.
+  // prove the same thing once per kind and still say nothing about the surface.
   const shared = Object.entries(ENVELOPE_TEXT)
     .filter(([, nature]) => nature === 'prose')
     .map(([path]) => path);
