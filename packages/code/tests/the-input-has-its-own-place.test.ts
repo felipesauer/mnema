@@ -249,7 +249,7 @@ describe('the area has forms, and the tallest one that fits is the one drawn', (
     // WHAT THE CARET IS PUT AT. The differences between the forms are what says so: the
     // badge and one rule for the full form, one rule for the ruled one, nothing for the
     // bare one — and the palette's rows are above the typed one in all three.
-    const rows = 40;
+    const rows = THE_FLOOR.rows;
     const full = areaFor({ ...showingEverything, rows });
     const ruled = areaFor({ ...showingEverything, badge: 0, rows });
     const bare = areaFor({ ...showingEverything, rows: 1 });
@@ -285,7 +285,7 @@ describe('the area has forms, and the tallest one that fits is the one drawn', (
 // ---------------------------------------------------------------------------
 
 /** What a console drew, opened on a terminal of a given size and left again. */
-async function openedAt(columns: number, rows = 40): Promise<string> {
+async function openedAt(columns: number, rows = THE_FLOOR.rows): Promise<string> {
   const terminal = fakeTerminal({ columns, rows });
   const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
   const closed = openSession({
@@ -503,7 +503,7 @@ describe('the badge says what the record proved, and the verb that says the rest
   it('carries it on the page too, at the level this record is at', async () => {
     // THE ELO. The case above is about a line; this is about the row a caller looks at,
     // painted by the renderer a terminal gets, over the level THIS record folded to.
-    const terminal = fakeTerminal({ columns: 120, rows: 40 });
+    const terminal = fakeTerminal({ columns: 120, rows: THE_FLOOR.rows });
     const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
     const closed = openSession({
       io,
@@ -665,7 +665,7 @@ describe('the rules are as wide as the terminal, and follow it when it changes',
   // column of the smallest console anybody can open.
   for (const columns of [80, 100, 140]) {
     it(`runs from the first column to column ${columns} of ${columns}`, async () => {
-      const rows = 40;
+      const rows = THE_FLOOR.rows;
       const ran = await inPty({ columns, rows, steps: [opens, leaves] });
       const screen = screenOf(ran.bytes.slice(0, ran.at[0] as number), columns, rows);
       expect(screen.text, `${columns}: the session never opened`).toContain(OPENED);
@@ -696,7 +696,7 @@ describe('the rules are as wide as the terminal, and follow it when it changes',
     // window is too small (`src/repl/floor.ts`, `tests/a-floor-under-the-window.test.ts`), and a
     // page with no input area on it has no rule to measure. It shrinks to the floor's own width
     // instead — still a shrink, still a redraw, and now the narrowest one there is.
-    const rows = 40;
+    const rows = THE_FLOOR.rows;
     const narrower = 80;
     const ran = await inPty({
       columns: 120,
@@ -727,7 +727,7 @@ describe('the rules are as wide as the terminal, and follow it when it changes',
 
 describe('the badge ends on the last column, at whatever width the terminal is', () => {
   it('is aligned to the right rather than put at a column somebody chose', async () => {
-    const rows = 40;
+    const rows = THE_FLOOR.rows;
     const widths = [80, 140];
     const starts: number[] = [];
     for (const columns of widths) {
@@ -756,7 +756,7 @@ describe('the caret is left on the row being typed, under everything drawn over 
     // in the full form, and how many is answered before the layout is reached — so an
     // off-by-one there leaves a caller's caret on a rule.
     const columns = 100;
-    const rows = 40;
+    const rows = THE_FLOOR.rows;
     const typed = 'ver';
     const ran = await inPty({
       columns,
@@ -862,7 +862,7 @@ const _WHERE_IT_WAS_RECORDED = 60;
 const _SHORT_ENOUGH_FOR_THE_BARE_FORM = 3;
 
 describe('every terminal a caller can open gets the whole area', () => {
-  it('draws the rules and the badge at forty rows and at the floor alike', async () => {
+  it('draws the rules and the badge on a roomy window and at the floor alike', async () => {
     // IT WAS A CASE PER FORM AND IT IS A CASE PER HEIGHT, and the floor is what changed it. The
     // second half of this case drove a THREE-ROW terminal and read the bare arrangement off it —
     // no rules, no badge, a prompt and a hint — because every ladder of this surface was total and
@@ -883,7 +883,11 @@ describe('every terminal a caller can open gets the whole area', () => {
       const ran = await inPty({ columns, rows, steps: [opens, leaves] });
       return screenOf(ran.bytes.slice(0, ran.at[0] as number), columns, rows);
     };
-    const full = await drawn(40);
+    // A ROOMY WINDOW, AND IT WAS FORTY ROWS. Forty had room to spare while the floor was
+    // twenty-four rows and is UNDER the floor now (`src/repl/floor.ts`), so a run at forty would
+    // be a run against the screen that says the window is too small — which draws no rules and no
+    // badge, and would have made this half of the comparison pass for the wrong reason.
+    const full = await drawn(THE_FLOOR.rows + 19);
     expect(rulesOn(full), 'the full form has no rules').toHaveLength(3);
     expect(
       full.rows.some((row) => row.includes(MARK)),

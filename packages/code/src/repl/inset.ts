@@ -33,12 +33,26 @@
 /**
  * The blank columns before the bar — the margin proper.
  *
- * TWO, and it is a number somebody chose rather than a measurement, so it is chosen out
- * loud: one column reads as an accident of the terminal and three is a page that has given
- * away four percent of the narrowest window this console draws on. It is what the console
- * this surface is measured against keeps to the left of what it says.
+ * FOUR, and IT WAS TWO. The sentence here read: *one column reads as an accident of the
+ * terminal and three is a page that has given away four percent of the narrowest window this
+ * console draws on*. WHAT FALSIFIED IT IS THE PAGE ITSELF, printed and measured rather than
+ * argued about: at two columns the bar landed on column three, and column three is where the
+ * row under the prompt begins — the hint is an `aside`, so it sits one indent in
+ * (`presentation/plain.ts`, `INDENT`). Two different things had one left edge, and the guide
+ * down the margin was the one that looked like an accident of the terminal. The old sentence
+ * was arithmetic about the width; it was never a reading of what the page shows.
+ *
+ * FOUR IS THAT COLUMN PLUS ONE LEVEL, which is the step this page moves by and the only unit
+ * of horizontal distance it has: the bar clears the hint's edge rather than sitting on it, and
+ * it clears it by the same two columns every indent of this product is worth.
+ *
+ * AND IT COSTS THE PAGE NOTHING AT THE FLOOR, which is the half a number chosen for its looks
+ * would not have. The shortest window this console draws on is eighty columns (`floor.ts`), the
+ * widest thing drawn inside the margin there is the drawing of the name at fifty
+ * (`presentation/banner.ts`), and the margin leaves seventy-four — so the widest row on the
+ * page has twenty-four columns to spare and nothing folds that did not fold before.
  */
-export const BEFORE_THE_BAR = 2;
+export const BEFORE_THE_BAR = 4;
 
 /** The bar's own column. One, because a rule is one glyph wide however tall it is. */
 export const THE_BAR = 1;

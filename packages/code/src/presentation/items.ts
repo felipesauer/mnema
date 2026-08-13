@@ -53,8 +53,13 @@ import type { Line, Part, Severity } from './line.js';
  * sense — every row of that list carries one, padded to the same width, which is what keeps
  * the words under it lined up — and it is in the subset for the reason `state` is: what it
  * needs of its own is a hue the row beside it does not have.
+ *
+ * `word` is the SECOND of that list's columns and the second that no reading records: the
+ * word a caller could type, beside what it does. It is a plain column of the table in every
+ * way that moves a byte — the same two spaces, the same padding — and what it needs of its
+ * own is the same thing `pick` needs, a hue the column beside it does not have.
  */
-export type ColumnRole = 'field' | 'id' | 'when' | 'scope' | 'state' | 'pick';
+export type ColumnRole = 'field' | 'id' | 'when' | 'scope' | 'state' | 'pick' | 'word';
 
 /**
  * One column of a list, with what it is said rather than left to be guessed.
@@ -130,6 +135,29 @@ export function asScope(text: string): Column {
  */
 export function asPick(text: string): Column {
   return { role: 'pick', text };
+}
+
+/**
+ * This column is a WORD A CALLER COULD TYPE — the console's list of what can be typed, and
+ * the second marker here that is not about the record.
+ *
+ * IT IS THE SUBJECT OF ITS ROW, which is the whole of what the marker buys. A row of that
+ * list is a word and a sentence saying what the word does, and at one weight the two compete:
+ * the eye lands in the middle of a table rather than on the thing being chosen between. The
+ * accent the renderer gives this role (`styled.ts`) is what puts it back, and the description
+ * beside it deliberately keeps none — two painted columns is one painted column twice over.
+ *
+ * WHAT IT IS NOT is a hue that says anything. Strip the escapes and the row is the same row,
+ * with the same word in the same column; a reader in a pipe, on a monochrome terminal or with
+ * the paint switched off loses a tint and no information, which is the rule every hue on this
+ * surface is spent under.
+ *
+ * It takes the text the call site composed — the word PADDED to the width of the column — for
+ * the reason {@link asPick} does: what the marker says is what the column IS, never how it is
+ * written.
+ */
+export function asWord(text: string): Column {
+  return { role: 'word', text };
 }
 
 /**

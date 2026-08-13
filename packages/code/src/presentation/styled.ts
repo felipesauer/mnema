@@ -139,6 +139,12 @@ const ACCENT = '\u001b[35m';
  *     the point rather than a duplication to collapse. A caller scrolling a session is
  *     looking for the line they asked, in among the answer to it, and that is the same
  *     thing a reader scanning a log for a refusal is doing.
+ *   - `word` — bare, and the THIRD role that carries a HUE of its own ({@link TINTED_BY}).
+ *     A word a caller could type is the product's own vocabulary offered back rather than a
+ *     fact about the record, so it takes the accent; what it does not take is a weight, for
+ *     the reason the mark does not — a list where four rows are emboldened is four rows
+ *     shouting, and what makes the word the subject of its row is that the description
+ *     beside it is NOT painted.
  */
 const OPENED_BY: { readonly [R in Role]: string } = {
   label: BOLD,
@@ -153,6 +159,7 @@ const OPENED_BY: { readonly [R in Role]: string } = {
   prompt: '',
   typed: BOLD,
   pick: '',
+  word: '',
 };
 
 /**
@@ -162,6 +169,13 @@ const OPENED_BY: { readonly [R in Role]: string } = {
  * Total over {@link Role} by type, exactly like the two tables it sits between, and for
  * the third time the same reason: a role whose hue nobody stated would be painted by
  * whatever a fallback chose.
+ *
+ * IT IS ONE ACCENT ON THREE ROLES, AND THE SENTENCE BELOW SAID *all of them but one*. What
+ * moved is not the count of hues, which is still one: the echo's prompt, the mark on a
+ * picked row and a word in the console's list of words are the three parts of this surface
+ * that are the PRODUCT rather than the record, and every one of them says *this is mnema*.
+ * A fourth hue would be a second meaning; a third bearer of the one accent is the same
+ * meaning said in one more place.
  *
  * IT IS A SECOND TABLE AND NOT A SECOND AXIS. Hue on this surface means one of two
  * things, and they may not meet: how bad the NEWS is, which is the call site's to say and
@@ -192,6 +206,7 @@ const TINTED_BY: { readonly [R in Role]: string } = {
   prompt: ACCENT,
   typed: '',
   pick: ACCENT,
+  word: ACCENT,
 };
 
 /**

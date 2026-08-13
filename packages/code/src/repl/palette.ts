@@ -89,6 +89,15 @@
  * a second model of the pick beside the one that decides it. A part of a line knowing what it
  * is costs the layout nothing.
  *
+ * AND THE WORD ITSELF CARRIES THE ACCENT, which is the second reading of that same argument
+ * and the one a caller asked for out loud: *the verbs in the search should have colour*. A row
+ * here is a word and a sentence about it, and at one weight the row has no subject — the eye
+ * lands in the middle of a table instead of on the thing being chosen between. So the word is a
+ * PART WITH A ROLE (`presentation/items.ts`, `asWord`), the layout goes on knowing nothing about
+ * it, and the description beside it keeps no hue at all: paint both columns and neither is the
+ * subject. It obeys `NO_COLOR` for the reason the mark does — it is a role and not a drawing —
+ * and what a reader without colour loses is the tone, never the word.
+ *
  * THE KEYS THAT MOVE IT ARE SAID UNDER IT, and that is the row this module gained. It arrives
  * composed, like a hint anywhere else on this surface (`session.ts`, `pickingTips`), and it is
  * one of this palette's rows rather than a row of the area: what is counted for the list is
@@ -96,7 +105,7 @@
  */
 
 import type { CompletionWord } from '../completion/tree.js';
-import { asPick, type Column, column, itemLine } from '../presentation/items.js';
+import { asPick, asWord, type Column, column, itemLine } from '../presentation/items.js';
 import type { Line } from '../presentation/line.js';
 import { widthOf } from '../presentation/plain.js';
 import type { Render } from '../presentation/render.js';
@@ -316,27 +325,34 @@ export function theWindow(
  * line* even so, because the completer was already answering that question with the verbs in
  * it. So the answer is ASKED rather than composed, and there is one list.
  *
- * THE LIST OPENS ON THE LETTER AND NOT ON THE BARE SLASH, and the sentence that used to be
- * here is what this delivery took back: *the bare prefix asks what an empty line asks*. It
- * did, and what it produced was every verb of the product on the screen for a keystroke a
- * caller may have typed for any reason — a menu of everything, answering a question nobody had
- * finished asking. A slash ALONE is *what exists*; a slash with a letter behind it is a verb
- * being WRITTEN, and a list of what that verb could still be is an answer to something. So the
- * bare prefix is a character on the row like any other, and what stands on it is whatever a
- * Tab left — which is how a caller who really does want the whole list still gets it, by
- * asking for it.
+ * THE BARE SLASH OPENS THE LIST, AND THE DELIVERY BEFORE THIS ONE CLOSED IT. What was
+ * written here was: *a slash ALONE is what exists; a slash with a letter behind it is a verb
+ * being WRITTEN, and a list of what that verb could still be is an answer to something* — so
+ * the bare prefix was a character on the row like any other, and what stood on it was whatever
+ * a Tab had left. THE PREMISE UNDER IT WAS THAT *what exists* IS NOT A QUESTION, and a caller
+ * looking at the page falsified it: a bar with a slash in it and nothing under it is a reader
+ * asking what there is, and answering that with nothing is answering it wrongly. A menu of
+ * everything was the fear, and the ceiling is what makes it groundless — four rows and an
+ * account of the rest ({@link AT_MOST}), which is a PREVIEW rather than a page.
+ *
+ * IT IS THE SAME LIST AND NOT A SECOND ONE, which is the whole reason this is three words of
+ * code. The bare prefix asks the completer exactly as `/t` does; typing narrows what is already
+ * open, the ceiling is the same ceiling and the arrows are the same arrows. A second list for
+ * the bare slash would be the two-menus defect this module was written to end, arriving from
+ * the other side.
  *
  * WHAT IS ASKED IS THE WHOLE OF WHAT WAS TYPED, slash included, because the completer is where
  * the prefix is understood (`complete.ts`): the slash is a KEY at the start of a line, so `/t`
- * narrows to the verbs beginning with `t` and to any word of the session that does. Nothing is
- * filtered twice, and there is still one list.
+ * narrows to the verbs beginning with `t` and to any word of the session that does, and a slash
+ * with nothing behind it narrows to nothing at all. Nothing is filtered twice, and there is
+ * still one list.
  */
 export function offeredBy(
   typed: string,
   offered: readonly CompletionWord[],
   asked: Completer,
 ): readonly CompletionWord[] {
-  if (!typed.startsWith(PREFIX) || typed === PREFIX) return offered;
+  if (!typed.startsWith(PREFIX)) return offered;
   const [hits] = asked(typed);
   return hits;
 }
@@ -409,10 +425,17 @@ function rowsOf(request: PaletteRequest): readonly Line[] {
   // glyph: an unpicked row is padded to the same width by the same function the words are
   // padded with, which is what keeps the second column lined up down the whole list. A mark
   // added to the picked row alone would move that row three columns right of its neighbours.
+  // THE WORD SAYS WHAT IT IS AND THE SENTENCE BESIDE IT DOES NOT, which is the whole of what
+  // the role buys and the reason it is on one of the two columns. A row of this list is a word
+  // and a description, and at one weight neither is the subject; the word is what a caller is
+  // choosing between, so it carries the role and takes the accent (`presentation/items.ts`,
+  // `asWord`). Painting both would be painting neither. Nothing about the bytes moves: a
+  // `word` joins its neighbour by the same two spaces a bare column does, so the plain
+  // rendering of a row is the one it always had.
   const said = (mark: string | Column, word: string, description: string): Line =>
     description.length === 0
-      ? itemLine([mark, word])
-      : itemLine([mark, column(word, width), description]);
+      ? itemLine([mark, asWord(word)])
+      : itemLine([mark, asWord(column(word, width)), description]);
   /**
    * The mark for one row: the glyph on the picked word, and a blank column on every other.
    *

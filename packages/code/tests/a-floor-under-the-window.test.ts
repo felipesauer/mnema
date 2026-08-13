@@ -250,7 +250,7 @@ const clearsAndLeaves: Step = {
 // The floor is a pair of numbers, and the boundary is searched for
 // ---------------------------------------------------------------------------
 
-describe('the floor is eighty by twenty-four, and it is a function of both measurements', () => {
+describe('the floor is eighty by fifty-one, and it is a function of both measurements', () => {
   it('is walked to rather than written down here', () => {
     // THE THRESHOLD, SEARCHED FOR — the same shape every other form on this surface is pinned by.
     // Nothing here knows what the floor is: the walk asks the question at every size and the
@@ -259,8 +259,14 @@ describe('the floor is eighty by twenty-four, and it is a function of both measu
     while (narrowest < 400 && !theWindowServes(narrowest, THE_FLOOR.rows)) narrowest += 1;
     let shortest = 0;
     while (shortest < 400 && !theWindowServes(THE_FLOOR.columns, shortest)) shortest += 1;
+    // THE PAIR MOVED, AND THE HEIGHT IS THE ONE THAT MOVED. It was twenty-four — the canonical
+    // terminal — and it is fifty-one, which is the height the nine-row drawing of the name is
+    // chosen at (`src/repl/floor.ts`, and the ladder in
+    // `the-floor-is-where-the-name-is-drawn.test.ts`). The two literals are here on purpose: this
+    // is the one case that pins the constant to numbers rather than to itself, so a floor that
+    // moved by accident is red here before it is anywhere else.
     expect(narrowest, 'the narrowest window that serves').toBe(80);
-    expect(shortest, 'the shortest window that serves').toBe(24);
+    expect(shortest, 'the shortest window that serves').toBe(51);
     // AND THE PAIR THE MODULE NAMES IS THE PAIR THE WALK FOUND, which is what keeps the constant
     // from drifting away from the rule that reads it.
     expect([narrowest, shortest]).toEqual([THE_FLOOR.columns, THE_FLOOR.rows]);
@@ -305,10 +311,15 @@ describe('the floor screen says both numbers and names the axis that falls short
     const narrow = floorRowsAt(THE_FLOOR.columns - 1, THE_FLOOR.rows).join('\n');
     const short = floorRowsAt(THE_FLOOR.columns, THE_FLOOR.rows - 1).join('\n');
     // BOTH NUMBERS, ON BOTH SCREENS: what this window is, and what the console needs.
-    expect(narrow, 'the window it is drawn on is not on it').toContain('79x24');
-    expect(narrow, 'what the console needs is not on it').toContain('80x24');
-    expect(short, 'the window it is drawn on is not on it').toContain('80x23');
-    expect(short, 'what the console needs is not on it').toContain('80x24');
+    const floor = `${THE_FLOOR.columns}x${THE_FLOOR.rows}`;
+    expect(narrow, 'the window it is drawn on is not on it').toContain(
+      `${THE_FLOOR.columns - 1}x${THE_FLOOR.rows}`,
+    );
+    expect(narrow, 'what the console needs is not on it').toContain(floor);
+    expect(short, 'the window it is drawn on is not on it').toContain(
+      `${THE_FLOOR.columns}x${THE_FLOOR.rows - 1}`,
+    );
+    expect(short, 'what the console needs is not on it').toContain(floor);
     // AND THE AXIS: one of them, and only the one that is short.
     expect(narrow, 'the axis that falls short is not named').toContain('1 column short');
     expect(narrow, 'it named the axis that is not short').not.toContain('row short');
@@ -319,11 +330,21 @@ describe('the floor screen says both numbers and names the axis that falls short
   it('names both when a window is short both ways, and counts in the number’s own form', () => {
     const corner = floorRowsAt(40, 10).join('\n');
     expect(corner, 'the window it is drawn on is not on it').toContain('40x10');
-    expect(corner, 'both axes are not named').toContain('40 columns and 14 rows short');
+    expect(corner, 'both axes are not named').toContain(
+      `${THE_FLOOR.columns - 40} columns and ${THE_FLOOR.rows - 10} rows short`,
+    );
     // THE PLURAL IS THE NUMBER'S, which is worth one assertion because it is the one thing on
-    // this screen a reader would read as a defect in the product.
-    expect(floorRowsAt(78, 24).join('\n'), 'two columns short').toContain('2 columns short');
-    expect(floorRowsAt(79, 23).join('\n')).toContain('1 column and 1 row short');
+    // this screen a reader would read as a defect in the product. THE OTHER MEASUREMENT IS HELD
+    // AT THE FLOOR in each of these, which the height moving is what forced: a window two
+    // columns short of eighty is short on BOTH axes at any height somebody used to write down,
+    // and a case that named one of them would be asserting half a sentence.
+    expect(
+      floorRowsAt(THE_FLOOR.columns - 2, THE_FLOOR.rows).join('\n'),
+      'two columns short',
+    ).toContain('2 columns short');
+    expect(floorRowsAt(THE_FLOOR.columns - 1, THE_FLOOR.rows - 1).join('\n')).toContain(
+      '1 column and 1 row short',
+    );
   });
 
   it('says the session is still there, which is what makes it a screen and not an error', () => {
@@ -392,7 +413,10 @@ describe('a window under the floor gets the screen, and the window at it gets th
 describe('the floor is crossed in both directions and the session survives it', () => {
   it('shows the screen when the window shrinks and the roll when it grows back', async () => {
     const columns = 100;
-    const rows = 30;
+    // A WINDOW ABOVE THE FLOOR, READ OFF THE FLOOR. It was thirty, which was above twenty-four
+    // and is under fifty-one — so a number written down here would open this case on the very
+    // screen it exists to cross INTO.
+    const rows = THE_FLOOR.rows;
     const ran = await inPty({
       columns,
       rows,
@@ -443,7 +467,10 @@ describe('the floor is crossed in both directions and the session survives it', 
     // every tree and the key material on the machine (`support/the-record-held.ts`).
     const started = held(sandbox);
     const columns = 100;
-    const rows = 30;
+    // A WINDOW ABOVE THE FLOOR, READ OFF THE FLOOR. It was thirty, which was above twenty-four
+    // and is under fifty-one — so a number written down here would open this case on the very
+    // screen it exists to cross INTO.
+    const rows = THE_FLOOR.rows;
     const ran = await inPty({
       columns,
       rows,
@@ -491,7 +518,9 @@ describe('the floor is crossed in both directions and the session survives it', 
     // way to see that is to count the compositions.
     const said = 'a line the session said before the window shrank';
     const composed: [number, number][] = [];
-    const terminal = fakeTerminal({ columns: 100, rows: 30 });
+    // THIRTY ROWS WAS A WINDOW WITH ROOM AND IS A WINDOW UNDER THE FLOOR, so the height is the
+    // floor's: this case has to OPEN above it in order to cross under it.
+    const terminal = fakeTerminal({ columns: 100, rows: THE_FLOOR.rows });
     const page = openConsole({
       stdin: terminal.stdin,
       stdout: terminal.stdout,
@@ -527,7 +556,7 @@ describe('the floor is crossed in both directions and the session survives it', 
 
     // AND THE ROLL COMES BACK WHOLE, without the line being said again: what is looked at is what
     // was written AFTER the floor screen, so a page still carrying the old bytes cannot answer.
-    terminal.resize(100, 30);
+    terminal.resize(100, THE_FLOOR.rows);
     const sinceTheFloor = (): string =>
       terminal.bytes().slice(terminal.bytes().lastIndexOf(THE_HEADING));
     await until(() => withoutLayout(sinceTheFloor()).includes(said), 'drew the roll again');

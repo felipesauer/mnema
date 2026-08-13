@@ -245,14 +245,14 @@ const WHATEVER_THE_HEIGHT = Number.MAX_SAFE_INTEGER;
  * the palette then, so the promise was kept, and the case that held the ban is inverted
  * rather than deleted (`tests/the-input-has-its-own-place.test.ts`).
  *
- * AND IT SAID `\`/\` lists the words`, WHICH IS THE PROMISE THIS DELIVERY TOOK BACK BY
- * HALF. A bare slash is a caller asking what there IS, and the answer to that is every verb
- * of the product at once; a slash with a letter behind it is a verb being written, and the
- * list of what it could still become is an answer to a question somebody asked. So the list
- * opens on the LETTER (`palette.ts`, `offeredBy`), and the clause says both keystrokes
- * because a hint that still said the slash alone listed anything would be the console
- * promising what it no longer does — which is the exact ban this paragraph is about, and it
- * would be the surface breaking it in its own favour.
+ * AND IT SAID `\`/\` and a letter list the words` FOR ONE DELIVERY, AND THE HALF-PROMISE IS
+ * BACK TO BEING A WHOLE ONE. The reasoning for the longer clause was that the list opened on
+ * the LETTER and not on the bare slash, so a hint saying the slash alone listed anything would
+ * promise what the console no longer did — right about the ban, and it was written on a
+ * premise a caller falsified from the page: a bar with a slash in it and nothing under it is
+ * somebody asking what there IS, and nothing is the wrong answer to that. The bare slash opens
+ * the list again (`palette.ts`, `offeredBy`), so the shorter clause is the true one, and the
+ * twelve columns it cost go back to the row.
  *
  * AND THE LAST ONE USED TO NAME `/exit`, AND NOW IT IS THE ONLY WAY OUT THERE IS. It was
  * already the honest half of that pair — the word was a second spelling of the same
@@ -264,7 +264,7 @@ const WHATEVER_THE_HEIGHT = Number.MAX_SAFE_INTEGER;
  * offers the verbs AND the words the session answers to itself, so `Tab for verbs` would
  * be shorter and false.
  */
-const WHAT_THE_SLASH_DOES = `\`${PREFIX}\` and a letter list the words`;
+const WHAT_THE_SLASH_DOES = `\`${PREFIX}\` lists the words`;
 const TAB_COMPLETES = 'Tab completes';
 const HOW_TO_LEAVE = `${THE_KEY_THAT_LEAVES} leaves`;
 
@@ -855,11 +855,11 @@ export function standingLine(where: Standing): readonly Line[] {
  *
  * WHAT IT COSTS IS MEASURED, because this row has a WIDTH rule over it: a hint the terminal
  * would fold is not drawn at all (`area.ts`), so every column it spends is a narrower terminal
- * that loses it. Seventy-four columns before the palette, fifty-three with two words dropped,
- * and SIXTY-FIVE now that the first clause names two keystrokes instead of one — which is a row
- * every window this console draws on keeps, because no page is laid out under eighty columns
- * (`floor.ts`). The twelve columns buy the one thing the shorter clause got wrong: it said the
- * slash alone listed the words, and it does not.
+ * that loses it. Seventy-four columns before the palette, sixty-five while the first clause
+ * named two keystrokes, and FIFTY-THREE now that the slash alone lists the words again — every
+ * one of them a row that every window this console draws on keeps, because no page is laid out
+ * under eighty columns (`floor.ts`). The twelve columns went back for the reason they were
+ * spent: the clause has to be what the console really does, and what it does moved.
  *
  * IT PROMISES NOTHING THAT IS NOT THERE. A row under the prompt is the most believed
  * sentence on the surface, and a hint naming an affordance that does not answer yet would

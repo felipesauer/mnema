@@ -15,6 +15,7 @@
  */
 
 import { PassThrough } from 'node:stream';
+import { THE_FLOOR } from '../../src/repl/floor.js';
 import { decodedWhole } from './arriving.js';
 
 /** One escape byte, written as an escape so no control byte enters a source file. */
@@ -35,9 +36,18 @@ export const ESC = '\u001b';
  */
 export const ENDS_THE_INPUT = '\u0004';
 
-/** How wide and how tall a fake terminal is unless a caller says otherwise. */
+/**
+ * How wide and how tall a fake terminal is unless a caller says otherwise.
+ *
+ * THE HEIGHT WAS FORTY AND IT IS THE FLOOR'S, read off the product rather than written down.
+ * Forty was a number with room to spare while the shortest window this console drew on was
+ * twenty-four; the floor is the height the name is drawn whole at now (`src/repl/floor.ts`),
+ * and a default under it would open every case that does not care about size on the screen
+ * that says the window is too small. Derived rather than retyped, so the day the floor moves
+ * again these cases move with it instead of going quietly wrong.
+ */
 const COLUMNS = 200;
-const ROWS = 40;
+const ROWS = THE_FLOOR.rows;
 
 /** A pair of streams a console will treat as the caller's terminal. */
 export interface FakeTerminal {

@@ -48,6 +48,7 @@ import { buildProgram, type CliIo, run } from '../src/cli.js';
 import { foldedAt } from '../src/presentation/folded.js';
 import { renderPlain, widthOf } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
+import { THE_FLOOR } from '../src/repl/floor.js';
 import { dispositionOf } from '../src/repl/gate.js';
 import { BEFORE_THE_BAR, insideTheMargin, THE_INSET } from '../src/repl/inset.js';
 import { openSession } from '../src/repl/session.js';
@@ -197,7 +198,7 @@ const leaves: Step = leavesTheSession;
  * the same library, the same accent.
  */
 async function drivenHere(typed: readonly string[]): Promise<string> {
-  const terminal = fakeTerminal({ columns: 200, rows: 40 });
+  const terminal = fakeTerminal({ columns: 200, rows: THE_FLOOR.rows });
   const closed = openSession({
     io: quiet,
     renderingAt: () => renderStyled,
@@ -229,7 +230,7 @@ function rowsOf(page: string): string[] {
 describe('the page has three rules, and they are the same drawing in the same hue', () => {
   it('closes the top region with one, and keeps the two the input area sits between', async () => {
     const columns = 100;
-    const rows = 30;
+    const rows = THE_FLOOR.rows;
     const ran = await inPty({ columns, rows, steps: [opens, asks, leaves] });
     const screen = theSettledScreen(ran.bytes, columns, rows, THE_ANSWER);
     const rules = screen.rows.map(isRule);
@@ -285,10 +286,12 @@ describe('the page has three rules, and they are the same drawing in the same hu
 
 describe('the banner ends in a rule and one row of breath', () => {
   it('leaves exactly one blank row between the seam and what the session says', async () => {
-    // AT THE FLOOR, which is where a row costs the most: eighty by twenty-four is the screen
-    // everybody has and the narrowest one this console draws a page on.
-    const columns = 80;
-    const rows = 24;
+    // AT THE FLOOR, which is where a row costs the most: the shortest window this console draws
+    // a page on. IT WAS EIGHTY BY TWENTY-FOUR — the canonical terminal — and it is eighty by
+    // fifty-one, which is the height the name is drawn whole at (`src/repl/floor.ts`). Read off
+    // the floor rather than retyped, so *at the floor* goes on meaning it.
+    const columns = THE_FLOOR.columns;
+    const rows = THE_FLOOR.rows;
     const ran = await inPty({ columns, rows, steps: [opens, asks, leaves] });
     const screen = theSettledScreen(ran.bytes, columns, rows, THE_ANSWER);
     const seam = screen.rows.findIndex(isRule);
@@ -308,8 +311,8 @@ describe('the banner ends in a rule and one row of breath', () => {
     // it is counted where the arrangement's rows are counted (`repl/panel.ts`, `THE_SEAM`), so a
     // window that can no longer afford the drawing it had gets the next one down — never a top
     // region that quietly grew by two.
-    const columns = 80;
-    const rows = 24;
+    const columns = THE_FLOOR.columns;
+    const rows = THE_FLOOR.rows;
     const ran = await inPty({ columns, rows, steps: [opens, asks, leaves] });
     const screen = theSettledScreen(ran.bytes, columns, rows, THE_ANSWER);
     const seam = screen.rows.findIndex(isRule);
@@ -389,7 +392,7 @@ describe('the line a caller sent is told from the answer to it', () => {
     // that owns both directions of it is `one-authority-over-colour.test.ts`; what is asserted
     // here is the ECHO, which is this file's subject.
     const columns = 100;
-    const rows = 30;
+    const rows = THE_FLOOR.rows;
     // AND NOTHING FORCING IT THE OTHER WAY.
     const quietly = { ...environment, NO_COLOR: '1' };
     delete quietly.FORCE_COLOR;
@@ -490,8 +493,8 @@ describe('the tree column stops competing with the title beside it', () => {
 
 describe('the margin takes columns of the page and never a character of a line', () => {
   it('puts every row of the widest answer on the page whole, at the narrowest window', async () => {
-    const columns = 80;
-    const rows = 24;
+    const columns = THE_FLOOR.columns;
+    const rows = THE_FLOOR.rows;
     // THE WIDEST THING THE SESSION SAYS, asked of the product rather than retyped. IT WAS THE
     // TABLE `/help` PRINTED and that word is gone — the list under the prompt answers it, and a
     // list is CUT to the terminal rather than folded by it. What is left that a fold has

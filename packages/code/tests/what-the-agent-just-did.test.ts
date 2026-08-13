@@ -54,6 +54,7 @@ import { type CliIo, run } from '../src/cli.js';
 import { runVerify } from '../src/commands/verify.js';
 import { occurrenceLine } from '../src/presentation/occurrence.js';
 import { renderPlain } from '../src/presentation/plain.js';
+import { THE_FLOOR } from '../src/repl/floor.js';
 import { followingTheRecord } from '../src/repl/following.js';
 import { here } from '../src/wiring/context.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
@@ -91,9 +92,17 @@ const THE_AGENT = 'the-agent-that-wrote-it';
  */
 const THE_VERDICT = 'local integrity verified';
 
-/** How wide and how tall the terminal every case here drives is. */
+/**
+ * How tall the terminal every case here drives is: THE FLOOR'S OWN HEIGHT.
+ *
+ * IT WAS FORTY, which had room to spare while the shortest window this console drew a page on
+ * was twenty-four rows. The floor is fifty-one now — the height the name is drawn whole at
+ * (`src/repl/floor.ts`) — so forty is under it, and a case that opened there would be driving
+ * the screen that says the window is too small. Read off the product rather than retyped, so
+ * the day the floor moves again these cases move with it.
+ */
 const COLUMNS = 140;
-const ROWS = 40;
+const ROWS = THE_FLOOR.rows;
 
 /** What the layout library writes when it takes the caller's history with the page. */
 const _ERASES_THE_HISTORY = '\u001b[3J';
