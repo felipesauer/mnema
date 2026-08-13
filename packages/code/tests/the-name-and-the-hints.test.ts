@@ -344,8 +344,8 @@ async function openedAt(
  * A window tall enough for whatever a case here is really about — THE FLOOR'S OWN HEIGHT.
  *
  * IT WAS FORTY, which was tall while the shortest window this console drew a page on was
- * twenty-four rows. The floor is fifty-one now (`src/repl/floor.ts`), so forty is under it and a
- * session opened there draws no page at all.
+ * twenty-four rows. The floor is forty-two now and it is worked out from the drawing of the name
+ * (`src/repl/floor.ts`), so forty is under it and a session opened there draws no page at all.
  */
 const TALL = THE_FLOOR.rows;
 const _CARRIES_THE_PAGE = `${ESC}[${TALL};1H`;
@@ -674,8 +674,9 @@ describe('the width the banner is chosen at is the terminal’s own', () => {
     );
     // AND THE WIDTH STILL CHOOSES, INSIDE THE MODULE — which is where the ladder is reachable
     // and the reason this case may stop asserting it. Every width above the floor holds the
-    // biggest drawing, because it is fifty columns and the narrowest page is the floor less its
-    // margin; the widths that give it away are all under the floor, where no page is drawn.
+    // biggest drawing, because it is forty-eight columns and the narrowest page is the floor
+    // less its margin; the widths that give it away are all under the floor, where no page is
+    // drawn.
     expect(drawn(THE_FLOOR.columns)).toEqual(drawn(200));
     expect(drawn(40), 'the width chose nothing at all').not.toEqual(drawn(200));
   }, 120_000);
