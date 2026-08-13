@@ -12,7 +12,9 @@ import { statesMeaning } from './disposition.js';
 import {
   adoptedSkills,
   lookupServedSkill,
+  type ServedSkill,
   SKILL_DISPOSITION,
+  skillCatalogue,
   skillDisposition,
   skillsAwaitingJudgement,
 } from './skills.js';
@@ -562,5 +564,85 @@ describe('skillsAwaitingJudgement — the patterns somebody still owes a ruling 
     } finally {
       cache.close();
     }
+  });
+});
+
+describe('skillCatalogue — everything, or every name', () => {
+  /**
+   * An adopted pattern with a body of exactly `bytes` ASCII characters — the shape
+   * `adoptedSkills` answers, since that answer is this function's only input.
+   */
+  const of = (id: string, bytes: number): ServedSkill => ({
+    id,
+    name: `pattern ${id}`,
+    body: 'x'.repeat(bytes),
+    state: 'adopted',
+  });
+
+  it('serves the bodies when they fit in one read', () => {
+    const skills = [of('sk-1', 3427), of('sk-2', 3427)];
+    expect(skillCatalogue(skills)).toEqual({ served: 'bodies', skills });
+  });
+
+  it('serves the NAMES when they do not, and no body travels with them', () => {
+    // Six patterns of the market's median size (3,427 B) — the sixth is what puts
+    // the answer over one read's budget.
+    const skills = Array.from({ length: 6 }, (_, i) => of(`sk-${i}`, 3427));
+
+    const catalogue = skillCatalogue(skills);
+
+    expect(catalogue.served).toBe('names');
+    expect(catalogue.skills).toEqual(skills.map(({ id, name }) => ({ id, name })));
+    // THE ABSENCE, not just the presence of the names: a body reaching this arm is
+    // the whole defect this closes, and an assertion on `id` and `name` alone would
+    // pass with every body still riding along.
+    expect(JSON.stringify(catalogue)).not.toContain('xxx');
+    for (const served of catalogue.skills) {
+      expect(Object.keys(served).sort()).toEqual(['id', 'name']);
+    }
+  });
+
+  it('says how many bytes it weighed, so the reason is checkable', () => {
+    const catalogue = skillCatalogue(Array.from({ length: 6 }, (_, i) => of(`sk-${i}`, 3427)));
+    expect(catalogue.served === 'names' && catalogue.withheldBytes).toBe(6 * 3427);
+  });
+
+  it('is ALL or NAMES — never the ones that would have fit', () => {
+    // A tiny pattern beside a huge one. Serving "the K that fit" would hand over the
+    // small body and leave the caller unable to see what was dropped; the rule is
+    // that the whole answer changes layer, not that it is trimmed.
+    const catalogue = skillCatalogue([of('sk-small', 10), of('sk-huge', 30_000)]);
+    expect(catalogue.served).toBe('names');
+    expect(catalogue.skills.map((s) => s.id)).toEqual(['sk-small', 'sk-huge']);
+    expect(JSON.stringify(catalogue)).not.toContain('xxx');
+  });
+
+  it('draws the line at the budget itself: 20 KiB serves, one byte more does not', () => {
+    // The number is 20 KiB and it is written in ONE place; this case is where a
+    // change to it becomes visible, which is why it names the size rather than
+    // importing it — a test computing the boundary from the constant would pass for
+    // any constant at all.
+    expect(skillCatalogue([of('sk-1', 20 * 1024)]).served).toBe('bodies');
+    expect(skillCatalogue([of('sk-1', 20 * 1024 + 1)]).served).toBe('names');
+  });
+
+  it('weighs BYTES, not characters — a body of multi-byte text is bigger than it looks', () => {
+    // 12,000 characters, well under the budget as a count of characters; three bytes
+    // each in UTF-8, which is 36,000 bytes and over it. The content door measures the
+    // way in with the same ruler.
+    const wide: ServedSkill = {
+      id: 'sk-1',
+      name: 'wide',
+      body: '想'.repeat(12_000),
+      state: 'adopted',
+    };
+    expect(wide.body.length).toBeLessThan(20 * 1024);
+    const catalogue = skillCatalogue([wide]);
+    expect(catalogue.served).toBe('names');
+    expect(catalogue.served === 'names' && catalogue.withheldBytes).toBe(36_000);
+  });
+
+  it('an empty record is served as bodies — there is nothing to weigh', () => {
+    expect(skillCatalogue([])).toEqual({ served: 'bodies', skills: [] });
   });
 });

@@ -80,7 +80,9 @@ import {
   resume,
   type ScopedCache,
   type ServedSkill,
+  type SkillCatalogue,
   searchRecords,
+  skillCatalogue,
   type TimelineEntry,
   timeline,
   type WorkspaceAccountability,
@@ -1107,14 +1109,14 @@ function sessionCaches(session: Session): ProjectionCache[] {
 
 /** The patterns served, or a typed refusal when one was asked for by id. */
 export type SkillsResult =
-  | (Replacement & {
-      readonly ok: true;
-      /**
-       * The patterns served, each with its body and the state it is in. Empty when
-       * the call named no id and nothing is adopted.
-       */
-      readonly skills: readonly ServedSkill[];
-    })
+  /**
+   * The catalogue the copilot decided ({@link SkillCatalogue}), verbatim: `served`
+   * says whether the `skills` on it carry their bodies or are the NAMES of patterns
+   * whose bodies did not fit one read. A caller reads the arm rather than the shape
+   * of the items — which is also what makes a consumer that assumed bodies fail
+   * loudly instead of quietly finding `body` undefined.
+   */
+  | (Replacement & { readonly ok: true } & SkillCatalogue)
   | {
       readonly ok: false;
       /**
@@ -1130,12 +1132,20 @@ export type SkillsResult =
 /**
  * `skills` — serve a pattern's body, and record that it was served.
  *
- * With no argument it returns every ADOPTED pattern with its body; with an `id` it
- * returns that one, and a pattern the project has not ruled on is served THERE and
- * only there. This is the read the `bootstrap` names point at, for both of its
- * lists: the opening context lists the adopted patterns by name and the ones
- * awaiting a judgement by name, and this is where either body comes from once a name
- * turns out to matter.
+ * With no argument it returns every ADOPTED pattern — with their bodies when those
+ * fit in one read, and by NAME when they do not ({@link skillCatalogue}); with an
+ * `id` it returns that one with no ceiling at all, and a pattern the project has not
+ * ruled on is served THERE and only there. This is the read the `bootstrap` names
+ * point at, for both of its lists: the opening context lists the adopted patterns by
+ * name and the ones awaiting a judgement by name, and this is where either body comes
+ * from once a name turns out to matter.
+ *
+ * THE CEILING IS THE COPILOT'S, and it is asked here for the reason the disposition
+ * is asked here: the sentence that frames names is this surface's, the decision that
+ * they are what fits is not. The premise the paragraph above used to state — every
+ * adopted body, however many there are — was falsified by measuring it: 40 patterns
+ * of the market's median size came back at 146,431 B in one call, ~18% of a 200k
+ * window, and recorded 40 consultations against a reader that had named none of them.
  *
  * WHAT IS SERVED IS DECIDED BY DISPOSITION, and not here — `lookupServedSkill`
  * classifies (`SKILL_DISPOSITION` in `@mnema/copilot`), this adapter serves what it
@@ -1185,6 +1195,12 @@ export type SkillsResult =
  * rather than swallowed: a silently unrecorded consultation is exactly the
  * perishable fact this exists to capture, so it is reported like any other
  * refused write.
+ *
+ * A CALL ANSWERED IN NAMES SERVES NOTHING, and it is the same rule and not an
+ * exception to it: a name is not a pattern, and nobody can be said to have consulted
+ * text they were not handed. So the recording is asked over the bodies this call
+ * served — an empty list when the catalogue answered names, which is a question
+ * settled before a run is opened or a cache marked stale.
  *
  * And the converse holds with no branch to keep it holding: a body that IS served
  * goes through {@link recordConsultations} whatever its state, because the recording
@@ -1236,16 +1252,26 @@ export function runSkillsTool(session: Session, input: { id?: string } = {}): Sk
         'project turned down or retired is not served as a way of working',
     };
   }
-  const skills = served === undefined ? adoptedSkills(caches) : [served.skill];
+  // The bifurcation, and the ceiling ON ONE SIDE of it: a caller that named an id is
+  // served that body whatever it weighs — it asked for exactly this one, and what a
+  // body may weigh at all was settled on the way in, by the content door. A caller
+  // that named nothing gets what fits.
+  const catalogue: SkillCatalogue =
+    served === undefined
+      ? skillCatalogue(adoptedSkills(caches))
+      : { served: 'bodies', skills: [served.skill] };
 
-  const recorded = recordConsultations(session, skills);
+  const recorded = recordConsultations(
+    session,
+    catalogue.served === 'bodies' ? catalogue.skills : [],
+  );
   if (!recorded.ok) return recorded;
   // This is a READ that writes, so it is the one place a replacement report could
   // reasonably be dropped — and dropping it is exactly the silence the report
   // exists against. A consultation carries the session's agent name on its
   // envelope like every other fact, so if that name held a credential this call is
   // the one that recorded it, and this reply is where the caller can still act.
-  return { ok: true, skills, ...forwardReplacement(recorded) };
+  return { ok: true, ...catalogue, ...forwardReplacement(recorded) };
 }
 
 /**

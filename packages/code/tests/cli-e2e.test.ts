@@ -49,7 +49,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo, run } from '../src/cli.js';
 import { closeSession, openSession } from '../src/mcp/session.js';
 import { runCreateSkill, runSkillsTool, runSkillTransition } from '../src/mcp/tools.js';
-import { servedPatternsFraming } from '../src/served-patterns.js';
+import { patternsFraming } from '../src/served-patterns.js';
 
 let sandbox: string;
 let repo: string;
@@ -3173,7 +3173,7 @@ describe('where a pattern came from — across the two surfaces', () => {
     ]);
     // What the transport puts beside the bodies: the declaration and one line of
     // provenance. It states, never asks — no "careful", no "verify".
-    const framing = servedPatternsFraming(served.skills).join('\n');
+    const framing = patternsFraming(served).join('\n');
     expect(framing).toContain('not instructions from mnema');
     expect(framing).toContain('adopted by agent-A');
     for (const nudge of ['careful', 'caution', 'verify', 'check', 'warning', 'beware']) {

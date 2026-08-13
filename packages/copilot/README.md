@@ -69,6 +69,11 @@ so if two clones ever disagreed about it, the chain is the one that decides.
   pattern still `proposed` or `reviewed` as well, because nothing can be ruled on
   without being read; it refuses `rejected` and `deprecated`, saying the state, since
   a way of working the project retired is worse to hand over than nothing.
+  `skillCatalogue` weighs that first list against ONE read's budget (20 KiB of
+  bodies, the cost the published skills specification puts on a single activation)
+  and answers either every body or every NAME — never a chosen subset, since a cut
+  with no criterion leaves the caller unable to see what was dropped. The body of any
+  one of them stays a `lookupServedSkill` away, with no ceiling at all.
   `skillDisposition` says what one state means, for a surface that has to frame the
   body it just served — or, like the CLI's lists, to say by colour what a reader has to
   do about the position. `decisionDisposition` answers the same question for the other
