@@ -60,7 +60,7 @@ import { verbsOffered } from '../src/repl/gate.js';
 import { AFTER_THE_BAR, BEFORE_THE_BAR, insideTheMargin, THE_INSET } from '../src/repl/inset.js';
 import { CUT, PICK } from '../src/repl/palette.js';
 import { theShortestScreenFor } from '../src/repl/panel.js';
-import { theSessionsOwnWords } from '../src/repl/session.js';
+import { theSessionsOwnWords, tips } from '../src/repl/session.js';
 import { PREFIX } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC } from './support/console.js';
@@ -87,6 +87,15 @@ const PROMPT = 'mnema>';
 const OPENED = 'a session over this project';
 /** The first words of the screen a window under the floor is shown. */
 const TOO_SMALL = 'The window is too small for the console';
+/**
+ * THE GUIDE DOWN THE MARGIN — BOX DRAWINGS LIGHT VERTICAL, U+2502.
+ *
+ * Spelled by its code point rather than typed, like every unusual byte in this repository: a
+ * glyph a reader cannot tell from a pipe is a glyph an edit destroys without anybody seeing it
+ * happen.
+ */
+const THE_GUIDE = '\u2502';
+
 /** The key a caller sends to walk down a list. */
 const MOVES_DOWN = `${ESC}[B`;
 /**
@@ -467,10 +476,26 @@ describe('the margin before the bar grew, and it eats nothing', () => {
         `a row ran past the edge of the window: ${row}`,
       ).toBeLessThanOrEqual(THE_FLOOR.columns);
     }
-    // AND THE BAR IS WHERE THE MARGIN PUTS IT, read off the module rather than counted here:
-    // the guide down the page sits after the blank columns and before the text.
-    const guide = screen.rows.find((row) => [...row][BEFORE_THE_BAR] === '│');
-    expect(guide, 'no row of the roll carries the guide at the margin').toBeDefined();
+    // AND THE BAR CLEARS THE ROW UNDER THE PROMPT, which is WHY the margin grew and the only
+    // thing here that a number written down could not have answered. At two columns the guide
+    // landed on column three and column three is where the hint begins — the hint is an `aside`,
+    // so it sits one indent in — and the page had two different things at one left edge. BOTH
+    // COLUMNS ARE READ OFF THE PAGE: a case that asked the constant would agree with itself at
+    // any value it took (measured: mutating the margin back to two left this file green).
+    const guideAt = screen.rows
+      .map((row) => [...row].indexOf(THE_GUIDE))
+      .find((at) => at >= 0) as number;
+    expect(guideAt, 'no row of the roll carries the guide at all').toBeGreaterThanOrEqual(0);
+    expect(guideAt, 'the guide is not drawn where the margin says').toBe(BEFORE_THE_BAR);
+    const hint = renderPlain(tips());
+    const hintRow = screen.rows.find((row) => row.includes(hint.trim())) as string;
+    expect(hintRow, 'the row under the prompt is not on the page').toBeDefined();
+    const hintAt = [...hintRow].findIndex((glyph) => glyph !== ' ');
+    expect(hintAt, 'the row under the prompt begins nowhere').toBeGreaterThanOrEqual(0);
+    expect(
+      guideAt,
+      'the guide sits in the same column the row under the prompt begins in',
+    ).toBeGreaterThan(hintAt);
     expect(THE_INSET, 'the margin is not the three parts it is made of').toBe(
       BEFORE_THE_BAR + 1 + AFTER_THE_BAR,
     );
