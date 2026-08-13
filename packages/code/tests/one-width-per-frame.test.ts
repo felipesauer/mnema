@@ -45,6 +45,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo, run } from '../src/cli.js';
+import { THE_FLOOR } from '../src/repl/floor.js';
 import { fact } from '../src/presentation/detail.js';
 import { foldedAt } from '../src/presentation/folded.js';
 import type { Line } from '../src/presentation/line.js';
@@ -104,8 +105,16 @@ const A_WRITE = 'task';
  */
 const AND_IT_REFUSES = 'shell.';
 
-/** How tall every window in this file is. The subject is the WIDTH, so nothing else moves. */
-const TALL_ENOUGH = 40;
+/**
+ * How tall every window in this file is. The subject is the WIDTH, so nothing else moves.
+ *
+ * IT WAS FORTY AND IT IS THE FLOOR'S. Forty was tall enough while the shortest window this
+ * console drew a page on was twenty-four rows; the floor is the height the name is drawn whole
+ * at now (`src/repl/floor.ts`), so a height written down here would hold the OTHER axis on the
+ * screen that says the window is too small — which is a case about the width answered by a page
+ * that has no width question in it.
+ */
+const TALL_ENOUGH = THE_FLOOR.rows;
 
 // ---------------------------------------------------------------------------
 // The fixture
@@ -568,7 +577,7 @@ describe('the frame is composed for a size the device really answered with', () 
       [80, 50],
     ];
     let asks = 0;
-    const terminal = fakeTerminal({ columns: 120, rows: 24 });
+    const terminal = fakeTerminal({ columns: 120, rows: THE_FLOOR.rows });
     Object.assign(terminal.stdout, {
       getWindowSize: () => {
         const answer = answers[Math.min(asks, answers.length - 1)] as readonly [number, number];

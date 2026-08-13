@@ -62,6 +62,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { CliIo } from '../src/cli.js';
+import { THE_FLOOR } from '../src/repl/floor.js';
 import { run } from '../src/cli.js';
 import { foldedAt } from '../src/presentation/folded.js';
 import { renderPlain } from '../src/presentation/plain.js';
@@ -206,7 +207,7 @@ const asks: Step = { types: `${A_VERB}\r`, until: aFrameSince(PROMPT), what: `as
 const leaves: Step = leavesTheSession;
 
 /** The three steps every case below drives, and the size it drives them at. */
-const A_SESSION = { columns: 100, rows: 30, steps: [opens, asks, leaves] };
+const A_SESSION = { columns: 100, rows: THE_FLOOR.rows, steps: [opens, asks, leaves] };
 
 // ---------------------------------------------------------------------------
 // The quiet direction, on a device
@@ -298,7 +299,7 @@ describe('a caller who asked for colour gets it on the chrome too, not only on t
     );
     expect(process.env[WHAT_THE_LIBRARY_READS], 'something already forced colour').toBeUndefined();
 
-    const terminal = fakeTerminal({ columns: 120, rows: 30 });
+    const terminal = fakeTerminal({ columns: 120, rows: THE_FLOOR.rows });
     const closed = openSession({
       io: quiet,
       // THE INVOCATION ASKED FOR COLOUR, which is what `--color=always` resolves to one

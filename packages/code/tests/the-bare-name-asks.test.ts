@@ -32,6 +32,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { theDoors } from '../src/choice/doors.js';
+import { THE_FLOOR } from '../src/repl/floor.js';
 import { buildProgram, type CliIo, run, start } from '../src/cli.js';
 import { PICK } from '../src/repl/palette.js';
 import { INIT_VERB } from '../src/wiring/init.js';
@@ -151,7 +152,11 @@ async function inPty(options: {
   };
   return await drive(fixture, {
     columns: options.columns ?? 100,
-    rows: options.rows ?? 30,
+    // THE DEFAULT HEIGHT IS THE FLOOR'S, and it was thirty. What these cases are about is which
+    // door a bare name offers, so the size was never the subject — but a window under the floor
+    // draws no console at all (`src/repl/floor.ts`), and a door that opens onto the screen saying
+    // the window is too small would answer every one of them.
+    rows: options.rows ?? THE_FLOOR.rows,
     steps: options.steps,
   });
 }
@@ -274,7 +279,7 @@ describe('with no terminal the bare name is the help it always was', () => {
     // THE NON-VACUITY OF THE CASE ABOVE, and the mutation the handoff names: the same call,
     // the same argv, the same port — and BOTH ends a terminal. It must not print the help,
     // and it must draw the question instead.
-    const terminal = fakeTerminal({ columns: 100, rows: 30 });
+    const terminal = fakeTerminal({ columns: 100, rows: THE_FLOOR.rows });
     const lines: string[] = [];
     const io: CliIo = {
       out: (line) => lines.push(line),

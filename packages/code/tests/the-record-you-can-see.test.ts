@@ -28,6 +28,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
+import { THE_FLOOR } from '../src/repl/floor.js';
 import { CUT } from '../src/repl/palette.js';
 import { CLEAR } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
@@ -293,7 +294,10 @@ function rowBeingTyped(screen: { readonly rows: readonly string[] }): string {
 describe('a record on the screen can be typed back, whole', () => {
   it('finishes a prefix into the id, and the read over it answers the record', async () => {
     const columns = NOTHING_IS_CUT;
-    const rows = 40;
+    // A WINDOW ABOVE THE FLOOR, READ OFF THE FLOOR rather than written down. The height here was
+    // never the subject — it was *a window with room* — and what *with room* means moved when the
+    // shortest window this console draws a page on became fifty-one rows (`src/repl/floor.ts`).
+    const rows = THE_FLOOR.rows;
     const chosen = shown[0] as Record;
     const prefix = tellsApart(
       chosen.id,
@@ -356,7 +360,10 @@ describe('a record on the screen can be typed back, whole', () => {
 describe('a prefix that names several lists them, each beside the line it came from', () => {
   it('shows every one of them with what the read said about it', async () => {
     const columns = NOTHING_IS_CUT;
-    const rows = 40;
+    // A WINDOW ABOVE THE FLOOR, READ OFF THE FLOOR rather than written down. The height here was
+    // never the subject — it was *a window with room* — and what *with room* means moved when the
+    // shortest window this console draws a page on became fifty-one rows (`src/repl/floor.ts`).
+    const rows = THE_FLOOR.rows;
     const ids = shown.map((record) => record.id);
     const shared = sharedBy(ids);
     // The instrument first: the prefix really is ambiguous, over more than two.
@@ -429,7 +436,10 @@ describe('a prefix that names several lists them, each beside the line it came f
     // ({@link THE_RECORDS}) — and what it measures is unchanged. Measured on a real terminal
     // rather than derived: at the floor the list shows some of them and names the rest.
     const columns = 80;
-    const rows = 24;
+    // A WINDOW ABOVE THE FLOOR, READ OFF THE FLOOR rather than written down. The height here was
+    // never the subject — it was *a window with room* — and what *with room* means moved when the
+    // shortest window this console draws a page on became fifty-one rows (`src/repl/floor.ts`).
+    const rows = THE_FLOOR.rows;
     const shared = sharedBy(shown.map((record) => record.id));
     const ran = await inPty({
       columns,
@@ -468,7 +478,10 @@ describe('a prefix that names several lists them, each beside the line it came f
 describe('what it offers is what the session showed, and never the record', () => {
   it('will not finish a record this session has not named', async () => {
     const columns = NOTHING_IS_CUT;
-    const rows = 40;
+    // A WINDOW ABOVE THE FLOOR, READ OFF THE FLOOR rather than written down. The height here was
+    // never the subject — it was *a window with room* — and what *with room* means moved when the
+    // shortest window this console draws a page on became fifty-one rows (`src/repl/floor.ts`).
+    const rows = THE_FLOOR.rows;
     // A PREFIX THAT NAMES ONE RECORD IN THE PROJECT AND NONE ON THE PAGE. The search
     // above answers with six of the seven, so this one exists, is readable, and was not
     // said — which is exactly the case that separates "what the session showed" from "a
@@ -539,7 +552,10 @@ describe('what it offers is what the session showed, and never the record', () =
     // a different shape of line — so a `show` whose output reached the page past the
     // memory would leave this Tab with nothing, exactly as the search-only session had.
     const columns = NOTHING_IS_CUT;
-    const rows = 40;
+    // A WINDOW ABOVE THE FLOOR, READ OFF THE FLOOR rather than written down. The height here was
+    // never the subject — it was *a window with room* — and what *with room* means moved when the
+    // shortest window this console draws a page on became fifty-one rows (`src/repl/floor.ts`).
+    const rows = THE_FLOOR.rows;
     const missing = tellsApart(hidden.id, [...shown.map((record) => record.id), hidden.id]);
 
     const ran = await inPty({
@@ -580,7 +596,10 @@ describe('what it offers is what the session showed, and never the record', () =
 
   it('offers no record where a verb goes, however many it has named', async () => {
     const columns = NOTHING_IS_CUT;
-    const rows = 40;
+    // A WINDOW ABOVE THE FLOOR, READ OFF THE FLOOR rather than written down. The height here was
+    // never the subject — it was *a window with room* — and what *with room* means moved when the
+    // shortest window this console draws a page on became fifty-one rows (`src/repl/floor.ts`).
+    const rows = THE_FLOOR.rows;
     const ran = await inPty({
       columns,
       rows,

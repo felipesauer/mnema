@@ -48,6 +48,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
+import { THE_FLOOR } from '../src/repl/floor.js';
 import { runVerify } from '../src/commands/verify.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
@@ -117,8 +118,16 @@ const CTRL_C = '\u0003';
 /** The key that ends the input, read from the one place this bench spells it. */
 const CTRL_D = ENDS_THE_INPUT;
 
-/** How tall and how wide the pty is made. Wide, so nothing the terminal folds is read. */
-const PTY_ROWS = 40;
+/**
+ * How tall the terminal every case here drives is: THE FLOOR'S OWN HEIGHT.
+ *
+ * IT WAS FORTY, which had room to spare while the shortest window this console drew a page on
+ * was twenty-four rows. The floor is fifty-one now — the height the name is drawn whole at
+ * (`src/repl/floor.ts`) — so forty is under it, and a case that opened there would be driving
+ * the screen that says the window is too small. Read off the product rather than retyped, so
+ * the day the floor moves again these cases move with it.
+ */
+const PTY_ROWS = THE_FLOOR.rows;
 const PTY_COLUMNS = 400;
 
 /** Where the runner prints what the terminal is like once the session is gone. */

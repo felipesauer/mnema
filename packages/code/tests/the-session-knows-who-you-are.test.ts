@@ -40,6 +40,7 @@ import { join } from 'node:path';
 import type { Command } from 'commander';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo, run } from '../src/cli.js';
+import { THE_FLOOR } from '../src/repl/floor.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { asTheSession } from '../src/repl/asking.js';
 import { typedLine } from '../src/repl/session.js';
@@ -63,8 +64,16 @@ const CLI = new URL('../dist/cli.js', import.meta.url).pathname;
 /** What the caller types in front of, as the layout writes it: trimmed at the end. */
 const PROMPT = 'mnema>';
 
-/** How big the terminal is made: wide enough that nothing read here was folded. */
-const PTY_ROWS = 40;
+/**
+ * How tall the terminal every case here drives is: THE FLOOR'S OWN HEIGHT.
+ *
+ * IT WAS FORTY, which had room to spare while the shortest window this console drew a page on
+ * was twenty-four rows. The floor is fifty-one now — the height the name is drawn whole at
+ * (`src/repl/floor.ts`) — so forty is under it, and a case that opened there would be driving
+ * the screen that says the window is too small. Read off the product rather than retyped, so
+ * the day the floor moves again these cases move with it.
+ */
+const PTY_ROWS = THE_FLOOR.rows;
 const PTY_COLUMNS = 200;
 
 /** The headline `status` answers with, after the identity it is answering for. */
