@@ -74,9 +74,12 @@
  *     group whose subcommand wrote would need a row of its own here.
  */
 
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
+import { catalogUpcasters, openChainForWriting } from '@mnema/chain';
+import { PROJECT_DIR } from '@mnema/core';
+import { createTask } from '@mnema/core/write';
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo, run } from '../src/cli.js';
@@ -145,6 +148,17 @@ interface Fixture {
   readonly task: string;
   /** The backup key `init` created, which `key revoke` retires. Named by the product. */
   readonly backupKey: string;
+  /**
+   * A tail this machine did not write, merged into the committed tree the way an
+   * offline copy is — the only kind of tail `tail prune` can name.
+   *
+   * A waiver may never name the tail it is written to, so the verb has no successful
+   * invocation over a record holding one machine's tail alone. Every fixture gets one
+   * rather than only the row that needs it, for the reason the fixture founds a project
+   * every row can use: a shape the product produces (an offline merge IS copying tail
+   * directories in) costs one write here and keeps this interface total.
+   */
+  readonly foreignTail: string;
 }
 
 /** How one verb is exercised: the line it is invoked with, and where it is typed. */
@@ -182,7 +196,7 @@ type Invocation = Exercise | typeof CANNOT_BE_EXERCISED;
  * would have left this verb's declaration unmeasured.
  */
 const INVOCATION: Readonly<Record<string, Invocation>> = {
-  // The eleven writes.
+  // The writes.
   init: { argv: () => ['init'], outsideAProject: true },
   task: { argv: () => ['task', 'a second task'] },
   decision: { argv: () => ['decision', 'a title', 'a rationale'] },
@@ -195,8 +209,11 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   link: { argv: (f) => ['link', f.task, f.task, '--rel', 'relates-to'] },
   run: { argv: () => ['run', 'start', '--which', 'agent-alpha'] },
   key: { argv: (f) => ['key', 'revoke', f.backupKey, '--reason', 'it left this machine'] },
+  tail: {
+    argv: (f) => ['tail', 'prune', f.foreignTail, '--reason', 'the person asked to be taken out'],
+  },
   mcp: CANNOT_BE_EXERCISED,
-  // The seventeen reads.
+  // The reads.
   status: { argv: (f) => ['status', '--actor', f.anchor] },
   focus: { argv: (f) => ['focus', '--actor', f.anchor] },
   resume: { argv: (f) => ['resume', '--actor', f.anchor] },
@@ -359,7 +376,37 @@ async function fixture(name: string): Promise<Fixture> {
     anchor: identity.trim().slice('identity:'.length).trim(),
     task: id[1],
     backupKey: basename(backup.slice(backup.indexOf(AT) + AT.length).trim(), '.key'),
+    foreignTail: mergeAForeignTail(
+      join(project, PROJECT_DIR),
+      join(sandbox, name, 'other-machine'),
+    ),
   };
+}
+
+/**
+ * A second machine's tail, merged into `into` the way an offline copy is: its tail
+ * directory and the public half of the key that signed it.
+ *
+ * The machine itself is thrown away afterwards, so nothing this function leaves behind
+ * is inside the window {@link held} measures across an invocation — what remains is the
+ * merged copy, which is part of the project every row is exercised over.
+ */
+function mergeAForeignTail(into: string, machine: string): string {
+  const writer = openChainForWriting(machine, { keyRoot: machine });
+  const created = createTask(
+    { writer, layout: { root: machine }, upcasters: catalogUpcasters() },
+    { title: 'work another machine did' },
+  );
+  if (!created.ok) throw new Error(`fixture: the other machine wrote nothing: ${created.code}`);
+  writer.checkpoint();
+  for (const tail of readdirSync(join(machine, 'tails'))) {
+    cpSync(join(machine, 'tails', tail), join(into, 'tails', tail), { recursive: true });
+  }
+  for (const key of readdirSync(join(machine, 'keys'))) {
+    if (key.endsWith('.pub')) cpSync(join(machine, 'keys', key), join(into, 'keys', key));
+  }
+  rmSync(machine, { recursive: true, force: true });
+  return writer.tail;
 }
 
 /**
@@ -451,7 +498,7 @@ describe('every verb says if it writes', () => {
     expect(Object.keys(INVOCATION).sort()).toEqual([...EFFECT_BY_VERB.keys()].sort());
   });
 
-  it('counts eleven writes and seventeen reads over the whole surface', () => {
+  it('counts twelve writes and seventeen reads over the whole surface', () => {
     // The count in the report, asserted rather than trusted, and the total against the
     // list: a verb that stopped being registered would otherwise leave both halves
     // looking healthy.
@@ -466,6 +513,7 @@ describe('every verb says if it writes', () => {
       'link',
       'run',
       'key',
+      'tail',
       'mcp',
     ]);
     expect(verbsThat('reads')).toEqual([
@@ -512,6 +560,7 @@ describe('every verb says if it writes', () => {
       'observe',
       'run',
       'skill',
+      'tail',
       'task',
     ]);
     // Every one of those is on the write side. The count is the other half: reads and

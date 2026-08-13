@@ -12,12 +12,13 @@
 
 _mnema_commands() {
   case "$1" in
-    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure refs skills brief key verify mcp repl completion help' ;;
+    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure refs skills brief key tail verify mcp repl completion help' ;;
     'task') echo 'move' ;;
     'decision') echo 'move supersede' ;;
     'skill') echo 'move' ;;
     'run') echo 'start end help' ;;
     'key') echo 'restore request enroll revoke help' ;;
+    'tail') echo 'prune help' ;;
   esac
 }
 
@@ -48,6 +49,7 @@ _mnema_described() {
       'skills:show where each pattern came from (who proposed it, who adopted it)' \
       'brief:print what governs the work here as markdown, for an agent to read' \
       'key:manage this machine'\''s signing keys' \
+      'tail:authorize a cut in the record'\''s own tails' \
       'verify:verify this project'\''s record — its committed tree and its private one' \
       'mcp:run the mnema MCP server over stdio (for an agent host)' \
       'repl:open an interactive session that reads this project' \
@@ -69,6 +71,9 @@ _mnema_described() {
       'request:ask to bring this machine into an identity (run this on the joining machine)' \
       'enroll:vouch for a requesting key so it joins this identity (run this on a member)' \
       'revoke:retire a key from this identity, from this point forward' \
+      'help:display help for command' ;;
+    'tail') printf '%s\n' \
+      'prune:record that one whole tail was authorized to be cut (it removes nothing)' \
       'help:display help for command' ;;
   esac
 }
@@ -110,6 +115,8 @@ _mnema_flags() {
     'key request') echo '--anchor --key -h --help -V --version --color' ;;
     'key enroll') echo '-h --help -V --version --color' ;;
     'key revoke') echo '--reason -h --help -V --version --color' ;;
+    'tail') echo '-h --help -V --version --color' ;;
+    'tail prune') echo '--reason --which -h --help -V --version --color' ;;
     'verify') echo '--global --require -h --help -V --version --color' ;;
     'mcp') echo '--project -h --help -V --version --color' ;;
     'repl') echo '-h --help -V --version --color' ;;
@@ -172,6 +179,8 @@ _mnema_values() {
     'key request:--color') echo 'auto always never' ;;
     'key enroll:--color') echo 'auto always never' ;;
     'key revoke:--color') echo 'auto always never' ;;
+    'tail:--color') echo 'auto always never' ;;
+    'tail prune:--color') echo 'auto always never' ;;
     'verify:--require') echo 'chained signed witnessed' ;;
     'verify:--color') echo 'auto always never' ;;
     'mcp:--color') echo 'auto always never' ;;

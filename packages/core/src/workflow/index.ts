@@ -71,6 +71,12 @@ export {
   type WriteError,
 } from './operations.js';
 export {
+  authorizeTailPrune,
+  type PruneError,
+  type PruneInput,
+  type PruneOk,
+} from './prune-operations.js';
+export {
   type EndRunError,
   type EndRunInput,
   type EndRunOk,

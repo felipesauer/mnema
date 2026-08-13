@@ -12,7 +12,7 @@
 function __mnema_commands --description 'the subcommands one level of the tree offers'
     switch "$argv[1]"
         case ''
-            echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure refs skills brief key verify mcp repl completion help'
+            echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure refs skills brief key tail verify mcp repl completion help'
         case 'task'
             echo 'move'
         case 'decision'
@@ -23,6 +23,8 @@ function __mnema_commands --description 'the subcommands one level of the tree o
             echo 'start end help'
         case 'key'
             echo 'restore request enroll revoke help'
+        case 'tail'
+            echo 'prune help'
     end
 end
 
@@ -80,6 +82,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'refs' -d 'show what an entity is con
 complete -c mnema -f -n '__mnema_at ""' -a 'skills' -d 'show where each pattern came from (who proposed it, who adopted it)'
 complete -c mnema -f -n '__mnema_at ""' -a 'brief' -d 'print what governs the work here as markdown, for an agent to read'
 complete -c mnema -f -n '__mnema_at ""' -a 'key' -d 'manage this machine\'s signing keys'
+complete -c mnema -f -n '__mnema_at ""' -a 'tail' -d 'authorize a cut in the record\'s own tails'
 complete -c mnema -f -n '__mnema_at ""' -a 'verify' -d 'verify this project\'s record — its committed tree and its private one'
 complete -c mnema -f -n '__mnema_at ""' -a 'mcp' -d 'run the mnema MCP server over stdio (for an agent host)'
 complete -c mnema -f -n '__mnema_at ""' -a 'repl' -d 'open an interactive session that reads this project'
@@ -351,6 +354,20 @@ complete -c mnema -f -n '__mnema_at "key revoke"' -l reason -r
 complete -c mnema -f -n '__mnema_at "key revoke"' -s h -l help
 complete -c mnema -f -n '__mnema_at "key revoke"' -s V -l version
 complete -c mnema -f -n '__mnema_at "key revoke"' -l color -x -a 'auto always never'
+
+# mnema tail
+complete -c mnema -f -n '__mnema_at "tail"' -a 'prune' -d 'record that one whole tail was authorized to be cut (it removes nothing)'
+complete -c mnema -f -n '__mnema_at "tail"' -a 'help' -d 'display help for command'
+complete -c mnema -f -n '__mnema_at "tail"' -s h -l help
+complete -c mnema -f -n '__mnema_at "tail"' -s V -l version
+complete -c mnema -f -n '__mnema_at "tail"' -l color -x -a 'auto always never'
+
+# mnema tail prune
+complete -c mnema -f -n '__mnema_at "tail prune"' -l reason -r
+complete -c mnema -f -n '__mnema_at "tail prune"' -l which -r
+complete -c mnema -f -n '__mnema_at "tail prune"' -s h -l help
+complete -c mnema -f -n '__mnema_at "tail prune"' -s V -l version
+complete -c mnema -f -n '__mnema_at "tail prune"' -l color -x -a 'auto always never'
 
 # mnema verify
 complete -c mnema -f -n '__mnema_at "verify"' -l global

@@ -55,6 +55,14 @@ export function tailsDir(layout: ChainLayout): string {
   return join(layout.root, 'tails');
 }
 
+/**
+ * Where one tail's files live.
+ *
+ * Published beyond this package for one reason: the verb that authorizes a cut has
+ * to tell whoever authorized it WHERE the files are, and it may not compose that
+ * path itself — two ideas of where a tail lives would be one command naming a
+ * directory the verifier does not read.
+ */
 export function tailDir(layout: ChainLayout, tailId: string): string {
   return join(tailsDir(layout), tailId);
 }

@@ -1,5 +1,11 @@
 /**
- * Locating the tree an entity lives in.
+ * Locating the tree something lives in — an ENTITY by its birth, a TAIL by its
+ * files.
+ *
+ * Both questions have the same shape and the same answer must not be reached two
+ * ways: which trees are searched, in what order, and stopping at the first one that
+ * holds it. That walk is {@link firstTreeHolding}, and the two readings below differ
+ * only in what "holds it" means.
  *
  * An entity (a task, a decision, a skill) is BORN in exactly one tree: its
  * birth event — `task.created`, `decision.recorded`, `skill.created` — is
@@ -40,7 +46,7 @@
  * parameter rather than a fixed strategy.
  */
 
-import type { CatalogEvent, UpcasterRegistry } from '@mnema/chain';
+import { type CatalogEvent, tailStanding, type UpcasterRegistry } from '@mnema/chain';
 import { canonicalId } from '../identity/id.js';
 import { orderedEvents } from '../projections/order.js';
 import type { ResolvedTrees } from './resolve.js';
@@ -62,6 +68,28 @@ const BIRTH_KINDS = new Set<CatalogEvent['kind']>([
  * is replayed first before the match short-circuits the rest.
  */
 const SEARCH_ORDER: readonly Scope[] = ['public', 'private', 'global'];
+
+/**
+ * The walk both readings here share: the trees this context has, in
+ * {@link SEARCH_ORDER}, stopping at the first one that holds what is being looked
+ * for. Undefined when none of them does.
+ *
+ * It is one function because the ORDER and the skipping of absent trees are the
+ * parts a second copy would get subtly right and then drift on — the answer would
+ * still look correct, and two surfaces would disagree about which tree owns a thing
+ * present in two of them. What each caller supplies is only what "holds it" means.
+ */
+function firstTreeHolding(
+  trees: ResolvedTrees,
+  holds: (chainRoot: string) => boolean,
+): Scope | undefined {
+  for (const scope of SEARCH_ORDER) {
+    const root = chainRootForScope(trees, scope);
+    if (root === undefined) continue; // that tree is not present in this context
+    if (holds(root)) return scope;
+  }
+  return undefined;
+}
 
 /**
  * Answers, for ONE tree, whether it holds the birth of the entity with this id.
@@ -110,13 +138,7 @@ export function locateEntityScopeWith(
 ): Scope | undefined {
   const canonical = canonicalId(id);
   if (canonical === undefined) return undefined;
-
-  for (const scope of SEARCH_ORDER) {
-    const root = chainRootForScope(trees, scope);
-    if (root === undefined) continue; // that tree is not present in this context
-    if (holdsBirth(root, canonical)) return scope;
-  }
-  return undefined;
+  return firstTreeHolding(trees, (root) => holdsBirth(root, canonical));
 }
 
 /**
@@ -153,4 +175,36 @@ export function locateEntityScope(
   upcasters: UpcasterRegistry,
 ): Scope | undefined {
   return locateEntityScopeWith(trees, id, replayingBirthProbe(upcasters));
+}
+
+/**
+ * Finds the scope of the tree that holds the tail `tailId` — the tree a waiver
+ * over that tail has to be written to. Undefined when no present tree holds it
+ * with events in it.
+ *
+ * A TAIL IS NOT AN ENTITY, so this asks the disk rather than the record: a tail is
+ * a directory of files, not a subject some event was minted for, and the question
+ * is whether THIS tree has that directory with something in it. `tailStanding` is
+ * the one reading of a tail's standing there is — the operation that builds a
+ * waiver fills its claims from it, and the writer's own door checks them against it
+ * — so a caller located by this function and refused by that door would have to
+ * have lost the tail in between.
+ *
+ * WHY THE SURFACE NEEDS IT, and it is the same argument a transition makes: a
+ * waiver lives in the SAME tree as the tail it names, because the census that later
+ * reads it is per-tree (`@mnema/chain`, `waiver.ts`). A waiver written to another
+ * tree is a signed fact nobody looking at the orphaned key will ever meet. So a
+ * surface resolves the tail's tree with this read, then opens THAT tree's writer,
+ * and the write stays the single-tree act every other one is.
+ *
+ * AN EMPTY TAIL IS NOT HELD, for the reason `tailStanding` gives: a directory with
+ * an ownership proof and no event is the ordinary residue of a session that only
+ * read, and there is nothing in it to account for.
+ */
+export function locateTailScope(
+  trees: ResolvedTrees,
+  tailId: string,
+  upcasters: UpcasterRegistry,
+): Scope | undefined {
+  return firstTreeHolding(trees, (root) => tailStanding({ root }, tailId, upcasters) !== undefined);
 }

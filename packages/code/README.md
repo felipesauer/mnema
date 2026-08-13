@@ -17,7 +17,9 @@ CLI and the MCP tools behave identically, because they are the same call.
   Every write is attributed to the identity that signed it and pinned to the
   session it happened in.
 - **A CLI** — the human side of the same record: create and move work, capture
-  knowledge, read context, and verify the chain.
+  knowledge, read context, and verify the chain. It also holds the one write the
+  MCP server has no tool for: `mnema tail prune` authorizes the cut of a whole
+  tail, which is the only command here whose consequence is destructive.
 - **Workflow gates** — an illegal move is refused with a typed reason, on both
   surfaces, because both ask the same gate. Some moves require their evidence
   (a reason to cancel, a note to complete) and the gate enforces it.
@@ -65,7 +67,7 @@ verbatim. The surfaces never upgrade a verdict into a stronger claim.
 | **The record could be read** | Part of the verdict, not an assumption. A stored line that will not parse is reported as an `UNREADABLE` issue naming the tail and the position — never a green over bytes nobody can interpret, and never a parser message with no address in it. |
 | **An edit is caught** | An edit made *without* the signing key is caught, because signatures cover a root recomputed from the event content. Someone holding the key can rewrite and re-sign — detecting that needs a witness outside this machine. |
 | **Nothing was deleted** | Still not proven locally, and the sentence that used to stop there was true for a reason worth keeping: a hash chain shows what changed, never what was removed, and a tail deleted together with its key leaves nothing on disk to cross. What is new is the other half — the record can now NAME a cut, so an unexplained absence and an authorized one are no longer the same silence. Committing the record to git is still what preserves the files a deletion would take with it. |
-| **A cut can be told from a tampering** | When it was authorized in advance, and for a WHOLE tail. A `tail.pruned` written while the tail is still there records which tail, how many events it held and the head it held them through — all three checked against the disk before the fact is signed — and `verify` then reports that account instead of listing the three reasons a key might have no tail. Cutting PART of a tail is not covered and stays loud: removing one line from a 402-event tail produces 102 findings. A waiver is not permission (anyone who can write can sign one, and it names who did), it is not a cure (a tail that is present and broken keeps every issue it had), and it does not remove anything — once the record is pushed, the events are in every clone and on the remote. |
+| **A cut can be told from a tampering** | When it was authorized in advance, and for a WHOLE tail. A `tail.pruned` written while the tail is still there records which tail, how many events it held and the head it held them through — all three checked against the disk before the fact is signed — and `verify` then reports that account instead of listing the three reasons a key might have no tail. Cutting PART of a tail is not covered and stays loud: removing one line from a 402-event tail produces 102 findings. A waiver is not permission (anyone who can write can sign one, and it names who did), it is not a cure (a tail that is present and broken keeps every issue it had), and it does not remove anything — once the record is pushed, the events are in every clone and on the remote. `mnema tail prune` is what writes one, on the CLI alone; the cut itself stays yours to make. |
 | **Gates protect the record** | They protect its *shape*, not its contents. A gate refuses an illegal transition; it is not access control. Anyone who can run the CLI writes as this machine's identity. |
 | **A lost key can be restored** | Only from the backup key `mnema init` makes, and only where the record proves that key a member: the **committed project tree**. `mnema key restore` is that path — local, offline, no service to ask, because anything able to hand your identity back could forge it. The private and global trees are born knowing one key, so a lost key cannot be replaced in them; they are uncommitted, so the disk that takes the key takes them anyway. |
 | **Your machines are one author** | True for machines the record proves belong to one identity — which is what enrolling a second machine records. A machine nobody vouched for writes as a *different* identity, honestly and permanently; that is not a bug to fix later, it is what an unvouched key means. When the record proves a key belongs to **two** identities, no command picks one for you: the write is refused until you say which. |
@@ -361,6 +363,39 @@ Retirement is **forward-only**: what that key signed while it was a member stays
 valid, because a rotation should not make past work unattributable. The identity's
 last key cannot be retired — it would leave an identity unable to sign anything
 again, including its own repair — so bring the replacement in first.
+
+### Authorizing a cut, which is not the same as making one
+
+Deleting a machine's tail from a record is invisible to the proof: `verify` reports
+the same sentence a machine that never wrote anything gets. So a cut is **declared
+before it happens**, while the tail is still on disk and everything the declaration
+claims can be checked against it.
+
+```sh
+mnema tail prune 8f21ab…-3c9d0e… --reason "the person asked to be taken out"
+#> Authorized the cut of tail 8f21ab…-3c9d0e…
+#>   41 event(s) through 5e4391d8…, the tail of mnid:60a50d38…
+#>   authorized by mnid:c0fc3c71…
+#>   Landed in the public tree — committed with the repository, so it reaches every clone.
+#>   The tail is still on disk at /path/to/repo/.mnema/tails/8f21ab…-3c9d0e… — nothing was removed.
+#>   Git history, any remote and every clone still hold what that tail recorded: …
+```
+
+**It removes nothing, and that is the design.** Removing the directory is your act,
+afterwards; this command records who authorized it, how many events were there and
+the head they ran through, so `verify` can later name the account instead of listing
+the three reasons a key might have no tail. It writes from **another** tail — a
+waiver inside the tail being cut would be cut with it — so the tail it names is never
+the one this machine writes to.
+
+And it does **not** promise forgetting. Once the record is committed and pushed, the
+events are in the git history, on the remote and in every clone; reaching those takes
+`git filter-repo`, a force push and everyone re-cloning, which is outside what any
+command here does. The output says so on the line where somebody would otherwise
+assume it had been handled.
+
+There is no MCP tool for this, deliberately: a cut is the one write whose consequence
+is destructive, and it is authorized by a person at a shell or not at all.
 
 ### What goes into the record
 

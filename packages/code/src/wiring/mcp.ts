@@ -7,7 +7,8 @@
  * stderr instead.
  *
  * IT IS CLASSIFIED A WRITE even though this file appends nothing. What it starts serves
- * every write tool the product has, so whoever can run this verb can record anything —
+ * every write tool there is (which is not every write the product has: `tail prune` has
+ * none, deliberately), so whoever can run this verb can record almost anything —
  * and the classification is about what an invocation CAN do (see `verb.ts`). Reading the
  * body for the answer would have called it a read.
  */

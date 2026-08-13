@@ -29,11 +29,15 @@
  * the census that reads it is per-tree: the caller opens that tree's writer and
  * hands it in, exactly as every other write here does.
  *
- * NOT ON THE PACKAGE'S WRITING SURFACE (`write.ts`), deliberately: no surface
- * authorizes a cut yet, and an export with no caller is the defect class this
- * workspace has paid for four times. The day a verb asks for one, it is exported
- * there — the operation is complete, and what is missing is the surface, said out
- * loud rather than plumbed ahead of time.
+ * ON THE PACKAGE'S WRITING SURFACE (`write.ts`), SINCE THE VERB ARRIVED. This
+ * paragraph used to say the opposite, and it was right at the time: nothing
+ * authorized a cut, and an export with no caller is the defect class this workspace
+ * has paid for four times, so the export waited for the caller rather than being
+ * plumbed ahead of it. `mnema tail prune` is that caller — ONE caller, on ONE
+ * surface. The MCP serves no tool for this and that is not an omission: a run there
+ * opens on the first write with the `who` read off the key and nobody authorizing
+ * that session out loud, and a cut is the one write whose consequence is
+ * destructive. It is authorized by a person at a shell, or not at all.
  */
 
 import { tailPruned, tailStanding } from '@mnema/chain';

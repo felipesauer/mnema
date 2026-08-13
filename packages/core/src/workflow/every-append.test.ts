@@ -1,4 +1,4 @@
-import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,6 +17,7 @@ import * as writeSurface from '../write.js';
 import { recordDecision } from './decision-operations.js';
 import { enrollKey, ensureFounded, revokeKey } from './identity-operations.js';
 import { createTask, type WriteContext } from './operations.js';
+import { authorizeTailPrune } from './prune-operations.js';
 import { endRun, startRun } from './session-operations.js';
 import { createSkill, recordConsultation } from './skill-operations.js';
 
@@ -172,6 +173,7 @@ describe('every write refuses what no read could accept', () => {
     // cannot reach their field from an empty record.
     let openRun = '';
     let secondKey = '';
+    let foreignTail = '';
     return [
       {
         op: 'createTask',
@@ -340,6 +342,36 @@ describe('every write refuses what no read could accept', () => {
           secondKey = joined.fingerprint;
         },
         drive: () => revokeMember(ctx, { fingerprint: secondKey, reason: '' }),
+      },
+      {
+        // A waiver's reason reaches the reader's door only over a tail that is really
+        // there: the operation reads its claims off the disk and refuses UNKNOWN_TAIL
+        // before it builds anything, so an empty reason driven over a tail nobody has
+        // would be refused for the wrong thing and this row would prove nothing. The
+        // tail is a second machine's, merged the way an offline copy is — which is
+        // also the only kind a waiver may ever name.
+        op: 'authorizeTailPrune',
+        field: 'reason',
+        names: 'payload.reason',
+        prepare: () => {
+          const machine = mkdtempSync(join(tmpdir(), 'mnema-append-other-'));
+          const other = openChainForWriting(machine, { keyRoot: machine });
+          const did = createTask(
+            { writer: other, layout: { root: machine }, upcasters },
+            { title: 'work another machine did' },
+          );
+          if (!did.ok) throw new Error('the other machine wrote nothing to cut');
+          other.checkpoint();
+          for (const tail of readdirSync(join(machine, 'tails'))) {
+            cpSync(join(machine, 'tails', tail), join(root, 'tails', tail), { recursive: true });
+          }
+          for (const key of readdirSync(join(machine, 'keys'))) {
+            if (key.endsWith('.pub')) cpSync(join(machine, 'keys', key), join(root, 'keys', key));
+          }
+          rmSync(machine, { recursive: true, force: true });
+          foreignTail = other.tail;
+        },
+        drive: () => authorizeTailPrune(ctx, { tail: foreignTail, reason: '' }),
       },
     ];
   }

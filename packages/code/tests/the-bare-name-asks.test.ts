@@ -212,7 +212,7 @@ describe('with no terminal the bare name is the help it always was', () => {
     // ONE CALL MAY CARRY SEVERAL LINES — commander hands its whole help over in one write —
     // so the prefix goes on each of them, exactly as the golden's own encoder does. A helper
     // that prefixed the call rather than the line would compare two strings that are equal
-    // and say nothing about which stream the other twenty-eight rows went to.
+    // and say nothing about which stream the rest of the rows went to.
     const said = (prefix: string, text: string) => {
       for (const line of text.split('\n'))
         lines.push(line === '' ? prefix.trimEnd() : `${prefix}${line}`);
@@ -515,7 +515,7 @@ describe('A1: every site that rules on the bare name, and every one that asks fo
 
   it('names every site that asks whether there is a project here', () => {
     // THE SITES ARE FOUND BY THE DISCRIMINANT and then named, so the site this delivery adds
-    // is the N+1st of a rule that already held in twenty-eight places rather than a new rule.
+    // is the N+1st of a rule that already held everywhere below rather than a new rule.
     // What every one of them shares is the RESOLVER: none of them looks for the directory
     // itself, so what a project IS has one definition (`@mnema/core`, `resolveTrees`).
     const asking = modules()

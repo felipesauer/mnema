@@ -10,12 +10,13 @@
 
 _mnema_commands() {
   case "$1" in
-    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure refs skills brief key verify mcp repl completion help' ;;
+    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure refs skills brief key tail verify mcp repl completion help' ;;
     'task') echo 'move' ;;
     'decision') echo 'move supersede' ;;
     'skill') echo 'move' ;;
     'run') echo 'start end help' ;;
     'key') echo 'restore request enroll revoke help' ;;
+    'tail') echo 'prune help' ;;
     *) echo ;;
   esac
 }
@@ -57,6 +58,8 @@ _mnema_flags() {
     'key request') echo '--anchor --key -h --help -V --version --color' ;;
     'key enroll') echo '-h --help -V --version --color' ;;
     'key revoke') echo '--reason -h --help -V --version --color' ;;
+    'tail') echo '-h --help -V --version --color' ;;
+    'tail prune') echo '--reason --which -h --help -V --version --color' ;;
     'verify') echo '--global --require -h --help -V --version --color' ;;
     'mcp') echo '--project -h --help -V --version --color' ;;
     'repl') echo '-h --help -V --version --color' ;;
@@ -120,6 +123,8 @@ _mnema_values() {
     'key request:--color') echo 'auto always never' ;;
     'key enroll:--color') echo 'auto always never' ;;
     'key revoke:--color') echo 'auto always never' ;;
+    'tail:--color') echo 'auto always never' ;;
+    'tail prune:--color') echo 'auto always never' ;;
     'verify:--require') echo 'chained signed witnessed' ;;
     'verify:--color') echo 'auto always never' ;;
     'mcp:--color') echo 'auto always never' ;;

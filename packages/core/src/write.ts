@@ -105,9 +105,16 @@ export {
 // The write operations for the work domain: each appends an event a gate
 // authorized. Their input/result/context types travel with them — a caller that
 // can write needs them; a reader never sees this module.
+//
+// `authorizeTailPrune` is the one here that no gate authorizes, and it is not an
+// exception to the rule so much as the rule's other side: gates protect the SHAPE
+// of the record, and a waiver's shape is checked against the disk by the writer's
+// own door instead (`@mnema/chain`, `waiver.ts`). It arrived on this surface the day
+// `mnema tail prune` asked for it, and it has that one caller.
 export {
   acceptDecision,
   adoptSkill,
+  authorizeTailPrune,
   type ConsultationInput,
   type ConsultationOk,
   type CreateInput,
@@ -123,6 +130,9 @@ export {
   type EndRunInput,
   type EndRunOk,
   endRun,
+  type PruneError,
+  type PruneInput,
+  type PruneOk,
   type RecordInput,
   type RecordOk,
   recordConsultation,
