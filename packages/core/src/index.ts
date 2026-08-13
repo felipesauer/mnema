@@ -125,6 +125,7 @@ export {
   type DiscoveryEnv,
   locateEntityScope,
   locateEntityScopeWith,
+  locateTailScope,
   type Origin,
   PROJECT_DIR,
   type ResolvedTrees,

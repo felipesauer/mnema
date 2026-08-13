@@ -1,7 +1,7 @@
 /**
  * What a verb's wiring receives, and what a verb's wiring IS.
  *
- * One shape for all twenty-eight, so the program can register them in a list
+ * One shape for all of them, so the program can register them in a list
  * instead of naming what each one needs: a verb takes the program to hang itself
  * on and the three things every verb may touch — where to write, how a line becomes
  * bytes, and the session its writes are pinned to.
@@ -154,8 +154,10 @@ export type Verb = (program: Command, wiring: Wiring) => Declared;
 /**
  * The verb CAN change the record: it appends an event, or it touches key material.
  *
- * Used by the eleven writes, `mcp` among them — the server serves every write tool this
- * product has, so the verb that starts it can do everything they can.
+ * Used by every write there is, `mcp` among them — the server serves every write TOOL there
+ * is, so the verb that starts it can do everything they can. That is not everything this
+ * product can do: `tail prune` has no tool and never will, so the MCP's reach is the tools'
+ * and this verb's classification is about the tools it serves.
  */
 export function mutatesTheRecord(command: Command): Declared {
   return { command, effect: 'mutates' };

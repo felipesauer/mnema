@@ -178,6 +178,12 @@ $ mnema focus --actor whoever
 $ mnema key request --anchor whoever
 ! Refused (UNKNOWN_ANCHOR): "whoever" names no identity in this record — these are: <anchor-short>
 [exit 1]
+$ mnema tail prune <tail-own> --reason 'cut myself'
+! Refused (TAIL_IS_OWN): Tail <tail-own> is the one this write lands on. A waiver has to outlive the cut it authorizes, so it is written from another tail — never from the tail being cut, which would take the waiver with it.
+[exit 1]
+$ mnema tail prune <backup-key-fingerprint> --reason 'the key that never wrote anything'
+! No tail <backup-key-fingerprint> holds events in any tree here.
+[exit 1]
 
 ### refusals — what the parser turns down
 $ mnema decision 'A decision with no rationale'
@@ -203,6 +209,10 @@ $ mnema tsk 'a verb nobody declared'
 $ mnema run nothing
 ! mnema run has no command "nothing". Run `mnema run --help` to see what it does.
 !   mnema run [options] [command]
+[exit 1]
+$ mnema tail prune <tail-own>
+! mnema tail prune needs --reason <text>: why it is being cut (recorded in the fact)
+!   mnema tail prune [options] <tail>
 [exit 1]
 
 ### refusals — what no read could accept

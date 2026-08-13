@@ -121,8 +121,8 @@ export type ColorWhen = (typeof COLOR_WHENS)[number];
  *
  * It is one question about one invocation, and it is asked before the verb: `mnema
  * --color=never verify`, the way `git --no-pager log` is. Declared on each of the
- * twenty-eight instead, it would be twenty-eight flags with one name, and the reader of
- * one verb's help would have no reason to think the next verb agreed.
+ * verbs instead, it would be one flag per verb with one name between them, and the
+ * reader of one verb's help would have no reason to think the next verb agreed.
  */
 export const COLOR_HELP =
   'when to use bold, dim and color: auto (a terminal only), always (also in a pipe), ' +

@@ -7,7 +7,7 @@
  *     coverage below is enumerated from the PROGRAM — every command `everyCommandOf`
  *     reaches, every option name derived from `.options` and the parent chain — and never
  *     from a list written in this file. The verb nobody has written yet has its own case,
- *     over a program built here so the twenty-eight that exist cannot satisfy it.
+ *     over a program built here so the verbs that exist cannot satisfy it.
  *   - IT DOES NOT PARSE, AND SAYS NOTHING. A shell that cannot read a completion script
  *     does not complain: it completes nothing, which is the defect being fixed. So the
  *     bash script is fed to `bash -n` AND DRIVEN — its function is called in a real bash
@@ -387,7 +387,7 @@ describe('the script knows every verb the program declares', () => {
 });
 
 describe('a verb nobody has written yet is completed by construction', () => {
-  /** A program of its own, so the twenty-eight that exist cannot satisfy the case. */
+  /** A program of its own, so the verbs that exist cannot satisfy the case. */
   function later(): Command {
     const program = new Command().name('later');
     const parent = program.command('parent').description('a group added tomorrow');
@@ -456,9 +456,18 @@ describe('the generated script is a file its shell can read', () => {
     for (const path of PATHS) {
       expect(offered('bash', path), `mnema ${path}`).not.toEqual([]);
     }
-    // And it filters by what has been typed, which is the whole point of a Tab.
-    const asked = drivenBash(SCRIPT.bash, [['ta'], ['task', 'mo'], ['task', 'move', '--n']]);
-    expect(asked.get('ta')).toEqual(['task']);
+    // And it filters by what has been typed, which is the whole point of a Tab. `ta`
+    // answers with BOTH verbs that start with it, which is what a filter is: it used to
+    // name one because there was only one, and a case that asserted the narrowing rather
+    // than the filtering would have gone red at the arrival of an unrelated verb.
+    const asked = drivenBash(SCRIPT.bash, [
+      ['ta'],
+      ['tai'],
+      ['task', 'mo'],
+      ['task', 'move', '--n'],
+    ]);
+    expect(asked.get('ta')).toEqual(['task', 'tail']);
+    expect(asked.get('tai')).toEqual(['tail']);
     expect(asked.get('task mo')).toEqual(['move']);
     expect(asked.get('task move --n')).toEqual(['--note']);
   });
