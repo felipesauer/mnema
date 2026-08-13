@@ -288,8 +288,9 @@ describe('the banner ends in a rule and one row of breath', () => {
   it('leaves exactly one blank row between the seam and what the session says', async () => {
     // AT THE FLOOR, which is where a row costs the most: the shortest window this console draws
     // a page on. IT WAS EIGHTY BY TWENTY-FOUR — the canonical terminal — and it is eighty by
-    // fifty-one, which is the height the name is drawn whole at (`src/repl/floor.ts`). Read off
-    // the floor rather than retyped, so *at the floor* goes on meaning it.
+    // forty-two, which is the height the name is drawn whole at, worked out from the drawing
+    // (`src/repl/floor.ts`). Read off the floor rather than retyped, so *at the floor* goes on
+    // meaning it.
     const columns = THE_FLOOR.columns;
     const rows = THE_FLOOR.rows;
     const ran = await inPty({ columns, rows, steps: [opens, asks, leaves] });

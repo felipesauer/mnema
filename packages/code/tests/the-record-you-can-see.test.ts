@@ -296,7 +296,8 @@ describe('a record on the screen can be typed back, whole', () => {
     const columns = NOTHING_IS_CUT;
     // A WINDOW ABOVE THE FLOOR, READ OFF THE FLOOR rather than written down. The height here was
     // never the subject — it was *a window with room* — and what *with room* means moved when the
-    // shortest window this console draws a page on became fifty-one rows (`src/repl/floor.ts`).
+    // shortest window this console draws a page on became the height the name is drawn whole at
+    // (`src/repl/floor.ts`).
     const rows = THE_FLOOR.rows;
     const chosen = shown[0] as Record;
     const prefix = tellsApart(
@@ -362,7 +363,8 @@ describe('a prefix that names several lists them, each beside the line it came f
     const columns = NOTHING_IS_CUT;
     // A WINDOW ABOVE THE FLOOR, READ OFF THE FLOOR rather than written down. The height here was
     // never the subject — it was *a window with room* — and what *with room* means moved when the
-    // shortest window this console draws a page on became fifty-one rows (`src/repl/floor.ts`).
+    // shortest window this console draws a page on became the height the name is drawn whole at
+    // (`src/repl/floor.ts`).
     const rows = THE_FLOOR.rows;
     const ids = shown.map((record) => record.id);
     const shared = sharedBy(ids);
@@ -438,7 +440,8 @@ describe('a prefix that names several lists them, each beside the line it came f
     const columns = 80;
     // A WINDOW ABOVE THE FLOOR, READ OFF THE FLOOR rather than written down. The height here was
     // never the subject — it was *a window with room* — and what *with room* means moved when the
-    // shortest window this console draws a page on became fifty-one rows (`src/repl/floor.ts`).
+    // shortest window this console draws a page on became the height the name is drawn whole at
+    // (`src/repl/floor.ts`).
     const rows = THE_FLOOR.rows;
     const shared = sharedBy(shown.map((record) => record.id));
     const ran = await inPty({
@@ -480,7 +483,8 @@ describe('what it offers is what the session showed, and never the record', () =
     const columns = NOTHING_IS_CUT;
     // A WINDOW ABOVE THE FLOOR, READ OFF THE FLOOR rather than written down. The height here was
     // never the subject — it was *a window with room* — and what *with room* means moved when the
-    // shortest window this console draws a page on became fifty-one rows (`src/repl/floor.ts`).
+    // shortest window this console draws a page on became the height the name is drawn whole at
+    // (`src/repl/floor.ts`).
     const rows = THE_FLOOR.rows;
     // A PREFIX THAT NAMES ONE RECORD IN THE PROJECT AND NONE ON THE PAGE. The search
     // above answers with six of the seven, so this one exists, is readable, and was not
@@ -554,7 +558,8 @@ describe('what it offers is what the session showed, and never the record', () =
     const columns = NOTHING_IS_CUT;
     // A WINDOW ABOVE THE FLOOR, READ OFF THE FLOOR rather than written down. The height here was
     // never the subject — it was *a window with room* — and what *with room* means moved when the
-    // shortest window this console draws a page on became fifty-one rows (`src/repl/floor.ts`).
+    // shortest window this console draws a page on became the height the name is drawn whole at
+    // (`src/repl/floor.ts`).
     const rows = THE_FLOOR.rows;
     const missing = tellsApart(hidden.id, [...shown.map((record) => record.id), hidden.id]);
 
@@ -598,7 +603,8 @@ describe('what it offers is what the session showed, and never the record', () =
     const columns = NOTHING_IS_CUT;
     // A WINDOW ABOVE THE FLOOR, READ OFF THE FLOOR rather than written down. The height here was
     // never the subject — it was *a window with room* — and what *with room* means moved when the
-    // shortest window this console draws a page on became fifty-one rows (`src/repl/floor.ts`).
+    // shortest window this console draws a page on became the height the name is drawn whole at
+    // (`src/repl/floor.ts`).
     const rows = THE_FLOOR.rows;
     const ran = await inPty({
       columns,

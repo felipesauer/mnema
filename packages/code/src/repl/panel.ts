@@ -23,8 +23,10 @@
  * on both openings: the reference spends FOUR rows of chrome and writes its name, its build
  * and its context in text beside its logo; this one spent TWELVE, of which two were the
  * border, one was the blank row the stacked arrangement needed and the rest was the same
- * content stacked instead of beside. What is left is NINE, and nine is the height of the
- * drawing of the name — so the chrome now costs the mark and nothing else.
+ * content stacked instead of beside. What is left is NINE, which was the height of the drawing
+ * of the name at that measurement — so the chrome costs the mark and nothing else. The drawing
+ * is six rows now (`presentation/banner.ts`) and the sentence is unchanged: what the chrome
+ * costs is the mark, whatever the mark is.
  *
  * THE RIGHT-HAND SIDE HELD TWO SECTIONS AND HOLDS ONE. The second was `Hints`, and what
  * it said was that a word lists the verbs — which the row under the prompt says too, out of
@@ -86,11 +88,12 @@ import type { Render } from '../presentation/render.js';
  * being no drops one rung, and the rung under the last one is the same lines on the roll.
  *
  * AND THE SHORT SCREEN IS NO LONGER ONE OF THE TWO WAYS THERE. A floor under the window
- * (`floor.ts`) means no page is laid out under FIFTY-ONE rows — it was twenty-four, and the
- * floor is the height the name is drawn whole at now — and the cheapest arrangement costs six,
- * one row of drawing and the five the text beside it takes, which wants eighteen. So
- * `bare` is reached ACROSS: a window narrower than the widest row the arrangement holds, and the
- * widest is usually the one that says where the session is standing, which is a path. The rule
+ * (`floor.ts`) means no page is laid out under FORTY-TWO rows — it was twenty-four, then
+ * fifty-one, and the floor is the height the name is drawn whole at, worked out from the drawing
+ * itself — and the cheapest arrangement costs nine: one row of drawing, the six the text beside
+ * it takes and the two of the seam, which wants twenty-seven. So `bare` is reached ACROSS: a
+ * window narrower than the widest row the arrangement holds, and the widest is usually the one
+ * that says where the session is standing, which is a path. The rule
  * did not move and neither did this ladder; what moved is which of the two questions a device can
  * still answer no to.
  */
@@ -122,9 +125,10 @@ const THE_FORMS: readonly PanelForm[] = ['columns', 'stacked', 'bare'];
  *     build and its context in text beside its logo ({@link BETWEEN_COLUMNS} has the rest of
  *     that measurement). Four of twenty-four is one row under a sixth; a third is twice as
  *     generous as the reference and still a bound.
- *   - ON THE SHORTEST SCREEN THIS CONSOLE DRAWS ON, a third is seventeen and the input area
+ *   - ON THE SHORTEST SCREEN THIS CONSOLE DRAWS ON, a third is fourteen and the input area
  *     takes about five — so what is left for the answer a caller asked for is around
- *     twenty-nine rows.
+ *     twenty-three rows (measured, at the floor:
+ *     `tests/the-opening-fits-the-height.test.ts`).
  *   - THE TWO ENTRIES ABOVE WERE WRITTEN ABOUT TWENTY-FOUR ROWS, and the third one read *AND
  *     THE PEOPLE WHO LIVE IN TWENTY-FOUR ROWS are the ones in a tmux pane, an editor's embedded
  *     terminal or an ssh session, which is not a degenerate size to be tolerated but the
@@ -388,8 +392,15 @@ export interface Opening {
  * choice at all: the form is what a {@link Panel} is built WITH, so a measurement that could
  * only be made once there was one could not be an input to choosing it. The counts are the same
  * numbers either way — a group's rows are its lines, whether they have been rendered yet or not.
+ *
+ * EXPORTED FOR THE FLOOR, which is a third reader of the same statement rather than a
+ * convenience. The shortest window this console draws on is the height at which the biggest
+ * drawing's arrangement is still inside its share (`floor.ts`), so the floor has to know what
+ * the arrangement round a drawing costs — and a floor that added up its own title, its own blank
+ * row and its own groups would be a second arithmetic of this panel, right until the day one of
+ * them moved.
  */
-function besideTheMark(standing: number, record: number): number {
+export function besideTheMark(standing: number, record: number): number {
   return THE_TITLE + standing + BETWEEN_SECTIONS + record;
 }
 
@@ -398,12 +409,13 @@ function besideTheMark(standing: number, record: number): number {
  * under it, and the seam that closes the region — and none at all for the one that is not an
  * arrangement.
  *
- * THE ONE PLACE THIS IS ANSWERED, and both readers of it are what makes that worth saying:
- * the CHOICE asks it of a form it has not settled on yet ({@link panelFor}), and the page asks
- * it of the form that was settled on ({@link panelRows}). Two arithmetics would be an
- * arrangement chosen as though it cost one thing and budgeted against as though it cost
- * another, which is the same class of defect as the column costs this file already pulled
- * together ({@link BETWEEN_COLUMNS}).
+ * THE ONE PLACE THIS IS ANSWERED, and its readers are what makes that worth saying: the
+ * CHOICE asks it of a form it has not settled on yet ({@link panelFor}), the page asks it of the
+ * form that was settled on ({@link panelRows}), and the FLOOR asks it of the arrangement the
+ * biggest drawing would be put in (`floor.ts`). Two arithmetics would be an arrangement chosen
+ * as though it cost one thing and budgeted against as though it cost another, which is the same
+ * class of defect as the column costs this file already pulled together
+ * ({@link BETWEEN_COLUMNS}).
  *
  * IT WAS `panelRows` AND IT BRANCHED ON A PANEL, and before that it was `boxRows` and it
  * counted a frame — a row for the title's border, a row for the bottom edge, and the taller of
@@ -421,7 +433,7 @@ function besideTheMark(standing: number, record: number): number {
  * counted ({@link panelFor}), so every row in here is one row. The lines of a `bare` opening
  * had no such choice made for them, which is why they are counted differently below.
  */
-function rowsOfTheForm(form: PanelForm, mark: number, beside: number): number {
+export function rowsOfTheForm(form: PanelForm, mark: number, beside: number): number {
   switch (form) {
     case 'columns':
       return Math.max(mark, beside) + THE_SEAM;

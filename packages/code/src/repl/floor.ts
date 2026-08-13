@@ -37,58 +37,145 @@
  * screen the way it silences everything else this product prints (`wiring/color.ts`).
  */
 
+import { THE_BIGGEST_DRAWING, widthOfTheDrawing } from '../presentation/banner.js';
 import { aside, fact, subjectLine } from '../presentation/detail.js';
 import type { Line } from '../presentation/line.js';
 import type { Render } from '../presentation/render.js';
+import { THE_INSET } from './inset.js';
+import { besideTheMark, rowsOfTheForm, theShortestScreenFor } from './panel.js';
 
 /**
- * THE SHORTEST WINDOW THIS CONSOLE DRAWS ON: eighty columns by fifty-one rows.
+ * THE WIDTH EVERY LADDER ON THIS SURFACE WAS MEASURED ACROSS, and the one number of the floor
+ * that is chosen rather than worked out.
+ *
+ * It is the width the panel's three forms, the input area's arrangements, the palette's list
+ * and the hint under the prompt were all measured at, and it is what a terminal has been since
+ * the VT100. The drawing does not dispute it — it is narrower than this with the page's margin
+ * counted ({@link theFloorFor}) — so what this number really says is *no page is laid out
+ * narrower than the width everything else on this surface was designed against*.
+ */
+const MEASURED_ACROSS = 80;
+
+/**
+ * WHERE THE SESSION IS STANDING, in rows: one.
+ *
+ * It is one line whatever it knows — the project and the identity are clauses of a single aside
+ * (`session.ts`, `standingLine`) — so this is a shape of the page rather than a count of
+ * anything a record holds.
+ */
+const THE_PLACE = 1;
+
+/**
+ * WHAT THE RECORD IS, in rows: its heading, and one row per tree of a project — which is two,
+ * the public one and the private one (`session.ts`, `recordSection`).
+ *
+ * IT IS THE ONE PART OF THE FLOOR THAT IS A FACT ABOUT A PAGE rather than about the drawing,
+ * and it is declared here instead of being folded into a total. A project with a third tree
+ * spends a row more and its big drawing wants a screen three rows taller — so the floor is the
+ * height the name is drawn at on the page a project HAS, not on every page there could be, and
+ * a heavier one still walks the ladder above this floor. That is the same declared cost the
+ * number carried when it was written down, said where the row is counted rather than in a
+ * sentence about the number.
+ *
+ * MEASURED ON THE PAGE RATHER THAN BELIEVED: the arrangement at the floor is read off a real
+ * console's own seam and compared with what this file works out
+ * (`tests/the-floor-is-where-the-name-is-drawn.test.ts`), so a page that stopped costing this
+ * is red rather than a floor quietly in the wrong place.
+ */
+const THE_RECORD_SAID = 3;
+
+/** The shortest window this console draws a page on, on both measurements. */
+export interface Floor {
+  /** How wide, in columns. */
+  readonly columns: number;
+  /** How tall, in rows. */
+  readonly rows: number;
+}
+
+/**
+ * THE SHORTEST WINDOW A GIVEN DRAWING OF THE NAME IS STILL DRAWN WHOLE ON — the floor, as a
+ * function of the art.
  *
  * THE ROWS WERE TWENTY-FOUR, and the argument was the CANONICAL TERMINAL: eighty by
  * twenty-four is what a terminal has been since the VT100, it is what every emulator opens at,
  * and it is what a tmux pane, an editor's embedded terminal and an ssh session are cut from.
  * That is a true sentence about terminals and it was never a statement about THIS console. What
  * replaced it is a definition a caller gave, in one line: *the smallest terminal is the one
- * where the name is drawn whole*. The floor is not the size the field settled on — it is the
- * size at which this product still shows what it is.
+ * where the name is drawn whole*.
  *
- * FIFTY-ONE, AND IT IS MEASURED RATHER THAN CHOSEN. The height was searched for by driving the
- * built binary on a real pseudo-terminal at eighty columns, one row at a time, and reading
- * which drawing came back: the nine-row drawing of the name first appears at fifty-one rows and
- * the five-row one is what forty to fifty get. The arithmetic behind that number is the budget
- * that was already there and was not touched — at eighty columns the arrangement holding the
- * big drawing is the stacked one and costs seventeen rows, a fixed region may hold one part in
- * three of the screen (`panel.ts`, `A_THIRD`), and three times seventeen is fifty-one.
+ * AND THE DEFINITION ARRIVED AS A NUMBER, WHICH IS THE PREMISE THIS FUNCTION TOOK AWAY. The
+ * height was searched for by driving the built binary on a real pseudo-terminal at eighty
+ * columns, one row at a time, and written down: fifty-one, with the arithmetic behind it in
+ * prose — nine rows of drawing, an arrangement of seventeen, and a third of the screen. Every
+ * word of that was true and none of it was CHECKED, so the day the drawing changed the floor
+ * did not: a nine-row drawing became a six-row one and fifty-one was suddenly a floor nine rows
+ * above where the name is drawn whole, which is a window this console refuses to draw on for no
+ * reason at all. It is the class this console has already paid for three times — a number of
+ * geometry worked out once and read by somebody who is not of that instant — and the answer is
+ * the same one every time: ask.
  *
- * AND THE COLUMNS DID NOT MOVE, because the measurement did not ask them to. The biggest
- * drawing is fifty columns wide and the page's own margin takes six (`inset.ts`), so the
- * drawing is inside the page at fifty-six; eighty is kept, which is the width every ladder on
- * this surface was measured across.
+ * SO THE HEIGHT IS THE SHARE, READ BACKWARDS. What refuses a drawing is that its arrangement
+ * would hold more than one part in three of the screen (`panel.ts`, `A_THIRD`), so the shortest
+ * screen it is kept on is three times what that arrangement costs — and what it costs is asked
+ * of the panel's own arithmetic ({@link rowsOfTheForm}, {@link besideTheMark}) rather than added
+ * up here.
  *
- * WHAT IT COSTS IS DECLARED, and it is the reason this number is written here rather than
- * discovered. A window of twenty-four or thirty rows — a tmux pane, an editor's embedded
- * terminal, a default ssh session — no longer draws a console at all: it draws the screen
- * below, which says the size it has and the size this console needs. Two ways of keeping those
- * windows were offered and refused: loosening the share a fixed region may hold so the big
- * drawing fits in about thirty rows, and two floors, one per width. The floor is one number and
- * it is where the name is drawn.
+ * THE ARRANGEMENT IS THE STACKED ONE, and that is a measurement rather than an assumption. At
+ * the floor's width the drawing and the text cannot sit side by side: the two columns want the
+ * drawing, four columns of gap and the widest row of the text — which is a path — and that is
+ * past what the page has inside its margin. So the mark's rows are ADDED to the text's rather
+ * than shared with them, which is the expensive of the two shapes and therefore the honest one
+ * to define a floor with.
  *
- * WHAT IT BUYS IS AN ASSUMPTION. Every ladder above this floor may now be written for a
- * screen that is at least this big, instead of degrading for ever towards a page nobody would
- * accept. What the bottom rungs of those ladders become is a question for the delivery that
- * moves them, not something this file may quietly decide — so nothing below the floor was
- * removed with it.
+ * AND THE COLUMNS ARE DERIVED TOO, which they were not while they were a number. The drawing
+ * has to be inside the page, and the page keeps a margin (`inset.ts`), so the width has to be at
+ * least the art plus that margin: forty-eight and six is fifty-four, which is under the width
+ * everything else was measured at ({@link MEASURED_ACROSS}), so eighty is what comes back. A
+ * drawing wider than seventy-four would move it, and nothing about this sentence is a promise —
+ * it is the expression.
  *
- * AND ONE LADDER IS NOW ANSWERED AT ITS TOP RUNG FOR THE PAGE THIS WAS MEASURED ON, which is
- * a consequence to name rather than a property to claim. The drawing gives way by height when
- * the arrangement around it would bust its share, and the floor is exactly the height at which
- * it stops doing so — so on a page of the weight measured here, no window above the floor is
- * ever given a smaller drawing. It is not inert: what the arrangement costs is a function of
- * what the record SAYS — a project with a third tree spends a row more, and its big drawing
- * wants fifty-four — so a heavier page still walks the ladder above this floor
+ * WHAT THE FLOOR COSTS IS DECLARED. A window of twenty-four or thirty rows — a tmux pane, an
+ * editor's embedded terminal, a default ssh session — draws no console at all: it draws the
+ * screen below, which says the size it has and the size this console needs. Two ways of keeping
+ * those windows were offered and refused: loosening the share a fixed region may hold, and two
+ * floors, one per width. The floor is one pair and it is where the name is drawn.
+ *
+ * WHAT IT BUYS IS AN ASSUMPTION. Every ladder above this floor may be written for a screen
+ * that is at least this big, instead of degrading for ever towards a page nobody would accept.
+ * What the bottom rungs of those ladders become is a question for the delivery that moves them,
+ * not something this file may quietly decide — so nothing below the floor was removed with it.
+ *
+ * AND ONE LADDER IS ANSWERED AT ITS TOP RUNG FOR THE PAGE THIS IS DEFINED AGAINST, which is a
+ * consequence to name rather than a property to claim. The drawing gives way by height when the
+ * arrangement around it would bust its share, and the floor is exactly the height at which it
+ * stops doing so — so on a page of this weight, no window above the floor is ever given a
+ * smaller drawing. It is not inert: what the arrangement costs is a function of what the record
+ * SAYS ({@link THE_RECORD_SAID}), so a heavier page still walks the ladder above this floor
  * (`tests/the-floor-is-where-the-name-is-drawn.test.ts` pins both halves).
  */
-export const THE_FLOOR = { columns: 80, rows: 51 } as const;
+export function theFloorFor(drawing: readonly Line[]): Floor {
+  return {
+    columns: Math.max(MEASURED_ACROSS, widthOfTheDrawing(drawing) + THE_INSET),
+    rows: theShortestScreenFor(
+      rowsOfTheForm('stacked', drawing.length, besideTheMark(THE_PLACE, THE_RECORD_SAID)),
+    ),
+  };
+}
+
+/**
+ * THE SHORTEST WINDOW THIS CONSOLE DRAWS ON: eighty columns by forty-two rows.
+ *
+ * IT WAS EIGHTY BY FIFTY-ONE, and no decision about windows was taken to move it. The drawing
+ * of the name went from nine rows to six ({@link THE_BIGGEST_DRAWING}), the arrangement round it
+ * from seventeen to fourteen, and three times fourteen is forty-two: nine rows of window given
+ * back to a caller by a delivery about art. That is the whole of what deriving it buys — the
+ * number is a consequence of the drawing, and a drawing edited without this file being opened
+ * moves it.
+ *
+ * ANSWERED ONCE, AT MODULE SCOPE, because the art is a constant: nothing about the drawing
+ * depends on a terminal, so the floor is one arithmetic rather than one per frame.
+ */
+export const THE_FLOOR: Floor = theFloorFor(THE_BIGGEST_DRAWING);
 
 /**
  * DOES THIS WINDOW SERVE? — the one place the floor is applied, over the pair the device

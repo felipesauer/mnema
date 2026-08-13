@@ -250,7 +250,7 @@ const clearsAndLeaves: Step = {
 // The floor is a pair of numbers, and the boundary is searched for
 // ---------------------------------------------------------------------------
 
-describe('the floor is eighty by fifty-one, and it is a function of both measurements', () => {
+describe('the floor is eighty by forty-two, and it is a function of both measurements', () => {
   it('is walked to rather than written down here', () => {
     // THE THRESHOLD, SEARCHED FOR — the same shape every other form on this surface is pinned by.
     // Nothing here knows what the floor is: the walk asks the question at every size and the
@@ -259,14 +259,19 @@ describe('the floor is eighty by fifty-one, and it is a function of both measure
     while (narrowest < 400 && !theWindowServes(narrowest, THE_FLOOR.rows)) narrowest += 1;
     let shortest = 0;
     while (shortest < 400 && !theWindowServes(THE_FLOOR.columns, shortest)) shortest += 1;
-    // THE PAIR MOVED, AND THE HEIGHT IS THE ONE THAT MOVED. It was twenty-four — the canonical
-    // terminal — and it is fifty-one, which is the height the nine-row drawing of the name is
-    // chosen at (`src/repl/floor.ts`, and the ladder in
-    // `the-floor-is-where-the-name-is-drawn.test.ts`). The two literals are here on purpose: this
-    // is the one case that pins the constant to numbers rather than to itself, so a floor that
-    // moved by accident is red here before it is anywhere else.
+    // THE PAIR MOVED TWICE, AND THE HEIGHT IS THE ONE THAT MOVED BOTH TIMES. It was twenty-four
+    // — the canonical terminal — then fifty-one, which is the height a NINE-ROW drawing of the
+    // name is chosen at, and it is forty-two, which is the height the SIX-ROW one is chosen at.
+    // The second move was made by a delivery about art that never opened this file's subject: the
+    // floor is worked out from the drawing now (`src/repl/floor.ts`, `theFloorFor`), so three
+    // rows of art fewer is nine rows of window given back.
+    //
+    // THE TWO LITERALS ARE HERE ON PURPOSE, and the derivation is what they are worth rather
+    // than what they cost: this is the one case that pins the constant to numbers rather than to
+    // itself, so a floor that moved BY ACCIDENT — a drawing edited without anybody meaning to
+    // move a window — is red here before it is anywhere else.
     expect(narrowest, 'the narrowest window that serves').toBe(80);
-    expect(shortest, 'the shortest window that serves').toBe(51);
+    expect(shortest, 'the shortest window that serves').toBe(42);
     // AND THE PAIR THE MODULE NAMES IS THE PAIR THE WALK FOUND, which is what keeps the constant
     // from drifting away from the rule that reads it.
     expect([narrowest, shortest]).toEqual([THE_FLOOR.columns, THE_FLOOR.rows]);
@@ -414,8 +419,8 @@ describe('the floor is crossed in both directions and the session survives it', 
   it('shows the screen when the window shrinks and the roll when it grows back', async () => {
     const columns = 100;
     // A WINDOW ABOVE THE FLOOR, READ OFF THE FLOOR. It was thirty, which was above twenty-four
-    // and is under fifty-one — so a number written down here would open this case on the very
-    // screen it exists to cross INTO.
+    // and is under every floor there has been since — so a number written down here would open
+    // this case on the very screen it exists to cross INTO.
     const rows = THE_FLOOR.rows;
     const ran = await inPty({
       columns,
@@ -468,8 +473,8 @@ describe('the floor is crossed in both directions and the session survives it', 
     const started = held(sandbox);
     const columns = 100;
     // A WINDOW ABOVE THE FLOOR, READ OFF THE FLOOR. It was thirty, which was above twenty-four
-    // and is under fifty-one — so a number written down here would open this case on the very
-    // screen it exists to cross INTO.
+    // and is under every floor there has been since — so a number written down here would open
+    // this case on the very screen it exists to cross INTO.
     const rows = THE_FLOOR.rows;
     const ran = await inPty({
       columns,

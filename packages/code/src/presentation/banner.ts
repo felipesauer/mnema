@@ -2,10 +2,10 @@
  * THE NAME, DRAWN — the one thing this surface prints that says nothing about the
  * record.
  *
- * It is ART, and that is the whole of what it is: nine rows of blocks and shades, five rows
- * of one block, or the name letterspaced, or the name. It carries no fact, so there is
- * nothing in it a reader could be misled about, and that is what makes the rule below safe
- * to state.
+ * It is ART, and that is the whole of what it is: six rows of full blocks with an outline
+ * drawn round them, five rows of one block, or the name letterspaced, or the name. It carries
+ * no fact, so there is nothing in it a reader could be misled about, and that is what makes
+ * the rule below safe to state.
  *
  * IT DEGRADES BY WIDTH, AND CUTTING ART IS NOT LYING. Everything else this product prints
  * is as wide as it is and gets FOLDED to the screen rather than cut — a line of data cut
@@ -150,16 +150,33 @@ const INKED: { readonly [mark: string]: string } = {
 };
 
 /**
- * THE BIGGEST DRAWING, AS THE DRAWING — nine rows of blocks and shades, fifty columns, and
- * the one form in this file that is not written as a mask.
+ * THE BIGGEST DRAWING, AS THE DRAWING — six rows of full blocks with an outline drawn round
+ * them, forty-eight columns, and the one form in this file that is not written as a mask.
  *
- * IT WOULD HAVE BEEN A MASK, AND THIS DRAWING IS WHAT FALSIFIED THE PREMISE THAT SAID SO.
- * Every form here has been written as *characters an editor renders at one width and a diff
- * can show*, and the argument under that rule is that a reader sees the FORM. This one is
- * inked with EIGHT different blocks and shades: as a mask its first row reads
- * ` ###_ _###% ###_    # %#####` — measured, by writing it out — and at eight marks the FORM
- * is the one thing that stops being visible. So the premise did not survive a drawing of
- * eight glyphs, and it is written down here rather than deleted.
+ * IT WAS NINE ROWS OF BLOCKS AND SHADES AND IT IS SIX, and the choice was made between
+ * samples drawn in the real arrangement rather than in the abstract. What the nine-row one
+ * spent its last three rows on was DUST — the light shades that make a drop shadow — and dust
+ * is what disappears first in a thin font, so a third of the height was paying for something a
+ * reader may not have at all. What is here instead is one weight of ink and a contour: the same
+ * word, said in full blocks, at two thirds of the rows and two columns narrower. A drawing of
+ * three rows was offered beside it and refused for the reason the requirement was made in — the
+ * name was asked to be BIGGER, and a compact form is the other direction.
+ *
+ * AND THE ROWS ARE WHAT THE FLOOR IS MADE OF, which is why this is not only a change of
+ * picture. The shortest window this console draws a page on is the height at which this drawing
+ * is still chosen (`repl/floor.ts`), and that height is worked out FROM these rows — so three
+ * rows of art fewer is a floor nine rows lower, without anybody editing a number. The old
+ * drawing put back moves it back, which is a case rather than a claim
+ * (`tests/the-name-in-full-blocks.test.ts`).
+ *
+ * IT WOULD HAVE BEEN A MASK, AND A DRAWING OF EIGHT SHADES IS WHAT FALSIFIED THE PREMISE THAT
+ * SAID SO. Every form here has been written as *characters an editor renders at one width and a
+ * diff can show*, and the argument under that rule is that a reader sees the FORM. The nine-row
+ * drawing was inked with EIGHT different blocks and shades: as a mask its first row read
+ * ` ###_ _###% ###_    # %#####` — measured, by writing it out — and at eight marks the FORM is
+ * the one thing that stops being visible. That drawing is gone and the premise stays
+ * falsified: this one is inked with SEVEN glyphs, which is a mask of seven marks, and the
+ * finding was never about the exact number.
  *
  * WHAT THE DOCTRINE IS REALLY AGAINST IS A CHARACTER A READER CANNOT SEE — an escape, a NUL,
  * a zero-width space, the twenty-four bytes this bench has paid for — and a block is the
@@ -168,33 +185,44 @@ const INKED: { readonly [mark: string]: string } = {
  * non-ASCII byte in the file ACCUSED (`tests/the-opening-fits-the-screen.test.ts`, which
  * also keeps a second copy of these rows so that an edit to the art is loud).
  *
- *   - FULL BLOCK U+2588, DARK SHADE U+2593, MEDIUM SHADE U+2592, LIGHT SHADE U+2591
- *   - LOWER HALF BLOCK U+2584, UPPER HALF BLOCK U+2580
- *   - RIGHT HALF BLOCK U+2590, LEFT HALF BLOCK U+258C
+ *   - FULL BLOCK U+2588 — the ink itself, and the one glyph this drawing shares with the mask
+ *     under it ({@link INK})
+ *   - BOX DRAWINGS DOUBLE HORIZONTAL U+2550 and DOUBLE VERTICAL U+2551
+ *   - BOX DRAWINGS DOUBLE DOWN AND RIGHT U+2554, DOUBLE DOWN AND LEFT U+2557
+ *   - BOX DRAWINGS DOUBLE UP AND RIGHT U+255A, DOUBLE UP AND LEFT U+255D
  *
  * THEY ARE EAST ASIAN AMBIGUOUS, and that is the DECLARED RISK the one block has carried
  * since the first drawing rather than a new one: a terminal set to a CJK locale draws them
- * two cells wide, while {@link widthOf} counts what `plain.ts` counts, so the drawing would
- * be twice as wide as everything that measured it thinks. Closing it means a character-width
- * table for the whole surface, which is a delivery rather than a line, and nothing in this
- * file pretends otherwise.
+ * two cells wide, while {@link widthOfTheDrawing} counts what `plain.ts` counts, so the drawing
+ * would be twice as wide as everything that measured it thinks. The six new ones are in the
+ * same class as the block that was already here — the debt did not grow a kind, it grew a
+ * count — and what the delivery that brought them did instead of asserting it was to ASK the
+ * product's own measurement, glyph by glyph, rather than read the standard
+ * (`tests/the-name-in-full-blocks.test.ts`). Closing it means a character-width table for the
+ * whole surface, which is a delivery rather than a line, and nothing in this file pretends
+ * otherwise.
  *
  * No row ends in a blank, and that is load-bearing rather than tidy: the layout trims the
  * end of every row it writes, so a form padded on the right would arrive somewhere trimmed
  * and be a different width than this file thinks it is. The generator this was taken from
  * pads every row to the widest one; the padding came off before it was brought here, and a
  * case asserts the property rather than trusting that it was done.
+ *
+ * SO THE DRAWING IS FORTY-EIGHT COLUMNS AND ITS TOP ROW IS FORTY-SEVEN, which is that rule
+ * seen from the other end rather than a row of the wrong width. The last letter's top row ends
+ * in a blank — its own shape, in every generator this font exists in — and that blank is
+ * padding at the end of the whole row, so it came off with the rest. What the two numbers mean
+ * is that no terminal ever draws a forty-eighth column on that row, and the five rows under it
+ * are the same width to the column ({@link widthOfTheDrawing} is what the page is measured by,
+ * and it answers forty-eight).
  */
 const THE_BLOCKS: readonly string[] = [
-  ' ███▄ ▄███▓ ███▄    █ ▓█████  ███▄ ▄███▓ ▄▄▄',
-  '▓██▒▀█▀ ██▒ ██ ▀█   █ ▓█   ▀ ▓██▒▀█▀ ██▒▒████▄',
-  '▓██    ▓██░▓██  ▀█ ██▒▒███   ▓██    ▓██░▒██  ▀█▄',
-  '▒██    ▒██ ▓██▒  ▐▌██▒▒▓█  ▄ ▒██    ▒██ ░██▄▄▄▄██',
-  '▒██▒   ░██▒▒██░   ▓██░░▒████▒▒██▒   ░██▒ ▓█   ▓██▒',
-  '░ ▒░   ░  ░░ ▒░   ▒ ▒ ░░ ▒░ ░░ ▒░   ░  ░ ▒▒   ▓▒█░',
-  '░  ░      ░░ ░░   ░ ▒░ ░ ░  ░░  ░      ░  ▒   ▒▒ ░',
-  '░      ░      ░   ░ ░    ░   ░      ░     ░   ▒',
-  '       ░            ░    ░  ░       ░         ░  ░',
+  '███╗   ███╗███╗   ██╗███████╗███╗   ███╗ █████╗',
+  '████╗ ████║████╗  ██║██╔════╝████╗ ████║██╔══██╗',
+  '██╔████╔██║██╔██╗ ██║█████╗  ██╔████╔██║███████║',
+  '██║╚██╔╝██║██║╚██╗██║██╔══╝  ██║╚██╔╝██║██╔══██║',
+  '██║ ╚═╝ ██║██║ ╚████║███████╗██║ ╚═╝ ██║██║  ██║',
+  '╚═╝     ╚═╝╚═╝  ╚═══╝╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝',
 ];
 
 /**
@@ -207,9 +235,9 @@ const THE_BLOCKS: readonly string[] = [
  * is why that one is written out.
  *
  * IT STOPPED BEING THE BIGGEST FORM AND IT DID NOT GO. It covers the band between the
- * biggest drawing's fifty columns and the nine of the letterspaced name — a terminal of
+ * biggest drawing's forty-eight columns and the nine of the letterspaced name — a terminal of
  * forty-something columns is in that band — and with the biggest one put in its place there
- * would be nothing at all between fifty columns and nine.
+ * would be nothing at all between forty-eight columns and nine.
  */
 const TALL_MASK: readonly string[] = [
   '#   # #   # ##### #   # #####',
@@ -247,6 +275,23 @@ function inked(rows: readonly string[]): readonly Line[] {
 const NAME: readonly Line[] = inked(NAME_MASK);
 
 /**
+ * THE BIGGEST FORM, AS LINES — the drawing itself, and the thing the shortest window this
+ * console draws on is worked out from.
+ *
+ * EXPORTED, AND THE EXPORT IS THE POINT OF THIS DELIVERY. The floor used to be a number
+ * somebody had measured by driving a binary one row at a time, written down, and true of a
+ * drawing that could then be replaced under it — which is the class of defect this console has
+ * paid for three times: a number of geometry worked out once and read by somebody who is not of
+ * that instant. So the floor asks THIS value how tall the drawing is and works its own height
+ * out (`repl/floor.ts`), and the module that owns the art is the one place the art is stated.
+ *
+ * IT IS THE FIRST ELEMENT OF {@link FORMS} rather than a copy of it, which is what keeps the
+ * two from disagreeing: a fifth form put above this one would be the biggest drawing and would
+ * not be what the floor was measured against, and there is no way to write that here.
+ */
+export const THE_BIGGEST_DRAWING: readonly Line[] = inked(THE_BLOCKS);
+
+/**
  * The four forms, biggest first — the order the choice below walks.
  *
  * Drawn once, at module scope, because which drawings exist is a constant: nothing about
@@ -254,7 +299,7 @@ const NAME: readonly Line[] = inked(NAME_MASK);
  * on every resize.
  */
 const FORMS: readonly (readonly Line[])[] = [
-  inked(THE_BLOCKS),
+  THE_BIGGEST_DRAWING,
   inked(TALL_MASK),
   inked(SHORT_MASK),
   NAME,
@@ -266,8 +311,13 @@ const FORMS: readonly (readonly Line[])[] = [
  * Asked of `plain.ts` rather than counted here, for the reason the panel gives about the
  * same question: how wide a line is is one module's answer, and a second count would be a
  * second opinion about how a line is punctuated.
+ *
+ * EXPORTED FOR THE FLOOR, which asks it of {@link THE_BIGGEST_DRAWING}: the shortest window
+ * this console draws on has to be at least wide enough for the page to hold the drawing inside
+ * its margin, and a second count of how wide the art is would be exactly the second opinion the
+ * paragraph above refuses. One statement, two readers — the choice below, and the floor.
  */
-function widthOf(form: readonly Line[]): number {
+export function widthOfTheDrawing(form: readonly Line[]): number {
   return form.reduce((most, line) => Math.max(most, widthOfLine(line)), 0);
 }
 
@@ -333,6 +383,6 @@ export interface BannerRequest {
  */
 export function bannerFor(request: BannerRequest): readonly Line[] {
   const fits = (candidate: readonly Line[]): boolean =>
-    widthOf(candidate) <= request.columns && request.needs(candidate) <= request.rows;
+    widthOfTheDrawing(candidate) <= request.columns && request.needs(candidate) <= request.rows;
   return FORMS.find(fits) ?? NAME;
 }

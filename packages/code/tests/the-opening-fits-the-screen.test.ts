@@ -97,29 +97,35 @@ const INK = '\u2588';
 const RUN = '\u2500';
 
 /**
- * EVERY GLYPH THE DRAWINGS MAY BE MADE OF, each named by its code point \u2014 the eight blocks
- * and shades, and nothing else.
+ * EVERY GLYPH THE DRAWINGS MAY BE MADE OF, each named by its code point \u2014 the block, the six
+ * pieces of the outline drawn round it, and nothing else.
  *
  * THIS IS THE GUARD THAT REPLACED THE MASK, and it is stronger than the mask was. Every form
  * of the name used to be written as an ASCII mask, on the argument that a reader of the source
  * sees the FORM in characters an editor renders at one width; the biggest drawing is inked
- * with eight different blocks, and at eight marks a mask is unreadable \u2014 measured, by writing
- * it out (` ###_ _###% ###_    # %#####`). So the drawing is written out and the eight are
- * ENUMERATED instead, here and in the module's own doc: a ninth non-ASCII byte anywhere in
+ * with several different glyphs, and at that many marks a mask is unreadable \u2014 measured, by
+ * writing one out (` ###_ _###% ###_    # %#####`). So the drawing is written out and the glyphs
+ * are ENUMERATED instead, here and in the module's own doc: one more non-ASCII byte anywhere in
  * that file is accused, which is a stronger statement than "the masks are ASCII" ever made.
+ *
+ * IT WAS EIGHT GLYPHS AND IT IS SEVEN, AND THE TWO SETS SHARE ONE MEMBER. The drawing this was
+ * written for was nine rows of blocks and shades, whose last three rows were the dust of a drop
+ * shadow; what replaced it is one weight of ink with a contour round it. So the four shades and
+ * the four half blocks went, the FULL BLOCK stayed, and six pieces of box drawing arrived. The
+ * COUNT was never the property \u2014 the property is that this list and the module's own bytes are
+ * the same set, whatever is in it.
  *
  * The names are the Unicode ones, so a reader can check a code point against the standard
  * rather than against this file.
  */
-const THE_EIGHT: readonly { readonly name: string; readonly glyph: string }[] = [
-  { name: 'UPPER HALF BLOCK', glyph: '\u2580' },
-  { name: 'LOWER HALF BLOCK', glyph: '\u2584' },
+const THE_NAMED: readonly { readonly name: string; readonly glyph: string }[] = [
   { name: 'FULL BLOCK', glyph: INK },
-  { name: 'LEFT HALF BLOCK', glyph: '\u258c' },
-  { name: 'RIGHT HALF BLOCK', glyph: '\u2590' },
-  { name: 'LIGHT SHADE', glyph: '\u2591' },
-  { name: 'MEDIUM SHADE', glyph: '\u2592' },
-  { name: 'DARK SHADE', glyph: '\u2593' },
+  { name: 'BOX DRAWINGS DOUBLE HORIZONTAL', glyph: '\u2550' },
+  { name: 'BOX DRAWINGS DOUBLE VERTICAL', glyph: '\u2551' },
+  { name: 'BOX DRAWINGS DOUBLE DOWN AND RIGHT', glyph: '\u2554' },
+  { name: 'BOX DRAWINGS DOUBLE DOWN AND LEFT', glyph: '\u2557' },
+  { name: 'BOX DRAWINGS DOUBLE UP AND RIGHT', glyph: '\u255a' },
+  { name: 'BOX DRAWINGS DOUBLE UP AND LEFT', glyph: '\u255d' },
 ];
 
 /** Ctrl-C, which abandons the row being typed. Spelled as an escape, for the same reason. */
@@ -235,7 +241,7 @@ const ROOMY = 40;
 const INKS: readonly (readonly [string, string])[] = [['#', INK]];
 
 /** The glyphs a drawing may hold, and nothing else may. */
-const GLYPHS: readonly string[] = THE_EIGHT.map(({ glyph }) => glyph);
+const GLYPHS: readonly string[] = THE_NAMED.map(({ glyph }) => glyph);
 
 /**
  * EVERY DRAWING THERE IS, biggest first — walked off the module rather than written down.
@@ -318,7 +324,7 @@ describe('the name has four drawings, and the widest that fits across is the one
     expect(drawnAcross(WIDE)).not.toEqual(drawnAcross(0));
   });
 
-  it('never pads a row at its end, and draws nothing but the eight named glyphs', () => {
+  it('never pads a row at its end, and draws nothing but the named glyphs', () => {
     // TWO PROPERTIES THE REST OF THE SURFACE DEPENDS ON, and neither is visible to a reader.
     //
     //   - NO ROW ENDS IN A BLANK. The layout trims the end of every row it writes, so a form
@@ -328,7 +334,7 @@ describe('the name has four drawings, and the widest that fits across is the one
     //     the four were substitutions: every form was an ASCII mask, so an unusual byte in a
     //     drawing could only have come from the table that inks one. The biggest drawing is
     //     written out now, blocks and all, and what replaces that reasoning is the
-    //     enumeration itself ({@link THE_EIGHT}) — asked of the drawing here, and of the
+    //     enumeration itself ({@link THE_NAMED}) — asked of the drawing here, and of the
     //     module's own bytes below.
     for (const form of everyForm()) {
       for (const row of form) {
@@ -343,13 +349,13 @@ describe('the name has four drawings, and the widest that fits across is the one
       }
     }
     // NOT VACUOUS: the drawings really are made of those glyphs rather than of ASCII alone,
-    // so the enumeration is ruling on something. Every one of the eight is used, which is
-    // what makes a ninth the only thing the guard below can be about.
+    // so the enumeration is ruling on something. Every one of the named glyphs is used, which
+    // is what makes one more the only thing the guard below can be about.
     const drawn = new Set([...everyForm().flat().join('')].filter((g) => g.codePointAt(0) >= 0x80));
     expect([...drawn].sort(), 'a named glyph is drawn nowhere').toEqual([...GLYPHS].sort());
   });
 
-  it('holds those eight code points in the module and no other unusual byte', () => {
+  it('holds those code points in the module and no other unusual byte', () => {
     // THE GUARD THE MASK USED TO BE, over the bytes of the source rather than over the
     // drawing. What the doctrine is against is a character a reader cannot SEE — an escape, a
     // NUL, a zero-width space — and the enumeration is what makes "no other" checkable now
@@ -361,15 +367,15 @@ describe('the name has four drawings, and the widest that fits across is the one
     const code = withoutComments(readFileSync(BANNER, 'utf-8'));
     const unusual = new Set([...code].filter((glyph) => (glyph.codePointAt(0) as number) >= 0x80));
     expect([...unusual].sort(), 'an unnamed byte is in the module').toEqual([...GLYPHS].sort());
-    // Not vacuous in either direction: there really are unusual bytes to find, and a ninth
+    // Not vacuous in either direction: there really are unusual bytes to find, and one more
     // glyph — or an invisible one, which is what this exists for — would be accused.
-    expect(unusual.size).toBe(THE_EIGHT.length);
-    const ninth = '▖';
-    expect(GLYPHS, 'the ninth glyph of the probe is one of the eight').not.toContain(ninth);
+    expect(unusual.size).toBe(THE_NAMED.length);
+    const unnamed = '▖';
+    expect(GLYPHS, 'the probe glyph is one of the named ones').not.toContain(unnamed);
     const relapse = new Set(
-      [...`const A = '${ninth}';`].filter((g) => (g.codePointAt(0) ?? 0) >= 0x80),
+      [...`const A = '${unnamed}';`].filter((g) => (g.codePointAt(0) ?? 0) >= 0x80),
     );
-    expect([...relapse]).toEqual([ninth]);
+    expect([...relapse]).toEqual([unnamed]);
   });
 });
 
@@ -400,7 +406,7 @@ function masksIn(source: string): readonly (readonly string[])[] {
 }
 
 /**
- * THE ART, AS A SECOND COPY — the nine rows of the biggest drawing, written out.
+ * THE ART, AS A SECOND COPY — the six rows of the biggest drawing, written out.
  *
  * IT IS A GOLDEN AND IT IS HERE BECAUSE A ROUND TRIP COULD NOT BE ONE. While the biggest
  * form was a mask, the mask in the source and the drawing that came back were ONE artifact:
@@ -411,25 +417,22 @@ function masksIn(source: string): readonly (readonly string[])[] {
  *
  * AND THE COPY WAS ASCII, AND THIS IS WHERE THAT STOPS. The reason given was *the copy is
  * ASCII for the same reason the mask is: a reader sees the shape, and a diff shows which
- * stroke moved* — and the drawing this now holds is inked with eight blocks and shades, whose
+ * stroke moved* — and the drawing this now holds is inked with blocks and box drawing, whose
  * mask a reader cannot see the shape in at all (` ###_ _###% ###_    # %#####`, measured by
  * writing it). So the copy is the GLYPHS, which is what keeps the half of the argument that
  * was load-bearing: a reader sees the shape and a diff shows which block moved. What guards
- * the bytes instead of the mask is the enumeration ({@link THE_EIGHT}), which is asked of this
+ * the bytes instead of the mask is the enumeration ({@link THE_NAMED}), which is asked of this
  * file's own copy as much as of the module's.
  *
  * Changing the drawing is meant to change this. That is the whole of what it is for.
  */
 const THE_BIGGEST_DRAWING: readonly string[] = [
-  ' ███▄ ▄███▓ ███▄    █ ▓█████  ███▄ ▄███▓ ▄▄▄',
-  '▓██▒▀█▀ ██▒ ██ ▀█   █ ▓█   ▀ ▓██▒▀█▀ ██▒▒████▄',
-  '▓██    ▓██░▓██  ▀█ ██▒▒███   ▓██    ▓██░▒██  ▀█▄',
-  '▒██    ▒██ ▓██▒  ▐▌██▒▒▓█  ▄ ▒██    ▒██ ░██▄▄▄▄██',
-  '▒██▒   ░██▒▒██░   ▓██░░▒████▒▒██▒   ░██▒ ▓█   ▓██▒',
-  '░ ▒░   ░  ░░ ▒░   ▒ ▒ ░░ ▒░ ░░ ▒░   ░  ░ ▒▒   ▓▒█░',
-  '░  ░      ░░ ░░   ░ ▒░ ░ ░  ░░  ░      ░  ▒   ▒▒ ░',
-  '░      ░      ░   ░ ░    ░   ░      ░     ░   ▒',
-  '       ░            ░    ░  ░       ░         ░  ░',
+  '███╗   ███╗███╗   ██╗███████╗███╗   ███╗ █████╗',
+  '████╗ ████║████╗  ██║██╔════╝████╗ ████║██╔══██╗',
+  '██╔████╔██║██╔██╗ ██║█████╗  ██╔████╔██║███████║',
+  '██║╚██╔╝██║██║╚██╗██║██╔══╝  ██║╚██╔╝██║██╔══██║',
+  '██║ ╚═╝ ██║██║ ╚████║███████╗██║ ╚═╝ ██║██║  ██║',
+  '╚═╝     ╚═╝╚═╝  ╚═══╝╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝',
 ];
 
 describe('every drawing but the biggest is a mask inked, and every mask is ASCII', () => {
@@ -443,7 +446,7 @@ describe('every drawing but the biggest is a mask inked, and every mask is ASCII
     // IT USED TO BE ONE MASK PER FORM. The biggest drawing is written out rather than
     // masked, because eight marks is a mask a reader cannot see the shape in — so the masks
     // are the forms UNDER it, and what holds the biggest one is the copy above and the
-    // enumeration of the eight glyphs.
+    // enumeration of the named glyphs.
     expect(masks, 'the masks were not found in the source').toHaveLength(forms.length - 1);
 
     for (const [at, mask] of masks.entries()) {
@@ -986,19 +989,28 @@ async function openedAt(
  *
  * THE THREE SIZES WERE EIGHTY BY TWENTY-FOUR, A HUNDRED BY THIRTY AND A HUNDRED AND TWENTY BY
  * FORTY, and all three are under the floor now. The shortest window this console draws a page on
- * is where the name is drawn whole (`repl/floor.ts`), which is eighty by fifty-one, so every one
+ * is where the name is drawn whole (`repl/floor.ts`), which is eighty by forty-two, so every one
  * of those sizes measures the screen that says the window is too small rather than a page. The
  * shape of the table did not move — the floor, a common window, and a large one — and every
  * number in it was measured again on the page each size really draws.
  *
- * AND TWO OF THE THREE WENT UP, WHICH IS THE COST OF THE DECISION IN ONE LINE. Thirteen of
- * twenty-four became twenty-two of fifty-one at the floor, and thirteen of thirty became
- * twenty-one of fifty-five: what a window over the floor gets is the WHOLE drawing of the name,
- * nine rows of it, where the old sizes were given the letterspaced one. The large window did not
+ * AND TWO OF THE THREE WENT UP, WHICH IS THE COST OF THAT DECISION IN ONE LINE. Thirteen of
+ * twenty-four became twenty-two of fifty-one at the floor as it then was, and thirteen of thirty
+ * became twenty-one of fifty-five: what a window over the floor gets is the WHOLE drawing of the
+ * name, nine rows of it at the time, where the old sizes were given the letterspaced one. The large window did not
  * move by a row — it was already being given the big drawing — which is what says the difference
  * is the drawing and not the page around it.
  *
- * AND EVERY NUMBER IN IT MOVED ONCE, WHICH IS WHAT THE TABLE IS FOR. The page shows its seams
+ * AND EVERY ROW FELL BY EXACTLY THREE WHEN THE DRAWING DID, which is the cleanest reading this
+ * table has ever given. The name is drawn in six rows where it was nine, and every size in the
+ * table spends three rows fewer — twenty-two to nineteen, twenty-one to eighteen, sixteen to
+ * thirteen — including the one at a hundred and twenty columns, where the text sits BESIDE the
+ * mark and the mark was the taller of the two. That the fall is the same at all three is what
+ * says the change is the ART and nothing else: no threshold was crossed, no arrangement gave
+ * way, and the first row of the table is at a different floor because the floor is worked out
+ * from the drawing now (`repl/floor.ts`).
+ *
+ * AND EVERY NUMBER IN IT MOVED ONCE BEFORE THAT, WHICH IS WHAT THE TABLE IS FOR. The page shows its seams
  * now: a RULE closes the top region, a blank row of breath sits under it, and what the session
  * says is drawn inside a margin (`repl/region.ts`, `repl/inset.ts`). What this counts is rows
  * with something on them, so the rule is one more at every size and the row of breath is none —
@@ -1009,9 +1021,9 @@ async function openedAt(
  * than in a sentence about them.
  */
 const THE_SCREEN: readonly { columns: number; rows: number; takes: number }[] = [
-  { columns: THE_FLOOR.columns, rows: THE_FLOOR.rows, takes: 22 },
-  { columns: 100, rows: 55, takes: 21 },
-  { columns: 120, rows: 60, takes: 16 },
+  { columns: THE_FLOOR.columns, rows: THE_FLOOR.rows, takes: 19 },
+  { columns: 100, rows: 55, takes: 18 },
+  { columns: 120, rows: 60, takes: 13 },
 ];
 
 describe('the console spends only part of the screen it opens on', () => {
@@ -1174,7 +1186,7 @@ describe('the drawing gives way so the page fits, rather than the page being cut
     // the ladder only ever gets simpler as the screen gets shorter.
     // AND THIS IS WHAT THE FLOOR MOVING COST THE LADDER, said as a measurement rather than as a
     // sentence. The ladder was three drawings at one width — the case read *at one width, four
-    // heights, three different drawings* — and every rung of it was under fifty-one rows. The
+    // heights, three different drawings* — and every rung of it was under the floor. The
     // floor is the height the whole drawing is chosen at, so the rungs are all BELOW the shortest
     // window this console draws a page on: a device can no longer reach one. The search is kept
     // and its answer is asserted to be EMPTY, which is a statement that can go red — a drawing
