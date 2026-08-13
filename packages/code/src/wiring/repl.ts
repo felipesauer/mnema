@@ -7,6 +7,20 @@
  * and an agent that ran it in a pty and landed at a prompt would wait for input nobody
  * is going to type. Asking for the session by name costs a word and takes nothing away.
  *
+ * THE PREMISE THAT FELL IS *`mnema` PRINTS THE HELP*, AND ONLY HALF OF IT DID. The bare
+ * name asks now — two doors, one of which opens this session — but only at a TERMINAL, and
+ * the sentence above is exactly what the other side of that question is (`cli.ts`, `start`):
+ * a pipe, a script and a CI job get the same bytes on the same stream with the same exit
+ * code, and that is what the pipeline and the script depended on. What the agent in a pty
+ * depended on is untouched for a different reason: it lands on a QUESTION rather than on a
+ * prompt, and every way of answering it — including pressing nothing and being killed —
+ * leaves the record as it found it.
+ *
+ * AND THE VERB IS NOT REPLACED BY THE DOOR, which is the decision the door was taken under.
+ * A caller who types `mnema repl` gets the session directly, with no menu in front of it: a
+ * shortcut that made everybody pass through it would have taken the word away rather than
+ * added to it, and a finger that already knows the word is the finger this surface is for.
+ *
  * IT IS DECLARED A READ, and it is one: it can only run what it can only run. The
  * session offers a verb when that verb declared `reads` and refuses everything else
  * (`repl/gate.ts`), so the power of this verb is the union of the powers it will

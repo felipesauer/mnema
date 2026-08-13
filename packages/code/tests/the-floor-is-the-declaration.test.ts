@@ -178,8 +178,12 @@ const DOMAIN = ['@mnema/chain', '@mnema/core', '@mnema/core/write', '@mnema/copi
  * because it walks the whole command tree — which is cheap and is still work `mnema
  * --version` has no reason to do — and the interactive session because it drags all
  * three of readline, that same generator and the entry point behind it.
+ *
+ * AND THE QUESTION THE BARE NAME ASKS, which is the newest of them and joins for the
+ * session's own reason: it draws with the same layout library, so a floor that loaded it
+ * would make every verb of this product pay for a menu only one invocation ever sees.
  */
-const WORK = ['commands', 'mcp', 'completion', 'repl'];
+const WORK = ['choice', 'commands', 'mcp', 'completion', 'repl'];
 
 /**
  * Every edge from the floor into the domain, and why that one cannot wait.

@@ -1,3 +1,46 @@
+### the bare name, with no terminal
+$ mnema
+! Usage: mnema [options] [command]
+!
+! A tamper-evident, local-first audit chain for AI-agent work.
+!
+! Options:
+!   -V, --version                           output the version number
+!   --color <when>                          when to use bold, dim and color: auto (a terminal only), always (also in a pipe), never. NO_COLOR and FORCE_COLOR are honored; an explicit --color beats both. Style never changes what a line says. (choices: "auto", "always", "never", default: "auto")
+!   -h, --help                              display help for command
+!
+! Commands:
+!   init                                    establish a mnema project in the current directory
+!   task [options] <title>                  create a task in the current project
+!   decision [options] <title> <rationale>  record a decision in the current project
+!   skill [options] <name>                  propose a reusable skill in the current project
+!   memory [options] <content>              capture a memory in the current project
+!   observe [options] <about>               record an observation about an entity in the current project
+!   handoff [options] <task> <from> <to>    record a handoff on a task in the current project
+!   link [options] <subject> <target>       link one piece of knowledge to another in the current project
+!   run                                     open and close the session an agent works inside
+!   status [options]                        show where things stand: the work, what governs, what awaits a ruling
+!   focus [options]                         show an actor's open runs (what they are touching now)
+!   resume [options]                        show where an actor left off (their latest run, open or ended)
+!   next-actions [options] <task-id>        show the moves the workflow allows a task next
+!   guard [options] <action> <id>           dry-run the gate: would a move be allowed on a task, and if not, why?
+!   search [options] [term]                 find what has been recorded, or list the most recent (no term)
+!   show [options] <id>                     show one whole record by id (the body a search only pointed at)
+!   timeline [options] <id>                 show an entity's history across the trees (subject, about, target)
+!   accountability [options]                show who authorized what across the record (optionally windowed/filtered)
+!   antipatterns [options]                  show recurring shapes in the record (reopens, supersessions, deprecations)
+!   exposure [options]                      show which records hold something shaped like a credential (never the value)
+!   refs [options] <id>                     show what an entity is connected to across the trees
+!   skills [options]                        show where each pattern came from (who proposed it, who adopted it)
+!   brief                                   print what governs the work here as markdown, for an agent to read
+!   key                                     manage this machine's signing keys
+!   verify [options]                        verify this project's record — its committed tree and its private one
+!   mcp [options]                           run the mnema MCP server over stdio (for an agent host)
+!   repl                                    open an interactive session that reads this project
+!   completion <shell>                      print the tab-completion script for a shell
+!   help [command]                          display help for command
+[exit 1]
+
 ### the program
 $ mnema --help
 | Usage: mnema [options] [command]
