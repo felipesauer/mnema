@@ -69,6 +69,7 @@ import { REPL_VERB } from '../src/wiring/repl.js';
 import { ENDS_THE_INPUT, ESC } from './support/console.js';
 import {
   aFrameSince,
+  asFarAs,
   inPty as drive,
   type Fixture,
   leavesTheSession,
@@ -975,17 +976,25 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
   it('keeps the three regions where they belong, narrowing and widening in sequence', async () => {
     const columns = 120;
     const rows = 40;
-    // ONE OF THE THREE WAS EIGHTY BY TWENTY-FOUR AND ANOTHER NINETY BY THIRTY, and neither
+    // ONE OF THEM WAS EIGHTY BY TWENTY-FOUR AND ANOTHER NINETY BY THIRTY, and neither
     // has an arrangement any more: the opening may hold a third of the screen at most, and it
     // costs more than that at both ({@link THREE_REGIONS}). What this case is about is the three
-    // regions surviving a resize, so the sequence is three sizes that HAVE three regions — the
+    // regions surviving a resize, so the sequence is sizes that HAVE three regions — the
     // narrowing and the widening are what it asserts, and a size with the opening on the roll is
     // the subject of `the-opening-fits-the-height.test.ts` instead. The transition to eighty by
     // twenty-four is still driven, in the case under this one, where what is read is the frames.
+    //
+    // AND THE LAST TWO ARE THE SAME WIDTH AT TWO HEIGHTS, which is the one thing here chosen
+    // rather than inherited. A page is located by the width it was drawn at, and a width is not
+    // a size: with two of them a hundred and twenty columns wide, a reading that searched the
+    // WHOLE stream would answer *the page at 120x40* with the frame drawn at 120x30 — which is
+    // what the reading below is bounded to stop, and what makes that bound provable instead of
+    // waited for. It is also an ordinary thing to do to a window: narrow it, then shorten it.
     const sizes = [
       { columns: 110, rows: 30 },
       { columns: 190, rows: 64 },
       { columns: 120, rows: 40 },
+      { columns: 120, rows: 30 },
     ] as const;
     const ran = await inPty({
       columns,
@@ -1010,13 +1019,30 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
         leaves,
       ],
     });
-    sizes.forEach((size) => {
+    sizes.forEach((size, index) => {
       // FOUND BY THE WIDTH IT WAS DRAWN AT rather than by where the step ended, and this case
       // is the one that taught the lesson. A resize produces more than one frame and a step ends
       // wherever the stream was quiet, so on a loaded machine `ran.at[2 + index]` reads the page
       // from BEFORE the resize — and the red says *the opening is not on the page*, which names
       // neither the index nor the load (`support/screen.ts`, {@link theSettledScreen}).
-      const screen = theSettledScreen(ran.bytes, size.columns, size.rows);
+      //
+      // AND SEARCHED ONLY AS FAR AS THE STEP THAT ASKED FOR THE SIZE, which is the half the
+      // sentence above was missing. A width is not a size, and this session is drawn at four
+      // widths but SIX sizes: setting a window size is two calls, so the device passes through
+      // an intermediate one on the way to each ({@link resizedTo}) — and the intermediate keeps
+      // the width it is leaving. Measured directly, on a device driven the way this case drives
+      // one: 110x30 → **110x64** → 190x64. That 110x64 frame is a correct page for a terminal
+      // that really existed for a moment, and a search over the whole stream answers *the page
+      // at 110x30* with it — sixty-four rows replayed onto a thirty-row screen, reported as
+      // *the top region is not at the top: expected 25 to be 0*, an accusation against the
+      // console for a page it drew right.
+      //
+      // THE BOUND IS NOT AN INDEX-READ, and the difference is what makes it honest: the page is
+      // still located by a property of the FRAME, and all the bound does is leave out the frames
+      // a LATER step caused. A boundary that drifts early cannot answer wrongly either — the
+      // locator refuses when no frame at that width is inside it, and the step above cannot end
+      // before the width has been drawn.
+      const screen = theSettledScreen(asFarAs(ran, 2 + index), size.columns, size.rows);
       const where = `${size.columns}x${size.rows}`;
       // THE TOP REGION BEGINS ON THE FIRST ROW, which is the claim a resize can falsify — and
       // NOT that a given row of it stays put: which arrangement a width has room for is the
@@ -1028,7 +1054,7 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
       expect(screen.alternate, `${where}: the screen stopped being ours`).toBe(true);
       expect(screen.above, `${where}: a resize fed the caller’s scrollback`).toEqual([]);
     });
-    theHistorySurvived(ran, 'a session resized three times');
+    theHistorySurvived(ran, 'a session resized four times');
   }, 240_000);
 
   it('writes no frame taller than the screen it is on, not even a transient one', async () => {
@@ -1056,7 +1082,16 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
       steps: [
         opens,
         submits(says(0)),
-        { resize: { columns: 80, rows: 24 }, until: aFrameSince(PROMPT), what: 'was made shorter' },
+        // AND THE STEP WAITS FOR THE SIZE, not for a frame. It waited for a frame, and a frame
+        // names nothing about a size: setting a window size is two calls, so the device is
+        // 120x24 before it is 80x24 ({@link resizedTo}), the console draws that intermediate
+        // page, and *a frame arrived since this step began* is answered by it. The step then
+        // ended, the end of the input was typed, and the session left WITHOUT EVER DRAWING AT
+        // EIGHTY — measured under load: *no frame in this stream was drawn 80 columns wide, so
+        // there is no settled page to read at that size*, which was true and was the case's own
+        // doing. It is the amarra this bench already carries — a step waits for what it CAUSED —
+        // at the last resize step that had not been given it (`support/screen.ts`, {@link drewAt}).
+        { resize: { columns: 80, rows: 24 }, until: drewAt(80), what: 'was made shorter' },
         leaves,
       ],
     });

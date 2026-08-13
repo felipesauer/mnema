@@ -132,6 +132,31 @@ export async function theDeviceWasTheSizeAskedFor(
  * The read-back is out of the same device one call later, while the session is certainly
  * still on it — the resize itself would have failed otherwise — so it says what the running
  * process is about to be told, rather than what it was asked to be told.
+ *
+ * ONE CALL, TWO SIZES — and this is the fact everything a case reads about a resize has to be
+ * written against. `stty rows R cols C` sets the height and the width in two separate calls to
+ * the device, so a session on the other side of it can be told TWICE, and the size in between
+ * is the OLD width at the NEW height. Measured directly, with a program that says every size it
+ * is told about, driven exactly as a case drives one:
+ *
+ *     START 120x40 → 110x30 → **110x64** → 190x64 → 120x40
+ *
+ * The 110x64 was never asked for by anybody. Whether it is seen at all is a race — the process
+ * has to be scheduled between the two calls, which is why what it breaks is red under load and
+ * green on a quiet machine — and a page drawn for it is CORRECT, because the terminal really was
+ * that shape. A caller dragging the corner of a window produces the same thing.
+ *
+ * SO THE ORDER IS THE HEIGHT FIRST, AND IT IS CHOSEN. It means the intermediate size is already
+ * at the FINAL height, so no frame between the two calls is taller than the screen the session
+ * is about to be on — which is what makes *writes no frame taller than the screen it is on*
+ * measurable at all (`tests/the-screen-is-ours.test.ts`). Setting the width first would put the
+ * old height on the new width and hand that case a forty-row frame to accuse the console with.
+ *
+ * AND WHAT IT COSTS IS PAID BY THE READER. The intermediate keeps the width it is LEAVING, so
+ * the last frame at a width can belong to a size nobody asked for; a case that reads the page at
+ * a size searches only as far as the step that asked for it ({@link asFarAs}), and a step that
+ * resizes waits for the width it asked for rather than for a frame (`support/screen.ts`,
+ * {@link drewAt}).
  */
 export function resizedTo(device: string, rows: number, columns: number): void {
   execFileSync('stty', ['-F', device, 'rows', String(rows), 'cols', String(columns)]);
@@ -433,6 +458,26 @@ export interface Step {
   readonly until: (bytes: string, since: number) => boolean;
   /** What the step is, for the message when it never happens. */
   readonly what: string;
+}
+
+/**
+ * EVERYTHING THE DEVICE HAD RECEIVED BY THE END OF STEP `at` — the stream a case reads when
+ * the question is *what did this step leave on the page*.
+ *
+ * IT IS NOT READING BY INDEX, and the distinction is the whole of why it exists. Reading by
+ * index takes the boundary of a step FOR the page, which is what a step does not promise: a
+ * resize draws more than one frame and the boundary lands wherever the stream was quiet. This
+ * hands the boundary to a locator that still finds the page by a property of the FRAME
+ * (`support/screen.ts`, {@link theSettledScreen}), and all it does is leave out what a LATER
+ * step caused — which is the only thing a search over the whole stream cannot leave out.
+ *
+ * WHAT MAKES A LATER STEP'S FRAMES A PROBLEM AT ALL is that a size is set in two calls, so a
+ * session passes through a size nobody asked for on the way to the next one, and that size keeps
+ * the width it is leaving ({@link resizedTo}). A page located by width alone can therefore be
+ * answered by a frame belonging to the step AFTER the one that asked for it.
+ */
+export function asFarAs(ran: Ran, at: number): string {
+  return ran.bytes.slice(0, ran.at[at] as number);
 }
 
 /** What a run in a pty produced. */

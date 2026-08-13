@@ -74,6 +74,12 @@ function name(value: string, as: string): string {
 /** The three transcripts, filled in fixture order and asserted one file each. */
 const transcript = { writes: [] as string[], reads: [] as string[], help: [] as string[] };
 
+/**
+ * The identity the fixture founded, held past {@link beforeAll} for the one case that runs a
+ * read of its own rather than reading the transcript the fixture recorded.
+ */
+let anchor: string;
+
 /** A labelled break in a transcript, so a reader can find their way in it. */
 function section(into: keyof typeof transcript, label: string): void {
   if (transcript[into].length > 0) transcript[into].push('');
@@ -193,6 +199,19 @@ function scrub(lines: readonly string[]): string {
   rank(/\b[0-9a-f]{64}\b/g, 'fingerprint');
   // How long a run has been open, which moves with the clock, not with the record.
   text = text.replace(/\b\d+[dhms](?: \d+[dhms])?\b/g, '<duration>');
+  // THE SAME MEASUREMENT IN THE FORM `--json` CARRIES IT, and it is the one that escaped.
+  // The line above catches the words a person reads; under them `--json` prints the count
+  // itself, so a round that reads a second later than the one that wrote the golden answers
+  // `1` where the committed file says `0` — a transcript that differs from itself, with no
+  // change to the product behind it and nothing a reader can act on.
+  //
+  // MATCHED ON THE SHAPE OF THE NAME rather than on the two that exist. Both are measured
+  // against the ASKER's clock (`@mnema/copilot`, `context/focus.ts`), which is exactly what
+  // makes them unpinnable, and the pair is that file's to grow — a list written here would be
+  // a second idea of which numbers move. The sign is kept in the pattern because one of them
+  // is allowed to be negative: two clocks disagreeing is a fact, and a scrub that missed the
+  // minus would leave it in the golden as a literal.
+  text = text.replace(/"(\w+Seconds)": -?\d+/g, '"$1": <seconds>');
   return `${text}\n`;
 }
 
@@ -365,7 +384,7 @@ beforeAll(async () => {
   //    run that finds it already there.
   section('writes', 'init');
   const initiated = await mnema('writes', 'init');
-  const anchor = name(after(initiated, '  identity:'), 'anchor');
+  anchor = name(after(initiated, '  identity:'), 'anchor');
   // The form the READS print, named by computing it here rather than by reading it
   // out of the output — which makes the name a CHECK. The short form is defined as
   // the anchor's own leading hex, so if a read ever printed something that is not a
@@ -742,4 +761,77 @@ describe('the lines the CLI writes for a person', () => {
     assertNothingVolatile(text);
     await expect(text).toMatchFileSnapshot('./cli.help.golden.txt');
   });
+
+  /**
+   * THE ONE THING IN A TRANSCRIPT THAT MOVES WITHOUT THE RECORD MOVING: how long the open run
+   * has been open. Everything else a read prints is a function of what was written — so two
+   * rounds over the same fixture answer the same bytes — and this is a function of WHEN the
+   * round ran.
+   *
+   * IT WAS RED IN THE SUITE AND GREEN ON ITS OWN FOR SEVERAL DELIVERIES, which is the worst
+   * shape a case can have: the golden differed from itself whenever the fixture and the read
+   * fell either side of a second, and what the diff said was `"ageSeconds": 0` against
+   * `"ageSeconds": 1` — a change nobody made, in a file whose whole job is to show changes
+   * somebody did.
+   *
+   * SO THE CROSSING IS FORCED RATHER THAN WAITED FOR. A case that ran the read twice and hoped
+   * to straddle a second would be red at the same rate as the defect and would prove nothing on
+   * the runs it was green. A whole second between the two rounds makes the underlying count
+   * differ by at least one BY CONSTRUCTION, and the case then asks the only question worth
+   * asking: does the scrubbed transcript notice?
+   *
+   * AND BOTH FORMS ARE ASKED, because the surface prints the measurement twice: the words a
+   * person reads (`open 0s`) and the count under them (`"ageSeconds": 0`). The first was
+   * scrubbed from the day the file existed and the second was not, which is exactly how one
+   * half of a rule comes to be enforced and the other half not.
+   */
+  it('answers a read the same way when a second passes under it', async () => {
+    for (const argv of [
+      ['resume', '--actor', anchor],
+      ['resume', '--actor', anchor, '--json'],
+    ]) {
+      const [first, second] = await twiceASecondApart(argv);
+      // NOT VACUOUS: the read really did answer differently. Without this the case would pass
+      // over a read that says nothing about the clock at all, which is what every OTHER read in
+      // this file is — so the assertion under it would be about nothing.
+      expect(
+        second.join('\n'),
+        `mnema ${argv.join(' ')} answered the same bytes a second later, so nothing here moves ` +
+          `with the clock and this case is asserting the scrub over a value it never sees`,
+      ).not.toBe(first.join('\n'));
+      expect(
+        scrub(second),
+        `mnema ${argv.join(' ')} moves the transcript when a second passes: the golden differs ` +
+          `from itself on a round that crosses one`,
+      ).toBe(scrub(first));
+    }
+  }, 30_000);
 });
+
+/**
+ * The same read, run twice with a whole second between the two rounds — and the lines each
+ * round wrote.
+ *
+ * A SECOND AND A LITTLE, because what has to differ is a count of whole seconds against an
+ * instant this fixture does not choose: waiting exactly a thousand milliseconds leaves the
+ * two rounds in the same second whenever the run started mid-second, and a case that is only
+ * sometimes about the thing it is about is the case this one replaces.
+ *
+ * It goes through {@link run}, the same entry the transcript is built with, so the bytes are
+ * the ones the golden would have held.
+ */
+async function twiceASecondApart(argv: readonly string[]): Promise<readonly [string[], string[]]> {
+  const once = async (): Promise<string[]> => {
+    const said: string[] = [];
+    const io: CliIo = {
+      out: (line) => said.push(line),
+      err: (line) => said.push(line),
+      fail: () => undefined,
+    };
+    await run([...argv], io);
+    return said;
+  };
+  const first = await once();
+  await new Promise((resolve) => setTimeout(resolve, 1_100));
+  return [first, await once()];
+}
