@@ -517,6 +517,73 @@ export interface SkillConsultedV1 extends Envelope {
 }
 
 /**
+ * A tail was authorized to be cut — the waiver that lets a reader tell an
+ * authorized cut apart from a tail that went missing.
+ *
+ * WHAT IT IS FOR, MEASURED. Removing one line from the middle of a 402-event tail
+ * produces 102 findings (a seq gap, a range mismatch, and 100 checkpoint chain
+ * breaks in cascade); removing the first hundred events produces 454. Removing the
+ * WHOLE tail produces none: the verifier reports `1 tail(s); no events yet` and
+ * exits zero, which is the same sentence a tail that never wrote anything gets. So
+ * the product punished the honest cut and could not see the dishonest one — and
+ * the census note for the orphaned key already listed three readings of it
+ * ("dropped by a botched merge, never written, or removed") with nothing on disk
+ * to tell them apart. This event is that missing fact, and it answers the THIRD
+ * reading only.
+ *
+ * IT IS PER TAIL, WHOLE, NEVER A RANGE. A waiver over an interval would oblige the
+ * verifier to rejoin the checkpoint chain across the hole and to fall silent on
+ * 100-151 cascading breaks plus 302 events left with no signature covering them —
+ * the heart of how the proof is read. The founding document already said
+ * "waiver assinado por-cauda"; the numbers above are why. And nobody needs a range
+ * for SIZE: this product costs 884 B per event, 84.3 MiB per hundred thousand.
+ *
+ * IT IS WRITTEN BEFORE THE CUT, AND THAT IS WHAT MAKES IT CHECKABLE. While the tail
+ * is still on disk, all three of its claims can be — and are — compared against it
+ * at write time (see `unprovenWaiverReason`): the tail exists, its head hash is
+ * `throughHash`, and it holds exactly `eventCount` events. Accepted afterwards, a
+ * waiver would authorize anything retroactively and would be a signature over a
+ * fact nobody could ever check. So this event is the AUTHORIZATION of a cut, not
+ * the observation of one — the product itself never removes anything.
+ *
+ * IT LIVES IN THE AUTHORIZER'S TAIL, never in the one it names: the named tail is
+ * about to stop existing, and a waiver inside it would go with it. The door refuses
+ * a waiver that names the tail it is being appended to, so that cannot be got wrong
+ * by accident.
+ *
+ * IT IS NOT ACCESS CONTROL AND IT IS NOT A CURE. Anyone who can write to the record
+ * can declare a prune of any tail, exactly as anyone who can write can record any
+ * other fact — the declaration is signed and attributed, so a forged waiver is a
+ * fact that points at whoever forged it. And it says nothing about CONTENT: a tail
+ * that is PRESENT and corrupt keeps every issue it had, because a waiver speaks of
+ * an absence. `verify` treats it as a census note, never as a verdict: it moves
+ * neither `ok` nor the exit code.
+ *
+ * WHAT IT DOES NOT PROMISE: forgetting. Once the record is pushed, reaching the
+ * remote and every clone takes `git filter-repo`, a force push, and everyone
+ * re-cloning — and a forbidden force-push is the precedent P1 itself cites. The
+ * waiver makes a removal DISTINGUISHABLE from a tampering. It does not remove.
+ */
+export interface TailPrunedV1 extends Envelope {
+  readonly kind: 'tail.pruned';
+  readonly v: 1;
+  /**
+   * Subject is the ANCHOR the pruned tail spoke for — the identity whose tails are
+   * the unit of the cut, taken from the `who` of that tail's last event.
+   */
+  readonly payload: {
+    /** The tail id being cut: `<fingerprint>-<installationId>`. */
+    readonly tail: string;
+    /** The hash of that tail's last entry, as the disk held it when this was written. */
+    readonly throughHash: string;
+    /** How many events that tail held. A count, never a range: the cut is the whole tail. */
+    readonly eventCount: number;
+    /** Why it was cut — the proof of the why, as free text. */
+    readonly reason: string;
+  };
+}
+
+/**
  * The catalog: every event the chain may contain. `kind` + `v` together select
  * exactly one arm, so a producer and a consumer can never disagree on a
  * payload shape without the compiler saying so.
@@ -537,7 +604,8 @@ export type CatalogEvent =
   | KnowledgeLinkedV1
   | SkillCreatedV1
   | SkillTransitionedV1
-  | SkillConsultedV1;
+  | SkillConsultedV1
+  | TailPrunedV1;
 
 /** The `kind` discriminators present in the catalog. */
 export type EventKind = CatalogEvent['kind'];
@@ -563,4 +631,5 @@ export const LATEST_VERSION: { readonly [K in EventKind]: number } = {
   'skill.created': 1,
   'skill.transitioned': 1,
   'skill.consulted': 1,
+  'tail.pruned': 1,
 };

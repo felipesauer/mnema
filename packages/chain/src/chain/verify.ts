@@ -78,7 +78,7 @@ import { resolveIdentity } from './enrollment.js';
 import type { Entry } from './entry.js';
 import { entryHash } from './hash.js';
 import { fingerprintOf, type KeyObject, publicKeyFromPem } from './keys.js';
-import { type ChainLayout, publicKeyPath, tailProofPath } from './layout.js';
+import { type ChainLayout, publicKeyPath, tailFingerprint, tailProofPath } from './layout.js';
 import {
   levelHeadline,
   type ProvenFacts,
@@ -89,6 +89,7 @@ import {
 import { UnreadableLineError } from './lines.js';
 import { listPublicKeyFingerprints, listTails, readTail, readTailCheckpoints } from './store.js';
 import { parseTailProof, verifyTailProof } from './tailproof.js';
+import { type TailWaiver, tailWaiversIn, waiversForKey } from './waiver.js';
 
 export type { WitnessStatus } from './level.js';
 
@@ -108,6 +109,14 @@ export interface TailIssue {
  * {@link VerifyResult.ok} to false: each of the two has an innocent reading and a
  * guilty one, and the disk cannot tell them apart. Reporting the ambiguity is the
  * product's posture; choosing a side on the reader's behalf is not.
+ *
+ * A WAIVER DOES NOT CHANGE THAT POSTURE — it gives the disk the fact it was
+ * missing. A key with no tail had three readings and nothing to choose between
+ * them; a `tail.pruned` naming that key's tail answers the third one, so the note
+ * SAYS SO instead of listing three possibilities (see {@link keysWithoutTail}).
+ * With no waiver the note is what it always was, byte for byte. And an accounted-for
+ * cut is still not a verdict: it moves neither `ok` nor the exit code, because a cut
+ * that was authorized is not a break — and it is not a cure for one either.
  *
  * It is a union rather than one shape because the two observations are about
  * different things, and a reader that has to branch on `kind` is a reader who
@@ -129,12 +138,25 @@ export type CensusNote = KeyWithoutTailNote | PartialFinalLineNote;
  * removed to hide its events. And it is blind to a tail deleted together WITH its
  * key: with nothing left on disk to cross, only an external witness (a git history)
  * can testify to what was removed.
+ *
+ * ONE OF THE THREE CAN NOW BE ANSWERED. A cut made through a waiver leaves a signed
+ * `tail.pruned` in the record — written while the tail was still there, so its head
+ * hash and its event count were checked against the disk — and the note then names
+ * that account instead of listing possibilities. The other two readings are
+ * untouched: a merge that dropped a tail and a machine that never wrote produce no
+ * waiver, and the note they get is unchanged.
  */
 export interface KeyWithoutTailNote {
   readonly kind: 'key-without-tail';
   /** The committed public key's fingerprint (equal to the missing tail's id). */
   readonly fingerprint: string;
   readonly detail: string;
+  /**
+   * The waivers that account for this key having no tail, in the order the record
+   * holds them. Empty is the ordinary case and is the ambiguity itself: nothing in
+   * the record says where the tail went.
+   */
+  readonly waivers: readonly TailWaiver[];
 }
 
 /**
@@ -350,7 +372,12 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
   }));
   const allIssues: TailIssue[] = tailResults.flatMap((t) => t.issues as TailIssue[]);
 
-  const census: CensusNote[] = [...keysWithoutTail(layout, tails), ...notes];
+  // The waivers the record holds, taken from the entries already read. A waiver
+  // about a tail that is still HERE is collected and never consulted: the census
+  // asks only about keys with no tail at all, so a waiver can never quiet an issue
+  // on a tail that is present and broken.
+  const waivers = tailWaiversIn(entriesByTail);
+  const census: CensusNote[] = [...keysWithoutTail(layout, tails, waivers), ...notes];
 
   const ok = allIssues.length === 0;
   const fullySigned = ok && uncheckpointed === 0;
@@ -458,27 +485,65 @@ function tailFingerprintIsCommitted(tail: string, committed: ReadonlySet<string>
  * key for signer"; if it has none, its events rest on the hash chain alone and
  * are already reported as the unsigned residual (`fullySigned`). Either way the
  * existing result covers it, so the census only looks one way: keys → tails.
+ *
+ * THE WAIVERS ARE WHAT MAKES THE THIRD READING ANSWERABLE. They are handed in
+ * rather than looked up, because the verifier has already read every tail by this
+ * point and a second pass over the disk to find them would be a second reading of
+ * the record. A key with a waiver for one of its tails gets a note that NAMES the
+ * account; a key with none gets exactly the note it has always got.
  */
-function keysWithoutTail(layout: ChainLayout, tails: readonly string[]): KeyWithoutTailNote[] {
+function keysWithoutTail(
+  layout: ChainLayout,
+  tails: readonly string[],
+  waivers: readonly TailWaiver[],
+): KeyWithoutTailNote[] {
   const fingerprintsWithTail = new Set(tails.map(tailFingerprint));
   const notes: KeyWithoutTailNote[] = [];
   for (const fingerprint of listPublicKeyFingerprints(layout)) {
     if (fingerprintsWithTail.has(fingerprint)) continue;
+    const accounted = waiversForKey(fingerprint, waivers);
     notes.push({
       kind: 'key-without-tail',
       fingerprint,
-      detail:
-        'committed public key has no tail on disk — the tail may have been dropped ' +
-        '(a botched merge), never written (an empty tail is not versioned), or removed',
+      detail: keyWithoutTailDetail(accounted),
+      waivers: accounted,
     });
   }
   return notes;
 }
 
-/** The fingerprint a tail directory carries: the part before its last `-`, or the whole name. */
-function tailFingerprint(tail: string): string {
-  const lastDash = tail.lastIndexOf('-');
-  return lastDash === -1 ? tail : tail.slice(0, lastDash);
+/**
+ * How a key with no tail READS — the one function that words it, for both cases.
+ *
+ * With nothing to go on, the sentence is the ambiguity, unchanged from the day the
+ * note was written: three readings, and the disk cannot choose. With a waiver, the
+ * third of them is answered, so the sentence names the account instead — who
+ * authorized the cut, how many events the tail held, and the head it held them
+ * through. Both quantities were compared against the disk when the waiver was
+ * written, which is what lets someone holding a copy of the tail check the claim.
+ *
+ * IT NAMES THE CUT; IT DOES NOT CLAIM ANYTHING IS GONE. Nothing local can know
+ * whether the events survive in a clone, a remote, or a backup — that is the same
+ * limit the T3 clause states plainly — so the sentence is about what the RECORD
+ * says, never about what the world holds.
+ *
+ * Two waivers for one key is a key with several installations, all cut. The
+ * sentence carries each, in the record's own order, rather than picking one: which
+ * of a key's tails was accounted for is exactly what a reader is trying to find out.
+ */
+function keyWithoutTailDetail(waivers: readonly TailWaiver[]): string {
+  if (waivers.length === 0) {
+    return (
+      'committed public key has no tail on disk — the tail may have been dropped ' +
+      '(a botched merge), never written (an empty tail is not versioned), or removed'
+    );
+  }
+  const accounts = waivers.map(
+    (waiver) =>
+      `${waiver.tail} (${waiver.eventCount} event(s) through ${waiver.throughHash}), ` +
+      `authorized by ${waiver.who}`,
+  );
+  return `committed public key has no tail on disk, and the record names the cut: ${accounts.join('; ')}`;
 }
 
 /**

@@ -59,6 +59,22 @@ export function tailDir(layout: ChainLayout, tailId: string): string {
   return join(tailsDir(layout), tailId);
 }
 
+/**
+ * The fingerprint a tail directory carries: the part before its last `-`, or the
+ * whole name for a tail named by a bare fingerprint (the shape that predates the
+ * installation suffix).
+ *
+ * It lives here, with the rest of what a path in a chain MEANS, because more than
+ * one reader needs it: the verifier ties a tail to a committed key by it, and the
+ * waiver rule ties a cut tail back to the key whose census note is missing its
+ * explanation. Two readings of where the suffix begins would let one of them accept
+ * a tail the other rejects.
+ */
+export function tailFingerprint(tailId: string): string {
+  const lastDash = tailId.lastIndexOf('-');
+  return lastDash === -1 ? tailId : tailId.slice(0, lastDash);
+}
+
 /** Zero-padded segment file path for a given segment number (1-based). */
 export function segmentPath(layout: ChainLayout, tailId: string, segment: number): string {
   const name = `${String(segment).padStart(SEGMENT_DIGITS, '0')}.jsonl`;
