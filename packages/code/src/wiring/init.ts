@@ -21,11 +21,21 @@ import { here } from './context.js';
 import type { CliIo } from './io.js';
 import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
+/**
+ * The name this verb is registered under, in one place.
+ *
+ * It is read rather than retyped for the reason `REPL_VERB` is (`wiring/repl.ts`): the bare
+ * name offers this verb as the first thing to do in a directory with no project, and it
+ * names it BY IDENTITY — so the door cannot end up pointing at a word this program no longer
+ * routes.
+ */
+export const INIT_VERB = 'init';
+
 /** Registers `mnema init` on the program. */
 export function registerInit(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
   const init = program
-    .command('init')
+    .command(INIT_VERB)
     .description('establish a mnema project in the current directory')
     .action(async () => {
       const { runInit } = await import('../commands/init.js');

@@ -486,6 +486,16 @@ export interface Ran {
   readonly bytes: string;
   /** How many bytes had arrived by the end of each step, in order. */
   readonly at: readonly number[];
+  /**
+   * WHAT THE RUNNER EXITED WITH, and `undefined` when this driver killed it instead.
+   *
+   * It is the runner's code and therefore the CLI's — `script -e` returns the code of the
+   * command it ran — which is what lets a case ask the one thing no byte on the page can
+   * answer: whether an invocation reported a failure. The `undefined` is the honest half:
+   * every session that is left rather than ended is killed here after its last step, and a
+   * number invented for it would be a code nobody produced.
+   */
+  readonly code: number | undefined;
 }
 
 /** Where a session is opened, and what it is opened with. */
@@ -589,6 +599,10 @@ export async function inPty(
 
   const arriving = decodedWhole();
   let over = false;
+  // WHAT IT EXITED WITH, kept only when the process ended of its own accord: `script -e`
+  // answers with the code of the command it ran, and a run this driver killed answers with a
+  // signal instead — which is not an exit code and is not reported as one.
+  let code: number | undefined;
   const child = spawn('script', ['-qec', `sh ${runner}`, '/dev/null'], {
     cwd: fixture.project,
     env: fixture.environment,
@@ -597,8 +611,9 @@ export async function inPty(
   arriving.from(child.stdout);
   arriving.from(child.stderr);
   const ended = new Promise<void>((resolve) => {
-    child.on('close', () => {
+    child.on('close', (was) => {
       over = true;
+      code = was ?? undefined;
       resolve();
     });
   });
@@ -636,5 +651,5 @@ export async function inPty(
     child.stdin.end();
     child.kill('SIGKILL');
   }
-  return { bytes: arriving.text(), at };
+  return { bytes: arriving.text(), at, code };
 }
