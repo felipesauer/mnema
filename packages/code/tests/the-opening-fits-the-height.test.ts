@@ -45,6 +45,7 @@ import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC } from './support/console.js';
 import {
   aFrameSince,
+  aFrameWithout,
   inPty as drive,
   type Fixture,
   opensAConsole,
@@ -645,34 +646,32 @@ describe('the answer a caller asked for is on the page, at the shortest window t
       // keystroke that draws NO frame, which is what the step waiting for one measured. The
       // assertions below are what say the opening really did leave, so the count is a fixture and
       // never the promise.
-      // AND THE THIRD ASK WAITS FOR NOTHING ON PURPOSE, which is a thing to say out loud
-      // rather than a shortcut. The window shows the END of the roll, so a third copy of the
-      // same answer leaves the page looking exactly as it did — and the layout writes NOTHING
-      // for a frame identical to the one on the screen, so a step waiting for one waits for
-      // ever (measured: *the session never asked brief*, on a step that had already worked
-      // twice). What makes the case honest is not the wait but the READ, which does not depend
-      // on where a step ended ({@link theFirstScreenWhere}).
+      // AND THE SECOND ASK WAITS FOR THE OPENING TO HAVE GONE, which is the one wait that
+      // means what this case is about. A step that waited for *a frame* ended wherever the
+      // stream was quiet — measured in whole-suite runs, twice: the page it left behind still
+      // had the drawing and the sentence under it on the screen, so the walk had nothing to
+      // walk back to and the case was red about its own instrument. An absence is waited for in
+      // two parts and the first is a presence ({@link aFrameWithout}), so what this step ends on
+      // is a frame it caused with the opening no longer in it.
       steps: [
         opens,
         asks,
-        asks,
-        { types: `${A_LONG_READ}\r`, until: () => true, what: 'asked once more' },
+        {
+          types: `${A_LONG_READ}\r`,
+          until: aFrameWithout(PROMPT, OPENED),
+          what: 'pushed the opening off the page',
+        },
         walksToTheTop,
         leaves,
       ],
     });
     // THE PAGE THE ANSWERS SETTLED ON, which is the LAST frame drawn before the walk rather
     // than the first one carrying an answer. IT WAS THE FIRST, and it is the wrong end of the
-    // stream for this subject: the roll is grown by three answers and the first page carrying
-    // both ends of ONE of them is the first answer's, which the opening is still on. What the
-    // case is about is what the roll has pushed off the page, so what it reads is where the
-    // page came to rest ({@link theSettledScreen}).
-    //
-    // AND IT IS THREE ANSWERS RATHER THAN TWO BECAUSE TWO WAS MARGINAL, which a full run under
-    // load found rather than an argument: the opening and two answers came to about the height
-    // of the window. A count that has to be exactly right to mean anything is a fixture doing
-    // the promise's work.
-    const asked = theSettledScreen(ran.bytes.slice(0, ran.at[3] as number), columns, rows);
+    // stream for this subject: the roll is grown by two answers and the first page carrying both
+    // ends of ONE of them is the first answer's, which the opening is still on. What the case is
+    // about is what the roll has pushed off the page, so what it reads is where the page came to
+    // rest ({@link theSettledScreen}).
+    const asked = theSettledScreen(ran.bytes.slice(0, ran.at[2] as number), columns, rows);
     // THE OPENING REALLY DID LEAVE THE PAGE, or there is nothing to walk back to: neither what
     // the session is nor the sentence it lands under the mark is on the page after the answer.
     expect(asked.text, 'the opening never left the page').not.toContain(OPENED);
