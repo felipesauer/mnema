@@ -157,8 +157,8 @@ const TO_THE_TAIL = `${ESC}[F`;
  * `the-opening-fits-the-height.test.ts`, and no number here is that answer.
  *
  * AND THE HEIGHT IS THE FLOOR'S NOW RATHER THAN THIRTY. Thirty was a window somebody had while
- * the shortest one this console drew a page on was twenty-four rows; the floor is fifty-one
- * (`src/repl/floor.ts`), so thirty is under it and every case below would be driving the screen
+ * the shortest one this console drew a page on was twenty-four rows; the floor is forty-two and
+ * is worked out from the drawing of the name (`src/repl/floor.ts`), so thirty is under it and every case below would be driving the screen
  * that says the window is too small. Read off the floor rather than retyped, for the reason the
  * paragraph above gives about thresholds: this is *a window somebody has*, and what that means
  * is now stated in one place.
@@ -171,9 +171,10 @@ const THREE_REGIONS = { columns: 120, rows: THE_FLOOR.rows } as const;
  * IT WAS THREE, AND THEN NINE, and the arithmetic under it is the same arithmetic as the size
  * above. The middle region was four rows while the arrangement held fifteen, so three answers
  * filled it twice over; nine was the answer for a window of thirty rows. The window is the
- * floor's now — fifty-one — the arrangement beside the mark costs eleven of them and the input
- * area five, so the middle is the thirty-five that are left, and a refused line is worth two
- * rows: twenty-two of them are forty-four and the roll clears the window by nine.
+ * floor's now, and the floor followed the drawing down to forty-two — the arrangement beside the
+ * mark costs eight of them and the input area five, so the middle is the twenty-nine that are
+ * left, and a refused line is worth two rows: twenty-two of them are forty-four and the roll
+ * clears the window by fifteen.
  *
  * MEASURED RATHER THAN CALCULATED, which is what every case that uses it then asserts: each one
  * says out loud that something really did go past the top, so a window that grew again turns
@@ -985,8 +986,8 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
   it('keeps the three regions where they belong, narrowing and widening in sequence', async () => {
     const columns = 120;
     // EVERY HEIGHT IN THIS CASE IS ABOVE THE FLOOR, which is what the floor moving forced: the
-    // sizes below were thirty, sixty-four, forty and thirty, and three of the four are under
-    // fifty-one now. What the case is about did not move — three regions surviving a resize — so
+    // sizes below were thirty, sixty-four, forty and thirty, and three of the four are under the
+    // floor now. What the case is about did not move — three regions surviving a resize — so
     // the shape is the one it had: four sizes, the third the one it opened at, and the last two
     // the same width at two heights.
     const rows = 55;
@@ -1140,7 +1141,7 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
 describe('the way out gives the screen back and the transcript with it', () => {
   it('writes everything the session said onto the caller’s own buffer, after leaving', async () => {
     const columns = 100;
-    // AT THE FLOOR'S HEIGHT, which was twenty-four and is fifty-one (`src/repl/floor.ts`).
+    // AT THE FLOOR'S HEIGHT, which was twenty-four and is forty-two (`src/repl/floor.ts`).
     const rows = THE_FLOOR.rows;
     const ran = await inPty({ columns, rows, steps: [opens, submits('verify'), leaves] });
     // AFTER THE SEQUENCE THAT GIVES THE SCREEN BACK, and this is the whole mechanism: the

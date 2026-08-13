@@ -350,22 +350,23 @@ const THE_GEOMETRIES: readonly {
   readonly form: PanelForm;
 }[] = [
   // The screen everybody has. Too narrow for the two columns with THIS drawing beside them, and
-  // fifteen rows of arrangement is more than a third of twenty-four — so with the biggest
-  // drawing there is no arrangement at all, and the console draws a smaller one instead.
+  // the stacked arrangement is more than a third of twenty-four — so with the biggest drawing
+  // there is no arrangement at all, and the console draws a smaller one instead.
   { columns: 80, rows: 24, form: 'bare' },
-  { columns: 100, rows: 24, form: 'bare' },
-  // A window with the room for the two columns ACROSS and not down. IT ANSWERED `columns` AND
-  // THE SEAM IS WHAT TOOK IT: the top region is the arrangement AND the rule that closes it and
-  // the row of breath under that (`repl/panel.ts`, `THE_SEAM`), so the biggest drawing costs
-  // eleven rows rather than nine and its share wants thirty-three. The rule did not move — a
-  // third of the screen, chrome and all — and what moved is what the chrome is.
-  { columns: 120, rows: 30, form: 'bare' },
+  // AND THREE ROWS OF THIS TABLE ANSWERED `bare` UNTIL THE DRAWING CHANGED. The biggest drawing
+  // is six rows where it was nine, so the arrangement that holds it BESIDE the text costs eight
+  // rows rather than eleven and its share wants twenty-four rather than thirty-three — which is
+  // a screen everybody has. What moved is the art, not the rule: the same third of the same
+  // screen buys an arrangement now, and the three sizes are kept at their old numbers so that
+  // the change is visible here rather than hidden by re-choosing them.
+  { columns: 100, rows: 24, form: 'columns' },
+  { columns: 120, rows: 30, form: 'columns' },
   { columns: 190, rows: 64, form: 'columns' },
   // A tmux pane, and a narrow window — neither has the rows for an arrangement.
   { columns: 60, rows: 20, form: 'bare' },
   { columns: 47, rows: 24, form: 'bare' },
-  // Wide enough for the text under the mark, and not tall enough to hold it there.
-  { columns: 100, rows: 30, form: 'bare' },
+  // Wide enough for the text beside the mark, and now tall enough to hold it there too.
+  { columns: 100, rows: 30, form: 'columns' },
 ];
 
 describe('the arrangement is chosen by the height as well as the width', () => {
@@ -378,10 +379,12 @@ describe('the arrangement is chosen by the height as well as the width', () => {
     // heights, and the same height answers differently at two widths. A table of one answer
     // repeated seven times would pass every assertion above.
     expect(new Set(THE_GEOMETRIES.map(({ form }) => form)).size).toBeGreaterThan(1);
-    // THE PAIRS MOVED UP THE TABLE with the seam: at a hundred and twenty by thirty the biggest
-    // drawing's arrangement no longer fits its share, so the width that still discriminates the
-    // HEIGHT is one with the rows for eleven of chrome.
-    expect(formAt(190, 64)).not.toBe(formAt(190, 24));
+    // THE PAIRS MOVED DOWN THE TABLE WITH THE DRAWING. They moved UP when the seam joined the
+    // chrome — at a hundred and twenty by thirty the biggest drawing's arrangement stopped
+    // fitting its share — and a drawing of six rows put them back: eight rows of chrome want
+    // twenty-four, so twenty-four no longer discriminates anything and the height that does is
+    // one with no room for eight.
+    expect(formAt(190, 64)).not.toBe(formAt(190, 20));
     expect(formAt(190, 64)).not.toBe(formAt(40, 64));
   });
 
@@ -543,35 +546,43 @@ function theAnswerOn(ran: Ran, columns: number, rows: number): Screen {
  * and the four that were left showed the tail of the answer with the list of verbs and the
  * heading that closes it both past the top of the window.
  *
- * IT WAS FIVE, THEN SIX, AND IT IS TWENTY-THREE. Six was the answer while the floor was
- * twenty-four rows: the arrangement held eight of them and the input area five, so eleven were
- * left and six of those were the answer's. The floor is fifty-one now (`src/repl/floor.ts`), the
- * arrangement holds seventeen and the input area five, and twenty-three of the twenty-nine that
- * are left are the answer's. Measured on a real terminal, at the floor.
+ * IT WAS FIVE, THEN SIX, THEN TWENTY-THREE, AND IT IS EIGHTEEN. Six was the answer while the
+ * floor was twenty-four rows: the arrangement held eight of them and the input area five, so
+ * eleven were left and six of those were the answer's. At a floor of fifty-one the arrangement
+ * held seventeen and twenty-three of the twenty-nine left were the answer's. THE FLOOR IS
+ * FORTY-TWO NOW and it is worked out from the drawing of the name rather than written down
+ * (`src/repl/floor.ts`): the arrangement holds fourteen, the input area five, and eighteen of
+ * the twenty-three left are the answer's. NINE ROWS OF WINDOW WENT AND FIVE ROWS OF ANSWER CAME
+ * WITH THEM, which is the trade this delivery made in one line — a caller on a window between
+ * the two floors gets a console at all now, and one on a taller window is unaffected. Measured
+ * on a real terminal, at the floor.
  */
-const SHOWS_OF_THE_ANSWER = 23;
+const SHOWS_OF_THE_ANSWER = 18;
 
 /**
  * WHAT THE ARRANGEMENT COSTS ON THAT SCREEN — the second stick, and the one that says the
  * identity survived.
  *
- * SEVENTEEN ROWS, AND IT WAS EIGHT. Eight was the arrangement at the old floor: the
- * letterspaced name on one row, the text beside it on six, and the SEAM — the rule that closes
- * the region and the row of breath under it (`repl/region.ts`, `theTop`) — on two. THE FIRST TRY
- * AT THAT DELIVERY MADE IT NOUGHT: the arrangement was given up whole and the identity went on
- * the roll with the drawing, which is the one thing a header may not do; what bought it back was
- * the DRAWING giving way instead.
+ * FOURTEEN ROWS, AND IT WAS EIGHT, AND THEN SEVENTEEN. Eight was the arrangement at the
+ * twenty-four-row floor: the letterspaced name on one row, the text beside it on six, and the
+ * SEAM — the rule that closes the region and the row of breath under it (`repl/region.ts`,
+ * `theTop`) — on two. THE FIRST TRY AT THAT DELIVERY MADE IT NOUGHT: the arrangement was given
+ * up whole and the identity went on the roll with the drawing, which is the one thing a header
+ * may not do; what bought it back was the DRAWING giving way instead.
  *
- * WHAT IS DRAWN AT THE FLOOR IS THE WHOLE NAME, which is what the floor now MEANS, so nothing
- * gives way here at all: nine rows of art, the six the text takes under it in the stacked form,
- * and the two of the seam. Seventeen is exactly a third of fifty-one — the bound, reached rather
- * than approached, at the shortest window this console draws a page on.
+ * WHAT IS DRAWN AT THE FLOOR IS THE WHOLE NAME, which is what the floor MEANS, so nothing gives
+ * way here at all: the rows of the art, the six the text takes under it in the stacked form, and
+ * the two of the seam. That came to seventeen while the art was nine rows and it is fourteen
+ * now that it is six — and the floor came with it, because the floor is three times this number
+ * rather than a number of its own (`src/repl/floor.ts`). Fourteen is exactly a third of
+ * forty-two: the bound, reached rather than approached, at the shortest window this console
+ * draws a page on.
  */
-const THE_ARRANGEMENT_COSTS = 17;
+const THE_ARRANGEMENT_COSTS = 14;
 
 describe('the answer a caller asked for is on the page, at the shortest window there is', () => {
   it('shows the list of verbs at the floor, where it showed none of it', async () => {
-    // AT THE FLOOR, WHICH WAS EIGHTY BY TWENTY-FOUR AND IS EIGHTY BY FIFTY-ONE. The screen
+    // AT THE FLOOR, WHICH WAS EIGHTY BY TWENTY-FOUR AND IS EIGHTY BY FORTY-TWO. The screen
     // everybody has is not the subject any more: the floor is the shortest window this console
     // draws a page on, and it is where the name is drawn whole (`src/repl/floor.ts`). What the
     // case is about did not move — the answer a caller asked for is on the page, under a region
@@ -641,8 +652,9 @@ describe('the answer a caller asked for is on the page, at the shortest window t
       rows,
       project: deep,
       // THREE ANSWERS RATHER THAN ONE, and the floor moving is what forced it. One read filled a
-      // twenty-four-row window twice over; the window is fifty-one rows now, so one answer no
-      // longer pushes the opening past the top — and a walk back with nothing above the page is a
+      // twenty-four-row window twice over; the window is the floor's own height now — forty-two,
+      // worked out from the drawing (`src/repl/floor.ts`) — so one answer no longer pushes the
+      // opening past the top — and a walk back with nothing above the page is a
       // keystroke that draws NO frame, which is what the step waiting for one measured. The
       // assertions below are what say the opening really did leave, so the count is a fixture and
       // never the promise.
@@ -677,17 +689,18 @@ describe('the answer a caller asked for is on the page, at the shortest window t
     expect(asked.text, 'the opening never left the page').not.toContain(OPENED);
     expect(asked.text, 'the oldest line never left the page').not.toContain(UNDER_THE_PANEL);
     // AND IT IS ALL THERE AT THE TOP OF THE ROLL: the drawing, what the session is, where it is
-    // standing and what the record proved — found by what the PAGE holds rather than by where
-    // the walk ended in the stream. The page after the walk is the one carrying both the top of
-    // the opening and the echo of what was typed; the page it opened with carried the first
-    // without the second, which is what tells the two apart.
-    const echoed = `${PROMPT} ${A_LONG_READ}`;
-    const top = theFirstScreenWhere(
-      ran.bytes,
-      columns,
-      rows,
-      (screen) => screen.text.includes(OPENED) && screen.text.includes(echoed),
-    );
+    // standing and what the record proved.
+    //
+    // IT WAS FOUND BY WHAT THE PAGE HOLDS — the FIRST screen of the whole stream carrying both
+    // the top of the opening and the echo of what was typed — on the premise that only two kinds
+    // of page carry the opening at all, the one it was drawn on and the one the walk came back
+    // to, and that the echo tells them apart. A SHORTER DRAWING FALSIFIED IT: with three rows
+    // less of art the first answer no longer pushes the whole opening off, so a page exists in
+    // the MIDDLE of that scroll which carries the echo and part of the opening — and it is the
+    // one this found, three rows into the drawing. The premise was that the pages carrying the
+    // opening are a set of two, and it was never true; what makes it two is WHEN you look. So
+    // the page is taken where the walk ENDED, which is the subject anyway.
+    const top = theSettledScreen(ran.bytes.slice(0, ran.at[3] as number), columns, rows);
     expect(rowOf(top, OPENED), 'what the session is did not come back').toBeGreaterThanOrEqual(0);
     expect(rowOf(top, UNDER_THE_PANEL), 'the oldest line is not on the roll').toBeGreaterThan(
       rowOf(top, OPENED),

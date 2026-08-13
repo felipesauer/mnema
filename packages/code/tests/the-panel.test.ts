@@ -778,7 +778,7 @@ describe('the form comes out of the content, and the narrowest still says the es
     // exception on one condition: where a narrower terminal is richer, the ART is what grew.
     //
     // AND THE EXCEPTION IS GONE, WHICH IS WHY THE NAME IS THE FIRST ONE AGAIN. Measured:
-    // the drawing is fifty columns now and the line under it — a project's path and an
+    // the drawing is forty-eight columns now and the line under it — a project's path and an
     // identity — is about forty-nine, so giving the art up buys the column almost nothing and
     // the stacked form is unreachable either way. The band closed by ARITHMETIC rather than by
     // anybody's intention, and the assertion is written as the count so that the day it
@@ -842,7 +842,7 @@ describe('the form comes out of the content, and the narrowest still says the es
     // WHAT THE NEW DRAWING BOUGHT, and the reason it is a case rather than a note: the box
     // gave the two columns up at 124 columns while the art was seventy wide, so a window of
     // a hundred and twenty — an ordinary one, and the one this was reported from — got the
-    // stacked form and nine blank rows beside the record. The art is fifty columns now and
+    // stacked form and nine blank rows beside the record. The art is forty-eight columns now and
     // the threshold is the content's, so it moved with it.
     //
     // THE THRESHOLD IS NOT WRITTEN HERE. {@link A_WORKING_TERMINAL} is a SIZE — a window a
