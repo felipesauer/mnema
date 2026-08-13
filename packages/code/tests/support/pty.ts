@@ -362,8 +362,14 @@ export function arrivedSince(what: string): (bytes: string, since: number) => bo
  * IT IS THE ECHO THAT FORCED IT. What a caller sent is a line with parts now — the prompt in
  * the accent this product is marked by, their own words in a weight of their own
  * (`src/presentation/echo.ts`) — so `mnema> x` is not a run of bytes on the wire any more, and a
- * step waiting for one waits for ever. The row being TYPED is still plain, so a step about the
- * input area goes on asking {@link arrivedSince}; this is for the ones about what LANDED.
+ * step waiting for one waits for ever.
+ *
+ * AND IT IS NOW BOTH ROWS. This said *the row being TYPED is still plain, so a step about the
+ * input area goes on asking {@link arrivedSince}; this is for the ones about what LANDED*, and
+ * the delivery that painted the prompt where the caller types falsified it: the input row is the
+ * same composed line, so a step waiting for `mnema> v` on the wire waits for ever there too. What
+ * is left for {@link arrivedSince} is anything that is not a line this product COMPOSED — a
+ * keystroke's own glyph, a word inside one part, the prompt on its own.
  *
  * ONLY THE STYLE IS TAKEN OUT, never every escape: what is left is where each glyph goes, which
  * is what makes the answer about the page rather than about the paint.
@@ -429,6 +435,28 @@ export function aFrameWithout(
 export function aFrameSince(prompt: string): (bytes: string, since: number) => boolean {
   const finished = aFrameAfter(prompt);
   return (bytes, since) => finished(bytes) && bytes.slice(since).includes(prompt);
+}
+
+/**
+ * THE SAME RULE FOR A KEY THAT REWRITES NO ROW — a frame the step itself caused, told by the
+ * frame rather than by the prompt.
+ *
+ * THE ARROWS ARE WHY IT EXISTS. A key that moves the caret and changes nothing the frame SAYS
+ * is answered by the library with a frame that carries no text at all: measured, one arrow puts
+ * forty-five bytes on the wire — a synchronized update holding a relative move and a column —
+ * and the prompt is not among them. So {@link aFrameSince} never answers for it, and
+ * {@link aFrameAfter} on its own is answered by the frame that arrived BEFORE the key, which is
+ * the trap four sites have already been red for.
+ *
+ * WHAT SAYS THE STEP CAUSED IT is the boundary of a finished frame arriving since the step
+ * began, which is the direct form of what the prompt was standing in for: every frame this
+ * console draws rewrites the row being typed, so the prompt was a PROXY for *a frame arrived*.
+ * It is the same idea and the same settling — {@link aFrameAfter} still says what a finished
+ * frame is — so there is no second definition of when the page is settled here.
+ */
+export function anotherFrameSince(prompt: string): (bytes: string, since: number) => boolean {
+  const finished = aFrameAfter(prompt);
+  return (bytes, since) => finished(bytes) && bytes.slice(since).includes(FRAME_IS_DRAWN);
 }
 
 /** One thing to do in the session, and what says it is done. */

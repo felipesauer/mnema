@@ -44,6 +44,7 @@ import { REPL_VERB } from '../src/wiring/repl.js';
 import {
   aFrameAfter,
   arrivedSince,
+  arrivedUnpainted,
   inPty as drive,
   endOf,
   type Fixture,
@@ -1313,7 +1314,7 @@ describe('the caret opens on the prompt, and the first keystroke does not move i
         opens,
         {
           types: typed,
-          until: (bytes) => bytes.includes(`${AFTER_THE_PROMPT}${typed}`),
+          until: arrivedUnpainted(`${AFTER_THE_PROMPT}${typed}`),
           what: 'echoed what was typed',
         },
         { types: CLEARS_THE_LINE, until: (bytes) => bytes.length > 0, what: 'abandoned the row' },

@@ -66,6 +66,7 @@ import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC } from './support/console.js';
 import {
   arrivedSince,
+  arrivedUnpainted,
   inPty as drive,
   type Fixture,
   leavesTheSession,
@@ -339,7 +340,7 @@ describe('a bare slash shows what there is, and the letter narrows THAT list', (
         // and the hint that names this very key.
         { types: PREFIX, until: arrivedSince(CUT), what: 'opened the preview' },
         { types: MOVES_DOWN, until: arrivedSince(PICK), what: 'marked a row' },
-        { types: 'v', until: arrivedSince(`${PROMPT} ${PREFIX}v`), what: 'typed a letter' },
+        { types: 'v', until: arrivedUnpainted(`${PROMPT} ${PREFIX}v`), what: 'typed a letter' },
         { types: CLEARS_THE_LINE, until: () => true, what: 'abandoned the row' },
         leaves,
       ],

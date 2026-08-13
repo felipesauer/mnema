@@ -1200,7 +1200,7 @@ describe('a slash and a letter open the list on the screen, and typing narrows i
         opens,
         {
           types: PREFIX,
-          until: arrivedSince(`${PROMPT} ${PREFIX}`),
+          until: arrivedUnpainted(`${PROMPT} ${PREFIX}`),
           what: 'typed a bare slash',
         },
         {
@@ -1413,7 +1413,7 @@ describe('the two keys open one list, and it stands off the row under it', () =>
           opens,
           {
             types: typed,
-            until: (bytes) => bytes.includes(`${PROMPT} ${typed}`),
+            until: arrivedUnpainted(`${PROMPT} ${typed}`),
             what: 'echoed a keystroke',
           },
           {
@@ -1651,7 +1651,7 @@ describe('Return takes the picked word, and Escape shuts the list', () => {
         opens,
         { types: COMPLETES, until: arrivedSince(whatTheListSays('')), what: 'listed the words' },
         { types: MOVES_DOWN, until: marks(first), what: 'marked the first word' },
-        { types: '\r', until: arrivedSince(`${PROMPT} ${first}`), what: 'took the word' },
+        { types: '\r', until: arrivedUnpainted(`${PROMPT} ${first}`), what: 'took the word' },
         // AND THE WAIT FOR THE LIST TO HAVE GONE IS THE SHARED INSTRUMENT'S, because spelled out
         // here it was true before the key had been drawn: measured, *the list is still open* in a
         // whole-suite run and green on its own (`support/pty.ts`, `aFrameWithout`).
@@ -1721,7 +1721,7 @@ describe('Return takes the picked word, and Escape shuts the list', () => {
           what: `stepped onto ${offer.word}`,
         })),
         { types: then, until: arrivedSince(then), what: 'narrowed the list' },
-        { types: '\r', until: arrivedSince(`${PROMPT} ${word}`), what: 'took what was left' },
+        { types: '\r', until: arrivedUnpainted(`${PROMPT} ${word}`), what: 'took what was left' },
         leaves,
       ],
     });
@@ -1756,7 +1756,7 @@ describe('a list of one, a list of none, and the arrows in both', () => {
       steps: [
         opens,
         // A LIST OF ONE: the whole word typed out, which narrows the list to itself.
-        { types: one, until: arrivedSince(`${PROMPT} ${one}`), what: 'typed a whole word' },
+        { types: one, until: arrivedUnpainted(`${PROMPT} ${one}`), what: 'typed a whole word' },
         { types: MOVES_DOWN, until: marks(one), what: 'marked the only word' },
         // AND A LIST OF NONE. A line is submitted, so there is a history to browse and nothing
         // offered — which is where the arrows go back to doing what they always did.
@@ -1767,7 +1767,7 @@ describe('a list of one, a list of none, and the arrows in both', () => {
           until: arrivedUnpainted(`${PROMPT} xyzzy`),
           what: 'submitted a line nothing answers to',
         },
-        { types: MOVES_UP, until: arrivedSince(`${PROMPT} xyzzy`), what: 'browsed back to it' },
+        { types: MOVES_UP, until: arrivedUnpainted(`${PROMPT} xyzzy`), what: 'browsed back to it' },
         leaves,
       ],
     });
