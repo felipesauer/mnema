@@ -36,6 +36,7 @@ import { type CliIo, run } from '../src/cli.js';
 import { bannerFor } from '../src/presentation/banner.js';
 import { renderPlain } from '../src/presentation/plain.js';
 import { THE_FLOOR } from '../src/repl/floor.js';
+import { theShortestScreenFor } from '../src/repl/panel.js';
 import { theSessionsOwnWords } from '../src/repl/session.js';
 import { PREFIX } from '../src/session-words.js';
 import { VERSION } from '../src/version.js';
@@ -983,10 +984,19 @@ async function openedAt(
  * reaches the foot scrolls on the next line said. That the table did not move through either
  * move is the finding: both changed where the page sits, and neither changed what it costs.
  *
- * The three sizes are the ordinary one (eighty by twenty-four, which is the size every
- * terminal has had since before they were on screens), a common laptop window, and a large
- * one — the last because a count that only held where the defect was measured is a count
- * that moved a case rather than the product.
+ * THE THREE SIZES WERE EIGHTY BY TWENTY-FOUR, A HUNDRED BY THIRTY AND A HUNDRED AND TWENTY BY
+ * FORTY, and all three are under the floor now. The shortest window this console draws a page on
+ * is where the name is drawn whole (`repl/floor.ts`), which is eighty by fifty-one, so every one
+ * of those sizes measures the screen that says the window is too small rather than a page. The
+ * shape of the table did not move — the floor, a common window, and a large one — and every
+ * number in it was measured again on the page each size really draws.
+ *
+ * AND TWO OF THE THREE WENT UP, WHICH IS THE COST OF THE DECISION IN ONE LINE. Thirteen of
+ * twenty-four became twenty-two of fifty-one at the floor, and thirteen of thirty became
+ * twenty-one of fifty-five: what a window over the floor gets is the WHOLE drawing of the name,
+ * nine rows of it, where the old sizes were given the letterspaced one. The large window did not
+ * move by a row — it was already being given the big drawing — which is what says the difference
+ * is the drawing and not the page around it.
  *
  * AND EVERY NUMBER IN IT MOVED ONCE, WHICH IS WHAT THE TABLE IS FOR. The page shows its seams
  * now: a RULE closes the top region, a blank row of breath sits under it, and what the session
@@ -999,9 +1009,9 @@ async function openedAt(
  * than in a sentence about them.
  */
 const THE_SCREEN: readonly { columns: number; rows: number; takes: number }[] = [
-  { columns: 80, rows: 24, takes: 13 },
-  { columns: 100, rows: 30, takes: 13 },
-  { columns: 120, rows: 40, takes: 16 },
+  { columns: THE_FLOOR.columns, rows: THE_FLOOR.rows, takes: 22 },
+  { columns: 100, rows: 55, takes: 21 },
+  { columns: 120, rows: 60, takes: 16 },
 ];
 
 describe('the console spends only part of the screen it opens on', () => {
@@ -1049,7 +1059,7 @@ describe('the console spends only part of the screen it opens on', () => {
 // window (`repl/floor.ts`) means nothing is laid out under eighty by twenty-four, so a session
 // driven at sixteen rows draws the screen that says so and no drawing of the name at all. The
 // ladder is four heights a caller really has, ending at the floor.
-const A_LADDER_OF_HEIGHTS: readonly number[] = [50, 40, 30, 24];
+const A_LADDER_OF_HEIGHTS: readonly number[] = [70, 60, 55, THE_FLOOR.rows];
 
 /**
  * THE SHORTEST SCREEN A GIVEN DRAWING IS STILL CHOSEN ON, at a width — searched by halving,
@@ -1132,16 +1142,20 @@ describe('the drawing gives way so the page fits, rather than the page being cut
       ).toBeLessThanOrEqual(smallest);
       smallest = opened.drawing.length;
     }
-    // NOT VACUOUS IN EITHER DIRECTION: the art really gave way somewhere on the ladder, and
-    // the ladder really moved — the drawing at the top of it is not the drawing at the
-    // bottom, so this is not one answer asserted four times.
-    expect(gaveWay, 'the art never gave way at any height on the ladder').toBeGreaterThan(0);
-    expect(smallest, 'every height on the ladder drew the same drawing').toBeLessThan(
+    // AND NOTHING GAVE WAY, WHICH IS WHAT THE FLOOR MOVING MEANS. This read *the art really
+    // gave way somewhere on the ladder*, and it was a true statement about a ladder that reached
+    // twenty-four rows. The floor is now DEFINED as the height the whole drawing is chosen at
+    // (`repl/floor.ts`), so every window above it is given the same drawing at this width and a
+    // ladder that found a difference would be a ladder contradicting the definition. The
+    // assertion is inverted rather than deleted: it is the one thing here that would go red if
+    // the floor and the drawing came apart.
+    expect(gaveWay, 'the art gave way above the floor, where the floor says it may not').toBe(0);
+    expect(smallest, 'the whole drawing is not what every window above the floor gets').toBe(
       (await openedAt(80, A_LADDER_OF_HEIGHTS[0] as number)).drawing.length,
     );
   }, 180_000);
 
-  it('gives each drawing up at the height its own arrangement stops fitting in', async () => {
+  it('gives no drawing up above the floor, and the floor rung is answered whatever the height', async () => {
     // THE AXIS THAT NEVER FIRED, EXERCISED. This module's own doc recorded the defect in as
     // many words — *the tallest form was five rows, `5 <= rows` is true on every terminal
     // anybody has, and the axis chose nothing at any size a person opens* — and the delivery
@@ -1158,32 +1172,36 @@ describe('the drawing gives way so the page fits, rather than the page being cut
     // SEARCHED, ONE ROW AT A TIME, AND NEVER WRITTEN DOWN — the same mould as the width ladder
     // above: at the height a drawing gives way at it is drawn, one row shorter it is not, and
     // the ladder only ever gets simpler as the screen gets shorter.
-    const columns = 80;
+    // AND THIS IS WHAT THE FLOOR MOVING COST THE LADDER, said as a measurement rather than as a
+    // sentence. The ladder was three drawings at one width — the case read *at one width, four
+    // heights, three different drawings* — and every rung of it was under fifty-one rows. The
+    // floor is the height the whole drawing is chosen at, so the rungs are all BELOW the shortest
+    // window this console draws a page on: a device can no longer reach one. The search is kept
+    // and its answer is asserted to be EMPTY, which is a statement that can go red — a drawing
+    // given away at any height above the floor means the floor and the drawing have come apart.
+    const columns = THE_FLOOR.columns;
     const ladder: { readonly drawing: readonly string[]; readonly at: number }[] = [];
-    // EVERY DRAWING BUT THE FLOOR, which is the exception the width ladder makes for the same
-    // reason: the name typed is answered at every height there is, including heights with no
-    // room for an arrangement at all, because the one thing this banner exists to say may not be
-    // dropped. Where the floor is answered is asserted under the loop instead.
     for (const form of everyForm().slice(0, -1)) {
       const at = await theHeightItGivesWayAt(form, columns);
       if (at === undefined) continue;
       ladder.push({ drawing: form, at });
-      expect((await openedAt(columns, at)).drawing, `${at} rows`).toEqual(form);
-      expect((await openedAt(columns, at - 1)).drawing, `${at - 1} rows`).not.toEqual(form);
     }
-    // MORE THAN ONE DRAWING IS REACHABLE BY THE HEIGHT ALONE, which is the whole of what was
-    // missing: at one width, four heights, three different drawings. Before this delivery this
-    // list would have had ONE entry — the biggest drawing, at the shortest screen that fits
-    // anything at all — because nothing else could ever be chosen by a height.
-    expect(ladder.length, 'the height chooses no drawing at any size').toBeGreaterThan(1);
-    // AND THE LADDER GOES ONE WAY: a drawing further down the list gives way on a shorter
-    // screen, so a taller terminal never gets a simpler drawing than a shorter one.
-    for (let at = 1; at < ladder.length; at += 1) {
-      expect(
-        (ladder[at] as { at: number }).at,
-        'a simpler drawing needs a taller screen than the one above it',
-      ).toBeLessThan((ladder[at - 1] as { at: number }).at);
-    }
+    expect(
+      ladder.map(({ at }) => at),
+      'a drawing gave way at a height above the floor',
+    ).toEqual([]);
+    // AND THE MECHANISM IS NOT DEAD, which is the half an empty list may not be allowed to
+    // stand alone on. What refuses a drawing is the SHARE a fixed region may hold
+    // (`repl/panel.ts`, `theShortestScreenFor`), and it is asked of what the arrangement really
+    // costs rather than of a number written here: three times what the floor's own arrangement
+    // costs IS the floor, so a page whose arrangement costs one row more wants a screen taller
+    // than the floor and is refused on it. The cost is measured on the page in
+    // `the-floor-is-where-the-name-is-drawn.test.ts`; what is asserted here is the rule that
+    // makes the two agree.
+    expect(theShortestScreenFor(Math.floor(THE_FLOOR.rows / 3))).toBe(THE_FLOOR.rows);
+    expect(theShortestScreenFor(Math.floor(THE_FLOOR.rows / 3) + 1)).toBeGreaterThan(
+      THE_FLOOR.rows,
+    );
     // AND THE FLOOR IS ANSWERED WHATEVER THE HEIGHT, which is what keeps the ladder total: the
     // name is still drawn on a screen too short for any arrangement at all.
     //
@@ -1225,20 +1243,36 @@ describe('the drawing gives way so the page fits, rather than the page being cut
     // separates the two runs is the height, which is what this case says — and it is still a
     // size and its (near) half rather than a threshold: where the drawing gives way is searched
     // for in the ladder above.
+    // AND THE SECOND HALF IS NO LONGER A SHORTER TERMINAL, WHICH IS WHAT THE FLOOR TOOK. The
+    // pair used to be a hundred and twenty by thirty-six against the same width at twenty-four,
+    // and the second of those is under the floor: the answer there is not a smaller drawing, it
+    // is NO PAGE — the screen that says the window is too small. So *and not on one without* is
+    // asked one row under the floor, which is the only place a window without the room for the
+    // whole name still exists.
     const biggest = drawnAcross(WIDE);
-    const roomy = await openedAt(120, 36);
+    const roomy = await openedAt(120, 60);
     expect(roomy.drawing, 'the biggest drawing is on no terminal at all').toEqual(biggest);
     expect(roomy.whole, 'the biggest drawing opened cut').toBe(true);
 
-    const ordinary = await openedAt(120, 24);
+    const atTheFloor = await openedAt(THE_FLOOR.columns, THE_FLOOR.rows);
+    expect(atTheFloor.drawing, 'the floor is not where the whole name is drawn').toEqual(biggest);
+    expect(atTheFloor.whole, 'the biggest drawing opened cut at the floor').toBe(true);
+
+    const under = await inPty({
+      columns: THE_FLOOR.columns,
+      rows: THE_FLOOR.rows - 1,
+      steps: [opens, leaves],
+    });
+    const short = screenOf(
+      under.bytes.slice(0, under.at[0] as number),
+      THE_FLOOR.columns,
+      THE_FLOOR.rows - 1,
+    );
+    expect(short.text, 'one row under the floor still drew a console').not.toContain(OPENED);
     expect(
-      ordinary.drawing,
-      'the biggest drawing was kept on a screen without the room',
-    ).not.toEqual(biggest);
-    expect(ordinary.whole, 'the opening opened cut once the art gave way').toBe(true);
-    // Not vacuous: the two differ in HEIGHT alone, and the shorter one still draws something.
-    expect(ordinary.drawing.length).toBeGreaterThan(0);
-    expect(ordinary.drawing.length).toBeLessThan(biggest.length);
+      everyForm().some((form) => form.every((row) => short.text.includes(row.trimEnd()))),
+      'one row under the floor still drew the name',
+    ).toBe(false);
   }, 180_000);
 });
 
@@ -1255,7 +1289,10 @@ describe('the caret opens on the prompt, and the first keystroke does not move i
     // a console whose caret is wrong in the same way twice, and one that only asked the
     // frame after a key would have passed all along.
     const columns = 100;
-    const rows = 30;
+    // THE HEIGHT WAS THIRTY AND IS THE FLOOR'S. What this case is about is the caret's ROW, so
+    // the size was never the subject — but thirty is under the floor now (`repl/floor.ts`) and a
+    // page that is not drawn has no prompt to put a caret on.
+    const rows = THE_FLOOR.rows;
     const typed = 'v';
     const ran = await inPty({
       columns,
@@ -1310,12 +1347,14 @@ describe('the word the box named is still there, behind the key that lists the w
     // may not happen is the vocabulary becoming unreachable — so the same session is asked
     // for it.
     //
-    // AND THE KEY IS THE PREFIX AND A LETTER, WHICH IS WHAT MOVED. A slash alone used to
-    // open the whole list; it opens nothing now, because a bare slash is a caller asking
-    // what exists rather than writing a word (`src/repl/palette.ts`, `offeredBy`). One
-    // letter behind it is a word being written, and the list is what it can still become.
+    // AND THE KEY IS THE PREFIX, WHICH MOVED TWICE. A slash alone opened the whole list; then
+    // it opened nothing, on the argument that a bare slash is a caller asking what exists rather
+    // than writing a word; and it opens the list again, because *what exists* turned out to be
+    // exactly the question a bar with a slash in it is asking (`src/repl/palette.ts`,
+    // `offeredBy`). What this case asks for is still the prefix AND a letter — the narrowing,
+    // which is the half that has been true throughout.
     const columns = 100;
-    const rows = 40;
+    const rows = THE_FLOOR.rows;
     const listed = theSessionsOwnWords()[0];
     expect(listed, 'the session answers to no word at all').toBeDefined();
     const word = (listed as { word: string }).word;
@@ -1526,8 +1565,8 @@ describe('the panel has one section in it, and the art is the only thing drawn',
     // top of the screen and the sentence the session lands under the panel, and they are read
     // whole. Which also means the two rules the INPUT area draws have to be outside them, and
     // they are: the sentence is above the emptiness and the rules are below it.
-    const columns = 80;
-    const rows = 24;
+    const columns = THE_FLOOR.columns;
+    const rows = THE_FLOOR.rows;
     const ran = await inPty({ columns, rows, steps: [opens, leaves] });
     const screen = screenOf(ran.bytes.slice(0, ran.at[0] as number), columns, rows);
     expect(screen.text, 'the session never opened').toContain(OPENED);

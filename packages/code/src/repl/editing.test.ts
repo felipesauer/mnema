@@ -404,19 +404,26 @@ describe('the arrows move through the list, and Return takes what they landed on
     expect(after(press('', { upArrow: true }), nothing).picked).toBe(LISTED.at(-1));
   });
 
-  it('opens nothing on a bare slash, so the arrows are the history\u2019s there', () => {
-    // THE DECISION THIS DELIVERY TOOK, read where a value can be read. A slash alone is not a
-    // question — what it opened was every verb of the product, for a keystroke nobody had
-    // finished — so the row is a character like any other and the arrows go on browsing.
+  it('opens the whole vocabulary on a bare slash, and the arrows move through THAT', () => {
+    // IT SAID *opens nothing on a bare slash, so the arrows are the history\u2019s there*, on the
+    // premise that a slash alone is not a question — so the row was a character like any other
+    // and the arrows went on browsing what had been typed before. A caller reading the page
+    // falsified it: a bar with a slash in it and nothing under it is somebody asking what
+    // there IS. The list is open the moment the slash is typed, so the arrows belong to it.
     const remembered = [...characters('verify'), press('', { return: true })];
+    const everything = THE_SESSIONS_WORDS(PREFIX)[0].map((offer) => offer.word);
     const bare = typing(
       [...remembered, press(PREFIX), press('', { upArrow: true })],
       THE_SESSIONS_WORDS,
     );
-    expect(bare.typed).toBe('verify');
-    expect(bare.picked).toBe(NOBODY);
-    // AND THE LETTER IS WHAT OPENS IT: the same row with one more character has a list under
-    // it, and the same arrow moves through that instead of through what was typed before.
+    expect(bare.typed).toBe(PREFIX);
+    expect(bare.picked).toBe(everything.at(-1));
+    // AND IT IS THE WHOLE VOCABULARY rather than one of the two the list holds, which is what
+    // keeps this ONE list: the row a letter opens is a NARROWING of this one, never a second.
+    expect(everything.length).toBeGreaterThan(LISTED.length);
+    expect(LISTED.every((word) => everything.includes(word))).toBe(true);
+    // AND THE LETTER NARROWS IT: the same row with one more character has fewer words under
+    // it, and the same arrow moves through those.
     const narrowed = typing(
       [...remembered, press(PREFIX), press(A_LETTER), press('', { upArrow: true })],
       THE_SESSIONS_WORDS,
@@ -520,9 +527,13 @@ const WHAT_EACH_KEY_LEAVES: {
   input: { typed: `${OPEN_ROW}${NARROWS_TO_THE_PICK}`, picked: LISTED[1] as string },
   // The pick is taken: the row becomes the word, and nothing is picked any more.
   return: { typed: LISTED[1] as string, picked: NOBODY },
-  // Backspace takes the letter back, which leaves a bare slash — and a bare slash opens
-  // nothing, so the list is shut and the pick goes with it.
-  backspace: { typed: PREFIX, picked: NOBODY },
+  // Backspace takes the letter back, which leaves a bare slash — and a bare slash opens the
+  // WHOLE vocabulary, so the list widens rather than shutting. IT SAID *the list is shut and
+  // the pick goes with it*, which was true while the bare slash opened nothing; what did not
+  // change is the rule the pick lives by, and this is the case that shows it from the other
+  // side. A pick is a WORD and it is real exactly while its word is still offered
+  // (`palette.ts`, `thePicked`), so a keystroke that makes the list BIGGER cannot lose it.
+  backspace: { typed: PREFIX, picked: LISTED[1] as string },
   // Delete has nothing under the caret at the end of the row.
   delete: { typed: OPEN_ROW, picked: LISTED[1] as string },
   // The caret moves and the list does not, so what is picked does not either.

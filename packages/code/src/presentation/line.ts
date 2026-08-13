@@ -76,6 +76,14 @@
  *     second axis over it rather than the carrier. That is why it is a role at all: a
  *     drawing that painted the row itself would need the layout to know WHICH row is
  *     picked, which is a second model of the pick beside the one that decides it.
+ *   - `word` — a word a caller could TYPE, in the console's list of what can be typed
+ *     (`repl/palette.ts`). It joined for `pick`'s reason and not for one of its own: the
+ *     list of words says nothing about the record — it is the product's own vocabulary
+ *     offered back — so a part of it may take the accent without hue meaning a second
+ *     thing. What it buys is the row's SUBJECT: a word and what it does, both at the
+ *     weight of a `field`, is two columns competing, and it is the word a reader is
+ *     choosing between. The description beside it stays a bare field for exactly that
+ *     reason — paint both and neither is the subject.
  *   - `subject` — one part of {@link subjectLine}, which reads as a heading rather
  *     than as the columns of a table.
  *   - `clause` — one clause of a verdict that arrives in SEVERAL, after the first. The
@@ -143,6 +151,7 @@ export const ROLES = [
   'prompt',
   'typed',
   'pick',
+  'word',
 ] as const;
 
 /** What a part is on its line. Closed: see {@link ROLES} for what it excludes. */

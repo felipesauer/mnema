@@ -49,6 +49,7 @@ import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
 import { erasesTheScreen, withoutTheHistoryErase } from '../src/repl/erasing.js';
+import { THE_FLOOR } from '../src/repl/floor.js';
 import { fromTheMouse, THE_WHEEL_BACK, WATCHING_THE_WHEEL } from '../src/repl/pointing.js';
 import {
   backAtMost,
@@ -151,26 +152,34 @@ const TO_THE_TAIL = `${ESC}[F`;
  * the whole opening goes on the roll instead — which is a page with two regions, and every case
  * below about a region that does not move would be a case about a region that is not there.
  *
- * IT IS A SIZE AND NOT A THRESHOLD. It is a window somebody has, with a row to spare over what
+ * IT IS A SIZE AND NOT A THRESHOLD. It is a window somebody has, with room to spare over what
  * the arrangement costs; where the arrangement gives way is searched for one height at a time in
  * `the-opening-fits-the-height.test.ts`, and no number here is that answer.
+ *
+ * AND THE HEIGHT IS THE FLOOR'S NOW RATHER THAN THIRTY. Thirty was a window somebody had while
+ * the shortest one this console drew a page on was twenty-four rows; the floor is fifty-one
+ * (`src/repl/floor.ts`), so thirty is under it and every case below would be driving the screen
+ * that says the window is too small. Read off the floor rather than retyped, for the reason the
+ * paragraph above gives about thresholds: this is *a window somebody has*, and what that means
+ * is now stated in one place.
  */
-const THREE_REGIONS = { columns: 120, rows: 30 } as const;
+const THREE_REGIONS = { columns: 120, rows: THE_FLOOR.rows } as const;
 
 /**
  * HOW MANY LINES A SESSION SAYS BEFORE THE ROLL OUTGROWS THE WINDOW IT IS SHOWN IN.
  *
- * IT WAS THREE, and the arithmetic under it is the same arithmetic as the size above: the
- * middle region was four rows while the arrangement held fifteen, so three answers filled it
- * twice over. The arrangement is nine rows of thirty here, the input area five, and the middle
- * is the sixteen that are left — and a refused line is worth two rows, so nine of them are
- * nineteen and the roll clears the window by three.
+ * IT WAS THREE, AND THEN NINE, and the arithmetic under it is the same arithmetic as the size
+ * above. The middle region was four rows while the arrangement held fifteen, so three answers
+ * filled it twice over; nine was the answer for a window of thirty rows. The window is the
+ * floor's now — fifty-one — the arrangement beside the mark costs eleven of them and the input
+ * area five, so the middle is the thirty-five that are left, and a refused line is worth two
+ * rows: twenty-two of them are forty-four and the roll clears the window by nine.
  *
  * MEASURED RATHER THAN CALCULATED, which is what every case that uses it then asserts: each one
  * says out loud that something really did go past the top, so a window that grew again turns
  * this into a red rather than into a case about a page nothing happened to.
  */
-const ENOUGH_TO_OVERFLOW = 9;
+const ENOUGH_TO_OVERFLOW = 22;
 
 /**
  * HOW MANY LINES ARE SUBMITTED ONTO A WINDOW WITH FAR MORE ROOM THAN THEM — the other fixture,
@@ -975,7 +984,12 @@ describe('the middle region scrolls, and the two fixed regions do not', () => {
 describe('a window the caller resizes is a frame drawn at the new size', () => {
   it('keeps the three regions where they belong, narrowing and widening in sequence', async () => {
     const columns = 120;
-    const rows = 40;
+    // EVERY HEIGHT IN THIS CASE IS ABOVE THE FLOOR, which is what the floor moving forced: the
+    // sizes below were thirty, sixty-four, forty and thirty, and three of the four are under
+    // fifty-one now. What the case is about did not move — three regions surviving a resize — so
+    // the shape is the one it had: four sizes, the third the one it opened at, and the last two
+    // the same width at two heights.
+    const rows = 55;
     // ONE OF THEM WAS EIGHTY BY TWENTY-FOUR AND ANOTHER NINETY BY THIRTY, and neither
     // has an arrangement any more: the opening may hold a third of the screen at most, and it
     // costs more than that at both ({@link THREE_REGIONS}). What this case is about is the three
@@ -991,10 +1005,10 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
     // what the reading below is bounded to stop, and what makes that bound provable instead of
     // waited for. It is also an ordinary thing to do to a window: narrow it, then shorten it.
     const sizes = [
-      { columns: 110, rows: 30 },
+      { columns: 110, rows: THE_FLOOR.rows },
       { columns: 190, rows: 64 },
-      { columns: 120, rows: 40 },
-      { columns: 120, rows: 30 },
+      { columns: 120, rows: 55 },
+      { columns: 120, rows: THE_FLOOR.rows },
     ] as const;
     const ran = await inPty({
       columns,
@@ -1078,20 +1092,24 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
     // hide a wrong one.
     const ran = await inPty({
       columns: 120,
-      rows: 40,
+      rows: 55,
       steps: [
         opens,
         submits(says(0)),
         // AND THE STEP WAITS FOR THE SIZE, not for a frame. It waited for a frame, and a frame
         // names nothing about a size: setting a window size is two calls, so the device is
-        // 120x24 before it is 80x24 ({@link resizedTo}), the console draws that intermediate
+        // 120 columns at the new height before it is 80 ({@link resizedTo}), the console draws that intermediate
         // page, and *a frame arrived since this step began* is answered by it. The step then
         // ended, the end of the input was typed, and the session left WITHOUT EVER DRAWING AT
         // EIGHTY — measured under load: *no frame in this stream was drawn 80 columns wide, so
         // there is no settled page to read at that size*, which was true and was the case's own
         // doing. It is the amarra this bench already carries — a step waits for what it CAUSED —
         // at the last resize step that had not been given it (`support/screen.ts`, {@link drewAt}).
-        { resize: { columns: 80, rows: 24 }, until: drewAt(80), what: 'was made shorter' },
+        {
+          resize: { columns: THE_FLOOR.columns, rows: THE_FLOOR.rows },
+          until: drewAt(THE_FLOOR.columns),
+          what: 'was made shorter',
+        },
         leaves,
       ],
     });
@@ -1105,12 +1123,12 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
     ).toBeGreaterThan(0);
     expect(
       Math.max(...frames),
-      `a frame of ${Math.max(...frames)} rows was written onto a 24-row screen`,
-    ).toBeLessThanOrEqual(24);
+      `a frame of ${Math.max(...frames)} rows was written onto a ${THE_FLOOR.rows}-row screen`,
+    ).toBeLessThanOrEqual(THE_FLOOR.rows);
     // AND THE PAGE IS WHOLE AFTERWARDS, which is what the frames above are for.
-    const settled = theSettledScreen(ran.bytes, 80, 24);
+    const settled = theSettledScreen(ran.bytes, THE_FLOOR.columns, THE_FLOOR.rows);
     expect(firstDrawnRow(settled), 'the top region left the screen').toBe(0);
-    fillsTheScreen(settled, 24, 'the page after a shrink');
+    fillsTheScreen(settled, THE_FLOOR.rows, 'the page after a shrink');
     theHistorySurvived(ran, 'a session made shorter');
   }, 240_000);
 });
@@ -1122,7 +1140,8 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
 describe('the way out gives the screen back and the transcript with it', () => {
   it('writes everything the session said onto the caller’s own buffer, after leaving', async () => {
     const columns = 100;
-    const rows = 24;
+    // AT THE FLOOR'S HEIGHT, which was twenty-four and is fifty-one (`src/repl/floor.ts`).
+    const rows = THE_FLOOR.rows;
     const ran = await inPty({ columns, rows, steps: [opens, submits('verify'), leaves] });
     // AFTER THE SEQUENCE THAT GIVES THE SCREEN BACK, and this is the whole mechanism: the
     // layout library treats everything written while it is tearing down as disposable and says

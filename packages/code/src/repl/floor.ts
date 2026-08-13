@@ -42,25 +42,53 @@ import type { Line } from '../presentation/line.js';
 import type { Render } from '../presentation/render.js';
 
 /**
- * THE SHORTEST WINDOW THIS CONSOLE DRAWS ON: eighty columns by twenty-four rows.
+ * THE SHORTEST WINDOW THIS CONSOLE DRAWS ON: eighty columns by fifty-one rows.
  *
- * IT IS THE CANONICAL TERMINAL and that is the whole of the argument. Eighty by twenty-four is
- * what a terminal has been since the VT100, it is what every emulator opens at, and it is what
- * a tmux pane, an editor's embedded terminal and an ssh session are cut from — so nobody is
- * under it by accident, and anybody who is has dragged an edge and can drag it back.
+ * THE ROWS WERE TWENTY-FOUR, and the argument was the CANONICAL TERMINAL: eighty by
+ * twenty-four is what a terminal has been since the VT100, it is what every emulator opens at,
+ * and it is what a tmux pane, an editor's embedded terminal and an ssh session are cut from.
+ * That is a true sentence about terminals and it was never a statement about THIS console. What
+ * replaced it is a definition a caller gave, in one line: *the smallest terminal is the one
+ * where the name is drawn whole*. The floor is not the size the field settled on — it is the
+ * size at which this product still shows what it is.
  *
- * AND IT IS WHERE THE CONSOLE IS MEASURED TO WORK. At this size the page is six rows of
- * arrangement, five of input area and thirteen of what the session said, measured on a real
- * terminal (`tests/the-opening-fits-the-height.test.ts`). It is not a size the layout tolerates:
- * it is the size the layout was tuned against.
+ * FIFTY-ONE, AND IT IS MEASURED RATHER THAN CHOSEN. The height was searched for by driving the
+ * built binary on a real pseudo-terminal at eighty columns, one row at a time, and reading
+ * which drawing came back: the nine-row drawing of the name first appears at fifty-one rows and
+ * the five-row one is what forty to fifty get. The arithmetic behind that number is the budget
+ * that was already there and was not touched — at eighty columns the arrangement holding the
+ * big drawing is the stacked one and costs seventeen rows, a fixed region may hold one part in
+ * three of the screen (`panel.ts`, `A_THIRD`), and three times seventeen is fifty-one.
+ *
+ * AND THE COLUMNS DID NOT MOVE, because the measurement did not ask them to. The biggest
+ * drawing is fifty columns wide and the page's own margin takes six (`inset.ts`), so the
+ * drawing is inside the page at fifty-six; eighty is kept, which is the width every ladder on
+ * this surface was measured across.
+ *
+ * WHAT IT COSTS IS DECLARED, and it is the reason this number is written here rather than
+ * discovered. A window of twenty-four or thirty rows — a tmux pane, an editor's embedded
+ * terminal, a default ssh session — no longer draws a console at all: it draws the screen
+ * below, which says the size it has and the size this console needs. Two ways of keeping those
+ * windows were offered and refused: loosening the share a fixed region may hold so the big
+ * drawing fits in about thirty rows, and two floors, one per width. The floor is one number and
+ * it is where the name is drawn.
  *
  * WHAT IT BUYS IS AN ASSUMPTION. Every ladder above this floor may now be written for a
  * screen that is at least this big, instead of degrading for ever towards a page nobody would
  * accept. What the bottom rungs of those ladders become is a question for the delivery that
  * moves them, not something this file may quietly decide — so nothing below the floor was
  * removed with it.
+ *
+ * AND ONE LADDER IS NOW ANSWERED AT ITS TOP RUNG FOR THE PAGE THIS WAS MEASURED ON, which is
+ * a consequence to name rather than a property to claim. The drawing gives way by height when
+ * the arrangement around it would bust its share, and the floor is exactly the height at which
+ * it stops doing so — so on a page of the weight measured here, no window above the floor is
+ * ever given a smaller drawing. It is not inert: what the arrangement costs is a function of
+ * what the record SAYS — a project with a third tree spends a row more, and its big drawing
+ * wants fifty-four — so a heavier page still walks the ladder above this floor
+ * (`tests/the-floor-is-where-the-name-is-drawn.test.ts` pins both halves).
  */
-export const THE_FLOOR = { columns: 80, rows: 24 } as const;
+export const THE_FLOOR = { columns: 80, rows: 51 } as const;
 
 /**
  * DOES THIS WINDOW SERVE? — the one place the floor is applied, over the pair the device

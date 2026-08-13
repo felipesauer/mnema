@@ -38,19 +38,26 @@ import { type CliIo, run } from '../src/cli.js';
 import { bannerFor } from '../src/presentation/banner.js';
 import { fact, subjectLine } from '../src/presentation/detail.js';
 import { renderPlain } from '../src/presentation/plain.js';
+import { THE_FLOOR } from '../src/repl/floor.js';
 import { THE_INSET } from '../src/repl/inset.js';
 import { type Opening, openingFor, type PanelForm, panelFor } from '../src/repl/panel.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC } from './support/console.js';
 import {
   aFrameSince,
+  aFrameWithout,
   inPty as drive,
   type Fixture,
   opensAConsole,
   type Ran,
   type Step,
 } from './support/pty.js';
-import { type Screen, theFirstScreenWhere, theFirstScreenWith } from './support/screen.js';
+import {
+  type Screen,
+  theFirstScreenWhere,
+  theFirstScreenWith,
+  theSettledScreen,
+} from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
@@ -536,36 +543,41 @@ function theAnswerOn(ran: Ran, columns: number, rows: number): Screen {
  * and the four that were left showed the tail of the answer with the list of verbs and the
  * heading that closes it both past the top of the window.
  *
- * IT WAS FIVE AND IT IS SIX, and the delivery that moved it is the one that took `/help` away:
- * what a caller asks for here is a READ of the record now, and the two answers are different
- * shapes — the rows above the closing heading are the document's rather than one verb each. The
- * page did not gain a row; the answer above it changed. Measured on a real terminal, at the size
- * everybody has.
+ * IT WAS FIVE, THEN SIX, AND IT IS TWENTY-THREE. Six was the answer while the floor was
+ * twenty-four rows: the arrangement held eight of them and the input area five, so eleven were
+ * left and six of those were the answer's. The floor is fifty-one now (`src/repl/floor.ts`), the
+ * arrangement holds seventeen and the input area five, and twenty-three of the twenty-nine that
+ * are left are the answer's. Measured on a real terminal, at the floor.
  */
-const SHOWS_OF_THE_ANSWER = 6;
+const SHOWS_OF_THE_ANSWER = 23;
 
 /**
  * WHAT THE ARRANGEMENT COSTS ON THAT SCREEN — the second stick, and the one that says the
  * identity survived.
  *
- * Eight rows: the name drawn on one, and beside it what the session is, where it is standing,
- * and the record's section under its blank row — six — and then the SEAM, which is the rule that
- * closes the region and the row of breath under it (`repl/region.ts`, `theTop`). THE FIRST TRY AT
- * THIS DELIVERY MADE IT NOUGHT — the arrangement was given up whole and the identity went on the
- * roll with the drawing, which is the one thing a header may not do. What buys it back is the
- * DRAWING giving way instead: at this width the letterspaced name is what fits beside the text
- * inside the share.
+ * SEVENTEEN ROWS, AND IT WAS EIGHT. Eight was the arrangement at the old floor: the
+ * letterspaced name on one row, the text beside it on six, and the SEAM — the rule that closes
+ * the region and the row of breath under it (`repl/region.ts`, `theTop`) — on two. THE FIRST TRY
+ * AT THAT DELIVERY MADE IT NOUGHT: the arrangement was given up whole and the identity went on
+ * the roll with the drawing, which is the one thing a header may not do; what bought it back was
+ * the DRAWING giving way instead.
  *
- * IT WAS SIX AND THE SEAM PUT IT AT EIGHT, which is exactly a third of twenty-four — the bound,
- * reached rather than approached, on the screen everybody has. What it costs the reader is the
- * two rows the stick above lost.
+ * WHAT IS DRAWN AT THE FLOOR IS THE WHOLE NAME, which is what the floor now MEANS, so nothing
+ * gives way here at all: nine rows of art, the six the text takes under it in the stacked form,
+ * and the two of the seam. Seventeen is exactly a third of fifty-one — the bound, reached rather
+ * than approached, at the shortest window this console draws a page on.
  */
-const THE_ARRANGEMENT_COSTS = 8;
+const THE_ARRANGEMENT_COSTS = 17;
 
-describe('the answer a caller asked for is on the page, on the screen everybody has', () => {
-  it('shows the list of verbs at eighty by twenty-four, where it showed none of it', async () => {
-    const columns = 80;
-    const rows = 24;
+describe('the answer a caller asked for is on the page, at the shortest window there is', () => {
+  it('shows the list of verbs at the floor, where it showed none of it', async () => {
+    // AT THE FLOOR, WHICH WAS EIGHTY BY TWENTY-FOUR AND IS EIGHTY BY FIFTY-ONE. The screen
+    // everybody has is not the subject any more: the floor is the shortest window this console
+    // draws a page on, and it is where the name is drawn whole (`src/repl/floor.ts`). What the
+    // case is about did not move — the answer a caller asked for is on the page, under a region
+    // that does not — and both sticks below are re-measured on the page the floor really draws.
+    const columns = THE_FLOOR.columns;
+    const rows = THE_FLOOR.rows;
     const ran = await inPty({ columns, rows, steps: [opens, asks, leaves] });
     // BOTH PAGES FOUND BY WHAT THEY HOLD, never by where a step ended in the stream: a submitted
     // line draws more than one frame, and the boundary a step settles on is wherever the stream
@@ -591,12 +603,16 @@ describe('the answer a caller asked for is on the page, on the screen everybody 
     expect(chrome, 'the fixed region does not say where it is standing').toContain('mnid:');
     expect(chrome, 'the fixed region does not say what the record is').toContain('The record');
     expect(chrome, 'the fixed region does not say what the record proved').toContain(VERIFIED);
-    // AND A DRAWING OF THE NAME IS STILL IN IT — a SMALLER one, which is the whole mechanism:
-    // what gives way is the ART and never what identifies. Which drawing it is is asked of the
-    // module that draws them, so a fifth form moves this case with it.
+    // AND THE DRAWING OF THE NAME IS IN IT, WHOLE. IT WAS A SMALLER ONE, and the sentence here
+    // read *what gives way is the ART and never what identifies* — true, and it was written when
+    // the floor was twenty-four rows, where the biggest drawing's arrangement busted its share.
+    // The floor is now DEFINED as the height that drawing is chosen at, so the assertion that
+    // held it back is the one thing this delivery inverts on purpose: the whole name is in the
+    // fixed region, and the mechanism that would give it away is still there for a page heavier
+    // than this one (`tests/the-floor-is-where-the-name-is-drawn.test.ts`).
     const drawn = everyDrawing().find((form) => form.every((row) => chrome.includes(row)));
     expect(drawn, 'no drawing of the name survived in the fixed region').toBeDefined();
-    expect(drawn, 'the biggest drawing is still holding rows of this screen').not.toEqual(ART);
+    expect(drawn, 'the whole name is not on the page at the floor').toEqual(ART);
     // AND THE SHARE HOLDS ON THE REAL PAGE and not only in the arithmetic.
     expect(fixed, 'the region at the top is over its share of the screen').toBeLessThanOrEqual(
       A_THIRD_OF(rows),
@@ -617,14 +633,45 @@ describe('the answer a caller asked for is on the page, on the screen everybody 
     // standing is a PATH ({@link deep}). It is a SIZE and not a threshold either way; where the
     // last arrangement gives way is searched for in `the-opening-fits-the-screen.test.ts`.
     const columns = 100;
-    const rows = 24;
+    // AND THE HEIGHT IS THE FLOOR'S, which was twenty-four: no page is laid out under it
+    // (`src/repl/floor.ts`), so a window shorter than this measures the screen that says so.
+    const rows = THE_FLOOR.rows;
     const ran = await inPty({
       columns,
       rows,
       project: deep,
-      steps: [opens, asks, walksToTheTop, leaves],
+      // THREE ANSWERS RATHER THAN ONE, and the floor moving is what forced it. One read filled a
+      // twenty-four-row window twice over; the window is fifty-one rows now, so one answer no
+      // longer pushes the opening past the top — and a walk back with nothing above the page is a
+      // keystroke that draws NO frame, which is what the step waiting for one measured. The
+      // assertions below are what say the opening really did leave, so the count is a fixture and
+      // never the promise.
+      // AND THE SECOND ASK WAITS FOR THE OPENING TO HAVE GONE, which is the one wait that
+      // means what this case is about. A step that waited for *a frame* ended wherever the
+      // stream was quiet — measured in whole-suite runs, twice: the page it left behind still
+      // had the drawing and the sentence under it on the screen, so the walk had nothing to
+      // walk back to and the case was red about its own instrument. An absence is waited for in
+      // two parts and the first is a presence ({@link aFrameWithout}), so what this step ends on
+      // is a frame it caused with the opening no longer in it.
+      steps: [
+        opens,
+        asks,
+        {
+          types: `${A_LONG_READ}\r`,
+          until: aFrameWithout(PROMPT, OPENED),
+          what: 'pushed the opening off the page',
+        },
+        walksToTheTop,
+        leaves,
+      ],
     });
-    const asked = theAnswerOn(ran, columns, rows);
+    // THE PAGE THE ANSWERS SETTLED ON, which is the LAST frame drawn before the walk rather
+    // than the first one carrying an answer. IT WAS THE FIRST, and it is the wrong end of the
+    // stream for this subject: the roll is grown by two answers and the first page carrying both
+    // ends of ONE of them is the first answer's, which the opening is still on. What the case is
+    // about is what the roll has pushed off the page, so what it reads is where the page came to
+    // rest ({@link theSettledScreen}).
+    const asked = theSettledScreen(ran.bytes.slice(0, ran.at[2] as number), columns, rows);
     // THE OPENING REALLY DID LEAVE THE PAGE, or there is nothing to walk back to: neither what
     // the session is nor the sentence it lands under the mark is on the page after the answer.
     expect(asked.text, 'the opening never left the page').not.toContain(OPENED);
@@ -660,7 +707,7 @@ describe('the answer a caller asked for is on the page, on the screen everybody 
       theFixedRowsBetween(asked, top),
       'something was fixed at the top, so this is not the floor',
     ).toBe(0);
-  }, 240_000);
+  }, 400_000);
 
   it('draws the whole arrangement on a screen with the room for it, drawing and all', async () => {
     // THE OTHER DIRECTION, which is what keeps the share a BOUND rather than a cost: a terminal

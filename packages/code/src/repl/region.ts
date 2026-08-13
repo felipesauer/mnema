@@ -16,7 +16,7 @@
  * AND THERE IS A SECOND FRAME NOW, WHICH THIS FILE USED TO SAY THERE COULD NOT BE. The page
  * was three regions at EVERY size, because every ladder under it was total — a narrower terminal
  * got a smaller drawing, a shorter one got fewer rows of area, and the bottom rung always fitted.
- * There is a FLOOR under all of it (`floor.ts`): below eighty by twenty-four the console does not
+ * There is a FLOOR under all of it (`floor.ts`): below it the console does not
  * lay a page out, and what is drawn is a screen saying the size the window has and the size the
  * console needs. It is one branch, over one discriminant, at the top of {@link Region} — and
  * everything under it is untouched, because a page that is not laid out has no regions to place.
@@ -215,7 +215,7 @@ const THE_MARGIN = 'hard';
  * WHICH OF THE TWO PAGES THIS FRAME IS, and it is a discriminant rather than a flag on one
  * value.
  *
- * A WINDOW UNDER THE FLOOR IS NOT A CONSOLE WITH FIELDS MISSING. Below eighty by twenty-four
+ * A WINDOW UNDER THE FLOOR IS NOT A CONSOLE WITH FIELDS MISSING. Below the floor
  * the console does not lay a page out at all — no arrangement is chosen, no area is budgeted, no
  * window onto the roll is cut ({@link Floored}, `floor.ts`) — so a single value carrying an empty
  * panel, an empty window and an area of nought would be this file being handed numbers nobody
@@ -486,9 +486,9 @@ function theThreeRegions(shown: Showing, tips: string, badge: string): readonly 
  *
  * THE BREATH IS ONE ROW AND NOT TWO. It is what a caller asked for in as many words — a small
  * margin under the banner, so the first thing the session says does not sit against the rule —
- * and one row is what the page can afford: the shortest window this console draws on has
- * twenty-four rows, the chrome may hold a third of them (`panel.ts`), and every row of chrome
- * comes out of what the answer a caller asked for is given.
+ * and one row is what the page can afford: the chrome may hold a third of the shortest window
+ * this console draws on (`panel.ts`, `floor.ts`), and every row of chrome comes out of what the
+ * answer a caller asked for is given.
  *
  * BOTH ROWS ARE COUNTED WHERE THE ARRANGEMENT'S ARE (`panel.ts`, `rowsOfTheForm`). A row this
  * file draws and that file does not count is a frame one row taller than the screen it is drawn

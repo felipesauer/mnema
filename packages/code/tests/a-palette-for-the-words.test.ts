@@ -39,6 +39,7 @@ import { renderStyled } from '../src/presentation/styled.js';
 import { areaFor } from '../src/repl/area.js';
 import { type Completer, completerFor } from '../src/repl/complete.js';
 import { erasesTheScreen } from '../src/repl/erasing.js';
+import { THE_FLOOR } from '../src/repl/floor.js';
 import { verbsOffered } from '../src/repl/gate.js';
 import {
   CUT,
@@ -238,14 +239,15 @@ describe('one palette, one list, and the slash counts only at the start of the l
   const wordsOf = (offers: readonly CompletionWord[]): readonly string[] =>
     offers.map((offer) => offer.word);
 
-  it('opens NOTHING on a bare slash, which is what the letter behind it does', () => {
-    // THIS CASE SAID *opens the whole list on a slash*, and asserted the palette was every
-    // word there is. That is the promise this delivery took back by half, and the half it took
-    // is the one nobody asked for: a bare slash is a caller asking WHAT EXISTS, and answering
-    // it with every verb of the product is a menu of everything for a keystroke nobody had
-    // finished. A slash with a letter behind it is a verb being WRITTEN, and a list of what it
-    // could still be is an answer to something.
-    expect(offeredBy(PREFIX, [], asked), 'a bare slash opened the list').toEqual([]);
+  it('opens the whole list on a bare slash, and the letter narrows THAT list', () => {
+    // THIS CASE SAID *opens NOTHING on a bare slash*, and the argument was that a bare slash is
+    // a caller asking WHAT EXISTS while a slash with a letter is a verb being written. The
+    // premise it rests on — that *what exists* is not a question — is what a caller reading the
+    // page falsified: a bar with a slash in it and nothing under it is somebody asking what there
+    // is, and nothing is the wrong answer. What made the old fear groundless is the CEILING: four
+    // rows and an account of the rest, which is a preview rather than a menu of everything.
+    expect(offeredBy(PREFIX, [], asked), 'a bare slash opened nothing').toEqual(asked(PREFIX)[0]);
+    expect(offeredBy(PREFIX, [], asked).length, 'the whole list is empty').toBeGreaterThan(4);
     // AND THE LETTER OPENS IT, over BOTH vocabularies: the slash is a key rather than a letter
     // of the word behind it, so `/c` reaches the verbs beginning with `c` and the session's own
     // word that does (`complete.ts`, `theStem`).
@@ -324,10 +326,13 @@ describe('one palette, one list, and the slash counts only at the start of the l
     const typed = `${PREFIX}c`;
     expect(offeredBy(typed, tabOffered, asked)).toEqual(offeredBy(typed, [], asked));
     expect(offeredBy(typed, tabOffered, asked)).not.toEqual(tabOffered);
-    // AND THE BARE SLASH IS NOT A QUESTION, so what a Tab left stands under it: a caller who
-    // really does want the whole list asks for it, and the key that asks is the one that has
-    // always asked. Without this the slash would SWALLOW a Tab pressed on the same row.
-    expect(offeredBy(PREFIX, tabOffered, asked)).toEqual(tabOffered);
+    // AND THE BARE SLASH IS A QUESTION TOO, so it wins over what a Tab left exactly as `/c`
+    // does. IT SAID *the bare slash is not a question, so what a Tab left stands under it*, and
+    // the sentence went with the decision it was written for: a slash typed on a row is the
+    // caller asking what there is, and answering with the last thing a Tab happened to offer
+    // would be answering a different question.
+    expect(offeredBy(PREFIX, tabOffered, asked)).toEqual(asked(PREFIX)[0]);
+    expect(offeredBy(PREFIX, tabOffered, asked)).not.toEqual(tabOffered);
   });
 });
 
@@ -699,8 +704,8 @@ describe('the mark says which row is picked, and it is a column of the table', (
     const opens = accent.slice(0, accent.indexOf(PROMPT));
     expect(opens, 'the accent is not an escape at all').toContain(ESC);
     expect(row, 'the mark is not painted in the accent').toContain(`${opens}${PICK}`);
-    // AND NOTHING ELSE ON THE ROW IS: strip what wraps the mark and the row is the plain one,
-    // byte for byte — the word, the padding and what the word is, exactly as a pipe gets them.
+    // AND STRIPPING WHAT WRAPS IT LEAVES THE PLAIN ROW, byte for byte — the word, the padding
+    // and what the word is, exactly as a pipe gets them.
     const plain = rowsFor(offers, paletteRowsFor(offers), NOTHING_IS_CUT, picked).find((line) =>
       line.trimStart().startsWith(PICK),
     ) as string;
@@ -709,11 +714,34 @@ describe('the mark says which row is picked, and it is a column of the table', (
     // answer: the glyph is in the text either way, and the rows around it are padded to the
     // same width by the same function.
     expect(stripped(row).indexOf(PICK)).toBe(plain.indexOf(PICK));
-    // NOT VACUOUS: an UNPICKED row carries no escape at all, so the paint above is the mark's
-    // and not something every row of a painted list has.
+    // AND THE WORD CARRIES THE ACCENT TOO, WHICH IS WHAT THIS DELIVERY ADDED. The case read
+    // *NOT VACUOUS: an UNPICKED row carries no escape at all*, and that was true while the mark
+    // was the only part of this list with a role. The word a caller could type is a part with a
+    // role now (`presentation/items.ts`, `asWord`), so what says the paint is not decoration is
+    // COUNTED instead: the word takes one wrap, the mark takes another on the row that has one,
+    // and the description takes none at all.
+    const wrapped = (line: string): number => line.split(ESC).length - 1;
+    // A ROW OF AN OFFER IS ONE THAT DOES NOT BEGIN WITH THE MARK THAT SAYS THERE IS MORE. It
+    // was *a row naming one of the offers*, and the account of what had no room reads `… 13 not
+    // shown` — which NAMES the verb `show`, so the account was being read as an offer's row.
+    // Nothing is cut at this width, so the mark at the start belongs to that row alone.
+    const named = (line: string): boolean => !stripped(line).trimStart().startsWith(CUT);
     const others = painted.filter((line) => line !== row && line !== renderStyled(THE_KEYS));
     expect(others.length).toBeGreaterThan(1);
-    for (const other of others) expect(other, 'an unmarked row is painted too').not.toContain(ESC);
+    for (const other of others.filter(named)) {
+      // TWO OPENERS AND TWO CLOSERS IS ONE WRAP: the accent and the escape that returns the
+      // terminal's own foreground, around the word and around nothing else.
+      expect(wrapped(other), 'an unmarked row is painted somewhere other than its word').toBe(2);
+      expect(other, 'the word does not carry the accent').toContain(opens);
+    }
+    // AND THE MARKED ROW CARRIES EXACTLY ONE WRAP MORE — the mark's.
+    expect(wrapped(row), 'the marked row is painted somewhere else as well').toBe(4);
+    // AND THE ROW THAT NAMES NO WORD CARRIES NONE AT ALL, which is what says the hue belongs to
+    // the word rather than to a row of this list: the account of what had no room is a row here
+    // like any other and it comes out of the renderer bare.
+    const account = others.find((line) => !named(line));
+    expect(account, 'nothing accounted for the words with no room').toBeDefined();
+    expect(account as string, 'the account of what had no room is painted').not.toContain(ESC);
   });
 });
 
@@ -922,7 +950,7 @@ function rowsNaming(
 describe('a slash and a letter open the list on the screen, and typing narrows it', () => {
   it('shows the session\u2019s own words, each with what it does', async () => {
     const columns = NOTHING_IS_CUT;
-    const rows = 40;
+    const rows = THE_FLOOR.rows;
     const words = theSessionsOwnWords();
     // THE LETTER IS THE ONE THE SESSION'S OWN WORD BEGINS WITH, read off the vocabulary: what
     // this case is about is the words the session answers to, and the row that reaches them is
@@ -954,12 +982,14 @@ describe('a slash and a letter open the list on the screen, and typing narrows i
     }
   }, 180_000);
 
-  it('opens nothing at all on a bare slash', async () => {
-    // THE OTHER HALF OF THE SAME KEY, ON A SCREEN. A slash alone used to put every verb of the
-    // product on the page; it is a character on the row now, and the page under it is the page
-    // that was there.
+  it('opens the preview on a bare slash, and the letter narrows it', async () => {
+    // THE OTHER HALF OF THE SAME KEY, ON A SCREEN. IT SAID *opens nothing at all on a bare
+    // slash*, and it was written for the delivery that shut the list on a bare prefix. A caller
+    // reading the page took that back: a bar with a slash in it and nothing under it is somebody
+    // asking what there is. So the slash opens the list — with the same ceiling of four and the
+    // same account of the rest — and the letter narrows THAT list rather than opening a second.
     const columns = NOTHING_IS_CUT;
-    const rows = 40;
+    const rows = THE_FLOOR.rows;
     const offers = everythingOffered();
     const ran = await inPty({
       columns,
@@ -980,26 +1010,25 @@ describe('a slash and a letter open the list on the screen, and typing narrows i
     // THE ROW REALLY WAS TYPED, so the absence below is about the list rather than about a
     // keystroke that never arrived.
     expect(bare.text, 'the slash was never echoed').toContain(`${PROMPT} ${PREFIX}`);
-    expect(
-      rowsNaming(
-        bare,
-        offers.map((offer) => offer.word),
-      ),
-      'a bare slash opened the list',
-    ).toHaveLength(0);
-    // AND THE LETTER OPENS IT, on the same run: what tells the two apart is one keystroke.
-    expect(
-      rowsNaming(
-        narrowed,
-        offers.map((offer) => offer.word),
-      ).length,
-      'the letter opened nothing',
-    ).toBeGreaterThan(0);
+    const words = offers.map((offer) => offer.word);
+    const onTheBare = rowsNaming(bare, words);
+    // FOUR ROWS AND NOT THE WHOLE VOCABULARY, which is what makes this a PREVIEW: the ceiling
+    // is the list's own and the account of the rest is on the page beside it.
+    expect(onTheBare, 'a bare slash opened nothing').toHaveLength(atMost());
+    expect(offers.length, 'the vocabulary is no bigger than the ceiling').toBeGreaterThan(atMost());
+    expect(bare.text, 'the bare slash did not say what it had no room for').toContain(CUT);
+    // AND THE LETTER NARROWS IT rather than opening a second list: every row still on the page
+    // is a row that was offered before the letter was typed.
+    const onTheLetter = rowsNaming(narrowed, words);
+    expect(onTheLetter.length, 'the letter shut the list').toBeGreaterThan(0);
+    expect(onTheLetter.length, 'the letter did not narrow anything').toBeLessThanOrEqual(
+      onTheBare.length,
+    );
   }, 180_000);
 
   it('narrows to what is still possible as the caller types', async () => {
     const columns = NOTHING_IS_CUT;
-    const rows = 40;
+    const rows = THE_FLOOR.rows;
     // WHAT THE TWO ROWS OFFER, asked of the completer the console asks: the case is about a
     // list GOING somewhere, so both ends of the narrowing are read rather than written down.
     const asked = theCompleter();
@@ -1042,7 +1071,7 @@ describe('a slash and a letter open the list on the screen, and typing narrows i
 
   it('opens nothing for a slash in the middle of a word', async () => {
     const columns = NOTHING_IS_CUT;
-    const rows = 40;
+    const rows = THE_FLOOR.rows;
     const words = theSessionsOwnWords();
     const typed = `show a${PREFIX}`;
     const ran = await inPty({
@@ -1085,7 +1114,7 @@ describe('a Tab shows the verbs with the description the declaration gives them'
     // and the whole vocabulary is compared where every one of them can be: against the same
     // `--help`, off the value both the screen and the shell read.
     const columns = NOTHING_IS_CUT;
-    const rows = 40;
+    const rows = THE_FLOOR.rows;
     const offers = everythingOffered();
     const help = execFileSync('node', [CLI, '--help'], {
       cwd: project,
@@ -1156,7 +1185,7 @@ describe('the two keys open one list, and it stands off the row under it', () =>
     // as an answer to the key just pressed. It is a row of the page and nothing else — no
     // string, empty or otherwise — so a screen is the only place it exists.
     const columns = NOTHING_IS_CUT;
-    const rows = 40;
+    const rows = THE_FLOOR.rows;
     const asked = theCompleter();
     const letter = 's';
     const offers = asked(letter)[0];
@@ -1286,7 +1315,7 @@ function marks(word: string): (bytes: string, since: number) => boolean {
 describe('the arrows move the mark, and the ends of the list hold', () => {
   it('marks nothing until an arrow, then walks the list from its end', async () => {
     const columns = NOTHING_IS_CUT;
-    const rows = 40;
+    const rows = THE_FLOOR.rows;
     const offers = everythingOffered();
     const last = offers.at(-1)?.word as string;
     const before = offers.at(-2)?.word as string;
@@ -1331,7 +1360,7 @@ describe('the arrows move the mark, and the ends of the list hold', () => {
     // merged binary. One step cannot catch it; this presses Down as many times as there are
     // offers and reads the screen after every one of them.
     const columns = NOTHING_IS_CUT;
-    const rows = 40;
+    const rows = THE_FLOOR.rows;
     const offers = everythingOffered();
     const words = offers.map((offer) => offer.word);
     const steps: Step[] = [
@@ -1366,7 +1395,7 @@ describe('the arrows move the mark, and the ends of the list hold', () => {
 
   it('holds at the other end too, and keeps the list showing everything', async () => {
     const columns = NOTHING_IS_CUT;
-    const rows = 40;
+    const rows = THE_FLOOR.rows;
     const offers = everythingOffered();
     const first = offers[0]?.word as string;
     const ran = await inPty({
@@ -1406,7 +1435,7 @@ describe('Return takes the picked word, and Escape shuts the list', () => {
     // echoed into the flow (`repl/console.ts`), so a page with one prompt on it is a page where
     // nothing was run.
     const columns = NOTHING_IS_CUT;
-    const rows = 40;
+    const rows = THE_FLOOR.rows;
     const offers = everythingOffered();
     const first = offers[0]?.word as string;
     const ran = await inPty({
@@ -1460,7 +1489,7 @@ describe('Return takes the picked word, and Escape shuts the list', () => {
     // THE ROW IS THE PREFIX AND A LETTER, because that is what opens a list at all now: the
     // word this narrows to is the session's own, so the letter is read off it.
     const columns = NOTHING_IS_CUT;
-    const rows = 40;
+    const rows = THE_FLOOR.rows;
     const word = (theSessionsOwnWords()[0] as CompletionWord).word;
     const opening = word.slice(0, PREFIX.length + 1);
     const then = word.slice(opening.length, opening.length + 1);
@@ -1499,7 +1528,7 @@ describe('Return takes the picked word, and Escape shuts the list', () => {
 describe('a list of one, a list of none, and the arrows in both', () => {
   it('marks the only word there is, and browses the history when there is no list', async () => {
     const columns = NOTHING_IS_CUT;
-    const rows = 40;
+    const rows = THE_FLOOR.rows;
     const words = theSessionsOwnWords().map((entry) => entry.word);
     const one = CLEAR;
     const ran = await inPty({
@@ -1548,7 +1577,7 @@ describe('the mark survives what changes around it', () => {
     // travels on the value the keys build, so a window dragged to another size redraws the list
     // with the same word still marked.
     const columns = NOTHING_IS_CUT;
-    const rows = 40;
+    const rows = THE_FLOOR.rows;
     const narrower = 100;
     const offers = everythingOffered();
     const first = offers[0]?.word as string;
@@ -1586,7 +1615,7 @@ describe('the mark survives what changes around it', () => {
     // who does not separate two tones — and it was read as a ban. The hue is a SECOND axis
     // over the column now, so what is asked is BOTH halves, on two real sessions.
     const columns = NOTHING_IS_CUT;
-    const rows = 40;
+    const rows = THE_FLOOR.rows;
     const offers = everythingOffered();
     const first = offers[0]?.word as string;
     const walk = (): readonly Step[] => [
@@ -1661,7 +1690,12 @@ describe('a page shows four, says how many it could not, and does it at every he
   // is asked of the same product where a screen is not needed (the case over `areaFor` above).
   // The number is still read off the product rather than written down, and what it names is
   // still asserted against the TOTAL.
-  for (const rows of [24, 28]) {
+  // AND THE TWO HEIGHTS MOVED WITH THE FLOOR. They were twenty-four and twenty-eight, and both
+  // are under the shortest window this console draws a page on (`src/repl/floor.ts`) — so a
+  // session driven at either draws the screen that says so, and a list nobody can see says
+  // nothing about a ceiling. The pair is the floor and a window over it, which is what *more than
+  // one height* needs to be.
+  for (const rows of [THE_FLOOR.rows, THE_FLOOR.rows + 4]) {
     it(`names a number that adds up to everything there was, at 80x${rows}`, async () => {
       const columns = 80;
       const offers = everythingOffered();
@@ -1719,14 +1753,16 @@ describe('opening the palette never makes the frame outgrow the screen', () => {
   // frame ends on the last row of the terminal with the list open, and not one row of the
   // caller's history is erased — with the library's own request as the witness that the
   // absence is merited (`src/repl/erasing.ts`, `erasesTheScreen`).
-  // THE SIZES MOVED WITH THE FLOOR AND NOT WITH THIS PROMISE. Sixty columns, eight rows and
-  // twelve rows are all under the shortest window a console is drawn on (`src/repl/floor.ts`), so
-  // a session driven at any of them draws the screen that says so — and a frame with no list on it
-  // says nothing about whether a list can make the frame outgrow the screen. What is left is the
-  // floor's own width and three heights above it, which is where a caller can really open one.
+  // THE SIZES MOVED WITH THE FLOOR AND NOT WITH THIS PROMISE, TWICE. Sixty columns, eight rows
+  // and twelve rows were all under the shortest window a console is drawn on, and so are
+  // twenty-four, thirty and forty now that the floor is where the name is drawn whole
+  // (`src/repl/floor.ts`): a session driven at any of them draws the screen that says so, and a
+  // frame with no list on it says nothing about whether a list can make the frame outgrow the
+  // screen. What is left is the floor's own width and three heights above it, read off the floor
+  // rather than written down, which is where a caller can really open one.
   for (const columns of [80, 100]) {
     it(`ends on the last row with the list open, at ${columns} columns`, async () => {
-      for (const rows of [24, 30, 40]) {
+      for (const rows of [THE_FLOOR.rows, THE_FLOOR.rows + 6, THE_FLOOR.rows + 16]) {
         const ran = await inPty({
           columns,
           rows,

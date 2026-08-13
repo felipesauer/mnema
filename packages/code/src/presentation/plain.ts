@@ -103,6 +103,13 @@ export function indentOf(depth: number): string {
  * is what keeps the plain rendering of a marked row identical to the unmarked one, glyph for
  * glyph: what is under the mark on every other row is the same column, padded.
  *
+ * `word` takes a COLUMN's separator, exactly like the three above it and for the same
+ * reason: it is a refinement of `field` for the styled renderer to tint, it is the first
+ * column after the mark in the console's list of words, and the two spaces are the ones
+ * that column already had. The role changed what the row is PAINTED in and it may not move
+ * a glyph of it — pinned on the plain rendering of a palette row, which is byte for byte
+ * what it was before the role existed.
+ *
  * `clause` is the ONE entry that is not punctuation this surface chose. The chain's
  * one-line verdict is a sentence of clauses separated by `; `, and it hands `verify`
  * those clauses rather than the string; the `; ` here is what puts them back in the
@@ -124,6 +131,7 @@ const PRECEDED_BY: { readonly [R in Role]: string } = {
   prompt: '',
   typed: '',
   pick: '',
+  word: '  ',
 };
 
 /**

@@ -50,6 +50,18 @@
  * screen, twice over, for two different reasons — and the second is the sharper lesson: a rule
  * satisfied by the damage it exists to prevent is worse than no rule.
  *
+ * AND THE THRESHOLD IS NOW MET AT THE FLOOR ITSELF, WHICH IS A CONSEQUENCE TO DECLARE RATHER
+ * THAN A DEFECT TO HIDE. The shortest window this console draws a page on was redefined as the
+ * height the biggest drawing is chosen at (`repl/floor.ts`), so on a page of the weight that was
+ * measured there, no window a device can report is ever given a smaller drawing by this axis —
+ * the ladder's rungs are all BELOW the floor. It is not the defect this paragraph warns about,
+ * and the difference is where the number comes from: what the drawing is measured against is
+ * still what the arrangement really costs, and what the arrangement costs is a function of what
+ * the record SAYS, so a heavier page still walks the ladder above the same floor. Both halves are
+ * pinned in `tests/the-floor-is-where-the-name-is-drawn.test.ts` and in
+ * `tests/the-opening-fits-the-screen.test.ts`, where the ladder above the floor is asserted to be
+ * EMPTY rather than left to be discovered.
+ *
  * WHAT IT IS MEASURED AGAINST NOW IS THE ARRANGEMENT the drawing would be put in. The region at
  * the top of that console is FIXED — drawn on every frame, never scrolled — so it may hold at
  * most a share of the screen (`repl/panel.ts`), and what arrives here is the taller of two

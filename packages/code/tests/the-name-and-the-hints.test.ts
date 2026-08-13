@@ -340,7 +340,14 @@ async function openedAt(
  * next width before this product had done anything at all. Every resize in that case was
  * a resize nothing happened for, and the case built on it could not go red.
  */
-const TALL = 40;
+/**
+ * A window tall enough for whatever a case here is really about — THE FLOOR'S OWN HEIGHT.
+ *
+ * IT WAS FORTY, which was tall while the shortest window this console drew a page on was
+ * twenty-four rows. The floor is fifty-one now (`src/repl/floor.ts`), so forty is under it and a
+ * session opened there draws no page at all.
+ */
+const TALL = THE_FLOOR.rows;
 const _CARRIES_THE_PAGE = `${ESC}[${TALL};1H`;
 
 /**
@@ -637,28 +644,40 @@ describe('the name is drawn, and how much of it depends on the terminal', () => 
 });
 
 describe('the width the banner is chosen at is the terminal’s own', () => {
-  it('draws the tall form on a wide terminal and the letterspaced one on a narrow one', async () => {
+  it('draws the whole name at the floor and at a wide terminal, which is what the floor IS', async () => {
     // THE ELO. The forms above are a function of a number; this is the number coming off
     // the device the session was handed, which is the half a pure case cannot see.
-    // THE NARROW END WAS TWENTY COLUMNS AND IT IS THE FLOOR. There is a floor under the window
-    // now (`repl/floor.ts`): under eighty by twenty-four no page is laid out at all, so a session
-    // opened at twenty draws the screen that says so and no drawing of the name at all. The
-    // narrowest window there IS answers the same question — it gets a smaller drawing than a wide
-    // one, and it gets the one its own width allows.
+    //
+    // IT ASSERTED THAT THE TWO DIFFER, and the floor moving is what falsified it. The case read
+    // *draws the tall form on a wide terminal and the letterspaced one on a narrow one*, and the
+    // narrow end was the floor: at eighty by twenty-four the arrangement holding the big drawing
+    // busted its share of the screen, so the floor really did get a smaller drawing than a wide
+    // window. THE FLOOR IS NOW DEFINED AS THE HEIGHT THE BIG DRAWING IS CHOSEN AT
+    // (`repl/floor.ts`), so the two pages are the same drawing BY CONSTRUCTION, and a case that
+    // went on asserting a difference would be asserting against the definition.
+    //
+    // WHAT IS LEFT IS THE ELO ITSELF, and it is the half that was always this case's: the
+    // drawing on the page is one of THIS MODULE'S forms, found by asking which of them is there
+    // rather than by naming one, and it is the biggest — which is only true if the size the
+    // device reported reached the module at all.
     const wide = await openedAt(200);
     expect(wide).toContain(drawn(200)[0] as string);
     const narrow = await openedAt(THE_FLOOR.columns);
-    // AND WHAT THE NARROW ONE GOT IS A FORM OF THIS MODULE'S, found by asking which of them
-    // is on the page rather than by naming one: which drawing a window gets is answered by the
-    // SIZE and not by the width alone — the arrangement around it may hold at most a third of the
-    // screen (`repl/panel.ts`) — so a case naming the form the width allows would be asserting
-    // half of the rule.
     const on = (page: string): readonly string[] | undefined =>
       everyDrawing().find((form) => form.every((row) => page.includes(row)));
     expect(on(narrow), 'no drawing of the name is on the narrow page').toBeDefined();
-    expect(on(narrow), 'the floor got the drawing a wide terminal gets').not.toEqual(
-      on(wide) as readonly string[],
+    expect(on(narrow), 'the floor did not get the whole name').toEqual(
+      everyDrawing()[0] as readonly string[],
     );
+    expect(on(wide), 'a wide window did not get the whole name').toEqual(
+      everyDrawing()[0] as readonly string[],
+    );
+    // AND THE WIDTH STILL CHOOSES, INSIDE THE MODULE — which is where the ladder is reachable
+    // and the reason this case may stop asserting it. Every width above the floor holds the
+    // biggest drawing, because it is fifty columns and the narrowest page is the floor less its
+    // margin; the widths that give it away are all under the floor, where no page is drawn.
+    expect(drawn(THE_FLOOR.columns)).toEqual(drawn(200));
+    expect(drawn(40), 'the width chose nothing at all').not.toEqual(drawn(200));
   }, 120_000);
 });
 
