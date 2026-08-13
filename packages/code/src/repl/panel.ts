@@ -86,8 +86,9 @@ import type { Render } from '../presentation/render.js';
  * being no drops one rung, and the rung under the last one is the same lines on the roll.
  *
  * AND THE SHORT SCREEN IS NO LONGER ONE OF THE TWO WAYS THERE. A floor under the window
- * (`floor.ts`) means no page is laid out under twenty-four rows, and the cheapest arrangement
- * costs six — one row of drawing and the five the text beside it takes — which wants eighteen. So
+ * (`floor.ts`) means no page is laid out under FIFTY-ONE rows — it was twenty-four, and the
+ * floor is the height the name is drawn whole at now — and the cheapest arrangement costs six,
+ * one row of drawing and the five the text beside it takes, which wants eighteen. So
  * `bare` is reached ACROSS: a window narrower than the widest row the arrangement holds, and the
  * widest is usually the one that says where the session is standing, which is a path. The rule
  * did not move and neither did this ladder; what moved is which of the two questions a device can
@@ -121,12 +122,17 @@ const THE_FORMS: readonly PanelForm[] = ['columns', 'stacked', 'bare'];
  *     build and its context in text beside its logo ({@link BETWEEN_COLUMNS} has the rest of
  *     that measurement). Four of twenty-four is one row under a sixth; a third is twice as
  *     generous as the reference and still a bound.
- *   - ON THE SCREEN EVERYBODY HAS, twenty-four rows, a third is eight and the input area takes
- *     about five — so what is left for the answer a caller asked for is around eleven rows
- *     rather than four.
- *   - AND THE PEOPLE WHO LIVE IN TWENTY-FOUR ROWS are the ones in a tmux pane, an editor's
- *     embedded terminal or an ssh session, which is not a degenerate size to be tolerated but
- *     the ordinary one.
+ *   - ON THE SHORTEST SCREEN THIS CONSOLE DRAWS ON, a third is seventeen and the input area
+ *     takes about five — so what is left for the answer a caller asked for is around
+ *     twenty-nine rows.
+ *   - THE TWO ENTRIES ABOVE WERE WRITTEN ABOUT TWENTY-FOUR ROWS, and the third one read *AND
+ *     THE PEOPLE WHO LIVE IN TWENTY-FOUR ROWS are the ones in a tmux pane, an editor's embedded
+ *     terminal or an ssh session, which is not a degenerate size to be tolerated but the
+ *     ordinary one*. That is still true about terminals and it is no longer an argument about
+ *     this share: the floor is the height the name is drawn whole at (`floor.ts`), a window of
+ *     twenty-four rows draws no page at all, and the cost of that was declared where the floor
+ *     is. What survives is the share itself — twice as generous as the console this was measured
+ *     against, and still a bound.
  */
 const A_THIRD = 3;
 

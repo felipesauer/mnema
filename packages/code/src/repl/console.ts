@@ -89,8 +89,8 @@
  *
  * AND THERE IS A FLOOR UNDER ALL OF IT. Every arrangement above degrades — a smaller drawing,
  * no arrangement at all, an input area without its badge or its rules — and every one of those
- * ladders was total, so a page was drawn at any size a device reported. Below eighty by
- * twenty-four it is not: the frame is a SCREEN saying what the window has and what the console
+ * ladders was total, so a page was drawn at any size a device reported. Below the floor it is
+ * not: the frame is a SCREEN saying what the window has and what the console
  * needs (`floor.ts`), the session goes on, the roll is untouched, and the page comes back by
  * itself when the window grows. It is asked once, at the top of {@link showing}, out of the same
  * one reading of the device every other number on the frame comes from.
@@ -703,7 +703,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     //
     // AND IT IS REMOVABLE, WHICH IS SAID HERE RATHER THAN ACTED ON. The floor under the window
     // puts it further out of reach than it already was (`floor.ts`) — nothing is drawn under
-    // twenty-four rows, and an arrangement may hold at most a third of the screen — but the
+    // the floor, and an arrangement may hold at most a third of the screen — but the
     // argument that it can never be false is older and does not need the floor: the palette is
     // budgeted so that the area never takes more than what is left under the region above it
     // (`area.ts`, `roomForThePalette`), so `under` is at least `opening.above` by construction

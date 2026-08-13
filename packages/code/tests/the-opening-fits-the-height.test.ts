@@ -51,7 +51,12 @@ import {
   type Ran,
   type Step,
 } from './support/pty.js';
-import { type Screen, theFirstScreenWhere, theFirstScreenWith } from './support/screen.js';
+import {
+  type Screen,
+  theFirstScreenWhere,
+  theFirstScreenWith,
+  theSettledScreen,
+} from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
@@ -634,23 +639,40 @@ describe('the answer a caller asked for is on the page, at the shortest window t
       columns,
       rows,
       project: deep,
-      // TWO ANSWERS RATHER THAN ONE, and the floor moving is what forced it. One read filled a
+      // THREE ANSWERS RATHER THAN ONE, and the floor moving is what forced it. One read filled a
       // twenty-four-row window twice over; the window is fifty-one rows now, so one answer no
       // longer pushes the opening past the top — and a walk back with nothing above the page is a
       // keystroke that draws NO frame, which is what the step waiting for one measured. The
       // assertions below are what say the opening really did leave, so the count is a fixture and
       // never the promise.
-      steps: [opens, asks, asks, walksToTheTop, leaves],
+      // AND THE THIRD ASK WAITS FOR NOTHING ON PURPOSE, which is a thing to say out loud
+      // rather than a shortcut. The window shows the END of the roll, so a third copy of the
+      // same answer leaves the page looking exactly as it did — and the layout writes NOTHING
+      // for a frame identical to the one on the screen, so a step waiting for one waits for
+      // ever (measured: *the session never asked brief*, on a step that had already worked
+      // twice). What makes the case honest is not the wait but the READ, which does not depend
+      // on where a step ended ({@link theFirstScreenWhere}).
+      steps: [
+        opens,
+        asks,
+        asks,
+        { types: `${A_LONG_READ}\r`, until: () => true, what: 'asked once more' },
+        walksToTheTop,
+        leaves,
+      ],
     });
-    // THE PAGE OF THE LAST ANSWER, found after the boundary of the one before it: with two
-    // answers on the roll the FIRST page carrying both ends of an answer is the first read's, and
-    // the opening is still on that one.
-    const asked = theFirstScreenWhere(
-      ran.bytes.slice(ran.at[1] as number),
-      columns,
-      rows,
-      (screen) => screen.text.includes(CLOSES_THE_ANSWER) && screen.text.includes(ENDS_THE_ANSWER),
-    );
+    // THE PAGE THE ANSWERS SETTLED ON, which is the LAST frame drawn before the walk rather
+    // than the first one carrying an answer. IT WAS THE FIRST, and it is the wrong end of the
+    // stream for this subject: the roll is grown by three answers and the first page carrying
+    // both ends of ONE of them is the first answer's, which the opening is still on. What the
+    // case is about is what the roll has pushed off the page, so what it reads is where the
+    // page came to rest ({@link theSettledScreen}).
+    //
+    // AND IT IS THREE ANSWERS RATHER THAN TWO BECAUSE TWO WAS MARGINAL, which a full run under
+    // load found rather than an argument: the opening and two answers came to about the height
+    // of the window. A count that has to be exactly right to mean anything is a fixture doing
+    // the promise's work.
+    const asked = theSettledScreen(ran.bytes.slice(0, ran.at[3] as number), columns, rows);
     // THE OPENING REALLY DID LEAVE THE PAGE, or there is nothing to walk back to: neither what
     // the session is nor the sentence it lands under the mark is on the page after the answer.
     expect(asked.text, 'the opening never left the page').not.toContain(OPENED);
@@ -686,7 +708,7 @@ describe('the answer a caller asked for is on the page, at the shortest window t
       theFixedRowsBetween(asked, top),
       'something was fixed at the top, so this is not the floor',
     ).toBe(0);
-  }, 240_000);
+  }, 400_000);
 
   it('draws the whole arrangement on a screen with the room for it, drawing and all', async () => {
     // THE OTHER DIRECTION, which is what keeps the share a BOUND rather than a cost: a terminal
