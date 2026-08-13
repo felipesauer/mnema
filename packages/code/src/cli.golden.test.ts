@@ -114,7 +114,7 @@ async function mnema(into: keyof typeof transcript, ...argv: string[]): Promise<
       failed = true;
     },
   };
-  transcript[into].push(`$ mnema ${argv.map(quoted).join(' ')}`);
+  transcript[into].push(['$ mnema', ...argv.map(quoted)].join(' '));
   tick();
   await run(argv, io);
   transcript[into].push(...encoded);
@@ -685,6 +685,16 @@ beforeAll(async () => {
   // ── The help of the program and of every verb, which is the other half of the
   //    surface: an option that quietly disappeared is a verb that lost a
   //    capability without a single output line changing.
+  // ── THE BARE NAME, WITH NO TERMINAL — the catalogue on stderr and a non-zero exit,
+  //    which is what every pipeline, script and CI job that has ever run this binary with
+  //    no arguments receives. It is pinned HERE, and it is pinned because the answer
+  //    MOVED on the other side of the same question: at a terminal the bare name asks
+  //    what you want instead (`cli.ts`, `start`). These bytes are what says the move
+  //    stopped where the terminal stops — this file drives the whole program through
+  //    `run` with an injected port and no device, which is the pipe.
+  section('help', 'the bare name, with no terminal');
+  await mnema('help');
+
   section('help', 'the program');
   await mnema('help', '--help');
   await mnema('help', '--version');

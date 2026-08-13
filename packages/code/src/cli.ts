@@ -268,8 +268,85 @@ export async function parseWith(built: BuiltProgram, argv: readonly string[]): P
   }
 }
 
+/**
+ * The facts about THIS INVOCATION that decide whether the bare name asks or prints.
+ *
+ * They are here for the reason the style capability is: the entry is where the process is,
+ * and a module that reached for `process` to answer them would be a module no case could
+ * drive twice. It is the same value the session's own verb assembles one layer down
+ * (`wiring/repl.ts`), for the same reason and out of the same three streams.
+ */
+export interface Entry {
+  /** Where this invocation writes. */
+  readonly io: CliIo;
+  /** Where the keystrokes would come from. */
+  readonly input: NodeJS.ReadStream;
+  /** The page a question would be drawn on. */
+  readonly output: NodeJS.WriteStream;
+  /**
+   * Whether BOTH ends are a terminal.
+   *
+   * The `&&` is the decision and it is the console's own: the arrows come from stdin and
+   * the page goes to stdout, so an invocation with either one redirected is one whose
+   * caller cannot see what they are answering — and, far more importantly, it is a PIPE,
+   * where the answer has to go on being the bytes it has always been.
+   */
+  readonly interactive: boolean;
+}
+
+/**
+ * THE BINARY'S OWN DOOR: the bare name asks what you want, and everything else runs.
+ *
+ * `mnema` with nothing after it printed the catalogue — twenty-nine verbs and the options
+ * above them — which is the right answer for somebody who knows what they are looking for
+ * and the wrong one for somebody who has just typed the name of a program. So at a terminal
+ * it ASKS, with two doors that depend on what is in this directory (`choice/doors.ts`), and
+ * what the caller picks is a LINE this same function then runs.
+ *
+ * WITHOUT A TERMINAL NOTHING MOVED, and that is the half with everything resting on it. A
+ * pipe, a script, a CI job, `mnema | less` — every one of them gets the help on stderr and
+ * the exit code of one, byte for byte as it always has, because {@link run} is reached
+ * unchanged with the same empty argv. It is the same rule the session already followed and
+ * it protects more than the session did: every script that has ever called this binary with
+ * no arguments is on the other side of it. `cli.help.golden.txt` is where those bytes are
+ * pinned, and `tests/the-bare-name-asks.test.ts` is what says this function delegates to the
+ * very call the golden drives.
+ *
+ * ONLY THE BARE NAME, and the narrowness is deliberate. `mnema --color=never` is a caller
+ * who typed something, and what they typed is about OUTPUT — so there is output, and it is
+ * the catalogue. The question is for the invocation that asked nothing at all.
+ *
+ * A CALLER WHO LEAVES WITHOUT CHOOSING RUNS NOTHING AND EXITS ZERO. Asking is not an error,
+ * and the record is untouched: nothing on this path opens a chain or a writer.
+ */
+export async function start(argv: readonly string[], entry: Entry): Promise<void> {
+  if (argv.length > 0 || !entry.interactive) return await run(argv, entry.io);
+  // Reached by a dynamic import, and the whole of `choice/` behind it — the layout library
+  // is the most expensive import on this surface, and `mnema --version` must not know it
+  // exists (`tests/the-floor-is-the-declaration.test.ts`).
+  const [{ theChoice }, { leavingProcess }] = await Promise.all([
+    import('./choice/asked.js'),
+    import('./repl/leaving.js'),
+  ]);
+  const chosen = await theChoice({
+    io: entry.io,
+    input: entry.input,
+    output: entry.output,
+    leaving: leavingProcess,
+  });
+  if (chosen === undefined) return;
+  // THE SAME ENTRY, so the chosen line is read exactly as a typed one: one place parses, one
+  // place reports, and what a caller can reach through a menu is what they could have typed.
+  await run(chosen, entry.io);
+}
+
 // Auto-run when invoked as the binary (not when imported by a test).
 if (process.argv[1] !== undefined && import.meta.url === `file://${process.argv[1]}`) {
   exitQuietlyOnClosedPipe();
-  void run(process.argv.slice(2));
+  void start(process.argv.slice(2), {
+    io: processIo,
+    input: process.stdin,
+    output: process.stdout,
+    interactive: process.stdin.isTTY === true && process.stdout.isTTY === true,
+  });
 }

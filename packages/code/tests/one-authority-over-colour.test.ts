@@ -456,19 +456,31 @@ describe('A1: what loads the library, and what tells it', () => {
     return [...reaching].sort();
   }
 
-  it('is two modules, and the scan that says so really read this surface', () => {
+  it('is three modules, and the scan that says so really read this surface', () => {
     const all = modules();
     // THE CORPUS IS REAL: a scan that found no file passes every case below saying nothing.
     expect(all.length).toBeGreaterThan(50);
     expect(all.map((module) => module.where)).toContain('repl/session.ts');
-    expect(reachingTheLibrary(all)).toEqual(['repl/console.ts', 'repl/region.ts']);
+    // IT WAS TWO AND THE THIRD IS THE QUESTION THE BARE NAME ASKS. It draws rows and reads
+    // keys with the same library, which is what makes the rule below a rule in TWO places
+    // rather than a property of one file.
+    expect(reachingTheLibrary(all)).toEqual([
+      'choice/screen.ts',
+      'repl/console.ts',
+      'repl/region.ts',
+    ]);
   });
 
-  it('is reached from the rest of the surface by ONE import, and that import is dynamic', () => {
+  it('is reached from the rest of the surface only by DYNAMIC imports, at every door', () => {
     // THE PROPERTY THE WHOLE DELIVERY RESTS ON. That library reads the channel once, while
     // its own module graph is being loaded, so the answer has to be written before the
     // import that loads it — and a STATIC import of any of it from anywhere would run
     // before every line of every function, this one included.
+    //
+    // IT NAMED ONE DOOR AND THERE ARE TWO, which is the amarra rather than a correction: a
+    // rule that holds in N places with a guard that names one is exactly the class this
+    // bench has paid for eight times. What is asserted is the SET, found by what each module
+    // imports — so a third door added tomorrow is named here the day it is written.
     const all = modules();
     const library = reachingTheLibrary(all);
     const doors = all
@@ -479,10 +491,18 @@ describe('A1: what loads the library, and what tells it', () => {
           .map((each) => `${module.where} ${each.how}`),
       )
       .sort();
-    // The type-only one is erased by the compiler and loads nothing: it is the shape of a
-    // line the session needs (`Drawn`), and it is named here so a pass is not read as
-    // saying there is only one mention.
-    expect(doors).toEqual(['repl/session.ts dynamic', 'repl/session.ts type']);
+    // The type-only ones are erased by the compiler and load nothing: the shape of a line
+    // the session needs (`Drawn`) and the shape of what a screen answers with (`Screen`).
+    // They are named here so a pass is not read as saying there is one mention per door.
+    expect(doors).toEqual([
+      'choice/asked.ts dynamic',
+      'choice/asked.ts type',
+      'repl/session.ts dynamic',
+      'repl/session.ts type',
+    ]);
+    // AND NOT ONE OF THEM IS A VALUE IMPORT, said as the rule rather than as a list: it is
+    // what the enumeration above is FOR, and it is the half that survives a door being added.
+    expect(doors.filter((door) => door.endsWith(' value'))).toEqual([]);
   });
 
   it('would accuse the static import an author would reach for', () => {
@@ -504,14 +524,28 @@ describe('A1: what loads the library, and what tells it', () => {
     expect(reachingTheLibrary(typed)).not.toContain('repl/panel.ts');
   });
 
-  it('tells the library before the line that loads it, in the one place that loads it', () => {
-    const session = modules().find((module) => module.where === 'repl/session.ts') as Module;
-    // ONE CALL. Two would be two answers about one page, which is the defect one layer up.
-    expect((session.code.match(/theLibraryIsTold\(/g) ?? []).length).toBe(1);
-    // AND ONE DYNAMIC IMPORT in the file, so the position below names the import that
-    // loads the library rather than whichever came first.
-    expect((session.code.match(/\bimport\(/g) ?? []).length).toBe(1);
-    expect(session.code.indexOf('theLibraryIsTold(')).toBeLessThan(session.code.indexOf('import('));
+  it('tells the library before the line that loads it, at EVERY door', () => {
+    // THE RULE, ASKED OF EACH DOOR RATHER THAN OF ONE FILE. Both of them load the library
+    // and both of them must have said what this product decided before that line runs — so
+    // the doors are found by the discriminant (the dynamic import of a module that reaches
+    // the library) and each is then held to the same two things.
+    const all = modules();
+    const library = reachingTheLibrary(all);
+    const doors = all.filter((module) =>
+      importsOf(module).some((each) => each.how === 'dynamic' && library.includes(each.what)),
+    );
+    // NOT VACUOUS: the walk really found doors, so what follows is asserted of something.
+    expect(doors.map((door) => door.where).sort()).toEqual(['choice/asked.ts', 'repl/session.ts']);
+    for (const door of doors) {
+      // ONE CALL. Two would be two answers about one page, which is the defect one layer up.
+      expect((door.code.match(/theLibraryIsTold\(/g) ?? []).length, door.where).toBe(1);
+      // AND ONE DYNAMIC IMPORT in the file, so the position below names the import that
+      // loads the library rather than whichever came first.
+      expect((door.code.match(/\bimport\(/g) ?? []).length, door.where).toBe(1);
+      expect(door.code.indexOf('theLibraryIsTold('), door.where).toBeLessThan(
+        door.code.indexOf('import('),
+      );
+    }
   });
 
   it('names the channel in exactly the two places that read it and write it', () => {

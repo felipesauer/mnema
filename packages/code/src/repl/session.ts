@@ -10,10 +10,15 @@
  *
  * WHAT IT IS NOT is as much of the design as what it is:
  *
- *   - IT IS A VERB, `mnema repl`, and never the bare invocation. `mnema` with no verb
- *     prints the help and exits, byte for byte as it always has. An agent that ran the
- *     binary in a pty and landed in a prompt would wait forever, and this product's
- *     other surface is the one agents are meant to use.
+ *   - IT IS A VERB, `mnema repl`, and it is still the only word that opens a session
+ *     directly. IT SAID *and never the bare invocation. `mnema` with no verb prints the
+ *     help and exits, byte for byte as it always has* — and the second sentence is now
+ *     true of a PIPE and false of a terminal: the bare name asks what you want there, and
+ *     one of the two doors it offers is this session (`cli.ts`, `start`). The half that
+ *     mattered is the half that held. Every shell pipeline, script and CI job that has
+ *     ever run this binary with no arguments gets the same bytes on the same stream with
+ *     the same exit code, and the agent that ran it in a pty lands on a QUESTION rather
+ *     than on a prompt — one that writes nothing however it is answered, or not answered.
  *   - IT ONLY READS, by DEFAULT-DENY over each verb's own declaration (`gate.ts`).
  *     Not a list kept here — a write added tomorrow is refused because nobody
  *     classified it as a read.
