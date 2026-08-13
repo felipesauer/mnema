@@ -42,8 +42,8 @@
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
-import { memoryCaptured } from '@mnema/chain';
-import { resolveTrees } from '@mnema/core';
+import { listTails, memoryCaptured } from '@mnema/chain';
+import { PROJECT_DIR, resolveTrees } from '@mnema/core';
 import { openTreeForWriting } from '@mnema/core/write';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from './cli.js';
@@ -624,6 +624,22 @@ beforeAll(async () => {
   await mnema('writes', 'focus', '--actor', 'whoever');
   await mnema('writes', 'key', 'request', '--anchor', 'whoever');
 
+  // The two nos authorizing a cut earns, each named by the id the record spells a
+  // tail with. The first is the tail a waiver may never name — this machine's own,
+  // which the waiver would be cut along with. The second is a committed key that owns
+  // no tail at all: the backup key `init` made, which is exactly the one a person
+  // meets in the census and might try to account for.
+  const ownTail = name(listTails({ root: join(repo, PROJECT_DIR) })[0] as string, 'tail-own');
+  await mnema('writes', 'tail', 'prune', ownTail, '--reason', 'cut myself');
+  await mnema(
+    'writes',
+    'tail',
+    'prune',
+    basename(backupKeyPath, '.key'),
+    '--reason',
+    'the key that never wrote anything',
+  );
+
   // ── The PARSER's refusals — one invocation per code the surface words, because
   //    they are the lines a person meets on their FIRST command and nothing pinned
   //    them. Each is the product speaking: what is missing and what it means (from
@@ -637,6 +653,9 @@ beforeAll(async () => {
   await mnema('writes', 'task', 'A task', '--which');
   await mnema('writes', 'tsk', 'a verb nobody declared');
   await mnema('writes', 'run', 'nothing');
+  // A cut with no recorded reason is the one an audit cannot read later, so the
+  // parser demands it before anything is opened.
+  await mnema('writes', 'tail', 'prune', ownTail);
 
   // ── What a read could not have accepted: an empty argument in a field the catalog
   //    requires. Each of these WROTE a signed event before this door existed, and
@@ -730,6 +749,7 @@ beforeAll(async () => {
     'skills',
     'brief',
     'key',
+    'tail',
     'verify',
     'mcp',
     'repl',
@@ -749,6 +769,7 @@ beforeAll(async () => {
     ['key', 'request'],
     ['key', 'enroll'],
     ['key', 'revoke'],
+    ['tail', 'prune'],
   ]) {
     section('help', `mnema ${pair.join(' ')} --help`);
     await mnema('help', ...pair, '--help');

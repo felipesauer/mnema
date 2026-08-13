@@ -5,9 +5,9 @@
  * THE ORDER IS THE OUTPUT. commander lists commands in registration order, so this
  * array is what a reader sees when they ask what mnema does — the writes first, from
  * founding a project to the four knowledge facts, then the session, then every read,
- * then the machine's keys, then verification. Reordering the list reorders the help,
- * which is why it lives in one place and not in the sequence of twenty-eight calls
- * inside one function.
+ * then the machine's keys, then the record's own tails, then verification.
+ * Reordering the list reorders the help, which is why it lives in one place and not
+ * in the sequence of twenty-nine calls inside one function.
  *
  * The FAMILIES are the shape of the surface, and each one exists for a reason worth
  * keeping next to the list rather than inside one of its members:
@@ -73,6 +73,17 @@
  * `--which` are aggregation FILTERS, not the asker's identity. `--json` emits
  * the faithful object. RELATES, never JUDGES — no output editorializes.
  *
+ * `key` and `tail` sit together at the end of the writes, and they are the two whose
+ * subject is not the work but the record's own material: `key` operates this
+ * machine's signing keys, and `tail` authorizes the cut of a whole tail. `tail prune`
+ * is the only verb in the product whose consequence is DESTRUCTIVE, and it is
+ * deliberately the only write with no counterpart on the MCP surface: a run there
+ * opens by itself on the first write, with the `who` read off the key and nobody
+ * authorizing that session out loud. A cut is authorized by a person at a shell, or
+ * not at all. It removes nothing either way — it records the authorization while the
+ * tail is still there, which is what makes the claim checkable, and says where the
+ * files are.
+ *
  * `verify` covers a THIRD set of trees, and the difference is that it answers with a
  * VERDICT. It verifies the project's two trees — the committed one and this machine's
  * private one — reporting one per tree and exiting on the WEAKEST of them, and it
@@ -110,8 +121,9 @@
  * is the one verb whose answer changes when any line above it does.
  *
  * The three do not agree about the record, and the disagreement is the classification
- * doing its job. `mcp` is a WRITE, because it serves every write tool this product has
- * to whoever connects to it. `repl` is a READ, because it will only dispatch to a verb
+ * doing its job. `mcp` is a WRITE, because it serves every write tool there is to whoever
+ * connects to it — every tool, which is not every write: `tail prune` is the one the server
+ * deliberately has none for. `repl` is a READ, because it will only dispatch to a verb
  * that declared itself one — it reads the declarations of this very list and refuses
  * everything else (`repl/gate.ts`), which is what makes it the first PRODUCTION reader
  * of the effect each verb declares. Both answers come from the same question: what can
@@ -151,6 +163,7 @@ import { registerShow } from './show.js';
 import { registerSkill } from './skill.js';
 import { registerSkills } from './skills.js';
 import { registerStatus } from './status.js';
+import { registerTail } from './tail.js';
 import { registerTask } from './task.js';
 import { registerTimeline } from './timeline.js';
 import type { Declared, Verb, Wiring } from './verb.js';
@@ -182,6 +195,7 @@ export const VERBS: readonly Verb[] = [
   registerSkills,
   registerBrief,
   registerKey,
+  registerTail,
   registerVerify,
   registerMcp,
   registerRepl,

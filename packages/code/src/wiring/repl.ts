@@ -25,7 +25,7 @@
  * session offers a verb when that verb declared `reads` and refuses everything else
  * (`repl/gate.ts`), so the power of this verb is the union of the powers it will
  * dispatch to, which is the same argument that makes `mcp` a WRITE — that one serves
- * every write tool this product has.
+ * every write tool there is.
  *
  * THE FACTS ABOUT THE PROCESS ARE READ HERE, where the process is. Whether each end is a
  * terminal is exactly the kind of question `wiring/color.ts` says may not be asked
