@@ -36,12 +36,21 @@
  * note already takes ("a key without a tail can be a machine that has not written
  * yet"): report the ambiguity, decide nothing on the reader's behalf.
  *
- * Verifying the OTHER PROJECTS of a workspace stays a separate concern, deliberately:
- * integrity is a property of a chain, whoever asks is standing in one project, and
- * covering every project of a workspace is a full replay of every chain of each — a
- * cost of a different order from any read that spans projects today.
+ * THE OTHER PROJECTS OF A WORKSPACE ARE COVERED WHEN THE CALLER NAMES THEM, and this
+ * comment used to say they were a separate concern — *integrity is a property of a
+ * chain, whoever asks is standing in one project, and covering every project is a full
+ * replay of every chain of each, a cost of a different order*. What survived is the
+ * COST, which is real and is now a number ({@link runVerifyWorkspace}); what fell over
+ * is "whoever asks is standing in one project". An auditor with five projects open was
+ * running five commands and combining five exit codes by a rule they invented in a
+ * shell loop — and that rule is not this product's. So the set is named ({@link
+ * WorkspaceContext.named}), never discovered: a `--workspace` that walked the disk
+ * would be the product GUESSING which projects the caller meant, and it would reach a
+ * stranger's project in a neighbouring folder.
  */
 
+import { realpathSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import {
   catalogUpcasters,
   holdsRecord,
@@ -53,7 +62,7 @@ import {
   verify,
   weakerLevel,
 } from '@mnema/chain';
-import { type DiscoveryEnv, resolveTrees, type Scope } from '@mnema/core';
+import { type DiscoveryEnv, type ResolvedTrees, resolveTrees, type Scope } from '@mnema/core';
 import { recordTrees, type ScopedTree } from '../intelligence-source.js';
 
 /** What verify needs — injected so it is testable. */
@@ -156,29 +165,270 @@ export function runVerify(ctx: VerifyContext): VerifyDone | VerifyRefused {
   if (trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
-  const upcasters = catalogUpcasters();
-  // The committed tree is the project — `resolveTrees` found the project BY this
-  // directory — so it is the one tree whose presence is already established, and the
-  // one the fold below always has a verdict from. An empty committed tree still gets
-  // the verdict it has always got here (`T1 only`, and a bare `verify` exits zero on
-  // it): a project between its first event and its first checkpoint is legitimate.
+  const covered = coverProject(trees, trees.projectPublic, ctx.global, catalogUpcasters());
+  return {
+    ok: true,
+    trees: covered.trees,
+    record: covered.record,
+    requirement: ctx.requirement,
+    requirementMet: meetsRequirement(covered.record.level, ctx.requirement),
+  };
+}
+
+/**
+ * EVERY TREE OF ONE PROJECT, VERIFIED — the whole of what a verdict about a project is,
+ * with nothing about WHERE the question came from.
+ *
+ * It is a function of its own because there are two callers now: the project of the cwd
+ * ({@link runVerify}) and each project of a named set ({@link runVerifyWorkspace}). The
+ * alternative was the set re-deciding which trees a project has and which of them the
+ * verdict folds — two readings of one rule, which is the shape that drifts (a set that
+ * forgot the private tree would report a verdict over half of every project in it, and
+ * every case in `verify.test.ts` would still be green).
+ */
+function coverProject(
+  trees: ResolvedTrees,
+  root: string,
+  global: boolean,
+  upcasters: UpcasterRegistry,
+): { readonly trees: readonly TreeReport[]; readonly record: RecordVerdict } {
+  // The committed tree is the project — `resolveTrees` found the project BY the
+  // directory it was resolved from — so it is the one tree whose presence is already
+  // established, and the one the fold below always has a verdict from. An empty
+  // committed tree still gets the verdict it has always got here (`T1 only`, and a bare
+  // `verify` exits zero on it): a project between its first event and its first
+  // checkpoint is legitimate.
   const committed: TreeVerdict = {
     kind: 'verdict',
     scope: 'public',
-    root: trees.projectPublic,
-    result: verify(trees.projectPublic, upcasters),
+    root,
+    result: verify(root, upcasters),
   };
   const rest = recordTrees(trees, undefined)
-    .filter((tree) => tree.scope !== 'public' && (tree.scope !== 'global' || ctx.global))
+    .filter((tree) => tree.scope !== 'public' && (tree.scope !== 'global' || global))
     .map((tree) => reportOn(tree, upcasters));
-  const record = aggregate([committed, ...rest.filter(isVerdict)]);
+  return {
+    trees: [committed, ...rest],
+    record: aggregate([committed, ...rest.filter(isVerdict)]),
+  };
+}
+
+/**
+ * What a verdict over a NAMED SET of projects needs. It shares three fields with
+ * {@link VerifyContext} and differs in the one that matters: the projects are the
+ * caller's, not the cwd's.
+ */
+export interface WorkspaceContext {
+  /** Where relative paths are resolved from — this invocation's directory. */
+  readonly cwd: string;
+  /** The discovery environment (XDG/home). */
+  readonly env: DiscoveryEnv;
+  /** The minimum this invocation accepts, held over the aggregate of the whole set. */
+  readonly requirement: LevelRequirement;
+  /**
+   * Whether this machine's global tree is part of this verification. It is verified
+   * ONCE for the whole set and belongs to no project in it — see
+   * {@link runVerifyWorkspace}.
+   */
+  readonly global: boolean;
+  /**
+   * The paths the caller NAMED. Never discovered, never walked for: see the head of
+   * this file for why a `--workspace` that searched the disk would be guessing.
+   *
+   * Relative paths resolve against {@link cwd}, and each is resolved the way the cwd
+   * is — walking UP to the project that holds it, so a package of a monorepo names its
+   * monorepo, exactly as running `mnema verify` in that directory would.
+   */
+  readonly named: readonly string[];
+}
+
+/** One project of a named set, with the verdict over its trees. */
+export interface ProjectVerdict {
+  readonly kind: 'verdict';
+  /**
+   * The project DIRECTORY, absolute — the parent of the `.mnema/` the walk-up arrived
+   * at, resolved from the path the caller named.
+   *
+   * It is the name the report says this project by, and there is no other: a project
+   * has no id and no title, and two `public` trees are two repositories. Where the
+   * caller reached one project by two paths, this is the first of them — so what a
+   * reader sees is a directory they named, and the closing statement says how many
+   * paths collapsed into how many projects.
+   */
+  readonly dir: string;
+  /** Every tree of this project, the committed one first. */
+  readonly trees: readonly TreeReport[];
+  /** The one verdict over this project's trees — the same fold a lone `verify` uses. */
+  readonly record: RecordVerdict;
+}
+
+/**
+ * One named path that holds NO record — the third answer, and the one the set exists to
+ * keep separate from the other two.
+ *
+ * It is not verified and it is not broken. Nothing was replayed there, so there is
+ * nothing to rule on: counting it as a pass would let an empty directory carry a CI
+ * gate (the no-op this verb has already been once), and counting it as a break would
+ * fail a set for naming a directory that has not been founded yet. So it is reported,
+ * left OUT of the aggregate, and counted in what the report says at the end.
+ */
+export interface ProjectWithoutRecord {
+  readonly kind: 'no-record';
+  /** The path as it resolves, absolute — what the caller named, made unambiguous. */
+  readonly dir: string;
+}
+
+/** What there was to say about one named path. */
+export type ProjectReport = ProjectVerdict | ProjectWithoutRecord;
+
+/** The ONE verdict over everything a named set covered. */
+export interface WorkspaceVerdict {
+  /** Nothing verifiable is broken in any covered project — every project's `ok`, folded. */
+  readonly ok: boolean;
+  /** The weakest level any covered project reached — what the exit code is decided by. */
+  readonly level: ProvenLevel;
+  /**
+   * What is AT that level, in the order it was reported: a project's directory, or
+   * `global` for this machine's tree when it was asked for. Never empty.
+   */
+  readonly at: readonly string[];
+}
+
+/** The verdict over a named set of projects, and what it did and did not cover. */
+export interface WorkspaceDone {
+  readonly ok: true;
+  /** How many paths the caller named, BEFORE two names of one project became one. */
+  readonly named: number;
+  /** Every DISTINCT project named, in the order it was first named. */
+  readonly projects: readonly ProjectReport[];
+  /**
+   * This machine's global tree, verified once for the whole set — only when asked.
+   *
+   * Once, and outside every project, because that is what the tree IS: the same
+   * directory for every project on the disk. Folded into each project it would be one
+   * replay per project of one chain, and one weakness in it would lower the verdict of
+   * every project in the set — the signal that is always on, multiplied.
+   */
+  readonly globalTree?: TreeReport;
+  /**
+   * The one verdict over everything covered — ABSENT when nothing was.
+   *
+   * Absent rather than a level meaning "nothing": a set of directories that hold no
+   * record has not been verified and has not failed either, and the only honest
+   * aggregate over an empty set is no aggregate. What the surface says about it, and
+   * what the exit does, is decided where the requirement is (see
+   * {@link WorkspaceDone.requirementMet}).
+   */
+  readonly record?: WorkspaceVerdict;
+  /** The minimum the caller declared, echoed so a surface can say what it wanted. */
+  readonly requirement: LevelRequirement;
+  /**
+   * Whether the verdict satisfies it — all the exit code reads.
+   *
+   * FALSE when nothing was covered, and that is the case this field exists to get
+   * right: a set in which every named path holds no record must not exit zero, because
+   * a zero there is `mnema verify` passing a gate over nothing at all.
+   */
+  readonly requirementMet: boolean;
+}
+
+/**
+ * Verifies the record of every project the caller NAMED, plus this machine's global
+ * tree when it is asked for, and folds one verdict over all of it.
+ *
+ * It never refuses. A path that is no project is an answer about that path
+ * ({@link ProjectWithoutRecord}) rather than a refusal that would throw away the
+ * verdicts of the projects named beside it — which is the difference between this and
+ * {@link runVerify}, where the one project asked about is the whole of the question.
+ *
+ * TWO NAMES FOR ONE PROJECT ARE ONE PROJECT, and the identity is the CHAIN ROOT rather
+ * than the text of the path: the same directory named twice, a subdirectory of a
+ * project already named, and a path that reaches one through a SYMLINK are all one
+ * record, and counting them twice would fold one project's level into the aggregate
+ * more than once while a reader counted projects by lines. Tree resolution is textual
+ * (`resolveTrees` joins and walks up, it does not canonicalize), so the link is
+ * followed here, once, at the identity — see {@link identityOf}.
+ */
+export function runVerifyWorkspace(ctx: WorkspaceContext): WorkspaceDone {
+  const upcasters = catalogUpcasters();
+  const projects: ProjectReport[] = [];
+  const seen = new Set<string>();
+  for (const named of ctx.named) {
+    const at = resolve(ctx.cwd, named);
+    const trees = resolveTrees(at, ctx.env);
+    const root = trees.projectPublic;
+    // The identity of a path with no project is the path itself: there is no chain
+    // root to take, and two spellings of one directory are still one answer.
+    const identity = identityOf(root ?? at);
+    if (seen.has(identity)) continue;
+    seen.add(identity);
+    projects.push(
+      root === undefined
+        ? { kind: 'no-record', dir: at }
+        : { kind: 'verdict', dir: dirname(root), ...coverProject(trees, root, false, upcasters) },
+    );
+  }
+  const globalTree = ctx.global
+    ? reportOn({ scope: 'global', chainRoot: resolveTrees(ctx.cwd, ctx.env).global }, upcasters)
+    : undefined;
+  const record = foldSet(projects, globalTree);
   return {
     ok: true,
-    trees: [committed, ...rest],
-    record,
+    named: ctx.named.length,
+    projects,
+    ...(globalTree !== undefined ? { globalTree } : {}),
+    ...(record !== undefined ? { record } : {}),
     requirement: ctx.requirement,
-    requirementMet: meetsRequirement(record.level, ctx.requirement),
+    requirementMet: record !== undefined && meetsRequirement(record.level, ctx.requirement),
   };
+}
+
+/**
+ * The verdict over a whole set: every COVERED project folded by name, with the global
+ * tree beside them when it was asked for — or nothing, when nothing was covered.
+ *
+ * A project with no record contributes NO entry, which is the whole of what "outside
+ * the aggregate" means, and it is why this can answer with nothing at all.
+ */
+function foldSet(
+  projects: readonly ProjectReport[],
+  globalTree: TreeReport | undefined,
+): WorkspaceVerdict | undefined {
+  const covered: Ruled<string>[] = projects
+    .filter((project): project is ProjectVerdict => project.kind === 'verdict')
+    .map((project) => ({
+      ok: project.record.ok,
+      level: project.record.level,
+      name: project.dir,
+    }));
+  if (globalTree !== undefined && globalTree.kind === 'verdict') {
+    // Named by its ROLE and not by its path: it is the one tree of the set that belongs
+    // to no project, and the role is what a reader of somebody else's CI log can act on.
+    covered.push({ ok: globalTree.result.ok, level: globalTree.result.level, name: 'global' });
+  }
+  const [first, ...rest] = covered;
+  return first === undefined ? undefined : weakest([first, ...rest]);
+}
+
+/**
+ * WHAT MAKES TWO PATHS THE SAME RECORD: the path with every symlink resolved.
+ *
+ * A repository reached through a link resolves to a chain root under the link's own
+ * spelling — tree resolution never canonicalizes — so two names of one record compare
+ * unequal, and the same events would be folded into the aggregate twice. This is the
+ * one place the link is followed, and it is followed for IDENTITY only: what the report
+ * names is still the directory the caller reached.
+ *
+ * A path that cannot be canonicalized (it does not exist, or is unreadable) is its own
+ * identity. That is the honest fallback: the failure means there is nothing on disk to
+ * follow, so the text is all there is to tell two names apart by.
+ */
+function identityOf(path: string): string {
+  try {
+    return realpathSync.native(path);
+  } catch {
+    return path;
+  }
 }
 
 /**
@@ -198,20 +448,68 @@ function reportOn(tree: ScopedTree, upcasters: UpcasterRegistry): TreeReport {
 }
 
 /**
- * The one verdict over the trees that were verified — the ONE place the fold happens,
- * so the level the exit reads and the trees the report names come out of one pass.
- *
- * It takes a non-empty list by type rather than by check: an aggregate over no tree
- * would have to invent a level, and there is always the committed tree to fold from.
+ * The one verdict over the trees of one project — {@link weakest}, with each tree
+ * carrying the name a report says it by.
  */
 function aggregate(verdicts: readonly [TreeVerdict, ...TreeVerdict[]]): RecordVerdict {
-  let level = verdicts[0].result.level;
-  for (const tree of verdicts) level = weakerLevel(level, tree.result.level);
+  const folded = weakest(
+    mapNonEmpty(verdicts, (tree) => ({
+      ok: tree.result.ok,
+      level: tree.result.level,
+      name: tree.scope,
+    })),
+  );
+  return { ok: folded.ok, level: folded.level, scopes: folded.at };
+}
+
+/** One thing a verdict folds over: what it proved, how far, and what it is called. */
+interface Ruled<Name> {
+  readonly ok: boolean;
+  readonly level: ProvenLevel;
+  readonly name: Name;
+}
+
+/**
+ * THE AGGREGATE, AND THE ONE PLACE IT IS DECIDED: the weakest level anything reached,
+ * and everything that is at it.
+ *
+ * There are two folds in this file and this is the rule under both — the trees of a
+ * project, and the projects of a named set. They are the same question asked at two
+ * heights, and the reason it is one function is that a second one could differ: a set
+ * that folded to the BEST project would be the pass earned by the healthy half, which
+ * is exactly the defect `weakerLevel` exists against (see its doc in the chain), one
+ * level up. `--require` is then compared against this, once, wherever it came from.
+ *
+ * It answers with WHAT IS AT the level as well, because a level alone stops being able
+ * to say where to look the moment there is more than one of anything: over trees that
+ * is the scope, over projects it is the directory, and a reader of either needs the
+ * name to act on it.
+ *
+ * Non-empty BY TYPE, so there is no empty case to invent a level for. A caller with
+ * nothing covered has no verdict at all rather than a hollow one — which is the whole
+ * of what {@link WorkspaceDone.record} being optional says.
+ */
+function weakest<Name>(ruled: readonly [Ruled<Name>, ...Ruled<Name>[]]): {
+  readonly ok: boolean;
+  readonly level: ProvenLevel;
+  readonly at: readonly Name[];
+} {
+  let level = ruled[0].level;
+  for (const one of ruled) level = weakerLevel(level, one.level);
   return {
-    ok: verdicts.every((tree) => tree.result.ok),
+    ok: ruled.every((one) => one.ok),
     level,
-    scopes: verdicts.filter((tree) => tree.result.level === level).map((tree) => tree.scope),
+    at: ruled.filter((one) => one.level === level).map((one) => one.name),
   };
+}
+
+/** `map` over a non-empty list, keeping the type that says it is non-empty. */
+function mapNonEmpty<In, Out>(
+  items: readonly [In, ...In[]],
+  each: (item: In) => Out,
+): readonly [Out, ...Out[]] {
+  const [first, ...rest] = items;
+  return [each(first), ...rest.map(each)];
 }
 
 function isVerdict(report: TreeReport): report is TreeVerdict {

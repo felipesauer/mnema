@@ -19,9 +19,14 @@
  * one disk. Same finding, different situation, and the merge is exactly what would
  * lose the difference.
  *
- * ONE PROJECT, and that is the shape of this surface rather than a limit left in
- * place: a command runs in a directory, `cwd` resolves one project, and there is no
- * workspace for it to span. The MCP tool of the same name is opened by a client that
+ * ONE PROJECT, and that is the shape of this READ rather than a limit left in place: it
+ * runs in a directory, `cwd` resolves one project, and no second project is handed to
+ * it. THE REASON USED TO BE ABOUT THE SURFACE — *"there is no workspace for it to
+ * span"* — and `mnema verify --workspace` falsified that: a CLI verb spans a workspace
+ * when the caller NAMES it, since the person is the announcer the MCP's host is. What
+ * did not change is this reading: nothing names a set to it, and an exposure report is
+ * about the record you are standing in. The MCP tool of the same name is opened by a
+ * client that
  * announces several projects at once, so it reads every one of them and its answer
  * carries a project label and one denominator per record. Here the answer needs
  * neither — but it does have to SAY so, which is what the empty report's second line

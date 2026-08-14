@@ -45,7 +45,7 @@ import type {
   VerifyResult,
 } from '@mnema/chain';
 import type { Command } from 'commander';
-import type { TreeReport } from '../commands/verify.js';
+import type { TreeReport, WorkspaceDone } from '../commands/verify.js';
 import { fact } from '../presentation/detail.js';
 import type { Line, Severity } from '../presentation/line.js';
 import type { Render } from '../presentation/render.js';
@@ -150,6 +150,103 @@ const NO_RECORD_WHY =
   ' — nothing has been written to this tree on this machine, so there is nothing to rule on';
 const NO_RECORD = NO_RECORD_HEADLINE + NO_RECORD_WHY;
 
+/**
+ * What is said about a NAMED PATH that holds no record, in the same two pieces.
+ *
+ * It shares the headline with the tree above deliberately: "there is nothing here to
+ * rule on" is one piece of news, and a set that worded it twice would be telling a
+ * reader that an empty tree and an unfounded directory are different kinds of nothing.
+ * What differs is the WHY, because what to do about it differs — a private tree that is
+ * not there is a clone, and a path that is no project is either a directory nobody has
+ * run `mnema init` in or a path the caller mistyped.
+ */
+const NO_PROJECT_THERE =
+  `${NO_RECORD_HEADLINE} — no \`.mnema/\` is at this path or above it, so there is ` +
+  'nothing to rule on';
+
+/**
+ * WHAT THE READING COVERED AND WHAT IT DID NOT, said once, at the end — the closing
+ * statement `usage` established, for the reading that most needs one.
+ *
+ * A set of projects is the one shape of this verb where a reader cannot count the
+ * coverage off the lines: paths collapse (two names of one project are one project),
+ * and paths drop out (one that holds no record is outside the verdict). Both are
+ * silent in the body, and both change what the exit code means — so the counts are
+ * stated, and the RULE under them is stated with them, because an aggregate with
+ * nothing qualifying it reads as a verdict over everything the caller named.
+ */
+function coverage(named: number, covered: number, without: number): string {
+  const distinct = covered + without;
+  const set =
+    covered === 0
+      ? `no project covered, ${without} holding no record`
+      : `${covered} project(s) covered${without === 0 ? '' : `, ${without} holding no record`}`;
+  return (
+    `${named} path(s) named → ${distinct} distinct: ${set}. ` +
+    'Two names of one record are one project — the same directory twice, ' +
+    'a subdirectory of one already named, or one reached through a symlink. A path that ' +
+    'holds no record is neither a pass nor a break: nothing was replayed there, so it is ' +
+    'outside the verdict, and the verdict is the WEAKEST level any covered project reached.'
+  );
+}
+
+/**
+ * WHY THE EXIT IS NON-ZERO WHEN NOTHING SAYS SO — one sentence, for the caller's
+ * minimum over a record that has no break in it.
+ *
+ * `subject` is what the level is OF, and it is the only part that differs between the
+ * one project this verb has always ruled on and a named set of them. It is a parameter
+ * rather than a second sentence because the criterion is one: what was asked for, what
+ * was proven, and which of several things is the one at that level. Two sentences is
+ * how the flag's exit and the bare exit come to disagree about what `--require` means.
+ */
+function requirementNotMet(
+  requirement: LevelRequirement,
+  needs: ProvenLevel,
+  level: ProvenLevel,
+  at: readonly string[],
+  subject: string,
+): string {
+  return (
+    `requirement not met: --require=${requirement} needs ${needs}, ` +
+    `${subject} is ${level} (${at.join(', ')})`
+  );
+}
+
+/**
+ * HOW A PROJECT'S DIRECTORY IS WRITTEN ON A LINE — `oneLine`, handed in rather than
+ * imported.
+ *
+ * WHY IT IS COLLAPSED. This report is the sharpest shape that rule covers. A directory
+ * may hold a newline, the set prints one line per tree per project, and the closing
+ * statement COUNTS the projects those lines are — so a path named
+ * `evil\n/other public: local integrity verified (T1/T2/T4)` would print a second line
+ * with the whole shape of a verdict about a record nobody verified, and a reader
+ * counting projects by lines would count it. It is the defect already measured on the
+ * refusal that names a session's project (`served-patterns.ts`), reached here through
+ * the most direct door there is: an argument on the command line.
+ *
+ * ONE FUNCTION AND EVERY SITE. The sites are three — the tree's label (which carries
+ * the census and the issues with it), the line of a path that holds no record, and the
+ * names beside the level in the requirement line — and a fourth that forgot would be
+ * the one place a forged line still gets through. It cannot be forgotten silently: it
+ * is a parameter, so a site that skipped it would be printing a raw path where every
+ * other one prints this.
+ *
+ * WHY IT IS A PARAMETER. `served-patterns.ts` reaches `@mnema/copilot`, and this module
+ * is DECLARED eagerly — commander needs every option before it can route a word — so
+ * importing it here would put the copilot on the floor of every invocation of every
+ * verb, including the ones that read nothing. That floor is guarded as a shape
+ * (`the-floor-is-the-declaration.test.ts`), and the guard is what caught it. So it
+ * arrives the way the rest of this action's work does: loaded when the verb RUNS.
+ *
+ * What it does NOT do is make the path copyable back: a directory whose name really
+ * holds a newline prints with a space where the newline was. That is the trade this
+ * rule always makes, and it makes it in the honest direction — a name that cannot be
+ * pasted back beats a line that claims a verdict nothing gave.
+ */
+type Named = (dir: string) => string;
+
 /** Registers `mnema verify` on the program. */
 export function registerVerify(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
@@ -163,6 +260,15 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
         'in every one, so a weakness in it would lower the verdict of every project ' +
         'on this disk',
     )
+    .option(
+      '--workspace <path...>',
+      'verify the projects at these paths instead of this one, and give ONE verdict ' +
+        'over all of them — the aggregate is the weakest, so no project passes on ' +
+        "another's proof. The set is what you name and is never searched for: two " +
+        'names of one record count once, and a path holding no record is reported, ' +
+        'left out of the verdict and counted at the end. Costs one full replay per ' +
+        'project',
+    )
     .addOption(
       enumeratedOption(
         '--require <level>',
@@ -171,12 +277,25 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
         LEVEL_REQUIREMENTS,
       ),
     )
-    .action(async (opts: { require?: string; global?: boolean }) => {
+    .action(async (opts: { require?: string; global?: boolean; workspace?: string[] }) => {
       const { requiredLevel } = await import('@mnema/chain');
-      const { runVerify } = await import('../commands/verify.js');
+      const { runVerify, runVerifyWorkspace } = await import('../commands/verify.js');
       const requirement = parseRequirement(opts.require, wiring);
       if (requirement === INVALID_REQUIREMENT) return;
-      const result = runVerify({ ...here(), requirement, global: opts.global === true });
+      const global = opts.global === true;
+      if (opts.workspace !== undefined) {
+        // `oneLine` is loaded HERE and not imported: see {@link Named} for the floor
+        // this verb would otherwise raise for every other verb in the product.
+        const { oneLine } = await import('../served-patterns.js');
+        reportSet(
+          wiring,
+          runVerifyWorkspace({ ...here(), requirement, global, named: opts.workspace }),
+          requiredLevel,
+          oneLine,
+        );
+        return;
+      }
+      const result = runVerify({ ...here(), requirement, global });
       if (!result.ok) {
         reportRefusal(wiring, { reason: 'NO_PROJECT' });
         return;
@@ -193,9 +312,13 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
           io.err(
             render(
               fact(
-                `requirement not met: --require=${result.requirement} needs ` +
-                  `${requiredLevel(result.requirement)}, this record is ` +
-                  `${result.record.level} (${result.record.scopes.join(', ')})`,
+                requirementNotMet(
+                  result.requirement,
+                  requiredLevel(result.requirement),
+                  result.record.level,
+                  result.record.scopes,
+                  'this record',
+                ),
               ),
             ),
           );
@@ -207,17 +330,91 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
 }
 
 /**
+ * A verdict over a NAMED SET: every project's trees under the project that holds them,
+ * then what the reading covered, then the exit.
+ *
+ * EVERY LINE CARRIES THE PROJECT, and that is not a decoration of the tree's label —
+ * it is the same rule that put the tree on every line in the first place. stderr is
+ * read on its own by whatever redirected it, so an issue that named only `private`
+ * would send a reader looking for a tail in the wrong REPOSITORY once there is more
+ * than one. The project is its directory, because a project has no other name.
+ *
+ * AND A DIRECTORY IS TEXT FROM OUTSIDE THE RECORD, so it goes through {@link named}.
+ */
+function reportSet(
+  wiring: Wiring,
+  result: WorkspaceDone,
+  requiredLevel: (requirement: LevelRequirement) => ProvenLevel,
+  named: Named,
+): void {
+  const { io, render } = wiring;
+  let covered = 0;
+  for (const project of result.projects) {
+    if (project.kind === 'no-record') {
+      io.out(render(statement(named(project.dir), NO_PROJECT_THERE)));
+      continue;
+    }
+    covered += 1;
+    for (const tree of project.trees) report(io, render, tree, `${named(project.dir)} `);
+  }
+  // The global tree is one tree for the whole set and is reported as one, after the
+  // projects and named by its role alone — it belongs to none of them.
+  if (result.globalTree !== undefined) report(io, render, result.globalTree);
+  io.out('');
+  io.out(coverage(result.named, covered, result.projects.length - covered));
+  if (result.requirementMet) return;
+  if (result.record === undefined) {
+    // Nothing was covered, so there is no level to compare and no verdict to report.
+    // It exits non-zero because the alternative is `mnema verify` passing a gate over
+    // a set of directories that hold no record — the no-op this verb has been once.
+    reportRefusal(
+      wiring,
+      { reason: 'NOTHING_VERIFIED' },
+      {
+        NOTHING_VERIFIED:
+          `Nothing was verified: none of the ${result.named} path(s) named holds a record. ` +
+          'Name a project that has been founded, or run `mnema init` in one of these.',
+      },
+    );
+    return;
+  }
+  if (result.record.ok) {
+    io.err(
+      render(
+        fact(
+          requirementNotMet(
+            result.requirement,
+            requiredLevel(result.requirement),
+            result.record.level,
+            result.record.at.map(named),
+            'the weakest of what was covered',
+          ),
+        ),
+      ),
+    );
+  }
+  io.fail();
+}
+
+/**
  * One tree of the record: its verdict verbatim under the tree's name, then the issues
  * that are the evidence for it — each also naming the tree, because stderr is read on
  * its own by whatever redirected it.
+ *
+ * `where` is what the tree's name is QUALIFIED by, and it is empty for the reading of
+ * one project — where it is empty, every byte of every line here is what it has always
+ * been, which is what `the-verdict-covers-what-you-name.test.ts` holds by comparing the
+ * two invocations. A set of projects passes the project's directory, so each line says
+ * which record it is about on both streams.
  */
-function report(io: CliIo, render: Render, tree: TreeReport): void {
+function report(io: CliIo, render: Render, tree: TreeReport, where = ''): void {
+  const named = `${where}${tree.scope}`;
   if (tree.kind === 'no-record') {
-    io.out(render(statement(tree.scope, NO_RECORD)));
+    io.out(render(statement(named, NO_RECORD)));
     return;
   }
   // The verdict's own honest clauses, laid out — the CLI never upgrades the guarantee.
-  io.out(render(clauseStatement(tree.scope, said(tree.result))));
+  io.out(render(clauseStatement(named, said(tree.result))));
   // The census, in the same shape as an issue and on the OTHER stream. Its clause has
   // said "see census" since the day the notes existed and there was nowhere to see
   // them: a reader was told a count and left with no way to learn WHICH key, or what
@@ -225,15 +422,11 @@ function report(io: CliIo, render: Render, tree: TreeReport): void {
   // does not move the verdict and it does not move the exit — and stderr on this
   // surface is where the evidence for a failure goes.
   for (const note of tree.result.census) {
-    io.out(
-      render(fact(`census [${note.kind}] ${tree.scope} ${censusLocus(note)}: ${note.detail}`)),
-    );
+    io.out(render(fact(`census [${note.kind}] ${named} ${censusLocus(note)}: ${note.detail}`)));
   }
   for (const issue of tree.result.issues) {
     io.err(
-      render(
-        fact(`issue [${issue.layer}] ${tree.scope} ${at(issue.tail, issue.seq)}: ${issue.detail}`),
-      ),
+      render(fact(`issue [${issue.layer}] ${named} ${at(issue.tail, issue.seq)}: ${issue.detail}`)),
     );
   }
 }

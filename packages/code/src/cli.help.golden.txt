@@ -580,18 +580,28 @@ $ mnema verify --help
 | verify this project's record — its committed tree and its private one
 |
 | Options:
-|   --global           also verify this machine's global tree, the personal record
-|                      across all projects. Off by default: that tree belongs to
-|                      no project and is present in every one, so a weakness in it
-|                      would lower the verdict of every project on this disk
-|   --require <level>  the least this invocation accepts, for a script or a CI
-|                      step: chained (the default — fail only on a break, which is
-|                      what a bare `verify` has always done), signed (also fail
-|                      unless every event is covered by a verified signature —
-|                      expect this to fail while a session is in flight),
-|                      witnessed (also fail unless an external witness covers the
-|                      record — nothing provides one yet, so it never passes)
-|   -h, --help         display help for command
+|   --global               also verify this machine's global tree, the personal
+|                          record across all projects. Off by default: that tree
+|                          belongs to no project and is present in every one, so a
+|                          weakness in it would lower the verdict of every project
+|                          on this disk
+|   --workspace <path...>  verify the projects at these paths instead of this one,
+|                          and give ONE verdict over all of them — the aggregate
+|                          is the weakest, so no project passes on another's
+|                          proof. The set is what you name and is never searched
+|                          for: two names of one record count once, and a path
+|                          holding no record is reported, left out of the verdict
+|                          and counted at the end. Costs one full replay per
+|                          project
+|   --require <level>      the least this invocation accepts, for a script or a CI
+|                          step: chained (the default — fail only on a break,
+|                          which is what a bare `verify` has always done), signed
+|                          (also fail unless every event is covered by a verified
+|                          signature — expect this to fail while a session is in
+|                          flight), witnessed (also fail unless an external
+|                          witness covers the record — nothing provides one yet,
+|                          so it never passes)
+|   -h, --help             display help for command
 
 ### mnema mcp --help
 $ mnema mcp --help
