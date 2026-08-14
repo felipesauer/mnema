@@ -28,7 +28,8 @@
  * not something a guard can do without becoming the thing it measures.
  */
 
-import { readdirSync, readFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -69,15 +70,43 @@ function filesUnder(where: string, deep: boolean): readonly string[] {
 }
 
 /**
+ * What a measurement CAPTURED, which is the one thing under `measurements/` the needle stays
+ * off. A run writes the agent's own output there, per cell, and a needle over text a model
+ * wrote accuses nobody: it would turn this guard red for a reason that is not a defect. Data
+ * is not configuration.
+ */
+const CAPTURED_OUTPUT = /^measurements\/[^/]+\/results\//;
+
+/**
  * Everything the workspace SHIPS that could configure a run: its own files at the root, the
- * packages, and CI. The workbench directories are local-only and ignored by git, so they are
- * not part of the tree this rule is about.
+ * packages, CI, and the measurements.
+ *
+ * THE SENTENCE THAT STOOD HERE said the workbench directories are local-only and ignored by
+ * git, so they are not part of the tree this rule is about — and it was the whole account of
+ * what the scan leaves out. `measurements/` falsified it: it is committed, it is a directory,
+ * and a scan that does not descend from the root would have skipped it in silence while this
+ * comment still explained the exclusion by an ignoredness that no longer covered it. So the
+ * tree is scanned rather than excused, and a manifest or a script that lands there tomorrow is
+ * covered without anybody having to remember this file.
  */
 const SCANNED: readonly string[] = [
   ...filesUnder(ROOT, false),
   ...filesUnder(join(ROOT, 'packages'), true),
   ...filesUnder(join(ROOT, '.github'), true),
+  ...measurementsUnder(ROOT),
 ];
+
+/**
+ * The measurements tree of `root`, minus what a run captured — the walk and the one exclusion,
+ * written as a function so the case below can put it over a tree of its OWN. Over this
+ * workspace it has nothing to exclude yet, because no run has produced a capture: a check of
+ * the exclusion against the real tree would pass just as well with the exclusion deleted.
+ */
+function measurementsUnder(root: string): readonly string[] {
+  return filesUnder(join(root, 'measurements'), true).filter(
+    (file) => !CAPTURED_OUTPUT.test(file.slice(root.length)),
+  );
+}
 
 describe('the ceiling a case waits under is that case’s own', () => {
   it('is lifted nowhere the workspace configures a run', () => {
@@ -118,5 +147,32 @@ describe('the ceiling a case waits under is that case’s own', () => {
     // EXISTS to leave alone, and prose about a case that waited is not a configuration.
     expect(LIFTS_THE_CEILING.test('  }, 60_000);')).toBe(false);
     expect(LIFTS_THE_CEILING.test('the case timed out, and the test said which one')).toBe(false);
+  });
+
+  it('reads what a measurement FIXED', () => {
+    // The tree the workspace started shipping when a protocol was pre-registered. It is
+    // committed, so it is inside the needle like every other committed file — and this line
+    // is what says the walk above actually descends into it.
+    const reached = SCANNED.map((file) => file.slice(ROOT.length));
+    expect(reached, 'the measurements were not read').toContain('measurements/p1/split.json');
+  });
+
+  it('and not what a measurement captured — over a tree of its own', () => {
+    // A TREE OF ITS OWN, because this workspace has no capture yet: over the real one the
+    // exclusion has nothing to exclude, and a case that read only the real one would stay
+    // green with the exclusion deleted. Here the capture exists, so deleting it goes red.
+    const root = `${mkdtempSync(join(tmpdir(), 'mnema-ceiling-'))}/`;
+    try {
+      const captured = join(root, 'measurements', 'p1', 'results', '2026-08-20-full', 'raw');
+      mkdirSync(captured, { recursive: true });
+      writeFileSync(join(captured, 'a1-rounding-base-r1.stdout.json'), '{"result":"done"}');
+      writeFileSync(join(root, 'measurements', 'p1', 'split.json'), '{"pilot":"a1-rounding"}');
+
+      expect(measurementsUnder(root).map((file) => file.slice(root.length))).toEqual([
+        join('measurements', 'p1', 'split.json'),
+      ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

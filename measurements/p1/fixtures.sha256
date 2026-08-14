@@ -1,0 +1,35 @@
+# The eight tasks of the P1 protocol, fixed before the first cell ran.
+#
+# Each hash covers one task directory whole — its starting repository, its ticket,
+# its decision, its two references and its discriminant — over a DETERMINISTIC
+# archive: entry order fixed, timestamps and ownership zeroed, Python bytecode
+# excluded. The archive carries the task's id as its path prefix, so two tasks
+# cannot swap contents without both hashes moving.
+#
+# The tasks themselves are withheld until they have been used. Until then this
+# file is what a third party can check: not what a task says, but that it did not
+# change between the freeze and the result.
+#
+# REPRODUCE — GNU tar 1.35 and coreutils sha256sum, run from the directory that
+# holds the eight task directories:
+#
+#   for id in a1-rounding a2-due-day a3-idempotency a4-collation \
+#             a5-no-retry a6-partner-code b1-csv-quotes b2-moving-average; do
+#     printf '%s  %s\n' "$(tar --sort=name --format=gnu \
+#         --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner \
+#         --exclude='__pycache__' --exclude='*.pyc' \
+#         -cf - "$id" | sha256sum | cut -d' ' -f1)" "$id"
+#   done
+#
+# A hash nobody knows how to reproduce proves nothing, which is why the command
+# is here and not in a report. A different tar implementation will produce a
+# different stream: the version above is the one these hashes were taken with.
+#
+885559c72e218ba42f78bd8983d067b8cfc7be303741518d8d3b1a1cd07027fb  a1-rounding
+2dc0d9d8861a87de6e0134702bc338eea570f3b3773e4b7f5c689916fc94c78a  a2-due-day
+0279d103fee67ea90145e27633ff67ab06edfbbc54eb97dd8e4eb0e9aa291493  a3-idempotency
+25f6b25d3c50437c5232d445bc55b1e0d2ffbcbc9cddcab28932acd1942a114a  a4-collation
+0d5f1fe930f622b2422be1a4c1e9d1a7fab68d29bf2b0f2b3cd7a835a098050f  a5-no-retry
+09e15b5b0a7f7068c4411d01598639cbe306bcc0dc9f22e02b57eeacb857223f  a6-partner-code
+a716047e8c387d1eb5f49febbc50ee9730cbd9f49932cf1a6296022fd3a76d69  b1-csv-quotes
+40b36ad2384463dea855d6be901cef622c5d537a3a2712cc9868541604fc9f35  b2-moving-average
