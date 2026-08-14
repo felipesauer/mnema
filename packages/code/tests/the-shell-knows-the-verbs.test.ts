@@ -51,7 +51,7 @@ import { completionScript } from '../src/completion/script.js';
 import { REFERENCE_DIRECTIONS } from '../src/reference-directions.js';
 import { SHELLS, type Shell } from '../src/wiring/completion.js';
 import { SCOPES } from '../src/wiring/enumerated.js';
-import { everyCommandOf } from '../src/wiring/usage.js';
+import { everyCommandOf } from '../src/wiring/misuse.js';
 
 /** A silent port: everything here reads declarations and writes nothing. */
 const silent: CliIo = { out: () => {}, err: () => {}, fail: () => {} };

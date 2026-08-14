@@ -31,7 +31,7 @@
  * The distinction was true about where the no CAME FROM and false about what a reader
  * does with it — "the gate said no" and "you typed it wrong" are one piece of news,
  * which is that the thing did not happen. So the rule is now: A LINE IS RED WHEN THE
- * COMMAND DID NOT DO WHAT YOU ASKED. `wiring/usage.ts` is where the parser's no is
+ * COMMAND DID NOT DO WHAT YOU ASKED. `wiring/misuse.ts` is where the parser's no is
  * worded, and `every-refusal-is-red.test.ts` is the guard over both halves.
  *
  * What that rule does NOT reach is an ANSWER that happens to be unwelcome. `verify`
@@ -106,7 +106,7 @@ export function refusalLine(code: string, message: string): Line {
  *
  * `detail` is the half after the colon where there is one: the parser's no puts what
  * the missing argument MEANS there, taken from the description the declaration already
- * carries (see `usage.ts`). Omitted, the sentence is the whole line.
+ * carries (see `misuse.ts`). Omitted, the sentence is the whole line.
  *
  * It exists as a function rather than as a `statement(…, 'bad')` at each call site so
  * that the severity is written in one place: `every-refusal-is-red.test.ts` reads the

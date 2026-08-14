@@ -36,9 +36,9 @@ import {
 } from './wiring/color.js';
 import { registerVerbs } from './wiring/index.js';
 import { type CliIo, processIo } from './wiring/io.js';
+import { speakUsageErrors } from './wiring/misuse.js';
 import { refusalLine, refusalSentence } from './wiring/report.js';
 import { pinnedRunResolver } from './wiring/run-pin.js';
-import { speakUsageErrors } from './wiring/usage.js';
 import type { Declared } from './wiring/verb.js';
 
 export type { CliIo } from './wiring/io.js';
@@ -190,7 +190,7 @@ export function buildProgram(
   const verbs = registerVerbs(program, { io, render: resolved, renderingAt, pinnedRun });
 
   // AFTER the verbs, and over all of them at once: the parser's own refusals, said
-  // the way this surface says every other one (see `wiring/usage.ts`). It walks what
+  // the way this surface says every other one (see `wiring/misuse.ts`). It walks what
   // was just registered, so a verb added to the list above arrives covered.
   speakUsageErrors(program, { io, render: resolved }, typed);
 
@@ -297,7 +297,7 @@ export interface Entry {
 /**
  * THE BINARY'S OWN DOOR: the bare name asks what you want, and everything else runs.
  *
- * `mnema` with nothing after it printed the catalogue — twenty-nine verbs and the options
+ * `mnema` with nothing after it printed the catalogue — thirty verbs and the options
  * above them — which is the right answer for somebody who knows what they are looking for
  * and the wrong one for somebody who has just typed the name of a program. So at a terminal
  * it ASKS, with two doors that depend on what is in this directory (`choice/doors.ts`), and

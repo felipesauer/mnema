@@ -11,7 +11,7 @@
  * "the gate said no" and "you typed it wrong" are one piece of news: the thing did
  * not happen. The rule now is A LINE IS RED WHEN THE COMMAND DID NOT DO WHAT YOU
  * ASKED, and the eighteen usage errors that used to go out unpainted go through the
- * same funnel as the rest (`wiring/report.ts`, `wiring/usage.ts`).
+ * same funnel as the rest (`wiring/report.ts`, `wiring/misuse.ts`).
  *
  * What the rule still does NOT reach is an ANSWER that happens to be unwelcome, and
  * the boundary is worth stating because it is the one an adversary probes: `verify`
@@ -105,10 +105,10 @@ describe('a refusal is worded in exactly one place', () => {
     // compile — but a producer could still be ADDED with its own wording, and the case
     // above is what refuses that. This one names the ones that exist and asserts each
     // hands the line to a renderer rather than to `io.err` directly, because that is
-    // what makes the colour reach it. `usage.ts` is the newest: the parser's no falls
+    // what makes the colour reach it. `misuse.ts` is the newest: the parser's no falls
     // back to this shape for a code nobody worded.
     const producers = shipped().filter((file) => sourceOf(file).includes('refusalLine('));
-    expect(producers).toEqual(['report.ts', 'run-pin.ts', 'usage.ts']);
+    expect(producers).toEqual(['misuse.ts', 'report.ts', 'run-pin.ts']);
     for (const file of producers) {
       const source = sourceOf(file);
       expect(source, file).toMatch(/render\(\s*refusalLine\(|render\(line\)/);
@@ -183,8 +183,8 @@ describe('a refusal is worded in exactly one place', () => {
     // reads levels can hold.
     expect(deciding).toEqual(['guard.ts', 'report.ts', 'verify.ts']);
     // And the funnel is where the parser's no gets it too — never at the call site.
-    expect(sourceOf('usage.ts')).not.toContain("'bad'");
-    expect(sourceOf('usage.ts')).toContain('refusalSentence(');
+    expect(sourceOf('misuse.ts')).not.toContain("'bad'");
+    expect(sourceOf('misuse.ts')).toContain('refusalSentence(');
   });
 
   it('names the composers that decide one too, which the scan above cannot see', () => {

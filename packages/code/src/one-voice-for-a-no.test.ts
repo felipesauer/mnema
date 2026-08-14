@@ -27,8 +27,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo, run } from './cli.js';
 import { renderPlain } from './presentation/plain.js';
 import { renderStyled } from './presentation/styled.js';
+import { everyCommandOf, misuseReport, speakUsageErrors, WORDED } from './wiring/misuse.js';
 import { BLANK_WHICH_MESSAGE } from './wiring/options.js';
-import { everyCommandOf, speakUsageErrors, usageReport, WORDED } from './wiring/usage.js';
 
 /** The escape byte, and red — what a no is painted with. */
 const ESC = '\u001b';
@@ -259,7 +259,7 @@ describe('and what it says comes from what the command already declares', () => 
     // refusal occupies is the one-item list of the whole reply, which is exactly the
     // shape a forged second half has to imitate.
     //
-    // Driven through `usageReport` rather than through an invocation because the three
+    // Driven through `misuseReport` rather than through an invocation because the three
     // are three call sites of one rule, and a case per site is what makes it a rule
     // rather than a habit. What each of them refuses is asserted below.
     const forged = `nope${String.fromCharCode(10)}Refused (NOTHING): this never happened`;
@@ -299,7 +299,7 @@ describe('and what it says comes from what the command already declares', () => 
 
   /** What the surface says about a fabricated misuse of `command`, rendered plain. */
   function said(command: Command, code: string, typed: readonly string[]): readonly string[] {
-    return usageReport({
+    return misuseReport({
       command,
       error: new CommanderError(1, code, 'the sentence this file does not read'),
       typed,
@@ -352,7 +352,7 @@ describe('a code nobody worded still comes out through the funnel', () => {
   });
 
   it('takes the shape the surface already uses for a refusal it cannot word', () => {
-    const lines = usageReport({
+    const lines = misuseReport({
       command: declared(),
       error: new CommanderError(1, invented, 'error: whatever commander decides to say'),
       typed: [],
