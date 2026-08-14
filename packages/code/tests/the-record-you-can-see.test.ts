@@ -112,6 +112,38 @@ interface Record {
   readonly id: string;
 }
 
+/**
+ * WHAT AN ID OF THIS PRODUCT LOOKS LIKE — the SHAPE of one, and nothing about the digits it
+ * begins with.
+ *
+ * IT WAS THE THREE CHARACTERS `019`, AT FOUR SITES, AND THE CLOCK RETIRED THEM. A row of the
+ * list was told from every other row by `row.trimStart().startsWith('019')`, and those three
+ * characters are the top of the MILLISECOND an id begins with: they are true only while the clock
+ * is inside `0x019000000000 … 0x019fffffffffff`, which it left on 2026-08-14 at 11:19:55 UTC. An
+ * hour after that this file had two red cases and two VACUOUS ones — the two that count the rows
+ * of the list found none, and the two that assert no row is a record passed without looking at
+ * anything at all. Nothing in the commit had moved.
+ *
+ * SO THE RULE IS THE OTHER SIDE OF THE ONE THAT SAYS A FIXTURE MAY ONLY WRITE A VALUE THE PRODUCT
+ * CAN PRODUCE: a fixture may not DEPEND on a value the product produces BY ACCIDENT. Deriving an
+ * input from an id in hand is the right instrument and this file is built out of it
+ * ({@link tellsApart}, {@link sharedBy}); writing a CHARACTER of one down is a case with an expiry
+ * date nobody put in a calendar. `01a` would have bought 795 days and cost the same afternoon on
+ * 2028-10-17. It holds for every case that derives an input from a generated id.
+ *
+ * The shape is all that is written down, it is written once for the two readings that need it
+ * ({@link THE_ID_PRINTED}, {@link BEGINS_WITH_A_RECORD}), and no part of it moves with a clock.
+ * That the ids this product mints really have it is proved where they are minted
+ * (`core/src/identity/id.test.ts`); what is asserted here is where one goes.
+ */
+const AN_ID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+
+/** The id the surface prints for a record it has just made: in parentheses, after the name. */
+const THE_ID_PRINTED = new RegExp(`\\((${AN_ID})\\)`);
+
+/** A row of a list whose first column is a record — the id, and the row it was named on. */
+const BEGINS_WITH_A_RECORD = new RegExp(`^${AN_ID}`);
+
 /** `mnema <argv>` at the shell, in this process, with what it printed. */
 async function shell(...argv: string[]): Promise<string> {
   const said: string[] = [];
@@ -123,7 +155,7 @@ async function shell(...argv: string[]): Promise<string> {
 /** One task, created at the shell, with the id the surface printed for it. */
 async function task(title: string): Promise<Record> {
   const said = await shell('task', title);
-  const id = /\(([0-9a-f-]{36})\)/.exec(said)?.[1];
+  const id = THE_ID_PRINTED.exec(said)?.[1];
   if (id === undefined) throw new Error(`fixture: task printed no id: ${said}`);
   return { title, id };
 }
@@ -289,6 +321,27 @@ function rowBeingTyped(screen: { readonly rows: readonly string[] }): string {
   return (typed.at(-1) ?? '').trim();
 }
 
+/**
+ * WHICH ROWS OF A PAGE ARE ROWS OF A RECORD — the rows of the list whose first column is an id.
+ *
+ * ONE READING AND FOUR SITES, and it is one because the four are the same question asked in two
+ * directions: two cases count the rows the list drew, and two assert there are none of them. Two
+ * spellings of *this row is a record* is how one of them comes to answer about something else, and
+ * this file has already paid for it once ({@link AN_ID}).
+ *
+ * IT IS THE SHAPE AND NOT THE RECORD, which is what keeps the cases that count non-vacuous: a row
+ * matched against the ids the fixture holds would make *every row of the list is one of the
+ * records* a question that answers itself. So the rows are found by what a record LOOKS like, and
+ * which record each one is stays the assertion's own to make.
+ *
+ * A ROW THAT BEGINS WITH A RECORD IS ONE THE PALETTE DREW, on the pages these cases read, and the
+ * clearing is what buys it: the rows a `search` wrote begin with an id too, and they are on the
+ * roll rather than on the screen once the page has been started over ({@link clears}).
+ */
+function theRecordsListedOn(screen: { readonly rows: readonly string[] }): readonly string[] {
+  return screen.rows.filter((row) => BEGINS_WITH_A_RECORD.test(row.trimStart()));
+}
+
 // ---------------------------------------------------------------------------
 // The flow
 // ---------------------------------------------------------------------------
@@ -407,7 +460,7 @@ describe('a prefix that names several lists them, each beside the line it came f
     // sixteen records are four rows and a number. What the case is about is untouched — a row
     // is an id AND what it was named on — and it is now asked of every row there is, with the
     // count of the rest asserted against the total below.
-    const listed = screen.rows.filter((row) => row.trimStart().startsWith('019'));
+    const listed = theRecordsListedOn(screen);
     expect(listed.length, screen.text).toBeGreaterThan(0);
     for (const row of listed) {
       const record = shown.find((named) => row.trimStart().startsWith(named.id));
@@ -465,7 +518,7 @@ describe('a prefix that names several lists them, each beside the line it came f
     // FOUND BY WHAT THE FRAME SHOWS rather than by where the step ended — the rule this file
     // now holds throughout (`support/screen.ts`, {@link theFirstScreenWith}).
     const screen = theFirstScreenWith(ran.bytes, CUT, columns, rows);
-    const listed = screen.rows.filter((row) => row.trimStart().startsWith('019'));
+    const listed = theRecordsListedOn(screen);
     const said = screen.rows.find((row) => row.trimStart().startsWith(CUT));
     expect(said, `no row said how many had no room:\n${screen.text}`).toBeDefined();
     const missing = Number(/(\d+)/.exec(said as string)?.[1]);
@@ -537,7 +590,7 @@ describe('what it offers is what the session showed, and never the record', () =
     // about — every assertion so far passes on that. The page was cleared, so a row that
     // begins with a record here can only be one the palette drew.
     expect(
-      refused.rows.filter((row) => row.trimStart().startsWith('019')),
+      theRecordsListedOn(refused),
       `something was offered for a record nobody named:\n${refused.text}`,
     ).toEqual([]);
 
@@ -643,7 +696,7 @@ describe('what it offers is what the session showed, and never the record', () =
     // What says the palette is open at every order is the palette's OWN row: the keys that
     // move it, which nothing else on this page draws.
     expect(screen.text, screen.text).toContain(renderPlain(pickingTips()).trim());
-    const listed = screen.rows.filter((row) => row.trimStart().startsWith('019'));
+    const listed = theRecordsListedOn(screen);
     expect(listed, `the top level offered a record:\n${screen.text}`).toEqual([]);
   }, 240_000);
 });
