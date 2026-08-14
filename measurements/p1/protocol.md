@@ -78,6 +78,9 @@ tasks are withheld until they have been used; what is committed now is
 
 1. **A deterministic gate, and it is the headline number.** One vector per axis-A task, which
    runs the produced code and returns `CONFORMS` or `VIOLATES`. No judge, no model, no opinion.
+   **The headline is that rate over the four held-out axis-A tasks** — the set is `headline` in
+   [`split.json`](split.json), and what counts as a difference between two arms is fixed in
+   [`reading.md`](reading.md), before the first cell runs.
 2. **A correctness gate.** The produced code has to work on the happy path, or conformance
    means nothing — a function that does not run violates nothing. This gate belongs to axis A
    and only to it: on axis B there is no second reading, so code that runs and gets the answer

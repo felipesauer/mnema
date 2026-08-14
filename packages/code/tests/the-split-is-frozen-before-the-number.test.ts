@@ -3,15 +3,16 @@
  *
  * A measurement of this product's first promise is pre-registered under `measurements/p1/`:
  * the promise, the four arms, the scorer, the reading of every possible outcome, and — the
- * part this file guards — WHICH tasks the harness may be iterated against and which are
- * touched exactly once.
+ * part this file guards — WHICH tasks the harness may be iterated against, which are touched
+ * exactly once, and which of them the headline number is computed over.
  *
  * WHY A TEST AND NOT A PARAGRAPH. The split is the only part of a pre-registration that can be
  * violated by accident. A pilot that runs whatever task sorts first touches a held-out task
  * without anybody deciding to; a harness fixed against the negative control softens the very
- * signal that would invalidate the run. Both are one line of code away at all times, and
- * neither leaves a trace in the result. So the rules are asserted here, over the committed
- * files, where a violation is red before it is a number.
+ * signal that would invalidate the run; a headline averaged over the tasks the harness was
+ * tuned against reports the tuning as if it were the product. All three are one line away at
+ * all times, and none of them leaves a trace in the result. So the rules are asserted here,
+ * over the committed files, where a violation is red before it is a number.
  *
  * WHAT THIS CANNOT COVER, said out loud rather than left to be discovered. The tasks live in a
  * workbench that git ignores, so nothing here can read them: `fixtures.sha256` is the
@@ -34,11 +35,14 @@ type Split = {
   readonly pilot: string;
   readonly development: readonly string[];
   readonly held_out: readonly string[];
+  readonly headline: readonly string[];
   readonly rule: string;
 };
 
 const split = JSON.parse(readFileSync(join(P1, 'split.json'), 'utf-8')) as Split;
 const digests = readFileSync(join(P1, 'fixtures.sha256'), 'utf-8');
+const reading = readFileSync(join(P1, 'reading.md'), 'utf-8');
+const protocol = readFileSync(join(P1, 'protocol.md'), 'utf-8');
 
 /** A digest line: sixty-four lowercase hex, two spaces, the task's id. */
 const DIGEST_LINE = /^([0-9a-f]{64}) {2}([a-z0-9-]+)$/;
@@ -92,6 +96,77 @@ describe('the split between what may be iterated on and what is touched once', (
     // programmatically reads what being held out means.
     expect(split.rule).toContain('held-out');
     expect(split.frozen_at, 'the freeze carries no date').toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+});
+
+/**
+ * How many runs a (task, arm) gets — read from the pre-registration instead of repeated here,
+ * so a protocol that changes its size moves the arithmetic below with it rather than leaving
+ * this file asserting the old product.
+ */
+function runsPerCell(): number {
+  const declared = /\bn=(\d+) per \(task, arm\)/.exec(protocol)?.[1];
+  expect(declared, 'the protocol does not say how many runs a (task, arm) gets').toBeDefined();
+  return Number(declared);
+}
+
+describe('the headline is a set, and it is the held-out half of axis A', () => {
+  /** What the split IMPLIES: held out, and not the negative control. */
+  const implied = (): readonly string[] =>
+    tasks().filter((id) => !isNegativeControl(id) && split.held_out.includes(id));
+
+  it('names exactly those tasks, so one file decides who counts and not two', () => {
+    const expected = implied();
+    // Non-vacuity first, on both sides: an empty set on either would make the equality below
+    // true about nothing, which is the shape a rule about a subset fails in silently.
+    expect(expected.length, 'the split implies no headline task at all').toBe(4);
+    expect(split.headline.length, 'the headline names no task').toBeGreaterThan(0);
+    expect([...split.headline].sort()).toEqual([...expected].sort());
+  });
+
+  it('folds in no development task — the harness may be fixed against those', () => {
+    // The reason the set exists. A task the harness was iterated against measures the harness
+    // as much as it measures the arm, and it is one line away from the headline at all times.
+    expect(split.headline.filter((id) => split.development.includes(id))).toEqual([]);
+    // And no negative control: axis B is read for the tie, never for the number.
+    expect(split.headline.filter(isNegativeControl)).toEqual([]);
+  });
+
+  it('and the table in the reading says of each task what the split says', () => {
+    // The reading LISTS the tasks, which makes it a second place naming who counts — the very
+    // shape the set exists to avoid. The count below would not catch a swap that keeps the size,
+    // so membership is checked row by row and the prose is held to the data.
+    const rows = new Map(
+      [...reading.matchAll(/^\| `([a-z0-9-]+)` \| ([AB]) \| (.+?) \|$/gm)].map(
+        (row) =>
+          [row[1] as string, { axis: row[2] as string, headline: row[3] as string }] as const,
+      ),
+    );
+    expect(rows.size, 'the reading lists no task at all').toBe(tasks().length);
+
+    for (const id of tasks()) {
+      const row = rows.get(id);
+      expect(row, `the reading's table says nothing about ${id}`).toBeDefined();
+      expect(row?.axis, `${id} is on the wrong axis in the reading`).toBe(
+        isNegativeControl(id) ? 'B' : 'A',
+      );
+      const counted = row?.headline.startsWith('**yes**');
+      expect(counted, `the reading and the split disagree about ${id}`).toBe(
+        split.headline.includes(id),
+      );
+    }
+  });
+
+  it('and the reading counts the cells this set implies, not a number it remembers', () => {
+    // The reading states the size of the headline in prose. Said twice — here as data, there
+    // as a sentence — it is a number that ages in silence the day the split moves, so the
+    // sentence is checked against the arithmetic rather than trusted.
+    const cells = split.headline.length * runsPerCell();
+    const counted = [...reading.matchAll(/(\d+) cells/g)].map((match) => Number(match[1]));
+    expect(counted.length, 'the reading states no cell count at all').toBeGreaterThan(0);
+    for (const n of counted) {
+      expect(n, 'the reading counts cells the split does not imply').toBe(cells);
+    }
   });
 });
 

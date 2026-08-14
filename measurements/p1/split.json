@@ -10,5 +10,6 @@
     "b1-csv-quotes",
     "b2-moving-average"
   ],
+  "headline": ["a2-due-day", "a4-collation", "a5-no-retry", "a6-partner-code"],
   "rule": "held-out tasks are touched once; any iteration after seeing a held-out result contaminates them"
 }
