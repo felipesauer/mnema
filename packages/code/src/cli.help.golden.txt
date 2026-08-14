@@ -590,9 +590,17 @@ $ mnema verify --help
 |                          is the weakest, so no project passes on another's
 |                          proof. The set is what you name and is never searched
 |                          for: two names of one record count once, and a path
-|                          holding no record is reported, left out of the verdict
-|                          and counted at the end. Costs one full replay per
-|                          project
+|                          holding no record is reported, left out of the level,
+|                          counted at the end, and makes the exit non-zero unless
+|                          --allow-no-record says otherwise. Costs one full replay
+|                          per project
+|   --allow-no-record      for --workspace: accept a named path that holds no
+|                          record, and rule on the projects that do. Off by
+|                          default, because naming a path is asserting that it is
+|                          a project — so a mistyped path in a CI step is news
+|                          rather than a silent pass. It tolerates ABSENCE and
+|                          never a BREAK: a covered project that fails still exits
+|                          non-zero
 |   --require <level>      the least this invocation accepts, for a script or a CI
 |                          step: chained (the default — fail only on a break,
 |                          which is what a bare `verify` has always done), signed
