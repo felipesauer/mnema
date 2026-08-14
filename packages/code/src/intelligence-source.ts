@@ -41,8 +41,14 @@
  *   together, so they cannot come from different trees.
  *
  * The `*Of` pair takes an explicit tree list, which is what lets one session reach
- * every project of a workspace; the two that take a {@link ResolvedTrees} are the
- * command line's, where `cwd` resolves one project and there is no workspace to span.
+ * every project of a workspace; the two that take a {@link ResolvedTrees} are the ones
+ * asked about the trees of ONE record, which is what `cwd` resolves to.
+ *
+ * THE SECOND HALF OF THAT SENTENCE USED TO SAY *"the command line's, where there is no
+ * workspace to span"*, AND THE COMMAND LINE HAS ONE NOW: `mnema verify --workspace`
+ * covers every project the caller names. It does not reach these functions — a verdict
+ * replays chains rather than folding events — so what the pair is remains exactly what
+ * it was, and what is false is only the claim that no CLI reading crosses projects.
  */
 
 import type { ChainLayout, UpcasterRegistry } from '@mnema/chain';
@@ -139,8 +145,12 @@ export function recordEvents(trees: ResolvedTrees, upcasters: UpcasterRegistry):
 
 /**
  * The same present trees, but each tree's events kept SEPARATE and tagged with the
- * scope they came from — one record's worth, with no project label, which is the
- * command line's source (one project from `cwd`, no workspace to span).
+ * scope they came from — one record's worth, with no project label, which is what the
+ * intelligence reads of the command line are asked about (one project, from `cwd`).
+ *
+ * It used to end *"no workspace to span"*, which is no longer a fact about this
+ * surface: `mnema verify --workspace` spans one. It is a fact about these readings,
+ * which are handed one record and no set.
  */
 export function scopedEvents(
   trees: ResolvedTrees,
