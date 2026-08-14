@@ -1,0 +1,14 @@
+{
+  "frozen_at": "2026-08-13",
+  "pilot": "a1-rounding",
+  "development": ["a1-rounding", "a3-idempotency"],
+  "held_out": [
+    "a2-due-day",
+    "a4-collation",
+    "a5-no-retry",
+    "a6-partner-code",
+    "b1-csv-quotes",
+    "b2-moving-average"
+  ],
+  "rule": "held-out tasks are touched once; any iteration after seeing a held-out result contaminates them"
+}
