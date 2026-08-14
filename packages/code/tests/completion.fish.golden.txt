@@ -384,6 +384,7 @@ complete -c mnema -f -n '__mnema_at "tail prune"' -l color -x -a 'auto always ne
 # mnema verify
 complete -c mnema -f -n '__mnema_at "verify"' -l global
 complete -c mnema -f -n '__mnema_at "verify"' -l workspace -r
+complete -c mnema -f -n '__mnema_at "verify"' -l allow-no-record
 complete -c mnema -f -n '__mnema_at "verify"' -l require -x -a 'chained signed witnessed'
 complete -c mnema -f -n '__mnema_at "verify"' -s h -l help
 complete -c mnema -f -n '__mnema_at "verify"' -s V -l version

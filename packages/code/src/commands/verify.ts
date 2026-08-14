@@ -122,9 +122,9 @@ export interface RecordVerdict {
    */
   readonly ok: boolean;
   /**
-   * The weakest level any verified tree reached — the one value the exit code is
-   * decided by. See `weakerLevel` for why an aggregate is the weakest and not the
-   * best.
+   * The weakest level any verified tree reached — what the exit code of a lone
+   * `verify` is decided by, against the caller's minimum. See `weakerLevel` for why an
+   * aggregate is the weakest and not the best.
    */
   readonly level: ProvenLevel;
   /**
@@ -240,6 +240,19 @@ export interface WorkspaceContext {
    * monorepo, exactly as running `mnema verify` in that directory would.
    */
   readonly named: readonly string[];
+  /**
+   * Whether a named path that holds NO record is tolerated. Declared by the caller,
+   * never defaulted here, and false is the answer nobody declared: naming a path is
+   * asserting that it is a project, so a path that is not one is news.
+   *
+   * IT TOLERATES ABSENCE AND NEVER A BREAK, and the two are different things. A path
+   * with no record was never replayed, so there is nothing to rule on and nothing to
+   * hide; a covered project that FAILS was ruled on, and it takes the exit down
+   * whatever this says — see {@link WorkspaceDone.coverageMet}, which is the only
+   * thing this field reaches. A flag that swallowed both would be the one that makes
+   * `mnema verify` a no-op as a gate, which this verb has already been once.
+   */
+  readonly allowWithoutRecord: boolean;
 }
 
 /** One project of a named set, with the verdict over its trees. */
@@ -269,8 +282,19 @@ export interface ProjectVerdict {
  * It is not verified and it is not broken. Nothing was replayed there, so there is
  * nothing to rule on: counting it as a pass would let an empty directory carry a CI
  * gate (the no-op this verb has already been once), and counting it as a break would
- * fail a set for naming a directory that has not been founded yet. So it is reported,
- * left OUT of the aggregate, and counted in what the report says at the end.
+ * say a chain failed to replay when none was read. So it is reported, left OUT of the
+ * aggregate, and counted in what the report says at the end.
+ *
+ * OUT OF THE AGGREGATE IS NOT OUT OF THE EXIT, AND THAT SENTENCE USED TO STOP AT THE
+ * FIRST HALF. What this doc claimed — that the honest posture was to report it and
+ * leave it be — was measured on the binary and was true of one shape out of three: a
+ * lone directory holding no record exits non-zero (`No mnema project here`), a set in
+ * which EVERY path holds none exits non-zero (`Nothing was verified`), and only the
+ * MIXTURE passed. So `mnema verify --workspace ./good ./typo` came back green over a
+ * project nobody verified, and in CI nobody reads the lines — the exit IS the
+ * interface. The level fold is unchanged (nothing was replayed, so there is no level to
+ * fold); what changed is that a path holding none makes the exit non-zero unless the
+ * caller declares otherwise, which is {@link WorkspaceContext.allowWithoutRecord}.
  */
 export interface ProjectWithoutRecord {
   readonly kind: 'no-record';
@@ -285,7 +309,10 @@ export type ProjectReport = ProjectVerdict | ProjectWithoutRecord;
 export interface WorkspaceVerdict {
   /** Nothing verifiable is broken in any covered project — every project's `ok`, folded. */
   readonly ok: boolean;
-  /** The weakest level any covered project reached — what the exit code is decided by. */
+  /**
+   * The weakest level any covered project reached — what {@link WorkspaceDone.requirementMet}
+   * is decided by, which is one of the two things the exit code reads.
+   */
   readonly level: ProvenLevel;
   /**
    * What is AT that level, in the order it was reported: a project's directory, or
@@ -323,13 +350,37 @@ export interface WorkspaceDone {
   /** The minimum the caller declared, echoed so a surface can say what it wanted. */
   readonly requirement: LevelRequirement;
   /**
-   * Whether the verdict satisfies it — all the exit code reads.
+   * Whether the verdict satisfies it — ONE of the two things the exit code reads.
+   *
+   * It used to be all of it, and this doc said so. What falsified that is the field
+   * below: a set can meet its level and still not be the set the caller named.
    *
    * FALSE when nothing was covered, and that is the case this field exists to get
    * right: a set in which every named path holds no record must not exit zero, because
    * a zero there is `mnema verify` passing a gate over nothing at all.
    */
   readonly requirementMet: boolean;
+  /**
+   * Whether the caller's declaration, echoed, tolerated a named path with no record.
+   *
+   * Echoed for the reason {@link requirement} is: the surface has to be able to say
+   * what the reading was ASKED for, and a report that only said what happened would
+   * leave a reader unable to tell "nothing was tolerated" from "nothing needed to be".
+   */
+  readonly allowWithoutRecord: boolean;
+  /**
+   * Whether the set's COVERAGE is what the caller accepts — the other thing the exit
+   * code reads, beside {@link requirementMet}.
+   *
+   * True when every named path held a record, and true when one did not and
+   * {@link WorkspaceContext.allowWithoutRecord} said that was fine. It is a second
+   * field rather than a term folded into `requirementMet` because the two answer
+   * different questions and a reader has to be told which one failed: `--require` is
+   * about how far the proof got over what was READ, and this is about whether what was
+   * read is what was NAMED. Folded into one boolean, a mistyped path would print a
+   * sentence about a level.
+   */
+  readonly coverageMet: boolean;
 }
 
 /**
@@ -340,6 +391,8 @@ export interface WorkspaceDone {
  * ({@link ProjectWithoutRecord}) rather than a refusal that would throw away the
  * verdicts of the projects named beside it — which is the difference between this and
  * {@link runVerify}, where the one project asked about is the whole of the question.
+ * It still counts against the EXIT ({@link WorkspaceDone.coverageMet}): answering about
+ * every path is not the same as passing every path.
  *
  * TWO NAMES FOR ONE PROJECT ARE ONE PROJECT, and the identity is the CHAIN ROOT rather
  * than the text of the path: the same directory named twice, a subdirectory of a
@@ -380,6 +433,12 @@ export function runVerifyWorkspace(ctx: WorkspaceContext): WorkspaceDone {
     ...(record !== undefined ? { record } : {}),
     requirement: ctx.requirement,
     requirementMet: record !== undefined && meetsRequirement(record.level, ctx.requirement),
+    allowWithoutRecord: ctx.allowWithoutRecord,
+    // Counted over the DISTINCT projects, which is the same list the report prints a
+    // line each for: two names of one unfounded directory are one path holding no
+    // record, exactly as two names of one project are one project.
+    coverageMet:
+      ctx.allowWithoutRecord || !projects.some((project) => project.kind === 'no-record'),
   };
 }
 
