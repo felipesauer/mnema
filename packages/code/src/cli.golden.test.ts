@@ -809,6 +809,7 @@ beforeAll(async () => {
     ['decision', 'move'],
     ['decision', 'supersede'],
     ['skill', 'move'],
+    ['skill', 'export'],
     ['run', 'start'],
     ['run', 'end'],
     ['key', 'restore'],
