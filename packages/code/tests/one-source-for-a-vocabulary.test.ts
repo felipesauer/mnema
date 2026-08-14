@@ -70,7 +70,7 @@ import { SCOPES as OPENED_IN_ORDER } from '../src/tree-sources.js';
 import { SHELLS } from '../src/wiring/completion.js';
 import * as vocabulary from '../src/wiring/enumerated.js';
 import { enumeratedArgument, SCOPES, valuesDeclaredOn } from '../src/wiring/enumerated.js';
-import { everyCommandOf } from '../src/wiring/usage.js';
+import { everyCommandOf } from '../src/wiring/misuse.js';
 
 /** A silent port: everything that reads declarations writes nothing. */
 const silent: CliIo = { out: () => {}, err: () => {}, fail: () => {} };

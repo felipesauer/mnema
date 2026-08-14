@@ -10,7 +10,7 @@
  * this value.
  *
  * IT IS THE SAME WALK THE PARSER'S REFUSALS USE. `everyCommandOf` (see
- * `wiring/usage.ts`) is what gave every command of the program one voice for a no, and
+ * `wiring/misuse.ts`) is what gave every command of the program one voice for a no, and
  * it is what enumerates the commands here — one recursion in this product, not two
  * that could disagree about what a command is. A verb registered tomorrow arrives in
  * all three scripts for the same reason its misuse already answers in the product's
@@ -57,7 +57,7 @@
 
 import type { Argument, Command, Help, Option } from 'commander';
 import { valuesDeclaredOn } from '../wiring/enumerated.js';
-import { everyCommandOf } from '../wiring/usage.js';
+import { everyCommandOf } from '../wiring/misuse.js';
 
 /** One flag, in every spelling the parser answers to, and what may follow it. */
 export interface CompletionFlag {

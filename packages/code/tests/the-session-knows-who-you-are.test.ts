@@ -44,10 +44,9 @@ import { renderPlain } from '../src/presentation/plain.js';
 import { asTheSession } from '../src/repl/asking.js';
 import { THE_FLOOR } from '../src/repl/floor.js';
 import { typedLine } from '../src/repl/session.js';
-
+import { everyCommandOf } from '../src/wiring/misuse.js';
 import { ACTOR_HELP } from '../src/wiring/options.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
-import { everyCommandOf } from '../src/wiring/usage.js';
 import type { Declared } from '../src/wiring/verb.js';
 import {
   inPty as drive,

@@ -7,7 +7,7 @@
  * founding a project to the four knowledge facts, then the session, then every read,
  * then the machine's keys, then the record's own tails, then verification.
  * Reordering the list reorders the help, which is why it lives in one place and not
- * in the sequence of twenty-nine calls inside one function.
+ * in the sequence of thirty calls inside one function.
  *
  * The FAMILIES are the shape of the surface, and each one exists for a reason worth
  * keeping next to the list rather than inside one of its members:
@@ -72,6 +72,19 @@
  * is a property of the record, not of who asks); accountability's `--who`/
  * `--which` are aggregation FILTERS, not the asker's identity. `--json` emits
  * the faithful object. RELATES, never JUDGES — no output editorializes.
+ *
+ * And `usage`, WHICH IS THE ONE READ THAT LEAVES THE RECORD. Every verb above answers
+ * out of the chain, so anyone holding a clone can ask the same question and get the same
+ * answer; this one crosses the record's runs with the transcripts Claude Code wrote on
+ * THIS machine, and neither half of that is in a clone. It is here because the number is
+ * real and somebody has to account for it, and it is declared a READ for the strict
+ * reason the others are — it appends nothing, and the record deliberately has no field
+ * for a cost (`RECONSTRUCTION.md`, *Custo/tokens*: the host's transcripts expire, so a
+ * recorded cost would be a signed claim whose only witness deletes itself). Tokens and a
+ * model id, never dollars; one host session in a run's window is attributed and NAMED,
+ * more than one is named and refused, none is a WORD and never a zero. It ends by saying
+ * all of that out loud, because a cost table printed by an audit tool with nothing
+ * qualifying it reads as part of the proof.
  *
  * `key` and `tail` sit together at the end of the writes, and they are the two whose
  * subject is not the work but the record's own material: `key` operates this
@@ -168,6 +181,7 @@ import { registerStatus } from './status.js';
 import { registerTail } from './tail.js';
 import { registerTask } from './task.js';
 import { registerTimeline } from './timeline.js';
+import { registerUsage } from './usage.js';
 import type { Declared, Verb, Wiring } from './verb.js';
 import { registerVerify } from './verify.js';
 
@@ -195,6 +209,7 @@ export const VERBS: readonly Verb[] = [
   registerExposure,
   registerReferences,
   registerSkills,
+  registerUsage,
   registerBrief,
   registerKey,
   registerTail,

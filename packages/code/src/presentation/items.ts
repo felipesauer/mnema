@@ -2,9 +2,9 @@
  * FORM A — a list of items: a header that says how much there is, then one line
  * per item, in aligned columns.
  *
- * Seven of the CLI's readings are this form: `search`, `exposure`, `refs`,
- * `timeline`, `accountability`, `skills` and `tail list`. Before this module each of
- * them wrote its own line by hand, and that is exactly why they drifted — two spaces
+ * Eight of the CLI's readings are this form: `search`, `exposure`, `refs`,
+ * `timeline`, `accountability`, `skills`, `tail list` and `usage`. Before this module
+ * each of them wrote its own line by hand, and that is exactly why they drifted — two spaces
  * here, a padded column there, an id last in one report and first in another. The
  * shape lives here now, so a change to it is one edit and not seven.
  *

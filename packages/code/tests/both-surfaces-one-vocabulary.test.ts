@@ -58,7 +58,7 @@ import { REFERENCE_DIRECTIONS } from '../src/reference-directions.js';
 import * as shared from '../src/vocabulary.js';
 import { actionsRequiring, listed, orListed, SCOPE_CHOICES, SCOPES } from '../src/vocabulary.js';
 import { valuesDeclaredOn } from '../src/wiring/enumerated.js';
-import { everyCommandOf } from '../src/wiring/usage.js';
+import { everyCommandOf } from '../src/wiring/misuse.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));

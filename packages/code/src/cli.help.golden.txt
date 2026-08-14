@@ -32,6 +32,7 @@ $ mnema
 !   exposure [options]                      show which records hold something shaped like a credential (never the value)
 !   refs [options] <id>                     show what an entity is connected to across the trees
 !   skills [options]                        show where each pattern came from (who proposed it, who adopted it)
+!   usage                                   what each run cost, read from this machine's Claude Code transcripts
 !   brief                                   print what governs the work here as markdown, for an agent to read
 !   key                                     manage this machine's signing keys
 !   tail                                    authorize a cut in the record's own tails
@@ -76,6 +77,7 @@ $ mnema --help
 |   exposure [options]                      show which records hold something shaped like a credential (never the value)
 |   refs [options] <id>                     show what an entity is connected to across the trees
 |   skills [options]                        show where each pattern came from (who proposed it, who adopted it)
+|   usage                                   what each run cost, read from this machine's Claude Code transcripts
 |   brief                                   print what governs the work here as markdown, for an agent to read
 |   key                                     manage this machine's signing keys
 |   tail                                    authorize a cut in the record's own tails

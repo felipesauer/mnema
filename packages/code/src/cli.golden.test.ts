@@ -378,6 +378,11 @@ async function readEverything(label: string, ids: Record<string, string>): Promi
       name(head, `tail-head-${label.replace(/[^a-z]+/g, '-')}-${index}`);
     }
   }
+  // What the runs of this project cost, from OUTSIDE the record. It is pinned here
+  // like every other read, and the sandbox has no host transcripts at all — so what the
+  // golden holds is the answer a person gets on a machine whose transcripts have
+  // expired, which is the one this verb must not report as a zero.
+  await mnema('reads', 'usage');
   await mnema('reads', 'verify');
 }
 
@@ -395,6 +400,10 @@ beforeAll(async () => {
   // stopped falling back to it (see `wiring/color.ts`).
   delete process.env.NO_COLOR;
   delete process.env.FORCE_COLOR;
+  // And what it may not depend on either: a machine that moved Claude Code's own
+  // configuration. Left set, `mnema usage` would read the developer's real transcripts
+  // into a transcript this file compares byte for byte.
+  delete process.env.CLAUDE_CONFIG_DIR;
   process.chdir(repo);
 
   // ── The reads with nothing recorded anywhere: no project, no trees.
@@ -402,6 +411,7 @@ beforeAll(async () => {
   await mnema('reads', 'search');
   await mnema('reads', 'exposure');
   await mnema('reads', 'brief');
+  await mnema('reads', 'usage');
   await mnema('reads', 'verify');
 
   // ── Founding the project, twice: the run that creates the identity, and the
