@@ -12,17 +12,23 @@
  * {@link locateEntityScope}, or {@link locateEntityScopeWith} for a caller that
  * can answer "does this tree hold it?" faster than a replay can — with
  * {@link replayingBirthProbe} as the answer the chain itself gives, for a caller
- * searching trees this module cannot name. Finding which tree holds a TAIL — so a
- * waiver over it lands where the census that reads it looks — is
- * {@link locateTailScope}, the same walk over a different question.
+ * searching trees this module cannot name. What TAILS the trees here hold — with
+ * what each one holds and whether its cut is already authorized — is
+ * {@link tailsHeld}, and finding which tree holds ONE of them, so a waiver over it
+ * lands where the census that reads it looks, is {@link locateTailScope}: a search
+ * over that same enumeration. Which trees a search from here covers at all is
+ * {@link treesSearched}, for the reading that has to say where it looked.
  */
 
 export {
   type BirthProbe,
+  type HeldTail,
   locateEntityScope,
   locateEntityScopeWith,
   locateTailScope,
   replayingBirthProbe,
+  tailsHeld,
+  treesSearched,
 } from './locate.js';
 export { type DiscoveryEnv, PROJECT_DIR, type ResolvedTrees, resolveTrees } from './resolve.js';
 export {

@@ -4,8 +4,16 @@
  *
  * Both questions have the same shape and the same answer must not be reached two
  * ways: which trees are searched, in what order, and stopping at the first one that
- * holds it. That walk is {@link firstTreeHolding}, and the two readings below differ
- * only in what "holds it" means.
+ * holds it. That walk is {@link treesToSearch}, and every reading below is over it.
+ *
+ * IT USED TO SAY the two readings differ ONLY in what "holds it" means, both of them
+ * over {@link firstTreeHolding}. What falsified it is that a tail has a second
+ * question — WHICH tails are here, which `mnema tail list` prints — and a walk that
+ * can only answer yes or no about one name cannot answer it. So the tail half is an
+ * ENUMERATION now ({@link tailsHeldIn}) and locating one is a search over that
+ * enumeration; the entity half is unchanged. What survived is the rule that matters:
+ * the tree set and its order are decided in one place, and a reading that needs to
+ * say where it looked asks that same place ({@link treesSearched}).
  *
  * An entity (a task, a decision, a skill) is BORN in exactly one tree: its
  * birth event — `task.created`, `decision.recorded`, `skill.created` — is
@@ -46,7 +54,15 @@
  * parameter rather than a fixed strategy.
  */
 
-import { type CatalogEvent, tailStanding, type UpcasterRegistry } from '@mnema/chain';
+import {
+  type CatalogEvent,
+  listTails,
+  readTailEntries,
+  standingOf,
+  type TailStanding,
+  tailWaiversIn,
+  type UpcasterRegistry,
+} from '@mnema/chain';
 import { canonicalId } from '../identity/id.js';
 import { orderedEvents } from '../projections/order.js';
 import type { ResolvedTrees } from './resolve.js';
@@ -70,22 +86,47 @@ const BIRTH_KINDS = new Set<CatalogEvent['kind']>([
 const SEARCH_ORDER: readonly Scope[] = ['public', 'private', 'global'];
 
 /**
- * The walk both readings here share: the trees this context has, in
- * {@link SEARCH_ORDER}, stopping at the first one that holds what is being looked
- * for. Undefined when none of them does.
+ * THE WALK every reading here shares: the trees this context has, in
+ * {@link SEARCH_ORDER}, skipping the ones it does not have.
  *
  * It is one function because the ORDER and the skipping of absent trees are the
  * parts a second copy would get subtly right and then drift on — the answer would
  * still look correct, and two surfaces would disagree about which tree owns a thing
- * present in two of them. What each caller supplies is only what "holds it" means.
+ * present in two of them. It yields rather than returning a list so a caller that
+ * stops early never opens a tree the answer no longer depends on.
+ */
+function* treesToSearch(trees: ResolvedTrees): Generator<{ scope: Scope; root: string }> {
+  for (const scope of SEARCH_ORDER) {
+    const root = chainRootForScope(trees, scope);
+    if (root === undefined) continue; // that tree is not present in this context
+    yield { scope, root };
+  }
+}
+
+/**
+ * The trees a search from here covers, in the order it covers them — the set, said
+ * out loud.
+ *
+ * A reading that finds NOTHING has to name where it looked, or its answer is
+ * indistinguishable from "there is nowhere to look" (`mnema tail list` over a record
+ * with no tail says this). Naming them from the same walk that does the searching is
+ * what keeps the sentence true: a fourth tree added to {@link SEARCH_ORDER} is
+ * searched and named by one change, not by two that can disagree.
+ */
+export function treesSearched(trees: ResolvedTrees): Scope[] {
+  return [...treesToSearch(trees)].map((tree) => tree.scope);
+}
+
+/**
+ * The walk, stopping at the first tree that holds what is being looked for.
+ * Undefined when none of them does. What each caller supplies is only what "holds
+ * it" means.
  */
 function firstTreeHolding(
   trees: ResolvedTrees,
   holds: (chainRoot: string) => boolean,
 ): Scope | undefined {
-  for (const scope of SEARCH_ORDER) {
-    const root = chainRootForScope(trees, scope);
-    if (root === undefined) continue; // that tree is not present in this context
+  for (const { scope, root } of treesToSearch(trees)) {
     if (holds(root)) return scope;
   }
   return undefined;
@@ -178,17 +219,84 @@ export function locateEntityScope(
 }
 
 /**
+ * One tail a tree here holds: which tree, which tail, what the disk says about it,
+ * and whether that tree already carries a waiver authorizing its cut.
+ */
+export interface HeldTail {
+  /** The tree holding it — the one a waiver over it has to be written to. */
+  readonly scope: Scope;
+  /** The tail id, whole: it is what `tail prune` takes, so a short form is unusable. */
+  readonly tail: string;
+  /** What the disk says right now: how it ends, how much it holds, whose it is. */
+  readonly standing: TailStanding;
+  /**
+   * Whether some waiver IN THE SAME TREE already authorizes cutting it.
+   *
+   * Same tree, because that is where a waiver has to live to be met by the census
+   * that reads it — see {@link locateTailScope}. A waiver about this tail sitting in
+   * another tree is a signed fact nobody will meet, and saying "authorized" from it
+   * would report an authorization the record cannot use.
+   */
+  readonly authorized: boolean;
+}
+
+/**
+ * Every tail the trees here hold, tree by tree in {@link SEARCH_ORDER} and tail by
+ * tail in the sorted order the store lists — the one enumeration, which
+ * {@link locateTailScope} is a search over and `mnema tail list` prints.
+ *
+ * A TAIL IS NOT AN ENTITY, so this asks the disk rather than the record: a tail is a
+ * directory of files, not a subject some event was minted for. Each tree's tails are
+ * read ONCE — the entries answer both what each tail's standing is
+ * (`standingOf`, the one reading of that there is) and which waivers the tree
+ * carries (`tailWaiversIn`, which the census asks with the same function).
+ *
+ * AN EMPTY TAIL IS NOT HELD, for the reason `tailStanding` gives: a directory with
+ * an ownership proof and no event is the ordinary residue of a session that only
+ * read, and there is nothing in it to account for. So it is absent from the listing
+ * and unlocatable by the verb that authorizes a cut, which is the same answer twice
+ * rather than two answers.
+ *
+ * Cost: it reads every tail of every tree it walks, whole. That is what the caller
+ * asking for the LIST needs by definition; the caller looking for ONE tail stops at
+ * the tree that holds it (this is a generator, and {@link locateTailScope} does not
+ * drain it), so it pays for the tails read before the match and for no later tree.
+ */
+function* tailsHeldIn(trees: ResolvedTrees, upcasters: UpcasterRegistry): Generator<HeldTail> {
+  for (const { scope, root } of treesToSearch(trees)) {
+    const layout = { root };
+    const entriesByTail = new Map(
+      listTails(layout).map((tail) => [tail, readTailEntries(layout, tail, upcasters)] as const),
+    );
+    const authorized = new Set(tailWaiversIn(entriesByTail).map((waiver) => waiver.tail));
+    for (const [tail, entries] of entriesByTail) {
+      const standing = standingOf(entries);
+      if (standing === undefined) continue;
+      yield { scope, tail, standing, authorized: authorized.has(tail) };
+    }
+  }
+}
+
+/**
+ * Every tail the trees here hold — {@link tailsHeldIn} drained, for the reading that
+ * wants all of them.
+ */
+export function tailsHeld(trees: ResolvedTrees, upcasters: UpcasterRegistry): HeldTail[] {
+  return [...tailsHeldIn(trees, upcasters)];
+}
+
+/**
  * Finds the scope of the tree that holds the tail `tailId` — the tree a waiver
  * over that tail has to be written to. Undefined when no present tree holds it
  * with events in it.
  *
- * A TAIL IS NOT AN ENTITY, so this asks the disk rather than the record: a tail is
- * a directory of files, not a subject some event was minted for, and the question
- * is whether THIS tree has that directory with something in it. `tailStanding` is
- * the one reading of a tail's standing there is — the operation that builds a
- * waiver fills its claims from it, and the writer's own door checks them against it
- * — so a caller located by this function and refused by that door would have to
- * have lost the tail in between.
+ * IT IS A SEARCH OVER {@link tailsHeldIn} AND THAT IS THE POINT. The verb that
+ * authorizes a cut resolves the tree with this; the verb that lists what can be cut
+ * prints that enumeration. A tail one of them sees and the other does not is a
+ * listing that offers a cut the record refuses, or a cut of something the listing
+ * never showed — and a second implementation of "where I look for tails" is exactly
+ * what produces it. `the-verb-says-which-tails.test.ts` holds the two to each other;
+ * this makes them the same walk, so the test guards a property rather than a habit.
  *
  * WHY THE SURFACE NEEDS IT, and it is the same argument a transition makes: a
  * waiver lives in the SAME tree as the tail it names, because the census that later
@@ -196,15 +304,14 @@ export function locateEntityScope(
  * tree is a signed fact nobody looking at the orphaned key will ever meet. So a
  * surface resolves the tail's tree with this read, then opens THAT tree's writer,
  * and the write stays the single-tree act every other one is.
- *
- * AN EMPTY TAIL IS NOT HELD, for the reason `tailStanding` gives: a directory with
- * an ownership proof and no event is the ordinary residue of a session that only
- * read, and there is nothing in it to account for.
  */
 export function locateTailScope(
   trees: ResolvedTrees,
   tailId: string,
   upcasters: UpcasterRegistry,
 ): Scope | undefined {
-  return firstTreeHolding(trees, (root) => tailStanding({ root }, tailId, upcasters) !== undefined);
+  for (const held of tailsHeldIn(trees, upcasters)) {
+    if (held.tail === tailId) return held.scope;
+  }
+  return undefined;
 }

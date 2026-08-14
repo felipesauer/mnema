@@ -75,7 +75,9 @@
  *
  * `key` and `tail` sit together at the end of the writes, and they are the two whose
  * subject is not the work but the record's own material: `key` operates this
- * machine's signing keys, and `tail` authorizes the cut of a whole tail. `tail prune`
+ * machine's signing keys, and `tail` authorizes the cut of a whole tail — and says
+ * which tails there are to cut, since `tail prune` takes an id and `tail list` is
+ * the only reading in the product that prints one. `tail prune`
  * is the only verb in the product whose consequence is DESTRUCTIVE, and it is
  * deliberately the only write with no counterpart on the MCP surface: a run there
  * opens by itself on the first write, with the `who` read off the key and nobody
