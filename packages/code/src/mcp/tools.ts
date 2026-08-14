@@ -1205,10 +1205,19 @@ export type SkillsResult =
  * And the converse holds with no branch to keep it holding: a body that IS served
  * goes through {@link recordConsultations} whatever its state, because the recording
  * is downstream of the bifurcation and reads the served list. The invariant that
- * justified making this the only door — a body never leaves without the fact of the
- * reading — would have been the first casualty of a candidate served on a shortcut.
- * Asserted in `mcp-e2e.test.ts` — "skills with an id serves the body of a pattern
- * awaiting a judgement, and records the consultation".
+ * justified making this the only door — a body never leaves THIS SURFACE without the
+ * fact of the reading — would have been the first casualty of a candidate served on a
+ * shortcut. Asserted in `mcp-e2e.test.ts` — "skills with an id serves the body of a
+ * pattern awaiting a judgement, and records the consultation".
+ *
+ * THE THREE WORDS "THIS SURFACE" USED TO BE ABSENT, and the sentence was too broad
+ * before this slice as well as after it. The command line already took a body out with
+ * nothing recorded (`mnema show <id>`, for a person curating, where there is no session
+ * to attribute a consultation to), and `mnema skill export` now takes one out as a
+ * FILE. Neither is a shortcut past this door: both are the auditor's surface, and the
+ * invariant is about the AGENT's — which is exactly what `read_record` refusing a skill
+ * (`USE_SKILLS_TOOL`) buys, and what it would stop buying if a tool here served a body
+ * without recording.
  */
 export function runSkillsTool(session: Session, input: { id?: string } = {}): SkillsResult {
   // READ before WRITE: the caches are consulted first, because building a write

@@ -13,7 +13,7 @@ _mnema_commands() {
     '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure refs skills usage brief key tail verify mcp repl completion help' ;;
     'task') echo 'move' ;;
     'decision') echo 'move supersede' ;;
-    'skill') echo 'move' ;;
+    'skill') echo 'move export' ;;
     'run') echo 'start end help' ;;
     'key') echo 'restore request enroll revoke help' ;;
     'tail') echo 'list prune help' ;;
@@ -32,6 +32,7 @@ _mnema_flags() {
     'decision supersede') echo '--reason -h --help --alternatives --scope --which -V --version --color' ;;
     'skill') echo '--body --scope --which -h --help -V --version --color' ;;
     'skill move') echo '--note --reason -h --help --body --scope --which -V --version --color' ;;
+    'skill export') echo '--out --description -h --help --body --scope --which -V --version --color' ;;
     'memory') echo '--scope --which -h --help -V --version --color' ;;
     'observe') echo '--topic --text --scope --which -h --help -V --version --color' ;;
     'handoff') echo '--scope --which -h --help -V --version --color' ;;
@@ -91,6 +92,8 @@ _mnema_values() {
     'skill move:--scope') echo 'public private global' ;;
     'skill move:--color') echo 'auto always never' ;;
     'skill move:') echo 'review adopt reject deprecate' ;;
+    'skill export:--scope') echo 'public private global' ;;
+    'skill export:--color') echo 'auto always never' ;;
     'memory:--scope') echo 'public private global' ;;
     'memory:--color') echo 'auto always never' ;;
     'observe:--scope') echo 'public private global' ;;

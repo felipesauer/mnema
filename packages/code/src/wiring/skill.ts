@@ -2,10 +2,12 @@
  * The `mnema skill` wiring: what it declares, and what it prints.
  *
  * `skill` is a group, shaped like `task` and `decision`: its default action
- * proposes a skill (`mnema skill "<name>" --body "<text>"`), and its one
- * subcommand moves an existing one. A skill needs BOTH a name and a body; the
- * name is a short positional, the body a flag (`--body`) — content that big
- * never goes in a positional (the `git commit -m` / `gh --body` convention).
+ * proposes a skill (`mnema skill "<name>" --body "<text>"`), one subcommand moves an
+ * existing one, and one WRITES AN ADOPTED ONE OUT as the file an agent host reads
+ * (`skill export`, whose own reasons are in `commands/skill-export.ts`). A skill needs
+ * BOTH a name and a body; the name is a short positional, the body a flag (`--body`) —
+ * content that big never goes in a positional (the `git commit -m` / `gh --body`
+ * convention).
  * The body is required, but NOT declared as commander's `requiredOption`: an
  * option on the GROUP is inherited by the `move` subcommand, and a required one
  * there would force `--body` on a move too. So it is a plain option the create
@@ -14,6 +16,18 @@
  * optional `--scope` (the per-action birth override, defaulting to public); the
  * move takes none (it follows the entity). A skill has no alias — propose prints
  * its `name` and its `id` (the key).
+ *
+ * THE GROUP IS STILL DECLARED A WRITE, and `export` does not change that: a group is
+ * classified by its most powerful member (`verb.ts`), and what `export` can do to the
+ * RECORD is nothing at all — it writes a file, under a directory the caller named, and
+ * appends no event. The two questions are not the same one, which is the distinction
+ * `RecordEffect` exists to make.
+ *
+ * IT IS ON THIS SURFACE AND NOT ON THE AGENT'S. Exporting is an act of whoever
+ * administers the repository — deciding that a pattern of this project should be a
+ * skill in some host's directory — and there is no MCP tool for it. That is the same
+ * division `skills` and `tail prune` already draw: the agent's surface records and
+ * reads the record, the command line is the auditor's.
  */
 
 import type { Command } from 'commander';
@@ -26,6 +40,7 @@ import {
   SKILL_ACTIONS,
   scopeOption,
 } from './enumerated.js';
+import { writeLines } from './io.js';
 import {
   declaredAgent,
   INVALID,
@@ -37,9 +52,51 @@ import { reportRecorded, reportRefusal, reportReplacement, reportUsage } from '.
 import { PIN_REFUSED } from './run-pin.js';
 import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
+/**
+ * Where an exported skill goes when the caller names nowhere — declared HERE, on the
+ * surface, so commander prints it in the `--help` and there is one answer to it.
+ *
+ * `./skills` and not a host's own directory, and that is the decision rather than a
+ * placeholder. `<repo>/skills/<name>/SKILL.md` is the layout the specification implies
+ * and four of the five collections measured in the ecosystem study use, so the default
+ * lands inside the caller's own project. A default of `~/.claude/skills` would have this
+ * verb writing into another product's configuration without being asked — and putting a
+ * pattern where an agent will read it as instruction is exactly the decision that has to
+ * be the operator's.
+ */
+const DEFAULT_OUT = './skills';
+
+/**
+ * What `skill export --help` says beyond its two flags: the shape of the file, the two
+ * fields the specification requires, and the three things this verb will not do.
+ *
+ * The DERIVATION is here because it is the field a caller cannot predict, and the two
+ * refusals are here because both are cheaper to read than to hit: a name that is not a
+ * specification name cannot be fixed after the fact (a skill is not renamed), and a
+ * pattern that is not adopted has one way out and it is not a flag.
+ */
+const SKILL_EXPORT_HELP = [
+  '',
+  'What it writes, and what it will not:',
+  '  <out>/<name>/SKILL.md — the frontmatter the skills specification defines, then the',
+  '  recorded body VERBATIM. Nothing summarizes, reformats or improves the body: it is',
+  '  what was signed.',
+  '  `description` is REQUIRED by the specification and the record holds none, so it is',
+  '  derived at export time — the first sentence of the body (or its first paragraph),',
+  '  collapsed to one line and cut to 1024 characters. `--description` overrides it. No',
+  '  model is asked for one anywhere.',
+  '  `name` must already BE a specification name (1–64 of a-z, 0-9 and -, no hyphen at',
+  '  either end, none doubled) because it has to equal the directory name. A recorded',
+  '  name that is not one is refused, never rewritten into one.',
+  '  Only an ADOPTED pattern is exported. A proposal put in a host’s skills directory is',
+  '  read as how the work is done here; a deprecated one is a retired way of working',
+  '  wearing the same face. There is no --force: adopt it, then export it.',
+  '  It records nothing — no event, no consultation — and it writes nowhere but --out.',
+].join('\n');
+
 /** Registers `mnema skill` on the program. */
 export function registerSkill(program: Command, wiring: Wiring): Declared {
-  const { io, pinnedRun } = wiring;
+  const { io, pinnedRun, render } = wiring;
   const skill = program
     .command('skill')
     .description('propose a reusable skill in the current project')
@@ -137,6 +194,57 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
       return;
     }
     reportRefusal(wiring, result, { UNKNOWN_SKILL: `No skill ${id} here.` });
+  });
+
+  // `skill export <id>` — the pattern as the file an agent host reads. It takes the
+  // group's positional shape (an id) and two options of its own, and it is the only
+  // verb on this surface that writes a file: WHERE is the caller's decision, so the
+  // destination is an option with a declared default and nothing else is ever touched.
+  const skillExport = skill
+    .command('export')
+    .description('write an adopted pattern as the SKILL.md an agent host reads (records nothing)')
+    .argument('<id>', 'the skill id (the value shown when it was proposed)')
+    .option('--out <dir>', 'the directory the <name>/SKILL.md is written under', DEFAULT_OUT)
+    .option(
+      '--description <text>',
+      'what the host chooses this skill by; omitted, it is derived from the body',
+    )
+    .addHelpText('after', SKILL_EXPORT_HELP);
+  skillExport.action(async (id: string, opts: { out: string; description?: string }) => {
+    const { runSkillExport } = await import('../commands/skill-export.js');
+    const { exportReport } = await import('../presentation/exported.js');
+    // The group's three options mean nothing on an export — nothing is born, nothing
+    // moves, and nothing is recorded for an agent to be credited with — so one that
+    // reaches here is refused rather than accepted and ignored. A `--which` taken in
+    // silence would let a caller believe the export was attributed to their agent.
+    const parentOpts = (skillExport.parent?.opts() ?? {}) as {
+      body?: string;
+      scope?: string;
+      which?: string;
+    };
+    for (const [flag, value] of [
+      ['--body', parentOpts.body],
+      ['--scope', parentOpts.scope],
+      ['--which', parentOpts.which],
+    ] as const) {
+      if (value === undefined) continue;
+      reportUsage(
+        wiring,
+        `\`skill export\` takes no ${flag}: it writes out a pattern the record already ` +
+          'holds — nothing is born, nothing moves and nothing is recorded.',
+      );
+      return;
+    }
+    const result = runSkillExport(here(), {
+      id,
+      out: opts.out,
+      ...(opts.description !== undefined ? { description: opts.description } : {}),
+    });
+    if (!result.ok) {
+      reportRefusal(wiring, result, { UNKNOWN_SKILL: `No skill ${id} here.` });
+      return;
+    }
+    writeLines(io, exportReport(render, result));
   });
   return mutatesTheRecord(skill);
 }
