@@ -56,6 +56,16 @@
  * show <id>` reads for a PERSON who is curating, and records nothing because there
  * is no session there to attribute a consultation to (`show.ts`).
  *
+ * ONE READING ON THAT SURFACE ASKS A NARROWER QUESTION THAN ANY TABLE HERE ANSWERS,
+ * and it is named so a reader does not come looking for its rule in this module.
+ * `mnema skill export` writes an adopted pattern out as the `SKILL.md` an agent host
+ * reads, and what may leave is decided by a table of its OWN over these same
+ * dispositions (`code/src/commands/skill-export.ts`). It is not this module's rule
+ * copied: serving a candidate to a caller that NAMED it, so the ruling can be made on
+ * its text, and publishing that candidate where an agent will read it as a standard are
+ * two different acts — which is why the two tables agree on `in-force` and `closed` and
+ * differ on `awaiting-judgement`.
+ *
  * TWO OF THOSE STATES ARE ALSO SOMETHING TO SAY UNASKED, and that is the second read
  * here. A pattern `proposed` waits for a review and a `reviewed` one waits for the
  * adoption; both are a judgement somebody owes, and a curation backlog nobody is
