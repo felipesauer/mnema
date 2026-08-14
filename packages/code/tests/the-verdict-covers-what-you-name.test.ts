@@ -22,9 +22,18 @@
  *     because an aggregate alone hides the project that pulled it there;
  *   - a path that holds NO record — not a pass and not a break. Counting it as verified
  *     would let an empty directory carry a CI gate, which is the no-op `verify` has
- *     already been once; counting it as broken would fail a set for naming a directory
- *     nobody has founded yet. It is reported, left out of the aggregate, and counted at
- *     the end — and when EVERY path is one, the exit may not be zero.
+ *     already been once; counting it as broken would say a chain failed to replay when
+ *     none was read. It is reported, left out of the LEVEL, and counted at the end.
+ *
+ * AND THE THIRD ANSWER USED TO STOP THERE, WHICH IS WHAT THESE CASES NOW SEPARATE. Out
+ * of the level was read as out of the exit too, so `verify --workspace ./good ./typo`
+ * came back zero over a project nobody verified — while the other two shapes of this
+ * verb already refused (a lone unfounded directory says `No mnema project here`, and a
+ * set where EVERY path holds none says `Nothing was verified`). One rule, three cases,
+ * and one of them disagreed with the other two. Naming a path is asserting that it is a
+ * project, so a path that is not one makes the exit non-zero, and `--allow-no-record`
+ * is the caller declaring the gap is theirs. It tolerates ABSENCE and never a BREAK,
+ * which is the case below that separates the two.
  *
  * Every fixture is built by the PRODUCT — `mnema init`, `mnema task` — and then edited
  * on disk the way an adversary or a `git clone` would. Nothing writes an event by hand.
@@ -254,6 +263,15 @@ describe('two sound projects', () => {
     // Both trees of both projects: the set does not cover half of each project.
     expect(said.lines.filter((line) => / (public|private): /.test(line))).toHaveLength(4);
     expect(closing(said)).toContain('2 path(s) named → 2 distinct: 2 project(s) covered');
+    // A SET WITH NO HOLE IN IT SAYS NOTHING ABOUT ONE. The rule about a path holding no
+    // record is stated with the counts, as every rule under this closing statement is,
+    // but nothing here was tolerated and nothing was refused — so neither the escape's
+    // echo nor the coverage line appears, and stderr is empty.
+    expect(closing(said)).not.toContain('did not move it');
+    // The COUNT and not the rule: the rule sentence says the words "holding no record"
+    // whatever the set is, so the discriminating form is the count clause ending there.
+    expect(closing(said)).toContain('2 distinct: 2 project(s) covered.');
+    expect(said.issues).toEqual([]);
 
     // The aggregate is a level, and it is the one the exit is decided by: everything
     // here is signature-covered, so the signature gate passes and the witness gate
@@ -337,16 +355,25 @@ describe('two names of one record', () => {
 });
 
 describe('a named path that holds no record', () => {
-  it('gets its own line, is counted, and does NOT lower the verdict of the rest', async () => {
+  it('gets its own line, is counted, and does NOT lower the LEVEL of the rest', async () => {
     // The half that discriminates. `verify` over an absent root answers green with no
     // signature checked — so a path folded in as though it were a tree would drag the
     // set to `hash-chain-only` and fail the signature gate over projects that are all
-    // fully signed.
+    // fully signed. The escape is on here so this case rules on the LEVEL alone: what
+    // the path does to the exit is the case below, and mixing the two would leave this
+    // one green whichever way either rule went.
     await found('alpha');
     await found('beta');
     bare('not-a-project');
 
-    const said = await mnema('verify', '--workspace', 'alpha', 'not-a-project', 'beta');
+    const said = await mnema(
+      'verify',
+      '--workspace',
+      'alpha',
+      'not-a-project',
+      'beta',
+      '--allow-no-record',
+    );
     expect(said.failed, said.issues.join(' / ')).toBe(false);
     expect(said.lines).toContain(
       `${join(sandbox, 'not-a-project')}: no record here — no \`.mnema/\` is at this path ` +
@@ -369,6 +396,7 @@ describe('a named path that holds no record', () => {
       'not-a-project',
       'beta',
       '--require=signed',
+      '--allow-no-record',
     );
     expect(gated.failed, gated.issues.join(' / ')).toBe(false);
   });
@@ -381,6 +409,11 @@ describe('a named path that holds no record', () => {
     // The names beside the level are the discriminator: a path folded in as a verdict
     // would appear there, because `verify` over an absent root answers at exactly the
     // level this fixture's weak project is at.
+    //
+    // THE ESCAPE IS ON, AND IT IS WHAT KEEPS THIS CASE FROM GOING BLIND. Without it the
+    // set exits non-zero for the path as well as for the level, so `failed` would stay
+    // true with the requirement comparison deleted — the exit assertion would be true
+    // of a fixture that proved nothing about a level at all.
     await found('alpha');
     await found('beta');
     deleteSignatures(trees('beta').publicRoot);
@@ -393,6 +426,7 @@ describe('a named path that holds no record', () => {
       'not-a-project',
       'beta',
       '--require=signed',
+      '--allow-no-record',
     );
     expect(said.failed).toBe(true);
     expect(said.issues.join('\n')).toContain(
@@ -401,6 +435,122 @@ describe('a named path that holds no record', () => {
     expect(closing(said)).toContain(
       '3 path(s) named → 3 distinct: 2 project(s) covered, 1 holding no record',
     );
+  });
+});
+
+describe('naming a path is asserting that it is a project', () => {
+  it('exits non-zero and NAMES the path, beside projects that verified', async () => {
+    // The defect this rule closes, in the shape it was measured in: one sound project
+    // and one path that is no project. It came back zero, so a CI gate went green over
+    // a repository nobody had verified — and in CI nobody reads the lines.
+    //
+    // TWO ASSERTIONS, because the exit alone does not say WHICH path: a reader of a CI
+    // log has one line to act on, and "one of the five paths you named" is not
+    // something they can act on.
+    await found('alpha');
+    bare('typo');
+
+    const said = await mnema('verify', '--workspace', 'alpha', 'typo');
+    expect(said.failed).toBe(true);
+    const why = said.issues.join('\n');
+    expect(why).toContain('not every named path holds a record');
+    expect(why).toContain(join(sandbox, 'typo'));
+    // And it names the escape, so the caller who meant it can say so.
+    expect(why).toContain('--allow-no-record');
+    // The project that DID verify still verified — the refusal is about the set, and it
+    // is not smeared over the record that was read.
+    expect(lineFor(said, 'alpha', 'public')).toContain('local integrity verified (T1/T2/T4)');
+  });
+
+  it('is accepted when the caller declares it, and the report SAYS it was', async () => {
+    // The escape gives back exactly what this set did before the rule: the path stays
+    // out of the level, out of the exit, and counted. What it must not do is go quiet
+    // about it — an exit of zero over a set with a hole in it is the thing the reader
+    // has to be told, and stderr is empty by then.
+    await found('alpha');
+    bare('typo');
+
+    const said = await mnema('verify', '--workspace', 'alpha', 'typo', '--allow-no-record');
+    expect(said.failed, said.issues.join(' / ')).toBe(false);
+    expect(closing(said)).toContain(
+      '`--allow-no-record` said otherwise, so the 1 holding none did not move it',
+    );
+    // The path is still reported and still counted: tolerated is not hidden.
+    expect(closing(said)).toContain(
+      '2 path(s) named → 2 distinct: 1 project(s) covered, 1 holding no record',
+    );
+    expect(said.lines.filter((line) => line.includes('no record here'))).toHaveLength(2);
+  });
+
+  it('tolerates ABSENCE and never a BREAK — the two the flag could confuse', async () => {
+    // The case that separates the two things one flag could swallow. A set with the
+    // escape on AND a project whose chain is tampered with must still exit non-zero:
+    // a flag that turned `mnema verify` into a no-op over a forged record is the defect
+    // the whole verb exists against, and it would arrive here disguised as leniency.
+    await found('alpha');
+    await found('beta');
+    tamper(trees('beta').publicRoot);
+    bare('typo');
+
+    const said = await mnema('verify', '--workspace', 'alpha', 'typo', 'beta', '--allow-no-record');
+    expect(said.failed).toBe(true);
+    expect(lineFor(said, 'beta', 'public')).toContain('local integrity FAILED');
+    // And the reason is the break, not the path: the path was tolerated and says so.
+    expect(closing(said)).toContain('`--allow-no-record` said otherwise');
+    expect(said.issues.join('\n')).not.toContain('not every named path holds a record');
+    expect(said.issues.join('\n')).toContain(`issue [T1] ${join(sandbox, 'beta')} public `);
+  });
+
+  it('says BOTH when the level is too weak and a path holds no record', async () => {
+    // Two criteria, two fixes, and neither masked by the other: a reader told only
+    // about the level would correct the level, run it again, and meet the path. The
+    // coverage line comes first because it questions the SET the level was over.
+    await found('alpha');
+    await found('beta');
+    deleteSignatures(trees('beta').publicRoot);
+    bare('typo');
+
+    const said = await mnema('verify', '--workspace', 'alpha', 'typo', 'beta', '--require=signed');
+    expect(said.failed).toBe(true);
+    const why = said.issues.join('\n');
+    expect(why).toContain(`not every named path holds a record: 1 path(s) hold none`);
+    expect(why).toContain(
+      `the weakest of what was covered is hash-chain-only (${join(sandbox, 'beta')})`,
+    );
+    // Order, asserted rather than assumed: the set before the level.
+    expect(why.indexOf('not every named path')).toBeLessThan(why.indexOf('requirement not met'));
+  });
+
+  it('counts DISTINCT paths, so two names of one bare directory are one', async () => {
+    // The dedupe is the set's rule and it holds over this one too: a caller who named
+    // the same unfounded directory twice has one hole, not two, and a count that said
+    // two would be the report disagreeing with the lines it just printed.
+    await found('alpha');
+    bare('typo');
+    symlinkSync(join(sandbox, 'typo'), join(sandbox, 'link-to-typo'));
+
+    const said = await mnema('verify', '--workspace', 'alpha', 'typo', 'typo', 'link-to-typo');
+    expect(said.failed).toBe(true);
+    expect(said.issues.join('\n')).toContain('not every named path holds a record: 1 path(s)');
+    expect(closing(said)).toContain(
+      '4 path(s) named → 2 distinct: 1 project(s) covered, 1 holding no record',
+    );
+  });
+
+  it('is refused as a declaration with no subject when no set was named', async () => {
+    // A bare `verify` names no paths, so there is nothing here for the flag to
+    // tolerate — and a caller who wrote it believes they relaxed something. Ignoring it
+    // silently is how a CI step ends up asking for a leniency it never got.
+    await found('alpha');
+    process.chdir(join(sandbox, 'alpha'));
+
+    const said = await mnema('verify', '--allow-no-record');
+    expect(said.failed).toBe(true);
+    expect(said.issues.join('\n')).toContain(
+      '`--allow-no-record` is about the paths a set names, and this invocation named none',
+    );
+    // It refused rather than ruling: no verdict came out of this invocation.
+    expect(said.lines).toEqual([]);
   });
 });
 
@@ -421,8 +571,35 @@ describe('every named path holds no record', () => {
     expect(said.issues.join('\n')).toContain(
       'Nothing was verified: none of the 2 path(s) named holds a record.',
     );
+    // ONE sentence, and it is this one. The rule that a path holding no record makes
+    // the exit non-zero is true of every path here, so a second line naming them would
+    // sit under this one telling a reader that SOME of the set is missing where this
+    // already says all of it is.
+    expect(said.issues.join('\n')).not.toContain('not every named path holds a record');
     // Every path still got its own line: what was named is accounted for, one by one.
     expect(said.lines.filter((line) => line.includes('no record here'))).toHaveLength(2);
+  });
+
+  it('stays non-zero with the escape declared, and still says only that', async () => {
+    // The escape accepts a gap in a set that was READ; it does not open the case where
+    // there was nothing to read. A zero here would be the flag doing exactly what it
+    // was written not to do — passing a CI gate over a set of empty directories — and
+    // the closing statement must not claim the paths "did not move the exit" directly
+    // above the line that exits on them.
+    bare('nothing-here');
+    bare('nothing-there');
+
+    const said = await mnema(
+      'verify',
+      '--workspace',
+      'nothing-here',
+      'nothing-there',
+      '--allow-no-record',
+    );
+    expect(said.failed).toBe(true);
+    expect(said.issues.join('\n')).toContain('Nothing was verified: none of the 2 path(s) named');
+    expect(said.issues.join('\n')).not.toContain('not every named path holds a record');
+    expect(closing(said)).not.toContain('did not move it');
   });
 
   it('stays non-zero however loose the minimum is, because there is no level at all', async () => {
@@ -445,10 +622,15 @@ describe('a project directory is text from outside the record', () => {
    */
   const FORGED = 'evil\n/somewhere/else public: local integrity verified (T1/T2/T4)';
 
-  it('cannot forge a line, through any of the three places a path is printed', async () => {
-    // Three sites, one rule, and a fixture that drives all of them at once: the tree's
-    // label (with the issues under it), the line of a path holding no record, and the
-    // names beside the level in the requirement line.
+  it('cannot forge a line, through any of the four places a path is printed', async () => {
+    // Four sites, one rule, and a fixture that drives all of them at once: the tree's
+    // label (with the issues under it), the line of a path holding no record, the names
+    // beside the level in the requirement line, and the paths named by the line that
+    // says not every named path holds a record. The fourth arrived with that line — it
+    // is the shape this rule keeps taking, since every new sentence about a set is a
+    // new place a directory becomes text — so the invocation below deliberately does
+    // NOT declare the escape: with it, the fourth site would never be reached and this
+    // case would be green over a site it never read.
     await found('alpha');
     deleteSignatures(trees('alpha').publicRoot);
     const forgedProject = join(sandbox, `p-${FORGED}`);
@@ -488,6 +670,15 @@ describe('a project directory is text from outside the record', () => {
     }
     expect(said.lines.filter((line) => line.includes('no record here'))).toHaveLength(3);
     expect(said.lines.filter((line) => line.startsWith(`${flat(forgedBare)}: `))).toHaveLength(1);
+    // THE FOURTH SITE, read on its own: the sentence that names the uncovered paths ran
+    // (otherwise the loop above proves nothing about it), and the name it printed is
+    // the collapsed one.
+    const named = said.issues.filter((line) =>
+      line.includes('not every named path holds a record'),
+    );
+    expect(named).toHaveLength(1);
+    expect(named[0]).toContain(flat(forgedBare));
+    expect(named[0]).not.toContain(forgedBare);
   });
 });
 
@@ -502,10 +693,22 @@ describe('it is a READ, over every project of the set', () => {
     bare('not-a-project');
     // Read once first, so anything a first read builds (a projection cache) is already
     // there and the digest measures THIS invocation.
-    await mnema('verify', '--workspace', 'alpha', 'beta', 'not-a-project');
+    // The escape rides along so the exit assertion below stays a check that nothing
+    // went wrong: the set holds a path with no record on purpose (a verifier that
+    // opened a writer would do it there as readily as anywhere), and without the
+    // declaration the exit would be non-zero for a reason this case is not about.
+    await mnema('verify', '--workspace', 'alpha', 'beta', 'not-a-project', '--allow-no-record');
 
     const before = digest(sandbox);
-    const said = await mnema('verify', '--workspace', 'alpha', 'beta', 'not-a-project', '--global');
+    const said = await mnema(
+      'verify',
+      '--workspace',
+      'alpha',
+      'beta',
+      'not-a-project',
+      '--global',
+      '--allow-no-record',
+    );
     expect(said.failed, said.issues.join(' / ')).toBe(false);
     expect(said.lines.filter((line) => / public: /.test(line))).toHaveLength(2);
     expect(digest(sandbox)).toBe(before);

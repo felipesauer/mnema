@@ -35,6 +35,14 @@
  * sentences cannot disagree. They did: with the signatures deleted, the sentence said
  * `verified` and the exit said success, which made `mnema verify` a no-op as a gate
  * over a forged record.
+ *
+ * OVER A NAMED SET THE EXIT READS A SECOND THING, and the sentence above used to stop
+ * at the first. A level says how far the proof got over what was READ; it says nothing
+ * about whether what was read is what was NAMED, and a set with a mistyped path in it
+ * came back green over a project nobody verified. So `reportSet` asks the command for
+ * two answers — `requirementMet` and `coverageMet` — and both are the command's, for
+ * the reason the level is: a criterion decided here would be a second opinion about
+ * what the exit means.
  */
 
 import type {
@@ -101,6 +109,24 @@ export const DEFAULT_REQUIREMENT: LevelRequirement = 'chained';
  * uses for its own name.
  */
 export const VERIFY_VERB = 'verify';
+
+/**
+ * WHAT THE CALLER DECLARES TO TOLERATE A NAMED PATH THAT HOLDS NO RECORD — spelled
+ * once, because three sentences say it: the flag's own help, the closing statement when
+ * something was tolerated, and the line that says why the exit is non-zero when nothing
+ * was. Typed three times, the day it is renamed is the day two of them send a reader to
+ * a flag that does not exist.
+ *
+ * THE NAME IS THE PRODUCT'S OWN PHRASE, and `--allow-empty` was the alternative. This
+ * surface already prints *"no record here"* for a tree and for a path, and it already
+ * distinguishes an EMPTY TREE from an unfounded directory in as many words
+ * ({@link NO_PROJECT_THERE}) — a project between its first event and its first
+ * checkpoint has an empty committed tree and is entirely legitimate. So `--allow-empty`
+ * would name the wrong nothing, and would read as tolerating the one this verb has
+ * never failed on. It reads as what the CALLER tolerates, in the mould of `--require`,
+ * rather than as what the tool does.
+ */
+const ALLOW_NO_RECORD = '--allow-no-record';
 
 /** Returned by {@link parseRequirement} when the value names no requirement. */
 const INVALID_REQUIREMENT = Symbol('invalid-requirement');
@@ -170,23 +196,67 @@ const NO_PROJECT_THERE =
  *
  * A set of projects is the one shape of this verb where a reader cannot count the
  * coverage off the lines: paths collapse (two names of one project are one project),
- * and paths drop out (one that holds no record is outside the verdict). Both are
- * silent in the body, and both change what the exit code means — so the counts are
+ * and paths drop out of the LEVEL (one that holds no record was never replayed). Both
+ * are silent in the body, and both change what the exit code means — so the counts are
  * stated, and the RULE under them is stated with them, because an aggregate with
  * nothing qualifying it reads as a verdict over everything the caller named.
+ *
+ * THE RULE IT STATES USED TO END ONE CLAUSE EARLIER. It said a path holding no record
+ * *"is neither a pass nor a break: nothing was replayed there, so it is outside the
+ * verdict"* — which was true of the level and false of the exit, and the exit is what a
+ * CI step reads. Measured on the binary: the other two shapes of this verb already
+ * refused (a lone unfounded directory, and a set where every path holds none), and only
+ * the MIXTURE came back zero. So the sentence now says both halves — outside the level,
+ * inside the exit — and names the declaration that gives the old behaviour back.
+ *
+ * `tolerated` IS THE CALLER'S DECLARATION AND NOT THE OUTCOME, and it is worded only
+ * where something was actually tolerated: with no path holding a record there is
+ * nothing to have let through, and a line claiming the gap did not move the exit would
+ * sit directly above `Nothing was verified` saying it did.
  */
-function coverage(named: number, covered: number, without: number): string {
+function coverage(named: number, covered: number, without: number, tolerated: boolean): string {
   const distinct = covered + without;
   const set =
     covered === 0
       ? `no project covered, ${without} holding no record`
       : `${covered} project(s) covered${without === 0 ? '' : `, ${without} holding no record`}`;
+  const gap =
+    tolerated && without > 0 && covered > 0
+      ? ` \`${ALLOW_NO_RECORD}\` said otherwise, so the ${without} holding none did not move it.`
+      : '';
   return (
     `${named} path(s) named → ${distinct} distinct: ${set}. ` +
     'Two names of one record are one project — the same directory twice, ' +
     'a subdirectory of one already named, or one reached through a symlink. A path that ' +
-    'holds no record is neither a pass nor a break: nothing was replayed there, so it is ' +
-    'outside the verdict, and the verdict is the WEAKEST level any covered project reached.'
+    'holds no record is outside the LEVEL — nothing was replayed there — and the verdict ' +
+    'is the WEAKEST level any covered project reached. It is not outside the EXIT: ' +
+    'naming a path is asserting that it is a project, so one holding no record makes ' +
+    'this exit non-zero unless the caller says otherwise.' +
+    gap
+  );
+}
+
+/**
+ * WHY THE EXIT IS NON-ZERO WHEN EVERY VERDICT ON THE SCREEN READS AS A PASS — the
+ * sentence for a set that is not the set the caller named.
+ *
+ * It NAMES the paths and does not only count them, because the count is already in the
+ * closing statement and a count is not something a CI log can be acted on: the reader
+ * has to know WHICH path to found, correct or drop. It is the fourth site where a
+ * directory reaches a line, and it goes through {@link Named} like the other three.
+ *
+ * It is a FACT and not a refusal, which is the same shape {@link requirementNotMet}
+ * takes and for the same reason: the verb was asked to rule and it ruled — on the
+ * projects that were there. The one refusal this reading has is the case where it could
+ * not rule at all (`NOTHING_VERIFIED`), and wording this one as a second refusal would
+ * make a reading that answered look like a reading that failed to.
+ */
+function noRecordAtNamedPaths(dirs: readonly string[]): string {
+  return (
+    `not every named path holds a record: ${dirs.length} path(s) hold none ` +
+    `(${dirs.join(', ')}) — naming a path is asserting that it is a project. Run ` +
+    '`mnema init` in one that should be, correct the path, or pass ' +
+    `\`${ALLOW_NO_RECORD}\` to rule on the projects that were covered and leave these out.`
   );
 }
 
@@ -226,12 +296,15 @@ function requirementNotMet(
  * refusal that names a session's project (`served-patterns.ts`), reached here through
  * the most direct door there is: an argument on the command line.
  *
- * ONE FUNCTION AND EVERY SITE. The sites are three — the tree's label (which carries
- * the census and the issues with it), the line of a path that holds no record, and the
- * names beside the level in the requirement line — and a fourth that forgot would be
- * the one place a forged line still gets through. It cannot be forgotten silently: it
- * is a parameter, so a site that skipped it would be printing a raw path where every
- * other one prints this.
+ * ONE FUNCTION AND EVERY SITE. The sites are FOUR — the tree's label (which carries the
+ * census and the issues with it), the line of a path that holds no record, the names
+ * beside the level in the requirement line, and the paths named by
+ * {@link noRecordAtNamedPaths} — and a fifth that forgot would be the one place a
+ * forged line still gets through. This doc said THREE until the fourth arrived with the
+ * sentence that names the uncovered paths, which is the shape the rule keeps taking:
+ * every new sentence about a set is a new place a directory becomes text. It cannot be
+ * forgotten silently: it is a parameter, so a site that skipped it would be printing a
+ * raw path where every other one prints this.
  *
  * WHY IT IS A PARAMETER. `served-patterns.ts` reaches `@mnema/copilot`, and this module
  * is DECLARED eagerly — commander needs every option before it can route a word — so
@@ -266,8 +339,16 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
         'over all of them — the aggregate is the weakest, so no project passes on ' +
         "another's proof. The set is what you name and is never searched for: two " +
         'names of one record count once, and a path holding no record is reported, ' +
-        'left out of the verdict and counted at the end. Costs one full replay per ' +
-        'project',
+        'left out of the level, counted at the end, and makes the exit non-zero ' +
+        `unless ${ALLOW_NO_RECORD} says otherwise. Costs one full replay per project`,
+    )
+    .option(
+      ALLOW_NO_RECORD,
+      'for --workspace: accept a named path that holds no record, and rule on ' +
+        'the projects that do. Off by default, because naming a path is asserting ' +
+        'that it is a project — so a mistyped path in a CI step is news rather than ' +
+        'a silent pass. It tolerates ABSENCE and never a BREAK: a covered project ' +
+        'that fails still exits non-zero',
     )
     .addOption(
       enumeratedOption(
@@ -277,55 +358,82 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
         LEVEL_REQUIREMENTS,
       ),
     )
-    .action(async (opts: { require?: string; global?: boolean; workspace?: string[] }) => {
-      const { requiredLevel } = await import('@mnema/chain');
-      const { runVerify, runVerifyWorkspace } = await import('../commands/verify.js');
-      const requirement = parseRequirement(opts.require, wiring);
-      if (requirement === INVALID_REQUIREMENT) return;
-      const global = opts.global === true;
-      if (opts.workspace !== undefined) {
-        // `oneLine` is loaded HERE and not imported: see {@link Named} for the floor
-        // this verb would otherwise raise for every other verb in the product.
-        const { oneLine } = await import('../served-patterns.js');
-        reportSet(
-          wiring,
-          runVerifyWorkspace({ ...here(), requirement, global, named: opts.workspace }),
-          requiredLevel,
-          oneLine,
-        );
-        return;
-      }
-      const result = runVerify({ ...here(), requirement, global });
-      if (!result.ok) {
-        reportRefusal(wiring, { reason: 'NO_PROJECT' });
-        return;
-      }
-      for (const tree of result.trees) report(io, render, tree);
-      if (!result.requirementMet) {
-        // A break already said why the exit is non-zero — the FAILED headline and
-        // the issues under it. What needs a line of its own is the exit that comes
-        // from the CALLER's minimum over a record with no break in it, because
-        // there the summaries read as a pass. All of the criterion goes on it: what
-        // was asked for, what the record is, and — since the level is the weakest of
-        // several trees — which tree is the one at it.
-        if (result.record.ok) {
-          io.err(
-            render(
-              fact(
-                requirementNotMet(
-                  result.requirement,
-                  requiredLevel(result.requirement),
-                  result.record.level,
-                  result.record.scopes,
-                  'this record',
+    .action(
+      async (opts: {
+        require?: string;
+        global?: boolean;
+        workspace?: string[];
+        allowNoRecord?: boolean;
+      }) => {
+        const { requiredLevel } = await import('@mnema/chain');
+        const { runVerify, runVerifyWorkspace } = await import('../commands/verify.js');
+        const requirement = parseRequirement(opts.require, wiring);
+        if (requirement === INVALID_REQUIREMENT) return;
+        const global = opts.global === true;
+        const allowWithoutRecord = opts.allowNoRecord === true;
+        if (opts.workspace !== undefined) {
+          // `oneLine` is loaded HERE and not imported: see {@link Named} for the floor
+          // this verb would otherwise raise for every other verb in the product.
+          const { oneLine } = await import('../served-patterns.js');
+          reportSet(
+            wiring,
+            runVerifyWorkspace({
+              ...here(),
+              requirement,
+              global,
+              named: opts.workspace,
+              allowWithoutRecord,
+            }),
+            requiredLevel,
+            oneLine,
+          );
+          return;
+        }
+        // A DECLARATION WITH NO SUBJECT IS REFUSED RATHER THAN IGNORED. There are no
+        // named paths in a bare `verify`, so there is nothing here for this to
+        // tolerate — and the caller who wrote it believes they relaxed something. What
+        // a bare `verify` does about a directory holding no record is unchanged and is
+        // not this flag's to change: it refuses, as it always has.
+        if (allowWithoutRecord) {
+          reportUsage(
+            wiring,
+            `\`${ALLOW_NO_RECORD}\` is about the paths a set names, and this invocation named none`,
+            'Pass it with `--workspace <path...>`, or drop it.',
+          );
+          return;
+        }
+        const result = runVerify({ ...here(), requirement, global });
+        if (!result.ok) {
+          reportRefusal(wiring, { reason: 'NO_PROJECT' });
+          return;
+        }
+        for (const tree of result.trees) report(io, render, tree);
+        if (!result.requirementMet) {
+          // A break already said why the exit is non-zero — the FAILED headline and
+          // the issues under it. What needs a line of its own is the exit that comes
+          // from the CALLER's minimum over a record with no break in it, because
+          // there the summaries read as a pass. All of the criterion goes on it: what
+          // was asked for, what the record is, and — since the level is the weakest of
+          // several trees — which tree is the one at it.
+          if (result.record.ok) {
+            io.err(
+              render(
+                fact(
+                  requirementNotMet(
+                    result.requirement,
+                    requiredLevel(result.requirement),
+                    result.record.level,
+                    result.record.scopes,
+                    'this record',
+                  ),
                 ),
               ),
-            ),
-          );
+            );
+          }
+          io.fail();
         }
-        io.fail();
-      }
-    });
+      },
+    );
   return readsTheRecord(verify);
 }
 
@@ -340,6 +448,12 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
  * than one. The project is its directory, because a project has no other name.
  *
  * AND A DIRECTORY IS TEXT FROM OUTSIDE THE RECORD, so it goes through {@link named}.
+ *
+ * TWO CRITERIA CAN FAIL AT ONCE, AND BOTH ARE SAID. A set can hold a project too weak
+ * for `--require` AND a path that is no project, and each has its own fix — masking
+ * either behind the other sends a reader to correct half of what is wrong and run the
+ * command again. The coverage line comes first because it questions the SET: a reader
+ * who mistyped a path does not yet know what the level was over.
  */
 function reportSet(
   wiring: Wiring,
@@ -349,8 +463,10 @@ function reportSet(
 ): void {
   const { io, render } = wiring;
   let covered = 0;
+  const without: string[] = [];
   for (const project of result.projects) {
     if (project.kind === 'no-record') {
+      without.push(project.dir);
       io.out(render(statement(named(project.dir), NO_PROJECT_THERE)));
       continue;
     }
@@ -361,12 +477,17 @@ function reportSet(
   // projects and named by its role alone — it belongs to none of them.
   if (result.globalTree !== undefined) report(io, render, result.globalTree);
   io.out('');
-  io.out(coverage(result.named, covered, result.projects.length - covered));
-  if (result.requirementMet) return;
+  io.out(coverage(result.named, covered, without.length, result.allowWithoutRecord));
+  if (result.requirementMet && result.coverageMet) return;
   if (result.record === undefined) {
     // Nothing was covered, so there is no level to compare and no verdict to report.
     // It exits non-zero because the alternative is `mnema verify` passing a gate over
     // a set of directories that hold no record — the no-op this verb has been once.
+    //
+    // AND IT IS THE ONLY SENTENCE IN THIS CASE, however the coverage was declared.
+    // Every path here holds no record, so the line below would name all of them, one
+    // sentence under another, telling a reader that some of the set is missing where
+    // this one already says all of it is.
     reportRefusal(
       wiring,
       { reason: 'NOTHING_VERIFIED' },
@@ -378,7 +499,10 @@ function reportSet(
     );
     return;
   }
-  if (result.record.ok) {
+  if (!result.coverageMet) {
+    io.err(render(fact(noRecordAtNamedPaths(without.map(named)))));
+  }
+  if (!result.requirementMet && result.record.ok) {
     io.err(
       render(
         fact(
