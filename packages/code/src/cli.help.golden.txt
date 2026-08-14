@@ -187,6 +187,8 @@ $ mnema skill --help
 | Commands:
 |   move [options] <action> <id>  move a skill through the workflow (follows the
 |                                 skill; takes no --scope)
+|   export [options] <id>         write an adopted pattern as the SKILL.md an
+|                                 agent host reads (records nothing)
 |
 | What recording means here:
 |   Permanent — mnema is append-only and nothing deletes a fact. A public record
@@ -786,6 +788,38 @@ $ mnema skill move --help
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema skill export --help
+$ mnema skill export --help
+| Usage: mnema skill export [options] <id>
+|
+| write an adopted pattern as the SKILL.md an agent host reads (records nothing)
+|
+| Arguments:
+|   id                    the skill id (the value shown when it was proposed)
+|
+| Options:
+|   --out <dir>           the directory the <name>/SKILL.md is written under
+|                         (default: "./skills")
+|   --description <text>  what the host chooses this skill by; omitted, it is
+|                         derived from the body
+|   -h, --help            display help for command
+|
+| What it writes, and what it will not:
+|   <out>/<name>/SKILL.md — the frontmatter the skills specification defines, then the
+|   recorded body VERBATIM. Nothing summarizes, reformats or improves the body: it is
+|   what was signed.
+|   `description` is REQUIRED by the specification and the record holds none, so it is
+|   derived at export time — the first sentence of the body (or its first paragraph),
+|   collapsed to one line and cut to 1024 characters. `--description` overrides it. No
+|   model is asked for one anywhere.
+|   `name` must already BE a specification name (1–64 of a-z, 0-9 and -, no hyphen at
+|   either end, none doubled) because it has to equal the directory name. A recorded
+|   name that is not one is refused, never rewritten into one.
+|   Only an ADOPTED pattern is exported. A proposal put in a host’s skills directory is
+|   read as how the work is done here; a deprecated one is a retired way of working
+|   wearing the same face. There is no --force: adopt it, then export it.
+|   It records nothing — no event, no consultation — and it writes nowhere but --out.
 
 ### mnema run start --help
 $ mnema run start --help

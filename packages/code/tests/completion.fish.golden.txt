@@ -18,7 +18,7 @@ function __mnema_commands --description 'the subcommands one level of the tree o
         case 'decision'
             echo 'move supersede'
         case 'skill'
-            echo 'move'
+            echo 'move export'
         case 'run'
             echo 'start end help'
         case 'key'
@@ -148,6 +148,7 @@ complete -c mnema -f -n '__mnema_at "decision supersede"' -l color -x -a 'auto a
 
 # mnema skill
 complete -c mnema -f -n '__mnema_at "skill"' -a 'move' -d 'move a skill through the workflow (follows the skill; takes no --scope)'
+complete -c mnema -f -n '__mnema_at "skill"' -a 'export' -d 'write an adopted pattern as the SKILL.md an agent host reads (records nothing)'
 complete -c mnema -f -n '__mnema_at "skill"' -l body -r
 complete -c mnema -f -n '__mnema_at "skill"' -l scope -x -a 'public private global'
 complete -c mnema -f -n '__mnema_at "skill"' -l which -r
@@ -165,6 +166,16 @@ complete -c mnema -f -n '__mnema_at "skill move"' -l which -r
 complete -c mnema -f -n '__mnema_at "skill move"' -s V -l version
 complete -c mnema -f -n '__mnema_at "skill move"' -l color -x -a 'auto always never'
 complete -c mnema -f -n '__mnema_at "skill move"' -a 'review adopt reject deprecate'
+
+# mnema skill export
+complete -c mnema -f -n '__mnema_at "skill export"' -l out -r
+complete -c mnema -f -n '__mnema_at "skill export"' -l description -r
+complete -c mnema -f -n '__mnema_at "skill export"' -s h -l help
+complete -c mnema -f -n '__mnema_at "skill export"' -l body -r
+complete -c mnema -f -n '__mnema_at "skill export"' -l scope -x -a 'public private global'
+complete -c mnema -f -n '__mnema_at "skill export"' -l which -r
+complete -c mnema -f -n '__mnema_at "skill export"' -s V -l version
+complete -c mnema -f -n '__mnema_at "skill export"' -l color -x -a 'auto always never'
 
 # mnema memory
 complete -c mnema -f -n '__mnema_at "memory"' -l scope -x -a 'public private global'
