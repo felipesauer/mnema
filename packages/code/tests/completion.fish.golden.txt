@@ -24,7 +24,7 @@ function __mnema_commands --description 'the subcommands one level of the tree o
         case 'key'
             echo 'restore request enroll revoke help'
         case 'tail'
-            echo 'prune help'
+            echo 'list prune help'
     end
 end
 
@@ -356,11 +356,17 @@ complete -c mnema -f -n '__mnema_at "key revoke"' -s V -l version
 complete -c mnema -f -n '__mnema_at "key revoke"' -l color -x -a 'auto always never'
 
 # mnema tail
+complete -c mnema -f -n '__mnema_at "tail"' -a 'list' -d 'list the tails the record holds here, with the id `prune` takes'
 complete -c mnema -f -n '__mnema_at "tail"' -a 'prune' -d 'record that one whole tail was authorized to be cut (it removes nothing)'
 complete -c mnema -f -n '__mnema_at "tail"' -a 'help' -d 'display help for command'
 complete -c mnema -f -n '__mnema_at "tail"' -s h -l help
 complete -c mnema -f -n '__mnema_at "tail"' -s V -l version
 complete -c mnema -f -n '__mnema_at "tail"' -l color -x -a 'auto always never'
+
+# mnema tail list
+complete -c mnema -f -n '__mnema_at "tail list"' -s h -l help
+complete -c mnema -f -n '__mnema_at "tail list"' -s V -l version
+complete -c mnema -f -n '__mnema_at "tail list"' -l color -x -a 'auto always never'
 
 # mnema tail prune
 complete -c mnema -f -n '__mnema_at "tail prune"' -l reason -r

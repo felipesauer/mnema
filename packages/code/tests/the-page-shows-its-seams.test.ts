@@ -601,7 +601,7 @@ describe('A1: every site that echoes, every site that draws an edge, every site 
   });
 
   it('says which column is a tree at every list that has one, and nowhere else', () => {
-    // THE FOUR READINGS THAT PUT A TREE IN A COLUMN — found by the marker, and then read back
+    // THE FIVE READINGS THAT PUT A TREE IN A COLUMN — found by the marker, and then read back
     // against every site that names a scope at all.
     const marking = sources()
       .filter((file) => /asScope\(/.test(file.code))
@@ -616,6 +616,8 @@ describe('A1: every site that echoes, every site that draws an edge, every site 
       'presentation/provenance.ts',
       'presentation/references.ts',
       'presentation/search.ts',
+      // the tails a cut can be authorized for: the tree is where the waiver lands
+      'presentation/tails.ts',
     ]);
     // AND THE SITES THAT NAME A TREE AND ARE NOT A COLUMN, which is the other half of the
     // enumeration and the part a list of files cannot answer. Each of them puts the tree where a

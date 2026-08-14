@@ -218,6 +218,9 @@ $ mnema brief
 |
 | No pattern has been adopted here yet — which is not the same as there being no way
 | of working here. The record holds none to hand over.
+$ mnema tail list
+| 1 tail(s):
+|   <tail-own>  public   2 event(s) through <tail-head-an-empty-project-1>  the tail of <anchor>  ·  no waiver
 $ mnema verify
 | public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; 1 committed key(s) without a tail (see census — informational, not a break); external witness (T3): not covered — enable an anchor or push to a shared remote
 |   census [key-without-tail] public <backup-key-fingerprint>: committed public key has no tail on disk — the tail may have been dropped (a botched merge), never written (an empty tail is not versioned), or removed
@@ -1237,6 +1240,11 @@ $ mnema brief
 | for its id.
 |
 | - **One slice per PR** · `<skill-slices>`
+$ mnema tail list
+| 3 tail(s):
+|   <tail-own>  public   31 event(s) through <tail-head-a-populated-project-1>  the tail of <anchor>  ·  no waiver
+|   <tail-private>  private  8 event(s) through <tail-head-a-populated-project-2>  the tail of <anchor>  ·  no waiver
+|   <tail-global>  global   4 event(s) through <tail-head-a-populated-project-3>  the tail of <anchor>  ·  no waiver
 $ mnema verify
 | public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; 1 committed key(s) without a tail (see census — informational, not a break); external witness (T3): not covered — enable an anchor or push to a shared remote
 |   census [key-without-tail] public <backup-key-fingerprint>: committed public key has no tail on disk — the tail may have been dropped (a botched merge), never written (an empty tail is not versioned), or removed
