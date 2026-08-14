@@ -2327,7 +2327,7 @@ describe('mnema CLI — run (the session), end to end', () => {
     //
     // It used to assert commander's own sentence, `required option '--which <agent>'
     // not specified`. That sentence no longer reaches a stream: the parser's no is
-    // said in the product's voice now (`wiring/usage.ts`), built from the very
+    // said in the product's voice now (`wiring/misuse.ts`), built from the very
     // declaration this case is about — which is why the discriminant survived the
     // change intact. The flags come from the `requiredOption`, and the half after the
     // colon is its help.

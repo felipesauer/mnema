@@ -71,6 +71,7 @@ verbatim. The surfaces never upgrade a verdict into a stronger claim.
 | **Gates protect the record** | They protect its *shape*, not its contents. A gate refuses an illegal transition; it is not access control. Anyone who can run the CLI writes as this machine's identity. |
 | **A lost key can be restored** | Only from the backup key `mnema init` makes, and only where the record proves that key a member: the **committed project tree**. `mnema key restore` is that path — local, offline, no service to ask, because anything able to hand your identity back could forge it. The private and global trees are born knowing one key, so a lost key cannot be replaced in them; they are uncommitted, so the disk that takes the key takes them anyway. |
 | **Your machines are one author** | True for machines the record proves belong to one identity — which is what enrolling a second machine records. A machine nobody vouched for writes as a *different* identity, honestly and permanently; that is not a bug to fix later, it is what an unvouched key means. When the record proves a key belongs to **two** identities, no command picks one for you: the write is refused until you say which. |
+| **What a run cost** | Not proven at all, and `mnema usage` says so on its own last line. The record holds no cost — deliberately: the number lives in Claude Code's transcripts, which the host deletes on a retention it decides, so a cost recorded in the chain would be a signed figure whose only witness is gone in weeks. So the verb crosses the two readings when you ask, reports **tokens and a model id — never dollars, and never a price table**, and names the host session it read so you can check the same file. Which session belongs to which run is that command's **inference from two clocks**, not a fact the record states: one session in a run's window is attributed, more than one is named and *not* attributed, and none says `no transcript` rather than `0`. |
 | **Credentials stay out of the record** | Only the ones mnema *recognizes*. A value in a known format — a cloud key, an API token, a PEM private key, a password inside a URL — is replaced with a typed placeholder before anything is written, and the reply names what was replaced. A proprietary token, a password written out in prose, a base64 blob: those are written verbatim, and nothing deletes a fact afterwards. It reduces the damage; it does not make the record safe to paste secrets into. |
 
 The honest summary: **local cryptography covers alteration; an external witness
@@ -314,6 +315,38 @@ open run has been open, and how long since anything was recorded in it — and
 
 Working the CLI yourself needs no run: the identity that signs each fact already
 carries the authority a run exists to delegate.
+
+### What those sessions cost, which the record does not hold
+
+`mnema usage` puts a run beside what Claude Code spent while it was open:
+
+```sh
+mnema usage
+#> 2 run(s):
+#>   019fa572-32c2-…  release-bot     2026-08-13T09:02:11.004Z → 2026-08-13T11:40:52.881Z  in 4211 · out 88190 · cache-read 3120044 · cache-write 502113 tokens · 214 message(s) · claude-opus-5 · session 03e234a3-89fc-…
+#>   019fa4e1-77aa-…  release-bot     2026-08-12T18:18:34.870Z → open  no transcript
+#>
+#> Read from /home/you/.claude/projects — 7 host session(s) there record work in this project.
+#> These counts come from Claude Code's own transcripts on this machine, not from the record: …
+```
+
+**Nothing is recorded, and there is no field for it.** The chain deliberately has
+none: the host's transcripts expire, so a cost written into the record would be a
+signed number whose only witness deletes itself. The verb reads those transcripts for
+`usage`, the model id and a timestamp — never a line of the conversation — and writes
+nothing anywhere.
+
+**It refuses to guess.** One host session inside a run's window is attributed and
+**named**, so you can open the same file it read. More than one is named and *not*
+attributed — there is no tie-break that is not invented. None says `no transcript`,
+never `0`, because "nobody recorded what this cost" and "this cost nothing" are
+different pieces of news.
+
+**Tokens and a model id. Never dollars.** No price table is carried, so nothing here
+can quietly age into a wrong figure.
+
+Which host session belongs to which run is the command's own inference from the two
+clocks — the record does not state it, and the last line of the output says so.
 
 ### Bringing a second machine into your identity
 

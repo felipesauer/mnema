@@ -1,7 +1,7 @@
 /**
  * WHAT THE BARE NAME OFFERS — the doors, and the page they are drawn as.
  *
- * `mnema` with nothing after it used to print the catalogue: twenty-nine verbs at once,
+ * `mnema` with nothing after it used to print the catalogue: thirty verbs at once,
  * with the options above them. That is the right answer for somebody who knows what they
  * are looking for and the wrong one for somebody who has just typed the name of a program.
  * So the name ASKS, and this is what it asks with.
