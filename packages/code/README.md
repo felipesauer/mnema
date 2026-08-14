@@ -62,6 +62,7 @@ verbatim. The surfaces never upgrade a verdict into a stronger claim.
 |---|---|
 | **`verify` passes** | Nothing *verifiable* is broken: the hash chain holds and every signature it found checks out. It is **not** a claim that every event is signed — the verdict names the **level** it reached (`verified (T1/T2/T4)`, `… up to the last checkpoint`, or `verified (T1 only) — no signature was checked`), and only the first of those means every event is covered. |
 | **`verify` covered the record** | Both trees of the project: the committed one and this machine's private one, each with its own verdict under its own name. The exit code is the **weakest** of them, so a gate cannot pass because one tree is healthy. It used to cover the committed tree alone, which said nothing about signed facts written `--scope private`. This machine's **global** tree is a third record, shared by every project on the disk; `mnema verify --global` covers it, and nothing does by default. |
+| **`verify` covered every project** | Only the ones you **named**: `mnema verify --workspace <path...>` gives one verdict over the projects at those paths, and a bare `verify` covers the project you are standing in. The set is never searched for — nothing walks the disk looking for a `.mnema/`, so no verdict of yours covers a project you did not name. Two names of one record (the same path twice, a subdirectory of one already named, a symlink) count **once**; a named path with no record is reported, left **out** of the verdict, and counted at the end. The aggregate is the weakest project's, so nothing passes on another project's proof — and a set in which no path holds a record exits non-zero rather than reading as a pass over nothing. Costs one full replay per project. |
 | **A tree with no record** | Reported as exactly that, and it moves neither the verdict nor the exit. The private tree is gitignored, so a fresh clone has none — and *absent* is not *broken*. |
 | **Events are signed** | True up to the last checkpoint. Events written after it rest on the hash chain alone, and `verify` reports that count separately rather than folding it into a pass. A record with **no** verified checkpoint at all is reported as `T1 only`: the hash chain held and no signature was checked. |
 | **The record could be read** | Part of the verdict, not an assumption. A stored line that will not parse is reported as an `UNREADABLE` issue naming the tail and the position — never a green over bytes nobody can interpret, and never a parser message with no address in it. |
@@ -134,10 +135,17 @@ mnema guard reopen "$TASK" --actor "$ME"
 mnema verify
 #> public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; …
 #> private: no record here — nothing has been written to this tree on this machine, …
+
+# Auditing several projects? Name them, and get ONE verdict over all of them.
+mnema verify --workspace ~/work/api ~/work/web
+#> /home/you/work/api public: local integrity verified (T1/T2/T4); …
+#> /home/you/work/web public: local integrity FAILED — see issues; …
+#> 2 path(s) named → 2 distinct: 2 project(s) covered. …
 ```
 
-`mnema verify` exits non-zero when the record is broken — in **either** tree, and
-the line says which — so it drops into CI as a check with no extra wiring.
+`mnema verify` exits non-zero when the record is broken — in **either** tree, in
+**any** project it was told to cover, and the line says which — so it drops into
+CI as a check with no extra wiring.
 **What "broken" means is the caller's to declare:**
 `--require=signed` also fails when any event of any tree it covered is not
 covered by a verified

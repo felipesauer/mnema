@@ -109,6 +109,14 @@
  * forever. It covered the committed tree ALONE until the private tree's signed facts
  * were found to be outside every verdict the product gave.
  *
+ * AND IT IS THE ONE VERB OF THIS SURFACE THAT COVERS MORE THAN ONE PROJECT, which the
+ * paragraph above described as a fixed property of every verb here: `--workspace
+ * <path...>` gives one verdict over the projects the caller NAMES, folded by the same
+ * rule and exiting on the weakest of them. It is not a fourth set of trees found by a
+ * different rule — each named path resolves exactly as a `cwd` does — and it is named
+ * rather than discovered, because a CLI has no host to announce a workspace and a verb
+ * that walked the disk would be guessing which projects the auditor meant.
+ *
  * And `brief`, which is a family of one and reads unlike all of them: every verb
  * above answers whoever ran it, and this one composes a FILE for a reader that never
  * asked. `mnema brief > AGENTS.md` puts the decisions in force and the adopted

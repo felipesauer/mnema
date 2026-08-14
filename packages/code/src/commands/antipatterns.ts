@@ -15,10 +15,14 @@
  * doing what they should rather than a clash.
  *
  * ONE PROJECT's record, which is what a command run in a directory is about — `cwd`
- * resolves one project and there is no workspace here to span. The MCP tool of the
- * same name is opened over several projects at once, so it answers with one set of
- * shapes per record and never adds two together; this answers about the record it was
- * run in, which is the same fold over the same trees.
+ * resolves one project, and nothing here is handed a second one. THE REASON GIVEN USED
+ * TO BE WIDER AND IS NOW FALSE: it read *"there is no workspace here to span"*, and
+ * `mnema verify --workspace` spans one — the caller NAMES the projects, so a CLI verb
+ * can cover several without a host to announce them. What survived is the shape of THIS
+ * read: it is asked about the directory it was run in, and it is handed no set. The MCP
+ * tool of the same name is opened over several projects at once, so it answers with one
+ * set of shapes per record and never adds two together; this answers about the record it
+ * was run in, which is the same fold over the same trees.
  *
  * Read-only: it reads the present trees' tails and folds them with the copilot's
  * pure `antipatterns`. No cache, no writer, no key, and no actor (the shapes are

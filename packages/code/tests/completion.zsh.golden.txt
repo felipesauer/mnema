@@ -121,7 +121,7 @@ _mnema_flags() {
     'tail') echo '-h --help -V --version --color' ;;
     'tail list') echo '-h --help -V --version --color' ;;
     'tail prune') echo '--reason --which -h --help -V --version --color' ;;
-    'verify') echo '--global --require -h --help -V --version --color' ;;
+    'verify') echo '--global --workspace --require -h --help -V --version --color' ;;
     'mcp') echo '--project -h --help -V --version --color' ;;
     'repl') echo '-h --help -V --version --color' ;;
     'completion') echo '-h --help -V --version --color' ;;
