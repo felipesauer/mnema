@@ -1,10 +1,18 @@
 /**
  * The `mnema tail` wiring: what it declares, and what it prints.
  *
- * A group with one subcommand, and the shape is `key`'s rather than `task`'s: its
- * subject is not a workflow entity but the record's own storage, so there is no
- * birth, no state and no `move` — there is one act, and it is authorizing the cut of
- * a whole tail.
+ * A group of two, and the shape is `key`'s rather than `task`'s: its subject is not
+ * a workflow entity but the record's own storage, so there is no birth, no state and
+ * no `move` — there is one act, authorizing the cut of a whole tail, and the reading
+ * that says which tails there are to act on.
+ *
+ * THE READING IS HERE BECAUSE THE ACT TAKES AN ID NOTHING PRINTED. `prune`'s
+ * argument is a tail id, and until `list` existed no read of this product put one on
+ * a screen — the help said *"as `verify` spells it"* and `verify` spells a COUNT
+ * (`1 tail(s)`), so the only way to use the verb was to read `.mnema/tails/` by
+ * hand. The two are declared together now, and the argument's help points at the
+ * verb that actually spells it (`the-verb-says-which-tails.test.ts` is what holds
+ * that sentence to being true).
  *
  * THE TAIL IS A POSITIONAL and the reason is what the verb is about: it is the whole
  * subject of the command and competes with nothing. `--reason` is a REQUIRED flag,
@@ -31,6 +39,7 @@ import type { Command } from 'commander';
 import { fact } from '../presentation/detail.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
+import { writeLines } from './io.js';
 import { declaredAgent } from './options.js';
 import { reportRecorded, reportRefusal } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
@@ -54,9 +63,31 @@ export function registerTail(program: Command, wiring: Wiring): Declared {
   const tail = program.command('tail').description("authorize a cut in the record's own tails");
 
   tail
+    .command('list')
+    .description('list the tails the record holds here, with the id `prune` takes')
+    .addHelpText(
+      'after',
+      [
+        '',
+        'What each line says, and why it is on it:',
+        '  The id is whole — it is what `mnema tail prune` takes.',
+        '  The tree is where a waiver over that tail has to land, so `prune` writes there.',
+        '  The events and the head are what a waiver would claim; `prune` reads them again.',
+        '  `cut authorized` means a waiver in that same tree already authorizes the cut.',
+        '  Nothing here removes anything, and a cut this lists is still yours to carry out.',
+      ].join('\n'),
+    )
+    .action(async () => {
+      const { runTailList } = await import('../commands/tail-list.js');
+      const { tailReport } = await import('../presentation/tails.js');
+      const listing = runTailList(here());
+      writeLines(io, tailReport(render, listing.tails, listing.trees));
+    });
+
+  tail
     .command('prune')
     .description('record that one whole tail was authorized to be cut (it removes nothing)')
-    .argument('<tail>', 'the tail to cut, as `verify` spells it: <fingerprint>-<installation>')
+    .argument('<tail>', 'the tail to cut, as `tail list` spells it: <fingerprint>-<installation>')
     .requiredOption('--reason <text>', 'why it is being cut (recorded in the fact)')
     .option(
       '--which <agent>',

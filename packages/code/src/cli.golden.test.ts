@@ -231,6 +231,13 @@ function assertNothingVolatile(text: string): void {
     // Anything key-shaped: a base64url run that long is a public half or a
     // signature, and neither is the same twice.
     /[A-Za-z0-9_-]{44,}/g,
+    // An INSTALLATION id — the half of a tail id after the fingerprint. It is added
+    // because it is the one volatile shape that got through: `tail list` prints tail
+    // ids of trees the fixture had not named, the fingerprint in front of each was
+    // ranked, and what reached the golden looked half-substituted rather than
+    // volatile. Nothing else in a transcript is a bare 32-hex run — a fingerprint is
+    // 64 and is ranked before this runs.
+    /\b[0-9a-f]{32}\b/g,
   ];
   for (const pattern of volatile) {
     expect(text.match(pattern) ?? [], `unnamed volatile value: ${pattern}`).toEqual([]);
@@ -354,6 +361,23 @@ async function readEverything(label: string, ids: Record<string, string>): Promi
   // its bytes are pinned for a person to read as a document — over an empty record and
   // over a full one, which are the two things it has to say honestly.
   await mnema('reads', 'brief');
+  // The tails the record holds here, with the id `tail prune` takes — the read that
+  // exists because nothing else in the product ever printed one.
+  //
+  // THE HEADS IT PRINTS ARE NAMED OFF THE LINES THAT PRINT THEM. A head is the hash
+  // of a tail's last entry, so every write mints a new one and a round of this
+  // fixture cannot know them in advance; unnamed, the second one is what `scrub`
+  // refuses as a second fingerprint. The name carries the round and the line, so two
+  // rows swapped would put a different name in each place — the property every other
+  // substitution in this file has. Matched on ` through `, never on the bare shape:
+  // the tail id on the same line LEADS with a fingerprint, and naming that would
+  // rewrite the machine's key everywhere else in the transcript.
+  for (const [index, line] of (await mnema('reads', 'tail', 'list')).entries()) {
+    const head = line.match(/ through ([0-9a-f]{64})\b/)?.[1];
+    if (head !== undefined && !named.has(head)) {
+      name(head, `tail-head-${label.replace(/[^a-z]+/g, '-')}-${index}`);
+    }
+  }
   await mnema('reads', 'verify');
 }
 
@@ -630,6 +654,18 @@ beforeAll(async () => {
   // no tail at all: the backup key `init` made, which is exactly the one a person
   // meets in the census and might try to account for.
   const ownTail = name(listTails({ root: join(repo, PROJECT_DIR) })[0] as string, 'tail-own');
+  // The tails of the two trees BESIDE the committed one, which `tail list` prints and
+  // nothing else in this transcript ever did. One person, three tails: the
+  // installation suffix is minted per chain, so each of these is a value of its own
+  // that has to be named — the fingerprint in front of it is this machine's key and
+  // is ranked, which is exactly what makes the leak easy to miss (the line reads as
+  // half-substituted rather than as volatile).
+  const beside = resolveTrees(repo, {
+    home: join(sandbox, 'home'),
+    xdgDataHome: join(sandbox, 'data'),
+  });
+  name(listTails({ root: beside.projectPrivate as string })[0] as string, 'tail-private');
+  name(listTails({ root: beside.global })[0] as string, 'tail-global');
   await mnema('writes', 'tail', 'prune', ownTail, '--reason', 'cut myself');
   await mnema(
     'writes',
@@ -769,6 +805,7 @@ beforeAll(async () => {
     ['key', 'request'],
     ['key', 'enroll'],
     ['key', 'revoke'],
+    ['tail', 'list'],
     ['tail', 'prune'],
   ]) {
     section('help', `mnema ${pair.join(' ')} --help`);

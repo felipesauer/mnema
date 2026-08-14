@@ -2,11 +2,11 @@
  * FORM A — a list of items: a header that says how much there is, then one line
  * per item, in aligned columns.
  *
- * Six of the CLI's readings are this form: `search`, `exposure`, `refs`,
- * `timeline`, `accountability` and `skills`. Before this module each of them
- * wrote its own line by hand, and that is exactly why they drifted — two spaces
+ * Seven of the CLI's readings are this form: `search`, `exposure`, `refs`,
+ * `timeline`, `accountability`, `skills` and `tail list`. Before this module each of
+ * them wrote its own line by hand, and that is exactly why they drifted — two spaces
  * here, a padded column there, an id last in one report and first in another. The
- * shape lives here now, so a change to it is one edit and not six.
+ * shape lives here now, so a change to it is one edit and not seven.
  *
  * ONE LINE PER ITEM IS THE POINT OF THE FORM, not a detail of it. The header says
  * how many items follow, so a reader counts them by counting lines: an item that

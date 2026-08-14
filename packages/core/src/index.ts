@@ -123,6 +123,7 @@ export {
   type BirthProbe,
   chainRootForScope,
   type DiscoveryEnv,
+  type HeldTail,
   locateEntityScope,
   locateEntityScopeWith,
   locateTailScope,
@@ -135,6 +136,8 @@ export {
   resolveTrees,
   type Scope,
   TreeUnavailableError,
+  tailsHeld,
+  treesSearched,
 } from './topology/index.js';
 export {
   type Clock,

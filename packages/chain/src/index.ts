@@ -108,7 +108,13 @@ export {
   verifyChain,
   type WitnessStatus,
 } from './chain/verify.js';
-export { type TailStanding, type TailWaiver, tailStanding } from './chain/waiver.js';
+export {
+  standingOf,
+  type TailStanding,
+  type TailWaiver,
+  tailStanding,
+  tailWaiversIn,
+} from './chain/waiver.js';
 export {
   ChainWriter,
   DEFAULT_CHECKPOINT_EVERY,

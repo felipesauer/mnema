@@ -10,11 +10,14 @@
  * written, or removed") and the disk held nothing to choose between them. A waiver
  * is the fact that answers the third one, and only it.
  *
- * TWO READERS, ONE READING OF THE DISK. {@link tailStanding} is asked by the
+ * THREE READERS, ONE READING OF THE DISK. {@link tailStanding} is asked by the
  * operation that BUILDS a waiver (to fill in what it claims) and by the door that
- * ACCEPTS one (to check the claim). Written as two readings, the day one of them
- * counted a torn final line differently from the other would be the day an honest
- * waiver started being refused — or a lying one accepted.
+ * ACCEPTS one (to check the claim); {@link standingOf} is the same rule, asked by
+ * the reading that ENUMERATES the tails of a tree with the entries already in hand.
+ * Written as separate readings, the day one of them counted a torn final line
+ * differently from the others would be the day an honest waiver started being
+ * refused — or a lying one accepted, or a listed tail said to hold a count the
+ * verb that cuts it disagrees with.
  *
  * WHY THE CHECK IS THE WRITER'S AND NEVER THE READER'S. The waiver exists to
  * survive the cut it authorizes, so a moment after it is honest, the tail it names
@@ -72,7 +75,26 @@ export function tailStanding(
   tailId: string,
   upcasters: UpcasterRegistry,
 ): TailStanding | undefined {
-  const entries = readTail(layout, tailId, upcasters).entries;
+  return standingOf(readTail(layout, tailId, upcasters).entries);
+}
+
+/**
+ * The same reading, over entries a caller ALREADY HAS — the rule itself, with the
+ * disk access left to {@link tailStanding}.
+ *
+ * It exists for the reader that takes a whole TREE at once: listing what every tail
+ * of a tree holds needs each tail's entries anyway (the waivers in it are found by
+ * {@link tailWaiversIn}, which takes exactly those entries), and asking
+ * {@link tailStanding} on top of that would read every tail a second time. Two
+ * readings of one tail is what this module's header refuses, and it refuses it here
+ * for the narrower reason too: the second read happens later, so a tail appended to
+ * in between would have its standing counted against entries nobody looked at.
+ *
+ * Everything the standing MEANS is stated on {@link TailStanding} — including why
+ * the anchor is the last entry's and not the first's. Nothing is decided here that
+ * was not decided there.
+ */
+export function standingOf(entries: readonly Entry[]): TailStanding | undefined {
   const last = entries.at(-1);
   if (last === undefined) return undefined;
   return { throughHash: last.link.hash, eventCount: entries.length, who: last.event.who };

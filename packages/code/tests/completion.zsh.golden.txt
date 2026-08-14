@@ -18,7 +18,7 @@ _mnema_commands() {
     'skill') echo 'move' ;;
     'run') echo 'start end help' ;;
     'key') echo 'restore request enroll revoke help' ;;
-    'tail') echo 'prune help' ;;
+    'tail') echo 'list prune help' ;;
   esac
 }
 
@@ -73,6 +73,7 @@ _mnema_described() {
       'revoke:retire a key from this identity, from this point forward' \
       'help:display help for command' ;;
     'tail') printf '%s\n' \
+      'list:list the tails the record holds here, with the id `prune` takes' \
       'prune:record that one whole tail was authorized to be cut (it removes nothing)' \
       'help:display help for command' ;;
   esac
@@ -116,6 +117,7 @@ _mnema_flags() {
     'key enroll') echo '-h --help -V --version --color' ;;
     'key revoke') echo '--reason -h --help -V --version --color' ;;
     'tail') echo '-h --help -V --version --color' ;;
+    'tail list') echo '-h --help -V --version --color' ;;
     'tail prune') echo '--reason --which -h --help -V --version --color' ;;
     'verify') echo '--global --require -h --help -V --version --color' ;;
     'mcp') echo '--project -h --help -V --version --color' ;;
@@ -180,6 +182,7 @@ _mnema_values() {
     'key enroll:--color') echo 'auto always never' ;;
     'key revoke:--color') echo 'auto always never' ;;
     'tail:--color') echo 'auto always never' ;;
+    'tail list:--color') echo 'auto always never' ;;
     'tail prune:--color') echo 'auto always never' ;;
     'verify:--require') echo 'chained signed witnessed' ;;
     'verify:--color') echo 'auto always never' ;;
