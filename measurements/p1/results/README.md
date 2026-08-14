@@ -9,11 +9,17 @@ A run lands one directory named for its date and mode — `2026-08-14-pilot/`,
 
 | | |
 |---|---|
-| `cells.jsonl` | **one line per cell.** The result |
+| `cells.jsonl` | **one line per cell** — two for a re-run cell, below. The result |
 | `raw/` | the agent's own output per cell, as it arrived. Evidence, not data |
 | `diffs/` | what the agent wrote, per cell, excluding the record itself |
 
 A second run is a second directory. Nothing here is edited after it lands.
+
+**And a re-run cell leaves both of its lines.** [`reading.md`](../reading.md) allows a cell that
+came back `harness_error` or `ruler_broken` — the instrument failing, never the agent choosing —
+to be run again exactly once. The failed attempt is **not** removed: it stays in the file with
+its status, and the reading takes the line whose `status` is `ok`. That is the only case in
+which the trio `fixture` · `arm` · `run` appears twice, and the status is what tells them apart.
 
 ## The line
 
