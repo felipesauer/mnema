@@ -369,11 +369,15 @@ describe('nothing builds that sentence on its own', () => {
   });
 
   it('names the one place outside this package that still words its own', () => {
-    // The domain refuses an unknown tail with a sentence of the same family, and it
-    // interpolates the caller's value raw. `oneLine` lives in this package and the core
-    // cannot reach it, so closing that one is a slice of its own with its own count —
-    // and it is RECONCILED here rather than left silent: the day it is closed, this
-    // case goes red and the exception is deleted instead of outliving its reason.
+    // `authorizeTailPrune` words two refusals of this family and interpolates the
+    // caller's value into both. It is NOT this defect: by the time either sentence is
+    // built, the value has been matched against the record — one against the tail this
+    // writer appends to, the other against the tree that was found holding it — so a
+    // name carrying a newline is refused before it gets there. What it is, is the same
+    // PHRASE in a package `oneLine` does not reach, which makes closing it a slice with
+    // its own count. It is RECONCILED here rather than left silent: the day it is
+    // closed, this case goes red and the exception is deleted instead of outliving its
+    // reason.
     const elsewhere = everyPackageSource()
       .filter(({ path }) => !path.startsWith(join('code', 'src')))
       .filter(({ text }) => INTERPOLATED.test(text) || CONCATENATED.test(text))
