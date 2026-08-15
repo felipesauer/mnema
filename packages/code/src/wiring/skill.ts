@@ -193,7 +193,8 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
       reportReplacement(result, io);
       return;
     }
-    reportRefusal(wiring, result, { UNKNOWN_SKILL: `No skill ${id} here.` });
+    const { noSuchRecord } = await import('./no-such-record.js');
+    reportRefusal(wiring, result, { UNKNOWN_SKILL: noSuchRecord('skill', id) });
   });
 
   // `skill export <id>` — the pattern as the file an agent host reads. It takes the
@@ -241,7 +242,8 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
       ...(opts.description !== undefined ? { description: opts.description } : {}),
     });
     if (!result.ok) {
-      reportRefusal(wiring, result, { UNKNOWN_SKILL: `No skill ${id} here.` });
+      const { noSuchRecord } = await import('./no-such-record.js');
+      reportRefusal(wiring, result, { UNKNOWN_SKILL: noSuchRecord('skill', id) });
       return;
     }
     writeLines(io, exportReport(render, result));

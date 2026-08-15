@@ -24,7 +24,8 @@ export function registerNextActions(program: Command, wiring: Wiring): Declared 
       const { runNextActions } = await import('../commands/next-actions.js');
       const result = runNextActions(here(), { id });
       if (!result.ok) {
-        reportRefusal(wiring, result, { UNKNOWN_TASK: `No task ${id} here.` });
+        const { noSuchRecord } = await import('./no-such-record.js');
+        reportRefusal(wiring, result, { UNKNOWN_TASK: noSuchRecord('task', id) });
         return;
       }
       if (opts.json === true) {

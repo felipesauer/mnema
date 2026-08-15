@@ -143,7 +143,8 @@ export function registerTask(program: Command, wiring: Wiring): Declared {
         reportReplacement(result, io);
         return;
       }
-      reportRefusal(wiring, result, { UNKNOWN_TASK: `No task ${id} here.` });
+      const { noSuchRecord } = await import('./no-such-record.js');
+      reportRefusal(wiring, result, { UNKNOWN_TASK: noSuchRecord('task', id) });
     },
   );
   return mutatesTheRecord(task);
