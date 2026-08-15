@@ -27,7 +27,8 @@ export function registerShow(program: Command, wiring: Wiring): Declared {
       const { recordReport } = await import('../presentation/record.js');
       const result = runShow(here(), { id });
       if (!result.ok) {
-        reportRefusal(wiring, result, { UNKNOWN_RECORD: `No record ${id} here.` });
+        const { noSuchRecord } = await import('./no-such-record.js');
+        reportRefusal(wiring, result, { UNKNOWN_RECORD: noSuchRecord('record', id) });
         return;
       }
       if (opts.json === true) {

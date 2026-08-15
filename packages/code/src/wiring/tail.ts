@@ -111,9 +111,8 @@ export function registerTail(program: Command, wiring: Wiring): Declared {
         ...(run !== undefined ? { run } : {}),
       });
       if (!result.ok) {
-        reportRefusal(wiring, result, {
-          UNKNOWN_TAIL: `No tail ${named} holds events in any tree here.`,
-        });
+        const { noSuchRecord } = await import('./no-such-record.js');
+        reportRefusal(wiring, result, { UNKNOWN_TAIL: noSuchRecord('tail', named) });
         return;
       }
       // What was recorded, then where the files still are, then how far a cut
