@@ -76,7 +76,8 @@ export function registerGuard(program: Command, wiring: Wiring): Declared {
           ...(opts.which !== undefined ? { which: opts.which } : {}),
         });
         if (!result.ok) {
-          reportRefusal(wiring, result, { UNKNOWN_TASK: `No task ${id} here.` });
+          const { noSuchRecord } = await import('./no-such-record.js');
+          reportRefusal(wiring, result, { UNKNOWN_TASK: noSuchRecord('task', id) });
           return;
         }
         if (opts.json === true) {
