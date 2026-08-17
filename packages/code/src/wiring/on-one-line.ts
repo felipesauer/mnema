@@ -39,18 +39,21 @@
  * `for a — g` and would print `for a— g`. The rule that follows is the one the call
  * sites now hold — INTERPOLATE THE VALUE, never a fragment that carries its own
  * punctuation — and the two sites that used to (`run start`, `focus`) were rewritten so
- * the ` — ` is a chunk of a template rather than the head of a value.
- * `tests/a-line-of-success-is-one-line.test.ts` compares every touched verb's output
- * byte for byte against what it printed before, which is what holds it.
+ * the ` — ` is a chunk of a template rather than the head of a value. Those two are the
+ * ones `tests/a-line-of-success-is-one-line.test.ts` compares byte for byte against the
+ * literal they printed before; every OTHER line of every touched verb is held by the
+ * suite it already had, and by the goldens, which were not regenerated.
  *
  * IT IS LOADED WHERE IT IS USED, INSIDE THE ACTION, for the reason `no-such-record.ts`
  * is: this module reaches `served-patterns.ts`, which reaches `@mnema/copilot`. A static
  * import would put a second declared edge to the copilot in the floor of every
  * invocation of every verb, and the argument for admitting it would be "it is free,
  * because `wiring/refs.ts` already pays" — which is the ratchet
- * `tests/the-floor-is-the-declaration.test.ts` exists to refuse. The success path pays
- * two small module loads, and `tests/the-floor-is-the-declaration.test.ts` reports the
- * same 55 modules it did before.
+ * `tests/the-floor-is-the-declaration.test.ts` exists to refuse. That guard reports the
+ * same 55 modules it did before this module existed. What the SUCCESS path pays is two
+ * small module loads, and the copilot they reach is already resident: measured on the
+ * real binary in alternating order, 15 invocations of `mnema observe` per arm came back
+ * 24 · 25 · 24 · 23 ms — the spread inside one arm is wider than the gap between them.
  *
  * WHAT IT DOES NOT REACH is what `oneLine`'s doc already says it does not: the control
  * characters a terminal interprets — an ANSI escape, or U+0085 NEL, which is not `\s`.

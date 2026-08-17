@@ -47,11 +47,11 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
       // it cannot — `mnid:` and 64 hex (see {@link onOneLine}).
       if (result.created) {
         io.out(onOneLine`Initialized mnema project at ${result.root}`);
-        io.out(render(fact(onOneLine`identity: ${result.anchor}`)));
+        io.out(render(fact(`identity: ${result.anchor}`)));
         await reportIdentity(result.identity, io, render);
       } else {
         io.out(onOneLine`Already a mnema project at ${result.root} — nothing to found.`);
-        io.out(render(fact(onOneLine`identity: ${result.anchor}`)));
+        io.out(render(fact(`identity: ${result.anchor}`)));
       }
     });
   return mutatesTheRecord(init);
