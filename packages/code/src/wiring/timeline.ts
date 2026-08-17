@@ -35,11 +35,16 @@ export function registerTimeline(program: Command, wiring: Wiring): Declared {
       }
       // Human summary — one line per event: when, what kind, the role by which the
       // entity appears, and who authorized it. The typed payload is in --json.
+      //
+      // The id is the caller's own word and it is not validated here — an id no event
+      // touches is a valid answer, not a refusal — so it reaches both of these lines as
+      // typed, and the second one HEADS the list (see {@link onOneLine}).
+      const { onOneLine } = await import('./on-one-line.js');
       if (result.entries.length === 0) {
-        io.out(`No history recorded for ${id}.`);
+        io.out(onOneLine`No history recorded for ${id}.`);
         return;
       }
-      io.out(`${id} — ${result.entries.length} event(s):`);
+      io.out(onOneLine`${id} — ${result.entries.length} event(s):`);
       for (const entry of result.entries) {
         io.out(
           render(

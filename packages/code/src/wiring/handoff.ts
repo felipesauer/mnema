@@ -55,7 +55,15 @@ export function registerHandoff(program: Command, wiring: Wiring): Declared {
         });
         if (result.ok) {
           // No id to report — a handoff has no standalone identity. Echo the fact.
-          io.out(`Recorded handoff on ${result.task}: ${result.fromAgent} → ${result.toAgent}`);
+          //
+          // Three positionals, all the caller's: the task and the two agents. The two
+          // agents are the sharpest of them — they are NAMES rather than ids, so a
+          // reader has nothing to check a forged second line against (see
+          // {@link onOneLine}).
+          const { onOneLine } = await import('./on-one-line.js');
+          io.out(
+            onOneLine`Recorded handoff on ${result.task}: ${result.fromAgent} → ${result.toAgent}`,
+          );
           reportRecorded(result, io);
           return;
         }

@@ -39,13 +39,18 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
     .description('establish a mnema project in the current directory')
     .action(async () => {
       const { runInit } = await import('../commands/init.js');
+      const { onOneLine } = await import('./on-one-line.js');
       const result = runInit(here());
+      // The ROOT is a directory this run discovered from the cwd, and a directory name
+      // is the value this whole class was first measured on: a checkout, an archive or
+      // a dependency can carry a newline in one and nobody typed it. The anchor beside
+      // it cannot — `mnid:` and 64 hex (see {@link onOneLine}).
       if (result.created) {
-        io.out(`Initialized mnema project at ${result.root}`);
+        io.out(onOneLine`Initialized mnema project at ${result.root}`);
         io.out(render(fact(`identity: ${result.anchor}`)));
-        reportIdentity(result.identity, io, render);
+        await reportIdentity(result.identity, io, render);
       } else {
-        io.out(`Already a mnema project at ${result.root} — nothing to found.`);
+        io.out(onOneLine`Already a mnema project at ${result.root} — nothing to found.`);
         io.out(render(fact(`identity: ${result.anchor}`)));
       }
     });
@@ -71,12 +76,23 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
  * changes WHO may speak for the identity. That is not something to learn by
  * reading the chain later.
  */
-function reportIdentity(identity: InitResult['identity'], io: CliIo, render: Render): void {
+async function reportIdentity(
+  identity: InitResult['identity'],
+  io: CliIo,
+  render: Render,
+): Promise<void> {
   if (identity === undefined) return;
+  // Loaded here rather than handed in: this is the branch that has a path to print, and
+  // a parameter would make every caller decide again which values are an actor's.
+  const { onOneLine } = await import('./on-one-line.js');
   const backup = identity.backup;
   if (backup?.created === true) {
     io.out(
-      render(fact(`backup key: created and enrolled — private half at ${backup.privateKeyPath}`)),
+      render(
+        fact(
+          onOneLine`backup key: created and enrolled — private half at ${backup.privateKeyPath}`,
+        ),
+      ),
     );
     io.out(
       render(fact('Move that file off this machine: a backup left on this disk is lost with it.')),
