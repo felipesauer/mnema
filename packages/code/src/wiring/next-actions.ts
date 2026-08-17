@@ -32,11 +32,15 @@ export function registerNextActions(program: Command, wiring: Wiring): Declared 
         io.out(JSON.stringify(result.actions, null, 2));
         return;
       }
+      // The id is whatever was typed after the verb, and it LEADS a line the moves are
+      // listed under: a break in it used to write a heading of its own with this
+      // reading's own items beneath it (see {@link onOneLine}).
+      const { onOneLine } = await import('./on-one-line.js');
       if (result.actions.length === 0) {
-        io.out(`Task ${id} is terminal — no legal moves.`);
+        io.out(onOneLine`Task ${id} is terminal — no legal moves.`);
         return;
       }
-      io.out(`Task ${id} — ${result.actions.length} legal move(s):`);
+      io.out(onOneLine`Task ${id} — ${result.actions.length} legal move(s):`);
       for (const action of result.actions) {
         const needs = action.requires.length > 0 ? ` (needs ${action.requires.join(', ')})` : '';
         io.out(render(itemLine([`${action.action} → ${action.to}${needs}`])));

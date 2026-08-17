@@ -25,6 +25,7 @@ export function registerResume(program: Command, wiring: Wiring): Declared {
     .action(async (opts: { actor: string; json?: boolean }) => {
       const { anchorText } = await import('../anchors.js');
       const { runResume } = await import('../commands/resume.js');
+      const { onOneLine } = await import('./on-one-line.js');
       const result = runResume(here(), { actor: opts.actor });
       if (!result.ok) {
         reportRefusal(wiring, result);
@@ -46,7 +47,13 @@ export function registerResume(program: Command, wiring: Wiring): Declared {
       // The actor LEADS the line here and heads the answer in `status`, which is why
       // the phrase begins after them and is composed in one place (see
       // {@link lastRunPhrase}).
-      io.out(`${actor} ${lastRunPhrase(lastRun)}`);
+      //
+      // The PHRASE is what goes through the collapse, not the actor: an anchor cannot
+      // hold a newline and a run's GOAL is text somebody typed, and the goal reaches
+      // this line inside the phrase. The other reading that prints it
+      // (`presentation/status.ts`) still prints it raw — named, and reconciled, in
+      // `tests/a-line-of-success-is-one-line.test.ts`.
+      io.out(onOneLine`${actor} ${lastRunPhrase(lastRun)}`);
       io.out(render(fact(openRunsPhrase(result.resume))));
     });
   return readsTheRecord(resume);

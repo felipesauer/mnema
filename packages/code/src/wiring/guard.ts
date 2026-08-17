@@ -92,10 +92,23 @@ export function registerGuard(program: Command, wiring: Wiring): Declared {
         // question with a yes-or-no answer, so it is the one reading where a colour
         // is a fact rather than a taste — and the words still carry it, which is what
         // makes `--color=never` and a monochrome terminal lose nothing.
+        //
+        // The id is the positional and nothing narrows it — the action beside it is an
+        // enumerated argument and the state after it is the table's own word, so the id
+        // is the one value on this line that can hold a break (see {@link onOneLine}).
+        const { onOneLine } = await import('./on-one-line.js');
         io.out(
           result.verdict.ok
-            ? render(statement('ALLOWED', `${action} ${id} → ${result.verdict.to}`, 'good'))
-            : render(statement(`REFUSED (${result.verdict.code})`, result.verdict.message, 'bad')),
+            ? render(
+                statement('ALLOWED', onOneLine`${action} ${id} → ${result.verdict.to}`, 'good'),
+              )
+            : render(
+                statement(
+                  onOneLine`REFUSED (${result.verdict.code})`,
+                  result.verdict.message,
+                  'bad',
+                ),
+              ),
         );
       },
     );
