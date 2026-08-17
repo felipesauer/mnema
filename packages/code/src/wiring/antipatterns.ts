@@ -27,7 +27,7 @@ export function registerAntipatterns(program: Command, wiring: Wiring): Declared
     .option('--json', 'emit the faithful shapes with their evidence as JSON')
     .action(async (opts: { json?: boolean }) => {
       const { runAntipatterns } = await import('../commands/antipatterns.js');
-      const { oneLine } = await import('../served-patterns.js');
+      const { onOneLine } = await import('./on-one-line.js');
       const result = runAntipatterns(here());
       if (!result.ok) {
         reportRefusal(wiring, result);
@@ -55,19 +55,21 @@ export function registerAntipatterns(program: Command, wiring: Wiring): Declared
           render(
             statement(
               'skill candidates (reopened >1×)',
-              skillCandidates.map((f) => f.entityId).join(', '),
+              skillCandidates.map((f) => onOneLine`${f.entityId}`).join(', '),
             ),
           ),
         );
       }
       for (const collision of labelCollisions) {
         // Both fields are read out of the record, and a record can be appended to by
-        // anything holding a key — so neither reaches the line as it was written.
+        // anything holding a key — so neither reaches the line as it was written. The
+        // candidates above are the same kind of value and had no collapse at all: two
+        // sibling readings, one of which had paid the rule and the other had not.
         io.out(
           render(
             statement(
-              `label naming more than one rule (${oneLine(collision.adr)})`,
-              collision.ids.map((id) => oneLine(id)).join(', '),
+              onOneLine`label naming more than one rule (${collision.adr})`,
+              collision.ids.map((id) => onOneLine`${id}`).join(', '),
             ),
           ),
         );

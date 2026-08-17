@@ -25,7 +25,7 @@ export function registerFocus(program: Command, wiring: Wiring): Declared {
     .action(async (opts: { actor: string; json?: boolean }) => {
       const { anchorText } = await import('../anchors.js');
       const { runFocus } = await import('../commands/focus.js');
-      const { oneLine } = await import('../served-patterns.js');
+      const { onOneLine } = await import('./on-one-line.js');
       const result = runFocus(here(), { actor: opts.actor });
       if (!result.ok) {
         reportRefusal(wiring, result);
@@ -38,7 +38,7 @@ export function registerFocus(program: Command, wiring: Wiring): Declared {
       // Human summary — one line per open run, and one line per run is what the
       // reader counts by: the agent and the goal are both text an actor wrote, so
       // either one holding a newline would print a run this record never opened
-      // (see {@link oneLine}). `--json` carries both as written.
+      // (see {@link onOneLine}). `--json` carries both as written.
       //
       // An actor with nothing open is stated plainly, not left as silent empty
       // output, and told what a run IS: most people working the CLI directly will
@@ -65,8 +65,11 @@ export function registerFocus(program: Command, wiring: Wiring): Declared {
               // line nobody reads: said as an id, it stops competing with the agent
               // and the goal, which are what tell ten leftover runs apart.
               asId(run.id),
-              `${oneLine(run.agent)}` +
-                `${run.goal !== undefined ? ` — ${oneLine(run.goal)}` : ''}` +
+              // The dash before the goal is a chunk of its own template rather than
+              // the head of an interpolated fragment: a value is what gets collapsed,
+              // and a collapse would eat the space this one opens with.
+              onOneLine`${run.agent}` +
+                (run.goal !== undefined ? onOneLine` — ${run.goal}` : '') +
                 runAgeSuffix(run),
             ]),
           ),

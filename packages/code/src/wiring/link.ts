@@ -60,7 +60,13 @@ export function registerLink(program: Command, wiring: Wiring): Declared {
         });
         if (result.ok) {
           // No id to report — a link is an edge, not an entity. Echo the fact.
-          io.out(`Linked ${result.subject} —${result.rel}→ ${result.target}`);
+          //
+          // All THREE values are the caller's, and the doc above says why none of them
+          // is validated: a link is legitimately cross-tree, and the relation is an
+          // open string on purpose. So this line is three doors onto itself, and each
+          // one goes through the collapse (see {@link onOneLine}).
+          const { onOneLine } = await import('./on-one-line.js');
+          io.out(onOneLine`Linked ${result.subject} —${result.rel}→ ${result.target}`);
           reportRecorded(result, io);
           return;
         }

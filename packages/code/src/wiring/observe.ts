@@ -56,7 +56,11 @@ export function registerObserve(program: Command, wiring: Wiring): Declared {
           ...(run !== undefined ? { run } : {}),
         });
         if (result.ok) {
-          io.out(`Recorded observation ${result.id} about ${about}`);
+          // The id is minted here; `about` is the positional, and the doc above says it
+          // is NOT validated — a dangling reference is honest cross-tree. So the value
+          // reaches this line exactly as typed (see {@link onOneLine}).
+          const { onOneLine } = await import('./on-one-line.js');
+          io.out(onOneLine`Recorded observation ${result.id} about ${about}`);
           reportRecorded(result, io);
           return;
         }

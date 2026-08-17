@@ -129,8 +129,17 @@ export function registerTail(program: Command, wiring: Wiring): Declared {
       reportRecorded(result, io);
       // Said plainly, because this is the moment somebody assumes otherwise: the
       // waiver is what makes the cut legible, and the cut itself is theirs to make.
+      // The three values above are the record's own — an event count, a hash, an
+      // anchor, a tail this run MATCHED against the record before it got here. This one
+      // is a PATH, built under the project root, so it is the one line of this verb
+      // that can carry a break in from a directory name (see {@link onOneLine}).
+      const { onOneLine } = await import('./on-one-line.js');
       io.out(
-        render(fact(`The tail is still on disk at ${result.tailDirectory} — nothing was removed.`)),
+        render(
+          fact(
+            onOneLine`The tail is still on disk at ${result.tailDirectory} — nothing was removed.`,
+          ),
+        ),
       );
       io.out(render(fact(CUT_LIMIT)));
     });

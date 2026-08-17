@@ -135,7 +135,12 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
       if (result.ok) {
         // Print both the name (orients the human) and the id (the key a move
         // takes) — a skill has no alias.
-        io.out(`Proposed skill "${result.name}" (${result.id})`);
+        //
+        // The name is the positional, in quotes, and it is text somebody wrote: the
+        // same value `moved-record.ts` already collapses when a skill MOVES, closed
+        // here for the line that reports its birth (see {@link onOneLine}).
+        const { onOneLine } = await import('./on-one-line.js');
+        io.out(onOneLine`Proposed skill "${result.name}" (${result.id})`);
         reportRecorded(result, io);
         return;
       }

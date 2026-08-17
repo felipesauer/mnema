@@ -64,8 +64,20 @@ export function registerRun(program: Command, wiring: Wiring): Declared {
       io.out(`Started run ${result.id}`);
       // Both halves AS RECORDED, never as typed: echoing `opts.goal` would print a
       // credential on the line directly above the one reporting it was replaced.
+      //
+      // Both are also text somebody wrote — an agent's NAME and a sentence of goal —
+      // and the dash between them is a chunk of its own template rather than the head
+      // of an interpolated fragment: the collapse trims what it is given, and a
+      // fragment beginning with a space would come back without it (see
+      // {@link onOneLine}).
+      const { onOneLine } = await import('./on-one-line.js');
       io.out(
-        render(fact(`for ${result.agent}${result.goal !== undefined ? ` — ${result.goal}` : ''}`)),
+        render(
+          fact(
+            onOneLine`for ${result.agent}` +
+              (result.goal !== undefined ? onOneLine` — ${result.goal}` : ''),
+          ),
+        ),
       );
       reportReplacement(result, io);
       // The export line alone, so it can be selected, pasted or eval'd. A process
@@ -123,7 +135,8 @@ export function registerRun(program: Command, wiring: Wiring): Declared {
       // session is for: `by` and not `for`, because this half says who did the
       // closing and the other says who the session was opened for — the same two
       // questions the envelope and the payload keep apart.
-      if (result.agent !== undefined) io.out(render(fact(`by ${result.agent}`)));
+      const { onOneLine } = await import('./on-one-line.js');
+      if (result.agent !== undefined) io.out(render(fact(onOneLine`by ${result.agent}`)));
       reportReplacement(result, io);
       // A shell still pinned to the run just closed would have every write
       // refused (the run is no longer open), so say how to let go of it — but

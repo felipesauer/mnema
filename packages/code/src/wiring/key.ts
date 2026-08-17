@@ -35,6 +35,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
     .argument('<file>', 'the PEM file holding the private half (your backup copy)')
     .action(async (file: string) => {
       const { runKeyRestore } = await import('../commands/key-restore.js');
+      const { onOneLine } = await import('./on-one-line.js');
       const result = runKeyRestore(here(), { privateKeyPath: file });
       if (result.ok) {
         io.out(`Restored key ${result.fingerprint}`);
@@ -46,8 +47,14 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
             ),
           ),
         );
-        io.out(render(fact(`private half installed at ${result.installedAt}`)));
-        io.out(render(fact(`Your copy at ${file} was read, not moved — keep it where it is.`)));
+        // Two PATHS, and the second one is the positional this verb was handed: it is
+        // echoed back to say the copy was not consumed, so it reaches the line exactly
+        // as it was typed (see {@link onOneLine}). The fingerprint and the anchor above
+        // are hex and `mnid:` — neither can hold a break.
+        io.out(render(fact(onOneLine`private half installed at ${result.installedAt}`)));
+        io.out(
+          render(fact(onOneLine`Your copy at ${file} was read, not moved — keep it where it is.`)),
+        );
         return;
       }
       // A recovery names ITSELF rather than `mnema init`: a machine bringing a key
@@ -110,6 +117,7 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
     .argument('<request>', 'the line `mnema key request` printed on the joining machine')
     .action(async (request: string) => {
       const { runKeyEnroll } = await import('../commands/key-enroll.js');
+      const { onOneLine } = await import('./on-one-line.js');
       const result = runKeyEnroll(here(), { request });
       if (result.ok) {
         if (result.alreadyMember) {
@@ -118,7 +126,9 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
         }
         io.out(`Enrolled key ${result.fingerprint}`);
         io.out(render(fact(`into ${result.anchor}`)));
-        io.out(render(fact(`recorded in ${result.root}`)));
+        // The project ROOT, discovered from the cwd — the same value `init` prints, and
+        // the same reason it is collapsed there (see {@link onOneLine}).
+        io.out(render(fact(onOneLine`recorded in ${result.root}`)));
         io.out(render(fact('Commit and share the record: the other machine joins by reading it.')));
         return;
       }
