@@ -31,7 +31,11 @@ export function searchReport(
   result: RecordSearch,
   term: string | undefined,
 ): string[] {
-  const forTerm = term !== undefined && term.trim() !== '' ? ` matching "${term}"` : '';
+  // THE TERM IS THE CALLER'S OWN WORDS, echoed back, and it rides the header that
+  // counts the hits under it — so a break in it puts a line between the count and the
+  // list it counts (see `served-patterns.ts`). It is the one value on this report that
+  // did not come out of the record at all.
+  const forTerm = term !== undefined && term.trim() !== '' ? ` matching "${oneLine(term)}"` : '';
   if (result.hits.length === 0) {
     return [term !== undefined ? `Nothing recorded${forTerm}.` : 'Nothing recorded here yet.'];
   }
