@@ -46,7 +46,7 @@
  * went and following it is what they asked for by not walking away from it.
  */
 
-import { withoutSequences } from '../presentation/folded.js';
+import { widthOfText } from '../presentation/width.js';
 
 /**
  * HOW MANY LINES THE CONSOLE KEEPS — and what falls off the top when there are more.
@@ -105,11 +105,19 @@ export const NOTHING_SAID: Scrolling = { said: [], back: 0 };
  * though every line were one row is a window taller than the region it is drawn in, which is
  * the one thing a frame on a screen we own may not be.
  *
- * THE ESCAPES COME OFF FIRST, because a terminal does not print them: a line carrying colour
- * is longer in bytes than it is in columns, and counting bytes would fold a line that fits.
- * What is left is counted in CODE POINTS, which is the same approximation the rest of this
- * surface makes about width — a glyph that takes two columns is counted as one, and what that
- * costs is a window one row short rather than one row over, which is the safe direction.
+ * THE ESCAPES COST NOTHING, because a terminal does not print them: a line carrying colour is
+ * longer in bytes than it is in columns, and counting bytes would fold a line that fits.
+ *
+ * AND THE SENTENCE THAT FOLLOWED THAT ONE WAS FALSE IN BOTH OF ITS HALVES. It read: *what is
+ * left is counted in CODE POINTS, which is the same approximation the rest of this surface makes
+ * about width — a glyph that takes two columns is counted as one, and what that costs is a window
+ * one row short rather than one row over, which is the safe direction.* Counting a two-column
+ * glyph as one makes this answer FEWER rows than a line really takes, so the page is drawn as
+ * though there were room that is not there and what runs over is the foot of the frame — the
+ * opposite of the direction the sentence called safe, and the same row-off-the-bottom this
+ * surface has already paid for twice. It is COLUMNS now, asked of the authority the renderer
+ * draws by (`presentation/width.ts`), and the approximation it named is gone from the surface
+ * rather than shared with it.
  *
  * AND A LINE CAN ALREADY BE SEVERAL ROWS BEFORE ANY TERMINAL FOLDS IT, which is the half the
  * first version of this left out. What lands here is what the product's own renderer produced,
@@ -127,7 +135,7 @@ export function rowsForTheLine(line: string, columns: number): number {
   const parts = line.split('\n');
   if (columns <= 0) return parts.length;
   return parts.reduce(
-    (rows, part) => rows + Math.max(1, Math.ceil([...withoutSequences(part)].length / columns)),
+    (rows, part) => rows + Math.max(1, Math.ceil(widthOfText(part) / columns)),
     0,
   );
 }

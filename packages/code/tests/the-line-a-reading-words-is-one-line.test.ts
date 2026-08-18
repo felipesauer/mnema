@@ -145,9 +145,16 @@ function copyQuoted(source: string, at: number, keep: (text: string) => void): n
  * decide nothing about where it came from, so the question belongs to their callers.
  * The day one of them reaches for `@mnema/copilot` it joins the thirteen, its values
  * become sites, and the classification below stops being total.
+ *
+ * IT WAS *ANY IMPORT THAT IS NOT `./`* AND THAT IS NOT WHAT IT MEANS. The record arrives from a
+ * PACKAGE of this workspace or from a layer above this one; a dependency off the registry brings
+ * no record at all, and the first module here to take one — the authority over how many columns
+ * text takes, which loads the measurement the layout library draws by — was classified as a
+ * composer with nothing to classify. So the predicate names the two ways a record can arrive
+ * instead of naming everything that is not local.
  */
 function receivesTheRecord(source: string): boolean {
-  return /from '(?!\.\/)/.test(withoutComments(source));
+  return /from '(?:@mnema\/|\.\.\/)/.test(withoutComments(source));
 }
 
 // ---------------------------------------------------------------------------
@@ -1087,11 +1094,17 @@ describe('every value this layer puts on a line is classified', () => {
     // The vacuous form of the case above is a walk that found nothing: two empty lists
     // are equal. The scale is stated, and so is the SPLIT the debt got wrong — it said
     // "six of the ten modules", counting the WORD `oneLine`, four of whose ten hits are
-    // a mention in a comment. There are twenty-four modules and thirteen are asked.
-    expect(FOUND.composers.length + FOUND.machinery.length).toBe(24);
+    // a mention in a comment. There are twenty-five modules and thirteen are asked.
+    //
+    // IT WAS TWENTY-FOUR, and the twenty-fifth is machinery: the authority over how many
+    // COLUMNS text takes (`width.ts`), which receives no record and words nothing — it is
+    // asked by the renderer, by the fold and by every table on the surface. A module added
+    // to this layer is counted here the day it is written, which is what this number is for.
+    expect(FOUND.composers.length + FOUND.machinery.length).toBe(25);
     expect(FOUND.composers.length).toBe(13);
     expect(FOUND.machinery).toContain('items.ts');
     expect(FOUND.machinery).toContain('line.ts');
+    expect(FOUND.machinery).toContain('width.ts');
     expect(FOUND.builders.length).toBeGreaterThan(10);
     expect(FOUND.sites.length).toBe(158);
   });

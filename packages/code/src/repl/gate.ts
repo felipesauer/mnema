@@ -92,7 +92,7 @@ export function verbsOffered(verbs: readonly Declared[], self: string): readonly
  * without a terminal.
  */
 export function dispositionOf(line: string, verbs: readonly Declared[], self: string): Disposition {
-  if (line.trim().length === 0) return { does: 'nothing' };
+  if (line.trim() === '') return { does: 'nothing' };
 
   const argv = argvOf(line);
   if (argv === undefined) {

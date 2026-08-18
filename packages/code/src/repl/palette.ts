@@ -109,6 +109,7 @@ import { asPick, asWord, type Column, column, itemLine } from '../presentation/i
 import type { Line } from '../presentation/line.js';
 import { widthOf } from '../presentation/plain.js';
 import type { Render } from '../presentation/render.js';
+import { cutTo, widestOf, widthOfText } from '../presentation/width.js';
 import { PREFIX } from '../session-words.js';
 import type { Completer } from './complete.js';
 
@@ -175,7 +176,7 @@ const AFTER_THE_WORD = 1;
 const AT_MOST = 4;
 
 /** How wide the column the mark sits in is: as wide as the mark, and read off the mark. */
-const AS_WIDE_AS_THE_MARK = [...PICK].length;
+const AS_WIDE_AS_THE_MARK = widthOfText(PICK);
 
 /** The row that says which keys move the list. One row, whenever the list has any. */
 const THE_KEYS = 1;
@@ -419,8 +420,7 @@ function rowsOf(request: PaletteRequest): readonly Line[] {
   // The left column is as wide as the widest word IN THIS PALETTE rather than in the
   // whole vocabulary, so a list narrowed to one word does not sit under a gap left by the
   // words it excluded.
-  const width =
-    offers.reduce((most, offer) => Math.max(most, offer.word.length), 0) + AFTER_THE_WORD;
+  const width = widestOf(offers.map((offer) => offer.word)) + AFTER_THE_WORD;
   // THE MARK IS A COLUMN OF THE TABLE, so every row carries one and only one row carries the
   // glyph: an unpicked row is padded to the same width by the same function the words are
   // padded with, which is what keeps the second column lined up down the whole list. A mark
@@ -455,7 +455,7 @@ function rowsOf(request: PaletteRequest): readonly Line[] {
   // the padding and the separator cost. So the answer survives a change to any of the
   // three, and no number about how a line is punctuated is written down in this file.
   const frame =
-    widthOf(said(column(PICK, AS_WIDE_AS_THE_MARK), offers[0]?.word ?? '', CUT)) - [...CUT].length;
+    widthOf(said(column(PICK, AS_WIDE_AS_THE_MARK), offers[0]?.word ?? '', CUT)) - widthOfText(CUT);
   const forTheDescription = columns - frame;
   // A terminal with no room for a description is a terminal the table does not fit on,
   // and a table drawn without its second column would be dropping what it says with no
@@ -464,9 +464,8 @@ function rowsOf(request: PaletteRequest): readonly Line[] {
 
   /** A description with no more of it than the row has columns for, and a mark saying so. */
   const within = (description: string): string => {
-    const glyphs = [...description];
-    if (glyphs.length <= forTheDescription) return description;
-    return `${glyphs.slice(0, forTheDescription - 1).join('')}${CUT}`;
+    if (widthOfText(description) <= forTheDescription) return description;
+    return `${cutTo(description, forTheDescription - widthOfText(CUT))}${CUT}`;
   };
 
   // WHICH OFFERS ARE DRAWN: the window over them, which holds the pick and is as long as the

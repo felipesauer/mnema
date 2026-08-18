@@ -285,6 +285,16 @@ interface WhereTheCaretGoes {
    * {@link WHERE_THE_FINGERS_ARE}).
    */
   readonly theFingersRow: boolean;
+  /**
+   * HOW MANY CELLS WHAT WAS TYPED OCCUPIES, where that is not one per code point.
+   *
+   * Declared per case rather than computed, and deliberately not asked of the product: what the
+   * instrument is for is to say independently where the caller's fingers are, and an instrument
+   * that borrowed the product's own measurement would agree with it by construction. It is a
+   * fact about the characters — `e` and COMBINING ACUTE ACCENT are one cell together in every
+   * terminal there is — so it is written down like the numbers beside it.
+   */
+  readonly cells?: number;
 }
 
 /**
@@ -295,15 +305,19 @@ interface WhereTheCaretGoes {
  * renderer that folded the row, or a column counted over the painted string, moves those two and
  * nothing else on this list.
  *
- * AND TWO OF THEM CARRY A DIVERGENCE THAT WAS ALREADY THERE, pinned at the number it has rather
- * than at the number it should have. Both are declared rather than closed: either one is a
- * decision about the caret's arithmetic, and a case asserting the answer nobody chose would be
- * red about a decision that was never taken.
+ * AND ONE OF THE TWO DIVERGENCES IS CLOSED. The paragraph here read: *two of them carry a
+ * divergence that was already there, pinned at the number it has rather than at the number it
+ * should have. Both are declared rather than closed: either one is a decision about the caret's
+ * arithmetic, and a case asserting the answer nobody chose would be red about a decision that
+ * was never taken.* The first of them was taken:
  *
- *   - `cafe` WITH A COMBINING ACUTE is five code points and four columns, and the column is
- *     counted in code points (`src/repl/console.ts`) — so on a terminal the caret sits one column
- *     right of the accent. The instrument counts the same way the product does, so this case PINS
- *     the number and does not rule on the divergence.
+ *   - `cafe` WITH A COMBINING ACUTE is five code points and FOUR CELLS, and the column used to be
+ *     counted in code points (`src/repl/console.ts`) — so on a terminal the caret sat one column
+ *     right of the accent, and this case pinned 12. The surface has one authority over columns
+ *     now (`src/presentation/width.ts`) and the caret is counted by it, so the number is 11 and
+ *     the case RULES rather than pins. The instrument still counts independently: what a case
+ *     declares about the cells its text occupies is {@link WhereTheCaretGoes.cells}, a fact about
+ *     the characters written down here, never a number asked of the product.
  *   - AN ARROW MOVES THE CARET UP A ROW. A key that changes nothing but where the caret is
  *     produces a frame identical to the one already on the screen, and the caret ends up one row
  *     higher for each such key: measured at −1 for one arrow and −3 for three. It is the same
@@ -375,7 +389,8 @@ const WHERE_THE_FINGERS_ARE: readonly WhereTheCaretGoes[] = [
     text: 'café',
     after: [],
     columns: 100,
-    column: () => 12,
+    column: () => 11,
+    cells: 4,
     row: 0,
     theFingersColumn: true,
     theFingersRow: true,
@@ -402,9 +417,17 @@ const WHERE_THE_FINGERS_ARE: readonly WhereTheCaretGoes[] = [
   },
 ];
 
-/** Where the fingers are, in characters: the prompt and what is left of the caret. */
+/**
+ * Where the fingers are, in CELLS: the prompt and what is left of the caret.
+ *
+ * It was in characters, which is the count the product itself used to make and this delivery
+ * replaced. What a case declares about its own text is used where the two differ
+ * ({@link WhereTheCaretGoes.cells}) — a fact about the characters, written down, so this stays an
+ * independent reading rather than the product's own answer handed back to it.
+ */
 function theFingersAt(one: WhereTheCaretGoes): number {
-  return [...`${PROMPT}${one.text}`].length - one.after.length;
+  const typed = one.cells ?? [...one.text].length;
+  return [...PROMPT].length + typed - one.after.length;
 }
 
 describe('the caret lands where the caller’s fingers are', () => {
@@ -550,12 +573,19 @@ describe('A1: everything that puts the row being typed together, and everything 
       'a prompt is glued to a line somewhere',
     ).toEqual([]);
 
-    // THE DISCRIMINANT FOR THE ARITHMETIC is anything that takes the LENGTH of a prompt: that is
-    // what a caret's column is made of, and it is what a second opinion about the row would have
-    // to compute. One site, and it is the one that counts the values rather than the row.
-    const counting = sources().filter((file) => /\bprompt\b[^\n]*\.length/.test(file.code));
+    // THE DISCRIMINANT FOR THE ARITHMETIC is anything that MEASURES a prompt: that is what a
+    // caret's column is made of, and it is what a second opinion about the row would have to
+    // compute. One site, and it is the one that counts the values rather than the row.
+    //
+    // IT WAS `.length` ALONE, and the delivery that gave this surface one authority over columns
+    // renamed the operation (`presentation/width.ts`, `widthOfText`). Both spellings are the
+    // discriminant now: the new one because that is what the site says today, and the OLD one
+    // because a caret counted in code points again is exactly the regression — the accent case
+    // above is the number it moves, and this would name the file that moved it.
+    const MEASURES_A_PROMPT = /\bprompt\b[^\n]*(?:\.length|widthOfText\()/;
+    const counting = sources().filter((file) => MEASURES_A_PROMPT.test(file.code));
     expect(counting.map((file) => file.where)).toEqual(['repl/console.ts']);
-    const sums = console_.match(/\bprompt\b[^\n]*\.length[^\n]*/g) ?? [];
+    const sums = console_.match(/\bprompt\b[^\n]*(?:\.length|widthOfText\()[^\n]*/g) ?? [];
     expect(sums.length, 'the column is worked out in more than one place').toBe(1);
     // AND IT IS COUNTED OVER THE VALUES AND NOT OVER THE ROW, which is the property that lets
     // the row be painted: `present` is the composed string, and a column that summed it would

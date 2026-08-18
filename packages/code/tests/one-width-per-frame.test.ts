@@ -30,6 +30,17 @@
  *     not, and the capability behind both is read once.
  *   - AND NOBODY ELSE ASKS A DEVICE HOW WIDE IT IS. Two files do, for two different questions,
  *     and a third would be a third answer on one page.
+ *   - AND THE CONTENT IS THE CALLER'S. A record titled in characters that take two cells each is
+ *     ordinary, and the frame's arithmetic was wrong about it in every terminal there is: the
+ *     width was a count of CODE POINTS, so a row of eighty-eight cells was handed to the layout
+ *     for a page with seventy-four columns inside its margin. What that produces on a screen is
+ *     not an overflow — the library wraps what our fold left too wide — it is the LIBRARY's break
+ *     instead of the product's, at the margin, with the continuation at column zero. Measured at
+ *     the floor, on the instrument.
+ *   - AND ONE AUTHORITY OVER HOW WIDE TEXT IS, which is what makes the number above stay right:
+ *     the surface asks the measurement the layout library draws by, in one module, and nothing
+ *     anywhere works a width out by hand. The four shapes it refuses are the four somebody
+ *     really wrote here, and each of them is asked to accuse the very line it replaced.
  *
  * WHAT IS NOT ASSERTED, said out loud so a pass is not read as covering it: a line already on
  * the roll is NOT re-folded when the window changes. It was rendered for the terminal it was
@@ -48,7 +59,7 @@ import { buildProgram, type CliIo, run } from '../src/cli.js';
 import { fact } from '../src/presentation/detail.js';
 import { foldedAt } from '../src/presentation/folded.js';
 import type { Line } from '../src/presentation/line.js';
-import { renderPlain, widthOf } from '../src/presentation/plain.js';
+import { indentOf, renderPlain, widthOf } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { openConsole } from '../src/repl/console.js';
 import { THE_FLOOR } from '../src/repl/floor.js';
@@ -106,6 +117,34 @@ const A_WRITE = 'task';
 const AND_IT_REFUSES = 'shell.';
 
 /**
+ * A TASK TITLE IN JAPANESE — thirty-eight characters, seventy-six cells.
+ *
+ * *A record titled in a language whose characters take two columns each*, which is what it says.
+ * Every one of its glyphs is East Asian WIDE, and Wide is not ambiguous: those are two cells in
+ * every terminal there is, whatever the locale. So the number below is a fact about the
+ * characters rather than an observation about a device, which is why it is written down.
+ *
+ * IT IS A VALUE A CALLER PRODUCES WITH THE PRODUCT'S OWN VERB (A13) — `mnema task <title>` — so
+ * the row it lands on is a row of an ordinary report and not a fixture nobody could have made.
+ *
+ * AND ITS LENGTH IS CHOSEN SO THAT THE OLD COUNT LET IT THROUGH. Measured on the built binary:
+ * the row `search` prints for it is the continuation of a folded item — four columns of hanging
+ * indent, the title, and ` (DRAFT)` — which is FIFTY code points and EIGHTY-EIGHT cells on a page
+ * with seventy-four columns inside its margin. So the fold this delivery replaced measured it as
+ * fitting and handed the terminal a row fourteen columns wider than the page, while the fold that
+ * measures cells breaks it. A shorter title would fit on both counts and this case would pass
+ * against the defect.
+ */
+const A_TITLE_IN_JAPANESE =
+  '二列を占める文字で書かれた記録の見出しであり折り返しが必要になるほど長い題名';
+
+/** How many cells that title takes: two per character, counted by hand. */
+const CELLS_OF_THE_TITLE = 2 * [...A_TITLE_IN_JAPANESE].length;
+
+/** The verb that lists what is recorded — a read, so the session runs it. */
+const A_READ = 'search';
+
+/**
  * How tall every window in this file is. The subject is the WIDTH, so nothing else moves.
  *
  * IT WAS FORTY AND IT IS THE FLOOR'S. Forty was tall enough while the shortest window this
@@ -133,6 +172,15 @@ let project: string;
  * than the window, and it is part of the opening in exactly the way the sentence was.
  */
 let deep: string;
+/**
+ * A PROJECT WHOSE ONE RECORD IS TITLED IN JAPANESE — the content the frame's arithmetic used to
+ * be wrong about.
+ *
+ * Its own project rather than a second record in the one above, so that every case in this file
+ * that reads a page reads the page it always read: a record added to the shared project would be
+ * a row on somebody else's screen.
+ */
+let wide: string;
 let environment: NodeJS.ProcessEnv;
 const before = { cwd: process.cwd(), env: { ...process.env } };
 
@@ -171,6 +219,13 @@ beforeAll(async () => {
   process.chdir(deep);
   await shell('init');
   await shell('task', 'the task the deep project is opened over');
+
+  // AND THE WIDE ONE ({@link wide}): one task, titled in the language the defect was measured in.
+  wide = join(sandbox, 'wide');
+  mkdirSync(wide, { recursive: true });
+  process.chdir(wide);
+  await shell('init');
+  await shell('task', A_TITLE_IN_JAPANESE);
   process.chdir(project);
 
   environment = {
@@ -706,6 +761,239 @@ describe('the colour is one answer per invocation and the width is not', () => {
     const at = rendererAtEachWidth(() => onATerminal(80));
     const fits = theWordsItPrints()[0] as Line;
     expect(at(400)(fits)).toBe(renderStyled(fits));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// And the content is the caller's, which is where the arithmetic was wrong
+// ---------------------------------------------------------------------------
+
+/**
+ * WHICH GLYPHS OF A ROW TAKE TWO CELLS — declared here, never asked of the product.
+ *
+ * IT IS THE POINT OF THE CASE BELOW BEING A CASE. What the page is measured by has to be
+ * INDEPENDENT of the thing under test, or the assertion is the product agreeing with itself:
+ * every glyph of {@link A_TITLE_IN_JAPANESE} is East Asian Wide, which is two cells in every
+ * terminal there is, and everything else this page holds is either printable ASCII or a
+ * punctuation this surface chose from the Ambiguous class, which is one. So the count is a fact
+ * about the characters, written down, and the pty and the screen model are what ANSWER
+ * (`support/pty.ts`, `support/screen.ts`).
+ */
+const TWO_CELLS = new Set([...A_TITLE_IN_JAPANESE]);
+
+/** How many cells a row of the page takes, counted independently of the product. */
+function cellsOfRow(row: string): number {
+  return [...row].reduce((total, glyph) => total + (TWO_CELLS.has(glyph) ? 2 : 1), 0);
+}
+
+describe('a record titled in two-cell characters is folded by the product', () => {
+  it('breaks it where the product breaks a line, with the product’s own indent', async () => {
+    // THE CASE THE FUNCTION-LEVEL ONES CANNOT ANSWER (`src/presentation/width.test.ts` holds
+    // those): the ARITHMETIC OF THE FRAME, on a real pseudo-terminal at the floor. The fold asked
+    // how wide a row was, got a count of code points, decided it fitted, and handed the layout a
+    // row of eighty-eight cells for a page with seventy-four columns inside its margin.
+    //
+    // AND WHAT THAT PRODUCES ON THE SCREEN IS NOT AN OVERFLOW, WHICH IS THE FINDING THIS CASE WAS
+    // REWRITTEN AROUND. The layout library measures correctly and wraps whatever our fold left
+    // too wide, so the row never runs past the page — it is broken by the LIBRARY instead of by
+    // the product, at the margin, and the continuation lands at column zero of the region. So the
+    // promise that breaks is the one this surface makes about a folded line: the continuation is
+    // indented one level under the row that generated it (`src/presentation/folded.ts`), which is
+    // what a reader tells a continuation from a new item by. Measured, at the floor, on the rows
+    // that carry the title:
+    //
+    //     before   "    二列を…必要になるほど長"   +   "い題名 (DRAFT)"
+    //     after    "    二列を…必要になるほど長"   +   "    い題名 (DRAFT)"
+    //
+    // Four columns, and they are the difference between a list and a wall of text. Outside the
+    // session there is no library to catch it and the TERMINAL breaks it the same way, with no
+    // indent at all — which is the half the goldens cannot see, because a pipe reports no width.
+    const columns = THE_FLOOR.columns;
+    const ran = await inPty({
+      columns,
+      rows: TALL_ENOUGH,
+      project: wide,
+      steps: [
+        opens,
+        { types: `${A_READ}\r`, until: arrivedSince('task'), what: 'listed the record' },
+        leaves,
+      ],
+    });
+
+    const screen = theSettledScreen(ran.bytes, columns, TALL_ENOUGH);
+    const page = rowsOf(screen);
+    // THE RECORD IS ON THE PAGE, or the case is about a page that never held the subject. It is
+    // looked for by a PIECE of the title, because at this width the row is folded.
+    const carrying = page.filter((row) => [...row].some((glyph) => TWO_CELLS.has(glyph)));
+    expect(carrying.length, `the record is not on the page:\n${screen.text}`).toBeGreaterThan(0);
+
+    // AND IT IS FOLDED, which is what makes the assertion below about anything: a title that
+    // fitted on one row would have no continuation to be indented wrongly.
+    expect(carrying.length, `the title landed on one row:\n${screen.text}`).toBeGreaterThan(1);
+
+    // EVERY ROW OF IT IS INDENTED AS A CONTINUATION OF AN ITEM — one level under the item's own
+    // depth, which is the indent this product's fold adds and the library's wrap does not.
+    const hanging = indentOf(2);
+    for (const row of carrying) {
+      expect(
+        row.startsWith(hanging),
+        `not indented as a continuation: ${JSON.stringify(row)}`,
+      ).toBe(true);
+    }
+
+    // AND NO ROW RUNS PAST THE PAGE, counted independently ({@link cellsOfRow}). It is the weaker
+    // half — the library would satisfy it on its own, which is exactly what the paragraph above
+    // says — and it is kept because it is the promise, and because outside a session nothing else
+    // holds it.
+    for (const row of page) {
+      expect(
+        cellsOfRow(row),
+        `a row of ${cellsOfRow(row)} cells on a ${columns}-column window`,
+      ).toBeLessThanOrEqual(columns);
+    }
+
+    // AND THE TITLE REALLY IS WIDER THAN THE PAGE HAS ROOM FOR, in cells and not in code points:
+    // the old count saw fifty where the page has seventy-four and let it through.
+    expect(CELLS_OF_THE_TITLE).toBeGreaterThan(insideTheMargin(columns) - THE_INSET);
+    expect([...A_TITLE_IN_JAPANESE].length).toBeLessThan(insideTheMargin(columns));
+  }, 240_000);
+});
+
+// ---------------------------------------------------------------------------
+// And nobody else works out how wide TEXT is
+// ---------------------------------------------------------------------------
+
+/** The four directories that draw: everything that ever asks how wide something is. */
+const THE_SURFACE = ['presentation/', 'repl/', 'choice/', 'wiring/'];
+
+/** The authority over columns, by the path it lives at — the one module exempt from the rule. */
+const THE_AUTHORITY = 'presentation/width.ts';
+
+/** The library the layout draws by, by the name a module has to write to load it. */
+const THE_LIBRARY = 'string-width';
+
+/**
+ * WHAT WORKING OUT A WIDTH BY HAND LOOKS LIKE — the four shapes, and each is one somebody
+ * really wrote on this surface before the authority existed.
+ *
+ *   - SPREAD AND COUNT: `[...text].length`, which is what `widthOf` was, and what the mark of a
+ *     picked row and the caret's column were counted with.
+ *   - PAD: `padEnd`/`padStart`, which pads to a count of code UNITS — the table column that
+ *     holds an agent's own name, and the block of words in the help.
+ *   - A LITERAL, MEASURED: `'decision'.length`, the width of one report's kind column. The
+ *     literal is blanked before this runs (`support/reading-source.ts`), so what is left is a
+ *     `.length` with nothing in front of it, which is exactly the shape.
+ *   - TEXT DERIVED, MEASURED: the length of what a render, a slice or a join produced. The
+ *     line`.trim().length` two files used to ask *is this row empty* with is written `=== ''`
+ *     now, so this term has nothing to forgive.
+ *
+ * WHAT IT DOES NOT REACH, said out loud so a pass is not read as more than it is: a bare
+ * `text.length` on a variable that holds a string. Without types there is nothing to tell it
+ * from `items.length` on an array, and half this surface counts arrays. The three sites of that
+ * shape that existed — the widest word of the session's list, of the bare name's doors and of
+ * the help — ask `widestOf` now, and what stands between them and a relapse is the elo below
+ * (every module of the surface that measures anything imports the authority) rather than this
+ * pattern.
+ */
+const COUNTS_ITS_OWN_COLUMNS: readonly { readonly what: string; readonly term: RegExp }[] = [
+  { what: 'spread and count', term: /\[\.\.\.[^\]\n]*\]\.length/ },
+  { what: 'pad', term: /\.padEnd\(|\.padStart\(/ },
+  { what: 'a literal, measured', term: /[\s(,]\.length/ },
+  {
+    what: 'text derived, measured',
+    term: /(?:render[A-Za-z]*\([^)\n]*\)|\.(?:slice|trim|trimEnd|trimStart|replace|join|repeat|normalize|toUpperCase|toLowerCase)\([^)\n]*\))\.length/,
+  },
+];
+
+/** Every module of this product that ships, with its bytes and its bytes as code. */
+function modulesOfTheSurface(): readonly { where: string; raw: string; code: string }[] {
+  return sourceFiles(SRC)
+    .map((file) => {
+      const raw = readFileSync(file, 'utf-8');
+      return { where: file.slice(SRC.length + 1), raw, code: codeOnly(raw) };
+    })
+    .filter((module) => THE_SURFACE.some((directory) => module.where.startsWith(directory)));
+}
+
+describe('one authority over how wide text is, and nothing on the surface counts for itself', () => {
+  it('loads the layout library’s own measurement in exactly one module', () => {
+    // THE DECISION THIS RESTS ON. The frame comes apart when OUR count and the RENDERER'S
+    // disagree, not when ours disagrees with the truth of some terminal — so the authority is the
+    // one the layout draws by, and a second module reaching for it would be a second answer about
+    // the same page. The discriminant is the library's own name over the RAW source, prose
+    // included: a module that so much as talks about measuring text itself is the next opinion
+    // waiting to be written.
+    const loading = sourceFiles(SRC)
+      .filter((file) => readFileSync(file, 'utf-8').includes(THE_LIBRARY))
+      .map((file) => file.slice(SRC.length + 1));
+    expect(loading).toEqual([THE_AUTHORITY]);
+    // Read, rather than absent: the walk really reached this surface's files.
+    expect(sourceFiles(SRC).length).toBeGreaterThan(50);
+  });
+
+  it('works out no width by hand anywhere on the surface', () => {
+    // CODE AND NOT PROSE. The paragraphs that make this rule readable NAME the shapes it
+    // refuses — this file's own do — and a scanner that read a doc comment would accuse the
+    // documentation for existing (`support/reading-source.ts`).
+    const modules = modulesOfTheSurface();
+    // Read, rather than absent.
+    expect(modules.length).toBeGreaterThan(30);
+    const counting = modules.flatMap((module) =>
+      module.where === THE_AUTHORITY
+        ? []
+        : COUNTS_ITS_OWN_COLUMNS.filter((shape) => shape.term.test(module.code)).map(
+            (shape) => `${module.where} — ${shape.what}`,
+          ),
+    );
+    expect(counting.sort()).toEqual([]);
+  });
+
+  it('would accuse each of the four shapes, on the very lines that were there', () => {
+    // NOT VACUOUS, and it is asked per SHAPE rather than once: a term that stopped matching
+    // anything would leave the case above green over a whole class. Every line below is one this
+    // delivery really replaced, quoted from the file it was in.
+    const accused = (line: string): readonly string[] =>
+      COUNTS_ITS_OWN_COLUMNS.filter((shape) => shape.term.test(codeOnly(line))).map(
+        (shape) => shape.what,
+      );
+    expect(accused('return [...renderPlain(line)].length;')).toContain('spread and count');
+    expect(accused('const AS_WIDE_AS_THE_MARK = [...PICK].length;')).toContain('spread and count');
+    expect(accused('return value.padEnd(width);')).toContain('pad');
+    expect(accused("const KIND_WIDTH = 'decision'.length;")).toContain('a literal, measured');
+    expect(accused('const worth = line.trim().length > 0;')).toContain('text derived, measured');
+    // AND IT IS NOT SATISFIED BY WHAT THE SURFACE SAYS NOW, or the case above passes for the
+    // wrong reason: these are the lines that replaced the five above.
+    expect(accused('return widthOfText(renderPlain(line));')).toEqual([]);
+    expect(accused('return padTo(value, width);')).toEqual([]);
+    expect(accused("const worth = line.trim() !== '';")).toEqual([]);
+    // AND IT DOES NOT ACCUSE A COUNT OF ITEMS, which is what half this surface does with
+    // `.length` and what a term written one notch looser would have taken down with it.
+    expect(accused('const shown = Math.min(offers.length, AT_MOST);')).toEqual([]);
+    expect(accused('return lines.map((row) => row).length;')).toEqual([]);
+  });
+
+  it('names every module that measures anything, and each of them asks the authority', () => {
+    // THE ELO, AND THE HALF THAT SURVIVES A SHAPE THIS FILE CANNOT SEE. A module that counted a
+    // width with a bare `text.length` would pass the case above; what it cannot do is measure
+    // without importing something, so the SET is asserted. A new module that starts measuring is
+    // named here the day it is written, and one that stops is a fossil and red.
+    const asking = modulesOfTheSurface()
+      .filter((module) => /from '[^']*width\.js'/.test(module.raw))
+      .map((module) => module.where)
+      .sort();
+    expect(asking).toEqual([
+      'choice/doors.ts',
+      'presentation/banner.ts',
+      'presentation/folded.ts',
+      'presentation/items.ts',
+      'presentation/plain.ts',
+      'presentation/status.ts',
+      'repl/console.ts',
+      'repl/palette.ts',
+      'repl/scrolling.ts',
+      'repl/seen.ts',
+      'wiring/repl.ts',
+    ]);
   });
 });
 

@@ -39,6 +39,7 @@ import { aside, subjectLine } from '../presentation/detail.js';
 import { asPick, type Column, column, itemLine } from '../presentation/items.js';
 import type { Line } from '../presentation/line.js';
 import type { Render } from '../presentation/render.js';
+import { widestOf, widthOfText } from '../presentation/width.js';
 import { NOBODY, PICK, thePicked } from '../repl/palette.js';
 import { INIT_VERB } from '../wiring/init.js';
 import { REPL_VERB } from '../wiring/repl.js';
@@ -75,7 +76,7 @@ const THE_HELP_FLAG = '--help';
 const AFTER_THE_WORD = 1;
 
 /** How wide the column the mark sits in is: as wide as the mark, and read off the mark. */
-const AS_WIDE_AS_THE_MARK = [...PICK].length;
+const AS_WIDE_AS_THE_MARK = widthOfText(PICK);
 
 /**
  * THE THREE CLAUSES OF THE ROW UNDER THE DOORS — a KEY, and what that key gives, in the
@@ -191,7 +192,7 @@ const A_BLANK_ROW = '';
  * where the first one ends rather than under a gap left by a word that is not here.
  */
 export function theDoorRows(doors: readonly Door[], picked: string): readonly Line[] {
-  const width = doors.reduce((most, door) => Math.max(most, door.word.length), 0) + AFTER_THE_WORD;
+  const width = widestOf(doors.map((door) => door.word)) + AFTER_THE_WORD;
   return doors.map((door) =>
     itemLine([markFor(doors, door.word, picked), column(door.word, width), door.description]),
   );

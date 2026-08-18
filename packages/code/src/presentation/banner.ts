@@ -116,6 +116,7 @@
 import { subjectLine } from './detail.js';
 import type { Line } from './line.js';
 import { widthOf as widthOfLine } from './plain.js';
+import { glyphsOf } from './width.js';
 
 /**
  * THE BLOCK THE FIVE-ROW MASK IS INKED WITH, named by its code point rather than typed, and
@@ -198,9 +199,19 @@ const INKED: { readonly [mark: string]: string } = {
  * same class as the block that was already here — the debt did not grow a kind, it grew a
  * count — and what the delivery that brought them did instead of asserting it was to ASK the
  * product's own measurement, glyph by glyph, rather than read the standard
- * (`tests/the-name-in-full-blocks.test.ts`). Closing it means a character-width table for the
- * whole surface, which is a delivery rather than a line, and nothing in this file pretends
- * otherwise.
+ * (`tests/the-name-in-full-blocks.test.ts`).
+ *
+ * AND THE SENTENCE UNDER THAT ONE IS HALF FALSIFIED. It read: *closing it means a
+ * character-width table for the whole surface, which is a delivery rather than a line.* The
+ * surface has one authority over columns now and it is not a table anybody here wrote
+ * (`width.js`, which asks the library the layout draws by) — so the delivery happened, and it
+ * did not close THIS. Ambiguous is ambiguous: the authority treats those glyphs as one cell,
+ * on the standard's own recommendation for a context that cannot be established, and this
+ * drawing is measured at one cell per glyph exactly as it always was. What the delivery changed
+ * is that the risk is now the WHOLE of the debt instead of the visible half of it — under it
+ * was East Asian WIDE, which is not ambiguous at all and was being counted as one cell in a
+ * caller's own titles. The seven glyphs of this drawing are unchanged, byte for byte and column
+ * for column, and a terminal in a CJK locale still draws them twice as wide as this thinks.
  *
  * No row ends in a blank, and that is load-bearing rather than tidy: the layout trims the
  * end of every row it writes, so a form padded on the right would arrive somewhere trimmed
@@ -268,7 +279,13 @@ const NAME_MASK: readonly string[] = ['mnema'];
  * that is not a mask would be a second answer to what a row of the name becomes.
  */
 function inked(rows: readonly string[]): readonly Line[] {
-  return rows.map((row) => subjectLine([...row].map((mark) => INKED[mark] ?? mark).join('')));
+  return rows.map((row) =>
+    subjectLine(
+      glyphsOf(row)
+        .map((glyph) => INKED[glyph.bytes] ?? glyph.bytes)
+        .join(''),
+    ),
+  );
 }
 
 /** The floor, drawn once — the one form that is answered whatever the size. */

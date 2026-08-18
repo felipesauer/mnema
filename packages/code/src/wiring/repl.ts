@@ -45,6 +45,7 @@
  */
 
 import type { Command } from 'commander';
+import { padTo, widestOf } from '../presentation/width.js';
 import { THE_KEY_THAT_LEAVES, WHAT_EACH_WORD_DOES } from '../session-words.js';
 import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
@@ -60,9 +61,9 @@ const AFTER_THE_WORD = 3;
  */
 function theWordsItAnswersTo(): string[] {
   const words = Object.entries(WHAT_EACH_WORD_DOES);
-  const widest = Math.max(...words.map(([word]) => word.length));
+  const widest = widestOf(words.map(([word]) => word));
   return words.map(
-    ([word, does]) => ' '.repeat(INDENT) + word.padEnd(widest + AFTER_THE_WORD) + does,
+    ([word, does]) => ' '.repeat(INDENT) + padTo(word, widest + AFTER_THE_WORD) + does,
   );
 }
 

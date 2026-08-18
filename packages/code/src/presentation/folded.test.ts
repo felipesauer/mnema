@@ -35,13 +35,14 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../cli.js';
 import { badgeLine, tips } from '../repl/session.js';
 import { aside, fact, statedFact, subjectLine } from './detail.js';
-import { foldedAt, rowsAt, withoutSequences } from './folded.js';
+import { foldedAt, rowsAt } from './folded.js';
 import { asId, asWhen, column, itemLine } from './items.js';
 import type { Line } from './line.js';
 import { indentOf, renderPlain, widthOf } from './plain.js';
 import { asState } from './state.js';
 import { renderStyled } from './styled.js';
 import { clauseStatement, statement } from './verdict.js';
+import { withoutSequences } from './width.js';
 
 /** The byte every sequence below opens with. */
 const ESC = '\u001b';

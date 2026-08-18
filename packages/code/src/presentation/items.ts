@@ -30,6 +30,7 @@
  */
 
 import type { Line, Part, Severity } from './line.js';
+import { padTo } from './width.js';
 
 /**
  * The roles a COLUMN of a list may take: the ordinary value, the three a call site can
@@ -192,7 +193,13 @@ export function itemLine(fields: readonly (string | Column)[]): Line {
  * closed set of short words (a state, a tree) and read as a table when they line
  * up. It pads and never truncates: a value wider than the column pushes the rest
  * of the line right, which is ugly, where cutting it would be a lie.
+ *
+ * IT WAS `padEnd` AND THAT PADS TO A COUNT OF CODE UNITS. One column of this surface holds a
+ * value a caller wrote — the AGENT a run's cost is attributed to (`usage.ts`) — so a name in
+ * Japanese was padded as though each of its glyphs took one cell and every column to the right
+ * of it on that row started two cells further along than on the rows around it. The pad is the
+ * authority's now (`width.ts`, `padTo`), which is the same function that measures the line.
  */
 export function column(value: string, width: number): string {
-  return value.padEnd(width);
+  return padTo(value, width);
 }
