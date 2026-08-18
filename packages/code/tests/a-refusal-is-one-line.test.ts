@@ -368,21 +368,26 @@ describe('nothing builds that sentence on its own', () => {
     expect(INTERPOLATED.test(`No ${OPEN}kind} ${OPEN}oneLine(named)} here.`)).toBe(false);
   });
 
-  it('names the one place outside this package that still words its own', () => {
+  it('names the one place outside this package that words its own, now through the rule', () => {
     // `authorizeTailPrune` words two refusals of this family and interpolates the
-    // caller's value into both. It is NOT this defect: by the time either sentence is
-    // built, the value has been matched against the record — one against the tail this
-    // writer appends to, the other against the tree that was found holding it — so a
-    // name carrying a newline is refused before it gets there. What it is, is the same
-    // PHRASE in a package `oneLine` does not reach, which makes closing it a slice with
-    // its own count. It is RECONCILED here rather than left silent: the day it is
-    // closed, this case goes red and the exception is deleted instead of outliving its
-    // reason.
+    // caller's value into both. This case used to say the value could not go through the
+    // rule, because `oneLine` was a module of THIS package and `core` cannot reach it.
+    // The rule moved: it is `@mnema/chain/one-line` now, under both packages, and
+    // `core`'s two go through it where they are written — which is what the second half
+    // of this case asserts, so the sentence is still walked and the collapse is what is
+    // held. The classification of both values is in
+    // `the-phrase-the-domain-words-is-one-line.test.ts`.
     const elsewhere = everyPackageSource()
       .filter(({ path }) => !path.startsWith(join('code', 'src')))
       .filter(({ text }) => INTERPOLATED.test(text) || CONCATENATED.test(text))
       .map(({ path }) => path);
-    expect(elsewhere).toEqual([join('core', 'src', 'workflow', 'prune-operations.ts')]);
+    const named = join('core', 'src', 'workflow', 'prune-operations.ts');
+    expect(elsewhere).toEqual([named]);
+    const source = everyPackageSource().find(({ path }) => path === named)?.text ?? '';
+    expect(source).toContain("import { oneLine } from '../one-line.js';");
+    // `${` is BUILT and not typed, the same way the case above builds its samples.
+    const open = `${'$'}{`;
+    expect(source).toContain(`No tail ${open}oneLine(input.tail)} holds events in this tree.`);
   });
 
   it('walks more than one package', () => {

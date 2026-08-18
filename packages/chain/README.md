@@ -78,6 +78,16 @@ parts apart (a terminal paints the level's clause and dims the rest) without mat
 text on a verdict, and `summary` is those clauses joined by the one function that
 joins them, so no two readings of one verdict can disagree.
 
+Every finding is **one line**, and that is part of what it means. An issue is
+printed one per line under a count, and every value in one comes from the thing
+under suspicion — a tail id is a directory name, a signer fingerprint is a field
+of a stored entry, a reader's complaint quotes the bytes it choked on. A value
+carrying a newline would put a second finding on the page about a tail nobody
+has, so each of them is collapsed where the sentence is written. The rule is
+published on its own at `@mnema/chain/one-line`, which imports nothing, because
+the packages above word sentences of their own and a caller cannot apply a rule
+to the inside of a sentence this package already joined.
+
 The pattern is consistent: **local crypto covers alteration; an external
 witness covers omission and ties the record to an identity.** That witness is
 the last row of the first table — a git remote or an anchor — and committing

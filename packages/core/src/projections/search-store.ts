@@ -48,6 +48,7 @@
  */
 
 import type { SqliteDatabase } from '../db/sqlite.js';
+import { oneLine } from '../one-line.js';
 import type { DecisionProjection } from './decision.js';
 import type { MemoryProjection, ObservationProjection } from './knowledge.js';
 import type { SkillProjection } from './skill.js';
@@ -452,7 +453,9 @@ function toHit(row: SearchRow): SearchHit {
  * space is what keeps a truncated line from ending mid-word.
  */
 function excerptOf(text: string): string {
-  const collapsed = text.replace(/\s+/g, ' ').trim();
+  // The collapse is the rule of the line's, not this module's — one place decides what
+  // "one line" means, and an excerpt that disagreed with it would be a second answer.
+  const collapsed = oneLine(text);
   if (collapsed.length <= EXCERPT_CHARS) return collapsed;
   const cut = collapsed.slice(0, EXCERPT_CHARS);
   const lastSpace = cut.lastIndexOf(' ');

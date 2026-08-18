@@ -27,6 +27,7 @@
 import type { TransitionFields } from '@mnema/chain';
 import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalIdentity } from '../identity/who.js';
+import { oneLine } from '../one-line.js';
 import { isSkillState, type SkillState } from './skill-states.js';
 import {
   findSkillTransition,
@@ -120,15 +121,18 @@ export function skillGate(request: SkillGateRequest): SkillGateResult {
   if (!agent.ok) return agent;
 
   if (!isSkillState(request.from)) {
-    return err('UNKNOWN_STATE', `"${request.from}" is not a skill state`);
+    return err('UNKNOWN_STATE', `"${oneLine(request.from)}" is not a skill state`);
   }
   if (!isSkillAction(request.action)) {
-    return err('UNKNOWN_ACTION', `"${request.action}" is not a skill action`);
+    return err('UNKNOWN_ACTION', `"${oneLine(request.action)}" is not a skill action`);
   }
 
   const transition = findSkillTransition(request.from as SkillState, request.action);
   if (transition === undefined) {
-    return err('ILLEGAL_TRANSITION', `cannot "${request.action}" a skill in ${request.from}`);
+    return err(
+      'ILLEGAL_TRANSITION',
+      `cannot "${oneLine(request.action)}" a skill in ${oneLine(request.from)}`,
+    );
   }
 
   for (const field of transition.requires) {
@@ -136,7 +140,7 @@ export function skillGate(request: SkillGateRequest): SkillGateResult {
       return {
         ok: false,
         code: 'MISSING_PROOF',
-        message: `"${request.action}" requires a non-empty "${field}"`,
+        message: `"${oneLine(request.action)}" requires a non-empty "${field}"`,
         field,
       };
     }

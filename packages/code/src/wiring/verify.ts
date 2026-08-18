@@ -62,6 +62,7 @@ import { type Clause, clauseStatement, statement } from '../presentation/verdict
 import { here } from './context.js';
 import { enumeratedOption, glossedList, LEVEL_REQUIREMENTS, listed } from './enumerated.js';
 import type { CliIo } from './io.js';
+import { onOneLine } from './on-one-line.js';
 import { type Reporter, reportRefusal, reportUsage } from './report.js';
 import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
@@ -546,11 +547,17 @@ function report(io: CliIo, render: Render, tree: TreeReport, where = ''): void {
   // does not move the verdict and it does not move the exit — and stderr on this
   // surface is where the evidence for a failure goes.
   for (const note of tree.result.census) {
-    io.out(render(fact(`census [${note.kind}] ${named} ${censusLocus(note)}: ${note.detail}`)));
+    io.out(
+      render(fact(onOneLine`census [${note.kind}] ${named} ${censusLocus(note)}: ${note.detail}`)),
+    );
   }
   for (const issue of tree.result.issues) {
     io.err(
-      render(fact(`issue [${issue.layer}] ${named} ${at(issue.tail, issue.seq)}: ${issue.detail}`)),
+      render(
+        fact(
+          onOneLine`issue [${issue.layer}] ${named} ${at(issue.tail, issue.seq)}: ${issue.detail}`,
+        ),
+      ),
     );
   }
 }
