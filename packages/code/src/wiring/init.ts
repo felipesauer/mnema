@@ -19,6 +19,7 @@ import { fact } from '../presentation/detail.js';
 import type { Render } from '../presentation/render.js';
 import { here } from './context.js';
 import type { CliIo } from './io.js';
+import { onOneLine } from './on-one-line.js';
 import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
 /**
@@ -39,7 +40,6 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
     .description('establish a mnema project in the current directory')
     .action(async () => {
       const { runInit } = await import('../commands/init.js');
-      const { onOneLine } = await import('./on-one-line.js');
       const result = runInit(here());
       // The ROOT is a directory this run discovered from the cwd, and a directory name
       // is the value this whole class was first measured on: a checkout, an archive or
@@ -48,7 +48,7 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
       if (result.created) {
         io.out(onOneLine`Initialized mnema project at ${result.root}`);
         io.out(render(fact(`identity: ${result.anchor}`)));
-        await reportIdentity(result.identity, io, render);
+        reportIdentity(result.identity, io, render);
       } else {
         io.out(onOneLine`Already a mnema project at ${result.root} — nothing to found.`);
         io.out(render(fact(`identity: ${result.anchor}`)));
@@ -76,15 +76,8 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
  * changes WHO may speak for the identity. That is not something to learn by
  * reading the chain later.
  */
-async function reportIdentity(
-  identity: InitResult['identity'],
-  io: CliIo,
-  render: Render,
-): Promise<void> {
+function reportIdentity(identity: InitResult['identity'], io: CliIo, render: Render): void {
   if (identity === undefined) return;
-  // Loaded here rather than handed in: this is the branch that has a path to print, and
-  // a parameter would make every caller decide again which values are an actor's.
-  const { onOneLine } = await import('./on-one-line.js');
   const backup = identity.backup;
   if (backup?.created === true) {
     io.out(

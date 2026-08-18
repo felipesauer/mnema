@@ -183,13 +183,16 @@ function visibleOptionsOf(command: Command): readonly Option[] {
 /**
  * A declaration's text on one line.
  *
- * It is NOT the `oneLine` of `served-patterns.ts`, and the difference is the threat,
- * not the mechanism: there, a newline inside RECORDED text forges an item in a list of
- * records, and the helper carries the argument for why that class is the class. Here a
- * newline would end a line of shell and start one the shell would try to run. They are
- * also two modules with different budgets — that one reaches `@mnema/copilot`, and this
- * one may not load the domain at all: the script it writes is generated on every
- * interactive shell start.
+ * It is NOT the `oneLine` of `one-line.ts`, and the difference is the threat, not the
+ * mechanism: there, a newline inside RECORDED text forges an item in a list of records,
+ * and the helper carries the argument for why that class is the class. Here a newline
+ * would end a line of shell and start one the shell would try to run.
+ *
+ * THE SECOND REASON WAS A BUDGET, AND IT IS GONE. This said the two were also modules
+ * with different budgets — that one reached `@mnema/copilot`, and this one may not load
+ * the domain at all, because the script it writes is generated on every interactive
+ * shell start. The rule of the line moved to a module that imports nothing, so that half
+ * is now false: what keeps these two apart is the paragraph above and nothing else.
  */
 function oneLine(text: string): string {
   return text.replace(/\s+/g, ' ').trim();

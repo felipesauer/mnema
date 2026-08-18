@@ -11,6 +11,7 @@
 import type { Command } from 'commander';
 import { here } from './context.js';
 import { writeLines } from './io.js';
+import { noSuchRecord } from './no-such-record.js';
 import { reportRefusal } from './report.js';
 import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
@@ -27,7 +28,6 @@ export function registerShow(program: Command, wiring: Wiring): Declared {
       const { recordReport } = await import('../presentation/record.js');
       const result = runShow(here(), { id });
       if (!result.ok) {
-        const { noSuchRecord } = await import('./no-such-record.js');
         reportRefusal(wiring, result, { UNKNOWN_RECORD: noSuchRecord('record', id) });
         return;
       }

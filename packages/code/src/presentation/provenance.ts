@@ -28,7 +28,7 @@
  */
 
 import type { PatternProvenance } from '@mnema/copilot';
-import { A_PERSON, oneLine } from '../served-patterns.js';
+import { A_PERSON, oneLine } from '../one-line.js';
 import { consultedLine } from './consultation.js';
 import { asId, asScope, column, itemLine } from './items.js';
 import type { Render } from './render.js';

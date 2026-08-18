@@ -27,6 +27,7 @@ import {
   scopeOption,
   TASK_ACTIONS,
 } from './enumerated.js';
+import { noSuchRecord } from './no-such-record.js';
 import {
   declaredAgent,
   INVALID,
@@ -143,7 +144,6 @@ export function registerTask(program: Command, wiring: Wiring): Declared {
         reportReplacement(result, io);
         return;
       }
-      const { noSuchRecord } = await import('./no-such-record.js');
       reportRefusal(wiring, result, { UNKNOWN_TASK: noSuchRecord('task', id) });
     },
   );

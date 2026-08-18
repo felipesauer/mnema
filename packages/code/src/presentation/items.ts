@@ -21,7 +21,7 @@
  * What it does NOT do is collapse the whitespace inside a field. That rule belongs
  * to the fields that hold text an ACTOR wrote (a title, an agent's name), it is
  * applied at the call sites with `oneLine`, and it is asserted there — see
- * `served-patterns.ts` for the rule and why the class it covers is the class it
+ * `one-line.ts` for the rule and why the class it covers is the class it
  * covers. Moving it in here would be a good idea with a byte attached: a
  * whitespace-only title prints today as an empty column between two separators,
  * and `oneLine` over the whole composed field would eat one of the spaces. That is

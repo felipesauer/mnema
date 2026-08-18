@@ -5,7 +5,7 @@
  * to put that id straight into the sentence. An id is whatever was typed after the
  * verb — nothing upstream removes a newline from one — so an argument holding a break
  * printed a SECOND line with the entire shape of a refusal, about a record nobody
- * named. The rule is `served-patterns.ts`'s and it was already closed for a project's
+ * named. The rule is `one-line.ts`'s and it was already closed for a project's
  * DIRECTORY (`verify --workspace`, four sites in one function); this file is the same
  * rule over the family of refusals that name a record.
  *

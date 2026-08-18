@@ -75,6 +75,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { discoveryEnv } from '../env.js';
 import { movedLine } from '../moved-record.js';
+import { oneLine } from '../one-line.js';
 import {
   type Landed,
   landedNotice,
@@ -84,7 +85,7 @@ import {
   replacementNotice,
 } from '../recorded-content.js';
 import { REFERENCE_DIRECTIONS } from '../reference-directions.js';
-import { oneLine, patternsFraming, SERVED_PATTERN_CONTRACT } from '../served-patterns.js';
+import { patternsFraming, SERVED_PATTERN_CONTRACT } from '../served-patterns.js';
 import { VERSION } from '../version.js';
 import {
   actionsRequiring,

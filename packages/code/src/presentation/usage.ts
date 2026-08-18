@@ -24,7 +24,7 @@
  * the session id — are collapsed too, and that is the one place this report differs
  * from every other: the values in a list are usually the record's, screened at the door
  * they came in through, and these arrived in a file the host wrote and nothing here
- * verified. A newline in one of them would forge a row (see `served-patterns.ts` for
+ * verified. A newline in one of them would forge a row (see `one-line.ts` for
  * the rule and what it costs when a list does not keep it).
  *
  * THE CLOSING STATEMENT IS NOT A FOOTER. It says the counts are the host's and not the
@@ -39,7 +39,7 @@
  */
 
 import type { RunSpend, UsageDone } from '../commands/usage.js';
-import { oneLine } from '../served-patterns.js';
+import { oneLine } from '../one-line.js';
 import { asId, column, itemLine } from './items.js';
 import type { Render } from './render.js';
 

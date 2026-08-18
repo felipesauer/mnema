@@ -69,7 +69,7 @@ const LAYER = fileURLToPath(new URL('../src/presentation', import.meta.url));
 
 /** A newline, built rather than typed, so no literal in this file spans two lines. */
 const LF = String.fromCharCode(10);
-/** The collapse — `served-patterns.ts`, and the one door this layer has. */
+/** The collapse — `one-line.ts`, and the one door this layer has. */
 const DOOR = 'oneLine';
 
 // ---------------------------------------------------------------------------
@@ -1139,13 +1139,13 @@ describe('the rule has one door in this layer', () => {
   const A_COLLAPSE = /replace\(\s*\/\\s/;
 
   it('collapses with the shared function and with nothing of its own', () => {
-    // `oneLine` lives in `served-patterns.ts` and is what `wiring/on-one-line.ts`'s tag
+    // `oneLine` lives in `one-line.ts` and is what `wiring/on-one-line.ts`'s tag
     // calls. A second collapse written here — a `replace` by hand, a local helper — would
     // be a second rule, and the one that stops agreeing is always the second.
     //
     // The ban is checked against the place the shape really is first, or it would pass on
     // a pattern that matches nothing anywhere.
-    const door = fileURLToPath(new URL('../src/served-patterns.ts', import.meta.url));
+    const door = fileURLToPath(new URL('../src/one-line.ts', import.meta.url));
     expect(A_COLLAPSE.test(readFileSync(door, 'utf-8'))).toBe(true);
     const rivals = sourceFiles(LAYER)
       .filter((file) => A_COLLAPSE.test(withoutComments(readFileSync(file, 'utf-8'))))
@@ -1159,7 +1159,7 @@ describe('the rule has one door in this layer', () => {
     // nothing, and a collapse with no import cannot be the shared one.
     const importing = sourceFiles(LAYER)
       .filter((file) =>
-        /import \{[^}]*\boneLine\b[^}]*\} from '\.\.\/served-patterns\.js'/.test(
+        /import \{[^}]*\boneLine\b[^}]*\} from '\.\.\/one-line\.js'/.test(
           readFileSync(file, 'utf-8'),
         ),
       )

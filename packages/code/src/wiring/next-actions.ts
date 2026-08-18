@@ -9,6 +9,8 @@
 import type { Command } from 'commander';
 import { itemLine } from '../presentation/items.js';
 import { here } from './context.js';
+import { noSuchRecord } from './no-such-record.js';
+import { onOneLine } from './on-one-line.js';
 import { reportRefusal } from './report.js';
 import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
@@ -24,7 +26,6 @@ export function registerNextActions(program: Command, wiring: Wiring): Declared 
       const { runNextActions } = await import('../commands/next-actions.js');
       const result = runNextActions(here(), { id });
       if (!result.ok) {
-        const { noSuchRecord } = await import('./no-such-record.js');
         reportRefusal(wiring, result, { UNKNOWN_TASK: noSuchRecord('task', id) });
         return;
       }
@@ -35,7 +36,6 @@ export function registerNextActions(program: Command, wiring: Wiring): Declared 
       // The id is whatever was typed after the verb, and it LEADS a line the moves are
       // listed under: a break in it used to write a heading of its own with this
       // reading's own items beneath it (see {@link onOneLine}).
-      const { onOneLine } = await import('./on-one-line.js');
       if (result.actions.length === 0) {
         io.out(onOneLine`Task ${id} is terminal — no legal moves.`);
         return;

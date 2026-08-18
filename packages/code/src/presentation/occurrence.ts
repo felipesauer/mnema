@@ -28,7 +28,7 @@
  */
 
 import type { CatalogEvent } from '@mnema/chain';
-import { A_PERSON, oneLine } from '../served-patterns.js';
+import { A_PERSON, oneLine } from '../one-line.js';
 import { asId, asWhen, itemLine } from './items.js';
 import type { Line } from './line.js';
 
