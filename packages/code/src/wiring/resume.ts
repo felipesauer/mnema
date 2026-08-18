@@ -7,7 +7,6 @@
 
 import type { Command } from 'commander';
 import { fact } from '../presentation/detail.js';
-import { lastRunPhrase, NO_RUNS_HINT, openRunsPhrase } from '../presentation/runs.js';
 import { here } from './context.js';
 import { writeLines } from './io.js';
 import { ACTOR_HELP } from './options.js';
@@ -26,6 +25,14 @@ export function registerResume(program: Command, wiring: Wiring): Declared {
       const { anchorText } = await import('../anchors.js');
       const { runResume } = await import('../commands/resume.js');
       const { onOneLine } = await import('./on-one-line.js');
+      // LOADED HERE AND NOT AT MODULE SCOPE, for the reason `on-one-line.ts` is:
+      // `presentation/runs.js` collapses the goal it words, so it reaches
+      // `served-patterns.ts` and through it `@mnema/copilot`. Declared eagerly, that
+      // edge would sit in the floor of `mnema --version`, which is what
+      // `tests/the-floor-is-the-declaration.test.ts` exists to refuse.
+      const { lastRunPhrase, NO_RUNS_HINT, openRunsPhrase } = await import(
+        '../presentation/runs.js'
+      );
       const result = runResume(here(), { actor: opts.actor });
       if (!result.ok) {
         reportRefusal(wiring, result);
@@ -50,9 +57,12 @@ export function registerResume(program: Command, wiring: Wiring): Declared {
       //
       // The PHRASE is what goes through the collapse, not the actor: an anchor cannot
       // hold a newline and a run's GOAL is text somebody typed, and the goal reaches
-      // this line inside the phrase. The other reading that prints it
-      // (`presentation/status.ts`) still prints it raw — named, and reconciled, in
-      // `tests/a-line-of-success-is-one-line.test.ts`.
+      // this line inside the phrase. The goal is collapsed a second time here and that
+      // is not redundancy to remove: `lastRunPhrase` collapses the goal because the
+      // OTHER reading prints the phrase too (`presentation/runs.ts`), and this tag
+      // collapses whatever the phrase turns out to hold. Both are classified —
+      // `tests/a-line-of-success-is-one-line.test.ts` for this line,
+      // `tests/the-line-a-reading-words-is-one-line.test.ts` for the phrase.
       io.out(onOneLine`${actor} ${lastRunPhrase(lastRun)}`);
       io.out(render(fact(openRunsPhrase(result.resume))));
     });

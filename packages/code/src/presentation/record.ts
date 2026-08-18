@@ -10,7 +10,19 @@
  * than an omission: a body printed on lines of its own is not in the
  * one-line-per-item class, because there is no list of items around it for a second
  * line to imitate. Collapsing it would damage the one thing this read exists to
- * serve.
+ * serve. It is the ONE thing here that is served whole, and it is written down as
+ * such: everything above the blank line is a FACT, and a fact is one line.
+ *
+ * AND THE FIELDS ABOVE IT ARE COLLAPSED, WHICH USED TO READ AS THE BODY'S ARGUMENT
+ * EXTENDED OVER THE WHOLE READ. The argument is that a body has no list around it to
+ * imitate — and the lines above the body are not a body: they are the indented facts
+ * under a subject, and a second line at that same depth is a FACT THIS RECORD DOES NOT
+ * HOLD. An observation's `about` is the sharpest of them, because it is the value
+ * `observe` does not validate (`tests/a-line-of-success-is-one-line.test.ts` measured
+ * that door), so a forged one enters the record through one verb and comes back out
+ * here as `topic: …` about a record nobody wrote. A title, a name, a topic and the two
+ * ids a decision supersedes by are the same shape of value; the instants, the
+ * `ADR-<n>`, the kind, the tree and the anchor are the record's own and are left alone.
  *
  * THE STATE IS ITS OWN PART, for all three kinds that have one. It was concatenated into
  * the fact beside the title — `` `${title} (${state})` `` — so a position and the words an
@@ -31,6 +43,7 @@
 
 import type { RecordBody } from '@mnema/copilot';
 import { type AnchorForms, anchorText } from '../anchors.js';
+import { oneLine } from '../served-patterns.js';
 import { consultedLine } from './consultation.js';
 import { fact, statedFact, subjectLine } from './detail.js';
 import type { Render } from './render.js';
@@ -60,20 +73,27 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
       lines.push(body.record.content);
       break;
     case 'observation':
-      lines.push(render(fact(`about ${body.record.about} · recorded ${body.record.recordedAt}`)));
-      lines.push(render(fact(`topic: ${body.record.topic}`)));
+      lines.push(
+        render(fact(`about ${oneLine(body.record.about)} · recorded ${body.record.recordedAt}`)),
+      );
+      lines.push(render(fact(`topic: ${oneLine(body.record.topic)}`)));
       lines.push('');
       lines.push(body.record.text);
       break;
     case 'decision':
       lines.push(
-        render(statedFact(`${body.record.adr} — ${body.record.title}`, asState(body.record.state))),
+        render(
+          statedFact(
+            `${body.record.adr} — ${oneLine(body.record.title)}`,
+            asState(body.record.state),
+          ),
+        ),
       );
       if (body.record.supersedes !== undefined) {
-        lines.push(render(fact(`supersedes ${body.record.supersedes}`)));
+        lines.push(render(fact(`supersedes ${oneLine(body.record.supersedes)}`)));
       }
       if (body.record.supersededBy !== undefined) {
-        lines.push(render(fact(`superseded by ${body.record.supersededBy}`)));
+        lines.push(render(fact(`superseded by ${oneLine(body.record.supersededBy)}`)));
       }
       lines.push('');
       lines.push(body.record.rationale);
@@ -88,13 +108,13 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
       }
       break;
     case 'task':
-      lines.push(render(statedFact(body.record.title, asState(body.record.state))));
+      lines.push(render(statedFact(oneLine(body.record.title), asState(body.record.state))));
       lines.push(
         render(fact(`created ${body.record.createdAt} · updated ${body.record.updatedAt}`)),
       );
       break;
     case 'skill':
-      lines.push(render(statedFact(body.record.name, asState(body.record.state))));
+      lines.push(render(statedFact(oneLine(body.record.name), asState(body.record.state))));
       lines.push(render(fact(consultedLine(context.consultations ?? 0))));
       lines.push('');
       lines.push(body.record.body);

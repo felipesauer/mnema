@@ -10,6 +10,7 @@
  */
 
 import type { Resume } from '@mnema/copilot';
+import { oneLine } from '../served-patterns.js';
 import { fact } from './detail.js';
 import type { Line } from './line.js';
 
@@ -43,6 +44,20 @@ export const NO_RUNS_HINT: readonly Line[] = [
  * The age rides it only while it is OPEN, which is {@link runAgeSuffix}'s rule stated
  * where the decision is made: an ended run reports its own end, and an age beside that
  * would read as time still passing in it.
+ *
+ * THE GOAL IS COLLAPSED HERE, in the phrase, and that is the whole reason the collapse
+ * moved. It is text whoever opened the session typed, and both readings print it: one
+ * of them collapsed it at its own line and the other did not, so the same run with the
+ * same goal came out as one line through `resume` and as two through `status`. A rule
+ * applied by the CALLER is a rule with as many doors as there are callers, and the
+ * second door is always the one nobody looked at. The other values are the record's
+ * own — a uuid, a word of a closed pair, two durations this module words out of
+ * numbers — so the goal is the one thing on the phrase there is anything to collapse.
+ *
+ * The ` — ` is a CHUNK of its own template rather than the head of the goal, which is
+ * the rule `wiring/on-one-line.ts` states and the reason the three halves are joined
+ * rather than nested: a fragment carrying its own punctuation, collapsed, loses the
+ * space it opens with, and `for a — g` becomes `for a— g`.
  */
 export function lastRunPhrase(run: {
   readonly id: string;
@@ -53,8 +68,8 @@ export function lastRunPhrase(run: {
 }): string {
   return (
     `last run ${run.id} (${run.open ? 'open' : 'ended'})` +
-    `${run.goal !== undefined ? ` — ${run.goal}` : ''}` +
-    `${run.open ? runAgeSuffix(run) : ''}`
+    (run.goal === undefined ? '' : ` — ${oneLine(run.goal)}`) +
+    (run.open ? runAgeSuffix(run) : '')
   );
 }
 

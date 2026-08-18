@@ -30,6 +30,7 @@
  */
 
 import type { ReferenceGraph } from '@mnema/copilot';
+import { oneLine } from '../served-patterns.js';
 import { fact, subjectLine } from './detail.js';
 import { asScope, itemLine } from './items.js';
 import type { Render } from './render.js';
@@ -39,16 +40,27 @@ export function referenceReport(render: Render, graph: ReferenceGraph): string[]
   const nodes = new Map(graph.nodes.map((node) => [node.id, node]));
   const origin = nodes.get(graph.id);
   const known = origin?.resolved === true ? (origin.kind ?? 'entity') : 'unresolved';
-  const lines = [render(subjectLine(graph.id, known))];
+  const lines = [render(subjectLine(oneLine(graph.id), known))];
   if (graph.links.length === 0) {
     lines.push(render(fact('nothing references it, and it references nothing.')));
     return lines;
   }
+  // ONE EXIT, and it is what puts the collapse where the id enters the line rather
+  // than at four returns any one of which could be added to without it. What follows
+  // the id is a word of the walk's own vocabulary (`unresolved`, or a `SearchKind`)
+  // or nothing at all; the id itself came back out of the record, and every row this
+  // function words is an ITEM under a heading that counts the rows.
   const label = (id: string) => {
     const node = nodes.get(id);
-    if (node === undefined) return id;
-    if (!node.resolved) return `${id} (unresolved)`;
-    return node.kind !== undefined ? `${id} (${node.kind})` : id;
+    const said =
+      node === undefined
+        ? ''
+        : !node.resolved
+          ? ' (unresolved)'
+          : node.kind !== undefined
+            ? ` (${node.kind})`
+            : '';
+    return `${oneLine(id)}${said}`;
   };
   /** A heading naming the group and how much is in it, then its items. */
   const group = (heading: string, items: readonly string[]) => {
@@ -60,7 +72,11 @@ export function referenceReport(render: Render, graph: ReferenceGraph): string[]
   const touchesOrigin = (link: ReferenceGraph['links'][number]) =>
     link.from === graph.id || link.to === graph.id;
   const written = (link: ReferenceGraph['links'][number]) => {
-    const rel = link.rel !== undefined ? `${link.role}:${link.rel}` : link.role;
+    // The RELATION is an open string — `mnema link a b --rel <anything>` records it
+    // verbatim and nothing here reads meaning into it (see `ReferenceLink.rel`), so
+    // it is the one value on an edge's row that a caller wrote. The role beside it is
+    // one of three words this walk chose.
+    const rel = link.rel !== undefined ? `${link.role}:${oneLine(link.rel)}` : link.role;
     // THE TREE IS THE COLUMN NOBODY READS, on the line of an edge: every edge of a graph
     // resolved from one project answers the same word, and it is the last field of the
     // row (`items.ts`, `asScope`). The brackets are this report's own punctuation and

@@ -29,6 +29,15 @@
  * title or a pattern name holding a newline would put a second line under a header that
  * says how many there are, and that second line reads exactly like an item nothing ever
  * recorded (see `served-patterns.ts`, and `one-line-per-item.test.ts`).
+ *
+ * THAT SENTENCE WAS A CLAIM ABOUT THE WHOLE READING AND IT WAS FALSE OF ONE FIELD. The
+ * four lists kept it; the SESSION line did not. It prints the run's phrase, whose goal is
+ * text whoever opened the session typed, and the phrase is worded in `runs.ts` — where
+ * the collapse was not. `resume` prints the same phrase and collapsed it at its own line,
+ * so the same run came out as one line through one verb and as two through this one. The
+ * collapse is in the phrase now, which is what makes the sentence above true rather than
+ * intended, and `tests/the-line-a-reading-words-is-one-line.test.ts` holds the
+ * classification of every value this module puts on a line, reconciled against the source.
  */
 
 import type { AwaitingJudgement, Bootstrap } from '@mnema/copilot';
