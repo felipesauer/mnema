@@ -375,6 +375,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'entity ids out of the record — the sibling reading collapsed them and this one did not',
   },
+  'antipatterns.ts «{} ({})» #1': {
+    verdict: 'collapsed',
+    why: 'the id of a pattern moved without a consultation, and the action — both the record’s',
+  },
   'antipatterns.ts «label naming more than one rule ({})» #1': {
     verdict: 'collapsed',
     why: 'an ADR label read back out of the record',
@@ -567,7 +571,7 @@ describe('every line this wiring words is classified', () => {
     // 28 of these, and a walk that regressed to a line-wise pattern would land near it.
     expect(FOUND.files).toBeGreaterThan(35);
     expect(FOUND.calls).toBeGreaterThan(80);
-    expect(FOUND.sites.length).toBe(60);
+    expect(FOUND.sites.length).toBe(61);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -587,9 +591,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(28);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(29);
     expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(32);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(28);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(29);
   });
 
   it('every reason says where the value comes from', () => {
@@ -715,6 +719,8 @@ describe('a value from outside cannot forge a second line', () => {
  */
 const UNREACHABLE: Readonly<Record<string, string>> = {
   'antipatterns.ts «{}» #1': 'needs a task reopened twice in the record',
+  'antipatterns.ts «{} ({})» #1':
+    'needs a run that was served one pattern’s body and moved another — the MCP surface',
   'antipatterns.ts «label naming more than one rule ({})» #1': 'needs two decisions sharing an ADR',
   'antipatterns.ts «{}» #2': 'the same collision',
   'focus.ts «{}» #1': 'the run’s own line — driven by `run start`, read back by `focus`',

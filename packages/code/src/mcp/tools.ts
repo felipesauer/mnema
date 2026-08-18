@@ -1212,12 +1212,21 @@ export type SkillsResult =
  *
  * THE THREE WORDS "THIS SURFACE" USED TO BE ABSENT, and the sentence was too broad
  * before this slice as well as after it. The command line already took a body out with
- * nothing recorded (`mnema show <id>`, for a person curating, where there is no session
- * to attribute a consultation to), and `mnema skill export` now takes one out as a
- * FILE. Neither is a shortcut past this door: both are the auditor's surface, and the
- * invariant is about the AGENT's — which is exactly what `read_record` refusing a skill
- * (`USE_SKILLS_TOOL`) buys, and what it would stop buying if a tool here served a body
- * without recording.
+ * nothing recorded (`mnema show <id>`, for a person curating), and `mnema skill export`
+ * now takes one out as a FILE. Neither is a shortcut past this door: both are the
+ * auditor's surface, and the invariant is about the AGENT's — which is exactly what
+ * `read_record` refusing a skill (`USE_SKILLS_TOOL`) buys, and what it would stop buying
+ * if a tool here served a body without recording.
+ *
+ * THE REASON THAT USED TO BE IN THAT PARENTHESIS WAS *"where there is no session to
+ * attribute a consultation to"*, AND IT IS FALSE NOW: `mnema run start` put a run on the
+ * command line, so a person reading there may well be inside one. The reason the auditor's
+ * surface still records nothing is written where that verb lives (`commands/show.ts`), and
+ * it is three measurements and one structural fact rather than an absence of sessions. What
+ * the command line got instead is a REPORT — `mnema antipatterns` says whether the run that
+ * moved a pattern had been served its body, and says NOT OBSERVABLE where nothing was
+ * listening. It is deliberately not a tool here: an auditor's finding the audited party can
+ * query and clear before anyone reads it is not a finding.
  */
 export function runSkillsTool(session: Session, input: { id?: string } = {}): SkillsResult {
   // READ before WRITE: the caches are consulted first, because building a write
