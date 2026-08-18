@@ -93,6 +93,14 @@ tasks are withheld until they have been used; what is committed now is
 
 ## What a cell holds fixed
 
+
+**Every future round captures the tool sequence.** `--output-format stream-json` instead of `json`,
+so the transcript says which doors an agent went through and in what order. The first three rounds
+did not, and the question they could not answer — *which door does the agent enter by* — was only
+half closed later, by a wrapper that sees calls to this product's own server and nothing else.
+Measuring the result without the path leaves the design of the door unmeasured. This is a rule for
+rounds that happen, not a reason to run one.
+
 Every cell is a fresh sandbox outside the working tree, with its own `HOME`, its own record and
 its own identity.
 
