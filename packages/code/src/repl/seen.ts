@@ -57,7 +57,7 @@
 
 import { type MintedId, mintedIdsIn } from '@mnema/core';
 import type { CompletionWord } from '../completion/tree.js';
-import { withoutSequences } from '../presentation/folded.js';
+import { withoutSequences } from '../presentation/width.js';
 
 /** What separates the words of a gloss. One space, however the row was spaced. */
 const BETWEEN_WORDS = ' ';

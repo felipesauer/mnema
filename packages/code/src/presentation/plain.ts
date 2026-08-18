@@ -43,6 +43,7 @@
 
 import type { Line, Part, Role } from './line.js';
 import type { Render } from './render.js';
+import { widthOfText } from './width.js';
 
 /** The two spaces one level of depth is. */
 const INDENT = '  ';
@@ -170,7 +171,7 @@ export function renderWith(paint: (part: Part) => string): Render {
 export const renderPlain: Render = renderWith((part) => part.text);
 
 /**
- * HOW WIDE A LINE IS ON A SCREEN, in characters — the plain rendering, counted.
+ * HOW WIDE A LINE IS ON A SCREEN, in COLUMNS — the plain rendering, measured.
  *
  * It lives beside the renderer it counts because the answer IS this renderer's output:
  * the indent, the separators and the parts are what a reader sees, and a caller that
@@ -183,9 +184,16 @@ export const renderPlain: Render = renderWith((part) => part.text);
  * mistake this exists to prevent: it would make a drawing that fits shrink for having
  * colour switched on.
  *
- * Characters and not code units, because a name, a path or a title may hold anything a
- * caller wrote. It is the one thing here that costs a caller nothing to ask and cannot be
- * asked correctly by hand.
+ * AND THE PARAGRAPH HERE USED TO READ *characters and not code units, because a name, a path
+ * or a title may hold anything a caller wrote* — which was the right reason attached to the
+ * wrong unit. Characters are not columns either: an East Asian WIDE glyph is one character and
+ * two cells in every terminal there is, so a decision titled in Japanese measured half of what
+ * it draws, and a combining accent measured twice. Measured on the built binary, `決定を記録する`
+ * came back 7 where it occupies 14. The half of the sentence that survives whole is the reason:
+ * a name, a path or a title may hold anything a caller wrote, which is exactly why the count
+ * may not be a count of anything but cells. It is asked of the one authority over columns
+ * (`width.ts`), which is the one the layout library draws by — so what this answers and what
+ * the screen does cannot come apart.
  *
  * WHO ASKS: the console's opening panel, which chooses between three drawings by whether
  * the widest of them fits the terminal (`repl/panel.ts`), and the input area and the
@@ -206,5 +214,5 @@ export const renderPlain: Render = renderWith((part) => part.text);
  * a folded line gives back the line, byte for byte, over every shape the surface builds.
  */
 export function widthOf(line: Line): number {
-  return [...renderPlain(line)].length;
+  return widthOfText(renderPlain(line));
 }

@@ -111,6 +111,7 @@ import { createElement, type ReactElement } from 'react';
 import { echoLine } from '../presentation/echo.js';
 import type { Line } from '../presentation/line.js';
 import type { Render } from '../presentation/render.js';
+import { widthOfText } from '../presentation/width.js';
 import type { RenderingAt } from '../wiring/color.js';
 import { areaFor } from './area.js';
 import type { Completer } from './complete.js';
@@ -838,7 +839,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
       // put around either is not a column here. Summing the length of `present` instead is the
       // one mutation that breaks this, and it is a case rather than a comment
       // (`tests/the-prompt-is-painted-where-you-type.test.ts`).
-      column: [...prompt].length + [...editing.typed.slice(0, editing.at)].length,
+      column: widthOfText(prompt) + widthOfText(editing.typed.slice(0, editing.at)),
       area,
     };
   }

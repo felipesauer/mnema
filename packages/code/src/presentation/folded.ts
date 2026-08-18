@@ -52,40 +52,27 @@
  * case — a fold that disagreed with itself about where a line breaks would put a terminal
  * and a CI log one row apart.
  *
- * ONE COUNT DIVERGES FROM {@link widthOf}, deliberately, and it is worth naming: a
- * FIELD may hold an escape byte an actor wrote (it is text, and the content door screens
- * for credentials rather than for control bytes). `widthOf` counts those bytes as
- * characters; this file counts them as the nothing a terminal draws. The fold is the one
- * that is right about a screen, and the disagreement is confined to a line nobody has
- * written yet — said out loud so that the day it matters, it is a known difference and not
- * a discovery.
+ * AND THE COUNT THAT USED TO DIVERGE FROM {@link widthOf} NO LONGER DOES. The paragraph here
+ * read: *a FIELD may hold an escape byte an actor wrote (it is text, and the content door
+ * screens for credentials rather than for control bytes). `widthOf` counts those bytes as
+ * characters; this file counts them as the nothing a terminal draws. The fold is the one that is
+ * right about a screen, and the disagreement is confined to a line nobody has written yet.* The
+ * disagreement was real and it is gone, because both counts are now the same function
+ * (`width.ts`): the fold was right about the screen and the width was made to agree with it
+ * rather than the other way round. The line nobody had written yet never has to be discovered.
  */
 
 import type { Line } from './line.js';
 import { indentOf, renderPlain } from './plain.js';
 import type { Render } from './render.js';
+import { glyphsOf, widthOfText } from './width.js';
 
-/** One escape byte, written as an escape so no control byte enters a source file. */
-const ESC = '\u001b';
-
-/** What an escape has to be followed by to be a control sequence: `ESC [`. */
-const CSI = '[';
-
-/**
- * What ENDS a control sequence — any character from `@` to `~`.
- *
- * The range is the standard's own (a CSI sequence is the introducer, then parameter and
- * intermediate bytes, then one final byte in that range), so a sequence this file has
- * never heard of is still skipped whole rather than half-counted. Both ends are printable,
- * which is why this pattern can be written literally.
- */
-const ENDS_A_SEQUENCE = /[@-~]/;
-
-/** One unit of a rendered line: its bytes, and how much of a screen they take. */
+/** One unit of a rendered line: its bytes, how much of a screen they take, and whether a
+ * break may be taken after it. */
 interface Cell {
-  /** The bytes themselves — one character, or a whole control sequence. */
+  /** The bytes themselves — one glyph, or a whole control sequence. */
   readonly bytes: string;
-  /** How many columns it occupies: one for a character, none for a sequence. */
+  /** How many columns it occupies: two for a wide glyph, none for a sequence or a mark. */
   readonly width: number;
   /** Whether it is the space a break may be taken after. */
   readonly space: boolean;
@@ -94,49 +81,18 @@ interface Cell {
 /**
  * A rendered row as the cells a screen would give it.
  *
- * By CHARACTER and not by code unit, for the reason `widthOf` gives: a title, a path or a
- * name may hold anything a caller wrote, and a fold that counted code units would break an
- * emoji in half.
+ * IT USED TO SAY *by CHARACTER and not by code unit, for the reason `widthOf` gives*, and it
+ * counted every character as ONE COLUMN. That sentence was right about the unit it was arguing
+ * against and wrong about the one it chose: an East Asian WIDE glyph is one character and two
+ * cells in every terminal there is, so a row of a Japanese title measured half of what it draws
+ * and the fold left it running off the screen. The bytes and the width of each unit are the
+ * authority's now (`width.ts`), which is the one the layout library draws by — so where this
+ * breaks a row and where the terminal would break it cannot come apart. All this adds is which
+ * cell is the space a break may be taken after, which is a question about the fold and not
+ * about a screen.
  */
 function cellsOf(text: string): readonly Cell[] {
-  const glyphs = [...text];
-  const cells: Cell[] = [];
-  let at = 0;
-  while (at < glyphs.length) {
-    const glyph = glyphs[at] as string;
-    if (glyph === ESC && glyphs[at + 1] === CSI) {
-      let end = at + 2;
-      while (end < glyphs.length && !ENDS_A_SEQUENCE.test(glyphs[end] as string)) end += 1;
-      cells.push({ bytes: glyphs.slice(at, end + 1).join(''), width: 0, space: false });
-      at = end + 1;
-      continue;
-    }
-    cells.push({ bytes: glyph, width: 1, space: glyph === ' ' });
-    at += 1;
-  }
-  return cells;
-}
-
-/**
- * A rendered row as the characters a screen actually shows: the escapes taken out, and
- * every other byte left exactly where it was.
- *
- * IT IS THE PROMISE `styled.ts` MAKES, AS A FUNCTION — *strip the escapes and you have
- * the plain line, exactly*. That sentence was true and was asserted by tests that each
- * wrote their own pattern for what an escape is; this is the one reading of it in the
- * product, over the same walk the fold counts columns by, so nothing can come to
- * disagree about where a sequence ends. `folded.test.ts` asserts it against the plain
- * renderer over every shape the surface builds.
- *
- * WHO ASKS: the console, which reads the ids out of a line it has already turned into
- * bytes (`repl/seen.ts`). What a caller can name is what is on their screen, so what is
- * scanned has to be what the screen shows rather than what the stream carried.
- */
-export function withoutSequences(text: string): string {
-  return cellsOf(text)
-    .filter((cell) => cell.width > 0)
-    .map((cell) => cell.bytes)
-    .join('');
+  return glyphsOf(text).map((glyph) => ({ ...glyph, space: glyph.bytes === ' ' }));
 }
 
 /** The bytes of `cells` from `from` up to `to`, in order and with nothing added. */
@@ -207,15 +163,21 @@ function breakBefore(cells: readonly Cell[], from: number, margin: number): numb
  */
 function foldRow(bytes: string, columns: number, hanging: string): string {
   if (columns <= 0) return bytes;
-  // The same bound the whole line was already answered by ({@link foldedAt}), applied to
-  // one row of it: a row with fewer units than the terminal has columns cannot be too
-  // wide. It is worth asking twice because a line an actor broke arrives here as several
-  // rows, and only one of them may be the long one.
-  if (bytes.length <= columns) return bytes;
+  // THE SAME QUESTION THE WHOLE LINE WAS ALREADY ASKED ({@link foldedAt}), applied to one row
+  // of it, and it is worth asking twice because a line an actor broke arrives here as several
+  // rows and only one of them may be the long one.
+  //
+  // IT USED TO BE TWO QUESTIONS — a cheap bound on the BYTES, and then the exact width of the
+  // cells — and the bound was false. It read *a row with fewer units than the terminal has
+  // columns cannot be too wide*, on the argument that a character outside the basic plane is
+  // two units and one column; a WIDE glyph is one unit and two columns, so a row of forty-one
+  // Japanese characters passed a bound of eighty and was handed back unfolded at eighty-two
+  // columns. One question now, asked of the authority (`width.ts`), which is exact — so there
+  // is nothing left for a bound to be wrong about.
+  if (widthOfText(bytes) <= columns) return bytes;
   const cells = cellsOf(bytes);
-  if (cells.reduce((wide, cell) => wide + cell.width, 0) <= columns) return bytes;
-  const hang = hanging.length < columns ? hanging : '';
-  const room = columns - hang.length;
+  const hang = widthOfText(hanging) < columns ? hanging : '';
+  const room = columns - widthOfText(hang);
   const rows: string[] = [];
   let from = 0;
   while (from < cells.length) {
@@ -255,19 +217,27 @@ function foldRow(bytes: string, columns: number, hanging: string): string {
 export function foldedAt(columns: number, render: Render): Render {
   return (line) => {
     const bytes = render(line);
-    // THE WHOLE LINE, ANSWERED BEFORE IT IS TAKEN APART. A line with fewer UNITS than the
-    // terminal has columns cannot hold a row that is too wide, whatever is in it: an
-    // escape sequence adds units and occupies no column, and a character outside the basic
-    // plane is two units and one column. So the length of the string is an upper bound on
-    // the width of the row, and the common case — almost every line of almost every report
-    // fits — costs one comparison instead of a split, a walk of every character and a join.
+    // THE WHOLE LINE, ANSWERED BEFORE IT IS TAKEN APART: a line no wider than the terminal
+    // holds no row that is too wide, so the common case — almost every line of almost every
+    // report fits — costs one measurement instead of a split, a walk of every glyph and a join.
     //
-    // MEASURED, over two hundred thousand renders of one list item, with the two halves
-    // run in both orders: 129 ns for the plain renderer and 130 ns through this, which is
-    // the tie identical work has to produce. Without it the same line cost 1037 ns. The
-    // line that does NOT fit pays the walk — 3.4 µs for a hundred columns of text folded
-    // to eighty — and there is no report where that is the cost anybody notices.
-    if (bytes.length <= columns) return bytes;
+    // IT USED TO BE A BOUND ON THE BYTES and the bound was false in the one direction that
+    // matters. It read *a line with fewer UNITS than the terminal has columns cannot hold a row
+    // that is too wide, whatever is in it: an escape sequence adds units and occupies no column,
+    // and a character outside the basic plane is two units and one column*. Both examples are
+    // true and the class they were generalised from is not: an East Asian WIDE glyph is ONE unit
+    // and TWO columns, so `bytes.length` is not an upper bound on the width at all, and a line
+    // of Japanese twice as wide as the window was handed back whole. The measurement is exact
+    // now (`width.ts`), which is what removes the bound rather than repairing it.
+    //
+    // MEASURED, over two hundred thousand renders of one list item, with the two halves run in
+    // both orders: 129 ns for the plain renderer and 130 ns through the bound this replaces,
+    // which is the tie identical work has to produce. Without any fast path at all the same line
+    // cost 1037 ns. What the exact measurement costs is in the report of the delivery that put
+    // it here; the line that does NOT fit pays the walk either way — 3.4 µs for a hundred
+    // columns of text folded to eighty — and there is no report where that is the cost anybody
+    // notices.
+    if (widthOfText(bytes) <= columns) return bytes;
     const hanging = indentOf(line.indent + 1);
     return bytes
       .split('\n')

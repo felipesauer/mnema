@@ -52,6 +52,7 @@
     "commander": "^15.0.0",
     "ink": "^7.1.1",
     "react": "^19.2.8",
+    "string-width": "^8.2.2",
     "zod": "^4.4.3"
   },
   "devDependencies": {
