@@ -40,7 +40,11 @@ CLI and the MCP tools behave identically, because they are the same call.
 - **Audit reads** — an entity's history across trees (`timeline`), what it is
   connected to (`refs`), who authorized what (`accountability`), recurring
   shapes like reopens and supersessions (`antipatterns`), and where each adopted
-  pattern came from (`skills`). They report; they do not judge.
+  pattern came from (`skills`). They report; they do not judge. `antipatterns` also
+  says whether the run that MOVED a pattern had been served its body — and answers
+  *not observable*, never *did not consult*, for every move whose run recorded no
+  reading at all, which is the state a move made by a person is always in. It is on
+  this surface only, and the page says what it can witness.
 - **A brief an agent reads without being asked** — `mnema brief` prints the
   decisions in force and the adopted patterns as markdown, so
   `mnema brief > AGENTS.md` puts what governs the work where an agent host reads it

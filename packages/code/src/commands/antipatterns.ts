@@ -24,6 +24,16 @@
  * set of shapes per record and never adds two together; this answers about the record it
  * was run in, which is the same fold over the same trees.
  *
+ * AND IT CARRIES ONE READING THE TOOL DOES NOT, WHICH IS THE POINT OF SAYING SO HERE.
+ * `moves` — whether the run that moved a pattern had been served its body — is the
+ * command line's alone, and the temptation to unify the two answers is exactly what this
+ * paragraph exists against. Handing an agent a tool for checking whether it consulted
+ * before it moved inverts the axis: the MCP surface is the agent's and the command line
+ * is the auditor's, and an auditor's finding that the audited party can query and clear
+ * before anyone reads it is not a finding. It costs nothing to compute — the same fold,
+ * already in hand — which is why it lives beside the shapes rather than in a verb of its
+ * own opening the tails a second time.
+ *
  * Read-only: it reads the present trees' tails and folds them with the copilot's
  * pure `antipatterns`. No cache, no writer, no key, and no actor (the shapes are
  * a property of the record). A shape-free record yields empty lists, not an
@@ -32,7 +42,12 @@
  */
 
 import { catalogUpcasters } from '@mnema/chain';
-import { type Antipatterns, antipatterns } from '@mnema/copilot';
+import {
+  type Antipatterns,
+  antipatterns,
+  type PatternMoveWitness,
+  patternMoveWitness,
+} from '@mnema/copilot';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { recordEvents } from '../intelligence-source.js';
 
@@ -52,6 +67,17 @@ export interface AntipatternsDone {
    * and the `ADR-<n>` labels more than one rule of a chain answers to.
    */
   readonly patterns: Antipatterns;
+  /**
+   * Whether the run that moved a pattern had been served its body — and, where the
+   * record cannot say, the fact that it cannot.
+   *
+   * It RIDES BESIDE the shapes rather than inside them, the way `runSkills` carries the
+   * consultation counts beside the provenance, and for a reason that is not tidiness:
+   * `Antipatterns` is what the MCP tool answers with, and this reading is the command
+   * line's alone. Folded into that type it would arrive on the agent's surface as a
+   * side effect of living in the same file.
+   */
+  readonly moves: PatternMoveWitness;
 }
 
 /** The read was refused — there is no project to inspect. */
@@ -71,5 +97,6 @@ export function runAntipatterns(ctx: AntipatternsContext): AntipatternsDone | An
   if (trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
-  return { ok: true, patterns: antipatterns(recordEvents(trees, catalogUpcasters())) };
+  const record = recordEvents(trees, catalogUpcasters());
+  return { ok: true, patterns: antipatterns(record), moves: patternMoveWitness(record.events) };
 }
