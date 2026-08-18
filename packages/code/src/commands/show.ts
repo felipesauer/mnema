@@ -17,11 +17,32 @@
  *
  * That sentence is the one this product's rule for the agent's surface was widened
  * to match: it is about whoever JUDGES, not about whoever is human. What stays
- * one-sided is the RECORDING. Nothing is recorded here: there is no session on the
- * command line to attribute a consultation to, and inventing one would put a fact on
- * the chain that no agent ever asked for. That is also what kills a gate of the shape
- * "you may only move what you have consulted" — it would not be one rule across both
- * surfaces, it would be a rule the auditor's surface cannot obey.
+ * one-sided is the RECORDING — and THE REASON GIVEN HERE USED TO BE FALSE. It read
+ * *"there is no session on the command line to attribute a consultation to"*, which was
+ * true when it was written and stopped being true when `mnema run start` put a run on
+ * this surface: a person reading here may well be inside one, and `MNEMA_RUN` would
+ * name it.
+ *
+ * What is true, and is why nothing is recorded anyway, was measured instead of assumed.
+ * A `skill.consulted` routes to the PUBLIC tree (`core/src/topology/routing.ts`), so a
+ * third party who clones a repository and reads inside a run would append to the
+ * committed record of the very people they are auditing. Any reader founds an identity
+ * on the spot — `run start` does it — so there is no reader the mechanism could tell
+ * apart and decline. And it would not close the hole it was for: whoever reads outside
+ * a run goes on reading in silence. Under all three sits the structural half: no system
+ * of proof makes the READER sign their own reading. Where a log of reading exists, what
+ * records it is the system that SERVES — which is why `skill.consulted` works on the MCP
+ * surface, which has a server, and cannot work here, where the person opens the file.
+ *
+ * That is also what kills a gate of the shape "you may only move what you have
+ * consulted" — it would not be one rule across both surfaces, it would be a rule the
+ * auditor's surface cannot obey. What stands in its place is a REPORT that declares its
+ * own scope: `mnema antipatterns` says whether the run that MOVED a pattern had been
+ * served its body, and answers NOT OBSERVABLE — never "did not consult" — for every move
+ * whose run recorded no consultation at all, which is the state every move following a
+ * read through this verb is in. `tests/what-the-record-can-witness.test.ts` drives that
+ * exact sequence (`run start` → `show` → `skill move`) and holds the answer to being the
+ * third one.
  *
  * Read-only: it opens a cache per tree, rebuilds it in memory, and reads. No
  * writer, no key, no event — so no `--actor`.

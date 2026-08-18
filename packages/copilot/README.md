@@ -223,8 +223,9 @@ and the one document it feeds is committed.
 - **`intelligence/`** — the auditor's reads over every visible tree: `timeline`
   (an entity's history), `references` (what it connects to), `accountability`
   (who authorized what), `antipatterns` (recurring shapes), `exposure`
-  (records holding a credential format), and `provenance` (who proposed and who
-  adopted each pattern).
+  (records holding a credential format), `provenance` (who proposed and who
+  adopted each pattern), and `pattern-moves` (whether the run that moved a pattern
+  had been served its body — and, where nothing was listening, that nothing was).
 - **`guard/`** — `guard`, the workflow gate exposed as a read-only consultation.
 
 To understand the boundary that justifies this being a package of its own, read

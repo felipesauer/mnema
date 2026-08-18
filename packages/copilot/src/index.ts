@@ -157,6 +157,12 @@ export {
 } from './intelligence/exposure.js';
 export { knownAnchors } from './intelligence/identities.js';
 export {
+  type PatternMove,
+  type PatternMoveAction,
+  type PatternMoveWitness,
+  patternMoveWitness,
+} from './intelligence/pattern-moves.js';
+export {
   type PatternProvenance,
   patternProvenance,
 } from './intelligence/provenance.js';

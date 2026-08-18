@@ -107,13 +107,24 @@ $ mnema antipatterns
 | reopened tasks: 0
 | superseded decisions: 0
 | deprecated skills: 0
+| pattern moves with a consultation in the same run: 0
+| pattern moves with none, in a run that recorded others: 0
+| pattern moves in a run with no consultation at all: 0
+|
+| What this can witness: a consultation is recorded when the AGENT surface serves a body, and nothing records a person who read the pattern with `mnema show`. So a move whose run recorded no consultation at all is NOT OBSERVABLE here — never a move made without consulting. The one case this asserts is a move whose own run recorded a consultation of some other pattern: there the record proves the witness was operating. Nothing was refused, and nothing was written to produce it.
 $ mnema antipatterns --json
 | {
 |   "reopenedTasks": [],
 |   "supersededDecisions": [],
 |   "deprecatedSkills": [],
 |   "skillCandidates": [],
-|   "labelCollisions": []
+|   "labelCollisions": [],
+|   "patternMoves": {
+|     "note": "What this can witness: a consultation is recorded when the AGENT surface serves a body, and nothing records a person who read the pattern with `mnema show`. So a move whose run recorded no consultation at all is NOT OBSERVABLE here — never a move made without consulting. The one case this asserts is a move whose own run recorded a consultation of some other pattern: there the record proves the witness was operating. Nothing was refused, and nothing was written to produce it.",
+|     "consulted": [],
+|     "movedWithoutConsulting": [],
+|     "notObservable": []
+|   }
 | }
 $ mnema status --actor <anchor>
 | <anchor-short> — where things stand.
@@ -451,7 +462,7 @@ $ mnema exposure --json
 |       "id": "<memory-unscreened>",
 |       "kind": "memory.captured",
 |       "scope": "public",
-|       "at": "<at:24>",
+|       "at": "<at:26>",
 |       "classes": [
 |         "github-token"
 |       ]
@@ -862,7 +873,12 @@ $ mnema antipatterns
 | reopened tasks: 1
 | superseded decisions: 1
 | deprecated skills: 1
+| pattern moves with a consultation in the same run: 0
+| pattern moves with none, in a run that recorded others: 0
+| pattern moves in a run with no consultation at all: 4
 | skill candidates (reopened >1×): <task-runbook>
+|
+| What this can witness: a consultation is recorded when the AGENT surface serves a body, and nothing records a person who read the pattern with `mnema show`. So a move whose run recorded no consultation at all is NOT OBSERVABLE here — never a move made without consulting. The one case this asserts is a move whose own run recorded a consultation of some other pattern: there the record proves the witness was operating. Nothing was refused, and nothing was written to produce it.
 $ mnema antipatterns --json
 | {
 |   "reopenedTasks": [
@@ -941,7 +957,7 @@ $ mnema antipatterns --json
 |         {
 |           "v": 1,
 |           "kind": "skill.transitioned",
-|           "at": "<at:23>",
+|           "at": "<at:25>",
 |           "who": "<anchor>",
 |           "signerFp": "<fingerprint:01>",
 |           "subject": "<skill-fridays>",
@@ -1000,7 +1016,38 @@ $ mnema antipatterns --json
 |       ]
 |     }
 |   ],
-|   "labelCollisions": []
+|   "labelCollisions": [],
+|   "patternMoves": {
+|     "note": "What this can witness: a consultation is recorded when the AGENT surface serves a body, and nothing records a person who read the pattern with `mnema show`. So a move whose run recorded no consultation at all is NOT OBSERVABLE here — never a move made without consulting. The one case this asserts is a move whose own run recorded a consultation of some other pattern: there the record proves the witness was operating. Nothing was refused, and nothing was written to produce it.",
+|     "consulted": [],
+|     "movedWithoutConsulting": [],
+|     "notObservable": [
+|       {
+|         "skill": "<skill-slices>",
+|         "action": "review",
+|         "at": "<at:21>",
+|         "run": "<run-first>"
+|       },
+|       {
+|         "skill": "<skill-slices>",
+|         "action": "adopt",
+|         "at": "<at:22>",
+|         "run": "<run-first>"
+|       },
+|       {
+|         "skill": "<skill-fridays>",
+|         "action": "review",
+|         "at": "<at:23>",
+|         "run": "<run-first>"
+|       },
+|       {
+|         "skill": "<skill-fridays>",
+|         "action": "adopt",
+|         "at": "<at:24>",
+|         "run": "<run-first>"
+|       }
+|     ]
+|   }
 | }
 $ mnema status --actor <anchor>
 | <anchor-short> — where things stand.
@@ -1028,7 +1075,7 @@ $ mnema status --actor <anchor> --json
 |       "agent": "agent-beta",
 |       "who": "<anchor>",
 |       "open": true,
-|       "startedAt": "<at:26>",
+|       "startedAt": "<at:28>",
 |       "goal": "read the record back",
 |       "thisSession": false,
 |       "ageSeconds": <seconds>
@@ -1041,7 +1088,7 @@ $ mnema status --actor <anchor> --json
 |           "agent": "agent-beta",
 |           "who": "<anchor>",
 |           "open": true,
-|           "startedAt": "<at:26>",
+|           "startedAt": "<at:28>",
 |           "goal": "read the record back",
 |           "thisSession": false,
 |           "ageSeconds": <seconds>
@@ -1102,7 +1149,7 @@ $ mnema focus --actor <anchor> --json
 |       "agent": "agent-beta",
 |       "who": "<anchor>",
 |       "open": true,
-|       "startedAt": "<at:26>",
+|       "startedAt": "<at:28>",
 |       "goal": "read the record back",
 |       "thisSession": false,
 |       "ageSeconds": <seconds>
@@ -1120,7 +1167,7 @@ $ mnema resume --actor <anchor> --json
 |     "agent": "agent-beta",
 |     "who": "<anchor>",
 |     "open": true,
-|     "startedAt": "<at:26>",
+|     "startedAt": "<at:28>",
 |     "goal": "read the record back",
 |     "thisSession": false,
 |     "ageSeconds": <seconds>
@@ -1133,7 +1180,7 @@ $ mnema resume --actor <anchor> --json
 |         "agent": "agent-beta",
 |         "who": "<anchor>",
 |         "open": true,
-|         "startedAt": "<at:26>",
+|         "startedAt": "<at:28>",
 |         "goal": "read the record back",
 |         "thisSession": false,
 |         "ageSeconds": <seconds>
@@ -1203,7 +1250,7 @@ $ mnema skills --json
 |     "state": "adopted",
 |     "scope": "public",
 |     "adoption": {
-|       "at": "<at:21>"
+|       "at": "<at:22>"
 |     },
 |     "selfAdopted": false
 |   },
@@ -1213,7 +1260,7 @@ $ mnema skills --json
 |     "state": "deprecated",
 |     "scope": "private",
 |     "adoption": {
-|       "at": "<at:22>"
+|       "at": "<at:24>"
 |     },
 |     "selfAdopted": false
 |   }
@@ -1254,8 +1301,8 @@ $ mnema tail list
 |   <tail-global>  global   4 event(s) through <tail-head-a-populated-project-3>  the tail of <anchor>  ·  no waiver
 $ mnema usage
 | 2 run(s):
-|   <run-second>  agent-beta      <at:26> → open  no transcript
-|   <run-first>  agent-alpha     <at:01> → <at:25>  no transcript
+|   <run-second>  agent-beta      <at:28> → open  no transcript
+|   <run-first>  agent-alpha     <at:01> → <at:27>  no transcript
 |
 | Read from <sandbox>/home/.claude/projects — 0 host session(s) there record work in this project.
 | These counts come from Claude Code's own transcripts on this machine, not from the record: nothing here is signed, `mnema verify` does not cover it, and the host deletes a transcript on a retention it decides. Which host session belongs to which run is this reading inferring it from two clocks, not a fact the record states. Nothing was written to produce it.
