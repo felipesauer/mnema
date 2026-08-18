@@ -7,7 +7,7 @@
  * canonicalized — NFC, chain-representable — and a break survives that), so an
  * argument that holds one used to write a SECOND line, well-formed, refusing an id
  * nobody asked about. That is the defect already measured on a project's directory
- * name in `served-patterns.ts`, reached here through the shortest door there is: the
+ * name in `one-line.ts`, reached here through the shortest door there is: the
  * command line. So the name goes through {@link oneLine}, in this function, and no
  * caller passes it through anything of its own.
  *
@@ -35,18 +35,18 @@
  * (`UNKNOWN_TASK`, `UNKNOWN_SKILL`, …) and the phrasing — stay exactly as they were.
  *
  * The twin of this module is `moved-record.ts`, which does the same for the echo of a
- * MOVE: a total table over the kinds, every value an actor wrote through `oneLine`, and
- * both loaded when a verb RUNS rather than when it is declared. Here it is loaded later
- * still — inside the branch that REFUSES, at all eight sites. `served-patterns.ts`
- * reaches `@mnema/copilot`, so a static import would put the copilot's own edge on the
- * floor of every invocation of every verb (the shape guard in
- * `tests/the-floor-is-the-declaration.test.ts` is what would say so), and loading it at
- * the top of an action would put it on every SUCCESSFUL `show`, `task move` and
- * `skill export` instead. A verb that found what it was asked for never reaches this
- * module.
+ * MOVE: a total table over the kinds, and every value an actor wrote through `oneLine`.
+ * That one is still loaded when a verb RUNS, because it reads the record it echoes and
+ * so reaches `@mnema/core`. This one is not, and it used to be loaded later still —
+ * inside the branch that REFUSES, at all eight sites — because `served-patterns.ts`
+ * reaches `@mnema/copilot`, so a static import would have put the copilot's own edge on
+ * the floor of every invocation of every verb (the shape guard in
+ * `tests/the-floor-is-the-declaration.test.ts` is what said so). The rule of the line
+ * lives in `one-line.ts` now and imports nothing, so this module imports nothing but
+ * that, and the eight sites name it the way they name every other word this surface says.
  */
 
-import { oneLine } from '../served-patterns.js';
+import { oneLine } from '../one-line.js';
 
 /** The five kinds of record a verb of this surface refuses to find. */
 export type NoSuchKind = 'task' | 'decision' | 'skill' | 'record' | 'tail';

@@ -48,7 +48,7 @@
 import { dirname, isAbsolute, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type DiscoveryEnv, type ResolvedTrees, resolveTrees } from '@mnema/core';
-import { oneLine } from '../served-patterns.js';
+import { oneLine } from '../one-line.js';
 
 /**
  * One project the session knows the workspace holds, with the trees it resolves to.

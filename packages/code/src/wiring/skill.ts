@@ -41,6 +41,8 @@ import {
   scopeOption,
 } from './enumerated.js';
 import { writeLines } from './io.js';
+import { noSuchRecord } from './no-such-record.js';
+import { onOneLine } from './on-one-line.js';
 import {
   declaredAgent,
   INVALID,
@@ -139,7 +141,6 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
         // The name is the positional, in quotes, and it is text somebody wrote: the
         // same value `moved-record.ts` already collapses when a skill MOVES, closed
         // here for the line that reports its birth (see {@link onOneLine}).
-        const { onOneLine } = await import('./on-one-line.js');
         io.out(onOneLine`Proposed skill "${result.name}" (${result.id})`);
         reportRecorded(result, io);
         return;
@@ -198,7 +199,6 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
       reportReplacement(result, io);
       return;
     }
-    const { noSuchRecord } = await import('./no-such-record.js');
     reportRefusal(wiring, result, { UNKNOWN_SKILL: noSuchRecord('skill', id) });
   });
 
@@ -247,7 +247,6 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
       ...(opts.description !== undefined ? { description: opts.description } : {}),
     });
     if (!result.ok) {
-      const { noSuchRecord } = await import('./no-such-record.js');
       reportRefusal(wiring, result, { UNKNOWN_SKILL: noSuchRecord('skill', id) });
       return;
     }

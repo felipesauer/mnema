@@ -59,7 +59,7 @@ import {
   resolveScope,
   type Scope,
 } from '@mnema/core';
-import { oneLine } from '../served-patterns.js';
+import { oneLine } from '../one-line.js';
 import type { WorkspaceProject } from './context.js';
 import type { Session, WriteTarget } from './session.js';
 

@@ -10,7 +10,7 @@
  */
 
 import type { Resume } from '@mnema/copilot';
-import { oneLine } from '../served-patterns.js';
+import { oneLine } from '../one-line.js';
 import { fact } from './detail.js';
 import type { Line } from './line.js';
 

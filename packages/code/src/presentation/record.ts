@@ -43,7 +43,7 @@
 
 import type { RecordBody } from '@mnema/copilot';
 import { type AnchorForms, anchorText } from '../anchors.js';
-import { oneLine } from '../served-patterns.js';
+import { oneLine } from '../one-line.js';
 import { consultedLine } from './consultation.js';
 import { fact, statedFact, subjectLine } from './detail.js';
 import type { Render } from './render.js';

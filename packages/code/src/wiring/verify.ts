@@ -54,6 +54,7 @@ import type {
 } from '@mnema/chain';
 import type { Command } from 'commander';
 import type { TreeReport, WorkspaceDone } from '../commands/verify.js';
+import { oneLine } from '../one-line.js';
 import { fact } from '../presentation/detail.js';
 import type { Line, Severity } from '../presentation/line.js';
 import type { Render } from '../presentation/render.js';
@@ -293,7 +294,7 @@ function requirementNotMet(
  * `evil\n/other public: local integrity verified (T1/T2/T4)` would print a second line
  * with the whole shape of a verdict about a record nobody verified, and a reader
  * counting projects by lines would count it. It is the defect already measured on the
- * refusal that names a session's project (`served-patterns.ts`), reached here through
+ * refusal that names a session's project (`one-line.ts`), reached here through
  * the most direct door there is: an argument on the command line.
  *
  * ONE FUNCTION AND EVERY SITE. The sites are FOUR — the tree's label (which carries the
@@ -306,12 +307,14 @@ function requirementNotMet(
  * forgotten silently: it is a parameter, so a site that skipped it would be printing a
  * raw path where every other one prints this.
  *
- * WHY IT IS A PARAMETER. `served-patterns.ts` reaches `@mnema/copilot`, and this module
- * is DECLARED eagerly — commander needs every option before it can route a word — so
- * importing it here would put the copilot on the floor of every invocation of every
- * verb, including the ones that read nothing. That floor is guarded as a shape
- * (`the-floor-is-the-declaration.test.ts`), and the guard is what caught it. So it
- * arrives the way the rest of this action's work does: loaded when the verb RUNS.
+ * WHY IT IS A PARAMETER. It was one because it had to be: `oneLine` used to live in
+ * `served-patterns.ts`, which reaches `@mnema/copilot`, and this module is DECLARED
+ * eagerly — commander needs every option before it can route a word — so importing it
+ * here would have put the copilot on the floor of every invocation of every verb,
+ * including the ones that read nothing. The rule of the line lives in `one-line.ts` now,
+ * which imports nothing, so the import above costs what a pure string rule costs. It
+ * stays a parameter for the OTHER reason, which was always the stronger one: a reporter
+ * handed the collapse cannot print a raw path by forgetting to call it.
  *
  * What it does NOT do is make the path copyable back: a directory whose name really
  * holds a newline prints with a space where the newline was. That is the trade this
@@ -372,9 +375,6 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
         const global = opts.global === true;
         const allowWithoutRecord = opts.allowNoRecord === true;
         if (opts.workspace !== undefined) {
-          // `oneLine` is loaded HERE and not imported: see {@link Named} for the floor
-          // this verb would otherwise raise for every other verb in the product.
-          const { oneLine } = await import('../served-patterns.js');
           reportSet(
             wiring,
             runVerifyWorkspace({

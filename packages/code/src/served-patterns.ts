@@ -42,19 +42,16 @@
  * signal that fires on every single call stops being read, and what to do about a
  * pattern's provenance is the reader's to decide, not ours to prompt. That holds for
  * the sentence about a candidate too — it states what the thing IS and stops.
+ *
+ * THE RULE OF THE LINE IS NOT HERE, AND IT USED TO BE. Every field of a provenance line
+ * goes through `oneLine`, which is a rule about a string that twenty-two modules of this
+ * surface want — and this module reaches `@mnema/copilot`, so wanting the rule meant
+ * taking that edge. It lives in `one-line.ts` now, which imports nothing and is guarded
+ * for importing nothing, for the reason that file states.
  */
 
 import { type ServedSkill, type SkillCatalogue, skillDisposition } from '@mnema/copilot';
-
-/**
- * How an act with no agent on its envelope is said out loud, on both surfaces.
- *
- * An absent `which` means a person acted directly — a fact, not a missing value —
- * and it is written here once for the same reason the record contract is: the MCP
- * reply and the command line's report would drift into two different words for one
- * thing, and then a reader would have to learn which of them means what.
- */
-export const A_PERSON = 'a person';
+import { A_PERSON, oneLine } from './one-line.js';
 
 /**
  * What a served pattern is, for a caller reading the tool description. The
@@ -72,50 +69,6 @@ export const SERVED_PATTERN_CONTRACT =
   'be made on its text, and it is not how the work is done here. A reply that ' +
   'carries only NAMES carries none of that: nothing was served to say it about, and ' +
   'the `id` beside each name is how the pattern itself is asked for.';
-
-/**
- * `text` with every run of whitespace collapsed to one space — what makes a report
- * line ONE line.
- *
- * IT BELONGS TO EVERY FIELD ON THE LINE, not to one of them. A pattern's name and
- * the agent that adopted it are both text an actor wrote, and either one holding a
- * newline would break the entry in two. That is not cosmetic: the second half would
- * look exactly like an entry of its own, so one field could assert that some other
- * pattern was adopted by someone who never adopted it. Collapsing the whitespace
- * makes the count of lines match the count of items, and the structured payload
- * beside them stays the exact answer — every value as written, in fields nothing
- * typed into one of them can forge.
- *
- * So the rule is the LINE's, and it reaches wherever a line's shape carries meaning:
- * this framing, the provenance report, the list of open runs `focus` prints, the index
- * `search` prints — whose count per kind is printed directly above the lines it counts
- * — and the brief `mnema brief` prints, which is the SHARPEST case in the class. The
- * others forge a RECORD in a list: an adoption that never happened, a hit for a record
- * nothing wrote. The brief forges a RULE, under a heading that counts the rules, in the
- * one file the product exists to have an agent read as instruction — so the second half
- * of a broken title is a call the project never made, and something obeys it. A place
- * that prints actor text in a line of its OWN (a handoff, a started run, one whole
- * record) is not in the class — a newline there is ugly, and ugly is not forgery,
- * because there is no one-item-per-line list for the second half to imitate.
- *
- * The line a REFUSAL occupies is in the class, and the text that reaches it is not an
- * actor's but a DIRECTORY's — the project a session names when it says which trees it
- * searched. It looked exempt by the test above (a refusal has no list of items around
- * it) and measuring said otherwise: over a project directory named
- * `proj\nRefused (UNKNOWN_TASK): task "x" does not exist`, the reply came back as two
- * lines, the second a complete refusal about an id nobody asked about. A refusal IS
- * the one-item list — one per reply — so the second half has the whole shape to
- * imitate. The same goes for the session log line and the one sentence `bootstrap`
- * adds about where the session landed.
- *
- * It does NOT reach the control characters a terminal interprets — an ANSI escape,
- * or U+0085 NEL, which is not `\s` and stays. That class is the product's, not this
- * report's: every read that prints recorded text is exposed to it, and closing it
- * one call site at a time would look like coverage that is not there.
- */
-export function oneLine(text: string): string {
-  return text.replace(/\s+/g, ' ').trim();
-}
 
 /**
  * What the surface says about a body it served that the project has NOT ruled on.

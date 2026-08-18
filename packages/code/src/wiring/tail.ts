@@ -40,6 +40,8 @@ import { fact } from '../presentation/detail.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import { writeLines } from './io.js';
+import { noSuchRecord } from './no-such-record.js';
+import { onOneLine } from './on-one-line.js';
 import { declaredAgent } from './options.js';
 import { reportRecorded, reportRefusal } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
@@ -111,7 +113,6 @@ export function registerTail(program: Command, wiring: Wiring): Declared {
         ...(run !== undefined ? { run } : {}),
       });
       if (!result.ok) {
-        const { noSuchRecord } = await import('./no-such-record.js');
         reportRefusal(wiring, result, { UNKNOWN_TAIL: noSuchRecord('tail', named) });
         return;
       }
@@ -133,7 +134,6 @@ export function registerTail(program: Command, wiring: Wiring): Declared {
       // anchor, a tail this run MATCHED against the record before it got here. This one
       // is a PATH, built under the project root, so it is the one line of this verb
       // that can carry a break in from a directory name (see {@link onOneLine}).
-      const { onOneLine } = await import('./on-one-line.js');
       io.out(
         render(
           fact(

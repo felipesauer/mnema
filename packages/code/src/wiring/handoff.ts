@@ -11,6 +11,7 @@ import type { Command } from 'commander';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import { scopeOption } from './enumerated.js';
+import { onOneLine } from './on-one-line.js';
 import { declaredAgent, INVALID, parseScope, WHICH_HELP } from './options.js';
 import { reportRecorded, reportRefusal } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
@@ -60,7 +61,6 @@ export function registerHandoff(program: Command, wiring: Wiring): Declared {
           // agents are the sharpest of them — they are NAMES rather than ids, so a
           // reader has nothing to check a forged second line against (see
           // {@link onOneLine}).
-          const { onOneLine } = await import('./on-one-line.js');
           io.out(
             onOneLine`Recorded handoff on ${result.task}: ${result.fromAgent} → ${result.toAgent}`,
           );

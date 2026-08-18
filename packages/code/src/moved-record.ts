@@ -36,7 +36,7 @@
  * reads.
  *
  * EVERY FIELD THE RECORD PUT ON THE LINE IS COLLAPSED TO ONE LINE. The rule is the
- * LINE's, not one field's (see `oneLine` in `served-patterns.ts`): a move echo is a
+ * LINE's, not one field's (see `oneLine` in `one-line.ts`): a move echo is a
  * one-item list — one per reply — so a break in it gives the second half the whole
  * shape to imitate, and the second half of a pattern's name would read as the
  * acknowledgement of a move nobody made. The destination is the one field that needs
@@ -46,7 +46,7 @@
 
 import type { UpcasterRegistry } from '@mnema/chain';
 import { orderedEvents, projectDecisions, projectSkills } from '@mnema/core';
-import { oneLine } from './served-patterns.js';
+import { oneLine } from './one-line.js';
 
 /** The three entities a workflow moves, and whose move a surface echoes. */
 export type MovedKind = 'task' | 'decision' | 'skill';

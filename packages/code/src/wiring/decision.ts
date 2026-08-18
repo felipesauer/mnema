@@ -24,6 +24,7 @@ import {
   listed,
   scopeOption,
 } from './enumerated.js';
+import { noSuchRecord } from './no-such-record.js';
 import {
   declaredAgent,
   INVALID,
@@ -210,6 +211,5 @@ async function reportDecisionMove(
     reportReplacement(result, to.io);
     return;
   }
-  const { noSuchRecord } = await import('./no-such-record.js');
   reportRefusal(to, result, { UNKNOWN_DECISION: noSuchRecord('decision', id) });
 }

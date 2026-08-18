@@ -265,7 +265,7 @@ const PAINTED_BY: { readonly [S in Severity]: string } = {
  * The text goes through verbatim, escapes and all. A stored field that holds an
  * escape byte of its own is text an actor wrote, and this renderer neither strips it
  * nor honours it; that is the content door's business and not a renderer's (see
- * `served-patterns.ts`).
+ * `one-line.ts`).
  */
 function painted(part: Part): string {
   const weight = OPENED_BY[part.role];

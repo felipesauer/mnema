@@ -33,7 +33,7 @@
  */
 
 import type { DescriptionSource, SkillExportDone } from '../commands/skill-export.js';
-import { oneLine } from '../served-patterns.js';
+import { oneLine } from '../one-line.js';
 import { aside, fact } from './detail.js';
 import type { Render } from './render.js';
 

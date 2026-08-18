@@ -107,7 +107,7 @@
 import { catalogUpcasters } from '@mnema/chain';
 import { type BirthProbe, canonicalId, replayingBirthProbe } from '@mnema/core';
 import type { ScopedTree } from '../intelligence-source.js';
-import { oneLine } from '../served-patterns.js';
+import { oneLine } from '../one-line.js';
 import type { CacheRegistry } from './cache-registry.js';
 import { namedProjects } from './route.js';
 import type { Session, WriteTarget } from './session.js';

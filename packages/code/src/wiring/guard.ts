@@ -24,6 +24,8 @@ import type { Command } from 'commander';
 import { statement } from '../presentation/verdict.js';
 import { here } from './context.js';
 import { actionsRequiring, enumeratedArgument, listed, TASK_ACTIONS } from './enumerated.js';
+import { noSuchRecord } from './no-such-record.js';
+import { onOneLine } from './on-one-line.js';
 import { ACTOR_HELP, declaredAgent } from './options.js';
 import { reportRefusal } from './report.js';
 import { type Declared, readsTheRecord, type Wiring } from './verb.js';
@@ -76,7 +78,6 @@ export function registerGuard(program: Command, wiring: Wiring): Declared {
           ...(opts.which !== undefined ? { which: opts.which } : {}),
         });
         if (!result.ok) {
-          const { noSuchRecord } = await import('./no-such-record.js');
           reportRefusal(wiring, result, { UNKNOWN_TASK: noSuchRecord('task', id) });
           return;
         }
@@ -96,7 +97,6 @@ export function registerGuard(program: Command, wiring: Wiring): Declared {
         // The id is the positional and nothing narrows it — the action beside it is an
         // enumerated argument and the state after it is the table's own word, so the id
         // is the one value on this line that can hold a break (see {@link onOneLine}).
-        const { onOneLine } = await import('./on-one-line.js');
         io.out(
           result.verdict.ok
             ? render(

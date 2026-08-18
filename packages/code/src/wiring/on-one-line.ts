@@ -44,16 +44,20 @@
  * literal they printed before; every OTHER line of every touched verb is held by the
  * suite it already had, and by the goldens, which were not regenerated.
  *
- * IT IS LOADED WHERE IT IS USED, INSIDE THE ACTION, for the reason `no-such-record.ts`
- * is: this module reaches `served-patterns.ts`, which reaches `@mnema/copilot`. A static
- * import would put a second declared edge to the copilot in the floor of every
- * invocation of every verb, and the argument for admitting it would be "it is free,
- * because `wiring/refs.ts` already pays" — which is the ratchet
- * `tests/the-floor-is-the-declaration.test.ts` exists to refuse. That guard reports the
- * same 55 modules it did before this module existed. What the SUCCESS path pays is two
- * small module loads, and the copilot they reach is already resident: measured on the
- * real binary in alternating order, 15 invocations of `mnema observe` per arm came back
- * 24 · 25 · 24 · 23 ms — the spread inside one arm is wider than the gap between them.
+ * IT IS IMPORTED STATICALLY, AT EVERY SITE, AND THAT IS THE SECOND ANSWER THIS FILE HAS
+ * GIVEN. It used to be loaded inside the action, for the reason `no-such-record.ts` used
+ * to be: this module reached `served-patterns.ts`, which reaches `@mnema/copilot`, so a
+ * static import would have put a second declared edge to the copilot in the floor of
+ * every invocation of every verb — and the argument for admitting it would have been "it
+ * is free, because `wiring/refs.ts` already pays", which is the ratchet
+ * `tests/the-floor-is-the-declaration.test.ts` exists to refuse. That was a curative at
+ * seventeen call sites for a cause at one: the rule of the line was a rule about a STRING
+ * living behind a package. It lives in `one-line.ts` now and imports nothing, so this
+ * module imports nothing but that. The floor went from 54 modules to 58 — this one, the
+ * rule, `no-such-record.ts` and `presentation/runs.ts`, whose late loads had the same
+ * single cause — and its table of edges into the domain did not move: the same eleven,
+ * from the same eleven places. Four modules that reach no package is what the curative
+ * cost to remove.
  *
  * WHAT IT DOES NOT REACH is what `oneLine`'s doc already says it does not: the control
  * characters a terminal interprets — an ANSI escape, or U+0085 NEL, which is not `\s`.
@@ -61,7 +65,7 @@
  * closing it one call site at a time would look like coverage that is not there.
  */
 
-import { oneLine } from '../served-patterns.js';
+import { oneLine } from '../one-line.js';
 
 /**
  * The line, with every value on it collapsed to one line and every word of it left

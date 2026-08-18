@@ -16,6 +16,7 @@ import type { Command } from 'commander';
 import { fact } from '../presentation/detail.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
+import { onOneLine } from './on-one-line.js';
 import { reportRefusal, reportReplacement } from './report.js';
 import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
@@ -35,7 +36,6 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
     .argument('<file>', 'the PEM file holding the private half (your backup copy)')
     .action(async (file: string) => {
       const { runKeyRestore } = await import('../commands/key-restore.js');
-      const { onOneLine } = await import('./on-one-line.js');
       const result = runKeyRestore(here(), { privateKeyPath: file });
       if (result.ok) {
         io.out(`Restored key ${result.fingerprint}`);
@@ -117,7 +117,6 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
     .argument('<request>', 'the line `mnema key request` printed on the joining machine')
     .action(async (request: string) => {
       const { runKeyEnroll } = await import('../commands/key-enroll.js');
-      const { onOneLine } = await import('./on-one-line.js');
       const result = runKeyEnroll(here(), { request });
       if (result.ok) {
         if (result.alreadyMember) {

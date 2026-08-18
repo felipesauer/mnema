@@ -10,6 +10,7 @@
 import type { Command } from 'commander';
 import { asWhen, itemLine } from '../presentation/items.js';
 import { here } from './context.js';
+import { onOneLine } from './on-one-line.js';
 import { reportRefusal } from './report.js';
 import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
@@ -39,7 +40,6 @@ export function registerTimeline(program: Command, wiring: Wiring): Declared {
       // The id is the caller's own word and it is not validated here — an id no event
       // touches is a valid answer, not a refusal — so it reaches both of these lines as
       // typed, and the second one HEADS the list (see {@link onOneLine}).
-      const { onOneLine } = await import('./on-one-line.js');
       if (result.entries.length === 0) {
         io.out(onOneLine`No history recorded for ${id}.`);
         return;

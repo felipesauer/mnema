@@ -17,7 +17,7 @@
 
 import type { RecordSearch } from '@mnema/copilot';
 import { SEARCH_KINDS } from '@mnema/core';
-import { oneLine } from '../served-patterns.js';
+import { oneLine } from '../one-line.js';
 import { asId, asScope, asWhen, itemLine } from './items.js';
 import type { Render } from './render.js';
 import { asState } from './state.js';
@@ -33,7 +33,7 @@ export function searchReport(
 ): string[] {
   // THE TERM IS THE CALLER'S OWN WORDS, echoed back, and it rides the header that
   // counts the hits under it — so a break in it puts a line between the count and the
-  // list it counts (see `served-patterns.ts`). It is the one value on this report that
+  // list it counts (see `one-line.ts`). It is the one value on this report that
   // did not come out of the record at all.
   const forTerm = term !== undefined && term.trim() !== '' ? ` matching "${oneLine(term)}"` : '';
   if (result.hits.length === 0) {

@@ -15,6 +15,7 @@
 import type { Command } from 'commander';
 import { statement } from '../presentation/verdict.js';
 import { here } from './context.js';
+import { onOneLine } from './on-one-line.js';
 import { reportRefusal } from './report.js';
 import { type Declared, readsTheRecord, type Wiring } from './verb.js';
 
@@ -27,7 +28,6 @@ export function registerAntipatterns(program: Command, wiring: Wiring): Declared
     .option('--json', 'emit the faithful shapes with their evidence as JSON')
     .action(async (opts: { json?: boolean }) => {
       const { runAntipatterns } = await import('../commands/antipatterns.js');
-      const { onOneLine } = await import('./on-one-line.js');
       const result = runAntipatterns(here());
       if (!result.ok) {
         reportRefusal(wiring, result);

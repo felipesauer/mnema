@@ -63,7 +63,7 @@
  */
 
 import type { AdrCollision, Brief } from '@mnema/copilot';
-import { oneLine } from '../served-patterns.js';
+import { oneLine } from '../one-line.js';
 
 /**
  * The marker that says what this file is, to a reader and to a `grep`.
