@@ -512,7 +512,7 @@ function cleared(editing: Editing): Editing {
  * is what keeps Up from walking back through five identical reads somebody ran in a row.
  */
 function remembering(editing: Editing, line: string): Editing {
-  const worth = line.trim().length > 0 && line !== editing.history.at(-1);
+  const worth = line.trim() !== '' && line !== editing.history.at(-1);
   const history = worth ? [...editing.history, line].slice(-REMEMBERED) : editing.history;
   return { ...NOTHING_TYPED, history, browsing: history.length };
 }

@@ -47,6 +47,7 @@ import { asId, column, itemLine } from './items.js';
 import type { Render } from './render.js';
 import { lastRunPhrase, openRunsPhrase } from './runs.js';
 import { asState } from './state.js';
+import { widthOfText } from './width.js';
 
 /**
  * How wide the column that says which machine an item awaiting a ruling belongs to.
@@ -54,7 +55,7 @@ import { asState } from './state.js';
  * It is `decision`'s length, the longer of the two words the derivation's discriminant
  * can hold, so the titles beside it line up and the column never pushes a line right.
  */
-const KIND_WIDTH = 'decision'.length;
+const KIND_WIDTH = widthOfText('decision');
 
 /** The lines `mnema status` prints: the actor's session, then the four lists. */
 export function statusReport(render: Render, status: Bootstrap, actor: string): string[] {
