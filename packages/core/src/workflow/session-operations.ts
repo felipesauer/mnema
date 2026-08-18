@@ -69,6 +69,7 @@ import {
 } from '../content/screen.js';
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
+import { oneLine } from '../one-line.js';
 import { orderedEvents } from '../projections/order.js';
 import { projectRuns } from '../projections/run.js';
 import { appendEvent, type UnreadableEventErr } from './append.js';
@@ -267,10 +268,18 @@ export function endRun(ctx: WriteContext, input: EndRunInput): EndRunOk | EndRun
   const runs = projectRuns(orderedEvents(ctx.layout, ctx.upcasters));
   const current = id === undefined ? undefined : runs.get(id);
   if (id === undefined || current === undefined) {
-    return { ok: false, code: 'UNKNOWN_RUN', message: `run "${input.run}" does not exist` };
+    return {
+      ok: false,
+      code: 'UNKNOWN_RUN',
+      message: `run "${oneLine(input.run)}" does not exist`,
+    };
   }
   if (!current.open) {
-    return { ok: false, code: 'ALREADY_ENDED', message: `run "${input.run}" is already ended` };
+    return {
+      ok: false,
+      code: 'ALREADY_ENDED',
+      message: `run "${oneLine(input.run)}" is already ended`,
+    };
   }
 
   const who = authorizingAnchor(ctx);

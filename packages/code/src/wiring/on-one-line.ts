@@ -52,12 +52,20 @@
  * is free, because `wiring/refs.ts` already pays", which is the ratchet
  * `tests/the-floor-is-the-declaration.test.ts` exists to refuse. That was a curative at
  * seventeen call sites for a cause at one: the rule of the line was a rule about a STRING
- * living behind a package. It lives in `one-line.ts` now and imports nothing, so this
- * module imports nothing but that. The floor went from 54 modules to 58 — this one, the
- * rule, `no-such-record.ts` and `presentation/runs.ts`, whose late loads had the same
- * single cause — and its table of edges into the domain did not move: the same eleven,
+ * living behind a package. It lives in `one-line.ts` now, so this module imports nothing
+ * but that. The floor went from 54 modules to 58 — this one, the rule,
+ * `no-such-record.ts` and `presentation/runs.ts`, whose late loads had the same single
+ * cause — and its table of edges into the domain did not move then: the same eleven,
  * from the same eleven places. Four modules that reach no package is what the curative
  * cost to remove.
+ *
+ * THE RULE ITSELF HAS SINCE MOVED AGAIN, AND FOR THE SAME KIND OF REASON. `@mnema/chain`
+ * words the verifier's findings and `@mnema/core` words the domain's refusals, and a tag
+ * on this surface cannot reach inside a sentence another package already joined. So
+ * `oneLine` lives in `@mnema/chain/one-line` — a subpath whose module imports nothing —
+ * and this package's `one-line.ts` re-exports it. That IS a twelfth edge in the floor's
+ * table, and it is declared there: a leaf, and the reason the subpath exists rather than
+ * the index.
  *
  * WHAT IT DOES NOT REACH is what `oneLine`'s doc already says it does not: the control
  * characters a terminal interprets — an ANSI escape, or U+0085 NEL, which is not `\s`.

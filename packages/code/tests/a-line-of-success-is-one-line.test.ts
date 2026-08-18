@@ -239,11 +239,18 @@ const FOUND = sitesInSource();
  *     transition table, or a sentence this surface composed out of those. None can hold a
  *     newline, so the line needs no collapse — and it must NOT be tagged, so that a value
  *     which stops being the product's own cannot keep this verdict quietly.
- *   - `elsewhere` — the value is worded by another package, which is where the rule for
- *     it lives. There are two, both in `wiring/verify.ts`, and the debt they carry is
- *     named in {@link WHAT_IS_NOT_CLOSED}.
+ *
+ * THERE USED TO BE A THIRD, `elsewhere`, and it held the two lines of `wiring/verify.ts`
+ * on the ground that the values on them are worded by `@mnema/chain`. That was half
+ * right and the wrong half was the operative one: the DETAIL is the chain's, and the
+ * rule for it belongs down there — but the TAIL on the same line is a directory name
+ * this wiring interpolates itself, and a tail directory holding a newline broke the
+ * issue line in two whatever the chain did. A verdict that says "somebody else's
+ * problem" about a line THIS file lays out is a verdict that cannot be true. Both are
+ * `collapsed` now, and the chain's half is classified in
+ * `the-phrase-the-domain-words-is-one-line.test.ts`.
  */
-type Verdict = 'collapsed' | 'minted' | 'elsewhere';
+type Verdict = 'collapsed' | 'minted';
 
 /**
  * Every line this wiring words, and where its values come from.
@@ -469,14 +476,14 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     why: 'the id positional HEADING the list — the one forgeable list header there is',
   },
 
-  // --- worded by another package -------------------------------------------------
+  // --- values another package worded, on a line this one lays out -------------------
   'verify.ts «census [{}] {} {}: {}» #1': {
-    verdict: 'elsewhere',
-    why: '`@mnema/chain`’s own census vocabulary, under the name `Named` already collapsed',
+    verdict: 'collapsed',
+    why: '`@mnema/chain`’s census note: its kind, the fingerprint it points at, its detail',
   },
   'verify.ts «issue [{}] {} {}: {}» #1': {
-    verdict: 'elsewhere',
-    why: 'the chain’s issue detail; see WHAT_IS_NOT_CLOSED for the one that can still break',
+    verdict: 'collapsed',
+    why: 'the chain’s finding, and the TAIL it is about — a directory name, chosen on disk',
   },
 };
 
@@ -580,9 +587,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(26);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(28);
     expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(32);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(26);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(28);
   });
 
   it('every reason says where the value comes from', () => {
@@ -726,10 +733,15 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'run.ts «by {}» #1': 'needs an open run to close',
   'tail.ts «The tail is still on disk at {} — nothing was removed.» #1': 'needs a tail to cut',
   'timeline.ts «{} — {} event(s):» #1': 'reached in two steps — see the case below',
+  'verify.ts «census [{}] {} {}: {}» #1':
+    'needs a committed key with no tail on disk, which is file surgery and not an argv',
+  'verify.ts «issue [{}] {} {}: {}» #1':
+    'needs a fabricated tail DIRECTORY — driven, with the chain’s half of the same line, ' +
+    'in `the-phrase-the-domain-words-is-one-line.test.ts`',
 };
 
 describe('every closed site is either driven or named', () => {
-  it('covers all twenty-six, once each', () => {
+  it('covers all twenty-eight, once each', () => {
     const closed = Object.entries(CLASSIFIED)
       .filter(([, said]) => said.verdict === 'collapsed')
       .map(([key]) => key)
@@ -794,12 +806,27 @@ describe('WHAT_IS_NOT_CLOSED', () => {
     expect(readFileSync(owned, 'utf-8')).toContain('runs.ts « — {}» oneLine(run.goal) #1');
   });
 
-  it('names the chain’s own detail, which can still carry a path', () => {
-    // `verify`'s issue line prints `@mnema/chain`'s detail verbatim, and one of those
-    // details embeds a locus built from the chain layout — a path, which is the value
-    // this whole class was first measured on. It is a package `oneLine` does not reach,
-    // so closing it is a slice with its own count, exactly as `core`'s two refusals were.
+  it('no longer names the chain’s own detail, because the chain now words it one line', () => {
+    // THIS CASE USED TO BE THE DEBT, and it is the second one in this file to be paid
+    // rather than restated. It said `verify`'s issue line prints `@mnema/chain`'s detail
+    // verbatim and that `oneLine` does not reach that package. The rule reaches it now:
+    // it MOVED there — `@mnema/chain/one-line`, under `core` and under this surface —
+    // and the detail goes through it where it is written.
+    //
+    // What replaces the debt is the assertion that the door is where it says it is, and
+    // that the sentence which was named here comes out of it. The classification of the
+    // values inside it is that slice's, and it goes red there if a collapse leaves.
     const chain = fileURLToPath(new URL('../../chain/src/chain/verify.ts', import.meta.url));
-    expect(readFileSync(chain, 'utf-8')).toContain('UNREADABLE:');
+    const source = readFileSync(chain, 'utf-8');
+    expect(source).toContain("import { oneLine } from '../one-line.js';");
+    // `${` is BUILT and not typed: a plain string holding one is a lint error here.
+    const open = `${'$'}{`;
+    expect(source).toContain(`UNREADABLE: ${open}oneLine(withinChain(layout, error.locus))}`);
+    const owned = fileURLToPath(
+      new URL('./the-phrase-the-domain-words-is-one-line.test.ts', import.meta.url),
+    );
+    expect(readFileSync(owned, 'utf-8')).toContain(
+      '«UNREADABLE: {}: {}» oneLine(withinChain(layout, error.locus)) #1',
+    );
   });
 });

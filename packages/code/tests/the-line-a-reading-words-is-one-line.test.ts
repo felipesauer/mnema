@@ -1139,13 +1139,18 @@ describe('the rule has one door in this layer', () => {
   const A_COLLAPSE = /replace\(\s*\/\\s/;
 
   it('collapses with the shared function and with nothing of its own', () => {
-    // `oneLine` lives in `one-line.ts` and is what `wiring/on-one-line.ts`'s tag
-    // calls. A second collapse written here — a `replace` by hand, a local helper — would
-    // be a second rule, and the one that stops agreeing is always the second.
+    // `oneLine` is what `wiring/on-one-line.ts`'s tag calls. A second collapse written
+    // here — a `replace` by hand, a local helper — would be a second rule, and the one
+    // that stops agreeing is always the second.
+    //
+    // IT LIVES IN `@mnema/chain` NOW, not in this package's `one-line.ts`, which
+    // re-exports it. The rule went under everything because the sentences that need it
+    // are written in three packages: `the-phrase-the-domain-words-is-one-line.test.ts`
+    // classifies the two below this one. What this layer imports did not move.
     //
     // The ban is checked against the place the shape really is first, or it would pass on
     // a pattern that matches nothing anywhere.
-    const door = fileURLToPath(new URL('../src/one-line.ts', import.meta.url));
+    const door = fileURLToPath(new URL('../../chain/src/one-line.ts', import.meta.url));
     expect(A_COLLAPSE.test(readFileSync(door, 'utf-8'))).toBe(true);
     const rivals = sourceFiles(LAYER)
       .filter((file) => A_COLLAPSE.test(withoutComments(readFileSync(file, 'utf-8'))))

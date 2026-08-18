@@ -69,10 +69,23 @@
  * the owner's own work, not a foreign tail, and a checkpoint later binds each
  * tail's name so no residual survives into a signed range. A reader that
  * requires `fullySigned` — not merely `ok` — sees any residual plainly.
+ *
+ * EVERY VALUE A FINDING NAMES GOES THROUGH `oneLine`, and this is the one file where
+ * that rule needs no argument. A verdict is what a third party reads to decide whether
+ * to believe the record, and an issue is one per line under a count — so a value
+ * carrying a newline puts a second finding on the page, about a tail nobody has. Every
+ * such value here comes from the thing under suspicion: a tail id is a DIRECTORY NAME,
+ * so anybody who can write the tree can choose it; a signer fingerprint is a field of a
+ * stored entry; a reader's complaint quotes the bytes it choked on. Measured against the
+ * shipped binary, two of those forged a line. The numbers do not go through it — a
+ * `seq`, a count, a word of a closed union cannot hold whitespace, and collapsing them
+ * would hide the day one of them stopped being a number. Which is which is classified,
+ * value by value, in `code/tests/the-phrase-the-domain-words-is-one-line.test.ts`.
  */
 
 import { existsSync, readFileSync } from 'node:fs';
 import type { UpcasterRegistry } from '../events/upcaster.js';
+import { oneLine } from '../one-line.js';
 import { type Checkpoint, checkpointHash, verifyCheckpoint } from './checkpoint.js';
 import { resolveIdentity } from './enrollment.js';
 import type { Entry } from './entry.js';
@@ -322,7 +335,7 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
         kind: 'partial-final-line',
         tail,
         detail:
-          `tail ${tail} ends in a partial line that was dropped — the mark of a write ` +
+          `tail ${oneLine(tail)} ends in a partial line that was dropped — the mark of a write ` +
           'interrupted mid-append, and indistinguishable from an appended fragment',
       });
     }
@@ -332,7 +345,7 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
         tail,
         layer: 'T2/T4',
         seq: 0,
-        detail: `tail ${tail} has no committed key fingerprint (fabricated or relocated tail)`,
+        detail: `tail ${oneLine(tail)} has no committed key fingerprint (fabricated or relocated tail)`,
       });
     } else {
       // The fingerprint prefix is committed, but the installation-id suffix is
@@ -447,7 +460,7 @@ function readOrIssue<T>(
     issues.push({
       tail,
       layer: 'T1',
-      detail: `UNREADABLE: ${withinChain(layout, error.locus)}: ${error.reason}`,
+      detail: `UNREADABLE: ${oneLine(withinChain(layout, error.locus))}: ${oneLine(error.reason)}`,
     });
     return UNREADABLE;
   }
@@ -540,8 +553,8 @@ function keyWithoutTailDetail(waivers: readonly TailWaiver[]): string {
   }
   const accounts = waivers.map(
     (waiver) =>
-      `${waiver.tail} (${waiver.eventCount} event(s) through ${waiver.throughHash}), ` +
-      `authorized by ${waiver.who}`,
+      `${oneLine(waiver.tail)} (${waiver.eventCount} event(s) through ${oneLine(waiver.throughHash)}), ` +
+      `authorized by ${oneLine(waiver.who)}`,
   );
   return `committed public key has no tail on disk, and the record names the cut: ${accounts.join('; ')}`;
 }
@@ -570,7 +583,7 @@ function verifyHashChain(tail: string, entries: readonly Entry[], issues: TailIs
         tail,
         layer: 'T1',
         seq: entry.link.seq,
-        detail: `entry names tail ${entry.link.tail}, stored under ${tail}`,
+        detail: `entry names tail ${oneLine(entry.link.tail)}, stored under ${oneLine(tail)}`,
       });
       return;
     }
@@ -635,7 +648,7 @@ function verifyCheckpoints(
       issues.push({
         tail,
         layer: 'T2/T4',
-        detail: `checkpoint names tail ${checkpoint.tail}, stored under ${tail}`,
+        detail: `checkpoint names tail ${oneLine(checkpoint.tail)}, stored under ${oneLine(tail)}`,
       });
       continue;
     }
@@ -670,7 +683,7 @@ function verifyCheckpoints(
         tail,
         layer: 'T2/T4',
         seq: checkpoint.fromSeq,
-        detail: `no committed public key for signer ${checkpoint.signerFp}`,
+        detail: `no committed public key for signer ${oneLine(checkpoint.signerFp)}`,
       });
       continue;
     }
@@ -685,7 +698,7 @@ function verifyCheckpoints(
         tail,
         layer: 'T2/T4',
         seq: checkpoint.fromSeq,
-        detail: `public key for ${checkpoint.signerFp} does not match its fingerprint (key was swapped)`,
+        detail: `public key for ${oneLine(checkpoint.signerFp)} does not match its fingerprint (key was swapped)`,
       });
       continue;
     }
@@ -778,24 +791,26 @@ function verifyTailOwnership(layout: ChainLayout, tail: string, issues: TailIssu
   const push = (detail: string) => issues.push({ tail, layer: 'T2/T4', seq: 0, detail });
   const path = tailProofPath(layout, tail);
   if (!existsSync(path)) {
-    push(`tail ${tail} has no ownership proof (fabricated or relocated tail)`);
+    push(`tail ${oneLine(tail)} has no ownership proof (fabricated or relocated tail)`);
     return;
   }
   let proof: ReturnType<typeof parseTailProof>;
   try {
     proof = parseTailProof(readFileSync(path, 'utf-8'));
   } catch (error) {
-    push(`tail ${tail} has a malformed ownership proof: ${(error as Error).message}`);
+    push(
+      `tail ${oneLine(tail)} has a malformed ownership proof: ${oneLine((error as Error).message)}`,
+    );
     return;
   }
   const publicKey = loadPublicKey(layout, tailFingerprint(tail));
   if (publicKey === null) {
-    push(`tail ${tail} ownership proof cannot be checked: no committed public key`);
+    push(`tail ${oneLine(tail)} ownership proof cannot be checked: no committed public key`);
     return;
   }
   const verdict = verifyTailProof({ proof, tail, publicKey });
   if (!verdict.ok) {
-    push(`tail ${tail} ownership proof is invalid (${verdict.reason})`);
+    push(`tail ${oneLine(tail)} ownership proof is invalid (${verdict.reason})`);
   }
 }
 

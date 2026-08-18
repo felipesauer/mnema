@@ -47,6 +47,7 @@ import {
   type UpcasterRegistry,
   writeAnchor,
 } from '@mnema/chain';
+import { oneLine } from '../one-line.js';
 import { type Membership, type MembershipRefusalCode, membershipIn } from './membership.js';
 
 /** What restoring a key needs. Paths are absolute — the surface resolves them. */
@@ -132,18 +133,18 @@ export function restoreKey(input: RestoreInput): RestoreOk | RestoreErr {
     return {
       ok: false,
       code: 'UNREADABLE_KEY',
-      message: `${input.privateKeyPath} could not be read as a private key`,
+      message: `${oneLine(input.privateKeyPath)} could not be read as a private key`,
     };
   }
 
   const keyRoot = { root: input.keyRoot };
-  const other = listPrivateKeyFingerprints(keyRoot).filter((fp) => fp !== keyPair.fingerprint);
-  if (other.length > 0) {
+  const [other] = listPrivateKeyFingerprints(keyRoot).filter((fp) => fp !== keyPair.fingerprint);
+  if (other !== undefined) {
     return {
       ok: false,
       code: 'KEY_PRESENT',
       message:
-        `this machine already holds the private key ${other[0]} — ` +
+        `this machine already holds the private key ${oneLine(other)} — ` +
         'restoring another would leave two, and which one the machine signs as ' +
         'would depend on the order the directory lists them. Restore is for a key ' +
         'that is gone; bringing a second key into an identity is an enrollment',

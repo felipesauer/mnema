@@ -36,6 +36,7 @@ import {
   type UpcasterRegistry,
   verifySignature,
 } from '@mnema/chain';
+import { oneLine } from '../one-line.js';
 import { orderedEvents } from '../projections/order.js';
 
 /** Which record to read, and how to read events written under older contracts. */
@@ -143,7 +144,7 @@ export function membershipIn(
       ok: false,
       code: 'AMBIGUOUS_MEMBERSHIP',
       message:
-        `this key belongs to more than one identity in that record (${anchors.join(', ')}) — ` +
+        `this key belongs to more than one identity in that record (${oneLine(anchors.join(', '))}) — ` +
         'which one it should speak for here is not a choice to make on its behalf',
     };
   }
@@ -155,7 +156,7 @@ export function membershipIn(
         ok: false,
         code: 'REVOKED_KEY',
         message:
-          `this key was revoked from ${retiredFrom} — a retired key that writes again ` +
+          `this key was revoked from ${oneLine(retiredFrom)} — a retired key that writes again ` +
           'leaves the whole record failing verification, so it is not brought back',
       };
     }

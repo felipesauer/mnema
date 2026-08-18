@@ -34,6 +34,7 @@ import type { TransitionFields } from '@mnema/chain';
 import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalId } from '../identity/id.js';
 import { canonicalIdentity } from '../identity/who.js';
+import { oneLine } from '../one-line.js';
 import { type DecisionState, isDecisionState } from './decision-states.js';
 import {
   DECISION_ACTIONS,
@@ -137,15 +138,18 @@ export function decisionGate(request: DecisionGateRequest): DecisionGateResult {
   if (!agent.ok) return agent;
 
   if (!isDecisionState(request.from)) {
-    return err('UNKNOWN_STATE', `"${request.from}" is not a decision state`);
+    return err('UNKNOWN_STATE', `"${oneLine(request.from)}" is not a decision state`);
   }
   if (!isDecisionAction(request.action)) {
-    return err('UNKNOWN_ACTION', `"${request.action}" is not a decision action`);
+    return err('UNKNOWN_ACTION', `"${oneLine(request.action)}" is not a decision action`);
   }
 
   const transition = findDecisionTransition(request.from as DecisionState, request.action);
   if (transition === undefined) {
-    return err('ILLEGAL_TRANSITION', `cannot "${request.action}" a decision in ${request.from}`);
+    return err(
+      'ILLEGAL_TRANSITION',
+      `cannot "${oneLine(request.action)}" a decision in ${oneLine(request.from)}`,
+    );
   }
 
   for (const field of transition.requires) {
@@ -153,7 +157,7 @@ export function decisionGate(request: DecisionGateRequest): DecisionGateResult {
       return {
         ok: false,
         code: 'MISSING_PROOF',
-        message: `"${request.action}" requires a non-empty "${field}"`,
+        message: `"${oneLine(request.action)}" requires a non-empty "${field}"`,
         field,
       };
     }
@@ -176,7 +180,7 @@ export function decisionGate(request: DecisionGateRequest): DecisionGateResult {
       return err('SELF_SUPERSEDE', 'a decision cannot supersede itself');
     }
   } else if (by !== undefined) {
-    return err('UNEXPECTED_BY', `"${request.action}" does not take a successor "by"`);
+    return err('UNEXPECTED_BY', `"${oneLine(request.action)}" does not take a successor "by"`);
   }
 
   const ok: Mutable<DecisionGateOk> = { ok: true, to: transition.to, action: request.action };

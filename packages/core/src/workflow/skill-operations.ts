@@ -39,6 +39,7 @@ import {
 } from '../content/screen.js';
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
+import { oneLine } from '../one-line.js';
 import { orderedEvents } from '../projections/order.js';
 import { projectSkills, type SkillProjection } from '../projections/skill.js';
 import { appendEvent, appendEvents, type UnreadableEventErr } from './append.js';
@@ -319,7 +320,11 @@ function transition(
   const skills = projectedSkills(ctx);
   const current = id === undefined ? undefined : skills.get(id);
   if (id === undefined || current === undefined) {
-    return { ok: false, code: 'UNKNOWN_SKILL', message: `skill "${input.id}" does not exist` };
+    return {
+      ok: false,
+      code: 'UNKNOWN_SKILL',
+      message: `skill "${oneLine(input.id)}" does not exist`,
+    };
   }
 
   // `who` is this installation's authorizing anchor, never supplied.

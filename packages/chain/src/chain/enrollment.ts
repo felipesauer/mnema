@@ -78,6 +78,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { enrollmentMessage } from '../events/build.js';
 import type { CatalogEvent } from '../events/catalog.js';
+import { oneLine } from '../one-line.js';
 import type { Entry } from './entry.js';
 import {
   deriveAnchor,
@@ -157,7 +158,7 @@ export function resolveIdentity(
         issues.push({
           tail,
           seq,
-          detail: `re-adds ${fp} revoked under signature coverage without being checkpointed itself`,
+          detail: `re-adds ${oneLine(fp)} revoked under signature coverage without being checkpointed itself`,
         });
         return;
       }
@@ -264,7 +265,7 @@ export function resolveIdentity(
           issues.push({
             tail,
             seq,
-            detail: `event signer ${event.signerFp} is not a key enrolled for ${event.who} at this point`,
+            detail: `event signer ${oneLine(event.signerFp)} is not a key enrolled for ${oneLine(event.who)} at this point`,
           });
         }
       }

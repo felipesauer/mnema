@@ -42,6 +42,7 @@ import {
   screened,
 } from '../content/screen.js';
 import { IdentityUnavailableError, type Membership, membershipIn } from '../identity/membership.js';
+import { oneLine } from '../one-line.js';
 import { orderedEvents } from '../projections/order.js';
 import { appendEvent, type UnreadableEventErr } from './append.js';
 import { systemClock } from './clock.js';
@@ -273,7 +274,7 @@ export function establishIdentity(
     if (registration.anchor !== anchor) {
       declined.push({
         fingerprint: registration.fingerprint,
-        reason: `it is registered for another identity (${registration.anchor})`,
+        reason: `it is registered for another identity (${oneLine(registration.anchor)})`,
       });
       continue;
     }

@@ -10,6 +10,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./one-line": {
+      "types": "./dist/one-line.d.ts",
+      "default": "./dist/one-line.js"
     }
   },
   "types": "./dist/index.d.ts",

@@ -56,6 +56,7 @@ import {
 } from '../content/screen.js';
 import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
+import { oneLine } from '../one-line.js';
 import { orderedEvents } from '../projections/order.js';
 import { projectTasks } from '../projections/task.js';
 import { appendEvent, appendEvents, type UnreadableEventErr } from './append.js';
@@ -164,7 +165,11 @@ export function transitionTask(
   const id = canonicalId(input.id);
   const current = id === undefined ? undefined : currentState(ctx, id);
   if (id === undefined || current === undefined) {
-    return { ok: false, code: 'UNKNOWN_TASK', message: `task "${input.id}" does not exist` };
+    return {
+      ok: false,
+      code: 'UNKNOWN_TASK',
+      message: `task "${oneLine(input.id)}" does not exist`,
+    };
   }
 
   // `who` is this installation's authorizing anchor — its own key's, or the

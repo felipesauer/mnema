@@ -37,6 +37,7 @@
 import type { TransitionFields } from '@mnema/chain';
 import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalIdentity } from '../identity/who.js';
+import { oneLine } from '../one-line.js';
 import { isTaskState, type TaskState } from './states.js';
 import { findTransition, type ProofField, TASK_ACTIONS, type TaskAction } from './transitions.js';
 
@@ -126,15 +127,18 @@ export function gate(request: GateRequest): GateResult {
   if (!agent.ok) return agent;
 
   if (!isTaskState(request.from)) {
-    return err('UNKNOWN_STATE', `"${request.from}" is not a workflow state`);
+    return err('UNKNOWN_STATE', `"${oneLine(request.from)}" is not a workflow state`);
   }
   if (!isTaskAction(request.action)) {
-    return err('UNKNOWN_ACTION', `"${request.action}" is not a workflow action`);
+    return err('UNKNOWN_ACTION', `"${oneLine(request.action)}" is not a workflow action`);
   }
 
   const transition = findTransition(request.from as TaskState, request.action);
   if (transition === undefined) {
-    return err('ILLEGAL_TRANSITION', `cannot "${request.action}" a task in ${request.from}`);
+    return err(
+      'ILLEGAL_TRANSITION',
+      `cannot "${oneLine(request.action)}" a task in ${oneLine(request.from)}`,
+    );
   }
 
   for (const field of transition.requires) {
@@ -142,7 +146,7 @@ export function gate(request: GateRequest): GateResult {
       return {
         ok: false,
         code: 'MISSING_PROOF',
-        message: `"${request.action}" requires a non-empty "${field}"`,
+        message: `"${oneLine(request.action)}" requires a non-empty "${field}"`,
         field,
       };
     }

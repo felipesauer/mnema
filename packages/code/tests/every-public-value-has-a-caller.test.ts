@@ -385,6 +385,10 @@ function reconcile(
  */
 const SURFACE_FLOOR: Readonly<Record<string, number>> = {
   '@mnema/chain': 75,
+  // One value, and it is published on its own for exactly that: `oneLine` is what makes
+  // a report line ONE line, three packages want it, and the ones that load it before a
+  // verb has been routed may not pay for the proof engine to get it.
+  '@mnema/chain/one-line': 1,
   '@mnema/code': 0,
   '@mnema/copilot': 20,
   '@mnema/core': 90,
