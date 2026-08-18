@@ -1,0 +1,13 @@
+diff --git a/invoice.php b/invoice.php
+index 6f33752..ee6de13 100644
+--- a/invoice.php
++++ b/invoice.php
+@@ -33,7 +33,6 @@ final class Invoice
+      */
+     public function tax(string $rate): string
+     {
+-        // TODO: not implemented yet
+-        throw new RuntimeException('Invoice::tax is not implemented');
++        return bcmul($this->gross(), $rate, 2);
+     }
+ }

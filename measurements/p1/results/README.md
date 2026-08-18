@@ -1,8 +1,9 @@
 # P1 results
 
-**Empty.** No cell of this protocol has run — not the pilot, not one cell. The directory is
-committed empty on purpose: the pre-registration beside it is worth what the order is worth,
-and the order is visible here.
+**The pilot has run; the round has not.** `2026-08-17-pilot/` holds four cells — one task, four
+arms, one run — and nothing else of this protocol has been spent. This directory was committed
+empty on purpose, and that sentence stood here until the pilot landed: the pre-registration
+beside it is worth what the order is worth, and the order is visible here.
 
 A run lands one directory named for its date and mode — `2026-08-14-pilot/`,
 `2026-08-20-full/` — holding:
@@ -12,6 +13,12 @@ A run lands one directory named for its date and mode — `2026-08-14-pilot/`,
 | `cells.jsonl` | **one line per cell** — two for a re-run cell, below. The result |
 | `raw/` | the agent's own output per cell, as it arrived. Evidence, not data |
 | `diffs/` | what the agent wrote, per cell, excluding the record itself |
+
+**`raw/` and `diffs/` show the code a cell produced, and code about a task describes the task.**
+For a development task that costs nothing — those are open by design. For a **held-out** task it
+would reveal, before the reveal, what [`fixtures.sha256`](../fixtures.sha256) deliberately keeps to
+a digest. So a run over held-out tasks commits `cells.jsonl` and holds `raw/` and `diffs/` back
+until the tasks themselves are published — the same order, for the same reason.
 
 A second run is a second directory. Nothing here is edited after it lands.
 
@@ -26,7 +33,9 @@ which the trio `fixture` · `arm` · `run` appears twice, and the status is what
 One JSON object per cell, one line each, every key written every time — a missing key and a
 null key say different things.
 
-**Which cell it was:** `schema` · `fixture` · `axis` · `arm` · `run`
+**Which cell it was:** `schema` · `fixture` · `axis` · `arm` · `run`. The schema number moves when
+the key set moves, so lines from two runs can be joined without guessing which keys a given line
+could have carried: `mnema-bench/cell/1` is the pilot, `/2` adds the mechanism columns below.
 
 **What produced it:** `model` · `cli_version` · `mnema_version` · `permission_mode` ·
 `system_prompt_sha256_16`. The build and the model are *in the line*, so a result that is
@@ -54,14 +63,31 @@ looks like a measurement is the one thing this protocol exists not to produce.
 **What the agent wrote:** `files_changed` · `added_lines` · `removed_lines`, from the diff,
 with the record excluded — it is the tool's writing, not the agent's code.
 
-**Whether the two mechanisms moved:** `memory_files_after` · `records_after`. Neither scores
-anything and both are free. If `memory_files_after` is 0 in every cell of every arm, the `host`
-arm was a directory nobody used, and its column has to be read that way.
+**Whether the two mechanisms moved:** `memory_changed` · `memory_writes` · `memory_read` ·
+`memory_reads` · `memory_read_probe` · `memory_files_after` · `records_after`. None of them
+scores anything and all of them are free.
+
+The pilot is why there are seven and not two. Its `host` cells read `memory_files_after = 2`
+and the other three arms read 0 — and the seed writes **exactly two files** into the host's
+directory, so all four numbers were the seeded state untouched. A count cannot tell a memory
+nobody opened from a memory the agent rewrote in place. What answers now is a content digest of
+the directory taken before and after the cell (`memory_changed`, and `memory_writes` naming what
+was added, modified or removed) and the files' access time (`memory_read` / `memory_reads`).
+
+**What they still do not say** is in `mechanism_note`, in the line: the digest sees writing and
+nothing about reading; the access time says a file was *opened*, never that the model used what
+it read, and it is `null` — never `false` — where `memory_read_probe` reports a filesystem that
+does not record access. `num_turns` and `cache_read_input_tokens` separated `host` from `base` in
+the pilot, and they are **indirect**: neither is evidence that anything was recalled.
+
+Lines written before the fix carry `schema` `mnema-bench/cell/1` and hold `memory_files_after`
+alone. That is what the schema number is for.
 
 **Whether the cell was in the state it claimed:** `seed_ok` · `seed_detail`, and
 `started_at` / `ended_at`.
 
 **The caveat, riding in the line:** `model_note` · `scoring_note` · `cost_source` ·
-`axis_note`. Whoever opens this file without the report still reads which model, how it was
-scored, where the cost came from, and what each axis means. A qualification in the prose beside
-the data is a qualification that travels one copy and then stops.
+`axis_note` · `mechanism_note`. Whoever opens this file without the report still reads which
+model, how it was scored, where the cost came from, what each axis means, and what the mechanism
+columns cannot answer. A qualification in the prose beside the data is a qualification that
+travels one copy and then stops.

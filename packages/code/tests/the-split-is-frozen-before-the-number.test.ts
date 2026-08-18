@@ -22,7 +22,7 @@
  * check no committed test can make, because the thing it compares against is not committed.
  */
 
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -205,17 +205,5 @@ describe('the tasks are fixed by a digest', () => {
     expect(DIGEST_LINE.test(`${hex} a1-rounding`)).toBe(false);
     expect(DIGEST_LINE.test(`${hex}  a1-rounding extra`)).toBe(false);
     expect(DIGEST_LINE.test('a1-rounding')).toBe(false);
-  });
-});
-
-describe('the freeze comes before the first number', () => {
-  /**
-   * THIS CASE HAS AN END, and it is not a defect: the delivery that lands the first result
-   * deletes it. Until then it is the whole point of the pre-registration — a reading fixed
-   * after the number is not a reading, it is a rationalisation, and the only evidence that the
-   * order was kept is that this directory was committed empty and stayed that way.
-   */
-  it('and the results directory holds nothing but its own README', () => {
-    expect(readdirSync(join(P1, 'results'))).toEqual(['README.md']);
   });
 });
