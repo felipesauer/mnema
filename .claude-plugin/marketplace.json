@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "mnema",
+  "description": "The mnema plugin for Claude Code: the project's committed record in the session's opening context, and the mnema MCP server.",
+  "owner": {
+    "name": "Felipe Sauer",
+    "url": "https://github.com/felipesauer"
+  },
+  "plugins": [
+    {
+      "name": "mnema",
+      "source": "./plugin",
+      "description": "Puts the project's committed mnema record into the session's opening context without the agent asking, and connects the mnema MCP server so it can record its own work.",
+      "category": "productivity"
+    }
+  ]
+}

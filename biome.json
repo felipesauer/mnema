@@ -6,7 +6,13 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["packages/**/*.ts", "!packages/**/dist/**"]
+    "includes": [
+      "packages/**/*.ts",
+      "!packages/**/dist/**",
+      "plugin/**/*.mjs",
+      "plugin/**/*.json",
+      ".claude-plugin/*.json"
+    ]
   },
   "formatter": {
     "enabled": true,

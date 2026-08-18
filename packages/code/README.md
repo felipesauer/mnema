@@ -50,6 +50,15 @@ CLI and the MCP tools behave identically, because they are the same call.
   proof, and the file can be thrown away and made again. The same record always prints
   the same bytes, which is what makes `mnema brief | diff - AGENTS.md` a staleness
   check.
+- **A plugin for Claude Code**, in [`plugin/`](../../plugin/), that stops the delivery
+  from depending on somebody remembering to regenerate a file: a `SessionStart` hook
+  runs `mnema brief` and hands the result to the session as opening context, and the
+  same installation declares the MCP server below. It is a read — it appends nothing,
+  opens no run, declares no event that can block — and it is **silent** where there is
+  no project, so a machine that installs it and opens a session somewhere else sees
+  nothing at all. Asserted in
+  `tests/the-record-arrives-unasked.test.ts`; the plugin's own page states what it
+  carries and what it leaves behind.
 
 ## What it proves — and what it does not
 
