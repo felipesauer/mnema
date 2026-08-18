@@ -15,11 +15,21 @@
  * `show` composes a subject out of parts and then indents four facts. A single
  * `block(headline, facts)` would have to take an empty list half the time.
  *
- * Nothing here collapses whitespace, and for form B that is not a compromise but
- * the rule: a fact printed on a line of its OWN is not in the one-line-per-item
- * class. A newline in a record's title makes the output ugly; it forges nothing,
- * because there is no list of one-line items around it for the second half to
- * imitate.
+ * Nothing here collapses whitespace, and that is still the primitive's rule: a part's
+ * text is TEXT, and what is in it is decided where the value enters the line.
+ *
+ * WHAT IT USED TO SAY WAS THAT FORM B IS EXEMPT — *a fact printed on a line of its OWN
+ * is not in the one-line-per-item class; a newline in a record's title makes the output
+ * ugly, and ugly is not forgery, because there is no list of one-line items around it
+ * for the second half to imitate.* THE ARGUMENT SURVIVES FOR THE BODY AND NOT FOR THE
+ * FACTS. A body really has no list around it, and `show` exists to serve it whole. The
+ * facts above it are not a body: they are lines at ONE depth under a subject, so a
+ * second line at that depth is a FACT the record does not hold — `about …`, `topic: …`,
+ * `supersedes …` — which is the same forgery a list row is, with the subject standing in
+ * for the header. What was too broad was reading "no list" off the FORM when it is a
+ * property of the one field that is a paragraph. See `record.ts`, which collapses its
+ * facts and not its bodies, and
+ * `tests/the-line-a-reading-words-is-one-line.test.ts`, which reconciles the five.
  */
 
 import type { Column } from './items.js';

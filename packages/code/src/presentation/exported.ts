@@ -20,11 +20,16 @@
  * the whole value because a short form only resolves against the record it was
  * shortened in. A report that shortened it would disagree with the file it describes.
  *
- * The PATH goes through `oneLine`. It is the one field on the headline that is neither
- * the product's words nor a checked value: a directory can hold a newline in its name,
- * and this line is a one-item report — the shape a second half would imitate. The
- * `name` needs none and that is not an omission: it passed `specName`, so it holds only
- * `a-z`, `0-9` and hyphens, and nothing in it can break a line.
+ * TWO FIELDS GO THROUGH `oneLine`, and it used to be one. The PATH always did: a
+ * directory can hold a newline in its name, and this line is a one-item report — the
+ * shape a second half would imitate. THE AGENT THAT ADOPTED THE PATTERN DID NOT, and
+ * that was a hole rather than a decision: `adoptedBy` is the name whoever adopted it
+ * was working under, which is text somebody typed, and it sits on a fact line under
+ * the headline where a second half reads as a second fact about the same file.
+ *
+ * The `name` needs none and that is not an omission: it passed `specName` before the
+ * file was written (`commands/skill-export.ts` refuses the export otherwise), so it
+ * holds only `a-z`, `0-9` and hyphens, and nothing in it can break a line.
  */
 
 import type { DescriptionSource, SkillExportDone } from '../commands/skill-export.js';
@@ -66,7 +71,7 @@ export function exportReport(render: Render, done: SkillExportDone): string[] {
     render(fact(`description: ${DESCRIPTION_SAID[done.descriptionFrom]}`)),
     render(
       fact(
-        `provenance in the file: record ${done.id}, adopted by ${done.adoptedBy} — ` +
+        `provenance in the file: record ${done.id}, adopted by ${oneLine(done.adoptedBy)} — ` +
           'both checkable against this repository',
       ),
     ),

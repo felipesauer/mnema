@@ -438,7 +438,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
   'resume.ts «{} {}» #1': {
     verdict: 'collapsed',
-    why: 'the phrase carries the run’s GOAL; `presentation/status.ts` prints it raw still',
+    why: 'the actor, and the phrase — whose goal `presentation/runs.ts` now collapses too',
   },
   'run.ts «for {}» #1': {
     verdict: 'collapsed',
@@ -772,16 +772,26 @@ describe('theListGainsNoItem', () => {
 // ---------------------------------------------------------------------------
 
 describe('WHAT_IS_NOT_CLOSED', () => {
-  it('names the twin reading that still prints a run’s goal raw', () => {
-    // `lastRunPhrase` composes the phrase both `resume` and `status` print, and the goal
-    // inside it is text somebody typed. `resume` collapses it at the line; `status` does
-    // not, and it cannot without a static import that would put the copilot's edge on the
-    // floor of every invocation (`tests/the-floor-is-the-declaration.test.ts` is what
-    // would say so). It is RECONCILED rather than left silent: the day it is closed this
-    // goes red and the exception is deleted instead of outliving its reason.
-    const status = readFileSync(join(SRC, 'presentation', 'status.ts'), 'utf-8');
-    expect(status).toContain('lastRunPhrase(lastRun)');
-    expect(status).not.toContain(TAG);
+  it('no longer names the twin reading, because the twin was closed', () => {
+    // THIS CASE USED TO BE THE DEBT AND IT IS THE CORRECTION OF ITS OWN SHAPE. It said
+    // `status` printed a run's goal raw and that it *cannot* collapse it "without a
+    // static import that would put the copilot's edge on the floor of every invocation"
+    // — which was wrong twice. `status.ts` already imports `served-patterns.ts`, and it
+    // is loaded inside the action, so the floor was never the question; and the fix was
+    // never `status`'s to make. The collapse belongs in `lastRunPhrase`, where the phrase
+    // is WORDED, so both readings come through it (A3).
+    //
+    // AND THE RECONCILIATION COULD NOT HAVE GONE RED. It asserted `status.ts` does not
+    // hold the TAG — and the right fix does not put the tag there, so the day the debt
+    // was paid this case would have stayed green with a dead reason under it. What
+    // replaces it points at the file that owns the question now, and that file's
+    // classification is what goes red if the collapse leaves.
+    const runs = readFileSync(join(SRC, 'presentation', 'runs.ts'), 'utf-8');
+    expect(runs).toContain('oneLine(run.goal)');
+    const owned = fileURLToPath(
+      new URL('./the-line-a-reading-words-is-one-line.test.ts', import.meta.url),
+    );
+    expect(readFileSync(owned, 'utf-8')).toContain('runs.ts « — {}» oneLine(run.goal) #1');
   });
 
   it('names the chain’s own detail, which can still carry a path', () => {
