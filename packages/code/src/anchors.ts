@@ -31,7 +31,7 @@ import {
   resolveAnchorPrefix,
   shortenAnchors,
 } from '@mnema/core';
-import { oneLine } from './served-patterns.js';
+import { oneLine } from './one-line.js';
 import { withScopedCaches } from './tree-sources.js';
 
 /**

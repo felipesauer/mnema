@@ -128,8 +128,8 @@ import {
   scopedEventsOf,
 } from '../intelligence-source.js';
 import { movedDisplay } from '../moved-record.js';
+import { oneLine } from '../one-line.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
-import { oneLine } from '../served-patterns.js';
 import {
   type EntityLocation,
   inEveryTreeThisSessionSees,

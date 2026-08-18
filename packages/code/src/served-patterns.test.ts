@@ -1,6 +1,7 @@
 import type { ServedSkill, SkillCatalogue } from '@mnema/copilot';
 import { describe, expect, it } from 'vitest';
-import { A_PERSON, patternsFraming, SERVED_PATTERN_CONTRACT } from './served-patterns.js';
+import { A_PERSON } from './one-line.js';
+import { patternsFraming, SERVED_PATTERN_CONTRACT } from './served-patterns.js';
 
 /**
  * An ADOPTED pattern, the way the tool serves one — `state` included, because the

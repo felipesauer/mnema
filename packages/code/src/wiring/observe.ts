@@ -12,6 +12,7 @@ import type { Command } from 'commander';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import { scopeOption } from './enumerated.js';
+import { onOneLine } from './on-one-line.js';
 import { declaredAgent, INVALID, parseScope, WHICH_HELP } from './options.js';
 import { reportRecorded, reportRefusal } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
@@ -59,7 +60,6 @@ export function registerObserve(program: Command, wiring: Wiring): Declared {
           // The id is minted here; `about` is the positional, and the doc above says it
           // is NOT validated — a dangling reference is honest cross-tree. So the value
           // reaches this line exactly as typed (see {@link onOneLine}).
-          const { onOneLine } = await import('./on-one-line.js');
           io.out(onOneLine`Recorded observation ${result.id} about ${about}`);
           reportRecorded(result, io);
           return;

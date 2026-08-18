@@ -33,7 +33,7 @@
  * skill, and nobody learns why.
  */
 
-import { oneLine } from './served-patterns.js';
+import { oneLine } from './one-line.js';
 
 /** The file every exported skill directory holds — the specification's own name. */
 export const SKILL_FILE = 'SKILL.md';

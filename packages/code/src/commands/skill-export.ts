@@ -76,7 +76,7 @@ import {
   specDescription,
   specName,
 } from '../agent-skill.js';
-import { oneLine } from '../served-patterns.js';
+import { oneLine } from '../one-line.js';
 import { withScopedCaches } from '../tree-sources.js';
 
 /**

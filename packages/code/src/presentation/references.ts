@@ -30,7 +30,7 @@
  */
 
 import type { ReferenceGraph } from '@mnema/copilot';
-import { oneLine } from '../served-patterns.js';
+import { oneLine } from '../one-line.js';
 import { fact, subjectLine } from './detail.js';
 import { asScope, itemLine } from './items.js';
 import type { Render } from './render.js';

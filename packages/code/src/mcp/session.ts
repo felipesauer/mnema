@@ -65,7 +65,7 @@ import {
   startRun,
   type WriteContext,
 } from '@mnema/core/write';
-import { oneLine } from '../served-patterns.js';
+import { oneLine } from '../one-line.js';
 import { type CacheRegistry, createCacheRegistry } from './cache-registry.js';
 import { resolveContext, type WorkspaceProject } from './context.js';
 

@@ -14,6 +14,7 @@ import type { Command } from 'commander';
 import { RECOMMENDED_RELATIONS, RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import { scopeOption } from './enumerated.js';
+import { onOneLine } from './on-one-line.js';
 import { declaredAgent, INVALID, parseScope, WHICH_HELP } from './options.js';
 import { reportRecorded, reportRefusal } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
@@ -65,7 +66,6 @@ export function registerLink(program: Command, wiring: Wiring): Declared {
           // is validated: a link is legitimately cross-tree, and the relation is an
           // open string on purpose. So this line is three doors onto itself, and each
           // one goes through the collapse (see {@link onOneLine}).
-          const { onOneLine } = await import('./on-one-line.js');
           io.out(onOneLine`Linked ${result.subject} —${result.rel}→ ${result.target}`);
           reportRecorded(result, io);
           return;

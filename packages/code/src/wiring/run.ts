@@ -19,6 +19,7 @@ import type { Command } from 'commander';
 import { fact } from '../presentation/detail.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
+import { onOneLine } from './on-one-line.js';
 import { declaredAgent } from './options.js';
 import { reportRefusal, reportReplacement, reportUsage } from './report.js';
 import { RUN_ENV } from './run-pin.js';
@@ -70,7 +71,6 @@ export function registerRun(program: Command, wiring: Wiring): Declared {
       // of an interpolated fragment: the collapse trims what it is given, and a
       // fragment beginning with a space would come back without it (see
       // {@link onOneLine}).
-      const { onOneLine } = await import('./on-one-line.js');
       io.out(
         render(
           fact(
@@ -135,7 +135,6 @@ export function registerRun(program: Command, wiring: Wiring): Declared {
       // session is for: `by` and not `for`, because this half says who did the
       // closing and the other says who the session was opened for — the same two
       // questions the envelope and the payload keep apart.
-      const { onOneLine } = await import('./on-one-line.js');
       if (result.agent !== undefined) io.out(render(fact(onOneLine`by ${result.agent}`)));
       reportReplacement(result, io);
       // A shell still pinned to the run just closed would have every write

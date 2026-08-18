@@ -28,7 +28,7 @@
  * ONE LINE PER ITEM, which is why every field an actor wrote goes through `oneLine`: a
  * title or a pattern name holding a newline would put a second line under a header that
  * says how many there are, and that second line reads exactly like an item nothing ever
- * recorded (see `served-patterns.ts`, and `one-line-per-item.test.ts`).
+ * recorded (see `one-line.ts`, and `one-line-per-item.test.ts`).
  *
  * THAT SENTENCE WAS A CLAIM ABOUT THE WHOLE READING AND IT WAS FALSE OF ONE FIELD. The
  * four lists kept it; the SESSION line did not. It prints the run's phrase, whose goal is
@@ -41,7 +41,7 @@
  */
 
 import type { AwaitingJudgement, Bootstrap } from '@mnema/copilot';
-import { oneLine } from '../served-patterns.js';
+import { oneLine } from '../one-line.js';
 import { fact } from './detail.js';
 import { asId, column, itemLine } from './items.js';
 import type { Render } from './render.js';
