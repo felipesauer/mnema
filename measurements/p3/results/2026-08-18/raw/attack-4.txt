@@ -1,0 +1,4 @@
+public: local integrity verified (T1 only) — no signature was checked; 0 tail(s); no events yet; 2 committed key(s) without a tail (see census — informational, not a break); external witness (T3): not covered — enable an anchor or push to a shared remote
+  census [key-without-tail] public 6a55feb2165ee0f56b6a9920ae394dbca374956f88d1ad4710dc5ecdcf372f37: committed public key has no tail on disk — the tail may have been dropped (a botched merge), never written (an empty tail is not versioned), or removed
+  census [key-without-tail] public ee6c72f1303dabf5a3dd3036dc3040947b0a6493f3fe1f654ea99caff0ef6a9d: committed public key has no tail on disk — the tail may have been dropped (a botched merge), never written (an empty tail is not versioned), or removed
+private: no record here — nothing has been written to this tree on this machine, so there is nothing to rule on
