@@ -35,10 +35,10 @@
  *     completion generator and the entry itself. A session imported at module scope
  *     would make every other verb pay for the thing built to stop paying.
  *   - every edge from the closure into `@mnema/*` is DECLARED, with the reason it
- *     has to be there. The floor still reaches the domain in EIGHT places, five of
- *     them a constant or a parser commander needs before it can route anything —
- *     and the table is what makes the ninth one visible instead of silent. It
- *     reconciles in both directions, so an edge that goes away has to leave too.
+ *     has to be there. The floor reaches the domain in TWELVE places, five of them a
+ *     constant or a parser commander needs before it can route anything — and the table
+ *     is what makes the thirteenth visible instead of silent. It reconciles in both
+ *     directions, so an edge that goes away has to leave too.
  *
  * WHAT IT DOES NOT COVER. A `--help` that changed is a declaration that became
  * lazy, and that is the golden's job (`cli.golden.test.ts`), not this file's. And a
@@ -167,8 +167,23 @@ function eagerClosure(entry: string): Closure {
 // The declarations
 // ---------------------------------------------------------------------------
 
-/** The packages whose load IS the floor — the ones measured at 38, 68 and 73 ms. */
-const DOMAIN = ['@mnema/chain', '@mnema/core', '@mnema/core/write', '@mnema/copilot'];
+/**
+ * The packages whose load IS the floor — the ones measured at 38, 68 and 73 ms — and the
+ * one SUBPATH that is here for the opposite reason.
+ *
+ * `@mnema/chain/one-line` is a leaf: one exported function, no imports of its own, and a
+ * guard over its source that says so (`chain/src/one-line.test.ts`). It is named here
+ * anyway, because the specifier one character shorter is the proof engine — and the day
+ * somebody widens the re-export in `one-line.ts` to the index, the edge has to be
+ * visible rather than lost in the difference between two strings.
+ */
+const DOMAIN = [
+  '@mnema/chain',
+  '@mnema/chain/one-line',
+  '@mnema/core',
+  '@mnema/core/write',
+  '@mnema/copilot',
+];
 
 /**
  * The directories of `src` that hold WORK rather than declarations.
@@ -188,7 +203,7 @@ const WORK = ['choice', 'commands', 'mcp', 'completion', 'repl'];
 /**
  * Every edge from the floor into the domain, and why that one cannot wait.
  *
- * Eight of the eleven are DECLARATIONS: commander is handed a help string or an
+ * Eight of the twelve are DECLARATIONS: commander is handed a help string or an
  * argument parser while the program is being built, before it has parsed a word, so
  * the value has to exist by then. Three are not, and they say so — they are what the
  * next pass at the floor is about, and all three cost nothing TODAY because the
@@ -200,13 +215,26 @@ const WORK = ['choice', 'commands', 'mcp', 'completion', 'repl'];
  * and the sentence went on saying eight through both, because a number in prose is the
  * one thing here that nothing checked. It is checked now: `reaches the domain only where
  * the declaration needs it` asserts the table's SIZE next to its contents, so the next
- * edge makes this paragraph red instead of stale.
+ * edge makes this paragraph red instead of stale. The twelfth arrived that way: the rule
+ * of the line moved under all three packages, and the edge to its subpath announced
+ * itself here the moment the specifier was named in `DOMAIN`.
  *
  * It reconciles in both directions, which is what keeps it from becoming the
  * allowlist every dead guard ends as: an edge that disappears has to leave this
  * table or the assertion fails.
  */
 const EAGER_DOMAIN: Readonly<Record<string, string>> = {
+  'one-line.ts @mnema/chain/one-line':
+    'THE RULE OF THE LINE, and the one edge here that is a leaf. `oneLine` is what makes ' +
+    'a report line one line, and it moved into `@mnema/chain` because the sentences that ' +
+    'need it are written in three packages — the verifier’s findings, the domain’s ' +
+    'refusals, this surface’s readings — and a surface cannot apply a rule to the inside ' +
+    'of a sentence another package already joined. This file re-exports the SUBPATH, ' +
+    'whose module imports nothing at all (`chain/src/one-line.test.ts` asserts it over ' +
+    'the source); reaching it is not reaching the proof engine. It is eager because the ' +
+    'two modules that want it here — `wiring/no-such-record.ts` and ' +
+    '`presentation/runs.ts` — are on this floor, and a curative at their call sites is ' +
+    'exactly what two earlier slices paid and this one removed.',
   'cli.ts @mnema/core':
     'the last-resort catch recognizes the domain’s own refusal by its class. NOT a ' +
     'declaration: it could be loaded inside the catch, which is free today because ' +
@@ -310,7 +338,7 @@ describe('the floor is the declaration', () => {
     // And the SIZE, so the number this file's own doc states cannot drift from the
     // table it describes. It drifted twice before anybody noticed — the prose said
     // eight through two slices that made it ten and then eleven.
-    expect(Object.keys(EAGER_DOMAIN)).toHaveLength(11);
+    expect(Object.keys(EAGER_DOMAIN)).toHaveLength(12);
   });
 
   it('walks a graph that is really there', () => {

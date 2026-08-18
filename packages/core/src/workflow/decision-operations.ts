@@ -41,6 +41,7 @@ import {
 } from '../content/screen.js';
 import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
+import { oneLine } from '../one-line.js';
 import { type DecisionProjection, projectDecisions } from '../projections/decision.js';
 import { orderedEvents } from '../projections/order.js';
 import { appendEvent, appendEvents, type UnreadableEventErr } from './append.js';
@@ -283,7 +284,7 @@ function transition(
     return {
       ok: false,
       code: 'UNKNOWN_DECISION',
-      message: `decision "${input.id}" does not exist`,
+      message: `decision "${oneLine(input.id)}" does not exist`,
     };
   }
 
@@ -319,7 +320,7 @@ function transition(
       return {
         ok: false,
         code: 'UNKNOWN_BY',
-        message: `supersede names a successor "${verdict.by}" that does not exist`,
+        message: `supersede names a successor "${oneLine(verdict.by)}" that does not exist`,
       };
     }
   }

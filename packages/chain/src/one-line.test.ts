@@ -1,14 +1,21 @@
 /**
  * `one-line.ts` DEPENDS ON NOTHING, asserted over its source.
  *
- * That is the whole property the module exists to have. The rule of the line is wanted by
- * twenty-two modules of this surface, and several of them are DECLARED — loaded by
- * commander before it has routed a word — so whatever this module imports, every
- * invocation of every verb pays for, including `mnema --version`, which reads nothing.
- * While the rule lived beside a framing that asks `@mnema/copilot` what a pattern's state
- * means, that price was one package, and it was paid twice by two slices that discovered
- * it only when the floor guard went red: a refusal site and a reading's phrase, both
- * fixed with an import inside a branch rather than at the cause.
+ * That is the whole property the module exists to have. The rule of the line is wanted
+ * by three packages — this one words the verifier's findings, `core` words every refusal
+ * the domain returns, and twenty-three modules of the command line word a reading — and
+ * several of those are DECLARED, loaded by commander before it has routed a word. So
+ * whatever this module imports, every invocation of every verb pays for, including
+ * `mnema --version`, which reads nothing. While the rule lived beside a framing that
+ * asks `@mnema/copilot` what a pattern's state means, that price was one package, and it
+ * was paid twice by two slices that discovered it only when the floor guard went red: a
+ * refusal site and a reading's phrase, both fixed with an import inside a branch rather
+ * than at the cause.
+ *
+ * THE PRICE IS WHY THE PACKAGE PUBLISHES IT AS A SUBPATH. `@mnema/code`'s own
+ * `one-line.ts` re-exports `@mnema/chain/one-line` and not `@mnema/chain`, so what the
+ * floor loads is this file rather than the proof engine behind it — and this file loads
+ * nothing, which is the assertion below.
  *
  * SO THE ASSERTION IS ABSENCE, AND ABSENCE IS THE ASSERTION THAT ROTS. A guard that
  * looked for one bad specifier would pass the day somebody imports a different one; a
@@ -37,7 +44,9 @@ import { describe, expect, it } from 'vitest';
 /** The module this file is about. */
 const MODULE = fileURLToPath(new URL('./one-line.ts', import.meta.url));
 /** A module of this package that really does import things — the non-vacuity witness. */
-const IMPORTS_THINGS = fileURLToPath(new URL('./served-patterns.ts', import.meta.url));
+const IMPORTS_THINGS = fileURLToPath(new URL('./chain/verify.ts', import.meta.url));
+/** The manifest, which has to publish the subpath the floor reaches this file through. */
+const MANIFEST = fileURLToPath(new URL('../package.json', import.meta.url));
 
 /** A newline, built rather than typed, so no literal in this file spans two lines. */
 const LF = String.fromCharCode(10);
@@ -92,14 +101,24 @@ describe('the rule of the line needs nothing', () => {
   it('is still the module that holds the rule', () => {
     // An empty file passes the assertion above. This is what keeps that from being the
     // cheapest way to make this suite green.
-    const source = readFileSync(MODULE, 'utf-8');
-    expect(source).toContain('export function oneLine(text: string): string {');
-    expect(source).toContain("export const A_PERSON = 'a person';");
+    expect(readFileSync(MODULE, 'utf-8')).toContain(
+      'export function oneLine(text: string): string {',
+    );
+  });
+
+  it('is published on its own, so reaching it is not reaching the package', () => {
+    // The subpath is half of the property: without it the only way in is the index,
+    // and the index is the proof engine. A package that stopped exporting it would
+    // leave every importer either paying for the engine or copying the rule.
+    const manifest = JSON.parse(readFileSync(MANIFEST, 'utf-8')) as {
+      exports: Record<string, { default?: string }>;
+    };
+    expect(manifest.exports['./one-line']?.default).toBe('./dist/one-line.js');
   });
 
   it('sees an import where there is one', () => {
-    // The scan's own non-vacuity, against the module the rule moved OUT of — which
-    // imports the copilot, and is the reason the rule moved.
+    // The scan's own non-vacuity, against the module whose findings are the sharpest
+    // reason the rule came down here — and which imports half this package to make them.
     expect(reaches(readFileSync(IMPORTS_THINGS, 'utf-8')).length).toBeGreaterThan(0);
   });
 

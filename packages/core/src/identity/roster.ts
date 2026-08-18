@@ -15,6 +15,7 @@
 
 import { materializePublicKey } from '@mnema/chain';
 import type { ScreenedWrite } from '../content/screen.js';
+import { oneLine } from '../one-line.js';
 import { decideAnchor, enrollKey, revokeKey } from '../workflow/identity-operations.js';
 import type { WriteContext } from '../workflow/operations.js';
 import { decodeKeyRequest } from './handshake.js';
@@ -102,8 +103,8 @@ export function enrollFromRequest(
       ok: false,
       code: 'UNPROVEN_REQUEST',
       message:
-        `that request does not prove the key ${fingerprint} consented to join ${anchor} — ` +
-        `a request is made for ONE identity, so check the joining machine asked to join ${anchor} ` +
+        `that request does not prove the key ${oneLine(fingerprint)} consented to join ${oneLine(anchor)} — ` +
+        `a request is made for ONE identity, so check the joining machine asked to join ${oneLine(anchor)} ` +
         'and not some other',
     };
   }
@@ -117,7 +118,7 @@ export function enrollFromRequest(
       ok: false,
       code: 'CANNOT_VOUCH',
       message:
-        `this machine's key is not currently valid for ${anchor} — the record retired it, ` +
+        `this machine's key is not currently valid for ${oneLine(anchor)} — the record retired it, ` +
         'so a vouch it signed would be rejected. Enroll from a machine that is still a member',
     };
   }
@@ -199,7 +200,7 @@ export function revokeMember(
       ok: false,
       code: 'CANNOT_VOUCH',
       message:
-        `this machine's key is not currently valid for ${anchor} — the record retired it, ` +
+        `this machine's key is not currently valid for ${oneLine(anchor)} — the record retired it, ` +
         'so a revocation it signed would have no effect. Revoke from a machine that is still a member',
     };
   }
@@ -208,7 +209,7 @@ export function revokeMember(
       ok: false,
       code: 'UNKNOWN_KEY',
       message:
-        `the record does not count ${input.fingerprint} as a key of ${anchor} — ` +
+        `the record does not count ${oneLine(input.fingerprint)} as a key of ${oneLine(anchor)} — ` +
         'it was never enrolled here, or it was retired already',
     };
   }
@@ -217,7 +218,7 @@ export function revokeMember(
       ok: false,
       code: 'LAST_KEY',
       message:
-        `${input.fingerprint} is the only key ${anchor} has — retiring it would leave the ` +
+        `${oneLine(input.fingerprint)} is the only key ${oneLine(anchor)} has — retiring it would leave the ` +
         'identity unable to sign anything again, including a repair. Enroll the replacement ' +
         'first, then retire this one',
     };

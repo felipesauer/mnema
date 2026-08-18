@@ -45,6 +45,7 @@ import {
   publicKeyToPem,
   sign,
 } from '@mnema/chain';
+import { oneLine } from '../one-line.js';
 import { isAnchorId } from './anchor.js';
 
 /**
@@ -186,7 +187,7 @@ export function requestEnrollment(input: RequestInput): RequestOk | RequestErr {
       ok: false,
       code: 'INVALID_ANCHOR',
       message:
-        `"${input.anchor}" is not an identity id — an identity looks like ` +
+        `"${oneLine(input.anchor)}" is not an identity id — an identity looks like ` +
         `${ANCHOR_PREFIX}<64 hex>, as printed when a project is founded`,
     };
   }
@@ -201,7 +202,7 @@ export function requestEnrollment(input: RequestInput): RequestOk | RequestErr {
       return {
         ok: false,
         code: 'UNREADABLE_KEY',
-        message: `${input.privateKeyPath} could not be read as a private key`,
+        message: `${oneLine(input.privateKeyPath)} could not be read as a private key`,
       };
     }
     keyPair = fromFile;
