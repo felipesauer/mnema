@@ -1,0 +1,19 @@
+{
+  "name": "mnema",
+  "version": "0.0.0",
+  "description": "Puts the project's committed mnema record into the session's opening context without the agent asking, and connects the mnema MCP server so it can record its own work.",
+  "author": {
+    "name": "Felipe Sauer",
+    "url": "https://github.com/felipesauer"
+  },
+  "homepage": "https://felipesauer.github.io/mnema/",
+  "repository": "https://github.com/felipesauer/mnema",
+  "license": "MIT",
+  "keywords": ["audit-trail", "provenance", "accountability", "adr", "local-first"],
+  "mcpServers": {
+    "mnema": {
+      "command": "mnema",
+      "args": ["mcp"]
+    }
+  }
+}
