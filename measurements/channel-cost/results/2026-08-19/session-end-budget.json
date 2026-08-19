@@ -1,0 +1,89 @@
+{
+  "probe": "session-end-budget",
+  "stamp": {
+    "at": "2026-08-19T03:32:23.846Z",
+    "product_version": "0.0.0",
+    "git_commit": "605052949a85bb7b15a38349b4158336df49e398",
+    "git_tree_modified": false,
+    "node": "v24.14.0",
+    "platform": "linux-x64",
+    "cpus": 16,
+    "total_mem_gib": 13.3,
+    "loadavg_1m": 2.77
+  },
+  "samples": 12,
+  "regimes": {
+    "empty": {
+      "bare_ms": {
+        "n": 12,
+        "min": 151.9,
+        "p50": 156.96,
+        "p90": 158.97,
+        "max": 159.02
+      },
+      "through_a_wrapper_ms": {
+        "n": 12,
+        "min": 179,
+        "p50": 183,
+        "p90": 188.52,
+        "max": 192.06
+      },
+      "first_half_p50_ms": 156.98,
+      "second_half_p50_ms": 156.96,
+      "headroom": {
+        "shared_budget_ms": 1500,
+        "worst_seen_ms": 192.06,
+        "budget_used_pct": 12.8,
+        "budgets_left_for_other_hooks": 6.8
+      }
+    },
+    "realistic": {
+      "bare_ms": {
+        "n": 12,
+        "min": 156.53,
+        "p50": 161.62,
+        "p90": 165.23,
+        "max": 171.65
+      },
+      "through_a_wrapper_ms": {
+        "n": 12,
+        "min": 184.8,
+        "p50": 187.17,
+        "p90": 192.85,
+        "max": 197.07
+      },
+      "first_half_p50_ms": 162.36,
+      "second_half_p50_ms": 160.03,
+      "headroom": {
+        "shared_budget_ms": 1500,
+        "worst_seen_ms": 197.07,
+        "budget_used_pct": 13.1,
+        "budgets_left_for_other_hooks": 6.6
+      }
+    },
+    "large": {
+      "bare_ms": {
+        "n": 12,
+        "min": 165.43,
+        "p50": 168.07,
+        "p90": 172.18,
+        "max": 175.91
+      },
+      "through_a_wrapper_ms": {
+        "n": 12,
+        "min": 193.18,
+        "p50": 196.98,
+        "p90": 200.53,
+        "max": 207.27
+      },
+      "first_half_p50_ms": 169.5,
+      "second_half_p50_ms": 167.71,
+      "headroom": {
+        "shared_budget_ms": 1500,
+        "worst_seen_ms": 207.27,
+        "budget_used_pct": 13.8,
+        "budgets_left_for_other_hooks": 6.2
+      }
+    }
+  }
+}

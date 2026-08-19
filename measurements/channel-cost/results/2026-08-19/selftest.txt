@@ -1,0 +1,20 @@
+red   channel-floor.mjs BREAK=server  exit=1  RULER BROKEN — search: the MCP side did not answer — the server exited (1) before answering
+red   channel-floor.mjs BREAK=verb  exit=1  RULER BROKEN — read_record: the command side exited 1 — No record not-an-id here.
+red   channel-floor.mjs BREAK=empty  exit=1  RULER BROKEN — search: the read under measurement found 0 — nothing to time
+red   channel-floor.mjs BREAK=mismatch  exit=1  RULER BROKEN — search: the two channels did not do the same work — each came back with [16,25]
+red   channel-floor.mjs BREAK=control  exit=1  RULER BROKEN — search: the command invocation against itself did not tie — 176.47 ms against 257.73 ms (31.5% apart, tolerance 25%)
+red   session-end-budget.mjs BREAK=noid  exit=1  RULER BROKEN — empty: `run end 00000000-0000-7000-8000-000000000000 --which claude-code --outcome measured` exited 1 — 
+red   session-end-budget.mjs BREAK=silent  exit=1  RULER BROKEN — empty: the close did not name the run a-name-no-close-can-print it claims to have closed
+red   session-end-budget.mjs BREAK=control  exit=1  RULER BROKEN — empty: the close did not tie with itself — 245.87 ms for the first 2 against 156.56 ms for the last 2 (36.3% apart, tolerance 25%)
+red   injection-size.mjs BREAK=emptybrief  exit=1  RULER BROKEN — empty: the opening document came back empty — there is nothing to size
+red   injection-size.mjs BREAK=nogrowth  exit=1  RULER BROKEN — the document did not grow across the three regimes: 1149 B, 1149 B, 1149 B
+red   injection-size.mjs BREAK=control  exit=1  RULER BROKEN — the same record built twice gave two documents: 4145 B against 4146 B
+red   host-multiplier.mjs BREAK=nostore  exit=1  RULER BROKEN — the store at ~/.claude/no-such-store holds no session to count
+red   host-multiplier.mjs BREAK=content  exit=1  RULER BROKEN — the output was about to carry something it did not author: $.per_session.leaked carries a string this probe did not author
+red   host-multiplier.mjs BREAK=control  exit=1  RULER BROKEN — two counting passes over the same store did not agree
+clean  channel-floor.mjs  exit=0
+clean  session-end-budget.mjs  exit=0
+clean  injection-size.mjs  exit=0
+clean  host-multiplier.mjs  exit=0
+
+every branch lit, and every clean run stayed quiet

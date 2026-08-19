@@ -1,0 +1,86 @@
+{
+  "probe": "injection-size",
+  "stamp": {
+    "at": "2026-08-19T03:35:03.697Z",
+    "product_version": "0.0.0",
+    "git_commit": "605052949a85bb7b15a38349b4158336df49e398",
+    "git_tree_modified": false,
+    "node": "v24.14.0",
+    "platform": "linux-x64",
+    "cpus": 16,
+    "total_mem_gib": 13.3,
+    "loadavg_1m": 1.76
+  },
+  "unit": "bytes; `chars` is a CEILING on tokens, not a token count",
+  "regimes": {
+    "empty": {
+      "per_prompt_brief": {
+        "bytes": 1149,
+        "chars": 1137,
+        "lines": 25
+      },
+      "per_edit_one_record": null,
+      "per_edit_one_thin_record": null,
+      "per_edit_envelope_bytes": null,
+      "index_of_matches": {
+        "bytes": 21,
+        "chars": 21,
+        "lines": 0,
+        "matched": 0
+      }
+    },
+    "realistic": {
+      "per_prompt_brief": {
+        "bytes": 4145,
+        "chars": 4061,
+        "lines": 68
+      },
+      "per_edit_one_record": {
+        "bytes": 3783,
+        "chars": 3783,
+        "lines": 0
+      },
+      "per_edit_one_thin_record": {
+        "bytes": 401,
+        "chars": 401,
+        "lines": 0
+      },
+      "per_edit_envelope_bytes": 361,
+      "index_of_matches": {
+        "bytes": 3921,
+        "chars": 3921,
+        "lines": 0,
+        "matched": 16
+      }
+    },
+    "large": {
+      "per_prompt_brief": {
+        "bytes": 12566,
+        "chars": 12227,
+        "lines": 153
+      },
+      "per_edit_one_record": {
+        "bytes": 3779,
+        "chars": 3779,
+        "lines": 0
+      },
+      "per_edit_one_thin_record": {
+        "bytes": 397,
+        "chars": 397,
+        "lines": 0
+      },
+      "per_edit_envelope_bytes": 357,
+      "index_of_matches": {
+        "bytes": 4844,
+        "chars": 4844,
+        "lines": 0,
+        "matched": 101
+      }
+    }
+  },
+  "arithmetic": {
+    "brief_bytes_per_rule_in_force": 99.1,
+    "records_per_10_kib_of_context": 2.7,
+    "briefs_per_10_kib_of_context": 2.5
+  }
+}

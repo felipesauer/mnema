@@ -1,0 +1,85 @@
+{
+  "composed": "per-session cost of one hook point, in seconds of added latency",
+  "per_firing_ms": {
+    "command": 171.54,
+    "mcp_warm": 1.24
+  },
+  "note": "the MCP connect (291.99 ms) is paid once when the session opens, by the server declaration the plugin already carries — not by the hook",
+  "points": {
+    "PreToolUse on Write|Edit|NotebookEdit": {
+      "firings_p50": 34,
+      "firings_p90": 121,
+      "firings_max": 3424,
+      "command_s": {
+        "p50": 5.83,
+        "p90": 20.76,
+        "max": 587.35
+      },
+      "mcp_tool_s": {
+        "p50": 0.04,
+        "p90": 0.15,
+        "max": 4.25
+      }
+    },
+    "PreToolUse on every tool": {
+      "firings_p50": 144,
+      "firings_p90": 741,
+      "firings_max": 15684,
+      "command_s": {
+        "p50": 24.7,
+        "p90": 127.11,
+        "max": 2690.43
+      },
+      "mcp_tool_s": {
+        "p50": 0.18,
+        "p90": 0.92,
+        "max": 19.45
+      }
+    },
+    "UserPromptSubmit": {
+      "firings_p50": 1,
+      "firings_p90": 24,
+      "firings_max": 574,
+      "command_s": {
+        "p50": 0.17,
+        "p90": 4.12,
+        "max": 98.46
+      },
+      "mcp_tool_s": {
+        "p50": 0,
+        "p90": 0.03,
+        "max": 0.71
+      }
+    },
+    "PostCompact": {
+      "firings_p50": 0,
+      "firings_p90": 0,
+      "firings_max": 18,
+      "command_s": {
+        "p50": 0,
+        "p90": 0,
+        "max": 3.09
+      },
+      "mcp_tool_s": {
+        "p50": 0,
+        "p90": 0,
+        "max": 0.02
+      }
+    },
+    "SubagentStart": {
+      "firings_p50": 0,
+      "firings_p90": 2,
+      "firings_max": 87,
+      "command_s": {
+        "p50": 0,
+        "p90": 0.34,
+        "max": 14.92
+      },
+      "mcp_tool_s": {
+        "p50": 0,
+        "p90": 0,
+        "max": 0.11
+      }
+    }
+  }
+}
