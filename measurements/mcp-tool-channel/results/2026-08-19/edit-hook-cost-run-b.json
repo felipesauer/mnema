@@ -1,0 +1,144 @@
+{
+  "probe": "edit-hook-cost",
+  "question": "What does the work of `rules_before_an_edit` cost per firing, apart from the floor of the channel, and what is that over a whole session?",
+  "stamp": {
+    "at": "2026-08-19T17:35:40.833Z",
+    "host": "2.1.228 (Claude Code)",
+    "git_commit": "51589e91083a43d55dee402a2fa85b2d766990bc",
+    "node": "v24.14.0",
+    "platform": "linux-x64",
+    "cpus": 16,
+    "total_mem_gib": 13.3,
+    "loadavg_1m": 3.39
+  },
+  "method": {
+    "runs_per_figure": 2000,
+    "warmup_per_figure": 300,
+    "order": "each pair timed forward and reversed; both terms reported",
+    "baseline": "read_record, a read that already existed, on the same warm session",
+    "floor": "1.24 ms per warm mcp_tool firing, from measurements/channel-cost/",
+    "edits_per_session": {
+      "p50": 34,
+      "p90": 121,
+      "max": 3424
+    }
+  },
+  "regimes": {
+    "empty": {
+      "hook_ms_p50": {
+        "forward": 0.247,
+        "reverse": 0.248
+      },
+      "baseline_read_record_ms_p50": {
+        "forward": 0.283,
+        "reverse": 0.283
+      },
+      "silent_path_ms_p50": {
+        "forward": 0.241,
+        "reverse": 0.238
+      },
+      "injected": {
+        "bytes": null,
+        "chars": null,
+        "lines": null,
+        "rules": 0
+      },
+      "silent_reply_is_empty": true
+    },
+    "realistic": {
+      "hook_ms_p50": {
+        "forward": 0.833,
+        "reverse": 0.788
+      },
+      "baseline_read_record_ms_p50": {
+        "forward": 0.133,
+        "reverse": 0.137
+      },
+      "silent_path_ms_p50": {
+        "forward": 0.812,
+        "reverse": 0.767
+      },
+      "injected": {
+        "bytes": 586,
+        "chars": 558,
+        "lines": 6,
+        "rules": 4
+      },
+      "silent_reply_is_empty": true
+    },
+    "large": {
+      "hook_ms_p50": {
+        "forward": 3.241,
+        "reverse": 3.334
+      },
+      "baseline_read_record_ms_p50": {
+        "forward": 0.132,
+        "reverse": 0.14
+      },
+      "silent_path_ms_p50": {
+        "forward": 3.377,
+        "reverse": 4.34
+      },
+      "injected": {
+        "bytes": 2706,
+        "chars": 2531,
+        "lines": 27,
+        "rules": 25
+      },
+      "silent_reply_is_empty": true
+    }
+  },
+  "per_session": {
+    "empty": {
+      "per_firing_ms": {
+        "floor": 1.24,
+        "work_matching": 0.248,
+        "work_silent": 0.241
+      },
+      "seconds_of_a_session_all_matching": {
+        "p50": 0.05,
+        "p90": 0.18,
+        "max": 5.09
+      },
+      "seconds_of_a_session_all_silent": {
+        "p50": 0.05,
+        "p90": 0.18,
+        "max": 5.07
+      }
+    },
+    "realistic": {
+      "per_firing_ms": {
+        "floor": 1.24,
+        "work_matching": 0.833,
+        "work_silent": 0.812
+      },
+      "seconds_of_a_session_all_matching": {
+        "p50": 0.07,
+        "p90": 0.25,
+        "max": 7.1
+      },
+      "seconds_of_a_session_all_silent": {
+        "p50": 0.07,
+        "p90": 0.25,
+        "max": 7.03
+      }
+    },
+    "large": {
+      "per_firing_ms": {
+        "floor": 1.24,
+        "work_matching": 3.334,
+        "work_silent": 4.34
+      },
+      "seconds_of_a_session_all_matching": {
+        "p50": 0.16,
+        "p90": 0.55,
+        "max": 15.66
+      },
+      "seconds_of_a_session_all_silent": {
+        "p50": 0.19,
+        "p90": 0.68,
+        "max": 19.11
+      }
+    }
+  }
+}

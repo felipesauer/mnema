@@ -1,0 +1,231 @@
+{
+  "probe": "mcp-tool-channel",
+  "question": "Does a hook of type mcp_tool inject into the session on PreToolUse, in what form, and under what name can it reach the server its own plugin declares?",
+  "stamp": {
+    "at": "2026-08-19T16:22:56.668Z",
+    "host": "2.1.228 (Claude Code)",
+    "git_commit": "5089f55784fa6aa71bad88db31bdb0103d91d79e",
+    "git_tree_modified": false,
+    "node": "v24.14.0",
+    "platform": "linux-x64",
+    "cpus": 16,
+    "total_mem_gib": 13.3,
+    "loadavg_1m": 1.69
+  },
+  "method": "The REAL host, a real stdio MCP server, and a local stand-in for the model API. No model was called: the stand-in answers the first request with a canned tool_use for Write, so the host dispatches a real PreToolUse hook. What the host sends in the NEXT request is the ground truth for what reached the session.",
+  "cases": [
+    {
+      "case": "PreToolUse, hook returns the hook-response JSON",
+      "hook_declared_in": "settings.json",
+      "server_named_in_hook": "probe",
+      "tool_was_called": true,
+      "tool_arguments": {
+        "path": "/tmp/claude-1000/-home-felipe-Documents-Personal-Me--projects-mnema/e5f4117e-e90e-4005-8452-0bff5447eb94/scratchpad/probe/runs/pretooluse-hookjson/project/target.txt"
+      },
+      "injected_into_the_next_request": true,
+      "the_edit_went_through": true,
+      "host_exit": "host exit: 0",
+      "host_said": [],
+      "where_it_landed": {
+        "role": "system",
+        "message_index": 4,
+        "of": 5,
+        "conversation": [
+          "user:text+text",
+          "system",
+          "assistant:tool_use",
+          "user:tool_result",
+          "system:text"
+        ]
+      },
+      "host_wrapper_before_the_text": "[{\"type\":\"text\",\"text\":\"PreToolUse:Write hook additional context: "
+    },
+    {
+      "case": "PreToolUse, hook returns prose",
+      "hook_declared_in": "settings.json",
+      "server_named_in_hook": "probe",
+      "tool_was_called": true,
+      "tool_arguments": {
+        "path": "/tmp/claude-1000/-home-felipe-Documents-Personal-Me--projects-mnema/e5f4117e-e90e-4005-8452-0bff5447eb94/scratchpad/probe/runs/pretooluse-prose/project/target.txt"
+      },
+      "injected_into_the_next_request": false,
+      "the_edit_went_through": true,
+      "host_exit": "host exit: 0",
+      "host_said": [],
+      "where_it_landed": null,
+      "host_wrapper_before_the_text": null
+    },
+    {
+      "case": "PreToolUse, hook names the wrong hookEventName",
+      "hook_declared_in": "settings.json",
+      "server_named_in_hook": "probe",
+      "tool_was_called": true,
+      "tool_arguments": {
+        "path": "/tmp/claude-1000/-home-felipe-Documents-Personal-Me--projects-mnema/e5f4117e-e90e-4005-8452-0bff5447eb94/scratchpad/probe/runs/pretooluse-probe_wrongevent/project/target.txt"
+      },
+      "injected_into_the_next_request": false,
+      "the_edit_went_through": true,
+      "host_exit": "host exit: 0",
+      "host_said": [],
+      "where_it_landed": null,
+      "host_wrapper_before_the_text": null
+    },
+    {
+      "case": "PreToolUse, the tool returns isError",
+      "hook_declared_in": "settings.json",
+      "server_named_in_hook": "probe",
+      "tool_was_called": true,
+      "tool_arguments": {
+        "path": "/tmp/claude-1000/-home-felipe-Documents-Personal-Me--projects-mnema/e5f4117e-e90e-4005-8452-0bff5447eb94/scratchpad/probe/runs/pretooluse-probe_error/project/target.txt"
+      },
+      "injected_into_the_next_request": false,
+      "the_edit_went_through": true,
+      "host_exit": "host exit: 0",
+      "host_said": [],
+      "where_it_landed": null,
+      "host_wrapper_before_the_text": null
+    },
+    {
+      "case": "PreToolUse, the hook names a server that does not exist",
+      "hook_declared_in": "settings.json",
+      "server_named_in_hook": "nosuchserver",
+      "tool_was_called": false,
+      "tool_arguments": null,
+      "injected_into_the_next_request": false,
+      "the_edit_went_through": true,
+      "host_exit": "host exit: 0",
+      "host_said": [
+        "MCP server 'nosuchserver' not connected"
+      ],
+      "where_it_landed": null,
+      "host_wrapper_before_the_text": null
+    },
+    {
+      "case": "SessionStart, same hook",
+      "hook_declared_in": "settings.json",
+      "server_named_in_hook": "probe",
+      "tool_was_called": false,
+      "tool_arguments": null,
+      "injected_into_the_next_request": false,
+      "the_edit_went_through": true,
+      "host_exit": "host exit: 0",
+      "host_said": [
+        "mcp_tool hooks are not available for the 'SessionStart' hook event (no MCP client context)"
+      ],
+      "where_it_landed": null,
+      "host_wrapper_before_the_text": null
+    },
+    {
+      "case": "PreToolUse from an INSTALLED PLUGIN, server named as the manifest declares it",
+      "hook_declared_in": "plugin hooks.json",
+      "server_named_in_hook": "probe",
+      "tool_was_called": false,
+      "tool_arguments": null,
+      "injected_into_the_next_request": false,
+      "the_edit_went_through": true,
+      "host_exit": "host exit: 0",
+      "host_said": [
+        "MCP server 'probe' not connected"
+      ],
+      "where_it_landed": null,
+      "host_wrapper_before_the_text": null
+    },
+    {
+      "case": "same, server named as the TOOL namespace spells it",
+      "hook_declared_in": "plugin hooks.json",
+      "server_named_in_hook": "plugin_probeplug_probe",
+      "tool_was_called": false,
+      "tool_arguments": null,
+      "injected_into_the_next_request": false,
+      "the_edit_went_through": true,
+      "host_exit": "host exit: 0",
+      "host_said": [
+        "MCP server 'plugin_probeplug_probe' not connected"
+      ],
+      "where_it_landed": null,
+      "host_wrapper_before_the_text": null
+    },
+    {
+      "case": "same, colon form without the plugin: prefix",
+      "hook_declared_in": "plugin hooks.json",
+      "server_named_in_hook": "probeplug:probe",
+      "tool_was_called": false,
+      "tool_arguments": null,
+      "injected_into_the_next_request": false,
+      "the_edit_went_through": true,
+      "host_exit": "host exit: 0",
+      "host_said": [
+        "MCP server 'probeplug:probe' not connected"
+      ],
+      "where_it_landed": null,
+      "host_wrapper_before_the_text": null
+    },
+    {
+      "case": "same, underscore form",
+      "hook_declared_in": "plugin hooks.json",
+      "server_named_in_hook": "probeplug_probe",
+      "tool_was_called": false,
+      "tool_arguments": null,
+      "injected_into_the_next_request": false,
+      "the_edit_went_through": true,
+      "host_exit": "host exit: 0",
+      "host_said": [
+        "MCP server 'probeplug_probe' not connected"
+      ],
+      "where_it_landed": null,
+      "host_wrapper_before_the_text": null
+    },
+    {
+      "case": "same, server named as `claude mcp list` prints it",
+      "hook_declared_in": "plugin hooks.json",
+      "server_named_in_hook": "plugin:probeplug:probe",
+      "tool_was_called": true,
+      "tool_arguments": {
+        "path": "/tmp/claude-1000/-home-felipe-Documents-Personal-Me--projects-mnema/e5f4117e-e90e-4005-8452-0bff5447eb94/scratchpad/probe/runs/plugin-hostname/project/target.txt"
+      },
+      "injected_into_the_next_request": true,
+      "the_edit_went_through": true,
+      "host_exit": "host exit: 0",
+      "host_said": [],
+      "where_it_landed": {
+        "role": "system",
+        "message_index": 4,
+        "of": 5,
+        "conversation": [
+          "user:text+text",
+          "system",
+          "assistant:tool_use",
+          "user:tool_result",
+          "system:text"
+        ]
+      },
+      "host_wrapper_before_the_text": "[{\"type\":\"text\",\"text\":\"PreToolUse:Write hook additional context: "
+    },
+    {
+      "case": "plugin hook, server from an mcp config instead of the manifest",
+      "hook_declared_in": "plugin hooks.json",
+      "server_named_in_hook": "probe",
+      "tool_was_called": true,
+      "tool_arguments": {
+        "path": "/tmp/claude-1000/-home-felipe-Documents-Personal-Me--projects-mnema/e5f4117e-e90e-4005-8452-0bff5447eb94/scratchpad/probe/runs/plugin-hook-config-server/project/target.txt"
+      },
+      "injected_into_the_next_request": true,
+      "the_edit_went_through": true,
+      "host_exit": "host exit: 0",
+      "host_said": [],
+      "where_it_landed": {
+        "role": "system",
+        "message_index": 4,
+        "of": 5,
+        "conversation": [
+          "user:text+text",
+          "system",
+          "assistant:tool_use",
+          "user:tool_result",
+          "system:text"
+        ]
+      },
+      "host_wrapper_before_the_text": "[{\"type\":\"text\",\"text\":\"PreToolUse:Write hook additional context: "
+    }
+  ]
+}

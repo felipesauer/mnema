@@ -1,5 +1,6 @@
 import { rmSync } from 'node:fs';
 import {
+  GOVERNS_RELATION,
   isDecisionState,
   isSkillState,
   type ProjectionCache,
@@ -15,6 +16,7 @@ import {
   birthTask,
   capture,
   deprecateSkill,
+  link,
   makeBench,
   mergeTailInto,
   moveDecision,
@@ -95,6 +97,11 @@ describe('brief — everything that governs the work here', () => {
     return id;
   }
 
+  /** Gives a record an address — the link whose target is a path. */
+  function address(b: Bench, subject: string, path: string): void {
+    link(b, subject, path, GOVERNS_RELATION);
+  }
+
   /** Births a pattern and adopts it — the three moves that make one served. */
   function adopt(b: Bench, id: string, name: string): string {
     birthSkill(b, id, name);
@@ -111,7 +118,55 @@ describe('brief — everything that governs the work here', () => {
       decisions: [{ id: 'dec-1', adr: 'ADR-dec-1', title: 'Hand-rolled big-integer arithmetic' }],
       skills: [{ id: 'sk-1', name: 'One slice per PR' }],
       collisions: [],
+      addressed: 0,
     });
+  });
+
+  it('counts the rules it PRINTS that have an address, and not the addresses', () => {
+    // THE CASE A MUTATION ASKED FOR. Turning this count into a count of `governs` links
+    // left the whole suite green: every fixture that had a link had it on a rule the
+    // document prints, so the two numbers could not be told apart. They differ in three
+    // ways, and each of them would mislead the reader in the same direction — telling
+    // them to expect a rule at an edit that nothing will ever push.
+    const b = bench();
+    accept(b, 'dec-1', 'Bill on the last business day');
+    adopt(b, 'sk-1', 'One slice per PR');
+    accept(b, 'dec-old', 'Bill on the first');
+    accept(b, 'dec-new', 'The replacement');
+    supersedeDecision(b, 'dec-old', 'dec-new');
+    birthTask(b, 'task-1', 'Rewrite the biller');
+    // One rule printed, at TWO paths: the count is over rules, so this is one.
+    address(b, 'dec-1', 'src/billing');
+    address(b, 'dec-1', 'src/invoices');
+    // A pattern printed, with an address: two.
+    address(b, 'sk-1', 'src/review');
+    // And three subjects the document says nothing about: a rule that stopped being in
+    // force, a record that is not a rule at all, and an id no projection here answers to.
+    address(b, 'dec-old', 'src/old-billing');
+    address(b, 'task-1', 'src/biller');
+    address(b, 'nobody-here', 'src/ghost');
+
+    const composed = brief([tree(b, 'public')]);
+    expect(composed.addressed).toBe(2);
+    // And the fixture really does hold six addresses, so the number above is a filter
+    // doing work rather than a coincidence of an empty graph.
+    expect([...tree(b, 'public').cache.linksByRelation(GOVERNS_RELATION)]).toHaveLength(6);
+    // Non-vacuity on the other side: both printed rules are there to be counted.
+    expect(composed.decisions.map((d) => d.id)).toContain('dec-1');
+    expect(composed.skills.map((s) => s.id)).toEqual(['sk-1']);
+  });
+
+  it('counts nothing when the addresses are in a tree that does not travel', () => {
+    // The same rule as everything else this composition does, applied to the number: a
+    // reader of a clone cannot account for an address asserted on one machine.
+    const team = bench();
+    const machine = bench();
+    accept(team, 'dec-1', 'Bill on the last business day');
+    accept(machine, 'dec-mine', 'Keep the staging keys here');
+    address(machine, 'dec-mine', 'src/staging');
+    expect(brief([tree(team, 'public'), tree(machine, 'private')]).addressed).toBe(0);
+    // And the address IS there, in the tree that was handed over and left out.
+    expect([...tree(machine, 'private').cache.linksByRelation(GOVERNS_RELATION)]).toHaveLength(1);
   });
 
   it('serves ONLY the accepted — proposed, rejected and superseded are all absent', () => {
@@ -214,7 +269,12 @@ describe('brief — everything that governs the work here', () => {
     const source = tree(b, 'public');
     const composed = brief([source]);
     // No field for it, and no text of it anywhere in the answer.
-    expect(Object.keys(composed).sort()).toEqual(['collisions', 'decisions', 'skills']);
+    expect(Object.keys(composed).sort()).toEqual([
+      'addressed',
+      'collisions',
+      'decisions',
+      'skills',
+    ]);
     expect(JSON.stringify(composed)).not.toContain('Write the deploy runbook');
     expect(JSON.stringify(composed)).not.toContain('task-ready');
     // And the record really did hold live work: without this the absence
@@ -465,8 +525,13 @@ describe('brief — everything that governs the work here', () => {
     // `presentation/brief.test.ts`). A refusal here would make "nobody has decided
     // yet" indistinguishable from "the record could not be read".
     const b = bench();
-    expect(brief([tree(b, 'public')])).toEqual({ decisions: [], skills: [], collisions: [] });
-    expect(brief([])).toEqual({ decisions: [], skills: [], collisions: [] });
+    expect(brief([tree(b, 'public')])).toEqual({
+      decisions: [],
+      skills: [],
+      collisions: [],
+      addressed: 0,
+    });
+    expect(brief([])).toEqual({ decisions: [], skills: [], collisions: [], addressed: 0 });
     // And a caller holding nothing but trees that do not travel gets the same honest
     // empty rather than their contents: an empty document over a record that HAS rules
     // in it is the shape this filter is for.
@@ -477,6 +542,7 @@ describe('brief — everything that governs the work here', () => {
       decisions: [],
       skills: [],
       collisions: [],
+      addressed: 0,
     });
   });
 });

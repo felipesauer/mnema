@@ -419,6 +419,15 @@ type Verdict = 'collapsed' | 'minted' | 'composed';
  */
 const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = {
   // --- brief.ts: the document an agent reads on its own --------------------------
+  'brief.ts «{} of the rules below {} an ADDRESS: a path in this» addressed #1': {
+    verdict: 'minted',
+    why: 'how many of the printed rules have an address — a count this document made, and the one number here that is not a list’s length',
+  },
+  "brief.ts «{} of the rules below {} an ADDRESS: a path in this» addressed === 1 ? 'has' : 'have' #1":
+    {
+      verdict: 'minted',
+      why: 'one of two words written in this module, chosen by the count beside it — nothing from the record reaches it',
+    },
   'brief.ts «{} — {}» decision.adr #1': {
     verdict: 'composed',
     why: 'the `ADR-<n>` half of a rule’s name — the whole name is collapsed by `rule` below',
@@ -1165,7 +1174,7 @@ describe('every value this layer puts on a line is classified', () => {
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
     expect(FOUND.builders.length).toBeGreaterThan(10);
-    expect(FOUND.sites.length).toBe(172);
+    expect(FOUND.sites.length).toBe(174);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1187,7 +1196,7 @@ describe('every value this layer puts on a line is classified', () => {
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
     expect(count('collapsed')).toBe(39);
-    expect(count('minted')).toBe(97);
+    expect(count('minted')).toBe(99);
     expect(count('composed')).toBe(36);
     expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(39);
   });
