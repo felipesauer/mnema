@@ -595,6 +595,14 @@ spawns it with an arbitrary cwd. It discovers the project in a fixed cascade:
 neither names a project. It never guesses a project at some cwd and never creates
 one; only `mnema init` does that.
 
+The cascade runs again when the client says its workspace changed
+(`roots/list_changed`), so a folder opened mid-session becomes a project the
+connection can read and write. It only ever ADDS: a session stays in the project
+it landed in, a root the client stops announcing is kept, and the one move the
+landing can make is from the global tree into a project. `bootstrap` says how many
+times the client has said so — **including zero**, because a re-read that changed
+nothing and one that never happened would otherwise look the same.
+
 `--project` is how you make certain which record a session serves:
 `"args": ["mcp", "--project", "/home/you/work/api"]`. Without it the project is
 whichever workspace folder the host happens to announce first that has a
