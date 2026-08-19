@@ -494,7 +494,8 @@ describe('the session says how many projects it chose from', () => {
     expect(where).toBe(
       `Workspace: this session knows of 2 projects — "${alpha}", "${beta}" — and it is ` +
         `operating on ${alpha}. A write can name another of them with \`project\`; one ` +
-        'that names none lands here.',
+        'that names none lands here. It is re-read whenever the client says the workspace ' +
+        'changed, which it has said 0 times since this session opened.',
     );
 
     // A FACT and not an alarm. This fires in every workspace with two folders open,
@@ -554,14 +555,18 @@ describe('the session says how many projects it chose from', () => {
     const project = makeProject('solo');
     const one = await connect([pathToFileURL(project).href]);
     expect(blocksOf(await one.client.callTool({ name: 'bootstrap' }))[1]?.text).toBe(
-      `Workspace: this session knows of 1 project; it is operating on ${project}.`,
+      `Workspace: this session knows of 1 project; it is operating on ${project}. It is ` +
+        're-read whenever the client says the workspace changed, which it has said 0 times ' +
+        'since this session opened.',
     );
     await one.client.close();
 
     // No project: there is no path to name, and the tree it is on is the machine's.
     const none = await connect([]);
     expect(blocksOf(await none.client.callTool({ name: 'bootstrap' }))[1]?.text).toBe(
-      'Workspace: this session knows of no project; it is operating on the machine-global tree.',
+      'Workspace: this session knows of no project; it is operating on the machine-global ' +
+        'tree. It is re-read whenever the client says the workspace changed, which it has ' +
+        'said 0 times since this session opened.',
     );
     await none.client.close();
   });

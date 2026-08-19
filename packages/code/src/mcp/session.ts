@@ -117,11 +117,19 @@ export interface OpenRun {
  * A project a write can be routed to.
  *
  * The destination of a write is an ARGUMENT, never session state, and this is the
- * shape that argument resolves to. Nothing here changes over a connection's life:
- * the workspace is announced once, at the handshake, so a call that names a project
- * is picking out of a fixed list rather than moving something. That is what makes
- * two concurrent writes to two projects correct without a lock — there is no
- * "current project" for one of them to move while the other reads it.
+ * shape that argument resolves to: a call that names a project is picking out of a
+ * list rather than moving something. That is what makes two concurrent writes to two
+ * projects correct without a lock — there is no "current project" for one of them to
+ * move while the other reads it.
+ *
+ * THE LIST IS NO LONGER FIXED, and the sentence here used to rest on its being so
+ * (*"the workspace is announced once, at the handshake"*). It is re-read whenever the
+ * client says the workspace changed ({@link refreshWorkspace}), which falsified that.
+ * What holds the argument up instead is that the list only ever GROWS and that every
+ * tool adapter is synchronous: a re-read runs between calls and never inside one, so
+ * no call ever sees two lists, and a name that resolved before a re-read resolves to
+ * the same project after it. `tests/the-session-learns-where-it-is.test.ts` asserts
+ * both halves.
  *
  * It carries NO scope, and losing that field is the point rather than a tidy-up. A
  * destination used to hold the default tree for writes routed to it, settled at the
@@ -147,16 +155,29 @@ export interface Session {
    * The trees this session's OWN writes go to — the cascade's answer (project
    * scopes absent when it landed on none), and where a write that names no project
    * still lands.
+   *
+   * MUTABLE, and it is the second field on a session that moves (after
+   * {@link Session.ended}). The workspace a client announces is not settled at the
+   * handshake: the protocol has `notifications/roots/list_changed` for exactly the
+   * case where it grows, and until this slice the server did not listen — so a
+   * connection whose workspace gained a project went on being served, and WRITING,
+   * out of the record it resolved once. It moves through one function
+   * ({@link refreshWorkspace}) and nowhere else.
    */
-  readonly trees: ResolvedTrees;
-  /** Whether the session landed in a project (vs the global tree). */
-  readonly inProject: boolean;
+  trees: ResolvedTrees;
+  /** Whether the session landed in a project (vs the global tree) — see {@link Session.trees}. */
+  inProject: boolean;
   /**
    * The project directory the cascade landed on, absent outside a project — the
    * answer to "where is this session writing", carried so the surface can say it
    * (see {@link ResolvedContext.project}).
+   *
+   * It can be FILLED IN by a re-read and never emptied or replaced, and that is a
+   * property of the union {@link refreshWorkspace} resolves over rather than a rule
+   * written here: the roots already seen keep their places, so the first one that
+   * resolves to a project keeps resolving to the same one.
    */
-  readonly project?: string;
+  project?: string;
   /**
    * Every project this session can write to OR read from, its own among them — the
    * other half of the answer above (see {@link ResolvedContext.workspaceProjects}),
@@ -168,16 +189,54 @@ export interface Session {
    * and the question does not know which. So this list is a menu for one and the whole
    * source for the other.
    *
-   * Carried on the session because it is settled when the session opens and never
-   * changes after: the roots are announced once, at the handshake. A reader that
-   * wanted it later would have to re-probe the filesystem to learn something the
-   * connection already knew — and a caller naming a project must be matched against
-   * what the client announced, not against whatever is on disk by the time it asks.
+   * Carried on the session because it is what the CLIENT announced, which is not the
+   * same question as what is on disk: a caller naming a project must be matched
+   * against the folders somebody opened, never against whatever a walk of the
+   * filesystem would turn up.
+   *
+   * It used to be carried on the further premise that it *"is settled when the
+   * session opens and never changes after: the roots are announced once, at the
+   * handshake"*. That was false of the protocol the whole time — `roots/list_changed`
+   * exists for the case where it is not — and the server simply did not listen. It
+   * does now ({@link refreshWorkspace}), and this list GROWS, in the order the client
+   * announced the roots. It never shrinks and never reorders, which is what keeps
+   * every reader of it (a match by name, a print, a read that spans all of them) from
+   * having to care that it moved.
    *
    * Empty for a session that landed on no project: there is nothing to name, and a
    * write that names something is refused rather than routed at a guess.
    */
-  readonly workspaceProjects: readonly WriteTarget[];
+  workspaceProjects: readonly WriteTarget[];
+  /**
+   * The workspace roots this connection has been told about, as `file://` URIs, in
+   * the order they were first announced.
+   *
+   * Carried because a re-read resolves over the UNION of what was announced before
+   * and what is announced now, never over the latest list alone. That is what makes
+   * this slice additive: a root cannot leave, so the cascade cannot walk from one
+   * project to another under a session's feet, and a workspace that SHRANK is a case
+   * this deliberately does not implement (see {@link refreshWorkspace}).
+   */
+  roots: readonly string[];
+  /**
+   * The explicit project the server was configured with, if any — carried so a
+   * re-read runs the SAME cascade the handshake ran.
+   *
+   * Without it the re-read would be a second reading of the rule, and the two would
+   * disagree on the one rung that refuses: a configured project would win at the
+   * handshake and be silently dropped afterwards.
+   */
+  readonly configProject?: string;
+  /**
+   * How many times the client has told this session its workspace changed — counting
+   * the times nothing came of it.
+   *
+   * It is reported ALWAYS, zero included, because a re-read that happened silently
+   * and one that never happened are the same connection from the outside. That is
+   * the rule the whole slice is an instance of, applied to the product against
+   * itself.
+   */
+  refreshes: number;
   /**
    * The connecting agent as the client ANNOUNCED it (`clientInfo.name`) — the
    * value handed to every write, where the content door screens it.
@@ -193,8 +252,16 @@ export interface Session {
    * and one of the two names would be a credential.
    */
   readonly which: string;
-  /** The authorizing anchor (the machine's key) — the `who` and the bootstrap actor. */
-  readonly who: string;
+  /**
+   * The authorizing anchor (the machine's key) — the `who` and the bootstrap actor.
+   *
+   * Mutable for one case only: a session that landed on the global tree and then
+   * learned of a project reads its anchor from the project's private tree, which is
+   * the tree the question is asked of there. An installation records the anchor it
+   * serves PER TREE, so a `who` left over from the global tree would attribute the
+   * project's work to the answer another tree gave.
+   */
+  who: string;
   /**
    * This session's runs — the roots of authority its writes pin to — one per tree a
    * write has landed in, keyed by that tree's CHAIN ROOT.
@@ -325,6 +392,14 @@ export function openSession(input: OpenSessionInput): Session {
     inProject,
     ...(project !== undefined ? { project } : {}),
     workspaceProjects,
+    // A COPY, and in the order the client announced them. The array belongs to the
+    // caller, and this one is the base every later union is built on: a re-read that
+    // resolved over a list somebody else could have changed would resolve over a
+    // workspace nobody announced.
+    roots: [...(input.roots ?? [])],
+    ...(input.configProject !== undefined ? { configProject: input.configProject } : {}),
+    // Zero, and it is REPORTED as zero — see {@link Session.refreshes}.
+    refreshes: 0,
     which: input.clientName,
     who,
     // Empty: the first write to a tree opens that tree's run (see `openWrite`). A
@@ -336,6 +411,124 @@ export function openSession(input: OpenSessionInput): Session {
     log: input.log ?? (() => {}),
     caches,
     consulted: new Map<string, Set<string>>(),
+  };
+}
+
+/**
+ * What a re-read of the workspace changed, so the connection can SAY it.
+ *
+ * Every field is reported even when it is empty, which is the whole shape of this
+ * type: a re-read that found nothing and a re-read that never ran are the same
+ * session from the outside, and that indistinguishability is the defect this slice
+ * exists against. The counts are on {@link Session.refreshes}; this is what THIS one
+ * did.
+ */
+export interface WorkspaceRefresh {
+  /** The roots announced now that this session had not been told about before. */
+  readonly gained: readonly string[];
+  /** The project directories that entered {@link Session.workspaceProjects}. */
+  readonly learned: readonly string[];
+  /**
+   * The project the cascade landed on, when this re-read is what made it land at
+   * all — absent when the landing did not move, which is every other case.
+   */
+  readonly landedOn?: string;
+}
+
+/**
+ * Re-runs the cascade over everything this connection has been told about, and moves
+ * the session onto the answer. The ONE place a session's landing changes.
+ *
+ * ## Why it exists
+ *
+ * {@link resolveContext} had exactly one caller — {@link openSession}, at the
+ * handshake — so the trees, the project and the list of the workspace's projects were
+ * resolved once and never again. The protocol says otherwise: a client that gains a
+ * folder sends `notifications/roots/list_changed`, and a server that does not listen
+ * goes on serving, and WRITING INTO, the record it happened to resolve first. That is
+ * not a missing feature, it is a correctness defect with a measured precedent — a
+ * session rooted in a home directory answered about another project, and the wrong
+ * answer went on to support a choice.
+ *
+ * ## It resolves over the UNION, and that is what makes it additive
+ *
+ * The notification carries nothing: the server has to ask for the list again, and
+ * what comes back is the client's CURRENT list, which may have dropped a root as
+ * easily as gained one. Resolving over that list alone would let the cascade walk
+ * from one project to another mid-session — every open run, every warm cache and any
+ * write in flight would then belong to a project the session no longer claims to be
+ * in. So the roots already seen keep their places and the new ones are appended, and
+ * two properties follow from the shape rather than from a rule anybody has to
+ * remember:
+ *
+ *   - a session that landed in a project STAYS in it. The cascade returns at the
+ *     first root that resolves, and that root is still first;
+ *   - a session that landed on the global tree can land in a project, because no
+ *     earlier root resolved to one. It is the only way the landing ever moves.
+ *
+ * A workspace that SHRANK is therefore declared and not implemented. Retiring a tree
+ * mid-session raises what to do with a run open in it, with its caches and with a
+ * write in flight, and that is product design rather than anything derivable here.
+ *
+ * ## It re-probes even when no root is new
+ *
+ * A list that came back identical is not the same as nothing having changed: `mnema
+ * init` in a folder the client already announced turns a root that was no project
+ * into one, and the client has no reason to renumber its roots for it. So the
+ * cascade runs on every notification, and the cost of that is a walk-up per root
+ * over paths already in hand.
+ *
+ * ## What it does NOT touch
+ *
+ * The runs, the warm caches and the recorded consultations are all keyed by chain
+ * root, so they are additive already: a tree that enters the workspace simply has no
+ * entry yet, and a tree that was written to keeps the one it has. Nothing here has to
+ * migrate them, and nothing here may drop them — the run in a tree this session wrote
+ * to is still the authority for that work.
+ *
+ * The `who` moves in exactly one case, and only because the landing did: the anchor
+ * is recorded per tree, so a session that walks from the global tree into a project
+ * asks the project's private tree the question it used to ask the global one. Read
+ * BEFORE anything is assigned, so a session whose anchor turns out to be unanswerable
+ * is left exactly as it was rather than half-moved.
+ */
+export function refreshWorkspace(session: Session, roots: readonly string[]): WorkspaceRefresh {
+  // Counted first, and counted even when the answer below is "nothing": the count is
+  // the evidence that the server heard the client at all.
+  session.refreshes += 1;
+
+  const gained = roots.filter((root) => !session.roots.includes(root));
+  const union = gained.length === 0 ? session.roots : [...session.roots, ...gained];
+  const resolved = resolveContext({
+    env: session.env,
+    ...(session.configProject !== undefined ? { configProject: session.configProject } : {}),
+    roots: union,
+  });
+
+  const known = new Set(session.workspaceProjects.map((project) => project.dir));
+  const learned = resolved.workspaceProjects
+    .map((project) => project.dir)
+    .filter((dir) => !known.has(dir));
+  const landed = resolved.inProject && !session.inProject;
+  // Before a single field moves. `authorizingAnchor` consults the record and can
+  // refuse (a key the record proves belongs to two identities), and a session left
+  // holding a project's trees with the global tree's `who` would attribute that
+  // project's work to an answer another tree gave.
+  const who = landed
+    ? authorizingAnchor(writeContext(resolved.trees, 'private', session.caches))
+    : session.who;
+
+  session.roots = union;
+  session.trees = resolved.trees;
+  session.inProject = resolved.inProject;
+  if (resolved.project !== undefined) session.project = resolved.project;
+  session.workspaceProjects = resolved.workspaceProjects;
+  session.who = who;
+
+  return {
+    gained,
+    learned,
+    ...(landed && resolved.project !== undefined ? { landedOn: resolved.project } : {}),
   };
 }
 

@@ -44,9 +44,13 @@
  * asks the id, and lands where the answer is — including in a sibling project, which
  * a birth routed there could produce and a move could not follow.
  *
- * The session is resolved lazily and once: `oninitialized` opens it as soon as
+ * The session is OPENED lazily and once: `oninitialized` opens it as soon as
  * the client is known, and every tool call ensures it too, so a call that races
- * ahead of the initialized callback still finds a session rather than failing.
+ * ahead of the initialized callback still finds a session rather than failing. Where
+ * it is READING is a separate question and is not settled there: this file also
+ * listens for `notifications/roots/list_changed` and re-runs the cascade over the
+ * roots the client announces then, so a connection whose workspace gained a project
+ * stops being served out of the record it happened to resolve first.
  * A failure to open the session is surfaced honestly as a tool error, never a
  * silent no-op. Opening it appends NOTHING: the run opens at the first write (see
  * `openWrite`), so a connection that only reads leaves the project untouched, and
@@ -72,6 +76,7 @@ import {
 } from '@mnema/core';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { RootsListChangedNotificationSchema } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { discoveryEnv } from '../env.js';
 import { movedLine } from '../moved-record.js';
@@ -101,7 +106,7 @@ import {
 } from '../vocabulary.js';
 import { armSessionClose, type Lifecycle } from './lifecycle.js';
 import { namedProjects } from './route.js';
-import { closeSession, openSession, type Session } from './session.js';
+import { closeSession, openSession, refreshWorkspace, type Session } from './session.js';
 import {
   runAccountabilityTool,
   runAntipatternsTool,
@@ -324,8 +329,9 @@ export function buildMcpServer(options: McpServerOptions = {}): {
 
   const server = new McpServer({ name: SERVER_NAME, version: VERSION });
 
-  // The one piece of per-connection state: the session. It is resolved once,
-  // and the in-flight PROMISE is what guards that — not the resolved value. The
+  // The one piece of per-connection state: the session. It is OPENED once — where
+  // it reads is re-resolved on notice, see the roots handler below — and the
+  // in-flight PROMISE is what guards the opening, not the resolved value. The
   // initialized callback and a racing first tool call both await the SAME
   // promise, so exactly one `openSession` (one `startRun`) happens. Holding only
   // the resolved value would let a call that arrives during the `await` below
@@ -413,6 +419,50 @@ export function buildMcpServer(options: McpServerOptions = {}): {
       log(`could not open session at initialize: ${messageOf(error)}`);
     });
   };
+
+  // AND THE WORKSPACE IS NOT SETTLED BY THAT CALLBACK. `roots/list` was asked once,
+  // at the handshake, and a client that gains a folder says so with this
+  // notification — which nothing here listened for, so a connection whose workspace
+  // grew went on being served, and writing, out of the record it resolved first.
+  //
+  // This is the whole of the server's half: ask the client for the list again (the
+  // notification carries nothing), and hand it to the ONE function that re-runs the
+  // cascade. The rule lives there, in the same `resolveContext` the handshake ran —
+  // a second reading of "where is this session" is exactly how the two would come to
+  // disagree. It is also the PORTABLE half: this is protocol, so it works in any MCP
+  // client, with no hook and no host-specific wiring anywhere near it.
+  //
+  // It waits for the session rather than racing it: a notification that arrived
+  // before `oninitialized` finished would otherwise open a second one.
+  server.server.setNotificationHandler(RootsListChangedNotificationSchema, async () => {
+    let active: Session;
+    try {
+      active = await ensureSession();
+    } catch (error) {
+      log(`could not re-read the workspace: no session — ${messageOf(error)}`);
+      return;
+    }
+    try {
+      const changed = refreshWorkspace(active, await listRootsSafely(server, log));
+      // Said even when it changed nothing, and that is the point of the line: a
+      // re-read that found nothing and a re-read that never happened are the same
+      // silence. Collapsed to one line, because a root or a project directory may
+      // hold a newline and the log is read one event per line.
+      log(
+        oneLine(
+          `workspace re-read #${active.refreshes}: ${changed.gained.length} new root(s), ` +
+            `${changed.learned.length} new project(s), ` +
+            `${active.workspaceProjects.length} known` +
+            (changed.landedOn === undefined ? '' : `, now operating on ${changed.landedOn}`),
+        ),
+      );
+    } catch (error) {
+      // A re-read that refuses leaves the session exactly as it was — `refreshWorkspace`
+      // assigns nothing before the anchor is read — so the connection stays usable and
+      // the operator is told why the workspace it can see did not move.
+      log(oneLine(`workspace re-read #${active.refreshes} refused: ${messageOf(error)}`));
+    }
+  });
 
   registerTools(server, ensureSession);
 
@@ -1672,12 +1722,36 @@ function whereThisSessionIs(session: Session): string {
   // offering the argument there would be offering it for no reason.
   if (projects.length < 2) {
     const known = projects.length === 0 ? 'no project' : '1 project';
-    return `Workspace: this session knows of ${known}; it is operating on ${where}.`;
+    return `Workspace: this session knows of ${known}; it is operating on ${where}.${reReads(session)}`;
   }
   return (
     `Workspace: this session knows of ${projects.length} projects — ${namedProjects(projects)} ` +
     `— and it is operating on ${where}. A write can name another of them with ` +
-    '`project`; one that names none lands here.'
+    `\`project\`; one that names none lands here.${reReads(session)}`
+  );
+}
+
+/**
+ * The half of that sentence which says the list is not frozen — and how many times it
+ * has been re-read, zero included.
+ *
+ * ZERO IS PRINTED, and that is the entire reason this exists as its own clause. The
+ * server re-reads the workspace whenever the client says it changed, and until this
+ * slice it did not: a session that had been told nothing and a session whose re-read
+ * changed nothing read identically, which is the shape that lets a defect of this
+ * class live for as long as this one did. A count that only appears when it is
+ * non-zero would put the silence straight back.
+ *
+ * It states the MECHANISM as well as the number, because the number alone answers a
+ * question the reader did not know to ask. The agent is the party that can act on
+ * this — it is the one that opens a folder mid-session — and what it needs to know is
+ * that saying so is enough, rather than that this connection must be restarted.
+ */
+function reReads(session: Session): string {
+  return (
+    ' It is re-read whenever the client says the workspace changed' +
+    `, which it has said ${session.refreshes} time${session.refreshes === 1 ? '' : 's'} ` +
+    'since this session opened.'
   );
 }
 

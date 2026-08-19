@@ -16,13 +16,36 @@
  *
  * THIS GUARD IS A SHAPE, NOT A STOPWATCH. The machine that runs it has measured
  * contention (five-second timeouts in `cli.test.ts`), so a timed assertion here
- * would be a flake somebody switches off — and then the floor grows back, which is
- * exactly what happened before: the record of an earlier pass says the floor had
- * been brought to 90 ms, and nineteen PRs later it was 121, because nothing
- * measured. So this walks the entry's STATIC imports and states what they reach.
- * The milliseconds belong in a report.
+ * would be a flake somebody switches off — and then the floor grows back. So this
+ * walks the entry's STATIC imports and states what they reach. The milliseconds
+ * belong in a report.
  *
- * Two things it asserts, and they are different:
+ * AND THE FLOOR GREW BACK ANYWAY, TWICE, WHICH IS WHY THE COUNTS BELOW ARE EXACT.
+ * This paragraph used to end at *"the record of an earlier pass says the floor had
+ * been brought to 90 ms, and nineteen PRs later it was 121, because nothing
+ * measured"* — written as a thing that had happened once. It happened again while
+ * that sentence stood: the last floor anybody recorded was **97.8 ms** (30/jul,
+ * `a27f7975`), and the channel-cost measurement of 19/aug found **143.1 ms**, of
+ * which only 20.5 ms is node. The two were never reconciled, and this file could not
+ * have caught it — its size assertion was `toBeGreaterThan(35)`, a FLOOR and not a
+ * ceiling, so a graph that only ever grows satisfies it forever.
+ *
+ * The gap was then attributed rather than guessed at: `a27f7975` was rebuilt and run
+ * on this machine, on this node, beside the current build with the order alternating.
+ * It measured 97.3 ms against the current 139.4 — 0.5% from what the archive recorded
+ * for it — so the environment did not move and the 42 ms is OURS. It is NOT this list
+ * getting longer: the July floor reached THIRTY modules under `commands/`, because the
+ * rule below did not exist yet, and today it reaches none of them. A floor that carries
+ * less work and costs more is not a floor that grew by our modules. Measured
+ * marginally, `string-width` is 25.4 ms of it and did not exist in that build — which
+ * is why the second table here declares the edges that are NOT the domain's, the table
+ * it would have shown up in on the day it arrived.
+ *
+ * Bringing the floor down is a slice of its own. What this file does is make the number
+ * stop growing unnoticed: a slice that puts a module or an edge on the floor now has to
+ * say so IN THE DIFF, which is exactly what was missing both times.
+ *
+ * Three things it asserts, and they are different:
  *   - no COMMAND ADAPTER, no MCP SERVER, no COMPLETION GENERATOR and no INTERACTIVE
  *     SESSION is in the closure. That is the rule with no exceptions, and the one a
  *     careless import breaks. The third family reads the command tree rather than the
@@ -38,7 +61,13 @@
  *     has to be there. The floor reaches the domain in TWELVE places, five of them a
  *     constant or a parser commander needs before it can route anything — and the table
  *     is what makes the thirteenth visible instead of silent. It reconciles in both
- *     directions, so an edge that goes away has to leave too.
+ *     directions, so an edge that goes away has to leave too;
+ *   - every MODULE of `src` on the floor is NAMED, and so is every edge out of it that
+ *     is not the domain's. This is the ceiling, and it is structural for the same
+ *     reason the rest of the file is: it counts what the source says rather than what
+ *     the clock says. A module that arrives lands in `reached` BY NAME, so the failure
+ *     says which one — a ceiling that only counted would be a ceiling that tells you to
+ *     go looking, and the honest repair for one of those is to raise the number.
  *
  * WHAT IT DOES NOT COVER. A `--help` that changed is a declaration that became
  * lazy, and that is the golden's job (`cli.golden.test.ts`), not this file's. And a
@@ -276,6 +305,123 @@ const EAGER_DOMAIN: Readonly<Record<string, string>> = {
     'build instead of quietly offering a word the move cannot take.',
 };
 
+/**
+ * Every edge out of the floor that is NOT the domain's, and why it is on the floor.
+ *
+ * The domain table above is about reaching `@mnema/*`. This one is about reaching
+ * anything else — a third-party package, a node builtin — and it exists because the
+ * expensive kind of growth does not have to be ours. The layout library has a case of
+ * its own further down, for being the one that was measured at a fifth of a second;
+ * this is the general rule that would have caught it, and that catches the next one
+ * before anybody has to notice it in a report.
+ *
+ * `string-width` is the newest and is the shape of the risk: it arrived because a line
+ * has to be measured in COLUMNS rather than code units, it is small, and nothing in
+ * this file would have said a word about it.
+ */
+const EAGER_EXTERNAL: Readonly<Record<string, string>> = {
+  'cli.ts commander':
+    'the entry BUILDS the program with it. It is the floor by definition — commander is ' +
+    'what routes the word, so nothing can be decided before it is loaded.',
+  'wiring/completion.ts commander':
+    'the completion FLAG is declared on the program while it is being built; what the ' +
+    'flag runs lives under `completion/` and is loaded when the verb runs.',
+  'wiring/enumerated.ts commander': 'the type of the choices it hands commander.',
+  'wiring/options.ts commander':
+    'the shared options are commander’s own `Option` objects, which is what makes one ' +
+    'declaration serve every verb that takes them.',
+  'env.ts node:os':
+    '`homedir()`, for the discovery environment every verb is handed. A builtin, and ' +
+    'the one the entry cannot defer: the environment is resolved before a verb runs.',
+  'presentation/width.ts string-width':
+    'a line is as wide as the COLUMNS it takes, and the authority on that is a table ' +
+    'this product does not keep. The floor reaches it because the wiring composes help ' +
+    'and refusals with the same measurement the report uses — one reading of width, or ' +
+    'the surface and the frame around it disagree.',
+};
+
+/**
+ * Every module of `src` the floor loads, by name.
+ *
+ * THE CEILING, and it is a list rather than a number for one reason: a number can be
+ * raised. This file's size assertion used to be `toBeGreaterThan(35)` — a floor under
+ * the floor, which a graph that only grows satisfies forever — and while it stood, the
+ * measured cost of loading this list went from 97.8 ms to 143 ms with nothing saying
+ * so. A count would have gone red and been "fixed" by editing the count. A name has to
+ * be ADDED, which is a sentence in a diff saying *I put this on the floor*.
+ *
+ * Most of it is `wiring/`, and that is the rule working rather than a leak: commander
+ * needs every command, option and line of help before it can route a word, so every
+ * verb's DECLARATION belongs here. What does not belong is the work behind it, and the
+ * first assertion of this file is what says so.
+ *
+ * `presentation/` is here for a reason worth naming, because it is the part a reader
+ * would question: the declarations compose sentences — help, refusals, the contract
+ * printed under a verb's help — and composing a sentence is what that directory is.
+ * It reaches no adapter and no record; the walk above is what says so.
+ */
+const FLOOR_MODULES: readonly string[] = [
+  'cli.ts',
+  'env.ts',
+  'one-line.ts',
+  'pinned-run.ts',
+  'presentation/detail.ts',
+  'presentation/folded.ts',
+  'presentation/items.ts',
+  'presentation/plain.ts',
+  'presentation/runs.ts',
+  'presentation/styled.ts',
+  'presentation/verdict.ts',
+  'presentation/width.ts',
+  'recorded-content.ts',
+  'reference-directions.ts',
+  'session-words.ts',
+  'version.ts',
+  'vocabulary.ts',
+  'wiring/accountability.ts',
+  'wiring/antipatterns.ts',
+  'wiring/brief.ts',
+  'wiring/color.ts',
+  'wiring/completion.ts',
+  'wiring/context.ts',
+  'wiring/decision.ts',
+  'wiring/enumerated.ts',
+  'wiring/exposure.ts',
+  'wiring/focus.ts',
+  'wiring/guard.ts',
+  'wiring/handoff.ts',
+  'wiring/index.ts',
+  'wiring/init.ts',
+  'wiring/io.ts',
+  'wiring/key.ts',
+  'wiring/link.ts',
+  'wiring/mcp.ts',
+  'wiring/memory.ts',
+  'wiring/misuse.ts',
+  'wiring/next-actions.ts',
+  'wiring/no-such-record.ts',
+  'wiring/observe.ts',
+  'wiring/on-one-line.ts',
+  'wiring/options.ts',
+  'wiring/refs.ts',
+  'wiring/repl.ts',
+  'wiring/report.ts',
+  'wiring/resume.ts',
+  'wiring/run-pin.ts',
+  'wiring/run.ts',
+  'wiring/search.ts',
+  'wiring/show.ts',
+  'wiring/skill.ts',
+  'wiring/skills.ts',
+  'wiring/status.ts',
+  'wiring/tail.ts',
+  'wiring/task.ts',
+  'wiring/timeline.ts',
+  'wiring/usage.ts',
+  'wiring/verb.ts',
+  'wiring/verify.ts',
+];
+
 /** What an exception table tolerates, and what it does not. */
 interface Reconciliation {
   /** Reached and NOT declared — the guard's teeth. */
@@ -284,15 +430,18 @@ interface Reconciliation {
   readonly stale: readonly string[];
 }
 
-/** Reconciles what the walk found against what the table declares, both ways at once. */
-function reconcile(
-  found: readonly string[],
-  declared: Readonly<Record<string, string>>,
-): Reconciliation {
-  const names = Object.keys(declared);
+/**
+ * Reconciles what the walk found against what is declared, both ways at once.
+ *
+ * It takes the declared NAMES rather than a table, because the floor is declared in
+ * three shapes now — two tables with a reason per edge, and a plain list of the
+ * modules — and this is one rule about two sets. Three readings of "is everything
+ * accounted for" would be three chances for one of them to be the lenient one.
+ */
+function reconcile(found: readonly string[], declared: readonly string[]): Reconciliation {
   return {
-    reached: found.filter((edge) => !names.includes(edge)).sort(),
-    stale: names.filter((name) => !found.includes(name)).sort(),
+    reached: found.filter((edge) => !declared.includes(edge)).sort(),
+    stale: declared.filter((name) => !found.includes(name)).sort(),
   };
 }
 
@@ -305,6 +454,11 @@ const FLOOR = eagerClosure(join(SRC, 'cli.ts'));
 /** Every `<module> <specifier>` edge from the floor into the domain. */
 const DOMAIN_EDGES = FLOOR.external
   .filter((edge) => DOMAIN.includes(edge.specifier))
+  .map((edge) => `${edge.from} ${edge.specifier}`);
+
+/** And every edge out of the floor that is NOT the domain's — the other half. */
+const EXTERNAL_EDGES = FLOOR.external
+  .filter((edge) => !DOMAIN.includes(edge.specifier))
   .map((edge) => `${edge.from} ${edge.specifier}`);
 
 /** Every source file under a directory of `src`. */
@@ -334,18 +488,37 @@ describe('the floor is the declaration', () => {
     // One assertion, both directions: a new eager import of the chain, the core or
     // the copilot lands in `reached` until somebody writes down why it cannot wait,
     // and an edge that goes away lands in `stale` until its entry is deleted.
-    expect(reconcile(DOMAIN_EDGES, EAGER_DOMAIN)).toEqual({ reached: [], stale: [] });
+    expect(reconcile(DOMAIN_EDGES, Object.keys(EAGER_DOMAIN))).toEqual({ reached: [], stale: [] });
     // And the SIZE, so the number this file's own doc states cannot drift from the
     // table it describes. It drifted twice before anybody noticed — the prose said
     // eight through two slices that made it ten and then eleven.
     expect(Object.keys(EAGER_DOMAIN)).toHaveLength(12);
   });
 
+  it('loads these modules and no others — the ceiling, by name', () => {
+    // THE CEILING. A module that arrives lands in `reached` and the failure NAMES it;
+    // a module that leaves lands in `stale` and the entry has to go. It is a list and
+    // not a count because a count can be raised without looking, and this floor has
+    // now grown unnoticed twice: 90 → 121 through nineteen PRs, and 97.8 → 143 through
+    // the ones after that, both while this file was green.
+    expect(reconcile(FLOOR.modules, FLOOR_MODULES)).toEqual({ reached: [], stale: [] });
+  });
+
+  it('leaves the floor for nothing but what is declared out there either', () => {
+    // The other direction out: a package or a builtin. The expensive growth does not
+    // have to be ours — `string-width` arrived this way, small and unremarked — and
+    // this reconciles both ways over the same rule the domain table uses.
+    expect(reconcile(EXTERNAL_EDGES, Object.keys(EAGER_EXTERNAL))).toEqual({
+      reached: [],
+      stale: [],
+    });
+  });
+
   it('walks a graph that is really there', () => {
-    // This file's own non-vacuity. Both assertions above are about ABSENCE, so a
-    // walk that stopped at the entry — a specifier shape this parser stopped
-    // recognizing, a rename — would pass them saying nothing at all.
-    expect(FLOOR.modules.length).toBeGreaterThan(35);
+    // This file's own non-vacuity. The assertions above are about a SET, so a walk
+    // that stopped at the entry — a specifier shape this parser stopped recognizing,
+    // a rename — would have to be met by deleting the declarations rather than by
+    // going green on its own; these are the anchors that say the walk arrived.
     expect(FLOOR.modules).toContain('cli.ts');
     expect(FLOOR.modules).toContain('wiring/index.ts');
     // Every verb's DECLARATION is in the floor, which is the other half of the rule:
@@ -423,15 +596,15 @@ describe('the floor is the declaration', () => {
     // the assertion above exercises the tolerant direction — but not the stale one,
     // which is what keeps the table from outliving its reasons.
     const found = ['a.ts @mnema/core', 'b.ts @mnema/chain'];
-    expect(reconcile(found, { 'a.ts @mnema/core': 'the reason' })).toEqual({
+    expect(reconcile(found, ['a.ts @mnema/core'])).toEqual({
       reached: ['b.ts @mnema/chain'],
       stale: [],
     });
-    expect(reconcile([], { 'a.ts @mnema/core': 'the reason' })).toEqual({
+    expect(reconcile([], ['a.ts @mnema/core'])).toEqual({
       reached: [],
       stale: ['a.ts @mnema/core'],
     });
-    expect(reconcile(found, {})).toEqual({ reached: found, stale: [] });
+    expect(reconcile(found, [])).toEqual({ reached: found, stale: [] });
   });
 });
 

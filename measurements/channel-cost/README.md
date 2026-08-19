@@ -53,6 +53,20 @@ including by `--version`, which reads nothing. And the 292 ms connect is not a p
 cost at all — it is one handshake per session, which the plugin's server declaration
 already pays for.
 
+**What that ratio decides, written down after this reading was taken.** A host whose hooks
+are `command`-only — Cursor's are — pays the 171.5 ms on every firing, so a `PreToolUse`
+per edit costs 5.8 s / 20.8 s / 9 min 47 s there against 0.04 s / 0.15 s / 4.3 s here.
+The consequence is that **a per-edit injection point is not portable as designed**, and a
+`command`-only host needs a coarser one. It is recorded where the design lives
+(`decisions/estudo-o-mnema-cobra.md`, §16 · G7 and §18.2 on the local bench), because it
+is a conclusion about the surface and not a number about the channel. What follows from
+it for this directory is only this: **the 123 ms is the portability budget**, and a later
+reading of these same numbers should expect it to have been attacked on purpose. The
+attribution of it is in that study too — the floor was 97.8 ms in July, and rebuilding
+that commit on this machine, on this node, measured it at 97.3, so the 42 ms is ours and
+not the environment's. Most of it has a name: measured marginally, `string-width` is
+25.4 ms of the floor, and it did not exist in the July build.
+
 ## 2 · Closing a run against the `SessionEnd` budget
 
 The host gives every `SessionEnd` hook a **shared 1.5 s**. `mnema run end` — process,
@@ -149,7 +163,7 @@ reconstruction. It is not a population, and two directions of bias are known:
 
 | number | expires when |
 |---|---|
-| `mnema --version` = 143 ms | the CLI's module graph changes. It is 123 ms of import over a 20.5 ms runtime, and one eager import in the wiring moves it |
+| `mnema --version` = 143 ms | the CLI's module graph changes. It is 123 ms of import over a 20.5 ms runtime, and one eager import in the wiring moves it. **It moved twice already, unattributed** — the number is now guarded by name in `packages/code/tests/the-floor-is-the-declaration.test.ts`, which lists every module and every edge the floor reaches, so the next slice that adds one has to say so in the diff |
 | the 292 ms MCP connect | the server's start-up work changes, or the host changes when it connects a declared server |
 | the 1.5 s `SessionEnd` budget | **the host changes it.** It is the host's number, not ours; nothing here would notice |
 | the multipliers | the work changes. They are a snapshot of one machine in Aug 2026 |
