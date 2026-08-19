@@ -86,8 +86,9 @@
  * all of that out loud, because a cost table printed by an audit tool with nothing
  * qualifying it reads as part of the proof.
  *
- * `key` and `tail` sit together at the end of the writes, and they are the two whose
- * subject is not the work but the record's own material: `key` operates this
+ * `key`, `tail` and `switch` sit together at the end of the writes, and they are the three
+ * whose subject is not the work: the first two are the record's own material and the third
+ * is this product's own behaviour (see below): `key` operates this
  * machine's signing keys, and `tail` authorizes the cut of a whole tail — and says
  * which tails there are to cut, since `tail prune` takes an id and `tail list` is
  * the only reading in the product that prints one. `tail prune`
@@ -98,6 +99,24 @@
  * not at all. It removes nothing either way — it records the authorization while the
  * tail is still there, which is what makes the claim checkable, and says where the
  * files are.
+ *
+ * `switch` is the last of the writes and the only verb of this surface whose subject is
+ * not the work but MNEMA. It turns off, or back on, one of the places this product puts the
+ * record in front of a model WITHOUT being asked — the document a session opens with, and
+ * the rules handed over as a file is written — and the switching is a fact of the chain like
+ * every other: attributed, dated, signed, scoped. That is the whole reason it is not a
+ * configuration file: switching off is legitimate, switching off in SILENCE is not, and
+ * nothing attributes or dates a setting. Its group is `tail`'s shape rather than `task`'s —
+ * no birth, no state a gate moves, no `move` — with one difference nothing else here has:
+ * the BARE group is the reading. `mnema switch` prints where every switch stands, because a
+ * channel name is an identifier this product invented and appears in no other reading, so a
+ * person who cannot see the list cannot use the verb at all (the same argument `tail list`
+ * was added for). Its birth `--scope` defaults to PUBLIC, so the ordinary switch travels and
+ * the team reads it; a private switch governs one machine and no committed file can report
+ * it, which is why the listing is where such a switch is ever spelled. It is the CLI's
+ * alone, like `tail prune`, and here the reason is sharper: an agent that could switch off
+ * what governs its own work through the door built for agents would be an agent that opts
+ * out of the record.
  *
  * `verify` covers a THIRD set of trees, and the difference is that it answers with a
  * VERDICT. It verifies the project's two trees — the committed one and this machine's
@@ -187,6 +206,7 @@ import { registerShow } from './show.js';
 import { registerSkill } from './skill.js';
 import { registerSkills } from './skills.js';
 import { registerStatus } from './status.js';
+import { registerSwitch } from './switch.js';
 import { registerTail } from './tail.js';
 import { registerTask } from './task.js';
 import { registerTimeline } from './timeline.js';
@@ -223,6 +243,7 @@ export const VERBS: readonly Verb[] = [
   registerBrief,
   registerKey,
   registerTail,
+  registerSwitch,
   registerVerify,
   registerMcp,
   registerRepl,

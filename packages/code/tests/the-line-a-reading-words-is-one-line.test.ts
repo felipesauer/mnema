@@ -851,6 +851,43 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     why: 'the anchor the tail belongs to',
   },
 
+  // --- switches.ts: where the product's own switches stand ------------------------
+  'switches.ts «{} channel(s), looked in {}:» rows.length #1': {
+    verdict: 'minted',
+    why: 'how many channels follow — the count the rows are counted by',
+  },
+  "switches.ts «{} channel(s), looked in {}:» trees.join(', ') #1": {
+    verdict: 'minted',
+    why: 'the trees that were looked in — closed words, joined by this report',
+  },
+  "switches.ts «switched off by {}» oneLine(anchorText(anchors, row.state.by ?? '')) #1": {
+    verdict: 'collapsed',
+    why: 'the anchor that switched it, in the short form the record knows — not forgeable today (it is derived from a key), closed as a rule because it is read back out of the record',
+  },
+  "switches.ts asWhen(row.state.at ?? '') #1": {
+    verdict: 'minted',
+    why: 'when the switch was made — an instant off the record',
+  },
+  'switches.ts «— {}» oneLine(row.state.reason) #1': {
+    verdict: 'collapsed',
+    why: 'why somebody switched it off — free text they typed at `--reason`, on a line the header counts',
+  },
+
+  // --- brief.ts: the document, and the switch that explains its silence -----------
+  'brief.ts «to be changed: {} was switched off by {}» oneLine(push.channel) #1': {
+    verdict: 'collapsed',
+    why: 'the channel as the RECORD spells it — a switch’s subject is a caller’s string, so what the document reads back is not the closed set the verb refuses against',
+  },
+  "brief.ts «to be changed: {} was switched off by {}» oneLine(push.by ?? '') #1": {
+    verdict: 'collapsed',
+    why: 'the anchor that switched it, closed as a rule for the reason the listing’s is',
+  },
+  "brief.ts «at {}. Run \\`mnema switch\\` for where every switch stands.» oneLine(push.at ?? '') #1":
+    {
+      verdict: 'collapsed',
+      why: 'the instant, closed as a rule: this is the file whose headings count the lines under them, and a break here forges one',
+    },
+
   // --- usage.ts: what the host's transcripts cost --------------------------------
   "usage.ts «No run is recorded here — looked in {}.» listing.trees.join(', ') #1": {
     verdict: 'minted',
@@ -1128,6 +1165,15 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     why: 'one of the three trees, padded to a column',
   },
 
+  'switches.ts itemLine(columnsOf(row, width, anchors)) #1': {
+    verdict: 'minted',
+    why: 'the columns this module composed, each classified on its own row here',
+  },
+  'switches.ts asId(column(row.state.channel, width)) #1': {
+    verdict: 'minted',
+    why: 'the channel name, whole, because `switch off` takes it — one of the product’s own two',
+  },
+
   // --- usage.ts: what the host's transcripts cost --------------------------------
   'usage.ts itemLine(column(oneLine(spend.agent), AGENT_WIDTH)) #1': {
     verdict: 'collapsed',
@@ -1162,19 +1208,22 @@ describe('every value this layer puts on a line is classified', () => {
     // The vacuous form of the case above is a walk that found nothing: two empty lists
     // are equal. The scale is stated, and so is the SPLIT the debt got wrong — it said
     // "six of the ten modules", counting the WORD `oneLine`, four of whose ten hits are
-    // a mention in a comment. There are twenty-five modules and thirteen are asked.
+    // a mention in a comment. There are twenty-seven modules and fifteen are asked.
     //
-    // IT WAS TWENTY-FOUR, and the twenty-fifth is machinery: the authority over how many
-    // COLUMNS text takes (`width.ts`), which receives no record and words nothing — it is
-    // asked by the renderer, by the fold and by every table on the surface. A module added
+    // IT WAS TWENTY-FOUR, then twenty-five: the authority over how many COLUMNS text takes
+    // (`width.ts`), which receives no record and words nothing — it is asked by the
+    // renderer, by the fold and by every table on the surface. The twenty-sixth is a
+    // COMPOSER and the first whose subject is not the work but this product: `switches.ts`
+    // says where each of the channels mnema pushes unasked stands, and the value on its
+    // line a person typed is the REASON somebody gave for switching one off. A module added
     // to this layer is counted here the day it is written, which is what this number is for.
-    expect(FOUND.composers.length + FOUND.machinery.length).toBe(26);
-    expect(FOUND.composers.length).toBe(14);
+    expect(FOUND.composers.length + FOUND.machinery.length).toBe(27);
+    expect(FOUND.composers.length).toBe(15);
     expect(FOUND.machinery).toContain('items.ts');
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
     expect(FOUND.builders.length).toBeGreaterThan(10);
-    expect(FOUND.sites.length).toBe(174);
+    expect(FOUND.sites.length).toBe(184);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1195,10 +1244,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(39);
-    expect(count('minted')).toBe(99);
+    expect(count('collapsed')).toBe(44);
+    expect(count('minted')).toBe(104);
     expect(count('composed')).toBe(36);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(39);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(44);
   });
 
   it('every reason says where the value comes from', () => {

@@ -65,6 +65,7 @@ import { Command, type Option } from 'commander';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo } from '../src/cli.js';
 import { completionScript } from '../src/completion/script.js';
+import { SWITCHABLE_CHANNELS } from '../src/record-framing.js';
 import { REFERENCE_DIRECTIONS } from '../src/reference-directions.js';
 import { SCOPES as OPENED_IN_ORDER } from '../src/tree-sources.js';
 import { SHELLS } from '../src/wiring/completion.js';
@@ -200,7 +201,7 @@ describe('a declaration lists the set it takes', () => {
     }
     // And it is asked of every declaration there is, so a set that stopped being
     // declared cannot make this vacuous by leaving the list empty.
-    expect(DECLARED_SETS.length).toBe(15);
+    expect(DECLARED_SETS.length).toBe(19);
   });
 
   it('takes the set from the DOMAIN, at each of the levels that take one', () => {
@@ -212,6 +213,11 @@ describe('a declaration lists the set it takes', () => {
     expect(setAt('search --kind').values).toBe(SEARCH_KINDS);
     expect(setAt('verify --require').values).toBe(LEVEL_REQUIREMENTS);
     expect(setAt('refs --direction').values).toBe(REFERENCE_DIRECTIONS);
+    // The one set here the DOMAIN does not own: a channel is a place this product pushes
+    // the record unasked, and the core knows of none. It is still read from ONE place —
+    // the module that decides what a channel is — rather than typed into the declaration.
+    expect(setAt('switch off <channel>').values).toBe(SWITCHABLE_CHANNELS);
+    expect(setAt('switch on <channel>').values).toBe(SWITCHABLE_CHANNELS);
     // `decision move` offers the decision vocabulary MINUS what has a verb of its own:
     // `supersede` needs a successor id the generic `move <action> <id>` cannot take, so
     // it is `mnema decision supersede <old> <new>`. Derived by exclusion, so a fourth

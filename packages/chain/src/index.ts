@@ -123,6 +123,7 @@ export {
 } from './chain/writer.js';
 export {
   BIRTH_ACTION,
+  channelSwitched,
   decisionBirth,
   decisionRecorded,
   decisionTransitioned,
@@ -153,6 +154,7 @@ export {
 } from './events/canonical.js';
 export {
   type CatalogEvent,
+  type ChannelSwitchedV1,
   type DecisionRecordedV1,
   type DecisionTransitionedV1,
   type EventKind,

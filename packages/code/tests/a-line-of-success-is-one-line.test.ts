@@ -349,6 +349,19 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'this surface’s own variable name, and nothing else',
   },
+  'switch.ts «Switched {} {}» #1': {
+    verdict: 'minted',
+    why: 'a channel of a CLOSED set (an unknown name is refused before the write) and one of two words this wiring owns',
+  },
+  'switch.ts «{} is now ON: it hands the record over as it did before.» #1': {
+    verdict: 'minted',
+    why: 'the same channel of the closed set, read back off the write',
+  },
+  'switch.ts «{} is now OFF: nothing of it reaches a model. The switch that decides it was made by {} at {}.» #1':
+    {
+      verdict: 'minted',
+      why: 'the closed channel, the anchor that switched it, and the clock’s own instant',
+    },
   'tail.ts «Authorized the cut of tail {}» #1': {
     verdict: 'minted',
     why: 'the tail the record was found holding — an unmatched one is refused earlier',
@@ -571,7 +584,7 @@ describe('every line this wiring words is classified', () => {
     // 28 of these, and a walk that regressed to a line-wise pattern would land near it.
     expect(FOUND.files).toBeGreaterThan(35);
     expect(FOUND.calls).toBeGreaterThan(80);
-    expect(FOUND.sites.length).toBe(61);
+    expect(FOUND.sites.length).toBe(64);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -592,7 +605,7 @@ describe('every line this wiring words is classified', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(29);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(32);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(35);
     expect(FOUND.sites.filter((site) => site.tagged).length).toBe(29);
   });
 

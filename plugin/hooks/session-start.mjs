@@ -53,6 +53,15 @@
  * red, by its file name, which is the whole point: the next thing this plugin pushes
  * will be a rule matched to a prompt or to a path, and it must not arrive bare.
  *
+ * IT IS SWITCHABLE, AND THAT COST THIS FILE NOTHING — which is the whole reason the note is
+ * here rather than in a branch. The document is one of the two places this product puts the
+ * record in front of a model unasked, and both can be switched off with the switching
+ * recorded (`mnema switch`). Off, the verb refuses on stderr and exits non-zero — and every
+ * non-zero outcome here was already silence, by the rule above. So a session whose document
+ * was switched off opens with nothing added, and not one byte of this handler decides that.
+ * Asserted in `packages/code/tests/the-record-arrives-unasked.test.ts` ("says nothing at all
+ * when the document channel is switched OFF").
+ *
  * WHAT IT CANNOT DO, said here because the README says it to whoever installs: it
  * carries what is COMMITTED — a decision recorded `--scope private` or in the global
  * tree governs that machine's work and is not in this document — and it carries

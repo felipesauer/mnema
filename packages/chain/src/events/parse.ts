@@ -68,6 +68,7 @@ const PAYLOAD_FIELDS: { readonly [K in CatalogEvent['kind']]: readonly string[] 
   // list is what makes ANY payload key on this kind a rejected line.
   'skill.consulted': [],
   'tail.pruned': ['tail', 'throughHash', 'eventCount', 'reason'],
+  'channel.switched': ['on', 'reason'],
 };
 
 /** The proof/context fields a transition's `fields` object may carry. */
@@ -190,7 +191,7 @@ function validateEnvelope(event: CatalogEvent): RebuiltEnvelope {
 }
 
 /** A rebuilt payload value: scalars, the valued `null` of a birth, or nested fields. */
-type PayloadValue = string | number | null | TransitionFields;
+type PayloadValue = string | number | boolean | null | TransitionFields;
 
 function validatePayload(event: CatalogEvent): Record<string, PayloadValue> {
   const kind = event.kind;
@@ -354,6 +355,17 @@ function validatePayload(event: CatalogEvent): Record<string, PayloadValue> {
         reason: event.payload.reason,
       };
     }
+    case 'channel.switched': {
+      // The catalog's first BOOLEAN, and the rule on it is that it is one: a `"off"`,
+      // a `0` or a missing key are three ways for two readers to disagree about
+      // whether a channel was on, and this kind is read to decide whether the product
+      // says anything at all.
+      requireBoolean(kind, 'payload.on', event.payload.on);
+      requireOptionalString(kind, 'payload.reason', event.payload.reason);
+      const p: Record<string, PayloadValue> = { on: event.payload.on };
+      if (event.payload.reason !== undefined) p.reason = event.payload.reason;
+      return p;
+    }
     default:
       // Exhaustiveness: adding a kind without an arm fails the build.
       return assertNever(event);
@@ -454,6 +466,20 @@ function requireOptionalString(kind: string, field: string, value: unknown): voi
 function requirePositiveInteger(kind: string, field: string, value: unknown): void {
   if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 1) {
     throw new EventParseError(`event "${kind}" needs a whole number of at least 1 at ${field}`);
+  }
+}
+
+/**
+ * Requires exactly a boolean.
+ *
+ * Nothing is coerced, deliberately: `"false"`, `0` and `null` are all falsy in this
+ * language and none of them is a position of a switch. A line that spelled the state
+ * any other way was not written by a builder here, and reading it as "off" would let
+ * a forged or truncated line silence the product.
+ */
+function requireBoolean(kind: string, field: string, value: unknown): void {
+  if (typeof value !== 'boolean') {
+    throw new EventParseError(`event "${kind}" needs true or false at ${field}`);
   }
 }
 

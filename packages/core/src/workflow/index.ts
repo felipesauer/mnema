@@ -4,6 +4,12 @@
  * time and the operations that append only what a gate authorized.
  */
 
+export {
+  type SwitchError,
+  type SwitchInput,
+  type SwitchOk,
+  switchChannel,
+} from './channel-operations.js';
 export { type Clock, systemClock } from './clock.js';
 export {
   type DecisionGateErr,

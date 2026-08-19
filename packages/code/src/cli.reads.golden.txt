@@ -261,6 +261,10 @@ $ mnema brief
 $ mnema tail list
 | 1 tail(s):
 |   <tail-own>  public   2 event(s) through <tail-head-an-empty-project-1>  the tail of <anchor>  ·  no waiver
+$ mnema switch
+| 2 channel(s), looked in public, private, global:
+|   brief-document   on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
+|   edit-rules-push  on   the rules addressed at a file, handed over at the moment that file is about to be written
 $ mnema usage
 | No run is recorded here — looked in public, private, global.
 |
@@ -1429,6 +1433,10 @@ $ mnema tail list
 |   <tail-own>  public   33 event(s) through <tail-head-a-populated-project-1>  the tail of <anchor>  ·  no waiver
 |   <tail-private>  private  8 event(s) through <tail-head-a-populated-project-2>  the tail of <anchor>  ·  no waiver
 |   <tail-global>  global   4 event(s) through <tail-head-a-populated-project-3>  the tail of <anchor>  ·  no waiver
+$ mnema switch
+| 2 channel(s), looked in public, private, global:
+|   brief-document   on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
+|   edit-rules-push  on   the rules addressed at a file, handed over at the moment that file is about to be written
 $ mnema usage
 | 2 run(s):
 |   <run-second>  agent-beta      <at:30> → open  no transcript

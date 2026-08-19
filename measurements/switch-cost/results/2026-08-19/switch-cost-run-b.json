@@ -1,0 +1,177 @@
+{
+  "probe": "switch-cost",
+  "question": "What does reading the channel’s switch add to the work of `rules_before_an_edit`, and what does the switched-off path cost when it delivers nothing?",
+  "stamp": {
+    "at": "2026-08-19T19:36:35.091Z",
+    "git_commit": "1936503bd13d09ab3457571c1ac14035da828cbf",
+    "node": "v24.14.0",
+    "platform": "linux-x64",
+    "cpus": 16,
+    "total_mem_gib": 13.3,
+    "loadavg_1m": 8.19
+  },
+  "method": {
+    "runs_per_figure": 2000,
+    "warmup_per_figure": 300,
+    "order": "every term timed forward and reversed; both reported",
+    "isolation": "the switch read is timed on its own, over the SESSION’S own warm caches — the same objects the tool reads, asked the same question",
+    "baseline": "read_record, a read that already existed, on the same warm session",
+    "floor": "1.24 ms per warm mcp_tool firing, from measurements/channel-cost/",
+    "edits_per_session": {
+      "p50": 34,
+      "p90": 121,
+      "max": 3424
+    }
+  },
+  "regimes": {
+    "empty": {
+      "switch_read_ms_p50": {
+        "forward": 0.044,
+        "reverse": 0.042
+      },
+      "hook_matching_ms_p50": {
+        "forward": 0.305,
+        "reverse": 0.334
+      },
+      "hook_silent_ms_p50": {
+        "forward": 0.334,
+        "reverse": 0.374
+      },
+      "hook_switched_off_ms_p50": {
+        "forward": 0.16,
+        "reverse": 0.159
+      },
+      "switch_read_when_off_ms_p50": {
+        "forward": 0.062,
+        "reverse": 0.056
+      },
+      "baseline_read_record_ms_p50": {
+        "forward": 0.347,
+        "reverse": 0.347
+      },
+      "injected": {
+        "bytes": null,
+        "lines": null
+      },
+      "switched_off_reply_is_empty": true
+    },
+    "realistic": {
+      "switch_read_ms_p50": {
+        "forward": 0.043,
+        "reverse": 0.037
+      },
+      "hook_matching_ms_p50": {
+        "forward": 0.917,
+        "reverse": 0.884
+      },
+      "hook_silent_ms_p50": {
+        "forward": 0.919,
+        "reverse": 0.864
+      },
+      "hook_switched_off_ms_p50": {
+        "forward": 0.132,
+        "reverse": 0.126
+      },
+      "switch_read_when_off_ms_p50": {
+        "forward": 0.046,
+        "reverse": 0.049
+      },
+      "baseline_read_record_ms_p50": {
+        "forward": 0.129,
+        "reverse": 0.131
+      },
+      "injected": {
+        "bytes": 586,
+        "lines": 6
+      },
+      "switched_off_reply_is_empty": true
+    },
+    "large": {
+      "switch_read_ms_p50": {
+        "forward": 0.037,
+        "reverse": 0.051
+      },
+      "hook_matching_ms_p50": {
+        "forward": 3.564,
+        "reverse": 4.285
+      },
+      "hook_silent_ms_p50": {
+        "forward": 4.024,
+        "reverse": 3.609
+      },
+      "hook_switched_off_ms_p50": {
+        "forward": 0.176,
+        "reverse": 0.158
+      },
+      "switch_read_when_off_ms_p50": {
+        "forward": 0.067,
+        "reverse": 0.067
+      },
+      "baseline_read_record_ms_p50": {
+        "forward": 0.13,
+        "reverse": 0.148
+      },
+      "injected": {
+        "bytes": 2706,
+        "lines": 27
+      },
+      "switched_off_reply_is_empty": true
+    }
+  },
+  "per_session": {
+    "empty": {
+      "per_firing_ms": {
+        "floor": 1.24,
+        "work_matching": 0.334,
+        "work_switched_off": 0.16,
+        "switch_read_alone": 0.044
+      },
+      "seconds_of_a_session_all_matching": {
+        "p50": 0.05,
+        "p90": 0.19,
+        "max": 5.39
+      },
+      "seconds_of_a_session_all_switched_off": {
+        "p50": 0.05,
+        "p90": 0.17,
+        "max": 4.79
+      }
+    },
+    "realistic": {
+      "per_firing_ms": {
+        "floor": 1.24,
+        "work_matching": 0.917,
+        "work_switched_off": 0.132,
+        "switch_read_alone": 0.043
+      },
+      "seconds_of_a_session_all_matching": {
+        "p50": 0.07,
+        "p90": 0.26,
+        "max": 7.39
+      },
+      "seconds_of_a_session_all_switched_off": {
+        "p50": 0.05,
+        "p90": 0.17,
+        "max": 4.7
+      }
+    },
+    "large": {
+      "per_firing_ms": {
+        "floor": 1.24,
+        "work_matching": 4.285,
+        "work_switched_off": 0.176,
+        "switch_read_alone": 0.051
+      },
+      "seconds_of_a_session_all_matching": {
+        "p50": 0.19,
+        "p90": 0.67,
+        "max": 18.92
+      },
+      "seconds_of_a_session_all_switched_off": {
+        "p50": 0.05,
+        "p90": 0.17,
+        "max": 4.85
+      }
+    }
+  }
+}

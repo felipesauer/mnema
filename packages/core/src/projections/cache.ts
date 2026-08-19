@@ -18,6 +18,8 @@ import {
 } from '@mnema/chain';
 import { ensureSchema } from '../db/schema.js';
 import { IN_MEMORY, openDatabase, type SqliteDatabase } from '../db/sqlite.js';
+import type { ChannelSwitchProjection } from './channel.js';
+import { getChannelSwitch, listChannelSwitches } from './channel-store.js';
 import { type AdrCollision, adrCollisions, type DecisionProjection } from './decision.js';
 import { getDecision, listDecisions, listDecisionsByState } from './decision-store.js';
 import type {
@@ -222,6 +224,20 @@ export class ProjectionCache {
   /** Lists skills currently in the given state. */
   listSkillsByState(state: string): SkillProjection[] {
     return listSkillsByState(this.db, state);
+  }
+
+  /**
+   * Where one of the product's own switches stands in this tree, or null when
+   * nothing in it ever switched that channel — which is the channel being ON (see
+   * {@link ChannelSwitchProjection}).
+   */
+  channelSwitch(channel: string): ChannelSwitchProjection | null {
+    return getChannelSwitch(this.db, channel);
+  }
+
+  /** Every channel this tree ever switched, ordered by channel. */
+  channelSwitches(): ChannelSwitchProjection[] {
+    return listChannelSwitches(this.db);
   }
 
   /**
