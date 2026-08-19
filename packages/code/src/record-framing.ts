@@ -43,6 +43,16 @@
  * `Exclude<ModelChannel, FramedChannel>`, so a channel added to the union does not
  * compile until it has either a subject or a written reason for having none — the
  * shape `core/src/topology/routing.ts` uses for the kinds its rule does not route.
+ *
+ * THE UNION ANSWERS A SECOND QUESTION NOW, AND IT IS THE SAME SHAPE AGAIN: which
+ * channels can be SWITCHED OFF ({@link WHAT_STOPS}, {@link NOT_SWITCHABLE}). Every
+ * charge this product makes is switchable and the switching is recorded, and "charge"
+ * on these channels means text arriving that NOBODY ASKED FOR — so the criterion is
+ * the same destination the union is built on, read one step further. `skills-answer`
+ * is a reply to a caller that asked and `exported-skill` is a file somebody asked to
+ * have written; switching either off would not stop a charge, it would break a tool.
+ * The gain of deriving the set here rather than writing a new list is that those two
+ * now SAY SO in a table, where before their being different was nowhere at all.
  */
 
 /** What a channel served, which is what its declaration names. */
@@ -174,6 +184,93 @@ export const UNFRAMED_CHANNELS: {
     'it, and its provenance rides in the frontmatter `metadata` the specification ' +
     'already has (`mnema-id`, `mnema-adopted-by`) rather than in prose a host would ' +
     'hand to a model as part of the skill',
+};
+
+/**
+ * The channels that can be SWITCHED OFF — the ones that arrive without anybody asking.
+ *
+ * A closed union so the two tables over it are total, and a subset of {@link
+ * ModelChannel} rather than a list of its own: what makes a channel switchable is what
+ * makes it a channel at all, read one step further. The union's criterion is the
+ * DESTINATION — text landing in front of a model — and this one adds the second half of
+ * a charge: that nobody asked for it.
+ */
+export type SwitchableChannel = 'brief-document' | 'edit-rules-push';
+
+/**
+ * The two switchable channels, each named once, so no consumer spells one.
+ *
+ * A CONSTANT AND NOT A LITERAL AT THE CALL SITE, and the reason is what a typo does here.
+ * A channel is looked up by exact name — in the record, where a switch's subject is the
+ * name somebody's command line sent, and against the tables above — so `'brief-documnet'`
+ * compiles, matches nothing, and leaves a channel that can never be switched off with
+ * nothing red anywhere. Typed as {@link SwitchableChannel}, the same typo does not build.
+ *
+ * They are two constants rather than one table because their consumers ask different
+ * questions: the document's own producer asks whether IT may speak, and the composition
+ * behind that document asks about the OTHER channel, whose silence it explains. Neither is
+ * a lookup, so neither is a table.
+ */
+export const DOCUMENT_CHANNEL: SwitchableChannel = 'brief-document';
+
+/** The channel that hands over the rules addressed at a file, as that file is written. */
+export const EDIT_PUSH_CHANNEL: SwitchableChannel = 'edit-rules-push';
+
+/**
+ * What stops arriving when each switchable channel is off — one sentence each, in the
+ * words of what a reader would MISS rather than of the mechanism.
+ *
+ * A TABLE AND NOT A COMMENT because it is printed: `mnema switch` shows a person where
+ * every switch stands and what each one carries, and somebody deciding whether to turn
+ * something off has to be told what they are turning off. A channel added to the
+ * switchable union does not compile until it has answered that, which is the same
+ * obligation {@link SUBJECT_OF} places on a framed one.
+ *
+ * The sentences say what the channel DOES and never what to do about it — they are
+ * addressed to a person at a terminal rather than pushed at a model, so they are outside
+ * what {@link SAYS_WHAT_TO_DO} rules on; that they read the same way anyway is not an
+ * accident, since the product has no more standing to instruct a person than a model.
+ */
+export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
+  'brief-document':
+    'the document `mnema brief` prints, which a session opens with: the decisions in ' +
+    'force and the adopted patterns of the committed record, by name',
+  'edit-rules-push':
+    'the rules addressed at a file, handed over at the moment that file is about to ' +
+    'be written',
+};
+
+/**
+ * Every switchable channel, as a list — the keys of {@link WHAT_STOPS}, read off the
+ * table rather than typed again.
+ *
+ * The verb walks THIS, and so does the guard that requires each of them to have a
+ * production point that consults the switch, so a channel added to the table is covered
+ * by both without anybody remembering to add it anywhere. The cast back is safe for the
+ * one reason a cast is here: the table's type makes its keys exactly
+ * {@link SwitchableChannel}, and nothing writes to it.
+ */
+export const SWITCHABLE_CHANNELS = Object.keys(WHAT_STOPS) as readonly SwitchableChannel[];
+
+/**
+ * The channels that CANNOT be switched off, and why — one sentence each, because "this
+ * one is not a charge" is a claim that has to be answerable.
+ *
+ * Exported for the totality proof: the type is `Exclude<ModelChannel, SwitchableChannel>`,
+ * so a channel added to the union fails to compile until it is classified one way or the
+ * other. Both reasons are the same reason twice — the text answers a request — and that
+ * they are two entries rather than one sentence is what makes a THIRD channel of that
+ * kind have to say so for itself.
+ */
+export const NOT_SWITCHABLE: {
+  readonly [K in Exclude<ModelChannel, SwitchableChannel>]: string;
+} = {
+  'skills-answer':
+    'it is the reply to a caller that asked for a pattern by id, so switching it off ' +
+    'would not stop a charge — it would make a tool answer nothing to whoever called it',
+  'exported-skill':
+    'it is a file somebody asked to have written, in somebody else’s directory and ' +
+    'format; what governs whether it exists is the command that writes it',
 };
 
 /**

@@ -203,7 +203,13 @@ describe('one declaration, and one place that decides it', () => {
     });
     expect(framed[0]).toBe(recordFramingBlock('skills-answer'));
 
-    const document = briefDocument({ decisions: [], skills: [], collisions: [], addressed: 0 });
+    const document = briefDocument({
+      decisions: [],
+      skills: [],
+      collisions: [],
+      addressed: 0,
+      editPush: { channel: 'edit-rules-push', on: true },
+    });
     for (const line of recordFraming('brief-document')) expect(document).toContain(line);
   });
 

@@ -68,6 +68,19 @@ CLI and the MCP tools behave identically, because they are the same call.
   somewhere else sees nothing. Asserted in `tests/the-record-arrives-unasked.test.ts` and
   `tests/the-rule-reaches-the-writing.test.ts`; the plugin's own page states what it
   carries and what it leaves behind.
+- **A switch for everything it pushes** — `mnema switch` says where each of those two
+  channels stands and what each carries; `mnema switch off edit-rules-push` stops the
+  per-edit push and `mnema switch off brief-document` stops the opening document. Nothing
+  arrives switched off. The switch is a **fact of the record** rather than a setting, and
+  that is the whole design: turning something off is legitimate and turning it off in
+  silence is not, so the switch is signed, attributed, dated and scoped like every other
+  fact — and a later reader can tell *"no rule addressed that file"* from *"somebody had
+  turned the push off that week"*. It defaults to the **committed** tree, so the team reads
+  it and the opening document says the push is off instead of implying it had nothing to
+  say; `--scope private` is the switch that means this machine, and then `mnema switch` is
+  the only reading that can report it. It is on the CLI alone — the MCP server serves no
+  tool for it, so an agent cannot switch off what governs its own work through the door
+  built for agents. Asserted in `tests/the-switch-is-a-fact.test.ts`.
 
 ## What it proves — and what it does not
 
@@ -583,6 +596,55 @@ with nothing to refuse and nothing to renumber. When a label in this document is
 answered to by more than one rule, the document **says so** above the list, names every
 id that carries it, and tells you to cite by id. `mnema antipatterns` reports the same
 thing about the whole record, chain by chain, without anyone generating the file.
+
+### Switching off what mnema hands to a model
+
+Both of the things above arrive without anybody asking: the document a session opens with,
+and the rules handed over as a file is written. Either can be switched off, and the
+switching is **recorded** — because turning something off is legitimate and turning it off
+in silence is not.
+
+```sh
+mnema switch
+#> 2 channel(s), looked in public, private, global:
+#>   brief-document   on   the document `mnema brief` prints, which a session opens with: …
+#>   edit-rules-push  on   the rules addressed at a file, handed over at the moment …
+```
+
+```sh
+mnema switch off edit-rules-push --reason "not while I am porting this"
+#> Switched edit-rules-push off
+#>   Landed in the public tree — committed with the repository, so it reaches every clone.
+#>   edit-rules-push is now OFF: nothing of it reaches a model. The switch that decides it
+#>   was made by mnid:60a50d38… at 2026-08-19T11:04:07.512Z.
+#>   Nothing was removed and nothing else stopped: the record still holds what it held, …
+```
+
+Four things about it are decisions rather than defaults.
+
+It is a **fact of the chain**, not a configuration file. A setting is not attributed, not
+dated, and does not travel — and a later reader of the record could never tell *"no rule
+addressed that file"* from *"somebody had turned the push off that week"*. As an event it
+carries the authorizing identity, the executing agent if one was driving, the run, the
+instant and the signature, exactly like a decision.
+
+It **travels** by default. The ordinary switch lands in the committed tree, so the team
+reads it and the opening document says the push is off instead of implying it had nothing
+to say. `--scope private` is the switch that means this machine only — and then `mnema
+switch` is the only reading that can report it, because a committed document carrying a
+fact about one machine would make the `diff` above report a difference that is not the
+record's.
+
+**Off wins** between trees. A switch recorded privately silences the channel even while the
+committed record says on, because two trees share no order — an event's instant is a clock
+on the machine that wrote it — so "the most recent switch across the trees" is not a
+comparison this product is entitled to make. The listing says which switch decides.
+
+Nothing arrives switched off, and there is no `mnema switch` tool on the **MCP server**.
+Anyone who can write to the record can append any fact, so this is not a claim about what is
+possible; it is a claim about which doors are open. An agent that could switch off what
+governs its own work through the door built for agents would be an agent that opts out of
+the record.
 
 ### As an MCP server
 

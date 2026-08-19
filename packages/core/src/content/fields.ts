@@ -169,9 +169,21 @@ export const ENVELOPE_TEXT: {
  *     so what is stored is the record's own key.
  *   - DERIVED from a key (the three identity kinds) — the anchor, computed.
  *   - The caller's REFERENCE, unproved (`handoff.recorded`, `knowledge.linked`,
- *     `skill.consulted`) — the subject IS a string a caller sent and nothing here
- *     confirms, so it is prose and goes through the door, which is what those three
- *     operations already do.
+ *     `skill.consulted`, `channel.switched`) — the subject IS a string a caller sent and
+ *     nothing here confirms, so it is prose and goes through the door, which is what
+ *     those four operations already do.
+ *
+ * The last of those four is the one that reads wrong at first, and it is this file's own
+ * rule applied honestly rather than an oversight. A channel name looks like a closed
+ * vocabulary — there are two of them, and the verb refuses a third — but the vocabulary
+ * lives in the SURFACE that pushes those channels, three packages downstream, and nothing
+ * this package can reach knows the names. So what is stored is whatever a caller sent,
+ * and calling it an identifier because a command-line verb happens to check it is exactly
+ * the reasoning this file rejects for `run` below: an invariant enforced only where
+ * somebody remembered it is a habit, not a property. Screening it is also safe in the
+ * direction that matters — the reading is a lookup by exact name, so a scrubbed channel
+ * matches nothing and the switch simply does not apply, which is the failure that leaves
+ * the product SPEAKING rather than the one that silences it.
  */
 export const SUBJECT_TEXT: { readonly [K in EventKind]: FieldNature } = {
   'run.started': 'identifier',
@@ -190,6 +202,7 @@ export const SUBJECT_TEXT: { readonly [K in EventKind]: FieldNature } = {
   'skill.created': 'identifier',
   'skill.transitioned': 'identifier',
   'skill.consulted': 'prose',
+  'channel.switched': 'prose',
   // DERIVED from the record: the anchor a waiver names is read off the pruned
   // tail's own last event, never handed in. No caller can put anything in it.
   'tail.pruned': 'identifier',
@@ -276,6 +289,10 @@ export const PAYLOAD_TEXT: {
   // `reason` is a caller's prose. (`eventCount` is a number and is no field of this
   // table: there is nothing textual to screen.)
   'tail.pruned': { tail: 'identifier', throughHash: 'identifier', reason: 'prose' },
+  // Only `reason` — `on` is a boolean and is no field of this table, by the same rule
+  // that keeps `eventCount` out of it: there is nothing textual to screen. The channel
+  // itself is the SUBJECT, answered above.
+  'channel.switched': { reason: 'prose' },
 };
 
 /**

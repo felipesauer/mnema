@@ -125,6 +125,10 @@ describe('the brief prints one line per rule', () => {
     skills: [],
     collisions: [],
     addressed: 0,
+    // Nothing switched the push, which is the composition's answer for a record with no
+    // switch in it — and it is what makes the ordinary cases below measure the document
+    // this file has always measured.
+    editPush: { channel: 'edit-rules-push', on: true },
     ...over,
   });
   const decision = (over: Partial<Brief['decisions'][number]> = {}) => ({
@@ -162,6 +166,34 @@ describe('the brief prints one line per rule', () => {
       adr: `ADR-${i}`,
       ids: c.ids.map((_id, j) => `c-${i}-${j}`),
     })),
+    // THE TWO NON-LIST FIELDS ARE CARRIED, AND THIS BASELINE USED TO DROP THEM. It was
+    // built as a fresh object holding only the three lists, so `addressed` arrived
+    // `undefined` and the baseline document printed "undefined of the rules below have an
+    // ADDRESS" — a line no record can produce, in the document every case here is
+    // measured against. It cost nothing because that line does not break either way, and
+    // it would have cost a case the day a value on it could. Both are carried now, with
+    // the switch's own text replaced the way every other field's is.
+    addressed: brief.addressed,
+    editPush: brief.editPush.on
+      ? { channel: 'c', on: true }
+      : { channel: 'c', on: false, by: 'w', at: 'a', travels: brief.editPush.travels ?? true },
+  });
+
+  /**
+   * The switch, off, with every field holding text a break could be smuggled into.
+   *
+   * The anchor and the instant are the RECORD's, and they land in the middle of a
+   * paragraph rather than in a bullet — which is precisely why the case exists: a break in
+   * either one puts a line into a document whose headings count what is under them, and
+   * nothing about the line looks like a rule until it is read.
+   */
+  const switchedOff = (over: Partial<Brief['editPush']> = {}): Brief['editPush'] => ({
+    channel: 'edit-rules-push',
+    on: false,
+    by: 'anchor-x',
+    at: '2026-08-19T11:04:07.512Z',
+    travels: true,
+    ...over,
   });
 
   it('is the SHARPEST case in the class: a forged rule is a rule an agent obeys', () => {
@@ -222,6 +254,26 @@ describe('the brief prints one line per rule', () => {
         governs({
           decisions: [decision()],
           collisions: [{ adr: 'ADR-1', ids: ['a', `b${breaker}c`] }],
+        }),
+      ];
+      for (const one of cases) {
+        expect(document(one), JSON.stringify(breaker)).toHaveLength(document(plain(one)).length);
+      }
+    }
+  });
+
+  it('holds for the SWITCH the document reports, in both of its fields', () => {
+    // The paragraph that explains the silence at an edit names who switched the push off
+    // and when, and both come out of the record. A break in either would add a line to a
+    // document whose whole worth is that its counts and its bullets agree — and this line
+    // is not a bullet, so the marker-counting measure would never have seen it.
+    for (const breaker of BREAKERS) {
+      const cases: Brief[] = [
+        governs({ decisions: [decision()], editPush: switchedOff({ by: `a${breaker}b` }) }),
+        governs({ decisions: [decision()], editPush: switchedOff({ at: `a${breaker}b` }) }),
+        governs({
+          decisions: [decision()],
+          editPush: switchedOff({ channel: `a${breaker}b` }),
         }),
       ];
       for (const one of cases) {

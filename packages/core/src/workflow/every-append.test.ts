@@ -14,6 +14,7 @@ import {
 } from '../knowledge/operations.js';
 import { orderedEvents } from '../projections/order.js';
 import * as writeSurface from '../write.js';
+import { switchChannel } from './channel-operations.js';
 import { recordDecision } from './decision-operations.js';
 import { enrollKey, ensureFounded, revokeKey } from './identity-operations.js';
 import { createTask, type WriteContext } from './operations.js';
@@ -307,6 +308,24 @@ describe('every write refuses what no read could accept', () => {
         field: 'skill',
         names: 'at subject',
         drive: () => recordConsultation(ctx, { skill: '' }),
+      },
+      {
+        // The channel becomes the event's SUBJECT, like a consultation's skill: the
+        // surface that owns the vocabulary of channels is three packages away, so an
+        // empty name reaches the door here and nowhere earlier.
+        op: 'switchChannel',
+        field: 'channel',
+        names: 'at subject',
+        drive: () => switchChannel(ctx, { channel: '', on: false }),
+      },
+      {
+        // The reason is OPTIONAL and swept like a required field, for the reason a
+        // decision's `alternatives` is: the catalog refuses a blank string wherever it
+        // appears, and absence is the way to say there was none.
+        op: 'switchChannel',
+        field: 'reason',
+        names: 'payload.reason',
+        drive: () => switchChannel(ctx, { channel: 'edit-rules-push', on: false, reason: '' }),
       },
       {
         op: 'revokeKey',

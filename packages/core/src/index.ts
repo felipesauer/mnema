@@ -52,6 +52,7 @@ export {
   type MembershipRefusalCode,
 } from './identity/membership.js';
 export { type CacheOptions, ProjectionCache } from './projections/cache.js';
+export type { ChannelSwitchProjection } from './projections/channel.js';
 export {
   type AdrCollision,
   adrCollisions,

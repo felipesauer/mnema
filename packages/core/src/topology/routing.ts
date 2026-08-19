@@ -85,7 +85,8 @@ export type RoutedKind =
   | 'handoff.recorded'
   | 'knowledge.linked'
   | 'memory.captured'
-  | 'observation.recorded';
+  | 'observation.recorded'
+  | 'channel.switched';
 
 /**
  * The two kinds whose tree the kind does NOT decide — a marker, not a scope.
@@ -119,6 +120,18 @@ const BY_ORIGIN = Symbol('scope-by-origin');
  * pattern was used by a run" is the only evidence the team ever gets that an
  * adopted pattern earns its place, and it is worth exactly nothing on one machine.
  *
+ * `channel.switched` is PUBLIC, and it is the entry a reader will come here to argue
+ * with. Turning off what the record pushes reads like a preference about one machine's
+ * noise, and the default that answers that reading is the one this very table was
+ * corrected for: a declaration routed away from the team is a declaration the team
+ * never sees. The tie behind the kind says switching off is legitimate and switching
+ * off in SILENCE is not — and a switch filed where only the machine that made it can
+ * read it is silent to everyone else, which would leave the tie holding for a single
+ * reader. So the ordinary switch travels, says who made it, and is in the document the
+ * next session opens with. `--scope private` is still there for a switch that means
+ * this machine only, and it costs exactly what an override costs everywhere else: it
+ * is deliberate, and it is a fact the committed record does not carry.
+ *
  * The two knowledge kinds carry {@link BY_ORIGIN} instead of a tree — the exception
  * is IN the table rather than beside it, so the reader of the table sees the whole
  * rule and a kind cannot be silently absent from it.
@@ -132,6 +145,7 @@ const TREE_BY_KIND: { readonly [K in RoutedKind]: Scope | typeof BY_ORIGIN } = {
   'knowledge.linked': 'public',
   'memory.captured': BY_ORIGIN,
   'observation.recorded': BY_ORIGIN,
+  'channel.switched': 'public',
 };
 
 /**

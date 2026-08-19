@@ -12,13 +12,14 @@
 
 _mnema_commands() {
   case "$1" in
-    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure refs rules skills usage brief key tail verify mcp repl completion help' ;;
+    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure refs rules skills usage brief key tail switch verify mcp repl completion help' ;;
     'task') echo 'move' ;;
     'decision') echo 'move supersede' ;;
     'skill') echo 'move export' ;;
     'run') echo 'start end help' ;;
     'key') echo 'restore request enroll revoke help' ;;
     'tail') echo 'list prune help' ;;
+    'switch') echo 'off on' ;;
   esac
 }
 
@@ -52,6 +53,7 @@ _mnema_described() {
       'brief:print what governs the work here as markdown, for an agent to read' \
       'key:manage this machine'\''s signing keys' \
       'tail:authorize a cut in the record'\''s own tails' \
+      'switch:turn off, or back on, what mnema hands to a model unasked' \
       'verify:verify this project'\''s record — its committed tree and its private one' \
       'mcp:run the mnema MCP server over stdio (for an agent host)' \
       'repl:open an interactive session that reads this project' \
@@ -79,6 +81,9 @@ _mnema_described() {
       'list:list the tails the record holds here, with the id `prune` takes' \
       'prune:record that one whole tail was authorized to be cut (it removes nothing)' \
       'help:display help for command' ;;
+    'switch') printf '%s\n' \
+      'off:stop a channel handing the record to a model unasked' \
+      'on:let a channel hand the record to a model again' ;;
   esac
 }
 
@@ -125,6 +130,9 @@ _mnema_flags() {
     'tail') echo '-h --help -V --version --color' ;;
     'tail list') echo '-h --help -V --version --color' ;;
     'tail prune') echo '--reason --which -h --help -V --version --color' ;;
+    'switch') echo '-h --help -V --version --color' ;;
+    'switch off') echo '--reason --scope --which -h --help -V --version --color' ;;
+    'switch on') echo '--reason --scope --which -h --help -V --version --color' ;;
     'verify') echo '--global --workspace --allow-no-record --require -h --help -V --version --color' ;;
     'mcp') echo '--project -h --help -V --version --color' ;;
     'repl') echo '-h --help -V --version --color' ;;
@@ -194,6 +202,13 @@ _mnema_values() {
     'tail:--color') echo 'auto always never' ;;
     'tail list:--color') echo 'auto always never' ;;
     'tail prune:--color') echo 'auto always never' ;;
+    'switch:--color') echo 'auto always never' ;;
+    'switch off:--scope') echo 'public private global' ;;
+    'switch off:--color') echo 'auto always never' ;;
+    'switch off:') echo 'brief-document edit-rules-push' ;;
+    'switch on:--scope') echo 'public private global' ;;
+    'switch on:--color') echo 'auto always never' ;;
+    'switch on:') echo 'brief-document edit-rules-push' ;;
     'verify:--require') echo 'chained signed witnessed' ;;
     'verify:--color') echo 'auto always never' ;;
     'mcp:--color') echo 'auto always never' ;;

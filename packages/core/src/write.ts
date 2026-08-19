@@ -111,6 +111,14 @@ export {
 // of the record, and a waiver's shape is checked against the disk by the writer's
 // own door instead (`@mnema/chain`, `waiver.ts`). It arrived on this surface the day
 // `mnema tail prune` asked for it, and it has that one caller.
+//
+// `switchChannel` is the other one no gate authorizes, and for a different reason
+// again: its subject is not the work but MNEMA — one of the places this product puts
+// the record in front of a model unasked — and there is no prior state to judge,
+// because switching a channel to where it already stands is a person saying so twice.
+// It arrived with `mnema switch`, and it has that one caller: the MCP server serves no
+// tool for it, so an agent cannot switch off what governs its own work through the door
+// built for agents.
 export {
   acceptDecision,
   adoptSkill,
@@ -150,8 +158,12 @@ export {
   type StartRunInput,
   type StartRunOk,
   type SupersedeInput,
+  type SwitchError,
+  type SwitchInput,
+  type SwitchOk,
   startRun,
   supersedeDecision,
+  switchChannel,
   type TransitionInput,
   type TransitionOk,
   transitionTask,

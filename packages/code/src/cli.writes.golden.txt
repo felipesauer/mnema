@@ -191,6 +191,28 @@ $ mnema tail prune <backup-key-fingerprint> --reason 'the key that never wrote a
 ! No tail <backup-key-fingerprint> holds events in any tree here.
 [exit 1]
 
+### switching what the product pushes
+$ mnema switch
+| 2 channel(s), looked in public, private, global:
+|   brief-document   on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
+|   edit-rules-push  on   the rules addressed at a file, handed over at the moment that file is about to be written
+$ mnema switch off edit-rules-push --reason 'noisy while porting'
+| Switched edit-rules-push off
+|   Landed in the public tree — committed with the repository, so it reaches every clone.
+|   edit-rules-push is now OFF: nothing of it reaches a model. The switch that decides it was made by <anchor-short> at <at:01>.
+|   Nothing was removed and nothing else stopped: the record still holds what it held, and every read and tool still answers whoever asks. What stops is this product putting it in front of a model unasked.
+$ mnema switch
+| 2 channel(s), looked in public, private, global:
+|   brief-document   on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
+|   edit-rules-push  off  the rules addressed at a file, handed over at the moment that file is about to be written  ·  switched off by <anchor-short>  <at:01>  — noisy while porting
+$ mnema switch on edit-rules-push
+| Switched edit-rules-push on
+|   Landed in the public tree — committed with the repository, so it reaches every clone.
+|   edit-rules-push is now ON: it hands the record over as it did before.
+$ mnema switch off no-such-channel
+! mnema pushes no channel by that name — `mnema switch` lists them.
+[exit 1]
+
 ### refusals — what the parser turns down
 $ mnema decision 'A decision with no rationale'
 ! mnema decision needs <rationale>: why the decision was made

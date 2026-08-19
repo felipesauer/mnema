@@ -19,6 +19,8 @@
 import type { ChainLayout, UpcasterRegistry } from '@mnema/chain';
 import { dropProjections, ensureSchema } from '../db/schema.js';
 import type { SqliteDatabase } from '../db/sqlite.js';
+import { projectChannelSwitches } from './channel.js';
+import { materializeChannelSwitches } from './channel-store.js';
 import { projectDecisions } from './decision.js';
 import { materializeDecisions } from './decision-store.js';
 import {
@@ -61,6 +63,7 @@ export function rebuild(
   const handoffs = projectHandoffs(events);
   const links = projectLinks(events);
   const skills = projectSkills(events);
+  const switches = projectChannelSwitches(events);
 
   const replace = db.transaction(() => {
     dropProjections(db);
@@ -73,6 +76,7 @@ export function rebuild(
     materializeHandoffs(db, handoffs.values());
     materializeLinks(db, links);
     materializeSkills(db, skills.values());
+    materializeChannelSwitches(db, switches.values());
     // The full-text index is filled from the projections just materialized, not
     // from a second pass over the chain: one read, one fold, two views — so the
     // index and the tables cannot come to disagree about what the chain says.

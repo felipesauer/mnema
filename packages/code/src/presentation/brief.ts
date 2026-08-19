@@ -67,7 +67,7 @@
  * not to do.
  */
 
-import type { AdrCollision, Brief } from '@mnema/copilot';
+import type { AdrCollision, Brief, ChannelState } from '@mnema/copilot';
 import { oneLine } from '../one-line.js';
 import { recordFraming } from '../record-framing.js';
 
@@ -174,13 +174,75 @@ const HOW_TO_REGENERATE = [
  * prints and does not go looking. Zero prints too, and it is the most informative value:
  * it says the rules below exist and none of them has been placed, which is a different
  * thing from a project with no rules.
+ *
+ * AND IT SAYS WHEN THAT MECHANISM IS SWITCHED OFF, which is the half that keeps the rest of
+ * it from lying. The push is switchable — every charge this product makes is, and the
+ * switching is recorded — so the silence at an edit now has TWO causes, and the count alone
+ * explains only one of them. A reader told there are eight addresses and then handed nothing
+ * would conclude that none of the eight names the file, which is precisely the wrong
+ * conclusion when somebody turned the channel off. So the sentence about what arrives is
+ * replaced, not decorated: see {@link switchedOffAtAnEdit}.
+ *
+ * WHAT THAT DOES NOT BUY, said plainly because the guard cannot say it. The state read here
+ * is the COMMITTED record's, like everything else in this file, so a switch recorded
+ * `--scope private` is invisible to it — the reader is told the push is on, and on that
+ * machine nothing arrives. That is the same omission every private rule has and it is
+ * declared to the reader in the same words ({@link WHAT_TRAVELS}), but it is a real hole
+ * and the third silence stays open with it: "the hook did not run" is still
+ * indistinguishable from both. Closing it would take a fact about ONE MACHINE inside a file
+ * that is committed and compared with `diff` — which would make the staleness check report
+ * a difference that is not the record's, the same reason the stale-address count is not
+ * here. The reading that spans every tree is `mnema switch`, and the document points at it.
  */
-function whatHasAnAddress(addressed: number): string[] {
+function whatHasAnAddress(addressed: number, push: ChannelState): string[] {
   return [
     `${addressed} of the rules below ${addressed === 1 ? 'has' : 'have'} an ADDRESS: a path in this`,
-    'repository, recorded beside the rule. When a file is about to be changed, the rules',
-    'addressed at it arrive on their own, and nothing arrives for a file none of them names.',
+    ...(push.on ? ARRIVES_AT_AN_EDIT : switchedOffAtAnEdit(push)),
     'Ask `governing_rules` with a path for the whole answer about it.',
+  ];
+}
+
+/**
+ * What happens at an edit while the push is on — the sentence the count explains, and the
+ * bytes this file printed before it could be switched off.
+ *
+ * It is TWO lines carrying the end of the first sentence, wrapped by hand at exactly the
+ * column it was wrapped at before, and that is the point rather than an accident of
+ * formatting: a project whose push is on prints the document it printed yesterday, so
+ * nobody's committed copy went stale because this product grew a switch. The `diff` that
+ * detects a stale copy only means one thing if the bytes move when the record does.
+ */
+const ARRIVES_AT_AN_EDIT = [
+  'repository, recorded beside the rule. When a file is about to be changed, the rules',
+  'addressed at it arrive on their own, and nothing arrives for a file none of them names.',
+];
+
+/**
+ * What happens at an edit while the push is switched OFF, and why this replaces the
+ * sentence above rather than being added beside it.
+ *
+ * The two sentences describe the same silence and only one of them is true. Printing both
+ * would leave a reader to decide which — and the reader of this file is a model, which is
+ * exactly the reader who cannot. So the count stays (it is still a fact about the rules
+ * below, and it is still what a person needs in order to know what turning the push back
+ * on would do) and the claim about what arrives is replaced by the claim that nothing will.
+ *
+ * IT NAMES WHO AND WHEN, because those are the only two things that make the sentence
+ * actionable: a reader who is told the push is off and not told by whom cannot find the
+ * switch. Both come out of the record, so this line is as pure over it as the rest of the
+ * file — the same record still prints the same bytes.
+ *
+ * IT DOES NOT NAME THE REASON, and that is the one omission worth defending. A reason is
+ * prose somebody typed to explain a decision about the tooling; it is addressed to whoever
+ * finds the switch, it is served whole by the reading that lists them, and putting it here
+ * would put an argument about mnema's own behaviour into the middle of a document about
+ * what governs the code. The document says the fact and where to ask.
+ */
+function switchedOffAtAnEdit(push: ChannelState): string[] {
+  return [
+    'repository, recorded beside the rule. NOTHING of them arrives when a file is about',
+    `to be changed: ${oneLine(push.channel)} was switched off by ${oneLine(push.by ?? '')}`,
+    `at ${oneLine(push.at ?? '')}. Run \`mnema switch\` for where every switch stands.`,
   ];
 }
 
@@ -257,7 +319,7 @@ export function briefDocument(governance: Brief): string[] {
     '',
     ...HOW_TO_REGENERATE,
     '',
-    ...whatHasAnAddress(governance.addressed),
+    ...whatHasAnAddress(governance.addressed, governance.editPush),
     '',
     ...section(
       'Decisions in force',

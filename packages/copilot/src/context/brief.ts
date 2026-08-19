@@ -8,6 +8,16 @@
  * answers is that adoption depended on the agent going looking, and a record it
  * never opened is indistinguishable from an empty one.
  *
+ * IT TAKES THE NAME OF ONE CHANNEL, and that is the only argument here that is not the
+ * record. The document explains a silence — nothing arrives when a file is edited — and a
+ * silence has two causes now: no rule addresses the path, or the push was switched off. The
+ * second is a fact of the chain like any other, but WHICH fact it is depends on what the
+ * channel is called, and channels are named by the surface that pushes them
+ * (`code/src/record-framing.ts`), three packages downstream of here. So the caller names it
+ * and this composition reads its state. Nothing else about the channel is known here, and
+ * nothing here decides whether it may speak — that is the channel's own reading, over its
+ * own sources ({@link channelIsOn}).
+ *
  * IT COMPOSES, AND DECIDES NOTHING about which rules hold. Which decisions govern is
  * {@link decisionsInForce}'s answer and which patterns apply is {@link
  * adoptedSkills}', and neither rule is restated here. That is the whole reason this
@@ -102,6 +112,7 @@ import { type AdrCollision, GOVERNS_RELATION, type ProjectionCache, type Scope }
 import type { ScopedCache } from '../sources.js';
 import { type DecisionRef, decisionsInForce } from './decisions.js';
 import { adoptedSkills, type SkillRef } from './skills.js';
+import { type ChannelState, channelStates } from './switches.js';
 
 /**
  * The one tree whose record TRAVELS — typed, so a typo fails the build.
@@ -166,6 +177,29 @@ export interface Brief {
    * record's. The two readings that touch a disk report it.
    */
   readonly addressed: number;
+  /**
+   * Where the channel that pushes a rule at an EDIT stands, in the tree that travels.
+   *
+   * WHY IT IS IN THIS ANSWER, and it is the same argument {@link Brief.addressed} makes
+   * carried one step further. That number exists to give a SILENCE a meaning: nothing
+   * arrives at an edit, and the reader has been told there are addresses, so the silence
+   * reads as "none of them names this file". A switched-off push produces the identical
+   * silence and means something else entirely — "somebody turned it off" — and a document
+   * that reported the count while omitting the switch would explain the silence WRONGLY,
+   * which is worse than not explaining it. So the state is here and the document says it.
+   *
+   * IT IS READ FROM THE TREE THAT TRAVELS, like everything else in this answer, and that
+   * is a real limit rather than a detail. A switch recorded `--scope private` governs this
+   * machine's pushes and is not in this file — the same omission every private rule has,
+   * declared to the reader in the same words — so a document saying the push is on is
+   * saying it of the COMMITTED record. The reading that spans every tree is `mnema
+   * switch`, and it is the only place a private switch is ever spelled.
+   *
+   * It stays pure over the record and therefore byte-stable: a switch is a fact of the
+   * chain, so two clones of one repository print the same line, and the `diff` that
+   * detects a stale copy still means exactly what it meant.
+   */
+  readonly editPush: ChannelState;
 }
 
 /**
@@ -189,10 +223,9 @@ export interface Brief {
  * is written down — a second copy of "only the public one" at each surface is the
  * shape that drifts.
  */
-export function brief(sources: readonly ScopedCache[]): Brief {
-  const travels: ProjectionCache[] = sources
-    .filter((source) => source.scope === TRAVELS)
-    .map((source) => source.cache);
+export function brief(sources: readonly ScopedCache[], editPushChannel: string): Brief {
+  const committed = sources.filter((source) => source.scope === TRAVELS);
+  const travels: ProjectionCache[] = committed.map((source) => source.cache);
   const decisions = decisionsInForce(travels);
   const skills = adoptedSkills(travels);
   return {
@@ -207,6 +240,12 @@ export function brief(sources: readonly ScopedCache[]): Brief {
     skills: skills.map(({ id, name }) => ({ id, name })),
     collisions: printedCollisions(travels, decisions),
     addressed: countAddressed(travels, [...decisions, ...skills]),
+    // Asked of the COMMITTED sources alone, for the reason the whole answer is: a switch
+    // this file could not carry would make the document claim a mechanism is on when the
+    // machine reading it has turned it off. The channel is NAMED by the caller because the
+    // vocabulary of channels belongs to the surface that pushes them, and this package has
+    // no idea what any of them are.
+    editPush: channelStates(committed, [editPushChannel])[0] as ChannelState,
   };
 }
 

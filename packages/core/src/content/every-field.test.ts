@@ -17,6 +17,7 @@ import {
   recordObservation,
 } from '../knowledge/operations.js';
 import { orderedEvents } from '../projections/order.js';
+import { switchChannel } from '../workflow/channel-operations.js';
 import { recordDecision, supersedeDecision } from '../workflow/decision-operations.js';
 import { enrollKey, foundIdentity, revokeKey } from '../workflow/identity-operations.js';
 import { createTask, transitionTask, type WriteContext } from '../workflow/operations.js';
@@ -283,6 +284,19 @@ const DRIVERS: { readonly [K in EventKind]: Driver } = {
     // checks the three it did not touch came through untouched.
     authorizeTailPrune(ctx, {
       tail: aSecondTailIn(ctx.layout.root),
+      reason: text('payload.reason'),
+      which: text('which'),
+      run: text('run'),
+    }),
+
+  'channel.switched': (ctx, text) =>
+    // The CHANNEL is the subject and it is a caller's string, so it goes through the
+    // door like a consultation's skill — nothing in this package knows which channels
+    // this product pushes. `on` is a boolean and there is nothing textual in it to
+    // drive, which is why the pair here is subject and reason.
+    switchChannel(ctx, {
+      channel: text('subject'),
+      on: false,
       reason: text('payload.reason'),
       which: text('which'),
       run: text('run'),

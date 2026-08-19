@@ -95,12 +95,6 @@ export {
   readRecord,
   searchRecords,
 } from './context/search.js';
-// `skillCatalogue` is here as a VALUE for the reason `skillDisposition` is: it
-// answers how much of the record a caller that named nothing is served, and a surface
-// that decided that for itself would be a second budget nobody could see drift from
-// this one. Its union comes with it — the surface has to narrow on the arm to know
-// whether it is framing bodies or names — and the two ARMS do not, being reachable
-// through it (`catalogue.served === 'names'` narrows without either being named).
 export {
   adoptedSkills,
   lookupServedSkill,
@@ -111,6 +105,18 @@ export {
   skillCatalogue,
   skillDisposition,
 } from './context/skills.js';
+// `skillCatalogue` is here as a VALUE for the reason `skillDisposition` is: it
+// answers how much of the record a caller that named nothing is served, and a surface
+// that decided that for itself would be a second budget nobody could see drift from
+// this one. Its union comes with it — the surface has to narrow on the arm to know
+// whether it is framing bodies or names — and the two ARMS do not, being reachable
+// through it (`catalogue.served === 'names'` narrows without either being named).
+// Both halves are values here, and each has a consumer of its own. `channelStates`
+// answers a verb and a document — what a reader is TOLD about where a switch stands;
+// `channelIsOn` answers a pushing channel deciding whether to speak. Neither is
+// reachable through the other in the shape its caller needs, and the rule they share
+// (off wins, and an absence is on) has exactly one implementation behind both.
+export { type ChannelState, channelIsOn, channelStates } from './context/switches.js';
 // The TYPE only, and from the module that OWNS the task machine's reads rather than
 // from the composition that serves them: `WorkItem` is what `Bootstrap.work` is made
 // of, so reading the opening context needs it written down. Neither `liveWork` nor

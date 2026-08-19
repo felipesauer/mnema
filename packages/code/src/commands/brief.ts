@@ -42,14 +42,24 @@
  * one rule with the document's scope: what the file carries is the project's
  * COMMITTED record, and with no public tree there is nothing for it to be made of.
  *
+ * IT REFUSES WHEN ITS OWN CHANNEL IS SWITCHED OFF, which is the second refusal it has and
+ * the one a reader will not expect from a read. This verb is not only a report — it is the
+ * producer of a channel, the file a session opens with, and every channel this product
+ * pushes can be switched off with the switching recorded. Off, there is no document: the
+ * refusal goes to stderr with a non-zero exit, so the plugin's handler is silent by the
+ * rule it already has, and the person who typed the verb is told which switch is holding it
+ * and where to look ({@link BriefSwitchedOff}).
+ *
  * Read-only in the strict sense: a cache per visible tree, rebuilt in memory, and
  * the copilot's pure `brief`. No writer, no key, no event, no consultation recorded
  * (serving a pattern's BODY records one; serving its name is not serving it, and
- * this never touches a body).
+ * this never touches a body). Switching a channel is a WRITE and lives in its own verb —
+ * this one only reads where the switch stands.
  */
 
-import { type Brief, brief } from '@mnema/copilot';
+import { type Brief, brief, channelIsOn, channelStates } from '@mnema/copilot';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { DOCUMENT_CHANNEL, EDIT_PUSH_CHANNEL } from '../record-framing.js';
 import { withScopedCaches } from '../tree-sources.js';
 
 /** What the brief needs — injected so it is testable. */
@@ -77,6 +87,34 @@ export interface BriefRefused {
 }
 
 /**
+ * The document was not composed because the channel that carries it is switched OFF.
+ *
+ * IT IS A REFUSAL AND NOT AN EMPTY DOCUMENT, and the two are not close. This verb's output
+ * is the whole of a file, so printing nothing would look to `mnema brief > AGENTS.md` like
+ * a record with nothing in it and would truncate a governance file the repository holds. A
+ * refusal on stderr with a non-zero exit is what the plugin's handler already treats as
+ * silence — it is how this verb behaves outside a project — so the session of somebody who
+ * switched the document off opens with nothing added, exactly as they asked, while the
+ * person who typed the verb is told why and by whom.
+ *
+ * It names the switch, because a person who cannot find it cannot undo it. Both fields
+ * come out of the record; they are absent only in a state this refusal cannot be in, and
+ * the caller words the sentence.
+ */
+export interface BriefSwitchedOff {
+  readonly ok: false;
+  readonly reason: 'SWITCHED_OFF';
+  /** The channel that is off — this verb's own, named so the wording can cite it. */
+  readonly channel: string;
+  /** The anchor whose switch decides it. */
+  readonly by: string;
+  /** When that switch was made. */
+  readonly at: string;
+  /** Whether that switch travels with the repository, or governs this machine alone. */
+  readonly travels: boolean;
+}
+
+/**
  * Composes what governs the work here out of the trees visible from `ctx.cwd` — every
  * one of them opened, and the document made of the one that travels.
  *
@@ -97,10 +135,29 @@ export interface BriefRefused {
  * pre-filtered would make the composition's own guard vacuous — it would never be
  * handed a tree to leave out.
  */
-export function runBrief(ctx: BriefContext): BriefDone | BriefRefused {
+export function runBrief(ctx: BriefContext): BriefDone | BriefRefused | BriefSwitchedOff {
   const trees = resolveTrees(ctx.cwd, ctx.env);
   if (trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
-  return withScopedCaches(trees, (sources) => ({ ok: true, brief: brief(sources) }));
+  return withScopedCaches(trees, (sources) => {
+    // The switch is asked over EVERY tree, unlike the document's own content: a person
+    // who switched this off on their machine switched off what reaches their sessions,
+    // and answering only out of the committed tree would keep printing the file at them.
+    // It is the same asymmetry the composition draws for the other channel and in the
+    // same direction — what a channel may do is read from every tree, what a committed
+    // file may CARRY is read from one.
+    if (!channelIsOn(sources, DOCUMENT_CHANNEL)) {
+      const state = channelStates(sources, [DOCUMENT_CHANNEL])[0];
+      return {
+        ok: false as const,
+        reason: 'SWITCHED_OFF' as const,
+        channel: DOCUMENT_CHANNEL,
+        by: state?.by ?? '',
+        at: state?.at ?? '',
+        travels: state?.travels ?? false,
+      };
+    }
+    return { ok: true as const, brief: brief(sources, EDIT_PUSH_CHANNEL) };
+  });
 }

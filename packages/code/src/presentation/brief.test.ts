@@ -14,14 +14,45 @@
  * it.
  */
 
-import type { Brief } from '@mnema/copilot';
+import type { Brief, ChannelState } from '@mnema/copilot';
 import { describe, expect, it } from 'vitest';
 import { briefDocument } from './brief.js';
 
-/** What governs, as the composition hands it over. */
+/**
+ * What governs, as the composition hands it over.
+ *
+ * The push is ON by default because that is the composition's own answer for a record
+ * nobody switched: the state carries no attribution at all, and the cases that need it
+ * OFF say so with the switch that decided it (A13 — nothing here writes a value the
+ * product could not produce).
+ */
 function governance(over: Partial<Brief> = {}): Brief {
-  return { decisions: [], skills: [], collisions: [], addressed: 0, ...over };
+  return {
+    decisions: [],
+    skills: [],
+    collisions: [],
+    addressed: 0,
+    editPush: { channel: 'edit-rules-push', on: true },
+    ...over,
+  };
 }
+
+/**
+ * The push, switched off by somebody — what the composition answers when a tree holds an
+ * off switch for it.
+ *
+ * Every field the state can carry is filled the way one write fills them, because a state
+ * that is off is a state a switch put there: `by`, `at` and `travels` are never absent on
+ * an off answer, and a fixture that omitted them would test a shape the reading cannot
+ * return.
+ */
+const SWITCHED_OFF: ChannelState = {
+  channel: 'edit-rules-push',
+  on: false,
+  by: '0198f3c1-7a2e-7b41-9c05-3d8e6f2a9f01',
+  at: '2026-08-19T11:04:07.512Z',
+  travels: true,
+};
 
 /** One decision in force, named the way the record names it. */
 function decision(n: number, title = `A call numbered ${n}`) {

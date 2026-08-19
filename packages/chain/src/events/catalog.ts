@@ -616,6 +616,55 @@ export interface TailPrunedV1 extends Envelope {
 }
 
 /**
+ * A channel of this product was switched — someone turned OFF, or back ON, one of the
+ * places mnema puts the record in front of a model without being asked.
+ *
+ * WHY IT IS A FACT OF THE CHAIN AND NOT A SETTING. The tie it exists for reads: every
+ * charge is switchable, and the switching is recorded — switching off is legitimate,
+ * switching off in SILENCE is not. A configuration file answers the first half and
+ * defeats the second: nothing attributes it, nothing dates it, and a reader of the
+ * record can never tell "no rule addressed that file" from "somebody had turned the
+ * push off that week". As an event it inherits everything the catalog already gives
+ * every fact — the authorizing `who`, the executing `which`, the `run`, the instant,
+ * the signature and the link — and it inherits the SCOPE, so a switch that travels
+ * with the repository and one kept on a single machine are the same fact filed in two
+ * trees rather than two mechanisms.
+ *
+ * ITS SUBJECT IS THE CHANNEL, the way a consultation's subject is the skill: a switch
+ * has no standalone identity worth minting, it is an entry in that channel's own
+ * history. Many switches share one subject and do not collide.
+ *
+ * THE STATE IS A BOOLEAN AND NOT A LITERAL, which is the one place this kind departs
+ * from the transitions. A transition's `to` is an open string so a workflow can grow
+ * an action without touching this catalog; a switch has exactly two positions and a
+ * third would not be a new label, it would be a different mechanism — so there is
+ * nothing here for an open vocabulary to buy, and a boolean cannot be spelled two
+ * ways ("off", "OFF", "false") by two producers.
+ *
+ * THE REASON IS OPTIONAL, and that is the tie read exactly. What it requires is the
+ * FACT — who switched what, and when — never a justification: a product that refused
+ * to let somebody turn it off without composing prose would be charging for the
+ * switch, and the field would fill with a full stop. When a reason IS given it is the
+ * most useful line an audit of this ever reads, which is why the field exists at all.
+ *
+ * NOTHING IS OFF WITHOUT ONE OF THESE. The absence of any `channel.switched` for a
+ * channel is the channel being ON; there is no birth event and no default row. A
+ * product that arrived switched off would be a product that looks installed and does
+ * nothing.
+ */
+export interface ChannelSwitchedV1 extends Envelope {
+  readonly kind: 'channel.switched';
+  readonly v: 1;
+  /** Subject is the CHANNEL that was switched. */
+  readonly payload: {
+    /** Its position after this fact: `true` is on, `false` is off. */
+    readonly on: boolean;
+    /** Why, when the person switching it said why. Never required. */
+    readonly reason?: string;
+  };
+}
+
+/**
  * The catalog: every event the chain may contain. `kind` + `v` together select
  * exactly one arm, so a producer and a consumer can never disagree on a
  * payload shape without the compiler saying so.
@@ -637,7 +686,8 @@ export type CatalogEvent =
   | SkillCreatedV1
   | SkillTransitionedV1
   | SkillConsultedV1
-  | TailPrunedV1;
+  | TailPrunedV1
+  | ChannelSwitchedV1;
 
 /** The `kind` discriminators present in the catalog. */
 export type EventKind = CatalogEvent['kind'];
@@ -664,4 +714,5 @@ export const LATEST_VERSION: { readonly [K in EventKind]: number } = {
   'skill.transitioned': 1,
   'skill.consulted': 1,
   'tail.pruned': 1,
+  'channel.switched': 1,
 };

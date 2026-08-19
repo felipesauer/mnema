@@ -389,6 +389,9 @@ async function readEverything(label: string, ids: Record<string, string>): Promi
   // like every other read, and the sandbox has no host transcripts at all — so what the
   // golden holds is the answer a person gets on a machine whose transcripts have
   // expired, which is the one this verb must not report as a zero.
+  // Where the product's own switches stand — the reading that exists because a channel
+  // name appears nowhere else, and the one whose subject is mnema rather than the work.
+  await mnema('reads', 'switch');
   await mnema('reads', 'usage');
   await mnema('reads', 'verify');
 }
@@ -701,6 +704,19 @@ beforeAll(async () => {
     '--reason',
     'the key that never wrote anything',
   );
+
+  // ── SWITCHING WHAT THE PRODUCT PUSHES, and back on again. The three lines a person
+  //    sees: the echo of the write, where the channel now stands, and — on an off — what
+  //    switching it off does NOT stop. The listing is run between them so the OFF row is
+  //    pinned with the attribution on it, which is the shape a private switch is read by
+  //    too. It ends switched ON, so the reads below are the reads of a product nobody
+  //    turned off.
+  section('writes', 'switching what the product pushes');
+  await mnema('writes', 'switch');
+  await mnema('writes', 'switch', 'off', 'edit-rules-push', '--reason', 'noisy while porting');
+  await mnema('writes', 'switch');
+  await mnema('writes', 'switch', 'on', 'edit-rules-push');
+  await mnema('writes', 'switch', 'off', 'no-such-channel');
 
   // ── The PARSER's refusals — one invocation per code the surface words, because
   //    they are the lines a person meets on their FIRST command and nothing pinned
