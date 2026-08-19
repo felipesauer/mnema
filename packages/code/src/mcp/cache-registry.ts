@@ -19,9 +19,19 @@
  *      cache would answer from whichever tree happened to be loaded first — the
  *      wrong projection, returned silently. A cache per root cannot make that
  *      mistake, and the roots are bounded by what the workspace holds: two trees
- *      per announced project plus the one global tree they share, all settled at
- *      the handshake. So the map still has a ceiling by construction rather than by
- *      eviction policy — it is just no longer three.
+ *      per announced project plus the one global tree they share. So the map still
+ *      has a ceiling by construction rather than by eviction policy — it is just no
+ *      longer three.
+ *
+ *      That ceiling USED TO BE JUSTIFIED by the roots being *"all settled at the
+ *      handshake"*, and that premise is gone: the server now re-reads the workspace
+ *      whenever the client says it changed ({@link refreshWorkspace}). The ceiling
+ *      survives it, and by the property that replaced the premise — the re-read is
+ *      ADDITIVE, so the map only ever gains the trees of a project the client
+ *      announced, and a client announces folders a person opened. What it is not any
+ *      more is a ceiling fixed at one instant, and the entries a re-read does not
+ *      reach are left exactly where they are: a cache belongs to the tree it was
+ *      opened over, and that tree did not move.
  *
  *      Entries are opened LAZILY, one per tree actually read, which is what keeps
  *      the wider ceiling from being a cost anyone pays for nothing: a connection
