@@ -124,6 +124,7 @@ describe('the brief prints one line per rule', () => {
     decisions: [],
     skills: [],
     collisions: [],
+    addressed: 0,
     ...over,
   });
   const decision = (over: Partial<Brief['decisions'][number]> = {}) => ({

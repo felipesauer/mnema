@@ -111,6 +111,7 @@ describe('brief — everything that governs the work here', () => {
       decisions: [{ id: 'dec-1', adr: 'ADR-dec-1', title: 'Hand-rolled big-integer arithmetic' }],
       skills: [{ id: 'sk-1', name: 'One slice per PR' }],
       collisions: [],
+      addressed: 0,
     });
   });
 
@@ -214,7 +215,12 @@ describe('brief — everything that governs the work here', () => {
     const source = tree(b, 'public');
     const composed = brief([source]);
     // No field for it, and no text of it anywhere in the answer.
-    expect(Object.keys(composed).sort()).toEqual(['collisions', 'decisions', 'skills']);
+    expect(Object.keys(composed).sort()).toEqual([
+      'addressed',
+      'collisions',
+      'decisions',
+      'skills',
+    ]);
     expect(JSON.stringify(composed)).not.toContain('Write the deploy runbook');
     expect(JSON.stringify(composed)).not.toContain('task-ready');
     // And the record really did hold live work: without this the absence
@@ -465,8 +471,13 @@ describe('brief — everything that governs the work here', () => {
     // `presentation/brief.test.ts`). A refusal here would make "nobody has decided
     // yet" indistinguishable from "the record could not be read".
     const b = bench();
-    expect(brief([tree(b, 'public')])).toEqual({ decisions: [], skills: [], collisions: [] });
-    expect(brief([])).toEqual({ decisions: [], skills: [], collisions: [] });
+    expect(brief([tree(b, 'public')])).toEqual({
+      decisions: [],
+      skills: [],
+      collisions: [],
+      addressed: 0,
+    });
+    expect(brief([])).toEqual({ decisions: [], skills: [], collisions: [], addressed: 0 });
     // And a caller holding nothing but trees that do not travel gets the same honest
     // empty rather than their contents: an empty document over a record that HAS rules
     // in it is the shape this filter is for.
@@ -477,6 +488,7 @@ describe('brief — everything that governs the work here', () => {
       decisions: [],
       skills: [],
       collisions: [],
+      addressed: 0,
     });
   });
 });

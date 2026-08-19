@@ -68,14 +68,25 @@ export type ServedSubject =
  * Those hand back information ("this happened", "this was decided", "these rules are
  * addressed here"), and the one thing this product hands back as INSTRUCTION is a
  * pattern's body, which is the reasoning `served-patterns.ts` states and this module
- * inherits rather than re-decides. A hook that PUSHES any of those same answers into
- * a prompt is a different channel from the tool that answers when asked, and it
- * belongs in this union on the day it exists.
+ * inherits rather than re-decides.
+ *
+ * THE DAY THE LAST SENTENCE PREDICTED HAS COME, and `edit-rules-push` is it. That
+ * sentence read: "a hook that PUSHES any of those same answers into a prompt is a
+ * different channel from the tool that answers when asked, and it belongs in this union
+ * on the day it exists." It exists. The rules addressed at a path are what
+ * `governing_rules` answers to a caller, and pushing them at the moment a file is about
+ * to be written is a second channel with the same subject — which is exactly why the
+ * subject is a PARAMETER here and the claim is one string: the two say the same thing
+ * about the same record, and only the destination differs.
  */
-export type ModelChannel = 'skills-answer' | 'brief-document' | 'exported-skill';
+export type ModelChannel =
+  | 'skills-answer'
+  | 'brief-document'
+  | 'exported-skill'
+  | 'edit-rules-push';
 
 /** The channels that carry a declaration — the ones {@link SUBJECT_OF} answers for. */
-export type FramedChannel = 'skills-answer' | 'brief-document';
+export type FramedChannel = 'skills-answer' | 'brief-document' | 'edit-rules-push';
 
 /**
  * What each framed channel served, and therefore what its declaration names.
@@ -88,6 +99,11 @@ export type FramedChannel = 'skills-answer' | 'brief-document';
 const SUBJECT_OF: { readonly [K in FramedChannel]: ServedSubject } = {
   'skills-answer': 'patterns',
   'brief-document': 'rules',
+  // The same subject as the document, and the same words: what governs the work is one
+  // thing whether it arrives when a session opens or when a file is about to change.
+  // The difference between the two is WHICH rules, and that belongs to the derivation
+  // behind each — never to what the channel says about the text.
+  'edit-rules-push': 'rules',
 };
 
 /**
@@ -120,6 +136,27 @@ export const FRAMED_CHANNELS = Object.keys(SUBJECT_OF) as readonly FramedChannel
  * delete without anything noticing is a comment, which is exactly what it must not be.
  */
 export const DECLARES_MODEL_CHANNEL = /^export const MODEL_CHANNEL = '([a-z-]+)';$/m;
+
+/**
+ * How a hook that is NOT a process names the channel it carries: by the MCP tool it
+ * calls.
+ *
+ * This host can run a hook as a call into an already-connected MCP server
+ * (`type: "mcp_tool"`), and such a hook has no handler file at all — there is no source
+ * for {@link DECLARES_MODEL_CHANNEL} to read, because there is no process. What
+ * identifies it is the pair the hook names, and the half that belongs to this product is
+ * the TOOL. So the tool's name is the declaration, and this is where it is recorded.
+ *
+ * IT IS A TABLE AND NOT A CONVENTION for the same reason `hooks.json` gets a
+ * default-deny: a tool added to the server and wired into a hook must appear here or the
+ * guard has nothing to check it against, and a channel pushed by a tool nobody
+ * classified is precisely what this module exists to have ended. The tool's own module
+ * IMPORTS the framing — it is built code, unlike a handler — so the declaration here and
+ * the text there cannot drift without one of them failing to compile.
+ */
+export const PUSHED_BY_TOOL: { readonly [tool: string]: FramedChannel } = {
+  rules_before_an_edit: 'edit-rules-push',
+};
 
 /**
  * The channels that carry no declaration, and why — one sentence each, because "this

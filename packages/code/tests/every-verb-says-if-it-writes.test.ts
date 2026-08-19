@@ -63,7 +63,7 @@
  *     over a real record and what reached the chain is counted the same way: the
  *     measurement moved, it was not dropped.
  *   - The MCP tools are a second surface with the same rule and are NOT classified here.
- *     There are twenty-three of them (`mcp/server.ts`), they are reached only through a
+ *     There are twenty-four of them (`mcp/server.ts`), they are reached only through a
  *     server this surface's `mcp` verb starts, and that verb is already declared a write —
  *     so a caller reading these declarations refuses the whole server in one, which is
  *     what a read-only session needs. Said out loud because the discriminant finds them

@@ -89,7 +89,7 @@
  * dropping sources cannot reorder what the remaining ones say.
  */
 
-import type { AdrCollision, ProjectionCache, Scope } from '@mnema/core';
+import { type AdrCollision, GOVERNS_RELATION, type ProjectionCache, type Scope } from '@mnema/core';
 import type { ScopedCache } from '../sources.js';
 import { type DecisionRef, decisionsInForce } from './decisions.js';
 import { adoptedSkills, type SkillRef } from './skills.js';
@@ -132,6 +132,31 @@ export interface Brief {
    * citable handle in a committed file names two rules is not.
    */
   readonly collisions: readonly AdrCollision[];
+  /**
+   * How many of the rules above have an ADDRESS — a path they were linked to with
+   * `rel: "governs"` in a tree that travels.
+   *
+   * WHY A NUMBER IS IN THIS ANSWER AT ALL, since everything else in it is a list. The
+   * product pushes a rule at the moment a file it addresses is about to be written, and
+   * that channel is SILENT when no rule addresses the path — a decision taken with a
+   * measurement behind it, because the alternative pays for "nothing governs this" on
+   * every edit of every session. Silence only means something to a reader who knows the
+   * mechanism is there, and this is where they are told: once, when the session opens.
+   * Zero is a legitimate value and it is the most informative one — it says the record
+   * holds rules and none of them has been placed.
+   *
+   * IT COUNTS RULES, NOT ADDRESSES. A rule addressed at two paths is one rule with an
+   * address; the reader of this document is deciding whether to expect anything, not
+   * auditing the graph. The audit's own answer counts addresses and names the stale ones
+   * (`mnema rules`, `governing_rules`).
+   *
+   * WHAT IT DELIBERATELY DOES NOT COUNT is how many of those addresses name a path the
+   * working tree no longer holds. That number is a fact about a CHECKOUT, and this
+   * document is committed and compared with `diff`: a count that moved when somebody
+   * switched branch would make the staleness check report a difference that is not the
+   * record's. The two readings that touch a disk report it.
+   */
+  readonly addressed: number;
 }
 
 /**
@@ -160,6 +185,7 @@ export function brief(sources: readonly ScopedCache[]): Brief {
     .filter((source) => source.scope === TRAVELS)
     .map((source) => source.cache);
   const decisions = decisionsInForce(travels);
+  const skills = adoptedSkills(travels);
   return {
     decisions,
     // The body is dropped by MAPPING, not by typing: a `ServedSkill` satisfies
@@ -169,9 +195,34 @@ export function brief(sources: readonly ScopedCache[]): Brief {
     // What it drops the `state` for is narrower: this file carries only what
     // GOVERNS, and `adoptedSkills` answers `adopted` and nothing else, so a state
     // printed here would be one word repeated once per rule.
-    skills: adoptedSkills(travels).map(({ id, name }) => ({ id, name })),
+    skills: skills.map(({ id, name }) => ({ id, name })),
     collisions: printedCollisions(travels, decisions),
+    addressed: countAddressed(travels, [...decisions, ...skills]),
   };
+}
+
+/**
+ * How many of `rules` have at least one address asserted in a tree that travels.
+ *
+ * The links are read from the SAME caches the rules came from, which is what makes the
+ * number a fact about this document rather than about the workspace: an address asserted
+ * in the private tree is not counted, for the reason nothing private is printed — it does
+ * not travel, and a reader of a clone would find a number they cannot account for.
+ *
+ * It intersects with the rules PRINTED rather than counting `governs` links, and that is
+ * the difference that matters: a link whose subject is a superseded decision, or a task,
+ * or an id no tree here holds, is a link this document says nothing about. Counting those
+ * would tell the reader to expect a rule at an edit that nothing will ever push.
+ */
+function countAddressed(
+  travels: readonly ProjectionCache[],
+  rules: readonly { readonly id: string }[],
+): number {
+  const addressed = new Set<string>();
+  for (const cache of travels) {
+    for (const edge of cache.linksByRelation(GOVERNS_RELATION)) addressed.add(edge.subject);
+  }
+  return rules.filter((rule) => addressed.has(rule.id)).length;
 }
 
 /**

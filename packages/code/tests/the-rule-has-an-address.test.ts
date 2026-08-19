@@ -388,27 +388,53 @@ describe('both surfaces answer out of the same derivation', () => {
 
 describe('one place assembles a governs read', () => {
   /**
-   * The derivation takes its disk probe as a parameter, so each surface could bring
+   * The derivations take their disk probe as a parameter, so each surface could bring
    * its own — and two probes is two ideas of what "the address exists" means, which
    * would make the stale count depend on which surface asked. So `governed-tree.ts`
-   * assembles it and both callers go through that. Found by the SYMBOL rather than by
+   * assembles it and every caller goes through that. Found by the SYMBOL rather than by
    * a list of files, which is what makes a third caller written next year red here.
+   *
+   * THERE ARE TWO DERIVATIONS NOW, and covering only the first would have left the hole
+   * this case exists to close: the pushed channel added `rulesInForceAt`, which takes the
+   * same `GovernanceQuery` and could have been called with a probe of its own. Both names
+   * are walked, so the guard covers the rule and not one instance of it — and the list is
+   * read off {@link ASSEMBLED_DERIVATIONS}, so a third derivation added to the copilot
+   * without being added here is a gap somebody has to notice, which is why the count is
+   * asserted too.
+   *
+   * It looks for a CALL and not a mention: a doc-comment naming a derivation is how the
+   * next reader learns which one a module means, and a guard that counted prose would
+   * push the explanations out of the files that owe them.
    */
-  it('names the derivation in exactly one module of this package', () => {
+  const ASSEMBLED_DERIVATIONS = ['governingRules', 'rulesInForceAt'];
+
+  it('names every governs derivation in exactly one module of this package', () => {
     const src = fileURLToPath(new URL('../src', import.meta.url));
+    const calls = new RegExp(`\\b(${ASSEMBLED_DERIVATIONS.join('|')})\\s*\\(`);
     const naming: string[] = [];
     const walk = (dir: string): void => {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
         const full = join(dir, entry.name);
         if (entry.isDirectory()) walk(full);
-        else if (
-          entry.name.endsWith('.ts') &&
-          /\bgoverningRules\b/.test(readFileSync(full, 'utf-8'))
-        )
+        else if (entry.name.endsWith('.ts') && calls.test(readFileSync(full, 'utf-8')))
           naming.push(relative(src, full));
       }
     };
     walk(src);
     expect(naming.sort()).toEqual(['governed-tree.ts']);
+    // And every derivation the copilot exports for a path question IS in the list above,
+    // so the walk cannot be green by looking for a name nothing uses any more.
+    const copilot = readFileSync(
+      fileURLToPath(new URL('../../copilot/src/index.ts', import.meta.url)),
+      'utf-8',
+    );
+    for (const derivation of ASSEMBLED_DERIVATIONS) {
+      expect(copilot, derivation).toContain(`  ${derivation},`);
+    }
+    expect(
+      readFileSync(join(src, 'governed-tree.ts'), 'utf-8').match(
+        new RegExp(`\\b(${ASSEMBLED_DERIVATIONS.join('|')})\\s*\\(`, 'g'),
+      ),
+    ).toHaveLength(ASSEMBLED_DERIVATIONS.length);
   });
 });

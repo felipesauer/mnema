@@ -1,5 +1,5 @@
 {
-  "description": "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name. It reads and never writes, and it never blocks.",
+  "description": "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name. Before a file is written, hands over the rules of the record addressed at that path. It reads and never writes, and it never blocks.",
   "hooks": {
     "SessionStart": [
       {
@@ -7,6 +7,20 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "mcp_tool",
+            "server": "plugin:mnema:mnema",
+            "tool": "rules_before_an_edit",
+            "input": { "path": "${tool_input.file_path}" },
             "timeout": 15
           }
         ]
