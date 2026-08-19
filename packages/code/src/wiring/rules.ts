@@ -1,9 +1,11 @@
 /**
  * The `mnema rules` wiring: what it declares, and what it prints.
  *
- * `mnema rules <path> [--json]` — the reverse reading of the one relation whose
- * target is a path. `refs` walks outward from an id; this walks inward from a place
- * in the code and answers which recorded rules govern it, most specific first.
+ * `mnema rules <path> [--json]` — the reverse reading of the relations whose target
+ * is a path (`ADDRESS_RELATIONS`: `governs` and `asks-for-a-person`). It said "the ONE
+ * relation" until the gate shipped as a second label of the same shape, and this page
+ * has reported both ever since. `refs` walks outward from an id; this walks inward from
+ * a place in the code and answers which recorded rules govern it, most specific first.
  *
  * It CHARGES NOTHING. It refuses no move, blocks no write and grades no work; what
  * it reports is the id a later charge would have to cite. Three numbers ride on

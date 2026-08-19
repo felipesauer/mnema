@@ -87,6 +87,7 @@ import {
   RECOMMENDED_RELATIONS,
   RECORD_CONTRACT,
   type Replacement,
+  reachNotice,
   replacementNotice,
 } from '../recorded-content.js';
 import { REFERENCE_DIRECTIONS } from '../reference-directions.js';
@@ -695,8 +696,13 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      // The relation the RECORD holds, not the one the call asked for.
-      return recorded(`Linked ${subject} —${result.recorded[0]}→ ${target}`, result);
+      // The relation the RECORD holds, not the one the call asked for — plus, on the
+      // two relations whose target is a path, what that address covers. The agent gets
+      // the same fact the command line prints, from the same wording, because an agent
+      // recording a gate for somebody is exactly who most needs to see its reach.
+      return recorded(`Linked ${subject} —${result.recorded[0]}→ ${target}`, result, {
+        after: reachNotice(result.reach),
+      });
     },
   );
 
@@ -1674,12 +1680,22 @@ async function listRootsSafely(
 function recorded(
   line: string,
   result: Landed & Replacement,
+  // Extra lines a particular verb owes, between the acknowledgement and the tree
+  // notice. Only `link_knowledge` has any — what its address covers — and it is a
+  // parameter rather than a field on the result so that no other verb's reply gains a
+  // slot it can never fill.
+  extra: { readonly after?: readonly string[] } = {},
 ): { readonly content: [{ readonly type: 'text'; readonly text: string }] } {
   return {
     content: [
       {
         type: 'text',
-        text: [line, landedNotice(result.scope), ...replacementNotice(result.replaced)].join('\n'),
+        text: [
+          line,
+          ...(extra.after ?? []),
+          landedNotice(result.scope),
+          ...replacementNotice(result.replaced),
+        ].join('\n'),
       },
     ],
   };

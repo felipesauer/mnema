@@ -24,7 +24,9 @@
  * on the fact and does not move the tree.
  */
 
+import { dirname } from 'node:path';
 import { catalogUpcasters } from '@mnema/chain';
+import type { AddressReach } from '@mnema/copilot';
 import {
   chainRootForScope,
   type DiscoveryEnv,
@@ -33,6 +35,7 @@ import {
   type Scope,
 } from '@mnema/core';
 import { linkKnowledge, openTreeForWriting } from '@mnema/core/write';
+import { reachOfAddress } from '../governed-tree.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
 
 /** What the link command needs — injected so it is testable. */
@@ -52,6 +55,16 @@ export interface LinkRecorded extends Replacement, Landed {
   readonly target: string;
   /** The relation label (an open string). */
   readonly rel: string;
+  /**
+   * What the address covers in the working tree, when the relation carries one —
+   * absent for every other relation, since a target that is an id covers nothing.
+   *
+   * It rides the SUCCESS path deliberately: the fact is already recorded when this is
+   * computed, so it is a report and never a gate. The moment it is useful is the one
+   * right after, when the person who typed a wide address can still record a narrower
+   * one — and nothing in the product said this number before.
+   */
+  readonly reach?: AddressReach;
 }
 
 /** The record was refused. */
@@ -114,6 +127,12 @@ export function runLink(
   // Checkpoint so the new link is signature-covered at once.
   writer.checkpoint();
 
+  // What the address covers, computed AFTER the write and off the relation AS
+  // RECORDED — the label that landed is the one a reader will later compare by, and a
+  // screened one is not an address relation at all. The root is the project's, so a
+  // link recorded outside a project (global) reports no reach: there is no root for an
+  // address to be relative to, which is the same reason `mnema rules` refuses there.
+  const root = projectRoot(trees.projectPublic);
   return {
     ok: true,
     subject: input.subject,
@@ -121,6 +140,17 @@ export function runLink(
     // The relation AS RECORDED — screened, so the echo shows what landed.
     rel: recorded.rel,
     scope,
+    ...(root !== undefined ? withReach(reachOfAddress(recorded.rel, input.target, root)) : {}),
     ...forwardReplacement(recorded),
   };
+}
+
+/** The project root an address is relative to: the PARENT of the project's `.mnema/`. */
+function projectRoot(projectPublic: string | undefined): string | undefined {
+  return projectPublic === undefined ? undefined : dirname(projectPublic);
+}
+
+/** The reach as a property, or nothing — so an absent one never becomes `reach: undefined`. */
+function withReach(reach: AddressReach | undefined): { reach?: AddressReach } {
+  return reach !== undefined ? { reach } : {};
 }

@@ -485,20 +485,38 @@ export const GOVERNS_RELATION = 'governs';
 export const ASKS_FOR_A_PERSON_RELATION = 'asks-for-a-person';
 
 /**
+ * The relations whose target is a PATH rather than an id — the whole of them.
+ *
+ * There are two, {@link GOVERNS_RELATION} and {@link ASKS_FOR_A_PERSON_RELATION}, and
+ * naming them together is what lets a reader ask "does this label carry an address"
+ * once instead of spelling out a pair at every place that has to know. Before this
+ * constant the pair was written out at each such site, and a third path relation would
+ * have had to be remembered at all of them.
+ *
+ * It says nothing about what each one DOES — one informs, the other stops somebody —
+ * and it is deliberately only about the SHAPE of the target, because that is what every
+ * reader of an address needs and none of them needs the power.
+ */
+export const ADDRESS_RELATIONS = [GOVERNS_RELATION, ASKS_FOR_A_PERSON_RELATION] as const;
+
+/**
  * The recommended relation labels for a {@link KnowledgeLinkedV1}. This is a
  * documentation and grouping aid — NOT a closed set the parser enforces. A
  * projection may group by these known labels and pass any other through
  * verbatim; a `rel` outside this set is valid and never rejected, the same way a
  * new transition `action` is. Exported so a reader can group consistently
  * without hard-coding the strings.
+ *
+ * The two that take a PATH are spread from {@link ADDRESS_RELATIONS} rather than
+ * listed again, so a third one cannot be recommended here and stay unknown to the
+ * readers that ask what an address covers.
  */
 export const RECOMMENDED_LINK_RELATIONS = [
   'supersedes',
   'relates-to',
   'derived-from',
   'contradicts',
-  GOVERNS_RELATION,
-  ASKS_FOR_A_PERSON_RELATION,
+  ...ADDRESS_RELATIONS,
 ] as const;
 
 /**

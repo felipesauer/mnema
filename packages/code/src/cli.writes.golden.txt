@@ -60,9 +60,13 @@ $ mnema link <task-runbook> <task-chore> --rel derived-from
 |   Landed in the public tree — committed with the repository, so it reaches every clone.
 $ mnema link <decision-runbook> docs/runbook --rel governs
 | Linked <decision-runbook> —governs→ docs/runbook
+|   docs/runbook covers 1 of 1 file(s) counted in the working tree; not counted: .mnema.
+|   Files on disk, not edits — a directory nobody touches counts the same as a busy one.
 |   Landed in the public tree — committed with the repository, so it reaches every clone.
 $ mnema link <decision-runbook> docs/gone-away --rel governs
 | Linked <decision-runbook> —governs→ docs/gone-away
+|   docs/gone-away covers 0 of 1 file(s) counted in the working tree; not counted: .mnema.
+|   Files on disk, not edits — a directory nobody touches counts the same as a busy one.
 |   Landed in the public tree — committed with the repository, so it reaches every clone.
 
 ### the moves

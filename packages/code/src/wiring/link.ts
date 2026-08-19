@@ -11,9 +11,10 @@
  */
 
 import type { Command } from 'commander';
-import { RECOMMENDED_RELATIONS, RECORD_CONTRACT_HELP } from '../recorded-content.js';
+import { RECOMMENDED_RELATIONS, RECORD_CONTRACT_HELP, reachNotice } from '../recorded-content.js';
 import { here } from './context.js';
 import { scopeOption } from './enumerated.js';
+import { writeLines } from './io.js';
 import { onOneLine } from './on-one-line.js';
 import { declaredAgent, INVALID, parseScope, WHICH_HELP } from './options.js';
 import { reportRecorded, reportRefusal } from './report.js';
@@ -73,6 +74,12 @@ export function registerLink(program: Command, wiring: Wiring): Declared {
           // open string on purpose. So this line is three doors onto itself, and each
           // one goes through the collapse (see {@link onOneLine}).
           io.out(onOneLine`Linked ${result.subject} —${result.rel}→ ${result.target}`);
+          // What that address covers, on the two relations whose target is a path, and
+          // nothing at all on every other. A fact, not a warning — see `reachNotice`.
+          // It goes BEFORE the tree notice because it is about what was just recorded
+          // and the tree notice is about where; the reader's question in the second
+          // after typing a wide address is the first one.
+          writeLines(io, reachNotice(result.reach));
           reportRecorded(result, io);
           return;
         }

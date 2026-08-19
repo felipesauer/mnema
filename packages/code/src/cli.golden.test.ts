@@ -39,7 +39,7 @@
  * lives: strip the escapes and the styled surface is this transcript, line for line.
  */
 
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import { listTails, memoryCaptured } from '@mnema/chain';
@@ -404,6 +404,11 @@ beforeAll(async () => {
   // address still names something, so the fixture has to hold one — and it holds only
   // this one, which is what lets the second address be stale on purpose.
   mkdirSync(join(repo, 'docs', 'runbook'), { recursive: true });
+  // A file, and not only the directory it sits in. The transcript asks `rules` about
+  // this very path and records an address at its directory, and both readings said
+  // something about a file that did not exist — while the reach of that address would
+  // print "0 of 0", a fraction that shows nothing of what a fraction is for.
+  writeFileSync(join(repo, 'docs', 'runbook', 'rollback.md'), '# rollback\n');
   mkdirSync(join(sandbox, 'home'), { recursive: true });
   process.env.HOME = join(sandbox, 'home');
   process.env.XDG_DATA_HOME = join(sandbox, 'data');
