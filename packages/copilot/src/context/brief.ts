@@ -37,6 +37,15 @@
  * list's own length. What bounds the size instead is that each item is a NAME: the
  * cost is a handful of fields per rule, not an argument per rule.
  *
+ * THAT LAST SENTENCE HAD NO NUMBER AND NOW HAS ONE — **99.1 bytes per rule in force**,
+ * the slope of the document this answer composes, over an envelope of about 359 bytes
+ * (`measurements/channel-cost/README.md`). It is what makes "no cut by size" affordable
+ * rather than merely principled: a record holding a hundred rules in force pays about
+ * ten kilobytes, once, where a session opens. The number belongs to the DOCUMENT's shape
+ * rather than to this function, and that shape has already moved once — an earlier
+ * reading measured 21/63/148 lines where the published one measures 25/68/153 — so it is
+ * cited to its capture instead of being pinned by a case here.
+ *
  * ONLY THE TREE THAT TRAVELS, AND THIS USED TO BE THE UNION. The paragraph here read
  * "ACROSS THE TREES the caller can see, because both derivations do and for their
  * reason: the team's calls are in the public tree, this machine's in the private one,
