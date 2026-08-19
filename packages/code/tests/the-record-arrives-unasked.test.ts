@@ -45,6 +45,7 @@ import { fileURLToPath } from 'node:url';
 import type { Command } from 'commander';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildProgram } from '../src/cli.js';
+import { FRAMED_CHANNELS, type FramedChannel, recordFraming } from '../src/record-framing.js';
 import { held } from './support/the-record-held.js';
 
 /** The repository root: `packages/code/tests/` is three levels under it. */
@@ -329,6 +330,29 @@ describe('the record arrives unasked', () => {
     // are a second read, asked about the one item that bears on the task.
     expect(context).not.toContain(COMMITTED_RATIONALE);
     expect(context).not.toContain(PATTERN_BODY);
+  });
+
+  it('carries the declaration of the channel it says it is', () => {
+    // THE BEHAVIOURAL HALF OF THE CHANNEL GUARD, on the sandbox this file already
+    // builds. `the-channel-says-what-it-carries.test.ts` reads the source and requires
+    // every handler that writes to a model to name a channel; what it cannot see from
+    // the source is whether the bytes that actually reach the session carry that
+    // channel's declaration. This is that, end to end: the real binary, the real
+    // handler, the reply the host would read.
+    const declared = /MODEL_CHANNEL\s*=\s*'([a-z-]+)'/.exec(
+      readFileSync(join(PLUGIN, 'hooks', 'session-start.mjs'), 'utf-8'),
+    );
+    expect(declared).not.toBeNull();
+    const channel = declared?.[1] as FramedChannel;
+    expect(FRAMED_CHANNELS as readonly string[]).toContain(channel);
+
+    const ran = runHook(declaredCommands()[0] as string, project);
+    const context = (JSON.parse(ran.out) as { hookSpecificOutput: { additionalContext: string } })
+      .hookSpecificOutput.additionalContext;
+    for (const line of recordFraming(channel)) expect(context).toContain(line);
+    // And the handler added none of it itself: the words are the DOCUMENT's, so they
+    // are in what the verb printed too.
+    for (const line of recordFraming(channel)) expect(cli('brief')).toContain(line);
   });
 
   it('writes nothing at all — no event, no key, no run', () => {

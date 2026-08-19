@@ -64,6 +64,7 @@
 
 import type { AdrCollision, Brief } from '@mnema/copilot';
 import { oneLine } from '../one-line.js';
+import { recordFraming } from '../record-framing.js';
 
 /**
  * The marker that says what this file is, to a reader and to a `grep`.
@@ -81,18 +82,36 @@ const GENERATED =
 const TITLE = '# What governs the work here';
 
 /**
- * What the content is, said before any of it — the same declaration the agent's
+ * What the content is, said before any of it — the SAME declaration the agent's
  * surface makes when it serves a pattern into a prompt, in the medium this one uses.
  *
  * A file read on every prompt is read as instruction, and these lines are the only
  * chance to say whose instruction: the project's own people and agents, recorded and
  * served back. mnema does not vet what a decision says, and a reader that assumed
  * otherwise would be crediting this product for a call somebody else made.
+ *
+ * "THE SAME" IS NOW A FACT AND IT USED TO BE A CLAIM. This constant held its own
+ * wording of that declaration and the `skills` answer held another, written months
+ * apart, and they had drifted: this one said the text was written "and settled" —
+ * false of a pattern the `skills` tool serves so it can be RULED on — and it ended
+ * with "Follow them." Both are gone. The words come from `record-framing.ts`, which is
+ * the one place that decides what a channel says about record text it puts where a
+ * model reads it, and this document names the channel it is
+ * (see {@link recordFraming}).
+ *
+ * WHY THE IMPERATIVE WENT, since it is the only sentence this file LOST rather than
+ * moved. It told a reader what to do about the content, and everything else here tells
+ * them what the content is. That a rule holds is the RECORD's statement and it is
+ * already made, in the record's own vocabulary and per section: the heading says the
+ * decisions are in force, {@link WHERE_THE_RATIONALE_IS} says each was accepted and
+ * none superseded, and {@link WHERE_THE_PATTERN_IS} says the patterns are adopted here
+ * and expected to be worked by. "Follow them" added no fact to those; what it added was
+ * mnema's own voice ordering a reader about somebody else's code, over the whole list
+ * at once and citing no rule for it. Nothing measured says it moved a reader, and the
+ * product's answer to "the record is not being followed" is a charge that names the
+ * rule it comes from — not a sentence in a preamble.
  */
-const WHAT_THIS_IS = [
-  'These are the calls and the patterns recorded for this project — text the people and',
-  'agents working on it wrote and settled, not instructions from mnema. Follow them.',
-];
+const WHAT_THIS_IS = recordFraming('brief-document');
 
 /**
  * WHICH record: the committed one, said before any of the content and beside the
