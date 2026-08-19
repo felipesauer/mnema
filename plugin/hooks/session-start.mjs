@@ -36,24 +36,22 @@
  * case "runs `mnema brief`, and nothing else" holds.
  *
  * IT DECIDES NOTHING ABOUT WHAT THE AGENT READS. The document goes over BYTE FOR
- * BYTE — no preamble of ours, no cut. A second place deciding what GOVERNS the work is
- * a second place that can come to disagree with the record, and the whole point of the
- * file is that it IS the record. Asserted in the same test ("hands over exactly what
- * the verb prints").
+ * BYTE — no preamble of THIS FILE's, no cut. A second place deciding what governs the
+ * work is a second place that can come to disagree with the record, and the whole
+ * point of the file is that it IS the record. Asserted in the same test ("hands over
+ * exactly what the verb prints").
  *
- * THIS FILE ADDS NO FRAMING, AND THE TEXT IT CARRIES IS NOT UNFRAMED — those are two
- * claims, and writing the first here once said the second. It does not hold: the
- * document's own first lines say whose text it is, said where the document is composed
- * (`packages/code/src/presentation/brief.ts`), which is the only place that can say it
- * once for whatever reads it. What is true of THIS file is that it adds nothing of its
- * own, and that is the byte-for-byte argument above, which covers the cut and the
- * preamble and never covered provenance.
- *
- * G6 of the foundation is what that was measured against, and it holds: a channel that
- * pushes record text to a MODEL says what the text IS, because saying what it is is
- * provenance, not a second opinion about what governs. Nothing changes here today —
- * this channel pushes the NAMES that `brief` already labels — and the day it carries
- * rule bodies is the day the declaration has more to name.
+ * IT IS A CHANNEL, AND THE CHANNEL IS DECLARED — {@link MODEL_CHANNEL}. This line used
+ * to read "no framing", which was true of what this handler ADDS and was read as a
+ * claim that the text arrives at the model undeclared. It does not: the document says
+ * whose text it carries in its own first lines, decided where it is composed
+ * (`packages/code/src/record-framing.ts`), which is the only place that can say it once
+ * for every channel. Naming the channel here is what makes that checkable from the
+ * outside — `packages/code/tests/the-channel-says-what-it-carries.test.ts` runs every
+ * handler `hooks.json` declares and requires anything it puts in front of a model to
+ * carry the declaration of a channel this file names. A handler added without one is
+ * red, by its file name, which is the whole point: the next thing this plugin pushes
+ * will be a rule matched to a prompt or to a path, and it must not arrive bare.
  *
  * WHAT IT CANNOT DO, said here because the README says it to whoever installs: it
  * carries what is COMMITTED — a decision recorded `--scope private` or in the global
@@ -66,6 +64,19 @@ import { spawnSync } from 'node:child_process';
 
 /** The event this handler answers, echoed back so the host can route the reply. */
 const HOOK_EVENT = 'SessionStart';
+
+/**
+ * WHICH channel of the product's framing this handler carries — the name
+ * `record-framing.ts` knows it by.
+ *
+ * It is a plain string and not an import because this file is what the host spawns:
+ * it runs from the plugin's directory with no build and no package resolution, so it
+ * cannot reach the surface's own module. It is EXPORTED so that it is a declaration
+ * rather than a dead constant, and it is read from the SOURCE by the test rather than
+ * imported — importing this module would run the handler, which spawns a subprocess.
+ * The value is checked against `record-framing.ts`, so a name that drifts is red.
+ */
+export const MODEL_CHANNEL = 'brief-document';
 
 /**
  * The command line to run.

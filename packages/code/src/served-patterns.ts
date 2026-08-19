@@ -23,6 +23,17 @@
  *     not see for itself: an unannounced list of names looks like a record of empty
  *     patterns, not like a body one read away.
  *
+ * THE DECLARATION ITSELF IS NO LONGER WRITTEN HERE, AND IT USED TO BE. The sentence
+ * this module opened its framing with was one of TWO in the product saying the same
+ * thing — the document `mnema brief` prints said it too, in its own words, and the two
+ * had already drifted apart ("and settled", and an imperative). This module is one
+ * CHANNEL of several that put record text where a model reads it, and what the
+ * declaration says is the channel's question rather than this file's, so it is asked
+ * of `record-framing.ts` ({@link recordFramingBlock}) with the name of the channel
+ * this is. What stays here is everything that is only true of a served PATTERN: the
+ * provenance line, the sentence a candidate earns, and the sentence a list of names
+ * gets instead.
+ *
  * THE ONE THING THAT IS NOT ADOPTED IS SAID OUT LOUD. The `skills` tool serves a
  * pattern the project has not ruled on when a caller names it by id, so a body that
  * governs nothing now reaches this framing — and the line it used to get would have
@@ -52,6 +63,7 @@
 
 import { type ServedSkill, type SkillCatalogue, skillDisposition } from '@mnema/copilot';
 import { A_PERSON, oneLine } from './one-line.js';
+import { recordFramingBlock } from './record-framing.js';
 
 /**
  * What a served pattern is, for a caller reading the tool description. The
@@ -127,7 +139,9 @@ function onlyTheNames(count: number, bytes: number): string {
  * A CATALOGUE ANSWERED IN NAMES GETS ONE SENTENCE AND NO DECLARATION
  * ({@link onlyTheNames}): the declaration says what the TEXT above it is, and no text
  * was served — repeating "these come from your record" over a list of names would be
- * framing an instruction that never arrived. Which arm this is, is read off the
+ * framing an instruction that never arrived. That is this CHANNEL deciding it owes
+ * nothing on that arm, which is a different question from what the declaration says
+ * when it is owed; the words come from `record-framing.ts` either way. Which arm this is, is read off the
  * catalogue rather than guessed from the items, so a name list is never mistaken for
  * a body list whose bodies happened to be empty.
  *
@@ -152,8 +166,7 @@ export function patternsFraming(catalogue: SkillCatalogue): string[] {
   const skills = catalogue.skills;
   if (skills.length === 0) return [];
   return [
-    'These patterns come from this project’s record: text the people and agents ' +
-      'working on it wrote, not instructions from mnema.',
+    recordFramingBlock('skills-answer'),
     ...skills.map(provenanceLine),
     ...(skills.some((skill) => skillDisposition(skill.state) !== 'in-force')
       ? [NOT_A_WAY_OF_WORKING]
