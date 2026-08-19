@@ -10,12 +10,19 @@
  *
  * ## It does not charge, and it does not rule
  *
- * Nothing here refuses, escalates or blocks; nothing here decides whether a rule
- * still holds. A rule's STATE travels out with it (`accepted`, `superseded`, an
- * adopted pattern, a rejected one) and the caller decides what to do with it. That
- * is deliberate: deciding "in force" a second time here is a second rule that can
- * come to disagree with `decisionsInForce`, and the disagreement would be silent —
- * one reader would simply obey a different set.
+ * Nothing here refuses, escalates or blocks. A rule's STATE travels out with it
+ * (`accepted`, `superseded`, an adopted pattern, a rejected one) and the caller decides
+ * what to do with it. That is deliberate: deciding "in force" a second time here is a
+ * second rule that can come to disagree with `decisionsInForce`, and the disagreement
+ * would be silent — one reader would simply obey a different set.
+ *
+ * "NOTHING HERE DECIDES WHETHER A RULE STILL HOLDS" was the first half of that sentence
+ * and it is no longer true of the module, only of {@link governingRules}. There are two
+ * readings in this file now, and the second one — {@link rulesInForceAt} — narrows to
+ * what is in force, because it answers a channel that PUSHES rather than a caller that
+ * asked. The rule the sentence protected is intact and is what makes the second reading
+ * safe: it does not decide "in force" itself either, it asks the two derivations that
+ * already do.
  *
  * ## An address is a PREFIX, by segments — never a glob
  *
@@ -86,7 +93,9 @@
  */
 
 import { GOVERNS_RELATION, type LinkEdge, type Scope, type SearchKind } from '@mnema/core';
+import { decisionsInForce } from '../context/decisions.js';
 import { type RecordBody, readRecord } from '../context/search.js';
+import { adoptedSkills } from '../context/skills.js';
 import type { ScopedCache } from '../sources.js';
 
 /** What to ask: a path, the project it is in, and how to test the working tree. */
@@ -385,3 +394,123 @@ function normalized(path: string): string[] | null {
 function compare(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
+
+/**
+ * One rule that governs a path and still holds — the shape a channel that PUSHES
+ * carries, which is narrower than what {@link GoverningRules} reports on request.
+ *
+ * Every field is present, and that is the difference. {@link AddressedRule} leaves the
+ * name, the kind and the state optional because it answers about an address whatever
+ * the record holds at the other end of it — including nothing. This shape is built
+ * from the two derivations that decide what is IN FORCE, so a rule that reached it has
+ * a projection some tree holds, and the name came out of that projection rather than
+ * out of a second lookup that could have missed.
+ */
+export interface PushedRule {
+  /** The rule's id — what a charge would cite, and what {@link readRecord} takes. */
+  readonly id: string;
+  /** What the rule says: a decision's title, a pattern's name. */
+  readonly name: string;
+  /** The address it was matched by, as it was compared or as the record wrote it. */
+  readonly address: string;
+  /**
+   * Whether the tree that holds the rule TRAVELS — whether a clone of the repository
+   * gets it.
+   *
+   * False is the case that has to be visible: a rule recorded `--scope private` or in
+   * the machine's global tree governs the work here and its id resolves nowhere else,
+   * so a reader that cited it would be citing something a teammate cannot open. It is
+   * false whenever the tree is not the committed one AND whenever no tree here holds
+   * the rule at all — unsure and not-travelling get the same answer, which is the
+   * direction that cannot mislead.
+   */
+  readonly travels: boolean;
+}
+
+/** The rules in force addressed at a path, and the path they were matched against. */
+export interface RulesAtPath {
+  /** The path as the caller wrote it. */
+  readonly path: string;
+  /**
+   * The path as it was compared: POSIX, relative to the project root. Absent when the
+   * path lies outside the project — in which case {@link rules} is empty, because
+   * nothing in this project addresses it.
+   */
+  readonly relative?: string;
+  /** The rules, most specific first — {@link governingRules}' own order, kept. */
+  readonly rules: readonly PushedRule[];
+}
+
+/**
+ * The rules of `sources` that govern `query.path` AND are still in force.
+ *
+ * ## Why this exists beside {@link governingRules} instead of being a flag on it
+ *
+ * The reading that answers a CALLER reports every address it found with each rule's
+ * state beside it, and judges none of them — a caller that asked can read a `superseded`
+ * and decide. A channel that PUSHES has no such reader: the text arrives unasked, in the
+ * middle of somebody's work, and a superseded decision arriving that way is this product
+ * asserting that a rule governs when the record says it stopped. So the push carries what
+ * is in force and nothing else, and the two answers are two functions rather than one
+ * function with a mode, because the difference is not a filter — it is which of the two
+ * has the right to decide.
+ *
+ * ## It does not decide "in force" a second time
+ *
+ * The set comes from {@link decisionsInForce} and {@link adoptedSkills}, which are the
+ * product's only readings of it: supersession is a graph fact and `accepted` is a state,
+ * and a second rule here — "state is not superseded", say — is exactly the silent
+ * divergence `governance.ts` already refuses to open. The NAME comes out of the same two
+ * answers for the same reason: reading it from a second lookup could hand back a title
+ * for a rule those two never listed.
+ *
+ * A consequence worth naming: nothing else can be in force. A task, a memory or an
+ * observation given a `governs` link is not a rule, so it is addressed and never pushed —
+ * `governing_rules` reports it, with its kind, to whoever asks.
+ *
+ * ## The three numbers are NOT here, and that is deliberate
+ *
+ * A count that disagreed with the list would be worse than no count, and it would: the
+ * `matching` of an asked reading counts the addresses covering the path whatever their
+ * state, so it is larger than this list whenever a superseded rule addresses the file. The
+ * numbers belong to the reading that reports all of them, and to the once-per-session
+ * document — never to a text pushed on every edit, where they would be paid for again and
+ * again to say the same thing.
+ */
+export function rulesInForceAt(
+  sources: readonly ScopedCache[],
+  query: GovernanceQuery,
+): RulesAtPath {
+  const governed = governingRules(sources, query);
+  const caches = sources.map((source) => source.cache);
+  const inForce = new Map<string, string>();
+  for (const decision of decisionsInForce(caches)) inForce.set(decision.id, decision.title);
+  for (const skill of adoptedSkills(caches)) inForce.set(skill.id, skill.name);
+  return {
+    path: governed.path,
+    ...(governed.relative !== undefined ? { relative: governed.relative } : {}),
+    rules: governed.rules.flatMap((rule) => {
+      const name = inForce.get(rule.rule);
+      if (name === undefined) return [];
+      return [
+        {
+          id: rule.rule,
+          name,
+          // The compared form when the address resolved into this project, and the
+          // record's own spelling otherwise. A matching rule always has the first —
+          // `covers` compares its segments — so the fallback is a type narrowing and
+          // not a case, and it prints something true either way.
+          address: rule.address ?? rule.recorded,
+          travels: rule.scope === TRAVELS_TO_A_CLONE,
+        },
+      ];
+    }),
+  };
+}
+
+/**
+ * The one tree whose rules a clone of the repository gets — the same scope
+ * `context/brief.ts` composes its document out of, named here because
+ * {@link PushedRule.travels} is a claim about that and not about a preference.
+ */
+const TRAVELS_TO_A_CLONE: Scope = 'public';

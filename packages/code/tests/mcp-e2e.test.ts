@@ -2235,6 +2235,7 @@ describe('MCP server — end to end over a real client', () => {
       'record_handoff',
       'record_observation',
       'resume',
+      'rules_before_an_edit',
       'search',
       'skill_transition',
       'skills',

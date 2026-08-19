@@ -107,6 +107,10 @@ interface HookHandler {
   readonly type?: string;
   readonly command?: string;
   readonly timeout?: number;
+  /** The MCP server a `mcp_tool` hook calls into — the name the HOST answers to. */
+  readonly server?: string;
+  /** The tool on that server. */
+  readonly tool?: string;
 }
 
 /** One matcher group of an event: the handlers it runs. */
@@ -379,7 +383,17 @@ describe('the record arrives unasked', () => {
     // the key, so a hook that opened one would move the moment and open an empty run
     // for every session that only reads. Nothing here writes, and this is what says
     // so out loud when a later slice adds an event.
-    expect(declaredEvents()).toEqual(['SessionStart']);
+    //
+    // A SECOND EVENT ARRIVED, and the list is what says which. It used to read
+    // `['SessionStart']` and the sentence above described that as the whole plugin; what
+    // it was actually guarding is that every declared event is a READ, and the events are
+    // named here so that a third one is a line somebody has to write. `PreToolUse` is the
+    // one that can refuse on this host and this plugin does not: the hook it declares
+    // there is a `mcp_tool` call that returns context or `{}`, with no
+    // `permissionDecision` in it — held by `the-rule-reaches-the-writing.test.ts`
+    // ("carries no field that could refuse, escalate or rewrite"), which also digests the
+    // record around the call.
+    expect(declaredEvents()).toEqual(['SessionStart', 'PreToolUse']);
 
     const reached = new Set<string>();
     for (const command of declaredCommands()) {
@@ -426,24 +440,51 @@ describe('the record arrives unasked', () => {
     const hooks = readJson<HooksFile>(HOOKS);
     expect(hooks.description ?? '').not.toBe('');
     for (const event of declaredEvents()) expect(PUBLISHED_EVENTS).toContain(event);
+    // TWO TYPES OF HOOK NOW, and each is checked for what can silently break IT. This
+    // loop used to require `command` of every handler, which was a description of the
+    // plugin rather than a rule: a `mcp_tool` hook is a call into the server this same
+    // manifest declares, has no command line and no file, and its own failure mode is a
+    // NAME that does not resolve. Both are validated, and a type neither arm knows fails
+    // rather than passing through — the shape a third one has to be classified in.
+    const validated: string[] = [];
     for (const group of Object.values(hooks.hooks ?? {}).flat()) {
       expect(group.hooks?.length).toBeGreaterThan(0);
       for (const handler of group.hooks ?? []) {
-        expect(handler.type).toBe('command');
-        const command = handler.command ?? '';
-        // Portable by the host's rule — the path is written against
-        // `${CLAUDE_PLUGIN_ROOT}`, which is what the pattern below requires, and
-        // never against a home directory or an absolute path.
-        expect(command).not.toMatch(/(^|\s)[~/]/);
-        const referenced = ROOTED.exec(command);
-        expect(referenced, command).not.toBeNull();
-        const handlerPath = referenced?.[1] ?? '';
-        // And it points at something that is THERE, which the host's own validator
-        // does not check: measured, a command naming a missing handler passes
-        // `claude plugin validate --strict`.
-        expect(existsSync(join(PLUGIN, handlerPath)), handlerPath).toBe(true);
+        if (handler.type === 'command') {
+          const command = handler.command ?? '';
+          // Portable by the host's rule — the path is written against
+          // `${CLAUDE_PLUGIN_ROOT}`, which is what the pattern below requires, and
+          // never against a home directory or an absolute path.
+          expect(command).not.toMatch(/(^|\s)[~/]/);
+          const referenced = ROOTED.exec(command);
+          expect(referenced, command).not.toBeNull();
+          const handlerPath = referenced?.[1] ?? '';
+          // And it points at something that is THERE, which the host's own validator
+          // does not check: measured, a command naming a missing handler passes
+          // `claude plugin validate --strict`.
+          expect(existsSync(join(PLUGIN, handlerPath)), handlerPath).toBe(true);
+          validated.push(`command:${handlerPath}`);
+          continue;
+        }
+        if (handler.type === 'mcp_tool') {
+          // The server it names has to be the one THIS manifest declares, spelled the way
+          // the host spells a plugin's server. Measured: a hook naming a server the host
+          // does not know is never called and produces no error at all, so this is the
+          // one field whose mistake is invisible in the field.
+          expect(handler.server).toBe(`plugin:${manifest.name}:${name}`);
+          expect(handler.tool ?? '').not.toBe('');
+          validated.push(`mcp_tool:${handler.tool ?? ''}`);
+          continue;
+        }
+        expect.fail(`hooks.json declares a handler of type "${String(handler.type)}"`);
       }
     }
+    // And both arms were reached. Without this the loop is green on a `hooks.json` whose
+    // handlers all disappeared, which is what a mis-parsed file looks like.
+    expect(validated).toEqual([
+      'command:/hooks/session-start.mjs',
+      'mcp_tool:rules_before_an_edit',
+    ]);
 
     const marketplace = readJson<Marketplace>(MARKETPLACE);
     expect(marketplace.name ?? '').not.toBe('');

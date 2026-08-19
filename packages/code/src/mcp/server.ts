@@ -127,6 +127,7 @@ import {
   runRecordObservation,
   runReferencesTool,
   runResumeTool,
+  runRulesBeforeAnEditTool,
   runSearchTool,
   runSkillsTool,
   runSkillTransition,
@@ -1466,6 +1467,45 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       // A path nothing addresses is an ANSWER ("nothing governs this"), never an
       // error — and the three counts beside it are what say which kind of nothing.
       return { content: [{ type: 'text', text: JSON.stringify(result.value, null, 2) }] };
+    },
+  );
+
+  server.registerTool(
+    'rules_before_an_edit',
+    {
+      title: 'The rules of the record for a file about to change',
+      description:
+        'The HOST calls this one, as a `PreToolUse` hook, before a file is written: it ' +
+        'hands the session the rules of this project’s record that are addressed ' +
+        'at that path AND still in force, as one short text — each rule’s name, ' +
+        'the address that matched, and the id you cite. You may call it yourself; what ' +
+        'you get back is a HOOK REPLY (`hookSpecificOutput.additionalContext`), because ' +
+        'that is the only shape this host injects, and `{}` when no rule in force ' +
+        'addresses the path. For the whole answer — every address whatever its state, ' +
+        'the ones whose file no longer exists, and the three counts — ask ' +
+        '`governing_rules` instead; this one is deliberately thin, because it is paid ' +
+        'for on every edit. It charges nothing: it refuses nothing, blocks nothing, ' +
+        'rewrites nothing, and writes no record. Read-only.',
+      inputSchema: {
+        path: z
+          .string()
+          .min(1)
+          .describe('The path about to be written, relative to the project root or absolute.'),
+      },
+    },
+    async ({ path }) => {
+      const active = await ensureSession();
+      const result = runRulesBeforeAnEditTool(active, { path });
+      if (!result.ok) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
+        };
+      }
+      // The reply is JSON because the host parses it, and it is COMPACT because nothing
+      // reads it as a document: the host's parser takes the first `{` and the bytes are
+      // paid for on every edit of every session.
+      return { content: [{ type: 'text', text: JSON.stringify(result.value) }] };
     },
   );
 

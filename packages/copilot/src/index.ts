@@ -155,12 +155,20 @@ export {
   type WorkspaceExposure,
   workspaceExposure,
 } from './intelligence/exposure.js';
+// Two readings of the same graph, and both are values here because two different
+// surfaces consume them: `governingRules` answers a caller that asked, and
+// `rulesInForceAt` answers a channel that pushes. The second is not reachable through
+// the first — it narrows to what is in force, which is a decision the pushing channel
+// has no right to take for itself.
 export {
   type AddressedRule,
   type GovernanceCounts,
   type GovernanceQuery,
   type GoverningRules,
   governingRules,
+  type PushedRule,
+  type RulesAtPath,
+  rulesInForceAt,
 } from './intelligence/governance.js';
 export { knownAnchors } from './intelligence/identities.js';
 export {

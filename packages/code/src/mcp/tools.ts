@@ -122,7 +122,8 @@ import {
   supersedeDecision,
   transitionTask,
 } from '@mnema/core/write';
-import { readGoverningRules } from '../governed-tree.js';
+import { editRulesNotice } from '../edit-rules-push.js';
+import { readGoverningRules, readRulesInForceAt } from '../governed-tree.js';
 import {
   projectEventsOf,
   recordTrees,
@@ -132,6 +133,7 @@ import {
 import { movedDisplay } from '../moved-record.js';
 import { oneLine } from '../one-line.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
+import { type HookEvent, type HookReply, hookReply } from './hook-reply.js';
 import {
   type EntityLocation,
   inEveryTreeThisSessionSees,
@@ -1869,6 +1871,68 @@ export function runGoverningRulesTool(
     }),
   };
 }
+
+/**
+ * `rules_before_an_edit` — the same graph, pushed instead of answered.
+ *
+ * IT IS A SECOND TOOL AND NOT A FLAG ON THE FIRST, and the reason is the channel rather
+ * than the shape of the answer. `governing_rules` replies to a caller that asked: it
+ * carries every address it found, each rule's state, the stale list and three counts, and
+ * it judges nothing, because a caller that asked can read a `superseded` and decide. This
+ * one is called by the HOST, before a file is written, and its text arrives in somebody's
+ * work unasked — so it carries what is in force and nothing else, it carries the thin
+ * form, and it says whose text it is. Two channels with one subject is exactly the shape
+ * `record-framing.ts` was built for, and putting a mode on the asked tool would have made
+ * one function answer to two readers with different rights.
+ *
+ * WHAT IT RETURNS IS A HOOK REPLY, and that is not a leak of the host into the record —
+ * it is the price of the channel. On this host a hook of type `mcp_tool` reaches the model
+ * only through `hookSpecificOutput.additionalContext`; a tool returning prose is called
+ * and DROPPED, silently, which was measured rather than assumed
+ * (`measurements/mcp-tool-channel/`). An agent that calls this tool itself gets the same
+ * reply, and the description says so: forging a call to it can only make the record's own
+ * rules arrive, which is what the channel is for.
+ *
+ * IT CHARGES NOTHING. No `permissionDecision`, no `updatedInput`, nothing written: no
+ * event, no run, no consultation. Read-only in the strict sense — the session's warm
+ * caches, the copilot's pure derivation, and one `existsSync` per address — and the type
+ * of {@link HookReply} is what keeps that from being a promise.
+ *
+ * NOTHING TO SAY IS SAID AS NOTHING. When no rule in force addresses the path the reply
+ * is `{}`, which the host treats as no injection and no diagnostic. Why silence rather
+ * than "nothing governs this file" is a decision with a number behind it, and it is
+ * written where the text is composed (`edit-rules-push.ts`).
+ *
+ * With no project it refuses `NO_PROJECT` — and a refusal on this channel is a tool error,
+ * which the host treats as non-blocking. The session of somebody who installed the plugin
+ * outside a project proceeds exactly as it would have without it.
+ */
+export function runRulesBeforeAnEditTool(
+  session: Session,
+  input: { path: string },
+): IntelligenceResult<HookReply> {
+  const refused = requireProject(session);
+  if (refused !== undefined) return refused;
+  // The same two lines `runGoverningRulesTool` stands on: a project session carries its
+  // directory, and a server has no working directory of its own to resolve against.
+  const root = session.project ?? '';
+  const at = readRulesInForceAt(workspaceCaches(session), {
+    path: input.path,
+    root,
+    from: root,
+  });
+  return { ok: true, value: hookReply(PRE_TOOL_USE, editRulesNotice(at)) };
+}
+
+/**
+ * The event this server answers a hook at — the only one.
+ *
+ * Named here rather than passed by the caller because the host CHECKS it: a reply naming
+ * an event other than the one that fired is dropped without a word, so the value has to
+ * come from the same place that decided which event `plugin/hooks/hooks.json` declares,
+ * and not from an argument a second call site could get wrong.
+ */
+const PRE_TOOL_USE: HookEvent = 'PreToolUse';
 
 /**
  * `audit_accountability` — who authorized what, accounted for one project at a time.

@@ -20,7 +20,7 @@ import { briefDocument } from './brief.js';
 
 /** What governs, as the composition hands it over. */
 function governance(over: Partial<Brief> = {}): Brief {
-  return { decisions: [], skills: [], collisions: [], ...over };
+  return { decisions: [], skills: [], collisions: [], addressed: 0, ...over };
 }
 
 /** One decision in force, named the way the record names it. */
@@ -96,14 +96,19 @@ describe('the brief costs one line per rule', () => {
     // is not the slope and is not asserted as if it were.
     expect(oneEach - none).toBeGreaterThan(0);
     // And the fixed part is small enough to be worth having in a file read on every
-    // prompt: measured at 25 lines with both lists empty, against the ~200 the market
+    // prompt: measured at 30 lines with both lists empty, against the ~200 the market
     // publishes for a whole project memory. It was 21 before the document had to name
-    // the scope it carries and say what its counts count (three lines and a blank), and
-    // the bound is 30 rather than the measurement: a declaration is the one thing this
-    // skeleton is allowed to grow for, and a bound sitting on the measured value turns
-    // the next honest sentence into a failing test instead of a decision.
-    expect(none).toBe(25);
-    expect(none).toBeLessThanOrEqual(30);
+    // the scope it carries and say what its counts count, and 25 before it had to say how
+    // many of the rules have an ADDRESS (four lines and a blank). That last growth used
+    // the whole of the headroom the bound left, and it was a decision rather than a
+    // slip: those five lines are read once per session, and what they buy is the meaning
+    // of a SILENCE in a channel that fires on every edit — up to 3,424 of them in one
+    // measured session. The bound moves with it, and stays above the measurement for the
+    // reason it always did: a declaration is the one thing this skeleton is allowed to
+    // grow for, and a bound sitting on the measured value turns the next honest sentence
+    // into a failing test instead of a decision.
+    expect(none).toBe(30);
+    expect(none).toBeLessThanOrEqual(34);
   });
 
   it('says how many rules there are, and prints exactly that many', () => {

@@ -243,6 +243,11 @@ $ mnema brief
 | `mnema brief | diff - AGENTS.md` — a difference is either a copy that fell behind the
 | record or an edit made here by hand, and an edit here is lost on the next run.
 |
+| 0 of the rules below have an ADDRESS: a path in this
+| repository, recorded beside the rule. When a file is about to be changed, the rules
+| addressed at it arrive on their own, and nothing arrives for a file none of them names.
+| Ask `governing_rules` with a path for the whole answer about it.
+|
 | ## Decisions in force (0)
 |
 | Nothing has been decided here yet — which is not the same as there being no rules.
@@ -1400,6 +1405,11 @@ $ mnema brief
 | Regenerate this file with `mnema brief > AGENTS.md`, and check it with
 | `mnema brief | diff - AGENTS.md` — a difference is either a copy that fell behind the
 | record or an edit made here by hand, and an edit here is lost on the next run.
+|
+| 1 of the rules below has an ADDRESS: a path in this
+| repository, recorded beside the rule. When a file is about to be changed, the rules
+| addressed at it arrive on their own, and nothing arrives for a file none of them names.
+| Ask `governing_rules` with a path for the whole answer about it.
 |
 | ## Decisions in force (1)
 |

@@ -39,6 +39,7 @@ import { briefDocument } from '../src/presentation/brief.js';
 import {
   DECLARES_MODEL_CHANNEL,
   FRAMED_CHANNELS,
+  PUSHED_BY_TOOL,
   recordFraming,
   recordFramingBlock,
   SAYS_WHAT_TO_DO,
@@ -82,6 +83,26 @@ const WRITES_TO_STDOUT = [/process\.stdout\.write/, /console\.log/];
 /** Every handler the plugin ships, by file name. */
 function handlers(): string[] {
   return readdirSync(HOOKS_DIR).filter((name) => name.endsWith('.mjs'));
+}
+
+/**
+ * Every hook the plugin DECLARES, flattened out of `hooks.json` with the event it
+ * answers.
+ *
+ * Two enumerations are needed and they catch different things. Walking the directory
+ * finds a handler FILE that pushes without declaring a channel. Walking this finds a hook
+ * that has no file at all — which is what a `type: "mcp_tool"` hook is: the host calls
+ * into the MCP server this plugin declares, no process is spawned, and there is no source
+ * for the source-side default-deny to read. The file walk was the whole of this guard
+ * until such a hook existed, and it walked straight past it.
+ */
+function declaredHooks(): { readonly event: string; readonly hook: Record<string, unknown> }[] {
+  const config = JSON.parse(readFileSync(join(HOOKS_DIR, 'hooks.json'), 'utf-8')) as {
+    hooks: Record<string, { hooks: Record<string, unknown>[] }[]>;
+  };
+  return Object.entries(config.hooks).flatMap(([event, matchers]) =>
+    matchers.flatMap((matcher) => matcher.hooks.map((hook) => ({ event, hook }))),
+  );
 }
 
 /**
@@ -161,7 +182,7 @@ describe('one declaration, and one place that decides it', () => {
     }
   });
 
-  it('says the same claim on the two channels that exist, and names each subject', () => {
+  it('says the same claim on every channel that exists, and names each subject', () => {
     // What differs between two channels is what was SERVED, and only that.
     const patterns = recordFramingBlock('skills-answer');
     const rules = recordFramingBlock('brief-document');
@@ -182,7 +203,7 @@ describe('one declaration, and one place that decides it', () => {
     });
     expect(framed[0]).toBe(recordFramingBlock('skills-answer'));
 
-    const document = briefDocument({ decisions: [], skills: [], collisions: [] });
+    const document = briefDocument({ decisions: [], skills: [], collisions: [], addressed: 0 });
     for (const line of recordFraming('brief-document')) expect(document).toContain(line);
   });
 
@@ -270,6 +291,55 @@ describe('every handler that pushes declares the channel it carries', () => {
     // And at least one handler WAS asked. Without this the case is green on a plugin
     // whose handlers all stopped writing, which is the shape a broken enumeration has.
     expect(named).toEqual(['session-start.mjs:brief-document']);
+  });
+
+  it('rules on every hook the plugin declares, whatever its TYPE', () => {
+    // DEFAULT-DENY OVER `hooks.json` ITSELF, and it is the hole this slice found. The
+    // case above walks the handler FILES, so it can only rule on a hook that is a
+    // process; a `type: "mcp_tool"` hook is a call into the MCP server, has no file, and
+    // was invisible to every assertion in this file. So each declared hook is classified
+    // here by its type, and a type this guard has no rule for FAILS — the next one the
+    // host offers (`http`, `prompt`, `agent`) is red until somebody says where its
+    // declaration lives.
+    const ruled: string[] = [];
+    for (const { event, hook } of declaredHooks()) {
+      const type = hook['type'];
+      if (type === 'command') {
+        // The channel is in the handler's SOURCE, which the case above already reads;
+        // what is checked here is that the file it names is one of the files walked.
+        const named = /hooks\/([\w-]+\.mjs)/.exec(String(hook['command']))?.[1] ?? '';
+        expect(handlers(), `${event} runs a file this guard never sees`).toContain(named);
+        ruled.push(`${event}:command:${named}`);
+        continue;
+      }
+      if (type === 'mcp_tool') {
+        // The channel is the TOOL, and the tool must be one this product classified.
+        const tool = String(hook['tool']);
+        const channel = PUSHED_BY_TOOL[tool];
+        expect(channel, `${event} calls \`${tool}\`, which names no channel`).not.toBeUndefined();
+        expect(FRAMED_CHANNELS as readonly string[], tool).toContain(channel);
+        ruled.push(`${event}:mcp_tool:${tool}:${channel}`);
+        continue;
+      }
+      expect.fail(`${event} declares a hook of type "${String(type)}" this guard cannot rule on`);
+    }
+    expect(ruled).toEqual([
+      'SessionStart:command:session-start.mjs',
+      'PreToolUse:mcp_tool:rules_before_an_edit:edit-rules-push',
+    ]);
+  });
+
+  it('classifies no tool the plugin does not push through', () => {
+    // The other direction of the table, and the reason it is a table: an entry here is a
+    // claim that a hook pushes through that tool, so an entry with no hook is a claim
+    // about nothing — the same dead-surface shape `every-public-value-has-a-caller`
+    // catches for exports.
+    const pushed = new Set(
+      declaredHooks()
+        .filter(({ hook }) => hook['type'] === 'mcp_tool')
+        .map(({ hook }) => String(hook['tool'])),
+    );
+    expect(Object.keys(PUSHED_BY_TOOL).sort()).toEqual([...pushed].sort());
   });
 
   it('will not read a declaration out of a comment', () => {

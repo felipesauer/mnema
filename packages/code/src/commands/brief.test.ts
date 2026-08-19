@@ -321,7 +321,7 @@ describe('mnema brief (what governs the work here)', () => {
     runInit({ cwd: repo, env });
     expect(runBrief({ cwd: repo, env })).toEqual({
       ok: true,
-      brief: { decisions: [], skills: [], collisions: [] },
+      brief: { decisions: [], skills: [], collisions: [], addressed: 0 },
     });
   });
 

@@ -7,9 +7,15 @@
  * `@mnema/core` words every refusal the domain returns, and a surface cannot apply a
  * rule to the inside of a sentence another package already joined. A sentence is one
  * line where it is WRITTEN or it is not one line anywhere. So the rule went to the only
- * package the other two can both reach, and this file stayed as the address the
- * twenty-three modules here already import — none of which has any reason to know it
- * moved.
+ * package the other two can both reach, and this file stayed as the address the modules
+ * here already import — none of which has any reason to know it moved.
+ *
+ * IT SAID "the twenty-three modules", AND THAT NUMBER WAS WRONG WHEN IT WAS READ: forty
+ * modules of this package import this file. Nothing counted it, so it rotted from the day
+ * it was written — the same failure the counts this product PRINTS are guarded against,
+ * in a doc-comment where no guard was looking. The number is gone rather than corrected,
+ * because it carries nothing the sentence needs: what matters is that every one of them
+ * imports this address and not the subpath, and the floor test below is what holds that.
  *
  * IT RE-EXPORTS THE SUBPATH AND NOT THE INDEX, and that is the whole floor argument.
  * `wiring/no-such-record.ts` and `presentation/runs.ts` are loaded by commander before

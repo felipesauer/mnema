@@ -55,13 +55,18 @@ CLI and the MCP tools behave identically, because they are the same call.
   the same bytes, which is what makes `mnema brief | diff - AGENTS.md` a staleness
   check.
 - **A plugin for Claude Code**, in [`plugin/`](../../plugin/), that stops the delivery
-  from depending on somebody remembering to regenerate a file: a `SessionStart` hook
-  runs `mnema brief` and hands the result to the session as opening context, and the
-  same installation declares the MCP server below. It is a read — it appends nothing,
-  opens no run, declares no event that can block — and it is **silent** where there is
-  no project, so a machine that installs it and opens a session somewhere else sees
-  nothing at all. Asserted in
-  `tests/the-record-arrives-unasked.test.ts`; the plugin's own page states what it
+  from depending on somebody remembering to regenerate a file. It declares two hooks and
+  the MCP server below, in one installation. A `SessionStart` hook runs `mnema brief` and
+  hands the result to the session as opening context. A `PreToolUse` hook on
+  `Write|Edit|NotebookEdit` hands over the rules of the record **addressed at the file
+  about to be written** — the ones still in force, each with the id you would cite — and
+  hands over **nothing** for a file none of them addresses, which is why the opening
+  document says how many of the project's rules have an address. Both are reads: they
+  append nothing, open no run, and refuse nothing — the second declares the one event of
+  this host that *could* refuse and carries no decision field at all. Both are **silent**
+  where there is no project, so a machine that installs this and opens a session
+  somewhere else sees nothing. Asserted in `tests/the-record-arrives-unasked.test.ts` and
+  `tests/the-rule-reaches-the-writing.test.ts`; the plugin's own page states what it
   carries and what it leaves behind.
 
 ## What it proves — and what it does not
@@ -522,6 +527,11 @@ mnema brief
 #> gets, and nothing kept privately on one machine or for one person. A rule recorded
 #> that way is not below, and each heading counts what is printed under it.
 #> …
+#> 1 of the rules below has an ADDRESS: a path in this
+#> repository, recorded beside the rule. When a file is about to be changed, the rules
+#> addressed at it arrive on their own, and nothing arrives for a file none of them names.
+#> Ask `governing_rules` with a path for the whole answer about it.
+#>
 #> ## Decisions in force (2)
 #>
 #> Each was accepted, and none of them superseded. For the argument behind one, ask

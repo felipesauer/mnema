@@ -41,6 +41,11 @@
  * NOTHING IS CUT BY SIZE, so nothing here reports a total: with the whole list
  * printed, a count is the list's own length, and it is printed in the heading for a
  * reader who wants to check that nothing was lost between the record and this file.
+ * ONE number is not a list length ({@link whatHasAnAddress}), and it is here for a reason
+ * that has nothing to do with size: it is what makes a SILENCE elsewhere readable. It is
+ * still a fact about what is printed below — how many of these rules have an address — and
+ * it is still pure over the record, so the `diff` that detects a stale copy means exactly
+ * what it meant before.
  *
  * A HANDLE THAT DOES NOT IDENTIFY IS DECLARED TOO, and it is the same doctrine again
  * rather than a new one. The `ADR-<n>` beside each rule is here to be CITED — it is
@@ -150,6 +155,35 @@ const HOW_TO_REGENERATE = [
   'record or an edit made here by hand, and an edit here is lost on the next run.',
 ];
 
+/**
+ * How many of the rules below have an ADDRESS, and what it means when nothing arrives.
+ *
+ * THIS IS THE OTHER HALF OF A DECISION TAKEN ELSEWHERE, and it does not stand on its own.
+ * The product pushes a rule at the moment a file it addresses is about to be written
+ * (`edit-rules-push.ts`), and that channel is silent when no rule addresses the path —
+ * because the alternative is paying for the sentence "nothing governs this file" on every
+ * edit of every session, measured at up to 3,424 edits in one of them. A silence is only
+ * readable to somebody who knows there is a mechanism; this is where they are told, once,
+ * for the price of one line in a file that is read once.
+ *
+ * It says what IS and where to ask, and nothing about what to do: the count is a fact
+ * about the record, and `governing_rules` is a door of this product rather than an opinion
+ * about somebody's code.
+ *
+ * The number is the composition's ({@link Brief.addressed}) — this file counts what it
+ * prints and does not go looking. Zero prints too, and it is the most informative value:
+ * it says the rules below exist and none of them has been placed, which is a different
+ * thing from a project with no rules.
+ */
+function whatHasAnAddress(addressed: number): string[] {
+  return [
+    `${addressed} of the rules below ${addressed === 1 ? 'has' : 'have'} an ADDRESS: a path in this`,
+    'repository, recorded beside the rule. When a file is about to be changed, the rules',
+    'addressed at it arrive on their own, and nothing arrives for a file none of them names.',
+    'Ask `governing_rules` with a path for the whole answer about it.',
+  ];
+}
+
 /** Where the argument behind a decision is, since this file carries only the rule. */
 const WHERE_THE_RATIONALE_IS = [
   'Each was accepted, and none of them superseded. For the argument behind one, ask',
@@ -222,6 +256,8 @@ export function briefDocument(governance: Brief): string[] {
     ...WHAT_TRAVELS,
     '',
     ...HOW_TO_REGENERATE,
+    '',
+    ...whatHasAnAddress(governance.addressed),
     '',
     ...section(
       'Decisions in force',
