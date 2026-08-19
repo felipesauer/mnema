@@ -65,6 +65,7 @@ import {
   bootstrap,
   type Focus,
   focus,
+  type GoverningRules,
   type GuardWithFocus,
   guardWithFocus,
   lookupServedSkill,
@@ -121,6 +122,7 @@ import {
   supersedeDecision,
   transitionTask,
 } from '@mnema/core/write';
+import { readGoverningRules } from '../governed-tree.js';
 import {
   projectEventsOf,
   recordTrees,
@@ -1812,6 +1814,60 @@ export function runReferencesTool(
   const refused = requireProject(session);
   if (refused !== undefined) return refused;
   return { ok: true, value: references(workspaceCaches(session), input) };
+}
+
+/** The `governing_rules` result — the rules addressed at a path, or a refusal. */
+export type GoverningRulesToolResult = IntelligenceResult<GoverningRules>;
+
+/**
+ * `governing_rules` — which recorded rules govern a path of this project.
+ *
+ * The reverse reading of the one relation whose target is a PATH: a decision or a
+ * pattern linked with `rel: "governs"` to `src/billing` is a rule with an address,
+ * and this finds it from the file rather than from the id. It is what turns "the
+ * record holds rules" into "these rules apply to what I am about to touch".
+ *
+ * IT CHARGES NOTHING. It refuses nothing, blocks nothing and grades nothing; it
+ * does not even decide which rules still hold — each rule's state travels beside it
+ * and reading it is the caller's. What it hands back is the id, which is what any
+ * later charge would have to cite.
+ *
+ * THREE NUMBERS RIDE ON EVERY ANSWER, including when all three are zero: how many
+ * addresses cover this path, how many the project's record holds at all, and how
+ * many name something the working tree no longer holds. Without the third an
+ * address whose file was moved or deleted stops governing in silence, and a quiet
+ * answer reads exactly like an empty mechanism.
+ *
+ * THE ADDRESSES ARE THIS PROJECT'S, and only this project's. An address is relative
+ * to a project root, so a rule written in a sibling project's record addresses that
+ * project's tree; importing it here would make it govern code nobody addressed. The
+ * machine-global tree is left out for the same reason — it belongs to no project, so
+ * a path in it is relative to nothing. That is the one read of this surface that
+ * deliberately does NOT span the workspace, and the reason is the question's, not a
+ * preference.
+ *
+ * A RELATIVE PATH IS RESOLVED AGAINST THE PROJECT ROOT, not against a working
+ * directory: a server is spawned with an arbitrary cwd by its host, so it has none to
+ * mean. Read-only: the session's warm caches, the copilot's pure derivation, and one
+ * `existsSync` per address. With no project it refuses `NO_PROJECT`.
+ */
+export function runGoverningRulesTool(
+  session: Session,
+  input: { path: string },
+): GoverningRulesToolResult {
+  const refused = requireProject(session);
+  if (refused !== undefined) return refused;
+  // `inProject` is what `requireProject` just checked, and a project session always
+  // carries its directory — the two are set together by the cascade.
+  const root = session.project ?? '';
+  return {
+    ok: true,
+    value: readGoverningRules(workspaceCaches(session), {
+      path: input.path,
+      root,
+      from: root,
+    }),
+  };
 }
 
 /**

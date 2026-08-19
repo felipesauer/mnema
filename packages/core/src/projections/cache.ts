@@ -30,6 +30,7 @@ import {
   getMemory,
   getObservation,
   listHandoffs,
+  listLinksByRelation,
   listLinksFrom,
   listLinksTo,
   listMemories,
@@ -197,6 +198,15 @@ export class ProjectionCache {
   /** Lists the knowledge links that point INTO the given entity. */
   listLinksTo(target: string): LinkEdge[] {
     return listLinksTo(this.db, target);
+  }
+
+  /**
+   * Lists the knowledge links asserting the given relation, whatever their ends.
+   * The read a rule's ADDRESS needs: an address covers a path by being a prefix
+   * of it, so neither end is a key and the label is.
+   */
+  linksByRelation(rel: string): LinkEdge[] {
+    return listLinksByRelation(this.db, rel);
   }
 
   /** Reads one skill by id, or null if it is not projected. */

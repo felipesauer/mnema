@@ -343,10 +343,12 @@ export function handoffRecorded(
 
 /**
  * Builds a `knowledge.linked` event (subject = the entity that originates the
- * link). `target` is only an id — the target's kind is resolved on read — and
- * `rel` is an open literal string (see the catalog's recommended set). No
- * dangling check happens here: a cross-tree target is a legitimate, asserted
- * fact resolved on read against the union.
+ * link). `target` is the caller's string and nothing here reads it — this line
+ * said "only an id", and `governs` falsified it: under that relation the target
+ * is a PATH in the working tree, which is an id of nothing. `rel` is an open
+ * literal string (see the catalog's recommended set). No dangling check happens
+ * here: a cross-tree target is a legitimate, asserted fact resolved on read
+ * against the union, and so is a path that names nothing.
  */
 export function knowledgeLinked(
   envelope: EnvelopeInput,

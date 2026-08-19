@@ -153,7 +153,10 @@ CREATE INDEX IF NOT EXISTS idx_handoffs_task ON handoffs (task, recorded_at);
 CREATE TABLE IF NOT EXISTS links (
   -- The entity that originates the link (the event subject).
   subject   TEXT NOT NULL,
-  -- The entity linked to. Only an id; its kind is resolved on read.
+  -- What the link points at: an id of another record, or a path in the working
+  -- tree under the 'governs' relation. This line said "only an id", and that
+  -- relation falsified it. Whatever it is, it is stored as the caller wrote it
+  -- and what it names is resolved on read.
   target    TEXT NOT NULL,
   -- The relation label — an open literal string.
   rel       TEXT NOT NULL,

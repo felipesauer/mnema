@@ -42,7 +42,12 @@
  *   authored — the catalog permits it on purpose, because the writer sees only
  *   its own tree. Such a node is reported with `resolved: false`, never dropped
  *   and never an error. Dropping it would turn "we cannot see the far end" into
- *   "there is no far end", which is a different and false claim.
+ *   "there is no far end", which is a different and false claim. This said "an
+ *   ENTITY", and `governs` falsified the narrower half of it: under that relation
+ *   a target is a PATH, so a walk that meets one reports an unresolved node whose
+ *   id is `src/collate` and never will resolve. That is the same honest shape and
+ *   not a defect — what a path means is `governance.ts`'s question, and asking it
+ *   here would be a second reader of the same label.
  *
  * ## What it refuses to invent
  *

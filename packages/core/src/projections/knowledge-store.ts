@@ -223,6 +223,27 @@ export function listLinksTo(db: SqliteDatabase, target: string): LinkEdge[] {
   return rows.map(toLink);
 }
 
+/**
+ * Lists every edge asserting the given relation, ordered by target then subject.
+ *
+ * The third way into the same table, and the one that reads the RELATION rather
+ * than an end: "which rules address a path" cannot start from a subject (the
+ * asker does not know which decisions there are) nor from a target (the asker has
+ * a path, and the addresses that cover it are PREFIXES of it, not equal to it).
+ * So the label is the key, and the caller filters the targets itself.
+ *
+ * `rel` is an open string the catalog never closes, so this takes any label and
+ * knows none: it is a lookup, not a vocabulary. The order is a property of the
+ * CONTENT, like the other two, so which rows come back cannot depend on the order
+ * they were written in.
+ */
+export function listLinksByRelation(db: SqliteDatabase, rel: string): LinkEdge[] {
+  const rows = db
+    .prepare('SELECT * FROM links WHERE rel = ? ORDER BY target, subject')
+    .all(rel) as LinkRow[];
+  return rows.map(toLink);
+}
+
 function toLink(row: LinkRow): LinkEdge {
   return {
     subject: row.subject,

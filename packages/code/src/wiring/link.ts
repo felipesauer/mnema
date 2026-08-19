@@ -27,7 +27,7 @@ export function registerLink(program: Command, wiring: Wiring): Declared {
     .command('link')
     .description('link one piece of knowledge to another in the current project')
     .argument('<subject>', 'the entity that originates the link')
-    .argument('<target>', 'the entity linked to')
+    .argument('<target>', 'what it points at: another id, or a path under --rel governs')
     .requiredOption('--rel <label>', `the relation (${RECOMMENDED_RELATIONS})`)
     .addOption(
       scopeOption(

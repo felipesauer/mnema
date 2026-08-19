@@ -180,6 +180,7 @@ import { registerObserve } from './observe.js';
 import { registerReferences } from './refs.js';
 import { registerRepl } from './repl.js';
 import { registerResume } from './resume.js';
+import { registerRules } from './rules.js';
 import { registerRun } from './run.js';
 import { registerSearch } from './search.js';
 import { registerShow } from './show.js';
@@ -216,6 +217,7 @@ export const VERBS: readonly Verb[] = [
   registerAntipatterns,
   registerExposure,
   registerReferences,
+  registerRules,
   registerSkills,
   registerUsage,
   registerBrief,

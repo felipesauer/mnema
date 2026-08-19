@@ -389,17 +389,24 @@ export interface HandoffRecordedV1 extends Envelope {
  * points at, and `rel` is the relation label.
  *
  * Two shapes matter, both chosen to mirror facts the catalog already proves:
- *   - `target` is ONLY an id (a universal v7). The catalog does not carry the
- *     target's KIND — a memory, a task, a decision are all just ids here, and
- *     the reader resolves what the target is by crossing projections. A
- *     `targetKind` alongside the id would be redundant with the id and could
- *     drift (say "task" over a decision's id), so it is not carried. This is the
- *     same choice the supersede's `by` makes: the id alone, kind by context.
+ *   - `target` is an UNVERIFIED reference the caller supplied. This paragraph
+ *     used to say it was "ONLY an id (a universal v7)", and {@link
+ *     GOVERNS_RELATION} falsified that: a rule addressed at a path links a
+ *     decision to `src/billing`, which is an id of nothing. The narrow reading
+ *     was already contradicted inside this product — the core classifies this
+ *     field as PROSE, not as an identifier, on the ground that "each holds
+ *     whatever a caller sent" — so what changed is this comment, not the shape.
+ *     What the field never carries is a KIND beside the value: a `targetKind`
+ *     would be redundant when the target IS an id and wrong when it is not, so
+ *     the reader resolves what the target is by crossing projections and a
+ *     target no projection knows is reported as unresolved. This is the same
+ *     choice the supersede's `by` makes: the value alone, meaning by context.
  *   - `rel` is an OPEN literal string, not a closed enum — the same design as a
- *     transition's `action`. A recommended set (`supersedes`, `relates-to`,
- *     `derived-from`, `contradicts`) is documented, but the parser accepts any
- *     non-empty string, so a new relation grows without an upcaster and a past
- *     link with an unfamiliar label is never rejected on read.
+ *     transition's `action`. A recommended set is documented in {@link
+ *     RECOMMENDED_LINK_RELATIONS}, but the parser accepts any non-empty string,
+ *     so a new relation grows without an upcaster and a past link with an
+ *     unfamiliar label is never rejected on read. That openness is what let
+ *     `governs` be added without a field, a version or an upcaster.
  *
  * Unlike a supersede — which is same-tree by construction and refuses a dangling
  * `by` at write time — a link is legitimately CROSS-TREE (a private memory may
@@ -413,12 +420,36 @@ export interface KnowledgeLinkedV1 extends Envelope {
   readonly v: 1;
   /** Subject is the entity that originates the link. */
   readonly payload: {
-    /** The id of the entity linked to. Only an id — the kind is resolved on read. */
+    /**
+     * What the link points at: an id of another record, or — under {@link
+     * GOVERNS_RELATION} — a path in the working tree. Whatever it is, it is the
+     * caller's string, never verified here, and what it names is resolved on
+     * read.
+     */
     readonly target: string;
     /** The relation label — an open literal string (see {@link RECOMMENDED_LINK_RELATIONS}). */
     readonly rel: string;
   };
 }
+
+/**
+ * The one relation whose target is a PATH and not an id: a rule of the record
+ * says which part of the working tree it applies to.
+ *
+ * It is a label like any other — nothing in the parser knows it, nothing
+ * validates the path, nothing refuses a link that uses it — and it exists as a
+ * named constant for one reason: a reader that answers "which rules govern this
+ * file" and a writer's help text that suggests the label must be the SAME
+ * string, and a string typed twice is two strings that can come to differ. It is
+ * the single site (see `RECOMMENDED_LINK_RELATIONS` below, which is built from
+ * it, and the copilot's governance reading, which imports it).
+ *
+ * Naming it here does not make the catalog aware of paths: `target` stays an
+ * unverified caller's string, and a link under this label whose path names
+ * nothing is exactly as valid, and as dangling, as one pointing at an id no tree
+ * holds.
+ */
+export const GOVERNS_RELATION = 'governs';
 
 /**
  * The recommended relation labels for a {@link KnowledgeLinkedV1}. This is a
@@ -433,6 +464,7 @@ export const RECOMMENDED_LINK_RELATIONS = [
   'relates-to',
   'derived-from',
   'contradicts',
+  GOVERNS_RELATION,
 ] as const;
 
 /**

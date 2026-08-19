@@ -12,7 +12,7 @@
 function __mnema_commands --description 'the subcommands one level of the tree offers'
     switch "$argv[1]"
         case ''
-            echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure refs skills usage brief key tail verify mcp repl completion help'
+            echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure refs rules skills usage brief key tail verify mcp repl completion help'
         case 'task'
             echo 'move'
         case 'decision'
@@ -79,6 +79,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'accountability' -d 'show who authori
 complete -c mnema -f -n '__mnema_at ""' -a 'antipatterns' -d 'show recurring shapes in the record (reopens, supersessions, deprecations)'
 complete -c mnema -f -n '__mnema_at ""' -a 'exposure' -d 'show which records hold something shaped like a credential (never the value)'
 complete -c mnema -f -n '__mnema_at ""' -a 'refs' -d 'show what an entity is connected to across the trees'
+complete -c mnema -f -n '__mnema_at ""' -a 'rules' -d 'show which recorded rules govern a path, and which address nothing'
 complete -c mnema -f -n '__mnema_at ""' -a 'skills' -d 'show where each pattern came from (who proposed it, who adopted it)'
 complete -c mnema -f -n '__mnema_at ""' -a 'usage' -d 'what each run cost, read from this machine\'s Claude Code transcripts'
 complete -c mnema -f -n '__mnema_at ""' -a 'brief' -d 'print what governs the work here as markdown, for an agent to read'
@@ -322,6 +323,12 @@ complete -c mnema -f -n '__mnema_at "refs"' -l json
 complete -c mnema -f -n '__mnema_at "refs"' -s h -l help
 complete -c mnema -f -n '__mnema_at "refs"' -s V -l version
 complete -c mnema -f -n '__mnema_at "refs"' -l color -x -a 'auto always never'
+
+# mnema rules
+complete -c mnema -f -n '__mnema_at "rules"' -l json
+complete -c mnema -f -n '__mnema_at "rules"' -s h -l help
+complete -c mnema -f -n '__mnema_at "rules"' -s V -l version
+complete -c mnema -f -n '__mnema_at "rules"' -l color -x -a 'auto always never'
 
 # mnema skills
 complete -c mnema -f -n '__mnema_at "skills"' -l json

@@ -58,6 +58,12 @@ $ mnema link <decision-runbook> <task-runbook> --rel relates-to
 $ mnema link <task-runbook> <task-chore> --rel derived-from
 | Linked <task-runbook> —derived-from→ <task-chore>
 |   Landed in the public tree — committed with the repository, so it reaches every clone.
+$ mnema link <decision-runbook> docs/runbook --rel governs
+| Linked <decision-runbook> —governs→ docs/runbook
+|   Landed in the public tree — committed with the repository, so it reaches every clone.
+$ mnema link <decision-runbook> docs/gone-away --rel governs
+| Linked <decision-runbook> —governs→ docs/gone-away
+|   Landed in the public tree — committed with the repository, so it reaches every clone.
 
 ### the moves
 $ mnema task move submit <task-runbook>

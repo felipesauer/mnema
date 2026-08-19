@@ -340,7 +340,11 @@ export interface LinkOk extends ScreenedWrite {
 export interface LinkInput {
   /** The entity that ORIGINATES the link (the event subject). */
   readonly subject: string;
-  /** The id of the entity linked to. */
+  /**
+   * What the link points at. An id of another record for most relations, and a PATH
+   * for `governs` — which is why this is not typed, checked or resolved here: it is
+   * the caller's string, and the reader decides what it names.
+   */
   readonly target: string;
   /** The relation label — an open literal string (see the catalog's recommended set). */
   readonly rel: string;

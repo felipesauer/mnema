@@ -11,7 +11,7 @@
  * (capture_memory, record_observation, record_handoff, link_knowledge,
  * create_task, task_transition, record_decision, decision_transition, create_skill,
  * skill_transition, bootstrap, focus, resume, next_actions, guard, skills,
- * search, read_record, and the
+ * search, read_record, governing_rules, and the
  * five `audit_*` intelligence reads — audit_timeline, audit_refs,
  * audit_accountability, audit_antipatterns, audit_exposure) delegates to a pure
  * adapter in {@link ./tools.js}. The
@@ -117,6 +117,7 @@ import {
   runDecisionTransition,
   runExposureTool,
   runFocusTool,
+  runGoverningRulesTool,
   runGuardTool,
   runLinkKnowledge,
   runNextActionsTool,
@@ -666,7 +667,13 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         RECORD_CONTRACT,
       inputSchema: {
         subject: z.string().min(1).describe('The entity that originates the link.'),
-        target: z.string().min(1).describe('The entity linked to.'),
+        target: z
+          .string()
+          .min(1)
+          .describe(
+            'What the link points at: the id of another record, or — under `governs` — a ' +
+              'path in the working tree, relative to the project root.',
+          ),
         rel: z.string().min(1).describe('The relation label (an open string).'),
         scope: scopeField('Where the link lands; overrides the routing rule (public).'),
         project: PROJECT_ARG,
@@ -1416,6 +1423,48 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
       }
       // An entity nothing references is an ANSWER ("nothing is tied to this"),
       // never an error — the same reason an empty history is one.
+      return { content: [{ type: 'text', text: JSON.stringify(result.value, null, 2) }] };
+    },
+  );
+
+  server.registerTool(
+    'governing_rules',
+    {
+      title: 'Which recorded rules govern this path',
+      description:
+        'Show which rules of THIS project\u2019s record are addressed at a path — a ' +
+        'decision or a pattern linked to it with `rel: "governs"`, most specific ' +
+        'first. Use it before changing a file, to find the decisions that already ' +
+        'apply to it; the id it returns is what you cite when you follow one. An ' +
+        'address is a PREFIX by path segment: a rule on `src/collate` governs ' +
+        '`src/collate/fold.ts` and does NOT govern `src/collate_test.rb`. Every ' +
+        'answer carries three counts, zeroes included: how many rules cover this ' +
+        'path, how many address this project at all, and how many address something ' +
+        'the working tree no longer holds — a rule whose file was moved or deleted ' +
+        'has stopped governing, and the third count is how you find out. It reports ' +
+        'each rule\u2019s state and decides nothing: it refuses nothing, blocks ' +
+        'nothing, and does not judge whether a rule still holds. Addresses come from ' +
+        'THIS project only, because an address is relative to a project root. A ' +
+        'relative path is resolved against the project root, not a working ' +
+        'directory. Read-only.',
+      inputSchema: {
+        path: z
+          .string()
+          .min(1)
+          .describe('The path to ask about, relative to the project root or absolute.'),
+      },
+    },
+    async ({ path }) => {
+      const active = await ensureSession();
+      const result = runGoverningRulesTool(active, { path });
+      if (!result.ok) {
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
+        };
+      }
+      // A path nothing addresses is an ANSWER ("nothing governs this"), never an
+      // error — and the three counts beside it are what say which kind of nothing.
       return { content: [{ type: 'text', text: JSON.stringify(result.value, null, 2) }] };
     },
   );
