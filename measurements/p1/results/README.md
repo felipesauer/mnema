@@ -1,9 +1,16 @@
 # P1 results
 
-**The pilot has run; the round has not.** `2026-08-17-pilot/` holds four cells — one task, four
-arms, one run — and nothing else of this protocol has been spent. This directory was committed
-empty on purpose, and that sentence stood here until the pilot landed: the pre-registration
+**The pilot and the first round have both run.** `2026-08-17-pilot/` holds four cells — one task,
+four arms, one run — `2026-08-18-full/` holds the pre-registered round's 112, and
+`2026-08-18-mechanism/` holds eight cells of a fifth arm that are a mechanism check and not a
+measurement. What each one is, and why their counts do not add up to each other, is named in
+[the index](../../README.md). This directory was committed empty on purpose: the pre-registration
 beside it is worth what the order is worth, and the order is visible here.
+
+*(The line that stood here said **"The pilot has run; the round has not"**, and it was true from
+17 Aug 2026 until the 18th, when the round landed in this directory and nobody came back to this
+file. The premise is rewritten rather than deleted: a folder whose own README contradicts the data
+inside it is the one thing a reader cannot check around.)*
 
 A run lands one directory named for its date and mode — `2026-08-14-pilot/`,
 `2026-08-20-full/` — holding:
@@ -17,8 +24,16 @@ A run lands one directory named for its date and mode — `2026-08-14-pilot/`,
 **`raw/` and `diffs/` show the code a cell produced, and code about a task describes the task.**
 For a development task that costs nothing — those are open by design. For a **held-out** task it
 would reveal, before the reveal, what [`fixtures.sha256`](../fixtures.sha256) deliberately keeps to
-a digest. So a run over held-out tasks commits `cells.jsonl` and holds `raw/` and `diffs/` back
-until the tasks themselves are published — the same order, for the same reason.
+a digest. So a run over held-out tasks commits `cells.jsonl` **and the development tasks' raw output
+and diffs**, and holds the held-out ones' back until the tasks themselves are published — the same
+order, for the same reason.
+
+**The consequence for `2026-08-18-full/`, spelled out because its own report says otherwise.**
+That capture's `report.md` closes on *"`cells.jsonl` only"*, which was true of it the day it landed
+and stopped being true when the rule above was applied to it: `a3-idempotency` is a development task,
+so its 32 raw files and 16 diffs are committed, and the six held-out tasks' are not. The report is a
+**capture** and captures are not edited — so the correction lives here and in the index, where a
+reader can check it against the directory listing rather than against a promise.
 
 A second run is a second directory. Nothing here is edited after it lands.
 
@@ -35,17 +50,27 @@ null key say different things.
 
 **Which cell it was:** `schema` · `fixture` · `axis` · `arm` · `run`. The schema number moves when
 the key set moves, so lines from two runs can be joined without guessing which keys a given line
-could have carried: `mnema-bench/cell/1` is the pilot, `/2` adds the memory columns below and
-`/3` the mnema arm's channel. **Lines are never re-run to gain a column** — a result is not redone
-because a later question got a better instrument. The absent key is what says a line is from
-before, and that is the whole job of the number.
+could have carried: `mnema-bench/cell/1` is the pilot, `/2` adds the memory columns below, `/3` the
+mnema arm's channel, `/4` the hooked arm's, and `/5` the reason a cell came back `BROKEN`.
+**Lines are never re-run to gain a column** — a result is not redone because a later question got a
+better instrument. The absent key is what says a line is from before, and that is the whole job of
+the number. The 124 lines committed here are 4 at `/1`, 32 at `/2`, 80 at `/3` and 8 at `/4`; none
+is at `/5`, and none will be.
 
 **What produced it:** `model` · `cli_version` · `mnema_version` · `permission_mode` ·
 `system_prompt_sha256_16`. The build and the model are *in the line*, so a result that is
 contradicted later can be told apart from a result taken against a different product.
 
 **What the discriminant said:** `verdict` (`CONFORMS` / `VIOLATES` / `BROKEN`) · `exit` ·
-`status` · `error` · `ruler_detail` · `truncated`.
+`status` · `error` · `ruler_detail` · `broken_detail` · `truncated`.
+
+`broken_detail` is the discriminant's **own sentence** when it refused the code — its first line,
+as printed — and `null` on every cell whose code ran. It exists because of one reading this
+directory could not support: `a5-no-retry` came back with four `BROKEN` cells in one arm, which is
+an arm with no rate at all, and nothing in those four lines could say whether the agents wrote
+unworkable code or the task's own happy path was unreachable. The answer was the task, and getting
+it meant opening a diff by hand. The sentence had been printed every time and thrown away every
+time. It scores nothing.
 
 `status` is the field that separates a result from a defect, and it is the reason the run can
 be believed: a missing CLI, a half-applied seed, an authentication failure and a discriminant

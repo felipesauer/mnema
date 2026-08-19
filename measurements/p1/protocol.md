@@ -1,9 +1,17 @@
 # P1 — does the record change the work?
 
-**Pre-registered. No number from this protocol exists yet.** This file says what will be
-measured and under what conditions; [`reading.md`](reading.md) says how each possible outcome
-is to be read; [`split.json`](split.json) says which tasks are free to iterate on and which are
-touched once; [`fixtures.sha256`](fixtures.sha256) fixes the tasks themselves.
+**Pre-registered, and measured once.** This file says what is measured and under what
+conditions; [`reading.md`](reading.md) says how each possible outcome of the FIRST round is to
+be read; [`split.json`](split.json) says which of that round's tasks were free to iterate on and
+which were touched once; [`fixtures.sha256`](fixtures.sha256) fixes those tasks themselves. A
+second round, with its own tasks and its own reading, is pre-registered in
+[`round-2/`](round-2/) — see [what a second round is](#a-second-round-of-the-same-promise) below.
+
+*(The line that stood here said **"No number from this protocol exists yet."** It was true when
+it was written, on 13 Aug 2026, and the first round falsified it on the 18th: the pilot's four
+cells, then 112 more, are committed under [`results/`](results/) with a reading that says the
+first promise did not survive as written. The premise is rewritten rather than deleted, because
+what this file claimed before the number is part of why the number can be believed.)*
 
 ## The promise being measured
 
@@ -154,12 +162,31 @@ held-out task would touch it twice.
   refuses a run whose split does not cover the tasks on disk, or whose hashes do not match this
   directory.
 
+## A second round of the same promise
+
+**The promise above does not change, and the tasks do.** The first round's four held-out axis-A
+tasks are spent — the rule in [`split.json`](split.json) says a held-out task is touched once —
+and its two development tasks were iterated against, so both classes are contaminated for a new
+measurement. A second round therefore needs its own tasks, and they were frozen **before** the
+product surface that round would measure was built: choosing a task after seeing what a
+mechanism does is the bias a pre-registered split exists to prevent.
+
+That second pre-registration lives in [`round-2/`](round-2/) and is complete on its own terms:
+ten tasks fixed by [digest](round-2/fixtures.sha256), the
+[split and the headline set](round-2/split.json), [five arms declared](round-2/arms.md) — the
+four that ran the first round, plus one that does not exist in code yet — and
+[the reading of every outcome](round-2/reading.md), which closes the three gaps the first round
+found in its own rule. Nothing of the first round's pre-registration is edited to make room for
+it: those files are the record of an order, and the order is what they are worth.
+
 ## Status
 
 | step | state |
 |---|---|
-| tasks calibrated | done — each one catches its bad reference and passes its good one |
+| tasks calibrated | done, both rounds — each task catches its bad reference and passes its good one |
 | harness | built; every isolation item above is a flag or a file |
-| pre-registration | **this directory** |
-| pilot | not run |
-| full run | not run |
+| pre-registration, round 1 | **this directory** |
+| pilot | run 17 Aug 2026 — 4 cells, [`results/2026-08-17-pilot/`](results/2026-08-17-pilot/) |
+| full run, round 1 | run 18 Aug 2026 — 112 cells, [`results/2026-08-18-full/`](results/2026-08-18-full/) |
+| pre-registration, round 2 | [`round-2/`](round-2/) — frozen 18 Aug 2026, **before** the surface it measures |
+| full run, round 2 | not run. Its fifth arm is a declaration, and the harness refuses a cell of that round until the arm exists |
