@@ -45,7 +45,12 @@ import { fileURLToPath } from 'node:url';
 import type { Command } from 'commander';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildProgram } from '../src/cli.js';
-import { FRAMED_CHANNELS, type FramedChannel, recordFraming } from '../src/record-framing.js';
+import {
+  DECLARES_MODEL_CHANNEL,
+  FRAMED_CHANNELS,
+  type FramedChannel,
+  recordFraming,
+} from '../src/record-framing.js';
 import { held } from './support/the-record-held.js';
 
 /** The repository root: `packages/code/tests/` is three levels under it. */
@@ -339,7 +344,7 @@ describe('the record arrives unasked', () => {
     // the source is whether the bytes that actually reach the session carry that
     // channel's declaration. This is that, end to end: the real binary, the real
     // handler, the reply the host would read.
-    const declared = /MODEL_CHANNEL\s*=\s*'([a-z-]+)'/.exec(
+    const declared = DECLARES_MODEL_CHANNEL.exec(
       readFileSync(join(PLUGIN, 'hooks', 'session-start.mjs'), 'utf-8'),
     );
     expect(declared).not.toBeNull();

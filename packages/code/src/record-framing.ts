@@ -102,6 +102,26 @@ const SUBJECT_OF: { readonly [K in FramedChannel]: ServedSubject } = {
 export const FRAMED_CHANNELS = Object.keys(SUBJECT_OF) as readonly FramedChannel[];
 
 /**
+ * How a plugin handler names the channel it carries, for a reader that only has the
+ * handler's SOURCE.
+ *
+ * A handler runs from the plugin's directory with no build and no package resolution,
+ * so it cannot import this module; what it can do is state the name, and what the
+ * guards can do is read that statement out of the file. This is the shape of the
+ * statement, and it lives here rather than in either guard because two guards read it
+ * — the source-side default-deny and the behavioural half that derives a channel's
+ * framing from what the handler claims to be — and two copies of one discriminant is
+ * the same drift this module exists to have ended.
+ *
+ * IT IS ANCHORED TO THE EXECUTABLE FORM, AND THAT IS THE WHOLE CARE IN IT. Without the
+ * `export const` and the start of a line, the pattern matches the same words inside a
+ * comment — and since nothing in the handler READS the constant, a commented-out
+ * declaration runs identically and leaves every guard green. A declaration a reader can
+ * delete without anything noticing is a comment, which is exactly what it must not be.
+ */
+export const DECLARES_MODEL_CHANNEL = /^export const MODEL_CHANNEL = '([a-z-]+)';$/m;
+
+/**
  * The channels that carry no declaration, and why — one sentence each, because "this
  * one owes nothing" is a claim that has to be answerable.
  *

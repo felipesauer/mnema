@@ -37,6 +37,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { briefDocument } from '../src/presentation/brief.js';
 import {
+  DECLARES_MODEL_CHANNEL,
   FRAMED_CHANNELS,
   recordFraming,
   recordFramingBlock,
@@ -78,15 +79,19 @@ const THE_CLAIM =
  */
 const WRITES_TO_STDOUT = [/process\.stdout\.write/, /console\.log/];
 
-/** How a handler names the channel it carries. */
-const DECLARES_CHANNEL = /MODEL_CHANNEL\s*=\s*'([a-z-]+)'/;
-
 /** Every handler the plugin ships, by file name. */
 function handlers(): string[] {
   return readdirSync(HOOKS_DIR).filter((name) => name.endsWith('.mjs'));
 }
 
-/** Every source file of this surface and of the plugin, with its text. */
+/**
+ * Every source file of this WORKSPACE and of the plugin, with its text.
+ *
+ * All four packages and not just this one: a second copy of the declaration is a defect
+ * wherever it is written, and a walk that stopped at the package which happens to emit
+ * it today would be green over a copy in `core`, `chain` or `copilot` — which is the
+ * scope this walk used to have, and the hole a mutation found.
+ */
 function everySource(): { readonly path: string; readonly text: string }[] {
   const found: { path: string; text: string }[] = [];
   const walk = (dir: string): void => {
@@ -101,7 +106,7 @@ function everySource(): { readonly path: string; readonly text: string }[] {
       found.push({ path, text: readFileSync(path, 'utf-8') });
     }
   };
-  walk(join(REPO, 'packages', 'code'));
+  walk(join(REPO, 'packages'));
   walk(join(REPO, 'plugin'));
   return found;
 }
@@ -132,6 +137,18 @@ describe('one declaration, and one place that decides it', () => {
       .filter((path) => !path.endsWith('.golden.txt'))
       .filter((path) => path !== 'packages/code/tests/the-channel-says-what-it-carries.test.ts');
     expect(holders).toEqual(['packages/code/src/record-framing.ts']);
+  });
+
+  it('looks for that copy in every package, not only the one that prints it', () => {
+    // Non-vacuity for the walk itself. The case above is a claim about the whole
+    // product, and it is only worth what the enumeration reaches: scoped to the package
+    // that emits the framing today, it was green over a copy planted in `core`.
+    const packages = new Set(
+      everySource()
+        .map((file) => /^packages\/([^/]+)\//.exec(file.path.slice(REPO.length))?.[1])
+        .filter((name): name is string => name !== undefined),
+    );
+    expect(packages).toEqual(new Set(['chain', 'code', 'copilot', 'core']));
   });
 
   it('reaches every framed channel through that one module', () => {
@@ -242,7 +259,7 @@ describe('every handler that pushes declares the channel it carries', () => {
     for (const file of handlers()) {
       const source = readFileSync(join(HOOKS_DIR, file), 'utf-8');
       if (!WRITES_TO_STDOUT.some((shape) => shape.test(source))) continue;
-      const declared = DECLARES_CHANNEL.exec(source);
+      const declared = DECLARES_MODEL_CHANNEL.exec(source);
       expect(declared, `${file} writes to a model and names no channel`).not.toBeNull();
       const channel = declared?.[1] ?? '';
       expect(FRAMED_CHANNELS as readonly string[], `${file} names an unknown channel`).toContain(
@@ -253,6 +270,20 @@ describe('every handler that pushes declares the channel it carries', () => {
     // And at least one handler WAS asked. Without this the case is green on a plugin
     // whose handlers all stopped writing, which is the shape a broken enumeration has.
     expect(named).toEqual(['session-start.mjs:brief-document']);
+  });
+
+  it('will not read a declaration out of a comment', () => {
+    // The scanner's own case, for the same reason the imperative one has one. NOTHING in
+    // a handler reads `MODEL_CHANNEL` — the value exists to be read from the source — so
+    // a commented-out declaration runs identically to a live one, and a pattern that
+    // matched the words anywhere left the guard green over a handler declaring nothing.
+    const live = "export const MODEL_CHANNEL = 'brief-document';";
+    expect(DECLARES_MODEL_CHANNEL.exec(live)?.[1]).toBe('brief-document');
+    expect(DECLARES_MODEL_CHANNEL.test(`// ${live}`)).toBe(false);
+    expect(DECLARES_MODEL_CHANNEL.test(` * ${live}`)).toBe(false);
+    expect(
+      DECLARES_MODEL_CHANNEL.test("/** The channel: MODEL_CHANNEL = 'brief-document' */"),
+    ).toBe(false);
   });
 
   it('names the channels in a vocabulary the module owns', () => {
