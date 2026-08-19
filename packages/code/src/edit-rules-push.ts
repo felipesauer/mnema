@@ -36,11 +36,21 @@
  * is what gives the silence here a known meaning — "none of them addresses this path"
  * rather than "there is no mechanism".
  *
- * WHAT THAT DOES NOT BUY, said plainly because the guard cannot say it: a reader that
- * has been told the record holds twelve addresses and then edits a file quietly cannot
- * tell "none of the twelve addresses this one" from "the hook did not run". Closing that
- * would take an index of the addressed paths in the opening document — measured at 3,921
- * bytes for a realistic record, once per session — and it is not this slice.
+ * THE SILENCE HAS THREE READINGS NOW, AND THE DOCUMENT CLOSES ONE OF THEM. This paragraph
+ * used to name two — "none of the twelve addresses this one" against "the hook did not run"
+ * — and the third arrived with the switch: somebody turned this channel off, which produces
+ * the identical nothing. So the once-per-session document does not only carry the count any
+ * more; when the push is switched off in the COMMITTED record it says so, names who switched
+ * it and when, and stops claiming that the rules arrive (`presentation/brief.ts`). The
+ * reading that spans every tree, including a switch kept on one machine, is `mnema switch`.
+ *
+ * WHAT THAT STILL DOES NOT BUY, said plainly because the guard cannot say it: a switch
+ * recorded `--scope private` is invisible to that document — it carries the committed record
+ * — so on that machine the silence still reads as "nothing addresses this file". And "the
+ * hook did not run" is distinguishable from neither. Closing the first would put a fact
+ * about one machine into a file that is committed and compared with `diff`; closing the
+ * second would take an index of the addressed paths in the opening document, measured at
+ * 3,921 bytes for a realistic record.
  *
  * ## What is left out, and why each
  *

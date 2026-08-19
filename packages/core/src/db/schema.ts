@@ -33,6 +33,9 @@ export const PROJECTION_TABLES = [
   'record_search',
   // The reference index: one row per (event, entity, role).
   'refs',
+  // Where each of the product's own switches stands: one row per channel that was
+  // ever switched, and no row at all for one that never was.
+  'channel_switches',
 ] as const;
 
 const SCHEMA = `
@@ -298,6 +301,30 @@ CREATE TABLE IF NOT EXISTS refs (
 -- The join that turns two rows into an edge: given one event's ord, find its
 -- other rows. Without it, resolving an edge would scan the table.
 CREATE INDEX IF NOT EXISTS idx_refs_ord ON refs (ord, role);
+
+-- Where each of the product's own switches stands. Unlike every other table here
+-- the rows are about MNEMA and not about the work: a channel is a place this
+-- product puts the record in front of a model unasked, and a row says somebody
+-- turned one off or back on.
+--
+-- A channel with no row was never switched, and a channel that was never
+-- switched is ON. There is no birth event, no default row and no seeding: a
+-- product that arrived switched off would look installed and do nothing.
+CREATE TABLE IF NOT EXISTS channel_switches (
+  -- The channel (the event subject). One row per channel; the last switch wins.
+  channel     TEXT PRIMARY KEY NOT NULL,
+  -- 1 when the last switch turned it on, 0 when off (STRICT has no boolean).
+  switched_on INTEGER NOT NULL,
+  -- The anchor that switched it (the authorizing 'who').
+  who         TEXT NOT NULL,
+  -- The executing agent, or NULL when the human acted directly.
+  which       TEXT,
+  -- 'at' of the last switch.
+  switched_at TEXT NOT NULL,
+  -- Why, or NULL when the switch carried no reason. The absence is the fact: a
+  -- switch is never refused for want of prose, so it is not the empty string.
+  reason      TEXT
+) STRICT;
 `;
 
 /** Creates the projection tables if they are absent. Idempotent. */

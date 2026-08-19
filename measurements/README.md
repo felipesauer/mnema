@@ -43,26 +43,23 @@ what they say. The ids name a domain (`a1-rounding`), never the rule the task tu
 |---|---|
 | [`p1/`](p1/) | **Does the record change the work?** Pre-registered, and **measured once**: the first round's numbers are committed under [`p1/results/`](p1/results/), and the first promise **did not survive as written**. A second round — new tasks, five arms, a reading that closes the three gaps the first one found in its own rule — is pre-registered in [`p1/round-2/`](p1/round-2/) and **has not run** |
 | [`p3/`](p3/) | **Does the proof survive someone with write access?** Eleven attacks [frozen before any of them ran](p3/protocol.md); nine carried out, and [every prediction held](p3/results/2026-08-18/report.md). No model was called — this one is filesystem and cryptography, and the attacker's own scripts are committed beside the verifier's output |
-| [`channel-cost/`](channel-cost/) | **What does a delivery channel cost before anything is delivered through it?** The floor of a command-line invocation against the floor of a call into an already-connected server, each measured with its work term separated from it, plus how many files a session of this machine actually edits. It is what decided that a per-edit hook is affordable at all |
-| [`mcp-tool-channel/`](mcp-tool-channel/) | **Does the host inject what a hook returns, and in what shape?** The real binary, a real server, and a stand-in for the model API so the request sent *after* the hook is the evidence. It refuted the reading the design started from — prose returned by a hook is dropped in silence — and it holds the cost of the one hook that shipped |
+| [`channel-cost/`](channel-cost/) | **What the channel costs before it carries anything** — the floor of a hook, decomposed: a warm `mcp_tool` call against a spawned process (1.24 ms against 171.5 ms), and the size of what an injection would carry. No model was called |
+| [`mcp-tool-channel/`](mcp-tool-channel/) | **Does the host inject at all, and what does the work cost** — twelve cases against the real `claude` binary with the model replaced by a stand-in, plus the work term of `rules_before_an_edit` at three record sizes, in two published runs |
+| [`switch-cost/`](switch-cost/) | **What the switch costs on that same hot path**, and what the switched-off path costs when it delivers nothing. Two published runs, both stamped with the machine's load, because the absolutes do not survive it and the delta does |
+
+*(THE THREE COST DIRECTORIES WERE MISSING FROM THIS TABLE, and the first two of them had been here
+for a day before anybody noticed — which is precisely the defect the parenthesis below describes,
+arriving a second time by the same route. They are captures like every other file here and they
+follow the same rules: one per file, nothing overwritten, the build inside the file. What they do not
+have is a pre-registration, and the reason is a real difference rather than an exemption — a cost is
+measured against a stopwatch and not against a promise, so there is no outcome to fix in advance and
+nothing a late reading of the rule could bend.)*
 
 *(The line that stood here said `p1/` was **"Pre-registered. No number exists yet."**, and it was
 the whole of this table. It was true on 13 Aug 2026 and false from the 18th, when the round landed
 in the directory beside it; `p3/` had by then been pre-registered, attacked and reported, and this
 index named none of it. The premise is rewritten rather than deleted, because an index that
 contradicts the data next to it is the one defect a reader cannot check around.)*
-
-**The last two are not pre-registered, and that is the difference rather than an exemption.**
-A `p` directory asks whether a PROMISE of the product holds, so the reading has to be frozen
-before the number exists or the number decides its own reading. The other two ask what a
-mechanism costs and what a host actually does — questions with no promise to bias, whose
-answer is a stamped capture and whose protocol is the script committed beside it. They are here
-because they are measurements of this product and belong under one index; they are named apart
-because a reader must not take an engineering number for evidence about a claim.
-
-*(This table listed only the two `p` directories for a day after the other two landed beside it
-— the same defect as the note above, one level down: an index is read as the whole of what is
-here.)*
 
 **There is no `p2/`, and the gap in the numbering is not an omission.** The names follow the
 PROMISES, not this directory: `p1` is the first promise and `p3` the third. The second is the one

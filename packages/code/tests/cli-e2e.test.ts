@@ -2713,6 +2713,8 @@ describe('mnema CLI — a --which that names nobody', () => {
         'run start',
         'run end',
         'skill',
+        'switch off',
+        'switch on',
         'tail prune',
         'task',
       ].sort(),

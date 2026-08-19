@@ -48,6 +48,7 @@ import { Argument, Command, Option } from 'commander';
 import { afterAll, describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo } from '../src/cli.js';
 import { completionScript } from '../src/completion/script.js';
+import { SWITCHABLE_CHANNELS } from '../src/record-framing.js';
 import { REFERENCE_DIRECTIONS } from '../src/reference-directions.js';
 import { SHELLS, type Shell } from '../src/wiring/completion.js';
 import { SCOPES } from '../src/wiring/enumerated.js';
@@ -129,6 +130,11 @@ function everyDomainWord(): readonly string[] {
     ...LEVEL_REQUIREMENTS,
     ...SCOPES,
     ...REFERENCE_DIRECTIONS,
+    // The one closed set here the DOMAIN does not own. A channel is a place this product
+    // puts the record in front of a model unasked, and the core has no idea it pushes
+    // anything at all — so the vocabulary is the surface's (`src/record-framing.ts`), and
+    // it is derived from the union of channels rather than typed a second time.
+    ...SWITCHABLE_CHANNELS,
   ];
 }
 

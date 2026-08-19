@@ -1,5 +1,5 @@
 {
-  "description": "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name. Before a file is written, hands over the rules of the record addressed at that path. It reads and never writes, and it never blocks.",
+  "description": "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name. Before a file is written, hands over the rules of the record addressed at that path. It reads and never writes, and it never blocks. Either can be switched off with `mnema switch`, which records that it was.",
   "hooks": {
     "SessionStart": [
       {

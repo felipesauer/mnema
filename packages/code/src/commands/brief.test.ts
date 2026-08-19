@@ -321,7 +321,15 @@ describe('mnema brief (what governs the work here)', () => {
     runInit({ cwd: repo, env });
     expect(runBrief({ cwd: repo, env })).toEqual({
       ok: true,
-      brief: { decisions: [], skills: [], collisions: [], addressed: 0 },
+      brief: {
+        decisions: [],
+        skills: [],
+        collisions: [],
+        addressed: 0,
+        // Nothing switched the push: a fresh project's channels are ON, and the answer
+        // carries no attribution because there is no switch to attribute it to.
+        editPush: { channel: 'edit-rules-push', on: true },
+      },
     });
   });
 

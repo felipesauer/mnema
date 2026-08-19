@@ -476,6 +476,28 @@ export function tailPruned(
 }
 
 /**
+ * Builds a `channel.switched` event (subject = the CHANNEL that was switched).
+ *
+ * The `reason` key is OMITTED when the caller gave none, never set to an empty
+ * string: a switch with no stated reason and one with a blank one would otherwise be
+ * two byte-distinct spellings of the same fact, and the reader refuses the second.
+ *
+ * Nothing here knows which channels exist. A builder shapes an event, and the
+ * vocabulary of channels belongs to the surface that PUSHES them — this package has
+ * no idea that this product injects anything. What that division costs is written
+ * where the subject is classified (`core/src/content/fields.ts`): the channel is a
+ * caller's string, so it goes through the content door like every other one.
+ */
+export function channelSwitched(
+  envelope: EnvelopeInput,
+  payload: { on: boolean; reason?: string },
+): CatalogEvent {
+  const p: { on: boolean; reason?: string } = { on: payload.on };
+  if (payload.reason !== undefined) p.reason = payload.reason;
+  return { v: 1, kind: 'channel.switched', ...envelopeFields(envelope), payload: p };
+}
+
+/**
  * Builds the pair of events a skill's birth always emits, in order: the
  * `skill.created` that proves it exists, then the birth `skill.transitioned`
  * (`from: null`, `action: "create"`) that establishes its initial state. The two

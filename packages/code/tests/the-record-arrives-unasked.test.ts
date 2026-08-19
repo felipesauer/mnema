@@ -304,6 +304,39 @@ describe('the record arrives unasked', () => {
     }
   });
 
+  it('says nothing at all when the document channel is switched OFF', () => {
+    // The behavioural half of the switch, on the harness that actually runs the handler the
+    // way the host runs it. Switching the document off has to make a session open with
+    // nothing added — and the mechanism is the one the handler already had: the verb refuses
+    // on stderr with a non-zero exit, and every non-zero outcome is silence here. So this
+    // slice added no branch to the plugin at all, which is why the case belongs to this file
+    // rather than to the switch's own.
+    //
+    // THE FIXTURE IS SHARED AND IS PUT BACK. Every other case in this file reads the same
+    // seeded project, so a switch left off would make the rest of them measure a product
+    // that says nothing — green for the wrong reason in one case and red for the wrong
+    // reason in the others.
+    const commands = declaredCommands();
+    expect(commands.length).toBe(1);
+    try {
+      cli('switch', 'off', 'brief-document', '--reason', 'this project keeps AGENTS.md by hand');
+      const ran = runHook(commands[0] as string, project);
+      expect(ran.out).toBe('');
+      expect(ran.err).toBe('');
+      expect(ran.status).toBe(0);
+      // And it was TRIED, which is what separates "the channel is off" from "the handler
+      // never ran the verb".
+      expect(ran.mnema).toEqual(['brief']);
+    } finally {
+      cli('switch', 'on', 'brief-document');
+    }
+    // Put back, and it speaks again — the non-vacuity of the silence above, over the same
+    // handler and the same project.
+    const again = runHook(commands[0] as string, project);
+    expect(again.out).not.toBe('');
+    expect(again.status).toBe(0);
+  });
+
   it('hands over exactly what the verb prints', () => {
     // Byte for byte, with nothing of the plugin's own around it: a preamble here
     // would be a SECOND place deciding what the agent reads about what governs the

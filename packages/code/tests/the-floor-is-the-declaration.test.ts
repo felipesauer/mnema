@@ -373,6 +373,15 @@ const FLOOR_MODULES: readonly string[] = [
   'presentation/styled.ts',
   'presentation/verdict.ts',
   'presentation/width.ts',
+  // THE ONE MODULE HERE THAT IS NOT A DECLARATION AND NOT A SENTENCE, and it is on the
+  // floor by a decision rather than by the rule. `mnema switch` declares its channel
+  // argument out of the closed set of channels this product pushes, and that set lives
+  // where the channels are decided (`record-framing.ts`) — so commander needs it before
+  // it can print a line of help. Typing the two names into the wiring instead would be
+  // the second spelling the whole module exists to have ended. What it costs is ONE file
+  // with no imports of its own: it reaches no adapter, no record and no package, which
+  // the walk above is what proves.
+  'record-framing.ts',
   'recorded-content.ts',
   'reference-directions.ts',
   'session-words.ts',
@@ -415,6 +424,7 @@ const FLOOR_MODULES: readonly string[] = [
   'wiring/skill.ts',
   'wiring/skills.ts',
   'wiring/status.ts',
+  'wiring/switch.ts',
   'wiring/tail.ts',
   'wiring/task.ts',
   'wiring/timeline.ts',

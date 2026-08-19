@@ -63,6 +63,7 @@ import {
   antipatternsByProject,
   type Bootstrap,
   bootstrap,
+  channelIsOn,
   type Focus,
   focus,
   type GoverningRules,
@@ -132,6 +133,7 @@ import {
 } from '../intelligence-source.js';
 import { movedDisplay } from '../moved-record.js';
 import { oneLine } from '../one-line.js';
+import { EDIT_PUSH_CHANNEL } from '../record-framing.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
 import { type HookEvent, type HookReply, hookReply } from './hook-reply.js';
 import {
@@ -1903,6 +1905,16 @@ export function runGoverningRulesTool(
  * than "nothing governs this file" is a decision with a number behind it, and it is
  * written where the text is composed (`edit-rules-push.ts`).
  *
+ * IT IS SWITCHABLE, AND IT ASKS BEFORE IT WORKS. Every channel this product pushes unasked
+ * can be switched off, with the switching recorded as a fact of the chain — so the first
+ * thing this does is ask where its own switch stands, across every tree the session can
+ * see. Off, the reply is the same `{}` and nothing else runs: the derivation is the term
+ * that scales with the whole record on every call, and a channel somebody turned off must
+ * not keep paying it. Which makes THREE readings of one silence on this channel — no rule
+ * addresses the path, the channel is off, the hook never ran — and the once-per-session
+ * document distinguishes the first two for the committed case (`presentation/brief.ts`,
+ * which says plainly what it still cannot tell apart).
+ *
  * With no project it refuses `NO_PROJECT` — and a refusal on this channel is a tool error,
  * which the host treats as non-blocking. The session of somebody who installed the plugin
  * outside a project proceeds exactly as it would have without it.
@@ -1913,10 +1925,19 @@ export function runRulesBeforeAnEditTool(
 ): IntelligenceResult<HookReply> {
   const refused = requireProject(session);
   if (refused !== undefined) return refused;
+  const caches = workspaceCaches(session);
+  // THE SWITCH IS ASKED FIRST, before the path is even resolved, and the order is the
+  // whole cost argument. Off, this call does one indexed lookup per tree and returns; the
+  // derivation behind the notice is the term that scales with the record (measured at
+  // 0.79-0.83 ms on a realistic one, 3.2-4.3 ms on a large one), and a channel that was
+  // switched off must not keep paying it on every edit of every session.
+  if (!channelIsOn(caches, EDIT_PUSH_CHANNEL)) {
+    return { ok: true, value: hookReply(PRE_TOOL_USE, undefined) };
+  }
   // The same two lines `runGoverningRulesTool` stands on: a project session carries its
   // directory, and a server has no working directory of its own to resolve against.
   const root = session.project ?? '';
-  const at = readRulesInForceAt(workspaceCaches(session), {
+  const at = readRulesInForceAt(caches, {
     path: input.path,
     root,
     from: root,

@@ -212,6 +212,12 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   tail: {
     argv: (f) => ['tail', 'prune', f.foreignTail, '--reason', 'the person asked to be taken out'],
   },
+  // The bare group is the LISTING, which reads; what makes this verb a write is `off`,
+  // so that is what the exercise runs. A row for the listing would measure the read
+  // half of a group already classified by its most powerful member.
+  switch: {
+    argv: () => ['switch', 'off', 'edit-rules-push', '--reason', 'too much noise while porting'],
+  },
   mcp: CANNOT_BE_EXERCISED,
   // The reads.
   status: { argv: (f) => ['status', '--actor', f.anchor] },
@@ -500,7 +506,7 @@ describe('every verb says if it writes', () => {
     expect(Object.keys(INVOCATION).sort()).toEqual([...EFFECT_BY_VERB.keys()].sort());
   });
 
-  it('counts twelve writes and nineteen reads over the whole surface', () => {
+  it('counts thirteen writes and nineteen reads over the whole surface', () => {
     // The count in the report, asserted rather than trusted, and the total against the
     // list: a verb that stopped being registered would otherwise leave both halves
     // looking healthy.
@@ -516,6 +522,7 @@ describe('every verb says if it writes', () => {
       'run',
       'key',
       'tail',
+      'switch',
       'mcp',
     ]);
     expect(verbsThat('reads')).toEqual([
@@ -564,6 +571,7 @@ describe('every verb says if it writes', () => {
       'observe',
       'run',
       'skill',
+      'switch',
       'tail',
       'task',
     ]);
