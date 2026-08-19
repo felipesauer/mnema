@@ -416,7 +416,7 @@ complete -c mnema -f -n '__mnema_at "switch off"' -l which -r
 complete -c mnema -f -n '__mnema_at "switch off"' -s h -l help
 complete -c mnema -f -n '__mnema_at "switch off"' -s V -l version
 complete -c mnema -f -n '__mnema_at "switch off"' -l color -x -a 'auto always never'
-complete -c mnema -f -n '__mnema_at "switch off"' -a 'brief-document edit-rules-push'
+complete -c mnema -f -n '__mnema_at "switch off"' -a 'brief-document edit-rules-push edit-asks-a-person'
 
 # mnema switch on
 complete -c mnema -f -n '__mnema_at "switch on"' -l reason -r
@@ -425,7 +425,7 @@ complete -c mnema -f -n '__mnema_at "switch on"' -l which -r
 complete -c mnema -f -n '__mnema_at "switch on"' -s h -l help
 complete -c mnema -f -n '__mnema_at "switch on"' -s V -l version
 complete -c mnema -f -n '__mnema_at "switch on"' -l color -x -a 'auto always never'
-complete -c mnema -f -n '__mnema_at "switch on"' -a 'brief-document edit-rules-push'
+complete -c mnema -f -n '__mnema_at "switch on"' -a 'brief-document edit-rules-push edit-asks-a-person'
 
 # mnema verify
 complete -c mnema -f -n '__mnema_at "verify"' -l global

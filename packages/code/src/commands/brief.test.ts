@@ -326,9 +326,11 @@ describe('mnema brief (what governs the work here)', () => {
         skills: [],
         collisions: [],
         addressed: 0,
-        // Nothing switched the push: a fresh project's channels are ON, and the answer
-        // carries no attribution because there is no switch to attribute it to.
+        asking: 0,
+        // Nothing switched either: a fresh project's channels are ON, and the answers carry
+        // no attribution because there is no switch to attribute them to.
         editPush: { channel: 'edit-rules-push', on: true },
+        asksAPerson: { channel: 'edit-asks-a-person', on: true },
       },
     });
   });

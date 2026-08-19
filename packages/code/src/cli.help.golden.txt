@@ -298,10 +298,12 @@ $ mnema link --help
 | Arguments:
 |   subject          the entity that originates the link
 |   target           what it points at: another id, or a path under --rel governs
+|                    or asks-for-a-person
 |
 | Options:
 |   --rel <label>    the relation (recommended: supersedes, relates-to,
-|                    derived-from, contradicts, governs; any label is accepted)
+|                    derived-from, contradicts, governs, asks-for-a-person; any
+|                    label is accepted)
 |   --scope <scope>  where the link is born: public (team-visible), private (this
 |                    machine, this project), or global (personal, cross-project).
 |                    Omitted, a link lands in the public tree (an assertion about

@@ -69,6 +69,9 @@ const PAYLOAD_FIELDS: { readonly [K in CatalogEvent['kind']]: readonly string[] 
   'skill.consulted': [],
   'tail.pruned': ['tail', 'throughHash', 'eventCount', 'reason'],
   'channel.switched': ['on', 'reason'],
+  // No payload field at all, the same as a consultation: the fact is entirely envelope.
+  'channel.served': [],
+  'channel.asked': ['rule', 'path'],
 };
 
 /** The proof/context fields a transition's `fields` object may carry. */
@@ -365,6 +368,18 @@ function validatePayload(event: CatalogEvent): Record<string, PayloadValue> {
       const p: Record<string, PayloadValue> = { on: event.payload.on };
       if (event.payload.reason !== undefined) p.reason = event.payload.reason;
       return p;
+    }
+    case 'channel.served':
+      // Nothing to validate and nothing to rebuild. The key list above is empty, so a
+      // payload carrying anything at all was already refused before reaching here.
+      return {};
+    case 'channel.asked': {
+      // Both are REQUIRED, and the rule especially: this is the one kind of the catalog
+      // whose whole standing is that it names what caused it, so a charge with an absent
+      // or empty citation is a line this reader refuses rather than one it lifts.
+      requireString(kind, 'payload.rule', event.payload.rule);
+      requireString(kind, 'payload.path', event.payload.path);
+      return { rule: event.payload.rule, path: event.payload.path };
     }
     default:
       // Exhaustiveness: adding a kind without an arm fails the build.

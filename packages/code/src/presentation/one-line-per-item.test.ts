@@ -125,10 +125,12 @@ describe('the brief prints one line per rule', () => {
     skills: [],
     collisions: [],
     addressed: 0,
-    // Nothing switched the push, which is the composition's answer for a record with no
-    // switch in it — and it is what makes the ordinary cases below measure the document
+    asking: 0,
+    // Nothing switched either channel, which is the composition's answer for a record with
+    // no switch in it — and it is what makes the ordinary cases below measure the document
     // this file has always measured.
     editPush: { channel: 'edit-rules-push', on: true },
+    asksAPerson: { channel: 'edit-asks-a-person', on: true },
     ...over,
   });
   const decision = (over: Partial<Brief['decisions'][number]> = {}) => ({
@@ -174,10 +176,21 @@ describe('the brief prints one line per rule', () => {
     // it would have cost a case the day a value on it could. Both are carried now, with
     // the switch's own text replaced the way every other field's is.
     addressed: brief.addressed,
-    editPush: brief.editPush.on
-      ? { channel: 'c', on: true }
-      : { channel: 'c', on: false, by: 'w', at: 'a', travels: brief.editPush.travels ?? true },
+    asking: brief.asking,
+    editPush: plainState(brief.editPush),
+    // THE GATE'S STATE IS CARRIED THE SAME WAY, and it is a second channel rather than a
+    // second rule: the paragraph about it names an anchor and an instant out of the record
+    // exactly as the push's does, so the baseline has to spend the same lines on it or a
+    // break in the gate's own fields would be measured against a document with no gate
+    // paragraph in it.
+    asksAPerson: plainState(brief.asksAPerson),
   });
+
+  /** One channel state with every value replaced by text holding no whitespace. */
+  const plainState = (state: Brief['editPush']): Brief['editPush'] =>
+    state.on
+      ? { channel: 'c', on: true }
+      : { channel: 'c', on: false, by: 'w', at: 'a', travels: state.travels ?? true };
 
   /**
    * The switch, off, with every field holding text a break could be smuggled into.
@@ -192,6 +205,16 @@ describe('the brief prints one line per rule', () => {
     on: false,
     by: 'anchor-x',
     at: '2026-08-19T11:04:07.512Z',
+    travels: true,
+    ...over,
+  });
+
+  /** The GATE's switch, off, with every field holding text a break could be smuggled into. */
+  const gateSwitchedOff = (over: Partial<Brief['asksAPerson']> = {}): Brief['asksAPerson'] => ({
+    channel: 'edit-asks-a-person',
+    on: false,
+    by: 'anchor-y',
+    at: '2026-08-19T12:15:33.007Z',
     travels: true,
     ...over,
   });
@@ -274,6 +297,28 @@ describe('the brief prints one line per rule', () => {
         governs({
           decisions: [decision()],
           editPush: switchedOff({ channel: `a${breaker}b` }),
+        }),
+      ];
+      for (const one of cases) {
+        expect(document(one), JSON.stringify(breaker)).toHaveLength(document(plain(one)).length);
+      }
+    }
+  });
+
+  it('holds for the GATE’s switch too, in all three of its fields', () => {
+    // THE N+1 SITE, AND IT IS THE SHARPEST ONE ON THIS PARAGRAPH. The document names who
+    // switched the gate off and when, out of the record, in the middle of the paragraph
+    // that tells a reader nothing will stop them. A break in either field puts a line there
+    // — under a sentence about what does and does not gate this project — and the forged
+    // half would read as a claim about the gate that nobody recorded. It is not a bullet,
+    // so nothing that counts markers would ever have seen it.
+    for (const breaker of BREAKERS) {
+      const cases: Brief[] = [
+        governs({ decisions: [decision()], asksAPerson: gateSwitchedOff({ by: `a${breaker}b` }) }),
+        governs({ decisions: [decision()], asksAPerson: gateSwitchedOff({ at: `a${breaker}b` }) }),
+        governs({
+          decisions: [decision()],
+          asksAPerson: gateSwitchedOff({ channel: `a${breaker}b` }),
         }),
       ];
       for (const one of cases) {

@@ -1,0 +1,28 @@
+{
+  "what": "where the charging path’s 400 ms goes: the signed append, or the warm cache it invalidates",
+  "commit": "4426c08866413b02a5061f3158fe5d0ee228d8ca",
+  "node": "v24.14.0",
+  "cpus": 16,
+  "loadavg_1m": 3,
+  "regime": "realistic (16 in force, 25 patterns, 30 tasks, 8 addresses)",
+  "read_warm_ms": {
+    "p50": 1.11,
+    "first": 0.956,
+    "max": 1613.165
+  },
+  "append_alone_ms": {
+    "p50": 0.643,
+    "first": 0.595,
+    "max": 1.801
+  },
+  "append_then_read_ms": {
+    "p50": 16.46,
+    "first": 13.436,
+    "max": 489.956
+  },
+  "read_warm_again_ms": {
+    "p50": 1.087,
+    "first": 0.821,
+    "max": 1226.796
+  }
+}

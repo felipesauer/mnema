@@ -2,12 +2,22 @@
  * FORM A applied to the rules that govern a path: the address, what the rule IS,
  * and where it lives — one line per rule, under a heading that counts them.
  *
- * IT OPENS WITH THREE NUMBERS AND THEY ARE NEVER OMITTED, including when all three
- * are zero. A reading that printed only the matching rules would give the same page
+ * IT OPENS WITH THE NUMBERS AND THEY ARE NEVER OMITTED, including when every one of
+ * them is zero. A reading that printed only the matching rules would give the same page
  * to three different worlds: a project whose record addresses nothing, a project
  * whose addresses all point elsewhere, and a project whose addresses have gone
  * stale because the files moved. The first line separates them, and it is what makes
  * an empty list an ANSWER rather than a silence.
+ *
+ * THE GATE IS ON THAT LINE TOO, AND ITS ABSENCE WAS THE HOLE. The record can now hold a
+ * rule that ASKS FOR A PERSON at a path, and a rule of that kind stops somebody's write.
+ * A page that reported which rules govern a file and said nothing about which of them
+ * gates it would leave the person whose work just stopped with no reading that explains
+ * it: the refusal cites an id, and this is where an id is looked up. So the gate gets its
+ * own second line — the same three numbers for the other relation — and its own group when
+ * anything is in it, printed whatever was asked about for the reason the stale group is:
+ * a gate that has gone stale stops nobody, silently, and only a number that names it
+ * separately can be looked at.
  *
  * THE STALE GROUP IS NAMED, NOT ONLY COUNTED. A count of dead addresses goes down by
  * making the count go down; a list of them goes down by looking at what it names.
@@ -43,6 +53,17 @@ export function rulesReport(render: Render, governed: GoverningRules): string[] 
       fact(
         `${counts.matching} govern this path · ${counts.governing} address this project · ` +
           `${counts.stale} address nothing here`,
+      ),
+    ),
+    // A SECOND LINE AND NOT MORE COLUMNS ON THE FIRST. The two relations answer different
+    // questions and a reader scanning for "is this file gated" should not have to find the
+    // fourth number of six on one line. It prints whether or not anything asks, because
+    // zero here is the answer people will most often need and a missing line reads as a
+    // product that has no such mechanism.
+    render(
+      fact(
+        `${counts.asks.matching} ask for a person here · ${counts.asks.addressed} ask in ` +
+          `this project · ${counts.asks.stale} ask about nothing here`,
       ),
     ),
   ];
@@ -86,6 +107,8 @@ export function rulesReport(render: Render, governed: GoverningRules): string[] 
     lines.push(...rules.map(row));
   };
   group('governing this path, most specific first', governed.rules);
+  group('asking for a person here, most specific first', governed.asks);
   group('addressing nothing in the working tree', governed.stale);
+  group('asking about nothing in the working tree', governed.asksStale);
   return lines;
 }
