@@ -39,7 +39,7 @@
  * SHORTER list is what pins that decision: the retired root stays.
  */
 
-import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -358,6 +358,68 @@ describe('refreshWorkspace — the rule itself', () => {
       learned: [other],
     });
     expect(session.project).toBe(late);
+  });
+
+  it('asks the PROJECT for the anchor when the landing moves into one', () => {
+    // The anchor is recorded PER TREE, so a session that walks from the global tree
+    // into a project has to ask the project's private tree the question it used to ask
+    // the global one. Leaving the old answer in place would attribute that project's
+    // work to what another tree said.
+    //
+    // ASSERTED BY WHICH TREE WAS ASKED, not by the value, and that is deliberate: in a
+    // fresh sandbox both trees answer with the same machine key, so an equality on
+    // `who` is satisfied by a session that never re-read at all. It is vacuous, and it
+    // was found that way — the mutation that drops the re-read left every other case in
+    // this file green. Opening the private tree to ask is what materializes it, so its
+    // EXISTENCE is the evidence, and a re-read that skipped the question leaves the
+    // directory absent.
+    const plain = makePlainDir('plain');
+    const late = makeProject('late');
+    const priv = resolveTrees(late, env).projectPrivate as string;
+
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(plain).href],
+      env,
+    });
+    // Not vacuous: the tree is absent while the session is on the global one, so the
+    // assertion below is about this re-read rather than about the fixture.
+    expect(existsSync(priv)).toBe(false);
+    expect(session.who).toMatch(/^mnid:/);
+
+    refreshWorkspace(session, [pathToFileURL(late).href]);
+
+    expect(existsSync(priv)).toBe(true);
+    // And the session says who it is out of that tree — the same answer a session
+    // opened there from the start gives, which is what "as if the root had arrived at
+    // the handshake" means.
+    expect(session.who).toBe(
+      openSession({
+        clientName: 'claude-code',
+        roots: [pathToFileURL(plain).href, pathToFileURL(late).href],
+        env,
+      }).who,
+    );
+  });
+
+  it('does NOT ask again when the landing did not move', () => {
+    // The other side, and it is what keeps the case above from being "re-read the
+    // anchor on every notification": a session already in a project has its answer, and
+    // asking again would open a writer over a tree per notification for nothing.
+    const alpha = makeProject('alpha');
+    const beta = makeProject('beta');
+    const betaPriv = resolveTrees(beta, env).projectPrivate as string;
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(alpha).href],
+      env,
+    });
+
+    refreshWorkspace(session, [pathToFileURL(beta).href]);
+
+    // `beta` is in the list and can be written to — and nothing has been opened in it.
+    expect(session.workspaceProjects.map((project) => project.dir)).toContain(beta);
+    expect(existsSync(betaPriv)).toBe(false);
   });
 
   it('runs the SAME cascade, so a configured project still wins', () => {
