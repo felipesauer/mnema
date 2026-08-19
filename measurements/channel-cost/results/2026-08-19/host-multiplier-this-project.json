@@ -1,0 +1,69 @@
+{
+  "probe": "host-multiplier",
+  "stamp": {
+    "at": "2026-08-19T03:32:51.261Z",
+    "product_version": "0.0.0",
+    "git_commit": "605052949a85bb7b15a38349b4158336df49e398",
+    "git_tree_modified": false,
+    "node": "v24.14.0",
+    "platform": "linux-x64",
+    "cpus": 16,
+    "total_mem_gib": 13.3,
+    "loadavg_1m": 2.63
+  },
+  "transcript_files_in_store": 640,
+  "transcript_files_counted": 397,
+  "sample_bias": "the sessions of ONE machine doing ONE kind of work; not a population",
+  "per_session": {
+    "tool_calls": {
+      "sessions": 104,
+      "total": 39911,
+      "p50": 131,
+      "p90": 254,
+      "p99": 4400,
+      "max": 15512,
+      "mean": 383.8,
+      "sessions_with_none": 1
+    },
+    "edits": {
+      "sessions": 104,
+      "total": 8617,
+      "p50": 35,
+      "p90": 65,
+      "p99": 996,
+      "max": 3369,
+      "mean": 82.9,
+      "sessions_with_none": 11
+    },
+    "prompts": {
+      "sessions": 104,
+      "total": 969,
+      "p50": 1,
+      "p90": 3,
+      "p99": 110,
+      "max": 574,
+      "mean": 9.3,
+      "sessions_with_none": 0
+    },
+    "compactions": {
+      "sessions": 104,
+      "total": 17,
+      "p50": 0,
+      "p90": 0,
+      "p99": 4,
+      "max": 11,
+      "mean": 0.2,
+      "sessions_with_none": 100
+    },
+    "subagents": {
+      "sessions": 104,
+      "total": 143,
+      "p50": 0,
+      "p90": 1,
+      "p99": 25,
+      "max": 87,
+      "mean": 1.4,
+      "sessions_with_none": 91
+    }
+  }
+}
