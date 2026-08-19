@@ -24,9 +24,13 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ADDRESS_RELATIONS } from '@mnema/core';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
+import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
 import { NOT_HAND_WRITTEN, reachOfAddress, WALK_CEILING } from '../src/governed-tree.js';
+import { buildMcpServer } from '../src/mcp/server.js';
 import { openSession, type Session } from '../src/mcp/session.js';
 import { runLinkKnowledge } from '../src/mcp/tools.js';
 
@@ -81,6 +85,21 @@ function reachLine(said: Said): string | undefined {
 
 function connect(): Session {
   return openSession({ clientName: 'agent-alpha', roots: [pathToFileURL(repo).href], env });
+}
+
+/** A connected client over the real transport — what the agent actually talks to. */
+async function connectClient(): Promise<Client> {
+  const { server } = buildMcpServer({ env, log: () => {} });
+  const client = new Client(
+    { name: 'claude-code', version: '1.0.0' },
+    { capabilities: { roots: {} } },
+  );
+  client.setRequestHandler(ListRootsRequestSchema, () => ({
+    roots: [{ uri: pathToFileURL(repo).href, name: repo }],
+  }));
+  const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+  await Promise.all([client.connect(clientSide), server.connect(serverSide)]);
+  return client;
 }
 
 beforeEach(async () => {
@@ -250,6 +269,38 @@ describe('the agent is told the same thing', () => {
     expect(reachLine(await address('src/collate'))).toContain(
       `covers 1 of ${linked.reach?.counted} file(s)`,
     );
+  });
+
+  it('puts the line in the TEXT the agent reads, over the real transport', async () => {
+    // The field on the tool result is not what an agent sees; the text block is. A case
+    // that stopped at the field left the server free to compute the reach and print
+    // none of it — measured: that mutation turned 123 existing MCP cases green.
+    file('src/collate/fold.ts');
+    file('src/billing/charge.ts');
+    const client = await connectClient();
+    const reply = await client.callTool({
+      name: 'link_knowledge',
+      arguments: { subject: 'ADR-1', target: 'src/collate', rel: 'governs' },
+    });
+    const text = (reply.content as { text: string }[])[0]?.text ?? '';
+    expect(text).toContain('src/collate covers 1 of 2 file(s)');
+    expect(text).toContain('Files on disk, not edits');
+    // And the ORDER: the reach is about what was just recorded, the tree notice about
+    // where it went, and a reader's question after typing a wide address is the first.
+    expect(text.indexOf('covers 1 of 2')).toBeLessThan(text.indexOf('Landed in the'));
+    await client.close();
+  });
+
+  it('says nothing in that text when the relation carries no address', async () => {
+    const client = await connectClient();
+    const reply = await client.callTool({
+      name: 'link_knowledge',
+      arguments: { subject: 'ADR-1', target: 'ADR-2', rel: 'relates-to' },
+    });
+    const text = (reply.content as { text: string }[])[0]?.text ?? '';
+    expect(text).not.toContain('covers');
+    expect(text).toContain('Linked ADR-1');
+    await client.close();
   });
 
   it('carries none when the relation carries no address', () => {

@@ -238,11 +238,6 @@ function walkProject(
   const skipped: string[] = [];
   let counted = 0;
   const descend = (dir: string, prefix: string): void => {
-    // Checked on ENTRY and not only inside the loop. Returning from the loop alone
-    // would leave every sibling directory above still opened and read — the walk would
-    // stop counting and not stop working, which is the shape of a ceiling that does
-    // not bound anything.
-    if (counted >= ceiling) return;
     // Named rather than inferred: `readdirSync`'s overloads resolve to the Buffer
     // one through a `ReturnType`, and every name below would come back as bytes.
     let entries: Dirent[];
@@ -253,6 +248,14 @@ function walkProject(
       return;
     }
     for (const entry of entries) {
+      // The ONE ceiling check, and it is here rather than also on entry because this
+      // is the only place a directory is ever descended into: past the ceiling the
+      // loop returns before deciding, so no deeper `readdirSync` happens. An entry
+      // check was written first, with a comment claiming that without it "every
+      // sibling above would still be opened and read"; a mutation that deleted it lit
+      // NOTHING, which is what proved the claim false and the line dead. What the
+      // ceiling actually bounds — directories OPENED, not just files counted — is
+      // `the-walk-stops-at-its-ceiling.test.ts`.
       if (counted >= ceiling) return;
       const relative = prefix === '' ? entry.name : `${prefix}/${entry.name}`;
       if (entry.isDirectory()) {
