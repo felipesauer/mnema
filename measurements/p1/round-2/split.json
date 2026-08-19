@@ -1,0 +1,28 @@
+{
+  "round": 2,
+  "frozen_at": "2026-08-18",
+  "pilot": "a7-partial-refund",
+  "development": ["a7-partial-refund", "a10-stock-cost"],
+  "held_out": [
+    "a8-installments",
+    "a9-phone-format",
+    "a11-tax-id",
+    "a12-payment-allocation",
+    "a13-holiday-shift",
+    "a14-tie-break",
+    "b3-duration-format",
+    "b4-run-length"
+  ],
+  "headline": [
+    "a8-installments",
+    "a9-phone-format",
+    "a11-tax-id",
+    "a12-payment-allocation",
+    "a13-holiday-shift",
+    "a14-tie-break"
+  ],
+  "arms": ["base", "prosa", "host", "mnema", "mnema+"],
+  "n": 4,
+  "n_decision": "OPEN, and not this file's to close: n is carried over from round 1 unchanged, and the three candidate sizes are costed in reading.md. Round 1 spent 5 points of the weekly meter where 3 were authorised, so the size of round 2 is a spending decision and it belongs to whoever holds the budget.",
+  "rule": "held-out tasks are touched once; any iteration after seeing a held-out result contaminates them"
+}

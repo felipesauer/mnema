@@ -98,9 +98,15 @@ const SCANNED: readonly string[] = [
 
 /**
  * The measurements tree of `root`, minus what a run captured — the walk and the one exclusion,
- * written as a function so the case below can put it over a tree of its OWN. Over this
- * workspace it has nothing to exclude yet, because no run has produced a capture: a check of
- * the exclusion against the real tree would pass just as well with the exclusion deleted.
+ * written as a function so the case below can put it over a tree of its OWN.
+ *
+ * THE SENTENCE THAT STOOD HERE said this workspace has nothing to exclude yet, because no run
+ * had produced a capture, so a check of the exclusion against the real tree would pass just as
+ * well with the exclusion deleted. The pilot falsified it on 17 Aug 2026 and the round on the
+ * 18th: a cell's raw output is committed as `<cell>.stdout.json`, and `.json` is exactly what
+ * TEXT matches. So the exclusion now removes real files from the real walk, and the case below
+ * asserts THAT rather than only the shape — while the tree of its own stays, because it is what
+ * pins which files the pattern lets through.
  */
 function measurementsUnder(root: string): readonly string[] {
   return filesUnder(join(root, 'measurements'), true).filter(
@@ -157,10 +163,25 @@ describe('the ceiling a case waits under is that case’s own', () => {
     expect(reached, 'the measurements were not read').toContain('measurements/p1/split.json');
   });
 
-  it('and not what a measurement captured — over a tree of its own', () => {
-    // A TREE OF ITS OWN, because this workspace has no capture yet: over the real one the
-    // exclusion has nothing to exclude, and a case that read only the real one would stay
-    // green with the exclusion deleted. Here the capture exists, so deleting it goes red.
+  it('and not what a measurement captured — over the real tree', () => {
+    // The exclusion has to be DOING something here, or the two cases below say nothing about
+    // this workspace: a run's raw output is committed per cell as `<cell>.stdout.json`, which
+    // the needle's own extension list matches. Deleting the exclusion puts a model's output
+    // into the scan, and a needle over text a model wrote accuses nobody.
+    const scanned = filesUnder(join(ROOT, 'measurements'), true);
+    const kept = measurementsUnder(ROOT);
+    expect(
+      scanned.length - kept.length,
+      'the exclusion excludes nothing in this workspace — it cannot have gone red',
+    ).toBeGreaterThan(0);
+    // And it excludes the captures only: what a measurement FIXED is still read.
+    expect(kept.map((file) => file.slice(ROOT.length))).toContain('measurements/p1/split.json');
+  });
+
+  it('and the pattern it excludes by lets a pre-registration through — over a tree of its own', () => {
+    // A TREE OF ITS OWN, because over the real one the case above can only count: which files
+    // the pattern lets through and which it stops needs a tree whose every file is known, and
+    // here deleting the exclusion goes red on an exact list rather than on a count.
     const root = `${mkdtempSync(join(tmpdir(), 'mnema-ceiling-'))}/`;
     try {
       const captured = join(root, 'measurements', 'p1', 'results', '2026-08-20-full', 'raw');

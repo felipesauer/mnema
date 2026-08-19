@@ -41,4 +41,28 @@ what they say. The ids name a domain (`a1-rounding`), never the rule the task tu
 
 | | |
 |---|---|
-| [`p1/`](p1/) | **Does the record change the work?** Pre-registered. No number exists yet. |
+| [`p1/`](p1/) | **Does the record change the work?** Pre-registered, and **measured once**: the first round's numbers are committed under [`p1/results/`](p1/results/), and the first promise **did not survive as written**. A second round — new tasks, five arms, a reading that closes the three gaps the first one found in its own rule — is pre-registered in [`p1/round-2/`](p1/round-2/) and **has not run** |
+| [`p3/`](p3/) | **Does the proof survive someone with write access?** Eleven attacks [frozen before any of them ran](p3/protocol.md); nine carried out, and [every prediction held](p3/results/2026-08-18/report.md). No model was called — this one is filesystem and cryptography, and the attacker's own scripts are committed beside the verifier's output |
+
+*(The line that stood here said `p1/` was **"Pre-registered. No number exists yet."**, and it was
+the whole of this table. It was true on 13 Aug 2026 and false from the 18th, when the round landed
+in the directory beside it; `p3/` had by then been pre-registered, attacked and reported, and this
+index named none of it. The premise is rewritten rather than deleted, because an index that
+contradicts the data next to it is the one defect a reader cannot check around.)*
+
+**There is no `p2/`, and the gap in the numbering is not an omission.** The names follow the
+PROMISES, not this directory: `p1` is the first promise and `p3` the third. The second is the one
+[`p3/protocol.md`](p3/protocol.md) calls *"about form"*, and no protocol for it is pre-registered
+here — which is a thing this index says rather than a thing a reader has to infer from a missing
+directory.
+
+## What each capture under `p1/results/` is
+
+One directory per run, and two of them are not the same kind of thing. The count in a report is the
+count that report is about, and the counts do not add up to each other — so they are named here.
+
+| | |
+|---|---|
+| [`2026-08-17-pilot/`](p1/results/2026-08-17-pilot/) | **4 cells** — one task, four arms, one run. The calibration pilot: it measured what a cell costs and it falsified the column the design had trusted to answer whether the host's memory was alive. Its task is a development task by rule, so its raw output and diffs are committed |
+| [`2026-08-18-full/`](p1/results/2026-08-18-full/) | **112 cells** — seven tasks × four arms × four runs, the pre-registered round. Its `report.md` opens on *"116 cells"*, and that number is the protocol's **accumulated spend** at the time — these 112 plus the pilot's 4, whose $5.25 and $0.18 make the $5.44 the same report states. The file is a capture and is **not edited**; this row is what disambiguates it. Committed: `cells.jsonl`, and the raw output and diffs of `a3-idempotency` alone, because that task is a development task and open by design. The held-out tasks' raw output and diffs stay back until the tasks are published |
+| [`2026-08-18-mechanism/`](p1/results/2026-08-18-mechanism/) | **8 cells** — a fifth arm on the two tasks the round had already shown to discriminate. **Not a measurement, and it says so in every line** (`selection_note`): the task selection is biased by a result, so no rate from it compares with the round's. Committed: `cells.jsonl` only — both its tasks are held out |
