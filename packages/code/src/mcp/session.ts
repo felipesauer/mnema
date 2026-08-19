@@ -145,10 +145,10 @@ export type WriteTarget = WorkspaceProject;
  * that connected, the human the work is authorized as, the runs a write has opened,
  * and the connection's warm caches. The tools read this to reach the right
  * writer/cache and to attribute a capture. Everything on it but
- * {@link Session.caches}, {@link Session.runs} and {@link Session.consulted} is
- * data; the caches are the one live resource a connection holds and the other two
- * are what fills in as it writes, and all three are held here because their
- * lifetime IS the connection's.
+ * {@link Session.caches}, {@link Session.runs}, {@link Session.consulted} and
+ * {@link Session.served} is data; the caches are the one live resource a connection
+ * holds and the other three are what fills in as it writes, and all four are held here
+ * because their lifetime IS the connection's.
  */
 export interface Session {
   /**
@@ -342,6 +342,27 @@ export interface Session {
    * process memory already knows.
    */
   readonly consulted: Map<string, Set<string>>;
+  /**
+   * The channels already recorded as having SERVED, per RUN — the names, not the facts.
+   *
+   * It is {@link Session.consulted} for the other half of the axis, and it is a second map
+   * rather than a second use of that one because the two dedupe different vocabularies: a
+   * skill id and a channel name would share a set and could, in principle, collide. Keyed
+   * by the run's chain root for the same reason, and for the reason that matters most on
+   * this path: it decides whether to write AT ALL, and the channel it guards fires on every
+   * edit of every session — a call that has nothing to record must not have opened a run to
+   * find that out.
+   *
+   * WHY A CHANNEL IS RECORDED ONCE AND AN ASKING EVERY TIME. Serving is continuous — a
+   * reader needs to know the push was live in that run, which one fact carries — while
+   * asking is a discrete exercise of authority over one call at one path, and every one of
+   * them is a fact of its own. So the asking has no map here: nothing about it is
+   * deduplicated, and that is the granularity of the power rather than an omission.
+   *
+   * In memory, and sufficient rather than a shortcut: the scope is exactly the run, and
+   * every run here dies with this session.
+   */
+  readonly served: Map<string, Set<string>>;
 }
 
 /**
@@ -411,6 +432,7 @@ export function openSession(input: OpenSessionInput): Session {
     log: input.log ?? (() => {}),
     caches,
     consulted: new Map<string, Set<string>>(),
+    served: new Map<string, Set<string>>(),
   };
 }
 

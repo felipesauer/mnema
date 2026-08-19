@@ -37,6 +37,11 @@ const EXPECTED: { readonly [K in RoutedKind]: Scope | 'by-origin' } = {
   // decision is: the team reads it, and a switch nobody but its own machine can see
   // would leave "switching off is never silent" holding for a single reader.
   'channel.switched': 'public',
+  // What a channel DID, on the same side of the table as what was done to it: the
+  // evidence that a push was live in a run, and the record of a rule that stopped a
+  // write, are both worth nothing on the one machine that produced them.
+  'channel.served': 'public',
+  'channel.asked': 'public',
 };
 
 const ROUTED = Object.keys(EXPECTED) as RoutedKind[];
@@ -123,7 +128,7 @@ describe('resolveScope — the classification is TOTAL over the catalog', () => 
 
   it('is not vacuous — every half holds kinds, and the catalog is not empty', () => {
     expect(catalog.length).toBeGreaterThan(10);
-    expect(BY_KIND.length).toBe(7);
+    expect(BY_KIND.length).toBe(9);
     expect(BY_ORIGIN.length).toBe(2);
     expect(Object.keys(UNROUTED_KINDS).length).toBe(catalog.length - ROUTED.length);
   });

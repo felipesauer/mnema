@@ -32,7 +32,9 @@ function governance(over: Partial<Brief> = {}): Brief {
     skills: [],
     collisions: [],
     addressed: 0,
+    asking: 0,
     editPush: { channel: 'edit-rules-push', on: true },
+    asksAPerson: { channel: 'edit-asks-a-person', on: true },
     ...over,
   };
 }
@@ -51,6 +53,21 @@ const SWITCHED_OFF: ChannelState = {
   on: false,
   by: '0198f3c1-7a2e-7b41-9c05-3d8e6f2a9f01',
   at: '2026-08-19T11:04:07.512Z',
+  travels: true,
+};
+
+/**
+ * The GATE, switched off by somebody — the same shape for the other channel.
+ *
+ * A second fixture rather than the one above with its `channel` changed, because the
+ * document says a different sentence for each and a case that reused one state could pass
+ * while the composition printed the push's words under the gate's number.
+ */
+const GATE_SWITCHED_OFF: ChannelState = {
+  channel: 'edit-asks-a-person',
+  on: false,
+  by: '0198f3c1-7a2e-7b41-9c05-3d8e6f2a9f02',
+  at: '2026-08-19T12:15:33.007Z',
   travels: true,
 };
 
@@ -107,6 +124,64 @@ describe('the brief is the same bytes for the same record', () => {
   });
 });
 
+describe('the brief explains the silence at an edit, per channel', () => {
+  /**
+   * A CASE THIS FILE DID NOT HAVE, and the omission was found by the linter rather than by
+   * a red: {@link SWITCHED_OFF} was written for the switch and then nothing here used it.
+   * The end-to-end guard covers the push's sentence through the CLI
+   * (`tests/the-switch-is-a-fact.test.ts`) and the line-layer guard covers its two record
+   * values, but no case in the composition's OWN file asserted which sentence it prints. So
+   * both channels get one here, and the fixtures are what they were written for.
+   */
+  it('says what arrives while both channels are on', () => {
+    const text = printed(governance({ decisions: [decision(1)] }));
+    expect(text).toContain('the rules');
+    expect(text).toContain('arrive on their own');
+    expect(text).toContain('the write waits until a person decides');
+    // And neither switched-off sentence, because neither is switched off.
+    expect(text).not.toContain('was switched off by');
+  });
+
+  it('replaces the push’s sentence when the push is off, and names who and when', () => {
+    const text = printed(governance({ decisions: [decision(1)], editPush: SWITCHED_OFF }));
+    expect(text).toContain('NOTHING of them arrives when a file is about');
+    expect(text).toContain(`edit-rules-push was switched off by ${SWITCHED_OFF.by ?? ''}`);
+    expect(text).toContain(SWITCHED_OFF.at ?? '');
+    // The two sentences describe the same silence and only one is true; printing both would
+    // leave a reader — a model — to pick.
+    expect(text).not.toContain('arrive on their own');
+    // And the GATE's sentence is untouched: the two switches are separate, and turning off
+    // the text must not read as turning off what stops somebody.
+    expect(text).toContain('the write waits until a person decides');
+  });
+
+  it('replaces the gate’s sentence when the gate is off, and names who and when', () => {
+    const text = printed(governance({ decisions: [decision(1)], asksAPerson: GATE_SWITCHED_OFF }));
+    expect(text).toContain('NONE of them waits now');
+    expect(text).toContain(`edit-asks-a-person was switched off by ${GATE_SWITCHED_OFF.by ?? ''}`);
+    expect(text).toContain(GATE_SWITCHED_OFF.at ?? '');
+    expect(text).not.toContain('the write waits until a person decides');
+    // And the push's sentence is untouched, which is the other direction of the same claim.
+    expect(text).toContain('arrive on their own');
+  });
+
+  it('says both, when both are off — and does not confuse one for the other', () => {
+    const text = printed(
+      governance({
+        decisions: [decision(1)],
+        editPush: SWITCHED_OFF,
+        asksAPerson: GATE_SWITCHED_OFF,
+      }),
+    );
+    // Each names ITS OWN channel and its own anchor. A composition that read one state for
+    // both would print one of these twice, and the document would attribute a switch to
+    // somebody who never made it.
+    expect(text).toContain(`edit-rules-push was switched off by ${SWITCHED_OFF.by ?? ''}`);
+    expect(text).toContain(`edit-asks-a-person was switched off by ${GATE_SWITCHED_OFF.by ?? ''}`);
+    expect(SWITCHED_OFF.by).not.toBe(GATE_SWITCHED_OFF.by);
+  });
+});
+
 describe('the brief costs one line per rule', () => {
   it('grows by exactly one line per decision and per pattern', () => {
     // The whole size claim, as a slope. A rule is a NAME — a title, a label, an id —
@@ -127,19 +202,25 @@ describe('the brief costs one line per rule', () => {
     // is not the slope and is not asserted as if it were.
     expect(oneEach - none).toBeGreaterThan(0);
     // And the fixed part is small enough to be worth having in a file read on every
-    // prompt: measured at 30 lines with both lists empty, against the ~200 the market
+    // prompt: measured at 34 lines with both lists empty, against the ~200 the market
     // publishes for a whole project memory. It was 21 before the document had to name
-    // the scope it carries and say what its counts count, and 25 before it had to say how
-    // many of the rules have an ADDRESS (four lines and a blank). That last growth used
-    // the whole of the headroom the bound left, and it was a decision rather than a
-    // slip: those five lines are read once per session, and what they buy is the meaning
-    // of a SILENCE in a channel that fires on every edit — up to 3,424 of them in one
-    // measured session. The bound moves with it, and stays above the measurement for the
-    // reason it always did: a declaration is the one thing this skeleton is allowed to
-    // grow for, and a bound sitting on the measured value turns the next honest sentence
-    // into a failing test instead of a decision.
-    expect(none).toBe(30);
-    expect(none).toBeLessThanOrEqual(34);
+    // the scope it carries and say what its counts count, 25 before it said how many of
+    // the rules have an ADDRESS, and 30 before that paragraph grew the switch.
+    //
+    // THE LAST FOUR ARE THE GATE, and they are the growth in this list that is not about
+    // explaining a silence. The record can hold a rule that STOPS a write, and a reader
+    // who first learns that from a refusal learns it at the worst moment there is — so
+    // these lines are the only warning this product gives, and they are paid once per
+    // session against a channel that fires up to 3,424 times in one. They are three lines
+    // and a blank because the pointer at `governing_rules` was not repeated: that read
+    // answers for both relations, and the paragraph above already names it.
+    //
+    // The bound moves with the measurement and stays above it, for the reason it always
+    // did: a declaration is the one thing this skeleton is allowed to grow for, and a
+    // bound sitting on the measured value turns the next honest sentence into a failing
+    // test instead of a decision.
+    expect(none).toBe(34);
+    expect(none).toBeLessThanOrEqual(38);
   });
 
   it('says how many rules there are, and prints exactly that many', () => {

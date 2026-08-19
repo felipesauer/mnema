@@ -8,6 +8,16 @@
  * is a path, and this reads that graph BACKWARDS — given a path, which rules
  * cover it.
  *
+ * ## TWO relations, ONE derivation
+ *
+ * {@link ASKS_FOR_A_PERSON_RELATION} has the same shape and a different power: it says
+ * that under this part of the tree, nobody writes without somebody looking. Everything
+ * about how an address is normalized, compared, ordered and counted is identical, so it
+ * is the same walk with a different label — {@link addressesUnder} — and never a second
+ * reading of the same rule. Two readings of an address is how the segment comparison
+ * would come to mean one thing for the text that informs and another for the gate that
+ * stops somebody, and the second would be found by whoever it trapped.
+ *
  * ## It does not charge, and it does not rule
  *
  * Nothing here refuses, escalates or blocks. A rule's STATE travels out with it
@@ -92,7 +102,13 @@
  * it is not taken here — the reading reports the tree, so whoever charges can.
  */
 
-import { GOVERNS_RELATION, type LinkEdge, type Scope, type SearchKind } from '@mnema/core';
+import {
+  ASKS_FOR_A_PERSON_RELATION,
+  GOVERNS_RELATION,
+  type LinkEdge,
+  type Scope,
+  type SearchKind,
+} from '@mnema/core';
 import { decisionsInForce } from '../context/decisions.js';
 import { type RecordBody, readRecord } from '../context/search.js';
 import { adoptedSkills } from '../context/skills.js';
@@ -169,6 +185,29 @@ export interface GovernanceCounts {
   readonly governing: number;
   /** How many of those name something the working tree does not hold. */
   readonly stale: number;
+  /**
+   * The same three numbers for the relation that ASKS FOR A PERSON — the gate rather
+   * than the text.
+   *
+   * They are here, and they are three rather than one, because the gate has exactly the
+   * three worlds the governing addresses do and they are worse to confuse: a path where
+   * no gate applies, a project whose record holds no gate at all, and a gate whose
+   * address went stale when a directory was renamed and now stops nobody. The last is
+   * the dangerous one — a gate that quietly stopped closing is indistinguishable from a
+   * gate that never had anything to close on — and only a number that names it separately
+   * can be looked at.
+   */
+  readonly asks: AddressCounts;
+}
+
+/** The three numbers of ONE relation's addresses around a path. */
+export interface AddressCounts {
+  /** How many of that relation's addresses cover the path asked about. */
+  readonly matching: number;
+  /** How many that relation holds in this project's record at all. */
+  readonly addressed: number;
+  /** How many of those name something the working tree does not hold. */
+  readonly stale: number;
 }
 
 /** Which rules govern a path, and what the record's addresses look like around it. */
@@ -195,7 +234,20 @@ export interface GoverningRules {
    * {@link rules}.
    */
   readonly stale: readonly AddressedRule[];
-  /** The three numbers. */
+  /**
+   * The addresses that ASK FOR A PERSON around this path — the gate, reported beside
+   * the text rather than instead of it.
+   *
+   * It is named as well as counted, for the reason the stale list is: a person who
+   * cannot see WHICH fact gates a directory cannot remove it, supersede it or argue
+   * with it, and the one thing worse than a gate is a gate whose cause nobody can find.
+   * Whatever state its rule is in travels with it exactly as it does above — this
+   * reading judges neither, and only the charge narrows to what is in force.
+   */
+  readonly asks: readonly AddressedRule[];
+  /** The gate addresses that match nothing in the working tree. Same order rule. */
+  readonly asksStale: readonly AddressedRule[];
+  /** The three numbers, and the other relation's three. */
   readonly counts: GovernanceCounts;
 }
 
@@ -212,24 +264,61 @@ export function governingRules(
   query: GovernanceQuery,
 ): GoverningRules {
   const asked = relativeSegments(query.path, query.root);
-  const addressed: Addressed[] = [];
-
-  for (const source of sources) {
-    if (!governsThisProject(source, query.root)) continue;
-    for (const edge of source.cache.linksByRelation(GOVERNS_RELATION)) {
-      addressed.push(describe(sources, source, edge, query));
-    }
-  }
-
-  const stale = addressed.filter((entry) => !entry.rule.onDisk);
-  const matching = asked === null ? [] : addressed.filter((entry) => covers(entry, asked));
+  const governs = addressesUnder(sources, query, GOVERNS_RELATION, asked);
+  const asks = addressesUnder(sources, query, ASKS_FOR_A_PERSON_RELATION, asked);
 
   return {
     path: query.path,
     ...(asked !== null ? { relative: posix(asked) } : {}),
-    rules: ordered(matching),
-    stale: ordered(stale),
-    counts: { matching: matching.length, governing: addressed.length, stale: stale.length },
+    rules: ordered(governs.matching),
+    stale: ordered(governs.stale),
+    asks: ordered(asks.matching),
+    asksStale: ordered(asks.stale),
+    counts: {
+      matching: governs.matching.length,
+      governing: governs.all.length,
+      stale: governs.stale.length,
+      asks: {
+        matching: asks.matching.length,
+        addressed: asks.all.length,
+        stale: asks.stale.length,
+      },
+    },
+  };
+}
+
+/**
+ * Every address of ONE relation in this project's trees, split into what covers the
+ * asked path and what covers nothing on disk — the whole walk, done once per relation.
+ *
+ * It exists so the two relations cannot come to disagree about what an address MEANS.
+ * Normalizing, the segment comparison, the disk probe and the counting are here and
+ * nowhere else, so a change to any of them lands on the text that informs and on the
+ * gate that stops somebody in the same edit. `all` travels out beside the two lists
+ * because the middle number counts the addresses this project holds at all, and
+ * recomputing it from the lists would be a second arithmetic that could differ.
+ */
+function addressesUnder(
+  sources: readonly ScopedCache[],
+  query: GovernanceQuery,
+  relation: string,
+  asked: readonly string[] | null,
+): {
+  readonly all: readonly Addressed[];
+  readonly matching: readonly Addressed[];
+  readonly stale: readonly Addressed[];
+} {
+  const all: Addressed[] = [];
+  for (const source of sources) {
+    if (!governsThisProject(source, query.root)) continue;
+    for (const edge of source.cache.linksByRelation(relation)) {
+      all.push(describe(sources, source, edge, query));
+    }
+  }
+  return {
+    all,
+    matching: asked === null ? [] : all.filter((entry) => covers(entry, asked)),
+    stale: all.filter((entry) => !entry.rule.onDisk),
   };
 }
 
@@ -481,15 +570,63 @@ export function rulesInForceAt(
   sources: readonly ScopedCache[],
   query: GovernanceQuery,
 ): RulesAtPath {
-  const governed = governingRules(sources, query);
+  return inForceUnder(sources, query, GOVERNS_RELATION);
+}
+
+/**
+ * The rules of `sources` that ASK FOR A PERSON at `query.path` AND are still in force —
+ * the reading a CHARGE stands on, and the only one in this file whose answer can stop
+ * somebody's work.
+ *
+ * ## Why it is in force and never merely addressed
+ *
+ * It is the same narrowing {@link rulesInForceAt} does and the argument is one step
+ * harder here. A superseded decision arriving as pushed text is the product asserting a
+ * rule the record says stopped; a superseded decision GATING a file is the product
+ * stopping work on the authority of something the team retired, and the person it stops
+ * has no way to see that from the refusal. So the set comes from the two derivations that
+ * decide what is in force, and nothing here decides it a second time.
+ *
+ * ## What an empty answer means, and it is one thing only
+ *
+ * No gate applies. It does not mean the mechanism is missing and it does not mean the
+ * channel is off — those are the caller's to distinguish, and both are answered where a
+ * session opens. The three numbers that separate them belong to {@link governingRules},
+ * which reports all of them to whoever asks, and never to a text paid for on every edit.
+ */
+export function asksForAPersonAt(
+  sources: readonly ScopedCache[],
+  query: GovernanceQuery,
+): RulesAtPath {
+  return inForceUnder(sources, query, ASKS_FOR_A_PERSON_RELATION);
+}
+
+/**
+ * The in-force rules addressed at a path under ONE relation — the single site both
+ * readings above route through.
+ *
+ * TWO ENTRY POINTS AND ONE BODY, deliberately, and the relation is not a parameter of
+ * either of them. What a caller chooses is the QUESTION ("which rules govern this" or
+ * "which rules gate this"), never the label, because a label a caller passes is a label a
+ * caller can invent — and the reading behind a charge must not answer for a relation
+ * nobody defined. `the-record-asks-for-a-person.test.ts` holds that both entry points
+ * come through here, so a third question cannot be answered by a third copy of this.
+ */
+function inForceUnder(
+  sources: readonly ScopedCache[],
+  query: GovernanceQuery,
+  relation: string,
+): RulesAtPath {
+  const asked = relativeSegments(query.path, query.root);
+  const found = addressesUnder(sources, query, relation, asked);
   const caches = sources.map((source) => source.cache);
   const inForce = new Map<string, string>();
   for (const decision of decisionsInForce(caches)) inForce.set(decision.id, decision.title);
   for (const skill of adoptedSkills(caches)) inForce.set(skill.id, skill.name);
   return {
-    path: governed.path,
-    ...(governed.relative !== undefined ? { relative: governed.relative } : {}),
-    rules: governed.rules.flatMap((rule) => {
+    path: query.path,
+    ...(asked !== null ? { relative: posix(asked) } : {}),
+    rules: ordered(found.matching).flatMap((rule) => {
       const name = inForce.get(rule.rule);
       if (name === undefined) return [];
       return [

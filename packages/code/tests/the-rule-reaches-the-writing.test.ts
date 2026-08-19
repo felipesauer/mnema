@@ -383,25 +383,53 @@ describe('the line of a pushed rule is one line', () => {
   });
 });
 
-describe('nothing is written, and nothing is charged', () => {
-  it('leaves the record byte for byte as it was', async () => {
+describe('the record gains ONE kind of fact, and the reply can still not refuse', () => {
+  /**
+   * WHAT THIS DESCRIBE USED TO CLAIM, AND WHAT FALSIFIED IT. It was
+   * "nothing is written, and nothing is charged", and its first case asserted that a run of
+   * this tool left `.mnema` byte for byte as it found it. That was true of the grade this
+   * channel shipped with and it is false now: a push that recorded nothing left "the rules
+   * reached that session" and "the plugin was never installed" as the same nothing, and the
+   * fact that separates them (`channel.served`) is appended by the tool that does the
+   * pushing.
+   *
+   * What survives is the half that was never about writing: the reply cannot refuse, cannot
+   * allow and cannot rewrite the edit, and none of the three is representable. The cases
+   * below are the same two claims with the first one INVERTED rather than deleted — the
+   * digest still has to be stable across the second and later calls of a run, which is where
+   * the once-per-run rule lives.
+   */
+  it('appends the service fact ONCE for a run, and nothing on the calls after it', async () => {
     const rule = await ruleInForce('collate with the ICU root locale');
     await addressAt(rule, 'src/collate');
     // The session is opened BEFORE the digest, so what is measured is the TOOL and not
     // the connection: opening one builds projections, and this case is not about that.
     const session = connect();
     const before = digest(join(repo, '.mnema'));
+    replyFor(session, 'src/collate/fold.ts');
+    const afterFirst = digest(join(repo, '.mnema'));
+    // Something WAS written — without this the case below would hold over a tool that
+    // still writes nothing, which is the shape this pair replaced.
+    expect(afterFirst).not.toBe(before);
+
+    // And then nothing, for the rest of the run, whatever the path: the fact is about the
+    // channel and the run, so a second one would be the same sentence signed again — on a
+    // path that fires up to 3,424 times in one measured session.
     for (const path of ['src/collate/fold.ts', 'README.md', 'src/collate_test.rb']) {
       replyFor(session, path);
     }
-    expect(digest(join(repo, '.mnema'))).toBe(before);
+    expect(digest(join(repo, '.mnema'))).toBe(afterFirst);
   });
 
-  it('carries no field that could refuse, escalate or rewrite', async () => {
+  it('carries no field that could refuse, allow or rewrite', async () => {
     const rule = await ruleInForce('collate with the ICU root locale');
     await addressAt(rule, 'src/collate');
     const reply = replyFor(connect(), 'src/collate/fold.ts');
     expect(Object.keys(reply)).toEqual(['hookSpecificOutput']);
+    // `governs` alone is the INFORMING grade, so nothing here asks: the reply is context and
+    // the event name, exactly as it was. What a rule that asks for a person adds, and what
+    // the type refuses to let it add, is the charge's own case
+    // (`the-record-asks-for-a-person.test.ts`).
     expect(Object.keys(reply['hookSpecificOutput'] as object).sort()).toEqual([
       'additionalContext',
       'hookEventName',

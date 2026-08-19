@@ -14,7 +14,7 @@ import {
 } from '../knowledge/operations.js';
 import { orderedEvents } from '../projections/order.js';
 import * as writeSurface from '../write.js';
-import { switchChannel } from './channel-operations.js';
+import { recordChannelAsked, recordChannelServed, switchChannel } from './channel-operations.js';
 import { recordDecision } from './decision-operations.js';
 import { enrollKey, ensureFounded, revokeKey } from './identity-operations.js';
 import { createTask, type WriteContext } from './operations.js';
@@ -326,6 +326,49 @@ describe('every write refuses what no read could accept', () => {
         field: 'reason',
         names: 'payload.reason',
         drive: () => switchChannel(ctx, { channel: 'edit-rules-push', on: false, reason: '' }),
+      },
+      {
+        // The two facts a channel writes about ITSELF carry the same subject and reach the
+        // door the same way. Their caller is the push rather than a person, so an empty
+        // name here is a product defect and not a typo — which is exactly why it is swept
+        // like every other one: the sweep is over what the door refuses, never over who
+        // was expected to hand it something good.
+        op: 'recordChannelServed',
+        field: 'channel',
+        names: 'at subject',
+        drive: () => recordChannelServed(ctx, { channel: '' }),
+      },
+      {
+        op: 'recordChannelAsked',
+        field: 'channel',
+        names: 'at subject',
+        drive: () =>
+          recordChannelAsked(ctx, { channel: '', rule: 'r', path: 'src/billing/invoice.ts' }),
+      },
+      {
+        op: 'recordChannelAsked',
+        field: 'path',
+        names: 'payload.path',
+        drive: () =>
+          recordChannelAsked(ctx, { channel: 'edit-asks-a-person', rule: 'r', path: '' }),
+      },
+      {
+        // THE CITATION, AND THE CASE THE MUTATION ASKED FOR. `rule` never goes through the
+        // content door — it is an identifier, so a scrubber would destroy the one field a
+        // charge is required to carry — and the first version of this sweep concluded from
+        // that it needed no case here at all. Removing the parser's `requireString` for it
+        // left the whole battery green: an empty citation would have reached the chain, and
+        // a signed accusation naming nothing is exactly what the axis's first tie forbids.
+        // The door is not what refuses it; the READER is, like every other empty field.
+        op: 'recordChannelAsked',
+        field: 'rule',
+        names: 'payload.rule',
+        drive: () =>
+          recordChannelAsked(ctx, {
+            channel: 'edit-asks-a-person',
+            rule: '',
+            path: 'src/billing/invoice.ts',
+          }),
       },
       {
         op: 'revokeKey',

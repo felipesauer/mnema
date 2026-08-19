@@ -9,7 +9,8 @@
  * two ideas of what "the address exists" means, and they would differ silently: the count
  * of stale rules would come back different depending on which surface asked, and neither
  * answer would say so. So the assembly lives here and every caller passes through it. A
- * caller that reached for {@link governingRules} or {@link rulesInForceAt} directly is
+ * caller that reached for {@link governingRules}, {@link rulesInForceAt} or
+ * {@link asksForAPersonAt} directly is
  * what `the-rule-has-an-address.test.ts` refuses ("one place assembles a governs read"),
  * by the symbols rather than by a list of files.
  *
@@ -22,6 +23,7 @@
 import { existsSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import {
+  asksForAPersonAt,
   type GovernanceQuery,
   type GoverningRules,
   governingRules,
@@ -79,6 +81,24 @@ export function readRulesInForceAt(
   read: GovernedRead,
 ): RulesAtPath {
   return rulesInForceAt(sources, asked(read));
+}
+
+/**
+ * The same reading again, under the relation that asks for a PERSON — what a channel that
+ * STOPS somebody stands on.
+ *
+ * Third entry point, same {@link asked}, and the reason is one step sharper than it is for
+ * the two above. A gate is decided by the same address comparison and the same disk probe
+ * as the text; if this assembled its own question, the path a charge was decided against
+ * could differ by a resolved link or a trailing slash from the path `mnema rules` reports —
+ * and the person the difference trapped would have no reading that agreed with what
+ * happened to them.
+ */
+export function readAsksForAPersonAt(
+  sources: readonly ScopedCache[],
+  read: GovernedRead,
+): RulesAtPath {
+  return asksForAPersonAt(sources, asked(read));
 }
 
 /**

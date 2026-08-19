@@ -208,7 +208,9 @@ describe('one declaration, and one place that decides it', () => {
       skills: [],
       collisions: [],
       addressed: 0,
+      asking: 0,
       editPush: { channel: 'edit-rules-push', on: true },
+      asksAPerson: { channel: 'edit-asks-a-person', on: true },
     });
     for (const line of recordFraming('brief-document')) expect(document).toContain(line);
   });
@@ -320,18 +322,25 @@ describe('every handler that pushes declares the channel it carries', () => {
       }
       if (type === 'mcp_tool') {
         // The channel is the TOOL, and the tool must be one this product classified.
+        // The channels are the TOOL's, and there may be MORE THAN ONE of them: the same
+        // call at the same event can hand over text and stop the write, and the table went
+        // plural the day the second one existed. Every one of them must be classified, so a
+        // channel added behind an existing tool cannot hide by sharing a key.
         const tool = String(hook['tool']);
-        const channel = PUSHED_BY_TOOL[tool];
-        expect(channel, `${event} calls \`${tool}\`, which names no channel`).not.toBeUndefined();
-        expect(FRAMED_CHANNELS as readonly string[], tool).toContain(channel);
-        ruled.push(`${event}:mcp_tool:${tool}:${channel}`);
+        const channels = PUSHED_BY_TOOL[tool];
+        expect(channels, `${event} calls \`${tool}\`, which names no channel`).not.toBeUndefined();
+        expect((channels ?? []).length, `${tool} names no channel at all`).toBeGreaterThan(0);
+        for (const channel of channels ?? []) {
+          expect(FRAMED_CHANNELS as readonly string[], `${tool} → ${channel}`).toContain(channel);
+        }
+        ruled.push(`${event}:mcp_tool:${tool}:${(channels ?? []).join('+')}`);
         continue;
       }
       expect.fail(`${event} declares a hook of type "${String(type)}" this guard cannot rule on`);
     }
     expect(ruled).toEqual([
       'SessionStart:command:session-start.mjs',
-      'PreToolUse:mcp_tool:rules_before_an_edit:edit-rules-push',
+      'PreToolUse:mcp_tool:rules_before_an_edit:edit-rules-push+edit-asks-a-person',
     ]);
   });
 

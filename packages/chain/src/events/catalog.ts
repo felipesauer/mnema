@@ -392,7 +392,9 @@ export interface HandoffRecordedV1 extends Envelope {
  *   - `target` is an UNVERIFIED reference the caller supplied. This paragraph
  *     used to say it was "ONLY an id (a universal v7)", and {@link
  *     GOVERNS_RELATION} falsified that: a rule addressed at a path links a
- *     decision to `src/billing`, which is an id of nothing. The narrow reading
+ *     decision to `src/billing`, which is an id of nothing — and {@link
+ *     ASKS_FOR_A_PERSON_RELATION} is the second label to do it, which turned
+ *     "the exception" into "the shape". The narrow reading
  *     was already contradicted inside this product — the core classifies this
  *     field as PROSE, not as an identifier, on the ground that "each holds
  *     whatever a caller sent" — so what changed is this comment, not the shape.
@@ -422,9 +424,9 @@ export interface KnowledgeLinkedV1 extends Envelope {
   readonly payload: {
     /**
      * What the link points at: an id of another record, or — under {@link
-     * GOVERNS_RELATION} — a path in the working tree. Whatever it is, it is the
-     * caller's string, never verified here, and what it names is resolved on
-     * read.
+     * GOVERNS_RELATION} and {@link ASKS_FOR_A_PERSON_RELATION} — a path in the
+     * working tree. Whatever it is, it is the caller's string, never verified
+     * here, and what it names is resolved on read.
      */
     readonly target: string;
     /** The relation label — an open literal string (see {@link RECOMMENDED_LINK_RELATIONS}). */
@@ -433,8 +435,13 @@ export interface KnowledgeLinkedV1 extends Envelope {
 }
 
 /**
- * The one relation whose target is a PATH and not an id: a rule of the record
- * says which part of the working tree it applies to.
+ * A relation whose target is a PATH and not an id: a rule of the record says which
+ * part of the working tree it applies to.
+ *
+ * IT USED TO BE "THE ONE", and {@link ASKS_FOR_A_PERSON_RELATION} falsified that.
+ * What the two share is the shape — subject a rule, target a path, compared by
+ * segments by whoever reads them; what separates them is the POWER each carries,
+ * which is why they are two labels and not one label read two ways.
  *
  * It is a label like any other — nothing in the parser knows it, nothing
  * validates the path, nothing refuses a link that uses it — and it exists as a
@@ -452,6 +459,32 @@ export interface KnowledgeLinkedV1 extends Envelope {
 export const GOVERNS_RELATION = 'governs';
 
 /**
+ * The relation that asks for a PERSON: a rule of the record says that under this part
+ * of the working tree, nobody writes without somebody looking first.
+ *
+ * It is the same shape as {@link GOVERNS_RELATION} — subject is the rule, target is a
+ * path — and it is a SECOND relation rather than a reading of the first, which is the
+ * one decision in it worth the paragraph. Under the axis's first tie the rule that
+ * charges is the record's and never the product's; if `governs` alone meant "ask a
+ * person", then every rule anybody ever addressed would have become a gate on the day
+ * the mechanism shipped, by an inference nobody recorded. So the gate is its own fact,
+ * asserted on purpose, by a person, at an address they typed — and a charge cites that
+ * fact's subject.
+ *
+ * IT IS SELF-SUFFICIENT, and does not require the rule to also `govern` the path.
+ * Requiring two facts would make a gate that silently does not close when the second is
+ * missing, which is the defect class the addressing reading already exists to make
+ * visible. What it does require is that its subject be a rule IN FORCE — a superseded
+ * decision cannot ask for anybody, and that is decided by the derivations that already
+ * decide it rather than by a second rule here.
+ *
+ * Nothing in the parser knows this label either: `rel` is an open string, so this
+ * relation cost the catalog no field, no version and no upcaster — exactly as `governs`
+ * did.
+ */
+export const ASKS_FOR_A_PERSON_RELATION = 'asks-for-a-person';
+
+/**
  * The recommended relation labels for a {@link KnowledgeLinkedV1}. This is a
  * documentation and grouping aid — NOT a closed set the parser enforces. A
  * projection may group by these known labels and pass any other through
@@ -465,6 +498,7 @@ export const RECOMMENDED_LINK_RELATIONS = [
   'derived-from',
   'contradicts',
   GOVERNS_RELATION,
+  ASKS_FOR_A_PERSON_RELATION,
 ] as const;
 
 /**
@@ -665,6 +699,78 @@ export interface ChannelSwitchedV1 extends Envelope {
 }
 
 /**
+ * A channel of this product SERVED the record in a run — the fact that the push was
+ * actually pushing, as opposed to having been off, or broken, or never installed.
+ *
+ * WHY IT EXISTS: a push that records nothing leaves the product acting outside its own
+ * record. Every other tie of the axis is paid by a fact; this one was not, and its
+ * absence had a measured consequence — a rule that arrives silently and a channel that
+ * never ran produce the identical nothing, so a later reader cannot tell "the rules
+ * reached that session" from "the plugin was not installed that week". This is the
+ * missing fact, and it is what gives a silence a name.
+ *
+ * IT IS ONCE PER RUN AND PER CHANNEL, never once per push, and the granularity is the
+ * granularity of the POWER rather than of the mechanism. An injection is continuous
+ * service, not a discrete act: the median session of this bench edits 34 files, the p90
+ * edits 121 and the largest seen edited 3,424, and a signed append on each would put
+ * thousands of writes on the hottest read path this product has to say the same sentence
+ * over and over. What a reader needs is that the channel was live in that run, which one
+ * fact carries exactly.
+ *
+ * ITS SUBJECT IS THE CHANNEL, the way {@link ChannelSwitchedV1}'s is, so a channel's own
+ * history holds both what was done TO it and what it did. The payload is empty for the
+ * same reason a consultation's is: everything the fact says — who, which agent, which
+ * run, when — is envelope, and a payload field here would be a second spelling of
+ * something already signed.
+ */
+export interface ChannelServedV1 extends Envelope {
+  readonly kind: 'channel.served';
+  readonly v: 1;
+  /** Subject is the CHANNEL that served. */
+  readonly payload: Readonly<Record<string, never>>;
+}
+
+/**
+ * A channel of this product ASKED FOR A PERSON — the first fact in this catalog whose
+ * subject did something to somebody else's work rather than describing it.
+ *
+ * WHAT IT RECORDS: a rule of the record asked that a file not be written until somebody
+ * looked, the product carried that to the host, and the host stopped. It is one fact per
+ * asking, and here the granularity of the power is discrete: an escalation is the
+ * exercise of authority over ONE call, at one path, citing one rule, and a reader
+ * auditing it needs each of them.
+ *
+ * IT CITES THE RULE, AND THE CITATION IS THE POINT. The axis's first tie says the
+ * product has no opinion: it charges what a decision that was accepted or a pattern that
+ * was adopted says, and it names the id. So `rule` is required. A charge that cannot name
+ * what caused it is not a weaker charge, it is the product having a preference — and the
+ * field being required is what keeps that from being a promise.
+ *
+ * ITS SUBJECT IS THE CHANNEL and not the rule, for the reason every other subject in this
+ * catalog is what it is: the subject is the thing whose history the fact belongs to. A
+ * rule's history is what was decided about it; the asking belongs to the surface that did
+ * the asking, beside the switch that can silence it and the service that says it was
+ * live. The rule travels in the payload, where the reference index resolves it exactly as
+ * it resolves a link's target.
+ *
+ * A DIFFERENT GRADE WILL BE A DIFFERENT KIND, not a field on this one. Refusing outright
+ * is a different power over somebody else's work, and a payload that carried "which
+ * grade" would be a payload whose meaning depends on a value — the shape this catalog
+ * avoids everywhere else. It waits on its own tie and will arrive as its own fact.
+ */
+export interface ChannelAskedV1 extends Envelope {
+  readonly kind: 'channel.asked';
+  readonly v: 1;
+  /** Subject is the CHANNEL that asked. */
+  readonly payload: {
+    /** The id of the rule that asked — what the charge cites. Never optional. */
+    readonly rule: string;
+    /** The path the asking was about, as the product compared it. */
+    readonly path: string;
+  };
+}
+
+/**
  * The catalog: every event the chain may contain. `kind` + `v` together select
  * exactly one arm, so a producer and a consumer can never disagree on a
  * payload shape without the compiler saying so.
@@ -687,7 +793,9 @@ export type CatalogEvent =
   | SkillTransitionedV1
   | SkillConsultedV1
   | TailPrunedV1
-  | ChannelSwitchedV1;
+  | ChannelSwitchedV1
+  | ChannelServedV1
+  | ChannelAskedV1;
 
 /** The `kind` discriminators present in the catalog. */
 export type EventKind = CatalogEvent['kind'];
@@ -715,4 +823,6 @@ export const LATEST_VERSION: { readonly [K in EventKind]: number } = {
   'skill.consulted': 1,
   'tail.pruned': 1,
   'channel.switched': 1,
+  'channel.served': 1,
+  'channel.asked': 1,
 };

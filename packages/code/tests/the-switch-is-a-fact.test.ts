@@ -54,6 +54,7 @@ import { type CliIo, run } from '../src/cli.js';
 import { openSession, type Session } from '../src/mcp/session.js';
 import { runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
 import {
+  ASKS_A_PERSON_CHANNEL,
   DOCUMENT_CHANNEL,
   EDIT_PUSH_CHANNEL,
   NOT_SWITCHABLE,
@@ -116,6 +117,14 @@ async function ruleAddressedAt(title: string, path: string): Promise<string> {
   return id;
 }
 
+/** Records a rule in force and links it as ASKING FOR A PERSON at a path. */
+async function ruleAskingAt(title: string, path: string): Promise<string> {
+  const id = idIn(await did('decision', title, `why ${title}`));
+  await did('decision', 'move', 'accept', id, '--note', 'agreed');
+  await did('link', id, path, '--rel', 'asks-for-a-person');
+  return id;
+}
+
 /** An agent connection over this project. */
 function connect(): Session {
   return openSession({ clientName: 'agent-alpha', roots: [pathToFileURL(repo).href], env });
@@ -137,6 +146,32 @@ function injected(session: Session, path: string): string | undefined {
   if (reply.hookSpecificOutput === undefined) return undefined;
   expect(reply.hookSpecificOutput.hookEventName).toBe('PreToolUse');
   return reply.hookSpecificOutput.additionalContext;
+}
+
+/**
+ * The reason the push would ASK a person with, or `undefined` when it asks nobody.
+ *
+ * A second reader and not a flag on {@link injected}, because the two channels ride in one
+ * reply and a helper that returned "whatever is there" would let a case about the gate pass
+ * on the text channel's context.
+ */
+function asked(session: Session, path: string): string | undefined {
+  const result = runRulesBeforeAnEditTool(session, { path });
+  expect(result.ok, JSON.stringify(result)).toBe(true);
+  if (!result.ok) throw new Error('unreachable');
+  const reply = JSON.parse(JSON.stringify(result.value)) as {
+    hookSpecificOutput?: {
+      hookEventName?: string;
+      permissionDecision?: string;
+      permissionDecisionReason?: string;
+    };
+  };
+  if (reply.hookSpecificOutput?.permissionDecision === undefined) return undefined;
+  expect(reply.hookSpecificOutput.hookEventName).toBe('PreToolUse');
+  // The one value this server can send. A reply naming any other is refused by the host's
+  // schema and DISCARDS the whole reply, injection included (`measurements/asks-a-person/`).
+  expect(reply.hookSpecificOutput.permissionDecision).toBe('ask');
+  return reply.hookSpecificOutput.permissionDecisionReason;
 }
 
 /** Every event of one of this project's trees, in the tree's own order. */
@@ -302,6 +337,14 @@ const HONOURED: Readonly<
       await ruleAddressedAt('Round money at the boundary', 'src/billing');
     },
     speaks: async () => injected(connect(), 'src/billing/invoice.ts') !== undefined,
+  },
+  [ASKS_A_PERSON_CHANNEL]: {
+    // The GATE, driven by the relation that asks rather than the one that governs — which
+    // is what keeps this case from passing on the strength of the other channel's switch.
+    setUp: async () => {
+      await ruleAskingAt('Nobody touches billing alone', 'src/billing');
+    },
+    speaks: async () => asked(connect(), 'src/billing/invoice.ts') !== undefined,
   },
 };
 

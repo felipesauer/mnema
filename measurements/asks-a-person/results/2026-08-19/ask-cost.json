@@ -1,0 +1,184 @@
+{
+  "what": "what the decision to ask for a person costs on the per-edit path, and what the path that does not charge costs",
+  "commit": "4426c08866413b02a5061f3158fe5d0ee228d8ca",
+  "node": "v24.14.0",
+  "cpus": 16,
+  "totalmem_gib": 13.3,
+  "loadavg_1m": 3.87,
+  "warm_iterations": 300,
+  "runs_per_read_term": 2000,
+  "runs_per_write_term": 100,
+  "floor_ms_per_firing": 1.24,
+  "edits_per_session": {
+    "p50": 34,
+    "p90": 121,
+    "max": 3424
+  },
+  "regimes": {
+    "empty": {
+      "gate_switch_read_ms_p50": {
+        "forward": 0.038,
+        "reverse": 0.045
+      },
+      "hook_not_charging_ms_p50": {
+        "forward": 0.479,
+        "reverse": 0.521
+      },
+      "hook_silent_ms_p50": {
+        "forward": 0.49,
+        "reverse": 0.514
+      },
+      "hook_charging_ms_p50": {
+        "forward": null,
+        "reverse": null
+      },
+      "hook_gate_off_ms_p50": {
+        "forward": 0.36,
+        "reverse": 0.364
+      },
+      "hook_both_off_ms_p50": {
+        "forward": 0.204,
+        "reverse": 0.198
+      },
+      "baseline_read_record_ms_p50": {
+        "forward": 0.301,
+        "reverse": 0.317
+      },
+      "charging_record_growth_bytes": null,
+      "charging_firings": 0,
+      "charging_gates": 0,
+      "charged_reply": null,
+      "gate_off_decision": null,
+      "both_off_reply": "{}"
+    },
+    "realistic": {
+      "gate_switch_read_ms_p50": {
+        "forward": 0.044,
+        "reverse": 0.041
+      },
+      "hook_not_charging_ms_p50": {
+        "forward": 1.339,
+        "reverse": 1.393
+      },
+      "hook_silent_ms_p50": {
+        "forward": 1.393,
+        "reverse": 1.474
+      },
+      "hook_charging_ms_p50": {
+        "forward": 412.83,
+        "reverse": 420.015
+      },
+      "hook_gate_off_ms_p50": {
+        "forward": 0.889,
+        "reverse": 0.865
+      },
+      "hook_both_off_ms_p50": {
+        "forward": 0.187,
+        "reverse": 0.19
+      },
+      "baseline_read_record_ms_p50": {
+        "forward": 0.146,
+        "reverse": 0.14
+      },
+      "charging_record_growth_bytes": 404371,
+      "charging_firings": 211,
+      "charging_gates": 2,
+      "charged_reply": {
+        "decision": "ask",
+        "reason_bytes": 474,
+        "context_bytes": null
+      },
+      "gate_off_decision": null,
+      "both_off_reply": "{}"
+    },
+    "large": {
+      "gate_switch_read_ms_p50": {
+        "forward": 0.049,
+        "reverse": 0.062
+      },
+      "hook_not_charging_ms_p50": {
+        "forward": 5.114,
+        "reverse": 6.778
+      },
+      "hook_silent_ms_p50": {
+        "forward": 4.653,
+        "reverse": 9.563
+      },
+      "hook_charging_ms_p50": {
+        "forward": 1716.696,
+        "reverse": 1748.979
+      },
+      "hook_gate_off_ms_p50": {
+        "forward": 3.571,
+        "reverse": 3.302
+      },
+      "hook_both_off_ms_p50": {
+        "forward": 0.171,
+        "reverse": 0.168
+      },
+      "baseline_read_record_ms_p50": {
+        "forward": 0.208,
+        "reverse": 0.156
+      },
+      "charging_record_growth_bytes": 695256,
+      "charging_firings": 211,
+      "charging_gates": 4,
+      "charged_reply": {
+        "decision": "ask",
+        "reason_bytes": 696,
+        "context_bytes": null
+      },
+      "gate_off_decision": null,
+      "both_off_reply": "{}"
+    }
+  },
+  "session_totals_s": {
+    "empty": {
+      "not_charging_s": {
+        "p50": 0.06,
+        "p90": 0.213,
+        "max": 6.03
+      },
+      "charging_s": null,
+      "both_off_s": {
+        "p50": 0.049,
+        "p90": 0.175,
+        "max": 4.944
+      }
+    },
+    "realistic": {
+      "not_charging_s": {
+        "p50": 0.09,
+        "p90": 0.319,
+        "max": 9.015
+      },
+      "charging_s": {
+        "p50": 14.323,
+        "p90": 50.972,
+        "max": 1442.377
+      },
+      "both_off_s": {
+        "p50": 0.049,
+        "p90": 0.173,
+        "max": 4.896
+      }
+    },
+    "large": {
+      "not_charging_s": {
+        "p50": 0.273,
+        "p90": 0.97,
+        "max": 27.454
+      },
+      "charging_s": {
+        "p50": 59.507,
+        "p90": 211.776,
+        "max": 5992.75
+      },
+      "both_off_s": {
+        "p50": 0.048,
+        "p90": 0.171,
+        "max": 4.831
+      }
+    }
+  }
+}

@@ -61,24 +61,34 @@ $ mnema refs no-such-id --direction out --depth 1
 $ mnema rules docs/runbook/rollback.md
 | docs/runbook/rollback.md  ·  in this project
 |   0 govern this path · 0 address this project · 0 address nothing here
+|   0 ask for a person here · 0 ask in this project · 0 ask about nothing here
 $ mnema rules docs/runbook/rollback.md --json
 | {
 |   "path": "<sandbox>/project/docs/runbook/rollback.md",
 |   "relative": "docs/runbook/rollback.md",
 |   "rules": [],
 |   "stale": [],
+|   "asks": [],
+|   "asksStale": [],
 |   "counts": {
 |     "matching": 0,
 |     "governing": 0,
-|     "stale": 0
+|     "stale": 0,
+|     "asks": {
+|       "matching": 0,
+|       "addressed": 0,
+|       "stale": 0
+|     }
 |   }
 | }
 $ mnema rules .
 | .  ·  in this project
 |   0 govern this path · 0 address this project · 0 address nothing here
+|   0 ask for a person here · 0 ask in this project · 0 ask about nothing here
 $ mnema rules /elsewhere/src/app.ts
 | /elsewhere/src/app.ts  ·  outside this project
 |   0 govern this path · 0 address this project · 0 address nothing here
+|   0 ask for a person here · 0 ask in this project · 0 ask about nothing here
 $ mnema exposure
 | Nothing recognizable in 2 record(s).
 |   Read here: this project’s trees and the machine-global tree — no other project.
@@ -248,6 +258,10 @@ $ mnema brief
 | addressed at it arrive on their own, and nothing arrives for a file none of them names.
 | Ask `governing_rules` with a path for the whole answer about it.
 |
+| 0 of them ask for a PERSON at an address: where one
+| does, the write waits until a person decides, and the rule that asked is named by
+| its id in what comes back. Nothing waits for a file none of them asks about.
+|
 | ## Decisions in force (0)
 |
 | Nothing has been decided here yet — which is not the same as there being no rules.
@@ -262,9 +276,10 @@ $ mnema tail list
 | 1 tail(s):
 |   <tail-own>  public   2 event(s) through <tail-head-an-empty-project-1>  the tail of <anchor>  ·  no waiver
 $ mnema switch
-| 2 channel(s), looked in public, private, global:
-|   brief-document   on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
-|   edit-rules-push  on   the rules addressed at a file, handed over at the moment that file is about to be written
+| 3 channel(s), looked in public, private, global:
+|   brief-document      on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
+|   edit-rules-push     on   the rules addressed at a file, handed over at the moment that file is about to be written
+|   edit-asks-a-person  on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
 $ mnema usage
 | No run is recorded here — looked in public, private, global.
 |
@@ -518,6 +533,7 @@ $ mnema refs <task-runbook> --direction out --depth 1
 $ mnema rules docs/runbook/rollback.md
 | docs/runbook/rollback.md  ·  in this project
 |   1 govern this path · 2 address this project · 1 address nothing here
+|   0 ask for a person here · 0 ask in this project · 0 ask about nothing here
 |
 | governing this path, most specific first (1)
 |   docs/runbook  Keep the runbook in the record (accepted)  <decision-runbook>  [public]
@@ -560,21 +576,30 @@ $ mnema rules docs/runbook/rollback.md --json
 |       "at": "<at:14>"
 |     }
 |   ],
+|   "asks": [],
+|   "asksStale": [],
 |   "counts": {
 |     "matching": 1,
 |     "governing": 2,
-|     "stale": 1
+|     "stale": 1,
+|     "asks": {
+|       "matching": 0,
+|       "addressed": 0,
+|       "stale": 0
+|     }
 |   }
 | }
 $ mnema rules .
 | .  ·  in this project
 |   0 govern this path · 2 address this project · 1 address nothing here
+|   0 ask for a person here · 0 ask in this project · 0 ask about nothing here
 |
 | addressing nothing in the working tree (1)
 |   docs/gone-away  Keep the runbook in the record (accepted)  <decision-runbook>  [public]
 $ mnema rules /elsewhere/src/app.ts
 | /elsewhere/src/app.ts  ·  outside this project
 |   0 govern this path · 2 address this project · 1 address nothing here
+|   0 ask for a person here · 0 ask in this project · 0 ask about nothing here
 |
 | addressing nothing in the working tree (1)
 |   docs/gone-away  Keep the runbook in the record (accepted)  <decision-runbook>  [public]
@@ -1415,6 +1440,10 @@ $ mnema brief
 | addressed at it arrive on their own, and nothing arrives for a file none of them names.
 | Ask `governing_rules` with a path for the whole answer about it.
 |
+| 0 of them ask for a PERSON at an address: where one
+| does, the write waits until a person decides, and the rule that asked is named by
+| its id in what comes back. Nothing waits for a file none of them asks about.
+|
 | ## Decisions in force (1)
 |
 | Each was accepted, and none of them superseded. For the argument behind one, ask
@@ -1434,9 +1463,10 @@ $ mnema tail list
 |   <tail-private>  private  8 event(s) through <tail-head-a-populated-project-2>  the tail of <anchor>  ·  no waiver
 |   <tail-global>  global   4 event(s) through <tail-head-a-populated-project-3>  the tail of <anchor>  ·  no waiver
 $ mnema switch
-| 2 channel(s), looked in public, private, global:
-|   brief-document   on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
-|   edit-rules-push  on   the rules addressed at a file, handed over at the moment that file is about to be written
+| 3 channel(s), looked in public, private, global:
+|   brief-document      on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
+|   edit-rules-push     on   the rules addressed at a file, handed over at the moment that file is about to be written
+|   edit-asks-a-person  on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
 $ mnema usage
 | 2 run(s):
 |   <run-second>  agent-beta      <at:30> → open  no transcript

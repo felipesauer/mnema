@@ -1479,13 +1479,16 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         'hands the session the rules of this project’s record that are addressed ' +
         'at that path AND still in force, as one short text — each rule’s name, ' +
         'the address that matched, and the id you cite. You may call it yourself; what ' +
-        'you get back is a HOOK REPLY (`hookSpecificOutput.additionalContext`), because ' +
-        'that is the only shape this host injects, and `{}` when no rule in force ' +
-        'addresses the path. For the whole answer — every address whatever its state, ' +
-        'the ones whose file no longer exists, and the three counts — ask ' +
-        '`governing_rules` instead; this one is deliberately thin, because it is paid ' +
-        'for on every edit. It charges nothing: it refuses nothing, blocks nothing, ' +
-        'rewrites nothing, and writes no record. Read-only.',
+        'you get back is a HOOK REPLY, because that is the only shape this host reads, ' +
+        'and `{}` when there is nothing to say. Where a rule of the record is linked to ' +
+        'the path with `rel: "asks-for-a-person"`, the reply also carries ' +
+        '`permissionDecision: "ask"` and the host holds the write until a PERSON ' +
+        'decides — citing that rule’s id. It cannot refuse, allow, or rewrite your ' +
+        'input: none of the three is representable in what it returns. Every asking is ' +
+        'appended to the record as a fact citing the rule, before the reply is composed. ' +
+        'For the whole answer — every address whatever its state, whose file no longer ' +
+        'exists, and the counts for both relations — ask `governing_rules` instead; ' +
+        'this one is deliberately thin, because it is paid for on every edit.',
       inputSchema: {
         path: z
           .string()

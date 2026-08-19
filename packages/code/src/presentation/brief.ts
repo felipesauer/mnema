@@ -246,6 +246,74 @@ function switchedOffAtAnEdit(push: ChannelState): string[] {
   ];
 }
 
+/**
+ * The paragraph about the GATE: how many of these rules can stop a write, and whether the
+ * thing that would do the stopping is on.
+ *
+ * IT IS A PARAGRAPH OF ITS OWN AND NOT A CLAUSE ON THE ONE ABOVE, and the reason is which
+ * reader each is for. The address paragraph explains a silence to somebody who noticed
+ * nothing arrived; this one is a WARNING, in the only sense this product is willing to
+ * warn — it states a fact about the record before that fact happens to anybody. A reader
+ * whose write is refused and who has never been told the mechanism exists has no way in
+ * from here, and the refusal itself arrives at the worst possible moment to learn something
+ * new.
+ *
+ * IT PRINTS AT ZERO, which is the ordinary case, and that is deliberate for the same reason
+ * the address count prints at zero: a missing line reads as a product with no such
+ * mechanism, and the day somebody records the first gate the document must already have
+ * taught its readers what the sentence means.
+ *
+ * IT SAYS WHAT THE RECORD ASKS AND NEVER WHAT TO DO ABOUT IT. There is no "get an approval"
+ * and no "record an ADR first": what a project does when its own gate closes is that
+ * project's business, and a document telling a reader how to satisfy somebody else's rule
+ * is exactly the line `record-framing.ts` exists to hold. It says the fact and stops.
+ *
+ * IT DOES NOT REPEAT WHERE TO ASK. The paragraph above already points at
+ * `governing_rules` with a path, and that read answers for BOTH relations in one reply —
+ * so a second pointer here would be a line paid for on every prompt to say a sentence the
+ * reader has just read. It is three lines and a blank for that reason, and the skeleton's
+ * own bound is what holds it to that (`brief.test.ts`).
+ */
+function whatAsksForAPerson(asking: number, gate: ChannelState): string[] {
+  return [
+    `${asking} of them ${asking === 1 ? 'asks' : 'ask'} for a PERSON at an address: where one`,
+    ...(gate.on ? STOPS_AT_AN_EDIT : switchedOffAtTheGate(gate)),
+  ];
+}
+
+/**
+ * What happens at an edit while the gate is on.
+ *
+ * Hand-wrapped at the column the paragraph above is wrapped at, for the reason that one is:
+ * this file is committed and compared with `diff`, so its bytes move when the record moves
+ * and at no other time.
+ *
+ * The second line names what a refusal CARRIES rather than what to do about it — the rule's
+ * id — because that is the one thing that makes the refusal answerable: an id is what a
+ * person reads, supersedes, or removes the address of.
+ */
+const STOPS_AT_AN_EDIT = [
+  'does, the write waits until a person decides, and the rule that asked is named by',
+  'its id in what comes back. Nothing waits for a file none of them asks about.',
+];
+
+/**
+ * What happens at an edit while the gate is switched OFF — replacing the sentence above
+ * rather than standing beside it.
+ *
+ * The two describe the same silence and only one is true, and the reader of this file is a
+ * model, which is the reader who cannot pick. It names who and when for the reason the
+ * other channel's line does: a reader told the gate is off and not told by whom cannot find
+ * the switch. It omits the reason for the same reason too.
+ */
+function switchedOffAtTheGate(gate: ChannelState): string[] {
+  return [
+    'did, the write would wait until a person decided. NONE of them waits now:',
+    `${oneLine(gate.channel)} was switched off by ${oneLine(gate.by ?? '')} at`,
+    `${oneLine(gate.at ?? '')}. Run \`mnema switch\` for where every switch stands.`,
+  ];
+}
+
 /** Where the argument behind a decision is, since this file carries only the rule. */
 const WHERE_THE_RATIONALE_IS = [
   'Each was accepted, and none of them superseded. For the argument behind one, ask',
@@ -320,6 +388,8 @@ export function briefDocument(governance: Brief): string[] {
     ...HOW_TO_REGENERATE,
     '',
     ...whatHasAnAddress(governance.addressed, governance.editPush),
+    '',
+    ...whatAsksForAPerson(governance.asking, governance.asksAPerson),
     '',
     ...section(
       'Decisions in force',

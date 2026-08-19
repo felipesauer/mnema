@@ -46,14 +46,18 @@ what they say. The ids name a domain (`a1-rounding`), never the rule the task tu
 | [`channel-cost/`](channel-cost/) | **What the channel costs before it carries anything** — the floor of a hook, decomposed: a warm `mcp_tool` call against a spawned process (1.24 ms against 171.5 ms), and the size of what an injection would carry. No model was called |
 | [`mcp-tool-channel/`](mcp-tool-channel/) | **Does the host inject at all, and what does the work cost** — twelve cases against the real `claude` binary with the model replaced by a stand-in, plus the work term of `rules_before_an_edit` at three record sizes, in two published runs |
 | [`switch-cost/`](switch-cost/) | **What the switch costs on that same hot path**, and what the switched-off path costs when it delivers nothing. Two published runs, both stamped with the machine's load, because the absolutes do not survive it and the delta does |
+| [`asks-a-person/`](asks-a-person/) | **Can the product make the host stop and ask a PERSON** — eight cases against the real binary, which established that the mechanism the plan named does not exist, that the one that does overrides every permission mode including `bypassPermissions`, and that a wrong value discards the whole reply in silence. Plus **how often a gate would actually fire**, measured over 200 commits of this repository: a 10× cliff for one segment of address depth, which is the number that decides whether this is usable |
 
-*(THE THREE COST DIRECTORIES WERE MISSING FROM THIS TABLE, and the first two of them had been here
-for a day before anybody noticed — which is precisely the defect the parenthesis below describes,
+*(THE COST DIRECTORIES — four of them now, with `asks-a-person/` — WERE MISSING FROM THIS TABLE, and
+the first two of them had been here for a day before anybody noticed — which is precisely the defect the parenthesis below describes,
 arriving a second time by the same route. They are captures like every other file here and they
 follow the same rules: one per file, nothing overwritten, the build inside the file. What they do not
 have is a pre-registration, and the reason is a real difference rather than an exemption — a cost is
 measured against a stopwatch and not against a promise, so there is no outcome to fix in advance and
-nothing a late reading of the rule could bend.)*
+nothing a late reading of the rule could bend. The one exception inside that exception is worth
+naming: `asks-a-person/` §1 and §3 are not costs at all — they are facts about a HOST, measured with
+a stand-in for the model, and what fixes them in advance is that the host's answer was unknown to
+everybody, not just to us.)*
 
 *(The line that stood here said `p1/` was **"Pre-registered. No number exists yet."**, and it was
 the whole of this table. It was true on 13 Aug 2026 and false from the 18th, when the round landed

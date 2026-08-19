@@ -75,7 +75,12 @@ describe('README example', () => {
       // the scoped sources and keeps the PUBLIC ones, because the file it feeds is
       // committed: a rule in the private or the global tree governs your work and does
       // not travel.
-      const governs = brief(sources);
+      // The channel names are the CALLER's: this package reports where each of the two
+      // unasked channels stands and cannot invent one.
+      const governs = brief(sources, {
+        editPush: 'edit-rules-push',
+        asksAPerson: 'edit-asks-a-person',
+      });
       const rules = governs.decisions.length + governs.skills.length; // 2, and nothing was cut
 
       // Before asking to move a task, is the move even allowed?

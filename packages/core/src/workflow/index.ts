@@ -5,6 +5,13 @@
  */
 
 export {
+  type AskedInput,
+  type AskedOk,
+  type ChannelFactError,
+  recordChannelAsked,
+  recordChannelServed,
+  type ServedInput,
+  type ServedOk,
   type SwitchError,
   type SwitchInput,
   type SwitchOk,

@@ -54,6 +54,17 @@ function asking(path: string, present: readonly string[] = []): GovernanceQuery 
   return { path, root: ROOT, onDisk: (relative) => present.includes(relative) };
 }
 
+/**
+ * The gate's three numbers when no case in this file records one.
+ *
+ * Named rather than spelled at each assertion, and it is a claim rather than boilerplate:
+ * every case below is about the relation that INFORMS, so the relation that stops somebody
+ * must read zero in all three — and it reading anything else would mean the two walks had
+ * started sharing a list. The gate's own cases live with the charge that stands on them
+ * (`code/tests/the-record-asks-for-a-person.test.ts`).
+ */
+const NO_GATE = { matching: 0, addressed: 0, stale: 0 };
+
 /** The rules of a reading, as `address → id`, in the order the reading put them. */
 const addresses = (rules: readonly { address?: string; rule: string }[]): string[] =>
   rules.map((rule) => `${rule.address ?? '(nowhere)'} → ${rule.rule}`);
@@ -82,7 +93,12 @@ describe('governance — an address is a prefix by segment', () => {
     const reading = governingRules([tree(b)], asking('src/collate_test.rb', ['src/collate']));
     expect(reading.rules).toEqual([]);
     // And it is not that nothing was read: the address IS in the project.
-    expect(reading.counts).toEqual({ matching: 0, governing: 1, stale: 0 });
+    expect(reading.counts).toEqual({
+      matching: 0,
+      governing: 1,
+      stale: 0,
+      asks: NO_GATE,
+    });
   });
 
   it('governs everything from the project root, which is an address like any other', () => {
@@ -139,7 +155,12 @@ describe('governance — three numbers, always', () => {
     capture(b, 'mem-1', 'a note that addresses nothing');
 
     const reading = governingRules([tree(b)], asking('src/whatever.ts'));
-    expect(reading.counts).toEqual({ matching: 0, governing: 0, stale: 0 });
+    expect(reading.counts).toEqual({
+      matching: 0,
+      governing: 0,
+      stale: 0,
+      asks: NO_GATE,
+    });
     expect(reading.rules).toEqual([]);
     expect(reading.stale).toEqual([]);
   });
@@ -154,7 +175,12 @@ describe('governance — three numbers, always', () => {
     link(b, 'orphan', 'src/gone', 'governs');
 
     const reading = governingRules([tree(b)], asking('src/here/file.ts', ['src/here']));
-    expect(reading.counts).toEqual({ matching: 1, governing: 2, stale: 1 });
+    expect(reading.counts).toEqual({
+      matching: 1,
+      governing: 2,
+      stale: 1,
+      asks: NO_GATE,
+    });
     // NAMED, not merely counted — a count of dead addresses is fixed by making the
     // count smaller, and a list is fixed by looking at what it names.
     expect(addresses(reading.stale)).toEqual(['src/gone → orphan']);
@@ -170,7 +196,12 @@ describe('governance — three numbers, always', () => {
     link(b, 'orphan', 'src/gone', 'governs');
 
     const reading = governingRules([tree(b)], asking('docs/readme.md', ['docs/readme.md']));
-    expect(reading.counts).toEqual({ matching: 0, governing: 1, stale: 1 });
+    expect(reading.counts).toEqual({
+      matching: 0,
+      governing: 1,
+      stale: 1,
+      asks: NO_GATE,
+    });
     expect(addresses(reading.stale)).toEqual(['src/gone → orphan']);
   });
 
@@ -183,7 +214,12 @@ describe('governance — three numbers, always', () => {
     link(b, 'dec-1', 'src/gone', 'governs');
 
     const reading = governingRules([tree(b)], asking('src/here/file.ts', ['src/here']));
-    expect(reading.counts).toEqual({ matching: 1, governing: 2, stale: 1 });
+    expect(reading.counts).toEqual({
+      matching: 1,
+      governing: 2,
+      stale: 1,
+      asks: NO_GATE,
+    });
   });
 });
 
@@ -245,7 +281,12 @@ describe('governance — what it normalizes, and what it does not', () => {
     link(b, 'foreign', '/somebody/else/src/collate', 'governs');
 
     const reading = governingRules([tree(b)], asking('src/collate/fold.ts', ['src/collate']));
-    expect(reading.counts).toEqual({ matching: 0, governing: 1, stale: 1 });
+    expect(reading.counts).toEqual({
+      matching: 0,
+      governing: 1,
+      stale: 1,
+      asks: NO_GATE,
+    });
     expect(reading.stale[0]?.address).toBeUndefined();
     expect(reading.stale[0]?.recorded).toBe('/somebody/else/src/collate');
   });

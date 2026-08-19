@@ -203,6 +203,11 @@ export const SUBJECT_TEXT: { readonly [K in EventKind]: FieldNature } = {
   'skill.transitioned': 'identifier',
   'skill.consulted': 'prose',
   'channel.switched': 'prose',
+  // The same string, from the same place, answered the same way: the two facts a channel
+  // produces name it exactly as the fact somebody makes ABOUT it does, and this package
+  // still has no idea which channels exist.
+  'channel.served': 'prose',
+  'channel.asked': 'prose',
   // DERIVED from the record: the anchor a waiver names is read off the pruned
   // tail's own last event, never handed in. No caller can put anything in it.
   'tail.pruned': 'identifier',
@@ -293,6 +298,18 @@ export const PAYLOAD_TEXT: {
   // that keeps `eventCount` out of it: there is nothing textual to screen. The channel
   // itself is the SUBJECT, answered above.
   'channel.switched': { reason: 'prose' },
+  // Nothing to classify, and not vacuous cover: like a consultation, the whole fact is
+  // envelope, and the one caller-supplied string it carries is its SUBJECT, answered above.
+  'channel.served': {},
+  // The `rule` is an IDENTIFIER by this file's own rule rather than by how it is spelled: it
+  // is an id that came OUT of the record, because the only thing that produces this fact is
+  // the derivation of what is in force, and a rule no tree holds never reaches it — the same
+  // case as a supersede's `by`. Screening it would be the sharpest wrong answer in this
+  // table: a rule id is a v7, so a scrubber would take it for entropy and destroy the one
+  // field the axis requires a charge to carry, leaving a signed accusation that names
+  // nothing. `path` is the host's own string, normalized and never checked, so it is prose
+  // exactly as a link's target is.
+  'channel.asked': { rule: 'identifier', path: 'prose' },
 };
 
 /**

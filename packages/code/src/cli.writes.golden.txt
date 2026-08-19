@@ -193,18 +193,20 @@ $ mnema tail prune <backup-key-fingerprint> --reason 'the key that never wrote a
 
 ### switching what the product pushes
 $ mnema switch
-| 2 channel(s), looked in public, private, global:
-|   brief-document   on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
-|   edit-rules-push  on   the rules addressed at a file, handed over at the moment that file is about to be written
+| 3 channel(s), looked in public, private, global:
+|   brief-document      on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
+|   edit-rules-push     on   the rules addressed at a file, handed over at the moment that file is about to be written
+|   edit-asks-a-person  on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
 $ mnema switch off edit-rules-push --reason 'noisy while porting'
 | Switched edit-rules-push off
 |   Landed in the public tree — committed with the repository, so it reaches every clone.
 |   edit-rules-push is now OFF: nothing of it reaches a model. The switch that decides it was made by <anchor-short> at <at:01>.
 |   Nothing was removed and nothing else stopped: the record still holds what it held, and every read and tool still answers whoever asks. What stops is this product putting it in front of a model unasked.
 $ mnema switch
-| 2 channel(s), looked in public, private, global:
-|   brief-document   on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
-|   edit-rules-push  off  the rules addressed at a file, handed over at the moment that file is about to be written  ·  switched off by <anchor-short>  <at:01>  — noisy while porting
+| 3 channel(s), looked in public, private, global:
+|   brief-document      on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
+|   edit-rules-push     off  the rules addressed at a file, handed over at the moment that file is about to be written  ·  switched off by <anchor-short>  <at:01>  — noisy while porting
+|   edit-asks-a-person  on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
 $ mnema switch on edit-rules-push
 | Switched edit-rules-push on
 |   Landed in the public tree — committed with the repository, so it reaches every clone.

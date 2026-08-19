@@ -3176,14 +3176,27 @@ describe('MCP server — end to end over a real client', () => {
       relative?: string;
       rules: Array<{ rule: string; address?: string; onDisk: boolean; name?: string }>;
       stale: Array<{ address?: string }>;
-      counts: { matching: number; governing: number; stale: number };
+      counts: {
+        matching: number;
+        governing: number;
+        stale: number;
+        asks: { matching: number; addressed: number; stale: number };
+      };
     };
     expect(governed.relative).toBe('src/collate/fold.ts');
     expect(governed.rules.map((one) => [one.address, one.rule])).toEqual([['src/collate', ruleId]]);
     expect(governed.rules[0]?.name).toBe('how collation works');
     // THE THIRD NUMBER, over the wire: an address whose directory is gone is counted
     // and named, which is the only thing that tells it from a rule that never existed.
-    expect(governed.counts).toEqual({ matching: 1, governing: 2, stale: 1 });
+    // And the GATE's three, over the wire too: this fixture addresses with `governs` only,
+    // so all three read zero — which is the reply saying "nothing here asks for a person"
+    // rather than saying nothing about the gate at all.
+    expect(governed.counts).toEqual({
+      matching: 1,
+      governing: 2,
+      stale: 1,
+      asks: { matching: 0, addressed: 0, stale: 0 },
+    });
     expect(governed.stale.map((one) => one.address)).toEqual(['src/long-gone']);
 
     // A path nothing addresses is an ANSWER and not an error, and it still carries
@@ -3195,10 +3208,20 @@ describe('MCP server — end to end over a real client', () => {
     expect(elsewhere.isError).toBeFalsy();
     const nothing = JSON.parse(textOf(elsewhere)) as {
       rules: unknown[];
-      counts: { matching: number; governing: number; stale: number };
+      counts: {
+        matching: number;
+        governing: number;
+        stale: number;
+        asks: { matching: number; addressed: number; stale: number };
+      };
     };
     expect(nothing.rules).toEqual([]);
-    expect(nothing.counts).toEqual({ matching: 0, governing: 2, stale: 1 });
+    expect(nothing.counts).toEqual({
+      matching: 0,
+      governing: 2,
+      stale: 1,
+      asks: { matching: 0, addressed: 0, stale: 0 },
+    });
   });
 
   it('search gives the id, audit_refs gives the neighbourhood, and then the lineage', async () => {

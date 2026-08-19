@@ -27,7 +27,13 @@ export function registerLink(program: Command, wiring: Wiring): Declared {
     .command('link')
     .description('link one piece of knowledge to another in the current project')
     .argument('<subject>', 'the entity that originates the link')
-    .argument('<target>', 'what it points at: another id, or a path under --rel governs')
+    .argument(
+      '<target>',
+      // TWO relations take a path now, and the help says so rather than naming the first
+      // one: somebody reading this to record a gate would otherwise be told the label they
+      // need is the one that only informs.
+      'what it points at: another id, or a path under --rel governs or asks-for-a-person',
+    )
     .requiredOption('--rel <label>', `the relation (${RECOMMENDED_RELATIONS})`)
     .addOption(
       scopeOption(
