@@ -8,23 +8,47 @@
  * project the verb prints `No mnema project here. Run `mnema init` first.` on stderr
  * and exits 1. A hook wired that way injects that sentence — or an error — into EVERY
  * session of EVERY project on the machine of whoever installs this. That is the
- * product giving orders in a house that is not its own, so the muteness lives here,
- * in the plugin, and the verb stays exactly as it is: a command a person typed is a
- * command that owes that person an answer, including a refusal.
+ * product speaking where it has nothing to say — a project with no record has no
+ * decision and no pattern to cite, and mnema's rules are its RECORD's rules — so the
+ * muteness lives here, in the plugin, and the verb stays exactly as it is: a command a
+ * person typed is a command that owes that person an answer, including a refusal.
  *
- * IT NEVER BLOCKS AND NEVER FAILS LOUD. Every outcome that is not a document is
- * silence and exit 0 — no project here, no `mnema` on the PATH, a record that will
- * not read. A hook is not a place to diagnose: the session belongs to the person who
- * opened it, and `PreToolUse` — the one surface of this host that can refuse — is
- * deliberately not used by this plugin at all. Asserted in
- * `packages/code/tests/the-record-arrives-unasked.test.ts` ("says nothing at all
- * where there is no project").
+ * THIS HANDLER NEVER BLOCKS AND NEVER FAILS LOUD, AND THAT IS STILL TRUE. Every
+ * outcome that is not a document is silence and exit 0 — no project here, no `mnema`
+ * on the PATH, a record that will not read. A hook is not a place to diagnose: the
+ * session belongs to the person who opened it, and a diagnosis nobody asked for buys
+ * nothing. Asserted in `packages/code/tests/the-record-arrives-unasked.test.ts`
+ * ("says nothing at all where there is no project").
+ *
+ * THE REASON THAT USED TO STAND HERE IS FALSE — rewritten rather than deleted, because
+ * it was read as doctrine and became one. It said: "`PreToolUse` — the one surface of
+ * this host that can refuse — is deliberately not used by this plugin at all",
+ * offered as a property of the PRODUCT rather than a fact about this file. Three
+ * things falsified it on 18 Aug 2026: mnema's own foundation never said it and says
+ * the opposite (the agents "execute behind workflow gates"); the product already
+ * refuses with 44 distinct typed codes of its own (counted 18 Aug 2026 across the
+ * refusal-code unions and `code:` literals of the three packages' source); and a
+ * round scored
+ * the arm carrying the record at 0/8 on the two tasks that discriminate — what the arm
+ * carrying NO record scored — against 8/8 for an arm that injected the same knowledge
+ * unasked. The foundation now says mnema governs the work with proof, under six ties
+ * (G1-G6). None of that is in this file, and none of it changes a byte of it: the
+ * event set lives in `hooks.json` and it names ONE event, which is what the case
+ * "runs `mnema brief`, and nothing else" holds.
  *
  * IT DECIDES NOTHING ABOUT WHAT THE AGENT READS. The document goes over BYTE FOR
- * BYTE — no preamble of ours, no framing, no cut. A second place deciding what
- * governs the work is a second place that can come to disagree with the record, and
- * the whole point of the file is that it IS the record. Asserted in the same test
- * ("hands over exactly what the verb prints").
+ * BYTE — no preamble of ours, no cut. A second place deciding what GOVERNS the work is
+ * a second place that can come to disagree with the record, and the whole point of the
+ * file is that it IS the record. Asserted in the same test ("hands over exactly what
+ * the verb prints").
+ *
+ * There is no framing either, and G6 of the foundation narrows what that is worth: a
+ * channel that pushes record text to a MODEL should say what the text IS, because
+ * saying what it is is provenance, not a second opinion about what governs. The
+ * byte-for-byte argument covers the cut and the preamble; it never covered provenance,
+ * and it was read as if it did. Nothing changes here today — this channel pushes the
+ * NAMES that `brief` already labels — and the day it carries rule bodies is the day
+ * framing belongs in it.
  *
  * WHAT IT CANNOT DO, said here because the README says it to whoever installs: it
  * carries what is COMMITTED — a decision recorded `--scope private` or in the global
