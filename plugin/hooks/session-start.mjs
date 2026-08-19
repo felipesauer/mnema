@@ -27,14 +27,13 @@
  * things falsified it on 18 Aug 2026: mnema's own foundation never said it and says
  * the opposite (the agents "execute behind workflow gates"); the product already
  * refuses with 44 distinct typed codes of its own (counted 18 Aug 2026 across the
- * refusal-code unions and `code:` literals of the three packages' source); and a
- * round scored
- * the arm carrying the record at 0/8 on the two tasks that discriminate — what the arm
- * carrying NO record scored — against 8/8 for an arm that injected the same knowledge
- * unasked. The foundation now says mnema governs the work with proof, under six ties
- * (G1-G6). None of that is in this file, and none of it changes a byte of it: the
- * event set lives in `hooks.json` and it names ONE event, which is what the case
- * "runs `mnema brief`, and nothing else" holds.
+ * refusal-code unions and `code:` literals of this workspace's non-test source); and a
+ * round scored the arm carrying the record at 0/8 on the two tasks that discriminate —
+ * what the arm carrying NO record scored — against 8/8 for an arm that injected the
+ * same knowledge unasked. The foundation now says mnema governs the work with proof,
+ * under six ties (G1-G6). None of that is in this file, and none of it changes a byte
+ * of it: the event set lives in `hooks.json` and it names ONE event, which is what the
+ * case "runs `mnema brief`, and nothing else" holds.
  *
  * IT DECIDES NOTHING ABOUT WHAT THE AGENT READS. The document goes over BYTE FOR
  * BYTE — no preamble of ours, no cut. A second place deciding what GOVERNS the work is
