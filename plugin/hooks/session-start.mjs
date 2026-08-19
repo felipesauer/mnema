@@ -41,13 +41,19 @@
  * file is that it IS the record. Asserted in the same test ("hands over exactly what
  * the verb prints").
  *
- * There is no framing either, and G6 of the foundation narrows what that is worth: a
- * channel that pushes record text to a MODEL should say what the text IS, because
- * saying what it is is provenance, not a second opinion about what governs. The
- * byte-for-byte argument covers the cut and the preamble; it never covered provenance,
- * and it was read as if it did. Nothing changes here today — this channel pushes the
- * NAMES that `brief` already labels — and the day it carries rule bodies is the day
- * framing belongs in it.
+ * THIS FILE ADDS NO FRAMING, AND THE TEXT IT CARRIES IS NOT UNFRAMED — those are two
+ * claims, and writing the first here once said the second. It does not hold: the
+ * document's own first lines say whose text it is, said where the document is composed
+ * (`packages/code/src/presentation/brief.ts`), which is the only place that can say it
+ * once for whatever reads it. What is true of THIS file is that it adds nothing of its
+ * own, and that is the byte-for-byte argument above, which covers the cut and the
+ * preamble and never covered provenance.
+ *
+ * G6 of the foundation is what that was measured against, and it holds: a channel that
+ * pushes record text to a MODEL says what the text IS, because saying what it is is
+ * provenance, not a second opinion about what governs. Nothing changes here today —
+ * this channel pushes the NAMES that `brief` already labels — and the day it carries
+ * rule bodies is the day the declaration has more to name.
  *
  * WHAT IT CANNOT DO, said here because the README says it to whoever installs: it
  * carries what is COMMITTED — a decision recorded `--scope private` or in the global
