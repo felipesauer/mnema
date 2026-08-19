@@ -1,0 +1,49 @@
+# The ten tasks of the P1 protocol's SECOND round, fixed before the mechanism it
+# will measure was built.
+#
+# WHY A SECOND SET. Round 1 measured the first promise and it did not survive as
+# written. The cause was measured rather than inferred — `mcp_asked` false in
+# twenty of twenty instrumented cells: the agent never called the record. The
+# product's answer to that is a surface that serves the record unasked and charges
+# for it, and proving the answer worked needs tasks nobody has spent. Round 1's
+# four held-out axis-A tasks are burned, and its two development tasks were
+# iterated against, so both classes are contaminated for a new measurement. These
+# ten are new, and they were frozen BEFORE any of that surface exists — which is
+# the whole reason this file is dated before the code it will judge.
+#
+# Each hash covers one task directory whole — its starting repository, its ticket,
+# its decision, its two references and its discriminant — over a DETERMINISTIC
+# archive: entry order fixed, timestamps and ownership zeroed, Python bytecode
+# excluded. The archive carries the task's id as its path prefix, so two tasks
+# cannot swap contents without both hashes moving.
+#
+# The tasks themselves are withheld until they have been used. Until then this
+# file is what a third party can check: not what a task says, but that it did not
+# change between the freeze and the result.
+#
+# REPRODUCE — GNU tar 1.35 and coreutils sha256sum, run from the directory that
+# holds the ten task directories:
+#
+#   for id in a7-partial-refund a8-installments a9-phone-format a10-stock-cost \
+#             a11-tax-id a12-payment-allocation a13-holiday-shift a14-tie-break \
+#             b3-duration-format b4-run-length; do
+#     printf '%s  %s\n' "$(tar --sort=name --format=gnu \
+#         --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner \
+#         --exclude='__pycache__' --exclude='*.pyc' \
+#         -cf - "$id" | sha256sum | cut -d' ' -f1)" "$id"
+#   done
+#
+# A hash nobody knows how to reproduce proves nothing, which is why the command is
+# here and not in a report. A different tar implementation will produce a different
+# stream: the version above is the one these hashes were taken with.
+#
+28e73a8d4ac39568c1c35a0905081d7dfc48001a396d013901e190869e2a592b  a7-partial-refund
+32d467f4c95eafc31ebc2b7e1d3162b2c286bbef994179a7a0faeee6d8195d22  a8-installments
+70d34e135019d4b4f275f34cdc8c844054aa02f3ab5d5dbb859b22c49a0cadac  a9-phone-format
+fef3c59301f2afac0233d3cd261347e42727bf368578396a94ddb2104c9ad514  a10-stock-cost
+1f7b6c1cbf5680ef491fbc49a4cda98992ca2bb67a2e9911ec2cefc865065ffc  a11-tax-id
+7b0d50300695e54aa5a6f406e8f996120b250a3ed498d63df030223f790f08f6  a12-payment-allocation
+128d163c98d8134fac2c52a71a53af5160048e37f87177087657f0cb1daa46f6  a13-holiday-shift
+8cf1cec3a64d7eaf0d45a19915d5b0d3b1f62a36666abc4bb33ec9da10f32aae  a14-tie-break
+63573378626ba415fadf6d5d56e47282e9247069a9ae8e1aaa466ae6aa9bc73a  b3-duration-format
+324f16f8e85f9a591511007126ae53b8921f9fd781d54a6b40604140ce1a3eeb  b4-run-length

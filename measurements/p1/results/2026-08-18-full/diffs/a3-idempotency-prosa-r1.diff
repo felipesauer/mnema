@@ -1,0 +1,20 @@
+diff --git a/webhooks.js b/webhooks.js
+index e76d9b5..e0a1679 100644
+--- a/webhooks.js
++++ b/webhooks.js
+@@ -25,7 +25,14 @@ class WebhookInbox {
+    * Returns true when the event is new work, false when it is a duplicate.
+    */
+   accept(event) {
+-    throw new Error('WebhookInbox.accept is not implemented');
++    // Check if this event has already been handled by its id
++    if (this.handled.some(e => e.id === event.id)) {
++      return false; // Duplicate
++    }
++
++    // New event, add it to handled and return true
++    this.handled.push(event);
++    return true;
+   }
+ }
+ 
