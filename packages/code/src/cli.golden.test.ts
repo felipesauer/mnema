@@ -298,6 +298,13 @@ async function readEverything(label: string, ids: Record<string, string>): Promi
   await mnema('reads', 'refs', ids.decision ?? 'no-such-id', '--json');
   await mnema('reads', 'refs', ids.task ?? 'no-such-id', '--depth', '2');
   await mnema('reads', 'refs', ids.task ?? 'no-such-id', '--direction', 'out', '--depth', '1');
+  // WHICH RULES GOVERN A PATH: one under an address that exists, one at the project
+  // root (which nothing addresses here), and one outside the project altogether —
+  // the three shapes the three counts have to tell apart.
+  await mnema('reads', 'rules', 'docs/runbook/rollback.md');
+  await mnema('reads', 'rules', 'docs/runbook/rollback.md', '--json');
+  await mnema('reads', 'rules', '.');
+  await mnema('reads', 'rules', '/elsewhere/src/app.ts');
   await mnema('reads', 'exposure');
   await mnema('reads', 'exposure', '--json');
   await mnema('reads', 'timeline', ids.task ?? 'no-such-id');
@@ -390,6 +397,10 @@ beforeAll(async () => {
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-golden-'));
   repo = join(sandbox, 'project');
   mkdirSync(repo, { recursive: true });
+  // A directory a rule can be ADDRESSED at. `rules` asks the working tree whether an
+  // address still names something, so the fixture has to hold one — and it holds only
+  // this one, which is what lets the second address be stale on purpose.
+  mkdirSync(join(repo, 'docs', 'runbook'), { recursive: true });
   mkdirSync(join(sandbox, 'home'), { recursive: true });
   process.env.HOME = join(sandbox, 'home');
   process.env.XDG_DATA_HOME = join(sandbox, 'data');
@@ -542,6 +553,11 @@ beforeAll(async () => {
   await mnema('writes', 'handoff', taskId, 'agent-alpha', 'agent-beta');
   await mnema('writes', 'link', decisionId, taskId, '--rel', 'relates-to');
   await mnema('writes', 'link', taskId, choreId, '--rel', 'derived-from');
+  // THE RELATION WHOSE TARGET IS A PATH — a decision given an address, and a second
+  // address that names nothing in the working tree. The two are what make `rules`
+  // answer with a rule and with a stale one rather than with three zeroes.
+  await mnema('writes', 'link', decisionId, 'docs/runbook', '--rel', 'governs');
+  await mnema('writes', 'link', decisionId, 'docs/gone-away', '--rel', 'governs');
 
   // ── The moves: a task through the whole workflow and back twice (which is what
   //    makes it a recurring shape), a decision accepted and one superseded, a
@@ -792,6 +808,7 @@ beforeAll(async () => {
     'antipatterns',
     'exposure',
     'refs',
+    'rules',
     'skills',
     'brief',
     'key',

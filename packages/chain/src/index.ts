@@ -156,6 +156,7 @@ export {
   type DecisionRecordedV1,
   type DecisionTransitionedV1,
   type EventKind,
+  GOVERNS_RELATION,
   type HandoffRecordedV1,
   type IdentityFoundedV1,
   type KeyEnrolledV1,

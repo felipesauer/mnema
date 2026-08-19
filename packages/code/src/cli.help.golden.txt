@@ -31,6 +31,7 @@ $ mnema
 !   antipatterns [options]                  show recurring shapes in the record (reopens, supersessions, deprecations)
 !   exposure [options]                      show which records hold something shaped like a credential (never the value)
 !   refs [options] <id>                     show what an entity is connected to across the trees
+!   rules [options] <path>                  show which recorded rules govern a path, and which address nothing
 !   skills [options]                        show where each pattern came from (who proposed it, who adopted it)
 !   usage                                   what each run cost, read from this machine's Claude Code transcripts
 !   brief                                   print what governs the work here as markdown, for an agent to read
@@ -76,6 +77,7 @@ $ mnema --help
 |   antipatterns [options]                  show recurring shapes in the record (reopens, supersessions, deprecations)
 |   exposure [options]                      show which records hold something shaped like a credential (never the value)
 |   refs [options] <id>                     show what an entity is connected to across the trees
+|   rules [options] <path>                  show which recorded rules govern a path, and which address nothing
 |   skills [options]                        show where each pattern came from (who proposed it, who adopted it)
 |   usage                                   what each run cost, read from this machine's Claude Code transcripts
 |   brief                                   print what governs the work here as markdown, for an agent to read
@@ -293,11 +295,11 @@ $ mnema link --help
 |
 | Arguments:
 |   subject          the entity that originates the link
-|   target           the entity linked to
+|   target           what it points at: another id, or a path under --rel governs
 |
 | Options:
 |   --rel <label>    the relation (recommended: supersedes, relates-to,
-|                    derived-from, contradicts; any label is accepted)
+|                    derived-from, contradicts, governs; any label is accepted)
 |   --scope <scope>  where the link is born: public (team-visible), private (this
 |                    machine, this project), or global (personal, cross-project).
 |                    Omitted, a link lands in the public tree (an assertion about
@@ -496,6 +498,19 @@ $ mnema refs --help
 |   --depth <n>        how many hops (max 10) (default: "1")
 |   --json             emit the faithful graph as JSON
 |   -h, --help         display help for command
+
+### mnema rules --help
+$ mnema rules --help
+| Usage: mnema rules [options] <path>
+|
+| show which recorded rules govern a path, and which address nothing
+|
+| Arguments:
+|   path        the path to ask about, relative to here or absolute
+|
+| Options:
+|   --json      emit the faithful reading as JSON
+|   -h, --help  display help for command
 
 ### mnema skills --help
 $ mnema skills --help
