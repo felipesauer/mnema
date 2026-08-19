@@ -88,7 +88,10 @@ import { recordFramingBlock } from './record-framing.js';
  * It says what the text is and stops. There is no "check these before you write", and
  * there will not be: a sentence telling a reader what to do about somebody else's code
  * is the one thing `record-framing.ts` exists to keep out of a pushed text, and the
- * record already says a rule governs in its own voice.
+ * record already says a rule governs in its own voice. That used to be a promise this
+ * comment made on its own — a mutation put an imperative here and the only red was the
+ * shape assertion the same diff would have updated. It is held now, over every sentence
+ * this channel writes rather than over the declaration alone; see {@link ourWordsIn}.
  */
 function addressedAt(path: string): string {
   return `Addressed at ${oneLine(path)}:`;
@@ -117,12 +120,38 @@ const ONE_IS_NOT_COMMITTED =
  */
 export function editRulesNotice(at: RulesAtPath): string | undefined {
   if (at.rules.length === 0) return undefined;
-  return [
-    recordFramingBlock('edit-rules-push'),
-    addressedAt(at.relative ?? at.path),
-    ...at.rules.map(ruleLine),
-    ...(at.rules.every((rule) => rule.travels) ? [] : [ONE_IS_NOT_COMMITTED]),
-  ].join('\n');
+  return [...opening(at), ...at.rules.map(ruleLine), ...closing(at)].join('\n');
+}
+
+/** What this channel says before the rules: whose text this is, and about which file. */
+function opening(at: RulesAtPath): readonly string[] {
+  return [recordFramingBlock('edit-rules-push'), addressedAt(at.relative ?? at.path)];
+}
+
+/** What it says after them, which is nothing unless one of them does not travel. */
+function closing(at: RulesAtPath): readonly string[] {
+  return at.rules.every((rule) => rule.travels) ? [] : [ONE_IS_NOT_COMMITTED];
+}
+
+/**
+ * Every line of a notice that this PRODUCT wrote, as opposed to the record.
+ *
+ * THE LINE BETWEEN THE TWO VOICES, AND IT IS WHY THIS IS EXPORTED. A pushed text says
+ * what the text IS and never what to do about it — but only the half mnema wrote can be
+ * held to that. The rule lines carry a name somebody typed into their own record, and a
+ * project is free to call a decision "Follow the style guide"; scanning those would make
+ * this product an opinion about how other people name their own rules, which is the
+ * inverse of the tie.
+ *
+ * So this returns the product's half and `the-rule-reaches-the-writing.test.ts` runs
+ * `record-framing.ts`'s `tellsWhatToDo` over it — over the lines a person composing a new
+ * sentence would add to, rather than over a list kept in step by hand. A sentence added
+ * to {@link opening} or {@link closing} arrives inside the guard without anybody
+ * remembering it, which is the only reason this is composed from the same two functions
+ * the notice is.
+ */
+export function ourWordsIn(at: RulesAtPath): readonly string[] {
+  return [...opening(at), ...closing(at)];
 }
 
 /**

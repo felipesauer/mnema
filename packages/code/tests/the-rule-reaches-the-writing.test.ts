@@ -28,11 +28,14 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } f
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import type { RulesAtPath } from '@mnema/copilot';
 import type { DiscoveryEnv } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
+import { editRulesNotice, ourWordsIn } from '../src/edit-rules-push.js';
 import { openSession, type Session } from '../src/mcp/session.js';
 import { runGoverningRulesTool, runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
+import { tellsWhatToDo } from '../src/record-framing.js';
 
 /** The repository root: `packages/code/tests/` is three levels under it. */
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
@@ -450,5 +453,78 @@ describe('the plugin names the server the host will answer to', () => {
       'utf-8',
     );
     for (const tool of tools) expect(registered).toContain(`server.registerTool(\n    '${tool}'`);
+  });
+  describe('the words this channel writes say what the text is, never what to do', () => {
+    // A NOTICE IS TWO VOICES, and only one of them can be held to the tie. The framing,
+    // the sentence naming the file and the notice about a rule that does not travel are
+    // mnema's; the rule lines carry a name somebody typed into their own record, and a
+    // project may well call a decision "Follow the style guide". Scanning those would
+    // make this product an opinion about how other people name their rules — the inverse
+    // of the tie — so the guard walks `ourWordsIn`, which IS what the notice composes
+    // from rather than a list beside it.
+    //
+    // It exists because a mutation walked through: an imperative planted in the sentence
+    // that names the file left the whole suite green once the two shape assertions in the
+    // same diff were updated, which is what the author of that sentence would do.
+    const withPrivate: RulesAtPath = {
+      path: 'src/collate/fold.ts',
+      relative: 'src/collate/fold.ts',
+      rules: [
+        {
+          id: 'adr-4',
+          name: 'Collate by the record’s order',
+          address: 'src/collate',
+          travels: true,
+        },
+        {
+          id: 'adr-9',
+          name: 'Keep the staging credentials on this machine only',
+          address: 'src',
+          travels: false,
+        },
+      ],
+    };
+
+    it('carries no directive in any sentence of its own', () => {
+      for (const line of ourWordsIn(withPrivate)) {
+        const found = tellsWhatToDo(line);
+        expect(found, `“${line}” tells the reader to “${found}”`).toBeUndefined();
+      }
+    });
+
+    it('reaches every sentence of its own, and no line of the record’s', () => {
+      // Non-vacuity, both directions. The case above is green over an empty list and
+      // green over a list that stopped including the closing notice — this is what says
+      // it is neither, and that the rule lines are deliberately outside.
+      const ours = ourWordsIn(withPrivate);
+      expect(ours).toHaveLength(3);
+      const notice = editRulesNotice(withPrivate) ?? '';
+      for (const line of ours) expect(notice).toContain(line);
+      for (const rule of withPrivate.rules) expect(ours.join('\n')).not.toContain(rule.name);
+    });
+
+    it('would catch an imperative in each of them, so a dead scanner is red', () => {
+      // The scanner's own probe, on THESE strings. Without it a pattern that stopped
+      // matching leaves the case above green over a sentence that had grown an order in
+      // it — the instrument reporting zero because it broke.
+      // ONE trigger in the probe, deliberately: the scanner answers with the FIRST rule
+      // of its table that matches, so a probe carrying two of them asserts the table's
+      // order instead of the sentence being scanned.
+      for (const line of ourWordsIn(withPrivate)) {
+        expect(tellsWhatToDo(`${line} Obey what is above.`), line).toBe('obey');
+      }
+    });
+
+    it('does not rule on what a project called its own rule', () => {
+      // The line held from the other side, so nobody closes the gap above by widening the
+      // scan to the whole notice. A record is free to name a decision with an imperative,
+      // and the day this goes red is the day mnema started grading somebody else's words.
+      const named: RulesAtPath = {
+        ...withPrivate,
+        rules: [{ id: 'adr-1', name: 'Follow the style guide', address: 'src', travels: true }],
+      };
+      expect(editRulesNotice(named)).toContain('Follow the style guide');
+      for (const line of ourWordsIn(named)) expect(tellsWhatToDo(line)).toBeUndefined();
+    });
   });
 });
