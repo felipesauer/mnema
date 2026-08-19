@@ -155,6 +155,7 @@ export {
   canonicalStringify,
 } from './events/canonical.js';
 export {
+  ADDRESS_RELATIONS,
   ASKS_FOR_A_PERSON_RELATION,
   type CatalogEvent,
   type ChannelAskedV1,

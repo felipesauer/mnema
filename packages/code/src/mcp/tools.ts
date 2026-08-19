@@ -54,9 +54,11 @@
  * so an operation that needs one will not take it.
  */
 
+import { dirname } from 'node:path';
 import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
 import {
   type AccountabilityFilter,
+  type AddressReach,
   type AskerContext,
   accountabilityByProject,
   adoptedSkills,
@@ -128,7 +130,12 @@ import {
 } from '@mnema/core/write';
 import { editAsksNotice } from '../edit-asks-a-person.js';
 import { editRulesNotice } from '../edit-rules-push.js';
-import { readAsksForAPersonAt, readGoverningRules, readRulesInForceAt } from '../governed-tree.js';
+import {
+  reachOfAddress,
+  readAsksForAPersonAt,
+  readGoverningRules,
+  readRulesInForceAt,
+} from '../governed-tree.js';
 import {
   projectEventsOf,
   recordTrees,
@@ -450,6 +457,20 @@ export function runRecordHandoff(
 }
 
 /**
+ * A link was recorded, with what its address covers when the relation carries one.
+ *
+ * A shape of its own rather than a `reach` added to {@link FactRecordedResult}, because
+ * a handoff shares that type and has no target that could be an address — a field there
+ * would be one every handoff carries and none can ever fill.
+ */
+export type LinkRecordedResult =
+  | (Extract<FactRecordedResult, { readonly ok: true }> & {
+      /** What the address covers, absent for a relation whose target is an id. */
+      readonly reach?: AddressReach;
+    })
+  | Extract<FactRecordedResult, { readonly ok: false }>;
+
+/**
  * `link_knowledge` — links one entity to another, the MCP counterpart of `mnema
  * link`. The destination is a per-action choice (`project`, then `scope`); omitted,
  * the cascade's project and the tree this KIND names — a link asserts a relation
@@ -468,9 +489,10 @@ export function runRecordHandoff(
 export function runLinkKnowledge(
   session: Session,
   input: { subject: string; target: string; rel: string; scope?: Scope; project?: string },
-): FactRecordedResult {
+): LinkRecordedResult {
   const route = routeWrite(session, 'knowledge.linked', input);
   if (!route.ok) return route;
+  const trees = route.target?.trees ?? session.trees;
   const { ctx, run } = openWrite(session, route.scope, route.target);
   const recorded = linkKnowledge(ctx, {
     subject: input.subject,
@@ -484,11 +506,18 @@ export function runLinkKnowledge(
   }
   // Checkpoint so the record is fully signed the moment the tool returns.
   ctx.writer.checkpoint();
+  // What the address covers, off the relation AS RECORDED and against the root of the
+  // project this write was ROUTED to — not the session's, which is a different project
+  // whenever the caller named one. A write that landed outside a project has no root
+  // for an address to be relative to and reports no reach.
+  const root = trees.projectPublic === undefined ? undefined : dirname(trees.projectPublic);
+  const reach = root === undefined ? undefined : reachOfAddress(recorded.rel, input.target, root);
   // The relation AS RECORDED — screened, so the echo shows what landed.
   return {
     ok: true,
     recorded: [recorded.rel],
     scope: route.scope,
+    ...(reach !== undefined ? { reach } : {}),
     ...forwardReplacement(recorded),
   };
 }
@@ -1834,7 +1863,8 @@ export type GoverningRulesToolResult = IntelligenceResult<GoverningRules>;
 /**
  * `governing_rules` — which recorded rules govern a path of this project.
  *
- * The reverse reading of the one relation whose target is a PATH: a decision or a
+ * The reverse reading of the relations whose target is a PATH (`ADDRESS_RELATIONS`,
+ * two of them since the gate shipped — this said "the one relation"): a decision or a
  * pattern linked with `rel: "governs"` to `src/billing` is a rule with an address,
  * and this finds it from the file rather than from the id. It is what turns "the
  * record holds rules" into "these rules apply to what I am about to touch".

@@ -131,6 +131,13 @@ const IDENTIFIER = /[A-Za-z_$][\w$]*/g;
  * literals, the re-export clauses and its own declaration heads are gone. A
  * property access (`writer.append`) is dropped too — it names a member, not the
  * exported value that happens to share the name.
+ *
+ * A SPREAD IS A REFERENCE, and reading it as a property access is what this guard did
+ * until `ADDRESS_RELATIONS` was accused: the pair of path relations is defined once and
+ * spread into the recommended set in the very next statement, and `...NAME` ends in the
+ * same character `obj.NAME` does. The accusation was the instrument's, not the code's —
+ * the value had a caller three lines below its declaration — so the two dots are told
+ * apart here rather than the source being written to suit the reader.
  */
 function referencedIdentifiers(source: string): Set<string> {
   const code = codeOnly(source)
@@ -140,7 +147,8 @@ function referencedIdentifiers(source: string): Set<string> {
   for (const match of code.matchAll(IDENTIFIER)) {
     let before = (match.index ?? 0) - 1;
     while (before >= 0 && (code[before] === ' ' || code[before] === '\n')) before -= 1;
-    if (before >= 0 && code[before] === '.') continue;
+    // `.NAME` is a member; `...NAME` is the value itself.
+    if (before >= 0 && code[before] === '.' && code[before - 1] !== '.') continue;
     referenced.add(match[0]);
   }
   return referenced;
@@ -405,6 +413,20 @@ describe('every public value has a caller', () => {
     // `accused`, and a declared one that gained a caller — or stopped being exported
     // — lands in `stale` until its entry leaves the table.
     expect(reconcile(unwired(), UNWIRED)).toEqual({ accused: [], stale: [] });
+  });
+
+  it('reads a spread as a use and a member access as none', () => {
+    // The instrument's own case, because a scanner that errs by ACCUSING is as broken
+    // as one that errs by staying silent — and this one did, on the exact shape a
+    // single-site constant takes when a second list is built from it. Both directions,
+    // so a fix that simply stopped dropping members would fail here.
+    const referenced = referencedIdentifiers(
+      ['const built = [...SOURCE_LIST];', 'const value = holder.SOURCE_LIST;'].join('\n'),
+    );
+    expect(referenced.has('SOURCE_LIST')).toBe(true);
+    expect(referencedIdentifiers('const value = holder.MEMBER_ONLY;').has('MEMBER_ONLY')).toBe(
+      false,
+    );
   });
 
   it('tolerates a declared value and still accuses an undeclared one', () => {

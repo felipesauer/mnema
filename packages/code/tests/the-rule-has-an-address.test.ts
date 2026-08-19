@@ -429,29 +429,52 @@ describe('both surfaces answer out of the same derivation', () => {
 
 describe('one place assembles a governs read', () => {
   /**
-   * The derivations take their disk probe as a parameter, so each surface could bring
-   * its own — and two probes is two ideas of what "the address exists" means, which
-   * would make the stale count depend on which surface asked. So `governed-tree.ts`
-   * assembles it and every caller goes through that. Found by the SYMBOL rather than by
-   * a list of files, which is what makes a third caller written next year red here.
+   * The derivations take their disk probe — or, for the reach, their WALK — as a
+   * parameter, so each surface could bring its own. Two probes is two ideas of what
+   * "the address exists" means, and two walks is two ideas of what a file of the
+   * project IS; either would make a number depend on which surface asked. So
+   * `governed-tree.ts` assembles them and every caller goes through that.
    *
-   * THERE ARE TWO DERIVATIONS NOW, and covering only the first would have left the hole
-   * this case exists to close: the pushed channel added `rulesInForceAt`, which takes the
-   * same `GovernanceQuery` and could have been called with a probe of its own. Both names
-   * are walked, so the guard covers the rule and not one instance of it — and the list is
-   * read off {@link ASSEMBLED_DERIVATIONS}, so a third derivation added to the copilot
-   * without being added here is a gap somebody has to notice, which is why the count is
-   * asserted too.
+   * THE LIST IS READ OFF THE COPILOT'S SOURCE, and that is the repair rather than a
+   * detail. It used to be a literal pair — `governingRules` and `rulesInForceAt` —
+   * with a comment saying a third derivation "is a gap somebody has to notice". A
+   * third one shipped (`asksForAPersonAt`, the gate), nobody noticed, and this case
+   * stayed GREEN while covering two of three: a guard whose scope is a hand-written
+   * list is a guard that stops covering the rule the moment the rule grows. So the
+   * derivations are now enumerated from the one file that defines them, by the shape
+   * that makes one dangerous — taking an injected question — and a fourth
+   * (`addressReach`) is in scope by existing.
    *
    * It looks for a CALL and not a mention: a doc-comment naming a derivation is how the
    * next reader learns which one a module means, and a guard that counted prose would
    * push the explanations out of the files that owe them.
    */
-  const ASSEMBLED_DERIVATIONS = ['governingRules', 'rulesInForceAt'];
+  const governance = fileURLToPath(
+    new URL('../../copilot/src/intelligence/governance.ts', import.meta.url),
+  );
 
-  it('names every governs derivation in exactly one module of this package', () => {
+  /** Every exported derivation of that module that takes an injected question. */
+  function assembledDerivations(): string[] {
+    const source = readFileSync(governance, 'utf-8');
+    return [
+      ...source.matchAll(/export function (\w+)\(([^)]*(?:GovernanceQuery|ReachQuery)[^)]*)\)/gs),
+    ].map((match) => match[1] as string);
+  }
+
+  it('names every address derivation in exactly one module of this package', () => {
+    const derivations = assembledDerivations();
+    // The rule grew twice already; assert it is not reading an empty list, which is the
+    // one way this whole case could pass by finding nothing.
+    expect(derivations).toEqual(
+      expect.arrayContaining([
+        'governingRules',
+        'rulesInForceAt',
+        'asksForAPersonAt',
+        'addressReach',
+      ]),
+    );
     const src = fileURLToPath(new URL('../src', import.meta.url));
-    const calls = new RegExp(`\\b(${ASSEMBLED_DERIVATIONS.join('|')})\\s*\\(`);
+    const calls = new RegExp(`\\b(${derivations.join('|')})\\s*\\(`);
     const naming: string[] = [];
     const walk = (dir: string): void => {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -463,19 +486,21 @@ describe('one place assembles a governs read', () => {
     };
     walk(src);
     expect(naming.sort()).toEqual(['governed-tree.ts']);
-    // And every derivation the copilot exports for a path question IS in the list above,
-    // so the walk cannot be green by looking for a name nothing uses any more.
+    // And every one of them IS exported from the copilot's barrel, so the walk cannot
+    // be green over a name no surface could have reached in the first place.
     const copilot = readFileSync(
       fileURLToPath(new URL('../../copilot/src/index.ts', import.meta.url)),
       'utf-8',
     );
-    for (const derivation of ASSEMBLED_DERIVATIONS) {
+    for (const derivation of derivations) {
       expect(copilot, derivation).toContain(`  ${derivation},`);
     }
+    // Every derivation is called there, and each exactly once: a second call site
+    // inside the assembly is a second question being built.
     expect(
       readFileSync(join(src, 'governed-tree.ts'), 'utf-8').match(
-        new RegExp(`\\b(${ASSEMBLED_DERIVATIONS.join('|')})\\s*\\(`, 'g'),
+        new RegExp(`\\b(${derivations.join('|')})\\s*\\(`, 'g'),
       ),
-    ).toHaveLength(ASSEMBLED_DERIVATIONS.length);
+    ).toHaveLength(derivations.length);
   });
 });
