@@ -162,24 +162,35 @@ export {
   type WorkspaceExposure,
   workspaceExposure,
 } from './intelligence/exposure.js';
-// THREE readings of the same graph, and each is a value here because a different surface
+// FOUR readings of the same graph, and each is a value here because a different surface
 // consumes it: `governingRules` answers a caller that asked, `rulesInForceAt` answers the
 // channel that pushes text, and `asksForAPersonAt` answers the one that stops somebody.
 // Neither of the last two is reachable through the first — they narrow to what is in
 // force, which is a decision a pushing channel has no right to take for itself — and they
 // are two entry points rather than one with a relation argument, because a caller free to
 // name the relation is a caller free to charge for a label nobody defined.
+//
+// `addressReach` is the fourth and it asks the question the other way round: not which
+// rules cover a path, but how much of the tree ONE address covers — the number nothing
+// said at the moment somebody recorded it. It takes an injected walk for the reason the
+// other three take an injected probe, and it is in the same module so that it compares an
+// address by the very prefix the gate is decided by.
 export {
   type AddressCounts,
   type AddressedRule,
+  type AddressReach,
+  addressReach,
   asksForAPersonAt,
   type GovernanceCounts,
   type GovernanceQuery,
   type GoverningRules,
   governingRules,
   type PushedRule,
+  type ReachQuery,
   type RulesAtPath,
   rulesInForceAt,
+  type TreeWalk,
+  type WalkOutcome,
 } from './intelligence/governance.js';
 export { knownAnchors } from './intelligence/identities.js';
 export {

@@ -10,12 +10,14 @@
  * and rebuilt by dropping and replaying — there are no data migrations.
  */
 
-// The one relation label a READER has to know by name: `governs`, whose target is
-// a path rather than an id. It is the chain's constant and it is re-exported here
-// for one reason — the copilot may not name `@mnema/chain` (its boundary test bans
-// the specifier, because that package holds writers), and a reader that typed the
-// literal instead would be the second place the label lives.
-export { ASKS_FOR_A_PERSON_RELATION, GOVERNS_RELATION } from '@mnema/chain';
+// The relation labels a READER has to know by name, and the set of them. It read
+// "the ONE relation label" and named `governs` alone; `asks-for-a-person` falsified
+// that, and `ADDRESS_RELATIONS` is the pair itself, so a reader asks whether a label
+// carries an address without spelling out either. They are the chain's constants and
+// are re-exported here for one reason — the copilot may not name `@mnema/chain` (its
+// boundary test bans the specifier, because that package holds writers), and a reader
+// that typed a literal instead would be the second place a label lives.
+export { ADDRESS_RELATIONS, ASKS_FOR_A_PERSON_RELATION, GOVERNS_RELATION } from '@mnema/chain';
 // What a credential looks like, and how much text a field may hold. Detecting is
 // a READ — a pure question about a string — so it belongs here, and the audit of
 // an existing record reaches it through this barrel. Only SCREENING (refusing and

@@ -317,7 +317,7 @@ function addressesUnder(
   }
   return {
     all,
-    matching: asked === null ? [] : all.filter((entry) => covers(entry, asked)),
+    matching: asked === null ? [] : all.filter((entry) => covers(entry.segments, asked)),
     stale: all.filter((entry) => !entry.rule.onDisk),
   };
 }
@@ -413,9 +413,14 @@ function nameAndState(record: RecordBody | null): { name?: string; state?: strin
  * segments than the path covers nothing, and one whose segments differ at any
  * position covers nothing: `src/collate` and `src/collate_test.rb` differ at the
  * second segment, which is the whole point.
+ *
+ * It takes the SEGMENTS rather than an {@link Addressed}, and that is what lets
+ * {@link addressReach} count files under an address through this same comparison. A
+ * reach computed by a prefix test of its own would report what a DIFFERENT address
+ * covers from the one the gate stops on, and the person it misled would have been
+ * misled by the number this product printed to inform them.
  */
-function covers(entry: Addressed, path: readonly string[]): boolean {
-  const wanted = entry.segments;
+function covers(wanted: readonly string[] | null, path: readonly string[]): boolean {
   if (wanted === null) return false;
   if (wanted.length > path.length) return false;
   return wanted.every((segment, index) => path[index] === segment);
@@ -651,3 +656,118 @@ function inForceUnder(
  * {@link PushedRule.travels} is a claim about that and not about a preference.
  */
 const TRAVELS_TO_A_CLONE: Scope = 'public';
+
+/**
+ * How the surface that owns a disk walks the project's files.
+ *
+ * Injected for the reason {@link GovernanceQuery.onDisk} is: the derivation stays pure
+ * over an address, and the one place that touches a disk is the surface. It is a
+ * CALLBACK rather than a list because the answer is two counts and nothing else — a
+ * caller that returned an array of every path would materialize a tree's worth of
+ * strings to have them counted and thrown away.
+ *
+ * What counts as a file of the project is the WALK's decision, not this module's, and
+ * that is why {@link WalkOutcome} travels back: a fraction whose base was decided out of
+ * sight is worse than no fraction, so the base gets to say what it left out.
+ */
+export interface TreeWalk {
+  /**
+   * Walks the project's files, calling `visit` once with each project-relative POSIX
+   * path, and reports what the walk left out.
+   */
+  readonly walk: (visit: (relative: string) => void) => WalkOutcome;
+}
+
+/** What a walk left out — the two ways its count is not the whole tree. */
+export interface WalkOutcome {
+  /**
+   * The directory names the walk did not descend into, as it actually met them —
+   * never the whole list it would have skipped. A base that names what it excluded is
+   * a base a reader can argue with; one that does not is a number with a hidden
+   * premise.
+   */
+  readonly skipped: readonly string[];
+  /**
+   * True when the walk stopped at a ceiling, which makes every count a FLOOR. It
+   * travels rather than being handled here because a truncated number that does not
+   * announce itself is worse than no number — cutting in silence is a defect this
+   * product names elsewhere and would be committing here.
+   */
+  readonly truncated: boolean;
+}
+
+/** What to ask about an address: the address, its project, and how to walk the tree. */
+export interface ReachQuery {
+  /** The address as the record holds it — the link's target, verbatim. */
+  readonly address: string;
+  /** The project's root directory — the parent of its `.mnema/`, absolute. */
+  readonly root: string;
+  /** How to walk the project's files. */
+  readonly tree: TreeWalk;
+}
+
+/**
+ * What an address covers, against the base it was counted over.
+ *
+ * Two numbers and never one: `under` alone says nothing — 128 files is most of a small
+ * repository and a corner of a large one — and it is the FRACTION that makes the cliff
+ * visible. The base's own qualifications ride along, because they are what the fraction
+ * means.
+ */
+export interface AddressReach {
+  /**
+   * The address as it was compared: POSIX segments joined by `/`, relative to the root,
+   * the root itself being `.`. Absent when the address lies outside the project and
+   * therefore covers nothing here — the same absence {@link AddressedRule.address} has,
+   * for the same reason.
+   */
+  readonly address?: string;
+  /** How many of the files counted the address covers. */
+  readonly under: number;
+  /** How many files were counted at all — what `under` is a fraction OF. */
+  readonly counted: number;
+  /** The directory names the walk did not descend into. See {@link WalkOutcome.skipped}. */
+  readonly skipped: readonly string[];
+  /** True when the walk hit its ceiling, making both counts floors. */
+  readonly truncated: boolean;
+}
+
+/**
+ * How much of the working tree an address covers — the number nothing said before the
+ * address was recorded.
+ *
+ * IT IS A FACT AND STOPS THERE. No threshold, no warning, no refusal: an address that
+ * covers everything is a legitimate thing to record, and a product with an opinion about
+ * how much of somebody else's tree a rule of theirs should reach would be charging for a
+ * judgement nobody recorded. What was missing was never a policy; it was that the person
+ * typing the address could not see what it reached.
+ *
+ * IT COUNTS FILES, NOT EDITS, and the difference is not a footnote. The measurement this
+ * exists to answer counted file touches across commits; this counts what is ON DISK, and
+ * a thousand files nobody opens weigh the same here as a thousand files touched daily.
+ * The surfaces that print it say so on the line, because a fraction the reader takes for
+ * a rate of firing is a number that misleads more than silence would.
+ *
+ * It goes through {@link relativeSegments} and {@link covers} — the same normalization
+ * and the same segment prefix the gate is decided by — so the reach describes the very
+ * address that will stop somebody, and not one that merely spells the same.
+ */
+export function addressReach(query: ReachQuery): AddressReach {
+  const wanted = relativeSegments(query.address, query.root);
+  let under = 0;
+  let counted = 0;
+  const outcome = query.tree.walk((relative) => {
+    counted += 1;
+    // A walked path is already project-relative, so this only splits and normalizes
+    // it — and it does so through the function every address goes through, which is
+    // what keeps a file's segments and an address's segments one idea.
+    if (covers(wanted, relativeSegments(relative, query.root) ?? [])) under += 1;
+  });
+  return {
+    ...(wanted !== null ? { address: posix(wanted) } : {}),
+    under,
+    counted,
+    skipped: outcome.skipped,
+    truncated: outcome.truncated,
+  };
+}
