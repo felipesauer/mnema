@@ -20,7 +20,15 @@
  */
 
 import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -268,6 +276,45 @@ describe('the reading answers, and charges nothing', () => {
     const reading = await reported('src/cli.ts');
     expect(reading.relative).toBe('packages/code/src/cli.ts');
     expect(reading.rules.map((one) => one.rule)).toEqual([rule]);
+  });
+
+  it('does not resolve a symlink, and the consequence is stated rather than hidden', async () => {
+    // WHAT IT NORMALIZES IS TEXT: `.`, `..`, a trailing slash, a repeated separator,
+    // and an absolute path under the root. A SYMLINK is not text, and resolving one
+    // would mean touching the disk per segment — so two names for one file are two
+    // addresses here, and a rule addressed at the real one is not found through the
+    // link. This bench has been bitten by a textual resolution passing for a real one
+    // (a symlink once made one project look like two), so the behaviour is FIXED by a
+    // case rather than left to be discovered.
+    mkdirSync(join(repo, 'src', 'collate'), { recursive: true });
+    symlinkSync(join(repo, 'src', 'collate'), join(repo, 'linked'));
+    const rule = await decide('how collation works');
+    await addressAt(rule, 'src/collate');
+
+    // Through the real name: found.
+    expect((await reported('src/collate/fold.ts')).rules.map((one) => one.rule)).toEqual([rule]);
+    // Through the link: NOT found — and the two counts beside it are what say the
+    // mechanism is not empty, so the answer is "no rule addresses this name" rather
+    // than "there are no rules".
+    const through = await reported('linked/fold.ts');
+    expect(through.rules).toEqual([]);
+    expect(through.counts).toEqual({ matching: 0, governing: 1, stale: 0 });
+  });
+
+  it('asks the working tree through the link, so a live symlink is not stale', async () => {
+    // The other half: the disk PROBE follows a symlink, because it is `existsSync` and
+    // that is what exists means. So an address at a live link is held and one at a
+    // dangling link is stale — which is the same rule the third count always applies.
+    mkdirSync(join(repo, 'src', 'real'), { recursive: true });
+    symlinkSync(join(repo, 'src', 'real'), join(repo, 'live'));
+    symlinkSync(join(repo, 'src', 'never-was'), join(repo, 'dangling'));
+    const rule = await decide('how the linked area works');
+    await addressAt(rule, 'live');
+    await addressAt(rule, 'dangling');
+
+    const reading = await reported('live/file.ts');
+    expect(reading.counts).toEqual({ matching: 1, governing: 2, stale: 1 });
+    expect(reading.stale.map((one) => one.address)).toEqual(['dangling']);
   });
 
   it('writes nothing: the sandbox is byte for byte what it was', async () => {

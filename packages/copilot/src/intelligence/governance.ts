@@ -22,7 +22,10 @@
  * `src/collate` governs `src/collate` and everything under `src/collate/`. It does
  * NOT govern `src/collate_test.rb`, and that is the whole reason the comparison is
  * over path SEGMENTS rather than over characters: a string prefix would hand a rule
- * a file nobody addressed, and it would do it silently.
+ * a file nobody addressed, and it would do it silently. Held by
+ * `governance.test.ts` ("does NOT govern a sibling whose name merely starts the
+ * same"), and the mutation that turns the comparison back into a string prefix
+ * lights it and its end-to-end twin — two red, nothing else.
  *
  * A glob was refused, with the reason written down: a glob is a second language
  * with its own semantics, and a glob with a typo governs NOTHING, in silence —
@@ -41,7 +44,8 @@
  * fire about. So every answer carries {@link GovernanceCounts}: how many rules
  * cover this path, how many address this project at all, and how many address
  * something the working tree does not hold. The third is not decoration; without it
- * the reading is not finished.
+ * the reading is not finished — measured: emptying the stale list turns TEN cases
+ * red, across both surfaces and the golden.
  *
  * ## What it normalizes, and what it deliberately does not
  *
@@ -53,7 +57,11 @@
  *   - a SYMLINK is not resolved. Two names for one file are two addresses here, and
  *     a rule addressed at one is not found through the other. Resolving would mean
  *     touching the disk per segment, and this bench has already been bitten by
- *     treating a textual resolution as a real one;
+ *     treating a textual resolution as a real one. The DISK PROBE does follow one,
+ *     because it is `existsSync` and that is what existing means — so an address at a
+ *     live link is held and one at a dangling link is stale. Both halves are fixed by
+ *     `code/tests/the-rule-has-an-address.test.ts` ("does not resolve a symlink" and
+ *     "asks the working tree through the link");
  *   - a path outside the project has no address at all, so nothing matches it. The
  *     answer says so by carrying no {@link GoverningRules.relative}, rather than by
  *     coming back empty and looking like "nothing governs this";
