@@ -48,6 +48,7 @@ export {
 } from './context/bootstrap.js';
 export {
   type Brief,
+  type BriefChannels,
   brief,
 } from './context/brief.js';
 // The TYPE only, still — and the prediction that used to be written here was wrong.
@@ -161,13 +162,17 @@ export {
   type WorkspaceExposure,
   workspaceExposure,
 } from './intelligence/exposure.js';
-// Two readings of the same graph, and both are values here because two different
-// surfaces consume them: `governingRules` answers a caller that asked, and
-// `rulesInForceAt` answers a channel that pushes. The second is not reachable through
-// the first — it narrows to what is in force, which is a decision the pushing channel
-// has no right to take for itself.
+// THREE readings of the same graph, and each is a value here because a different surface
+// consumes it: `governingRules` answers a caller that asked, `rulesInForceAt` answers the
+// channel that pushes text, and `asksForAPersonAt` answers the one that stops somebody.
+// Neither of the last two is reachable through the first — they narrow to what is in
+// force, which is a decision a pushing channel has no right to take for itself — and they
+// are two entry points rather than one with a relation argument, because a caller free to
+// name the relation is a caller free to charge for a label nobody defined.
 export {
+  type AddressCounts,
   type AddressedRule,
+  asksForAPersonAt,
   type GovernanceCounts,
   type GovernanceQuery,
   type GoverningRules,

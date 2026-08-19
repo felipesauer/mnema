@@ -498,6 +498,44 @@ export function channelSwitched(
 }
 
 /**
+ * Builds a `channel.served` event (subject = the CHANNEL that served).
+ *
+ * No payload at all, and the same shape {@link skillConsulted} has for the same reason:
+ * everything the fact says is envelope, and the empty object is what makes any payload key
+ * on this kind a rejected line rather than an ignored one.
+ */
+export function channelServed(envelope: EnvelopeInput): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'channel.served',
+    ...envelopeFields(envelope),
+    payload: {},
+  };
+}
+
+/**
+ * Builds a `channel.asked` event (subject = the CHANNEL that asked for a person).
+ *
+ * Both fields are REQUIRED and neither is checked here: the rule is an id the reader
+ * resolves against its own trees, and the path is whatever the surface compared. A builder
+ * shapes an event, and the rule that the id names a rule IN FORCE lives where the reading
+ * that decides "in force" does — which is the same division `tailPruned` has with the write
+ * door. What this signature does enforce is that a charge cannot be built without naming
+ * what caused it.
+ */
+export function channelAsked(
+  envelope: EnvelopeInput,
+  payload: { rule: string; path: string },
+): CatalogEvent {
+  return {
+    v: 1,
+    kind: 'channel.asked',
+    ...envelopeFields(envelope),
+    payload: { rule: payload.rule, path: payload.path },
+  };
+}
+
+/**
  * Builds the pair of events a skill's birth always emits, in order: the
  * `skill.created` that proves it exists, then the birth `skill.transitioned`
  * (`from: null`, `action: "create"`) that establishes its initial state. The two

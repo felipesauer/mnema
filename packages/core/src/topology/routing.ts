@@ -86,7 +86,9 @@ export type RoutedKind =
   | 'knowledge.linked'
   | 'memory.captured'
   | 'observation.recorded'
-  | 'channel.switched';
+  | 'channel.switched'
+  | 'channel.served'
+  | 'channel.asked';
 
 /**
  * The two kinds whose tree the kind does NOT decide — a marker, not a scope.
@@ -146,6 +148,14 @@ const TREE_BY_KIND: { readonly [K in RoutedKind]: Scope | typeof BY_ORIGIN } = {
   'memory.captured': BY_ORIGIN,
   'observation.recorded': BY_ORIGIN,
   'channel.switched': 'public',
+  // Both facts a channel produces travel, for the reason the consultation's entry gives:
+  // the evidence is worth nothing on one machine. "This channel was live in that run" and
+  // "this rule stopped a write here" are read by a teammate asking why a rule did not
+  // arrive, or auditing what the record charged for — and filed where only the machine
+  // that produced them can read, neither question has an answer. `--scope private` is
+  // still there for somebody who wants the fact on one machine only.
+  'channel.served': 'public',
+  'channel.asked': 'public',
 };
 
 /**

@@ -38,7 +38,7 @@
  * carry it.
  */
 
-import { channelSwitched } from '@mnema/chain';
+import { channelAsked, channelServed, channelSwitched } from '@mnema/chain';
 import {
   type ContentTooLargeErr,
   type ScreenedWrite,
@@ -133,6 +133,156 @@ export function switchChannel(ctx: WriteContext, input: SwitchInput): SwitchOk |
     ok: true,
     channel: content.fields.channel,
     on: input.on,
+    ...screened([...content.replaced, ...agent.replaced]),
+  };
+}
+
+/**
+ * What a channel recorded about ITSELF: it served, or it asked for a person.
+ *
+ * These two writes sit beside {@link switchChannel} because they are facts under the same
+ * subject — a channel's own history holds what was done to it and what it did — and they
+ * differ from it in one way that matters: nobody asks for them. A person switches a
+ * channel; the PRODUCT records that a channel served and that it asked. So there is no
+ * verb behind either, no `--reason` to compose, and no surface that lets a caller assert
+ * one: the only producer is the push itself, which is what makes the rule id in an asking
+ * a value that came out of the record rather than out of a caller.
+ *
+ * WHY THE ASKING IS WRITTEN BEFORE THE HOST IS ANSWERED, and it is the sharpest rule
+ * here. A charge that is not in the record is the product acting outside its own record —
+ * so the fact is appended FIRST, and the reply that stops somebody's edit is composed
+ * only if it landed. It is the order a waiver already has with the cut it authorizes
+ * (`unprovenWaiverReason`), and it makes the failure fall the safe way: a record that
+ * cannot be written charges nothing, which is the direction that cannot trap somebody
+ * else's work.
+ */
+
+/** The service was recorded: this channel was live in this run. */
+export interface ServedOk extends ScreenedWrite {
+  readonly ok: true;
+  /** The channel that served — the event's subject, as it was recorded. */
+  readonly channel: string;
+}
+
+/** The asking was recorded: this rule stopped a write at this path. */
+export interface AskedOk extends ScreenedWrite {
+  readonly ok: true;
+  /** The channel that asked — the event's subject, as it was recorded. */
+  readonly channel: string;
+  /** The rule the charge cites, as it was recorded. */
+  readonly rule: string;
+}
+
+/** The refusals either can earn — the ones every fact can, and nothing of their own. */
+export type ChannelFactError = SelfAuthorizedErr | ContentTooLargeErr | UnreadableEventErr;
+
+/** What the caller records: which channel, in which run, driven by which agent. */
+export interface ServedInput {
+  /** The channel that served, as the pushing surface names it. */
+  readonly channel: string;
+  /** The agent that executed it, if any. `who` is derived from the writer's key. */
+  readonly which?: string;
+  /** The run this belongs to, if any. */
+  readonly run?: string;
+}
+
+/** What the caller records about one asking. */
+export interface AskedInput extends ServedInput {
+  /**
+   * The id of the rule that asked. NOT screened, and that is the one departure from the
+   * door's habit in this file: it is an id the derivation of what is in force produced, so
+   * it came out of the record, and a scrubber would read a v7 as entropy and destroy the
+   * one field a charge is required to carry. The classification says so
+   * (`content/fields.ts`), and what keeps it true is that nothing but the push writes this.
+   */
+  readonly rule: string;
+  /** The path the asking was about, as the surface compared it. A caller's string. */
+  readonly path: string;
+}
+
+/**
+ * Records that a channel served in this run: appends the single `channel.served` whose
+ * subject IS the channel.
+ *
+ * The caller decides WHETHER to write one — once per run and per channel is the rule, and
+ * it belongs to the surface that knows what a session already recorded, not here. This
+ * appends whatever it is asked to, exactly as switching does.
+ */
+export function recordChannelServed(
+  ctx: WriteContext,
+  input: ServedInput,
+): ServedOk | ChannelFactError {
+  const content = screenContent({ channel: input.channel, run: input.run });
+  if (!content.ok) return content;
+
+  const who = authorizingAnchor(ctx);
+  const agent = resolveExecutingAgent(who, input.which);
+  if (!agent.ok) return agent;
+
+  ensureFounded(ctx);
+  const appended = appendEvent(
+    ctx.writer,
+    channelServed({
+      at: (ctx.clock ?? systemClock)(),
+      who,
+      signerFp: ctx.writer.signerFingerprint,
+      subject: content.fields.channel,
+      ...(agent.which !== undefined ? { which: agent.which } : {}),
+      ...(content.fields.run !== undefined ? { run: content.fields.run } : {}),
+    }),
+  );
+  if (!appended.ok) return appended;
+  return {
+    ok: true,
+    channel: content.fields.channel,
+    ...screened([...content.replaced, ...agent.replaced]),
+  };
+}
+
+/**
+ * Records that a channel asked for a person: appends the single `channel.asked` whose
+ * subject IS the channel and whose payload cites the rule.
+ *
+ * The channel and the path are screened; the rule is not, for the reason
+ * {@link AskedInput.rule} gives. The SCREENED path is what reaches the chain, and a path
+ * that came back replaced is recorded replaced rather than dropped: what the fact is for is
+ * that the asking happened and which rule caused it, and both survive a scrubbed path.
+ */
+export function recordChannelAsked(
+  ctx: WriteContext,
+  input: AskedInput,
+): AskedOk | ChannelFactError {
+  const content = screenContent({
+    channel: input.channel,
+    path: input.path,
+    run: input.run,
+  });
+  if (!content.ok) return content;
+
+  const who = authorizingAnchor(ctx);
+  const agent = resolveExecutingAgent(who, input.which);
+  if (!agent.ok) return agent;
+
+  ensureFounded(ctx);
+  const appended = appendEvent(
+    ctx.writer,
+    channelAsked(
+      {
+        at: (ctx.clock ?? systemClock)(),
+        who,
+        signerFp: ctx.writer.signerFingerprint,
+        subject: content.fields.channel,
+        ...(agent.which !== undefined ? { which: agent.which } : {}),
+        ...(content.fields.run !== undefined ? { run: content.fields.run } : {}),
+      },
+      { rule: input.rule, path: content.fields.path },
+    ),
+  );
+  if (!appended.ok) return appended;
+  return {
+    ok: true,
+    channel: content.fields.channel,
+    rule: input.rule,
     ...screened([...content.replaced, ...agent.replaced]),
   };
 }

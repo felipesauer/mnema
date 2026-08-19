@@ -59,7 +59,7 @@
 
 import { type Brief, brief, channelIsOn, channelStates } from '@mnema/copilot';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
-import { DOCUMENT_CHANNEL, EDIT_PUSH_CHANNEL } from '../record-framing.js';
+import { ASKS_A_PERSON_CHANNEL, DOCUMENT_CHANNEL, EDIT_PUSH_CHANNEL } from '../record-framing.js';
 import { withScopedCaches } from '../tree-sources.js';
 
 /** What the brief needs — injected so it is testable. */
@@ -158,6 +158,16 @@ export function runBrief(ctx: BriefContext): BriefDone | BriefRefused | BriefSwi
         travels: state?.travels ?? false,
       };
     }
-    return { ok: true as const, brief: brief(sources, EDIT_PUSH_CHANNEL) };
+    return {
+      ok: true as const,
+      // BOTH channels the per-edit hook pushes, named here because the vocabulary is this
+      // package's. The document explains what a silence at an edit means, and there are now
+      // two switches that can produce it — a document naming one of them would explain the
+      // silence wrongly half the time, which is worse than not explaining it.
+      brief: brief(sources, {
+        editPush: EDIT_PUSH_CHANNEL,
+        asksAPerson: ASKS_A_PERSON_CHANNEL,
+      }),
+    };
   });
 }

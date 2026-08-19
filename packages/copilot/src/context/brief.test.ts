@@ -37,7 +37,7 @@ import { brief } from './brief.js';
  * spellings are the same string is the surface's own case to make
  * (`code/tests/the-switch-is-a-fact.test.ts`).
  */
-const EDIT_PUSH = 'edit-rules-push';
+const CHANNELS = { editPush: 'edit-rules-push', asksAPerson: 'edit-asks-a-person' };
 
 /**
  * Every fixture reaches its state through the move the workflow defines, from the
@@ -125,14 +125,16 @@ describe('brief — everything that governs the work here', () => {
     const b = bench();
     accept(b, 'dec-1', 'Hand-rolled big-integer arithmetic');
     adopt(b, 'sk-1', 'One slice per PR');
-    expect(brief([tree(b, 'public')], EDIT_PUSH)).toEqual({
+    expect(brief([tree(b, 'public')], CHANNELS)).toEqual({
       decisions: [{ id: 'dec-1', adr: 'ADR-dec-1', title: 'Hand-rolled big-integer arithmetic' }],
       skills: [{ id: 'sk-1', name: 'One slice per PR' }],
       collisions: [],
       addressed: 0,
-      // Nothing switched it, which is the channel being on — and the answer carries no
-      // attribution at all, because there is no switch to attribute it to.
-      editPush: { channel: EDIT_PUSH, on: true },
+      asking: 0,
+      // Nothing switched either, which is a channel being on — and the answers carry no
+      // attribution at all, because there is no switch to attribute them to.
+      editPush: { channel: CHANNELS.editPush, on: true },
+      asksAPerson: { channel: CHANNELS.asksAPerson, on: true },
     });
   });
 
@@ -160,7 +162,7 @@ describe('brief — everything that governs the work here', () => {
     address(b, 'task-1', 'src/biller');
     address(b, 'nobody-here', 'src/ghost');
 
-    const composed = brief([tree(b, 'public')], EDIT_PUSH);
+    const composed = brief([tree(b, 'public')], CHANNELS);
     expect(composed.addressed).toBe(2);
     // And the fixture really does hold six addresses, so the number above is a filter
     // doing work rather than a coincidence of an empty graph.
@@ -178,7 +180,7 @@ describe('brief — everything that governs the work here', () => {
     accept(team, 'dec-1', 'Bill on the last business day');
     accept(machine, 'dec-mine', 'Keep the staging keys here');
     address(machine, 'dec-mine', 'src/staging');
-    expect(brief([tree(team, 'public'), tree(machine, 'private')], EDIT_PUSH).addressed).toBe(0);
+    expect(brief([tree(team, 'public'), tree(machine, 'private')], CHANNELS).addressed).toBe(0);
     // And the address IS there, in the tree that was handed over and left out.
     expect([...tree(machine, 'private').cache.linksByRelation(GOVERNS_RELATION)]).toHaveLength(1);
   });
@@ -197,7 +199,7 @@ describe('brief — everything that governs the work here', () => {
     accept(b, 'dec-successor', 'The replacement');
     supersedeDecision(b, 'dec-superseded', 'dec-successor');
     const source = tree(b, 'public');
-    expect(new Set(brief([source], EDIT_PUSH).decisions.map((d) => d.id))).toEqual(
+    expect(new Set(brief([source], CHANNELS).decisions.map((d) => d.id))).toEqual(
       new Set(['dec-accepted', 'dec-successor']),
     );
     // And the fixture really did reach all four, in the product's own vocabulary:
@@ -221,7 +223,7 @@ describe('brief — everything that governs the work here', () => {
     adopt(b, 'sk-deprecated', 'Deprecated');
     deprecateSkill(b, 'sk-deprecated');
     const source = tree(b, 'public');
-    expect(brief([source], EDIT_PUSH).skills.map((s) => s.id)).toEqual(['sk-adopted']);
+    expect(brief([source], CHANNELS).skills.map((s) => s.id)).toEqual(['sk-adopted']);
     const states = ['sk-proposed', 'sk-reviewed', 'sk-adopted', 'sk-rejected', 'sk-deprecated'].map(
       (id) => source.cache.getSkill(id)?.state ?? '(not projected)',
     );
@@ -249,7 +251,7 @@ describe('brief — everything that governs the work here', () => {
 
     const composed = brief(
       [tree(team, 'public'), tree(machine, 'private'), tree(personal, 'global')],
-      EDIT_PUSH,
+      CHANNELS,
     );
     expect({
       decisions: composed.decisions.map((d) => d.id),
@@ -280,10 +282,12 @@ describe('brief — everything that governs the work here', () => {
     birthTask(b, 'task-third', 'Read the release notes');
     accept(b, 'dec-1', 'The one call there is');
     const source = tree(b, 'public');
-    const composed = brief([source], EDIT_PUSH);
+    const composed = brief([source], CHANNELS);
     // No field for it, and no text of it anywhere in the answer.
     expect(Object.keys(composed).sort()).toEqual([
       'addressed',
+      'asking',
+      'asksAPerson',
       'collisions',
       'decisions',
       'editPush',
@@ -309,7 +313,7 @@ describe('brief — everything that governs the work here', () => {
     accept(b, 'dec-1', 'A call with a long argument behind it');
     adopt(b, 'sk-1', 'A pattern with a body');
     capture(b, 'mem-1', 'a memory that is not governance');
-    const composed = brief([tree(b, 'public')], EDIT_PUSH);
+    const composed = brief([tree(b, 'public')], CHANNELS);
     expect(Object.keys(composed.decisions[0] ?? {}).sort()).toEqual(['adr', 'id', 'title']);
     expect(Object.keys(composed.skills[0] ?? {}).sort()).toEqual(['id', 'name']);
     // The fixture's own text, not the field names: the bench writes `why <title>`
@@ -353,8 +357,8 @@ describe('brief — everything that governs the work here', () => {
     adopt(one, 'sk-2', 'Beta');
     const a = tree(one, 'public');
     const c = tree(two, 'public');
-    const forwards = brief([a, c], EDIT_PUSH);
-    const backwards = brief([c, a], EDIT_PUSH);
+    const forwards = brief([a, c], CHANNELS);
+    const backwards = brief([c, a], CHANNELS);
     expect(forwards.decisions.map((d) => d.id)).toEqual(['dec-a', 'dec-b', 'dec-c', 'dec-d']);
     expect(forwards.skills.map((s) => s.name)).toEqual(['Alpha', 'Beta']);
     // Same content, same answer, whatever order the caller passes the trees in.
@@ -382,7 +386,7 @@ describe('brief — everything that governs the work here', () => {
     const committed = tree(team, 'public');
     const mine = tree(machine, 'private');
 
-    const composed = brief([committed, mine], EDIT_PUSH);
+    const composed = brief([committed, mine], CHANNELS);
     // The agent's own context reads every tree it was given — the union, unchanged.
     const opening = bootstrap([committed.cache, mine.cache], asking(team.who));
     // Unchanged in its SHAPE too, and by the list rather than by a spot check: this
@@ -432,7 +436,7 @@ describe('brief — everything that governs the work here', () => {
       acceptAt(machine, id, `A private call ${id}`, '2026-06-01T00:00:00.000Z');
     }
     const sources = [tree(team, 'public'), tree(machine, 'private')];
-    const composed = brief(sources, EDIT_PUSH);
+    const composed = brief(sources, CHANNELS);
     const opening = bootstrap(
       sources.map((s) => s.cache),
       asking(team.who),
@@ -474,7 +478,7 @@ describe('brief — everything that governs the work here', () => {
     accept(clone, 'dec-clone', 'Round the tax per line', 'ADR-1');
     mergeTailInto(here, clone);
 
-    const composed = brief([tree(here, 'public')], EDIT_PUSH);
+    const composed = brief([tree(here, 'public')], CHANNELS);
     // Both rules are in force and both still carry the label they were SIGNED with:
     // nothing renumbered, which is the other half of the answer.
     expect(composed.decisions.map((d) => [d.id, d.adr]).sort()).toEqual([
@@ -504,7 +508,7 @@ describe('brief — everything that governs the work here', () => {
     reject(clone, 'dec-refused-too', 'What the clone also turned down', 'ADR-2');
     mergeTailInto(here, clone);
 
-    const composed = brief([tree(here, 'public')], EDIT_PUSH);
+    const composed = brief([tree(here, 'public')], CHANNELS);
     expect(composed.decisions.map((d) => d.id)).toEqual(['dec-in-force']);
     expect(composed.collisions).toEqual([
       { adr: 'ADR-1', ids: ['dec-in-force', 'dec-refused-clone'] },
@@ -526,7 +530,7 @@ describe('brief — everything that governs the work here', () => {
     accept(alpha, 'dec-alpha', 'What alpha settled', 'ADR-1');
     accept(beta, 'dec-beta', 'What beta settled', 'ADR-1');
 
-    const composed = brief([tree(alpha, 'public'), tree(beta, 'public')], EDIT_PUSH);
+    const composed = brief([tree(alpha, 'public'), tree(beta, 'public')], CHANNELS);
     // The pooled answer HAS the same label twice — so the silence below is a decision
     // about what a collision is, not an absence of material to find one in.
     expect(composed.decisions.map((d) => d.adr)).toEqual(['ADR-1', 'ADR-1']);
@@ -539,19 +543,23 @@ describe('brief — everything that governs the work here', () => {
     // `presentation/brief.test.ts`). A refusal here would make "nobody has decided
     // yet" indistinguishable from "the record could not be read".
     const b = bench();
-    expect(brief([tree(b, 'public')], EDIT_PUSH)).toEqual({
+    expect(brief([tree(b, 'public')], CHANNELS)).toEqual({
       decisions: [],
       skills: [],
       collisions: [],
       addressed: 0,
-      editPush: { channel: EDIT_PUSH, on: true },
+      asking: 0,
+      editPush: { channel: CHANNELS.editPush, on: true },
+      asksAPerson: { channel: CHANNELS.asksAPerson, on: true },
     });
-    expect(brief([], EDIT_PUSH)).toEqual({
+    expect(brief([], CHANNELS)).toEqual({
       decisions: [],
       skills: [],
       collisions: [],
       addressed: 0,
-      editPush: { channel: EDIT_PUSH, on: true },
+      asking: 0,
+      editPush: { channel: CHANNELS.editPush, on: true },
+      asksAPerson: { channel: CHANNELS.asksAPerson, on: true },
     });
     // And a caller holding nothing but trees that do not travel gets the same honest
     // empty rather than their contents: an empty document over a record that HAS rules
@@ -559,12 +567,14 @@ describe('brief — everything that governs the work here', () => {
     const machine = bench();
     accept(machine, 'dec-machine', 'What this machine settled');
     adopt(machine, 'sk-machine', 'How this machine works');
-    expect(brief([tree(machine, 'private'), tree(machine, 'global')], EDIT_PUSH)).toEqual({
+    expect(brief([tree(machine, 'private'), tree(machine, 'global')], CHANNELS)).toEqual({
       decisions: [],
       skills: [],
       collisions: [],
       addressed: 0,
-      editPush: { channel: EDIT_PUSH, on: true },
+      asking: 0,
+      editPush: { channel: CHANNELS.editPush, on: true },
+      asksAPerson: { channel: CHANNELS.asksAPerson, on: true },
     });
   });
 });

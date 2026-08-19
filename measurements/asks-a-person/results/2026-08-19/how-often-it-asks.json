@@ -1,0 +1,87 @@
+{
+  "what": "how many edits of a session a gate at each address would stop, on this repository",
+  "repository": "/home/felipe/Documents/Personal/Me/.projects/mnema",
+  "head": "4426c08866413b02a5061f3158fe5d0ee228d8ca",
+  "commits_walked": 200,
+  "file_touches": 2918,
+  "distinct_files": 650,
+  "edits_per_session": {
+    "p50": 34,
+    "p90": 121,
+    "max": 3424
+  },
+  "by_address": {
+    ".": {
+      "covered_file_touches": 2918,
+      "fraction": 1,
+      "pauses_per_session": {
+        "p50": 34,
+        "p90": 121,
+        "max": 3424
+      }
+    },
+    "packages": {
+      "covered_file_touches": 2770,
+      "fraction": 0.9493,
+      "pauses_per_session": {
+        "p50": 32.3,
+        "p90": 114.9,
+        "max": 3250.3
+      }
+    },
+    "packages/code": {
+      "covered_file_touches": 1916,
+      "fraction": 0.6566,
+      "pauses_per_session": {
+        "p50": 22.3,
+        "p90": 79.5,
+        "max": 2248.2
+      }
+    },
+    "packages/code/src": {
+      "covered_file_touches": 1298,
+      "fraction": 0.4448,
+      "pauses_per_session": {
+        "p50": 15.1,
+        "p90": 53.8,
+        "max": 1523.1
+      }
+    },
+    "packages/code/src/mcp": {
+      "covered_file_touches": 129,
+      "fraction": 0.0442,
+      "pauses_per_session": {
+        "p50": 1.5,
+        "p90": 5.3,
+        "max": 151.4
+      }
+    },
+    "packages/core/src/content": {
+      "covered_file_touches": 19,
+      "fraction": 0.0065,
+      "pauses_per_session": {
+        "p50": 0.2,
+        "p90": 0.8,
+        "max": 22.3
+      }
+    },
+    "packages/chain/src/events": {
+      "covered_file_touches": 69,
+      "fraction": 0.0236,
+      "pauses_per_session": {
+        "p50": 0.8,
+        "p90": 2.9,
+        "max": 81
+      }
+    },
+    "docs": {
+      "covered_file_touches": 0,
+      "fraction": 0,
+      "pauses_per_session": {
+        "p50": 0,
+        "p90": 0,
+        "max": 0
+      }
+    }
+  }
+}

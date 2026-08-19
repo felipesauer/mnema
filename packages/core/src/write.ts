@@ -119,10 +119,19 @@ export {
 // It arrived with `mnema switch`, and it has that one caller: the MCP server serves no
 // tool for it, so an agent cannot switch off what governs its own work through the door
 // built for agents.
+//
+// `recordChannelServed` and `recordChannelAsked` are the same subject from the other side:
+// what a channel DID, rather than what somebody did to it. They have no verb and no gate
+// either, and their caller is not a person at all — it is the push itself, which is what
+// makes the rule id an asking cites a value that came out of the record. An agent cannot
+// reach them: no tool takes a rule id and writes an accusation with it.
 export {
+  type AskedInput,
+  type AskedOk,
   acceptDecision,
   adoptSkill,
   authorizeTailPrune,
+  type ChannelFactError,
   type ConsultationInput,
   type ConsultationOk,
   type CreateInput,
@@ -143,11 +152,15 @@ export {
   type PruneOk,
   type RecordInput,
   type RecordOk,
+  recordChannelAsked,
+  recordChannelServed,
   recordConsultation,
   recordDecision,
   rejectDecision,
   rejectSkill,
   reviewSkill,
+  type ServedInput,
+  type ServedOk,
   type SkillCreateInput,
   type SkillCreateOk,
   type SkillTransitionInput,

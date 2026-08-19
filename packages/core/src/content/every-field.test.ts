@@ -17,7 +17,11 @@ import {
   recordObservation,
 } from '../knowledge/operations.js';
 import { orderedEvents } from '../projections/order.js';
-import { switchChannel } from '../workflow/channel-operations.js';
+import {
+  recordChannelAsked,
+  recordChannelServed,
+  switchChannel,
+} from '../workflow/channel-operations.js';
 import { recordDecision, supersedeDecision } from '../workflow/decision-operations.js';
 import { enrollKey, foundIdentity, revokeKey } from '../workflow/identity-operations.js';
 import { createTask, transitionTask, type WriteContext } from '../workflow/operations.js';
@@ -301,7 +305,48 @@ const DRIVERS: { readonly [K in EventKind]: Driver } = {
       which: text('which'),
       run: text('run'),
     }),
+
+  'channel.served': (ctx, text) =>
+    // Subject and envelope, and nothing else — the payload is empty, so the pair here is
+    // the channel and the two envelope fields, exactly as a consultation's is.
+    recordChannelServed(ctx, {
+      channel: text('subject'),
+      which: text('which'),
+      run: text('run'),
+    }),
+
+  'channel.asked': (ctx, text) =>
+    // The one kind in this table with a payload field the door must NOT touch. `rule` is
+    // classified as an identifier — it is an id the derivation of what is in force
+    // produced, and a scrubber would read a v7 as entropy and destroy the citation a
+    // charge is required to carry — so the sweep's other half is what checks it came
+    // through untouched. `path` is a caller's string and is driven.
+    recordChannelAsked(ctx, {
+      channel: text('subject'),
+      // NOT driven, and it is the second field in this table that must not be. `rule` is
+      // classified as an identifier, so the door does not run on it — poisoning it would
+      // make the sweep read the marker as "the door was here" and fail for the opposite
+      // of the reason it exists. What is driven is what a caller supplies as text; the
+      // sweep's other half is what checks this came through untouched, and the case that
+      // hands it a credential-SHAPED id lives with the channel it belongs to
+      // (`code/tests/the-record-asks-for-a-person.test.ts`).
+      rule: A_RULE_ID,
+      path: text('payload.path'),
+      which: text('which'),
+      run: text('run'),
+    }),
 };
+
+/**
+ * A rule id in the shape the record mints them — the value the ONE identifier of
+ * `channel.asked` is driven with.
+ *
+ * A literal rather than a mint, and deliberately without an era in it: an id whose prefix
+ * encodes a time expires as a literal, and this fixture only needs a value the product
+ * could have produced. What matters about it is that it is not the poison, so the sweep's
+ * two halves can tell "the door did not run here" from "nothing filled this in".
+ */
+const A_RULE_ID = '0198f2a4-0000-7000-8000-000000000001';
 
 /**
  * Puts a second machine's tail into a chain root, the way an offline merge does:

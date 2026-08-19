@@ -93,10 +93,15 @@ export type ModelChannel =
   | 'skills-answer'
   | 'brief-document'
   | 'exported-skill'
-  | 'edit-rules-push';
+  | 'edit-rules-push'
+  | 'edit-asks-a-person';
 
 /** The channels that carry a declaration — the ones {@link SUBJECT_OF} answers for. */
-export type FramedChannel = 'skills-answer' | 'brief-document' | 'edit-rules-push';
+export type FramedChannel =
+  | 'skills-answer'
+  | 'brief-document'
+  | 'edit-rules-push'
+  | 'edit-asks-a-person';
 
 /**
  * What each framed channel served, and therefore what its declaration names.
@@ -114,6 +119,13 @@ const SUBJECT_OF: { readonly [K in FramedChannel]: ServedSubject } = {
   // The difference between the two is WHICH rules, and that belongs to the derivation
   // behind each — never to what the channel says about the text.
   'edit-rules-push': 'rules',
+  // The GATE, and it is framed for a reason that took a measurement to establish: the
+  // text of a refusal is not a diagnostic for a person, it comes back to the session as
+  // the tool result of the refused call, byte for byte, where a model reads it
+  // (`measurements/asks-a-person/`). Same subject as the two above, because it is the
+  // same record saying the same kind of thing — what differs is that this one stops
+  // somebody, and what a text says about ITSELF does not change with how hard it lands.
+  'edit-asks-a-person': 'rules',
 };
 
 /**
@@ -164,8 +176,16 @@ export const DECLARES_MODEL_CHANNEL = /^export const MODEL_CHANNEL = '([a-z-]+)'
  * IMPORTS the framing — it is built code, unlike a handler — so the declaration here and
  * the text there cannot drift without one of them failing to compile.
  */
-export const PUSHED_BY_TOOL: { readonly [tool: string]: FramedChannel } = {
-  rules_before_an_edit: 'edit-rules-push',
+export const PUSHED_BY_TOOL: { readonly [tool: string]: readonly FramedChannel[] } = {
+  // ONE TOOL, TWO CHANNELS, and the plural is the shape rather than a convenience. This
+  // used to map a tool to a single channel, and the assumption under it — that a hook
+  // pushing at one moment pushes one kind of thing — was falsified by the grade that asks
+  // for a person: the same call at the same event can hand over text AND stop the write,
+  // and the two are separately switchable because turning off the gate must not turn off
+  // the information. A reader looking for what a tool pushes now gets every channel it
+  // can push, so a channel added behind an existing tool cannot hide from the guard by
+  // sharing a key.
+  rules_before_an_edit: ['edit-rules-push', 'edit-asks-a-person'],
 };
 
 /**
@@ -195,7 +215,7 @@ export const UNFRAMED_CHANNELS: {
  * DESTINATION — text landing in front of a model — and this one adds the second half of
  * a charge: that nobody asked for it.
  */
-export type SwitchableChannel = 'brief-document' | 'edit-rules-push';
+export type SwitchableChannel = 'brief-document' | 'edit-rules-push' | 'edit-asks-a-person';
 
 /**
  * The two switchable channels, each named once, so no consumer spells one.
@@ -215,6 +235,20 @@ export const DOCUMENT_CHANNEL: SwitchableChannel = 'brief-document';
 
 /** The channel that hands over the rules addressed at a file, as that file is written. */
 export const EDIT_PUSH_CHANNEL: SwitchableChannel = 'edit-rules-push';
+
+/**
+ * The channel that stops a file being written until a person looks — the only one of them
+ * whose being off changes what somebody is ABLE to do rather than what they are told.
+ *
+ * IT IS ITS OWN SWITCH AND NOT A READING OF {@link EDIT_PUSH_CHANNEL}, and the measurement
+ * is why. Asking overrides every permission mode this host has, `bypassPermissions`
+ * included (`measurements/asks-a-person/`), so this product's own switch is the ONLY way
+ * out of a gate somebody inherited with a clone. A single switch covering both grades would
+ * force whoever needed the way out to give up the rules as well — charging them the
+ * information to escape the charge — and the tie that every charge be switchable would be
+ * satisfied in the letter while trapping the person it exists for.
+ */
+export const ASKS_A_PERSON_CHANNEL: SwitchableChannel = 'edit-asks-a-person';
 
 /**
  * What stops arriving when each switchable channel is off — one sentence each, in the
@@ -238,6 +272,9 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
   'edit-rules-push':
     'the rules addressed at a file, handed over at the moment that file is about to ' +
     'be written',
+  'edit-asks-a-person':
+    'the pause before a file is written where the record asks that a person look ' +
+    'first — the rules go on arriving, and nothing stops',
 };
 
 /**

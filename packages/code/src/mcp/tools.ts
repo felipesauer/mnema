@@ -77,6 +77,7 @@ import {
   type RecordSearch,
   type ReferenceGraph,
   type Resume,
+  type RulesAtPath,
   readRecord,
   references,
   resume,
@@ -113,6 +114,8 @@ import {
   createTask,
   deprecateSkill,
   linkKnowledge,
+  recordChannelAsked,
+  recordChannelServed,
   recordConsultation,
   recordDecision,
   recordHandoff,
@@ -123,8 +126,9 @@ import {
   supersedeDecision,
   transitionTask,
 } from '@mnema/core/write';
+import { editAsksNotice } from '../edit-asks-a-person.js';
 import { editRulesNotice } from '../edit-rules-push.js';
-import { readGoverningRules, readRulesInForceAt } from '../governed-tree.js';
+import { readAsksForAPersonAt, readGoverningRules, readRulesInForceAt } from '../governed-tree.js';
 import {
   projectEventsOf,
   recordTrees,
@@ -133,7 +137,11 @@ import {
 } from '../intelligence-source.js';
 import { movedDisplay } from '../moved-record.js';
 import { oneLine } from '../one-line.js';
-import { EDIT_PUSH_CHANNEL } from '../record-framing.js';
+import {
+  ASKS_A_PERSON_CHANNEL,
+  EDIT_PUSH_CHANNEL,
+  type SwitchableChannel,
+} from '../record-framing.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
 import { type HookEvent, type HookReply, hookReply } from './hook-reply.js';
 import {
@@ -1895,25 +1903,45 @@ export function runGoverningRulesTool(
  * reply, and the description says so: forging a call to it can only make the record's own
  * rules arrive, which is what the channel is for.
  *
- * IT CHARGES NOTHING. No `permissionDecision`, no `updatedInput`, nothing written: no
- * event, no run, no consultation. Read-only in the strict sense — the session's warm
- * caches, the copilot's pure derivation, and one `existsSync` per address — and the type
- * of {@link HookReply} is what keeps that from being a promise.
+ * IT CHARGES NOW, AND THAT SENTENCE REPLACES THE OPPOSITE ONE. This note used to read
+ * "IT CHARGES NOTHING. No `permissionDecision`, no `updatedInput`, nothing written: no
+ * event, no run, no consultation. Read-only in the strict sense." That was true of the
+ * grade this tool shipped with and it is false now: when the record holds a rule that asks
+ * for a PERSON at the path, this reply carries `permissionDecision: "ask"`, the host stops
+ * the write, and two kinds of fact are appended. What survives of the old sentence is the
+ * part the type still holds — no `updatedInput`, no `deny`, no `allow`, none of them
+ * representable ({@link HookReply}).
+ *
+ * WHAT IT WRITES, AND IN WHICH ORDER, which is the one rule here that a reader must not
+ * have to infer. Two facts, both under the CHANNEL as subject:
+ *   - `channel.served`, once per run and per channel, saying the push was live. It pays a
+ *     tie this channel shipped owing: a push that recorded nothing left "the rules reached
+ *     that session" and "the plugin was never installed" as the same nothing.
+ *   - `channel.asked`, once per asking, citing the rule and the path.
+ * The ASKING IS APPENDED BEFORE THE REPLY IS COMPOSED. A charge outside the record is the
+ * product acting outside its own record, so if the fact cannot be written the reply carries
+ * no charge — the write failing means nobody is stopped, which is the only direction a
+ * failure here may fall. It is the order a waiver already has with the cut it authorizes.
  *
  * NOTHING TO SAY IS SAID AS NOTHING. When no rule in force addresses the path the reply
  * is `{}`, which the host treats as no injection and no diagnostic. Why silence rather
  * than "nothing governs this file" is a decision with a number behind it, and it is
  * written where the text is composed (`edit-rules-push.ts`).
  *
- * IT IS SWITCHABLE, AND IT ASKS BEFORE IT WORKS. Every channel this product pushes unasked
- * can be switched off, with the switching recorded as a fact of the chain — so the first
- * thing this does is ask where its own switch stands, across every tree the session can
- * see. Off, the reply is the same `{}` and nothing else runs: the derivation is the term
- * that scales with the whole record on every call, and a channel somebody turned off must
- * not keep paying it. Which makes THREE readings of one silence on this channel — no rule
- * addresses the path, the channel is off, the hook never ran — and the once-per-session
- * document distinguishes the first two for the committed case (`presentation/brief.ts`,
- * which says plainly what it still cannot tell apart).
+ * TWO SWITCHES, ASKED BEFORE ANY WORK. Every channel this product pushes unasked can be
+ * switched off with the switching recorded, and this tool pushes TWO of them — the text and
+ * the gate — so it asks about both before the path is resolved. Both off, the reply is `{}`
+ * and the derivation never runs: it is the term that scales with the whole record on every
+ * call, and a channel somebody turned off must not keep paying it. They are separate
+ * switches because asking overrides every permission mode this host has, `bypassPermissions`
+ * included (`measurements/asks-a-person/`) — so this switch is the only way out of an
+ * inherited gate, and a single switch would charge whoever needed that way out the rules as
+ * well.
+ *
+ * Which makes FOUR readings of one silence here — no rule addresses the path, the text
+ * channel is off, the gate channel is off, the hook never ran — and the once-per-session
+ * document distinguishes the first three for the committed case
+ * (`presentation/brief.ts`, which says plainly what it still cannot tell apart).
  *
  * With no project it refuses `NO_PROJECT` — and a refusal on this channel is a tool error,
  * which the host treats as non-blocking. The session of somebody who installed the plugin
@@ -1926,23 +1954,128 @@ export function runRulesBeforeAnEditTool(
   const refused = requireProject(session);
   if (refused !== undefined) return refused;
   const caches = workspaceCaches(session);
-  // THE SWITCH IS ASKED FIRST, before the path is even resolved, and the order is the
-  // whole cost argument. Off, this call does one indexed lookup per tree and returns; the
-  // derivation behind the notice is the term that scales with the record (measured at
-  // 0.79-0.83 ms on a realistic one, 3.2-4.3 ms on a large one), and a channel that was
-  // switched off must not keep paying it on every edit of every session.
-  if (!channelIsOn(caches, EDIT_PUSH_CHANNEL)) {
-    return { ok: true, value: hookReply(PRE_TOOL_USE, undefined) };
-  }
+  // BOTH SWITCHES ARE ASKED FIRST, before the path is even resolved, and the order is the
+  // whole cost argument. Each is one indexed lookup per tree over a projection the session
+  // keeps warm (measured flat at 0.04 ms, `measurements/switch-cost/`); the derivations
+  // behind the two notices are the terms that scale with the record (0.79-0.83 ms on a
+  // realistic one, 3.2-4.3 ms on a large one), so a channel that was switched off must not
+  // keep paying its derivation on every edit of every session. With both off nothing else
+  // runs at all.
+  const pushing = channelIsOn(caches, EDIT_PUSH_CHANNEL);
+  const asking = channelIsOn(caches, ASKS_A_PERSON_CHANNEL);
+  if (!pushing && !asking) return { ok: true, value: hookReply(PRE_TOOL_USE, {}) };
+
   // The same two lines `runGoverningRulesTool` stands on: a project session carries its
   // directory, and a server has no working directory of its own to resolve against.
   const root = session.project ?? '';
-  const at = readRulesInForceAt(caches, {
-    path: input.path,
-    root,
-    from: root,
-  });
-  return { ok: true, value: hookReply(PRE_TOOL_USE, editRulesNotice(at)) };
+  const read = { path: input.path, root, from: root };
+  const context = pushing ? editRulesNotice(readRulesInForceAt(caches, read)) : undefined;
+
+  // THE GATE, AND ITS WHOLE ORDER OF OPERATIONS. The rules that ask are derived, the text
+  // is composed, and only then is the fact appended — because the fact cites what the text
+  // cites, and appending first would mean recording an accusation whose wording could still
+  // fail to compose. Then the reply: the charge rides only if the append landed.
+  const asked = asking ? readAsksForAPersonAt(caches, read) : undefined;
+  const ask = asked === undefined ? undefined : editAsksNotice(asked);
+  const charged =
+    ask === undefined || asked === undefined
+      ? { ok: true as const }
+      : recordAskings(session, asked);
+  // A RECORD THAT CANNOT BE WRITTEN CHARGES NOTHING, and the silence is not this line's to
+  // explain: the tool still answers `ok` with whatever text it had, so the edit goes
+  // through and nobody's afternoon is spent on a refusal that was never recorded. What says
+  // the gate was live is `channel.served`, and its absence from a run is the evidence.
+  const said = {
+    ...(context !== undefined ? { context } : {}),
+    ...(charged.ok && ask !== undefined ? { ask } : {}),
+  };
+  // SERVICE IS RECORDED FOR WHAT ACTUALLY SPOKE, per channel, once per run — never for a
+  // channel that was switched off and never for one that had nothing to say. A fact saying
+  // a channel served on a call where it said nothing would be the fact reading backwards.
+  recordServices(session, [
+    ...(context !== undefined ? [EDIT_PUSH_CHANNEL] : []),
+    ...(charged.ok && ask !== undefined ? [ASKS_A_PERSON_CHANNEL] : []),
+  ]);
+  return { ok: true, value: hookReply(PRE_TOOL_USE, said) };
+}
+
+/**
+ * Appends one `channel.asked` per rule that asked — the facts a charge is made of.
+ *
+ * ONE PER RULE AND NOT ONE PER ASKING, which is the reading of the tie that the axis
+ * settles: a charge cites the rule that caused it, and two rules asking about one file are
+ * two facts each naming its own. A single fact with a list would make a charge whose
+ * citation is a set, and superseding one of them would leave a fact that half-cites.
+ *
+ * They share one write context and one checkpoint: they are one act of asking, and signing
+ * once is cheaper than signing each — the same arrangement the consultations have.
+ *
+ * A REFUSAL HERE IS NOT REPORTED TO THE HOST, and that is deliberate. The caller's answer
+ * to a refused append is to charge nothing, so what a reader needs is `ok` or not `ok`;
+ * turning a write failure into a tool error would make the host see `isError`, which it
+ * treats as non-blocking anyway, at the cost of a diagnostic nobody reads in a channel that
+ * must never make somebody's session worse.
+ */
+function recordAskings(session: Session, at: RulesAtPath): { readonly ok: boolean } {
+  const route = routeWrite(session, 'channel.asked', {});
+  if (!route.ok) return { ok: false };
+  const { ctx, run } = openWrite(session, route.scope);
+  let appended = 0;
+  for (const rule of at.rules) {
+    const done = recordChannelAsked(ctx, {
+      channel: ASKS_A_PERSON_CHANNEL,
+      rule: rule.id,
+      path: at.relative ?? at.path,
+      which: session.which,
+      run,
+    });
+    if (!done.ok) {
+      if (appended > 0) ctx.writer.checkpoint();
+      return { ok: false };
+    }
+    appended += 1;
+  }
+  ctx.writer.checkpoint();
+  return { ok: true };
+}
+
+/**
+ * Appends one `channel.served` for each channel that spoke and that this RUN has not
+ * already recorded.
+ *
+ * The dedupe is asked per run, and the run is identified by the tree these facts go to, so
+ * the question is asked BEFORE the write context is built: this decides whether to write at
+ * all, and a call with nothing to record must not have opened a run to find that out. It is
+ * the arrangement `recordConsultations` has, for the same reason and on a hotter path — this
+ * one fires on every edit, and after the first of a run every call must cost one set lookup
+ * and nothing else.
+ *
+ * A channel joins the run's set only once its fact is on the chain, so a refused write
+ * leaves it eligible for a later edit rather than marking it recorded. Nothing is reported:
+ * a service fact that failed to append is a gap in the evidence, not a reason to make
+ * somebody's session worse.
+ */
+function recordServices(session: Session, channels: readonly SwitchableChannel[]): void {
+  if (channels.length === 0) return;
+  const route = routeWrite(session, 'channel.served', {});
+  if (!route.ok) return;
+  const root = chainRootForScope(session.trees, route.scope) as string;
+  const already = session.served.get(root);
+  const fresh =
+    already === undefined ? channels : channels.filter((channel) => !already.has(channel));
+  if (fresh.length === 0) return;
+
+  const { ctx, run } = openWrite(session, route.scope);
+  const recordedInRun = already ?? new Set<string>();
+  session.served.set(root, recordedInRun);
+  let appended = 0;
+  for (const channel of fresh) {
+    const done = recordChannelServed(ctx, { channel, which: session.which, run });
+    if (!done.ok) break;
+    recordedInRun.add(channel);
+    appended += 1;
+  }
+  if (appended > 0) ctx.writer.checkpoint();
 }
 
 /**

@@ -428,6 +428,28 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'minted',
       why: 'one of two words written in this module, chosen by the count beside it — nothing from the record reaches it',
     },
+  'brief.ts «{} of them {} for a PERSON at an address: where one» asking #1': {
+    verdict: 'minted',
+    why: 'how many of the printed rules can STOP a write — a count this document made',
+  },
+  "brief.ts «{} of them {} for a PERSON at an address: where one» asking === 1 ? 'asks' : 'ask' #1":
+    {
+      verdict: 'minted',
+      why: 'one of two words written in this module, chosen by the count beside it — nothing from the record reaches it',
+    },
+  'brief.ts «{} was switched off by {} at» oneLine(gate.channel) #1': {
+    verdict: 'collapsed',
+    why: 'the channel a switch names — a subject somebody’s command line sent, in the middle of the paragraph about the gate',
+  },
+  "brief.ts «{} was switched off by {} at» oneLine(gate.by ?? '') #1": {
+    verdict: 'collapsed',
+    why: 'the anchor that switched the gate off — out of the record, and not on a bullet, so a break here forges a claim about the gate',
+  },
+  "brief.ts «{}. Run \\`mnema switch\\` for where every switch stands.» oneLine(gate.at ?? '') #1":
+    {
+      verdict: 'collapsed',
+      why: 'when the gate was switched off — an instant out of the record, collapsed for the same reason the anchor is',
+    },
   'brief.ts «{} — {}» decision.adr #1': {
     verdict: 'composed',
     why: 'the `ADR-<n>` half of a rule’s name — the whole name is collapsed by `rule` below',
@@ -662,6 +684,18 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   'rules.ts «{} address nothing here» counts.stale #1': {
     verdict: 'minted',
     why: 'how many addresses name nothing in the working tree — a count',
+  },
+  'rules.ts «{} ask for a person here · {} ask in » counts.asks.matching #1': {
+    verdict: 'minted',
+    why: 'how many gate addresses cover the path — a count',
+  },
+  'rules.ts «{} ask for a person here · {} ask in » counts.asks.addressed #1': {
+    verdict: 'minted',
+    why: 'how many gate addresses the project’s record holds at all — a count',
+  },
+  'rules.ts «this project · {} ask about nothing here» counts.asks.stale #1': {
+    verdict: 'minted',
+    why: 'how many gate addresses name nothing in the working tree — a count, and the one that says a gate stopped closing in silence',
   },
   'rules.ts «{} ({})» heading #1': {
     verdict: 'minted',
@@ -1223,7 +1257,7 @@ describe('every value this layer puts on a line is classified', () => {
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
     expect(FOUND.builders.length).toBeGreaterThan(10);
-    expect(FOUND.sites.length).toBe(184);
+    expect(FOUND.sites.length).toBe(192);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1244,10 +1278,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(44);
-    expect(count('minted')).toBe(104);
+    expect(count('collapsed')).toBe(47);
+    expect(count('minted')).toBe(109);
     expect(count('composed')).toBe(36);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(44);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(47);
   });
 
   it('every reason says where the value comes from', () => {

@@ -38,6 +38,17 @@ import { type CliIo, run } from '../src/cli.js';
 import { openSession, type Session } from '../src/mcp/session.js';
 import { runGoverningRulesTool } from '../src/mcp/tools.js';
 
+/**
+ * The gate's three numbers, which every case in this file must read as zero.
+ *
+ * Named rather than spelled at each assertion, and it is a claim rather than boilerplate:
+ * this file is about the relation that INFORMS, so the relation that STOPS somebody has
+ * nothing addressed in any of its fixtures — and it reading anything else would mean the two
+ * walks had started sharing a list. The gate's own cases are with the charge
+ * (`the-record-asks-for-a-person.test.ts`).
+ */
+const NO_GATE = { matching: 0, addressed: 0, stale: 0 };
+
 let sandbox: string;
 let repo: string;
 let env: DiscoveryEnv;
@@ -215,7 +226,12 @@ describe('a path survives the write half the product already had', () => {
     const linked = await addressAt(rule, 'src/not-written-yet');
     expect(linked.failed, linked.err.join(' / ')).toBe(false);
     const reading = await reported('docs/anything.md');
-    expect(reading.counts).toEqual({ matching: 0, governing: 1, stale: 1 });
+    expect(reading.counts).toEqual({
+      matching: 0,
+      governing: 1,
+      stale: 1,
+      asks: NO_GATE,
+    });
   });
 });
 
@@ -251,7 +267,12 @@ describe('the reading answers, and charges nothing', () => {
     const shown = await page('src/anything.ts');
     expect(shown).toContain('0 govern this path · 0 address this project · 0 address nothing here');
     const reading = await reported('src/anything.ts');
-    expect(reading.counts).toEqual({ matching: 0, governing: 0, stale: 0 });
+    expect(reading.counts).toEqual({
+      matching: 0,
+      governing: 0,
+      stale: 0,
+      asks: NO_GATE,
+    });
   });
 
   it('reports a path outside the project without pretending nothing governs it', async () => {
@@ -298,7 +319,12 @@ describe('the reading answers, and charges nothing', () => {
     // than "there are no rules".
     const through = await reported('linked/fold.ts');
     expect(through.rules).toEqual([]);
-    expect(through.counts).toEqual({ matching: 0, governing: 1, stale: 0 });
+    expect(through.counts).toEqual({
+      matching: 0,
+      governing: 1,
+      stale: 0,
+      asks: NO_GATE,
+    });
   });
 
   it('asks the working tree through the link, so a live symlink is not stale', async () => {
@@ -313,7 +339,12 @@ describe('the reading answers, and charges nothing', () => {
     await addressAt(rule, 'dangling');
 
     const reading = await reported('live/file.ts');
-    expect(reading.counts).toEqual({ matching: 1, governing: 2, stale: 1 });
+    expect(reading.counts).toEqual({
+      matching: 1,
+      governing: 2,
+      stale: 1,
+      asks: NO_GATE,
+    });
     expect(reading.stale.map((one) => one.address)).toEqual(['dangling']);
   });
 
@@ -325,7 +356,12 @@ describe('the reading answers, and charges nothing', () => {
     // A record with something to report, so the guard cannot pass by finding nothing.
     const before = digest(sandbox);
     const reading = await reported('src/file.ts');
-    expect(reading.counts).toEqual({ matching: 1, governing: 2, stale: 1 });
+    expect(reading.counts).toEqual({
+      matching: 1,
+      governing: 2,
+      stale: 1,
+      asks: NO_GATE,
+    });
     await page('src/file.ts');
     expect(digest(sandbox)).toBe(before);
   });
@@ -370,7 +406,12 @@ describe('both surfaces answer out of the same derivation', () => {
     expect(fromTool.value.rules).toEqual(fromCli.rules);
     expect(fromTool.value.stale).toEqual(fromCli.stale);
     expect(fromTool.value.counts).toEqual(fromCli.counts);
-    expect(fromCli.counts).toEqual({ matching: 2, governing: 3, stale: 1 });
+    expect(fromCli.counts).toEqual({
+      matching: 2,
+      governing: 3,
+      stale: 1,
+      asks: NO_GATE,
+    });
   });
 
   it('refuses the tool outside a project, as the verb does', () => {

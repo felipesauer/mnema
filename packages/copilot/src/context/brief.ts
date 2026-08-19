@@ -108,7 +108,13 @@
  * dropping sources cannot reorder what the remaining ones say.
  */
 
-import { type AdrCollision, GOVERNS_RELATION, type ProjectionCache, type Scope } from '@mnema/core';
+import {
+  type AdrCollision,
+  ASKS_FOR_A_PERSON_RELATION,
+  GOVERNS_RELATION,
+  type ProjectionCache,
+  type Scope,
+} from '@mnema/core';
 import type { ScopedCache } from '../sources.js';
 import { type DecisionRef, decisionsInForce } from './decisions.js';
 import { adoptedSkills, type SkillRef } from './skills.js';
@@ -178,6 +184,25 @@ export interface Brief {
    */
   readonly addressed: number;
   /**
+   * How many of the rules below ASK FOR A PERSON somewhere — the number that gives the
+   * hardest silence on this surface its meaning.
+   *
+   * WHY IT IS SEPARATE FROM {@link Brief.addressed} rather than folded into it. That number
+   * says how many rules can ARRIVE at an edit; this one says how many can STOP one, and the
+   * two are different powers over the reader's afternoon. A document that reported only the
+   * first would leave somebody whose write was refused with no way to know from this file
+   * that the mechanism exists — and a gate is the one thing in this product a person needs
+   * to have been told about BEFORE it happens to them.
+   *
+   * Zero is a legitimate value and it is the ordinary one: it says the record holds rules,
+   * some of them may be placed, and none of them gates anything.
+   *
+   * It counts RULES and not addresses, and it does not count staleness, for the two reasons
+   * {@link Brief.addressed} gives — the reader is deciding what to expect, and this file is
+   * committed and compared with `diff`.
+   */
+  readonly asking: number;
+  /**
    * Where the channel that pushes a rule at an EDIT stands, in the tree that travels.
    *
    * WHY IT IS IN THIS ANSWER, and it is the same argument {@link Brief.addressed} makes
@@ -200,6 +225,39 @@ export interface Brief {
    * detects a stale copy still means exactly what it meant.
    */
   readonly editPush: ChannelState;
+  /**
+   * Where the channel that STOPS a write stands, in the tree that travels.
+   *
+   * It is here for the reason {@link Brief.editPush} is, and the consequence is heavier. A
+   * gate that is switched off produces exactly the silence a gate that has nothing to close
+   * on produces; but the direction of the mistake is reversed from the other channel's — a
+   * reader wrongly told that nothing gates this project loses nothing, while a reader
+   * wrongly told that something does will go looking for a refusal that cannot come. Both
+   * are fixed by saying which it is.
+   *
+   * Read from the committed tree, like everything else in this answer, and what that costs
+   * is the same: a switch somebody recorded `--scope private` is invisible here, so on that
+   * machine the document still says the gate is live. The reading that spans every tree is
+   * `mnema switch`, and the document points at it.
+   */
+  readonly asksAPerson: ChannelState;
+}
+
+/**
+ * The channels this document reports on, named by the caller.
+ *
+ * A shape rather than two positional strings, and it is the same rule the vocabulary of
+ * channels has had since it existed: the names live with the surface that PUSHES them, so
+ * this package takes them and cannot invent one. Two strings in a row would compile with
+ * the pair swapped, which would make the document report the gate's state as the push's —
+ * one of the few mistakes here that reads as a working document and says the opposite of
+ * the truth.
+ */
+export interface BriefChannels {
+  /** The channel that hands over the rules addressed at a file, as it is written. */
+  readonly editPush: string;
+  /** The channel that stops the write until a person looks. */
+  readonly asksAPerson: string;
 }
 
 /**
@@ -223,7 +281,7 @@ export interface Brief {
  * is written down — a second copy of "only the public one" at each surface is the
  * shape that drifts.
  */
-export function brief(sources: readonly ScopedCache[], editPushChannel: string): Brief {
+export function brief(sources: readonly ScopedCache[], channels: BriefChannels): Brief {
   const committed = sources.filter((source) => source.scope === TRAVELS);
   const travels: ProjectionCache[] = committed.map((source) => source.cache);
   const decisions = decisionsInForce(travels);
@@ -245,8 +303,33 @@ export function brief(sources: readonly ScopedCache[], editPushChannel: string):
     // machine reading it has turned it off. The channel is NAMED by the caller because the
     // vocabulary of channels belongs to the surface that pushes them, and this package has
     // no idea what any of them are.
-    editPush: channelStates(committed, [editPushChannel])[0] as ChannelState,
+    asking: countAsking(travels, [...decisions, ...skills]),
+    // Asked of the COMMITTED sources alone, for the reason the whole answer is: a switch
+    // this file could not carry would make the document claim a mechanism is on when the
+    // machine reading it has turned it off. Both channels in ONE call, so the fold, the
+    // tie-break and the meaning of an absence are the same for the two of them — a document
+    // that read one channel one way and the other another way would be two rules about what
+    // "off" means, in one paragraph.
+    ...channelPair(committed, channels),
   };
+}
+
+/**
+ * The two channel states this document carries, read in one call.
+ *
+ * Split out so the pair is built ONCE from one reading rather than assembled by two calls a
+ * later edit could make asymmetric. The order of the array is the order of the names, which
+ * is what {@link channelStates} promises, so the indexes are the names' and not a guess.
+ */
+function channelPair(
+  committed: readonly ScopedCache[],
+  channels: BriefChannels,
+): { readonly editPush: ChannelState; readonly asksAPerson: ChannelState } {
+  const [editPush, asksAPerson] = channelStates(committed, [
+    channels.editPush,
+    channels.asksAPerson,
+  ]);
+  return { editPush: editPush as ChannelState, asksAPerson: asksAPerson as ChannelState };
 }
 
 /**
@@ -266,11 +349,36 @@ function countAddressed(
   travels: readonly ProjectionCache[],
   rules: readonly { readonly id: string }[],
 ): number {
-  const addressed = new Set<string>();
+  return countUnder(travels, rules, GOVERNS_RELATION);
+}
+
+/**
+ * How many of `rules` ask for a person somewhere — the same count under the other relation.
+ *
+ * It is {@link countUnder} asked a second question and not a second counting rule, which is
+ * what keeps the two numbers on the document's first paragraph from being computed two ways.
+ * Everything the note above says about intersecting with the rules PRINTED holds here for a
+ * sharper reason: a gate whose subject is a superseded decision is a gate nothing will ever
+ * close, and counting it would tell the reader to expect a refusal that cannot come.
+ */
+function countAsking(
+  travels: readonly ProjectionCache[],
+  rules: readonly { readonly id: string }[],
+): number {
+  return countUnder(travels, rules, ASKS_FOR_A_PERSON_RELATION);
+}
+
+/** How many of `rules` are the subject of a link under `relation`, in the trees that travel. */
+function countUnder(
+  travels: readonly ProjectionCache[],
+  rules: readonly { readonly id: string }[],
+  relation: string,
+): number {
+  const subjects = new Set<string>();
   for (const cache of travels) {
-    for (const edge of cache.linksByRelation(GOVERNS_RELATION)) addressed.add(edge.subject);
+    for (const edge of cache.linksByRelation(relation)) subjects.add(edge.subject);
   }
-  return rules.filter((rule) => addressed.has(rule.id)).length;
+  return rules.filter((rule) => subjects.has(rule.id)).length;
 }
 
 /**
