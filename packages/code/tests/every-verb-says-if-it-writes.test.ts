@@ -226,6 +226,7 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   antipatterns: { argv: () => ['antipatterns'] },
   exposure: { argv: () => ['exposure'] },
   refs: { argv: (f) => ['refs', f.task] },
+  rules: { argv: () => ['rules', 'src'] },
   skills: { argv: () => ['skills'] },
   usage: { argv: () => ['usage'] },
   brief: { argv: () => ['brief'] },
@@ -430,7 +431,7 @@ function offersJson(verb: string): boolean {
  * the one this file did not run would be invisible. The number is asserted so a
  * `command.options` that stopped answering cannot silently halve the exercise.
  */
-const EXERCISED_IN_BOTH_FORMS = 13;
+const EXERCISED_IN_BOTH_FORMS = 14;
 
 /** Exercises every verb the table names, each in its own project, and measures the record. */
 async function exerciseEverything(): Promise<Exercised[]> {
@@ -499,7 +500,7 @@ describe('every verb says if it writes', () => {
     expect(Object.keys(INVOCATION).sort()).toEqual([...EFFECT_BY_VERB.keys()].sort());
   });
 
-  it('counts twelve writes and eighteen reads over the whole surface', () => {
+  it('counts twelve writes and nineteen reads over the whole surface', () => {
     // The count in the report, asserted rather than trusted, and the total against the
     // list: a verb that stopped being registered would otherwise leave both halves
     // looking healthy.
@@ -530,6 +531,7 @@ describe('every verb says if it writes', () => {
       'antipatterns',
       'exposure',
       'refs',
+      'rules',
       'skills',
       'usage',
       'brief',

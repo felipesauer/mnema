@@ -632,6 +632,65 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     why: 'the depth cap the walk applied, after clamping — a count',
   },
 
+  // --- rules.ts: which recorded rules govern a path -------------------------------
+  'rules.ts subjectLine(oneLine(governed.relative ?? governed.path)) #1': {
+    verdict: 'collapsed',
+    why: 'the path the caller asked about, or the one the record’s own root-relative form made of it',
+  },
+  "rules.ts subjectLine(governed.relative === undefined ? 'outside this project' : 'in this project') #1":
+    {
+      verdict: 'minted',
+      why: 'one of two phrases this report writes, saying whether the path is addressable here',
+    },
+  'rules.ts «{} govern this path · {} address this project · » counts.matching #1': {
+    verdict: 'minted',
+    why: 'how many addresses cover the path — a count',
+  },
+  'rules.ts «{} govern this path · {} address this project · » counts.governing #1': {
+    verdict: 'minted',
+    why: 'how many addresses the project’s record holds at all — a count',
+  },
+  'rules.ts «{} address nothing here» counts.stale #1': {
+    verdict: 'minted',
+    why: 'how many addresses name nothing in the working tree — a count',
+  },
+  'rules.ts «{} ({})» heading #1': {
+    verdict: 'minted',
+    why: 'one of this report’s two group headings',
+  },
+  'rules.ts «{} ({})» rules.length #1': {
+    verdict: 'minted',
+    why: 'how many rows are under the heading — the count they are counted by',
+  },
+  'rules.ts itemLine(oneLine(rule.address ?? rule.recorded)) #1': {
+    verdict: 'collapsed',
+    why: 'the address `mnema link --rel governs` recorded — a caller’s string the core never validates',
+  },
+  'rules.ts itemLine(said) #1': {
+    verdict: 'composed',
+    why: 'the rule’s title, collapsed where it enters, or a word of this report’s own vocabulary',
+  },
+  'rules.ts «({})» rule.kind #1': {
+    verdict: 'minted',
+    why: 'a `SearchKind` the read resolved the rule to — one of five words',
+  },
+  'rules.ts itemLine(...(rule.state === undefined ? [] : [asState(oneLine(rule.state))])) #1': {
+    verdict: 'collapsed',
+    why: 'the column carrying the rule’s state, present only when its kind has one',
+  },
+  'rules.ts asState(oneLine(rule.state)) #1': {
+    verdict: 'collapsed',
+    why: 'the rule’s workflow state, read back out of the record',
+  },
+  'rules.ts asId(oneLine(rule.rule)) #1': {
+    verdict: 'collapsed',
+    why: 'the rule’s id — a link’s subject, which the core forwards without verifying it exists',
+  },
+  'rules.ts «[{}]» rule.assertedIn #1': {
+    verdict: 'minted',
+    why: 'the tree whose record asserts the address — one of three words',
+  },
+
   // --- runs.ts: a run, for all three readings ------------------------------------
   'runs.ts «last run {} ({})» run.id #1': {
     verdict: 'minted',
@@ -1100,13 +1159,13 @@ describe('every value this layer puts on a line is classified', () => {
     // COLUMNS text takes (`width.ts`), which receives no record and words nothing — it is
     // asked by the renderer, by the fold and by every table on the surface. A module added
     // to this layer is counted here the day it is written, which is what this number is for.
-    expect(FOUND.composers.length + FOUND.machinery.length).toBe(25);
-    expect(FOUND.composers.length).toBe(13);
+    expect(FOUND.composers.length + FOUND.machinery.length).toBe(26);
+    expect(FOUND.composers.length).toBe(14);
     expect(FOUND.machinery).toContain('items.ts');
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
     expect(FOUND.builders.length).toBeGreaterThan(10);
-    expect(FOUND.sites.length).toBe(158);
+    expect(FOUND.sites.length).toBe(172);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1127,10 +1186,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(34);
-    expect(count('minted')).toBe(89);
-    expect(count('composed')).toBe(35);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(34);
+    expect(count('collapsed')).toBe(39);
+    expect(count('minted')).toBe(97);
+    expect(count('composed')).toBe(36);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(39);
   });
 
   it('every reason says where the value comes from', () => {

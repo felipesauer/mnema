@@ -2226,6 +2226,7 @@ describe('MCP server — end to end over a real client', () => {
       'create_task',
       'decision_transition',
       'focus',
+      'governing_rules',
       'guard',
       'link_knowledge',
       'next_actions',
@@ -3140,6 +3141,63 @@ describe('MCP server — end to end over a real client', () => {
     expect(patterns.byProject.every((entry) => entry.skillCandidates.length === 0)).toBe(true);
 
     await client.close();
+  });
+
+  it('governing_rules answers which rules address a path, over a real connection', async () => {
+    // THE LINK OF THE ELBOW: the tool is declared, routed, and answers out of the
+    // same derivation the command line reads — a tool plumbed to the registration
+    // and to nothing else would list here and refuse to work.
+    const project = makeProject('governed');
+    mkdirSync(join(project, 'src', 'collate'), { recursive: true });
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    const decided = await client.callTool({
+      name: 'record_decision',
+      arguments: { title: 'how collation works', rationale: 'one fold, one order' },
+    });
+    const ruleId = /\(([^)]+)\)/.exec(textOf(decided))?.[1] as string;
+    await client.callTool({
+      name: 'link_knowledge',
+      arguments: { subject: ruleId, target: 'src/collate', rel: 'governs' },
+    });
+    // A second address whose directory nobody created — the stale one.
+    await client.callTool({
+      name: 'link_knowledge',
+      arguments: { subject: ruleId, target: 'src/long-gone', rel: 'governs' },
+    });
+
+    const asked = await client.callTool({
+      name: 'governing_rules',
+      arguments: { path: 'src/collate/fold.ts' },
+    });
+    const governed = JSON.parse(textOf(asked)) as {
+      relative?: string;
+      rules: Array<{ rule: string; address?: string; onDisk: boolean; name?: string }>;
+      stale: Array<{ address?: string }>;
+      counts: { matching: number; governing: number; stale: number };
+    };
+    expect(governed.relative).toBe('src/collate/fold.ts');
+    expect(governed.rules.map((one) => [one.address, one.rule])).toEqual([['src/collate', ruleId]]);
+    expect(governed.rules[0]?.name).toBe('how collation works');
+    // THE THIRD NUMBER, over the wire: an address whose directory is gone is counted
+    // and named, which is the only thing that tells it from a rule that never existed.
+    expect(governed.counts).toEqual({ matching: 1, governing: 2, stale: 1 });
+    expect(governed.stale.map((one) => one.address)).toEqual(['src/long-gone']);
+
+    // A path nothing addresses is an ANSWER and not an error, and it still carries
+    // the two counts that say the mechanism is not empty.
+    const elsewhere = await client.callTool({
+      name: 'governing_rules',
+      arguments: { path: 'docs/readme.md' },
+    });
+    expect(elsewhere.isError).toBeFalsy();
+    const nothing = JSON.parse(textOf(elsewhere)) as {
+      rules: unknown[];
+      counts: { matching: number; governing: number; stale: number };
+    };
+    expect(nothing.rules).toEqual([]);
+    expect(nothing.counts).toEqual({ matching: 0, governing: 2, stale: 1 });
   });
 
   it('search gives the id, audit_refs gives the neighbourhood, and then the lineage', async () => {

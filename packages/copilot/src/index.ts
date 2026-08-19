@@ -155,6 +155,13 @@ export {
   type WorkspaceExposure,
   workspaceExposure,
 } from './intelligence/exposure.js';
+export {
+  type AddressedRule,
+  type GovernanceCounts,
+  type GovernanceQuery,
+  type GoverningRules,
+  governingRules,
+} from './intelligence/governance.js';
 export { knownAnchors } from './intelligence/identities.js';
 export {
   type PatternMove,

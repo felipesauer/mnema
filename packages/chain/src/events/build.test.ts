@@ -8,6 +8,7 @@ import {
   identityFounded,
   keyEnrolled,
   keyRevoked,
+  knowledgeLinked,
   memoryCaptured,
   runEnded,
   runStarted,
@@ -20,6 +21,7 @@ import {
   taskTransitioned,
 } from './build.js';
 import { canonicalStringify } from './canonical.js';
+import { GOVERNS_RELATION, RECOMMENDED_LINK_RELATIONS } from './catalog.js';
 import { toCanonical } from './parse.js';
 
 const env = { at: '2026-07-21T00:00:00.000Z', who: 'mnid:aa', signerFp: 'fp-1', subject: 's-1' };
@@ -408,5 +410,30 @@ describe('memoryCaptured', () => {
     expect(event.which).toBe('claude');
     expect(event.run).toBe('r-1');
     expect(() => canonicalStringify(toCanonical(event))).not.toThrow();
+  });
+});
+
+describe('the relation that carries an address', () => {
+  it('is one string, and the recommended set is built out of it', () => {
+    // A reader answering "which rules govern this file" and the help text that
+    // suggests the label have to mean the SAME string. Written twice they are two
+    // strings that can come to differ — and the drift would be silent, because a
+    // `rel` outside the recommended set is valid: the reader would simply find
+    // nothing, and the help would go on suggesting a label nothing reads.
+    expect(GOVERNS_RELATION).toBe('governs');
+    expect(RECOMMENDED_LINK_RELATIONS).toContain(GOVERNS_RELATION);
+  });
+
+  it('needs no field, no version and no upcaster to carry a path', () => {
+    // The whole reason this delivery cost the catalog nothing: `rel` is an open
+    // literal and `target` is an unverified string, so a path is a link like any
+    // other. The event is v1 and its payload is the two fields it always had.
+    const built = knowledgeLinked(
+      { at: '2026-08-19T00:00:00.000Z', who: 'mnid:abc', signerFp: 'ff', subject: 'dec-1' },
+      { target: 'src/collate', rel: GOVERNS_RELATION },
+    );
+    expect(built.kind).toBe('knowledge.linked');
+    expect(built.v).toBe(1);
+    expect(built.payload).toEqual({ target: 'src/collate', rel: 'governs' });
   });
 });

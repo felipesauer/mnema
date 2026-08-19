@@ -10,7 +10,7 @@
 
 _mnema_commands() {
   case "$1" in
-    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure refs skills usage brief key tail verify mcp repl completion help' ;;
+    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure refs rules skills usage brief key tail verify mcp repl completion help' ;;
     'task') echo 'move' ;;
     'decision') echo 'move supersede' ;;
     'skill') echo 'move export' ;;
@@ -52,6 +52,7 @@ _mnema_flags() {
     'antipatterns') echo '--json -h --help -V --version --color' ;;
     'exposure') echo '--json -h --help -V --version --color' ;;
     'refs') echo '--direction --depth --json -h --help -V --version --color' ;;
+    'rules') echo '--json -h --help -V --version --color' ;;
     'skills') echo '--json -h --help -V --version --color' ;;
     'usage') echo '-h --help -V --version --color' ;;
     'brief') echo '-h --help -V --version --color' ;;
@@ -121,6 +122,7 @@ _mnema_values() {
     'exposure:--color') echo 'auto always never' ;;
     'refs:--direction') echo 'both out in' ;;
     'refs:--color') echo 'auto always never' ;;
+    'rules:--color') echo 'auto always never' ;;
     'skills:--color') echo 'auto always never' ;;
     'usage:--color') echo 'auto always never' ;;
     'brief:--color') echo 'auto always never' ;;

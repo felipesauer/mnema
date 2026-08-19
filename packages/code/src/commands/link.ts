@@ -48,7 +48,7 @@ export interface LinkRecorded extends Replacement, Landed {
   readonly ok: true;
   /** The entity that ORIGINATES the link (the event subject). */
   readonly subject: string;
-  /** The entity linked to. */
+  /** What the link points at: another record's id, or a path under `governs`. */
   readonly target: string;
   /** The relation label (an open string). */
   readonly rel: string;
