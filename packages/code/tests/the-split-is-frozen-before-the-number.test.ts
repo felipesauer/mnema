@@ -15,11 +15,22 @@
  * over the committed files, where a violation is red before it is a number.
  *
  * IT GUARDS EVERY ROUND, and the rules are written ONCE and applied to each. The protocol has
- * two rounds: the first ran in August 2026 and spent its tasks, and the second is pre-registered
- * in `round-2/` with tasks of its own, frozen before the product surface it will measure exists.
- * A guard written for one round and copied for the other is two readings of one rule, which is
- * the shape that drifts in silence — so `describe.each` over the rounds is the point, not a
- * convenience. What differs between rounds is declared per round below, never duplicated.
+ * THREE rounds. (This comment said "two rounds" until 20 Aug 2026, and what falsified it is
+ * `round-3/`: the first round ran in August 2026 and spent its tasks, the second ran on the 20th
+ * and spent its own, and the third is pre-registered with ten new tasks frozen before the
+ * mechanism it will measure exists.) A guard written for one round and copied for the others is
+ * two readings of one rule, which is the shape that drifts in silence — so `describe.each` over
+ * the rounds is the point, not a convenience. What differs between rounds is declared per round
+ * below, never duplicated.
+ *
+ * AND ROUND 3 WAS FROZEN TWICE, which is the one thing a pre-registration may do and the one
+ * thing a diff hides. It was declared with five arms and re-declared with four, before a cell of
+ * it ran and before any mechanism of it was built, so nothing about the change can have been
+ * chosen against a result. What keeps that readable in the committed state rather than only in
+ * history is `split.json`'s `arms_withdrawn`, and the cases below hold `arms.md` to naming a
+ * reason for every arm that is absent — the ones round 2 ran and this round does not, and the
+ * ones this round declared and withdrew. `prosa` is both, which is why that list is computed in
+ * one function instead of two loops.
  *
  * AND ONE RULE IS ABOUT THE ROUNDS TOGETHER: no task belongs to two of them. Each round keeps
  * its tasks in a different directory of a workbench git ignores, so both rounds' own checks pass
@@ -52,9 +63,20 @@ type Split = {
   readonly rule: string;
   /** Round 2 declares its arms; round 1's file predates the field and is not edited. */
   readonly arms?: readonly string[];
-  /** Round 2 carries the size as data, with the decision on it named as open. */
+  /** Rounds 2 and 3 carry the size as data, with the decision on it named as open. */
   readonly n?: number;
   readonly n_decision?: string;
+  /** Round 3 states how its development pair was chosen; rounds 1 and 2 do not carry it. */
+  readonly development_criterion?: string;
+  /**
+   * The arms a round DECLARED and then withdrew, before running a cell of it.
+   *
+   * Round 3 alone carries it, because round 3 alone was frozen twice. An arm that leaves
+   * a pre-registration in a diff is an arm nobody can check was ever declared, so the
+   * withdrawal is data and the reason for it is prose the case below holds it to.
+   */
+  readonly arms_withdrawn?: readonly string[];
+  readonly arms_withdrawn_note?: string;
 };
 
 /** The protocol, shared by every round: the promise and the size of the first one. */
@@ -91,7 +113,11 @@ function roundAt(round: number, dir: string, tasks: number, headline: number): R
  * against agrees with every future change, and the whole job of these two numbers is to go red
  * when a task quietly appears in or disappears from a frozen set.
  */
-const ROUNDS: readonly Round[] = [roundAt(1, P1, 8, 4), roundAt(2, join(P1, 'round-2'), 10, 6)];
+const ROUNDS: readonly Round[] = [
+  roundAt(1, P1, 8, 4),
+  roundAt(2, join(P1, 'round-2'), 10, 6),
+  roundAt(3, join(P1, 'round-3'), 10, 6),
+];
 
 /** A digest line: sixty-four lowercase hex, two spaces, the task's id. */
 const DIGEST_LINE = /^([0-9a-f]{64}) {2}([a-z0-9-]+)$/;
@@ -358,5 +384,252 @@ describe('the arms of round 2', () => {
     }
     // NOT VACUOUS: a name that is not an arm is not described there either.
     expect(declared).not.toContain('| `no-such-arm` |');
+  });
+});
+
+/**
+ * Every arm a round OWES a written reason for — ONE list, computed in one place.
+ *
+ * Two ways an arm can be missing from a round, and both of them leave the reader with the
+ * same question. One ran the round before and does not run this one. The other was
+ * DECLARED by this round and withdrawn before it ran — round 3 was frozen twice, and an
+ * arm that vanishes between two freezes of the same file is invisible in the committed
+ * state unless the file says it was there.
+ *
+ * The union is computed here and read once, because the alternative is two lists asserted
+ * separately and a `prosa` that is on both — which is exactly this round's case, and the
+ * shape in which a doubly-named arm gets checked twice and a singly-named one not at all.
+ */
+function armsOwedAReason(round: Round, previous: readonly string[]): readonly string[] {
+  const arms = round.split.arms ?? [];
+  const gone = previous.filter((arm) => !arms.includes(arm));
+  return [...new Set([...gone, ...(round.split.arms_withdrawn ?? [])])].sort();
+}
+
+describe('the arms of round 3', () => {
+  const third = ROUNDS[2] as Round;
+  const armsMd = readFileSync(join(P1, 'round-3', 'arms.md'), 'utf-8');
+
+  it('runs FOUR arms — two of round 2 leave and one arrives', () => {
+    const declared = third.split.arms;
+    expect(declared, 'round 3 declares no arms').toBeDefined();
+    const arms = declared as readonly string[];
+    expect(new Set(arms).size, 'an arm is declared twice').toBe(arms.length);
+
+    const before = (ROUNDS[1] as Round).split.arms as readonly string[];
+    // Non-vacuity: round 2's arms have to have been read, or every difference below is a
+    // difference from an empty set.
+    expect(before.length, 'round 2 declares no arm to compare against').toBe(5);
+    // THE COUNT IS A LITERAL, for the reason the task counts are: derived from the file it
+    // checks, it would agree with any future change, and the job of this number is to go red
+    // when an arm quietly appears in or leaves a frozen round.
+    expect(arms.length, 'round 3 does not run four arms').toBe(4);
+
+    // ROUND 3 IS THE FIRST ROUND THAT DROPS AN ARM, and it now drops TWO. Round 2's rule was
+    // "keeps every arm and adds one"; this round's first freeze was "exactly one leaves,
+    // exactly one arrives", and the re-freeze falsified that too — `prosa` left beside
+    // `mnema` when the round's question became internal to the surface. So the shape is
+    // asserted as it is rather than as the previous freeze had it: a rule loosened until it
+    // says nothing is worse than a rule that changed and said so.
+    expect(
+      before.filter((arm) => !arms.includes(arm)),
+      'round 3 drops other than two of round 2 arms',
+    ).toHaveLength(2);
+    expect(
+      arms.filter((arm) => !before.includes(arm)),
+      'round 3 adds more or fewer than one arm',
+    ).toHaveLength(1);
+  });
+
+  it('carries the arms it withdrew as DATA, and never as an arm it also runs', () => {
+    // The re-freeze is the one change a pre-registration allows, and the only thing that
+    // keeps it from being a silent rewrite is that the file says what left. In a diff it is
+    // invisible; in the committed state it has to be readable without one.
+    const withdrawn = third.split.arms_withdrawn;
+    expect(withdrawn, 'round 3 does not say which arms it withdrew').toBeDefined();
+    const gone = withdrawn as readonly string[];
+    expect(gone.length, 'the withdrawal names no arm').toBeGreaterThan(0);
+    expect(new Set(gone).size, 'an arm is withdrawn twice').toBe(gone.length);
+
+    const arms = third.split.arms as readonly string[];
+    // An arm cannot be both declared and withdrawn: that is a round claiming to measure
+    // what it says it dropped.
+    expect(
+      gone.filter((arm) => arms.includes(arm)),
+      'an arm is both declared and withdrawn',
+    ).toEqual([]);
+    expect(third.split.arms_withdrawn_note, 'the withdrawal carries no reason').toMatch(/before/);
+  });
+
+  it('and the file that declares them names every one, and says why each absent one left', () => {
+    const arms = third.split.arms as readonly string[];
+    for (const arm of arms) {
+      expect(armsMd, `arms.md says nothing about ${arm}`).toContain(`| \`${arm}\` |`);
+    }
+    // NOT VACUOUS: a name that is not an arm is not described there either.
+    expect(armsMd).not.toContain('| `no-such-arm` |');
+
+    // An arm that leaves in silence is an arm nobody can check was ever there. The reason has
+    // to be in the file that declares the arms, naming the arm — and it is owed for BOTH
+    // ways of being absent, which is why the list is one function and not two loops.
+    const owed = armsOwedAReason(third, (ROUNDS[1] as Round).split.arms as readonly string[]);
+    expect(owed.length, 'no arm is absent, so this case is about nothing').toBe(3);
+    for (const arm of owed) {
+      expect(armsMd, `arms.md does not say why \`${arm}\` is not in this round`).toContain(
+        `Why \`${arm}\` is not in this round`,
+      );
+    }
+    // NOT VACUOUS in the other direction: the file does not carry that section for an arm it
+    // runs, which would be a round describing its own treatment as absent.
+    for (const arm of arms) {
+      expect(armsMd, `arms.md says why \`${arm}\` left, and it did not`).not.toContain(
+        `Why \`${arm}\` is not in this round`,
+      );
+    }
+  });
+
+  it('carries n as data, names the decision on it as open, and costs every candidate', () => {
+    // The same shape round 2 froze, for the same reason: what is frozen is not a size but an
+    // arithmetic, so whoever closes the decision closes it against numbers written before any
+    // result exists.
+    expect(third.split.n, 'round 3 does not carry n as data').toBe(runsPerCell());
+    expect(third.split.n_decision, 'the decision on n is not named as open').toMatch(/OPEN/);
+
+    const arms = third.split.arms as readonly string[];
+    const tasksOf = tasks(third).length;
+    for (const n of [2, 3, 4]) {
+      expect(third.reading, `the reading does not cost n=${n}`).toContain(
+        `| ${tasksOf * arms.length * n} |`,
+      );
+    }
+    // NOT VACUOUS: a size the split does not imply must NOT be costed, or the case above would
+    // pass over a table of every number anybody ever typed. With four arms this is also the
+    // cell count the FIVE-arm freeze costed at n=4, so the case doubles as the one that goes
+    // red if the old table survives the re-freeze.
+    expect(third.reading, 'the reading costs a size the split does not imply').not.toContain(
+      `| ${tasksOf * arms.length * 5} |`,
+    );
+  });
+
+  it('says how its development pair was chosen, blind to what the tasks contain', () => {
+    // Rounds 1 and 2 do not carry this field and are not edited to acquire it. Round 3 does,
+    // because round 2's report described a criterion that does not reproduce round 1's pick —
+    // so the criterion is stated by the round that used it, where it can be checked.
+    const criterion = third.split.development_criterion;
+    expect(criterion, 'round 3 does not say how its development pair was chosen').toBeDefined();
+    expect(third.split.development, 'the development pair is not a pair').toHaveLength(2);
+    // The criterion names the pilot as the lowest-numbered axis A task, so the pilot has to BE
+    // the first development task in numeric order — the one property of it a test can hold.
+    const numberOf = (id: string): number => Number(/^[ab](\d+)/.exec(id)?.[1] ?? NaN);
+    const ordered = [...third.split.development].sort((a, b) => numberOf(a) - numberOf(b));
+    expect(ordered[0], 'the pilot is not the lowest-numbered development task').toBe(
+      third.split.pilot,
+    );
+  });
+});
+
+describe('the prediction of round 3', () => {
+  const third = ROUNDS[2] as Round;
+  const prediction = readFileSync(join(P1, 'round-3', 'prediction.md'), 'utf-8');
+
+  /** A row of the prediction's table: the task, its axis, whether it counts, and the call. */
+  const ROW =
+    /^\| `([a-z0-9-]+)` \| ([AB]) \| (\*\*yes\*\*|no) \| \*\*(first write|later)\*\* \| (.+?) \|$/gm;
+
+  it('calls every task of the round, exactly once, with a reason', () => {
+    // WHY THIS IS A TEST. Round 3 exists to attribute a number to one of two channels, and the
+    // only thing that keeps that from being decided after the fact is a call made before the
+    // round, per task, in a file nothing may edit afterwards. A task with no call is a task the
+    // round can attribute anything to.
+    //
+    // THE CALL IS THE SAME CALL IT WAS AT THE FIRST FREEZE, and what changed is what it
+    // IMPLIES. It used to be read as "here the injected rule should gain"; it is now read as
+    // "here the per-edit push CANNOT have acted, so the two arms are expected to tie". The
+    // classification is about the shape of a task, and withdrawing an arm does not reshape a
+    // task, so the table is not rewritten to follow the arms.
+    const rows = new Map(
+      [...prediction.matchAll(ROW)].map(
+        (row) =>
+          [
+            row[1] as string,
+            {
+              axis: row[2] as string,
+              headline: row[3] as string,
+              call: row[4] as string,
+              why: row[5] as string,
+            },
+          ] as const,
+      ),
+    );
+    expect(rows.size, 'the prediction calls the wrong number of tasks').toBe(third.tasks);
+
+    for (const id of tasks(third)) {
+      const row = rows.get(id);
+      expect(row, `the prediction says nothing about ${id}`).toBeDefined();
+      expect(row?.axis, `${id} is on the wrong axis in the prediction`).toBe(
+        isNegativeControl(id) ? 'B' : 'A',
+      );
+      expect(row?.headline === '**yes**', `the prediction and the split disagree about ${id}`).toBe(
+        third.split.headline.includes(id),
+      );
+      // A call with no reason is a coin toss written down. Ten of those would pass every other
+      // assertion in this file.
+      expect((row?.why ?? '').length, `${id} is called with no reason`).toBeGreaterThan(20);
+    }
+  });
+
+  it('names the COLUMN that decides whether the push could have acted at all', () => {
+    // The prediction is now about POSSIBILITY: a push that arrives after the first write cannot
+    // act on a task the first write settled. That is checkable per cell, and the column is the
+    // one the round already has — so the prediction has to name it, and name the value that
+    // makes the difference, or it is a claim with no procedure.
+    expect(prediction, 'the prediction names no column that would check it').toContain(
+      'mcp_pushed',
+    );
+    // BOTH SIDES, because a rule stated on one value only is a rule that cannot be wrong: the
+    // value where the push could not act, and the value where it could.
+    expect(prediction, 'the prediction does not say what one dispatch means').toMatch(
+      /`mcp_pushed = 1`/,
+    );
+    expect(
+      prediction,
+      'the prediction does not say where a difference would have to appear',
+    ).toMatch(/`mcp_pushed ≥ 2`/);
+    // And the claim's own limit: a second dispatch is necessary for the push to have acted and
+    // does not prove that it did. A prediction that reads it as proof would confirm itself.
+    expect(prediction, 'the prediction reads a second dispatch as sufficient').toMatch(
+      /[Nn]ecessary and not sufficient/,
+    );
+  });
+
+  it('and the reading refuses to read it without the column that would check it', () => {
+    // "Read it loosely" is the answer that would let the round confirm itself, so the reading
+    // has to say what happens when the column cannot answer, in the word that closes it.
+    //
+    // WHAT THIS ASSERTED UNTIL THE RE-FREEZE, and what falsified it: the phrase was `the line
+    // carries no write count`, and the reason the reading gave for needing it was that
+    // `mcp_pushed` is 1 in 47 of 48 cells "because the per-edit channel speaks once per cell".
+    // That described `channel_served`, not `mcp_pushed` — the committed cell
+    // `a7-partial-refund` / `mnema+` / run 4 carries `mcp_pushed` 2 beside `channel_served`
+    // `edit-rules-push:1`, and a column that reaches 2 does not speak once per cell. So the
+    // round is read over the column it has, and what the reading owes is the refusal for the
+    // cells where that column is silent.
+    expect(third.reading, 'the reading does not require the column').toContain('`mcp_pushed`');
+    expect(third.reading, 'the reading names no consequence for the silent column').toMatch(
+      /the prediction is not read on that task at all/,
+    );
+  });
+
+  it('and the round adds the condition that its own capture earned', () => {
+    // Round 2 published three `>` readings for the one arm its contamination detector could not
+    // see. The fifth condition is that hole closed, and it is asserted here because it is the
+    // one clause of the reading that can VETO a result this product wins — which is exactly the
+    // kind of clause that gets quietly dropped.
+    expect(third.reading, 'the reading has no fifth condition on `>`').toMatch(
+      /has a rate on at least one negative control/,
+    );
+    expect(third.reading, 'the reading does not declare what the new condition costs').toMatch(
+      /withdraws three of that round's eight `>` readings/,
+    );
   });
 });

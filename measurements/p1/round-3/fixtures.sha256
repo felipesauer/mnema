@@ -1,0 +1,63 @@
+# The ten tasks of the P1 protocol's THIRD round, fixed before the mechanism it
+# will measure was built.
+#
+# WHY A THIRD SET. Round 2 measured the surface that answers round 1 and the
+# answer was two-sided: the surface beat our own uncharged arm by 73.6 points,
+# and it did not beat the memory the coding agent already ships (-8.3 points,
+# `mnema+` 91.7% against `host` 100.0%). The whole of that gap is one task, where
+# our arm scored 0.50 and the host's 1.00. Round 3 measures the answer to that
+# one task. Rounds 1 and 2 spent twenty tasks between them -- the held-out ones
+# were touched once by rule, the development ones were iterated against -- so
+# proving anything new needs tasks nobody has spent. These ten are new, they
+# share no id with either earlier round, and they were frozen BEFORE the
+# mechanism this round exists to measure is written.
+#
+# AND THIS FREEZE IS WEAKER THAN ROUND 2'S, IN ONE NAMED WAY. Round 2's tasks
+# were written by somebody who could not know what the mechanism would do,
+# because it did not exist. These were written by somebody who knew round 2's
+# result and had already formed a hypothesis about its one bad task. No hash
+# fixes that. What was done about it is written in `prediction.md`, including the
+# fact that the failing task's contents were not opened while these were being
+# written, and that the prediction about them was declared rather than the tasks
+# being selected. The reader is told the direction of the weakness because that
+# is the only protection that does not lie.
+#
+# Each hash covers one task directory whole -- its starting repository, its
+# ticket, its decision, its two references and its discriminant -- over a
+# DETERMINISTIC archive: entry order fixed, timestamps and ownership zeroed,
+# Python bytecode excluded. The archive carries the task's id as its path prefix,
+# so two tasks cannot swap contents without both hashes moving.
+#
+# The tasks themselves are withheld until they have been used. Until then this
+# file is what a third party can check: not what a task says, but that it did not
+# change between the freeze and the result.
+#
+# REPRODUCE -- GNU tar 1.35 and coreutils sha256sum, run from the directory that
+# holds the ten task directories:
+#
+#   for id in a15-commission-base a16-event-order a17-billed-seats \
+#             a18-dunning-recipients a19-batch-pick a20-over-long-note \
+#             a21-session-expiry a22-graduated-usage b5-column-name \
+#             b6-wrap-words; do
+#     printf '%s  %s\n' "$(tar --sort=name --format=gnu \
+#         --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner \
+#         --exclude='__pycache__' --exclude='*.pyc' \
+#         -cf - "$id" | sha256sum | cut -d' ' -f1)" "$id"
+#   done
+#
+# A hash nobody knows how to reproduce proves nothing, which is why the command
+# is here and not in a report. A different tar implementation will produce a
+# different stream: the version above is the one these hashes were taken with,
+# and the harness's own `digestOf` was run against these ten and agreed with it
+# hash for hash.
+#
+e0fb857ff5c98933acefa4219380959264db47435f475294576768f56d205832  a15-commission-base
+d7ca19a4f350f46a5d990efbab531b36e85cb2bf8fcd83039cc054f1b4f555b7  a16-event-order
+d7dd04a2005a4dbfceafc247093461172adcc7ce4e30c07efcf4fcf387de93d6  a17-billed-seats
+fc34421e3c006e37a27585365dbf64a7f2a31eee5c13406ac5dd3801e0656611  a18-dunning-recipients
+9cda9a71b870c66aea0b5b276887b98301ae0655f0308f4b97dfb24772aa89e2  a19-batch-pick
+48c1e0d0fb43f0857af1a9d663b9282b24e8624f6d865e1abe53a464c558c2ee  a20-over-long-note
+7d592724f2d6f2f034090eee1c0ed280a2ede533b3b9195a2b27b02eb9dc50eb  a21-session-expiry
+92c27d345691f09657fcb1ee477a42b464b1f080642de4a1eb4a0ccff438478d  a22-graduated-usage
+383fcbaf6b47b35ee813560e1f0782b6e86f462f15359c3afeefdd8370ce2aaf  b5-column-name
+903c63fac69660b27401c0cc663a43ba66b6863ed9a24766e17bf1c84fd97694  b6-wrap-words
