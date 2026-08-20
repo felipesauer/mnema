@@ -174,10 +174,17 @@ mechanism does is the bias a pre-registered split exists to prevent.
 That second pre-registration lives in [`round-2/`](round-2/) and is complete on its own terms:
 ten tasks fixed by [digest](round-2/fixtures.sha256), the
 [split and the headline set](round-2/split.json), [five arms declared](round-2/arms.md) — the
-four that ran the first round, plus one that does not exist in code yet — and
+four that ran the first round, plus `mnema+`, the record served unasked and charged for — and
 [the reading of every outcome](round-2/reading.md), which closes the three gaps the first round
 found in its own rule. Nothing of the first round's pre-registration is edited to make room for
 it: those files are the record of an order, and the order is what they are worth.
+
+*(Until 19 Aug 2026 the sentence above said the fifth arm "does not exist in code yet", and that
+was the point of freezing the round before it. It exists now — the harness seeds all five, and
+the mismatch that stopped round 2 lifted on its own, because what stopped it was a comparison
+between the arms the round declares and the arms the harness can seed, never a switch. The
+premise is rewritten rather than removed: the tasks are the ones that were frozen before the
+surface, which is the only thing that had to be true.)*
 
 ## Status
 
@@ -189,4 +196,5 @@ it: those files are the record of an order, and the order is what they are worth
 | pilot | run 17 Aug 2026 — 4 cells, [`results/2026-08-17-pilot/`](results/2026-08-17-pilot/) |
 | full run, round 1 | run 18 Aug 2026 — 112 cells, [`results/2026-08-18-full/`](results/2026-08-18-full/) |
 | pre-registration, round 2 | [`round-2/`](round-2/) — frozen 18 Aug 2026, **before** the surface it measures |
-| full run, round 2 | not run. Its fifth arm is a declaration, and the harness refuses a cell of that round until the arm exists |
+| fifth arm, in code | built 19 Aug 2026 — the harness seeds all five, and the refusal keyed on the round's declared arms lifted by itself |
+| full run, round 2 | **not run.** The harness plans its 200 cells and stops: nothing that calls a model runs without `--yes`, and the size of the round is a spending decision the pre-registration leaves open |
