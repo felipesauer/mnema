@@ -29,6 +29,7 @@ import { join } from 'node:path';
 import { expect } from 'vitest';
 import { decodedWhole } from './arriving.js';
 import { ENDS_THE_INPUT } from './console.js';
+import { theSettledScreen } from './screen.js';
 
 /**
  * Where a runner leaves the DEVICE'S OWN answer about how big it is.
@@ -407,6 +408,47 @@ const PAINT = new RegExp(`${String.fromCodePoint(0x1b)}\\[[0-9;]*m`, 'g');
  * It is one function because it is one rule — the same reason {@link arrivedSince} is one — and
  * the three sites that spelled it out are exactly how two ideas of "it has gone" come to exist.
  */
+/**
+ * A FRAME THE STEP CAUSED, WITH `absent` OFF THE PAGE — the same question the case then asks,
+ * asked of the same object.
+ *
+ * WHY THIS EXISTS BESIDE {@link aFrameWithout}, WHICH LOOKS LIKE IT ALREADY DOES THIS. That one
+ * asks whether a string is in what ARRIVED since the step began, and arriving is cumulative: a
+ * line drawn once early in the step is in that window forever, however far the roll has since
+ * pushed it off the page. For "it has gone from the TEXT the caller is typing into" that is the
+ * right question and it is why that function stays. For "it has scrolled off the PAGE" it is the
+ * wrong one, and it is wrong in the direction that cannot be waited out — measured: widening
+ * `aFrameWithout` to cover the oldest line turned an intermittent assertion into a 31 s timeout
+ * in 7 of 10 runs, because the line keeps being redrawn and so keeps arriving.
+ *
+ * A page is what a replay says is SHOWING, so that is what this replays. The case that reads the
+ * settled page then asserts the same absence of the same screen, and a step that ends early no
+ * longer ends on a page the case will disagree with.
+ *
+ * A REPLAY THAT CANNOT FIND A FRAME IS NOT AN ABSENCE. Until a frame at this width has been
+ * drawn there is no page to have lost anything, and answering `true` there would end the step
+ * before the session had drawn at all — the exact defect {@link aFrameWithout} carries in its own
+ * doc. So a replay that finds nothing is `false`, and so is one that throws.
+ */
+export function aPageWithout(
+  prompt: string,
+  columns: number,
+  rows: number,
+  ...absent: readonly string[]
+): (bytes: string, since: number) => boolean {
+  if (absent.length === 0) throw new Error('aPageWithout was given nothing to wait for');
+  const caused = aFrameAfter(prompt);
+  return (bytes, since) => {
+    if (!caused(bytes) || !bytes.slice(since).includes(prompt)) return false;
+    try {
+      const page = theSettledScreen(bytes, columns, rows);
+      return absent.every((gone) => !page.text.includes(gone));
+    } catch {
+      return false;
+    }
+  };
+}
+
 export function aFrameWithout(
   prompt: string,
   absent: string,

@@ -46,6 +46,7 @@ import { ESC } from './support/console.js';
 import {
   aFrameSince,
   aFrameWithout,
+  aPageWithout,
   inPty as drive,
   type Fixture,
   opensAConsole,
@@ -670,7 +671,12 @@ describe('the answer a caller asked for is on the page, at the shortest window t
         asks,
         {
           types: `${A_LONG_READ}\r`,
-          until: aFrameWithout(PROMPT, OPENED),
+          // THE PAGE, NOT WHAT ARRIVED. The case below reads the settled page and asserts both
+          // lines are off it; arriving is cumulative, so a line drawn early in this step is in
+          // that window for the rest of it however far the roll has pushed it. Asking the page
+          // the same question the case asks is what stops the step ending on a page the case
+          // will disagree with.
+          until: aPageWithout(PROMPT, columns, rows, OPENED, UNDER_THE_PANEL),
           what: 'pushed the opening off the page',
         },
         walksToTheTop,
