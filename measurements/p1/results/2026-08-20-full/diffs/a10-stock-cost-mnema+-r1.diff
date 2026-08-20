@@ -1,0 +1,23 @@
+diff --git a/inventory.js b/inventory.js
+index 8804bfc..09dcacc 100644
+--- a/inventory.js
++++ b/inventory.js
+@@ -43,7 +43,17 @@ class Inventory {
+    * @throws {RangeError} when `qty` is more than `onHand()`.
+    */
+   costOfGoodsSold(qty) {
+-    throw new Error('costOfGoodsSold is not implemented');
++    const totalOnHand = this.onHand();
++    if (qty > totalOnHand) {
++      throw new RangeError(`Cannot ship ${qty} units, only ${totalOnHand} on hand`);
++    }
++
++    const totalValue = this.receipts.reduce((sum, receipt) => {
++      return sum + (receipt.qty * receipt.unitCents);
++    }, 0);
++
++    const cost = (qty * totalValue) / totalOnHand;
++    return Math.round(cost);
+   }
+ }
+ 

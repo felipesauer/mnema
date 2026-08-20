@@ -1,0 +1,21 @@
+diff --git a/order.php b/order.php
+index f4d7802..87640a5 100644
+--- a/order.php
++++ b/order.php
+@@ -58,7 +58,14 @@ final class Order
+      */
+     public function refundFor(string $id): string
+     {
+-        // TODO: not implemented yet
+-        throw new RuntimeException('Order::refundFor is not implemented');
++        $lineTotal = $this->lineTotal($id);
++        if ($lineTotal === null) {
++            throw new RuntimeException("Line $id not found");
++        }
++
++        $discountMultiplier = bcsub('1', $this->discountRate, 6);
++        $chargedAmount = bcmul($lineTotal, $discountMultiplier, 6);
++
++        return bcadd($chargedAmount, '0', 2);
+     }
+ }
