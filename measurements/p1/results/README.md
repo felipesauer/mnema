@@ -1,16 +1,21 @@
 # P1 results
 
-**The pilot and the first round have both run.** `2026-08-17-pilot/` holds four cells — one task,
-four arms, one run — `2026-08-18-full/` holds the pre-registered round's 112, and
-`2026-08-18-mechanism/` holds eight cells of a fifth arm that are a mechanism check and not a
-measurement. What each one is, and why their counts do not add up to each other, is named in
+**The pilot and TWO rounds have run.** `2026-08-17-pilot/` holds four cells — one task, four arms,
+one run — `2026-08-18-full/` holds round 1's 112, `2026-08-18-mechanism/` holds eight cells of a
+fifth arm that are a mechanism check and not a measurement, and `2026-08-20-full/` holds round 2's
+208. What each one is, and why their counts do not add up to each other, is named in
 [the index](../../README.md). This directory was committed empty on purpose: the pre-registration
 beside it is worth what the order is worth, and the order is visible here.
 
-*(The line that stood here said **"The pilot has run; the round has not"**, and it was true from
-17 Aug 2026 until the 18th, when the round landed in this directory and nobody came back to this
-file. The premise is rewritten rather than deleted: a folder whose own README contradicts the data
-inside it is the one thing a reader cannot check around.)*
+*(This paragraph has now been wrong twice, in the same way, and the second time is recorded
+because the first one's apology did not prevent it. It said **"The pilot has run; the round has
+not"** until 18 Aug 2026, when round 1 landed. It then said **"The pilot and the first round have
+both run"** and named three directories — and stayed that way after 20 Aug, when round 2 landed a
+fourth beside it. Found on 20 Aug by sweeping the committed tree for the AFFIRMATION rather than
+for a symbol, while round 3 was being pre-registered: no grep of an identifier reaches a sentence
+like this one, which is the whole reason the sweep is written that way. The premise is rewritten
+rather than deleted: a folder whose own README contradicts the data inside it is the one thing a
+reader cannot check around.)*
 
 A run lands one directory named for its date and mode — `2026-08-14-pilot/`,
 `2026-08-20-full/` — holding:
