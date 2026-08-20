@@ -21,9 +21,11 @@
     "a21-session-expiry",
     "a22-graduated-usage"
   ],
-  "arms": ["base", "prosa", "host", "mnema+", "mnema++"],
+  "arms": ["base", "host", "mnema-doc", "mnema+"],
+  "arms_withdrawn": ["prosa", "mnema++"],
+  "arms_withdrawn_note": "Declared in this round's FIRST freeze and withdrawn in the re-freeze of the same day — before a cell of this round ran and before any mechanism for either was built, which is the one change a pre-registration allows. arms.md carries a `Why <arm> is not in this round` section for each of them, and for `mnema`, which round 2 ran and this round does not. The tasks, the digests, the split and the headline set are untouched by the change: swapping an arm touches no task.",
   "n": 4,
-  "n_decision": "OPEN, and not this file's to close: n is carried over from round 2 unchanged, and the three candidate sizes are costed in reading.md against the per-arm cost round 2 MEASURED. Four of the five arms have such a figure; mnema++ does not exist and has none, so its column is a stand-in and is labelled one. The size of the round is a spending decision and it belongs to whoever holds the budget.",
+  "n_decision": "OPEN, and not this file's to close: n is carried over from round 2 unchanged, and the three candidate sizes are costed in reading.md against the per-arm cost round 2 MEASURED. Three of the four arms have such a figure; mnema-doc does not exist and has none, so its column is a stand-in and is labelled one. The size of the round is a spending decision and it belongs to whoever holds the budget.",
   "development_criterion": "the pilot is the lowest-numbered axis-A task; the second development task is the lowest-numbered axis-A task whose discriminant runs on a runtime the pilot's does not. Blind to what any task contains, and stated here rather than inherited: round 2's report describes this criterion as reproducing round 1's pick, and it does not — round 1's a1 and a2 already cover two runtimes and a3 was the one chosen.",
   "rule": "held-out tasks are touched once; any iteration after seeing a held-out result contaminates them"
 }

@@ -189,18 +189,31 @@ surface, which is the only thing that had to be true.)*
 
 **And a third round, for the same reason and with one honest difference.** Round 2 ran on 20 Aug
 2026 and answered two things at once: the product's charged surface beats our own uncharged arm by
-**73.6 points**, and it is **`≈`** with the memory the coding agent already ships. The whole of
-that second gap is **one task** — `a14-tie-break`, where the charged arm scored 0.50 and the host's
-memory 1.00 — and there is a measured hypothesis about why: a capture of 19 Aug in
-[`../mcp-tool-channel/`](../mcp-tool-channel/) shows that the text this product pushes lands
-**after** the tool result of the edit that triggered it, so on a task settled by the first write it
-arrives late. Round 3 measures the answer to that, and its pre-registration is in
-[`round-3/`](round-3/): ten more new tasks fixed by
+**73.6 points**, and it is **`≈`** with the memory the coding agent already ships. What that first
+number does **not** say is which half of the surface earned it: the `mnema+` arm carried an opening
+document **and** a per-edit push, and no arm of round 2 held one without the other. Round 2's own
+line then settled that the push cannot have earned it — `mcp_pushed`, the count of dispatches the
+host made to the cell's own server, is **1 in all 24 headline cells** of that arm, so there was at
+most one matched edit, and the capture of 19 Aug in
+[`../mcp-tool-channel/`](../mcp-tool-channel/) measured that the pushed text lands **after** the
+tool result of the edit that triggered it. Round 3 measures the attribution, and its
+pre-registration is in [`round-3/`](round-3/): ten more new tasks fixed by
 [digest](round-3/fixtures.sha256), a [split](round-3/split.json) whose development pair is chosen
-by a criterion the file states, [five arms](round-3/arms.md) — the four that ran round 2 minus
-`mnema`, which has now answered `≈ base` twice, plus `mnema++`, the rule put in front of the model
-before its first write — [the reading of every outcome](round-3/reading.md), which closes the two
-gaps round 2's own capture found, and [a prediction](round-3/prediction.md).
+by a criterion the file states, [four arms](round-3/arms.md) — `base`, `host`, and the pair that
+differs in one switch position, `mnema-doc` with the push off against `mnema+` with it on —
+[the reading of every outcome](round-3/reading.md), which closes the two gaps round 2's own capture
+found, and [a prediction](round-3/prediction.md) that is now about what the push CAN act on.
+
+*(Round 3 was frozen twice, and the first freeze is not written out of this paragraph. It declared
+five arms — `base`, `prosa`, `host`, `mnema+`, `mnema++` — with `mnema++` putting the governing rule
+in front of the model **before** its first write, to test whether the shortfall on `a14-tie-break`
+was about **when** the text arrives. Round 2's own cells refute that: the timing was identical in
+all 24 headline cells and five of the six tasks scored 1.00, so a cause that did not vary cannot
+explain an outcome that did. The round was re-frozen before a cell of it ran and before any
+mechanism of it was built, which is the one change a pre-registration allows; the withdrawn arms are
+carried as data in [`round-3/split.json`](round-3/split.json) and the reason each left is written in
+[`round-3/arms.md`](round-3/arms.md). The tasks and their digests did not move — swapping an arm
+touches no task.)*
 
 **The honest difference is stated in the pre-registration rather than here.** Round 2's tasks were
 frozen by somebody who could not know what the mechanism would do, because it did not exist. Round
@@ -220,7 +233,7 @@ select, is in [`round-3/prediction.md`](round-3/prediction.md) and in the header
 | full run, round 1 | run 18 Aug 2026 — 112 cells, [`results/2026-08-18-full/`](results/2026-08-18-full/) |
 | pre-registration, round 2 | [`round-2/`](round-2/) — frozen 18 Aug 2026, **before** the surface it measures |
 | fifth arm, in code | built 19 Aug 2026 — the harness seeds all five, and the refusal keyed on the round's declared arms lifted by itself |
-| pre-registration, round 3 | [`round-3/`](round-3/) — frozen 20 Aug 2026, **before** the mechanism it measures. Ten new tasks, five arms (`mnema` out, `mnema++` in), a reading, and a prediction |
-| fifth arm of round 3, in code | not built. `--round 3` is refused by the harness at the argument, and the round's declared arms do not match the arms it can seed — the same refusal that stopped round 2 and lifted by itself |
+| pre-registration, round 3 | [`round-3/`](round-3/) — frozen 20 Aug 2026, **before** the mechanism it measures, and **re-frozen the same day, before a cell of it ran**: four arms (`mnema` and `prosa` out, `mnema-doc` in, `mnema++` withdrawn), a reading, and a prediction. The withdrawal is data in the split; the reason each arm left is in `arms.md` |
+| the `mnema-doc` arm of round 3, in code | **the product side needs nothing** — the arm is `mnema+` with `edit-rules-push` switched off, and that switch exists and is measured at 0.04 ms ([`../switch-cost/`](../switch-cost/)). What is not built is the **seeding**: `--round 3` is refused by the harness at the argument, and the round's declared arms do not match the arms it can seed — the same refusal that stopped round 2 and lifted by itself |
 | full run, round 3 | not run. No cell of it exists, and no verb of the harness can reach its tasks |
 | full run, round 2 | run 20 Aug 2026 — **208 cells** (200 planned + the 8 re-runs the frozen reading rule requires), [`results/2026-08-20-full/`](results/2026-08-20-full/). *(This row read **"not run. The harness plans its 200 cells and stops"**, and it was true while the size of the round was an open spending decision. What falsified it is that the decision was taken at `n = 4` and the round ran.)* |
