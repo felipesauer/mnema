@@ -1,0 +1,24 @@
+diff --git a/order.php b/order.php
+index f4d7802..a5a70ea 100644
+--- a/order.php
++++ b/order.php
+@@ -58,7 +58,17 @@ final class Order
+      */
+     public function refundFor(string $id): string
+     {
+-        // TODO: not implemented yet
+-        throw new RuntimeException('Order::refundFor is not implemented');
++        $lineTotal = $this->lineTotal($id);
++        if ($lineTotal === null) {
++            throw new RuntimeException("Line {$id} not found");
++        }
++
++        // The refund is the line's total minus its share of the order-level discount.
++        // refund = line_total × (1 - discount_rate)
++        $discountFactor = bcsub('1', $this->discountRate, 6);
++        $refund = bcmul($lineTotal, $discountFactor, 6);
++
++        // Return with exactly two decimal places
++        return bcadd($refund, '0', 2);
+     }
+ }

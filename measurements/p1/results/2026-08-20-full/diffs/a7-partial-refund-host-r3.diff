@@ -1,0 +1,46 @@
+diff --git a/order.php b/order.php
+index f4d7802..41770d8 100644
+--- a/order.php
++++ b/order.php
+@@ -58,7 +58,39 @@ final class Order
+      */
+     public function refundFor(string $id): string
+     {
+-        // TODO: not implemented yet
+-        throw new RuntimeException('Order::refundFor is not implemented');
++        $lineTotal = $this->lineTotal($id);
++        if ($lineTotal === null) {
++            throw new RuntimeException("Line $id not found");
++        }
++
++        $orderListTotal = $this->listTotal();
++
++        if ($orderListTotal === '0') {
++            return '0.00';
++        }
++
++        // Line's proportion of the order
++        $lineProportion = bcdiv($lineTotal, $orderListTotal, 6);
++
++        // Total discount amount
++        $totalDiscount = bcmul($orderListTotal, $this->discountRate, 6);
++
++        // This line's share of the discount
++        $lineDiscountShare = bcmul($lineProportion, $totalDiscount, 6);
++
++        // Refund: line total minus its share of the discount
++        $refund = bcsub($lineTotal, $lineDiscountShare, 2);
++
++        // Ensure exactly 2 decimal places
++        if (strpos($refund, '.') === false) {
++            $refund .= '.00';
++        } else {
++            $parts = explode('.', $refund);
++            if (strlen($parts[1]) === 1) {
++                $refund .= '0';
++            }
++        }
++
++        return $refund;
+     }
+ }
