@@ -3,9 +3,10 @@
 **Pre-registered, and measured once.** This file says what is measured and under what
 conditions; [`reading.md`](reading.md) says how each possible outcome of the FIRST round is to
 be read; [`split.json`](split.json) says which of that round's tasks were free to iterate on and
-which were touched once; [`fixtures.sha256`](fixtures.sha256) fixes those tasks themselves. A
-second round, with its own tasks and its own reading, is pre-registered in
-[`round-2/`](round-2/) — see [what a second round is](#a-second-round-of-the-same-promise) below.
+which were touched once; [`fixtures.sha256`](fixtures.sha256) fixes those tasks themselves. Further
+rounds, each with its own tasks and its own reading, are pre-registered in
+[`round-2/`](round-2/) and [`round-3/`](round-3/) — see
+[what a further round is](#further-rounds-of-the-same-promise) below.
 
 *(The line that stood here said **"No number from this protocol exists yet."** It was true when
 it was written, on 13 Aug 2026, and the first round falsified it on the 18th: the pilot's four
@@ -162,7 +163,7 @@ held-out task would touch it twice.
   refuses a run whose split does not cover the tasks on disk, or whose hashes do not match this
   directory.
 
-## A second round of the same promise
+## Further rounds of the same promise
 
 **The promise above does not change, and the tasks do.** The first round's four held-out axis-A
 tasks are spent — the rule in [`split.json`](split.json) says a held-out task is touched once —
@@ -186,15 +187,40 @@ between the arms the round declares and the arms the harness can seed, never a s
 premise is rewritten rather than removed: the tasks are the ones that were frozen before the
 surface, which is the only thing that had to be true.)*
 
+**And a third round, for the same reason and with one honest difference.** Round 2 ran on 20 Aug
+2026 and answered two things at once: the product's charged surface beats our own uncharged arm by
+**73.6 points**, and it is **`≈`** with the memory the coding agent already ships. The whole of
+that second gap is **one task** — `a14-tie-break`, where the charged arm scored 0.50 and the host's
+memory 1.00 — and there is a measured hypothesis about why: a capture of 19 Aug in
+[`../mcp-tool-channel/`](../mcp-tool-channel/) shows that the text this product pushes lands
+**after** the tool result of the edit that triggered it, so on a task settled by the first write it
+arrives late. Round 3 measures the answer to that, and its pre-registration is in
+[`round-3/`](round-3/): ten more new tasks fixed by
+[digest](round-3/fixtures.sha256), a [split](round-3/split.json) whose development pair is chosen
+by a criterion the file states, [five arms](round-3/arms.md) — the four that ran round 2 minus
+`mnema`, which has now answered `≈ base` twice, plus `mnema++`, the rule put in front of the model
+before its first write — [the reading of every outcome](round-3/reading.md), which closes the two
+gaps round 2's own capture found, and [a prediction](round-3/prediction.md).
+
+**The honest difference is stated in the pre-registration rather than here.** Round 2's tasks were
+frozen by somebody who could not know what the mechanism would do, because it did not exist. Round
+3's were written by somebody who knew round 2's result and had already formed the hypothesis above.
+No digest fixes that; what was done about it, and why the answer is to PREDICT rather than to
+select, is in [`round-3/prediction.md`](round-3/prediction.md) and in the header of
+[`round-3/fixtures.sha256`](round-3/fixtures.sha256).
+
 ## Status
 
 | step | state |
 |---|---|
-| tasks calibrated | done, both rounds — each task catches its bad reference and passes its good one |
+| tasks calibrated | done, **all three rounds** — each of the twenty-eight tasks catches its bad reference and passes its good one, checked by one calibrator that each round's directory symlinks. *(This row said "both rounds" while there were two.)* |
 | harness | built; every isolation item above is a flag or a file |
 | pre-registration, round 1 | **this directory** |
 | pilot | run 17 Aug 2026 — 4 cells, [`results/2026-08-17-pilot/`](results/2026-08-17-pilot/) |
 | full run, round 1 | run 18 Aug 2026 — 112 cells, [`results/2026-08-18-full/`](results/2026-08-18-full/) |
 | pre-registration, round 2 | [`round-2/`](round-2/) — frozen 18 Aug 2026, **before** the surface it measures |
 | fifth arm, in code | built 19 Aug 2026 — the harness seeds all five, and the refusal keyed on the round's declared arms lifted by itself |
+| pre-registration, round 3 | [`round-3/`](round-3/) — frozen 20 Aug 2026, **before** the mechanism it measures. Ten new tasks, five arms (`mnema` out, `mnema++` in), a reading, and a prediction |
+| fifth arm of round 3, in code | not built. `--round 3` is refused by the harness at the argument, and the round's declared arms do not match the arms it can seed — the same refusal that stopped round 2 and lifted by itself |
+| full run, round 3 | not run. No cell of it exists, and no verb of the harness can reach its tasks |
 | full run, round 2 | run 20 Aug 2026 — **208 cells** (200 planned + the 8 re-runs the frozen reading rule requires), [`results/2026-08-20-full/`](results/2026-08-20-full/). *(This row read **"not run. The harness plans its 200 cells and stops"**, and it was true while the size of the round was an open spending decision. What falsified it is that the decision was taken at `n = 4` and the round ran.)* |
