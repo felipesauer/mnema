@@ -296,19 +296,29 @@ describe('an arrival brings the cache to exactly where a replay would have put i
         'the arrival holds the kind under test',
       ).toContain(kind);
 
-      advance(
-        advanced,
-        [...before.events, ...arrived.events],
-        arrived.events,
-        before.events.length,
-        tablesFedBy(arrived.events.map((event) => event.kind)),
-      );
+      const order = [...before.events, ...arrived.events];
+      const arrivedKinds = arrived.events.map((event) => event.kind);
+      advance(advanced, order, arrived.events, before.events.length, tablesFedBy(arrivedKinds));
+
+      // AND AGAIN with THIS KIND'S ROW ALONE, which is what closes the masking the
+      // birth pairs would otherwise create. A pair puts two kinds on the chain, so the
+      // union of their rows can carry a table the row under test forgot — measured: a
+      // mutation that deleted the full-text index from `task.created` left this case
+      // green, because `task.transitioned` arrived beside it still naming it. Every
+      // arrival a driver here produces holds kinds that SHARE a row, so restricting to
+      // one of them asks for exactly the same tables and no fewer.
+      const byThisKindAlone = emptyDb();
+      rebuild(byThisKindAlone, before.events);
+      advance(byThisKindAlone, order, arrived.events, before.events.length, tablesFedBy([kind]));
 
       const replayed = emptyDb();
       rebuild(replayed, chainReplay(ctx.layout, upcasters).events);
 
-      expect(dump(advanced)).toEqual(dump(replayed));
+      const expected = dump(replayed);
+      expect(dump(advanced), 'the union of the arrival’s rows').toEqual(expected);
+      expect(dump(byThisKindAlone), `the row for ${kind} alone`).toEqual(expected);
       advanced.close();
+      byThisKindAlone.close();
       replayed.close();
     });
   }
@@ -397,20 +407,63 @@ describe('a chain that changed some other way is replayed whole', () => {
     cache.close();
   });
 
-  it('a fact stamped before what was replayed: the cache replays', () => {
+  it('a TAIL arriving with older facts: the cache replays', () => {
+    // The pulled clone, which is the case this refusal exists for: a colleague's tail
+    // shows up holding facts stamped before everything already covered, so the merge
+    // would interleave them into the middle of the order and every position after them
+    // would shift. Nothing here can be appended, and the cache says so by replaying.
+    //
+    // It replaced a case that drove the same clock through the session's OWN tail and
+    // was measured VACUOUS: removing this refusal left the whole suite green, because
+    // within one tail `seq` is the order and there is nothing for it to refuse.
     const ctx = open();
     aRecordAlreadyHere(ctx);
     const cache = ProjectionCache.open(root, { upcasters });
     cache.rebuild();
     expect(cache.listTasks()).toHaveLength(1);
 
-    // A clock that stepped back — the product's own injection point for one, and the
-    // ordinary case this refusal exists for. The task it writes sorts BEFORE
-    // everything already replayed, so no suffix describes the difference.
+    const before = chainReplay(ctx.layout, upcasters);
+    const otherKeys = mkdtempSync(join(tmpdir(), 'mnema-advance-older-'));
+    try {
+      const colleague: WriteContext = {
+        writer: openChainForWriting(root, { keyRoot: otherKeys }),
+        layout: { root },
+        upcasters,
+        clock: () => '2000-01-01T00:00:00.000Z',
+      };
+      landed(captureMemory(colleague, { content: 'written long before, on another machine' }));
+      colleague.writer.checkpoint();
+
+      expect(chainArrivals(ctx.layout, upcasters, before.frontier)).toEqual({
+        suffix: false,
+        why: 'AN_ARRIVAL_IS_NOT_LATER',
+      });
+      cache.refresh();
+      expect(cache.listMemories()).toHaveLength(2);
+      agreesWithAFullReplay(cache);
+    } finally {
+      rmSync(otherKeys, { recursive: true, force: true });
+    }
+    cache.close();
+  });
+
+  it('a clock that stepped back INSIDE one tail is still a suffix, and still right', () => {
+    // The other half, and it is not a fallback: within a tail `seq` is the order and
+    // the hash chain proves it, so an event stamped before its predecessor still comes
+    // after it. There is nothing to refuse, and the cache brings itself forward — what
+    // this pins is that the ROWS are the ones a replay would have written, which is the
+    // only thing at stake.
+    const ctx = open();
+    aRecordAlreadyHere(ctx);
+    const cache = ProjectionCache.open(root, { upcasters });
+    cache.rebuild();
+
+    const before = chainReplay(ctx.layout, upcasters);
     const stepped: WriteContext = { ...ctx, clock: () => '2000-01-01T00:00:00.000Z' };
     landed(createTask(stepped, { title: 'written by a clock that stepped back' }));
     stepped.writer.checkpoint();
 
+    expect(chainArrivals(ctx.layout, upcasters, before.frontier)).toMatchObject({ suffix: true });
     cache.refresh();
     expect(cache.listTasks()).toHaveLength(2);
     agreesWithAFullReplay(cache);
@@ -428,6 +481,27 @@ describe('a chain that changed some other way is replayed whole', () => {
     if (!arrived.suffix) return;
     expect(arrived.events).toHaveLength(0);
     expect(arrived.frontier).toEqual(before.frontier);
+  });
+});
+
+describe('what `advance` refuses to be given', () => {
+  it('arrivals that are not the tail of the order', () => {
+    // A programming error rather than a state of the record, and the guard had NO case
+    // until a mutation removed it and left the whole suite green. It earns one: the
+    // failure it prevents is the reference index appending at a position that is not
+    // where those events sit, which nothing downstream would notice.
+    const ctx = open();
+    aRecordAlreadyHere(ctx);
+    const replay = chainReplay(ctx.layout, upcasters);
+    const db = emptyDb();
+    try {
+      rebuild(db, replay.events);
+      expect(() =>
+        advance(db, replay.events, replay.events.slice(-1), 0, tablesFedBy(['task.created'])),
+      ).toThrow(RangeError);
+    } finally {
+      db.close();
+    }
   });
 });
 
