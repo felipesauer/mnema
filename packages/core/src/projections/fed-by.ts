@@ -31,6 +31,13 @@
  * are, and the expensive ones — the full-text index, and every entity table — are
  * fed by their own kinds alone.
  *
+ * IT IS NOT ON THE PACKAGE'S PUBLIC SURFACE, and that is checked rather than
+ * declared: `code/tests/no-classification-table-reaches-the-surface.test.ts` finds this
+ * module by the sentence above and walks every entry point's runtime exports. A
+ * consumer able to import the table would be a consumer able to keep a second opinion
+ * about which tables a kind feeds, and two opinions about that is a cache nobody
+ * invalidates.
+ *
  * TOTAL BY TYPE, IN `src`. A kind added to the catalog does not compile until it
  * is classified here, and a value that is not a projection table cannot be
  * spelled ({@link ProjectionTable} comes from the schema's own list). That is the

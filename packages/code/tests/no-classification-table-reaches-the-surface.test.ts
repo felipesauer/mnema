@@ -4,10 +4,16 @@
  *
  * A workflow state answers "where is this entity"; a table beside the machine says
  * what that state MEANS to a reader — governs, awaits somebody, is over, can still
- * move. FIVE modules hold such a table, and each one declares in its own doc that the
+ * move. Several modules hold such a table, and each one declares in its own doc that the
  * table is NOT on the package's public surface, because a consumer that could import it
  * would re-derive the meaning where nobody can see the two copies drift. Nothing kept
  * any of those declarations true.
+ *
+ * Not every subject is a per-state table. `fed-by.ts` says which projection tables each
+ * event kind feeds, and a consumer able to import THAT could keep a second opinion about
+ * which tables a write makes stale — two opinions about that is a cache nobody
+ * invalidates. It is here by the same mechanism and for the same reason: it declares
+ * itself hidden, so the sweep finds it.
  *
  * It is the second guard of a pair that could not go red. Measured in the delivery
  * before this one: making a surface classify for itself (`state === 'adopted'`
@@ -192,14 +198,16 @@ const HIDDEN = await declaredHidden();
  * The assertion runs on what the sweep found; this is what fails if the sweep starts
  * finding something else, which is the failure a claim-driven guard has to be loud
  * about: reword the sentence in one of those docs and the guard would otherwise cover
- * nothing and pass. Checked in both directions, so a fifth module that declares
- * itself hidden — or a table added to one of these four — announces itself here
- * instead of arriving silently.
+ * nothing and pass. Checked in both directions, so a SEVENTH module that declares
+ * itself hidden — or a table added to one of these six — announces itself here
+ * instead of arriving silently. It said "a fifth… one of these four" while there were
+ * five entries over four modules; the count is written from the table below now.
  */
 const DECLARED_HIDDEN: Readonly<Record<string, readonly string[]>> = {
   'copilot/src/context/decisions.ts': ['DECISION_DISPOSITION'],
   'copilot/src/context/skills.ts': ['SKILL_DISPOSITION'],
   'core/src/content/fields.ts': ['ENVELOPE_TEXT', 'PAYLOAD_TEXT', 'SUBJECT_TEXT'],
+  'core/src/projections/fed-by.ts': ['FED_BY_KIND'],
   'core/src/topology/routing.ts': ['UNROUTED_KINDS'],
   'core/src/workflow/disposition.ts': ['TASK_DISPOSITION'],
 };
