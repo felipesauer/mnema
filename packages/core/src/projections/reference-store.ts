@@ -211,13 +211,34 @@ interface RefParams {
  * A reference whose entity id is blank is skipped. A blank is not a dangling
  * reference (which is honest and kept); it is the absence of an id, and indexing
  * it would put a node in the graph that no one can ask about.
+ *
+ * `from` is where in the stream these events sit — 0 for the whole order, and the
+ * count already indexed when the caller holds only what arrived after it. That is the
+ * ONE materialization here that can be brought forward by appending rather than by
+ * being replaced, and the reason is `ord`: a row's position is the event's position
+ * in the order, so a suffix of the order indexes to a suffix of the rows. It is the
+ * same function over the same events either way, which is what makes the appended
+ * rows identical to the ones a full replay would have written (`advance.test.ts`).
+ *
+ * A WRONG `from` IS NOT CAUGHT HERE. That sentence replaces one claiming the primary
+ * key would collide, and the claim is false: the key is (entity, role, ord), so only
+ * re-indexing the SAME entity at a position it holds throws — a different event at
+ * that position writes a row claiming it, quietly. So the base is the caller's to
+ * establish, and {@link chainArrivals} is what establishes it by proving the slice is
+ * a suffix of the order the index was built from. The limit is pinned rather than
+ * described (`reference-store.test.ts`, "a wrong position is NOT caught here").
  */
-export function materializeReferences(db: SqliteDatabase, events: readonly CatalogEvent[]): void {
+export function materializeReferences(
+  db: SqliteDatabase,
+  events: readonly CatalogEvent[],
+  from = 0,
+): void {
   const insert = db.prepare(
     `INSERT INTO refs (ord, entity, role, at, kind, who, which, subject, event)
      VALUES (@ord, @entity, @role, @at, @kind, @who, @which, @subject, @event)`,
   );
-  events.forEach((event, ord) => {
+  events.forEach((event, index) => {
+    const ord = from + index;
     // Encoded once per event, not once per row: a fact referred to twice is the
     // same fact both times.
     const encoded = JSON.stringify(event);
