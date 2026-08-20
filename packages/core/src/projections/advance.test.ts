@@ -619,3 +619,45 @@ describe('a write that changes something is still seen by the read after it', ()
     replayed.close();
   });
 });
+
+describe('a cache refreshed again and again equals one replayed once', () => {
+  it('keeps the frontier moving, so the same arrival is never applied twice', () => {
+    // THE CASES ABOVE CALL `advance` DIRECTLY, which is what leaves this uncovered:
+    // they hand it the order and the position themselves, so nothing exercises the
+    // bookkeeping `ProjectionCache.refresh` does BETWEEN two arrivals — the frontier it
+    // carries forward and the order it keeps. Measured: deleting `this.frontier =
+    // arrived.frontier` left the whole suite green, and the reference index — the one
+    // table that is APPENDED rather than rebuilt — went from one row per appearance to
+    // two and then four, because every refresh re-applied what the last one had already
+    // written. Silent corruption of the index three audits read.
+    //
+    // So this drives the CACHE, not the function, and more than once. The assertion is
+    // the file's own: what it holds equals what a replay of the same chain holds.
+    const ctx = open();
+    aRecordAlreadyHere(ctx);
+    const dbPath = join(root, 'warm.db');
+    const cache = ProjectionCache.open(root, { dbPath });
+    cache.rebuild();
+
+    // Three arrivals, refreshed one at a time. `channel.served` is the shape the charge
+    // repeats hundreds of times in one session, and it is the shape that feeds `refs`.
+    const arrivals = [
+      () => landed(switchChannel(ctx, { channel: 'a-channel', on: false })),
+      () => landed(startRun(ctx, { agent: 'an-agent', goal: 'a second run' })),
+      () => landed(captureMemory(ctx, { content: 'something after the frontier' })),
+    ];
+    for (const emit of arrivals) {
+      emit();
+      ctx.writer.checkpoint();
+      cache.refresh();
+    }
+    cache.close();
+
+    const replayed = emptyDb();
+    rebuild(replayed, chainReplay(ctx.layout, upcasters).events);
+    const warm = openDatabase(dbPath);
+    expect(dump(warm), 'three refreshes equal one replay').toEqual(dump(replayed));
+    warm.close();
+    replayed.close();
+  });
+});
