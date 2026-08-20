@@ -1,0 +1,296 @@
+{
+  "question": "What does the pair a push makes cost \u2014 one signed append, then the read the next push is served from \u2014 and does the cost of charging still rise with the record?",
+  "no_model_called": true,
+  "build": {
+    "base": "d80fc802",
+    "branch": "9b9dd5a5",
+    "note": "A/B between the two BUILT trees: only the compiled files were swapped, dist deleted and rebuilt for each arm."
+  },
+  "machine": {
+    "cpu": "AMD Ryzen 7 7735HS",
+    "cores": 16,
+    "node": "v24.14.0",
+    "pnpm": "10.34.1",
+    "os": "Linux 7.0.0-29-generic"
+  },
+  "protocol": {
+    "arms": [
+      "base-1",
+      "branch-1",
+      "branch-2",
+      "base-2"
+    ],
+    "order": "ALTERNATED \u2014 base, branch, branch, base \u2014 so a term that is only fast because of where it sits in the run shows as a gap between the two placings of the same arm.",
+    "load_1min_per_arm": {
+      "base-1": 4.69,
+      "base-2": 4.73,
+      "branch-1": 4.36,
+      "branch-2": 4.36
+    },
+    "sandbox": "one mkdtemp per regime, destroyed after. Nothing was written into the working tree.",
+    "reads_measured": "listDecisionsByState through the session cache registry \u2014 the term a write destroys, not the whole hook."
+  },
+  "pair": [
+    {
+      "regime": "empty",
+      "regime_note": "a record the probe itself grew: it starts empty and the loop appends",
+      "term": "the read alone, warm, nothing written between calls",
+      "chain_bytes_at_end_of_loop": 244113,
+      "unit": "ms",
+      "statistic": "p50 of 40 timed repetitions",
+      "cost_from": "process clock (perf_hooks), no model called",
+      "base-1": 0.069,
+      "base-2": 0.067,
+      "branch-1": 0.069,
+      "branch-2": 0.071
+    },
+    {
+      "regime": "empty",
+      "regime_note": "a record the probe itself grew: it starts empty and the loop appends",
+      "term": "one signed append alone (channel.served), no read after it",
+      "chain_bytes_at_end_of_loop": 244113,
+      "unit": "ms",
+      "statistic": "p50 of 40 timed repetitions",
+      "cost_from": "process clock (perf_hooks), no model called",
+      "base-1": 0.318,
+      "base-2": 0.325,
+      "branch-1": 0.32,
+      "branch-2": 0.31
+    },
+    {
+      "regime": "empty",
+      "regime_note": "a record the probe itself grew: it starts empty and the loop appends",
+      "term": "the PAIR a push makes: one append, then the read the next push is served from",
+      "chain_bytes_at_end_of_loop": 244113,
+      "unit": "ms",
+      "statistic": "p50 of 40 timed repetitions",
+      "cost_from": "process clock (perf_hooks), no model called",
+      "base-1": 2.11,
+      "base-2": 2.246,
+      "branch-1": 0.796,
+      "branch-2": 0.803
+    },
+    {
+      "regime": "empty",
+      "regime_note": "a record the probe itself grew: it starts empty and the loop appends",
+      "term": "the same pair, measured second in the loop \u2014 the alternated placing",
+      "chain_bytes_at_end_of_loop": 244113,
+      "unit": "ms",
+      "statistic": "p50 of 40 timed repetitions",
+      "cost_from": "process clock (perf_hooks), no model called",
+      "base-1": 2.792,
+      "base-2": 2.73,
+      "branch-1": 0.712,
+      "branch-2": 0.711
+    },
+    {
+      "regime": "empty",
+      "regime_note": "a record the probe itself grew: it starts empty and the loop appends",
+      "term": "a write that CHANGES an entity table (task.created), then the read",
+      "chain_bytes_at_end_of_loop": 244113,
+      "unit": "ms",
+      "statistic": "p50 of 40 timed repetitions",
+      "cost_from": "process clock (perf_hooks), no model called",
+      "base-1": 3.8,
+      "base-2": 3.776,
+      "branch-1": 1.311,
+      "branch-2": 1.29
+    },
+    {
+      "regime": "realistic",
+      "regime_note": "16 decisions in force, 30 tasks, 25 patterns, 20 memories, 20 observations, 8 links",
+      "term": "the read alone, warm, nothing written between calls",
+      "chain_bytes_at_end_of_loop": 391049,
+      "unit": "ms",
+      "statistic": "p50 of 40 timed repetitions",
+      "cost_from": "process clock (perf_hooks), no model called",
+      "base-1": 0.103,
+      "base-2": 0.105,
+      "branch-1": 0.105,
+      "branch-2": 0.107
+    },
+    {
+      "regime": "realistic",
+      "regime_note": "16 decisions in force, 30 tasks, 25 patterns, 20 memories, 20 observations, 8 links",
+      "term": "one signed append alone (channel.served), no read after it",
+      "chain_bytes_at_end_of_loop": 391049,
+      "unit": "ms",
+      "statistic": "p50 of 40 timed repetitions",
+      "cost_from": "process clock (perf_hooks), no model called",
+      "base-1": 0.213,
+      "base-2": 0.206,
+      "branch-1": 0.208,
+      "branch-2": 0.213
+    },
+    {
+      "regime": "realistic",
+      "regime_note": "16 decisions in force, 30 tasks, 25 patterns, 20 memories, 20 observations, 8 links",
+      "term": "the PAIR a push makes: one append, then the read the next push is served from",
+      "chain_bytes_at_end_of_loop": 391049,
+      "unit": "ms",
+      "statistic": "p50 of 40 timed repetitions",
+      "cost_from": "process clock (perf_hooks), no model called",
+      "base-1": 5.986,
+      "base-2": 5.891,
+      "branch-1": 0.76,
+      "branch-2": 0.76
+    },
+    {
+      "regime": "realistic",
+      "regime_note": "16 decisions in force, 30 tasks, 25 patterns, 20 memories, 20 observations, 8 links",
+      "term": "the same pair, measured second in the loop \u2014 the alternated placing",
+      "chain_bytes_at_end_of_loop": 391049,
+      "unit": "ms",
+      "statistic": "p50 of 40 timed repetitions",
+      "cost_from": "process clock (perf_hooks), no model called",
+      "base-1": 6.675,
+      "base-2": 6.8,
+      "branch-1": 0.732,
+      "branch-2": 0.737
+    },
+    {
+      "regime": "realistic",
+      "regime_note": "16 decisions in force, 30 tasks, 25 patterns, 20 memories, 20 observations, 8 links",
+      "term": "a write that CHANGES an entity table (task.created), then the read",
+      "chain_bytes_at_end_of_loop": 391049,
+      "unit": "ms",
+      "statistic": "p50 of 40 timed repetitions",
+      "cost_from": "process clock (perf_hooks), no model called",
+      "base-1": 8.177,
+      "base-2": 8.093,
+      "branch-1": 1.918,
+      "branch-2": 1.907
+    },
+    {
+      "regime": "large",
+      "regime_note": "101 decisions, 120 tasks, 50 patterns, 90 memories, 90 observations, 50 links",
+      "term": "the read alone, warm, nothing written between calls",
+      "chain_bytes_at_end_of_loop": 871084,
+      "unit": "ms",
+      "statistic": "p50 of 40 timed repetitions",
+      "cost_from": "process clock (perf_hooks), no model called",
+      "base-1": 0.178,
+      "base-2": 0.181,
+      "branch-1": 0.176,
+      "branch-2": 0.177
+    },
+    {
+      "regime": "large",
+      "regime_note": "101 decisions, 120 tasks, 50 patterns, 90 memories, 90 observations, 50 links",
+      "term": "one signed append alone (channel.served), no read after it",
+      "chain_bytes_at_end_of_loop": 871084,
+      "unit": "ms",
+      "statistic": "p50 of 40 timed repetitions",
+      "cost_from": "process clock (perf_hooks), no model called",
+      "base-1": 0.198,
+      "base-2": 0.198,
+      "branch-1": 0.203,
+      "branch-2": 0.204
+    },
+    {
+      "regime": "large",
+      "regime_note": "101 decisions, 120 tasks, 50 patterns, 90 memories, 90 observations, 50 links",
+      "term": "the PAIR a push makes: one append, then the read the next push is served from",
+      "chain_bytes_at_end_of_loop": 871084,
+      "unit": "ms",
+      "statistic": "p50 of 40 timed repetitions",
+      "cost_from": "process clock (perf_hooks), no model called",
+      "base-1": 18.161,
+      "base-2": 18.553,
+      "branch-1": 0.841,
+      "branch-2": 0.85
+    },
+    {
+      "regime": "large",
+      "regime_note": "101 decisions, 120 tasks, 50 patterns, 90 memories, 90 observations, 50 links",
+      "term": "the same pair, measured second in the loop \u2014 the alternated placing",
+      "chain_bytes_at_end_of_loop": 871084,
+      "unit": "ms",
+      "statistic": "p50 of 40 timed repetitions",
+      "cost_from": "process clock (perf_hooks), no model called",
+      "base-1": 18.93,
+      "base-2": 18.656,
+      "branch-1": 0.814,
+      "branch-2": 0.825
+    },
+    {
+      "regime": "large",
+      "regime_note": "101 decisions, 120 tasks, 50 patterns, 90 memories, 90 observations, 50 links",
+      "term": "a write that CHANGES an entity table (task.created), then the read",
+      "chain_bytes_at_end_of_loop": 871084,
+      "unit": "ms",
+      "statistic": "p50 of 40 timed repetitions",
+      "cost_from": "process clock (perf_hooks), no model called",
+      "base-1": 19.23,
+      "base-2": 19.246,
+      "branch-1": 3.712,
+      "branch-2": 3.706
+    }
+  ],
+  "amplification": {
+    "question": "211 charges in a row, each an append plus the read the next one is served from. Does the per-charge median rise as the record grows?",
+    "arms": {
+      "base-1": {
+        "loadavg_1min": 4.36,
+        "chain_bytes_start": 147849,
+        "chain_bytes_end": 389796,
+        "grew_bytes": 241947,
+        "total_ms": 1416.5,
+        "p50_ms_by_band": {
+          "1-25": 5.541,
+          "26-75": 5.924,
+          "76-125": 6.355,
+          "126-175": 7.04,
+          "176-211": 8.037
+        },
+        "rise_first_band_to_last": 1.45
+      },
+      "base-2": {
+        "loadavg_1min": 4.59,
+        "chain_bytes_start": 147849,
+        "chain_bytes_end": 389796,
+        "grew_bytes": 241947,
+        "total_ms": 1425.5,
+        "p50_ms_by_band": {
+          "1-25": 5.613,
+          "26-75": 5.912,
+          "76-125": 6.392,
+          "126-175": 7.171,
+          "176-211": 7.72
+        },
+        "rise_first_band_to_last": 1.375
+      },
+      "branch-1": {
+        "loadavg_1min": 4.36,
+        "chain_bytes_start": 147849,
+        "chain_bytes_end": 389796,
+        "grew_bytes": 241947,
+        "total_ms": 176.7,
+        "p50_ms_by_band": {
+          "1-25": 0.897,
+          "26-75": 0.788,
+          "76-125": 0.775,
+          "126-175": 0.791,
+          "176-211": 0.749
+        },
+        "rise_first_band_to_last": 0.835
+      },
+      "branch-2": {
+        "loadavg_1min": 4.36,
+        "chain_bytes_start": 147849,
+        "chain_bytes_end": 389796,
+        "grew_bytes": 241947,
+        "total_ms": 173.7,
+        "p50_ms_by_band": {
+          "1-25": 0.853,
+          "26-75": 0.783,
+          "76-125": 0.785,
+          "126-175": 0.755,
+          "176-211": 0.756
+        },
+        "rise_first_band_to_last": 0.886
+      }
+    },
+    "reading": "Every arm grew the chain by exactly 241947 bytes, so the arms did identical work. On the base the median rises 38-45% along the run; on the branch it does not rise."
+  }
+}

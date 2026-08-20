@@ -8,7 +8,24 @@
  * open a cache from scratch and throw it away. The replay is linear in the
  * chain, so the cost grows with the record — exactly when the product is
  * working. This registry is the fix, and it is nothing more than process
- * memory: the same cache, the same rebuild, retained between calls.
+ * memory: the same cache, retained between calls.
+ *
+ * THAT SENTENCE USED TO SAY "the same cache, the same REBUILD, retained between
+ * calls", and the second half is what a measurement took away. Retaining the cache
+ * fixed the read and left the WRITE paying the whole bill: an append marks the cache,
+ * the next read replayed the chain, and a channel that appends on every edit made the
+ * next replay dearer than the last. Measured on this machine, the pair a push
+ * actually performs — one signed append, then the read the next push is served from —
+ * cost 6.1 ms on a 391 KB record and 17.8 ms on 871 KB, against 0.10 and 0.17 ms for
+ * the same read with no write between it. Two hundred and eleven charges in a row
+ * took 1.42 s, and the per-charge median ROSE 42% along the run as the record grew.
+ *
+ * So the cache brings itself forward instead ({@link ProjectionCache.refresh}): a
+ * chain that only grew is caught up from what arrived, and only a chain that changed
+ * some other way is replayed. The same run of 211 charges is 0.17 s, the pair is
+ * 0.76-0.84 ms at every record size measured, and the median no longer rises. The
+ * first open still replays and still costs what a replay costs — nothing here makes
+ * the record cheaper to READ the first time.
  *
  * Two properties are what make it safe to retain:
  *
@@ -78,13 +95,14 @@
  * author can act — which tree a write landed in, what a content door scrubbed —
  * and this is the other kind.
  *
- * Invalidation MARKS, it does not rebuild. A session that writes five times and
- * then reads pays one replay, not five — and a session that writes without ever
+ * Invalidation MARKS, it does not catch up. A session that writes five times and
+ * then reads pays one catch-up, not five — and a session that writes without ever
  * reading again pays none. The cost of being wrong is asymmetric and the design
- * follows that: a needless rebuild costs milliseconds, while a missed one hands
- * the agent a record that no longer exists. That criterion did not change; what
- * changed is that it now applies to an append by ANY process, which is where the
- * expensive error was actually coming from.
+ * follows that: catching up needlessly costs a fraction of a millisecond, while a
+ * missed catch-up hands the agent a record that no longer exists. That criterion did
+ * not change; what changed is that it now applies to an append by ANY process, which
+ * is where the expensive error was actually coming from — and that the cheap side of
+ * the asymmetry got cheaper, which widens the margin rather than narrowing it.
  */
 
 import {
@@ -98,12 +116,18 @@ import { ProjectionCache } from '@mnema/core';
 /** A cache retained for one chain root, and whether it still matches the chain. */
 interface Entry {
   readonly cache: ProjectionCache;
-  /** False once a write went to this root: the next reader rebuilds before reading. */
+  /** True once a write went to this root: the next reader catches up before reading. */
   stale: boolean;
   /**
-   * How far the chain reached when this projection was replayed from it. A
-   * different extent now means somebody appended in between — this process or
-   * another one — and the next reader rebuilds before being served.
+   * How far the chain reached when this projection was last brought into agreement
+   * with it. A different extent now means somebody appended in between — this
+   * process or another one — and the next reader catches up before being served.
+   *
+   * It stays the CHEAP question, and that is why it is still here beside the cache's
+   * own frontier: an extent is one `readdir` and one `stat` per tail, so an unchanged
+   * chain is served for nothing at all. The cache's frontier is what answers the
+   * expensive question — what arrived, and does it follow — and it is only ever asked
+   * once this one has said something moved.
    */
   extent: ChainExtent;
 }
@@ -111,10 +135,11 @@ interface Entry {
 /** The session's warm caches, one per chain root it has read. */
 export interface CacheRegistry {
   /**
-   * The cache for a chain root, rebuilt if this is the first read, if a write
-   * marked it stale, or if the chain has grown since the retained projection was
-   * replayed from it — so a caller always receives a cache that agrees with the
-   * chain, and never has to know whether it was warm, or who moved the record.
+   * The cache for a chain root, brought into agreement with the chain if this is
+   * the first read, if a write marked it stale, or if the chain has grown since the
+   * retained projection was replayed from it — so a caller always receives a cache
+   * that agrees with the chain, and never has to know whether it was warm, or who
+   * moved the record.
    */
   get(chainRoot: string): ProjectionCache;
   /**
@@ -150,11 +175,18 @@ export function createCacheRegistry(): CacheRegistry {
       const existing = entries.get(chainRoot);
       if (existing !== undefined) {
         if (existing.stale || existing.extent !== extent) {
-          // Rebuild BEFORE recording anything: a chain that fails to read throws
+          // REFRESH, not rebuild, and the difference is the whole cost of this
+          // module. A chain that only grew is brought forward from what arrived; a
+          // chain that changed any other way is replayed whole. The cache decides
+          // which, because it is the half that knows how far its own tables reach —
+          // this side knows only that SOMETHING moved. Either way what comes back
+          // agrees with the chain, so nothing above here reads differently.
+          //
+          // It runs BEFORE anything is recorded: a chain that fails to read throws
           // out of here with the entry still marked stale and still holding the
           // older extent, so the next reader tries again instead of being served
           // a cache we know is behind.
-          existing.cache.rebuild();
+          existing.cache.refresh();
           existing.stale = false;
           existing.extent = extent;
         }

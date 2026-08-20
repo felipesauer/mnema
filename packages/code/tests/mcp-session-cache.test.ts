@@ -333,13 +333,19 @@ describe('one cache per tree — the trees do not mix', () => {
     // The other half of "they do not mix": invalidation is per root, so a private
     // write must leave the public cache exactly as it was.
     //
-    // Observed by COUNTING replays rather than by appending to public behind the
-    // session's back. That used to be the device — a stray event the public read
-    // must not pick up — and it stopped telling the two apart the moment a read
-    // checked the tree it was serving: a public read picking the stray up is now
-    // the correct answer, whether or not the private write wrongly invalidated
-    // anything. What still separates over-invalidation from freshness is the
-    // COST, and it is exact: a tree nothing touched is served without a replay.
+    // Observed by COUNTING the work a read does against the chain, rather than by
+    // appending to public behind the session's back. That used to be the device — a
+    // stray event the public read must not pick up — and it stopped telling the two
+    // apart the moment a read checked the tree it was serving: a public read picking
+    // the stray up is now the correct answer, whether or not the private write
+    // wrongly invalidated anything. What still separates over-invalidation from
+    // freshness is the COST, and it is exact: a tree nothing touched is served
+    // without touching the chain at all.
+    //
+    // The call counted is `refresh` and it used to be `rebuild`. A read that has to
+    // catch up no longer replays the chain when it only grew — it is brought forward
+    // from what arrived — so counting `rebuild` would now read zero for BOTH halves
+    // and the case would pass while proving nothing.
     const session = openOn(makeProject('proj'));
 
     const seen = runCreateTask(session, { title: 'known', scope: 'public' });
@@ -352,16 +358,16 @@ describe('one cache per tree — the trees do not mix', () => {
     const captured = runCaptureMemory(session, { content: 'private note' });
     if (!captured.ok) throw new Error('setup: capture refused');
 
-    const replays = vi.spyOn(ProjectionCache.prototype, 'rebuild');
+    const caughtUp = vi.spyOn(ProjectionCache.prototype, 'refresh');
     try {
       expect(cacheOf(session, 'public').listTasks()).toHaveLength(1);
-      expect(replays).not.toHaveBeenCalled();
+      expect(caughtUp).not.toHaveBeenCalled();
       // …and the private read does pay, which is what keeps the assertion above
-      // from passing over a session that had simply stopped replaying anything.
+      // from passing over a session that had simply stopped catching up at all.
       expect(cacheOf(session, 'private').listMemories()).toHaveLength(1);
-      expect(replays).toHaveBeenCalledTimes(1);
+      expect(caughtUp).toHaveBeenCalledTimes(1);
     } finally {
-      replays.mockRestore();
+      caughtUp.mockRestore();
     }
 
     closeSession(session);

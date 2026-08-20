@@ -11,6 +11,7 @@
  */
 
 import {
+  type CatalogEvent,
   type ChainLayout,
   catalogUpcasters,
   type EventKind,
@@ -22,6 +23,7 @@ import type { ChannelSwitchProjection } from './channel.js';
 import { getChannelSwitch, listChannelSwitches } from './channel-store.js';
 import { type AdrCollision, adrCollisions, type DecisionProjection } from './decision.js';
 import { getDecision, listDecisions, listDecisionsByState } from './decision-store.js';
+import { tablesFedBy } from './fed-by.js';
 import type {
   HandoffProjection,
   LinkEdge,
@@ -38,7 +40,8 @@ import {
   listMemories,
   listObservationsAbout,
 } from './knowledge-store.js';
-import { rebuild } from './rebuild.js';
+import { type ChainFrontier, chainArrivals, chainReplay } from './order.js';
+import { advance, rebuild } from './rebuild.js';
 import {
   type AuthorshipFilter,
   type AuthorshipTally,
@@ -75,6 +78,19 @@ export interface CacheOptions {
 }
 
 export class ProjectionCache {
+  /**
+   * The order the tables were last built from, and how far into the chain it
+   * reached. Retained because reading the chain is a third of what a rebuild costs
+   * and the order is the whole input to every fold: holding it is what lets
+   * {@link refresh} bring the cache forward without asking the disk for anything
+   * but what arrived.
+   *
+   * Undefined until the first replay, which is the state {@link refresh} reads as
+   * "there is nothing to bring forward".
+   */
+  private order: readonly CatalogEvent[] = [];
+  private frontier: ChainFrontier | undefined;
+
   private constructor(
     private readonly db: SqliteDatabase,
     private readonly layout: ChainLayout,
@@ -99,7 +115,49 @@ export class ProjectionCache {
 
   /** Drops the cache and replays it from the chain. Safe to call any time. */
   rebuild(): void {
-    rebuild(this.db, this.layout, this.upcasters);
+    const replay = chainReplay(this.layout, this.upcasters);
+    rebuild(this.db, replay.events);
+    this.order = replay.events;
+    this.frontier = replay.frontier;
+  }
+
+  /**
+   * Brings the cache into agreement with the chain, doing the least work that is
+   * sound — and it is the call a reader wants, not {@link rebuild}.
+   *
+   * A chain that only GREW since the last replay is brought forward from what
+   * arrived: the arrivals are read (their own entries, not the chain), appended to
+   * the order already in hand, folded, and written into the tables those arrivals
+   * actually feed. A chain that changed any other way — a tail pruned, a tail gone,
+   * a fact arriving stamped before something already covered — cannot be described
+   * as a suffix, and this replays the whole thing.
+   *
+   * It is not a cheaper rebuild, it is the same result by a shorter route: the
+   * tables it leaves behind are byte-identical to the ones a full replay would have
+   * written, which is asserted for one event of every kind in the catalog
+   * (`advance.test.ts`). Nothing here decides what a projection CONTAINS.
+   */
+  refresh(): void {
+    if (this.frontier === undefined) {
+      this.rebuild();
+      return;
+    }
+    const arrived = chainArrivals(this.layout, this.upcasters, this.frontier);
+    if (!arrived.suffix) {
+      this.rebuild();
+      return;
+    }
+    if (arrived.events.length === 0) return;
+    const order = [...this.order, ...arrived.events];
+    advance(
+      this.db,
+      order,
+      arrived.events,
+      this.order.length,
+      tablesFedBy(arrived.events.map((event) => event.kind)),
+    );
+    this.order = order;
+    this.frontier = arrived.frontier;
   }
 
   /** Reads one task by id, or null if it is not projected. */

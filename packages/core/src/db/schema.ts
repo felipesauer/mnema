@@ -38,6 +38,13 @@ export const PROJECTION_TABLES = [
   'channel_switches',
 ] as const;
 
+/**
+ * One of the projection tables, by name. It is derived from the list above rather
+ * than written twice, so a table added there is immediately a legal value here —
+ * and a name that is NOT a table cannot be spelled.
+ */
+export type ProjectionTable = (typeof PROJECTION_TABLES)[number];
+
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS tasks (
   -- The task's id (the event subject). One row per task.
@@ -333,12 +340,20 @@ export function ensureSchema(db: SqliteDatabase): void {
 }
 
 /**
- * Drops every projection table. The counterpart to {@link ensureSchema}: a
- * rebuild drops, recreates, and replays. Dropping only the listed tables keeps
- * the operation scoped to the cache's own projections.
+ * Drops projection tables. The counterpart to {@link ensureSchema}: a rebuild
+ * drops, recreates, and replays. Dropping only the listed tables keeps the
+ * operation scoped to the cache's own projections.
+ *
+ * With no argument it drops them ALL, which is what a rebuild wants. Given a set it
+ * drops just those, which is what bringing a cache forward over events that feed
+ * only some of them wants — and the DROP order is still this module's own (the
+ * reverse of creation), never the caller's, so a subset cannot be dropped in an
+ * order the schema does not allow.
  */
-export function dropProjections(db: SqliteDatabase): void {
+export function dropProjections(db: SqliteDatabase, tables?: ReadonlySet<ProjectionTable>): void {
   for (let i = PROJECTION_TABLES.length - 1; i >= 0; i -= 1) {
-    db.exec(`DROP TABLE IF EXISTS ${PROJECTION_TABLES[i]};`);
+    const table = PROJECTION_TABLES[i] as ProjectionTable;
+    if (tables !== undefined && !tables.has(table)) continue;
+    db.exec(`DROP TABLE IF EXISTS ${table};`);
   }
 }

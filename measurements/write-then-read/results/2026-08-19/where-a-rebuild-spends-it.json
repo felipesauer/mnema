@@ -1,0 +1,93 @@
+{
+  "question": "Where do the milliseconds of a rebuild actually go? The diagnosis this delivery was handed said the folds; this is the decomposition that answered.",
+  "no_model_called": true,
+  "build": {
+    "commit": "d80fc802",
+    "note": "the BASE, before this delivery. Each term timed on its own over the same sandbox record."
+  },
+  "machine": {
+    "cpu": "AMD Ryzen 7 7735HS",
+    "cores": 16,
+    "node": "v24.14.0",
+    "os": "Linux 7.0.0-29-generic"
+  },
+  "protocol": {
+    "statistic": "p50 of 60 timed repetitions",
+    "unit": "ms",
+    "materializations": "each timed over an EMPTY table \u2014 the state a rebuild always leaves it in \u2014 with the drop/recreate outside the clock",
+    "cost_from": "process clock (perf_hooks)",
+    "sandbox": "one mkdtemp per regime, destroyed after"
+  },
+  "terms": [
+    {
+      "regime": "empty",
+      "events": 0,
+      "chain_bytes": 613,
+      "read the chain into one order (orderedEvents)": 0.028,
+      "the nine folds, on events already in hand": 0.003,
+      "drop every table + recreate the schema": 0.82,
+      "materialize the reference index": 0.041,
+      "materialize the full-text index": 0.038,
+      "materialize the nine other tables (summed)": 0.288,
+      "the whole rebuild": 1.11
+    },
+    {
+      "regime": "realistic",
+      "events": 207,
+      "chain_bytes": 147849,
+      "read the chain into one order (orderedEvents)": 1.432,
+      "the nine folds, on events already in hand": 0.058,
+      "drop every table + recreate the schema": 0.889,
+      "materialize the reference index": 1.139,
+      "materialize the full-text index": 0.55,
+      "materialize the nine other tables (summed)": 0.761,
+      "the whole rebuild": 4.816
+    },
+    {
+      "regime": "large",
+      "events": 874,
+      "chain_bytes": 627622,
+      "read the chain into one order (orderedEvents)": 6.013,
+      "the nine folds, on events already in hand": 0.091,
+      "drop every table + recreate the schema": 0.807,
+      "materialize the reference index": 4.919,
+      "materialize the full-text index": 1.907,
+      "materialize the nine other tables (summed)": 2.128,
+      "the whole rebuild": 16.044
+    }
+  ],
+  "per_table_p50_ms": {
+    "note": "the nine other tables, itemized, so the summed row above is checkable",
+    "realistic": {
+      "tasks": 0.124,
+      "runs": 0.038,
+      "decisions": 0.118,
+      "memories": 0.098,
+      "observations": 0.106,
+      "handoffs": 0.036,
+      "links": 0.064,
+      "skills": 0.141,
+      "channel_switches": 0.034
+    },
+    "large": {
+      "tasks": 0.339,
+      "runs": 0.036,
+      "decisions": 0.435,
+      "memories": 0.263,
+      "observations": 0.291,
+      "handoffs": 0.032,
+      "links": 0.176,
+      "skills": 0.223,
+      "channel_switches": 0.033
+    }
+  },
+  "ddl_p50_ms": {
+    "recreate the schema over tables that already exist": 0.055,
+    "drop all twelve + recreate": 0.828,
+    "drop ONE table (runs) + recreate": 0.148,
+    "note": "recreating an existing schema is 0.055 ms, so the 0.8 ms of a full rebuild is the DROP"
+  },
+  "reading": "The nine folds are 1.2% of a realistic rebuild and 0.6% of a large one. What costs is reading the chain (30-37%) and writing the rows (~50%, of which the reference index alone is a quarter to a third), plus 0.8 ms of DROP that is flat in the record.",
+  "the_reference_index_reads_every_kind": "It is one row per appearance and every event has a subject, so no kind is unindexed. The premise that the two facts a channel writes about itself feed nothing is false, and this is where.",
+  "the_run_table_reads_every_kind_too": "lastFactAt is the latest `at` of any event whose envelope pins it to the run, so the run fold reads the ENVELOPE of every kind whatever its `kind` switch says."
+}

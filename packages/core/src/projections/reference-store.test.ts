@@ -99,6 +99,47 @@ function walk(
     .sort((a, b) => a.join().localeCompare(b.join()));
 }
 
+describe('materializeReferences — where in the stream the events sit', () => {
+  it('indexes a suffix at exactly the positions a whole stream would have given it', () => {
+    // The parameter a cache brought forward depends on. Two events indexed together,
+    // against the same two indexed as a suffix after the first — the rows have to be
+    // the same, because `ord` is what a history is ordered and joined by.
+    const whole = [
+      taskCreated('t1', 1),
+      memoryCaptured('m1', 2),
+      observationRecorded('o1', 't1', 3),
+    ];
+    materializeReferences(db, whole);
+    const inOnePass = db.prepare('SELECT ord, entity, role FROM refs ORDER BY ord, role').all();
+
+    const other: SqliteDatabase = new Database(':memory:');
+    try {
+      ensureSchema(other);
+      materializeReferences(other, whole.slice(0, 1));
+      materializeReferences(other, whole.slice(1), 1);
+      const inTwo = other.prepare('SELECT ord, entity, role FROM refs ORDER BY ord, role').all();
+      expect(inTwo).toEqual(inOnePass);
+    } finally {
+      other.close();
+    }
+  });
+
+  it('a wrong position is NOT caught here — which is why the caller establishes it', () => {
+    // The honest limit, pinned so nobody relies on the wrong half of it. The primary
+    // key is (entity, role, ord), so re-indexing the SAME event at a position it
+    // already holds throws…
+    materializeReferences(db, [taskCreated('t1', 1)]);
+    expect(() => materializeReferences(db, [taskCreated('t1', 1)], 0)).toThrow();
+    // …and a DIFFERENT event at that same position does not: it writes a row
+    // claiming a position another event already occupies, and nothing here can tell.
+    // What makes the base right is `chainArrivals` proving the slice is a suffix; this
+    // function is not a second check on that and must not be read as one.
+    materializeReferences(db, [memoryCaptured('m1', 2)], 0);
+    const atZero = db.prepare('SELECT entity FROM refs WHERE ord = 0 ORDER BY entity').all();
+    expect(atZero).toEqual([{ entity: 'm1' }, { entity: 't1' }]);
+  });
+});
+
 describe('materializeReferences — the four roles', () => {
   it('gives every event a subject row', () => {
     materializeReferences(db, [taskCreated('t1', 1), memoryCaptured('m1', 2)]);

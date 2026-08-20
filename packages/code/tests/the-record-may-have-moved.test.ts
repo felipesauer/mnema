@@ -151,14 +151,38 @@ function rootOf(session: Session, scope: Scope): string {
   return chainRootForScope(session.trees, scope) as string;
 }
 
-/** Counts every replay any cache performs while `body` runs. */
-function countingRebuilds<T>(body: () => T): { result: T; rebuilds: number } {
-  const spy = vi.spyOn(ProjectionCache.prototype, 'rebuild');
+/**
+ * Counts the work any cache does against the chain while `body` runs, split by
+ * WHICH work — and the split is the point, not bookkeeping.
+ *
+ * It used to count `rebuild` alone, on the premise that a read which has to catch
+ * up replays the chain. That premise is gone: a chain that only GREW is brought
+ * forward from what arrived (`ProjectionCache.refresh`), and only a chain that
+ * changed some other way — pruned, a tail gone, a fact stamped before something
+ * already covered — is replayed whole. Counting one name would now read zero for a
+ * read that did catch up, which is an assertion going quietly vacuous.
+ *
+ * Both are counted RAW, and a refresh that falls back therefore shows as one of
+ * each. That is the honest reading and the informative one: a case expecting a
+ * fallback says so by asking for both.
+ */
+function countingReplays<T>(body: () => T): {
+  result: T;
+  rebuilds: number;
+  refreshes: number;
+} {
+  const rebuilt = vi.spyOn(ProjectionCache.prototype, 'rebuild');
+  const refreshed = vi.spyOn(ProjectionCache.prototype, 'refresh');
   try {
     const result = body();
-    return { result, rebuilds: spy.mock.calls.length };
+    return {
+      result,
+      rebuilds: rebuilt.mock.calls.length,
+      refreshes: refreshed.mock.calls.length,
+    };
   } finally {
-    spy.mockRestore();
+    refreshed.mockRestore();
+    rebuilt.mockRestore();
   }
 }
 
@@ -235,13 +259,15 @@ describe('the warm cache is still warm', () => {
     // first opens.
     seen(session);
 
-    const { rebuilds } = countingRebuilds(() => {
+    const { rebuilds, refreshes } = countingReplays(() => {
       seen(session);
       seen(session);
       seen(session);
     });
 
-    expect(rebuilds).toBe(0);
+    // NEITHER kind of work: an unchanged chain is neither replayed nor brought
+    // forward, because the extent said there was nothing to do.
+    expect({ rebuilds, refreshes }).toEqual({ rebuilds: 0, refreshes: 0 });
     closeSession(session);
   });
 
@@ -249,10 +275,12 @@ describe('the warm cache is still warm', () => {
     // The probe is a function of the disk, not of how often it is called: the
     // same tree asked ten times in a row replays once, at the first ask.
     const session = openHere();
-    const { rebuilds } = countingRebuilds(() => {
+    const { rebuilds, refreshes } = countingReplays(() => {
       for (let i = 0; i < 10; i += 1) session.caches.get(rootOf(session, 'public'));
     });
-    expect(rebuilds).toBe(1);
+    // The first open replays — there is no retained order to bring forward — and
+    // the nine after it do nothing at all.
+    expect({ rebuilds, refreshes }).toEqual({ rebuilds: 1, refreshes: 0 });
     closeSession(session);
   });
 });
@@ -349,7 +377,7 @@ describe('a tree that goes away, or stops being readable, between two reads', ()
 describe('the trees are still read one at a time', () => {
   it('an outside write to public heals public, and private pays nothing for it', () => {
     // Freshness is per tree, exactly as invalidation is. The public tree moved
-    // under the session and the private one did not, so the public read replays
+    // under the session and the private one did not, so the public read catches up
     // and the private read is served from what it already had.
     const session = openHere();
     if (!runCaptureMemory(session, { content: 'a private note' }).ok) {
@@ -361,16 +389,19 @@ describe('the trees are still read one at a time', () => {
 
     cli('decision', 'Decided elsewhere', 'while this session was reading');
 
-    const publicRead = countingRebuilds(() =>
+    const publicRead = countingReplays(() =>
       session.caches.get(rootOf(session, 'public')).listDecisions(),
     );
-    expect(publicRead.rebuilds).toBe(1);
+    // BROUGHT FORWARD, not replayed, and the two counts say which: the outside write
+    // grew the tail, so what arrived describes the difference. This line read
+    // `rebuilds: 1` before the cache could tell growth from any other change.
+    expect(publicRead).toMatchObject({ rebuilds: 0, refreshes: 1 });
     expect(publicRead.result.map((d) => d.title)).toEqual(['Decided elsewhere']);
 
-    const privateRead = countingRebuilds(() =>
+    const privateRead = countingReplays(() =>
       session.caches.get(rootOf(session, 'private')).listMemories(),
     );
-    expect(privateRead.rebuilds).toBe(0);
+    expect(privateRead).toMatchObject({ rebuilds: 0, refreshes: 0 });
     expect(privateRead.result).toHaveLength(1);
 
     closeSession(session);
