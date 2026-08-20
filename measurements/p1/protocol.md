@@ -197,4 +197,4 @@ surface, which is the only thing that had to be true.)*
 | full run, round 1 | run 18 Aug 2026 — 112 cells, [`results/2026-08-18-full/`](results/2026-08-18-full/) |
 | pre-registration, round 2 | [`round-2/`](round-2/) — frozen 18 Aug 2026, **before** the surface it measures |
 | fifth arm, in code | built 19 Aug 2026 — the harness seeds all five, and the refusal keyed on the round's declared arms lifted by itself |
-| full run, round 2 | **not run.** The harness plans its 200 cells and stops: nothing that calls a model runs without `--yes`, and the size of the round is a spending decision the pre-registration leaves open |
+| full run, round 2 | run 20 Aug 2026 — **208 cells** (200 planned + the 8 re-runs the frozen reading rule requires), [`results/2026-08-20-full/`](results/2026-08-20-full/). *(This row read **"not run. The harness plans its 200 cells and stops"**, and it was true while the size of the round was an open spending decision. What falsified it is that the decision was taken at `n = 4` and the round ran.)* |
