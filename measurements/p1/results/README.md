@@ -51,15 +51,34 @@ null key say different things.
 **Which cell it was:** `schema` · `fixture` · `axis` · `arm` · `run`. The schema number moves when
 the key set moves, so lines from two runs can be joined without guessing which keys a given line
 could have carried: `mnema-bench/cell/1` is the pilot, `/2` adds the memory columns below, `/3` the
-mnema arm's channel, `/4` the hooked arm's, and `/5` the reason a cell came back `BROKEN`.
+mnema arm's channel, `/4` the hooked arm's, `/5` the reason a cell came back `BROKEN`, `/6` the
+per-edit channel's `channel.served`, and `/7` **which build the cell executed**.
 **Lines are never re-run to gain a column** — a result is not redone because a later question got a
 better instrument. The absent key is what says a line is from before, and that is the whole job of
-the number. The 124 lines committed here are 4 at `/1`, 32 at `/2`, 80 at `/3` and 8 at `/4`; none
-is at `/5`, and none will be.
+the number. The 332 lines committed here are 4 at `/1`, 32 at `/2`, 80 at `/3`, 8 at `/4` and 208
+at `/6`; none is at `/5`, none is at `/7`, and none will be.
 
-**What produced it:** `model` · `cli_version` · `mnema_version` · `permission_mode` ·
-`system_prompt_sha256_16`. The build and the model are *in the line*, so a result that is
-contradicted later can be told apart from a result taken against a different product.
+**What produced it:** `model` · `cli_version` · `mnema_version` · `mnema_build_sha256_16` ·
+`mnema_build_files` · `mnema_build_probe` · `permission_mode` · `system_prompt_sha256_16`. The
+build and the model are *in the line*, so a result that is contradicted later can be told apart
+from a result taken against a different product.
+
+**And the VERSION could not say which build, which is why the digest is there.** From `/7` on,
+`mnema_build_sha256_16` is a sha256 over every `.js` file under `packages/*/dist` of the workspace
+the cell's own binary comes from, each file hashed with its path — the bytes a node process loads,
+not the `.d.ts` and not the source maps. `mnema_build_files` is how many of them there were, so a
+digest that moved because a file appeared reads differently from one that moved because a file was
+rewritten, and `mnema_build_probe` says what the digest covered or why it is `null`.
+
+It exists because of what nearly happened to the round of 2026-08-20: another process rebuilt
+`packages/code/dist` — the artefact every cell executes — during that round's preflight, and the
+round had to be moved into a dedicated worktree. A person noticed. Nothing in the data could have:
+all 208 of that round's lines carry `mnema_version` `0.0.0`, which is what a `package.json` says,
+and it is `0.0.0` on both sides of any rebuild. **A round split in half by somebody else's build
+would have measured two products, published one number, and looked exactly like a clean capture.**
+Two cells whose digests differ executed different products. The digest is sampled once per cell,
+before the cell seeds anything, so it says which build the cell *started* on — a rebuild landing
+inside a single cell is not something it can see.
 
 **What the discriminant said:** `verdict` (`CONFORMS` / `VIOLATES` / `BROKEN`) · `exit` ·
 `status` · `error` · `ruler_detail` · `broken_detail` · `truncated`.
@@ -121,8 +140,8 @@ the pilot, and they are **indirect**: neither is evidence that anything was reca
 obeyed.
 
 Lines written before the fix carry `schema` `mnema-bench/cell/1` and hold `memory_files_after`
-alone; lines at `/2` hold the memory columns and nothing about the channel. That is what the schema
-number is for.
+alone; lines at `/2` hold the memory columns and nothing about the channel; lines at `/6` and
+before hold nothing about which build the cell ran. That is what the schema number is for.
 
 **Whether the cell was in the state it claimed:** `seed_ok` · `seed_detail`, and
 `started_at` / `ended_at`.
