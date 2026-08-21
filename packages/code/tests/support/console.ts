@@ -49,6 +49,17 @@ export const ENDS_THE_INPUT = '\u0004';
 const COLUMNS = 200;
 const ROWS = THE_FLOOR.rows;
 
+/**
+ * WHAT EMPTIES THE SCREEN THE SESSION IS DRAWN ON — the layout's other way of clearing the
+ * page, and the one this instrument used to leave in ({@link withoutLayout}).
+ *
+ * Named by its code point rather than typed, like every control byte in this repository. It is
+ * the sequence the product lets through on purpose, because the screen belongs to the session
+ * (`repl/erasing.ts`, `ERASES_THE_SCREEN`) — so a page really carries it, and a reader of that
+ * page has to know it is not a line.
+ */
+const ERASES_THE_SCREEN = `${ESC}[2J`;
+
 /** A pair of streams a console will treat as the caller's terminal. */
 export interface FakeTerminal {
   /** Where the console reads keys. */
@@ -123,10 +134,48 @@ export const hooksNothing = {
  * sequence that must NOT be stripped is the one a rendered line can carry: a style. A
  * pattern wide enough to swallow the layout would swallow the paint, and the case that
  * compares a painted line to a plain one would then be comparing two plain ones.
+ *
+ * AND IT LEFT ONE OF THE TWO WAYS THE PAGE IS CLEARED IN, which is what this delivery
+ * falsified. The premise written here was that everything the layout writes to place a line
+ * was taken out; measured, ONE act of the layout survived — the ERASE OF THE SCREEN
+ * ({@link ERASES_THE_SCREEN}). The library clears before it draws the page again, and it has
+ * two ways of doing it: walk up the region erasing each row, or empty the screen in one
+ * sequence. Which one it picks is decided out of its own throttle, before anything of this
+ * product runs, and therefore out of WALL CLOCK — a session whose last frame was written
+ * fifteen milliseconds before the caller's key gets one, and a session whose key came sooner
+ * gets the other. The row erase was taken out here from the first draft and the screen erase
+ * was not, so a page read through this instrument said something different depending on how
+ * fast the caller typed.
+ *
+ * MEASURED, ON THE SAME RENDERER: a console opened and left immediately and the same console
+ * opened and left three hundred milliseconds later produced pages that differ in exactly one
+ * row — the row where the screen erase glues the last row of one frame to the first row of the
+ * next. With the erase taken out the two agree, and so do the painted and the plain. That is
+ * the whole of the trunk's first red (`the panel … says exactly what the unpainted one says`),
+ * and it was NOT the two renderers disagreeing: it was one renderer disagreeing with itself.
+ *
+ * IT IS NOT A WEAKENING OF THE COMPARISON, and the line between the two is what a RENDERER
+ * put on the page. A style is a renderer's and stays. The erase of the screen is nobody's
+ * line — it carries no character a reader sees, it is the same act as the row erase already
+ * taken out here, and leaving one of the pair in while removing the other is the instrument
+ * disagreeing with itself. What the pages are compared for — every glyph, every gap, art and
+ * padding included — is untouched, and the case that reads them asserts the library really
+ * wrote the sequence, so nothing here can go quietly vacuous
+ * (`repl/erasing.ts`, `erasesTheScreen`).
+ *
+ * SPELLED HERE RATHER THAN IMPORTED, like the rest of this function and for the reason the
+ * product's own ban gives: exactly one module under `src/repl` may name an erase
+ * (`repl/erasing.ts`, and `the-console-on-ink.test.ts` asserts it is the only one), and a test
+ * naming the bytes it strips is outside that corpus on purpose — two other files driving a
+ * device already spell this one.
  */
 export function withoutLayout(bytes: string): string {
   return (
     bytes
+      // THE ERASE OF THE SCREEN, which is one of the two ways the layout clears the page
+      // before drawing it again — the other is the row erase below, and they are one act.
+      .split(ERASES_THE_SCREEN)
+      .join('')
       // Hide and show the cursor; synchronised output around a frame.
       .split(`${ESC}[?25l`)
       .join('')

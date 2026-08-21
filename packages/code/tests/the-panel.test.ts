@@ -50,6 +50,7 @@ import { renderPlain } from '../src/presentation/plain.js';
 import type { Render } from '../src/presentation/render.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { statement } from '../src/presentation/verdict.js';
+import { erasesTheScreen } from '../src/repl/erasing.js';
 import { BEFORE_THE_BAR, THE_INSET } from '../src/repl/inset.js';
 import { type PanelForm, panelFor } from '../src/repl/panel.js';
 import { openSession, tips } from '../src/repl/session.js';
@@ -59,6 +60,7 @@ import { REPL_VERB } from '../src/wiring/repl.js';
 import { DEFAULT_REQUIREMENT, treeHeadline } from '../src/wiring/verify.js';
 import {
   ENDS_THE_INPUT,
+  ESC,
   fakeTerminal,
   hooksNothing,
   until,
@@ -197,11 +199,30 @@ afterAll(() => {
  */
 const ROOMY = 64;
 
+/**
+ * HOW LONG THE CALLER SAT AT THE PROMPT BEFORE LEAVING — nought, unless a case is about it.
+ *
+ * IT IS A DELIBERATELY SLOW CALLER AND NOT A WAIT FOR THE PAGE, and the difference is the one
+ * this delivery measured. The page is on the wire and finished when the prompt is: sampled at
+ * the prompt and again five, ten, twenty, forty, a hundred, three hundred and six hundred
+ * milliseconds later, with no key pressed, the byte count did not move once — 1592 for the
+ * plain console and 1776 for the painted one, at every sample. So there is nothing here to
+ * settle and no early read to fix; what a pause changes is what the LEAVING writes, because the
+ * layout library picks how to clear the page out of its own throttle
+ * (`support/console.ts`, {@link withoutLayout}).
+ *
+ * Three hundred is not a threshold and no case may read it as one: the two behaviours part
+ * company between ten and fifteen milliseconds on this bench, and this is a value far enough
+ * past it that a loaded machine still lands on the far side.
+ */
+const A_SLOW_CALLER = 300;
+
 /** What a console drew, opened on a terminal `columns` wide and left again. */
 async function openedAt(
   columns: number,
   render: Render = renderPlain,
   rows: number = ROOMY,
+  sitsAtThePromptFor = 0,
 ): Promise<string> {
   const terminal = fakeTerminal({ columns, rows });
   const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
@@ -220,6 +241,9 @@ async function openedAt(
   // The bytes still hold it — the whole roll is written onto the caller's own buffer when the
   // session leaves — but only once it HAS left. The prompt is on every page there is.
   await until(() => terminal.bytes().includes(PROMPT), 'opened');
+  if (sitsAtThePromptFor > 0) {
+    await new Promise((resolve) => setTimeout(resolve, sitsAtThePromptFor));
+  }
   terminal.type(ENDS_THE_INPUT);
   await closed;
   return terminal.bytes();
@@ -240,6 +264,21 @@ function stripped(text: string): string {
 /** The page as rows, with everything a layout writes to place a line taken out. */
 function rowsOf(page: string): string[] {
   return stripped(withoutLayout(page)).split('\n');
+}
+
+/**
+ * THE WHOLE PAGE AS ONE STRING, row by row, with the trailing spaces off each row — what the
+ * cases that compare two pages compare.
+ *
+ * IT WAS SPELLED INSIDE THE ONE CASE THAT HAD IT, and a second case that needed the same
+ * reading would have been a second spelling of what a page IS. Why the trailing spaces come off
+ * is at the case that first needed it — it is the echo of the row a session was left on, and it
+ * is the one difference that is nobody's renderer.
+ */
+function pageOf(page: string): string {
+  return rowsOf(page)
+    .map((row) => row.replace(/ +$/, ''))
+    .join('\n');
 }
 
 /**
@@ -1006,14 +1045,75 @@ describe('the panel is the plain panel, wrapped, and it is drawn once', () => {
     // and what the two renderers SAID is identical either way — which is the promise.
     const plain = await openedAt(200);
     const painted = await openedAt(200, renderStyled);
-    const rowsOf = (bytes: string): string =>
-      stripped(withoutLayout(bytes))
-        .split('\n')
-        .map((row) => row.replace(/ +$/, ''))
-        .join('\n');
-    expect(rowsOf(painted)).toBe(rowsOf(plain));
+    expect(pageOf(painted)).toBe(pageOf(plain));
     // Not vacuous: the painted one really carries escapes the plain one does not.
     expect(sgrOf(painted).length).toBeGreaterThan(sgrOf(plain).length);
+    // AND NEITHER PAGE IS ONE THE ERASE NEVER REACHED, which is the half that keeps the
+    // stripping honest. What is compared is read through an instrument that takes the layout's
+    // erase of the screen out ({@link withoutLayout}); an absence is satisfied by a page that
+    // never carried the sequence, so the case asserts the library really wrote it — asked with
+    // the product's own answer for it rather than with a second spelling here.
+    for (const [what, page] of [
+      ['the plain page', plain],
+      ['the painted page', painted],
+    ] as const) {
+      expect(erasesTheScreen(page), `${what} never carried the erase there is to take out`).toBe(
+        true,
+      );
+    }
+  }, 120_000);
+
+  it('says the same thing to a caller who left at once and one who sat at the prompt', async () => {
+    // THE TRUNK'S FIRST RED, AND WHAT IT WAS NOT. The case above went red on the machine and
+    // green everywhere else, and the shape of the failure said one row of two hundred differed
+    // — the row where the tip line, the drawing and the identity meet — which read as the
+    // PAINTING moving a gap. It was neither the painting nor a gap: the two renderers were
+    // never the variable. ONE RENDERER DISAGREES WITH ITSELF, on how long the caller took.
+    //
+    // The layout library clears the page before drawing it again and has two ways to do it —
+    // walk up the region erasing each row, or empty the screen in one sequence — and it decides
+    // out of its own throttle, which is wall clock. So a console left at once and a console left
+    // three hundred milliseconds later write pages that are the same drawing by two different
+    // erases, and an instrument that took one erase out and left the other in reported them as
+    // saying different things (`support/console.ts`, {@link withoutLayout}).
+    //
+    // Asked of ONE renderer on purpose. The case above is about painting and would be answered
+    // by the paint; this is about nothing but the moment, so the paint is held still.
+    const atOnce = await openedAt(200);
+    const satThere = await openedAt(200, renderPlain, ROOMY, A_SLOW_CALLER);
+    expect(pageOf(satThere)).toBe(pageOf(atOnce));
+    // Not vacuous: both pages really are pages the erase reached.
+    expect(erasesTheScreen(atOnce) && erasesTheScreen(satThere)).toBe(true);
+  }, 120_000);
+
+  it('takes the layout out of a page, both erases of it and never a style', async () => {
+    // THE INSTRUMENT'S OWN CASE, because the instrument is what was wrong. The rule it holds is
+    // *everything a layout writes to place a line comes out, and what a renderer put on the page
+    // stays*, and it held that rule for one of the two erases only — which is a difference no
+    // page-level case can see until a machine is slow enough to pick the other one. Asked here
+    // over bytes rather than over a session, so it answers the same on every machine.
+    //
+    // Over a REAL page and not a hand-built string: a value this product cannot produce would
+    // prove the function against a page that cannot exist. What is asserted of it is that
+    // neither erase survives and every style does.
+    //
+    // AND IT IS THE PAGE OF THE CALLER WHO SAT THERE, because that is the only page that
+    // carries BOTH — measured, a console left at once writes two screen erases and not one row
+    // erase, and a console left three hundred milliseconds later writes one screen erase and
+    // sixty-four row erases. A case over the first page would assert the row erase against a
+    // page that never had one, which is the vacuous half of this rule.
+    const page = await openedAt(200, renderStyled, ROOMY, A_SLOW_CALLER);
+    expect(erasesTheScreen(page), 'the library never erased the screen on this page').toBe(true);
+    expect(page).toContain(`${ESC}[2K`);
+    const taken = withoutLayout(page);
+    expect(
+      erasesTheScreen(taken),
+      'the erase of the screen survived the layout being taken out',
+    ).toBe(false);
+    expect(taken).not.toContain(`${ESC}[2K`);
+    // And the paint is untouched — the one thing this function may never swallow.
+    expect(sgrOf(taken)).toEqual(sgrOf(page));
+    expect(sgrOf(page).length).toBeGreaterThan(0);
   }, 120_000);
 
   it('draws the panel once, however many frames the caller causes', async () => {
