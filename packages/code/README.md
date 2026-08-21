@@ -120,7 +120,7 @@ signing key a history someone else can check.
 pnpm add -g @mnema/code
 ```
 
-This installs the `mnema` binary. Requires Node ≥ 20; the package is ESM-only.
+This installs the `mnema` binary. Requires Node ≥ 22.12.0; the package is ESM-only.
 
 ## Usage
 

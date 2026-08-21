@@ -85,7 +85,7 @@ claude plugin marketplace add felipesauer/mnema
 claude plugin install mnema@mnema
 ```
 
-Requires Node ≥ 20. Nothing here reaches the network, and nothing here writes.
+Requires Node ≥ 22.12.0. Nothing here reaches the network, and nothing here writes.
 
 ## Check that it worked
 
