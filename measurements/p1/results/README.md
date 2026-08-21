@@ -1,21 +1,26 @@
 # P1 results
 
-**The pilot and TWO rounds have run.** `2026-08-17-pilot/` holds four cells — one task, four arms,
+**The pilot and THREE rounds have run.** `2026-08-17-pilot/` holds four cells — one task, four arms,
 one run — `2026-08-18-full/` holds round 1's 112, `2026-08-18-mechanism/` holds eight cells of a
-fifth arm that are a mechanism check and not a measurement, and `2026-08-20-full/` holds round 2's
-208. What each one is, and why their counts do not add up to each other, is named in
-[the index](../../README.md). This directory was committed empty on purpose: the pre-registration
-beside it is worth what the order is worth, and the order is visible here.
+fifth arm that are a mechanism check and not a measurement, `2026-08-20-full/` holds round 2's
+208, and `2026-08-21-full/` holds round 3's 160. What each one is, and why their counts do not add
+up to each other, is named in [the index](../../README.md). This directory was committed empty on
+purpose: the pre-registration beside it is worth what the order is worth, and the order is visible
+here.
 
-*(This paragraph has now been wrong twice, in the same way, and the second time is recorded
-because the first one's apology did not prevent it. It said **"The pilot has run; the round has
-not"** until 18 Aug 2026, when round 1 landed. It then said **"The pilot and the first round have
-both run"** and named three directories — and stayed that way after 20 Aug, when round 2 landed a
-fourth beside it. Found on 20 Aug by sweeping the committed tree for the AFFIRMATION rather than
-for a symbol, while round 3 was being pre-registered: no grep of an identifier reaches a sentence
-like this one, which is the whole reason the sweep is written that way. The premise is rewritten
-rather than deleted: a folder whose own README contradicts the data inside it is the one thing a
-reader cannot check around.)*
+*(This paragraph has now been wrong THREE times, in the same way, and each time is recorded
+because the previous apology did not prevent the next one. It said **"The pilot has run; the round
+has not"** until 18 Aug 2026, when round 1 landed. It then said **"The pilot and the first round
+have both run"** and named three directories — and stayed that way after 20 Aug, when round 2
+landed a fourth beside it. It then said **"The pilot and TWO rounds have run"** and named four —
+and round 3 landed a fifth on 21 Aug. Each correction was found the same way, by sweeping the
+committed tree for the AFFIRMATION rather than for a symbol: no grep of an identifier reaches a
+sentence like this one, which is the whole reason the sweep is written that way. **What the third
+occurrence adds is that the technique catches this file and does not fix it** — a count in prose
+beside a directory listing goes stale every time the directory grows, and the honest reading of
+three occurrences is that this sentence is a defect of form, not of attention. The premise is
+rewritten rather than deleted: a folder whose own README contradicts the data inside it is the one
+thing a reader cannot check around.)*
 
 A run lands one directory named for its date and mode — `2026-08-14-pilot/`,
 `2026-08-20-full/` — holding:
@@ -60,8 +65,12 @@ mnema arm's channel, `/4` the hooked arm's, `/5` the reason a cell came back `BR
 per-edit channel's `channel.served`, and `/7` **which build the cell executed**.
 **Lines are never re-run to gain a column** — a result is not redone because a later question got a
 better instrument. The absent key is what says a line is from before, and that is the whole job of
-the number. The 332 lines committed here are 4 at `/1`, 32 at `/2`, 80 at `/3`, 8 at `/4` and 208
-at `/6`; none is at `/5`, none is at `/7`, and none will be.
+the number. The **492** lines committed here are 4 at `/1`, 32 at `/2`, 80 at `/3`, 8 at `/4`, 208
+at `/6` and **160 at `/7`**; none is at `/5`, and the 332 that predate `/7` will never gain it.
+*(This sentence read **"The 332 lines committed here are … none is at `/7`, and none will be"**, and
+every clause of it was true on 20 Aug. Round 3 landed 160 lines at `/7` on the 21st. The scope of
+"none will be" was always the 332 already here — it is the no-re-run rule, not a claim about future
+captures — and it is spelled out rather than left to be read the wrong way twice.)*
 
 **What produced it:** `model` · `cli_version` · `mnema_version` · `mnema_build_sha256_16` ·
 `mnema_build_files` · `mnema_build_probe` · `permission_mode` · `system_prompt_sha256_16`. The
