@@ -22,7 +22,18 @@ three occurrences is that this sentence is a defect of form, not of attention. T
 rewritten rather than deleted: a folder whose own README contradicts the data inside it is the one
 thing a reader cannot check around.)*
 
-A run lands one directory named for its date and mode — `2026-08-14-pilot/`,
+*(**And the sentence above — "the technique catches this file and does not fix it" — is the premise
+this entry falsifies.** The technique caught a fourth occurrence on 21 Aug 2026, of a different
+shape: the example two paragraphs down named `2026-08-14-pilot/`, a directory that has never
+existed, and it had named it since the day the real one landed as `2026-08-17-pilot/`. Naming a
+directory that is not there is not a stale count — no run growing the folder would ever have made
+it true. What fixes the form is not prose: it is
+`packages/code/tests/the-index-names-the-runs-that-exist.test.ts`, which reads every result
+directory this file and [the index](../../README.md) name and fails if one is absent, and reads
+every directory that exists and fails if either file leaves it out. The count in the first
+paragraph goes stale the same way a fifth time; from now on it goes stale RED.)*
+
+A run lands one directory named for its date and mode — `2026-08-17-pilot/`,
 `2026-08-20-full/` — holding:
 
 | | |

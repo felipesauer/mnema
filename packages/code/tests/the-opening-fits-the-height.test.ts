@@ -45,7 +45,6 @@ import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC } from './support/console.js';
 import {
   aFrameSince,
-  aFrameWithout,
   aPageWithout,
   inPty as drive,
   type Fixture,
