@@ -131,7 +131,7 @@ layer makes no proof of its own; being clear about that is the point.
 pnpm add @mnema/copilot
 ```
 
-Requires Node ≥ 20. The package is ESM-only.
+Requires Node ≥ 22.12.0. The package is ESM-only.
 
 ## Usage
 

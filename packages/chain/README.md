@@ -101,7 +101,7 @@ gives the signing key a provenance the crypto alone cannot.
 pnpm add @mnema/chain
 ```
 
-Requires Node ≥ 20. The package is ESM-only.
+Requires Node ≥ 22.12.0. The package is ESM-only.
 
 ## Usage
 
