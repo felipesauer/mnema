@@ -27,27 +27,33 @@
  * source has none — it is answered by running the suite and reading the durations, which is
  * not something a guard can do without becoming the thing it measures.
  *
- * AND THE DURATIONS WERE READ, once, on 21 Aug 2026, because CI reaching this trunk made them
+ * AND THE DURATIONS WERE READ, on 21 Aug 2026, because CI reaching this trunk made them
  * available for the first time. Of 3484 cases, 3286 wait under the shared five seconds — read
  * off the run rather than counted in the source, since a positional argument also closes a
  * `beforeAll` and the source count says 215 where the cases say 198. The slowest of the 3286,
- * in five configurations:
+ * over two runner runs and four local configurations:
  *
- *   GitHub runner, node 22 ................. 1173 ms
- *   GitHub runner, node 24 ................. 1259 ms
+ *   GitHub runner, node 24 ................. 955 ms, 1259 ms
+ *   GitHub runner, node 22 ................. 1173 ms, 1595 ms
  *   container, 4 cores, node 22 ............ 1339 ms
  *   this workstation, 16 cores, node 24 .... 1635 ms
  *   the same, under v8 coverage ............ 2412 ms
  *
  * Nothing came within three seconds of the ceiling, in any of them, so no case needs one of its
  * own today and this ban costs nothing to keep. TWO THINGS IN THAT TABLE ARE WORTH THE READING.
- * The runner is not the slow machine: it is 0.77x of this workstation on the worst case, even
- * though the suite's wall clock there is 3.2x slower (114 s against 36 s) — fewer workers on
- * fewer cores contend less, and the slowest cases are pty and screen work that waits on the
- * clock. A ceiling sized from that wall-clock ratio would have been three times too loose. And
- * coverage instrumentation charges 1.48x to the worst case while charging 11.6% to the wall
- * clock (40.2 s against 36.0 s, four passes alternating), because it charges most to the
- * heaviest cases and parallelism absorbs the rest.
+ * The runner is not the slow machine — 1595 ms at its worst against this workstation's 1635 ms,
+ * near parity — even though the suite's wall clock there is around 3x slower (101-134 s against
+ * 36 s). Fewer workers on fewer cores contend less, and the slowest cases are pty and screen
+ * work that waits on the clock, so the two ratios pull opposite ways: a ceiling sized from the
+ * wall-clock ratio would have been three times too loose. And coverage instrumentation charges
+ * 1.48x to the worst case while charging 11.6% to the wall clock (40.2 s against 36.0 s, four
+ * passes alternating), because it charges most to the heaviest cases and parallelism absorbs
+ * the rest.
+ *
+ * A SINGLE SAMPLE WOULD HAVE MISLED. The first runner run put node 22 at 1173 ms and node 24 at
+ * 1259 ms; the second reversed them, at 1595 ms and 955 ms. The spread between two runs of the
+ * same commit on the same image is wider than the gap between machines, which is the reason
+ * these are written as a set and not as a figure.
  *
  * SO THE REPAIR THIS BAN REFUSES WAS PRICED, and it is still the wrong one: the cheap line
  * would have been written at the number this measurement produced, and the measurement says no

@@ -69,11 +69,12 @@ jobs:
 
       # This step now has a gate in it — `thresholds` in `vitest.config.ts`, floored to today's
       # figures. It stays a SECOND run of the suite rather than replacing the first, and the
-      # measurement is why: v8 instrumentation costs 1.48x on the slowest case that inherits the
-      # default timeout (2412 ms against 1635 ms) while costing only 11.6% of wall clock. Folding
-      # the two steps together would save 101 s of runner time and spend a third of the ceiling's
-      # headroom to buy it. Keeping them apart also means the matrix runs the suite both
-      # instrumented (here) and plain (node 24), which is worth more than the 101 s.
+      # measurement is why: v8 instrumentation costs 1.48x on the slowest case that shares the
+      # five-second ceiling (2412 ms against 1635 ms) while costing only 11.6% of wall clock.
+      # Folding the two steps together would save around two minutes of runner time and spend a
+      # third of that ceiling's headroom to buy it. Keeping them apart also means the matrix runs
+      # the suite both instrumented (here) and plain (node 24), which is worth more than the two
+      # minutes.
       - name: Coverage gate
         if: matrix.node == '22'
         run: pnpm test:coverage
