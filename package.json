@@ -25,7 +25,7 @@
     "build": "tsc -b",
     "clean": "tsc -b --clean",
     "typecheck": "tsc -b",
-    "lint": "biome check packages/ plugin/ .claude-plugin/",
+    "lint": "biome check --error-on-warnings packages/ plugin/ .claude-plugin/",
     "lint:fix": "biome check --write packages/ plugin/ .claude-plugin/",
     "format": "biome format --write packages/",
     "test": "vitest run",
