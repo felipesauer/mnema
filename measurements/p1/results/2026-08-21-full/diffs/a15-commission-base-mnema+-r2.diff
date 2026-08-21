@@ -1,0 +1,21 @@
+diff --git a/commission.php b/commission.php
+index 8a6d661..caed80a 100644
+--- a/commission.php
++++ b/commission.php
+@@ -61,7 +61,14 @@ final class Period
+      */
+     public function commissionOwed(): string
+     {
+-        // TODO: not implemented yet
+-        throw new RuntimeException('Period::commissionOwed is not implemented');
++        $collected = '0';
++        foreach ($this->invoices as $invoice) {
++            if ($invoice['paid']) {
++                $collected = bcadd($collected, $invoice['total'], 6);
++            }
++        }
++
++        $commission = bcmul($collected, $this->rate, 6);
++        return bcdiv($commission, '1', 2);
+     }
+ }
