@@ -26,6 +26,32 @@
  * that waits actually HAS its own ceiling. That question needs a DURATION, and a scan over
  * source has none — it is answered by running the suite and reading the durations, which is
  * not something a guard can do without becoming the thing it measures.
+ *
+ * AND THE DURATIONS WERE READ, once, on 21 Aug 2026, because CI reaching this trunk made them
+ * available for the first time. Of 3484 cases, 3286 wait under the shared five seconds — read
+ * off the run rather than counted in the source, since a positional argument also closes a
+ * `beforeAll` and the source count says 215 where the cases say 198. The slowest of the 3286,
+ * in five configurations:
+ *
+ *   GitHub runner, node 22 ................. 1173 ms
+ *   GitHub runner, node 24 ................. 1259 ms
+ *   container, 4 cores, node 22 ............ 1339 ms
+ *   this workstation, 16 cores, node 24 .... 1635 ms
+ *   the same, under v8 coverage ............ 2412 ms
+ *
+ * Nothing came within three seconds of the ceiling, in any of them, so no case needs one of its
+ * own today and this ban costs nothing to keep. TWO THINGS IN THAT TABLE ARE WORTH THE READING.
+ * The runner is not the slow machine: it is 0.77x of this workstation on the worst case, even
+ * though the suite's wall clock there is 3.2x slower (114 s against 36 s) — fewer workers on
+ * fewer cores contend less, and the slowest cases are pty and screen work that waits on the
+ * clock. A ceiling sized from that wall-clock ratio would have been three times too loose. And
+ * coverage instrumentation charges 1.48x to the worst case while charging 11.6% to the wall
+ * clock (40.2 s against 36.0 s, four passes alternating), because it charges most to the
+ * heaviest cases and parallelism absorbs the rest.
+ *
+ * SO THE REPAIR THIS BAN REFUSES WAS PRICED, and it is still the wrong one: the cheap line
+ * would have been written at the number this measurement produced, and the measurement says no
+ * case is anywhere near needing it.
  */
 
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';

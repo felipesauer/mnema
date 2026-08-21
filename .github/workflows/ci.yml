@@ -52,9 +52,10 @@ jobs:
       - name: Build
         run: pnpm build
 
-      # The JSON report is kept because the timeout policy in `vitest.config.ts` is derived
-      # from it: it carries a duration per test, so the worst test that inherits the default
-      # can be read off the runner instead of guessed at from a laptop.
+      # The JSON report is kept because it carries a duration per case, and durations off the
+      # runner are the one thing no workstation and no container can supply. It is what answered
+      # the question `the-ceiling-belongs-to-the-case` names as beyond a source scan — whether
+      # any case is near the ceiling it shares — and it is what would answer it again.
       - name: Test
         run: pnpm test --reporter=default --reporter=json --outputFile.json=vitest-report.json
 
@@ -66,6 +67,13 @@ jobs:
           path: vitest-report.json
           if-no-files-found: warn
 
+      # This step now has a gate in it — `thresholds` in `vitest.config.ts`, floored to today's
+      # figures. It stays a SECOND run of the suite rather than replacing the first, and the
+      # measurement is why: v8 instrumentation costs 1.48x on the slowest case that inherits the
+      # default timeout (2412 ms against 1635 ms) while costing only 11.6% of wall clock. Folding
+      # the two steps together would save 101 s of runner time and spend a third of the ceiling's
+      # headroom to buy it. Keeping them apart also means the matrix runs the suite both
+      # instrumented (here) and plain (node 24), which is worth more than the 101 s.
       - name: Coverage gate
         if: matrix.node == '22'
         run: pnpm test:coverage
