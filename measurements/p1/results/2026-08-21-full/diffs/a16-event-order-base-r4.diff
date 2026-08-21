@@ -1,0 +1,10 @@
+diff --git a/audit.py b/audit.py
+index d2e9c52..809bd64 100644
+--- a/audit.py
++++ b/audit.py
+@@ -26,4 +26,4 @@ class Log:
+ 
+     def timeline(self) -> list[str]:
+         """The ids of this log's entries, in the order the timeline shows them."""
+-        raise NotImplementedError("Log.timeline is not implemented")
++        return [entry["id"] for entry in sorted(self._entries, key=lambda e: e["occurred_at"])]
