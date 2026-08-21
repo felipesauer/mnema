@@ -27,3 +27,52 @@ scripts/
 # key). The faithful examples of the audit flow are those adopter repos, never
 # this one.
 .mnema/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HELD-OUT TASK OUTPUTS — P1 round 1, and only round 1.
+#
+# `measurements/p1/split.json` names six held-out tasks. Their raw output and
+# their diffs DESCRIBE the task, so committing them publishes the task before
+# the reveal. 312 such files sat untracked-and-unignored in this tree for three
+# days, where one `git add -A` would have published them — which this project
+# has already done once.
+#
+# IGNORED BY NAME, one line per task per run, never by a wildcard over `raw/`
+# or `diffs/`: the DEVELOPMENT tasks' outputs live in those same directories
+# and ARE committed (`a1-rounding`, `a3-idempotency`), and a directory-wide
+# ignore would silently stop committing the next one.
+#
+# UNTIL WHEN: these lines are DELETED — not amended, not widened — on the day
+# the six tasks are published in `measurements/p1/`. Nothing else retires them,
+# and an ignore with no end written on it is an ignore nobody removes.
+#
+# ROUNDS 2 AND 3 NEED NO LINES HERE. Checked 21/08/2026: their held-out raw
+# output and diffs are not on disk at all, and every raw/diff they do track
+# belongs to a development task.
+# ─────────────────────────────────────────────────────────────────────────────
+# round 1 · 2026-08-18-full
+measurements/p1/results/2026-08-18-full/raw/a2-due-day-*
+measurements/p1/results/2026-08-18-full/diffs/a2-due-day-*
+measurements/p1/results/2026-08-18-full/raw/a4-collation-*
+measurements/p1/results/2026-08-18-full/diffs/a4-collation-*
+measurements/p1/results/2026-08-18-full/raw/a5-no-retry-*
+measurements/p1/results/2026-08-18-full/diffs/a5-no-retry-*
+measurements/p1/results/2026-08-18-full/raw/a6-partner-code-*
+measurements/p1/results/2026-08-18-full/diffs/a6-partner-code-*
+measurements/p1/results/2026-08-18-full/raw/b1-csv-quotes-*
+measurements/p1/results/2026-08-18-full/diffs/b1-csv-quotes-*
+measurements/p1/results/2026-08-18-full/raw/b2-moving-average-*
+measurements/p1/results/2026-08-18-full/diffs/b2-moving-average-*
+# round 1 · 2026-08-18-mechanism
+measurements/p1/results/2026-08-18-mechanism/raw/a2-due-day-*
+measurements/p1/results/2026-08-18-mechanism/diffs/a2-due-day-*
+measurements/p1/results/2026-08-18-mechanism/raw/a4-collation-*
+measurements/p1/results/2026-08-18-mechanism/diffs/a4-collation-*
+measurements/p1/results/2026-08-18-mechanism/raw/a5-no-retry-*
+measurements/p1/results/2026-08-18-mechanism/diffs/a5-no-retry-*
+measurements/p1/results/2026-08-18-mechanism/raw/a6-partner-code-*
+measurements/p1/results/2026-08-18-mechanism/diffs/a6-partner-code-*
+measurements/p1/results/2026-08-18-mechanism/raw/b1-csv-quotes-*
+measurements/p1/results/2026-08-18-mechanism/diffs/b1-csv-quotes-*
+measurements/p1/results/2026-08-18-mechanism/raw/b2-moving-average-*
+measurements/p1/results/2026-08-18-mechanism/diffs/b2-moving-average-*

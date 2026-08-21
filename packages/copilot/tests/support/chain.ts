@@ -9,7 +9,7 @@
  * copilot package itself writes nothing (see boundaries.test.ts).
  */
 
-import { cpSync, mkdirSync, mkdtempSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -32,6 +32,7 @@ import {
 } from '@mnema/chain';
 import { chainRootForScope, orderedEvents, ProjectionCache, resolveTrees } from '@mnema/core';
 import { openTreeForWriting } from '@mnema/core/write';
+import { onTestFinished } from 'vitest';
 
 /** A writer bound to the public tree of a throwaway sandbox, plus its root. */
 export interface Bench {
@@ -46,9 +47,23 @@ export interface Bench {
   events(): CatalogEvent[];
 }
 
-/** Creates a sandbox, opens the public tree for writing, and returns a Bench. */
+/**
+ * Creates a sandbox, opens the public tree for writing, and returns a Bench.
+ *
+ * THE SANDBOX IS REMOVED HERE, by the function that made it. It used to be removed nowhere:
+ * every caller cleaned up, and every one of them cleaned up `bench.root` — the CHAIN root,
+ * which lives several levels inside the sandbox — so the `mkdtemp` directory itself survived
+ * each test. 296 of them per suite run, 47.237 of them in `/tmp` by the time an audit counted.
+ * A cleanup aimed at what the Bench exposes rather than at what the Bench created is the shape
+ * of the defect, and the fix is not a better `afterEach` in fifteen files: it is that whoever
+ * creates destroys, in the same place. `the-bench-leaves-nothing-behind.test.ts` is the case
+ * that would have caught it, and it reads every file in the workspace, not this one.
+ */
 export function makeBench(): Bench {
   const sandbox = mkdtempSync(join(tmpdir(), 'mnema-copilot-'));
+  onTestFinished(() => {
+    rmSync(sandbox, { recursive: true, force: true });
+  });
   mkdirSync(join(sandbox, 'repo', '.mnema'), { recursive: true });
   const trees = resolveTrees(join(sandbox, 'repo'), {
     xdgDataHome: join(sandbox, 'data'),
