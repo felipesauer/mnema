@@ -48,7 +48,7 @@ but the merge policy is a separate concern.
 pnpm add @mnema/core
 ```
 
-Requires Node ≥ 20. ESM-only. Depends on `@mnema/chain` and `better-sqlite3`.
+Requires Node ≥ 22.12.0. ESM-only. Depends on `@mnema/chain` and `better-sqlite3`.
 
 ## Usage
 

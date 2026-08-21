@@ -2,9 +2,12 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # main is the published alpha and what dependabot works against; main-v1 is the trunk
+    # the v1 is built on. Twelve merges landed on main-v1 before it was named here, and none
+    # of them had ever run on a runner.
+    branches: [main, main-v1]
   pull_request:
-    branches: [main]
+    branches: [main, main-v1]
 
 permissions:
   contents: read
@@ -16,11 +19,19 @@ concurrency:
 jobs:
   test:
     name: lint + build + test (node ${{ matrix.node }})
-    runs-on: ubuntu-latest
+    # Pinned rather than `ubuntu-latest`. Not because the next image breaks the suite — the
+    # primitives `tests/support/pty.ts` needs (`script -qec`, `stty -F`) were checked on
+    # util-linux 2.39.3 and 2.41.3 and behave identically on both. It is pinned because a
+    # repository that stamps the build behind every measurement cell should not let the image
+    # under the runner change without anybody deciding it. Moving to 26.04 is a one-line diff.
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
-        node: ['20', '22']
+        # The floor comes from `engines.node`, and `the-runtime-floor-is-declared-once` fails
+        # if this list stops covering it. 24 is what development runs on: a CI that never runs
+        # the runtime the code is written on is not checking what is being written.
+        node: ['22', '24']
 
     steps:
       - uses: actions/checkout@v7
@@ -41,8 +52,19 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # The JSON report is kept because the timeout policy in `vitest.config.ts` is derived
+      # from it: it carries a duration per test, so the worst test that inherits the default
+      # can be read off the runner instead of guessed at from a laptop.
       - name: Test
-        run: pnpm test
+        run: pnpm test --reporter=default --reporter=json --outputFile.json=vitest-report.json
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: vitest-report-node${{ matrix.node }}
+          path: vitest-report.json
+          if-no-files-found: warn
 
       - name: Coverage gate
         if: matrix.node == '22'

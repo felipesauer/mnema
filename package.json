@@ -15,7 +15,7 @@
     "url": "https://github.com/felipesauer/mnema/issues"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.12.0"
   },
   "packageManager": "pnpm@10.34.1",
   "pnpm": {
