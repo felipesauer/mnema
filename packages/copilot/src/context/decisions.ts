@@ -73,6 +73,7 @@ import {
   DECISION_STATES,
   type DecisionProjection,
   type DecisionState,
+  newestFirst,
   type ProjectionCache,
 } from '@mnema/core';
 import { type Disposition, statesMeaning } from './disposition.js';
@@ -163,14 +164,19 @@ export interface DecisionRef {
 }
 
 /**
- * Every decision in force across `caches`, most recently settled first, ties
- * broken by id so the order is total.
+ * Every decision in force across `caches`, most recently settled first, ties broken
+ * by id DESCENDING ({@link newestFirst}) so the order is total AND newest-first the
+ * whole way down.
  *
  * The order is a property of the CONTENT (when the decision came into force, then
  * its id), never of the tree it happens to live in — so adding a tree to the list,
  * or reading them in a different order, cannot reshuffle the answer. Callers put
  * this in a prompt, and a stable order is what keeps the host's cache of that
  * prefix valid; the same argument the search's ordering is written on.
+ *
+ * Stable was the whole claim, and it was not enough: this read broke the tie by id
+ * ASCENDING, which is oldest-first, so two decisions settled in one millisecond came
+ * back with the older on top. See `newest-first.ts`.
  *
  * ONE function, and both consumers exist now. The opening context ({@link bootstrap})
  * serves the first page of this list; the per-prompt brief ({@link brief}) serves the
@@ -267,8 +273,7 @@ function toRef(decision: DecisionProjection): DecisionRef {
   return { id: decision.id, adr: decision.adr, title: decision.title };
 }
 
-/** Most recently settled first; ties keep a stable (id) order. */
+/** Most recently settled first, by the core's {@link newestFirst}. */
 function bySettledDesc(a: DecisionProjection, b: DecisionProjection): number {
-  if (a.updatedAt !== b.updatedAt) return a.updatedAt < b.updatedAt ? 1 : -1;
-  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+  return newestFirst({ at: a.updatedAt, id: a.id }, { at: b.updatedAt, id: b.id });
 }

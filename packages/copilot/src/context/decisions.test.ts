@@ -142,7 +142,7 @@ describe('decisionsInForce — the calls that govern', () => {
     }
   });
 
-  it('orders most recently settled first, ties by id, whatever order the trees come in', () => {
+  it('orders most recently settled first, ties by id DESC, whatever order the trees come in', () => {
     // Two things make this discriminate. Every decision is accepted at the SAME
     // instant, so `updatedAt` settles nothing; and the ids are written in DESCENDING
     // order across two trees, so the fold order disagrees with the id order. On a
@@ -166,8 +166,10 @@ describe('decisionsInForce — the calls that govern', () => {
     try {
       const forwards = decisionsInForce([a, c]).map((d) => d.id);
       const backwards = decisionsInForce([c, a]).map((d) => d.id);
-      // The freshest leads; the tie behind it is broken by id, ascending.
-      expect(forwards).toEqual(['dec-z', 'dec-a', 'dec-b', 'dec-c', 'dec-d']);
+      // The freshest leads; the tie behind it is broken by id, DESCENDING — which is
+      // the newest of the instant, since an id carries the order it was minted in.
+      // It read ascending here, and that was the same defect the search index had.
+      expect(forwards).toEqual(['dec-z', 'dec-d', 'dec-c', 'dec-b', 'dec-a']);
       // Same content, same bytes, whatever order the caller passes the trees in —
       // an unstable order invalidates the host's cache of a prompt that did not change.
       expect(backwards).toEqual(forwards);

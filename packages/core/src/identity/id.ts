@@ -55,6 +55,19 @@ const VARIANT_AT = 8;
 const VARIANT_KEPT = 0x3f;
 const VARIANT_SET = 0x80;
 
+/**
+ * The 12 bits RFC 9562 calls `rand_a` — the low nibble of byte 6, beside the
+ * version, plus the whole of byte 7 — and the largest counter they hold.
+ *
+ * {@link mintId} spends them on a counter rather than on randomness, which is
+ * what makes two ids minted in one millisecond ORDERED rather than merely
+ * distinct. The 62 bits of `rand_b` are untouched and still cryptographic, so
+ * nothing about collision between offline clones changes.
+ */
+const COUNTER_HIGH_AT = VERSION_AT;
+const COUNTER_LOW_AT = 7;
+const COUNTER_MAX = 0xfff;
+
 /** The 16 bytes of a UUID, written as hex in the groups {@link GROUPS} names. */
 function grouped(hex: string): string {
   const parts: string[] = [];
@@ -67,11 +80,78 @@ function grouped(hex: string): string {
 }
 
 /**
- * Mints a fresh entity id: a UUID version 7, per RFC 9562. The high 48 bits are
- * the current Unix time in milliseconds, so ids sort by creation time; the rest
- * is cryptographic randomness (`crypto.randomBytes`), so two ids minted in the
- * same millisecond — even across offline clones — do not collide. The version
- * (`7`) and variant (`10`) bits are set in place.
+ * Where a mint lands: the millisecond written into the leading 48 bits of the id,
+ * and the counter written into the 12 bits beside them.
+ */
+interface MintPosition {
+  readonly ms: number;
+  readonly counter: number;
+}
+
+/**
+ * The next position after `last`, given what the clock says now — the whole of the
+ * monotonicity rule, in one pure function so the three branches can each be shown.
+ *
+ * A NEW MILLISECOND restarts the counter, which is where all 4096 values are spent.
+ * THE SAME MILLISECOND (or an earlier one: a clock stepped backwards by NTP lands
+ * here too, and monotonicity survives it) advances the counter, and that advance is
+ * the order the clock cannot carry. A FULL COUNTER borrows the next millisecond and
+ * restarts there.
+ *
+ * Borrowing rather than refusing or waiting, because those are worse in ways that
+ * are not about ids at all. Refusing means a write fails for a reason having nothing
+ * to do with what was written — `mintId` is called from inside the create operations,
+ * so the caller would see a record rejected because a sibling was fast. Waiting means
+ * `mintId` sometimes blocks for up to a millisecond on a write path. Borrowing keeps
+ * the sequence strictly increasing and costs an id whose embedded timestamp is ahead
+ * of the clock, which the clock then catches up with. The drift it can reach is the
+ * measure of how far away it is: at the 154 ids/ms this record's own burst produced,
+ * 4096 in one millisecond is 26× that, so the borrow is a branch that holds rather
+ * than one that runs. `id.test.ts` drives it directly for that reason.
+ */
+export function nextMintPosition(nowMs: number, last: MintPosition): MintPosition {
+  if (nowMs > last.ms) return { ms: nowMs, counter: 0 };
+  if (last.counter < COUNTER_MAX) return { ms: last.ms, counter: last.counter + 1 };
+  return { ms: last.ms + 1, counter: 0 };
+}
+
+/**
+ * Where the last mint landed. Per PROCESS, which is exactly the reach of the order
+ * it buys — see {@link mintId}.
+ */
+let lastPosition: MintPosition = { ms: 0, counter: 0 };
+
+/**
+ * Mints a fresh entity id: a UUID version 7, per RFC 9562. The high 48 bits are a
+ * Unix millisecond, the 12 bits beside them are a counter, and the remaining 62 are
+ * cryptographic randomness (`crypto.randomBytes`), so two ids minted in the same
+ * millisecond — even across offline clones — do not collide. The version (`7`) and
+ * variant (`10`) bits are set in place.
+ *
+ * WITHIN ONE PROCESS, TWO IDS SORT IN THE ORDER THEY WERE MINTED, and that is what
+ * the counter is for. This doc-comment used to claim the timestamp alone bought it —
+ * *"the high 48 bits are the current Unix time in milliseconds, so ids sort by
+ * creation time"* — and that is true BETWEEN milliseconds and false inside one, which
+ * is where a burst of writes almost entirely lives. What falsified it: 2000 ids minted
+ * in a row put 1986 of 1999 consecutive pairs (99.4%) in a single millisecond, and 988
+ * of those 1986 — 49.7%, a coin flip — came back in the wrong order, because the bits
+ * that separated them were pure randomness. That is a real defect and not a
+ * curiosity: every "newest first" reading in the product falls back on the id when the
+ * instant ties, so half of those pairs were served backwards. It took the trunk red
+ * (`search.test.ts`, 22/08/2026) to be seen. `id.test.ts` mints a burst and asserts
+ * the sequence is STRICTLY increasing, which is the case that was failing before the
+ * counter existed.
+ *
+ * OUTSIDE ONE PROCESS THERE IS NO SUCH ORDER, and no fix for it here. The counter is
+ * this process's own and nothing shares it, so two ids from two processes — or two
+ * machines, or two clones of one tree — that fall in the same millisecond are ordered
+ * by their random tails: stable, and arbitrary. A reading that needs more than that
+ * needs something the id cannot carry.
+ *
+ * The counter is a fixed-bit-length dedicated counter in the sense of RFC 9562 §6.2,
+ * reset to zero on each new millisecond rather than seeded randomly, which spends all
+ * 4096 of its values on headroom. {@link nextMintPosition} is the rule, including what
+ * happens when the 4096 run out.
  *
  * It is generated by hand rather than from `crypto.randomUUID`: that helper
  * emits a v4 on every Node this package supports (`>= 20`), and its `{version:
@@ -86,7 +166,8 @@ function grouped(hex: string): string {
  */
 export function mintId(): string {
   const bytes = randomBytes(16);
-  const ms = Date.now();
+  lastPosition = nextMintPosition(Date.now(), lastPosition);
+  const { ms, counter } = lastPosition;
   // 48-bit big-endian millisecond timestamp in bytes 0..5.
   bytes[0] = Math.floor(ms / 2 ** 40) & 0xff;
   bytes[1] = Math.floor(ms / 2 ** 32) & 0xff;
@@ -94,9 +175,12 @@ export function mintId(): string {
   bytes[3] = Math.floor(ms / 2 ** 16) & 0xff;
   bytes[4] = Math.floor(ms / 2 ** 8) & 0xff;
   bytes[5] = ms & 0xff;
-  // Version 7 in the high nibble of byte 6; variant 0b10 in the high bits of
-  // byte 8. The cast is safe: a 16-byte buffer always has these indices.
-  bytes[VERSION_AT] = ((bytes[VERSION_AT] as number) & VERSION_KEPT) | VERSION_SET;
+  // Version 7 in the high nibble of byte 6 and the counter's top 4 bits under it;
+  // the counter's low 8 in byte 7; variant 0b10 in the high bits of byte 8. The
+  // version is masked with the same two numbers the recognizer reads, so the high
+  // nibble is a 7 whatever the counter says.
+  bytes[COUNTER_HIGH_AT] = ((counter >> 8) & VERSION_KEPT) | VERSION_SET;
+  bytes[COUNTER_LOW_AT] = counter & 0xff;
   bytes[VARIANT_AT] = ((bytes[VARIANT_AT] as number) & VARIANT_KEPT) | VARIANT_SET;
   return grouped(bytes.toString('hex'));
 }

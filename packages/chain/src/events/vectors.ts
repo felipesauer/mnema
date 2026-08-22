@@ -103,7 +103,10 @@ const VECTOR_INSTALLATION = '55555555555555555555555555555555';
  * They are UUID v7 written the way `mintId` writes one — the 48-bit millisecond
  * prefix is {@link VECTOR_AT} itself, so an id in a vector and the instant of the
  * fact it belongs to agree, and the last group is a counter rather than entropy so
- * the file stays readable. A subject the product mints is a v7; the nine oldest
+ * the file stays readable. The 12 bits after the version digit read as a counter here
+ * too (`7001`, `7002`, …), and in a minted id they now ARE one: `mintId` spends them
+ * on a monotonic sequence so two ids from one millisecond sort in the order they were
+ * minted. These are literals and none of the frozen digests moves either way. A subject the product mints is a v7; the nine oldest
  * vectors predate that and carry `t-1`, `d-1`, `r-1`, which no operation of this
  * product could ever produce. Their digests are frozen, so they stay as they are
  * and the discrepancy is recorded here rather than papered over.
