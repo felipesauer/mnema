@@ -227,7 +227,7 @@ select, is in [`round-3/prediction.md`](round-3/prediction.md) and in the header
 | step | state |
 |---|---|
 | tasks calibrated | done, **all three rounds** — each of the twenty-eight tasks catches its bad reference and passes its good one, checked by one calibrator that each round's directory symlinks. *(This row said "both rounds" while there were two.)* |
-| harness | built; every isolation item above is a flag or a file |
+| harness | built, and **published** since 21 Aug 2026 at [`harness/`](harness/): the runner that produced every capture under [`results/`](results/), with no dependency outside `node:`. Every isolation item above is a flag or a file, and something outside this document now holds it to that — `packages/code/tests/the-ruler-runs-in-another-hand.test.ts` reads the flags the bullets of §"What a cell holds fixed" name, runs the argument vector the code builds, and goes red in **either** direction. *(This row read **"built; every isolation item above is a flag or a file"**, and it was true and unchecked: the instrument lived on a workbench git ignores, so a flag dropped from the code left this sentence standing and nothing could see the difference. What falsified it is the publication and the guard, not a change of behaviour — the flags were the flags.)* |
 | pre-registration, round 1 | **this directory** |
 | pilot | run 17 Aug 2026 — 4 cells, [`results/2026-08-17-pilot/`](results/2026-08-17-pilot/) |
 | full run, round 1 | run 18 Aug 2026 — 112 cells, [`results/2026-08-18-full/`](results/2026-08-18-full/) |
