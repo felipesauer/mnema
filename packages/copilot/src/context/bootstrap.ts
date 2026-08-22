@@ -218,7 +218,7 @@
  * reshuffle the list.
  */
 
-import { type ProjectionCache, SEARCH_DEFAULT_LIMIT } from '@mnema/core';
+import { newestFirst, type ProjectionCache, SEARCH_DEFAULT_LIMIT } from '@mnema/core';
 import {
   type DecisionAwaitingJudgement,
   type DecisionRef,
@@ -360,7 +360,8 @@ export interface Bootstrap {
 export function bootstrap(caches: readonly ProjectionCache[], scope: ActorScope): Bootstrap {
   // Ordered HERE and not in `tasks.ts`, for the reason the awaiting halves give: the
   // order belongs to the list that is served and cut, and the same comparator settles
-  // both, so "most recently moved first, ties by id" is one rule in one function.
+  // both, so "most recently moved first, ties by id DESC" is one rule in one function
+  // — the core's `newestFirst`, which every recency listing in the product now asks.
   const live = liveWork(caches).sort(byUpdatedDesc);
   // Named, never spelled out: the body is dropped here and served by its own
   // read, so the opening context stays one line per pattern.
@@ -376,7 +377,7 @@ export function bootstrap(caches: readonly ProjectionCache[], scope: ActorScope)
   // any half: interleaving by when each item last moved is a property of the
   // composed list, and a half that sorted itself would be asserting an order this
   // line discards. Same comparator the work list uses — "most recently moved
-  // first, ties by id" is one rule, so it is one function.
+  // first, ties by id DESC" is one rule, so it is one function.
   const awaiting = capped(
     [
       ...tasksAwaitingJudgement(caches),
@@ -421,7 +422,8 @@ function capped<T>(items: readonly T[]): {
 }
 
 /**
- * Most recently touched first; ties keep a stable (id) order.
+ * Most recently touched first, by the core's {@link newestFirst} — this file names the
+ * field the instant lives in and asks nothing else.
  *
  * Taken by the two lists ordered this way — the work items and the mixed awaiting
  * list — so it is stated over the two fields the rule reads rather than over one
@@ -429,11 +431,15 @@ function capped<T>(items: readonly T[]): {
  * sentence twice, and the copies would decide the tie differently the day one of
  * them is amended; that matters more than it looks, because for a CUT list the
  * tie-break decides what is left out.
+ *
+ * It used to write the rule out here, and said the tie "keeps a stable (id) order" —
+ * which was the SIXTH writing of one comparison and, like the other five, broke the
+ * tie by id ASCENDING, serving the oldest item of a millisecond at the top of a
+ * newest-first list. See `newest-first.ts` for what falsified it.
  */
 function byUpdatedDesc(
   a: { readonly id: string; readonly updatedAt: string },
   b: { readonly id: string; readonly updatedAt: string },
 ): number {
-  if (a.updatedAt !== b.updatedAt) return a.updatedAt < b.updatedAt ? 1 : -1;
-  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+  return newestFirst({ at: a.updatedAt, id: a.id }, { at: b.updatedAt, id: b.id });
 }

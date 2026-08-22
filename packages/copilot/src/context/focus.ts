@@ -50,7 +50,12 @@
  * judge, and nothing in this file closes, hides or ranks a run by its age.
  */
 
-import { canonicalIdentity, type ProjectionCache, type RunProjection } from '@mnema/core';
+import {
+  canonicalIdentity,
+  newestFirst,
+  type ProjectionCache,
+  type RunProjection,
+} from '@mnema/core';
 
 /**
  * What only the ASKER knows: the instant it is asking at, and the runs it opened
@@ -259,8 +264,15 @@ function elapsedSeconds(from: string, to: string): number | undefined {
   return Math.floor((end - start) / 1000);
 }
 
-/** Newest run first, by `startedAt`. Ties keep a stable (id) order. */
+/**
+ * Newest run first, by `startedAt` — the core's {@link newestFirst} over the field
+ * this projection calls its instant.
+ *
+ * It matters more here than in a display: `latestRun` takes the HEAD of this order,
+ * so the tie-break does not decide what a reader sees first, it decides which run the
+ * session is told it is in. Two runs opened in one millisecond used to hand that to
+ * the smaller id, which is the older of the two.
+ */
 function byStartedDesc(a: RunProjection, b: RunProjection): number {
-  if (a.startedAt !== b.startedAt) return a.startedAt < b.startedAt ? 1 : -1;
-  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+  return newestFirst({ at: a.startedAt, id: a.id }, { at: b.startedAt, id: b.id });
 }

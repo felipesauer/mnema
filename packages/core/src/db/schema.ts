@@ -157,7 +157,10 @@ CREATE TABLE IF NOT EXISTS handoffs (
   recorded_at TEXT NOT NULL
 ) STRICT;
 
--- Speeds "the handoffs on task X" and keeps the list ordered by time.
+-- Speeds "the handoffs on task X" and keeps the list ordered by time. Time is not a
+-- total order over these rows — a handoff has no id, and two can share a millisecond —
+-- so the read breaks the tie on 'rowid', which this index carries and which is the
+-- order the rebuild inserted in. See listHandoffs.
 CREATE INDEX IF NOT EXISTS idx_handoffs_task ON handoffs (task, recorded_at);
 
 CREATE TABLE IF NOT EXISTS links (
