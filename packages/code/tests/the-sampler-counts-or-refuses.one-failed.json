@@ -1,0 +1,102 @@
+{
+ "numTotalTestSuites": 2,
+ "numPassedTestSuites": 0,
+ "numFailedTestSuites": 2,
+ "numPendingTestSuites": 0,
+ "numTotalTests": 5,
+ "numPassedTests": 4,
+ "numFailedTests": 1,
+ "numPendingTests": 0,
+ "numTodoTests": 0,
+ "snapshot": {
+  "added": 0,
+  "failure": false,
+  "filesAdded": 0,
+  "filesRemoved": 0,
+  "filesRemovedList": [],
+  "filesUnmatched": 0,
+  "filesUpdated": 0,
+  "matched": 0,
+  "total": 0,
+  "unchecked": 0,
+  "uncheckedKeysByFile": [],
+  "unmatched": 0,
+  "updated": 0,
+  "didUpdate": false
+ },
+ "startTime": 1787378787807,
+ "success": false,
+ "testResults": [
+  {
+   "assertionResults": [
+    {
+     "ancestorTitles": [
+      "the rule of the line needs nothing"
+     ],
+     "fullName": "the rule of the line needs nothing declares no import, of any kind, of anything",
+     "status": "passed",
+     "title": "declares no import, of any kind, of anything",
+     "duration": 2.236065999999994,
+     "failureMessages": [],
+     "meta": {},
+     "tags": []
+    },
+    {
+     "ancestorTitles": [
+      "the rule of the line needs nothing"
+     ],
+     "fullName": "the rule of the line needs nothing is still the module that holds the rule",
+     "status": "passed",
+     "title": "is still the module that holds the rule",
+     "duration": 0.2673550000000091,
+     "failureMessages": [],
+     "meta": {},
+     "tags": []
+    },
+    {
+     "ancestorTitles": [
+      "the rule of the line needs nothing"
+     ],
+     "fullName": "the rule of the line needs nothing is published on its own, so reaching it is not reaching the package",
+     "status": "failed",
+     "title": "is published on its own, so reaching it is not reaching the package",
+     "duration": 5.061321000000021,
+     "failureMessages": [
+      "AssertionError: expected './dist/one-line.js' to be './dist/NOT-THIS.js' // Object.is equality\n    at /home/runner/work/mnema/mnema/packages/chain/src/one-line.test.ts:116:53\n    at file:///home/runner/work/mnema/mnema/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///home/runner/work/mnema/mnema/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///home/runner/work/mnema/mnema/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///home/runner/work/mnema/mnema/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)\n    at file:///home/runner/work/mnema/mnema/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///home/runner/work/mnema/mnema/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)\n    at file:///home/runner/work/mnema/mnema/node_modules/.pnpm/@vitest+runner@4.1.10/node_modules/@vitest/runner/dist/chunk-artifact.js:2955:64"
+     ],
+     "meta": {},
+     "tags": []
+    },
+    {
+     "ancestorTitles": [
+      "the rule of the line needs nothing"
+     ],
+     "fullName": "the rule of the line needs nothing sees an import where there is one",
+     "status": "passed",
+     "title": "sees an import where there is one",
+     "duration": 1.334403999999978,
+     "failureMessages": [],
+     "meta": {},
+     "tags": []
+    },
+    {
+     "ancestorTitles": [
+      "the rule of the line needs nothing"
+     ],
+     "fullName": "the rule of the line needs nothing reads each shape a reach can take, and no comment about one",
+     "status": "passed",
+     "title": "reads each shape a reach can take, and no comment about one",
+     "duration": 0.5977090000000089,
+     "failureMessages": [],
+     "meta": {},
+     "tags": []
+    }
+   ],
+   "startTime": 1787378787959,
+   "endTime": 1787378787968.5977,
+   "status": "failed",
+   "message": "",
+   "name": "/home/runner/work/mnema/mnema/packages/chain/src/one-line.test.ts"
+  }
+ ]
+}

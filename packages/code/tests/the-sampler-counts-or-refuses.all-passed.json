@@ -1,0 +1,100 @@
+{
+ "numTotalTestSuites": 2,
+ "numPassedTestSuites": 2,
+ "numFailedTestSuites": 0,
+ "numPendingTestSuites": 0,
+ "numTotalTests": 5,
+ "numPassedTests": 5,
+ "numFailedTests": 0,
+ "numPendingTests": 0,
+ "numTodoTests": 0,
+ "snapshot": {
+  "added": 0,
+  "failure": false,
+  "filesAdded": 0,
+  "filesRemoved": 0,
+  "filesRemovedList": [],
+  "filesUnmatched": 0,
+  "filesUpdated": 0,
+  "matched": 0,
+  "total": 0,
+  "unchecked": 0,
+  "uncheckedKeysByFile": [],
+  "unmatched": 0,
+  "updated": 0,
+  "didUpdate": false
+ },
+ "startTime": 1787378530874,
+ "success": true,
+ "testResults": [
+  {
+   "assertionResults": [
+    {
+     "ancestorTitles": [
+      "the rule of the line needs nothing"
+     ],
+     "fullName": "the rule of the line needs nothing declares no import, of any kind, of anything",
+     "status": "passed",
+     "title": "declares no import, of any kind, of anything",
+     "duration": 2.2904729999999915,
+     "failureMessages": [],
+     "meta": {},
+     "tags": []
+    },
+    {
+     "ancestorTitles": [
+      "the rule of the line needs nothing"
+     ],
+     "fullName": "the rule of the line needs nothing is still the module that holds the rule",
+     "status": "passed",
+     "title": "is still the module that holds the rule",
+     "duration": 0.28691100000000347,
+     "failureMessages": [],
+     "meta": {},
+     "tags": []
+    },
+    {
+     "ancestorTitles": [
+      "the rule of the line needs nothing"
+     ],
+     "fullName": "the rule of the line needs nothing is published on its own, so reaching it is not reaching the package",
+     "status": "passed",
+     "title": "is published on its own, so reaching it is not reaching the package",
+     "duration": 0.290473999999989,
+     "failureMessages": [],
+     "meta": {},
+     "tags": []
+    },
+    {
+     "ancestorTitles": [
+      "the rule of the line needs nothing"
+     ],
+     "fullName": "the rule of the line needs nothing sees an import where there is one",
+     "status": "passed",
+     "title": "sees an import where there is one",
+     "duration": 1.2105040000000145,
+     "failureMessages": [],
+     "meta": {},
+     "tags": []
+    },
+    {
+     "ancestorTitles": [
+      "the rule of the line needs nothing"
+     ],
+     "fullName": "the rule of the line needs nothing reads each shape a reach can take, and no comment about one",
+     "status": "passed",
+     "title": "reads each shape a reach can take, and no comment about one",
+     "duration": 0.5886299999999949,
+     "failureMessages": [],
+     "meta": {},
+     "tags": []
+    }
+   ],
+   "startTime": 1787378531024,
+   "endTime": 1787378531028.5886,
+   "status": "passed",
+   "message": "",
+   "name": "/home/runner/work/mnema/mnema/packages/chain/src/one-line.test.ts"
+  }
+ ]
+}

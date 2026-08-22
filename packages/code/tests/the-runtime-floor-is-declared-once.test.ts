@@ -18,7 +18,12 @@
  *     search does not find: not one of them contains the word `engines`, so the grep that
  *     locates the manifests locates none of them, and they are the only sites an adopter
  *     actually reads.
- *   - CI'S OWN MATRIX, because a floor that CI never runs is a floor nobody has checked.
+ *   - EVERY WORKFLOW THAT PICKS A NODE, because a floor CI never runs is a floor nobody has
+ *     checked. This said "CI'S OWN MATRIX" and read `.github/workflows/ci.yml` by its path, on
+ *     the premise that there was one such file. The flake sampler falsified that on 22/08/2026 by
+ *     arriving with a node matrix of its own, and a matrix nothing reads is exactly the blind spot
+ *     this case exists to close. The workflows now come from git, the way the READMEs above
+ *     already did.
  *   - `.npmrc`, because a floor pnpm does not enforce is prose.
  *
  * AND IT IS CHECKED AGAINST THE DEPENDENCIES, not just against itself. The eight sites agreeing
@@ -212,18 +217,53 @@ describe('every place that repeats the floor repeats this number', () => {
     expect(wrong, `prose states a floor other than ${show(FLOOR)}`).toEqual([]);
   });
 
-  it('is a runtime CI actually runs', () => {
-    const ci = readFileSync(join(ROOT, '.github/workflows/ci.yml'), 'utf-8');
-    const matrix = /^\s*node: \[(.+)\]\s*$/m.exec(ci);
-    expect(matrix, 'CI declares no node matrix').not.toBeNull();
-    const versions = (matrix?.[1] ?? '')
-      .split(',')
+  /**
+   * EVERY WORKFLOW THAT PICKS A NODE, NOT `ci.yml` BY NAME. This read one file by its path until
+   * a second workflow arrived carrying a node matrix of its own — the flake sampler — and the
+   * premise underneath the sentence in this file's header, *"CI'S OWN MATRIX"*, turned out to be
+   * an assumption that there was exactly one. There is not, and the next one will not announce
+   * itself either. So the list comes from git, the same way the prose sites above do.
+   */
+  const WORKFLOWS = TRACKED.filter(
+    (where) => where.startsWith('.github/workflows/') && where.endsWith('.yml'),
+  ).map((where) => ({ where, text: readFileSync(join(ROOT, where), 'utf-8') }));
+
+  /** A version this repository pins somewhere. Expressions such as `${{ matrix.node }}` are not. */
+  const pinned = (text: string, pattern: RegExp): string[] =>
+    [...text.matchAll(pattern)]
+      .flatMap((found) => (found[1] ?? '').split(','))
       .map((entry) => entry.trim().replace(/^['"]|['"]$/g, ''))
-      .filter((entry) => entry !== '');
-    expect(versions.length, 'the node matrix came back empty').toBeGreaterThan(0);
-    expect(versions, 'CI never runs the floor it declares').toContain(String(FLOOR[0]));
-    const below = versions.filter((entry) => Number(entry) < FLOOR[0]);
-    expect(below, 'CI runs a node this workspace does not claim to support').toEqual([]);
+      .filter((entry) => /^\d+(\.\d+)*$/.test(entry));
+
+  it('is a runtime CI actually runs, in every workflow that declares a matrix', () => {
+    expect(WORKFLOWS.length, 'git found no workflow at all').toBeGreaterThan(0);
+
+    const matrices = WORKFLOWS.map((file) => ({
+      where: file.where,
+      versions: pinned(file.text, /^\s*node: \[(.+)\]\s*$/gm),
+    })).filter((file) => file.versions.length > 0);
+
+    expect(
+      matrices.map((file) => file.where),
+      'no workflow declares a node matrix, so nothing here checks a runtime',
+    ).toContain('.github/workflows/ci.yml');
+
+    const misses = matrices
+      .filter((file) => !file.versions.includes(String(FLOOR[0])))
+      .map((file) => `${file.where}: ${file.versions.join(', ')}`);
+    expect(misses, 'a workflow matrix never runs the floor this workspace declares').toEqual([]);
+  });
+
+  it('is never undercut by a node pinned anywhere in a workflow', () => {
+    const below = WORKFLOWS.flatMap((file) =>
+      [
+        ...pinned(file.text, /^\s*node: \[(.+)\]\s*$/gm),
+        ...pinned(file.text, /^\s*node-version:\s*(\S+)\s*$/gm),
+      ]
+        .filter((entry) => Number(entry.split('.')[0]) < FLOOR[0])
+        .map((entry) => `${file.where}: ${entry}`),
+    );
+    expect(below, 'a workflow runs a node this workspace does not claim to support').toEqual([]);
   });
 
   it('is enforced by pnpm rather than merely stated', () => {
