@@ -22,6 +22,13 @@
  * content root. These digests freeze the exact SHA-256 of the canonical bytes, so
  * a change to the format has to be a deliberate, versioned migration.
  *
+ * HOW TO ADD A VECTOR, since the file is written by hand ON PURPOSE. Add the row to
+ * `vectors.ts` (a kind with none does not compile), run this file, and paste the
+ * digest the failure names into `canonical-vectors.json` along with the event and the
+ * two aggregate folds it reports. It is deliberately not a snapshot the runner
+ * rewrites: `--update` would silently move a frozen digest, and moving one is the one
+ * edit here that has to be a decision somebody made.
+ *
  * WHY THE DIGESTS ARE NOT IN THIS FILE. They live in `canonical-vectors.json` —
  * the artifact `FORMAT.md` describes and an outside implementation downloads —
  * and this file recomputes them. That is one list, not two: the file DECLARES the
@@ -135,6 +142,30 @@ describe('canonicalization golden vectors — the byte format must not drift sil
 });
 
 describe('the published artifact says what the code says', () => {
+  it('carries exactly the keys an outside consumer reads it for', () => {
+    // The artifact is public surface, and three of its keys are read by nothing in
+    // this suite — `vectorsVersion`, `describedBy` and `envelope` are for the
+    // stranger, not for us. A key renamed or dropped would break every consumer and
+    // pass every other case here, so the SHAPE is asserted whole.
+    expect(Object.keys(artifact)).toEqual([
+      'vectorsVersion',
+      'describedBy',
+      'entryDomain',
+      'rootDomain',
+      'envelope',
+      'vectors',
+      'chain',
+    ]);
+    expect(Object.keys(artifact.vectors[0] ?? {})).toEqual(['name', 'kind', 'event', 'sha256']);
+    expect(Object.keys(artifact.chain)).toEqual([
+      'tail',
+      'emptyRoot',
+      'entryHashGenesis',
+      'entryHashLinked',
+      'contentRootOverAllVectors',
+    ]);
+  });
+
   it('carries the domain tags the code hashes under, never a copy of them', () => {
     expect(artifact.entryDomain).toBe(ENTRY_DOMAIN);
     expect(artifact.rootDomain).toBe(ROOT_DOMAIN);
