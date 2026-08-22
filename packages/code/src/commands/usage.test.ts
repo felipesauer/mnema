@@ -22,7 +22,9 @@
 import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { DiscoveryEnv } from '@mnema/core';
+import { catalogUpcasters } from '@mnema/chain';
+import { chainRootForScope, type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { openTreeForWriting, startRun } from '@mnema/core/write';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runInit } from './init.js';
 import { runRunStart } from './run-start.js';
@@ -129,6 +131,30 @@ function storeIn(env: DiscoveryEnv): string {
   return join(env.home, '.claude', 'projects');
 }
 
+/**
+ * Opens two runs in the project's public tree at the SAME instant, through the core's
+ * injectable clock — the only way to build the tie, since `mnema run start` takes no
+ * clock and two of its invocations are milliseconds apart.
+ *
+ * Answers with the ids in the order they were opened.
+ */
+function twoRunsAtOneInstant(repo: string, env: DiscoveryEnv, at: string): readonly string[] {
+  const trees = resolveTrees(repo, env);
+  const ctx = {
+    writer: openTreeForWriting(trees, 'public'),
+    layout: { root: chainRootForScope(trees, 'public') as string },
+    upcasters: catalogUpcasters(),
+    clock: () => at,
+  };
+  const opened = ['agent-one', 'agent-two'].map((agent) => {
+    const run = startRun(ctx, { agent });
+    if (!run.ok) throw new Error(`setup: startRun refused (${run.code})`);
+    return run.id;
+  });
+  ctx.writer.checkpoint();
+  return opened;
+}
+
 /** Opens a run and answers with its id and the instant it started at. */
 function openRun(
   repo: string,
@@ -160,6 +186,25 @@ function read(repo: string, env: DiscoveryEnv, atMs: number): UsageDone {
 }
 
 describe('mnema usage', () => {
+  it('puts the NEWER of two runs opened in one millisecond at the top of the table', () => {
+    // The listing is newest-first and its tie-break used to be `id.localeCompare`
+    // ASCENDING, which is oldest-first — so a table headed "most recent at the top"
+    // put the older of a tie there. Nothing here covered it: every other case in this
+    // file opens one run, or opens them far enough apart that the instants differ, and
+    // a mutation of the core's rule left the whole file green.
+    //
+    // The ids are MINTED, not written, so the order asserted is the one the product
+    // produces: `mintId` carries a monotonic counter, so the second run's id is the
+    // greater of the two inside a millisecond.
+    const { repo, env } = setup();
+    const at = '2026-08-22T09:00:00.000Z';
+    const [older, newer] = twoRunsAtOneInstant(repo, env, at);
+
+    const listing = read(repo, env, Date.parse(at) + 60_000);
+    expect(listing.runs.map((run) => run.startedAt)).toEqual([at, at]);
+    expect(listing.runs.map((run) => run.run)).toEqual([newer, older]);
+  });
+
   it('attributes the one host session in the window, and sums it once per message', () => {
     const { repo, env } = setup();
     const { id, startedMs } = openRun(repo, env, 'agent-alpha');
