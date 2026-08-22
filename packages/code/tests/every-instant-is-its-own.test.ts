@@ -35,8 +35,8 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-/** The packages tree — this file is `packages/code/tests/…`. */
-const PACKAGES = fileURLToPath(new URL('../../', import.meta.url));
+/** The workspace root — this file is `packages/code/tests/…`. */
+const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 
 /**
  * A ranked instant as a golden carries it: the placeholder a chronological position becomes.
@@ -52,23 +52,35 @@ const RANKED_INSTANT = /<at:\d+>/;
  */
 const CLOCK_READ = /\bDate\.now\(\)|\bnew Date\(\s*\)/g;
 
-/** Every file under `where`, minus what is built or installed. */
-function filesUnder(where: string): readonly string[] {
+/** Every file under `where`; `deep` walks it, and what is built or installed is not it. */
+function filesUnder(where: string, deep: boolean): readonly string[] {
   const found: string[] = [];
   for (const entry of readdirSync(where, { withFileTypes: true })) {
     const path = join(where, entry.name);
     if (entry.isDirectory()) {
+      if (!deep) continue;
       if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name === 'coverage') {
         continue;
       }
-      found.push(...filesUnder(path));
+      found.push(...filesUnder(path, true));
     } else found.push(path);
   }
   return found;
 }
 
-/** Every file the packages ship, read once — the goldens and the sources both come out of it. */
-const SHIPPED = filesUnder(PACKAGES);
+/**
+ * Every file the workspace SHIPS, read once — the goldens and the sources both come out of it.
+ *
+ * The measurements are walked with the packages rather than left out by scope: that tree ships
+ * a harness with goldens of its own, and a guard that never looked at it would be saying
+ * nothing about it while appearing to. It holds no ranked instant today, and this is what
+ * makes that a fact rather than a decision — one landing there tomorrow is covered.
+ */
+const SHIPPED: readonly string[] = [
+  ...filesUnder(ROOT, false),
+  ...filesUnder(join(ROOT, 'packages'), true),
+  ...filesUnder(join(ROOT, 'measurements'), true),
+];
 
 /**
  * The goldens that hold a ranked instant, by path.
@@ -77,7 +89,7 @@ const SHIPPED = filesUnder(PACKAGES);
  * says what it is, and a list here would be a second idea of which transcripts rank.
  */
 const RANKING_GOLDENS = SHIPPED.filter(
-  (file) => file.endsWith('.golden.txt') && RANKED_INSTANT.test(readFileSync(file, 'utf-8')),
+  (file) => /\.golden\.\w+$/.test(file) && RANKED_INSTANT.test(readFileSync(file, 'utf-8')),
 );
 
 /**
@@ -132,13 +144,20 @@ describe('every instant a ranked transcript holds is its own', () => {
     // is concluded from it: a rule proved over zero files is the shape of a guard that was
     // switched off by a rename nobody noticed.
     expect(
-      RANKING_GOLDENS.map((file) => file.slice(PACKAGES.length)),
+      RANKING_GOLDENS.map((file) => file.slice(ROOT.length)),
       'no committed golden ranks an instant — the scan found nothing to be a rule about',
-    ).toContain('code/src/cli.reads.golden.txt');
+    ).toContain('packages/code/src/cli.reads.golden.txt');
+    // AND THE WALK REACHES THE OTHER TREE THAT SHIPS GOLDENS, so its absence from the list
+    // above is a reading and not a blind spot: the measurements harness pins one, it holds no
+    // ranked instant, and that is why the rule does not reach it today.
+    const reached = SHIPPED.map((file) => file.slice(ROOT.length));
+    expect(reached, 'the measurements harness was not walked').toContain(
+      'measurements/p1/harness/tests/four-arms.golden.json',
+    );
     for (const golden of RANKING_GOLDENS) {
       expect(
-        fixturesFor(golden).map((file) => file.slice(PACKAGES.length)),
-        `nothing names ${golden.slice(PACKAGES.length)} — its fixture was not found`,
+        fixturesFor(golden).map((file) => file.slice(ROOT.length)),
+        `nothing names ${golden.slice(ROOT.length)} — its fixture was not found`,
       ).not.toEqual([]);
     }
   });
@@ -147,7 +166,7 @@ describe('every instant a ranked transcript holds is its own', () => {
     for (const golden of RANKING_GOLDENS) {
       for (const fixture of fixturesFor(golden)) {
         const source = readFileSync(fixture, 'utf-8');
-        const where = fixture.slice(PACKAGES.length);
+        const where = fixture.slice(ROOT.length);
         const gates = gatesIn(source);
         // NON-VACUITY FIRST, both halves of it. A fixture with no gate would pass the ban
         // below by having nothing to ban, and a gate that stopped reading the clock would
