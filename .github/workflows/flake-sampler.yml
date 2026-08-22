@@ -1,0 +1,214 @@
+name: Flake sampler
+
+# WHAT THIS IS. It runs the suite N times against ONE commit and publishes, per case, how many of
+# those N runs it failed in. It produces a RATE, and the rate is the number that did not exist
+# before it.
+#
+# WHAT IT IS NOT. It is not a gate. It is not a required check. It re-runs nothing until green, it
+# repairs no flake it finds, and it must never be added to branch protection. A red here is a
+# SIGNAL — and when the flake it names is fixed, it goes back to green by itself, which is what
+# makes it an instrument rather than an alarm.
+#
+# WHY IT EXISTS. Two merges onto this trunk went red on a runner within twenty-four hours,
+# `6ce26119` and `9e06ab08`. Neither red was a regression of the change that carried it: one was a
+# screen erase left inside a test's own layout stripper, the other was the product tie-breaking two
+# ids of the same millisecond on a coin flip. Both were green on their pull request at the
+# identical tree, and both were found by the FIRST run of the trunk. `ci.yml` answers "did it pass
+# once". Twice in two days, that turned out not to be the same question as "does it pass".
+#
+# AND IT IS A CONTINUOUS INSTRUMENT, NOT A ONE-OFF TEST. With p the rate of a flake, N runs find it
+# with probability 1-(1-p)^N. N=30 is 96% for one in ten and 79% for one in twenty — but only 26%
+# for one in a hundred. Seven nights are 210 runs, and one in a hundred is 88% there. NOBODY MAY
+# READ ONE GREEN NIGHT AS "THERE IS NO FLAKE". The page the summary prints says so on its face.
+#
+# IT COSTS NO MONEY AND IT COSTS NO MERGE. Standard runners on a public repository are free and
+# unmetered; the whole cost is wall clock on machines nobody is waiting for, which is why there is
+# no reason here to economise on sample size.
+
+on:
+  # WHEN IT ACTUALLY FIRES, and the two triggers below do NOT behave alike. This comment first
+  # said both were dormant until the file reached the default branch, on the received wisdom that
+  # GitHub runs `schedule` and offers `workflow_dispatch` from there only. HALF OF THAT IS FALSE,
+  # and it was falsified by probing it rather than by believing it: `gh workflow run
+  # flake-sampler.yml --ref the-suite-says-how-often-it-lies` started run `32556614503` from a
+  # branch that is not the default one. What is confined to the default branch is the workflow
+  # LIST the web interface offers; the dispatch itself takes a `ref` and runs the file it finds
+  # there.
+  #
+  # `schedule` is the half that is genuinely dormant. Scheduled workflows run from the default
+  # branch, which is `main`, while the v1 is built on `main-v1` — so until this file reaches
+  # `main`, no night fires on its own and every night has to be asked for. Said here rather than
+  # discovered by waiting a week for a night that was never scheduled.
+  schedule:
+    # 06:00 UTC, which is the small hours of the timezone this is developed in.
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      repetitions:
+        description: 'Runs of the suite per shard (3 shards per node; 10 gives N=30 per node)'
+        required: false
+        default: '10'
+  # A CHANGE TO THE SAMPLER RUNS THE SAMPLER. `docs.yml` already keeps its own path in its trigger
+  # for the same reason: an instrument whose only exercise is the night it is needed is an
+  # instrument nobody has checked. It is also what makes a night arrive without anybody asking
+  # for one while `schedule` cannot fire.
+  pull_request:
+    paths:
+      - '.github/workflows/flake-sampler.yml'
+      - '.github/flake-sampler/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  # NOT `cancel-in-progress`. A night is twenty-odd minutes of sampling, and cancelling it to start
+  # another leaves neither — and the sampler refuses on a short count rather than publishing one,
+  # so a cancelled night costs a night AND prints RULER BROKEN.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sample:
+    name: sample (node ${{ matrix.node }}, shard ${{ matrix.shard }})
+    # THREE SHARDS PER NODE, TEN RUNS EACH, RATHER THAN ONE JOB OF THIRTY. Same N, and the reason
+    # is measured rather than guessed. Thirty repetitions in one job sample ONE virtual machine,
+    # which covers what both known flakes were (timing between files running in parallel) and
+    # cannot see variation between machines at all. Three jobs sample three. The cost of the split
+    # is the setup paid twice more — and on the run this was sized from (`32553298605`) checkout,
+    # pnpm, node, install and build together took 21 s on node 22 and 15 s on node 24, because the
+    # pnpm cache hits and install lands in 2-5 s. So the extra machines cost about forty seconds of
+    # runner time in total, not the minutes it looks like they should, and they cost nothing at all
+    # in wall clock because the shards run at the same time. Thirty sequential runs would take
+    # around sixty-five minutes; ten take around twenty-two.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        # BOTH RUNTIMES, because the two known reds landed on node 22 and were green on node 24 in
+        # the same run. Two out of two is one in four by chance if the two are independent, so it
+        # is neither established nor dismissed — and the matrix answers it for free, since it was
+        # going to run both anyway.
+        node: ['22', '24']
+        shard: ['1', '2', '3']
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      # No lint step and no coverage step. This measures the SUITE, and the flags are the ones
+      # `ci.yml` runs the suite with, so that what is sampled is what the trunk is judged by.
+      #
+      # `|| true` IS LOAD-BEARING AND IS NOT SWALLOWING THE RESULT. A red run is the thing being
+      # counted; letting it end the loop would sample until the first failure and then stop, which
+      # is the one shape that cannot produce a rate. The verdict is read off the reports, and a run
+      # that never wrote a report is not counted as a pass — the summariser refuses on the short
+      # count.
+      #
+      # THE REPETITION COUNT ARRIVES IN THE ENVIRONMENT, NOT INTERPOLATED INTO THE SCRIPT. It is a
+      # `workflow_dispatch` input, so it is text somebody types, and text somebody types that is
+      # pasted into a shell line is a shell they can write. It is also checked for being a whole
+      # number before it reaches `seq`, so a value that is not one refuses by name instead of
+      # producing an empty loop and a zero-report night.
+      - name: Run the suite N times
+        env:
+          REPETITIONS: ${{ github.event.inputs.repetitions || 10 }}
+          LABEL: node${{ matrix.node }}-shard${{ matrix.shard }}
+        run: |
+          set -euo pipefail
+          N="$REPETITIONS"
+          case "$N" in
+            ''|*[!0-9]*) echo "REPETITIONS must be a whole number, and it was '$N'"; exit 1 ;;
+          esac
+          if [ "$N" -lt 1 ]; then echo "REPETITIONS must be at least 1, and it was $N"; exit 1; fi
+          mkdir -p reports
+          for i in $(seq 1 "$N"); do
+            SEQ=$(printf '%02d' "$i")
+            echo "::group::$LABEL run $SEQ of $N"
+            pnpm test \
+              --reporter=default \
+              --reporter=json \
+              --outputFile.json="reports/run--$LABEL--$SEQ.json" || true
+            echo "::endgroup::"
+          done
+          ls -la reports
+
+      - name: Upload this shard's reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: flake-reports-node${{ matrix.node }}-shard${{ matrix.shard }}
+          path: reports/
+          retention-days: 14
+          if-no-files-found: warn
+
+  summarise:
+    name: how often it lied
+    needs: sample
+    # ALWAYS, because a shard that died is exactly the case the summariser has to speak about. It
+    # refuses on a short count instead of publishing a rate over whatever survived.
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Download every shard's reports
+        uses: actions/download-artifact@v7
+        with:
+          pattern: flake-reports-*
+          path: reports
+
+      # THE COUNTS ARE PASSED IN, BOTH OF THEM, AND THEY CROSS-CHECK. `--expect` alone would accept
+      # twelve runs from one shard and eight from another as the twenty it asked for; `--per-label`
+      # alone would not notice a shard that never reported at all. The summariser exits 2 and
+      # prints RULER BROKEN on either, and prints no rate table when it does.
+      #
+      # THE SIX IS THE MATRIX ABOVE: two runtimes times three shards. It is written here as a
+      # constant because a job cannot read the size of another job's matrix, and a constant that
+      # drifts from the matrix is the sort of thing that rots quietly. It does not rot quietly
+      # here: getting it wrong makes the count disagree with what was read, and the summariser
+      # answers a disagreement with RULER BROKEN and no rate at all. A stale number produces a
+      # refusal, never a wrong rate.
+      - name: Count, or say the ruler broke
+        env:
+          REPETITIONS: ${{ github.event.inputs.repetitions || 10 }}
+          LABELS: '6'
+        run: |
+          set -euo pipefail
+          case "$REPETITIONS" in
+            ''|*[!0-9]*) echo "REPETITIONS must be a whole number, and it was '$REPETITIONS'"; exit 1 ;;
+          esac
+          node .github/flake-sampler/summarize.mjs \
+            --reports reports \
+            --root "$GITHUB_WORKSPACE" \
+            --per-label "$REPETITIONS" \
+            --expect "$((REPETITIONS * LABELS))" \
+            --summary "$GITHUB_STEP_SUMMARY" \
+            --json tally.json
+
+      - name: Upload the tally
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: flake-tally
+          path: tally.json
+          retention-days: 90
+          if-no-files-found: warn
