@@ -26,13 +26,19 @@ name: Flake sampler
 # no reason here to economise on sample size.
 
 on:
-  # WHEN IT ACTUALLY FIRES, said plainly because it is currently NOT what it looks like. GitHub
-  # runs `schedule` and offers `workflow_dispatch` from the DEFAULT branch only, and the default
-  # branch of this repository is `main` while the v1 is built on `main-v1`. So until this file
-  # reaches `main` — which happens when the trunk becomes the default branch, and not before —
-  # the two triggers below are declared and dormant, and the `pull_request` one underneath them
-  # is the only one that runs. That is stated here rather than discovered by waiting a week for a
-  # night that was never scheduled.
+  # WHEN IT ACTUALLY FIRES, and the two triggers below do NOT behave alike. This comment first
+  # said both were dormant until the file reached the default branch, on the received wisdom that
+  # GitHub runs `schedule` and offers `workflow_dispatch` from there only. HALF OF THAT IS FALSE,
+  # and it was falsified by probing it rather than by believing it: `gh workflow run
+  # flake-sampler.yml --ref the-suite-says-how-often-it-lies` started run `32556614503` from a
+  # branch that is not the default one. What is confined to the default branch is the workflow
+  # LIST the web interface offers; the dispatch itself takes a `ref` and runs the file it finds
+  # there.
+  #
+  # `schedule` is the half that is genuinely dormant. Scheduled workflows run from the default
+  # branch, which is `main`, while the v1 is built on `main-v1` — so until this file reaches
+  # `main`, no night fires on its own and every night has to be asked for. Said here rather than
+  # discovered by waiting a week for a night that was never scheduled.
   schedule:
     # 06:00 UTC, which is the small hours of the timezone this is developed in.
     - cron: '0 6 * * *'
@@ -44,8 +50,8 @@ on:
         default: '10'
   # A CHANGE TO THE SAMPLER RUNS THE SAMPLER. `docs.yml` already keeps its own path in its trigger
   # for the same reason: an instrument whose only exercise is the night it is needed is an
-  # instrument nobody has checked. It also happens to be how the first real night was obtained,
-  # since the two triggers above could not fire from a branch.
+  # instrument nobody has checked. It is also what makes a night arrive without anybody asking
+  # for one while `schedule` cannot fire.
   pull_request:
     paths:
       - '.github/workflows/flake-sampler.yml'
