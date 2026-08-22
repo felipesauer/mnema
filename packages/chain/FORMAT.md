@@ -94,8 +94,9 @@ A genesis entry and an entry whose predecessor is the empty string produce
 different digests — that is what fields 4 and 5 together are for
 (`packages/chain/src/chain/hash.test.ts`).
 
-A tail id is `<signing-key-fingerprint>-<installation-id>`. Sequence numbers
-start at 0 and are contiguous within a tail.
+A tail id is `<signing-key-fingerprint>-<installation-id>`. Sequence numbers start
+at 0 and are contiguous within a tail; a verifier that meets a gap reports it and
+names where (`packages/chain/src/chain/waiver.test.ts`).
 
 ## 4. The stored line
 
