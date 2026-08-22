@@ -37,13 +37,14 @@
  * the page, and the sampler's own header says so.
  */
 
-import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
+  collectReports,
   EXIT,
   exitCodeOf,
   render,
@@ -405,5 +406,81 @@ describe('the page a broken ruler prints is not the page a clean night prints', 
   it('keeps the three verdicts on three different exit codes', () => {
     expect(new Set([EXIT.CLEAN, EXIT.FLAKY, EXIT.BROKEN]).size).toBe(3);
     expect(EXIT.CLEAN).toBe(0);
+  });
+});
+
+/**
+ * THE NAME OF A REPORT IS A RULE WRITTEN IN TWO PLACES, and the two are in different languages.
+ * The workflow's shell composes `reports/run--$LABEL--$SEQ.json`; the summariser recognises it
+ * with a regular expression. Nothing makes them agree, and the day they stop agreeing every
+ * report becomes a file the counter cannot name — a loud refusal rather than a wrong rate, which
+ * is the good failure, but a night lost to it is a night lost.
+ *
+ * The same holds for the number of labels: the summarise job passes `LABELS: '6'` because a job
+ * cannot read the size of another job's matrix. The refusal catches a stale six, and this catches
+ * it before a night is spent on it.
+ *
+ * So both are read out of the workflow itself rather than restated here.
+ */
+describe('the sampler reads exactly the names its workflow writes', () => {
+  const WORKFLOW = readFileSync(join(ROOT, '.github/workflows/flake-sampler.yml'), 'utf-8');
+
+  /** One capture group off the workflow, refused by name when the shape it needs is gone. */
+  const off = (pattern: RegExp, what: string): string => {
+    const found = pattern.exec(WORKFLOW);
+    expect(found, `the workflow no longer declares ${what}`).not.toBeNull();
+    return found?.[1] ?? '';
+  };
+
+  const list = (pattern: RegExp, what: string): string[] =>
+    off(pattern, what)
+      .split(',')
+      .map((entry) => entry.trim().replace(/^['"]|['"]$/g, ''))
+      .filter((entry) => entry !== '');
+
+  const NODES = list(/^\s*node: \[(.+)\]\s*$/m, 'a node matrix');
+  const SHARDS = list(/^\s*shard: \[(.+)\]\s*$/m, 'a shard matrix');
+
+  it('composes a path the summariser can name, for every cell of the matrix', () => {
+    const label = off(/^\s*LABEL: (.+)$/m, 'the label its shards write under');
+    const path = off(/--outputFile\.json="([^"]+)"/, 'where it writes a report');
+
+    const written: string[] = [];
+    for (const node of NODES) {
+      for (const shard of SHARDS) {
+        // The matrix references are matched as patterns rather than written as literals: a
+        // literal `${{ … }}` inside a plain string is what `noTemplateCurlyInString` exists to
+        // catch, and it is right to — that is the shape of a template that forgot its backtick.
+        const cell = (what: string) => new RegExp(`\\$\\{\\{\\s*matrix\\.${what}\\s*\\}\\}`, 'g');
+        const filled = path
+          .replace('$LABEL', label.replace(cell('node'), node).replace(cell('shard'), shard))
+          .replace('$SEQ', '07');
+        const dir = join(sandbox(), 'reports');
+        mkdirSync(join(dir, ...filled.split('/').slice(0, -1).slice(1)), { recursive: true });
+        cpSync(CAPTURE.passed, join(dir, ...filled.split('/').slice(1)));
+        const { reports, problems } = collectReports(dir);
+        expect(problems, `the summariser cannot name what the workflow writes: ${filled}`).toEqual(
+          [],
+        );
+        expect(reports).toHaveLength(1);
+        expect(reports[0].seq).toBe(7);
+        written.push(reports[0].label);
+      }
+    }
+
+    expect(written).toEqual([
+      'node22-shard1',
+      'node22-shard2',
+      'node22-shard3',
+      'node24-shard1',
+      'node24-shard2',
+      'node24-shard3',
+    ]);
+  });
+
+  it('counts as many labels as the matrix has cells', () => {
+    const labels = Number(off(/^\s*LABELS: '(\d+)'\s*$/m, 'how many labels it expects'));
+
+    expect(labels).toBe(NODES.length * SHARDS.length);
   });
 });
