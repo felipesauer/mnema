@@ -5,8 +5,15 @@ in front of it, and a fourth that says how often each of them would be paid.
 
 Nothing here was built. No hook was added, no tool, no verb; `packages/` was not touched
 and no model was called. This directory holds the **captures** and the reading of them;
-the probes that produced them live on the local workbench, the same arrangement
-[`p1/`](../p1/) keeps with its harness.
+the probes that produced them live on the local workbench.
+
+*(That sentence ended **"the same arrangement [`p1/`](../p1/) keeps with its harness"**, and p1
+does not keep it any more: its runner is committed at [`p1/harness/`](../p1/harness/), beside the
+numbers it produced. The premise is rewritten rather than deleted, and the difference between the
+two cases is the reason this directory did not follow it — p1's runner is a pre-registered
+instrument that produced three rounds and is meant to be run again, by us and by anybody else;
+these probes are one-off stopwatches, each answering one question once. Publishing a stopwatch as
+an instrument would claim a reuse it does not have.)*
 
 The measurement is dated `results/2026-08-19/`, and every capture carries its own
 `stamp`: the commit that produced it, the node version, the machine and its load. Read

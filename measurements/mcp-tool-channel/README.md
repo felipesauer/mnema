@@ -9,8 +9,10 @@ questions, in this order, because the second one is worth nothing if the first a
    form, and under what name can it reach the server its own plugin declares?
 2. what does the work behind it cost per firing, and over a session?
 
-The probes live on the local workbench, the arrangement [`p1/`](../p1/) and
-[`channel-cost/`](../channel-cost/) already keep. This directory holds the captures, each
+The probes live on the local workbench, the arrangement [`channel-cost/`](../channel-cost/)
+already keeps. *(This sentence named [`p1/`](../p1/) too, and p1 left that list: its runner is
+committed at [`p1/harness/`](../p1/harness/), because a pre-registered instrument that has
+produced three rounds is a thing a stranger should be able to read. A one-off probe is not.)* This directory holds the captures, each
 stamped with the commit, the host version, the node, the machine and its load. **Read every
 number beside the build it came from, never beside this prose.**
 

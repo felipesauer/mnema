@@ -12,9 +12,12 @@ Two questions, and the second is the one that matters:
 2. does charging still get **more expensive the more it charges**? That is a property of the design
    rather than an instant, and it is why the first number was worth chasing.
 
-The probes live on the local workbench, the arrangement [`p1/`](../p1/),
-[`channel-cost/`](../channel-cost/), [`switch-cost/`](../switch-cost/) and
-[`asks-a-person/`](../asks-a-person/) already keep. This directory holds the captures, each stamped
+The probes live on the local workbench, the arrangement [`channel-cost/`](../channel-cost/),
+[`switch-cost/`](../switch-cost/) and [`asks-a-person/`](../asks-a-person/) already keep. *(This
+sentence named [`p1/`](../p1/) first, and p1 left that list: its runner is committed at
+[`p1/harness/`](../p1/harness/). The line stays as the record of an arrangement that was once
+uniform, and the reason it stopped being uniform is a difference rather than an exception — an
+instrument three rounds were measured with is re-run; a stopwatch is not.)* This directory holds the captures, each stamped
 with the commits, the node, the machine and its load. **Read every number beside the build and the
 LOAD it came from, never beside this prose.** No model was called: this is a stopwatch over the
 product's own functions.

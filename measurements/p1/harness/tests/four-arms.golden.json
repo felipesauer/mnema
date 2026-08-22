@@ -1,0 +1,471 @@
+{
+  "frozen_for": "the four arms of the pre-registered round",
+  "arms": [
+    "base",
+    "prosa",
+    "host",
+    "mnema"
+  ],
+  "manifests": {
+    "a1-rounding/base": {
+      "arm": "base",
+      "axis": "A",
+      "repo": [
+        "invoice.php 114e765eb9828ae1"
+      ],
+      "memory": [],
+      "mnemaTree": false,
+      "records": null,
+      "settings": {
+        "autoMemoryDirectory": "<SANDBOX>/memory"
+      },
+      "env": {
+        "PATH": "<INHERITED-PATH>",
+        "SHELL": "/bin/bash",
+        "USER": "bench",
+        "LOGNAME": "bench",
+        "LANG": "C.UTF-8",
+        "TZ": "UTC",
+        "HOME": "<SANDBOX>/home",
+        "TMPDIR": "<SANDBOX>/tmp",
+        "XDG_DATA_HOME": "<SANDBOX>/xdg",
+        "XDG_CONFIG_HOME": "<SANDBOX>/config",
+        "XDG_CACHE_HOME": "<SANDBOX>/cache",
+        "ANTHROPIC_API_KEY": ""
+      },
+      "mcp": {
+        "mcpServers": {}
+      },
+      "argv": [
+        "-p",
+        "<TICKET>",
+        "--model",
+        "claude-haiku-4-5-20251001",
+        "--output-format",
+        "json",
+        "--setting-sources",
+        "project,local",
+        "--strict-mcp-config",
+        "--mcp-config",
+        "<SANDBOX>/cell/mcp.json",
+        "--settings",
+        "<SANDBOX>/cell/settings.json",
+        "--append-system-prompt",
+        "You are working in a small repository. Implement what the ticket asks by editing the files that are already there. Do not start servers or other long-running processes, and do not use the network. Stop when the ticket is done.",
+        "--permission-mode",
+        "bypassPermissions",
+        "--no-session-persistence"
+      ]
+    },
+    "a1-rounding/prosa": {
+      "arm": "prosa",
+      "axis": "A",
+      "repo": [
+        "DECISIONS.md 63f4f8a49642b1b2",
+        "invoice.php 114e765eb9828ae1"
+      ],
+      "memory": [],
+      "mnemaTree": false,
+      "records": null,
+      "settings": {
+        "autoMemoryDirectory": "<SANDBOX>/memory"
+      },
+      "env": {
+        "PATH": "<INHERITED-PATH>",
+        "SHELL": "/bin/bash",
+        "USER": "bench",
+        "LOGNAME": "bench",
+        "LANG": "C.UTF-8",
+        "TZ": "UTC",
+        "HOME": "<SANDBOX>/home",
+        "TMPDIR": "<SANDBOX>/tmp",
+        "XDG_DATA_HOME": "<SANDBOX>/xdg",
+        "XDG_CONFIG_HOME": "<SANDBOX>/config",
+        "XDG_CACHE_HOME": "<SANDBOX>/cache",
+        "ANTHROPIC_API_KEY": ""
+      },
+      "mcp": {
+        "mcpServers": {}
+      },
+      "argv": [
+        "-p",
+        "<TICKET>",
+        "--model",
+        "claude-haiku-4-5-20251001",
+        "--output-format",
+        "json",
+        "--setting-sources",
+        "project,local",
+        "--strict-mcp-config",
+        "--mcp-config",
+        "<SANDBOX>/cell/mcp.json",
+        "--settings",
+        "<SANDBOX>/cell/settings.json",
+        "--append-system-prompt",
+        "You are working in a small repository. Implement what the ticket asks by editing the files that are already there. Do not start servers or other long-running processes, and do not use the network. Stop when the ticket is done.",
+        "--permission-mode",
+        "bypassPermissions",
+        "--no-session-persistence"
+      ]
+    },
+    "a1-rounding/host": {
+      "arm": "host",
+      "axis": "A",
+      "repo": [
+        "invoice.php 114e765eb9828ae1"
+      ],
+      "memory": [
+        "MEMORY.md 1d58925063be5e94",
+        "tax-on-a-service-invoice-is-rounded-once-over-the-total.md 5064b31a8e173778"
+      ],
+      "mnemaTree": false,
+      "records": null,
+      "settings": {
+        "autoMemoryDirectory": "<SANDBOX>/memory"
+      },
+      "env": {
+        "PATH": "<INHERITED-PATH>",
+        "SHELL": "/bin/bash",
+        "USER": "bench",
+        "LOGNAME": "bench",
+        "LANG": "C.UTF-8",
+        "TZ": "UTC",
+        "HOME": "<SANDBOX>/home",
+        "TMPDIR": "<SANDBOX>/tmp",
+        "XDG_DATA_HOME": "<SANDBOX>/xdg",
+        "XDG_CONFIG_HOME": "<SANDBOX>/config",
+        "XDG_CACHE_HOME": "<SANDBOX>/cache",
+        "ANTHROPIC_API_KEY": ""
+      },
+      "mcp": {
+        "mcpServers": {}
+      },
+      "argv": [
+        "-p",
+        "<TICKET>",
+        "--model",
+        "claude-haiku-4-5-20251001",
+        "--output-format",
+        "json",
+        "--setting-sources",
+        "project,local",
+        "--strict-mcp-config",
+        "--mcp-config",
+        "<SANDBOX>/cell/mcp.json",
+        "--settings",
+        "<SANDBOX>/cell/settings.json",
+        "--append-system-prompt",
+        "You are working in a small repository. Implement what the ticket asks by editing the files that are already there. Do not start servers or other long-running processes, and do not use the network. Stop when the ticket is done.",
+        "--permission-mode",
+        "bypassPermissions",
+        "--no-session-persistence"
+      ]
+    },
+    "a1-rounding/mnema": {
+      "arm": "mnema",
+      "axis": "A",
+      "repo": [
+        "invoice.php 114e765eb9828ae1"
+      ],
+      "memory": [],
+      "mnemaTree": true,
+      "records": [
+        "decision · accepted · Tax on a service invoice is rounded once, over the total"
+      ],
+      "settings": {
+        "autoMemoryDirectory": "<SANDBOX>/memory"
+      },
+      "env": {
+        "PATH": "<INHERITED-PATH>",
+        "SHELL": "/bin/bash",
+        "USER": "bench",
+        "LOGNAME": "bench",
+        "LANG": "C.UTF-8",
+        "TZ": "UTC",
+        "HOME": "<SANDBOX>/home",
+        "TMPDIR": "<SANDBOX>/tmp",
+        "XDG_DATA_HOME": "<SANDBOX>/xdg",
+        "XDG_CONFIG_HOME": "<SANDBOX>/config",
+        "XDG_CACHE_HOME": "<SANDBOX>/cache",
+        "ANTHROPIC_API_KEY": ""
+      },
+      "mcp": {
+        "mcpServers": {
+          "mnema": {
+            "command": "<NODE>",
+            "args": [
+              "<HARNESS>/lib/mcp-wrapper.mjs",
+              "<SANDBOX>/cell/mcp-traffic.jsonl",
+              "--",
+              "<NODE>",
+              "<MNEMA>",
+              "mcp",
+              "--project",
+              "<SANDBOX>/repo"
+            ],
+            "env": {
+              "PATH": "<INHERITED-PATH>",
+              "SHELL": "/bin/bash",
+              "USER": "bench",
+              "LOGNAME": "bench",
+              "LANG": "C.UTF-8",
+              "TZ": "UTC",
+              "HOME": "<SANDBOX>/home",
+              "TMPDIR": "<SANDBOX>/tmp",
+              "XDG_DATA_HOME": "<SANDBOX>/xdg",
+              "XDG_CONFIG_HOME": "<SANDBOX>/config",
+              "XDG_CACHE_HOME": "<SANDBOX>/cache"
+            }
+          }
+        }
+      },
+      "argv": [
+        "-p",
+        "<TICKET>",
+        "--model",
+        "claude-haiku-4-5-20251001",
+        "--output-format",
+        "json",
+        "--setting-sources",
+        "project,local",
+        "--strict-mcp-config",
+        "--mcp-config",
+        "<SANDBOX>/cell/mcp.json",
+        "--settings",
+        "<SANDBOX>/cell/settings.json",
+        "--append-system-prompt",
+        "You are working in a small repository. Implement what the ticket asks by editing the files that are already there. Do not start servers or other long-running processes, and do not use the network. Stop when the ticket is done.",
+        "--permission-mode",
+        "bypassPermissions",
+        "--no-session-persistence"
+      ]
+    },
+    "b1-csv-quotes/base": {
+      "arm": "base",
+      "axis": "B",
+      "repo": [
+        "parse.py 1d3fa148f45c492e"
+      ],
+      "memory": [],
+      "mnemaTree": false,
+      "records": null,
+      "settings": {
+        "autoMemoryDirectory": "<SANDBOX>/memory"
+      },
+      "env": {
+        "PATH": "<INHERITED-PATH>",
+        "SHELL": "/bin/bash",
+        "USER": "bench",
+        "LOGNAME": "bench",
+        "LANG": "C.UTF-8",
+        "TZ": "UTC",
+        "HOME": "<SANDBOX>/home",
+        "TMPDIR": "<SANDBOX>/tmp",
+        "XDG_DATA_HOME": "<SANDBOX>/xdg",
+        "XDG_CONFIG_HOME": "<SANDBOX>/config",
+        "XDG_CACHE_HOME": "<SANDBOX>/cache",
+        "ANTHROPIC_API_KEY": ""
+      },
+      "mcp": {
+        "mcpServers": {}
+      },
+      "argv": [
+        "-p",
+        "<TICKET>",
+        "--model",
+        "claude-haiku-4-5-20251001",
+        "--output-format",
+        "json",
+        "--setting-sources",
+        "project,local",
+        "--strict-mcp-config",
+        "--mcp-config",
+        "<SANDBOX>/cell/mcp.json",
+        "--settings",
+        "<SANDBOX>/cell/settings.json",
+        "--append-system-prompt",
+        "You are working in a small repository. Implement what the ticket asks by editing the files that are already there. Do not start servers or other long-running processes, and do not use the network. Stop when the ticket is done.",
+        "--permission-mode",
+        "bypassPermissions",
+        "--no-session-persistence"
+      ]
+    },
+    "b1-csv-quotes/prosa": {
+      "arm": "prosa",
+      "axis": "B",
+      "repo": [
+        "parse.py 1d3fa148f45c492e"
+      ],
+      "memory": [],
+      "mnemaTree": false,
+      "records": null,
+      "settings": {
+        "autoMemoryDirectory": "<SANDBOX>/memory"
+      },
+      "env": {
+        "PATH": "<INHERITED-PATH>",
+        "SHELL": "/bin/bash",
+        "USER": "bench",
+        "LOGNAME": "bench",
+        "LANG": "C.UTF-8",
+        "TZ": "UTC",
+        "HOME": "<SANDBOX>/home",
+        "TMPDIR": "<SANDBOX>/tmp",
+        "XDG_DATA_HOME": "<SANDBOX>/xdg",
+        "XDG_CONFIG_HOME": "<SANDBOX>/config",
+        "XDG_CACHE_HOME": "<SANDBOX>/cache",
+        "ANTHROPIC_API_KEY": ""
+      },
+      "mcp": {
+        "mcpServers": {}
+      },
+      "argv": [
+        "-p",
+        "<TICKET>",
+        "--model",
+        "claude-haiku-4-5-20251001",
+        "--output-format",
+        "json",
+        "--setting-sources",
+        "project,local",
+        "--strict-mcp-config",
+        "--mcp-config",
+        "<SANDBOX>/cell/mcp.json",
+        "--settings",
+        "<SANDBOX>/cell/settings.json",
+        "--append-system-prompt",
+        "You are working in a small repository. Implement what the ticket asks by editing the files that are already there. Do not start servers or other long-running processes, and do not use the network. Stop when the ticket is done.",
+        "--permission-mode",
+        "bypassPermissions",
+        "--no-session-persistence"
+      ]
+    },
+    "b1-csv-quotes/host": {
+      "arm": "host",
+      "axis": "B",
+      "repo": [
+        "parse.py 1d3fa148f45c492e"
+      ],
+      "memory": [],
+      "mnemaTree": false,
+      "records": null,
+      "settings": {
+        "autoMemoryDirectory": "<SANDBOX>/memory"
+      },
+      "env": {
+        "PATH": "<INHERITED-PATH>",
+        "SHELL": "/bin/bash",
+        "USER": "bench",
+        "LOGNAME": "bench",
+        "LANG": "C.UTF-8",
+        "TZ": "UTC",
+        "HOME": "<SANDBOX>/home",
+        "TMPDIR": "<SANDBOX>/tmp",
+        "XDG_DATA_HOME": "<SANDBOX>/xdg",
+        "XDG_CONFIG_HOME": "<SANDBOX>/config",
+        "XDG_CACHE_HOME": "<SANDBOX>/cache",
+        "ANTHROPIC_API_KEY": ""
+      },
+      "mcp": {
+        "mcpServers": {}
+      },
+      "argv": [
+        "-p",
+        "<TICKET>",
+        "--model",
+        "claude-haiku-4-5-20251001",
+        "--output-format",
+        "json",
+        "--setting-sources",
+        "project,local",
+        "--strict-mcp-config",
+        "--mcp-config",
+        "<SANDBOX>/cell/mcp.json",
+        "--settings",
+        "<SANDBOX>/cell/settings.json",
+        "--append-system-prompt",
+        "You are working in a small repository. Implement what the ticket asks by editing the files that are already there. Do not start servers or other long-running processes, and do not use the network. Stop when the ticket is done.",
+        "--permission-mode",
+        "bypassPermissions",
+        "--no-session-persistence"
+      ]
+    },
+    "b1-csv-quotes/mnema": {
+      "arm": "mnema",
+      "axis": "B",
+      "repo": [
+        "parse.py 1d3fa148f45c492e"
+      ],
+      "memory": [],
+      "mnemaTree": true,
+      "records": [],
+      "settings": {
+        "autoMemoryDirectory": "<SANDBOX>/memory"
+      },
+      "env": {
+        "PATH": "<INHERITED-PATH>",
+        "SHELL": "/bin/bash",
+        "USER": "bench",
+        "LOGNAME": "bench",
+        "LANG": "C.UTF-8",
+        "TZ": "UTC",
+        "HOME": "<SANDBOX>/home",
+        "TMPDIR": "<SANDBOX>/tmp",
+        "XDG_DATA_HOME": "<SANDBOX>/xdg",
+        "XDG_CONFIG_HOME": "<SANDBOX>/config",
+        "XDG_CACHE_HOME": "<SANDBOX>/cache",
+        "ANTHROPIC_API_KEY": ""
+      },
+      "mcp": {
+        "mcpServers": {
+          "mnema": {
+            "command": "<NODE>",
+            "args": [
+              "<HARNESS>/lib/mcp-wrapper.mjs",
+              "<SANDBOX>/cell/mcp-traffic.jsonl",
+              "--",
+              "<NODE>",
+              "<MNEMA>",
+              "mcp",
+              "--project",
+              "<SANDBOX>/repo"
+            ],
+            "env": {
+              "PATH": "<INHERITED-PATH>",
+              "SHELL": "/bin/bash",
+              "USER": "bench",
+              "LOGNAME": "bench",
+              "LANG": "C.UTF-8",
+              "TZ": "UTC",
+              "HOME": "<SANDBOX>/home",
+              "TMPDIR": "<SANDBOX>/tmp",
+              "XDG_DATA_HOME": "<SANDBOX>/xdg",
+              "XDG_CONFIG_HOME": "<SANDBOX>/config",
+              "XDG_CACHE_HOME": "<SANDBOX>/cache"
+            }
+          }
+        }
+      },
+      "argv": [
+        "-p",
+        "<TICKET>",
+        "--model",
+        "claude-haiku-4-5-20251001",
+        "--output-format",
+        "json",
+        "--setting-sources",
+        "project,local",
+        "--strict-mcp-config",
+        "--mcp-config",
+        "<SANDBOX>/cell/mcp.json",
+        "--settings",
+        "<SANDBOX>/cell/settings.json",
+        "--append-system-prompt",
+        "You are working in a small repository. Implement what the ticket asks by editing the files that are already there. Do not start servers or other long-running processes, and do not use the network. Stop when the ticket is done.",
+        "--permission-mode",
+        "bypassPermissions",
+        "--no-session-persistence"
+      ]
+    }
+  }
+}

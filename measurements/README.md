@@ -37,6 +37,23 @@ The consequence is stated rather than hidden: while a measurement is pending, a 
 check that the tasks did **not change** between the freeze and the result, and cannot yet check
 what they say. The ids name a domain (`a1-rounding`), never the rule the task turns on.
 
+**And what a task may not be is asserted, not only ignored.**
+`packages/code/tests/no-task-is-published-before-it-is-used.test.ts` asks git what it would
+publish — committed files **and** untracked ones nothing ignores — and requires that no path of a
+held-out task is among them, for every round. The ignore rules are the mechanism; that file is the
+check, and it exists because a missing ignore line leaves held-out output unignored and one
+`git add -A` from publication, which this project has done once with 304 files and come within
+three days of a second time with 312.
+
+**The INSTRUMENT is committed too, for [`p1/`](p1/) alone.** [`p1/harness/`](p1/harness/) is the
+runner that produced every capture under [`p1/results/`](p1/results/), published because a number
+whose instrument is not published is *our word* about how it was obtained — which is the one thing
+this directory is organised against. It does not make the rounds reproducible, and the difference
+between *checking the method* and *re-running our cells* is written at the top of that directory's
+own README instead of being left for a reader to assume. The other directories' probes stay on the
+workbench, and that is a difference rather than an exemption: a probe is a stopwatch used once, and
+this is an instrument three rounds were measured with.
+
 ## What is here
 
 | | |

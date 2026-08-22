@@ -14,8 +14,11 @@ answers no:
 3. how often would a gate actually fire — is this usable governance or friction wearing its
    clothes?
 
-The probes live on the local workbench, the arrangement [`p1/`](../p1/),
-[`channel-cost/`](../channel-cost/) and [`switch-cost/`](../switch-cost/) already keep. This
+The probes live on the local workbench, the arrangement [`channel-cost/`](../channel-cost/) and
+[`switch-cost/`](../switch-cost/) already keep. *(This sentence named [`p1/`](../p1/) first, and p1
+left that list: its runner is committed at [`p1/harness/`](../p1/harness/). What did not change is
+the reason these probes stay back — a probe is a stopwatch used once, and p1's runner is a
+pre-registered instrument three rounds have been measured with.)* This
 directory holds the captures, each stamped with the commit, the host version, the node, the
 machine and its load. **Read every number beside the build and the LOAD it came from, never
 beside this prose.**
