@@ -32,8 +32,17 @@ import { type CanonicalValue, canonicalBytes } from '../events/canonical.js';
 import type { CatalogEvent } from '../events/catalog.js';
 import { toCanonical } from '../events/parse.js';
 
-const ENTRY_DOMAIN = 'mnema.entry.v1';
-const ROOT_DOMAIN = 'mnema.root.v1';
+/**
+ * The domain tag every entry hash begins with. Exported off the package's public
+ * surface — this module, not `index.ts` — because a doc and a published artifact
+ * both NAME it, and a name typed into prose is a name that can come to differ
+ * from the code. `FORMAT.md`'s guard and the vectors artifact read it from here,
+ * so the day this becomes `v2` the two of them go red instead of going stale.
+ */
+export const ENTRY_DOMAIN = 'mnema.entry.v1';
+
+/** The domain tag every content-root fold begins with. Named for the same reason. */
+export const ROOT_DOMAIN = 'mnema.root.v1';
 
 declare const writtenBrand: unique symbol;
 

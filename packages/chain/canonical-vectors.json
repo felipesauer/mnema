@@ -1,0 +1,452 @@
+{
+  "vectorsVersion": 1,
+  "describedBy": "FORMAT.md",
+  "entryDomain": "mnema.entry.v1",
+  "rootDomain": "mnema.root.v1",
+  "envelope": {
+    "at": "2026-07-21T00:00:00.000Z",
+    "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+    "signerFp": "2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "vectors": [
+    {
+      "name": "run.started",
+      "kind": "run.started",
+      "event": {
+        "v": 1,
+        "kind": "run.started",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "r-1",
+        "payload": {
+          "agent": "claude",
+          "goal": "do the thing"
+        }
+      },
+      "sha256": "dceb41f6f35480826487ddcea67a3dd5c376d39ada91bd1dba34386bc26a4165"
+    },
+    {
+      "name": "run.ended",
+      "kind": "run.ended",
+      "event": {
+        "v": 1,
+        "kind": "run.ended",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "r-1",
+        "payload": {
+          "outcome": "ok"
+        }
+      },
+      "sha256": "814c119819392bc9069e9ce8178ef7efaa84a0379103c3ba5af6ab7d0c4661aa"
+    },
+    {
+      "name": "task.created",
+      "kind": "task.created",
+      "event": {
+        "v": 1,
+        "kind": "task.created",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "t-1",
+        "which": "claude",
+        "payload": {
+          "title": "Ship the parser"
+        }
+      },
+      "sha256": "e645a47c2c0a6370e607246f67c5b3040b5a97c9977eb21fb66d894696f6751b"
+    },
+    {
+      "name": "task.created (an NFD title normalizes to NFC)",
+      "kind": "task.created",
+      "event": {
+        "v": 1,
+        "kind": "task.created",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "t-2",
+        "which": "claude",
+        "payload": {
+          "title": "café"
+        }
+      },
+      "sha256": "7d301648812a6079f0f480a487ffb8dd36800e82c9828acfb5b46ca4f8b23b20"
+    },
+    {
+      "name": "task.transitioned (birth, from: null)",
+      "kind": "task.transitioned",
+      "event": {
+        "v": 1,
+        "kind": "task.transitioned",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "t-1",
+        "which": "claude",
+        "payload": {
+          "from": null,
+          "to": "todo",
+          "action": "create"
+        }
+      },
+      "sha256": "17d68fa59a2c6206ee717da2e2e2516a9ca6237905110727aff6de379f96e7e2"
+    },
+    {
+      "name": "task.transitioned (with proof fields)",
+      "kind": "task.transitioned",
+      "event": {
+        "v": 1,
+        "kind": "task.transitioned",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "t-1",
+        "which": "claude",
+        "payload": {
+          "from": "todo",
+          "to": "done",
+          "action": "finish",
+          "fields": {
+            "note": "shipped",
+            "pr_url": "https://example.test/pr/1"
+          }
+        }
+      },
+      "sha256": "8bf3ac330c91a56d138fa28e31973c3b161ede06704c7201af6daf9cb86a6bba"
+    },
+    {
+      "name": "task.transitioned (a move the task workflow allows)",
+      "kind": "task.transitioned",
+      "event": {
+        "v": 1,
+        "kind": "task.transitioned",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "019f81f8-e400-7003-8000-000000000003",
+        "which": "claude",
+        "payload": {
+          "from": "IN_PROGRESS",
+          "to": "DONE",
+          "action": "complete",
+          "fields": {
+            "note": "the parser ships"
+          }
+        }
+      },
+      "sha256": "187507c2c5bd8f42e5434b840c0663dc9d8a9cf8710f40176cefc5187a21213f"
+    },
+    {
+      "name": "decision.recorded",
+      "kind": "decision.recorded",
+      "event": {
+        "v": 1,
+        "kind": "decision.recorded",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "d-1",
+        "which": "claude",
+        "payload": {
+          "title": "Use SQLite for the cache",
+          "rationale": "The load is relational.",
+          "adr": "ADR-3"
+        }
+      },
+      "sha256": "ea7fb49e4f83e30414fdea73303ef309f2322000223229d93826a4b92da99d47"
+    },
+    {
+      "name": "decision.transitioned (supersede, with `by`)",
+      "kind": "decision.transitioned",
+      "event": {
+        "v": 1,
+        "kind": "decision.transitioned",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "d-1",
+        "which": "claude",
+        "payload": {
+          "from": "accepted",
+          "to": "superseded",
+          "action": "supersede",
+          "by": "d-2",
+          "fields": {
+            "reason": "r"
+          }
+        }
+      },
+      "sha256": "24793d2e053cad92ed0d0364ba8f6a8d51b004507a37a645cabbb54ba4012700"
+    },
+    {
+      "name": "identity.founded (self-signed by the founder)",
+      "kind": "identity.founded",
+      "event": {
+        "v": 1,
+        "kind": "identity.founded",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "payload": {
+          "foundingFp": "2222222222222222222222222222222222222222222222222222222222222222"
+        }
+      },
+      "sha256": "40472210b699781d13c49f550047f2b746ceff42a64accde156187a16a265499"
+    },
+    {
+      "name": "key.enrolled (member vouches for a new key)",
+      "kind": "key.enrolled",
+      "event": {
+        "v": 1,
+        "kind": "key.enrolled",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "payload": {
+          "newFp": "3333333333333333333333333333333333333333333333333333333333333333",
+          "reverseSig": "abababababababababababababababababababababababababababababababab"
+        }
+      },
+      "sha256": "4f4b32213a25ebf59e682941bfa28614c92f915addca5288ebdfb241aaa05a5a"
+    },
+    {
+      "name": "key.revoked (prospective removal)",
+      "kind": "key.revoked",
+      "event": {
+        "v": 1,
+        "kind": "key.revoked",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "payload": {
+          "revokedFp": "3333333333333333333333333333333333333333333333333333333333333333",
+          "reason": "key rotation"
+        }
+      },
+      "sha256": "f7f9b5dc090d11a8a909cc2d8cf32327fda764e1762add37874a90e11a1d394b"
+    },
+    {
+      "name": "memory.captured",
+      "kind": "memory.captured",
+      "event": {
+        "v": 1,
+        "kind": "memory.captured",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "019f81f8-e400-7001-8000-000000000001",
+        "which": "claude",
+        "payload": {
+          "content": "The cache is SQLite because the load is relational."
+        }
+      },
+      "sha256": "787730e5b250044ba9453f03009c75aeb08eae240191378b87d6e621e8265c94"
+    },
+    {
+      "name": "observation.recorded",
+      "kind": "observation.recorded",
+      "event": {
+        "v": 1,
+        "kind": "observation.recorded",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "019f81f8-e400-7002-8000-000000000002",
+        "which": "claude",
+        "payload": {
+          "about": "019f81f8-e400-7003-8000-000000000003",
+          "topic": "flake",
+          "text": "The suite reddens on a cold cache, about once in twenty runs."
+        }
+      },
+      "sha256": "7d2af2f858946054fcca03db7a1fd1d0c7bad02dfc68e5c95eab4ce2769c73dc"
+    },
+    {
+      "name": "handoff.recorded (a restart with the same agent)",
+      "kind": "handoff.recorded",
+      "event": {
+        "v": 1,
+        "kind": "handoff.recorded",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "019f81f8-e400-7003-8000-000000000003",
+        "which": "claude",
+        "payload": {
+          "fromAgent": "claude",
+          "toAgent": "claude"
+        }
+      },
+      "sha256": "3530cbccd5d7af252b7c303d3fd4e236c02d17786ed20b61dfa49264e089063c"
+    },
+    {
+      "name": "knowledge.linked (relates-to)",
+      "kind": "knowledge.linked",
+      "event": {
+        "v": 1,
+        "kind": "knowledge.linked",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "019f81f8-e400-7001-8000-000000000001",
+        "which": "claude",
+        "payload": {
+          "target": "019f81f8-e400-7003-8000-000000000003",
+          "rel": "relates-to"
+        }
+      },
+      "sha256": "f90a3ebf9ffb382a98c9743c4f8b3502cf6a459ad911acad5bf4685f7435f917"
+    },
+    {
+      "name": "skill.created",
+      "kind": "skill.created",
+      "event": {
+        "v": 1,
+        "kind": "skill.created",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "019f81f8-e400-7004-8000-000000000004",
+        "which": "claude",
+        "payload": {
+          "name": "Review before merge",
+          "body": "A change is read by somebody who did not write it, before it lands."
+        }
+      },
+      "sha256": "35312aec4495c02f424c20d1898efe59cec6581f4b76ff5160d2843367a13d43"
+    },
+    {
+      "name": "skill.transitioned (adopt, with the note the move requires)",
+      "kind": "skill.transitioned",
+      "event": {
+        "v": 1,
+        "kind": "skill.transitioned",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "019f81f8-e400-7004-8000-000000000004",
+        "which": "claude",
+        "payload": {
+          "from": "reviewed",
+          "to": "adopted",
+          "action": "adopt",
+          "fields": {
+            "note": "in use on three tasks"
+          }
+        }
+      },
+      "sha256": "7e8e8ea4b44561393e7ddf6b5cece1b17bbc4c4b6935a16eac75825ff50f97eb"
+    },
+    {
+      "name": "skill.consulted (empty payload, inside a run)",
+      "kind": "skill.consulted",
+      "event": {
+        "v": 1,
+        "kind": "skill.consulted",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "019f81f8-e400-7004-8000-000000000004",
+        "which": "claude",
+        "run": "019f81f8-e400-7005-8000-000000000005",
+        "payload": {}
+      },
+      "sha256": "3161936f0827a62a6f4fe50794df8c26d8e34dec9948904f70594b44bf39868e"
+    },
+    {
+      "name": "tail.pruned (a whole tail, authorized before the cut)",
+      "kind": "tail.pruned",
+      "event": {
+        "v": 1,
+        "kind": "tail.pruned",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "payload": {
+          "tail": "2222222222222222222222222222222222222222222222222222222222222222-55555555555555555555555555555555",
+          "throughHash": "4444444444444444444444444444444444444444444444444444444444444444",
+          "eventCount": 402,
+          "reason": "the machine was decommissioned"
+        }
+      },
+      "sha256": "dca90c05b50e224d143a425a98dd396e30bebca1991709f282a72766fe1885d7"
+    },
+    {
+      "name": "channel.switched (off, with a reason)",
+      "kind": "channel.switched",
+      "event": {
+        "v": 1,
+        "kind": "channel.switched",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "edit-rules-push",
+        "payload": {
+          "on": false,
+          "reason": "the push is noisy in this repository"
+        }
+      },
+      "sha256": "0e1930e70c3f828bef612475d7c32af3018d08c1908af02a4821f7659712f914"
+    },
+    {
+      "name": "channel.served (empty payload, inside a run)",
+      "kind": "channel.served",
+      "event": {
+        "v": 1,
+        "kind": "channel.served",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "brief-document",
+        "which": "claude",
+        "run": "019f81f8-e400-7005-8000-000000000005",
+        "payload": {}
+      },
+      "sha256": "b7201f438f89af692152683eb5ebfc800fae980a671445d2efbfae1e3ce17457"
+    },
+    {
+      "name": "channel.asked (a rule asked for a person, at a path)",
+      "kind": "channel.asked",
+      "event": {
+        "v": 1,
+        "kind": "channel.asked",
+        "at": "2026-07-21T00:00:00.000Z",
+        "who": "mnid:1111111111111111111111111111111111111111111111111111111111111111",
+        "signerFp": "2222222222222222222222222222222222222222222222222222222222222222",
+        "subject": "edit-asks-a-person",
+        "which": "claude",
+        "run": "019f81f8-e400-7005-8000-000000000005",
+        "payload": {
+          "rule": "019f81f8-e400-7006-8000-000000000006",
+          "path": "src/billing/rounding.ts"
+        }
+      },
+      "sha256": "8e1646a9ea1137c99e46d1e290f6943ac6030768c547eb7babf978b81d1fa8cb"
+    }
+  ],
+  "chain": {
+    "tail": "2222222222222222222222222222222222222222222222222222222222222222-55555555555555555555555555555555",
+    "emptyRoot": "396605d56d670e100e19f4838285a68f3c4c1aded8767254b513c658f5a90a39",
+    "entryHashGenesis": {
+      "seq": 0,
+      "prev": null,
+      "vector": "run.started",
+      "entryHash": "4f4878c719f38730c78fbd6f462c658e1dfddead247434d9b56c0e8ecca1fd8d"
+    },
+    "entryHashLinked": {
+      "seq": 1,
+      "prev": "4f4878c719f38730c78fbd6f462c658e1dfddead247434d9b56c0e8ecca1fd8d",
+      "vector": "run.ended",
+      "entryHash": "bafbebddd9d5ee75b10bdde626c5e36eed44b37d9fe352b4d98f614fa2647b73"
+    },
+    "contentRootOverAllVectors": "d9122f5f8e84bdbfd087259b244ce8533c268d7df379fa9e9f7b12cc642352ee"
+  }
+}

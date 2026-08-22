@@ -19,8 +19,18 @@
  * The drivers are their own table rather than the one in `content/every-field.test.ts`,
  * because the obligation is different: that one poisons every text field to prove the
  * door runs, this one appends one ordinary fact to a record that already exists.
- * Both are total over {@link EventKind} by type, so a kind added to the catalog fails
- * to compile in each until it is driven.
+ *
+ * THIS PARAGRAPH USED TO SAY THAT BOTH TABLES ARE "total over {@link EventKind} by
+ * type, so a kind added to the catalog fails to compile in each until it is driven",
+ * AND IT WAS FALSE OF BOTH. A mapped type declared in a `.test.ts` is checked by
+ * nothing: `tsc -b` excludes tests and vitest strips types without checking them. It
+ * was measured — a kind added to the catalog with no row in either table left the
+ * build's complaints in `src` alone, and the two tables silent. The one next door
+ * survived it anyway, because it asserts its keys against the catalog at RUN time; this
+ * one iterated `Object.keys(ARRIVALS)`, so an undriven kind was not failed, it was
+ * SKIPPED — 32 cases passed and the new kind got no advance-versus-replay proof at all.
+ * The table below is now held against the catalog at run time, by the case that opens
+ * the suite.
  *
  * THREE KINDS CANNOT ARRIVE ALONE, and the cases say so rather than pretending
  * otherwise: `createTask`, `recordDecision` and `createSkill` each write a birth PAIR
@@ -37,6 +47,7 @@ import { join } from 'node:path';
 import {
   catalogUpcasters,
   type EventKind,
+  LATEST_VERSION,
   openChainForWriting,
   tailDir,
   type UpcasterRegistry,
@@ -266,8 +277,14 @@ function emptyDb(): SqliteDatabase {
 }
 
 describe('an arrival brings the cache to exactly where a replay would have put it', () => {
-  // One case per kind, from the catalog's own union: a kind added there fails to
-  // compile in ARRIVALS until it is driven.
+  it('drives every kind the catalog holds, and no kind it does not', () => {
+    // THE LOOP BELOW WALKS THE TABLE, so a kind missing from it is skipped rather
+    // than failed, and the type that was supposed to prevent that is inert in a test
+    // file. This is the check that makes the table total: it is asked of the CATALOG,
+    // which is the only list that cannot fall behind the catalog.
+    expect(Object.keys(ARRIVALS).sort()).toEqual(Object.keys(LATEST_VERSION).sort());
+  });
+
   for (const kind of Object.keys(ARRIVALS) as EventKind[]) {
     it(`${kind} — advanced tables equal replayed tables`, () => {
       const ctx = open();

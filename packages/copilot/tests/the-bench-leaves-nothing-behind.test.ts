@@ -11,7 +11,16 @@
  * finally counted.
  *
  * SO THIS ONE FOLLOWS THE PATH. It names the directory `makeBench` created, and then asks the
- * filesystem whether it is still there. That needs two tests, because a test cannot watch its
+ * filesystem whether it is still there.
+ *
+ * IT USED TO NAME IT BY A DIFF OF `tmpdir()`, AND THAT WAS A RACE. The first case listed the
+ * sandboxes before and after the call and required exactly ONE new one — but vitest runs several
+ * files at once and every one of them makes a sandbox under this same prefix, so a second worker's
+ * directory appearing inside that window was attributed to this call and the length assertion
+ * reddened. Measured on the trunk it shipped on: six of six runs of this package alone, and two
+ * of three full-suite runs. The sandbox is now derived from the bench's OWN root, which belongs to
+ * this call and to nothing else; the before-set is kept, because it is what still proves the
+ * directory is NEW rather than one somebody else owns. That needs two tests, because a test cannot watch its
  * own cleanup: `onTestFinished` fires after the test body has returned and before the next test
  * starts, so the first case below records what appeared and the second reads whether it went.
  * The order matters and is not incidental — if these are ever reordered or run in isolation, the
@@ -20,7 +29,7 @@
 
 import { existsSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, relative, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { makeBench } from './support/chain.js';
 
@@ -32,6 +41,20 @@ const sandboxesNow = (): readonly string[] =>
     .filter((entry) => entry.isDirectory() && entry.name.startsWith(A_BENCH_SANDBOX))
     .map((entry) => entry.name);
 
+/**
+ * The sandbox a chain root lives in: the first segment under `tmpdir()`, when it is one
+ * of ours. `null` when the root is not under a sandbox of this prefix at all, which is
+ * the case that must fail rather than pass quietly.
+ */
+function sandboxOf(root: string): string | null {
+  const inside = relative(tmpdir(), root);
+  const first = inside.split(sep)[0];
+  if (first === undefined || first === '' || first === '..' || !first.startsWith(A_BENCH_SANDBOX)) {
+    return null;
+  }
+  return first;
+}
+
 /** What the first case saw appear. `null` until it has run — see the header on ordering. */
 let appeared: string | null = null;
 
@@ -40,14 +63,22 @@ describe('the bench leaves nothing behind', () => {
     const before = new Set(sandboxesNow());
     const bench = makeBench();
 
-    const fresh = sandboxesNow().filter((name) => !before.has(name));
-    // NOT VACUOUS: if `makeBench` stopped using tmpdir, or used a different prefix, the case
-    // below would be asking whether a directory that never existed still exists — and would
-    // pass. Naming exactly one new directory is what earns the right to ask.
-    expect(fresh, 'makeBench did not create exactly one new sandbox under tmpdir()').toHaveLength(
-      1,
+    // NOT VACUOUS, in the two ways it has to be: if `makeBench` stopped using tmpdir, or
+    // used a different prefix, the root is under no sandbox of ours and this is null — and
+    // the case below would otherwise be asking whether a directory that never existed still
+    // exists, and would pass.
+    const sandbox = sandboxOf(bench.root);
+    expect(
+      sandbox,
+      `the chain root ${bench.root} is under no ${A_BENCH_SANDBOX} sandbox in ${tmpdir()}`,
+    ).not.toBeNull();
+    // And it has to be NEW. A root inside a directory that was already there would be a
+    // sandbox this call did not make, so its removal would be somebody else's business.
+    expect(before.has(sandbox as string), `${sandbox} was already there before makeBench ran`).toBe(
+      false,
     );
-    appeared = join(tmpdir(), fresh[0] as string);
+    expect(sandboxesNow(), `${sandbox} is not under ${tmpdir()}`).toContain(sandbox);
+    appeared = join(tmpdir(), sandbox as string);
 
     // The bench is real and usable, and the directory just named is the one it is built in —
     // otherwise this measures the cleanup of something other than the sandbox under test.
