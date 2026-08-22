@@ -13,10 +13,14 @@ have to trust for tamper-evidence is auditable on its own.
 
 ## What it gives you
 
-- **A typed event catalog** — a closed, versioned discriminated union of events
-  (`task.created`, `task.transitioned`, `run.started`, `run.ended`), with
-  deterministic canonicalization (event → bytes) and per-kind upcasters so the
-  catalog can grow without rewriting the past.
+- **A typed event catalog** — a closed, versioned discriminated union of every
+  fact the chain may hold, with deterministic canonicalization (event → bytes) and
+  per-kind upcasters so the catalog can grow without rewriting the past. This
+  line used to list four kinds by name (`task.created`, `task.transitioned`,
+  `run.started`, `run.ended`); the catalog holds twenty, and a list in prose is a
+  list that stops being true. `canonical-vectors.json` carries one frozen event
+  per kind and is total over the catalog by type, so it is the list that cannot
+  fall behind.
 - **An append-only chain** — each machine writes its own tail (a JSONL file);
   entries are hash-chained so a changed or reordered event breaks the chain.
 - **Signed checkpoints** — an Ed25519 signature over a root recomputed from the
@@ -165,6 +169,23 @@ folder). The private key is not part of it and must never be shared.
 
 The source is documented at the level of *why*; if you are auditing the proof,
 reading `hash.ts` and `verify.ts` is the place to start.
+
+## The format, written down
+
+[`FORMAT.md`](./FORMAT.md) specifies the bytes: canonicalization, the framed
+hashing, the entry hash, the stored line, the content root, and the signed
+checkpoint. It is written for someone who did not write this code and wants to
+implement a verifier from it — every claim in it names the test that holds it, and
+the version tags in it are read out of the source by a guard.
+
+`canonical-vectors.json` beside it is the machine-readable half: one frozen event
+per catalog kind and the SHA-256 of its canonical bytes, plus the aggregate
+digests. Canonicalize a row's `event`, hash the bytes, compare — that is the whole
+check, and it needs nothing of ours.
+
+What that does **not** buy is stated in the document itself, in the same terms as
+the table above: it is not an open standard, there is no second implementation,
+and publishing the format adds no external witness.
 
 ## License
 

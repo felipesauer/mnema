@@ -35,7 +35,16 @@ import { contentRoot, type WrittenEvent } from './hash.js';
 import type { KeyPair } from './keys.js';
 import { type KeyObject, sign, verify } from './keys.js';
 
-const SCHEME = 'mnema-checkpoint/1';
+/**
+ * The scheme tag a checkpoint declares and a verifier refuses to read past.
+ *
+ * Exported off the package's public surface — this module, not `index.ts` — for
+ * the reason the hash domains are: `FORMAT.md` NAMES it, and a version typed into
+ * prose goes stale silently. The doc's guard reads it from here, so bumping this
+ * to `/2` reddens the document instead of leaving it describing a scheme nobody
+ * writes any more.
+ */
+export const SCHEME = 'mnema-checkpoint/1';
 
 /** A signed checkpoint over a contiguous range of one tail. */
 export interface Checkpoint {
