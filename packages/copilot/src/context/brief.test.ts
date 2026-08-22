@@ -359,7 +359,10 @@ describe('brief — everything that governs the work here', () => {
     const c = tree(two, 'public');
     const forwards = brief([a, c], CHANNELS);
     const backwards = brief([c, a], CHANNELS);
-    expect(forwards.decisions.map((d) => d.id)).toEqual(['dec-a', 'dec-b', 'dec-c', 'dec-d']);
+    // Ties by id DESCENDING (`newestFirst`), which for an id is the newest of the
+    // instant. The patterns beside them are ordered by NAME, ascending, and that one
+    // is untouched: a name is not a clock and has no newest.
+    expect(forwards.decisions.map((d) => d.id)).toEqual(['dec-d', 'dec-c', 'dec-b', 'dec-a']);
     expect(forwards.skills.map((s) => s.name)).toEqual(['Alpha', 'Beta']);
     // Same content, same answer, whatever order the caller passes the trees in.
     expect(backwards).toEqual(forwards);
@@ -448,8 +451,13 @@ describe('brief — everything that governs the work here', () => {
     // this document's length — two numbers about two questions.
     expect(opening.decisionsTotal).toBe(committed + privately.length);
     // The freshest rules are the private ones, so the opening page opens with them:
-    // the old prefix relation is broken, and this is the assertion that says so.
-    expect(opening.decisions.slice(0, privately.length).map((d) => d.id)).toEqual(privately);
+    // the old prefix relation is broken, and this is the assertion that says so. All
+    // three share an instant, so among themselves they come back by id DESCENDING
+    // (`newestFirst`) — reversed here rather than re-typed, so the fixture stays the
+    // one list and the ORDER is the only thing this line claims.
+    expect(opening.decisions.slice(0, privately.length).map((d) => d.id)).toEqual(
+      [...privately].reverse(),
+    );
     expect(composed.decisions.slice(0, SEARCH_DEFAULT_LIMIT)).not.toEqual(opening.decisions);
     // And the agreement that survives the break: every rule of the opening page that
     // TRAVELS is in this document, field for field — one definition of "in force", two

@@ -42,15 +42,21 @@
  *
  * The order is relevance when there is a term and recency when there is not —
  * without a term there is no relevance to speak of. Both are total orders (ties
- * broken by instant, then id), so the same query returns the same bytes: what a
- * read returns lands in the prefix of an agent's prompt, and an unstable order
- * invalidates its cache for no change in content.
+ * broken by instant, then id, by {@link newestFirst}), so the same query returns the
+ * same bytes: what a read returns lands in the prefix of an agent's prompt, and an
+ * unstable order invalidates its cache for no change in content.
+ *
+ * Stable was not enough, and this read is where that was learned: it ordered by
+ * `at DESC, id` ASCENDING, which is total and therefore stable, and which serves the
+ * OLDEST record of a millisecond first. The trunk went red on it. The rule is
+ * {@link newestFirst} now, in one place for both writings of it.
  */
 
 import type { SqliteDatabase } from '../db/sqlite.js';
 import { oneLine } from '../one-line.js';
 import type { DecisionProjection } from './decision.js';
 import type { MemoryProjection, ObservationProjection } from './knowledge.js';
+import { NEWEST_FIRST_SQL, newestFirst } from './newest-first.js';
 import type { SkillProjection } from './skill.js';
 import type { TaskProjection } from './task.js';
 
@@ -292,8 +298,10 @@ export function searchRecord(db: SqliteDatabase, query: SearchQuery): SearchResu
       : `snippet(record_search, 1, '', '', '…', ${EXCERPT_TOKENS})`;
   const score = match === undefined ? 'NULL' : `bm25(record_search, ${TITLE_WEIGHT}, 1.0)`;
   // ORDER BY mirrors compareSearchHits exactly — the same rule, once in SQL
-  // (because LIMIT needs it) and once in JS (because merging trees needs it).
-  const order = match === undefined ? 'at DESC, id' : 'score, at DESC, id';
+  // (because LIMIT needs it) and once in JS (because merging trees needs it). The
+  // words are read off NEWEST_FIRST_SQL rather than typed, so the two writings cannot
+  // drift apart in the tie-break, which is exactly where they were both wrong.
+  const order = match === undefined ? NEWEST_FIRST_SQL : `score, ${NEWEST_FIRST_SQL}`;
 
   const rows = db
     .prepare(
@@ -311,10 +319,14 @@ export function searchRecord(db: SqliteDatabase, query: SearchQuery): SearchResu
 }
 
 /**
- * The order two hits are served in: relevance first when the query had a term,
- * then newest first, then by id. Exported because the union across trees has to
- * re-order what it merged, and doing that by a different rule than the SQL above
- * would make a two-tree answer disagree with a one-tree answer for no reason.
+ * The order two hits are served in: relevance first when the query had a term, then
+ * {@link newestFirst}. Exported because the union across trees has to re-order what it
+ * merged, and doing that by a different rule than the SQL above would make a two-tree
+ * answer disagree with a one-tree answer for no reason.
+ *
+ * The score is this read's own — it is the one ordering in the product with a clause
+ * ABOVE the instant — and everything below it is the shared rule, asked rather than
+ * repeated.
  *
  * Hits from one query either all carry a score or none do (a term is present or
  * it is not), so the mixed case cannot arise inside a single tree's result; when
@@ -324,8 +336,7 @@ export function compareSearchHits(a: SearchHit, b: SearchHit): number {
   if (a.score !== undefined && b.score !== undefined && a.score !== b.score) {
     return a.score - b.score;
   }
-  if (a.at !== b.at) return a.at < b.at ? 1 : -1;
-  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+  return newestFirst(a, b);
 }
 
 /**

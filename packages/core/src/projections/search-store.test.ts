@@ -414,26 +414,46 @@ describe('the order', () => {
     expect(JSON.stringify(search())).toBe(JSON.stringify(search()));
   });
 
-  it('is the same rule the merge across trees applies', () => {
+  it('is the same rule the merge across trees applies, TIES INCLUDED', () => {
     // The SQL ORDER BY and compareSearchHits are one rule written twice (LIMIT
     // needs it in SQL, merging needs it in JS). Sorting the SQL answer with the
     // JS comparator must not move a single row, or a two-tree answer would
     // disagree with a one-tree answer for no reason.
+    //
+    // THE FIXTURE HAS TO HOLD A TIE. It gave every record its own instant, and on
+    // such a fixture the two writings agree however either of them breaks a tie —
+    // so the case was green while both of them broke it the wrong way, and stayed
+    // green when one of them was changed. Two records share instant 1 and two more
+    // share instant 4 now, which is the only shape in which this compares anything.
     index({
-      memories: [memory('m1', 'cache thing', 1), memory('m2', 'cache other', 4)],
-      decisions: [decision('d1', 'cache', 'why', 2)],
+      memories: [
+        memory('m1', 'cache thing', 1),
+        memory('m2', 'cache other', 4),
+        memory('m3', 'cache again', 1),
+      ],
+      decisions: [decision('d1', 'cache', 'why', 4)],
       tasks: [task('t1', 'cache task', 3)],
     });
 
     for (const query of [{ term: 'cache' }, {}]) {
       const hits = search(query).hits;
       expect([...hits].sort(compareSearchHits)).toEqual(hits);
+      // And the reverse, so a comparator that returned 0 on every pair could not
+      // pass: `Array.sort` is stable, and a stable sort leaves any order alone.
+      expect([...hits].reverse().sort(compareSearchHits)).toEqual(hits);
     }
   });
 
-  it('breaks a tie in the instant by id, so the pair never swaps', () => {
+  it('breaks a tie in the instant by id DESCENDING — the newest of one millisecond', () => {
+    // THE CASE THIS REPLACES ASSERTED THE OPPOSITE, and it was the defect: it read
+    // `['m1', 'm2']` and called it "so the pair never swaps", which is true of any
+    // total order and says nothing about which of the two is the answer. `at DESC`
+    // means newest first; an ascending id is OLDEST first, because `mintId` puts a
+    // monotonic counter beside the millisecond. Two clauses pointing opposite ways
+    // put the older record of a millisecond at the top of a newest-first list, and
+    // the trunk went red on exactly that (`search.test.ts`, 22/08/2026).
     index({ memories: [memory('m2', 'same', 1), memory('m1', 'same', 1)] });
 
-    expect(ids(search().hits)).toEqual(['m1', 'm2']);
+    expect(ids(search().hits)).toEqual(['m2', 'm1']);
   });
 });

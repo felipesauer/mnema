@@ -86,6 +86,7 @@ export {
   listMemories,
   listObservationsAbout,
 } from './projections/knowledge-store.js';
+export { type Dated, NEWEST_FIRST_SQL, newestFirst } from './projections/newest-first.js';
 export { orderedEvents, orderedEventsOfRecord, type RecordOrder } from './projections/order.js';
 export {
   type AuthorshipFilter,

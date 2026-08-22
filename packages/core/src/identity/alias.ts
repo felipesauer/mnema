@@ -9,7 +9,9 @@
  * `e-3a9f` for an epic, `s-3a9f` for a sprint. The hash is used, not the id's
  * own prefix, because an id is a v7 UUID that begins with a timestamp — two ids
  * minted close together would share a leading run and collide on sight. The
- * hash spreads them uniformly.
+ * hash spreads them uniformly. Measured on the burst `id.test.ts` mints: 1986 of
+ * 1999 consecutive pairs share their whole 48-bit prefix, so "close together" is
+ * the ordinary case and not a coincidence to be waited for.
  *
  * Because the alias is display-only, a collision is a LEGIBILITY problem, never
  * a correctness one: the id stays unique, nothing in the chain is confused, and

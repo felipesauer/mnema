@@ -7,6 +7,7 @@ import {
   endRun,
   makeBench,
   startRun,
+  startRunAt,
 } from '../../tests/support/chain.js';
 import { focus, resume } from './focus.js';
 
@@ -191,6 +192,32 @@ describe('resume — where an actor left off', () => {
     try {
       const r = resume([cache], asking(bench.who, { sessionRuns: ['run-first', 'run-second'] }));
       expect(r.lastRun?.id).toBe('run-second');
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('prefers the NEWER of two runs opened in ONE millisecond', () => {
+    // The tie-break, which for this read is not cosmetic: `latestRun` takes the HEAD of
+    // the order, so which run of a tie wins is which run the session is told it is in.
+    // Two runs opened inside a millisecond is a session restarting its agent.
+    //
+    // NOTHING COVERED THIS UNTIL A MUTATION SAID SO. Reversing the tie-break in the
+    // core left this file green — every case here gives its runs distinct instants
+    // through the bench clock, so the fallback was never reached. The instant is
+    // pinned by hand for that reason.
+    bench = makeBench();
+    const at = bench.now();
+    startRunAt(bench, 'run-earlier', at, { agent: 'claude' });
+    startRunAt(bench, 'run-later', at, { agent: 'claude' });
+    const cache = bench.cache();
+    try {
+      const f = focus([cache], asking(bench.who));
+      expect(f.openRuns.map((r) => r.startedAt)).toEqual([at, at]);
+      // Ids here are the bench's own words rather than minted ones, so the assertion
+      // is on the RULE (id descending) and the case names which id that is.
+      expect(f.openRuns.map((r) => r.id)).toEqual(['run-later', 'run-earlier']);
+      expect(resume([cache], asking(bench.who)).lastRun?.id).toBe('run-later');
     } finally {
       cache.close();
     }

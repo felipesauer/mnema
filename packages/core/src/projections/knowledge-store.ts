@@ -155,10 +155,30 @@ export function materializeHandoffs(
   }
 }
 
-/** Lists the handoffs on the given task, ordered by time. */
+/**
+ * Lists the handoffs on the given task, oldest first — a TOTAL order, which
+ * `ORDER BY recorded_at` alone was not.
+ *
+ * A handoff row is the one row in this schema with no id of its own: it is a list
+ * entry rather than an entity (see the table's comment), so the tie between two
+ * handoffs recorded in the same millisecond — one batch script, or a chat restarted
+ * twice — cannot be broken the way every other read here breaks it. With no second
+ * column to name, the order was whatever the query plan happened to produce, and a
+ * plan is not a contract: the index scan this read gets today returns insertion
+ * order, and a plan that sorted into a temp b-tree would not have to.
+ *
+ * So the tie-break is `rowid`, which IS insertion order, and insertion order is the
+ * chain's own: a rebuild materializes the fold in replay order, and replay order is
+ * total and deterministic for a tree. That makes the answer the record's order rather
+ * than SQLite's, which is the same reason the other reads name `id`.
+ *
+ * Not `id DESC` like the newest-first reads, because this list is oldest first — a
+ * handoff chain is read forwards — and an ascending tie-break is the one that agrees
+ * with an ascending instant. See `newest-first.ts` for the sites where it does not.
+ */
 export function listHandoffs(db: SqliteDatabase, task: string): HandoffProjection[] {
   const rows = db
-    .prepare('SELECT * FROM handoffs WHERE task = ? ORDER BY recorded_at')
+    .prepare('SELECT * FROM handoffs WHERE task = ? ORDER BY recorded_at, rowid')
     .all(task) as HandoffRow[];
   return rows.map(toHandoff);
 }

@@ -150,6 +150,33 @@ export function startRun(b: Bench, id: string, spec: RunSpec): string {
   return id;
 }
 
+/**
+ * The same move, at an instant the caller chooses — the only way to make two runs
+ * share a `startedAt`, because `b.now()` is monotonic by design.
+ *
+ * The reason is the one {@link moveTaskAt} gives: a derivation that orders by an
+ * instant has a tie-break, and a tie-break is only testable if a tie can be built.
+ * Two runs opened in one millisecond is not unrealistic — a session that restarts its
+ * agent, or a script opening a run per project — and for the focus read the tie is not
+ * cosmetic: `latestRun` takes the HEAD of that order, so it decides which run a
+ * session is told it is in.
+ */
+export function startRunAt(b: Bench, id: string, at: string, spec: RunSpec): string {
+  b.writer.append(
+    runStarted(
+      {
+        at,
+        who: spec.who ?? b.who,
+        signerFp: b.writer.signerFingerprint,
+        subject: id,
+        which: spec.agent,
+      },
+      spec.goal !== undefined ? { agent: spec.agent, goal: spec.goal } : { agent: spec.agent },
+    ),
+  );
+  return id;
+}
+
 /** Appends a `run.ended` for an existing run. */
 export function endRun(b: Bench, id: string, outcome?: string): void {
   b.writer.append(

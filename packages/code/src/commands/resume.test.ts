@@ -25,10 +25,18 @@ function setup(): { repo: string; env: DiscoveryEnv } {
 }
 
 /**
- * A write context onto the private tree with a CONTROLLABLE clock — so two runs
- * get distinct `startedAt` values and "latest run" is unambiguous (the default
- * system clock can stamp two same-millisecond runs identically, leaving the
- * order to the random id tail, which is not creation order).
+ * A write context onto the private tree with a CONTROLLABLE clock — so two runs get
+ * distinct `startedAt` values and "latest run" is settled by the field these cases are
+ * about rather than by the tie-break behind it.
+ *
+ * IT USED TO SAY the tie fell to "the random id tail, which is not creation order",
+ * and that was true when it was written: `mintId` filled everything past the
+ * millisecond with entropy, so two runs opened inside one millisecond came back in
+ * either order, half the time each. It is not true any more — the id carries a
+ * monotonic counter, and the reads break the tie by id DESCENDING, so a
+ * same-millisecond pair now orders newest-first by itself. The clock stays controlled
+ * regardless: a case about "the latest run" should fail on the instant, not pass
+ * through a fallback, and this is the seam that keeps the two separable.
  */
 function privateContext(repo: string, env: DiscoveryEnv, now: () => string): WriteContext {
   const trees = resolveTrees(repo, env);

@@ -41,6 +41,7 @@ import { dirname } from 'node:path';
 import {
   type Clock,
   type DiscoveryEnv,
+  newestFirst,
   type RunProjection,
   resolveTrees,
   type Scope,
@@ -163,13 +164,17 @@ function repositoryOf(projectPublic: string): string {
   return dirname(projectPublic);
 }
 
-/** Most recently started first — what a person scanning a cost table wants at the top. */
+/**
+ * Most recently started first — what a person scanning a cost table wants at the top,
+ * by the core's {@link newestFirst}.
+ *
+ * It wrote the comparison out here, and broke the tie with `localeCompare` ASCENDING,
+ * which put the OLDER of two runs opened in one millisecond above the newer. Same
+ * defect as the four other sites, in a different spelling — which is why the scan that
+ * keeps a seventh from being written looks for the shape and not for a phrase.
+ */
 function byStartedDesc(a: RunProjection, b: RunProjection): number {
-  return a.startedAt === b.startedAt
-    ? a.id.localeCompare(b.id)
-    : a.startedAt < b.startedAt
-      ? 1
-      : -1;
+  return newestFirst({ at: a.startedAt, id: a.id }, { at: b.startedAt, id: b.id });
 }
 
 /**

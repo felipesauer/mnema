@@ -118,6 +118,13 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     // two trees, so the FOLD order disagrees with the id order. On a fixture where
     // the two agree, a sort with no tie-break at all passes (`Array.sort` is stable),
     // which is exactly the assertion that looks like a test and is not one.
+    //
+    // AND THE DIRECTION IT KEPT WAS THE WRONG ONE. It read the lowest ids as the
+    // winners and called that content. The ids here ascend with creation, so on this
+    // fixture "lowest id" and "oldest" are the same thing — which is how a
+    // newest-first list came to cut the NEWEST items and look reasonable doing it.
+    // The rule is `newestFirst` now: highest id wins the tie, and the cut falls on
+    // the oldest of the instant.
     bench = makeBench();
     const other = makeBench();
     const at = bench.now();
@@ -134,9 +141,9 @@ describe('bootstrap — the opening context, focused on the actor', () => {
       const first = bootstrap([mine, theirs], asking(bench.who));
       const flipped = bootstrap([theirs, mine], asking(bench.who));
       expect(first.work.map((w) => w.updatedAt)).toEqual(Array(SEARCH_DEFAULT_LIMIT).fill(at));
-      // The lowest ids win the tie, whichever tree they came from and whichever
+      // The highest ids win the tie, whichever tree they came from and whichever
       // order the trees were passed in.
-      const kept = Array.from({ length: SEARCH_DEFAULT_LIMIT }, (_, i) => idOf(i));
+      const kept = Array.from({ length: SEARCH_DEFAULT_LIMIT }, (_, i) => idOf(wanted - 1 - i));
       expect(first.work.map((w) => w.id)).toEqual(kept);
       expect(flipped.work.map((w) => w.id)).toEqual(kept);
       // And the answer still declares the cut, over the union of both trees.
@@ -692,10 +699,13 @@ describe('bootstrap — the opening context, focused on the actor', () => {
       try {
         const forwards = bootstrap([mine, theirs], asking(bench.who)).awaitingJudgement;
         const backwards = bootstrap([theirs, mine], asking(bench.who)).awaitingJudgement;
+        // `sk-tie` above `dec-tie` on the shared instant: the tie-break is by id
+        // DESCENDING, so it is also the case that a list built kind by kind — which
+        // would put the decision first — cannot produce.
         expect(forwards.map((i) => `${i.kind}:${i.id}`)).toEqual([
           'skill:sk-fresh',
-          'decision:dec-tie',
           'skill:sk-tie',
+          'decision:dec-tie',
         ]);
         // The tie is REAL — without it the two lines above prove only the sort.
         expect(forwards[1]?.updatedAt).toBe(forwards[2]?.updatedAt);

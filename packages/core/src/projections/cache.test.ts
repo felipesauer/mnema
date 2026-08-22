@@ -429,6 +429,29 @@ describe('ProjectionCache — observations, handoffs, links (the three knowledge
     expect(list.map((h) => h.fromAgent)).toEqual(['claude', 'felipe']);
   });
 
+  it('orders two handoffs recorded in ONE millisecond by the chain, not by the plan', () => {
+    // A handoff row has no id of its own — it is a list entry, not an entity — so a
+    // tie in `recorded_at` had no second column to break it and the order was the
+    // query plan's. Two handoffs in one millisecond is not exotic: a batch script, or
+    // a chat restarted twice. The order that has to come back is the one the chain
+    // holds, and it has to come back the SAME way from a fresh database.
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    w.append(handoffRecorded(env('t-1', 0), { fromAgent: 'claude', toAgent: 'felipe' }));
+    w.append(handoffRecorded(env('t-1', 0), { fromAgent: 'felipe', toAgent: 'codex' }));
+    w.append(handoffRecorded(env('t-1', 0), { fromAgent: 'codex', toAgent: 'claude' }));
+
+    const cache = openCache();
+    cache.rebuild();
+    const recorded = cache.listHandoffs('t-1');
+    expect(recorded.map((h) => h.recordedAt)).toEqual([at(0), at(0), at(0)]);
+    expect(recorded.map((h) => h.fromAgent)).toEqual(['claude', 'felipe', 'codex']);
+
+    // And again from nothing, so what is pinned is the rule and not one build's luck.
+    const rebuilt = openCache();
+    rebuilt.rebuild();
+    expect(rebuilt.listHandoffs('t-1')).toEqual(recorded);
+  });
+
   it('materializes a link answerable from BOTH directions', () => {
     const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
     w.append(knowledgeLinked(env('m-1', 0), { target: 't-1', rel: 'relates-to' }));
