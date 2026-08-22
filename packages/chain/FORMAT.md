@@ -106,14 +106,18 @@ A tail is a JSONL file. Each line is the **canonical** serialization (§1) of:
 ```
 
 The line carries the event **as it was written**, so the bytes on disk are the
-bytes the entry hash was taken over; re-serializing a line that was read back
-reproduces it (`packages/chain/src/chain/chain.test.ts`).
+bytes the entry hash was taken over; re-serializing an entry read back from a line
+reproduces that line byte for byte
+(`packages/chain/src/chain/format-on-disk.test.ts`). A genesis link is a `null`
+`prev`, never an empty string, and the top-level keys are `event` and `link` with
+no insignificant whitespace between them — the same file holds both.
 
 A reader **rebuilds** the event from the fields its kind declares and rejects any
-other, so a forged extra field cannot ride along into the signed bytes: the
-rebuilt event re-canonicalizes to bytes that differ from the stored line, and the
-"stored bytes equal recomputed bytes" check refuses it
-(`packages/chain/src/events/parse.test.ts`).
+other, so a forged extra field cannot ride along into the signed bytes
+(`packages/chain/src/events/parse.test.ts`). What that buys is that the rebuilt
+event re-canonicalizes to bytes which differ from the stored line, so the
+verifier's "stored bytes equal recomputed bytes" check refuses the line rather
+than reading past the forgery (`packages/chain/src/chain/chain.test.ts`).
 
 ## 5. The content root
 
@@ -156,7 +160,9 @@ part of it**:
 - The signature is **Ed25519** over those bytes, hex-encoded, stored as `sig`
   alongside the fields.
 - `scheme` is `mnema-checkpoint/1`; a reader refuses a scheme it does not know
-  rather than guessing (`packages/chain/src/chain/chain.test.ts`).
+  rather than guessing at the fields, and the signature is over the seven keys
+  above with `sig` absent
+  (`packages/chain/src/chain/format-on-disk.test.ts`).
 
 ## 7. Versions, and why a proof is never recomputed over a reading
 

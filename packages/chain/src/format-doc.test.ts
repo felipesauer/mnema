@@ -51,8 +51,13 @@ describe('FORMAT.md names the versions the code hashes under', () => {
     expect([...new Set(written)].sort()).toEqual([ENTRY_DOMAIN, ROOT_DOMAIN].sort());
   });
 
-  it('writes no checkpoint scheme but the one a checkpoint declares', () => {
-    const written = [...FORMAT.matchAll(/mnema-checkpoint\/\d+/g)].map((m) => m[0]);
+  it('writes no scheme tag but the one a checkpoint declares', () => {
+    // The pattern is the CLASS, not the instance: this codebase has more than one
+    // `mnema-<thing>/<n>` scheme (a tail proof carries its own), and a document that
+    // grew a section about another one would name a version no guard here read. So
+    // any scheme tag the document writes has to be a constant the code exports — a
+    // new section has to export its own before it can name it.
+    const written = [...FORMAT.matchAll(/mnema-[a-z]+\/\d+/g)].map((m) => m[0]);
     expect(written.length).toBeGreaterThan(0);
     expect([...new Set(written)]).toEqual([SCHEME]);
   });
