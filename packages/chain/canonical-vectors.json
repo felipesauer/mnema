@@ -316,11 +316,11 @@
         "subject": "019f81f8-e400-7004-8000-000000000004",
         "which": "claude",
         "payload": {
-          "name": "Close the sprint before merging",
-          "body": "One sprint is active at a time: close it, then merge."
+          "name": "Review before merge",
+          "body": "A change is read by somebody who did not write it, before it lands."
         }
       },
-      "sha256": "7c1db2d408c9c8a770b4813887bdf8ff4597cfa89cac359fca76c652f25c5e82"
+      "sha256": "35312aec4495c02f424c20d1898efe59cec6581f4b76ff5160d2843367a13d43"
     },
     {
       "name": "skill.transitioned (adopt, with the note the move requires)",
@@ -447,6 +447,6 @@
       "vector": "run.ended",
       "entryHash": "bafbebddd9d5ee75b10bdde626c5e36eed44b37d9fe352b4d98f614fa2647b73"
     },
-    "contentRootOverAllVectors": "6fdb07f5efb2238d1611114dea2cf9ebf7cd4a3d30f5a8827065c0b1eb19c06b"
+    "contentRootOverAllVectors": "d9122f5f8e84bdbfd087259b244ce8533c268d7df379fa9e9f7b12cc642352ee"
   }
 }

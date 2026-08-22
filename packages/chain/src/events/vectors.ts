@@ -315,8 +315,8 @@ export const CANONICAL_VECTORS: {
     {
       name: 'skill.created',
       event: skillCreated(agent(SKILL_ID), {
-        name: 'Close the sprint before merging',
-        body: 'One sprint is active at a time: close it, then merge.',
+        name: 'Review before merge',
+        body: 'A change is read by somebody who did not write it, before it lands.',
       }),
     },
   ],
