@@ -214,6 +214,17 @@ meets the target it declares, which must be at least `0x1800ffff` — 2**40 time
 genesis difficulty. A header mined at an easier target is refused, because one is
 found in milliseconds (`packages/chain/src/chain/bitcoin.test.ts`).
 
+**What a reader refuses before it reads.** Both files are committed, so a clone opens
+whatever the last person to write the repository put there. Three limits are declared
+rather than left to a stack: a path deeper than **1000 steps**, a proof past **1 MiB**,
+and a message a path has folded past **4 KiB** are each refused by name. A real proof is
+eight or nine steps per calendar, 3,586 bytes complete, and folds messages of about a
+hundred bytes — so every limit has between one and four orders of magnitude of room, and
+each is a refusal, which can only ever reject an exotic proof and never accept a hostile
+one. (Measured on the reader before they existed: a 30 KB file of one repeated byte took
+the parse past V8's stack; a 979 KiB file of `append` steps walked in 238 ms and ended
+holding a megabyte.)
+
 **A request that has not confirmed is not coverage.** A proof is born incomplete —
 the calendars promise to aggregate it, and a Bitcoin block carries it minutes to
 hours later — so between asking and holding there is a third state, reported as
