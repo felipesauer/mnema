@@ -157,7 +157,7 @@ describe('the return visit', () => {
       url.includes('/timestamp/')
         ? anchored()
         : url.endsWith(`/block-height/${BLOCK_800000_HEIGHT}`)
-          ? new Response('0'.repeat(63) + '1')
+          ? new Response(`${'0'.repeat(63)}1`)
           : new Response(BLOCK_800000_HEADER),
     );
     const after = await completeWitness(before, { fetch });
@@ -177,7 +177,7 @@ describe('the return visit', () => {
       url.includes('/timestamp/')
         ? anchored()
         : url.endsWith(`/block-height/${BLOCK_800000_HEIGHT}`)
-          ? new Response('0'.repeat(63) + '1')
+          ? new Response(`${'0'.repeat(63)}1`)
           : new Response(BLOCK_800000_HEADER);
     const once = await completeWitness(before, { fetch: stubbed(answer).fetch });
     const twice = await completeWitness(once.proof, { fetch: stubbed(answer).fetch });
@@ -195,7 +195,7 @@ describe('the return visit', () => {
       url.includes('/timestamp/')
         ? anchored()
         : url.includes('/block-height/')
-          ? new Response('0'.repeat(63) + '1')
+          ? new Response(`${'0'.repeat(63)}1`)
           : new Response('not a header'),
     );
     const after = await completeWitness(before, { fetch });

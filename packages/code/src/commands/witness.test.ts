@@ -15,7 +15,7 @@
  * also how the three states are driven: a promise, a block, and a refusal.
  */
 
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { catalogUpcasters, type Fetcher, verify as verifyChainAt } from '@mnema/chain';
@@ -121,14 +121,13 @@ describe('asking an outside witness to date the record', () => {
     const ctx = setup();
     const { fetch, sent } = network(() => promises());
     await runWitnessStamp(ctx, { calendars: [CALENDAR, 'https://second.invalid'], fetch });
-    expect(sent.map((s) => s.url)).toEqual([
-      `${CALENDAR}/digest`,
-      'https://second.invalid/digest',
-    ]);
+    expect(sent.map((s) => s.url)).toEqual([`${CALENDAR}/digest`, 'https://second.invalid/digest']);
     for (const request of sent) expect(request.body?.length).toBe(32);
     // And nothing the record holds travels: the bodies are a hash of a hash.
     const events = readFileSync(segmentOf(publicRoot(ctx)), 'utf-8');
-    for (const value of new Set([...events.matchAll(/"([^"\\]{12,})"/g)].map((m) => m[1] as string))) {
+    for (const value of new Set(
+      [...events.matchAll(/"([^"\\]{12,})"/g)].map((m) => m[1] as string),
+    )) {
       for (const request of sent) {
         expect(request.body?.includes(Buffer.from(value, 'utf-8')), value).toBe(false);
       }
@@ -177,7 +176,10 @@ describe('asking an outside witness to date the record', () => {
     await runWitnessStamp(ctx, { calendars: [CALENDAR], fetch: off.fetch });
     expect(off.sent).toHaveLength(1);
     const on = network(() => promises());
-    const act = await runWitnessStamp({ ...ctx, global: true }, { calendars: [CALENDAR], fetch: on.fetch });
+    const act = await runWitnessStamp(
+      { ...ctx, global: true },
+      { calendars: [CALENDAR], fetch: on.fetch },
+    );
     expect(act.ok && act.outcomes.map((o) => o.scope).sort()).toEqual(['global', 'public']);
   });
 

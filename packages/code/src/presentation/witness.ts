@@ -29,12 +29,26 @@ import type { Render } from './render.js';
 /** The width the tree column is padded to, so what follows it lines up. */
 const SCOPE_WIDTH = 7;
 
-/** What a line reads for each of the three states. */
+/**
+ * What each of the three states READS — TOTAL over the union, so a state added to it
+ * does not compile until it has a word.
+ *
+ * ONE TABLE AND TWO CALLERS. The listing puts it in a column and the two acts put it
+ * in a sentence, and they said it differently until this was a function: the verdict
+ * shouted `PENDING` while `mnema witness stamp` — the one moment somebody is most
+ * likely to think they are finished — printed a lowercase `pending` beside it. Two
+ * readings of one word is the shape that produces exactly that.
+ */
 const SAID: Readonly<Record<WitnessReading['status'], string>> = {
   'not-covered': 'not covered',
   pending: 'PENDING',
   covered: 'covered',
 };
+
+/** How one witness state reads, wherever this surface says it. */
+export function witnessWord(status: WitnessReading['status']): string {
+  return SAID[status];
+}
 
 /** One tail's standing, as this report takes it. */
 export interface WitnessLine {
@@ -60,7 +74,7 @@ export function witnessReport(
         itemLine([
           asId(line.tail),
           asScope(column(line.scope, SCOPE_WIDTH)),
-          asWord(SAID[line.reading.status]),
+          asWord(witnessWord(line.reading.status)),
           '·',
           line.checkpoint === null ? 'no checkpoint' : `checkpoint ${line.checkpoint}`,
           '·',

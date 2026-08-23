@@ -94,7 +94,7 @@ export function registerWitness(program: Command, wiring: Wiring): Declared {
         { ...here(), global: opts.global },
         opts.calendar === undefined ? {} : { calendars: opts.calendar },
       );
-      report(wiring, act);
+      await report(wiring, act);
     });
 
   witness
@@ -126,18 +126,26 @@ export function registerWitness(program: Command, wiring: Wiring): Declared {
           ...(opts.blocks === undefined ? {} : { blockSource: opts.blocks }),
         },
       );
-      report(wiring, act);
+      await report(wiring, act);
     });
 
   return mutatesTheRecord(witness);
 }
 
-/** What an act prints: a line per tail it touched, then whoever would not answer. */
-function report(
+/**
+ * What an act prints: a line per tail it touched, then whoever would not answer.
+ *
+ * It loads the state's word rather than spelling one, and it loads it INSIDE the
+ * action for the reason every other verb here loads its work there: an eager import
+ * of `presentation/` raises the floor of every invocation of every verb, including
+ * the ones that print nothing.
+ */
+async function report(
   wiring: Wiring,
   act: Awaited<ReturnType<typeof import('../commands/witness.js').runWitnessStamp>>,
-): void {
+): Promise<void> {
   const { io, render } = wiring;
+  const { witnessWord } = await import('../presentation/witness.js');
   if (!act.ok) {
     reportRefusal(wiring, act, {});
     return;
@@ -160,7 +168,7 @@ function report(
     io.out(
       render(
         fact(
-          onOneLine`external witness (T3): ${outcome.reading.status} — ${outcome.reading.detail}`,
+          onOneLine`external witness (T3): ${witnessWord(outcome.reading.status)} — ${outcome.reading.detail}`,
         ),
       ),
     );

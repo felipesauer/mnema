@@ -1222,9 +1222,9 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'one of the three trees, padded to a column',
   },
-  'witness.ts asWord(SAID[line.reading.status]) #1': {
+  'witness.ts asWord(witnessWord(line.reading.status)) #1': {
     verdict: 'minted',
-    why: 'one of this module’s own three words, written above as a table total over the union',
+    why: 'one of this module’s own three words, from the table the two acts read too',
   },
   "witness.ts itemLine(line.checkpoint === null ? 'no checkpoint' : `checkpoint ${line.checkpoint}`) #1":
     {
