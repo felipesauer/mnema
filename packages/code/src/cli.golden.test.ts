@@ -115,7 +115,11 @@ async function mnema(into: keyof typeof transcript, ...argv: string[]): Promise<
     },
   };
   transcript[into].push(['$ mnema', ...argv.map(quoted)].join(' '));
-  tick();
+  // The instant this invocation claims. The value is the CLI's own to read, from its
+  // own clock, inside {@link run} — what is taken here is the turn of the millisecond
+  // in front of it, so that whatever it reads is later than everything already
+  // recorded.
+  ownInstant();
   await run(argv, io);
   transcript[into].push(...encoded);
   if (failed) transcript[into].push('[exit 1]');
@@ -123,19 +127,30 @@ async function mnema(into: keyof typeof transcript, ...argv: string[]): Promise<
 }
 
 /**
- * Waits until the millisecond changes, before every invocation.
+ * Waits for the millisecond to turn, and returns the instant on the other side of it.
  *
  * The instants in the transcript are ranked in chronological order, which needs
- * every clock read to be its own instant: two commands landing in the same
+ * every clock read to be its own instant: two of them landing in the same
  * millisecond would merge two ranks in one run and not in the next, and the
- * golden would differ from itself. Two milliseconds of a hundred invocations is
+ * golden would differ from itself. Two milliseconds of a hundred fixture steps is
  * the whole cost of a transcript that does not reshuffle.
+ *
+ * SO IT IS THE ONLY PLACE IN THIS FILE THAT READS THE CLOCK, and that is the rule
+ * rather than a tidiness. The wait used to sit inline in {@link mnema}, which read
+ * as a guard over every step and was one over every step that goes through the CLI:
+ * {@link appendUnscreenedMemory} writes straight to the tree, took its instant with
+ * nothing in front of it, and landed a millisecond after the invocation before it.
+ * The two merged in 6 of 180 runs of the sampler — the golden differing from itself,
+ * exactly as the paragraph above says it would. A step that wants an instant comes
+ * here for it now, and `every-instant-is-its-own.test.ts` refuses a clock read in
+ * this file anywhere else.
  */
-function tick(): void {
+function ownInstant(): string {
   const from = Date.now();
   while (Date.now() - from < 2) {
     // Busy, deliberately: a timer would make every caller async for two ms.
   }
+  return new Date().toISOString();
 }
 
 /**
@@ -253,6 +268,11 @@ function assertNothingVolatile(text: string): void {
  * here. That is not a gap in the fixture, it is what `exposure` is for — the read
  * exists for the record's past, when there was no door, and this is the only way
  * to reproduce that past in a fixture built today.
+ *
+ * WHAT IT STILL SHARES WITH A CLI STEP is the instant: it takes one from
+ * {@link ownInstant}, the same gate every invocation goes through. Going around the
+ * surface is what this step is for; going around the clock is what made the golden
+ * differ from itself.
  */
 function appendUnscreenedMemory(anchor: string): string {
   const trees = resolveTrees(repo, {
@@ -266,7 +286,7 @@ function appendUnscreenedMemory(anchor: string): string {
   writer.append(
     memoryCaptured(
       {
-        at: new Date().toISOString(),
+        at: ownInstant(),
         who: anchor,
         signerFp: writer.signerFingerprint,
         subject: id,
