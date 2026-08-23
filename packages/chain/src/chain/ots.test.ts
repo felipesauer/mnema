@@ -130,6 +130,29 @@ describe('what a hostile clone can put in a tree', () => {
     expect(() => parseOtsProof(deep(30_000))).toThrow(/deeper than 1000 steps/);
   });
 
+  it('refuses a path that INFLATES its message instead of folding it', () => {
+    // A small file can still be expensive: every `append` copies, so a thousand of
+    // them with a kilobyte each is quadratic. Measured on the reader before this
+    // limit: a 979 KiB file walked in 238 ms and ended holding a megabyte — which can
+    // attest nothing, a merkle root being 32 bytes, so the work was pure waste.
+    const step = Buffer.concat([
+      Buffer.from([0xf0]), // append
+      Buffer.from([0xe8, 0x07]), // of 1000 bytes
+      Buffer.alloc(1000, 0x41),
+    ]);
+    const inflating = Buffer.concat([
+      Buffer.from('004f70656e54696d657374616d7073000050726f6f6600bf89e2e884e89294', 'hex'),
+      Buffer.from([1, 0x08]),
+      Buffer.alloc(32),
+      Buffer.concat(Array.from({ length: 900 }, () => step)),
+      Buffer.from('0083dfe30d2ef90c8e020178', 'hex'),
+    ]);
+    // It PARSES — depth and size are both inside their limits, which is what makes
+    // this a third question rather than a corollary of the first two.
+    const parsed = parseOtsProof(inflating);
+    expect(() => reachedAttestations(parsed)).toThrow(/past what a path folds/);
+  });
+
   it('refuses a file past the size any proof has', () => {
     expect(() => parseOtsProof(Buffer.alloc(MAX_PROOF_BYTES + 1))).toThrow(
       /past the \d+ this reads/,

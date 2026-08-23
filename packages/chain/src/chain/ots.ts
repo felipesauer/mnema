@@ -74,6 +74,18 @@ const MAX_DEPTH = 1000;
  */
 export const MAX_PROOF_BYTES = 1 << 20;
 
+/**
+ * How large the message a path is folding may get.
+ *
+ * EVERY MESSAGE A REAL PROOF HOLDS IS ABOUT A HUNDRED BYTES: a digest is 32, a nonce
+ * appended to it makes 48, and the next `sha256` takes it back to 32. What a path can
+ * do instead is `append` a kilobyte a thousand times — each step COPIES, so a 979 KiB
+ * file walks in 238 ms and ends holding a megabyte, measured. The end of that path can
+ * attest nothing (a merkle root is 32 bytes), so the work was pure waste and the
+ * refusal costs a real proof nothing: this is forty times the largest message one has.
+ */
+const MAX_MESSAGE_BYTES = 4096;
+
 /** The op tag that says the proof's subject is a SHA-256 digest. */
 const SHA256_TAG = 0x08;
 
@@ -393,6 +405,11 @@ export function applyOtsOp(op: OtsOp, message: Buffer): Buffer {
 export function reachedAttestations(proof: OtsProof): readonly ReachedAttestation[] {
   const out: ReachedAttestation[] = [];
   const walk = (node: OtsTimestamp, message: Buffer): void => {
+    if (message.length > MAX_MESSAGE_BYTES) {
+      throw new UnreadableProofError(
+        `a message of ${message.length} bytes, past what a path folds`,
+      );
+    }
     for (const attestation of node.attestations) out.push({ attestation, message });
     for (const step of node.steps) walk(step.next, applyOtsOp(step, message));
   };
