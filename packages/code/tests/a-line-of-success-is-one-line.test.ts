@@ -493,6 +493,24 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     why: 'the id positional HEADING the list — the one forgeable list header there is',
   },
 
+  // --- witness.ts: the act that speaks to somebody outside --------------------------
+  'witness.ts «No tail holds events in any tree here — looked in {}.» #1': {
+    verdict: 'minted',
+    why: 'the trees that were looked in — closed words, joined by the act',
+  },
+  'witness.ts «{} ({}): {} — {}» #1': {
+    verdict: 'collapsed',
+    why: 'the TAIL ID, which is a directory name anybody who can write the tree chooses',
+  },
+  'witness.ts «external witness (T3): {} — {}» #1': {
+    verdict: 'collapsed',
+    why: '`@mnema/chain`’s reading, one of whose states quotes a calendar URI read off a file',
+  },
+  'witness.ts «{} did not answer: {}» #1': {
+    verdict: 'collapsed',
+    why: 'a URL the caller typed, and somebody else’s error message about it',
+  },
+
   // --- values another package worded, on a line this one lays out -------------------
   'verify.ts «census [{}] {} {}: {}» #1': {
     verdict: 'collapsed',
@@ -584,7 +602,7 @@ describe('every line this wiring words is classified', () => {
     // 28 of these, and a walk that regressed to a line-wise pattern would land near it.
     expect(FOUND.files).toBeGreaterThan(35);
     expect(FOUND.calls).toBeGreaterThan(80);
-    expect(FOUND.sites.length).toBe(64);
+    expect(FOUND.sites.length).toBe(68);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -604,9 +622,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(29);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(35);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(29);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(32);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(36);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(32);
   });
 
   it('every reason says where the value comes from', () => {
@@ -757,10 +775,18 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'verify.ts «issue [{}] {} {}: {}» #1':
     'needs a fabricated tail DIRECTORY — driven, with the chain’s half of the same line, ' +
     'in `the-phrase-the-domain-words-is-one-line.test.ts`',
+  'witness.ts «{} ({}): {} — {}» #1':
+    'needs a tail whose DIRECTORY NAME holds a break — a name the writer mints from a ' +
+    'fingerprint and a random suffix, never typed',
+  'witness.ts «external witness (T3): {} — {}» #1':
+    'the neighbour of that line, printed in the same breath and about the same tail',
+  'witness.ts «{} did not answer: {}» #1':
+    'needs one calendar that answered and one that did not IN ONE ACT — with none ' +
+    'answering the act refuses instead, so this line needs a network',
 };
 
 describe('every closed site is either driven or named', () => {
-  it('covers all twenty-eight, once each', () => {
+  it('covers all thirty-one, once each', () => {
     const closed = Object.entries(CLASSIFIED)
       .filter(([, said]) => said.verdict === 'collapsed')
       .map(([key]) => key)

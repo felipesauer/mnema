@@ -308,7 +308,12 @@ describe('the caller declares the minimum — `--require`', () => {
     expect(said.issues).toEqual([]);
   });
 
-  it('never passes --require=witnessed, and says so instead of implying T3 works', async () => {
+  it('fails --require=witnessed on a record nobody stamped, and says which layer is missing', async () => {
+    // THIS CASE USED TO SAY *NEVER PASSES*, and that was true for as long as nothing
+    // could produce an attestation. `mnema witness` can now, so what is pinned is the
+    // half that governs every record that has not been stamped — which is all of them
+    // until somebody runs the verb — and the words are unchanged down to the byte before
+    // the dash.
     await record(2);
     const said = await verify('--require=witnessed');
     expect(said.failed).toBe(true);

@@ -10,13 +10,14 @@
 
 _mnema_commands() {
   case "$1" in
-    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs rules skills usage brief key tail switch verify mcp repl completion help' ;;
+    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs rules skills usage brief key tail witness switch verify mcp repl completion help' ;;
     'task') echo 'move' ;;
     'decision') echo 'move supersede' ;;
     'skill') echo 'move export' ;;
     'run') echo 'start end help' ;;
     'key') echo 'restore request enroll revoke help' ;;
     'tail') echo 'list prune help' ;;
+    'witness') echo 'stamp upgrade' ;;
     'switch') echo 'off on' ;;
     *) echo ;;
   esac
@@ -66,6 +67,9 @@ _mnema_flags() {
     'tail') echo '-h --help -V --version --color' ;;
     'tail list') echo '-h --help -V --version --color' ;;
     'tail prune') echo '--reason --which -h --help -V --version --color' ;;
+    'witness') echo '--global -h --help -V --version --color' ;;
+    'witness stamp') echo '--calendar --global -h --help -V --version --color' ;;
+    'witness upgrade') echo '--calendar --blocks --global -h --help -V --version --color' ;;
     'switch') echo '-h --help -V --version --color' ;;
     'switch off') echo '--reason --scope --which -h --help -V --version --color' ;;
     'switch on') echo '--reason --scope --which -h --help -V --version --color' ;;
@@ -140,6 +144,9 @@ _mnema_values() {
     'tail:--color') echo 'auto always never' ;;
     'tail list:--color') echo 'auto always never' ;;
     'tail prune:--color') echo 'auto always never' ;;
+    'witness:--color') echo 'auto always never' ;;
+    'witness stamp:--color') echo 'auto always never' ;;
+    'witness upgrade:--color') echo 'auto always never' ;;
     'switch:--color') echo 'auto always never' ;;
     'switch off:--scope') echo 'public private global' ;;
     'switch off:--color') echo 'auto always never' ;;

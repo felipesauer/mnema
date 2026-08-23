@@ -620,6 +620,10 @@ describe('A1: every site that echoes, every site that draws an edge, every site 
       'presentation/search.ts',
       // the tails a cut can be authorized for: the tree is where the waiver lands
       'presentation/tails.ts',
+      // where the external witness stands, tail by tail: the tree is the same column
+      // the tails report puts it in, because it is the same list read for another
+      // question
+      'presentation/witness.ts',
     ]);
     // AND THE SITES THAT NAME A TREE AND ARE NOT A COLUMN, which is the other half of the
     // enumeration and the part a list of files cannot answer. Each of them puts the tree where a

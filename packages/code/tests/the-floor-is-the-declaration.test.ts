@@ -432,6 +432,7 @@ const FLOOR_MODULES: readonly string[] = [
   'wiring/usage.ts',
   'wiring/verb.ts',
   'wiring/verify.ts',
+  'wiring/witness.ts',
 ];
 
 /** What an exception table tolerates, and what it does not. */

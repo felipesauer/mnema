@@ -121,8 +121,11 @@ describe('mnema verify', () => {
     const out = runVerify({ cwd: repo, env, requirement: 'chained', global: false });
     expect(out.ok).toBe(true);
     if (out.ok) {
-      // The command must not upgrade the guarantee: T3 is honestly uncovered,
-      // and the summary says so — no "tamper-proof" gloss.
+      // The command must not upgrade the guarantee: nothing has stamped this record,
+      // so T3 is honestly uncovered and the summary says so — no "tamper-proof" gloss.
+      // The adapter passes the chain's verdict through whatever it says, which is the
+      // property this case is really about: it was written when `not-covered` was the
+      // ONLY answer T3 had, and it holds unchanged now that there are three.
       const covered = verdictOf(out, 'public');
       expect(covered.result.witness).toBe('not-covered');
       expect(covered.result.summary).toContain('external witness (T3): not covered');

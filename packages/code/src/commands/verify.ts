@@ -6,10 +6,16 @@
  * computed them. The command adds NO judgement of its own to any one of them:
  * `verify`'s result — and its one-line `summary` — is honest by construction (it
  * distinguishes "nothing verifiable is broken" from "everything is authenticated",
- * names the LEVEL the proof reached, and reports the external witness T3 as
- * not-covered). The surface must preserve that honesty, never dress it up into a
- * "tamper-proof" claim the proof does not make; so it passes each verdict through
- * unchanged and the CLI prints its summary verbatim.
+ * names the LEVEL the proof reached, and reports where the external witness T3 stands:
+ * not covered, pending, or covered — read off the record's own files, never off a
+ * network this command does not touch). The surface must preserve that honesty, never
+ * dress it up into a "tamper-proof" claim the proof does not make; so it passes each
+ * verdict through unchanged and the CLI prints its summary verbatim.
+ *
+ * THAT LAST CLAUSE USED TO READ *"reports the external witness T3 as not-covered"*, and
+ * it was accurate while `not-covered` was the only answer there was. `mnema witness`
+ * produces the other two; nothing about this adapter changed, which is the point of it
+ * adding no judgement of its own.
  *
  * THE RECORD OF A PROJECT IS TWO TREES: the committed one every clone gets, and this
  * machine's private one beside it. It used to be ONE — this file verified

@@ -384,9 +384,11 @@ describe('every level the chain declares reads as news, and the table is total',
   });
 
   it('paints each of them, byte for byte, with the label left alone', () => {
-    // All six, including the rung nothing can reach yet: no witness exists, so
-    // `externally-witnessed` cannot be produced by any record on any disk, and a table
-    // that only ever answered for the five reachable ones would be a table with an
+    // All six, INCLUDING THE RUNG THIS CASE USED TO CALL UNREACHABLE — *no witness
+    // exists, so `externally-witnessed` cannot be produced by any record on any disk*.
+    // A witness landed (`chain/witness.ts`), so the sixth is now an ordinary answer and
+    // the reason for asking about it has changed rather than gone: a table that only
+    // ever answered for the levels a fixture happens to produce would be a table with an
     // unpainted entry nobody would find. The text is the level's name rather than its
     // sentence — the wording is the chain's business and `levelHeadline` never leaves it;
     // what is asserted here is the wrapping.

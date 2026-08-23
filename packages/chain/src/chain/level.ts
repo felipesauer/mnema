@@ -35,18 +35,39 @@
  * `npm audit --audit-level` settled on.
  */
 
-/** How the external-witness (T3) layer stands for one verification. */
-export type WitnessStatus = 'not-covered';
+/**
+ * How the external-witness (T3) layer stands for one verification.
+ *
+ * THREE STATES, AND THE MIDDLE ONE IS WHY THIS IS A UNION AND NOT A BOOLEAN. An
+ * attestation is asynchronous by construction — a calendar aggregates, a Bitcoin
+ * block takes as long as it takes — so between asking for one and holding one there
+ * is an ordinary, legitimate state that is NEITHER absence nor coverage. A record in
+ * it has done everything it can and is not yet witnessed. Given two words it would
+ * have to be filed under one of them, and the cheap direction is the one that turns
+ * the whole layer into a promise: `pending` counted as coverage is a green verdict
+ * earned by a request nobody answered. See {@link WITNESS_COVERS}.
+ */
+export type WitnessStatus = 'not-covered' | 'pending' | 'covered';
 
 /**
  * Whether a witness status means T3 actually covered the record — TOTAL over
- * {@link WitnessStatus}, so the day a witness lands the day's new status does not
- * compile until it says whether it counts as coverage. Today there is one status
- * and it does not, which is why {@link ProvenLevel}'s top rung is unreachable and
- * why saying so out loud is cheaper than pretending the rung is not there.
+ * {@link WitnessStatus}, so a status added tomorrow does not compile until it says
+ * whether it counts as coverage.
+ *
+ * THE TOTALITY IS WHAT FORCED `pending` TO BE DECIDED RATHER THAN INHERITED. This
+ * file used to hold one status which did not count, and said so, and said that was
+ * why {@link ProvenLevel}'s top rung was unreachable. The rung is reachable now, and
+ * the interesting line is the middle one: an attestation that has been requested and
+ * has not confirmed is NOT coverage, because the thing being proven is that a
+ * checkpoint existed at an instant and nothing has yet said which instant. Its
+ * mutation is the guard: `pending: true` here promotes a record with an unconfirmed
+ * request to `externally-witnessed`, and the suite reddens
+ * (`level.test.ts`, `witness.test.ts`, `code/tests/the-rung-a-witness-reaches.test.ts`).
  */
 const WITNESS_COVERS: Readonly<Record<WitnessStatus, boolean>> = {
   'not-covered': false,
+  pending: false,
+  covered: true,
 };
 
 /**

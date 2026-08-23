@@ -79,8 +79,8 @@ const LEVEL_MEANS: Readonly<Record<LevelRequirement, string>> = {
     'also fail unless every event is covered by a verified signature — expect this to fail ' +
     'while a session is in flight',
   witnessed:
-    'also fail unless an external witness covers the record — nothing provides one yet, so ' +
-    'it never passes',
+    'also fail unless an external witness dates the record — `mnema witness stamp` asks ' +
+    'for one, and it passes once a Bitcoin block carries it, never while it is pending',
 };
 
 /**

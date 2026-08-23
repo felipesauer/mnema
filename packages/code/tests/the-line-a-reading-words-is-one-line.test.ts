@@ -885,6 +885,20 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     why: 'the anchor the tail belongs to',
   },
 
+  // --- witness.ts: where the external witness stands ------------------------------
+  "witness.ts «No tail holds events in any tree here — looked in {}.» trees.join(', ') #1": {
+    verdict: 'minted',
+    why: 'the trees that were looked in — closed words, joined by this report',
+  },
+  'witness.ts «{} tail(s):» lines.length #1': {
+    verdict: 'minted',
+    why: 'how many tails follow — the count the rows are counted by',
+  },
+  'witness.ts «checkpoint {}» line.checkpoint #1': {
+    verdict: 'minted',
+    why: 'the digest an attestation is filed under — sixty-four hex characters this package computed',
+  },
+
   // --- switches.ts: where the product's own switches stand ------------------------
   'switches.ts «{} channel(s), looked in {}:» rows.length #1': {
     verdict: 'minted',
@@ -1199,6 +1213,29 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     why: 'one of the three trees, padded to a column',
   },
 
+  // --- witness.ts: where the external witness stands ------------------------------
+  'witness.ts asId(line.tail) #1': {
+    verdict: 'minted',
+    why: 'the tail id, whole, exactly as the tails report writes it — a value the two reports must not disagree about',
+  },
+  'witness.ts asScope(column(line.scope, SCOPE_WIDTH)) #1': {
+    verdict: 'minted',
+    why: 'one of the three trees, padded to a column',
+  },
+  'witness.ts asWord(witnessWord(line.reading.status)) #1': {
+    verdict: 'minted',
+    why: 'one of this module’s own three words, from the table the two acts read too',
+  },
+  "witness.ts itemLine(line.checkpoint === null ? 'no checkpoint' : `checkpoint ${line.checkpoint}`) #1":
+    {
+      verdict: 'minted',
+      why: 'this module’s own words, or the digest above — the tail with no checkpoint says so',
+    },
+  'witness.ts itemLine(line.reading.detail) #1': {
+    verdict: 'composed',
+    why: 'the reading `@mnema/chain` worded, every value of which is classified in `the-phrase-the-domain-words-is-one-line`',
+  },
+
   'switches.ts itemLine(columnsOf(row, width, anchors)) #1': {
     verdict: 'minted',
     why: 'the columns this module composed, each classified on its own row here',
@@ -1251,13 +1288,13 @@ describe('every value this layer puts on a line is classified', () => {
     // says where each of the channels mnema pushes unasked stands, and the value on its
     // line a person typed is the REASON somebody gave for switching one off. A module added
     // to this layer is counted here the day it is written, which is what this number is for.
-    expect(FOUND.composers.length + FOUND.machinery.length).toBe(27);
-    expect(FOUND.composers.length).toBe(15);
+    expect(FOUND.composers.length + FOUND.machinery.length).toBe(28);
+    expect(FOUND.composers.length).toBe(16);
     expect(FOUND.machinery).toContain('items.ts');
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
     expect(FOUND.builders.length).toBeGreaterThan(10);
-    expect(FOUND.sites.length).toBe(192);
+    expect(FOUND.sites.length).toBe(200);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1279,8 +1316,8 @@ describe('every value this layer puts on a line is classified', () => {
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
     expect(count('collapsed')).toBe(47);
-    expect(count('minted')).toBe(109);
-    expect(count('composed')).toBe(36);
+    expect(count('minted')).toBe(116);
+    expect(count('composed')).toBe(37);
     expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(47);
   });
 

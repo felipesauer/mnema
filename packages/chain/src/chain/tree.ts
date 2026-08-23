@@ -27,7 +27,9 @@ import { type ChainLayout, gitignorePath } from './layout.js';
  * The chain's own `.gitignore`, self-contained at the tree root. It ignores the
  * private subtree and every local key-material file, and — by NOT ignoring them
  * — lets the proof files through: `keys/*.pub`, and everything under `tails/`
- * (segments, `checkpoints.jsonl`, `tailproof.json`). Patterns are anchored with
+ * (segments, `checkpoints.jsonl`, `tailproof.json`, and the `witness/` directory,
+ * whose attestations are public by construction — a digest, a Merkle path and a
+ * block header — and useless to a clone that cannot read them). Patterns are anchored with
  * a leading `/` so they match only THIS tree's paths, never a like-named path
  * elsewhere the project might track.
  */

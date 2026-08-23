@@ -676,6 +676,53 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'minted',
       why: 'a whole number the catalog requires of a checkpoint’s range',
     },
+  '@mnema/chain chain/verify.ts «external witness (T3): PENDING, which is not coverage — {}» witness.detail #1':
+    {
+      verdict: 'composed',
+      why: 'the reading `witness.ts` composed — every value in it is a site of its own below',
+    },
+  '@mnema/chain chain/verify.ts «external witness (T3): covered — {}» witness.detail #1': {
+    verdict: 'composed',
+    why: 'the same reading, in the state that reaches the record’s top rung',
+  },
+  '@mnema/chain chain/verify.ts «external witness (T3): not covered — {}» witness.detail #1': {
+    verdict: 'composed',
+    why: 'the same reading, in the state every record is in until somebody asks for a witness',
+  },
+  '@mnema/chain chain/witness.ts «Bitcoin block {} at {}» attestation.height #1': {
+    verdict: 'minted',
+    why: 'a block height read as a NUMBER out of the proof’s own varuint — no byte of it is text',
+  },
+  '@mnema/chain chain/witness.ts «Bitcoin block {} at {}» new Date(header.time * 1000).toISOString() #1':
+    {
+      verdict: 'minted',
+      why: 'the instant, formatted from a 32-bit field of an 80-byte header — a number, whoever wrote the file',
+    },
+  '@mnema/chain chain/witness.ts «an attestation was requested from {} and has not confirmed» oneLine(attestation.uri) #1':
+    {
+      verdict: 'collapsed',
+      why: 'a calendar URI read out of a file in the tree — anybody who can write the tree chooses it',
+    },
+  '@mnema/chain chain/witness.ts «anchored in Bitcoin block {}, whose header this record does not carry» attestation.height #1':
+    {
+      verdict: 'minted',
+      why: 'the same height, in the state where the record has the anchor and not the header',
+    },
+  '@mnema/chain chain/witness.ts «the stored header for Bitcoin block {} carries another merkle root» attestation.height #1':
+    {
+      verdict: 'minted',
+      why: 'the height a contradicted attestation named',
+    },
+  '@mnema/chain chain/witness.ts «the stored header for Bitcoin block {} carries no proof of work» attestation.height #1':
+    {
+      verdict: 'minted',
+      why: 'the height whose stored header was mined at nothing',
+    },
+  '@mnema/chain chain/witness.ts «the stored proof is unreadable: {}» oneLine(String((error as Error).message)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the proof reader’s own complaint, which quotes the stored bytes it choked on',
+    },
   '@mnema/chain chain/verify.ts «no committed public key for signer {}» oneLine(checkpoint.signerFp) #1':
     {
       verdict: 'collapsed',
@@ -1007,6 +1054,10 @@ const NOT_A_SENTENCE: Readonly<Record<string, string>> = {
     'than wherever this clone sits. It is never printed.',
   '@mnema/core workflow/decision-operations.ts «ADR-{}» decisions.size + 1':
     'the alias a decision is minted with, from a count of the decisions already recorded',
+  '@mnema/chain chain/witness.ts «{}\\n» serializeStoredHeader(height, header)':
+    'a LINE OF A FILE this package writes — the canonical form of one stored block ' +
+    'header, terminated. Nobody reads it as a sentence; the reader that opens it ' +
+    'refuses a line it cannot parse rather than quoting one.',
 };
 
 // ---------------------------------------------------------------------------
@@ -1023,8 +1074,8 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
     // sites, twelve in `core` and eleven in `chain` — because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(81);
-    expect(FOUND[0]?.sites.length).toBe(32);
+    expect(SITES.length).toBe(91);
+    expect(FOUND[0]?.sites.length).toBe(42);
     expect(FOUND[1]?.sites.length).toBe(49);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
@@ -1072,11 +1123,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(61);
-    expect(count('minted')).toBe(18);
-    expect(count('composed')).toBe(2);
+    expect(count('collapsed')).toBe(63);
+    expect(count('minted')).toBe(23);
+    expect(count('composed')).toBe(5);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      61,
+      63,
     );
   });
 

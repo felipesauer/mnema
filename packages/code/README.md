@@ -103,7 +103,7 @@ verbatim. The surfaces never upgrade a verdict into a stronger claim.
 | **A tree with no record** | Reported as exactly that, and it moves neither the verdict nor the exit. The private tree is gitignored, so a fresh clone has none — and *absent* is not *broken*. |
 | **Events are signed** | True up to the last checkpoint. Events written after it rest on the hash chain alone, and `verify` reports that count separately rather than folding it into a pass. A record with **no** verified checkpoint at all is reported as `T1 only`: the hash chain held and no signature was checked. |
 | **The record could be read** | Part of the verdict, not an assumption. A stored line that will not parse is reported as an `UNREADABLE` issue naming the tail and the position — never a green over bytes nobody can interpret, and never a parser message with no address in it. |
-| **An edit is caught** | An edit made *without* the signing key is caught, because signatures cover a root recomputed from the event content. Someone holding the key can rewrite and re-sign — detecting that needs a witness outside this machine. |
+| **An edit is caught** | An edit made *without* the signing key is caught, because signatures cover a root recomputed from the event content. Someone holding the key can rewrite and re-sign — detecting that needs a witness outside this machine, and `mnema witness stamp` asks for one. What it attests is that a checkpoint EXISTED at an instant, so a chain rebuilt this morning cannot claim a history; it is opt-in, and a record nobody stamped reads `not covered` exactly as every record did before. |
 | **Nothing was deleted** | Still not proven locally, and the sentence that used to stop there was true for a reason worth keeping: a hash chain shows what changed, never what was removed, and a tail deleted together with its key leaves nothing on disk to cross. What is new is the other half — the record can now NAME a cut, so an unexplained absence and an authorized one are no longer the same silence. Committing the record to git is still what preserves the files a deletion would take with it. |
 | **A cut can be told from a tampering** | When it was authorized in advance, and for a WHOLE tail. A `tail.pruned` written while the tail is still there records which tail, how many events it held and the head it held them through — all three checked against the disk before the fact is signed — and `verify` then reports that account instead of listing the three reasons a key might have no tail. Cutting PART of a tail is not covered and stays loud: removing one line from a 402-event tail produces 102 findings. A waiver is not permission (anyone who can write can sign one, and it names who did), it is not a cure (a tail that is present and broken keeps every issue it had), and it does not remove anything — once the record is pushed, the events are in every clone and on the remote. `mnema tail prune` is what writes one, on the CLI alone; the cut itself stays yours to make. |
 | **Gates protect the record** | They protect its *shape*, not its contents. A gate refuses an illegal transition; it is not access control. Anyone who can run the CLI writes as this machine's identity. |
@@ -115,11 +115,23 @@ verbatim. The surfaces never upgrade a verdict into a stronger claim.
 | **Credentials stay out of the record** | Only the ones mnema *recognizes*. A value in a known format — a cloud key, an API token, a PEM private key, a password inside a URL — is replaced with a typed placeholder before anything is written, and the reply names what was replaced. A proprietary token, a password written out in prose, a base64 blob: those are written verbatim, and nothing deletes a fact afterwards. It reduces the damage; it does not make the record safe to paste secrets into. |
 
 The honest summary: **local cryptography covers alteration; an external witness
-covers omission and ties the record to an identity.** No such witness is wired
-in yet — `verify` says so plainly rather than implying coverage it does not
-have. Committing the chain to a shared git remote is the recommended path
-today, because git both preserves what a deletion would erase and gives the
-signing key a history someone else can check.
+covers omission, dates the record, and ties it to an identity.** This paragraph
+used to say no such witness was wired in. One is now — `mnema witness` — and it
+does exactly one of those three things:
+
+- **It dates.** `mnema witness stamp` asks the public OpenTimestamps calendars to
+  attest the digest of a checkpoint's signed message; `mnema witness upgrade` goes
+  back for it once a Bitcoin block carries it. `verify` then reads the answer off
+  the disk — never off a network — and reaches `externally-witnessed`. Only the
+  digest leaves this machine: no id, no title, no body, no count. Between the ask
+  and the block the verdict says `PENDING`, which is **not** coverage.
+- **It does not cover omission, and it does not tie the record to an identity.**
+  Committing the chain to a shared git remote is still the path for both, because
+  git preserves what a deletion would erase and gives the signing key a history
+  someone else can check.
+
+A record nobody stamps is unchanged in every byte: nothing on the writing path asks
+anybody for anything, so a checkpoint cannot fail because a calendar was down.
 
 ## Install
 
@@ -191,8 +203,9 @@ gap and rules on the rest, and it never accepts a break.
 **What "broken" means is the caller's to declare:**
 `--require=signed` also fails when any event of any tree it covered is not
 covered by a verified
-signature, and `--require=witnessed` when no external witness covers the record
-(nothing provides one yet, so that one never passes). The default stays
+signature, and `--require=witnessed` when no external witness dates the record
+(`mnema witness stamp` asks for one; it passes once a Bitcoin block carries it,
+and never while it is pending). The default stays
 `--require=chained` — a break and nothing else — because events above the last
 checkpoint are the normal state of a session in flight, and a check that fails
 every time is a check somebody turns off.
@@ -791,10 +804,62 @@ and never generated by a model, only an **adopted** pattern is exported, and the
 at the record it came from. It writes nowhere but `--out` and records nothing —
 and there is no import in the other direction, on purpose: see the table above.
 
+### Asking somebody outside to date the record
+
+The two local layers catch an edit that breaks the hash chain and an edit made
+without the signing key. Neither catches the person who **holds** the key, rebuilds
+the whole record from nothing and re-signs it: everything links, everything verifies,
+and the chain claims a history it acquired this morning. What that person cannot
+produce is an attestation dated before they started.
+
+```sh
+mnema witness stamp
+#> 8f21ab…-3c9d0e… (public): stamped — asked an outside witness to date checkpoint f84396…
+#>   external witness (T3): pending — an attestation was requested from
+#>   https://alice.btc.calendar.opentimestamps.org and has not confirmed
+```
+
+What leaves this machine is the **SHA-256 of one checkpoint's signed message** and
+nothing else — no id, no title, no body, no count — and each calendar is handed a
+hash of that digest with a nonce of its own, so no two of them see the same value.
+One checkpoint is enough for the whole record: checkpoints chain, so an attestation
+over the last one dates every checkpoint below it.
+
+The answer is a **promise, not a proof**. It becomes one when a Bitcoin block carries
+it, minutes to hours later, and until then `verify` says `PENDING`, which is not
+coverage. `mnema witness upgrade` is the return visit — safe to repeat, and it fetches
+the 80-byte block header the proof lands in so that every verification after it is
+arithmetic on this machine:
+
+```sh
+mnema witness upgrade
+#> 8f21ab…-3c9d0e… (public): completed — the attestation over checkpoint f84396… has confirmed
+#>   external witness (T3): covered — Bitcoin block 963690 at 2026-08-23T06:23:18.000Z
+
+mnema verify --require=witnessed
+#> public: local integrity verified (T1/T2/T4) and witnessed (T3); 1 tail(s); all events are
+#> signature-covered; external witness (T3): covered — Bitcoin block 963690 at 2026-08-23T06:23:18.000Z
+```
+
+`verify` **never touches a network**. It reads the proof and the header out of the
+record, checks that the proof commits to the checkpoint it proved, that the path folds
+to the merkle root the header carries, and that the header did the work it declares.
+The proof itself is [OpenTimestamps](https://opentimestamps.org)' own file, unaltered,
+so a stranger with the `ots` client and no copy of mnema gets the same answer from the
+same bytes.
+
+**It is opt-in, and nothing on the writing path asks anybody for anything.** A record
+nobody stamps behaves byte for byte as it did before this existed, and a checkpoint
+can never fail because a calendar was unreachable. What the layer does **not** prove:
+that the block header sits on the longest chain — a reader who needs that follows the
+block id into any explorer — and it says nothing at all about deletion or about whose
+key really signed.
+
 ## Layout on disk
 
 ```
 <repo>/.mnema/              the project record — commit this, the team shares it
+  tails/<id>/witness/       external attestations over this tail's checkpoints (T3)
   private/                  gitignored: this machine, this project only
 <data>/mnema/global/        this machine, across every project
 <data>/mnema/identity/      the signing key — referenced, never copied into a chain

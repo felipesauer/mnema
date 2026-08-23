@@ -90,11 +90,36 @@ describe('the level a verification reached', () => {
     expect(provenLevel({ ...PROVEN, hasIssue: true, unreadable: true })).toBe('unreadable');
   });
 
-  it('never reports the witness level while nothing provides a witness', () => {
-    // `WitnessStatus` has one member and it is not coverage, so the top rung is
-    // unreachable BY THE TYPE. Said out loud so a reader does not take its presence
-    // in the union for a claim that T3 works.
-    expect(provenLevel(PROVEN)).not.toBe('externally-witnessed');
+  it('reports the witness level when, and only when, a witness COVERS the record', () => {
+    // THIS CASE USED TO SAY THE OPPOSITE, and the premise it rested on is gone.
+    // `WitnessStatus` had one member which was not coverage, so the top rung was
+    // unreachable BY THE TYPE, and this said so out loud rather than leave the rung
+    // reading as a claim that T3 worked. A witness landed (witness.ts): the union has
+    // three members now and one of them is coverage, so the rung is reachable and
+    // what has to be pinned is the boundary rather than the emptiness.
+    expect(provenLevel({ ...PROVEN, witness: 'covered' })).toBe('externally-witnessed');
+    expect(provenLevel({ ...PROVEN, witness: 'not-covered' })).toBe('fully-signed');
+  });
+
+  it('does NOT report the witness level for an attestation that has not confirmed', () => {
+    // The one that matters. A request that succeeded is what somebody has in front
+    // of them at the moment they are most likely to believe they are done, and
+    // counting it would make the whole layer a promise. `WITNESS_COVERS` is where
+    // this is decided; flipping `pending` there to true reddens this case.
+    expect(provenLevel({ ...PROVEN, witness: 'pending' })).toBe('fully-signed');
+  });
+
+  it('lets no witness lift a record that has not earned the rung below it', () => {
+    // Coverage is asked LAST, after the break, the unreadable line and the residual,
+    // so an attestation over a chain with a hole is still a chain with a hole. It is
+    // the same ordering argument the rest of this function rests on, asked of the
+    // input that is newest and most tempting to treat as an override.
+    expect(provenLevel({ ...PROVEN, witness: 'covered', hasIssue: true })).toBe('broken');
+    expect(provenLevel({ ...PROVEN, witness: 'covered', unreadable: true })).toBe('unreadable');
+    expect(provenLevel({ ...PROVEN, witness: 'covered', uncheckpointedEvents: 1 })).toBe(
+      'signed-through-last-checkpoint',
+    );
+    expect(provenLevel({ ...PROVEN, witness: 'covered', signedEvents: 0 })).toBe('hash-chain-only');
   });
 });
 
