@@ -44,10 +44,11 @@ const GLOBAL_HELP =
   "also cover this machine's global tree — left out by default, exactly as `verify` leaves it out: it belongs to no project and is present in every one";
 
 /** What the acts say about the one thing a reader of `--help` wants to know. */
-const WHAT_TRAVELS =
-  "What leaves this machine: the SHA-256 of one checkpoint's signed message, and " +
-  'nothing else — no id, no title, no body, no count. Each calendar is handed a hash ' +
-  'of that digest with a nonce of its own, so no two of them see the same value.';
+const WHAT_TRAVELS = [
+  "What leaves this machine: the SHA-256 of one checkpoint's signed message, and",
+  'nothing else — no id, no title, no body, no count. Each calendar is handed a hash',
+  'of that digest with a nonce of its own, so no two of them see the same value.',
+].join('\n');
 
 /** Registers `mnema witness` on the program. */
 export function registerWitness(program: Command, wiring: Wiring): Declared {
