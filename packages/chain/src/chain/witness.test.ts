@@ -181,6 +181,28 @@ describe('a stored witness that does not say what it claims', () => {
     expect(reading.detail).not.toContain('call stack');
   });
 
+  it('refuses a proof too big to read WITHOUT reading it', () => {
+    // The order is what this case is about. `parseOtsProof` refuses a proof past its
+    // limit — the right refusal at the wrong moment, since by then the bytes are in
+    // memory. A clone can commit a file of any size, so the size is asked first.
+    const huge = Buffer.alloc((1 << 20) + 1);
+    writeWitness(layout, TAIL, digest, { proof: huge });
+    const reading = readWitness(layout, TAIL, digest);
+    expect(reading.status).toBe('not-covered');
+    // Read back as the stand-in rather than as the file: the bytes never entered.
+    const stored = readStoredWitness(layout, TAIL, digest);
+    expect(stored?.proof.length).toBeLessThan(100);
+  });
+
+  it('ignores a headers sidecar past the size any capped proof can ask for', () => {
+    writeWitness(layout, TAIL, digest, { proof: anchoredProof(digest) });
+    writeFileSync(witnessBlocksPath(layout, TAIL, digest), 'x'.repeat(1 << 17), 'utf-8');
+    // The anchor is still reached; what is gone is the header that would cover it.
+    const reading = readWitness(layout, TAIL, digest);
+    expect(reading.status).toBe('pending');
+    expect(reading.detail).toContain('does not carry');
+  });
+
   it('refuses bytes that are not a proof, without taking the verdict down with them', () => {
     writeWitness(layout, TAIL, digest, { proof: Buffer.from('this is not a proof') });
     const reading = readWitness(layout, TAIL, digest);

@@ -49,7 +49,7 @@
  * answer depended on somebody else being up.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 
 import { canonicalStringify } from '../events/canonical.js';
 import { oneLine } from '../one-line.js';
@@ -58,7 +58,12 @@ import { checkpointHash } from './checkpoint.js';
 import type { ChainLayout } from './layout.js';
 import { witnessBlocksPath, witnessDir, witnessProofPath } from './layout.js';
 import type { WitnessStatus } from './level.js';
-import { parseOtsProof, type ReachedAttestation, reachedAttestations } from './ots.js';
+import {
+  MAX_PROOF_BYTES,
+  parseOtsProof,
+  type ReachedAttestation,
+  reachedAttestations,
+} from './ots.js';
 import { lastTailCheckpoint } from './store.js';
 
 /**
@@ -101,7 +106,16 @@ export interface StoredWitness {
   readonly headers: ReadonlyMap<number, Buffer>;
 }
 
-/** What the record holds for one checkpoint, or null if it holds nothing. */
+/**
+ * What the record holds for one checkpoint, or null if it holds nothing.
+ *
+ * THE SIZE IS ASKED BEFORE THE BYTES ARE, and the order is the point. Both files are
+ * COMMITTED, so a clone reads whatever the last person to write the repository put
+ * there — and a reader that loads whatever it is handed and checks the size afterwards
+ * has already allocated it. `parseOtsProof` refuses a proof past its limit, which is
+ * the right refusal at the wrong moment: by then a gigabyte is in memory. Refused here
+ * instead, by the same number, so nothing oversized is ever read.
+ */
 export function readStoredWitness(
   layout: ChainLayout,
   tailId: string,
@@ -109,9 +123,12 @@ export function readStoredWitness(
 ): StoredWitness | null {
   const proofPath = witnessProofPath(layout, tailId, checkpointHash);
   if (!existsSync(proofPath)) return null;
+  if (statSync(proofPath).size > MAX_PROOF_BYTES) return { proof: OVERSIZED, headers: new Map() };
   const headers = new Map<number, Buffer>();
   const blocksPath = witnessBlocksPath(layout, tailId, checkpointHash);
-  if (existsSync(blocksPath)) {
+  // The sidecar is one line per block a proof reaches, and a proof is capped, so a file
+  // past this holds lines no attestation will ever ask for.
+  if (existsSync(blocksPath) && statSync(blocksPath).size <= MAX_BLOCKS_BYTES) {
     for (const line of readFileSync(blocksPath, 'utf-8').split('\n')) {
       if (line.trim() === '') continue;
       const stored = parseStoredHeader(line);
@@ -120,6 +137,22 @@ export function readStoredWitness(
   }
   return { proof: readFileSync(proofPath), headers };
 }
+
+/**
+ * What stands in for a proof too big to read: bytes that are not one, so the reading
+ * takes the refusal every unreadable proof takes and says the same thing.
+ *
+ * A shape rather than a `null`, because `null` here means "nothing was ever asked for",
+ * which is a different fact and reads as a different sentence.
+ */
+const OVERSIZED = Buffer.from('oversized');
+
+/**
+ * How many bytes of block headers this reads. A proof is capped at
+ * {@link MAX_PROOF_BYTES} and reaches at most one attestation per few bytes of it, so
+ * this is far more sidecar than any capped proof can ask for.
+ */
+const MAX_BLOCKS_BYTES = 1 << 16;
 
 /**
  * A stored header line, or null if it is not one.
