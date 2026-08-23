@@ -38,6 +38,7 @@ $ mnema
 !   brief                                   print what governs the work here as markdown, for an agent to read
 !   key                                     manage this machine's signing keys
 !   tail                                    authorize a cut in the record's own tails
+!   witness [options]                       ask an outside witness to date this record, and read where that stands
 !   switch                                  turn off, or back on, what mnema hands to a model unasked
 !   verify [options]                        verify this project's record — its committed tree and its private one
 !   mcp [options]                           run the mnema MCP server over stdio (for an agent host)
@@ -86,6 +87,7 @@ $ mnema --help
 |   brief                                   print what governs the work here as markdown, for an agent to read
 |   key                                     manage this machine's signing keys
 |   tail                                    authorize a cut in the record's own tails
+|   witness [options]                       ask an outside witness to date this record, and read where that stands
 |   switch                                  turn off, or back on, what mnema hands to a model unasked
 |   verify [options]                        verify this project's record — its committed tree and its private one
 |   mcp [options]                           run the mnema MCP server over stdio (for an agent host)
@@ -633,8 +635,9 @@ $ mnema verify --help
 |                          (also fail unless every event is covered by a verified
 |                          signature — expect this to fail while a session is in
 |                          flight), witnessed (also fail unless an external
-|                          witness covers the record — nothing provides one yet,
-|                          so it never passes)
+|                          witness dates the record — `mnema witness stamp` asks
+|                          for one, and it passes once a Bitcoin block carries it,
+|                          never while it is pending)
 |   -h, --help             display help for command
 
 ### mnema mcp --help

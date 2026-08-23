@@ -22,6 +22,9 @@
  *         000002.jsonl        ...
  *         checkpoints.jsonl   append-only signed checkpoints for this tail
  *         tailproof.json      the key's signature over this tail's own id
+ *         witness/            external attestations over this tail's checkpoints
+ *                             (T3): the detached proof and the block headers it
+ *                             needs, both committed like the checkpoints
  *     keys/
  *       <fingerprint>.pub     MATERIALIZED public key, committed (the private
  *                             half is NOT here — it lives in the key root)
@@ -105,6 +108,49 @@ export function checkpointsPath(layout: ChainLayout, tailId: string): string {
 
 export function tailProofPath(layout: ChainLayout, tailId: string): string {
   return join(tailDir(layout, tailId), 'tailproof.json');
+}
+
+/**
+ * Where a tail's external witnesses live — one directory, beside the checkpoints
+ * they are about.
+ *
+ * A directory rather than a file, and one file per checkpoint rather than a log,
+ * because an attestation is not appended: it is REPLACED as it completes (a proof
+ * is born incomplete and is upgraded until a block carries it), and a name that is
+ * the checkpoint's own digest makes that replacement idempotent — the same
+ * checkpoint always lands on the same path, so no reader has to decide which of two
+ * lines about one checkpoint is the current one.
+ */
+export function witnessDir(layout: ChainLayout, tailId: string): string {
+  return join(tailDir(layout, tailId), 'witness');
+}
+
+/**
+ * The detached OpenTimestamps proof over one checkpoint — the ecosystem's own file
+ * format, at a path named by what it commits to.
+ */
+export function witnessProofPath(
+  layout: ChainLayout,
+  tailId: string,
+  checkpointHash: string,
+): string {
+  return join(witnessDir(layout, tailId), `${checkpointHash}.ots`);
+}
+
+/**
+ * The block headers a proof's attestations need — 80 bytes each, one JSON line
+ * each, beside the proof they complete.
+ *
+ * They are a SEPARATE file because the `.ots` must stay byte-for-byte what the
+ * OpenTimestamps client writes and reads; anything of this product's mixed into it
+ * would make the one file a stranger can check into a file only this product can.
+ */
+export function witnessBlocksPath(
+  layout: ChainLayout,
+  tailId: string,
+  checkpointHash: string,
+): string {
+  return join(witnessDir(layout, tailId), `${checkpointHash}.blocks`);
 }
 
 export function keysDir(layout: ChainLayout): string {

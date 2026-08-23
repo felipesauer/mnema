@@ -1,6 +1,7 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { gitignorePath } from './layout.js';
 import { ensureTree } from './tree.js';
@@ -35,8 +36,51 @@ describe('ensureTree — self-contained .gitignore', () => {
       .split('\n')
       .map((l) => l.trim())
       .filter((l) => l.length > 0 && !l.startsWith('#'));
-    for (const proof of ['pub', 'tails', 'checkpoints', 'tailproof']) {
+    for (const proof of ['pub', 'tails', 'checkpoints', 'tailproof', 'witness', 'ots']) {
       expect(rules.some((r) => r.includes(proof))).toBe(false);
+    }
+  });
+
+  it('lets the WITNESS through, and git is the one asked', () => {
+    // The attestation and the block headers are public by construction — a digest, a
+    // Merkle path and eighty bytes of somebody else's block — and they are the only
+    // thing standing between a clone and a `not covered` it cannot do anything about.
+    // A rule that hid them would make T3 a layer only the machine that stamped can see.
+    //
+    // ASKED OF `git check-ignore`, NOT OF A SUBSTRING. The first draft of this compared
+    // the rules to a path by hand, and a mutation that added `/tails/*/witness/` to the
+    // ignore file walked straight past it — a glob is not a substring, and a rule like
+    // `/tails/*/*/` would not even carry the word. The tool that decides this in
+    // production is git, so git is what answers.
+    const repo = mkdtempSync(join(tmpdir(), 'mnema-gitignore-'));
+    try {
+      execFileSync('git', ['init', '-q'], { cwd: repo });
+      const tree = join(repo, '.mnema');
+      ensureTree({ root: tree });
+      const witnessed = join('.mnema', 'tails', 'ffff-0001', 'witness', 'abc.ots');
+      const blocks = join('.mnema', 'tails', 'ffff-0001', 'witness', 'abc.blocks');
+      for (const path of [witnessed, blocks]) {
+        mkdirSync(join(repo, dirname(path)), { recursive: true });
+        writeFileSync(join(repo, path), 'x');
+        // `check-ignore` exits 0 when the path IS ignored, 1 when it is not.
+        let ignored = true;
+        try {
+          execFileSync('git', ['check-ignore', '-q', path], { cwd: repo });
+        } catch {
+          ignored = false;
+        }
+        expect(ignored, `${path} is ignored by the tree's own .gitignore`).toBe(false);
+      }
+      // And the same question, the other way round, so the instrument is not vacuous:
+      // what the file DOES hide is hidden.
+      const secret = join('.mnema', 'keys', 'abc.key');
+      mkdirSync(join(repo, dirname(secret)), { recursive: true });
+      writeFileSync(join(repo, secret), 'x');
+      expect(() =>
+        execFileSync('git', ['check-ignore', '-q', secret], { cwd: repo }),
+      ).not.toThrow();
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
     }
   });
 

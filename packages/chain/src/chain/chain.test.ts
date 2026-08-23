@@ -27,8 +27,10 @@ import { entryHash, writtenAsBuilt, writtenAsStored } from './hash.js';
 import { deriveAnchor, generateKeyPair, publicKeyToPem } from './keys.js';
 import { loadOrCreateKeyPair } from './keystore.js';
 import { checkpointsPath, publicKeyPath, segmentPath, tailProofPath } from './layout.js';
+import { serializeOtsProof } from './ots.js';
 import { holdsRecord, listTails, orderedSegments, readTailEntries } from './store.js';
 import { serializeTailProof, signTailProof } from './tailproof.js';
+import { writeWitness } from './witness.js';
 import type { ChainWriter } from './writer.js';
 
 let root: string;
@@ -86,6 +88,22 @@ function openFounded(opts?: { checkpointEvery?: number; maxSegmentBytes?: number
   return found(openChain(root, opts));
 }
 
+/** The hash of the last checkpoint a tail stored — what a witness is filed under. */
+function lastCheckpointHashOf(chainRoot: string, tail: string): string {
+  const lines = readFileSync(checkpointsPath({ root: chainRoot }, tail), 'utf-8')
+    .trim()
+    .split('\n');
+  return checkpointHash(JSON.parse(lines[lines.length - 1] as string));
+}
+
+/** An attestation that has been requested over `digest` and has not confirmed. */
+function promiseOver(digest: string): Buffer {
+  return serializeOtsProof(Buffer.from(digest, 'hex'), {
+    attestations: [{ kind: 'pending', uri: 'https://calendar.invalid' }],
+    steps: [],
+  });
+}
+
 function writeSome(count: number, opts?: { checkpointEvery?: number; maxSegmentBytes?: number }) {
   const w = openFounded(opts);
   for (let i = 0; i < count; i += 1) {
@@ -106,13 +124,66 @@ describe('chain — write then verify (happy path, T1/T2/T4)', () => {
     expect(result.tails[0]?.entryCount).toBe(11);
   });
 
-  it('always declares T3 (external witness) as not covered, never green', () => {
+  it('declares T3 (external witness) not covered for a record nobody stamped', () => {
+    // THIS CASE USED TO SAY *ALWAYS*, and it was true for as long as nothing could
+    // produce any other answer. A witness landed (witness.ts), so what holds now is
+    // narrower and is the half that matters for every record already on a disk: a
+    // chain with no attestation beside it reads exactly as it always did, down to
+    // the words. The cases below are the other three answers.
     writeSome(3);
     const result = verify(root);
     expect(result.witness).toBe('not-covered');
     expect(result.summary).toMatch(/external witness \(T3\): not covered/);
     // The summary must not read as an unqualified tamper-proof "intact".
     expect(result.summary).not.toMatch(/chain intact/i);
+  });
+
+  it('reads the witness off the DISK and lets it reach the verdict', () => {
+    // THE ELO. A status that never travels from the file to the sentence is a layer
+    // that exists in a unit test and nowhere else, and four defects of this series
+    // were exactly that. So: a real chain, a real checkpoint, an attestation filed
+    // under that checkpoint's own digest, and the verdict asked what it now says.
+    const w = writeSome(3, { checkpointEvery: 1 });
+    const tail = tailIdOf(root);
+    const through = lastCheckpointHashOf(root, tail);
+    writeWitness({ root }, tail, through, { proof: promiseOver(through) });
+    const result = verify(root);
+    expect(result.witness).toBe('pending');
+    expect(result.summary).toMatch(/external witness \(T3\): PENDING, which is not coverage/);
+    // And it is NOT coverage: the level is what it was without any witness at all.
+    expect(result.level).toBe('fully-signed');
+    expect(w.checkpoint()).toBeNull();
+  });
+
+  it('reads the witness for the checkpoint it PROVED, not for whatever file is there', () => {
+    // An attestation filed under a name that is not this checkpoint's digest attests
+    // nothing here, however impeccable it is about the digest it does name.
+    writeSome(3, { checkpointEvery: 1 });
+    const tail = tailIdOf(root);
+    const through = lastCheckpointHashOf(root, tail);
+    writeWitness({ root }, tail, through, { proof: promiseOver('b'.repeat(64)) });
+    const result = verify(root);
+    expect(result.witness).toBe('not-covered');
+    expect(result.summary).toMatch(/over another digest/);
+  });
+
+  it('does not look for a witness under a checkpoint that failed to verify', () => {
+    // The last LINE of `checkpoints.jsonl` and the last checkpoint that VERIFIED are
+    // different things the moment somebody appends a bad one, and a witness looked
+    // for under the wrong one would be a T3 answer about a checkpoint T2/T4 refused.
+    writeSome(3, { checkpointEvery: 1 });
+    const tail = tailIdOf(root);
+    const good = lastCheckpointHashOf(root, tail);
+    const stored = readFileSync(checkpointsPath({ root }, tail), 'utf-8').trim().split('\n');
+    const forged = { ...JSON.parse(stored[stored.length - 1] as string), fromSeq: 99, toSeq: 99 };
+    appendFileSync(checkpointsPath({ root }, tail), `${canonicalStringify(forged)}\n`, 'utf-8');
+    writeWitness({ root }, tail, checkpointHash(forged), {
+      proof: promiseOver(checkpointHash(forged)),
+    });
+    expect(verify(root).witness).toBe('not-covered');
+    // And under the one that did verify, it is found.
+    writeWitness({ root }, tail, good, { proof: promiseOver(good) });
+    expect(verify(root).witness).toBe('pending');
   });
 
   it('reports the uncheckpointed window as a declared residual, not a failure', () => {

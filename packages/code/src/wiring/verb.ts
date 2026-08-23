@@ -89,11 +89,21 @@ export interface Wiring {
 /**
  * What a verb can do to the RECORD, which every one of them declares.
  *
- * `mutates` says this verb CAN append an event to a chain or change this machine's key
- * material. `reads` says it cannot. The claim is about the POWER and never about the
- * exercise: a write refused for a missing project appended nothing and is still a
- * write, and a caller deciding what to allow has to know what a verb could do, not
- * what it happened to do last time.
+ * `mutates` says this verb CAN change the record: append an event to a chain, change
+ * this machine's key material, or alter what a verifier rules on. `reads` says it
+ * cannot. The claim is about the POWER and never about the exercise: a write refused
+ * for a missing project appended nothing and is still a write, and a caller deciding
+ * what to allow has to know what a verb could do, not what it happened to do last time.
+ *
+ * THE THIRD CLAUSE IS NEW AND IT ARRIVED WITH A COUNTEREXAMPLE. This said "append an
+ * event or touch key material" for as long as those were the only two ways to change
+ * anything, and `witness` is neither: it writes an external attestation beside a tail's
+ * checkpoints, appends nothing, mints nothing, and moves `verify` from `not-covered` to
+ * `covered`. Under the old wording it would have classified as a READ — which is the
+ * unsafe side — so the wording widened to the thing all three have in common, which is
+ * what a verifier would afterwards say. `every-verb-says-if-it-writes.test.ts` measures
+ * the first two and DECLARES that it cannot see the third, rather than counting its
+ * silence as evidence.
  *
  * IT IS NOT "TOUCHES DISK", and the difference is not academic. Most reads open the
  * projection cache and rebuild it, which writes a file — and none of that reaches the

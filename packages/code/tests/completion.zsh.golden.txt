@@ -12,13 +12,14 @@
 
 _mnema_commands() {
   case "$1" in
-    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs rules skills usage brief key tail switch verify mcp repl completion help' ;;
+    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs rules skills usage brief key tail witness switch verify mcp repl completion help' ;;
     'task') echo 'move' ;;
     'decision') echo 'move supersede' ;;
     'skill') echo 'move export' ;;
     'run') echo 'start end help' ;;
     'key') echo 'restore request enroll revoke help' ;;
     'tail') echo 'list prune help' ;;
+    'witness') echo 'stamp upgrade' ;;
     'switch') echo 'off on' ;;
   esac
 }
@@ -54,6 +55,7 @@ _mnema_described() {
       'brief:print what governs the work here as markdown, for an agent to read' \
       'key:manage this machine'\''s signing keys' \
       'tail:authorize a cut in the record'\''s own tails' \
+      'witness:ask an outside witness to date this record, and read where that stands' \
       'switch:turn off, or back on, what mnema hands to a model unasked' \
       'verify:verify this project'\''s record — its committed tree and its private one' \
       'mcp:run the mnema MCP server over stdio (for an agent host)' \
@@ -82,6 +84,9 @@ _mnema_described() {
       'list:list the tails the record holds here, with the id `prune` takes' \
       'prune:record that one whole tail was authorized to be cut (it removes nothing)' \
       'help:display help for command' ;;
+    'witness') printf '%s\n' \
+      'stamp:ask an outside witness to date each tail'\''s last checkpoint (T3)' \
+      'upgrade:go back for the attestations this record is waiting on' ;;
     'switch') printf '%s\n' \
       'off:stop a channel handing the record to a model unasked' \
       'on:let a channel hand the record to a model again' ;;
@@ -132,6 +137,9 @@ _mnema_flags() {
     'tail') echo '-h --help -V --version --color' ;;
     'tail list') echo '-h --help -V --version --color' ;;
     'tail prune') echo '--reason --which -h --help -V --version --color' ;;
+    'witness') echo '--global -h --help -V --version --color' ;;
+    'witness stamp') echo '--calendar --global -h --help -V --version --color' ;;
+    'witness upgrade') echo '--calendar --blocks --global -h --help -V --version --color' ;;
     'switch') echo '-h --help -V --version --color' ;;
     'switch off') echo '--reason --scope --which -h --help -V --version --color' ;;
     'switch on') echo '--reason --scope --which -h --help -V --version --color' ;;
@@ -205,6 +213,9 @@ _mnema_values() {
     'tail:--color') echo 'auto always never' ;;
     'tail list:--color') echo 'auto always never' ;;
     'tail prune:--color') echo 'auto always never' ;;
+    'witness:--color') echo 'auto always never' ;;
+    'witness stamp:--color') echo 'auto always never' ;;
+    'witness upgrade:--color') echo 'auto always never' ;;
     'switch:--color') echo 'auto always never' ;;
     'switch off:--scope') echo 'public private global' ;;
     'switch off:--color') echo 'auto always never' ;;
