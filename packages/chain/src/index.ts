@@ -116,6 +116,26 @@ export {
   tailWaiversIn,
 } from './chain/waiver.js';
 export {
+  type ChainWitness,
+  checkpointToWitness,
+  readStoredWitness,
+  readWitness,
+  type TailWitness,
+  type WitnessReading,
+  witnessOfChain,
+  writeWitness,
+} from './chain/witness.js';
+export {
+  type CompletedWitness,
+  completeWitness,
+  DEFAULT_BLOCK_SOURCE,
+  DEFAULT_CALENDARS,
+  type StampedWitness,
+  stampCheckpoint,
+  type WitnessNetwork,
+  type WitnessRefusal,
+} from './chain/witness-request.js';
+export {
   ChainWriter,
   DEFAULT_CHECKPOINT_EVERY,
   DEFAULT_MAX_SEGMENT_BYTES,

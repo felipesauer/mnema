@@ -41,12 +41,15 @@ any secret at verify time:
 | **Accidental corruption** — a truncated write, a flipped byte | The hash chain — keyless, always on. |
 | **An edit made *without* the signing key** | Ed25519 checkpoints over a content-recomputed root. Editing content and re-chaining the keyless hashes is still caught, because the signed root folds the actual event bytes. |
 | **An outside audit with only what was committed** — no secrets | The public key is committed by fingerprint; verification re-derives that fingerprint from the key it loads, so swapping the committed key for another is caught. |
-| **An edit made *with* the signing key** | **Not covered by local crypto.** A key holder can rewrite and re-sign. Detecting that needs an external witness — a git remote, an anchor — a seam this package leaves open, never a guarantee it fakes. |
+| **An edit made *with* the signing key** | **Not covered by local crypto, and covered by T3 when a record is stamped.** A key holder can rewrite and re-sign, and everything local verifies. What they cannot produce is an attestation dated before they started: `witness.ts` stores an OpenTimestamps proof over a checkpoint's digest and the Bitcoin block header it lands in, and `verify` reads both offline. This row used to say the seam was one *this package leaves open, never a guarantee it fakes* — it is closed for a record somebody stamped, and exactly as open as it ever was for one nobody did. See FORMAT.md §8. |
 
 **Removing what was there, and trusting who signed.** A hash chain proves
 nothing was *changed*; it cannot prove nothing was *deleted*, and it proves the
 record is self-consistent, not that it is bound to any outside identity. These
-are the honest gaps, and the same external witness closes them:
+are the honest gaps. T3 closes the *dating* half of them — a rebuilt chain has no
+checkpoint anybody attested yesterday — and closes none of the rest: what a
+timestamp proves is that a digest existed at an instant, never who else has a copy
+of the bytes or whose key it really was.
 
 | Threat | Covered by |
 |---|---|
@@ -71,9 +74,13 @@ always did.
 Reading two fields and adding them up is what nobody should have to do, so the
 result also carries the **level** it reached (`level`), and the one-line
 `summary` is worded from it: `unreadable`, `broken`, `hash-chain-only`
-(nothing signed was checked), `signed-through-last-checkpoint`, `fully-signed`.
-A caller that wants a gate compares it with `meetsRequirement(level,
-'chained' | 'signed' | 'witnessed')` rather than re-deriving the meaning.
+(nothing signed was checked), `signed-through-last-checkpoint`, `fully-signed`,
+`externally-witnessed`. A caller that wants a gate compares it with
+`meetsRequirement(level, 'chained' | 'signed' | 'witnessed')` rather than
+re-deriving the meaning. The top rung was unreachable until a witness existed, and
+this list said five levels where the code declared six; it is six now, and the
+record a frozen fixture proves it with is
+`packages/chain/src/chain/witnessed-record.test.ts`.
 
 The same verdict is handed over as the **clauses** it is made of (`clauses`), each
 saying which part of the verdict it is — the level, the tail count, what the events
@@ -93,11 +100,19 @@ the packages above word sentences of their own and a caller cannot apply a rule
 to the inside of a sentence this package already joined.
 
 The pattern is consistent: **local crypto covers alteration; an external
-witness covers omission and ties the record to an identity.** That witness is
-the last row of the first table — a git remote or an anchor — and committing
-the chain to git is the recommended path for anyone who wants the strong
-guarantee, because git both preserves the files that a deletion would remove and
-gives the signing key a provenance the crypto alone cannot.
+witness covers omission, dates the record, and ties it to an identity.** Two
+witnesses do different halves of that, and neither does the other's:
+
+- **A timestamp anchor (T3), which this package now implements.** It attests that a
+  checkpoint's digest existed at an instant, so a chain rebuilt today cannot claim a
+  history — the one thing a key holder could otherwise do unseen. It says nothing
+  about deletion or identity, and it is **opt-in**: a record nobody stamped reads
+  `not covered`, exactly as every record did before. FORMAT.md §8 is the bytes;
+  `witness.ts` is the reading; nothing on the verifying path touches a network.
+- **A git remote.** It preserves the files a deletion would remove and gives a
+  committed public key a provenance the crypto alone cannot, which is the half a
+  timestamp does not reach. Committing the chain to git stays the recommended path
+  for anyone who wants the strong guarantee.
 
 ## Install
 

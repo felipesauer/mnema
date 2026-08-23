@@ -21,9 +21,14 @@
  *     An event is authentic only if its `signerFp` is a key valid for its `who`
  *     at that point. This spans tails (a key enrolled on one authorizes events on
  *     another) and applies to every event, checkpointed or not. See enrollment.ts.
- *   - T3 (external witness): out of scope for local crypto. With no witness
- *     configured, the verifier says so plainly — never a green that reads as
- *     tamper-proof.
+ *   - T3 (external witness): the layer that is not local by definition, and the
+ *     only one that catches the party who HOLDS the key and rebuilds the whole
+ *     chain from nothing. It is read off the disk, never off the network: the
+ *     record stores an attestation over the digest of the checkpoint each tail was
+ *     proven through, plus the block header that attestation lands in, and this
+ *     file folds them to the weakest (witness.ts). A record nobody stamped answers
+ *     `not-covered` and reads exactly as it always did; a request that has not
+ *     confirmed answers `pending`, which is NOT coverage.
  *
  * WHAT EVERY RECOMPUTATION ABOVE IS OVER. Reading a stored line lifts its event
  * through the registered upcasters, so the event this file holds may be the
@@ -103,6 +108,7 @@ import { UnreadableLineError } from './lines.js';
 import { listPublicKeyFingerprints, listTails, readTail, readTailCheckpoints } from './store.js';
 import { parseTailProof, verifyTailProof } from './tailproof.js';
 import { type TailWaiver, tailWaiversIn, waiversForKey } from './waiver.js';
+import { type ChainWitness, witnessOfChain } from './witness.js';
 
 export type { WitnessStatus } from './level.js';
 
@@ -304,6 +310,11 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
   const entriesByTail = new Map<string, readonly Entry[]>();
   const issuesByTail = new Map<string, TailIssue[]>();
   const checkpointedByTail = new Map<string, number>();
+  // The checkpoint each tail was proven THROUGH — the one an external attestation
+  // would be filed under. Held per tail because T3 is folded over all of them at
+  // once, and a tail whose checkpoints did not verify carries a null rather than
+  // being left out, so the fold sees every tail there is.
+  const verifiedThrough = new Map<string, string | null>();
   const notes: PartialFinalLineNote[] = [];
   let unreadable = false;
 
@@ -326,6 +337,7 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
       unreadable = true;
       entriesByTail.set(tail, []);
       checkpointedByTail.set(tail, -1);
+      verifiedThrough.set(tail, null);
       continue;
     }
     const entries = read.entries;
@@ -355,9 +367,10 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
       verifyTailOwnership(layout, tail, issues);
     }
     verifyHashChain(tail, entries, issues);
-    const checkpointedThrough = verifyCheckpoints(layout, tail, entries, checkpoints, issues);
-    checkpointedByTail.set(tail, checkpointedThrough);
-    uncheckpointed += entries.length - (checkpointedThrough + 1);
+    const coverage = verifyCheckpoints(layout, tail, entries, checkpoints, issues);
+    checkpointedByTail.set(tail, coverage.covered);
+    verifiedThrough.set(tail, coverage.through);
+    uncheckpointed += entries.length - (coverage.covered + 1);
   }
 
   // Identity by enrollment, folded across every tail in one deterministic order:
@@ -394,7 +407,12 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
 
   const ok = allIssues.length === 0;
   const fullySigned = ok && uncheckpointed === 0;
-  const witness: WitnessStatus = 'not-covered';
+  // T3, read off the disk and never off the network: the attestation the record
+  // stores over the checkpoint each tail was proven through, folded to the weakest
+  // (witness.ts). A record that was never stamped answers `not-covered`, exactly as
+  // it did when nothing could answer anything else.
+  const witnessed = witnessOfChain(layout, verifiedThrough);
+  const witness: WitnessStatus = witnessed.status;
   // Events an actually-verified checkpoint covers. Zero is the state the old
   // summary called `verified (T1/T2/T4)`: no signature was checked, on any tail.
   const signedEvents = tailResults.reduce((sum, t) => sum + t.checkpointedThrough + 1, 0);
@@ -416,6 +434,7 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
     signedEvents,
     uncheckpointed,
     census,
+    witness: witnessed,
   });
   return {
     ok,
@@ -632,13 +651,31 @@ function verifyHashChain(tail: string, entries: readonly Entry[], issues: TailIs
  * it names. Coverage must be contiguous from seq 0. Returns the highest seq
  * covered by a verified checkpoint (-1 if none).
  */
+/**
+ * How far a tail's checkpoints VERIFIED: the last seq they cover, and the hash of
+ * the last one that actually checked out.
+ *
+ * The hash travels because T3 is asked about EXACTLY that checkpoint (witness.ts):
+ * an attestation is filed under the digest of a checkpoint's signed message, so a
+ * verifier looking for one has to name the checkpoint it just proved rather than
+ * the last line of a file it has not judged. Returning the seq alone would have
+ * left the witness reading to recompute which checkpoint was the good one, which is
+ * a second opinion about the thing this function is the authority on.
+ */
+interface CheckpointCoverage {
+  /** Highest seq covered by a verified checkpoint, or -1 if none. */
+  readonly covered: number;
+  /** Hash of the last VERIFIED checkpoint, or null if none verified. */
+  readonly through: string | null;
+}
+
 function verifyCheckpoints(
   layout: ChainLayout,
   tail: string,
   entries: readonly Entry[],
   stored: readonly Checkpoint[],
   issues: TailIssue[],
-): number {
+): CheckpointCoverage {
   const checkpoints = [...stored].sort((a, b) => a.fromSeq - b.fromSeq);
   let covered = -1;
   let expectedPrev: string | null = null;
@@ -754,7 +791,10 @@ function verifyCheckpoints(
     covered = checkpoint.toSeq;
     expectedPrev = checkpointHash(checkpoint);
   }
-  return covered;
+  // `expectedPrev` IS the hash of the last checkpoint that verified — it is set at
+  // the bottom of the loop and only there, so a checkpoint that took any of the
+  // refusals above never becomes the one a witness is looked for under.
+  return { covered, through: expectedPrev };
 }
 
 /**
@@ -824,6 +864,8 @@ interface VerdictFacts {
   /** Events resting on the hash chain alone. */
   readonly uncheckpointed: number;
   readonly census: readonly CensusNote[];
+  /** What the external witness stands at, and why — see witness.ts. */
+  readonly witness: ChainWitness;
 }
 
 /**
@@ -841,9 +883,13 @@ interface VerdictFacts {
  * own way therefore shows THESE words, in this order, and the string every other reader
  * gets is the same list joined.
  *
- * The witness clause is last and it is a constant, because T3 is out of scope for local
- * crypto whatever the rest of the verdict found: with no witness configured the verifier
- * says so plainly rather than leaving a green that reads as tamper-proof.
+ * The witness clause is last, and it USED TO BE A CONSTANT — *because T3 is out of scope
+ * for local crypto whatever the rest of the verdict found*. That premise fell with
+ * witness.ts: T3 is now read off the disk like everything else, and the clause is a
+ * function of what was found there ({@link witnessClause}). What survives of the old
+ * argument is the POSITION and the posture — it is still last, and a record with no
+ * attestation still says so plainly rather than leaving a green that reads as
+ * tamper-proof.
  */
 function verdictClauses(facts: VerdictFacts): readonly [VerdictClause, ...VerdictClause[]] {
   return [
@@ -851,13 +897,33 @@ function verdictClauses(facts: VerdictFacts): readonly [VerdictClause, ...Verdic
     { of: 'tails', text: `${facts.tailCount} tail(s)` },
     { of: 'coverage', text: coverageClause(facts) },
     ...censusClauses(facts.census).map((text): VerdictClause => ({ of: 'census', text })),
-    { of: 'witness', text: WITNESS_CLAUSE },
+    { of: 'witness', text: witnessClause(facts.witness) },
   ];
 }
 
-/** How the external-witness layer reads while nothing provides one. */
-const WITNESS_CLAUSE =
-  'external witness (T3): not covered — enable an anchor or push to a shared remote';
+/**
+ * How the external-witness layer reads — TOTAL over {@link WitnessStatus}, so a
+ * state added to that union does not compile until it has a sentence.
+ *
+ * It used to be one constant, and the constant was the honest answer while nothing
+ * could produce any other. What is unchanged is the FIRST HALF of the absent case:
+ * `external witness (T3): not covered` are the words every reader of this product
+ * has matched on, and a record nobody stamped still earns them. What changed is the
+ * advice after the dash, which named a mechanism that did not exist.
+ *
+ * `pending` says the wait OUT LOUD and says it is not coverage in the same breath,
+ * because that is the sentence somebody reads at the one moment they are most likely
+ * to assume otherwise: they have just asked for an attestation and the request
+ * succeeded.
+ */
+function witnessClause(witness: ChainWitness): string {
+  const said: Readonly<Record<WitnessStatus, string>> = {
+    'not-covered': `external witness (T3): not covered — ${witness.detail}`,
+    pending: `external witness (T3): PENDING, which is not coverage — ${witness.detail}`,
+    covered: `external witness (T3): covered — ${witness.detail}`,
+  };
+  return said[witness.status];
+}
 
 /**
  * What separates two clauses of the verdict — the whole punctuation of the sentence.

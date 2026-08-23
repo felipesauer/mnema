@@ -212,6 +212,13 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   tail: {
     argv: (f) => ['tail', 'prune', f.foreignTail, '--reason', 'the person asked to be taken out'],
   },
+  // The one verb of this surface that would REACH SOMEBODY ELSE, and the row is chosen
+  // so that it does not: `upgrade` over a record nothing has been asked about skips
+  // every tail before a fetch is composed. `stamp` is the powerful member and it needs a
+  // calendar to answer, which a guard may not depend on — so what is measured here is
+  // the group entering its own act and touching nothing, and `RECORDS_NOTHING` says the
+  // rest out loud.
+  witness: { argv: () => ['witness', 'upgrade'] },
   // The bare group is the LISTING, which reads; what makes this verb a write is `off`,
   // so that is what the exercise runs. A row for the listing would measure the read
   // half of a group already classified by its most powerful member.
@@ -259,6 +266,14 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
  */
 const RECORDS_NOTHING: Readonly<Record<string, string>> = {
   mcp: 'not exercised: it serves a connection for its lifetime and would not return',
+  // AND THE ONE THAT WRITES SOMETHING THIS INSTRUMENT CANNOT SEE. `witness` appends no
+  // event and touches no key: it writes an ATTESTATION beside the checkpoints, which
+  // changes what `verify` rules on and reaches neither of the two things counted here.
+  // That is why it is declared a write (see `wiring/verb.ts`, where the wording had to
+  // widen for it) and why the count below stays honest about not having measured it.
+  witness:
+    'writes an attestation file beside the checkpoints — neither an event nor key ' +
+    'material, so nothing this instrument counts moves',
 };
 
 // ---------------------------------------------------------------------------
@@ -507,7 +522,7 @@ describe('every verb says if it writes', () => {
     expect(Object.keys(INVOCATION).sort()).toEqual([...EFFECT_BY_VERB.keys()].sort());
   });
 
-  it('counts thirteen writes and twenty reads over the whole surface', () => {
+  it('counts fourteen writes and twenty reads over the whole surface', () => {
     // The count in the report, asserted rather than trusted, and the total against the
     // list: a verb that stopped being registered would otherwise leave both halves
     // looking healthy.
@@ -523,6 +538,7 @@ describe('every verb says if it writes', () => {
       'run',
       'key',
       'tail',
+      'witness',
       'switch',
       'mcp',
     ]);

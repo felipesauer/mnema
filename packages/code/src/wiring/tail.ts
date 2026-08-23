@@ -33,6 +33,13 @@
  * turned down — that is the design a study proposed for redaction and a decision
  * already deferred once, to when an external witness exists. One sentence, true in
  * the worst case, every time.
+ *
+ * AN EXTERNAL WITNESS EXISTS NOW (`mnema witness`), AND IT CHANGES NOTHING HERE — which
+ * is worth saying, because the deferral above names it as the condition. What T3 attests
+ * is that a checkpoint EXISTED at an instant; it says nothing about who else has a copy
+ * of the bytes, which is the whole of what this sentence is about. If anything the
+ * witness sharpens it: a record somebody else has dated is a record whose history is
+ * that much harder to pretend away.
  */
 
 import type { Command } from 'commander';

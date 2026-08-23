@@ -178,6 +178,54 @@ stop matching, and checkpoint signatures stop verifying: a keyless-editor alarm
 raised by an honest read
 (`packages/chain/src/chain/upcast-vs-proof.test.ts`).
 
+## 8. The external witness (T3)
+
+A checkpoint can be **dated by somebody outside this machine**. That closes the one
+hole the two layers above cannot: a party who holds the signing key can rebuild the
+whole chain and re-sign it, and everything in sections 1–7 will verify. What they
+cannot produce is an attestation dated before they started.
+
+What is attested is **the SHA-256 of a checkpoint's signed message** (§6) — the same
+digest `prev` links to — and nothing else. No id, no title, no body, no count leaves
+the machine. And because checkpoints chain, attesting **one** dates every checkpoint
+below it: this is not an attestation per event, nor even per checkpoint.
+
+Two files sit beside the checkpoints they are about:
+
+```
+tails/<tailId>/witness/<checkpointHash>.ots      an OpenTimestamps detached proof
+tails/<tailId>/witness/<checkpointHash>.blocks   the 80-byte Bitcoin block headers
+```
+
+- The `.ots` is **[OpenTimestamps](https://opentimestamps.org)' own format, unaltered**
+  — a Merkle path from the digest to a Bitcoin block's merkle root. A stranger runs
+  the `ots` client on it, against any Bitcoin node, and gets the same answer without
+  this product installed. The file is named by the digest it commits to, so a reader
+  knows which checkpoint it is about before opening it.
+- The `.blocks` sidecar is **this format's**, and it is what makes verification
+  offline: one JSON object per line (§1's canonical form), `{"header":"<160 hex>","height":<n>}`,
+  each header the 80 bytes Bitcoin serializes. It is separate from the `.ots` so that
+  the file a stranger checks stays byte-for-byte the ecosystem's.
+
+A verifier reading them offline asks three things, and all three are arithmetic:
+the proof's subject equals the checkpoint's digest; the path folds to the merkle root
+the stored header carries (bytes 36–68, internal order); and the header's own hash
+meets the target it declares, which must be at least `0x1800ffff` — 2**40 times the
+genesis difficulty. A header mined at an easier target is refused, because one is
+found in milliseconds (`packages/chain/src/chain/bitcoin.test.ts`).
+
+**A request that has not confirmed is not coverage.** A proof is born incomplete —
+the calendars promise to aggregate it, and a Bitcoin block carries it minutes to
+hours later — so between asking and holding there is a third state, reported as
+`pending` and counted as nothing
+(`packages/chain/src/chain/witness.test.ts`,
+`packages/chain/src/chain/witnessed-record.test.ts`).
+
+What this layer does **not** prove, said here rather than in a footnote: the stored
+header is checked for its work, not for its place in the chain. A reader who needs
+that follows the block id into any explorer, or runs the `ots` client against a node
+— which the unaltered `.ots` is there for.
+
 ## What this document does **not** promise
 
 Stated plainly, because a published format invites all three readings:
@@ -191,11 +239,14 @@ Stated plainly, because a published format invites all three readings:
   format with three independent implementations checking each other has a kind of
   assurance this one does not have yet, and publishing the vectors is the first
   step toward it rather than a substitute for it.
-- **Publishing the format adds no witness.** The threat this format does not
-  cover is an edit made *with* the signing key: a key holder can rewrite and
-  re-sign, and everything above will verify. Detecting that needs an external
-  witness, which is outside this document and outside this package. See the
-  "What it proves — and what it does not" table in `README.md`.
+- **Publishing the format adds no witness — and §8 is not the format's doing
+  either.** The threat sections 1–7 do not cover is an edit made *with* the signing
+  key: a key holder can rewrite and re-sign, and everything there will verify.
+  Detecting that needs somebody OUTSIDE, and this used to say that was outside this
+  document and outside this package. §8 brought it inside — but by taking a
+  dependency on Bitcoin and on a public calendar answering, not by anything
+  publishing these bytes achieved. A record nobody stamped is exactly where it
+  always was. See the "What it proves — and what it does not" table in `README.md`.
 - **This document specifies the bytes, not the workflow.** Which states a task
   may move between, which scope a fact is written to, what a verifier's verdict
   means — none of that is here.

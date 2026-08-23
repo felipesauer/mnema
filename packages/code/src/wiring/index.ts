@@ -98,9 +98,9 @@
  * all of that out loud, because a cost table printed by an audit tool with nothing
  * qualifying it reads as part of the proof.
  *
- * `key`, `tail` and `switch` sit together at the end of the writes, and they are the three
- * whose subject is not the work: the first two are the record's own material and the third
- * is this product's own behaviour (see below): `key` operates this
+ * `key`, `tail`, `witness` and `switch` sit together at the end of the writes, and they are
+ * the four whose subject is not the work: the first three are the record's own material and
+ * the last is this product's own behaviour (see below): `key` operates this
  * machine's signing keys, and `tail` authorizes the cut of a whole tail — and says
  * which tails there are to cut, since `tail prune` takes an id and `tail list` is
  * the only reading in the product that prints one. `tail prune`
@@ -111,6 +111,19 @@
  * not at all. It removes nothing either way — it records the authorization while the
  * tail is still there, which is what makes the claim checkable, and says where the
  * files are.
+ *
+ * `witness` is the T3 layer, and it is the ONE VERB OF THIS SURFACE THAT SPEAKS TO
+ * SOMEBODY ELSE. Every other verb answers out of the record or out of this machine's own
+ * files; its two acts send the digest of a checkpoint's signed message to a public
+ * timestamp calendar and, on the return visit, ask a block source for an 80-byte header.
+ * That is why it is a group of three in `tail`'s shape with the BARE group as the reading
+ * — a person who cannot see where the witness stands cannot decide whether to ask for one
+ * — and why it takes `--global` with `verify`'s own meaning: a witness exists to raise the
+ * level of a VERDICT, and the verdict over a project leaves the machine-global tree out
+ * unless it is asked for. It appends no EVENT, deliberately: the event would seal a new
+ * checkpoint, which would make the checkpoint just stamped no longer the last one. It is
+ * still a write — see `verb.ts`, whose wording had to widen for exactly this — because
+ * what it leaves behind changes what `verify` rules on.
  *
  * `switch` is the last of the writes and the only verb of this surface whose subject is
  * not the work but MNEMA. It turns off, or back on, one of the places this product puts the
@@ -226,6 +239,7 @@ import { registerTimeline } from './timeline.js';
 import { registerUsage } from './usage.js';
 import type { Declared, Verb, Wiring } from './verb.js';
 import { registerVerify } from './verify.js';
+import { registerWitness } from './witness.js';
 
 /** Every verb, in the order `mnema --help` lists them. */
 export const VERBS: readonly Verb[] = [
@@ -257,6 +271,7 @@ export const VERBS: readonly Verb[] = [
   registerBrief,
   registerKey,
   registerTail,
+  registerWitness,
   registerSwitch,
   registerVerify,
   registerMcp,

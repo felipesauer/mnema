@@ -12,7 +12,7 @@
 function __mnema_commands --description 'the subcommands one level of the tree offers'
     switch "$argv[1]"
         case ''
-            echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs rules skills usage brief key tail switch verify mcp repl completion help'
+            echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs rules skills usage brief key tail witness switch verify mcp repl completion help'
         case 'task'
             echo 'move'
         case 'decision'
@@ -25,6 +25,8 @@ function __mnema_commands --description 'the subcommands one level of the tree o
             echo 'restore request enroll revoke help'
         case 'tail'
             echo 'list prune help'
+        case 'witness'
+            echo 'stamp upgrade'
         case 'switch'
             echo 'off on'
     end
@@ -88,6 +90,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'usage' -d 'what each run cost, read 
 complete -c mnema -f -n '__mnema_at ""' -a 'brief' -d 'print what governs the work here as markdown, for an agent to read'
 complete -c mnema -f -n '__mnema_at ""' -a 'key' -d 'manage this machine\'s signing keys'
 complete -c mnema -f -n '__mnema_at ""' -a 'tail' -d 'authorize a cut in the record\'s own tails'
+complete -c mnema -f -n '__mnema_at ""' -a 'witness' -d 'ask an outside witness to date this record, and read where that stands'
 complete -c mnema -f -n '__mnema_at ""' -a 'switch' -d 'turn off, or back on, what mnema hands to a model unasked'
 complete -c mnema -f -n '__mnema_at ""' -a 'verify' -d 'verify this project\'s record — its committed tree and its private one'
 complete -c mnema -f -n '__mnema_at ""' -a 'mcp' -d 'run the mnema MCP server over stdio (for an agent host)'
@@ -411,6 +414,29 @@ complete -c mnema -f -n '__mnema_at "tail prune"' -l which -r
 complete -c mnema -f -n '__mnema_at "tail prune"' -s h -l help
 complete -c mnema -f -n '__mnema_at "tail prune"' -s V -l version
 complete -c mnema -f -n '__mnema_at "tail prune"' -l color -x -a 'auto always never'
+
+# mnema witness
+complete -c mnema -f -n '__mnema_at "witness"' -a 'stamp' -d 'ask an outside witness to date each tail\'s last checkpoint (T3)'
+complete -c mnema -f -n '__mnema_at "witness"' -a 'upgrade' -d 'go back for the attestations this record is waiting on'
+complete -c mnema -f -n '__mnema_at "witness"' -l global
+complete -c mnema -f -n '__mnema_at "witness"' -s h -l help
+complete -c mnema -f -n '__mnema_at "witness"' -s V -l version
+complete -c mnema -f -n '__mnema_at "witness"' -l color -x -a 'auto always never'
+
+# mnema witness stamp
+complete -c mnema -f -n '__mnema_at "witness stamp"' -l calendar -r
+complete -c mnema -f -n '__mnema_at "witness stamp"' -l global
+complete -c mnema -f -n '__mnema_at "witness stamp"' -s h -l help
+complete -c mnema -f -n '__mnema_at "witness stamp"' -s V -l version
+complete -c mnema -f -n '__mnema_at "witness stamp"' -l color -x -a 'auto always never'
+
+# mnema witness upgrade
+complete -c mnema -f -n '__mnema_at "witness upgrade"' -l calendar -r
+complete -c mnema -f -n '__mnema_at "witness upgrade"' -l blocks -r
+complete -c mnema -f -n '__mnema_at "witness upgrade"' -l global
+complete -c mnema -f -n '__mnema_at "witness upgrade"' -s h -l help
+complete -c mnema -f -n '__mnema_at "witness upgrade"' -s V -l version
+complete -c mnema -f -n '__mnema_at "witness upgrade"' -l color -x -a 'auto always never'
 
 # mnema switch
 complete -c mnema -f -n '__mnema_at "switch"' -a 'off' -d 'stop a channel handing the record to a model unasked'

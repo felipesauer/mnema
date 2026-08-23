@@ -285,7 +285,7 @@ $ mnema usage
 |
 | These counts come from Claude Code's own transcripts on this machine, not from the record: nothing here is signed, `mnema verify` does not cover it, and the host deletes a transcript on a retention it decides. Which host session belongs to which run is this reading inferring it from two clocks, not a fact the record states. Nothing was written to produce it.
 $ mnema verify
-| public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; 1 committed key(s) without a tail (see census — informational, not a break); external witness (T3): not covered — enable an anchor or push to a shared remote
+| public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; 1 committed key(s) without a tail (see census — informational, not a break); external witness (T3): not covered — nothing outside this machine attests this record
 |   census [key-without-tail] public <backup-key-fingerprint>: committed public key has no tail on disk — the tail may have been dropped (a botched merge), never written (an empty tail is not versioned), or removed
 | private: no record here — nothing has been written to this tree on this machine, so there is nothing to rule on
 
@@ -1475,9 +1475,9 @@ $ mnema usage
 | Read from <sandbox>/home/.claude/projects — 0 host session(s) there record work in this project.
 | These counts come from Claude Code's own transcripts on this machine, not from the record: nothing here is signed, `mnema verify` does not cover it, and the host deletes a transcript on a retention it decides. Which host session belongs to which run is this reading inferring it from two clocks, not a fact the record states. Nothing was written to produce it.
 $ mnema verify
-| public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; 1 committed key(s) without a tail (see census — informational, not a break); external witness (T3): not covered — enable an anchor or push to a shared remote
+| public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; 1 committed key(s) without a tail (see census — informational, not a break); external witness (T3): not covered — nothing outside this machine attests this record
 |   census [key-without-tail] public <backup-key-fingerprint>: committed public key has no tail on disk — the tail may have been dropped (a botched merge), never written (an empty tail is not versioned), or removed
-| private: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; external witness (T3): not covered — enable an anchor or push to a shared remote
+| private: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; external witness (T3): not covered — nothing outside this machine attests this record
 
 ### one whole record of each kind
 $ mnema show <task-runbook>
