@@ -30,6 +30,7 @@ $ mnema
 !   accountability [options]                show who authorized what across the record (optionally windowed/filtered)
 !   antipatterns [options]                  show recurring shapes in the record (reopens, supersessions, deprecations)
 !   exposure [options]                      show which records hold something shaped like a credential (never the value)
+!   export [options]                        emit the record as an OCSF audit feed (NDJSON, envelope only — never a body)
 !   refs [options] <id>                     show what an entity is connected to across the trees
 !   rules [options] <path>                  show which recorded rules govern a path, and which address nothing
 !   skills [options]                        show where each pattern came from (who proposed it, who adopted it)
@@ -77,6 +78,7 @@ $ mnema --help
 |   accountability [options]                show who authorized what across the record (optionally windowed/filtered)
 |   antipatterns [options]                  show recurring shapes in the record (reopens, supersessions, deprecations)
 |   exposure [options]                      show which records hold something shaped like a credential (never the value)
+|   export [options]                        emit the record as an OCSF audit feed (NDJSON, envelope only — never a body)
 |   refs [options] <id>                     show what an entity is connected to across the trees
 |   rules [options] <path>                  show which recorded rules govern a path, and which address nothing
 |   skills [options]                        show where each pattern came from (who proposed it, who adopted it)

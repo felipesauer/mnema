@@ -396,6 +396,7 @@ const FLOOR_MODULES: readonly string[] = [
   'wiring/decision.ts',
   'wiring/enumerated.ts',
   'wiring/exposure.ts',
+  'wiring/export.ts',
   'wiring/focus.ts',
   'wiring/guard.ts',
   'wiring/handoff.ts',
