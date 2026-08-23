@@ -2704,6 +2704,7 @@ describe('mnema CLI — a --which that names nobody', () => {
     expect(declaring.sort()).toEqual(
       [
         'accountability',
+        'export',
         'decision',
         'guard',
         'memory',
@@ -2719,9 +2720,11 @@ describe('mnema CLI — a --which that names nobody', () => {
         'task',
       ].sort(),
     );
-    // …and exactly one is exempt: accountability's `--which` is a FILTER over who
-    // already acted, not a declaration of who is acting now.
-    expect(unvalidated).toEqual(['accountability']);
+    // …and the exempt ones are exactly the two whose `--which` is a FILTER over who
+    // already acted rather than a declaration of who is acting now. Both are reads that
+    // narrow the record by agent; neither attributes anything, so a value naming no
+    // recorded agent is an empty answer rather than a refusal.
+    expect(unvalidated.sort()).toEqual(['accountability', 'export']);
   });
 });
 

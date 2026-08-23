@@ -231,6 +231,7 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   accountability: { argv: () => ['accountability'] },
   antipatterns: { argv: () => ['antipatterns'] },
   exposure: { argv: () => ['exposure'] },
+  export: { argv: () => ['export'] },
   refs: { argv: (f) => ['refs', f.task] },
   rules: { argv: () => ['rules', 'src'] },
   skills: { argv: () => ['skills'] },
@@ -506,7 +507,7 @@ describe('every verb says if it writes', () => {
     expect(Object.keys(INVOCATION).sort()).toEqual([...EFFECT_BY_VERB.keys()].sort());
   });
 
-  it('counts thirteen writes and nineteen reads over the whole surface', () => {
+  it('counts thirteen writes and twenty reads over the whole surface', () => {
     // The count in the report, asserted rather than trusted, and the total against the
     // list: a verb that stopped being registered would otherwise leave both halves
     // looking healthy.
@@ -537,6 +538,7 @@ describe('every verb says if it writes', () => {
       'accountability',
       'antipatterns',
       'exposure',
+      'export',
       'refs',
       'rules',
       'skills',

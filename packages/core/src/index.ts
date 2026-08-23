@@ -95,6 +95,7 @@ export {
   listAuthors,
   listReferences,
   listSubjectRuns,
+  matchesAuthorship,
   materializeReferences,
   REFERENCE_ROLES,
   type ReferenceDirection,
