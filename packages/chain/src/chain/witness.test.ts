@@ -162,6 +162,25 @@ describe('a stored witness that does not say what it claims', () => {
     expect(reading.detail).toContain('no proof of work');
   });
 
+  it('refuses a proof deep enough to take the stack down, as a READING', () => {
+    // The verdict is about a CHAIN; the proof is a file beside it that a hostile clone
+    // wrote. A throw out of the reader here would take the whole verdict with it, which
+    // is why the parse and the WALK are under one guard.
+    const hostile = Buffer.concat([
+      Buffer.from('004f70656e54696d657374616d7073000050726f6f6600bf89e2e884e89294', 'hex'),
+      Buffer.from([1, 0x08]),
+      Buffer.from(digest, 'hex'),
+      Buffer.alloc(30_000, 0x08),
+      Buffer.from('0083dfe30d2ef90c8e020178', 'hex'),
+    ]);
+    writeWitness(layout, TAIL, digest, { proof: hostile });
+    const reading = readWitness(layout, TAIL, digest);
+    expect(reading.status).toBe('not-covered');
+    expect(reading.detail).toContain('deeper than 1000 steps');
+    // And it says so in the format's words, not the runtime's.
+    expect(reading.detail).not.toContain('call stack');
+  });
+
   it('refuses bytes that are not a proof, without taking the verdict down with them', () => {
     writeWitness(layout, TAIL, digest, { proof: Buffer.from('this is not a proof') });
     const reading = readWitness(layout, TAIL, digest);

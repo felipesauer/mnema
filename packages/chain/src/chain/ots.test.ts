@@ -14,6 +14,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   applyOtsOp,
+  MAX_PROOF_BYTES,
   parseOtsProof,
   reachedAttestations,
   serializeOtsProof,
@@ -95,6 +96,44 @@ describe('the operations a path is made of', () => {
     const message = Buffer.from('abc', 'utf-8');
     applyOtsOp({ op: 'reverse' }, message);
     expect(message.toString()).toBe('abc');
+  });
+});
+
+describe('what a hostile clone can put in a tree', () => {
+  /**
+   * A proof is COMMITTED, so a clone reads whatever the last person to write the
+   * repository put there. Depth costs one byte in this grammar — every `0x08` is
+   * another `sha256` step — so these are built by hand rather than through the writer,
+   * which is the only way to reach a depth the writer itself could not produce.
+   */
+  const deep = (steps: number): Buffer =>
+    Buffer.concat([
+      Buffer.from('004f70656e54696d657374616d7073000050726f6f6600bf89e2e884e89294', 'hex'),
+      Buffer.from([1, 0x08]),
+      Buffer.alloc(32),
+      Buffer.alloc(steps, 0x08),
+      // `0x00` then a pending attestation over a one-byte URI: something to end at.
+      Buffer.from('0083dfe30d2ef90c8e020178', 'hex'),
+    ]);
+
+  it('reads a path as deep as anything real will ever be', () => {
+    // Nine hundred, against the eight or nine steps a calendar's answer really has.
+    expect(reachedAttestations(parseOtsProof(deep(900)))).toHaveLength(1);
+  });
+
+  it('refuses a deeper one BY NAME, before the stack has an opinion', () => {
+    // MEASURED ON THE SHIPPED READER, before this limit: a 30 KB file of nothing but
+    // that byte took the parse past V8's stack, and what reached the verdict was
+    // `unreadable: Maximum call stack size exceeded` — survivable only because the
+    // catch around it happens to be untyped. Depth is a property of the FORMAT.
+    expect(() => parseOtsProof(deep(1001))).toThrow(UnreadableProofError);
+    expect(() => parseOtsProof(deep(30_000))).toThrow(/deeper than 1000 steps/);
+  });
+
+  it('refuses a file past the size any proof has', () => {
+    expect(() => parseOtsProof(Buffer.alloc(MAX_PROOF_BYTES + 1))).toThrow(
+      /past the \d+ this reads/,
+    );
   });
 });
 

@@ -48,6 +48,32 @@ const MAGIC = Buffer.from('004f70656e54696d657374616d7073000050726f6f6600bf89e2e
 /** The version this reader writes and the highest it accepts. */
 const MAJOR_VERSION = 1;
 
+/**
+ * How deep a path may go before this reader refuses it.
+ *
+ * A PROOF COMES OUT OF SOMEBODY ELSE'S TREE. It is committed, so a clone reads whatever
+ * the last person to write the repository put there — and the grammar makes depth cost
+ * ONE BYTE: every `0x08` is another `sha256` step. Measured on the shipped reader, a
+ * 30 KB file of nothing but that byte took the parse past V8's stack, and what reached
+ * the verdict was `the stored proof is unreadable: Maximum call stack size exceeded` —
+ * survivable only because the catch around it happens to be untyped. Depth is a
+ * PROPERTY OF THE FORMAT, so it is refused here, by name, before the stack has an
+ * opinion.
+ *
+ * A real proof is eight or nine steps per calendar. A thousand is four orders of
+ * magnitude of room.
+ */
+const MAX_DEPTH = 1000;
+
+/**
+ * How many bytes of proof this reader will look at.
+ *
+ * The same argument one size up: the file is somebody else's, and a reader that loads
+ * whatever it is handed is a reader a repository can make swallow a gigabyte. The
+ * complete proof this package produced measures 3,586 bytes.
+ */
+export const MAX_PROOF_BYTES = 1 << 20;
+
 /** The op tag that says the proof's subject is a SHA-256 digest. */
 const SHA256_TAG = 0x08;
 
@@ -194,7 +220,10 @@ function readAttestation(cursor: Cursor): OtsAttestation {
   return { kind: 'unknown', tag: tag.toString('hex'), payload };
 }
 
-function readTimestamp(cursor: Cursor): OtsTimestamp {
+function readTimestamp(cursor: Cursor, depth = 0): OtsTimestamp {
+  if (depth > MAX_DEPTH) {
+    throw new UnreadableProofError(`a path deeper than ${MAX_DEPTH} steps`);
+  }
   const attestations: OtsAttestation[] = [];
   const steps: (OtsOp & { next: OtsTimestamp })[] = [];
   const member = (tag: number): void => {
@@ -204,7 +233,9 @@ function readTimestamp(cursor: Cursor): OtsTimestamp {
     }
     cursor.back();
     const op = readOp(cursor);
-    steps.push({ ...op, next: readTimestamp(cursor) } as OtsOp & { next: OtsTimestamp });
+    steps.push({ ...op, next: readTimestamp(cursor, depth + 1) } as OtsOp & {
+      next: OtsTimestamp;
+    });
   };
   // Members are separated by `0xff` and the LAST one is not preceded by it, so the
   // first byte that is not a separator closes this node.
@@ -232,6 +263,9 @@ export function parseOtsTimestamp(bytes: Buffer): OtsTimestamp {
 
 /** Reads a detached proof, refusing anything this reader cannot account for. */
 export function parseOtsProof(bytes: Buffer): OtsProof {
+  if (bytes.length > MAX_PROOF_BYTES) {
+    throw new UnreadableProofError(`${bytes.length} bytes, past the ${MAX_PROOF_BYTES} this reads`);
+  }
   const cursor = new Cursor(bytes);
   if (!cursor.take(MAGIC.length).equals(MAGIC)) {
     throw new UnreadableProofError('not an OpenTimestamps proof');

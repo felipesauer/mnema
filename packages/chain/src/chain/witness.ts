@@ -58,7 +58,7 @@ import { checkpointHash } from './checkpoint.js';
 import type { ChainLayout } from './layout.js';
 import { witnessBlocksPath, witnessDir, witnessProofPath } from './layout.js';
 import type { WitnessStatus } from './level.js';
-import { parseOtsProof, reachedAttestations } from './ots.js';
+import { parseOtsProof, type ReachedAttestation, reachedAttestations } from './ots.js';
 import { lastTailCheckpoint } from './store.js';
 
 /**
@@ -204,9 +204,17 @@ export function readWitness(
 ): WitnessReading {
   const stored = readStoredWitness(layout, tailId, checkpointHash);
   if (stored === null) return NOTHING;
+  // THE PARSE *AND* THE WALK, under one guard. The walk applies the path's operations,
+  // and one of them can be unavailable rather than wrong — OpenSSL 3 moved `ripemd160`
+  // behind its legacy provider, so a node built without it cannot run that step. Left
+  // outside this, that throw would take down a verdict about a CHAIN over a file that is
+  // not part of the chain. Both halves answer the same way now: a proof this machine
+  // cannot read attests nothing here, and says which.
   let proof: ReturnType<typeof parseOtsProof>;
+  let reached: readonly ReachedAttestation[];
   try {
     proof = parseOtsProof(stored.proof);
+    reached = reachedAttestations(proof);
   } catch (error) {
     return {
       status: 'not-covered',
@@ -220,7 +228,6 @@ export function readWitness(
     };
   }
 
-  const reached = reachedAttestations(proof);
   let anchored: WitnessReading | null = null;
   let waiting: WitnessReading | null = null;
   for (const { attestation, message } of reached) {
