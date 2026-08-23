@@ -63,15 +63,27 @@
  * Neither refuses outside a project either — the global tree is a record too.
  *
  * The INTELLIGENCE reads — `timeline`, `accountability`, `antipatterns`, `exposure`,
- * `refs`, `skills`. Top-level verbs like the context reads, but the AUDITOR's view:
- * each folds the UNION of the present trees (public/private/global) into one view of
- * the whole record, not one tree's slice — a story crosses trees, and authorship
- * and recurrence are properties of everything. Strictly READ-ONLY: each reads
- * the present trees' tails and folds them with a PURE copilot derivation — no
+ * `refs`, `skills`, `export`. Top-level verbs like the context reads, but the AUDITOR's
+ * view: each covers EVERY present tree (public/private/global) rather than one tree's
+ * slice — a story crosses trees, and authorship and recurrence are properties of
+ * everything. HOW they take those trees differs, and the difference is the answer's:
+ * most fold the union, while `exposure` and `export` keep the trees APART and label what
+ * they report, because a fact that is committed and clones to every machine and a fact
+ * that is on one disk are the same finding in two situations. Strictly READ-ONLY: each
+ * reads the present trees' tails and folds them with a PURE copilot derivation — no
  * cache rebuilt to disk, no writer, no key. So none takes `--actor` (the answer
- * is a property of the record, not of who asks); accountability's `--who`/
- * `--which` are aggregation FILTERS, not the asker's identity. `--json` emits
- * the faithful object. RELATES, never JUDGES — no output editorializes.
+ * is a property of the record, not of who asks); accountability's and `export`'s
+ * `--who`/`--which` are FILTERS over who already acted, not the asker's identity.
+ * `--json` emits the faithful object, on every one of them but `export`, whose whole
+ * output is already the machine's and which therefore has no second shape to ask for.
+ * RELATES, never JUDGES — no output editorializes.
+ *
+ * `export` IS THE ONE WHOSE ANSWER IS MEANT TO LEAVE THE MACHINE, which is what decides
+ * everything about it: it emits the ENVELOPE of each fact and no payload of any kind,
+ * because `exposure` refuses to print a value that looks like a credential even to the
+ * person holding the record, and a feed carrying bodies would push exactly that into
+ * somebody's search index. It sends nothing anywhere — the feed goes to standard output
+ * and whoever forwards it decides the rest.
  *
  * And `usage`, WHICH IS THE ONE READ THAT LEAVES THE RECORD. Every verb above answers
  * out of the chain, so anyone holding a clone can ask the same question and get the same
@@ -185,6 +197,7 @@ import { registerAntipatterns } from './antipatterns.js';
 import { registerBrief } from './brief.js';
 import { registerCompletion } from './completion.js';
 import { registerDecision } from './decision.js';
+import { registerExport } from './export.js';
 import { registerExposure } from './exposure.js';
 import { registerFocus } from './focus.js';
 import { registerGuard } from './guard.js';
@@ -236,6 +249,7 @@ export const VERBS: readonly Verb[] = [
   registerAccountability,
   registerAntipatterns,
   registerExposure,
+  registerExport,
   registerReferences,
   registerRules,
   registerSkills,

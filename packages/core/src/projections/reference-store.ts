@@ -147,6 +147,40 @@ export interface AuthorshipFilter {
 }
 
 /**
+ * What a filter selects, read over an EVENT rather than over a table — the second
+ * reading of {@link AuthorshipFilter}, deliberately next to the first.
+ *
+ * There are two readings because there are two questions. {@link tallyAuthorship}
+ * COUNTS, and counting happens in SQL over the reference index, one grouped query per
+ * tree. A reading that has to emit the facts THEMSELVES has no table to group: it holds
+ * the ordered events and decides one at a time. Neither can be expressed as the other —
+ * a `WHERE` clause cannot yield an event, and a predicate over a stream cannot be a
+ * `GROUP BY` — so the rule is stated twice, and what keeps the two from drifting is not
+ * this signature. `one-window-two-readings.test.ts` runs both over the same record with
+ * the same matrix of filters and asserts they select the same set; a condition added to
+ * one and not the other is red there rather than in a review.
+ *
+ * The window is inclusive on both ends and compared on the ISO strings DIRECTLY, which
+ * is the same comparison the SQL makes: ISO-8601 UTC stamps sort lexically, in the order
+ * the chain merges on. Parsing to a date here would be a second notion of order, and the
+ * one place the two readings could disagree about a boundary instant.
+ *
+ * A `which` filter excludes the facts a person authored with no agent, exactly as
+ * `which = @which` never matches a NULL — the narrowing a caller asking about an agent
+ * means.
+ */
+export function matchesAuthorship(
+  event: Pick<CatalogEvent, 'at' | 'who' | 'which'>,
+  filter: AuthorshipFilter,
+): boolean {
+  if (filter.from !== undefined && event.at < filter.from) return false;
+  if (filter.to !== undefined && event.at > filter.to) return false;
+  if (filter.who !== undefined && event.who !== filter.who) return false;
+  if (filter.which !== undefined && event.which !== filter.which) return false;
+  return true;
+}
+
+/**
  * One cell of the authorship tally: how many facts one author, of one kind,
  * executed by one agent (or by none). Summing the cells by author gives the
  * per-author total; summing by kind or by agent gives either breakdown, so both

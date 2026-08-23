@@ -151,6 +151,20 @@ export {
   type RecurrenceFinding,
   type WorkspaceAntipatterns,
 } from './intelligence/antipatterns.js';
+export {
+  AUDIT_BY_KIND,
+  type AuditActor,
+  type AuditEntity,
+  type AuditEnvelope,
+  type AuditEvent,
+  type AuditMetadata,
+  type AuditProducer,
+  auditEvent,
+  auditFeed,
+  OCSF_CATEGORY_UID,
+  OCSF_CLASS_UID,
+  OCSF_SCHEMA_VERSION,
+} from './intelligence/audit-feed.js';
 export { consultationsByRun } from './intelligence/consultation.js';
 export type { CatalogEvent, EventKind } from './intelligence/events.js';
 export {

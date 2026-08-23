@@ -12,7 +12,7 @@
 function __mnema_commands --description 'the subcommands one level of the tree offers'
     switch "$argv[1]"
         case ''
-            echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure refs rules skills usage brief key tail switch verify mcp repl completion help'
+            echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs rules skills usage brief key tail switch verify mcp repl completion help'
         case 'task'
             echo 'move'
         case 'decision'
@@ -80,6 +80,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'timeline' -d 'show an entity\'s hist
 complete -c mnema -f -n '__mnema_at ""' -a 'accountability' -d 'show who authorized what across the record (optionally windowed/filtered)'
 complete -c mnema -f -n '__mnema_at ""' -a 'antipatterns' -d 'show recurring shapes in the record (reopens, supersessions, deprecations)'
 complete -c mnema -f -n '__mnema_at ""' -a 'exposure' -d 'show which records hold something shaped like a credential (never the value)'
+complete -c mnema -f -n '__mnema_at ""' -a 'export' -d 'emit the record as an OCSF audit feed (NDJSON, envelope only — never a body)'
 complete -c mnema -f -n '__mnema_at ""' -a 'refs' -d 'show what an entity is connected to across the trees'
 complete -c mnema -f -n '__mnema_at ""' -a 'rules' -d 'show which recorded rules govern a path, and which address nothing'
 complete -c mnema -f -n '__mnema_at ""' -a 'skills' -d 'show where each pattern came from (who proposed it, who adopted it)'
@@ -318,6 +319,15 @@ complete -c mnema -f -n '__mnema_at "exposure"' -l json
 complete -c mnema -f -n '__mnema_at "exposure"' -s h -l help
 complete -c mnema -f -n '__mnema_at "exposure"' -s V -l version
 complete -c mnema -f -n '__mnema_at "exposure"' -l color -x -a 'auto always never'
+
+# mnema export
+complete -c mnema -f -n '__mnema_at "export"' -l from -r
+complete -c mnema -f -n '__mnema_at "export"' -l to -r
+complete -c mnema -f -n '__mnema_at "export"' -l who -r
+complete -c mnema -f -n '__mnema_at "export"' -l which -r
+complete -c mnema -f -n '__mnema_at "export"' -s h -l help
+complete -c mnema -f -n '__mnema_at "export"' -s V -l version
+complete -c mnema -f -n '__mnema_at "export"' -l color -x -a 'auto always never'
 
 # mnema refs
 complete -c mnema -f -n '__mnema_at "refs"' -l direction -x -a 'both out in'
