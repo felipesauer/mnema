@@ -3,12 +3,22 @@
 What this project measured about itself, and how each number is to be read.
 
 A claim about a product is worth what its measurement is worth, and a measurement is worth
-what was fixed **before** the number existed. So this directory holds two kinds of file and
+what was fixed **before** the number existed. So this directory holds three kinds of file and
 keeps them apart:
 
 - **the pre-registration** — the promise, the arms, the isolation, the scorer, and the reading
   of every possible outcome. It is committed **before** the run;
-- **the captures** — one file per run, under `results/`, added afterwards and never edited.
+- **the captures** — one file per run, under `results/`, added afterwards and never edited;
+- **the instruments** — the runner that produces the cells, and the simulation that derives the
+  numbers a pre-registration is then frozen around. They are committed for `p1/` alone, and the
+  paragraph below says why that is a difference rather than an exemption.
+
+*(This said **two kinds of file** until 23 Aug 2026, and what falsified it is
+[`p1/threshold.mjs`](p1/threshold.mjs) — a file that is neither a pre-registration nor a capture:
+it derives the threshold a reading will be frozen around, and it is committed because a number
+fixed before a round is only worth the order if the derivation is visible too. The premise is
+rewritten rather than deleted, because "the instrument is committed" was already true of
+[`p1/harness/`](p1/harness/) and this list did not say so.)*
 
 ## The rules this directory keeps
 
@@ -53,6 +63,15 @@ between *checking the method* and *re-running our cells* is written at the top o
 own README instead of being left for a reader to assume. The other directories' probes stay on the
 workbench, and that is a difference rather than an exemption: a probe is a stopwatch used once, and
 this is an instrument three rounds were measured with.
+
+**And the second instrument derives a number rather than producing cells.**
+[`p1/threshold.mjs`](p1/threshold.mjs) simulates how often a threshold publishes a `>` that is not
+there, which is how the threshold for a round is now chosen; [`p1/threshold.md`](p1/threshold.md) is
+the rule it serves, the target it derives against, and the reason that target is the number it is.
+It calls no model and spends nothing. It is committed for the same reason the runner is, and for one
+more: a threshold argued for in prose and computed in a script nobody has is a threshold chosen
+after the fact with extra steps. Its own cases run with
+`node --test measurements/p1/threshold.test.mjs`.
 
 ## What is here
 
