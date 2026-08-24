@@ -368,6 +368,31 @@ export const MUTATIONS = [
   // And the root, which is not an absence guard but a path every absolute path in
   // the bench is built from. It was wrong for a while and the suite reported it as
   // broken fixtures, a broken split and a missing binary.
+  // And the three below are THE SIEVE — the stage round 4 put in front of its comparison,
+  // which spends one arm over sixteen candidates to decide which tasks the headline is
+  // computed over. All three of its parameters come out of the frozen split, and each of
+  // these takes one of them back out of it.
+  {
+    name: 'z17 · the sieve plans every task on disk instead of the declared candidates',
+    file: RUN,
+    from: '  return cellPlan(chosen, sieve.runs, [sieve.arm])',
+    to: '  return cellPlan(fixtures, sieve.runs, [sieve.arm])',
+    expect: 'the sieve spends the development tasks and the negative controls too, which nothing declared',
+  },
+  {
+    name: 'z18 · the sieve stops reading how many runs the split froze',
+    file: RUN,
+    from: '  return cellPlan(chosen, sieve.runs, [sieve.arm])',
+    to: '  return cellPlan(chosen, 4, [sieve.arm])',
+    expect: 'the sieve runs at four, where a third of the tasks it exists to exclude get through',
+  },
+  {
+    name: 'z19 · a candidate the split does not hold back stops being refused',
+    file: SPLIT,
+    from: '  const stray = candidates.filter((id) => !split.held_out.includes(id))',
+    to: '  const stray = []',
+    expect: 'a development task can be named a candidate, and the sieve spends it as one',
+  },
   {
     name: 'o · the workspace root goes back to counting `..`',
     file: ROOT,

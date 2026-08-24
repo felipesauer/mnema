@@ -18,13 +18,13 @@
 
 import { test, describe, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { existsSync, mkdtempSync, readdirSync, realpathSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { listFixtures } from '../lib/fixtures.mjs'
 import { ARMS } from '../lib/seed.mjs'
 import { runSelftest } from '../lib/selftest.mjs'
 import { sandboxRoot } from '../lib/sandbox.mjs'
-import { benchOf, benches, cellPlan, pilotPlan } from '../run.mjs'
+import { benchOf, benches, cellPlan, pilotPlan, sievePlan } from '../run.mjs'
 import {
   ROUNDS,
   armsOf,
@@ -34,6 +34,7 @@ import {
   PREREG,
   refuseUnrunnableRound,
   roundArms,
+  sieveOf,
 } from '../lib/split.mjs'
 import { MNEMA_BIN, cloneFixtures } from './helpers.mjs'
 
@@ -333,6 +334,81 @@ describe('10c · and the preflight clears round 2’s tasks, every check of it',
       result.checks.find((c) => c.name === 'seeding').detail,
       new RegExp(`^${10 * ARMS.length} cells seed as declared`),
       'ten tasks times every arm the harness seeds',
+    )
+  })
+})
+
+describe('10e · the sieve spends the set the split froze, and not one task more', () => {
+  // ROUND 4 IS THE FIRST ROUND WITH A STAGE BEFORE ITS COMPARISON. The sieve runs one arm
+  // over sixteen candidates to decide which of them the headline is computed over, and the
+  // whole value of it is that the sixteen were fixed BEFORE it ran. `--full --arm <x>` would
+  // have done the same work over the round's twenty tasks — the two development tasks and the
+  // two negative controls included — which is four tasks nothing declared, spent on a stage
+  // whose own file says which sixteen it is about. So the plan is read from the frozen split,
+  // exactly as the pilot is, and these cases are what say it still is.
+
+  test('the plan is the declared candidates x the sieve arm x the declared runs', () => {
+    const sieve = sieveOf(preregOf(4))
+    assert.notEqual(sieve, null, 'round 4 declares no sieve')
+    const fixtures = listFixtures(benchOf(4).fixturesDir)
+    const plan = sievePlan(fixtures, sieve, roundArms(4))
+
+    // Non-vacuity first: a plan over nothing satisfies every claim below.
+    assert.ok(sieve.candidates.length > 0, 'the sieve names no candidate')
+    assert.equal(plan.length, sieve.candidates.length * sieve.runs)
+    assert.deepEqual([...new Set(plan.map((c) => c.arm))], [sieve.arm])
+    assert.deepEqual(
+      [...new Set(plan.map((c) => c.fixture.id))].sort(),
+      [...sieve.candidates].sort(),
+      'the sieve plans a task the split does not name as a candidate',
+    )
+    // And the four tasks of the round it must NOT reach: a `--full` would have had them.
+    const planned = new Set(plan.map((c) => c.fixture.id))
+    const untouched = fixtures.map((f) => f.id).filter((id) => !planned.has(id))
+    assert.equal(untouched.length, 4, `the sieve reaches all but [${untouched}]`)
+    for (const id of untouched) {
+      assert.equal(sieve.candidates.includes(id), false)
+    }
+  })
+
+  test('a round with no sieve is refused, and round 3 is one', () => {
+    assert.equal(sieveOf(preregOf(3)), null, 'round 3 declares a sieve')
+    assert.throws(
+      () => sievePlan(listFixtures(benchOf(3).fixturesDir), sieveOf(preregOf(3)), roundArms(3)),
+      /declares no sieve/,
+    )
+  })
+
+  test('and the teeth: a sieve on an arm the round does not run, and a candidate not on disk', () => {
+    // With the real files the case above only ever says "nothing is accused", so the same
+    // function is handed the two shapes that must not plan.
+    const fixtures = listFixtures(benchOf(4).fixturesDir)
+    const sieve = sieveOf(preregOf(4))
+    assert.throws(
+      () => sievePlan(fixtures, { ...sieve, arm: 'prosa' }, roundArms(4)),
+      /a sieve on an arm the comparison does not carry/,
+    )
+    assert.throws(
+      () => sievePlan(fixtures, { ...sieve, candidates: ['a1-rounding'] }, roundArms(4)),
+      /names a1-rounding as a candidate, and it is not in this run/,
+    )
+  })
+
+  test('and a candidate the split does not hold back is refused before it can be planned', () => {
+    // The sieve touches held-out tasks by declared exception. A candidate that is NOT held
+    // out is a development task being spent as one, which is the split's own rule inverted.
+    const four = preregOf(4)
+    const dir = mkdtempSync(join(sandboxRoot(), 'mnema-bench-sieve-'))
+    scratch.push(dir)
+    const split = readSplit(four.split)
+    const loosened = join(dir, 'split.json')
+    writeFileSync(
+      loosened,
+      JSON.stringify({ ...split, candidates: [...split.candidates, split.pilot] }),
+    )
+    assert.throws(
+      () => sieveOf({ ...four, split: loosened }),
+      /are candidates and are not held out/,
     )
   })
 })

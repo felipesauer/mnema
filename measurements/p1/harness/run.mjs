@@ -33,6 +33,7 @@ import {
   readSplit,
   refuseUnrunnableRound,
   roundArms,
+  sieveOf,
 } from './lib/split.mjs'
 import { productPluginDir } from './lib/hook.mjs'
 import { tasksRoot } from './lib/root.mjs'
@@ -101,6 +102,7 @@ function parseArgv(argv) {
       case '--selftest': opts.mode = 'selftest'; break
       case '--pilot': opts.mode = 'pilot'; break
       case '--full': opts.mode = 'full'; break
+      case '--sieve': opts.mode = 'sieve'; break
       case '--cell': opts.mode = 'cell'; opts.cell = [next(), next(), Number(next())]; break
       case '--runs': opts.runs = Number(next()); break
       case '--round': opts.round = Number(next()); break
@@ -131,6 +133,8 @@ function usage() {
 
   --selftest                     run every preflight check and stop. No model is called.
   --pilot                        the split's pilot task x the ROUND's arms x 1 run
+  --sieve                        the ROUND's declared candidates x its sieve arm x its
+                                 sieve runs, all three read from the frozen split
   --full                         every fixture x the ROUND's arms x --runs
                                  (this harness seeds ${ARMS.length}; a round declares
                                  which of them it runs, and round 3 declares four)
@@ -192,6 +196,39 @@ export function pilotPlan(fixtures, split = readSplit(), arms = ARMS) {
   const chosen = fixtures.find((f) => f.id === split.pilot)
   if (!chosen) throw new Error(`the split names ${split.pilot} as the pilot, and it is not in this run`)
   return cellPlan([chosen], 1, arms)
+}
+
+/**
+ * The sieve's cells — the round's declared candidates, its sieve arm, its sieve runs.
+ *
+ * ALL THREE COME OUT OF THE FROZEN SPLIT and none of them is a parameter, for the reason
+ * `pilotPlan` reads the pilot from there instead of taking whichever task sorts first: a
+ * sieve is only worth anything if what it ran over was fixed before it ran, and a set
+ * typed at the prompt is a set nobody can check afterwards. `--full --arm <x> --runs <n>`
+ * would have done the same work over the round's WHOLE task list — the development tasks
+ * and the negative controls included — which is four tasks nothing declared, spent on a
+ * stage whose own file says which sixteen it is about.
+ *
+ * It refuses a round with no sieve by name, and it refuses a sieve whose arm the round
+ * does not run: an arm outside `arms` would be seeded here and have no column in the
+ * comparison it is selecting tasks for.
+ */
+export function sievePlan(fixtures, sieve, arms) {
+  if (sieve === null) {
+    throw new Error('this round declares no sieve, and a sieve this file invents is not one')
+  }
+  if (!arms.includes(sieve.arm)) {
+    throw new Error(
+      `the sieve names ${sieve.arm} and this round runs the arms [${arms.join(', ')}]: ` +
+        'a sieve on an arm the comparison does not carry selects tasks for nobody',
+    )
+  }
+  const chosen = sieve.candidates.map((id) => {
+    const fixture = fixtures.find((f) => f.id === id)
+    if (!fixture) throw new Error(`the sieve names ${id} as a candidate, and it is not in this run`)
+    return fixture
+  })
+  return cellPlan(chosen, sieve.runs, [sieve.arm])
 }
 
 async function main() {
@@ -263,6 +300,8 @@ async function main() {
     plan = [{ fixture, arm, run }]
   } else if (opts.mode === 'pilot') {
     plan = pilotPlan(fixtures, split, arms)
+  } else if (opts.mode === 'sieve') {
+    plan = sievePlan(fixtures, sieveOf(preregOf(opts.round)), arms)
   } else {
     plan = cellPlan(fixtures, opts.runs, arms)
   }

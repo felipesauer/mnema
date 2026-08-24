@@ -242,6 +242,52 @@ export function roundArms(round, arms = ARMS) {
   return armsOf(preregOf(round)) ?? arms
 }
 
+/**
+ * The SIEVE a round declares, or `null` when its split names none.
+ *
+ * A sieve is a stage that runs before a round's comparison and decides which of its
+ * candidate tasks the headline is computed over. Round 4 is the first round to have one,
+ * and the reason it is READ FROM THE SPLIT rather than typed on the command line is the
+ * reason `pilotPlan` reads the pilot from there: a set typed at the prompt is a set
+ * nobody can check afterwards, and the whole value of a sieve is that what it ran over
+ * was fixed before it ran.
+ *
+ * Every field is checked rather than assumed. A sieve that names an arm as a number, or
+ * a run count as a string, would otherwise reach `cellPlan` and produce a plan nobody
+ * declared — over tasks that can be spent once.
+ */
+export function sieveOf(prereg) {
+  const split = readSplit(prereg.split)
+  const declared = split.sieve
+  if (declared === undefined) return null
+  for (const [key, kind] of [
+    ['arm', 'string'],
+    ['runs', 'number'],
+  ]) {
+    if (typeof declared[key] !== kind) {
+      throw new Error(`${prereg.split}: the sieve's "${key}" is missing or is not a ${kind}`)
+    }
+  }
+  if (!Number.isInteger(declared.runs) || declared.runs < 1) {
+    throw new Error(`${prereg.split}: the sieve's "runs" is not a whole number of runs`)
+  }
+  const candidates = split.candidates
+  if (!Array.isArray(candidates) || candidates.length === 0) {
+    throw new Error(`${prereg.split}: a sieve is declared and "candidates" names no task`)
+  }
+  if (candidates.some((id) => typeof id !== 'string')) {
+    throw new Error(`${prereg.split}: "candidates" is not a list of ids`)
+  }
+  const stray = candidates.filter((id) => !split.held_out.includes(id))
+  if (stray.length > 0) {
+    throw new Error(
+      `${prereg.split}: [${stray.join(', ')}] are candidates and are not held out, so the ` +
+        'sieve would spend a task the split does not hold back',
+    )
+  }
+  return { ...declared, candidates }
+}
+
 /** The frozen digests, as a Map from task id to hash. Comment lines are skipped. */
 export function readDigests(path = PREREG.digests) {
   const frozen = new Map()
