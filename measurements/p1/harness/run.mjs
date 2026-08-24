@@ -18,7 +18,7 @@
 
 import { fileURLToPath } from 'node:url'
 import { join, resolve } from 'node:path'
-import { existsSync, mkdirSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { listFixtures } from './lib/fixtures.mjs'
 import { ARMS, servesUnasked } from './lib/seed.mjs'
 import { ISOLATION_CHECKLIST, MODEL, AUTH_MODES } from './lib/isolation.mjs'
@@ -94,6 +94,7 @@ function parseArgv(argv) {
     authMode: DEFAULTS.authMode,
     maxBudgetUsd: null,
     round: DEFAULTS.round,
+    resume: false,
   }
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i]
@@ -103,6 +104,7 @@ function parseArgv(argv) {
       case '--pilot': opts.mode = 'pilot'; break
       case '--full': opts.mode = 'full'; break
       case '--sieve': opts.mode = 'sieve'; break
+      case '--resume': opts.resume = true; break
       case '--cell': opts.mode = 'cell'; opts.cell = [next(), next(), Number(next())]; break
       case '--runs': opts.runs = Number(next()); break
       case '--round': opts.round = Number(next()); break
@@ -148,6 +150,9 @@ function usage() {
   --max-budget-usd <n>           per-cell ceiling passed to the CLI
   --out <dir>                    where results and raw output land
                                  [measurements/p1/results/<date>-<mode>]
+  --resume                       skip the (fixture, arm, run) cells the capture at --out
+                                 already holds with status ok. For a stage that spends
+                                 across more than one sitting
   --keep                         do not destroy the sandboxes
   --yes                          required by anything that calls a model
 `)
@@ -229,6 +234,41 @@ export function sievePlan(fixtures, sieve, arms) {
     return fixture
   })
   return cellPlan(chosen, sieve.runs, [sieve.arm])
+}
+
+/**
+ * The cells of `plan` a capture does not already hold, so a stage can spend across sittings.
+ *
+ * WHY THIS EXISTS, and it is not convenience. Round 4's sieve is 128 cells on one arm, and the
+ * account's session limit stopped the first attempt 55 cells in — every cell after that came
+ * back as the vendor refusing to run. Without a resume the choice is to re-spend the 22 cells
+ * that were real or to drive the remainder one `--cell` at a time, each paying the whole
+ * preflight again. Both are worse than reading the capture.
+ *
+ * IT SKIPS ONLY WHAT RESOLVED. A line whose status is not `ok` is not a result — a vendor
+ * refusal, a half-applied seed, a discriminant that would not load — and the round's own
+ * reading rule says such a cell is re-run and both attempts are kept. So it is planned again,
+ * and the failed line stays where it is: this function never edits a capture, it only reads
+ * one.
+ *
+ * AND IT APPENDS INTO THE SAME FILE, which is the rule the results directory already keeps: a
+ * capture that is silently replaced destroys the only evidence that the difference existed. A
+ * run that is stopped and resumed is one capture; a run that is repeated is a second directory.
+ */
+export function cellsNotYetRun(plan, resultsPath) {
+  if (!existsSync(resultsPath)) return plan
+  const done = new Set()
+  for (const line of readFileSync(resultsPath, 'utf8').split('\n')) {
+    if (line.trim() === '') continue
+    let row
+    try {
+      row = JSON.parse(line)
+    } catch {
+      throw new Error(`${resultsPath} holds a line that is not JSON: a capture cannot be resumed from`)
+    }
+    if (row.status === 'ok') done.add(`${row.fixture}\u0000${row.arm}\u0000${row.run}`)
+  }
+  return plan.filter((c) => !done.has(`${c.fixture.id}\u0000${c.arm}\u0000${c.run}`))
 }
 
 async function main() {
@@ -318,6 +358,16 @@ async function main() {
   const stamp = new Date().toISOString().slice(0, 10)
   const outDir = opts.outDir ?? join(PREREG.results, `${stamp}-${opts.mode}`)
   const resultsPath = join(outDir, 'cells.jsonl')
+
+  if (opts.resume) {
+    const wanted = plan.length
+    plan = cellsNotYetRun(plan, resultsPath)
+    console.log(`\nresuming: ${wanted - plan.length} of ${wanted} cells already resolved in the capture`)
+    if (plan.length === 0) {
+      console.log('nothing left to run')
+      process.exit(0)
+    }
+  }
 
   console.log(`\n${plan.length} cells, model ${MODEL}`)
   console.log(`results: ${resultsPath}`)

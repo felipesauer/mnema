@@ -24,7 +24,7 @@ import { listFixtures } from '../lib/fixtures.mjs'
 import { ARMS } from '../lib/seed.mjs'
 import { runSelftest } from '../lib/selftest.mjs'
 import { sandboxRoot } from '../lib/sandbox.mjs'
-import { benchOf, benches, cellPlan, pilotPlan, sievePlan } from '../run.mjs'
+import { benchOf, benches, cellPlan, cellsNotYetRun, pilotPlan, sievePlan } from '../run.mjs'
 import {
   ROUNDS,
   armsOf,
@@ -410,5 +410,72 @@ describe('10e · the sieve spends the set the split froze, and not one task more
       () => sieveOf({ ...four, split: loosened }),
       /are candidates and are not held out/,
     )
+  })
+})
+
+describe('10f · a stage that spends across sittings resumes into the same capture', () => {
+  // THE SIEVE OF 2026-08-24 IS WHY. 128 cells on one arm, and the account's session limit
+  // stopped it 55 cells in: every cell after that came back as the vendor refusing to run.
+  // Without a resume the choice is to re-spend the 22 that were real, or to drive the rest
+  // one `--cell` at a time and pay the whole preflight for each. Both are worse than reading
+  // the capture, and the results directory's own rule is that a stopped run resumes into the
+  // same file rather than into a second one.
+
+  function capture(lines) {
+    const dir = mkdtempSync(join(sandboxRoot(), 'mnema-bench-resume-'))
+    scratch.push(dir)
+    const path = join(dir, 'cells.jsonl')
+    writeFileSync(path, lines.map((l) => JSON.stringify(l)).join('\n') + (lines.length ? '\n' : ''))
+    return path
+  }
+
+  const plan = [
+    { fixture: { id: 'a25-late-fee' }, arm: 'mnema-doc', run: 1 },
+    { fixture: { id: 'a25-late-fee' }, arm: 'mnema-doc', run: 2 },
+    { fixture: { id: 'a26-freight-band' }, arm: 'mnema-doc', run: 1 },
+  ]
+
+  test('a capture that does not exist yet skips nothing', () => {
+    const missing = join(mkdtempSync(join(sandboxRoot(), 'mnema-bench-resume-')), 'cells.jsonl')
+    assert.deepEqual(cellsNotYetRun(plan, missing), plan)
+  })
+
+  test('and a cell the capture holds as ok is not planned again', () => {
+    const path = capture([{ fixture: 'a25-late-fee', arm: 'mnema-doc', run: 1, status: 'ok' }])
+    const left = cellsNotYetRun(plan, path)
+    assert.equal(left.length, 2)
+    assert.deepEqual(
+      left.map((c) => `${c.fixture.id} r${c.run}`),
+      ['a25-late-fee r2', 'a26-freight-band r1'],
+    )
+  })
+
+  test('but a cell the capture holds as anything ELSE is, and that is the whole point', () => {
+    // THE SECOND VALUE. A guard that only ever skips would pass just as well if it skipped
+    // everything, and the cells this has to plan again are exactly the ones a session limit
+    // produced: present in the capture, and not a result. The failed line is never edited —
+    // the reading rule keeps both attempts — so the only thing that may change is the plan.
+    const path = capture([
+      { fixture: 'a25-late-fee', arm: 'mnema-doc', run: 1, status: 'harness_error' },
+      { fixture: 'a25-late-fee', arm: 'mnema-doc', run: 2, status: 'ruler_broken' },
+      { fixture: 'a26-freight-band', arm: 'mnema-doc', run: 1, status: 'ok' },
+    ])
+    assert.deepEqual(
+      cellsNotYetRun(plan, path).map((c) => `${c.fixture.id} r${c.run}`),
+      ['a25-late-fee r1', 'a25-late-fee r2'],
+    )
+  })
+
+  test('and the arm is part of the identity, so two arms on one task are two cells', () => {
+    const path = capture([{ fixture: 'a25-late-fee', arm: 'mnema+', run: 1, status: 'ok' }])
+    assert.equal(cellsNotYetRun(plan, path).length, 3, 'a cell of another arm was counted as this one')
+  })
+
+  test('and a capture it cannot read is refused rather than resumed from', () => {
+    const dir = mkdtempSync(join(sandboxRoot(), 'mnema-bench-resume-'))
+    scratch.push(dir)
+    const path = join(dir, 'cells.jsonl')
+    writeFileSync(path, '{"fixture":"a25-late-fee","status":"ok"\nnot json at all\n')
+    assert.throws(() => cellsNotYetRun(plan, path), /is not JSON/)
   })
 })

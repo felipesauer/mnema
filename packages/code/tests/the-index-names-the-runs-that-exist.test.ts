@@ -139,7 +139,9 @@ describe('the index names the runs that exist', () => {
     const read = (text: string): readonly string[] =>
       [...text.matchAll(new RegExp(A_RUN.source, 'g'))].map((m) => m[1] ?? '');
 
-    expect(read('`2026-08-24-sieve-aborted/` holds 55 cells')).toEqual(['2026-08-24-sieve-aborted']);
+    expect(read('`2026-08-24-sieve-aborted/` holds 55 cells')).toEqual([
+      '2026-08-24-sieve-aborted',
+    ]);
     expect(read('`2026-08-21-full/` holds 160')).toEqual(['2026-08-21-full']);
     // And the near misses, none of which is a run directory:
     expect(read('on 2026-08-24 a sieve of 128 cells')).toEqual([]);

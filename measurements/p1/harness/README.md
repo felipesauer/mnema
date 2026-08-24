@@ -47,11 +47,27 @@ destroys the sandbox.
 node run.mjs --selftest              refuse or clear the run. Every round. No model is called.
 node run.mjs --pilot --yes           the split's pilot task x the round's arms x 1
 node run.mjs --full --yes            the round's tasks x the round's arms x --runs
+node run.mjs --sieve --round 4 --yes the round's declared candidates x its sieve arm x its
+                                     sieve runs — all three read from the frozen split
+node run.mjs --sieve --round 4 --resume --out <dir> --yes
+                                     the same, skipping what that capture already resolved
 node run.mjs --cell a1-rounding mnema 1 --yes
 node run.mjs --full --round 3 --yes
 node --test "tests/*.test.mjs"       the instrument's own suite
-node mutate.mjs                      41 mutations against that suite. None may come back green
+node mutate.mjs                      48 mutations against that suite. None may come back green
 ```
+
+**`--sieve` is a stage and not a round**, and round 4 is the first to declare one: it runs one
+arm over the candidates its split names, to decide which of them that round's headline is
+computed over, and its cells are discarded by the round's own rule. Everything it plans comes
+out of the committed pre-registration, for the same reason `--pilot` reads the pilot from there
+rather than taking whichever task sorts first.
+
+**`--resume` exists because a stage can be stopped part-way**, and one was: the sieve of
+2026-08-24 hit the account's session limit 55 cells into 128. It skips the cells the capture
+already holds with `status: ok` and plans everything else again — including the cells the
+vendor refused, which are present in the capture and are not results. It never edits a capture,
+and a stopped run resumes into the same file rather than into a second directory.
 
 Six arms exist in code (`ARMS` in `lib/seed.mjs`); a **round** declares which of them it runs, and
 the harness refuses a round that declares an arm it cannot seed — by name, saying which
@@ -171,7 +187,7 @@ read *"0 failures"* — and both times it was caught only because a mutation tha
 came back zero. An instrument that cannot say it broke is worse than no instrument.
 
 **`mutate.mjs` is published with the runner, and it is not our deliveries' battery.** Every one of
-its 41 mutations targets a file of THIS runner — `lib/seed.mjs`, `lib/selftest.mjs`, `lib/root.mjs`,
+its 48 mutations targets a file of THIS runner — `lib/seed.mjs`, `lib/selftest.mjs`, `lib/root.mjs`,
 `run.mjs` and nine others, each resolved from its own directory — and it runs this directory's own
 suite. It is the instrument proving that its own guards can go red, which is the only evidence that
 the suite above is worth its green. Nothing in it touches `packages/`.

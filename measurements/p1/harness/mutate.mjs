@@ -12,13 +12,21 @@
 //      cannot be parsed is RULER BROKEN, never zero;
 //   3. it restores the exact bytes it saved, whether or not the run succeeded.
 //
-// Forty mutations, in ten families: the floor of the experiment (the arm that
+// FORTY-EIGHT mutations, in thirteen families: the floor of the experiment (the arm that
 // should carry the decision stops carrying it, and the arm that should carry
 // nothing starts), the memory column, the mnema arm's channel, the surface arms'
 // document channel, their PER-EDIT channel, the AXIS that channel's rule
 // asks about, THE SWITCH POSITION that is the sixth arm, WHICH ROUNDS the bench walks
-// and which ARMS a round plans, WHICH BUILD a cell executed, and the workspace root
-// every absolute path in the bench is built from.
+// and which ARMS a round plans, WHICH BUILD a cell executed, the workspace root
+// every absolute path in the bench is built from, THE SIEVE that decides which candidates
+// a round's headline is computed over, THE VENDOR'S OWN VERDICT on a session, and RESUMING
+// a stage that spends across sittings.
+//
+// This said "forty, in ten families" while the list held forty-one, and the count is now a
+// count of `MUTATIONS.length` rather than a number remembered. TWO OTHER PLACES SAY 41 AND
+// ARE NOT WRONG: `measurements/README.md` and round 3's own report record that the round-3
+// snapshot was checked against this matrix and found **0 of 41 applied**. That is a fact
+// about the matrix as it stood on 21 Aug 2026, in a capture that is not edited, and it stays.
 
 import { readFileSync, writeFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
@@ -369,6 +377,23 @@ export const MUTATIONS = [
   // And the root, which is not an absence guard but a path every absolute path in
   // the bench is built from. It was wrong for a while and the suite reported it as
   // broken fixtures, a broken split and a missing binary.
+  // And the two below are RESUMING a stage that spends across sittings — which round 4's
+  // sieve needed because the session limit stopped it 55 cells into 128. Two sides: what it
+  // must skip, and what it must NOT.
+  {
+    name: 'z22 · the resume plans a cell the capture already resolved',
+    file: RUN,
+    from: "    if (row.status === 'ok') done.add(",
+    to: "    if (false) done.add(",
+    expect: 'a resumed sieve re-spends every cell that already worked',
+  },
+  {
+    name: 'z23 · the resume skips a cell the vendor refused, as though it were a result',
+    file: RUN,
+    from: "    if (row.status === 'ok') done.add(",
+    to: '    if (true) done.add(',
+    expect: 'the cells a session limit produced are never run, and the sieve is short by exactly them',
+  },
   // And the two below are THE VENDOR'S OWN VERDICT ON THE SESSION. They exist because a
   // sieve of 128 cells was corrupted on 2026-08-24 by a gate that read `subtype` alone: the
   // account's session limit answers `{"subtype":"success","is_error":true,
