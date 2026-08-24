@@ -18,13 +18,13 @@
 
 import { test, describe, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { existsSync, mkdtempSync, readdirSync, realpathSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { listFixtures } from '../lib/fixtures.mjs'
 import { ARMS } from '../lib/seed.mjs'
 import { runSelftest } from '../lib/selftest.mjs'
 import { sandboxRoot } from '../lib/sandbox.mjs'
-import { benchOf, benches, cellPlan, pilotPlan } from '../run.mjs'
+import { benchOf, benches, cellPlan, cellsNotYetRun, pilotPlan, sievePlan } from '../run.mjs'
 import {
   ROUNDS,
   armsOf,
@@ -34,6 +34,7 @@ import {
   PREREG,
   refuseUnrunnableRound,
   roundArms,
+  sieveOf,
 } from '../lib/split.mjs'
 import { MNEMA_BIN, cloneFixtures } from './helpers.mjs'
 
@@ -95,7 +96,7 @@ describe('10 · the rounds are separate sets of tasks, and stay separate', () =>
     assert.equal(existsSync(preregOf(1).split), true, 'round 1 is at the root of the pre-registration')
     assert.deepEqual(ROUNDS, [1, ...onDisk])
     // Non-vacuity: the walk found directories at all.
-    assert.ok(onDisk.length >= 2, `the walk found [${onDisk}], which is not a bench with three rounds`)
+    assert.ok(onDisk.length >= 3, `the walk found [${onDisk}], which is fewer directories than the rounds that have been frozen`)
   })
 
   test('and a task in two splits is caught, by name', () => {
@@ -334,5 +335,147 @@ describe('10c · and the preflight clears round 2’s tasks, every check of it',
       new RegExp(`^${10 * ARMS.length} cells seed as declared`),
       'ten tasks times every arm the harness seeds',
     )
+  })
+})
+
+describe('10e · the sieve spends the set the split froze, and not one task more', () => {
+  // ROUND 4 IS THE FIRST ROUND WITH A STAGE BEFORE ITS COMPARISON. The sieve runs one arm
+  // over sixteen candidates to decide which of them the headline is computed over, and the
+  // whole value of it is that the sixteen were fixed BEFORE it ran. `--full --arm <x>` would
+  // have done the same work over the round's twenty tasks — the two development tasks and the
+  // two negative controls included — which is four tasks nothing declared, spent on a stage
+  // whose own file says which sixteen it is about. So the plan is read from the frozen split,
+  // exactly as the pilot is, and these cases are what say it still is.
+
+  test('the plan is the declared candidates x the sieve arm x the declared runs', () => {
+    const sieve = sieveOf(preregOf(4))
+    assert.notEqual(sieve, null, 'round 4 declares no sieve')
+    const fixtures = listFixtures(benchOf(4).fixturesDir)
+    const plan = sievePlan(fixtures, sieve, roundArms(4))
+
+    // Non-vacuity first: a plan over nothing satisfies every claim below.
+    assert.ok(sieve.candidates.length > 0, 'the sieve names no candidate')
+    assert.equal(plan.length, sieve.candidates.length * sieve.runs)
+    assert.deepEqual([...new Set(plan.map((c) => c.arm))], [sieve.arm])
+    assert.deepEqual(
+      [...new Set(plan.map((c) => c.fixture.id))].sort(),
+      [...sieve.candidates].sort(),
+      'the sieve plans a task the split does not name as a candidate',
+    )
+    // And the four tasks of the round it must NOT reach: a `--full` would have had them.
+    const planned = new Set(plan.map((c) => c.fixture.id))
+    const untouched = fixtures.map((f) => f.id).filter((id) => !planned.has(id))
+    assert.equal(untouched.length, 4, `the sieve reaches all but [${untouched}]`)
+    for (const id of untouched) {
+      assert.equal(sieve.candidates.includes(id), false)
+    }
+  })
+
+  test('a round with no sieve is refused, and round 3 is one', () => {
+    assert.equal(sieveOf(preregOf(3)), null, 'round 3 declares a sieve')
+    assert.throws(
+      () => sievePlan(listFixtures(benchOf(3).fixturesDir), sieveOf(preregOf(3)), roundArms(3)),
+      /declares no sieve/,
+    )
+  })
+
+  test('and the teeth: a sieve on an arm the round does not run, and a candidate not on disk', () => {
+    // With the real files the case above only ever says "nothing is accused", so the same
+    // function is handed the two shapes that must not plan.
+    const fixtures = listFixtures(benchOf(4).fixturesDir)
+    const sieve = sieveOf(preregOf(4))
+    assert.throws(
+      () => sievePlan(fixtures, { ...sieve, arm: 'prosa' }, roundArms(4)),
+      /a sieve on an arm the comparison does not carry/,
+    )
+    assert.throws(
+      () => sievePlan(fixtures, { ...sieve, candidates: ['a1-rounding'] }, roundArms(4)),
+      /names a1-rounding as a candidate, and it is not in this run/,
+    )
+  })
+
+  test('and a candidate the split does not hold back is refused before it can be planned', () => {
+    // The sieve touches held-out tasks by declared exception. A candidate that is NOT held
+    // out is a development task being spent as one, which is the split's own rule inverted.
+    const four = preregOf(4)
+    const dir = mkdtempSync(join(sandboxRoot(), 'mnema-bench-sieve-'))
+    scratch.push(dir)
+    const split = readSplit(four.split)
+    const loosened = join(dir, 'split.json')
+    writeFileSync(
+      loosened,
+      JSON.stringify({ ...split, candidates: [...split.candidates, split.pilot] }),
+    )
+    assert.throws(
+      () => sieveOf({ ...four, split: loosened }),
+      /are candidates and are not held out/,
+    )
+  })
+})
+
+describe('10f · a stage that spends across sittings resumes into the same capture', () => {
+  // THE SIEVE OF 2026-08-24 IS WHY. 128 cells on one arm, and the account's session limit
+  // stopped it 55 cells in: every cell after that came back as the vendor refusing to run.
+  // Without a resume the choice is to re-spend the 22 that were real, or to drive the rest
+  // one `--cell` at a time and pay the whole preflight for each. Both are worse than reading
+  // the capture, and the results directory's own rule is that a stopped run resumes into the
+  // same file rather than into a second one.
+
+  function capture(lines) {
+    const dir = mkdtempSync(join(sandboxRoot(), 'mnema-bench-resume-'))
+    scratch.push(dir)
+    const path = join(dir, 'cells.jsonl')
+    writeFileSync(path, lines.map((l) => JSON.stringify(l)).join('\n') + (lines.length ? '\n' : ''))
+    return path
+  }
+
+  const plan = [
+    { fixture: { id: 'a25-late-fee' }, arm: 'mnema-doc', run: 1 },
+    { fixture: { id: 'a25-late-fee' }, arm: 'mnema-doc', run: 2 },
+    { fixture: { id: 'a26-freight-band' }, arm: 'mnema-doc', run: 1 },
+  ]
+
+  test('a capture that does not exist yet skips nothing', () => {
+    const missing = join(mkdtempSync(join(sandboxRoot(), 'mnema-bench-resume-')), 'cells.jsonl')
+    assert.deepEqual(cellsNotYetRun(plan, missing), plan)
+  })
+
+  test('and a cell the capture holds as ok is not planned again', () => {
+    const path = capture([{ fixture: 'a25-late-fee', arm: 'mnema-doc', run: 1, status: 'ok' }])
+    const left = cellsNotYetRun(plan, path)
+    assert.equal(left.length, 2)
+    assert.deepEqual(
+      left.map((c) => `${c.fixture.id} r${c.run}`),
+      ['a25-late-fee r2', 'a26-freight-band r1'],
+    )
+  })
+
+  test('but a cell the capture holds as anything ELSE is, and that is the whole point', () => {
+    // THE SECOND VALUE. A guard that only ever skips would pass just as well if it skipped
+    // everything, and the cells this has to plan again are exactly the ones a session limit
+    // produced: present in the capture, and not a result. The failed line is never edited —
+    // the reading rule keeps both attempts — so the only thing that may change is the plan.
+    const path = capture([
+      { fixture: 'a25-late-fee', arm: 'mnema-doc', run: 1, status: 'harness_error' },
+      { fixture: 'a25-late-fee', arm: 'mnema-doc', run: 2, status: 'ruler_broken' },
+      { fixture: 'a26-freight-band', arm: 'mnema-doc', run: 1, status: 'ok' },
+    ])
+    assert.deepEqual(
+      cellsNotYetRun(plan, path).map((c) => `${c.fixture.id} r${c.run}`),
+      ['a25-late-fee r1', 'a25-late-fee r2'],
+    )
+  })
+
+  test('and the arm is part of the identity, so two arms on one task are two cells', () => {
+    const path = capture([{ fixture: 'a25-late-fee', arm: 'mnema+', run: 1, status: 'ok' }])
+    assert.equal(cellsNotYetRun(plan, path).length, 3, 'a cell of another arm was counted as this one')
+  })
+
+  test('and a capture it cannot read is refused rather than resumed from', () => {
+    const dir = mkdtempSync(join(sandboxRoot(), 'mnema-bench-resume-'))
+    scratch.push(dir)
+    const path = join(dir, 'cells.jsonl')
+    writeFileSync(path, '{"fixture":"a25-late-fee","status":"ok"\nnot json at all\n')
+    assert.throws(() => cellsNotYetRun(plan, path), /is not JSON/)
   })
 })

@@ -48,7 +48,7 @@ import { servesUnasked } from './seed.mjs'
 // number with nothing in the data to say so. `mnema_build_sha256_16` is the bytes. Those
 // 208 lines have no such key, they are not re-run to gain one, and the absent key is what
 // says which side of this they are from.
-export const RESULT_SCHEMA = 'mnema-bench/cell/7'
+export const RESULT_SCHEMA = 'mnema-bench/cell/8'
 
 /**
  * What a surface-arm cell run on ROUND 1's tasks is, carried in the DATA and not only in
@@ -195,6 +195,15 @@ export function resultLine(fields) {
     num_turns: result?.num_turns ?? null,
     permission_denials: countDenials(result),
     result_subtype: result?.subtype ?? null,
+    // AND THE VENDOR'S OWN VERDICT ON THE SESSION, beside its subtype, because the two
+    // disagree and only one of them was in the line. Schema 7 carried `result_subtype`
+    // alone, so a capture could not be audited for the shape that corrupted the sieve of
+    // 2026-08-24 — `{"subtype":"success","is_error":true,"api_error_status":429}` — and the
+    // only way to find it was to open `raw/`, which is not published for a held-out task.
+    // A qualification that rides in a file nobody can read is not in the line.
+    result_is_error: result?.is_error ?? null,
+    api_error_status: result?.api_error_status ?? null,
+    terminal_reason: result?.terminal_reason ?? null,
     missing_result_fields: missingResultFields,
 
     files_changed: diff?.filesChanged ?? null,

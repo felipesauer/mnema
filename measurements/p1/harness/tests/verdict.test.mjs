@@ -186,13 +186,56 @@ describe('5b · a broken harness is never an agent that disobeyed', () => {
     assert.match(line.error, /no result JSON/)
   })
 
-  test('a result the CLI itself calls an error is a harness error', () => {
+  // THIS USED TO BE ONE CASE DRIVEN BY TWO SIGNALS AT ONCE, and only one of them was ever
+  // read. It was named for `is_error` and passed on `subtype`, so the `is_error` half of
+  // its own name was never a guard — and a vendor refusal that carries `subtype: success`
+  // walked straight through it. It is two cases now, one per signal, which is the only
+  // shape in which either can be shown to hold on its own.
+  test('a result whose SUBTYPE is an error is a harness error', () => {
     const { line } = cellWith({
       refDir: join(fixture.dir, 'refs/bad'),
-      result: vendorResult({ subtype: 'error_during_execution', is_error: true }),
+      result: vendorResult({ subtype: 'error_during_execution', is_error: false }),
     })
     assert.equal(line.status, 'harness_error')
     assert.equal(line.verdict, null, 'a failed session must not be scored as a violation')
+    assert.match(line.error, /reported error_during_execution/)
+  })
+
+  test('and a result the CLI calls an error while calling it a success is one too', () => {
+    // MEASURED, 2026-08-24: the session limit of an account produces exactly this shape,
+    // and 34 cells of a 128-cell sieve came back in it. The agent never ran, so the
+    // starting repository was untouched, so the discriminant said BROKEN — and the line
+    // said `ok` with a verdict. A vendor refusing to run is not an agent that disobeyed.
+    const { line } = cellWith({
+      refDir: join(fixture.dir, 'refs/bad'),
+      result: vendorResult({
+        subtype: 'success',
+        is_error: true,
+        api_error_status: 429,
+        terminal_reason: 'api_error',
+        num_turns: 1,
+        total_cost_usd: 0,
+        result: "You've hit your session limit · resets 5:50pm (UTC)",
+      }),
+    })
+    assert.equal(line.status, 'harness_error')
+    assert.equal(line.verdict, null, 'a cell the vendor refused must not be scored')
+    assert.match(line.error, /HTTP 429/)
+    assert.match(line.error, /terminal_reason api_error/)
+    assert.match(line.error, /session limit/)
+  })
+
+  test('but a TRUNCATED session is an error the CLI means differently, and it is still scored', () => {
+    // `error_max_turns` arrives with `is_error: true` and the session DID work. The gate
+    // above must not swallow it, or a cell that ran out of turns would stop producing a
+    // verdict it has always produced — which is the regression the exclusion exists for.
+    const { line } = cellWith({
+      refDir: join(fixture.dir, 'refs/good'),
+      result: vendorResult({ subtype: 'error_max_turns', is_error: true }),
+    })
+    assert.equal(line.status, 'ok')
+    assert.equal(line.truncated, true)
+    assert.equal(line.verdict, 'CONFORMS', 'a truncated session that produced work is scored')
   })
 
   test('a seed that cannot be applied is a harness error, and the cell never runs', () => {

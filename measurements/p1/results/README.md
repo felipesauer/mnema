@@ -1,10 +1,17 @@
 # P1 results
 
-**The pilot and THREE rounds have run.** `2026-08-17-pilot/` holds four cells — one task, four arms,
-one run — `2026-08-18-full/` holds round 1's 112, `2026-08-18-mechanism/` holds eight cells of a
-fifth arm that are a mechanism check and not a measurement, `2026-08-20-full/` holds round 2's
-208, and `2026-08-21-full/` holds round 3's 160. What each one is, and why their counts do not add
-up to each other, is named in [the index](../../README.md). This directory was committed empty on
+**The pilot and THREE rounds have run, and a fourth round has begun spending.**
+`2026-08-17-pilot/` holds four cells — one task, four arms, one run — `2026-08-18-full/` holds
+round 1's 112, `2026-08-18-mechanism/` holds eight cells of a fifth arm that are a mechanism check
+and not a measurement, `2026-08-20-full/` holds round 2's 208, and `2026-08-21-full/` holds round
+3's 160. Round 4 has three directories and **none of them is a measurement of an arm**:
+`2026-08-24-pilot/` holds four cells over that round's own pilot task, `2026-08-24-sieve-aborted/`
+holds the 55 cells of a sieve that was stopped when the account's session limit turned 33 of them
+into the vendor refusing to run — **published aborted, because a run that went badly is not
+overwritten** — and `2026-08-24-sieve/` holds the complete sieve's 128, whose cells are discarded
+by that round's own rule and whose result is that **one candidate of sixteen survived, so round 4's
+comparison does not run.** What each one is, and why their counts do not add up to each other, is
+named in [the index](../../README.md). This directory was committed empty on
 purpose: the pre-registration beside it is worth what the order is worth, and the order is visible
 here.
 
@@ -124,9 +131,23 @@ is the one *without* the record, whose violations are the expected outcome — s
 have confirmed the hypothesis. Anything that is not the agent's choice is `harness_error` or
 `ruler_broken`, and neither is a result.
 
+**And the vendor refusing to run is one of them, which this list learned by omission.** On
+2026-08-24 a sieve of 128 cells hit the account's session limit partway through, and the CLI
+answered `subtype: "success"` beside `is_error: true` and `api_error_status: 429` — the agent
+never ran, the starting repository was untouched, and the discriminant said `BROKEN`. The gate
+read `subtype` alone, so 34 cells nobody had spent a token on were written as `status: ok` with
+a verdict. **A vendor that refuses to run is indistinguishable, in a line taken that way, from
+an agent that wrote code which does not work.** The gate reads `is_error` from schema 8, and the
+line carries `result_is_error`, `api_error_status` and `terminal_reason` so a capture can be
+audited for it without opening `raw/` — which is not published for a held-out task. The 492
+cells committed before schema 8 were checked for the shape by hand and **none of them carries
+it**; the run that found it is published, aborted, in
+[`2026-08-24-sieve-aborted/`](2026-08-24-sieve-aborted/).
+
 **What it cost:** `cost_usd` · `input_tokens` · `output_tokens` ·
 `cache_read_input_tokens` · `cache_creation_input_tokens` · `duration_ms` · `duration_api_ms` ·
-`num_turns` · `permission_denials` · `result_subtype` · `missing_result_fields`.
+`num_turns` · `permission_denials` · `result_subtype` · `result_is_error` ·
+`api_error_status` · `terminal_reason` · `missing_result_fields`.
 
 Every one of these is copied from the vendor's own result message. **A field that did not
 arrive is `null` and is named in `missing_result_fields`** — never estimated. An estimate that
