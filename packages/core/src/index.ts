@@ -18,21 +18,19 @@
 // boundary test bans the specifier, because that package holds writers), and a reader
 // that typed a literal instead would be the second place a label lives.
 export { ADDRESS_RELATIONS, ASKS_FOR_A_PERSON_RELATION, GOVERNS_RELATION } from '@mnema/chain';
-// Reading decision documents somebody else already wrote — the market's ADR form,
-// turned into the four things this product records. It is a pure READ of text and of
-// a directory: no writer, no key, no event, and no model. What it produces is input
-// to a write the caller still has to ask for.
-export {
-  type AdrDocument,
-  type AdrRead,
-  type AdrRefusalCode,
-  type AdrRefused,
-  ALTERNATIVE_LABELS,
-  adrIsInForce,
-  CONTEXT_LABELS,
-  RETIRED_STATUSES,
-  readAdr,
-  STATUS_LABELS,
+// Reading a directory of decision documents somebody else already wrote — the
+// market's ADR form, turned into the four things this product records. It is a pure
+// READ of text and of a directory: no writer, no key, no event, and no model. What it
+// produces is input to a write the caller still has to ask for.
+//
+// ONLY THE DIRECTORY WALK COMES OUT. The reader of a single document, the status rule
+// and the four label tables stay inside the package: nothing outside it consumes them,
+// and a value exported with no consumer is published surface nobody is holding up —
+// the shape `every-public-value-has-a-caller.test.ts` exists for. The package's own
+// modules and its own cases import them from `./adr/read.js` directly.
+export type {
+  AdrDocument,
+  AdrRefusalCode,
 } from './adr/read.js';
 export {
   type AdrScan,
