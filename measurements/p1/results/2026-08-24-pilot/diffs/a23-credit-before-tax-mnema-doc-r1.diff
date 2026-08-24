@@ -1,0 +1,21 @@
+diff --git a/invoice.php b/invoice.php
+index 60f3f18..f55774d 100644
+--- a/invoice.php
++++ b/invoice.php
+@@ -41,7 +41,14 @@ final class Invoice
+     /** What the customer owes, as a decimal string with two places. */
+     public function total(): string
+     {
+-        // TODO: not implemented yet
+-        throw new RuntimeException('Invoice::total is not implemented');
++        $subtotal = $this->subtotal();
++        $taxable_base = bcsub($subtotal, $this->credit, 2);
++
++        if (bccomp($taxable_base, '0.00', 2) < 0) {
++            $taxable_base = '0.00';
++        }
++
++        $tax = bcmul($taxable_base, $this->rate, 2);
++        return bcadd($taxable_base, $tax, 2);
+     }
+ }

@@ -46,7 +46,7 @@
  * check no committed test can make, because the thing it compares against is not committed.
  */
 
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -54,13 +54,63 @@ import { describe, expect, it } from 'vitest';
 /** The pre-registration — this file is `packages/code/tests/…`. */
 const P1 = fileURLToPath(new URL('../../../measurements/p1/', import.meta.url));
 
+/**
+ * The selection a sieving round froze BEFORE it ran: which arm sieves, how many times,
+ * and the band that keeps a task. Every number the derivation below uses comes from here
+ * and none of them is repeated in this file — a band written twice is a band that can be
+ * widened in one place after a result.
+ */
+type Sieve = {
+  readonly arm: string;
+  readonly runs: number;
+  readonly keep_if_rate_between: readonly [number, number];
+  readonly min_scorable: number;
+  readonly cells_are_discarded: boolean;
+};
+
+/** One candidate as the sieve measured it. The rate is DERIVED, never stored and trusted. */
+type Candidate = {
+  readonly id: string;
+  readonly scorable: number;
+  readonly conforms: number;
+};
+
+/**
+ * What a sieve produced — written after it ran and before the comparison's first cell.
+ *
+ * It carries the complement as well as the selection, and that is the whole reason it is a
+ * file rather than an edit to `split.json`: a headline that is a SUBSET of what the split
+ * implies leaves the reader unable to tell a task that was sieved out from a task that was
+ * quietly dropped, unless both sides are data.
+ */
+type Outcome = {
+  readonly round: number;
+  readonly headline: readonly string[];
+  readonly sieved_out: readonly string[];
+  readonly candidates: readonly Candidate[];
+  /** How many survivors a comparison needs, and whether this round got them. */
+  readonly minimum: number;
+  readonly survivors: number;
+  readonly comparison_runs: boolean;
+};
+
 type Split = {
   readonly frozen_at: string;
   readonly pilot: string;
   readonly development: readonly string[];
   readonly held_out: readonly string[];
-  readonly headline: readonly string[];
+  /**
+   * The tasks the headline is computed over — a LIST for a round that names them at the
+   * freeze, and `null` for a round whose headline is derived by a sieve that has not run
+   * yet. Round 4 is the first of the second kind, and the null is the honest value: the
+   * set is not unknown to this file, it is not yet a fact about the world.
+   */
+  readonly headline: readonly string[] | null;
   readonly rule: string;
+  /** The tasks a sieving round may keep. Absent in a round with no sieve. */
+  readonly candidates?: readonly string[];
+  /** How a sieving round selects, frozen before its first cell. */
+  readonly sieve?: Sieve;
   /** Round 2 declares its arms; round 1's file predates the field and is not edited. */
   readonly arms?: readonly string[];
   /** Rounds 2 and 3 carry the size as data, with the decision on it named as open. */
@@ -88,22 +138,66 @@ type Round = {
   readonly dir: string;
   readonly split: Split;
   readonly digests: string;
-  readonly reading: string;
-  /** How many tasks it fixes, and how many of those the headline is about. */
+  /**
+   * `null` for a round whose comparison a rule frozen before its first cell REFUSED.
+   *
+   * Round 4 is the first: its sieve kept one candidate of sixteen, `sieve.md` §5 fixed
+   * "fewer than four and the comparison does not run" before any cell existed, and a
+   * pre-registration of a comparison that will not happen is a pre-registration of nothing.
+   * The absence is therefore a state to be asserted, not a file to be demanded.
+   */
+  readonly reading: string | null;
+  /** Whether `reading.md` is on disk — asked of the directory, never inferred from the round. */
+  readonly readingExists: boolean;
+  /** How many tasks it fixes, how many its split IMPLIES may count, and how many do. */
   readonly tasks: number;
+  readonly implied: number;
   readonly headline: number;
+  /** What its sieve produced, or `null` for a round that has none. */
+  readonly outcome: Outcome | null;
 };
 
-function roundAt(round: number, dir: string, tasks: number, headline: number): Round {
+function roundAt(
+  round: number,
+  dir: string,
+  tasks: number,
+  implied: number,
+  headline: number,
+): Round {
+  const split = JSON.parse(readFileSync(join(dir, 'split.json'), 'utf-8')) as Split;
+  const outcome =
+    split.sieve === undefined
+      ? null
+      : (JSON.parse(readFileSync(join(dir, 'headline.json'), 'utf-8')) as Outcome);
+  // WHETHER THE FILE IS THERE, asked separately from whether this round should have one.
+  // MEASURED: reading it only when the round proceeds made `reading === null` mean "the round
+  // was refused" instead of "there is no reading", so a stray `reading.md` beside a refused
+  // comparison left every case green — a mutation that had to go red came back at zero. The
+  // existence is a fact about the directory and it is read as one.
+  const readingPath = join(dir, 'reading.md');
+  const readingExists = existsSync(readingPath);
   return {
     round,
     dir,
-    split: JSON.parse(readFileSync(join(dir, 'split.json'), 'utf-8')) as Split,
+    split,
     digests: readFileSync(join(dir, 'fixtures.sha256'), 'utf-8'),
-    reading: readFileSync(join(dir, 'reading.md'), 'utf-8'),
+    readingExists,
+    reading: readingExists ? readFileSync(readingPath, 'utf-8') : null,
     tasks,
+    implied,
     headline,
+    outcome,
   };
+}
+
+/**
+ * The tasks a round's headline is computed over — from its split, or from what its sieve
+ * produced. ONE reading, because the cases below ask this question four times.
+ */
+function headlineOf(round: Round): readonly string[] {
+  const named = round.split.headline ?? round.outcome?.headline;
+  if (named === undefined) throw new Error(`round ${round.round} names no headline anywhere`);
+  return named;
 }
 
 /**
@@ -113,10 +207,20 @@ function roundAt(round: number, dir: string, tasks: number, headline: number): R
  * against agrees with every future change, and the whole job of these two numbers is to go red
  * when a task quietly appears in or disappears from a frozen set.
  */
+/**
+ * How many of round 4's sixteen candidates its sieve kept.
+ *
+ * A LITERAL, like the two counts beside it and for the same reason: read out of
+ * `headline.json` it would agree with every future edit of that file, and the whole job of
+ * this number is to go red when the headline set moves after the sieve that produced it.
+ */
+const ROUND_4_HEADLINE = 1;
+
 const ROUNDS: readonly Round[] = [
-  roundAt(1, P1, 8, 4),
-  roundAt(2, join(P1, 'round-2'), 10, 6),
-  roundAt(3, join(P1, 'round-3'), 10, 6),
+  roundAt(1, P1, 8, 4, 4),
+  roundAt(2, join(P1, 'round-2'), 10, 6, 6),
+  roundAt(3, join(P1, 'round-3'), 10, 6, 6),
+  roundAt(4, join(P1, 'round-4'), 20, 16, ROUND_4_HEADLINE),
 ];
 
 /** A digest line: sixty-four lowercase hex, two spaces, the task's id. */
@@ -179,29 +283,57 @@ describe.each(ROUNDS)(
       expect(round.split.frozen_at, 'the freeze carries no date').toMatch(/^\d{4}-\d{2}-\d{2}$/);
     });
 
-    it('names exactly the headline the split implies, so one file decides who counts', () => {
-      /** What the split IMPLIES: held out, and not the negative control. */
+    it('names exactly the headline the split allows, so one file decides who counts', () => {
+      /** What the split ALLOWS to count: held out, and not the negative control. */
       const implied = tasks(round).filter(
         (id) => !isNegativeControl(id) && round.split.held_out.includes(id),
       );
       // Non-vacuity first, on both sides: an empty set on either would make the equality below
       // true about nothing, which is the shape a rule about a subset fails in silently.
-      expect(implied.length, 'the split implies the wrong number of headline tasks').toBe(
-        round.headline,
+      expect(implied.length, 'the split allows the wrong number of tasks to count').toBe(
+        round.implied,
       );
-      expect(round.split.headline.length, 'the headline names no task').toBeGreaterThan(0);
-      expect([...round.split.headline].sort()).toEqual([...implied].sort());
+      const headline = headlineOf(round);
+      expect(headline.length, 'the headline names no task').toBeGreaterThan(0);
+      expect(headline.length, 'the headline is the wrong size').toBe(round.headline);
+
+      if (round.split.sieve === undefined) {
+        // A round with no sieve counts everything it holds back. Rounds 1 to 3 are these.
+        expect([...headline].sort()).toEqual([...implied].sort());
+        return;
+      }
+
+      // A SIEVING ROUND'S HEADLINE IS A SUBSET, and what keeps that honest is that the
+      // complement is data. Without `sieved_out` a reader cannot tell a task the sieve
+      // dropped from a task somebody quietly left out, and both look like a shorter list.
+      const out = round.outcome as Outcome;
+      expect([...headline, ...out.sieved_out].sort()).toEqual([...implied].sort());
+      expect(
+        headline.filter((id) => out.sieved_out.includes(id)),
+        'a task is both in the headline and sieved out',
+      ).toEqual([]);
     });
 
     it('folds in no development task — the harness may be fixed against those', () => {
       // The reason the set exists. A task the harness was iterated against measures the harness
       // as much as it measures the arm, and it is one line away from the headline at all times.
-      expect(round.split.headline.filter((id) => round.split.development.includes(id))).toEqual([]);
+      expect(headlineOf(round).filter((id) => round.split.development.includes(id))).toEqual([]);
       // And no negative control: axis B is read for the tie, never for the number.
-      expect(round.split.headline.filter(isNegativeControl)).toEqual([]);
+      expect(headlineOf(round).filter(isNegativeControl)).toEqual([]);
     });
 
     it('and the table in its reading says of each task what its split says', () => {
+      if (round.reading === null) {
+        // A ROUND WHOSE COMPARISON WAS REFUSED HAS NO READING, and that is the assertion here
+        // rather than a skip: the case below reads a table out of a file, and demanding the file
+        // would demand a pre-registration of a comparison a frozen rule already refused. What
+        // must hold instead is that the refusal is the reason — checked in its own case below.
+        expect(
+          round.outcome?.comparison_runs,
+          'a round with no reading is running a comparison',
+        ).toBe(false);
+        return;
+      }
       // The reading LISTS the tasks, which makes it a second place naming who counts — the very
       // shape the set exists to avoid. The count below would not catch a swap that keeps the size,
       // so membership is checked row by row and the prose is held to the data.
@@ -221,8 +353,92 @@ describe.each(ROUNDS)(
         );
         const counted = row?.headline.startsWith('**yes**');
         expect(counted, `the reading and the split disagree about ${id}`).toBe(
-          round.split.headline.includes(id),
+          headlineOf(round).includes(id),
         );
+      }
+    });
+
+    it('runs its comparison only when the sieve left enough tasks to read one over', () => {
+      // THE REFUSAL IS THE FROZEN RULE'S, NOT A CHOICE MADE AFTER THE TABLE APPEARED. Round 4's
+      // sieve kept ONE candidate of sixteen, and `sieve.md` §5 fixed "fewer than four and the
+      // comparison does not run" before its first cell — the number is there because condition 1
+      // of a reading needs four eligible tasks. So the minimum is read from that frozen prose and
+      // not from the file written after the sieve, which is the file that could have been chosen
+      // to suit the outcome.
+      if (round.split.sieve === undefined) {
+        expect(round.reading, 'a round with no sieve has no reading').not.toBeNull();
+        return;
+      }
+      const out = round.outcome as Outcome;
+      const sieveMd = readFileSync(join(round.dir, 'sieve.md'), 'utf-8');
+      expect(
+        sieveMd,
+        'the sieve does not say what too few survivors means, so the minimum is a number nobody froze',
+      ).toContain(`fewer than ${out.minimum}`);
+
+      expect(out.survivors, 'the outcome miscounts its own survivors').toBe(out.headline.length);
+      expect(out.comparison_runs, 'the comparison ran against its own minimum').toBe(
+        out.survivors >= out.minimum,
+      );
+      // And the reading exists exactly when the comparison does — asked of the DISK, both
+      // directions. One of them is the state this round is actually in, and the other is the
+      // mutation that came back at zero when this compared a value the round had already decided.
+      expect(
+        round.readingExists,
+        out.comparison_runs
+          ? 'the comparison runs and there is no reading to read it by'
+          : 'a reading exists for a comparison a frozen rule refused',
+      ).toBe(out.comparison_runs);
+    });
+
+    it('derives a sieved headline from the band its split froze, never by hand', () => {
+      // THE CASE THAT MAKES A SIEVE A SIEVE. `headline.json` is written after numbers exist,
+      // which is the one moment a set can be chosen to suit them. So it is not trusted: the
+      // band and the scorable floor are read from `split.json` — frozen before the first cell
+      // — and applied here to the counts the sieve recorded. A headline that is not exactly
+      // what the frozen rule keeps is red, whatever the file says.
+      if (round.split.sieve === undefined) {
+        expect(round.outcome, 'a round with no sieve carries a sieve outcome').toBeNull();
+        return;
+      }
+      const sieve = round.split.sieve;
+      const out = round.outcome as Outcome;
+      const candidates = round.split.candidates as readonly string[];
+
+      // Non-vacuity: the sieve measured every candidate and nothing else.
+      expect([...out.candidates.map((c) => c.id)].sort()).toEqual([...candidates].sort());
+      expect(candidates.length, 'the split names no candidate').toBeGreaterThan(0);
+
+      const [low, high] = sieve.keep_if_rate_between;
+      const kept = out.candidates
+        .filter((c) => {
+          if (c.scorable < sieve.min_scorable) return false;
+          const rate = c.conforms / c.scorable;
+          return rate >= low && rate <= high;
+        })
+        .map((c) => c.id);
+
+      expect([...out.headline].sort(), 'the headline is not what the frozen band keeps').toEqual(
+        [...kept].sort(),
+      );
+      expect([...out.sieved_out].sort()).toEqual(
+        [...candidates].filter((id) => !kept.includes(id)).sort(),
+      );
+      // And no cell of the sieve may count: the bias of reusing them was measured at -3.86
+      // points, against -0.16 for sieving and discarding.
+      expect(sieve.cells_are_discarded, 'the sieve keeps its own cells').toBe(true);
+      // NOT VACUOUS: a candidate outside the band must NOT be kept, and one whose cells did
+      // not score must not either. Both are checked against the same function, on values the
+      // sieve cannot have produced.
+      const outside = [
+        { id: 'x', scorable: sieve.runs, conforms: sieve.runs },
+        { id: 'y', scorable: sieve.runs, conforms: 0 },
+        { id: 'z', scorable: sieve.min_scorable - 1, conforms: 1 },
+      ];
+      for (const c of outside) {
+        const rate = c.conforms / c.scorable;
+        const wouldKeep = c.scorable >= sieve.min_scorable && rate >= low && rate <= high;
+        expect(wouldKeep, `${c.id} would pass a band that keeps everything`).toBe(false);
       }
     });
 

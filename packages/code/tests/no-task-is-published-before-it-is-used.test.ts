@@ -8,6 +8,14 @@
  * per run, deliberately never a wildcard over `raw/`, because the development tasks' outputs
  * live in those same directories and ARE committed.
  *
+ * AND THE IGNORE FILE IS NOT THE ONLY MECHANISM ANY MORE, which is said here because the
+ * paragraph below reads as though it were. Rounds 2, 3 and 4 keep their held-out output OUT of
+ * the tree entirely — each ran in its own worktree and its raw output and diffs were moved to a
+ * bench git never sees — so there is nothing for an ignore line to catch. Round 1's lines remain
+ * because round 1's output is in this tree. What this file asserts is unchanged by that: it asks
+ * git what it would publish, and a path that is absent passes for the same reason a path that is
+ * ignored does.
+ *
  * WHY A TEST AND NOT THE IGNORE FILE ALONE. The ignore file is the mechanism; it is not a check.
  * A line missed when a round produces a new directory leaves the files untracked and UNIGNORED,
  * one `git add -A` away from publication — and this project has done exactly that once, with 304
@@ -67,6 +75,7 @@ const ROUNDS = [
   { round: 1, dir: 'measurements/p1' },
   { round: 2, dir: 'measurements/p1/round-2' },
   { round: 3, dir: 'measurements/p1/round-3' },
+  { round: 4, dir: 'measurements/p1/round-4' },
 ] as const;
 
 function splitOf(dir: string): Split {

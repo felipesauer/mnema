@@ -219,7 +219,7 @@ describe('7 · the mnema arm is asked through the wrapper, and the wrapper is in
       // The literal stays a literal: a schema compared against the constant it is
       // read from would agree with every future change, and the whole point of the
       // number is that lines from before a column existed are readable as such.
-      assert.equal(line.schema, 'mnema-bench/cell/7', arm)
+      assert.equal(line.schema, 'mnema-bench/cell/8', arm)
       assert.match(line.mechanism_note, /mcp_asked is the mnema arm’s channel/, arm)
       assert.match(line.mechanism_note, /ASKING IS NOT USING/, arm)
       assert.match(line.mechanism_note, /nor believed, nor obeyed/, arm)

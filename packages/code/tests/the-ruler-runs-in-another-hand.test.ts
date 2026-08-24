@@ -264,7 +264,15 @@ function everyModule(dir: string = HARNESS): readonly string[] {
  */
 function specifiersIn(text: string): readonly string[] {
   const found = [
-    ...[...text.matchAll(/\bfrom\s*'([^']+)'/g)],
+    // `\s+` AND NOT `\s*`, which is a defect this scanner had and a case below holds it to.
+    // `from` followed immediately by a quote is prose, not an import: the test name *"and a
+    // capture it cannot read is refused rather than resumed from"* ends in that word, so
+    // `from', () => {` matched and the scanner reported the whole of the next two lines as an
+    // import specifier — accusing a file whose imports are all `node:`. An import written
+    // `from'x'` is legal JavaScript and is the false negative this accepts; it cannot survive
+    // this tree's own formatter, which is what makes the trade a safe one HERE and not a rule
+    // about scanners in general.
+    ...[...text.matchAll(/\bfrom\s+'([^']+)'/g)],
     ...[...text.matchAll(/^\s*import\s*'([^']+)'/gm)],
     ...[...text.matchAll(/\bimport\(\s*'([^']+)'/g)],
     ...[...text.matchAll(/\brequire\(\s*'([^']+)'/g)],
@@ -279,6 +287,24 @@ describe('the instrument runs in a hand that has none of this machine', () => {
     // The floor is a literal, and it is BELOW what is there: it exists to catch a walk that
     // silently found nothing, not to freeze a file count that is free to grow.
     expect(MODULES.length).toBeGreaterThanOrEqual(30);
+  });
+
+  it('reads a real specifier and does not read prose that ends in the word from', () => {
+    // THE TEETH OF THE SCANNER ITSELF. Over the real files the case below only ever says
+    // "nothing is accused", so it has never shown it can tell an import from a sentence. It
+    // could not: `\s*` made `resumed from', () => {` a specifier, and the accusation named a
+    // file whose every import is `node:`. An instrument that accuses is as bad as one that
+    // cannot say it broke, and a new form of either needs its own case.
+    expect(specifiersIn("import { join } from 'node:path'")).toEqual(['node:path']);
+    expect(specifiersIn("} from '../lib/split.mjs'")).toEqual(['../lib/split.mjs']);
+    expect(specifiersIn("const m = await import('./run.mjs')")).toEqual(['./run.mjs']);
+    expect(specifiersIn("const p = require('node:path')")).toEqual(['node:path']);
+    expect(specifiersIn("import 'node:assert'")).toEqual(['node:assert']);
+    // And the prose, which is what this file's own tree contains:
+    expect(
+      specifiersIn("test('a capture it cannot read is refused rather than resumed from', () => {"),
+    ).toEqual([]);
+    expect(specifiersIn("// where the tasks come from', and the answer")).toEqual([]);
   });
 
   it('imports nothing outside node: and its own tree', () => {

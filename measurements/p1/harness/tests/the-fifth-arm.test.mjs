@@ -490,8 +490,8 @@ describe('8c · the line says the surface ran, and says what these cells are', (
     // key is what says they are from before, and that only works if the number moves
     // — which is why the expectation here is a LITERAL and not the constant it is
     // read from: compared against itself it would agree with every future change.
-    assert.equal(RESULT_SCHEMA, 'mnema-bench/cell/7')
-    assert.equal(lineFor(SURFACE_ARM, { whole: true }).schema, 'mnema-bench/cell/7')
+    assert.equal(RESULT_SCHEMA, 'mnema-bench/cell/8')
+    assert.equal(lineFor(SURFACE_ARM, { whole: true }).schema, 'mnema-bench/cell/8')
   })
 
   test('a whole cell of this arm reports BOTH channels having run', () => {

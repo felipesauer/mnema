@@ -44,8 +44,10 @@ export const PREREG = {
  *
  * Each round's pre-registration lives beside the others' and is never edited
  * afterwards; each round's tasks live in their own directory of the workbench,
- * calibrated by the SAME script — `round-2/selftest.sh` and `round-3/selftest.sh` are
- * symlinks to it, so there is one calibrator and not copies of one that can drift.
+ * calibrated by the SAME script — every later round's `selftest.sh` is a symlink to it,
+ * so there is one calibrator and not copies of one that can drift. Named by round here
+ * until 2026-08-24, which is a sentence that has to be edited every time the list grows
+ * and was already one round behind the code below it.
  *
  * THIS LIST IS A GATE AND NOT AN INVENTORY, which is what round 3 cost to learn. Round
  * 3's pre-registration was committed and frozen on 2026-08-20 while this list stopped at
@@ -55,7 +57,7 @@ export const PREREG = {
  * is a round nothing checks. `tests/rounds.test.mjs` therefore asserts this list against
  * the pre-registrations that EXIST rather than against itself.
  */
-export const ROUNDS = [1, 2, 3]
+export const ROUNDS = [1, 2, 3, 4]
 
 /**
  * Where round `n`'s pre-registration lives, and the two files that fix it.
@@ -238,6 +240,52 @@ export function refuseUnrunnableRound(round, arms = ARMS) {
  */
 export function roundArms(round, arms = ARMS) {
   return armsOf(preregOf(round)) ?? arms
+}
+
+/**
+ * The SIEVE a round declares, or `null` when its split names none.
+ *
+ * A sieve is a stage that runs before a round's comparison and decides which of its
+ * candidate tasks the headline is computed over. Round 4 is the first round to have one,
+ * and the reason it is READ FROM THE SPLIT rather than typed on the command line is the
+ * reason `pilotPlan` reads the pilot from there: a set typed at the prompt is a set
+ * nobody can check afterwards, and the whole value of a sieve is that what it ran over
+ * was fixed before it ran.
+ *
+ * Every field is checked rather than assumed. A sieve that names an arm as a number, or
+ * a run count as a string, would otherwise reach `cellPlan` and produce a plan nobody
+ * declared — over tasks that can be spent once.
+ */
+export function sieveOf(prereg) {
+  const split = readSplit(prereg.split)
+  const declared = split.sieve
+  if (declared === undefined) return null
+  for (const [key, kind] of [
+    ['arm', 'string'],
+    ['runs', 'number'],
+  ]) {
+    if (typeof declared[key] !== kind) {
+      throw new Error(`${prereg.split}: the sieve's "${key}" is missing or is not a ${kind}`)
+    }
+  }
+  if (!Number.isInteger(declared.runs) || declared.runs < 1) {
+    throw new Error(`${prereg.split}: the sieve's "runs" is not a whole number of runs`)
+  }
+  const candidates = split.candidates
+  if (!Array.isArray(candidates) || candidates.length === 0) {
+    throw new Error(`${prereg.split}: a sieve is declared and "candidates" names no task`)
+  }
+  if (candidates.some((id) => typeof id !== 'string')) {
+    throw new Error(`${prereg.split}: "candidates" is not a list of ids`)
+  }
+  const stray = candidates.filter((id) => !split.held_out.includes(id))
+  if (stray.length > 0) {
+    throw new Error(
+      `${prereg.split}: [${stray.join(', ')}] are candidates and are not held out, so the ` +
+        'sieve would spend a task the split does not hold back',
+    )
+  }
+  return { ...declared, candidates }
 }
 
 /** The frozen digests, as a Map from task id to hash. Comment lines are skipped. */

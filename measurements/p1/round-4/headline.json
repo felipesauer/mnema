@@ -1,0 +1,114 @@
+{
+  "round": 4,
+  "derived_at": "2026-08-24",
+  "from": "p1/results/2026-08-24-sieve/cells.jsonl",
+  "rule": "measurements/p1/round-4/sieve.md \u00a73 and \u00a75, with the band, the scorable floor and the candidate list read from split.json",
+  "minimum": 4,
+  "minimum_source": "sieve.md \u00a75: fewer than 4 survivors and the comparison does not run, because condition 1 of a reading needs at least four eligible tasks",
+  "ceiling": 12,
+  "survivors": 1,
+  "comparison_runs": false,
+  "comparison_note": "ONE candidate of sixteen survived, so the comparison does not run and this round has no reading.md: a pre-registration of a comparison that a rule frozen before the first cell refuses is a pre-registration of nothing. The finding is about the task design and it is in p1/results/2026-08-24-sieve/report.md. The sieve's 128 cells are published and none of them is counted as a measurement of any arm.",
+  "headline": [
+    "a28-plan-change"
+  ],
+  "sieved_out": [
+    "a25-late-fee",
+    "a26-freight-band",
+    "a27-payout-cutoff",
+    "a29-exempt-lines",
+    "a30-retry-budget",
+    "a31-effective-at",
+    "a32-discount-stack",
+    "a33-branch-registration",
+    "a34-usage-rollover",
+    "a35-dunning-pause",
+    "a36-credit-note-order",
+    "a37-sla-clock",
+    "a38-reversal-period",
+    "a39-quota-reset",
+    "a40-competence-month"
+  ],
+  "candidates": [
+    {
+      "id": "a25-late-fee",
+      "scorable": 7,
+      "conforms": 7
+    },
+    {
+      "id": "a26-freight-band",
+      "scorable": 8,
+      "conforms": 8
+    },
+    {
+      "id": "a27-payout-cutoff",
+      "scorable": 5,
+      "conforms": 2
+    },
+    {
+      "id": "a28-plan-change",
+      "scorable": 7,
+      "conforms": 5
+    },
+    {
+      "id": "a29-exempt-lines",
+      "scorable": 8,
+      "conforms": 8
+    },
+    {
+      "id": "a30-retry-budget",
+      "scorable": 8,
+      "conforms": 8
+    },
+    {
+      "id": "a31-effective-at",
+      "scorable": 8,
+      "conforms": 8
+    },
+    {
+      "id": "a32-discount-stack",
+      "scorable": 8,
+      "conforms": 0
+    },
+    {
+      "id": "a33-branch-registration",
+      "scorable": 8,
+      "conforms": 8
+    },
+    {
+      "id": "a34-usage-rollover",
+      "scorable": 8,
+      "conforms": 8
+    },
+    {
+      "id": "a35-dunning-pause",
+      "scorable": 8,
+      "conforms": 7
+    },
+    {
+      "id": "a36-credit-note-order",
+      "scorable": 6,
+      "conforms": 6
+    },
+    {
+      "id": "a37-sla-clock",
+      "scorable": 7,
+      "conforms": 7
+    },
+    {
+      "id": "a38-reversal-period",
+      "scorable": 8,
+      "conforms": 8
+    },
+    {
+      "id": "a39-quota-reset",
+      "scorable": 7,
+      "conforms": 7
+    },
+    {
+      "id": "a40-competence-month",
+      "scorable": 8,
+      "conforms": 8
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+# The twenty tasks of the P1 protocol's FOURTH round, fixed before the round's
+# first cell -- the sieve's included.
+#
+# WHY A FOURTH SET, AND WHY THEY ARE SHAPED DIFFERENTLY. Round 3 answered its
+# question and could not answer it well: `mnema-doc` scored 1.00 on all six
+# headline tasks and `mnema+` scored 1.00 on all six, so the subtraction the
+# round existed to make was between two saturated arms. A tie at the ceiling is
+# not evidence that the two channels are equal; it is evidence that the tasks
+# left nothing for a second channel to add. These twenty are written to leave
+# room: each axis-A task carries a decision whose APPLICATION to the
+# discriminating case is work even with the decision in hand, by one of four
+# declared mechanisms, and `sieve.md` says which mechanism each one uses and how
+# the ones that still saturate are removed before the comparison.
+#
+# AND THIS FREEZE IS WEAKER THAN ROUND 3'S IN A NAMED WAY, WHICH IS THE SAME KIND
+# OF WEAKNESS ROUND 3 DECLARED ABOUT ITSELF. These tasks were written by somebody
+# who knew that round 3 saturated and whose explicit goal was tasks that do not.
+# No hash fixes that. Two things are done about it instead of one sentence of
+# reassurance: the four mechanisms are declared per task BEFORE any cell runs, so
+# "designed for difficulty" is checkable rather than asserted; and the sieve
+# measures the difficulty it produced on ONE arm and discards those cells, so the
+# comparison is not read on the numbers that selected its own tasks. What no
+# procedure here removes is that the author of the tasks wanted them not to
+# saturate, and the reader is told that rather than protected from it.
+#
+# Each hash covers one task directory whole -- its starting repository, its
+# ticket, its decision, its two references and its discriminant -- over a
+# DETERMINISTIC archive: entry order fixed, timestamps and ownership zeroed,
+# Python bytecode excluded. The archive carries the task's id as its path prefix,
+# so two tasks cannot swap contents without both hashes moving.
+#
+# The tasks themselves are withheld until they have been used. Until then this
+# file is what a third party can check: not what a task says, but that it did not
+# change between the freeze and the result. THE SIEVE USES THEM AND DOES NOT
+# PUBLISH THEM: a candidate the sieve drops is a task nothing else has spent, and
+# it stays held out.
+#
+# REPRODUCE -- GNU tar 1.35 and coreutils sha256sum, run from the directory that
+# holds the twenty task directories:
+#
+#   for id in a23-credit-before-tax a24-cycle-anchor a25-late-fee \
+#             a26-freight-band a27-payout-cutoff a28-plan-change \
+#             a29-exempt-lines a30-retry-budget a31-effective-at \
+#             a32-discount-stack a33-branch-registration a34-usage-rollover \
+#             a35-dunning-pause a36-credit-note-order a37-sla-clock \
+#             a38-reversal-period a39-quota-reset a40-competence-month \
+#             b7-roman-numeral b8-run-length; do
+#     printf '%s  %s\n' "$(tar --sort=name --format=gnu \
+#         --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner \
+#         --exclude='__pycache__' --exclude='*.pyc' \
+#         -cf - "$id" | sha256sum | cut -d' ' -f1)" "$id"
+#   done
+#
+# A hash nobody knows how to reproduce proves nothing, which is why the command
+# is here and not in a report. A different tar implementation will produce a
+# different stream: the version below is the one these hashes were taken with,
+# and the harness's own `digestOf` was run against these twenty and agreed with
+# it hash for hash.
+#
+c740819c5af706d2747dd92e6677f1208b832edb964c731d6c834a27c704b1df  a23-credit-before-tax
+597cb6574151d49773df83086825784c589611e2f8cf607c79b595ccc759b4af  a24-cycle-anchor
+937e8cc164d28d8fcc5b33dbbb2bf24112ef97b52290933df98c9a4b3b8cef61  a25-late-fee
+1a3567b73c20e9830e5aed2b82460f3dca52cec3fb689ca23574a5134f8e5e58  a26-freight-band
+97f789a91db460b91061848335e7c23a8626307fa2f3a8b628ec35449361bff3  a27-payout-cutoff
+894738436e785195193cb5ffdc7b5dbd8f8b495d1d048a9750adac956794e9d5  a28-plan-change
+07ef53a42c8928942f8eb57c67ca24e154abc8391a99690b90fcbb7ebf0dbdfd  a29-exempt-lines
+acbaf1d278fc01243d50a3193ced94f71ef46dce860fcbdb530f1ac22771eaea  a30-retry-budget
+f14c9f2b317d0935923b7af6797f855a409336a9dc796fec08e24d151397a3ed  a31-effective-at
+e436d5d4af4482a3b0cc4b56f3c14633a9e868d6eaaaff5aed242fc3e8b6734d  a32-discount-stack
+2043d92542f45870996fbd94cac701a7c5e1c8e039a9141a638031d45a7dd95c  a33-branch-registration
+78e8408d8819b674419a9d86eed8e5fa39c94b81814855537caec1c663ab7437  a34-usage-rollover
+dc28c37e615df5dccba1c7faed4817987408483e46418b0ee6629ddee891ca11  a35-dunning-pause
+836fce579baf03ecbdaad8eea250bb7cb1729fa3de76572d13e4d0140de4017b  a36-credit-note-order
+35edec411cac8ec57018181eba77023238d535bf076d0e691d144d9c7275f5a8  a37-sla-clock
+57902cd35bcbc668f504a28136690c673753e410a1d63136d28d93023918e572  a38-reversal-period
+155da63753bab10ef5528c89452619d3a4eb856dbddb0586ea26c34a239e90e1  a39-quota-reset
+4f0375955a6326c48455a1d443c1c1c8f50be767b568c62d53f1b96517e1e7c2  a40-competence-month
+52c350ac00a41e9051bd5432e951997f9fb5cb0f79d2d2fe961311c85157f656  b7-roman-numeral
+c6e34cda33d29d88aa9a2698ba0566c0219450503cf431f8549badd141111fa7  b8-run-length

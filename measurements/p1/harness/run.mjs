@@ -18,7 +18,7 @@
 
 import { fileURLToPath } from 'node:url'
 import { join, resolve } from 'node:path'
-import { existsSync, mkdirSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { listFixtures } from './lib/fixtures.mjs'
 import { ARMS, servesUnasked } from './lib/seed.mjs'
 import { ISOLATION_CHECKLIST, MODEL, AUTH_MODES } from './lib/isolation.mjs'
@@ -33,6 +33,7 @@ import {
   readSplit,
   refuseUnrunnableRound,
   roundArms,
+  sieveOf,
 } from './lib/split.mjs'
 import { productPluginDir } from './lib/hook.mjs'
 import { tasksRoot } from './lib/root.mjs'
@@ -93,6 +94,7 @@ function parseArgv(argv) {
     authMode: DEFAULTS.authMode,
     maxBudgetUsd: null,
     round: DEFAULTS.round,
+    resume: false,
   }
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i]
@@ -101,6 +103,8 @@ function parseArgv(argv) {
       case '--selftest': opts.mode = 'selftest'; break
       case '--pilot': opts.mode = 'pilot'; break
       case '--full': opts.mode = 'full'; break
+      case '--sieve': opts.mode = 'sieve'; break
+      case '--resume': opts.resume = true; break
       case '--cell': opts.mode = 'cell'; opts.cell = [next(), next(), Number(next())]; break
       case '--runs': opts.runs = Number(next()); break
       case '--round': opts.round = Number(next()); break
@@ -131,6 +135,8 @@ function usage() {
 
   --selftest                     run every preflight check and stop. No model is called.
   --pilot                        the split's pilot task x the ROUND's arms x 1 run
+  --sieve                        the ROUND's declared candidates x its sieve arm x its
+                                 sieve runs, all three read from the frozen split
   --full                         every fixture x the ROUND's arms x --runs
                                  (this harness seeds ${ARMS.length}; a round declares
                                  which of them it runs, and round 3 declares four)
@@ -144,6 +150,9 @@ function usage() {
   --max-budget-usd <n>           per-cell ceiling passed to the CLI
   --out <dir>                    where results and raw output land
                                  [measurements/p1/results/<date>-<mode>]
+  --resume                       skip the (fixture, arm, run) cells the capture at --out
+                                 already holds with status ok. For a stage that spends
+                                 across more than one sitting
   --keep                         do not destroy the sandboxes
   --yes                          required by anything that calls a model
 `)
@@ -192,6 +201,74 @@ export function pilotPlan(fixtures, split = readSplit(), arms = ARMS) {
   const chosen = fixtures.find((f) => f.id === split.pilot)
   if (!chosen) throw new Error(`the split names ${split.pilot} as the pilot, and it is not in this run`)
   return cellPlan([chosen], 1, arms)
+}
+
+/**
+ * The sieve's cells — the round's declared candidates, its sieve arm, its sieve runs.
+ *
+ * ALL THREE COME OUT OF THE FROZEN SPLIT and none of them is a parameter, for the reason
+ * `pilotPlan` reads the pilot from there instead of taking whichever task sorts first: a
+ * sieve is only worth anything if what it ran over was fixed before it ran, and a set
+ * typed at the prompt is a set nobody can check afterwards. `--full --arm <x> --runs <n>`
+ * would have done the same work over the round's WHOLE task list — the development tasks
+ * and the negative controls included — which is four tasks nothing declared, spent on a
+ * stage whose own file says which sixteen it is about.
+ *
+ * It refuses a round with no sieve by name, and it refuses a sieve whose arm the round
+ * does not run: an arm outside `arms` would be seeded here and have no column in the
+ * comparison it is selecting tasks for.
+ */
+export function sievePlan(fixtures, sieve, arms) {
+  if (sieve === null) {
+    throw new Error('this round declares no sieve, and a sieve this file invents is not one')
+  }
+  if (!arms.includes(sieve.arm)) {
+    throw new Error(
+      `the sieve names ${sieve.arm} and this round runs the arms [${arms.join(', ')}]: ` +
+        'a sieve on an arm the comparison does not carry selects tasks for nobody',
+    )
+  }
+  const chosen = sieve.candidates.map((id) => {
+    const fixture = fixtures.find((f) => f.id === id)
+    if (!fixture) throw new Error(`the sieve names ${id} as a candidate, and it is not in this run`)
+    return fixture
+  })
+  return cellPlan(chosen, sieve.runs, [sieve.arm])
+}
+
+/**
+ * The cells of `plan` a capture does not already hold, so a stage can spend across sittings.
+ *
+ * WHY THIS EXISTS, and it is not convenience. Round 4's sieve is 128 cells on one arm, and the
+ * account's session limit stopped the first attempt 55 cells in — every cell after that came
+ * back as the vendor refusing to run. Without a resume the choice is to re-spend the 22 cells
+ * that were real or to drive the remainder one `--cell` at a time, each paying the whole
+ * preflight again. Both are worse than reading the capture.
+ *
+ * IT SKIPS ONLY WHAT RESOLVED. A line whose status is not `ok` is not a result — a vendor
+ * refusal, a half-applied seed, a discriminant that would not load — and the round's own
+ * reading rule says such a cell is re-run and both attempts are kept. So it is planned again,
+ * and the failed line stays where it is: this function never edits a capture, it only reads
+ * one.
+ *
+ * AND IT APPENDS INTO THE SAME FILE, which is the rule the results directory already keeps: a
+ * capture that is silently replaced destroys the only evidence that the difference existed. A
+ * run that is stopped and resumed is one capture; a run that is repeated is a second directory.
+ */
+export function cellsNotYetRun(plan, resultsPath) {
+  if (!existsSync(resultsPath)) return plan
+  const done = new Set()
+  for (const line of readFileSync(resultsPath, 'utf8').split('\n')) {
+    if (line.trim() === '') continue
+    let row
+    try {
+      row = JSON.parse(line)
+    } catch {
+      throw new Error(`${resultsPath} holds a line that is not JSON: a capture cannot be resumed from`)
+    }
+    if (row.status === 'ok') done.add(`${row.fixture}\u0000${row.arm}\u0000${row.run}`)
+  }
+  return plan.filter((c) => !done.has(`${c.fixture.id}\u0000${c.arm}\u0000${c.run}`))
 }
 
 async function main() {
@@ -263,6 +340,8 @@ async function main() {
     plan = [{ fixture, arm, run }]
   } else if (opts.mode === 'pilot') {
     plan = pilotPlan(fixtures, split, arms)
+  } else if (opts.mode === 'sieve') {
+    plan = sievePlan(fixtures, sieveOf(preregOf(opts.round)), arms)
   } else {
     plan = cellPlan(fixtures, opts.runs, arms)
   }
@@ -279,6 +358,16 @@ async function main() {
   const stamp = new Date().toISOString().slice(0, 10)
   const outDir = opts.outDir ?? join(PREREG.results, `${stamp}-${opts.mode}`)
   const resultsPath = join(outDir, 'cells.jsonl')
+
+  if (opts.resume) {
+    const wanted = plan.length
+    plan = cellsNotYetRun(plan, resultsPath)
+    console.log(`\nresuming: ${wanted - plan.length} of ${wanted} cells already resolved in the capture`)
+    if (plan.length === 0) {
+      console.log('nothing left to run')
+      process.exit(0)
+    }
+  }
 
   console.log(`\n${plan.length} cells, model ${MODEL}`)
   console.log(`results: ${resultsPath}`)

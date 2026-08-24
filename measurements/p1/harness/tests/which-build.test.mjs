@@ -184,7 +184,12 @@ describe('11 · the line says which build the cell executed', () => {
     // The 208 lines of the 2026-08-20 round were not re-run to gain this key. The absent
     // key is what says they are from before, and that only works if the number moves —
     // hence a LITERAL, which a comparison against the constant itself would not be.
-    assert.equal(RESULT_SCHEMA, 'mnema-bench/cell/7')
+    //
+    // IT HAS MOVED AGAIN, to 8, and the boundary is a different one: schema 7 carried the
+    // CLI's `subtype` and not its `is_error`, so no capture taken at 7 or earlier can be
+    // audited for the vendor refusal that corrupted the sieve of 2026-08-24. The 492 cells
+    // committed before it were checked for it by hand, out of `raw/`, and none carries it.
+    assert.equal(RESULT_SCHEMA, 'mnema-bench/cell/8')
   })
 })
 
