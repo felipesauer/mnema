@@ -44,8 +44,10 @@ export const PREREG = {
  *
  * Each round's pre-registration lives beside the others' and is never edited
  * afterwards; each round's tasks live in their own directory of the workbench,
- * calibrated by the SAME script — `round-2/selftest.sh` and `round-3/selftest.sh` are
- * symlinks to it, so there is one calibrator and not copies of one that can drift.
+ * calibrated by the SAME script — every later round's `selftest.sh` is a symlink to it,
+ * so there is one calibrator and not copies of one that can drift. Named by round here
+ * until 2026-08-24, which is a sentence that has to be edited every time the list grows
+ * and was already one round behind the code below it.
  *
  * THIS LIST IS A GATE AND NOT AN INVENTORY, which is what round 3 cost to learn. Round
  * 3's pre-registration was committed and frozen on 2026-08-20 while this list stopped at
@@ -55,7 +57,7 @@ export const PREREG = {
  * is a round nothing checks. `tests/rounds.test.mjs` therefore asserts this list against
  * the pre-registrations that EXIST rather than against itself.
  */
-export const ROUNDS = [1, 2, 3]
+export const ROUNDS = [1, 2, 3, 4]
 
 /**
  * Where round `n`'s pre-registration lives, and the two files that fix it.

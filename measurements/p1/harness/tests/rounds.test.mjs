@@ -95,7 +95,7 @@ describe('10 · the rounds are separate sets of tasks, and stay separate', () =>
     assert.equal(existsSync(preregOf(1).split), true, 'round 1 is at the root of the pre-registration')
     assert.deepEqual(ROUNDS, [1, ...onDisk])
     // Non-vacuity: the walk found directories at all.
-    assert.ok(onDisk.length >= 2, `the walk found [${onDisk}], which is not a bench with three rounds`)
+    assert.ok(onDisk.length >= 3, `the walk found [${onDisk}], which is fewer directories than the rounds that have been frozen`)
   })
 
   test('and a task in two splits is caught, by name', () => {

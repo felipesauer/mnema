@@ -340,8 +340,8 @@ export const MUTATIONS = [
   {
     name: 'z13 · the bench stops walking the newest pre-registered round',
     file: SPLIT,
-    from: 'export const ROUNDS = [1, 2, 3]',
-    to: 'export const ROUNDS = [1, 2]',
+    from: 'export const ROUNDS = [1, 2, 3, 4]',
+    to: 'export const ROUNDS = [1, 2, 3]',
     expect: 'a frozen round is a round nothing checks — exactly the state round 3 shipped in',
   },
   {
