@@ -4,12 +4,14 @@
 `2026-08-17-pilot/` holds four cells — one task, four arms, one run — `2026-08-18-full/` holds
 round 1's 112, `2026-08-18-mechanism/` holds eight cells of a fifth arm that are a mechanism check
 and not a measurement, `2026-08-20-full/` holds round 2's 208, and `2026-08-21-full/` holds round
-3's 160. Round 4 has two directories and neither is a measurement of it: `2026-08-24-pilot/` holds
-four cells over that round's own pilot task, and `2026-08-24-sieve-aborted/` holds the 55 cells of
-a sieve that was stopped when the account's session limit turned 33 of them into the vendor
-refusing to run — **published aborted, because a run that went badly is not overwritten.** What
-each one is, and why their counts do not add up to each other, is named in
-[the index](../../README.md). This directory was committed empty on
+3's 160. Round 4 has three directories and **none of them is a measurement of an arm**:
+`2026-08-24-pilot/` holds four cells over that round's own pilot task, `2026-08-24-sieve-aborted/`
+holds the 55 cells of a sieve that was stopped when the account's session limit turned 33 of them
+into the vendor refusing to run — **published aborted, because a run that went badly is not
+overwritten** — and `2026-08-24-sieve/` holds the complete sieve's 128, whose cells are discarded
+by that round's own rule and whose result is that **one candidate of sixteen survived, so round 4's
+comparison does not run.** What each one is, and why their counts do not add up to each other, is
+named in [the index](../../README.md). This directory was committed empty on
 purpose: the pre-registration beside it is worth what the order is worth, and the order is visible
 here.
 
