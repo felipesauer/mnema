@@ -201,7 +201,9 @@ describe('a declaration lists the set it takes', () => {
     }
     // And it is asked of every declaration there is, so a set that stopped being
     // declared cannot make this vacuous by leaving the list empty.
-    expect(DECLARED_SETS.length).toBe(19);
+    // Twenty since `decision import` declared its own `--scope`: it is a birth, and a
+    // birth takes the per-action override.
+    expect(DECLARED_SETS.length).toBe(20);
   });
 
   it('takes the set from the DOMAIN, at each of the levels that take one', () => {

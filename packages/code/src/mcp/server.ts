@@ -697,7 +697,9 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
         };
       }
       // The relation the RECORD holds, not the one the call asked for — plus, on the
-      // two relations whose target is a path, what that address covers. The agent gets
+      // two relations that carry an ADDRESS, what that address covers. Not every path
+      // target is one: `derived-from` names the file a proposal came out of and there
+      // is nothing under it to count. The agent gets
       // the same fact the command line prints, from the same wording, because an agent
       // recording a gate for somebody is exactly who most needs to see its reach.
       return recorded(`Linked ${subject} —${result.recorded[0]}→ ${target}`, result, {

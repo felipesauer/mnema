@@ -69,6 +69,37 @@ $ mnema link <decision-runbook> docs/gone-away --rel governs
 |   Files on disk, not edits — a directory nobody touches counts the same as a busy one.
 |   Landed in the public tree — committed with the repository, so it reaches every clone.
 
+### the decisions the repository already wrote
+$ mnema decision import docs/adr
+| Read docs/adr: 1 decision(s) to propose.
+|   proposed — Keep the runbook where the work is
+|       from docs/adr/0001-keep-the-runbook.md · the file says "Accepted" · names what it turned down
+| 2 file(s) produced nothing:
+|   docs/adr/0002-replaced.md — the document’s own status says it is no longer in force
+|   docs/adr/0003-headless.md — no level-1 title — nothing names the decision
+| Nothing was written. Run it again with --write to record these as proposals.
+$ mnema decision import docs/adr --write
+| Recorded 1 decision(s) as proposals from docs/adr, in the public tree.
+|   ADR-3 (<decision-imported>) — Keep the runbook where the work is
+|       from docs/adr/0001-keep-the-runbook.md · the file says "Accepted" · names what it turned down
+| 2 file(s) produced nothing:
+|   docs/adr/0002-replaced.md — the document’s own status says it is no longer in force
+|   docs/adr/0003-headless.md — no level-1 title — nothing names the decision
+| Each one is `proposed`. Accepting is a person’s move: `mnema decision move accept <id> --note "<why>"`.
+$ mnema decision import docs/adr --write
+| Recorded 0 decision(s) as proposals from docs/adr, in the public tree.
+| 1 file(s) already in the record, unchanged:
+|   docs/adr/0001-keep-the-runbook.md — <decision-imported>
+| 2 file(s) produced nothing:
+|   docs/adr/0002-replaced.md — the document’s own status says it is no longer in force
+|   docs/adr/0003-headless.md — no level-1 title — nothing names the decision
+$ mnema decision --scope private import docs/adr
+! `decision import` takes its own --scope: put it after `import`, not before.
+[exit 1]
+$ mnema decision import /tmp
+! "/tmp" is not inside this project. The provenance a proposal records has to be citable by every clone, so the directory has to be one.
+[exit 1]
+
 ### the moves
 $ mnema task move submit <task-runbook>
 | Task <task-runbook-alias> (<task-runbook>) → READY

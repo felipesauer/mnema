@@ -108,7 +108,7 @@ describe('brief — everything that governs the work here', () => {
     return id;
   }
 
-  /** Gives a record an address — the link whose target is a path. */
+  /** Gives a record an address — a link under one of the two relations that carry one. */
   function address(b: Bench, subject: string, path: string): void {
     link(b, subject, path, GOVERNS_RELATION);
   }

@@ -18,6 +18,29 @@
 // boundary test bans the specifier, because that package holds writers), and a reader
 // that typed a literal instead would be the second place a label lives.
 export { ADDRESS_RELATIONS, ASKS_FOR_A_PERSON_RELATION, GOVERNS_RELATION } from '@mnema/chain';
+// Reading decision documents somebody else already wrote — the market's ADR form,
+// turned into the four things this product records. It is a pure READ of text and of
+// a directory: no writer, no key, no event, and no model. What it produces is input
+// to a write the caller still has to ask for.
+export {
+  type AdrDocument,
+  type AdrRead,
+  type AdrRefusalCode,
+  type AdrRefused,
+  ALTERNATIVE_LABELS,
+  adrIsInForce,
+  CONTEXT_LABELS,
+  RETIRED_STATUSES,
+  readAdr,
+  STATUS_LABELS,
+} from './adr/read.js';
+export {
+  type AdrScan,
+  type ScannedDecision,
+  type ScanRefusal,
+  type ScanRefusalCode,
+  scanAdrDirectory,
+} from './adr/scan.js';
 // What a credential looks like, and how much text a field may hold. Detecting is
 // a READ — a pure question about a string — so it belongs here, and the audit of
 // an existing record reaches it through this barrel. Only SCREENING (refusing and
