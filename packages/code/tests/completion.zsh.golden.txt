@@ -14,7 +14,7 @@ _mnema_commands() {
   case "$1" in
     '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs rules skills usage brief key tail witness switch verify mcp repl completion help' ;;
     'task') echo 'move' ;;
-    'decision') echo 'move supersede' ;;
+    'decision') echo 'move supersede import' ;;
     'skill') echo 'move export' ;;
     'run') echo 'start end help' ;;
     'key') echo 'restore request enroll revoke help' ;;
@@ -66,7 +66,8 @@ _mnema_described() {
       'move:move a task through the workflow (follows the task; takes no --scope)' ;;
     'decision') printf '%s\n' \
       'move:accept or reject a decision (follows the decision; takes no --scope)' \
-      'supersede:supersede a decision with a later one (follows the decision; takes no --scope)' ;;
+      'supersede:supersede a decision with a later one (follows the decision; takes no --scope)' \
+      'import:propose the decisions already written in this repository’s decision files' ;;
     'skill') printf '%s\n' \
       'move:move a skill through the workflow (follows the skill; takes no --scope)' \
       'export:write an adopted pattern as the SKILL.md an agent host reads (records nothing)' ;;
@@ -102,6 +103,7 @@ _mnema_flags() {
     'decision') echo '--alternatives --scope --which -h --help -V --version --color' ;;
     'decision move') echo '--note -h --help --alternatives --scope --which -V --version --color' ;;
     'decision supersede') echo '--reason -h --help --alternatives --scope --which -V --version --color' ;;
+    'decision import') echo '--write --scope --which -h --help --alternatives -V --version --color' ;;
     'skill') echo '--body --scope --which -h --help -V --version --color' ;;
     'skill move') echo '--note --reason -h --help --body --scope --which -V --version --color' ;;
     'skill export') echo '--out --description -h --help --body --scope --which -V --version --color' ;;
@@ -166,6 +168,8 @@ _mnema_values() {
     'decision move:') echo 'accept reject' ;;
     'decision supersede:--scope') echo 'public private global' ;;
     'decision supersede:--color') echo 'auto always never' ;;
+    'decision import:--scope') echo 'public private global' ;;
+    'decision import:--color') echo 'auto always never' ;;
     'skill:--scope') echo 'public private global' ;;
     'skill:--color') echo 'auto always never' ;;
     'skill move:--scope') echo 'public private global' ;;

@@ -30,10 +30,13 @@ export function registerLink(program: Command, wiring: Wiring): Declared {
     .argument('<subject>', 'the entity that originates the link')
     .argument(
       '<target>',
-      // TWO relations take a path now, and the help says so rather than naming the first
-      // one: somebody reading this to record a gate would otherwise be told the label they
-      // need is the one that only informs.
-      'what it points at: another id, or a path under --rel governs or asks-for-a-person',
+      // ANY relation may take a path — `target` is whatever the caller sent — so the help
+      // names the two that carry an ADDRESS rather than implying they are the only two a
+      // path is legal under. It said "a path under --rel governs or asks-for-a-person"
+      // while `derived-from` was already recording the file a proposal was read from.
+      // Somebody reading this to record a gate still needs to be told which label has the
+      // power, which is why both are named and neither is dropped.
+      'what it points at: another id, or a path (an address, under --rel governs or asks-for-a-person)',
     )
     .requiredOption('--rel <label>', `the relation (${RECOMMENDED_RELATIONS})`)
     .addOption(
@@ -74,8 +77,8 @@ export function registerLink(program: Command, wiring: Wiring): Declared {
           // open string on purpose. So this line is three doors onto itself, and each
           // one goes through the collapse (see {@link onOneLine}).
           io.out(onOneLine`Linked ${result.subject} —${result.rel}→ ${result.target}`);
-          // What that address covers, on the two relations whose target is a path, and
-          // nothing at all on every other. A fact, not a warning — see `reachNotice`.
+          // What that address covers, on the two relations that carry an ADDRESS, and
+          // nothing at all on every other — a path target alone is not one. A fact, not a warning — see `reachNotice`.
           // It goes BEFORE the tree notice because it is about what was just recorded
           // and the tree notice is about where; the reader's question in the second
           // after typing a wide address is the first one.

@@ -1863,8 +1863,10 @@ export type GoverningRulesToolResult = IntelligenceResult<GoverningRules>;
 /**
  * `governing_rules` — which recorded rules govern a path of this project.
  *
- * The reverse reading of the relations whose target is a PATH (`ADDRESS_RELATIONS`,
- * two of them since the gate shipped — this said "the one relation"): a decision or a
+ * The reverse reading of the relations that carry an ADDRESS (`ADDRESS_RELATIONS`,
+ * two of them since the gate shipped — this said "the one relation", and said "whose
+ * target is a PATH" until `derived-from` began carrying the file a proposal was read
+ * from, which is a path and covers nothing): a decision or a
  * pattern linked with `rel: "governs"` to `src/billing` is a rule with an address,
  * and this finds it from the file rather than from the id. It is what turns "the
  * record holds rules" into "these rules apply to what I am about to touch".

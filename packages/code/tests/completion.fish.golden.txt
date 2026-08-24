@@ -16,7 +16,7 @@ function __mnema_commands --description 'the subcommands one level of the tree o
         case 'task'
             echo 'move'
         case 'decision'
-            echo 'move supersede'
+            echo 'move supersede import'
         case 'skill'
             echo 'move export'
         case 'run'
@@ -128,6 +128,7 @@ complete -c mnema -f -n '__mnema_at "task move"' -a 'submit start block unblock 
 # mnema decision
 complete -c mnema -f -n '__mnema_at "decision"' -a 'move' -d 'accept or reject a decision (follows the decision; takes no --scope)'
 complete -c mnema -f -n '__mnema_at "decision"' -a 'supersede' -d 'supersede a decision with a later one (follows the decision; takes no --scope)'
+complete -c mnema -f -n '__mnema_at "decision"' -a 'import' -d 'propose the decisions already written in this repository’s decision files'
 complete -c mnema -f -n '__mnema_at "decision"' -l alternatives -r
 complete -c mnema -f -n '__mnema_at "decision"' -l scope -x -a 'public private global'
 complete -c mnema -f -n '__mnema_at "decision"' -l which -r
@@ -153,6 +154,15 @@ complete -c mnema -f -n '__mnema_at "decision supersede"' -l scope -x -a 'public
 complete -c mnema -f -n '__mnema_at "decision supersede"' -l which -r
 complete -c mnema -f -n '__mnema_at "decision supersede"' -s V -l version
 complete -c mnema -f -n '__mnema_at "decision supersede"' -l color -x -a 'auto always never'
+
+# mnema decision import
+complete -c mnema -f -n '__mnema_at "decision import"' -l write
+complete -c mnema -f -n '__mnema_at "decision import"' -l scope -x -a 'public private global'
+complete -c mnema -f -n '__mnema_at "decision import"' -l which -r
+complete -c mnema -f -n '__mnema_at "decision import"' -s h -l help
+complete -c mnema -f -n '__mnema_at "decision import"' -l alternatives -r
+complete -c mnema -f -n '__mnema_at "decision import"' -s V -l version
+complete -c mnema -f -n '__mnema_at "decision import"' -l color -x -a 'auto always never'
 
 # mnema skill
 complete -c mnema -f -n '__mnema_at "skill"' -a 'move' -d 'move a skill through the workflow (follows the skill; takes no --scope)'

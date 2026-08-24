@@ -190,7 +190,11 @@ export const WALK_CEILING = 50_000;
  * brought by each would be two ideas of what the project's files ARE, so the same
  * address would come back covering two different fractions depending on which surface
  * recorded it. It also decides, once, WHICH relations have an address, off
- * {@link ADDRESS_RELATIONS}, so a third path relation is answered here by existing.
+ * {@link ADDRESS_RELATIONS}, so a third ADDRESS relation is answered here by existing.
+ * A relation whose target is merely a path is not one: `derived-from` carries the file
+ * a proposal was read out of, and there is no region under it to walk — which is why
+ * this answers `undefined` for it, and why "the target looks like a path" was never the
+ * question this asks.
  *
  * It states a fact and stops: no threshold, no warning, no refusal. A wide address is a
  * legitimate thing to record and what was missing was never a policy — it was that the

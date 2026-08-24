@@ -581,11 +581,57 @@ beforeAll(async () => {
   await mnema('writes', 'handoff', taskId, 'agent-alpha', 'agent-beta');
   await mnema('writes', 'link', decisionId, taskId, '--rel', 'relates-to');
   await mnema('writes', 'link', taskId, choreId, '--rel', 'derived-from');
-  // THE RELATION WHOSE TARGET IS A PATH — a decision given an address, and a second
-  // address that names nothing in the working tree. The two are what make `rules`
+  // THE RELATIONS THAT CARRY AN ADDRESS — a decision given an address, and a second
+  // address that names nothing in the working tree. (A path target alone is not an
+  // address: `derived-from` takes one and covers nothing, which `decision import`
+  // records below.) The two are what make `rules`
   // answer with a rule and with a stale one rather than with three zeroes.
   await mnema('writes', 'link', decisionId, 'docs/runbook', '--rel', 'governs');
   await mnema('writes', 'link', decisionId, 'docs/gone-away', '--rel', 'governs');
+
+  // ── What the repository already decided: a directory of decision files read as
+  //    proposals. Three invocations pin the whole shape of the verb — the PLAN that
+  //    writes nothing, the write, and the second run that writes nothing because the
+  //    record already holds every one of them. The last is the idempotence, proved
+  //    here on the surface rather than only at the adapter.
+  section('writes', 'the decisions the repository already wrote');
+  mkdirSync(join(repo, 'docs', 'adr'), { recursive: true });
+  writeFileSync(
+    join(repo, 'docs', 'adr', '0001-keep-the-runbook.md'),
+    '# ADR-001 — Keep the runbook where the work is\n\n' +
+      '- **Status:** Accepted\n\n' +
+      '## Context\n\na wiki page nobody owns goes stale\n\n' +
+      '## Considered Options\n\na shared spreadsheet: it has no history\n',
+    'utf-8',
+  );
+  writeFileSync(
+    join(repo, 'docs', 'adr', '0002-replaced.md'),
+    '# ADR-002 — Page the on-call rota by hand\n\n' +
+      '- **Status:** Superseded by ADR-004\n\n' +
+      '## Context\n\nthe rota was short enough to read\n',
+    'utf-8',
+  );
+  writeFileSync(join(repo, 'docs', 'adr', '0003-headless.md'), 'no heading at all\n', 'utf-8');
+  writeFileSync(
+    join(repo, 'docs', 'adr', 'README.md'),
+    '# Index\n\n## Context\n\nthe list\n',
+    'utf-8',
+  );
+  await mnema('writes', 'decision', 'import', 'docs/adr');
+  const imported = await mnema('writes', 'decision', 'import', 'docs/adr', '--write');
+  // The report indents each proposal, so the id is found by the `(…)` on the ADR line
+  // rather than by a line HEAD — the one place in this fixture where that is true.
+  name(
+    inParens(
+      imported.map((l) => l.trim()),
+      'ADR-',
+    ),
+    'decision-imported',
+  );
+  await mnema('writes', 'decision', 'import', 'docs/adr', '--write');
+  // And the refusals the parser turns down before anything is read.
+  await mnema('writes', 'decision', '--scope', 'private', 'import', 'docs/adr');
+  await mnema('writes', 'decision', 'import', '/tmp');
 
   // ── The moves: a task through the whole workflow and back twice (which is what
   //    makes it a recurring shape), a decision accepted and one superseded, a
@@ -866,6 +912,7 @@ beforeAll(async () => {
     ['task', 'move'],
     ['decision', 'move'],
     ['decision', 'supersede'],
+    ['decision', 'import'],
     ['skill', 'move'],
     ['skill', 'export'],
     ['run', 'start'],

@@ -159,6 +159,7 @@ $ mnema decision --help
 | Commands:
 |   move [options] <action> <id>           accept or reject a decision (follows the decision; takes no --scope)
 |   supersede [options] <old-id> <new-id>  supersede a decision with a later one (follows the decision; takes no --scope)
+|   import [options] <dir>                 propose the decisions already written in this repository’s decision files
 |
 | What recording means here:
 |   Permanent — mnema is append-only and nothing deletes a fact. A public record
@@ -301,8 +302,8 @@ $ mnema link --help
 |
 | Arguments:
 |   subject          the entity that originates the link
-|   target           what it points at: another id, or a path under --rel governs
-|                    or asks-for-a-person
+|   target           what it points at: another id, or a path (an address, under
+|                    --rel governs or asks-for-a-person)
 |
 | Options:
 |   --rel <label>    the relation (recommended: supersedes, relates-to,
@@ -780,6 +781,45 @@ $ mnema decision supersede --help
 |                    a CI step) is driving mnema — omit it when you are acting
 |                    directly. It names the executor only: a move always follows
 |                    the entity to the tree it was born in.
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema decision import --help
+$ mnema decision import --help
+| Usage: mnema decision import [options] <dir>
+|
+| propose the decisions already written in this repository’s decision files
+|
+| Arguments:
+|   dir              the directory holding the decision files (e.g. docs/adr),
+|                    inside the project
+|
+| Options:
+|   --write          record the plan. Omitted, nothing is written: the plan is
+|                    printed and the record is untouched.
+|   --scope <scope>  where the decision is born: public (team-visible), private
+|                    (this machine, this project), or global (personal,
+|                    cross-project). Omitted, an imported decision lands in the
+|                    public tree, like any other.
+|   --which <agent>  the agent that executed this, when an agent (a script, a CI
+|                    step) is driving mnema — omit it when you are acting
+|                    directly. Declared, never assumed; it names the executor. See
+|                    --scope for where the fact lands. A value that names no agent
+|                    (an unset variable) is refused, never credited to you.
+|   -h, --help       display help for command
+|
+| Every proposal is born `proposed`, whatever the file says its status is: what
+| the file states is reported, never applied. Accepting one is a person’s move,
+| with a note, through `decision move accept`.
+|
+| One decision per file, a level-1 title and named `##` sections — the Nygard and
+| MADR shape. A file that is not that shape is refused by name, never guessed at.
+| Nothing here calls a model.
 |
 | What recording means here:
 |   Permanent — mnema is append-only and nothing deletes a fact. A public record
