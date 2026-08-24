@@ -318,9 +318,12 @@ describe('the agent is told the same thing', () => {
 
 describe('one place decides which relations carry an address', () => {
   /**
-   * `ADDRESS_RELATIONS` is the whole of the labels whose target is a path, and this
+   * `ADDRESS_RELATIONS` is the whole of the labels that carry an ADDRESS, and this
    * asserts it against the derivation that reads them rather than against a list
-   * written twice: `governance.ts` walks exactly these relations, so a third one added
+   * written twice. It said "whose target is a path" and the decision import falsified
+   * that: `derived-from` records the file a proposal was read out of, which is a path
+   * and covers no region — so the list is about coverage, never about the shape of the
+   * string. Read on: `governance.ts` walks exactly these relations, so a third one added
    * to the constant and not to the walk — or the reverse — is red here.
    *
    * Read off the SOURCE because the walk takes the relation as an argument, so no

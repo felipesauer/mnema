@@ -45,9 +45,13 @@
  *   "there is no far end", which is a different and false claim. This said "an
  *   ENTITY", and `governs` falsified the narrower half of it: under that relation
  *   a target is a PATH, so a walk that meets one reports an unresolved node whose
- *   id is `src/collate` and never will resolve. That is the same honest shape and
- *   not a defect — what a path means is `governance.ts`'s question, and asking it
- *   here would be a second reader of the same label.
+ *   id is `src/collate` and never will resolve. `derived-from` does it too, carrying
+ *   the file a proposal was read out of — worth naming here because it is the first
+ *   path target that is NOT an address, so "an unresolved node is a rule's address"
+ *   would be the next narrow reading to falsify. That is the same honest shape and
+ *   not a defect — what a path means is the READER's question (an address is
+ *   `governance.ts`'s), and answering it here would be a second reader of the same
+ *   label.
  *
  * ## What it refuses to invent
  *

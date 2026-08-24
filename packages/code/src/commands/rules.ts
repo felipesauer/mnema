@@ -2,9 +2,13 @@
  * `mnema rules <path>` — which recorded rules govern a path, and which rules of
  * this project address nothing at all.
  *
- * The reverse reading of the relations whose target is a path — `governs` and
+ * The reverse reading of the relations that carry an ADDRESS — `governs` and
  * `asks-for-a-person`, which is what `ADDRESS_RELATIONS` names. This line said "the
- * ONE relation" until the gate shipped as a second label of the same shape. `refs` walks
+ * ONE relation" until the gate shipped as a second label of the same shape, and it said
+ * "whose target is a path" until the decision import shipped a THIRD label with a path
+ * target and no address in it (`derived-from`, the file a proposal was read from). What
+ * this walks inward from is a region of the tree, so the list it needs is the one about
+ * coverage and never the one about the shape of a string. `refs` walks
  * outward from an entity; this walks INWARD from a place in the code: a decision
  * that was accepted, linked with `--rel governs` to `src/billing`, is a rule with
  * an ADDRESS, and this is what finds it from the file rather than from the id.

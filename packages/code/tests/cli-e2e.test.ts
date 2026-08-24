@@ -2706,6 +2706,11 @@ describe('mnema CLI — a --which that names nobody', () => {
         'accountability',
         'export',
         'decision',
+        // The import declares its OWN `--which` rather than reading the group's,
+        // because it is a BIRTH: it names the agent on every fact it appends. The
+        // moves are absent from this list for the mirror reason — they read the
+        // group's.
+        'decision import',
         'guard',
         'memory',
         'observe',

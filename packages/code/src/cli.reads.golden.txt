@@ -291,7 +291,7 @@ $ mnema verify
 
 ### a populated project
 $ mnema search
-| 12 record(s):
+| 13 record(s):
 |
 | memory (4)
 |   <memory-scrubbed>  public  <date:01>  a note with a token in it: <SECRET:github-token>
@@ -302,7 +302,8 @@ $ mnema search
 | observation (1)
 |   <observation-rollback>  public  <date:01>  review
 |
-| decision (2)
+| decision (3)
+|   <decision-imported>  public  <date:01>  Keep the runbook where the work is (proposed)
 |   <decision-wiki>  public  <date:01>  Keep the runbook in the wiki (superseded)
 |   <decision-runbook>  public  <date:01>  Keep the runbook in the record (accepted)
 |
@@ -315,7 +316,7 @@ $ mnema search
 |   <skill-fridays>  private  <date:01>  Ship on Fridays (deprecated)
 |   <skill-slices>  public  <date:01>  One slice per PR (adopted)
 $ mnema search runbook
-| 6 record(s) matching "runbook":
+| 7 record(s) matching "runbook":
 |
 | memory (2)
 |   <memory-runbook>  public  <date:01>  the deploy runbook lives in the record now
@@ -324,16 +325,18 @@ $ mnema search runbook
 | observation (1)
 |   <observation-rollback>  public  <date:01>  review
 |
-| decision (2)
+| decision (3)
 |   <decision-wiki>  public  <date:01>  Keep the runbook in the wiki (superseded)
+|   <decision-imported>  public  <date:01>  Keep the runbook where the work is (proposed)
 |   <decision-runbook>  public  <date:01>  Keep the runbook in the record (accepted)
 |
 | task (1)
 |   <task-runbook>  public  <date:01>  Write the deploy runbook (IN_PROGRESS)
 $ mnema search spreadsheet
-| 1 record(s) matching "spreadsheet":
+| 2 record(s) matching "spreadsheet":
 |
-| decision (1)
+| decision (2)
+|   <decision-imported>  public  <date:01>  Keep the runbook where the work is (proposed)
 |   <decision-runbook>  public  <date:01>  Keep the runbook in the record (accepted)
 $ mnema search runbook --json
 | {
@@ -355,6 +358,15 @@ $ mnema search runbook --json
 |       "title": "Keep the runbook in the wiki",
 |       "derived": false,
 |       "state": "superseded"
+|     },
+|     {
+|       "id": "<decision-imported>",
+|       "kind": "decision",
+|       "scope": "public",
+|       "at": "<at:15>",
+|       "title": "Keep the runbook where the work is",
+|       "derived": false,
+|       "state": "proposed"
 |     },
 |     {
 |       "id": "<decision-runbook>",
@@ -390,7 +402,7 @@ $ mnema search runbook --json
 |       "derived": true
 |     }
 |   ],
-|   "total": 6
+|   "total": 7
 | }
 $ mnema search --kind task --scope public
 | 1 record(s):
@@ -400,7 +412,7 @@ $ mnema search --kind task --scope public
 $ mnema show <task-runbook>
 | task <task-runbook>  ·  public
 |   Write the deploy runbook (IN_PROGRESS)
-|   created <at:02> · updated <at:21>
+|   created <at:02> · updated <at:22>
 $ mnema show <task-runbook> --json
 | {
 |   "kind": "task",
@@ -411,7 +423,7 @@ $ mnema show <task-runbook> --json
 |     "title": "Write the deploy runbook",
 |     "state": "IN_PROGRESS",
 |     "createdAt": "<at:02>",
-|     "updatedAt": "<at:21>"
+|     "updatedAt": "<at:22>"
 |   }
 | }
 $ mnema refs <decision-runbook>
@@ -497,7 +509,7 @@ $ mnema refs <decision-runbook> --json
 |       "from": "<decision-wiki>",
 |       "to": "<decision-runbook>",
 |       "role": "by",
-|       "at": "<at:22>",
+|       "at": "<at:23>",
 |       "kind": "decision.transitioned",
 |       "who": "<anchor>",
 |       "scope": "public"
@@ -604,7 +616,7 @@ $ mnema rules /elsewhere/src/app.ts
 | addressing nothing in the working tree (1)
 |   docs/gone-away  Keep the runbook in the record (accepted)  <decision-runbook>  [public]
 $ mnema exposure
-| 1 of 45 record(s) hold a credential format:
+| 1 of 48 record(s) hold a credential format:
 |   public  <date:01>  memory.captured  <memory-unscreened>  github-token
 |
 |   These records are permanent — nothing deletes a fact. Rotate the credentials.
@@ -616,13 +628,13 @@ $ mnema exposure --json
 |       "id": "<memory-unscreened>",
 |       "kind": "memory.captured",
 |       "scope": "public",
-|       "at": "<at:28>",
+|       "at": "<at:29>",
 |       "classes": [
 |         "github-token"
 |       ]
 |     }
 |   ],
-|   "scanned": 45
+|   "scanned": 48
 | }
 $ mnema timeline <task-runbook>
 | <task-runbook> — 13 event(s):
@@ -632,13 +644,13 @@ $ mnema timeline <task-runbook>
 |   <at:10>  handoff.recorded  [subject]  <anchor-short>
 |   <at:11>  knowledge.linked  [target]  <anchor-short>
 |   <at:12>  knowledge.linked  [subject]  <anchor-short>
-|   <at:15>  task.transitioned  [subject]  <anchor-short>
 |   <at:16>  task.transitioned  [subject]  <anchor-short>
 |   <at:17>  task.transitioned  [subject]  <anchor-short>
 |   <at:18>  task.transitioned  [subject]  <anchor-short>
 |   <at:19>  task.transitioned  [subject]  <anchor-short>
 |   <at:20>  task.transitioned  [subject]  <anchor-short>
 |   <at:21>  task.transitioned  [subject]  <anchor-short>
+|   <at:22>  task.transitioned  [subject]  <anchor-short>
 $ mnema timeline <task-runbook> --json
 | [
 |   {
@@ -769,28 +781,6 @@ $ mnema timeline <task-runbook> --json
 |     }
 |   },
 |   {
-|     "at": "<at:15>",
-|     "kind": "task.transitioned",
-|     "who": "<anchor>",
-|     "subject": "<task-runbook>",
-|     "role": "subject",
-|     "scope": "public",
-|     "event": {
-|       "v": 1,
-|       "kind": "task.transitioned",
-|       "at": "<at:15>",
-|       "who": "<anchor>",
-|       "signerFp": "<fingerprint:01>",
-|       "subject": "<task-runbook>",
-|       "run": "<run-first>",
-|       "payload": {
-|         "from": "DRAFT",
-|         "to": "READY",
-|         "action": "submit"
-|       }
-|     }
-|   },
-|   {
 |     "at": "<at:16>",
 |     "kind": "task.transitioned",
 |     "who": "<anchor>",
@@ -806,9 +796,9 @@ $ mnema timeline <task-runbook> --json
 |       "subject": "<task-runbook>",
 |       "run": "<run-first>",
 |       "payload": {
-|         "from": "READY",
-|         "to": "IN_PROGRESS",
-|         "action": "start"
+|         "from": "DRAFT",
+|         "to": "READY",
+|         "action": "submit"
 |       }
 |     }
 |   },
@@ -828,12 +818,9 @@ $ mnema timeline <task-runbook> --json
 |       "subject": "<task-runbook>",
 |       "run": "<run-first>",
 |       "payload": {
-|         "from": "IN_PROGRESS",
-|         "to": "DONE",
-|         "action": "complete",
-|         "fields": {
-|           "note": "the first draft is in"
-|         }
+|         "from": "READY",
+|         "to": "IN_PROGRESS",
+|         "action": "start"
 |       }
 |     }
 |   },
@@ -853,11 +840,11 @@ $ mnema timeline <task-runbook> --json
 |       "subject": "<task-runbook>",
 |       "run": "<run-first>",
 |       "payload": {
-|         "from": "DONE",
-|         "to": "IN_PROGRESS",
-|         "action": "reopen",
+|         "from": "IN_PROGRESS",
+|         "to": "DONE",
+|         "action": "complete",
 |         "fields": {
-|           "reason": "it has no rollback section"
+|           "note": "the first draft is in"
 |         }
 |       }
 |     }
@@ -878,9 +865,12 @@ $ mnema timeline <task-runbook> --json
 |       "subject": "<task-runbook>",
 |       "run": "<run-first>",
 |       "payload": {
-|         "from": "IN_PROGRESS",
-|         "to": "IN_REVIEW",
-|         "action": "submit_review"
+|         "from": "DONE",
+|         "to": "IN_PROGRESS",
+|         "action": "reopen",
+|         "fields": {
+|           "reason": "it has no rollback section"
+|         }
 |       }
 |     }
 |   },
@@ -900,12 +890,9 @@ $ mnema timeline <task-runbook> --json
 |       "subject": "<task-runbook>",
 |       "run": "<run-first>",
 |       "payload": {
-|         "from": "IN_REVIEW",
-|         "to": "DONE",
-|         "action": "approve",
-|         "fields": {
-|           "note": "the rollback section reads well"
-|         }
+|         "from": "IN_PROGRESS",
+|         "to": "IN_REVIEW",
+|         "action": "submit_review"
 |       }
 |     }
 |   },
@@ -925,6 +912,31 @@ $ mnema timeline <task-runbook> --json
 |       "subject": "<task-runbook>",
 |       "run": "<run-first>",
 |       "payload": {
+|         "from": "IN_REVIEW",
+|         "to": "DONE",
+|         "action": "approve",
+|         "fields": {
+|           "note": "the rollback section reads well"
+|         }
+|       }
+|     }
+|   },
+|   {
+|     "at": "<at:22>",
+|     "kind": "task.transitioned",
+|     "who": "<anchor>",
+|     "subject": "<task-runbook>",
+|     "role": "subject",
+|     "scope": "public",
+|     "event": {
+|       "v": 1,
+|       "kind": "task.transitioned",
+|       "at": "<at:22>",
+|       "who": "<anchor>",
+|       "signerFp": "<fingerprint:01>",
+|       "subject": "<task-runbook>",
+|       "run": "<run-first>",
+|       "payload": {
 |         "from": "DONE",
 |         "to": "IN_PROGRESS",
 |         "action": "reopen",
@@ -936,23 +948,23 @@ $ mnema timeline <task-runbook> --json
 |   }
 | ]
 $ mnema accountability
-| 45 fact(s) · 1 author(s)
-|   <anchor-short>  45
+| 48 fact(s) · 1 author(s)
+|   <anchor-short>  48
 $ mnema accountability --json
 | {
-|   "total": 45,
+|   "total": 48,
 |   "byWho": [
 |     {
 |       "who": "<anchor>",
-|       "total": 45,
+|       "total": 48,
 |       "byKind": [
 |         {
 |           "kind": "decision.recorded",
-|           "count": 2
+|           "count": 3
 |         },
 |         {
 |           "kind": "decision.transitioned",
-|           "count": 4
+|           "count": 5
 |         },
 |         {
 |           "kind": "handoff.recorded",
@@ -968,7 +980,7 @@ $ mnema accountability --json
 |         },
 |         {
 |           "kind": "knowledge.linked",
-|           "count": 4
+|           "count": 5
 |         },
 |         {
 |           "kind": "memory.captured",
@@ -1006,7 +1018,7 @@ $ mnema accountability --json
 |       "byWhich": [
 |         {
 |           "which": null,
-|           "count": 40
+|           "count": 43
 |         },
 |         {
 |           "which": "agent-alpha",
@@ -1021,8 +1033,8 @@ $ mnema accountability --json
 |   ]
 | }
 $ mnema accountability --who <anchor-short>
-| 45 fact(s) · 1 author(s)
-|   <anchor-short>  45
+| 48 fact(s) · 1 author(s)
+|   <anchor-short>  48
 $ mnema antipatterns
 | reopened tasks: 1
 | superseded decisions: 1
@@ -1043,7 +1055,7 @@ $ mnema antipatterns --json
 |         {
 |           "v": 1,
 |           "kind": "task.transitioned",
-|           "at": "<at:18>",
+|           "at": "<at:19>",
 |           "who": "<anchor>",
 |           "signerFp": "<fingerprint:01>",
 |           "subject": "<task-runbook>",
@@ -1060,7 +1072,7 @@ $ mnema antipatterns --json
 |         {
 |           "v": 1,
 |           "kind": "task.transitioned",
-|           "at": "<at:21>",
+|           "at": "<at:22>",
 |           "who": "<anchor>",
 |           "signerFp": "<fingerprint:01>",
 |           "subject": "<task-runbook>",
@@ -1085,7 +1097,7 @@ $ mnema antipatterns --json
 |         {
 |           "v": 1,
 |           "kind": "decision.transitioned",
-|           "at": "<at:22>",
+|           "at": "<at:23>",
 |           "who": "<anchor>",
 |           "signerFp": "<fingerprint:01>",
 |           "subject": "<decision-wiki>",
@@ -1111,7 +1123,7 @@ $ mnema antipatterns --json
 |         {
 |           "v": 1,
 |           "kind": "skill.transitioned",
-|           "at": "<at:27>",
+|           "at": "<at:28>",
 |           "who": "<anchor>",
 |           "signerFp": "<fingerprint:01>",
 |           "subject": "<skill-fridays>",
@@ -1136,7 +1148,7 @@ $ mnema antipatterns --json
 |         {
 |           "v": 1,
 |           "kind": "task.transitioned",
-|           "at": "<at:18>",
+|           "at": "<at:19>",
 |           "who": "<anchor>",
 |           "signerFp": "<fingerprint:01>",
 |           "subject": "<task-runbook>",
@@ -1153,7 +1165,7 @@ $ mnema antipatterns --json
 |         {
 |           "v": 1,
 |           "kind": "task.transitioned",
-|           "at": "<at:21>",
+|           "at": "<at:22>",
 |           "who": "<anchor>",
 |           "signerFp": "<fingerprint:01>",
 |           "subject": "<task-runbook>",
@@ -1179,25 +1191,25 @@ $ mnema antipatterns --json
 |       {
 |         "skill": "<skill-slices>",
 |         "action": "review",
-|         "at": "<at:23>",
+|         "at": "<at:24>",
 |         "run": "<run-first>"
 |       },
 |       {
 |         "skill": "<skill-slices>",
 |         "action": "adopt",
-|         "at": "<at:24>",
-|         "run": "<run-first>"
-|       },
-|       {
-|         "skill": "<skill-fridays>",
-|         "action": "review",
 |         "at": "<at:25>",
 |         "run": "<run-first>"
 |       },
 |       {
 |         "skill": "<skill-fridays>",
-|         "action": "adopt",
+|         "action": "review",
 |         "at": "<at:26>",
+|         "run": "<run-first>"
+|       },
+|       {
+|         "skill": "<skill-fridays>",
+|         "action": "adopt",
+|         "at": "<at:27>",
 |         "run": "<run-first>"
 |       }
 |     ]
@@ -1219,7 +1231,8 @@ $ mnema status --actor <anchor>
 | 1 adopted pattern(s):
 |   <skill-slices>  One slice per PR
 |
-| Nothing awaiting a judgement.
+| 1 awaiting a judgement:
+|   <decision-imported>  decision  ADR-3 · Keep the runbook where the work is (proposed)
 $ mnema status --actor <anchor> --json
 | {
 |   "resume": {
@@ -1229,7 +1242,7 @@ $ mnema status --actor <anchor> --json
 |       "agent": "agent-beta",
 |       "who": "<anchor>",
 |       "open": true,
-|       "startedAt": "<at:30>",
+|       "startedAt": "<at:31>",
 |       "goal": "read the record back",
 |       "thisSession": false,
 |       "ageSeconds": <seconds>
@@ -1242,7 +1255,7 @@ $ mnema status --actor <anchor> --json
 |           "agent": "agent-beta",
 |           "who": "<anchor>",
 |           "open": true,
-|           "startedAt": "<at:30>",
+|           "startedAt": "<at:31>",
 |           "goal": "read the record back",
 |           "thisSession": false,
 |           "ageSeconds": <seconds>
@@ -1255,7 +1268,7 @@ $ mnema status --actor <anchor> --json
 |       "id": "<task-runbook>",
 |       "title": "Write the deploy runbook",
 |       "state": "IN_PROGRESS",
-|       "updatedAt": "<at:21>"
+|       "updatedAt": "<at:22>"
 |     },
 |     {
 |       "id": "<task-errand>",
@@ -1285,8 +1298,17 @@ $ mnema status --actor <anchor> --json
 |     }
 |   ],
 |   "decisionsTotal": 1,
-|   "awaitingJudgement": [],
-|   "awaitingJudgementTotal": 0
+|   "awaitingJudgement": [
+|     {
+|       "kind": "decision",
+|       "id": "<decision-imported>",
+|       "adr": "ADR-3",
+|       "title": "Keep the runbook where the work is",
+|       "state": "proposed",
+|       "updatedAt": "<at:15>"
+|     }
+|   ],
+|   "awaitingJudgementTotal": 1
 | }
 $ mnema focus --actor <anchor-short>
 | <anchor-short> — 1 open run(s):
@@ -1303,7 +1325,7 @@ $ mnema focus --actor <anchor> --json
 |       "agent": "agent-beta",
 |       "who": "<anchor>",
 |       "open": true,
-|       "startedAt": "<at:30>",
+|       "startedAt": "<at:31>",
 |       "goal": "read the record back",
 |       "thisSession": false,
 |       "ageSeconds": <seconds>
@@ -1321,7 +1343,7 @@ $ mnema resume --actor <anchor> --json
 |     "agent": "agent-beta",
 |     "who": "<anchor>",
 |     "open": true,
-|     "startedAt": "<at:30>",
+|     "startedAt": "<at:31>",
 |     "goal": "read the record back",
 |     "thisSession": false,
 |     "ageSeconds": <seconds>
@@ -1334,7 +1356,7 @@ $ mnema resume --actor <anchor> --json
 |         "agent": "agent-beta",
 |         "who": "<anchor>",
 |         "open": true,
-|         "startedAt": "<at:30>",
+|         "startedAt": "<at:31>",
 |         "goal": "read the record back",
 |         "thisSession": false,
 |         "ageSeconds": <seconds>
@@ -1404,7 +1426,7 @@ $ mnema skills --json
 |     "state": "adopted",
 |     "scope": "public",
 |     "adoption": {
-|       "at": "<at:24>"
+|       "at": "<at:25>"
 |     },
 |     "selfAdopted": false
 |   },
@@ -1414,7 +1436,7 @@ $ mnema skills --json
 |     "state": "deprecated",
 |     "scope": "private",
 |     "adoption": {
-|       "at": "<at:26>"
+|       "at": "<at:27>"
 |     },
 |     "selfAdopted": false
 |   }
@@ -1459,7 +1481,7 @@ $ mnema brief
 | - **One slice per PR** · `<skill-slices>`
 $ mnema tail list
 | 3 tail(s):
-|   <tail-own>  public   33 event(s) through <tail-head-a-populated-project-1>  the tail of <anchor>  ·  no waiver
+|   <tail-own>  public   36 event(s) through <tail-head-a-populated-project-1>  the tail of <anchor>  ·  no waiver
 |   <tail-private>  private  8 event(s) through <tail-head-a-populated-project-2>  the tail of <anchor>  ·  no waiver
 |   <tail-global>  global   4 event(s) through <tail-head-a-populated-project-3>  the tail of <anchor>  ·  no waiver
 $ mnema switch
@@ -1469,8 +1491,8 @@ $ mnema switch
 |   edit-asks-a-person  on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
 $ mnema usage
 | 2 run(s):
-|   <run-second>  agent-beta      <at:30> → open  no transcript
-|   <run-first>  agent-alpha     <at:01> → <at:29>  no transcript
+|   <run-second>  agent-beta      <at:31> → open  no transcript
+|   <run-first>  agent-alpha     <at:01> → <at:30>  no transcript
 |
 | Read from <sandbox>/home/.claude/projects — 0 host session(s) there record work in this project.
 | These counts come from Claude Code's own transcripts on this machine, not from the record: nothing here is signed, `mnema verify` does not cover it, and the host deletes a transcript on a retention it decides. Which host session belongs to which run is this reading inferring it from two clocks, not a fact the record states. Nothing was written to produce it.
@@ -1483,7 +1505,7 @@ $ mnema verify
 $ mnema show <task-runbook>
 | task <task-runbook>  ·  public
 |   Write the deploy runbook (IN_PROGRESS)
-|   created <at:02> · updated <at:21>
+|   created <at:02> · updated <at:22>
 $ mnema show <decision-runbook>
 | decision <decision-runbook>  ·  public
 |   ADR-1 — Keep the runbook in the record (accepted)

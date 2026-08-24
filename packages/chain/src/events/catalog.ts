@@ -485,17 +485,29 @@ export const GOVERNS_RELATION = 'governs';
 export const ASKS_FOR_A_PERSON_RELATION = 'asks-for-a-person';
 
 /**
- * The relations whose target is a PATH rather than an id — the whole of them.
+ * The relations whose target is an ADDRESS: a part of the working tree, compared by
+ * segments, covering whatever lies under it.
  *
  * There are two, {@link GOVERNS_RELATION} and {@link ASKS_FOR_A_PERSON_RELATION}, and
  * naming them together is what lets a reader ask "does this label carry an address"
  * once instead of spelling out a pair at every place that has to know. Before this
- * constant the pair was written out at each such site, and a third path relation would
- * have had to be remembered at all of them.
+ * constant the pair was written out at each such site, and a third address relation
+ * would have had to be remembered at all of them.
  *
- * It says nothing about what each one DOES — one informs, the other stops somebody —
- * and it is deliberately only about the SHAPE of the target, because that is what every
- * reader of an address needs and none of them needs the power.
+ * IT USED TO SAY "THE RELATIONS WHOSE TARGET IS A PATH — THE WHOLE OF THEM", and the
+ * decision import falsified that half of it: a proposal read out of somebody else's
+ * decision file records its provenance as `derived-from` pointing at the FILE it came
+ * out of, which is a path and is not on this list. Nothing about the shape changed —
+ * `target` was always "whatever the caller sent" — so what was wrong was reading a
+ * list about POWER as a list about shape. The distinction the two make is real and it
+ * is not the slash between an id and a path: an address COVERS a region of the tree
+ * and something has to walk it, while a provenance points at one file and nothing
+ * walks anything. That is why the import needed no member here, and why a reader
+ * asking "what does this cover" must ask this constant and not ask whether the target
+ * looks like a path.
+ *
+ * It still says nothing about what each one DOES — one informs, the other stops
+ * somebody — because that is the power, and a reader of an address needs the shape.
  */
 export const ADDRESS_RELATIONS = [GOVERNS_RELATION, ASKS_FOR_A_PERSON_RELATION] as const;
 
