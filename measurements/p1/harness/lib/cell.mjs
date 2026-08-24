@@ -180,6 +180,44 @@ export function runCell({
     })
   }
 
+  // AND `subtype: success` IS NOT THE WHOLE ANSWER, which this bench learned by having a
+  // run corrupted by believing it was.
+  //
+  // MEASURED, on 2026-08-24: a sieve of 128 cells hit the account's session limit partway
+  // through, and every cell after that came back from the CLI as
+  // `{"subtype":"success","is_error":true,"api_error_status":429,"terminal_reason":"api_error",
+  // "total_cost_usd":0,"num_turns":1,"result":"You've hit your session limit · resets 5:50pm"}`.
+  // The gate above reads `subtype` and let all 34 of them through. The agent had never run,
+  // so the starting repository was untouched, so the discriminant said `BROKEN` — and the
+  // line said `status: ok` with a verdict. A vendor REFUSING to run is then
+  // indistinguishable from an agent that wrote code that does not work, which is the same
+  // class of defect as the surface arm that was never delivered: not the agent choosing
+  // anything, and therefore not a verdict.
+  //
+  // THE CASE THAT SHOULD HAVE CAUGHT IT WAS ALREADY WRITTEN AND WAS PASSING FOR THE WRONG
+  // REASON. `tests/verdict.test.mjs` has had *"a result the CLI itself calls an error is a
+  // harness error"* since the harness was built, and it drives it with
+  // `{subtype: 'error_during_execution', is_error: true}` — two signals at once, of which
+  // only the first was ever read. Its name claimed `is_error` and the gate above never
+  // looked at it. It is now two cases, one per signal.
+  //
+  // `error_max_turns` is excluded deliberately: the CLI marks a truncated session as an
+  // error and that session DID work. Truncation is a fact about the cell, carried in the
+  // line as `truncated`, and it has always been scored.
+  if (result?.is_error === true && !truncated) {
+    const status = result?.api_error_status
+    return finish({
+      status: 'harness_error',
+      error:
+        `the agent CLI reported is_error beside subtype ${subtype}` +
+        `${status ? ` (HTTP ${status})` : ''}` +
+        `${result?.terminal_reason ? `, terminal_reason ${result.terminal_reason}` : ''}` +
+        `: ${String(result?.result ?? '').slice(0, 300)}`,
+      result,
+      missingResultFields: missingFrom(result),
+    })
+  }
+
   // --- what the agent produced ---------------------------------------------
   const diff = diffStat(sandbox)
   const mechanism = mechanismBetween(before, sandbox, arm, mnemaBin)

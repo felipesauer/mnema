@@ -37,6 +37,7 @@ const ROOT = join(HARNESS_DIR, 'lib/root.mjs')
 const CHANNEL = join(HARNESS_DIR, 'lib/channel.mjs')
 const BUILD = join(HARNESS_DIR, 'lib/build.mjs')
 const SPLIT = join(HARNESS_DIR, 'lib/split.mjs')
+const CELL = join(HARNESS_DIR, 'lib/cell.mjs')
 const RUN = join(HARNESS_DIR, 'run.mjs')
 const SELFTEST = join(HARNESS_DIR, 'lib/selftest.mjs')
 
@@ -368,6 +369,26 @@ export const MUTATIONS = [
   // And the root, which is not an absence guard but a path every absolute path in
   // the bench is built from. It was wrong for a while and the suite reported it as
   // broken fixtures, a broken split and a missing binary.
+  // And the two below are THE VENDOR'S OWN VERDICT ON THE SESSION. They exist because a
+  // sieve of 128 cells was corrupted on 2026-08-24 by a gate that read `subtype` alone: the
+  // account's session limit answers `{"subtype":"success","is_error":true,
+  // "api_error_status":429,"total_cost_usd":0,"num_turns":1}`, and 34 cells the agent never
+  // ran were written as `ok` with a BROKEN verdict. Two sides, two mutations: the gate that
+  // must fire, and the exclusion that must not.
+  {
+    name: 'z20 · a session the vendor refused goes back to being a verdict',
+    file: CELL,
+    from: '  if (result?.is_error === true && !truncated) {',
+    to: '  if (false && result?.is_error === true && !truncated) {',
+    expect: 'a cell that never ran is scored BROKEN, which is what a rate limit did to a whole run',
+  },
+  {
+    name: 'z21 · the gate swallows a truncated session too',
+    file: CELL,
+    from: '  if (result?.is_error === true && !truncated) {',
+    to: '  if (result?.is_error === true) {',
+    expect: 'a session that ran out of turns stops producing the verdict it has always produced',
+  },
   // And the three below are THE SIEVE — the stage round 4 put in front of its comparison,
   // which spends one arm over sixteen candidates to decide which tasks the headline is
   // computed over. All three of its parameters come out of the frozen split, and each of

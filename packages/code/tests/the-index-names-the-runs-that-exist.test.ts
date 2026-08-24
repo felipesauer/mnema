@@ -65,8 +65,19 @@ const RESULTS = 'measurements/p1/results';
  */
 const NAMING = [`${RESULTS}/README.md`, 'measurements/README.md'] as const;
 
-/** A run directory as the prose writes it: a date and a mode. */
-const A_RUN = /\b(20\d{2}-\d{2}-\d{2}-[a-z]+)\b/g;
+/**
+ * A run directory as the prose writes it: a date and a mode.
+ *
+ * THE MODE IS ONE OR MORE WORDS, and it took a two-word one to find that out. `[a-z]+` followed
+ * by `\b` reads `2026-08-24-sieve-aborted/` as `2026-08-24-sieve` — the boundary sits between the
+ * `e` and the hyphen — so the guard reported a directory that is not on disk while the one that
+ * is went unnamed. Both directions went red at once, on a name that was correct.
+ *
+ * The widening is not a loosening of what counts as a claim: the shape is still a full date and
+ * then words, and the case below holds it to refusing the near misses. What it stops doing is
+ * truncating a name in the middle.
+ */
+const A_RUN = /\b(20\d{2}-\d{2}-\d{2}-[a-z]+(?:-[a-z]+)*)\b/g;
 
 /**
  * A RECORD OF A PREMISE THAT FELL. Every one of these in these two files is a correction kept
@@ -120,6 +131,21 @@ describe('the index names the runs that exist', () => {
       quoting.map((n) => n.where),
       'no record-of-a-fallen-premise quotes a run directory, so skipping those blocks does nothing',
     ).not.toEqual([]);
+  });
+
+  it('reads a run name whole, and still refuses what is not one', () => {
+    // THE WIDENING EARNS ITSELF HERE. A pattern that reads more has to be shown still to refuse,
+    // or "it matches the two-word mode now" is indistinguishable from "it matches anything".
+    const read = (text: string): readonly string[] =>
+      [...text.matchAll(new RegExp(A_RUN.source, 'g'))].map((m) => m[1] ?? '');
+
+    expect(read('`2026-08-24-sieve-aborted/` holds 55 cells')).toEqual(['2026-08-24-sieve-aborted']);
+    expect(read('`2026-08-21-full/` holds 160')).toEqual(['2026-08-21-full']);
+    // And the near misses, none of which is a run directory:
+    expect(read('on 2026-08-24 a sieve of 128 cells')).toEqual([]);
+    expect(read('the round of 2026-08-24')).toEqual([]);
+    expect(read('schema mnema-bench/cell/8')).toEqual([]);
+    expect(read('2026-08-24-Full')).toEqual([]);
   });
 
   it('names nothing that is not there', () => {
