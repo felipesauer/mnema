@@ -923,6 +923,12 @@ beforeAll(async () => {
     ['key', 'revoke'],
     ['tail', 'list'],
     ['tail', 'prune'],
+    // The two acts that speak to somebody else. Their help declares WHAT LEAVES THIS
+    // MACHINE and, for `upgrade`, how far down a tail it reaches and where it stops —
+    // affirmations about behaviour with nothing pinning the bytes until now. The list
+    // above is kept by hand, which is exactly how a page goes unpinned.
+    ['witness', 'stamp'],
+    ['witness', 'upgrade'],
   ]) {
     section('help', `mnema ${pair.join(' ')} --help`);
     await mnema('help', ...pair, '--help');
