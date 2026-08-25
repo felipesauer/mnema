@@ -712,12 +712,12 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'a tail DIRECTORY name, read off the disk — whoever writes the tree chooses it',
   },
-  '@mnema/chain chain/witness.ts «the last attested checkpoint is dated by {}, with {} event(s) written after it» after #1':
+  '@mnema/chain chain/witness.ts «the last attested checkpoint is dated by {}, with {} event(s) written after it» facts.dated.after #1':
     {
       verdict: 'minted',
       why: 'a count of events, arrived at by subtracting two seqs — arithmetic, not text',
     },
-  '@mnema/chain chain/witness.ts «the last attested checkpoint is dated by {}, with {} event(s) written after it» attested.detail #1':
+  '@mnema/chain chain/witness.ts «the last attested checkpoint is dated by {}, with {} event(s) written after it» facts.dated.attested.detail #1':
     {
       verdict: 'composed',
       why: 'the covered reading `witness.ts` composed — its height and its instant are sites above',
@@ -732,13 +732,13 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'minted',
       why: 'the height whose stored header was mined at nothing',
     },
-  '@mnema/chain chain/witness.ts «{}, and {}» atHead.detail #1': {
+  '@mnema/chain chain/witness.ts «{}, and {}» all #1': {
     verdict: 'composed',
-    why: 'the head checkpoint’s own reading, kept beside the dating when it is a finding',
+    why: 'the clauses of a tail’s sentence joined so far — the head’s own finding, and the dating',
   },
-  '@mnema/chain chain/witness.ts «{}, and {}» dating #1': {
+  '@mnema/chain chain/witness.ts «{}, and {}» one #1': {
     verdict: 'composed',
-    why: 'the dating sentence this same function wrote, one template above',
+    why: 'the next clause of the same sentence — the dating above, or a request still in flight',
   },
   '@mnema/chain chain/witness.ts «the stored proof is unreadable: {}» oneLine(String((error as Error).message)) #1':
     {

@@ -20,6 +20,15 @@
  * the tail offers now and takes the newest one that is attested, so a stamp goes on
  * being worth what it was worth, with the count of what was written since.
  *
+ * NOR WHILE IT IS STILL IN FLIGHT. A stamp is a request, and a calendar answers in
+ * minutes or in half a day; for that whole window the record holds a proof that is not
+ * yet coverage, and the walk used to drop it for exactly that reason — so the line
+ * this verb prints, whose entire job is to show where the witness stands, said that
+ * nothing attested a record somebody had just stamped. It now names the request and
+ * the calendar it is with, which is what separates `wait` from `stamp again`. It is
+ * still not coverage: the level and the exit code are what a record with no witness at
+ * all earns.
+ *
  * IT REFUSES TO STAMP A RECORD THAT IS NOT FULLY SIGNED, and the refusal is the
  * design rather than caution. An attestation is filed under the digest of a
  * checkpoint, and the verifier looks for one under the checkpoint IT PROVED — never

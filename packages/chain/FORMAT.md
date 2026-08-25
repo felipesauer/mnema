@@ -225,17 +225,26 @@ one. (Measured on the reader before they existed: a 30 KB file of one repeated b
 the parse past V8's stack; a 979 KiB file of `append` steps walked in 238 ms and ended
 holding a megabyte.)
 
-**A request that has not confirmed is not coverage.** A proof is born incomplete —
-the calendars promise to aggregate it, and a Bitcoin block carries it minutes to
-hours later — so between asking and holding there is a third state, reported as
-`pending` and counted as nothing
+**A request that has not confirmed is not coverage — and it is never silence.** A
+proof is born incomplete — the calendars promise to aggregate it, and a Bitcoin block
+carries it minutes to hours later — so between asking and holding there is a third
+state, reported as `pending` and counted as nothing
 (`packages/chain/src/chain/witness.test.ts`,
-`packages/chain/src/chain/witnessed-record.test.ts`).
+`packages/chain/src/chain/witnessed-record.test.ts`). Counting for nothing is not the
+same as being dropped, and the reader used to do both: a record whose only proof was
+still in flight answered `nothing outside this machine attests this record`, which is
+the sentence a record nobody ever stamped earns, and the act that follows from it is
+to stamp again. A request is now reported wherever it is found — with the calendar it
+is with, when the proof names one — and it still raises no level and satisfies no
+`--require` (`packages/chain/src/chain/witness.test.ts`,
+`packages/chain/src/chain/witnessed-then-written.test.ts`,
+`packages/code/src/commands/witness.test.ts`).
 
 **The attestations accumulate, and a reader asks all of them.** Nothing in this format
 removes a witness file: stamp today, write tomorrow, and yesterday's `.ots` stays under
 yesterday's digest, still proving that that checkpoint existed at that instant. So a
-reader takes the **newest** checkpoint it holds a confirmed attestation for, and reports
+reader takes the **newest** checkpoint it holds a confirmed attestation for — and the
+newest request still open, for when there is no confirmed one — and reports
 three things together — the instant, the block, and **how many events were written after
 the checkpoint that instant dates**. A record whose newest attestation reaches its last
 event reads `covered`; one dated to an earlier point reads `not covered` and says the

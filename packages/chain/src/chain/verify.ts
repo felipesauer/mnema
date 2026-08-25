@@ -933,14 +933,17 @@ function verdictClauses(facts: VerdictFacts): readonly [VerdictClause, ...Verdic
  * to assume otherwise: they have just asked for an attestation and the request
  * succeeded.
  *
- * THE THIRD WORLD ARRIVES THROUGH THE DETAIL AND NOT THROUGH A CLAUSE OF ITS OWN. A
- * record dated to a point, with events written after it, reads `not covered` here —
- * because it is not covered, and because the count after the date is what stops the
- * sentence being read as coverage — and the dating that used to be silently dropped
- * is the detail. The clause list is the verdict's sentence: adding one to it would
- * change what every reader of this product matches on, and there is nothing here
- * that a clause could say and the detail cannot. See `witnessOfTail` in witness.ts,
- * which is where the three worlds are decided.
+ * THE WORLDS PAST THE FIRST TWO ARRIVE THROUGH THE DETAIL AND NOT THROUGH A CLAUSE OF
+ * THEIR OWN. A record dated to a point, with events written after it, reads `not
+ * covered` here — because it is not covered, and because the count after the date is
+ * what stops the sentence being read as coverage — and the dating that used to be
+ * silently dropped is the detail. A record whose only proof is a request nobody has
+ * answered reads `PENDING, which is not coverage`, and the calendar it is waiting on
+ * is the detail; that one used to be dropped too, and the sentence it left behind was
+ * the one a record nobody ever stamped earns. The clause list is the verdict's
+ * sentence: adding one to it would change what every reader of this product matches
+ * on, and there is nothing here that a clause could say and the detail cannot. See
+ * `witnessOfTail` in witness.ts, which is where the four worlds are decided.
  */
 function witnessClause(witness: ChainWitness): string {
   const said: Readonly<Record<WitnessStatus, string>> = {

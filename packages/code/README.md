@@ -826,7 +826,12 @@ One checkpoint is enough for the whole record: checkpoints chain, so an attestat
 over the last one dates every checkpoint below it. Stamps are never removed and the
 reading asks the newest one there is, so a record stamped in March and written to in
 April still reports March — with the count of events written since, because a date
-that does not say what it reaches claims more than it holds.
+that does not say what it reaches claims more than it holds. A request that has **not
+confirmed yet** survives the same way: `verify` names it and names the calendar it is
+with, whichever checkpoint it was filed under, so *nobody asked* and *somebody asked
+and we are waiting* are never the same sentence. The window is ordinary — the two
+attestations in this repository's own fixture were asked for at 00:52 and served
+complete at 12:49 — and the act that follows from reading silence is to stamp again.
 
 The answer is a **promise, not a proof**. It becomes one when a Bitcoin block carries
 it, minutes to hours later, and until then `verify` says `PENDING`, which is not

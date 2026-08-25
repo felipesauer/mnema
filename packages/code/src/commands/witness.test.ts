@@ -31,6 +31,7 @@ import {
   catalogUpcasters,
   checkpointToWitness,
   type Fetcher,
+  meetsRequirement,
   verify as verifyChainAt,
 } from '@mnema/chain';
 import { type DiscoveryEnv, resolveTrees, tailsHeld } from '@mnema/core';
@@ -308,6 +309,60 @@ describe('the reading beside the two acts', () => {
     );
   });
 
+  it('says a request is still in flight after the record was written to — the delivery’s case', () => {
+    // THE WHOLE WORLD, BUILT BY THE PRODUCT (A13): stamp, then write, then read. The
+    // proof under the older checkpoint is the one `runWitnessStamp` wrote from a
+    // calendar's own answer, and the checkpoint above it is the one `runMemory` sealed
+    // — nothing here puts a byte on the disk by hand.
+    //
+    // Before this delivery the reading met that proof, saw it was not coverage, and
+    // dropped it, so this line said `nothing outside this machine attests this record`
+    // about a record whose stamp was hours old. The two attestations this package's own
+    // fixture carries were asked for at 00:52 and served complete at 12:49 — most of a
+    // day in the state this case drives.
+    const ctx = setup();
+    const { fetch } = network(() => promises());
+    return runWitnessStamp(ctx, { calendars: [CALENDAR], fetch }).then(() => {
+      const stamped = checkpointToWitness({ root: publicRoot(ctx) }, tailOf(publicRoot(ctx)));
+      runMemory({ cwd: ctx.cwd, env: ctx.env }, { content: 'written while waiting' });
+      // The stamped checkpoint is no longer the head — which is the only thing that
+      // makes this the case and not the one that already worked.
+      expect(checkpointToWitness({ root: publicRoot(ctx) }, tailOf(publicRoot(ctx)))).not.toBe(
+        stamped,
+      );
+      const line = runWitnessList(ctx).lines[0];
+      expect(line?.reading.detail).not.toContain(
+        'nothing outside this machine attests this record',
+      );
+      expect(line?.reading.detail).toBe(
+        `an attestation was requested from ${CALENDAR} and has not confirmed`,
+      );
+      expect(line?.reading.status).toBe('pending');
+    });
+  });
+
+  it('says it in the VERDICT too, at the level a record with no witness earns', () => {
+    // The second surface, and the three places a promise must not count: the status,
+    // the level, and the requirement an exit code is derived from. The listing and the
+    // verdict share no caller — that is how the same false sentence survived in two
+    // places once — so both are driven.
+    const ctx = setup();
+    const { fetch } = network(() => promises());
+    return runWitnessStamp(ctx, { calendars: [CALENDAR], fetch }).then(() => {
+      runMemory({ cwd: ctx.cwd, env: ctx.env }, { content: 'written while waiting' });
+      const result = verifyChainAt(publicRoot(ctx), catalogUpcasters());
+      expect(result.summary).toContain('PENDING, which is not coverage');
+      expect(result.summary).toContain(`requested from ${CALENDAR}`);
+      expect(result.summary).not.toContain('nothing outside this machine attests this record');
+      expect(result.witness).toBe('pending');
+      expect(result.level).toBe('fully-signed');
+      expect(meetsRequirement(result.level, 'witnessed')).toBe(false);
+      expect(meetsRequirement(result.level, 'signed')).toBe(true);
+      // And the listing agrees with the verdict about the tail, as it must.
+      expect(runWitnessList(ctx).lines[0]?.reading.status).toBe(result.witness);
+    });
+  });
+
   it('counts the events the tail holds, so the reading can say what a dating misses', () => {
     // The count the third world's sentence is built from. `setup` writes two memories
     // over the founding events, and the listing takes the number from the enumeration
@@ -320,10 +375,14 @@ describe('the reading beside the two acts', () => {
   });
 });
 
+/** The one tail a freshly founded tree holds. */
+function tailOf(root: string): string {
+  return readdirSync(join(root, 'tails'))[0] as string;
+}
+
 /** The first segment file of a tree's only tail. */
 function segmentOf(root: string): string {
-  const tail = readdirSync(join(root, 'tails'))[0] as string;
-  return join(root, 'tails', tail, '000001.jsonl');
+  return join(root, 'tails', tailOf(root), '000001.jsonl');
 }
 
 /** That tail's checkpoints file. */

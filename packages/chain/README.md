@@ -109,7 +109,9 @@ witnesses do different halves of that, and neither does the other's:
   about deletion or identity, and it is **opt-in**: a record nobody stamped reads
   `not covered`, exactly as every record did before. Attestations accumulate and the
   reading asks the **newest** one, so a record that was stamped and then written to
-  goes on reporting the date it holds, with the count of events written after it.
+  goes on reporting the date it holds, with the count of events written after it — and
+  a request that has not confirmed is reported too, with the calendar it is with,
+  because a promise that counts for nothing is still not the same fact as no promise.
   FORMAT.md §8 is the bytes; `witness.ts` is the reading; nothing on the verifying
   path touches a network.
 - **A git remote.** It preserves the files a deletion would remove and gives a
