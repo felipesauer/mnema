@@ -595,13 +595,28 @@ export interface ChainWitness {
  * tails is the one dated most recently. Within each group the number is defined for
  * every member — `covered` always carries an instant, a dating always carries one,
  * and nothing else has one at all — so it never compares a fact against a filler.
+ *
+ * THE FOURTH IS THE REMAINDER, AND IT WAS FOUND BY A PROBE rather than reasoned
+ * about. Two tails dated by the SAME block, one a single event past its dating and
+ * one thirty-eight past, tied on the first three numbers — and the tie fell to
+ * whichever came first, so the chain published *with 1 event(s) written after it*
+ * about a record holding thirty-nine undated events. Weakest means weakest on this
+ * axis too, so the larger remainder wins and the published count is a floor no tail
+ * falls below.
+ *
+ * WHAT IT STILL DOES NOT DO, said out loud: the instant and the remainder can name
+ * DIFFERENT tails, and this takes the instant first, because the instant is what the
+ * layer proves and the remainder is what qualifies it. The per-tail truth is in
+ * {@link ChainWitness.tails}, and the record's whole undated residual is the verdict's
+ * coverage clause, which is summed across tails.
  */
-function claimOf(reading: WitnessReading): readonly [number, number, number] {
+function claimOf(reading: WitnessReading): readonly [number, number, number, number] {
   const dating = reading.status === 'covered' ? undefined : reading.datedThrough;
   return [
     WITNESS_RANK[reading.status],
     dating === undefined ? 0 : 1,
     reading.status === 'covered' ? -reading.at : -(dating?.at ?? 0),
+    -(dating?.after ?? 0),
   ];
 }
 

@@ -347,6 +347,24 @@ describe('the chain-wide reading', () => {
     expect(witness.tails[0]?.reading.detail).toContain('dated by Bitcoin block');
   });
 
+  it('publishes the LARGEST remainder when two tails are dated by the same block', () => {
+    // FOUND BY A PROBE, NOT BY READING THE CODE. Tied on status, on carrying a dating
+    // and on the instant, the fold kept whichever tail came first — so a chain with
+    // one tail a single event past its dating and one thirty-eight past published
+    // `1 event(s)`, which is a floor thirty-eight events too high. The count the chain
+    // says has to be one no tail falls below.
+    stampCovered('a-1');
+    stampCovered('b-2');
+    const witness = witnessOfChain(
+      layout,
+      new Map([
+        ['a-1', { checkpoints: [{ hash: covered, toSeq: 1 }], events: 3 }],
+        ['b-2', { checkpoints: [{ hash: covered, toSeq: 1 }], events: 40 }],
+      ]),
+    );
+    expect(witness.detail).toContain('with 38 event(s) written after it');
+  });
+
   it('publishes the dating when EVERY tail carries one', () => {
     stampCovered('a-1');
     stampCovered('b-2');
