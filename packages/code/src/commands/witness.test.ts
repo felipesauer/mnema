@@ -321,6 +321,42 @@ describe('going back for what has not confirmed', () => {
     ]);
   });
 
+  it('does not hand a calendar a proof this machine refuses — the act used to THROW', async () => {
+    // MEASURED ON THE BUILD BEFORE THIS ONE: over a record whose head carried an
+    // unreadable proof, this verb threw `opentimestamps: ran off the end` and the act
+    // died — no line, no outcome, and the request under that head never asked about.
+    // `readWitness` catches a proof it cannot parse; `completeWitness` parses again and
+    // the old act handed it the bytes because the reading was merely "not covered".
+    // Selecting on INCOMPLETENESS rather than on not-coverage is what closes it: an
+    // unreadable file and a proof over another digest have nothing a calendar could
+    // finish, and sending them is a round trip spent to write the same refusal back.
+    const ctx = setup();
+    const asked = network(() => promises());
+    await runWitnessStamp(ctx, { calendars: [CALENDAR], fetch: asked.fetch });
+    const older = checkpointToWitness({ root: publicRoot(ctx) }, tailOf(publicRoot(ctx)));
+    runMemory({ cwd: ctx.cwd, env: ctx.env }, { content: 'written while waiting' });
+    await runWitnessStamp(ctx, { calendars: [CALENDAR], fetch: asked.fetch });
+    const head = checkpointToWitness({ root: publicRoot(ctx) }, tailOf(publicRoot(ctx))) as string;
+    const witness = join(publicRoot(ctx), 'tails', tailOf(publicRoot(ctx)), 'witness');
+    writeFileSync(join(witness, `${head}.ots`), Buffer.from('not a proof at all'));
+
+    const { fetch, sent } = network(() => new Response(null, { status: 404 }));
+    const act = await runWitnessUpgrade(ctx, { fetch });
+    expect(act.ok).toBe(true);
+    if (!act.ok) return;
+    expect(act.outcomes.map((o) => o.did)).toEqual(['skipped', 'waiting']);
+    expect(act.outcomes[0]?.detail).toBe(
+      `checkpoint ${head} holds nothing a calendar can complete: ` +
+        'the stored proof is unreadable: opentimestamps: ran off the end',
+    );
+    // The request UNDER the unreadable file still got its round — the refusal above it
+    // did not take it down.
+    expect(act.outcomes[1]?.detail).toContain(older);
+    expect(sent.filter((s) => s.url.includes('/timestamp/'))).toHaveLength(1);
+    // And the file this machine refuses was left exactly as it was found.
+    expect(readFileSync(join(witness, `${head}.ots`)).toString()).toBe('not a proof at all');
+  });
+
   it('does not go back to the network for a proof that is already complete', async () => {
     // Network spent in silence is what this avoids, and the ecosystem's own client warns
     // about the other half: `ots upgrade` writes a `.bak` before it replaces a proof,
