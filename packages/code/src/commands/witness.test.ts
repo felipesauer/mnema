@@ -411,14 +411,20 @@ describe('the two verbs, over one disk', () => {
    * hope. The records are every shape this suite can build, plus the two frozen ones.
    */
   it('never says nothing was asked about a tail whose reading holds an attestation', async () => {
-    const ctx = setup();
+    const bare = setup();
     const asked = network(() => promises());
-    // Four shapes in one tree: a tail nobody stamped (the machine-global one is left
-    // out), a tail with two requests below its head, and the frozen record's two real
-    // proofs. `verify` folds them; the listing and the act answer tail by tail.
-    await runWitnessStamp(ctx, { calendars: [CALENDAR], fetch: asked.fetch });
+    // Three shapes in one tree, and the third one was MISSING until a mutation said so:
+    // bending the words of `nothing has been asked` lit one case where it should have
+    // lit two, because every tail this had was one somebody HAD asked about — so the
+    // half of the property that guards the absence was never driven. The
+    // machine-global tail is the one that holds nothing.
+    const ctx = { ...bare, global: true };
+    // The stamps are asked WITHOUT `--global`, exactly as a person's would be, so the
+    // machine's own tree stays the one nobody ever stamped.
+    runMemory({ cwd: ctx.cwd, env: ctx.env }, { content: 'a personal note', scope: 'global' });
+    await runWitnessStamp(bare, { calendars: [CALENDAR], fetch: asked.fetch });
     runMemory({ cwd: ctx.cwd, env: ctx.env }, { content: 'written while waiting' });
-    await runWitnessStamp(ctx, { calendars: [CALENDAR], fetch: asked.fetch });
+    await runWitnessStamp(bare, { calendars: [CALENDAR], fetch: asked.fetch });
     runMemory({ cwd: ctx.cwd, env: ctx.env }, { content: 'and again' });
     cpSync(WITNESSED_THEN_WRITTEN, publicRoot(ctx), { recursive: true });
 
@@ -427,13 +433,16 @@ describe('the two verbs, over one disk', () => {
     const act = await runWitnessUpgrade(ctx, { fetch });
     expect(act.ok).toBe(true);
     if (!act.ok) return;
-    expect(before.lines.length).toBeGreaterThan(1);
+    expect(before.lines.length).toBeGreaterThan(2);
+    // Both halves of the iff are exercised, which is the thing the mutation caught.
+    const absence = 'nothing outside this machine attests this record';
+    expect(before.lines.some((l) => l.reading.detail === absence)).toBe(true);
+    expect(before.lines.some((l) => l.reading.detail !== absence)).toBe(true);
     for (const line of before.lines) {
       const mine = act.outcomes.filter((o) => o.tail === line.tail);
       expect(mine.length, line.tail).toBeGreaterThan(0);
       const saidNothingWasAsked = mine.some((o) => o.detail.includes('nothing has been asked'));
-      const holdsNothing =
-        line.reading.detail === 'nothing outside this machine attests this record';
+      const holdsNothing = line.reading.detail === absence;
       // The IF AND ONLY IF is the whole property: the act may say nothing was asked
       // exactly when the reading says nothing attests this record, and never otherwise.
       expect(saidNothingWasAsked, line.tail).toBe(holdsNothing);
