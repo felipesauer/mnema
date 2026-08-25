@@ -38,17 +38,20 @@
 import {
   type ChainLayout,
   catalogUpcasters,
+  checkpointHash,
   checkpointToWitness,
   completeWitness,
   meetsRequirement,
   type ProvenLevel,
   readStoredWitness,
+  readTailCheckpoints,
   readWitness,
   stampCheckpoint,
   verify,
   type WitnessNetwork,
   type WitnessReading,
   type WitnessRefusal,
+  witnessOfTail,
   writeWitness,
 } from '@mnema/chain';
 import {
@@ -97,6 +100,14 @@ interface HeldChain {
   readonly scope: Scope;
   readonly tail: string;
   readonly layout: ChainLayout;
+  /**
+   * How many events the tail holds — taken from the standing the enumeration already
+   * read, so the listing pays nothing extra for it.
+   *
+   * The reading needs it because the question T3 answers is how much of a record an
+   * attestation dates, and "how much" is measured against everything the tail holds.
+   */
+  readonly events: number;
 }
 
 /** Every tail the trees visible from `ctx.cwd` hold, with the chain each lives in. */
@@ -111,7 +122,16 @@ function heldChains(ctx: WitnessContext): {
     // A tail is only ever reported for a tree that resolved, so this drops nothing in
     // practice; it is here because the router's answer is optional by type and a
     // non-null assertion would be this file deciding a question the router owns.
-    return root === undefined ? [] : [{ scope: held.scope, tail: held.tail, layout: { root } }];
+    return root === undefined
+      ? []
+      : [
+          {
+            scope: held.scope,
+            tail: held.tail,
+            layout: { root },
+            events: held.standing.eventCount,
+          },
+        ];
   });
   const searched = treesSearched(trees).filter((scope) => ctx.global || scope !== 'global');
   return { chains, trees: searched };
@@ -121,25 +141,41 @@ function heldChains(ctx: WitnessContext): {
  * Where the external witness stands, tail by tail — nothing is opened for writing,
  * nothing is asked of anybody.
  *
- * It reads through the same two functions the verifier does ({@link
- * checkpointToWitness}, {@link readWitness}), so a tail this reports as covered is a
- * tail `verify` will report as covered — there is no second idea here of what a
- * witness is or of where one lives.
+ * It reads through the same function the verifier does ({@link witnessOfTail}), so a
+ * tail this reports as covered is a tail `verify` will report as covered — there is
+ * no second idea here of what a witness is or of where one lives. THIS SURFACE SAID
+ * THE FALSE SENTENCE TOO: `nothing outside this machine attests this record`, printed
+ * about a record holding an attestation over a checkpoint that is no longer the last
+ * one. It was found by grepping for the sentence rather than for the function, which
+ * is the only way it could have been found — the verdict and this listing share no
+ * caller.
+ *
+ * WHAT THE TWO OFFER THE READING DIFFERS, deliberately. The verifier hands it the
+ * checkpoints it PROVED; this hands it the ones the tail STORED, in the file's own
+ * order, because a listing has never claimed to have verified anything and saying so
+ * here would be a second, weaker verification standing beside the real one. The head
+ * of that list is the same checkpoint {@link checkpointToWitness} names for the two
+ * acts — the last line stored — and `witness.test.ts` asserts that rather than
+ * assuming it, because an act that filed a proof where this does not look would tell
+ * somebody they were stamped and then show them `not covered`.
  */
 export function runWitnessList(ctx: WitnessContext): WitnessListing {
   const { chains, trees } = heldChains(ctx);
   return {
     trees,
     lines: chains.map((chain) => {
-      const checkpoint = checkpointToWitness(chain.layout, chain.tail);
+      const checkpoints = readTailCheckpoints(chain.layout, chain.tail).map((stored) => ({
+        hash: checkpointHash(stored),
+        toSeq: stored.toSeq,
+      }));
       return {
         scope: chain.scope,
         tail: chain.tail,
-        checkpoint,
-        reading:
-          checkpoint === null
-            ? { status: 'not-covered', detail: 'the tail has no checkpoint to witness' }
-            : readWitness(chain.layout, chain.tail, checkpoint),
+        checkpoint: checkpoints[checkpoints.length - 1]?.hash ?? null,
+        reading: witnessOfTail(chain.layout, chain.tail, {
+          checkpoints,
+          events: chain.events,
+        }) ?? { status: 'not-covered', detail: 'the tail has no checkpoint to witness' },
       };
     }),
   };
