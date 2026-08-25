@@ -232,6 +232,20 @@ hours later — so between asking and holding there is a third state, reported a
 (`packages/chain/src/chain/witness.test.ts`,
 `packages/chain/src/chain/witnessed-record.test.ts`).
 
+**The attestations accumulate, and a reader asks all of them.** Nothing in this format
+removes a witness file: stamp today, write tomorrow, and yesterday's `.ots` stays under
+yesterday's digest, still proving that that checkpoint existed at that instant. So a
+reader takes the **newest** checkpoint it holds a confirmed attestation for, and reports
+three things together — the instant, the block, and **how many events were written after
+the checkpoint that instant dates**. A record whose newest attestation reaches its last
+event reads `covered`; one dated to an earlier point reads `not covered` and says the
+date and the remainder in one sentence, because a date without a boundary claims more
+than it holds. (Before this, a reader asked only about the last checkpoint, so a record
+holding a valid attestation answered `nothing outside this machine attests this record`
+the moment one more event was written — an understatement of what its own files prove.
+`packages/chain/src/chain/witness.test.ts`,
+`packages/chain/src/chain/witnessed-record.test.ts`.)
+
 What this layer does **not** prove, said here rather than in a footnote: the stored
 header is checked for its work, not for its place in the chain. A reader who needs
 that follows the block id into any explorer, or runs the `ots` client against a node

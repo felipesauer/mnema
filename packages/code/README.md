@@ -823,7 +823,10 @@ What leaves this machine is the **SHA-256 of one checkpoint's signed message** a
 nothing else — no id, no title, no body, no count — and each calendar is handed a
 hash of that digest with a nonce of its own, so no two of them see the same value.
 One checkpoint is enough for the whole record: checkpoints chain, so an attestation
-over the last one dates every checkpoint below it.
+over the last one dates every checkpoint below it. Stamps are never removed and the
+reading asks the newest one there is, so a record stamped in March and written to in
+April still reports March — with the count of events written since, because a date
+that does not say what it reaches claims more than it holds.
 
 The answer is a **promise, not a proof**. It becomes one when a Bitcoin block carries
 it, minutes to hours later, and until then `verify` says `PENDING`, which is not

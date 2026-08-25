@@ -15,11 +15,25 @@
  * also how the three states are driven: a promise, a block, and a refusal.
  */
 
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { catalogUpcasters, type Fetcher, verify as verifyChainAt } from '@mnema/chain';
-import type { DiscoveryEnv } from '@mnema/core';
+import { fileURLToPath } from 'node:url';
+import {
+  catalogUpcasters,
+  checkpointToWitness,
+  type Fetcher,
+  verify as verifyChainAt,
+} from '@mnema/chain';
+import { type DiscoveryEnv, resolveTrees, tailsHeld } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runInit } from './init.js';
 import { runMemory } from './memory.js';
@@ -49,6 +63,15 @@ function setup(): { cwd: string; env: DiscoveryEnv; global: boolean } {
 
 /** Where the project's committed tree lives. */
 const publicRoot = (ctx: { cwd: string }): string => join(ctx.cwd, '.mnema');
+
+/** The frozen record that was stamped and then written to — the third world, on a disk. */
+const WITNESSED_THEN_WRITTEN = fileURLToPath(
+  new URL('../../../chain/src/chain/__fixtures__/witnessed-then-written', import.meta.url),
+);
+
+/** The one tail that record holds. */
+const FROZEN_TAIL =
+  '7e5a72fd0ea237237651690087e4a87133dab8b78847efadde778f633214cca4-05e27e636158e547a09e594545603717';
 
 /** Every request a case made — what left the machine, in order. */
 interface Sent {
@@ -240,6 +263,60 @@ describe('the reading beside the two acts', () => {
     const ctx = setup();
     const listing = runWitnessList(ctx);
     expect(listing.lines[0]?.checkpoint).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('names the SAME head the two acts file under', () => {
+    // The listing walks the tail's whole checkpoint file now, because an attestation
+    // over an older checkpoint still dates what came before it — so it no longer takes
+    // its head from `checkpointToWitness`, which is what the two acts still use. The
+    // two derivations have to agree or the act files a proof where the listing does
+    // not look, and the person who just stamped is shown `not covered`. Asserted here
+    // rather than assumed, since it is no longer true by construction.
+    const ctx = setup();
+    const root = publicRoot(ctx);
+    const tail = readdirSync(join(root, 'tails'))[0] as string;
+    expect(runWitnessList(ctx).lines[0]?.checkpoint).toBe(checkpointToWitness({ root }, tail));
+  });
+
+  it('says the date and the remainder for a record stamped and then written to', () => {
+    // THE SECOND SITE, and it was found by grepping the SENTENCE rather than the
+    // function: this listing and the verdict share no caller, so a `grep` for
+    // `witnessOfChain` finds one of them. It said the same false thing — `nothing
+    // outside this machine attests this record`, about a record holding two valid
+    // proofs — and it says what the verdict says now because the two read through one
+    // function.
+    //
+    // The record is the frozen one, dropped into a project's committed tree beside
+    // the project's own tail: a listing walks every tail the trees here hold, and this
+    // is the cheapest way to give it one whose attestation is real. (It cannot be
+    // built: reading `covered` means folding a digest into a mined block's merkle
+    // root. See `witnessed-then-written.test.ts`.)
+    const ctx = setup();
+    cpSync(WITNESSED_THEN_WRITTEN, publicRoot(ctx), { recursive: true });
+    const line = runWitnessList(ctx).lines.find((l) => l.tail === FROZEN_TAIL);
+    expect(line?.reading.status).toBe('not-covered');
+    expect(line?.reading.detail).toBe(
+      'the last attested checkpoint is dated by Bitcoin block 963937 at ' +
+        '2026-08-25T01:47:34.000Z, with 1 event(s) written after it',
+    );
+    expect(line?.reading.detail).not.toContain('nothing outside this machine attests this record');
+    // And the checkpoint on the line is still the tail's HEAD — the one the two acts
+    // would file under — not the older one the sentence is about. The status is about
+    // the head; the dating says where the record's proof actually reaches.
+    expect(line?.checkpoint).toBe(
+      'f84396462713a5fd1fefd3a043cddb2eed81c00f5fead86f0474bfaa551c42e2',
+    );
+  });
+
+  it('counts the events the tail holds, so the reading can say what a dating misses', () => {
+    // The count the third world's sentence is built from. `setup` writes two memories
+    // over the founding events, and the listing takes the number from the enumeration
+    // it already ran rather than reading the tail a second time.
+    const ctx = setup();
+    const root = publicRoot(ctx);
+    const tail = readdirSync(join(root, 'tails'))[0] as string;
+    const held = tailsHeld(resolveTrees(ctx.cwd, ctx.env), catalogUpcasters());
+    expect(held.find((h) => h.tail === tail)?.standing.eventCount).toBeGreaterThan(1);
   });
 });
 
