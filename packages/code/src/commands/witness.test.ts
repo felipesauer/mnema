@@ -1,6 +1,6 @@
 /**
- * THE ACT AND THE READING AGREE ABOUT WHICH CHECKPOINT — which is the one thing this
- * verb can get wrong in a way nothing else notices.
+ * THE ACTS AND THE READING AGREE ABOUT WHICH CHECKPOINTS — which is the one thing these
+ * verbs can get wrong in a way nothing else notices.
  *
  * IT EXISTS BECAUSE A MUTATION FOUND NOTHING. `checkpointToWitness` decides the digest
  * an attestation is FILED UNDER, and `verify` looks for one under the checkpoint IT
@@ -10,11 +10,20 @@
  * directly, and the act had no case at all. The mutation is red now, and the reason it
  * is red is the first test below — the act's own file, read back by the verifier.
  *
+ * AND IT HAPPENED A SECOND TIME, one function over. `mnema witness upgrade` asked the
+ * same `checkpointToWitness` and so went back for at most one attestation — the head's —
+ * while the reading walked the whole tail, so a record with a request under an older
+ * checkpoint had `verify` reporting it in flight and `upgrade` reporting, in the same
+ * minute, that nothing had been asked about it. The whole suite was green over that too:
+ * every case here drove `stamp` or the listing, and no case drove `upgrade` past a record
+ * whose head was the thing that had been stamped. The cases below drive it past one.
+ *
  * NOTHING HERE REACHES THE NETWORK. The calendars and the block source are parameters
  * (`WitnessNetwork`), so what a calendar answers is this file's to choose — which is
  * also how the three states are driven: a promise, a block, and a refusal.
  */
 
+import { createHash } from 'node:crypto';
 import {
   cpSync,
   mkdirSync,
@@ -73,6 +82,20 @@ const WITNESSED_THEN_WRITTEN = fileURLToPath(
 /** The one tail that record holds. */
 const FROZEN_TAIL =
   '7e5a72fd0ea237237651690087e4a87133dab8b78847efadde778f633214cca4-05e27e636158e547a09e594545603717';
+
+/**
+ * The two checkpoints that record holds a real proof for — `19cd79b2…` covers seq 2..2
+ * and is the NEWER of them; `797d1de8…` covers seq 0..1. The head, `f8439646…` (seq
+ * 3..3), was never stamped, which is what makes the record the one the walk is about.
+ */
+const NEWER_STAMP = '19cd79b2bd85360bdcba5a812c48d92c633251aa40de6ceeda5a60402ecd2e73';
+const OLDER_STAMP = '797d1de8cd3eb8c8944a7b308f75ef04567de73702bd49742769e749c9770709';
+
+/** A block's id: the double-SHA-256 of its 80-byte header, read back to front. */
+function idOf(header: string): string {
+  const once = createHash('sha256').update(Buffer.from(header, 'hex')).digest();
+  return Buffer.from(createHash('sha256').update(once).digest()).reverse().toString('hex');
+}
 
 /** Every request a case made — what left the machine, in order. */
 interface Sent {
@@ -232,6 +255,7 @@ describe('going back for what has not confirmed', () => {
     const act = await runWitnessUpgrade(ctx, { fetch });
     expect(sent).toEqual([]);
     expect(act.ok && act.outcomes.map((o) => o.did)).toEqual(['skipped']);
+    expect(act.ok && act.outcomes[0]?.detail).toBe('nothing has been asked about this tail yet');
   });
 
   it('leaves the record PENDING while the calendar still has nothing', async () => {
@@ -243,6 +267,319 @@ describe('going back for what has not confirmed', () => {
     expect(act.ok && act.outcomes.map((o) => o.did)).toEqual(['waiting']);
     expect(verifyChainAt(publicRoot(ctx), catalogUpcasters()).witness).toBe('pending');
     expect(verifyChainAt(publicRoot(ctx), catalogUpcasters()).level).toBe('fully-signed');
+  });
+
+  it('goes back for a request filed under an OLDER checkpoint — the delivery’s case', async () => {
+    // THE DEFECT, in the words the two verbs printed about one disk in one minute:
+    // `verify` said an attestation had been requested and had not confirmed, and this
+    // act said `nothing has been asked about this checkpoint yet` — and skipped. The
+    // window is a working day: the two stamps this package's own fixture carries were
+    // asked for at 00:52 and served complete at 12:49, and 64 events under the head is
+    // one `mnema decision import`.
+    //
+    // Built by the product (A13): stamp, write, stamp, write. Nothing is placed by hand.
+    const ctx = setup();
+    const asked = network(() => promises());
+    await runWitnessStamp(ctx, { calendars: [CALENDAR], fetch: asked.fetch });
+    const older = checkpointToWitness({ root: publicRoot(ctx) }, tailOf(publicRoot(ctx)));
+    runMemory({ cwd: ctx.cwd, env: ctx.env }, { content: 'written while waiting' });
+    await runWitnessStamp(ctx, { calendars: [CALENDAR], fetch: asked.fetch });
+    const newer = checkpointToWitness({ root: publicRoot(ctx) }, tailOf(publicRoot(ctx)));
+    runMemory({ cwd: ctx.cwd, env: ctx.env }, { content: 'and again while waiting' });
+    // Both requests are now BELOW the head — the only thing that makes this the case.
+    const head = checkpointToWitness({ root: publicRoot(ctx) }, tailOf(publicRoot(ctx)));
+    expect(new Set([older, newer, head]).size).toBe(3);
+
+    const back = network(() => new Response(null, { status: 404 }));
+    const act = await runWitnessUpgrade(ctx, { fetch: back.fetch });
+    expect(act.ok).toBe(true);
+    if (!act.ok) return;
+    // The phrase IS the defect, so its absence is asserted rather than inferred.
+    for (const outcome of act.outcomes) {
+      expect(outcome.detail).not.toContain('nothing has been asked about this checkpoint yet');
+      expect(outcome.detail).not.toContain('nothing has been asked about this tail yet');
+    }
+    expect(act.outcomes.map((o) => o.did)).toEqual(['waiting', 'waiting']);
+    // Newest first, and each names the checkpoint it is about.
+    expect(act.outcomes[0]?.detail).toContain(newer);
+    expect(act.outcomes[1]?.detail).toContain(older);
+    // And both were really asked about: one calendar round per open request.
+    expect(back.sent.filter((s) => s.url.includes('/timestamp/'))).toHaveLength(2);
+  });
+
+  it('says the tail has no checkpoint rather than saying nothing at all', async () => {
+    // A tail with nothing sealed used to fall out of this act with NO outcome — the one
+    // path here that produced no sentence. It is the listing's own words for the state.
+    const ctx = setup();
+    const root = publicRoot(ctx);
+    rmSync(join(root, 'tails', tailOf(root), 'checkpoints.jsonl'));
+    const { fetch, sent } = network(() => new Error('nothing here should be called'));
+    const act = await runWitnessUpgrade(ctx, { fetch });
+    expect(sent).toEqual([]);
+    expect(act.ok && act.outcomes.map((o) => [o.did, o.detail])).toEqual([
+      ['skipped', 'the tail has no checkpoint to witness'],
+    ]);
+  });
+
+  it('does not go back to the network for a proof that is already complete', async () => {
+    // Network spent in silence is what this avoids, and the ecosystem's own client warns
+    // about the other half: `ots upgrade` writes a `.bak` before it replaces a proof,
+    // because overwriting one is a path with a trap in it. Driven on the frozen record
+    // because it is where a COMPLETE proof exists — nothing here can mine a block.
+    const ctx = setup();
+    cpSync(WITNESSED_THEN_WRITTEN, publicRoot(ctx), { recursive: true });
+    const witness = join(publicRoot(ctx), 'tails', FROZEN_TAIL, 'witness');
+    const before = new Map(
+      readdirSync(witness).map((n) => [n, readFileSync(join(witness, n))] as const),
+    );
+    const { fetch, sent } = network(() => new Error('nothing here should be called'));
+    const act = await runWitnessUpgrade(ctx, { fetch });
+    expect(sent).toEqual([]);
+    expect(act.ok).toBe(true);
+    if (!act.ok) return;
+    const mine = act.outcomes.filter((o) => o.tail === FROZEN_TAIL);
+    expect(mine.map((o) => [o.did, o.detail])).toEqual([
+      ['skipped', `checkpoint ${NEWER_STAMP} is already covered`],
+    ]);
+    // Neither the covered proof nor the one shadowed by it was rewritten.
+    expect(
+      new Map(readdirSync(witness).map((n) => [n, readFileSync(join(witness, n))] as const)),
+    ).toEqual(before);
+  });
+});
+
+/**
+ * WHAT A CALENDAR CAN SAY THAT ENDS ONE PROOF'S RETURN VISIT, written out in bytes.
+ *
+ * An `append` of 5000 bytes, then the ordinary "I am working on it". The reader accepts
+ * it — it is well-formed — and the WALK does not: a path may fold a message of at most
+ * 4096 bytes, so completing this proof throws where nothing catches it. It is the shape
+ * of any answer that parses and then cannot be carried through, and it is a calendar's
+ * to send: nothing this side chooses it.
+ *
+ *   f0        append
+ *   88 27     of 5000 bytes
+ *   00 × 5000 which are these
+ *   …         and then the vector above, unchanged
+ */
+const CALENDAR_ANSWER_THAT_CANNOT_BE_CARRIED = Buffer.concat([
+  Buffer.from('f08827', 'hex'),
+  Buffer.alloc(5000),
+  CALENDAR_ANSWER,
+]);
+
+describe('the two verbs, over one disk', () => {
+  /**
+   * Whether `verify` and `witness upgrade` can be made to contradict each other about
+   * whether anything was ever asked — which IS the defect, so it is a case and not a
+   * hope. The records are every shape this suite can build, plus the two frozen ones.
+   */
+  it('never says nothing was asked about a tail whose reading holds an attestation', async () => {
+    const ctx = setup();
+    const asked = network(() => promises());
+    // Four shapes in one tree: a tail nobody stamped (the machine-global one is left
+    // out), a tail with two requests below its head, and the frozen record's two real
+    // proofs. `verify` folds them; the listing and the act answer tail by tail.
+    await runWitnessStamp(ctx, { calendars: [CALENDAR], fetch: asked.fetch });
+    runMemory({ cwd: ctx.cwd, env: ctx.env }, { content: 'written while waiting' });
+    await runWitnessStamp(ctx, { calendars: [CALENDAR], fetch: asked.fetch });
+    runMemory({ cwd: ctx.cwd, env: ctx.env }, { content: 'and again' });
+    cpSync(WITNESSED_THEN_WRITTEN, publicRoot(ctx), { recursive: true });
+
+    const before = runWitnessList(ctx);
+    const { fetch } = network(() => new Response(null, { status: 404 }));
+    const act = await runWitnessUpgrade(ctx, { fetch });
+    expect(act.ok).toBe(true);
+    if (!act.ok) return;
+    expect(before.lines.length).toBeGreaterThan(1);
+    for (const line of before.lines) {
+      const mine = act.outcomes.filter((o) => o.tail === line.tail);
+      expect(mine.length, line.tail).toBeGreaterThan(0);
+      const saidNothingWasAsked = mine.some((o) => o.detail.includes('nothing has been asked'));
+      const holdsNothing =
+        line.reading.detail === 'nothing outside this machine attests this record';
+      // The IF AND ONLY IF is the whole property: the act may say nothing was asked
+      // exactly when the reading says nothing attests this record, and never otherwise.
+      expect(saidNothingWasAsked, line.tail).toBe(holdsNothing);
+    }
+    // And the verdict is on the same side of it: it reports a request in flight, so no
+    // outcome of the act may claim nothing was asked of the tail that carries it.
+    const verdict = verifyChainAt(publicRoot(ctx), catalogUpcasters());
+    expect(verdict.summary).toContain('PENDING, which is not coverage');
+    const waiting = before.lines.filter((l) => l.reading.status === 'pending');
+    expect(waiting).not.toEqual([]);
+    for (const line of waiting) {
+      for (const outcome of act.outcomes.filter((o) => o.tail === line.tail)) {
+        expect(outcome.detail).not.toContain('nothing has been asked');
+      }
+    }
+  });
+
+  it('does not move a reading it did not complete', async () => {
+    // Repeating the act over a calendar with nothing changes no sentence anywhere — the
+    // property the two verbs' agreement rests on between visits.
+    const ctx = setup();
+    const asked = network(() => promises());
+    await runWitnessStamp(ctx, { calendars: [CALENDAR], fetch: asked.fetch });
+    runMemory({ cwd: ctx.cwd, env: ctx.env }, { content: 'written while waiting' });
+    const before = runWitnessList(ctx).lines.map((l) => l.reading.detail);
+    const { fetch } = network(() => new Response(null, { status: 404 }));
+    await runWitnessUpgrade(ctx, { fetch });
+    expect(runWitnessList(ctx).lines.map((l) => l.reading.detail)).toEqual(before);
+  });
+
+  it('carries the proofs beside one it could not carry through at all', async () => {
+    // THE PARTIAL ANSWER. The product is append-only and says what it did rather than
+    // what it meant to: each proof is written the moment its own return visit is done,
+    // so the ones that went through are on the disk before the one that did not is even
+    // attempted — and the one that did not is a LINE, not a thrown act.
+    const ctx = setup();
+    const asked = network(() => promises());
+    const stamps: string[] = [];
+    for (const note of ['one', 'two', 'three', 'four']) {
+      await runWitnessStamp(ctx, { calendars: [CALENDAR], fetch: asked.fetch });
+      stamps.push(
+        checkpointToWitness({ root: publicRoot(ctx) }, tailOf(publicRoot(ctx))) as string,
+      );
+      runMemory({ cwd: ctx.cwd, env: ctx.env }, { content: `${note}, written while waiting` });
+    }
+    expect(new Set(stamps).size).toBe(4);
+
+    let visits = 0;
+    const { fetch } = network((url) => {
+      if (!url.includes('/timestamp/')) return new Response(null, { status: 404 });
+      visits += 1;
+      return visits === 2
+        ? new Response(CALENDAR_ANSWER_THAT_CANNOT_BE_CARRIED, { status: 200 })
+        : new Response(null, { status: 404 });
+    });
+    const act = await runWitnessUpgrade(ctx, { fetch });
+    expect(act.ok).toBe(true);
+    if (!act.ok) return;
+    // Four proofs, four lines, and the second one names what happened to it.
+    expect(act.outcomes.map((o) => o.did)).toEqual(['waiting', 'failed', 'waiting', 'waiting']);
+    expect(act.outcomes[1]?.detail).toContain(stamps[2] as string);
+    expect(act.outcomes[1]?.detail).toContain('could not be completed');
+    // And every proof is still on the disk, the one that failed included.
+    const witness = join(publicRoot(ctx), 'tails', tailOf(publicRoot(ctx)), 'witness');
+    expect(readdirSync(witness).sort()).toEqual(stamps.map((h) => `${h}.ots`).sort());
+  });
+});
+
+/**
+ * THE RETURN VISIT, REPLAYED ON REAL BYTES.
+ *
+ * Coverage cannot be fabricated: reading `covered` means folding a checkpoint digest
+ * along a merkle path into the merkle root of a block that was actually mined, and a
+ * test that could build that pair is a test that found a SHA-256 pre-image. So the two
+ * proofs are the frozen record's — asked of the public OpenTimestamps calendars by this
+ * product's own `stampCheckpoint`, carried by Bitcoin block 963937 — and the block
+ * source is replayed out of the very `.blocks` sidecars the fixture ships.
+ *
+ * The sidecars are removed IN A COPY, which is exactly the state a record is in between
+ * the calendar serving a complete proof and anybody fetching the headers for it: the
+ * `.ots` reaches a block, and this machine cannot check the claim. Neither frozen record
+ * is touched.
+ */
+describe('the return visit, over a record with two real proofs', () => {
+  /** The frozen record in a tree of its own, with the headers taken back out. */
+  function withoutHeaders(): {
+    ctx: ReturnType<typeof setup>;
+    witness: string;
+    heights: readonly number[];
+    headers: ReadonlyMap<number, string>;
+  } {
+    const ctx = setup();
+    cpSync(WITNESSED_THEN_WRITTEN, publicRoot(ctx), { recursive: true });
+    const witness = join(publicRoot(ctx), 'tails', FROZEN_TAIL, 'witness');
+    const headers = new Map<number, string>();
+    for (const name of readdirSync(witness).filter((n) => n.endsWith('.blocks'))) {
+      for (const line of readFileSync(join(witness, name), 'utf-8').split('\n')) {
+        if (line.trim() === '') continue;
+        const stored = JSON.parse(line) as { height: number; header: string };
+        headers.set(stored.height, stored.header);
+      }
+      rmSync(join(witness, name));
+    }
+    return { ctx, witness, heights: [...headers.keys()].sort(), headers };
+  }
+
+  /** A block source that answers out of the record's own sidecars. */
+  function blocks(headers: ReadonlyMap<number, string>): (url: string) => Response | Error {
+    return (url) => {
+      const height = /\/block-height\/(\d+)$/.exec(url);
+      if (height !== null) {
+        const known = headers.has(Number(height[1]));
+        // The id a block is looked up by is the double-SHA-256 of its own header,
+        // reversed — computed here rather than invented, so nothing in this case is a
+        // value the world could not have produced.
+        return known
+          ? new Response(idOf(headers.get(Number(height[1])) as string), { status: 200 })
+          : new Response(null, { status: 404 });
+      }
+      const header = /\/block\/([0-9a-f]{64})\/header$/.exec(url);
+      for (const hex of headers.values()) {
+        if (header !== null && idOf(hex) === header[1]) return new Response(hex, { status: 200 });
+      }
+      return new Response(null, { status: 404 });
+    };
+  }
+
+  it('stops at the NEWEST proof that confirms, and never asks about the one below it', async () => {
+    // THE ORDER AND THE LIMIT, in numbers. Everything under a confirmed attestation
+    // dates a smaller prefix at a later instant, so no reading of this record would ever
+    // quote it — and a request for it is network spent on an answer nobody reads.
+    const { ctx, witness, heights, headers } = withoutHeaders();
+    const { fetch, sent } = network(blocks(headers));
+    const act = await runWitnessUpgrade(ctx, { fetch });
+    expect(act.ok).toBe(true);
+    if (!act.ok) return;
+    const mine = act.outcomes.filter((o) => o.tail === FROZEN_TAIL);
+    expect(mine.map((o) => o.did)).toEqual(['completed']);
+    expect(mine[0]?.detail).toBe(`the attestation over checkpoint ${NEWER_STAMP} has confirmed`);
+    // The older proof was never opened: its headers are still gone.
+    expect(readdirSync(witness).sort()).toEqual(
+      [`${NEWER_STAMP}.blocks`, `${NEWER_STAMP}.ots`, `${OLDER_STAMP}.ots`].sort(),
+    );
+    // One trip per block the ONE proof reaches, and each block asked for exactly once.
+    const asked = sent.filter((s) => s.url.includes('/block-height/')).map((s) => s.url);
+    expect(asked).toHaveLength(heights.length);
+    expect(new Set(asked).size).toBe(heights.length);
+  });
+
+  it('puts the record back in the sentence its own sidecars produce', async () => {
+    // What the act is FOR, end to end: the dating the fixture documents is reached from
+    // a record that had lost it, by going back for it.
+    const { ctx, headers } = withoutHeaders();
+    const { fetch } = network(blocks(headers));
+    await runWitnessUpgrade(ctx, { fetch });
+    const line = runWitnessList(ctx).lines.find((l) => l.tail === FROZEN_TAIL);
+    expect(line?.reading.detail).toBe(
+      'the last attested checkpoint is dated by Bitcoin block 963937 at ' +
+        '2026-08-25T01:47:34.000Z, with 1 event(s) written after it',
+    );
+  });
+
+  it('carries every proof through when NONE of them confirms, and damages none', async () => {
+    // The other end of the same decision: K open requests cost K rounds only in the
+    // world where none confirms — which is the world where none would have helped.
+    const { ctx, witness } = withoutHeaders();
+    const before = new Map(
+      readdirSync(witness).map((n) => [n, readFileSync(join(witness, n))] as const),
+    );
+    const { fetch, sent } = network(() => new Response(null, { status: 404 }));
+    const act = await runWitnessUpgrade(ctx, { fetch });
+    expect(act.ok).toBe(true);
+    if (!act.ok) return;
+    const mine = act.outcomes.filter((o) => o.tail === FROZEN_TAIL);
+    expect(mine.map((o) => o.did)).toEqual(['waiting', 'waiting']);
+    expect(mine[0]?.detail).toContain(NEWER_STAMP);
+    expect(mine[1]?.detail).toContain(OLDER_STAMP);
+    // Both proofs were asked about, and both came back as they went in.
+    expect(sent.filter((s) => s.url.includes('/block-height/')).length).toBeGreaterThan(2);
+    expect(
+      new Map(readdirSync(witness).map((n) => [n, readFileSync(join(witness, n))] as const)),
+    ).toEqual(before);
   });
 });
 
@@ -266,13 +603,16 @@ describe('the reading beside the two acts', () => {
     expect(listing.lines[0]?.checkpoint).toMatch(/^[0-9a-f]{64}$/);
   });
 
-  it('names the SAME head the two acts file under', () => {
-    // The listing walks the tail's whole checkpoint file now, because an attestation
-    // over an older checkpoint still dates what came before it — so it no longer takes
-    // its head from `checkpointToWitness`, which is what the two acts still use. The
-    // two derivations have to agree or the act files a proof where the listing does
-    // not look, and the person who just stamped is shown `not covered`. Asserted here
-    // rather than assumed, since it is no longer true by construction.
+  it('names the SAME head the act that ASKS files under', () => {
+    // The listing walks the tail's whole checkpoint file, because an attestation over an
+    // older checkpoint still dates what came before it — so it does not take its head
+    // from `checkpointToWitness`. `stamp` is the one act that still does, and it is the
+    // only one that should: it is the act that files something NEW. (`upgrade` asked it
+    // too, once, and that was the defect — it completes proofs already on the disk, and
+    // asking where a new one would go is how it came to miss every one of them.) The two
+    // derivations have to agree or the act files a proof where the listing does not look,
+    // and the person who just stamped is shown `not covered`. Asserted here rather than
+    // assumed, since it is no longer true by construction.
     const ctx = setup();
     const root = publicRoot(ctx);
     const tail = readdirSync(join(root, 'tails'))[0] as string;
@@ -301,9 +641,9 @@ describe('the reading beside the two acts', () => {
         '2026-08-25T01:47:34.000Z, with 1 event(s) written after it',
     );
     expect(line?.reading.detail).not.toContain('nothing outside this machine attests this record');
-    // And the checkpoint on the line is still the tail's HEAD — the one the two acts
-    // would file under — not the older one the sentence is about. The status is about
-    // the head; the dating says where the record's proof actually reaches.
+    // And the checkpoint on the line is still the tail's HEAD — the one `stamp` would
+    // file under — not the older one the sentence is about. The status is about the
+    // head; the dating says where the record's proof actually reaches.
     expect(line?.checkpoint).toBe(
       'f84396462713a5fd1fefd3a043cddb2eed81c00f5fead86f0474bfaa551c42e2',
     );

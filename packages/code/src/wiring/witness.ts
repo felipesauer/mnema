@@ -7,6 +7,11 @@
  * cannot decide whether to ask for one or to go back for one, and the two acts say
  * nothing about the tails they did not touch.
  *
+ * THE READING AND `upgrade` WALK THE SAME TAIL, which is a property of this group and
+ * not an accident of two implementations agreeing. They did not, once: the bare verb
+ * showed a request in flight and `upgrade` — one line down the same help — reported
+ * that nothing had been asked about it and skipped.
+ *
  * IT IS THE ONE VERB OF THIS SURFACE THAT SPEAKS TO SOMEBODY ELSE. Every other verb
  * answers out of the record or out of this machine's own files; these two acts send a
  * 32-byte digest to a public calendar and, on the way back, ask a block source for an
@@ -100,7 +105,7 @@ export function registerWitness(program: Command, wiring: Wiring): Declared {
 
   witness
     .command('upgrade')
-    .description('go back for the attestations this record is waiting on')
+    .description('go back for every attestation this record is waiting on (T3)')
     .option('--calendar <url...>', 'the calendars to ask, when the defaults are not the ones used')
     .option(
       '--blocks <url>',
@@ -111,6 +116,13 @@ export function registerWitness(program: Command, wiring: Wiring): Declared {
     .addHelpText(
       'after',
       [
+        '',
+        'It goes back for EVERY request the tail still has open, not only the newest one.',
+        'Proofs stay under the checkpoint they were filed under and the head moves on, so a',
+        'request made this morning is usually no longer the head by the time a calendar has',
+        'an answer for it. Newest first, and it stops at the first one that confirms: below',
+        'that point a proof dates less of the record at a later instant, so no reading would',
+        'ever quote it. One that cannot be carried through is reported and the rest go on.',
         '',
         'Safe to repeat: a calendar with nothing yet answers so, and the proof comes back',
         'as it went in. A header this fetches is checked against the block it claims to be',

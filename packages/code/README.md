@@ -837,7 +837,17 @@ The answer is a **promise, not a proof**. It becomes one when a Bitcoin block ca
 it, minutes to hours later, and until then `verify` says `PENDING`, which is not
 coverage. `mnema witness upgrade` is the return visit — safe to repeat, and it fetches
 the 80-byte block header the proof lands in so that every verification after it is
-arithmetic on this machine:
+arithmetic on this machine.
+
+It goes back for **every** request the tail still has open, not only the newest one, and
+that is not a refinement: a proof stays under the checkpoint it was filed under while the
+head moves on every 64 events, so by the time a calendar has an answer the request is
+usually somewhere else entirely. Asking only about the head meant this verb answered
+`nothing has been asked about this checkpoint yet` about records `verify` was reporting a
+request in flight for — the same product contradicting itself about the same disk. It
+walks newest first and stops at the first attestation that confirms, because a proof below
+one that confirmed dates less of the record at a later instant, and no reading would ever
+quote it:
 
 ```sh
 mnema witness upgrade
