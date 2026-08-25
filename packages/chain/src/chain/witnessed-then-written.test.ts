@@ -127,6 +127,56 @@ describe('a record that was dated, and then written to', () => {
     expect(result.uncheckpointedEvents).toBe(0);
   });
 
+  it('says a request is in flight when the headers its proofs need are missing', () => {
+    // THE STATE BETWEEN THE ANCHOR AND THE HEADER, on this record's real bytes. The
+    // `.blocks` sidecar is what makes the reading offline — a proof ends at "the merkle
+    // root of block N", and without N's header that is a claim rather than arithmetic —
+    // and a record lacks it whenever `witness --upgrade` ran while the block source
+    // refused, which is the branch `completeWitness` returns `complete: false` from.
+    // The proofs themselves are untouched: the same real attestations, still confirmed
+    // in block 963937, read here by a machine that cannot check the block.
+    //
+    // Before this delivery the walk dropped both and the record answered the words of a
+    // record nobody had ever stamped.
+    for (const hash of [OLDER, NEWER]) rmSync(witnessBlocksPath({ root }, TAIL, hash));
+    const result = verify(root, catalogUpcasters());
+    expect(clauseOf(result)).toBe(
+      'external witness (T3): PENDING, which is not coverage — an attestation was ' +
+        'requested from https://alice.btc.calendar.opentimestamps.org and has not confirmed',
+    );
+    expect(result.summary).not.toContain('nothing outside this machine attests this record');
+  });
+
+  it('is still NOT coverage with only the request showing — the level does not move', () => {
+    // The three places a promise could count, on a record that holds two of them: the
+    // status, the level, and the requirement an exit code is derived from. The level is
+    // asserted to be the one this record earns with its witness directory EMPTY, which
+    // is the comparison that cannot be satisfied by a promise counting for a little.
+    for (const hash of [OLDER, NEWER]) rmSync(witnessBlocksPath({ root }, TAIL, hash));
+    const waiting = verify(root, catalogUpcasters());
+    expect(waiting.witness).toBe('pending');
+    expect(meetsRequirement(waiting.level, 'witnessed')).toBe(false);
+    for (const hash of [OLDER, NEWER]) rmSync(witnessProofPath({ root }, TAIL, hash));
+    expect(waiting.level).toBe(verify(root, catalogUpcasters()).level);
+  });
+
+  it('takes the NEWEST request still open, exactly as it takes the newest dating', () => {
+    // With only the newer proof left headerless, the reading is about that one; with
+    // only the older, about the older. Same block here, so what distinguishes them is
+    // that the walk CHOSE rather than landed — the newer proof reaches block 963989 as
+    // well, which the older one does not.
+    rmSync(witnessBlocksPath({ root }, TAIL, NEWER));
+    const result = verify(root, catalogUpcasters());
+    // The older checkpoint is still dated, and the newer one is still waiting: both
+    // facts, in one sentence, with the date belonging to the confirmed attestation.
+    expect(clauseOf(result)).toBe(
+      `external witness (T3): PENDING, which is not coverage — the last attested checkpoint ` +
+        `is dated by Bitcoin block ${BLOCK} at ${ATTESTED_AT}, with 2 event(s) written after ` +
+        `it, and an attestation was requested from ` +
+        `https://alice.btc.calendar.opentimestamps.org and has not confirmed`,
+    );
+  });
+
   it('says the untouched words once its proofs are gone from the copy', () => {
     // The non-regression, from the other direction: the walk may only ever ADD a
     // sentence to a record that holds a proof. Strip both proofs out of this sandbox

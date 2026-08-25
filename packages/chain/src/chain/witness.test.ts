@@ -25,6 +25,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { BLOCK_HEADER_BYTES } from './bitcoin.js';
 import type { ChainLayout } from './layout.js';
 import { witnessBlocksPath, witnessProofPath } from './layout.js';
+import { meetsRequirement, provenLevel } from './level.js';
 import { serializeOtsProof } from './ots.js';
 import {
   readStoredWitness,
@@ -526,6 +527,260 @@ describe('a tail whose attestation is over an OLDER checkpoint', () => {
 
   it('answers null when no checkpoint was offered at all', () => {
     expect(witnessOfTail(layout, TAIL, { checkpoints: [], events: 0 })).toBeNull();
+  });
+});
+
+describe('a tail whose only proof is a request still in flight', () => {
+  /**
+   * The delivery's case, and the state every stamp is in for its first hours.
+   *
+   * The bytes are the REAL calendar answer (`witness-vectors.ts`) filed under an OLDER
+   * checkpoint, with the head holding nothing. Before this, the walk met that file,
+   * saw it was not coverage, and dropped it — so a record holding a proof somebody had
+   * paid for answered the words of a record nobody had ever stamped, and the act that
+   * follows from those words is to stamp again.
+   */
+  const OLDER = PENDING_PROOF_DIGEST;
+
+  beforeEach(() => {
+    writeWitness(layout, TAIL, OLDER, { proof: PENDING });
+  });
+
+  /** The tail with the request at seq 1 and two unstamped checkpoints above it. */
+  const waiting = (): WitnessReading =>
+    witnessOfTail(layout, TAIL, {
+      checkpoints: [
+        { hash: OLDER, toSeq: 1 },
+        { hash: 'a'.repeat(64), toSeq: 2 },
+        { hash: 'b'.repeat(64), toSeq: 3 },
+      ],
+      events: 4,
+    }) as WitnessReading;
+
+  it('does NOT say that nothing attests this record — the sentence that was the defect', () => {
+    // Asserted as an ABSENCE, because the sentence is the defect and not a wording
+    // problem: it makes `nobody asked` and `somebody asked and we are waiting`
+    // indistinguishable, and only one of them is answered by stamping.
+    expect(waiting().detail).not.toContain('nothing outside this machine attests this record');
+  });
+
+  it('names the calendar the request is with, which is what says WAIT instead of STAMP', () => {
+    expect(waiting().detail).toBe(
+      'an attestation was requested from https://alice.btc.calendar.opentimestamps.org ' +
+        'and has not confirmed',
+    );
+  });
+
+  it('is PENDING, and the level a record earns with it is the level with no witness', () => {
+    // `pending` and not a fourth state: `WITNESS_COVERS` in level.ts is where it says
+    // it is not coverage, and it has said so since the delivery that fixed the
+    // opposite mistake. Showing a promise may not reopen that — so the level, and the
+    // exit code derived from it, are asserted to be what a record with NOTHING earns.
+    const reading = waiting();
+    expect(reading.status).toBe('pending');
+    const facts = { unreadable: false, hasIssue: false, signedEvents: 4, uncheckpointedEvents: 0 };
+    expect(provenLevel({ ...facts, witness: reading.status })).toBe(
+      provenLevel({ ...facts, witness: 'not-covered' }),
+    );
+    expect(meetsRequirement(provenLevel({ ...facts, witness: reading.status }), 'witnessed')).toBe(
+      false,
+    );
+  });
+
+  it('carries no dating, so nothing downstream can read a promise as a date', () => {
+    // The type says it and this pins it: `datedThrough` is the only way a fact about
+    // an instant leaves this function, and a promise has no instant to give.
+    const reading = waiting();
+    expect(reading.datedThrough).toBeUndefined();
+    expect(reading.at).toBeUndefined();
+    expect(reading.block).toBeUndefined();
+  });
+
+  it('takes the NEWEST request still open, not the first one it can find', () => {
+    // Two open requests over two checkpoints. The newer one is the one whose
+    // confirmation would date the most of the record, which is the same rule the walk
+    // follows for confirmed attestations — a proof anchored in a block whose header
+    // this record does not carry is `pending` too, and it is the newer here.
+    writeWitness(layout, TAIL, BLOCK_800000_MERKLE_ROOT, {
+      proof: anchoredProof(BLOCK_800000_MERKLE_ROOT),
+    });
+    const reading = witnessOfTail(layout, TAIL, {
+      checkpoints: [
+        { hash: OLDER, toSeq: 1 },
+        { hash: BLOCK_800000_MERKLE_ROOT, toSeq: 2 },
+        { hash: 'b'.repeat(64), toSeq: 3 },
+      ],
+      events: 4,
+    });
+    expect(reading?.detail).toBe(
+      `anchored in Bitcoin block ${BLOCK_800000_HEIGHT}, whose header this record does not carry`,
+    );
+  });
+
+  it('says the request BESIDE a dating, and the date stays the confirmed one’s', () => {
+    // The composition, decided rather than defaulted. A record dated to an old point
+    // with a newer request in flight belongs to somebody who has already done the
+    // right thing; publishing only the dating would tell them their head is undated
+    // and send them to stamp — the act this exists to prevent. And the frontier does
+    // not move: the dating is the CONFIRMED attestation's, to the second.
+    writeWitness(layout, TAIL, BLOCK_800000_MERKLE_ROOT, {
+      proof: anchoredProof(BLOCK_800000_MERKLE_ROOT),
+      headers: new Map([[BLOCK_800000_HEIGHT, HEADER]]),
+    });
+    const reading = witnessOfTail(layout, TAIL, {
+      checkpoints: [
+        { hash: BLOCK_800000_MERKLE_ROOT, toSeq: 0 },
+        { hash: OLDER, toSeq: 1 },
+        { hash: 'b'.repeat(64), toSeq: 3 },
+      ],
+      events: 4,
+    });
+    expect(reading?.detail).toBe(
+      `the last attested checkpoint is dated by Bitcoin block ${BLOCK_800000_HEIGHT} at ` +
+        `${new Date(BLOCK_800000_TIME * 1000).toISOString()}, with 3 event(s) written after it, ` +
+        'and an attestation was requested from https://alice.btc.calendar.opentimestamps.org ' +
+        'and has not confirmed',
+    );
+    expect(reading?.datedThrough).toEqual({
+      at: BLOCK_800000_TIME,
+      block: BLOCK_800000_HEIGHT,
+      after: 3,
+    });
+  });
+
+  it('keeps a FINDING about the head’s own file in front of the request', () => {
+    // The order is a refusal first and a promise last. A refusal about the head's own
+    // file is a forgery signal, and a promise proves nothing — burying the first under
+    // the second would be worse than the silence this removes.
+    writeWitness(layout, TAIL, 'c'.repeat(64), { proof: Buffer.from('not a proof') });
+    const reading = witnessOfTail(layout, TAIL, {
+      checkpoints: [
+        { hash: OLDER, toSeq: 1 },
+        { hash: 'c'.repeat(64), toSeq: 2 },
+      ],
+      events: 4,
+    });
+    expect(reading?.detail).toBe(
+      'the stored proof is unreadable: opentimestamps: ran off the end, and an ' +
+        'attestation was requested from https://alice.btc.calendar.opentimestamps.org ' +
+        'and has not confirmed',
+    );
+    // And the head's refusal keeps the status: a file this machine refuses is a weaker
+    // fact than a request nobody has answered.
+    expect(reading?.status).toBe('not-covered');
+  });
+
+  it('says the head’s OWN request once, and not a second time from below', () => {
+    // The head's promise is already the sentence; the walk collects one from BELOW the
+    // head only. Said twice, one file's words would occupy the line two times over.
+    const reading = witnessOfTail(layout, TAIL, {
+      checkpoints: [{ hash: OLDER, toSeq: 3 }],
+      events: 4,
+    });
+    expect(reading?.detail).toBe(
+      'an attestation was requested from https://alice.btc.calendar.opentimestamps.org ' +
+        'and has not confirmed',
+    );
+  });
+
+  it('leaves the words of a record nobody stamped exactly as they were', () => {
+    // The non-regression, from the other side: the walk may only ever ADD a sentence
+    // to a record that holds a file. With nothing on the disk the answer is the one
+    // every reader of this product has matched on, byte for byte.
+    const reading = witnessOfTail(layout, 'unstamped-1', {
+      checkpoints: [
+        { hash: OLDER, toSeq: 1 },
+        { hash: 'a'.repeat(64), toSeq: 3 },
+      ],
+      events: 4,
+    });
+    expect(reading).toEqual({
+      status: 'not-covered',
+      detail: 'nothing outside this machine attests this record',
+      absent: true,
+    });
+  });
+});
+
+describe('a promise beside another tail', () => {
+  const covered = BLOCK_800000_MERKLE_ROOT;
+
+  /** Files the block-800000 attestation for a tail, so that tail reads as dated. */
+  const dating = (tail: string): void => {
+    writeWitness(layout, tail, covered, {
+      proof: anchoredProof(covered),
+      headers: new Map([[BLOCK_800000_HEIGHT, HEADER]]),
+    });
+  };
+
+  it('never lets the DATING speak for a chain whose other tail has nothing confirmed', () => {
+    // FOUND BY A PROBE OF THIS DELIVERY, and it is the overstatement the fold exists to
+    // prevent. The strength ladder says `pending` outranks `not-covered`, which is true
+    // of absence → promise → coverage and false of the question the sentence answers:
+    // one tail here holds a real Bitcoin anchor and the other holds nothing but a
+    // request, and the chain was publishing the anchor for both.
+    dating('a-1');
+    writeWitness(layout, 'b-2', PENDING_PROOF_DIGEST, { proof: PENDING });
+    const witness = witnessOfChain(
+      layout,
+      new Map([
+        ['a-1', { checkpoints: [{ hash: covered, toSeq: 0 }], events: 3 }],
+        ['b-2', { checkpoints: [{ hash: PENDING_PROOF_DIGEST, toSeq: 0 }], events: 1 }],
+      ]),
+    );
+    expect(witness.detail).not.toContain('dated by Bitcoin block');
+    expect(witness.detail).toContain('has not confirmed');
+    expect(witness.status).toBe('pending');
+    // The per-tail truth is untouched — the dating is still true of the tail that has it.
+    expect(witness.tails.find((t) => t.tail === 'a-1')?.reading.detail).toContain(
+      'dated by Bitcoin block',
+    );
+  });
+
+  it('never lets the ABSENCE speak for a chain that holds a request in flight', () => {
+    // The same false sentence one level up, and the narrower predicate that let it
+    // through: the guard used to ask whether some tail was DATED, so a promise beside
+    // an unstamped tail published `nothing outside this machine attests this record`
+    // over a record with a proof in its tree.
+    writeWitness(layout, 'b-2', PENDING_PROOF_DIGEST, { proof: PENDING });
+    const witness = witnessOfChain(
+      layout,
+      new Map([
+        ['a-1', { checkpoints: [{ hash: 'a'.repeat(64), toSeq: 0 }], events: 1 }],
+        ['b-2', { checkpoints: [{ hash: PENDING_PROOF_DIGEST, toSeq: 0 }], events: 1 }],
+      ]),
+    );
+    expect(witness.detail).not.toContain('nothing outside this machine attests this record');
+    expect(witness.detail).toBe('tail a-1 holds no attestation');
+    expect(witness.status).toBe('not-covered');
+  });
+
+  it('keeps the untouched words when NO tail holds anything at all', () => {
+    // The other half of the case above: with nothing anywhere in the tree, the claim
+    // about everything is true, and it is the one sentence this delivery may not move.
+    const witness = witnessOfChain(
+      layout,
+      new Map([
+        ['a-1', { checkpoints: [{ hash: 'a'.repeat(64), toSeq: 0 }], events: 1 }],
+        ['b-2', { checkpoints: [{ hash: 'b'.repeat(64), toSeq: 0 }], events: 1 }],
+      ]),
+    );
+    expect(witness.detail).toBe('nothing outside this machine attests this record');
+  });
+
+  it('is never COVERED because a tail is waiting', () => {
+    // A promise may not raise the chain past the tail that has nothing. Driven with
+    // the promise on the STRONGER-looking side, since that is the direction a fold
+    // ordered by the ladder alone gets wrong.
+    writeWitness(layout, 'b-2', PENDING_PROOF_DIGEST, { proof: PENDING });
+    const witness = witnessOfChain(
+      layout,
+      new Map([
+        ['a-1', { checkpoints: [{ hash: 'a'.repeat(64), toSeq: 0 }], events: 1 }],
+        ['b-2', { checkpoints: [{ hash: PENDING_PROOF_DIGEST, toSeq: 0 }], events: 1 }],
+      ]),
+    );
+    expect(witness.status).not.toBe('covered');
   });
 });
 
