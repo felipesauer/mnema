@@ -120,13 +120,10 @@ export {
 // `witnessOfChain` stays inside: the verifier is its only caller, and an export nothing
 // calls is a value with no reason to be a contract.
 export {
-  type AttestedReading,
   checkpointToWitness,
-  type DatedThrough,
   type ProvenCheckpoint,
   readStoredWitness,
   readWitness,
-  type UnattestedReading,
   type WitnessedTail,
   type WitnessReading,
   witnessOfTail,
