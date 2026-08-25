@@ -24,11 +24,13 @@
  *   - T3 (external witness): the layer that is not local by definition, and the
  *     only one that catches the party who HOLDS the key and rebuilds the whole
  *     chain from nothing. It is read off the disk, never off the network: the
- *     record stores an attestation over the digest of the checkpoint each tail was
- *     proven through, plus the block header that attestation lands in, and this
- *     file folds them to the weakest (witness.ts). A record nobody stamped answers
+ *     record stores attestations over the digests of the checkpoints each tail was
+ *     proven over, plus the block headers those attestations land in, and this file
+ *     folds them to the weakest (witness.ts). A record nobody stamped answers
  *     `not-covered` and reads exactly as it always did; a request that has not
- *     confirmed answers `pending`, which is NOT coverage.
+ *     confirmed answers `pending`, which is NOT coverage; and a record whose
+ *     attestation is over an OLDER checkpoint says so, with the date and with how
+ *     many events fall outside it.
  *
  * WHAT EVERY RECOMPUTATION ABOVE IS OVER. Reading a stored line lifts its event
  * through the registered upcasters, so the event this file holds may be the
@@ -108,7 +110,12 @@ import { UnreadableLineError } from './lines.js';
 import { listPublicKeyFingerprints, listTails, readTail, readTailCheckpoints } from './store.js';
 import { parseTailProof, verifyTailProof } from './tailproof.js';
 import { type TailWaiver, tailWaiversIn, waiversForKey } from './waiver.js';
-import { type ChainWitness, witnessOfChain } from './witness.js';
+import {
+  type ChainWitness,
+  type ProvenCheckpoint,
+  type WitnessedTail,
+  witnessOfChain,
+} from './witness.js';
 
 export type { WitnessStatus } from './level.js';
 
@@ -310,11 +317,12 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
   const entriesByTail = new Map<string, readonly Entry[]>();
   const issuesByTail = new Map<string, TailIssue[]>();
   const checkpointedByTail = new Map<string, number>();
-  // The checkpoint each tail was proven THROUGH — the one an external attestation
-  // would be filed under. Held per tail because T3 is folded over all of them at
-  // once, and a tail whose checkpoints did not verify carries a null rather than
-  // being left out, so the fold sees every tail there is.
-  const verifiedThrough = new Map<string, string | null>();
+  // The checkpoints each tail was PROVEN over, and how many events it holds — what an
+  // external attestation would be filed under, and what the undated remainder is
+  // counted against. Held per tail because T3 is folded over all of them at once, and
+  // a tail whose checkpoints did not verify carries an empty list rather than being
+  // left out, so the fold sees every tail there is.
+  const provenTails = new Map<string, WitnessedTail>();
   const notes: PartialFinalLineNote[] = [];
   let unreadable = false;
 
@@ -337,7 +345,7 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
       unreadable = true;
       entriesByTail.set(tail, []);
       checkpointedByTail.set(tail, -1);
-      verifiedThrough.set(tail, null);
+      provenTails.set(tail, { checkpoints: [], events: 0 });
       continue;
     }
     const entries = read.entries;
@@ -369,7 +377,7 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
     verifyHashChain(tail, entries, issues);
     const coverage = verifyCheckpoints(layout, tail, entries, checkpoints, issues);
     checkpointedByTail.set(tail, coverage.covered);
-    verifiedThrough.set(tail, coverage.through);
+    provenTails.set(tail, { checkpoints: coverage.proven, events: entries.length });
     uncheckpointed += entries.length - (coverage.covered + 1);
   }
 
@@ -407,11 +415,11 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
 
   const ok = allIssues.length === 0;
   const fullySigned = ok && uncheckpointed === 0;
-  // T3, read off the disk and never off the network: the attestation the record
-  // stores over the checkpoint each tail was proven through, folded to the weakest
+  // T3, read off the disk and never off the network: the newest attestation the
+  // record stores over a checkpoint each tail was proven over, folded to the weakest
   // (witness.ts). A record that was never stamped answers `not-covered`, exactly as
   // it did when nothing could answer anything else.
-  const witnessed = witnessOfChain(layout, verifiedThrough);
+  const witnessed = witnessOfChain(layout, provenTails);
   const witness: WitnessStatus = witnessed.status;
   // Events an actually-verified checkpoint covers. Zero is the state the old
   // summary called `verified (T1/T2/T4)`: no signature was checked, on any tail.
@@ -652,21 +660,28 @@ function verifyHashChain(tail: string, entries: readonly Entry[], issues: TailIs
  * covered by a verified checkpoint (-1 if none).
  */
 /**
- * How far a tail's checkpoints VERIFIED: the last seq they cover, and the hash of
- * the last one that actually checked out.
+ * How far a tail's checkpoints VERIFIED: the last seq they cover, and every
+ * checkpoint that actually checked out, in the order they cover the events.
  *
- * The hash travels because T3 is asked about EXACTLY that checkpoint (witness.ts):
- * an attestation is filed under the digest of a checkpoint's signed message, so a
- * verifier looking for one has to name the checkpoint it just proved rather than
- * the last line of a file it has not judged. Returning the seq alone would have
- * left the witness reading to recompute which checkpoint was the good one, which is
- * a second opinion about the thing this function is the authority on.
+ * THE HASHES TRAVEL because T3 is asked about EXACTLY these checkpoints
+ * (witness.ts): an attestation is filed under the digest of a checkpoint's signed
+ * message, so a verifier looking for one has to name checkpoints it proved rather
+ * than lines of a file it has not judged. Returning the seq alone would leave the
+ * witness reading to recompute which ones were good, which is a second opinion about
+ * the thing this function is the authority on.
+ *
+ * IT USED TO BE ONE HASH — the last that verified — and the premise under that was
+ * *an attestation over an earlier checkpoint dates what came before it and says
+ * nothing about what came after, so only the last one is worth asking about*. The
+ * second clause is true; the conclusion is not, and it made the product answer
+ * `nothing outside this machine attests this record` about records holding a valid
+ * attestation. So the list travels, and {@link witnessOfTail} walks it.
  */
 interface CheckpointCoverage {
   /** Highest seq covered by a verified checkpoint, or -1 if none. */
   readonly covered: number;
-  /** Hash of the last VERIFIED checkpoint, or null if none verified. */
-  readonly through: string | null;
+  /** Every checkpoint that verified, oldest first — empty if none did. */
+  readonly proven: readonly ProvenCheckpoint[];
 }
 
 function verifyCheckpoints(
@@ -677,6 +692,7 @@ function verifyCheckpoints(
   issues: TailIssue[],
 ): CheckpointCoverage {
   const checkpoints = [...stored].sort((a, b) => a.fromSeq - b.fromSeq);
+  const proven: ProvenCheckpoint[] = [];
   let covered = -1;
   let expectedPrev: string | null = null;
 
@@ -790,11 +806,12 @@ function verifyCheckpoints(
     }
     covered = checkpoint.toSeq;
     expectedPrev = checkpointHash(checkpoint);
+    proven.push({ hash: expectedPrev, toSeq: checkpoint.toSeq });
   }
-  // `expectedPrev` IS the hash of the last checkpoint that verified — it is set at
-  // the bottom of the loop and only there, so a checkpoint that took any of the
-  // refusals above never becomes the one a witness is looked for under.
-  return { covered, through: expectedPrev };
+  // `proven` is APPENDED TO at the bottom of the loop and only there, so a checkpoint
+  // that took any of the refusals above never becomes one a witness is looked for
+  // under — the property the single hash carried before, over the whole run of them.
+  return { covered, proven };
 }
 
 /**
@@ -915,6 +932,15 @@ function verdictClauses(facts: VerdictFacts): readonly [VerdictClause, ...Verdic
  * because that is the sentence somebody reads at the one moment they are most likely
  * to assume otherwise: they have just asked for an attestation and the request
  * succeeded.
+ *
+ * THE THIRD WORLD ARRIVES THROUGH THE DETAIL AND NOT THROUGH A CLAUSE OF ITS OWN. A
+ * record dated to a point, with events written after it, reads `not covered` here —
+ * because it is not covered, and because the count after the date is what stops the
+ * sentence being read as coverage — and the dating that used to be silently dropped
+ * is the detail. The clause list is the verdict's sentence: adding one to it would
+ * change what every reader of this product matches on, and there is nothing here
+ * that a clause could say and the detail cannot. See `witnessOfTail` in witness.ts,
+ * which is where the three worlds are decided.
  */
 function witnessClause(witness: ChainWitness): string {
   const said: Readonly<Record<WitnessStatus, string>> = {

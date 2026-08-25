@@ -138,6 +138,20 @@ describe('chain — write then verify (happy path, T1/T2/T4)', () => {
     expect(result.summary).not.toMatch(/chain intact/i);
   });
 
+  it('says the untouched words, byte for byte, for a record with a checkpoint and no witness', () => {
+    // BYTE FOR BYTE, and as a CLAUSE rather than as a substring of the line. The
+    // reading learned to walk back to older attestations, and the one thing that walk
+    // may never do is change what a record with no attestation anywhere says — those
+    // are the words every reader of this product has matched on. A `toMatch` goes on
+    // passing with a whole sentence appended after the words it looked for, which is
+    // exactly the change this delivery makes to the record NEXT to this one.
+    writeSome(3, { checkpointEvery: 1 });
+    const result = verify(root);
+    expect(result.clauses.find((clause) => clause.of === 'witness')?.text).toBe(
+      'external witness (T3): not covered — nothing outside this machine attests this record',
+    );
+  });
+
   it('reads the witness off the DISK and lets it reach the verdict', () => {
     // THE ELO. A status that never travels from the file to the sentence is a layer
     // that exists in a unit test and nowhere else, and four defects of this series

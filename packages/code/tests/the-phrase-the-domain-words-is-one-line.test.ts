@@ -708,6 +708,20 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'minted',
       why: 'the same height, in the state where the record has the anchor and not the header',
     },
+  '@mnema/chain chain/witness.ts «tail {} holds no attestation» oneLine(weakest.tail) #1': {
+    verdict: 'collapsed',
+    why: 'a tail DIRECTORY name, read off the disk — whoever writes the tree chooses it',
+  },
+  '@mnema/chain chain/witness.ts «the last attested checkpoint is dated by {}, with {} event(s) written after it» after #1':
+    {
+      verdict: 'minted',
+      why: 'a count of events, arrived at by subtracting two seqs — arithmetic, not text',
+    },
+  '@mnema/chain chain/witness.ts «the last attested checkpoint is dated by {}, with {} event(s) written after it» attested.detail #1':
+    {
+      verdict: 'composed',
+      why: 'the covered reading `witness.ts` composed — its height and its instant are sites above',
+    },
   '@mnema/chain chain/witness.ts «the stored header for Bitcoin block {} carries another merkle root» attestation.height #1':
     {
       verdict: 'minted',
@@ -718,6 +732,14 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'minted',
       why: 'the height whose stored header was mined at nothing',
     },
+  '@mnema/chain chain/witness.ts «{}, and {}» atHead.detail #1': {
+    verdict: 'composed',
+    why: 'the head checkpoint’s own reading, kept beside the dating when it is a finding',
+  },
+  '@mnema/chain chain/witness.ts «{}, and {}» dating #1': {
+    verdict: 'composed',
+    why: 'the dating sentence this same function wrote, one template above',
+  },
   '@mnema/chain chain/witness.ts «the stored proof is unreadable: {}» oneLine(String((error as Error).message)) #1':
     {
       verdict: 'collapsed',
@@ -1074,8 +1096,8 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
     // sites, twelve in `core` and eleven in `chain` — because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(91);
-    expect(FOUND[0]?.sites.length).toBe(42);
+    expect(SITES.length).toBe(96);
+    expect(FOUND[0]?.sites.length).toBe(47);
     expect(FOUND[1]?.sites.length).toBe(49);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
@@ -1123,11 +1145,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(63);
-    expect(count('minted')).toBe(23);
-    expect(count('composed')).toBe(5);
+    expect(count('collapsed')).toBe(64);
+    expect(count('minted')).toBe(24);
+    expect(count('composed')).toBe(8);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      63,
+      64,
     );
   });
 

@@ -22,6 +22,13 @@
  * appended to would have a new last checkpoint, which nothing has attested. That is
  * not a limitation of the fixture, it is the layer working: an attestation dates the
  * checkpoints below it and says nothing about what comes after.
+ *
+ * WHAT THAT DID NOT MEAN, corrected here because this file's own words carried the
+ * mistake: *says nothing about what comes after* was read as *says nothing at all*.
+ * The product asked only the last checkpoint, so a record that was stamped and then
+ * written to answered `nothing outside this machine attests this record` — false
+ * about a record whose proof is in its own tree. `witnessed-then-written` is the
+ * frozen record for that state, and it is this same one with the head left unstamped.
  */
 
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';

@@ -107,8 +107,11 @@ witnesses do different halves of that, and neither does the other's:
   checkpoint's digest existed at an instant, so a chain rebuilt today cannot claim a
   history — the one thing a key holder could otherwise do unseen. It says nothing
   about deletion or identity, and it is **opt-in**: a record nobody stamped reads
-  `not covered`, exactly as every record did before. FORMAT.md §8 is the bytes;
-  `witness.ts` is the reading; nothing on the verifying path touches a network.
+  `not covered`, exactly as every record did before. Attestations accumulate and the
+  reading asks the **newest** one, so a record that was stamped and then written to
+  goes on reporting the date it holds, with the count of events written after it.
+  FORMAT.md §8 is the bytes; `witness.ts` is the reading; nothing on the verifying
+  path touches a network.
 - **A git remote.** It preserves the files a deletion would remove and gives a
   committed public key a provenance the crypto alone cannot, which is the half a
   timestamp does not reach. Committing the chain to git stays the recommended path

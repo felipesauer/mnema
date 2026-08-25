@@ -20,6 +20,13 @@
  * checkpoint below it. This is why the layer is cheap enough to be honest about —
  * it is not an attestation per event, nor even per checkpoint.
  *
+ * AND THEY ACCUMULATE. Nothing here removes a witness file, so stamping today and
+ * writing tomorrow leaves yesterday's proof under yesterday's digest, still proving
+ * what it proved. The reading therefore asks the NEWEST checkpoint it holds a
+ * confirmed attestation for and reports how far that reaches — see
+ * {@link witnessOfTail}, which is where the premise that only the last checkpoint is
+ * worth asking about was found to be false and what replaced it.
+ *
  * WHAT IS STORED, beside the checkpoints it is about:
  *
  *   tails/<tailId>/witness/<checkpointHash>.ots      the detached proof
@@ -49,7 +56,7 @@
  * answer depended on somebody else being up.
  */
 
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 
 import { canonicalStringify } from '../events/canonical.js';
 import { oneLine } from '../one-line.js';
@@ -77,15 +84,84 @@ const WITNESS_RANK: Readonly<Record<WitnessStatus, number>> = {
   covered: 2,
 };
 
-/** What one checkpoint's stored witness reads as. */
-export interface WitnessReading {
-  readonly status: WitnessStatus;
+/**
+ * What one checkpoint's stored witness reads as.
+ *
+ * IT IS A UNION ON THE STATUS, so `covered` is the only shape that carries an
+ * instant. It used to be one interface with two optional numbers, and the two were
+ * optional for a true reason — a reading that is not covered has no instant to
+ * report — stated in a way the compiler could not act on: a caller that wanted the
+ * instant of a covered reading had to assert it or branch on a case that cannot
+ * happen, and this package has already measured what an `as` costs (it empties the
+ * assertion that quotes it). Split, the instant is present exactly where it exists.
+ */
+export type WitnessReading = AttestedReading | UnattestedReading;
+
+/** A reading that reached a confirmed attestation — the only one with an instant. */
+export interface AttestedReading {
+  readonly status: 'covered';
   /** Why it reads that way, in words a verdict may quote. */
   readonly detail: string;
-  /** The instant attested, in seconds since the epoch — only when covered. */
-  readonly at?: number;
-  /** The Bitcoin block that carries it — only when covered. */
-  readonly block?: number;
+  /** The instant attested, in seconds since the epoch. */
+  readonly at: number;
+  /** The Bitcoin block that carries it. */
+  readonly block: number;
+}
+
+/**
+ * A reading that did not reach one: an absence, a refusal, or a request still open.
+ *
+ * The status is written as an EXCLUSION rather than as two spelled-out members, so a
+ * fourth {@link WitnessStatus} lands here by construction instead of falling outside
+ * both halves of the union and taking the compiler's word for it with them.
+ */
+export interface UnattestedReading {
+  readonly status: Exclude<WitnessStatus, 'covered'>;
+  /** Why it reads that way, in words a verdict may quote. */
+  readonly detail: string;
+  /**
+   * True when the record holds NO witness file for this checkpoint at all — as
+   * opposed to holding one this machine refuses.
+   *
+   * The two are different sentences and only one of them can go stale. An absence
+   * says nothing attests the record, which stops being true the moment an OLDER
+   * checkpoint is attested; a refusal is a finding about one file and stays true
+   * beside any dating. {@link witnessOfTail} is the only reader, and it is what
+   * decides which of those two sentences a tail gets.
+   */
+  readonly absent?: true;
+  /**
+   * An attestation over an EARLIER checkpoint, when this one has none to give.
+   *
+   * Set only by {@link witnessOfTail}, never by {@link readWitness}: one checkpoint's
+   * stored files cannot know what an older checkpoint's say. It is not coverage and
+   * never becomes any — see {@link DatedThrough}.
+   */
+  readonly datedThrough?: DatedThrough;
+}
+
+/**
+ * How far back a record is provably dated when its HEAD is not the dated point.
+ *
+ * THREE NUMBERS AND THEY ONLY MEAN ANYTHING TOGETHER. "Dated since 23 August" without
+ * saying how much of the record is dated is the same half-truth the product used to
+ * tell in the other direction, and a count of undated events without an instant is a
+ * complaint rather than a fact. So the reading carries the instant, the block that
+ * carries it, and how many events were written after the checkpoint it dates.
+ *
+ * IT IS NOT COVERAGE and it is deliberately not reachable from one. It hangs off
+ * {@link UnattestedReading} alone, so no fold, no level and no exit code can arrive
+ * at it from a state that counts — the mistake this layer already made once, when a
+ * requested-and-unconfirmed attestation looked enough like coverage to be counted as
+ * some.
+ */
+export interface DatedThrough {
+  /** The instant attested, in seconds since the epoch. */
+  readonly at: number;
+  /** The Bitcoin block that carries it. */
+  readonly block: number;
+  /** How many events were written after the checkpoint that attestation dates. */
+  readonly after: number;
 }
 
 /** One block header the record carries, by the height it is claimed for. */
@@ -210,10 +286,19 @@ export function writeWitness(
   writeFileSync(witnessBlocksPath(layout, tailId, checkpointHash), lines.join(''), 'utf-8');
 }
 
-/** No witness at all — the state every record is in until one is asked for. */
-const NOTHING: WitnessReading = {
+/**
+ * No witness at all — the state every record is in until one is asked for.
+ *
+ * ITS WORDS ARE A CLAIM ABOUT THE WHOLE RECORD, which is why it is marked
+ * {@link UnattestedReading.absent}. Every other `not-covered` reading is a finding
+ * about the one file it read; this one speaks for everything, and it is the only
+ * sentence here that a fact elsewhere in the tree can falsify. See
+ * {@link witnessOfTail}, which is where an older attestation takes it away.
+ */
+const NOTHING: UnattestedReading = {
   status: 'not-covered',
   detail: 'nothing outside this machine attests this record',
+  absent: true,
 };
 
 /**
@@ -261,8 +346,8 @@ export function readWitness(
     };
   }
 
-  let anchored: WitnessReading | null = null;
-  let waiting: WitnessReading | null = null;
+  let anchored: AttestedReading | null = null;
+  let waiting: UnattestedReading | null = null;
   for (const { attestation, message } of reached) {
     if (attestation.kind === 'pending') {
       waiting ??= {
@@ -323,6 +408,161 @@ export function checkpointToWitness(layout: ChainLayout, tailId: string): string
   return last === undefined ? null : checkpointHash(last);
 }
 
+/**
+ * One checkpoint a reading may ask about, and how far into the tail it reaches.
+ *
+ * THE `toSeq` TRAVELS WITH THE DIGEST because the question this layer owes an answer
+ * to is not "is the head attested" but HOW MUCH of the record an attestation dates,
+ * and that is a seq. A digest on its own says which checkpoint was attested and
+ * nothing whatever about extent, which is the half of the answer the product used to
+ * leave out.
+ */
+export interface ProvenCheckpoint {
+  /** The digest of the checkpoint's signed message — what an attestation is filed under. */
+  readonly hash: string;
+  /** The last event seq this checkpoint covers. */
+  readonly toSeq: number;
+}
+
+/** One tail, as much of it as the witness reading needs. */
+export interface WitnessedTail {
+  /**
+   * The checkpoints the CALLER stands behind, in the order they cover the events —
+   * empty when there are none.
+   *
+   * Which ones those are is the caller's to say, and the two callers say different
+   * things on purpose: the verifier passes the checkpoints that VERIFIED, because a
+   * verdict may not rest on a line it has not judged, and `mnema witness` passes the
+   * ones the tail STORED, because a listing has never claimed to have verified
+   * anything. Neither reading of "a checkpoint" belongs to this function.
+   */
+  readonly checkpoints: readonly ProvenCheckpoint[];
+  /** How many events the tail holds — what the undated remainder is counted against. */
+  readonly events: number;
+}
+
+/** What {@link witnessProofPath} names a proof with — the one place the suffix is known. */
+const PROOF_SUFFIX = '.ots';
+
+/**
+ * The checkpoint digests this tail holds a proof for — the directory, read once.
+ *
+ * IT IS AN OPTIMIZATION AND NOT A SECOND OPINION. {@link readWitness} stays the only
+ * thing that decides what a stored witness SAYS; this decides only which checkpoints
+ * are worth asking it about, and it can skip one exactly when that checkpoint's
+ * `.ots` is not on the disk — the same fact {@link readStoredWitness} establishes one
+ * `existsSync` at a time. It exists for the walk: without it, a tail with a thousand
+ * checkpoints and one attestation costs a thousand `existsSync` calls to find it, and
+ * with it costs one `readdir`. Both were measured; the numbers are in this delivery's
+ * report, and `witness.test.ts` pins the agreement rather than assuming it.
+ */
+function stampedCheckpoints(layout: ChainLayout, tailId: string): ReadonlySet<string> {
+  const dir = witnessDir(layout, tailId);
+  if (!existsSync(dir)) return new Set();
+  return new Set(
+    readdirSync(dir)
+      .filter((name) => name.endsWith(PROOF_SUFFIX))
+      .map((name) => name.slice(0, -PROOF_SUFFIX.length)),
+  );
+}
+
+/**
+ * What one tail's stored witnesses prove about it: where its head stands, and — when
+ * the head is not the dated point — how far back an OLDER attestation still reaches.
+ *
+ * THE PREMISE THIS FALSIFIES was written one function down and read: *it is the LAST
+ * checkpoint of each tail that is asked about, because an attestation over an earlier
+ * one dates what came before it and says nothing about what came after.* The second
+ * half is true, and is the whole reason the third world below exists. The first half
+ * does not follow from it: an attestation over an earlier checkpoint says nothing
+ * about what came AFTER, and goes on saying everything about what came BEFORE. So a
+ * record with an attestation in its tree began answering `nothing outside this
+ * machine attests this record` the instant somebody wrote one more event — a sentence
+ * that is false about that record, and an understatement of what it can prove.
+ *
+ * THREE WORLDS, WHERE THE PRODUCT HAD TWO:
+ *
+ *   - nothing attests this tail — {@link NOTHING}, unchanged to the byte;
+ *   - the record is dated TO ITS HEAD: the newest attested checkpoint covers the last
+ *     event there is. The only state that reads as coverage;
+ *   - the record is dated TO A POINT, and events were written after it. The new one.
+ *     It is an {@link UnattestedReading} by construction, and its sentence says how
+ *     many events fall outside the dating in the same breath as it gives the date,
+ *     because a date without a boundary is the half-truth this delivery removes.
+ *
+ * WHICH QUESTION THE SENTENCE ANSWERS, decided and written down: **how far into the
+ * record the dating reaches, and when that point was dated** — the NEWEST attested
+ * checkpoint, never the oldest. Two reasons and a cost. The verdict's other clauses
+ * are all about extent (`N event(s) above the last checkpoint …`), so a T3 clause on
+ * that axis composes into one sentence instead of two a reader has to reconcile; and
+ * the layer exists to defeat a chain rebuilt this morning, which the LARGEST provably
+ * old prefix defeats hardest. The other question — *since when is the old part
+ * dated*, the EARLIEST attestation — names a date whose boundary is a different and
+ * smaller prefix, so an honest clause would have to carry two (checkpoint, date)
+ * pairs and would answer neither. It costs more, too: this walk stops at the first
+ * attestation it meets coming down from the head, and the earliest one can only be
+ * had by reading every proof the tail stores.
+ *
+ * Returns null when the caller offered no checkpoint at all: there is no reading to
+ * give, and the sentence for that is the caller's, because the two callers mean
+ * different things by an empty list.
+ */
+export function witnessOfTail(
+  layout: ChainLayout,
+  tailId: string,
+  tail: WitnessedTail,
+): WitnessReading | null {
+  const head = tail.checkpoints[tail.checkpoints.length - 1];
+  if (head === undefined) return null;
+  const stamped = stampedCheckpoints(layout, tailId);
+  const atHead = stamped.has(head.hash) ? readWitness(layout, tailId, head.hash) : NOTHING;
+  const lastSeq = tail.events - 1;
+  // Dated to its head — the state that reads as coverage, and the only one that does.
+  // The head CHECKPOINT being attested is not enough: events written above it are
+  // outside the dating exactly as events above the last checkpoint are outside the
+  // signature, and a clause that said `covered` over those was claiming a reach it
+  // did not have.
+  if (atHead.status === 'covered' && head.toSeq >= lastSeq) return atHead;
+  for (let i = tail.checkpoints.length - 1; i >= 0; i -= 1) {
+    const checkpoint = tail.checkpoints[i] as ProvenCheckpoint;
+    if (!stamped.has(checkpoint.hash)) continue;
+    const reading =
+      i === tail.checkpoints.length - 1 ? atHead : readWitness(layout, tailId, checkpoint.hash);
+    if (reading.status !== 'covered') continue;
+    const after = lastSeq - checkpoint.toSeq;
+    return {
+      status: atHead.status === 'covered' ? 'not-covered' : atHead.status,
+      detail: datedDetail(atHead, reading, after),
+      datedThrough: { at: reading.at, block: reading.block, after },
+    };
+  }
+  return atHead;
+}
+
+/**
+ * How a tail dated to a POINT reads: the date, what it reaches, and what the head's
+ * own file said if that was a finding.
+ *
+ * THE ABSENCE IS REPLACED, A FINDING IS KEPT. `nothing outside this machine attests
+ * this record` is false about a record holding a proof and is the defect itself, so
+ * it goes. A refusal about the head's own file — an unreadable proof, a header nobody
+ * mined — is a finding that stays true beside any dating, and replacing it would turn
+ * a fix for an understatement into a hidden forgery signal. So only the marked
+ * absence gives way.
+ *
+ * IT IS A FUNCTION AND NOT A TEMPLATE AT THE `detail:` because of what walks this
+ * package: `the-phrase-the-domain-words-is-one-line.test.ts` follows a producer into
+ * its body, and a sentence assembled in a local `const` beside the property is a
+ * sentence that walk never enters. Written as one, both templates are sites and every
+ * value in them is classified.
+ */
+function datedDetail(atHead: WitnessReading, attested: AttestedReading, after: number): string {
+  const dating = `the last attested checkpoint is dated by ${attested.detail}, with ${after} event(s) written after it`;
+  return atHead.status === 'covered' || atHead.absent === true
+    ? dating
+    : `${atHead.detail}, and ${dating}`;
+}
+
 /** What one tail's witness stands at, and over which checkpoint. */
 export interface TailWitness {
   readonly tail: string;
@@ -339,16 +579,91 @@ export interface ChainWitness {
 }
 
 /**
- * The chain's witness: the WEAKEST of its tails, over the checkpoint each one ends
- * at.
+ * How much a reading CLAIMS, as a tuple compared left to right — the chain's fold
+ * keeps the SMALLEST, so the sentence it publishes is one no tail contradicts.
  *
- * Weakest for the reason the level's own fold is weakest (`weakerLevel`): a record
- * is several tails and a reader is given one answer, so an attestation over one
+ * THE SECOND NUMBER IS THIS DELIVERY'S, and without it the delivery would have moved
+ * the falsehood rather than removed it. The fold used to keep whichever `not-covered`
+ * tail came first, which was harmless while every `not-covered` said the same thing.
+ * It is not harmless now: one tail can carry a DATING and the one beside it none, and
+ * publishing the dating for the chain would be the same overstatement in the other
+ * direction. A reading that claims a dating is STRONGER than one that claims nothing
+ * at the same status, and loses.
+ *
+ * THE THIRD IS THE INSTANT, LATER FIRST. A date further from today is a stronger
+ * claim about how far back the record provably reaches, so the weaker of two dated
+ * tails is the one dated most recently. Within each group the number is defined for
+ * every member — `covered` always carries an instant, a dating always carries one,
+ * and nothing else has one at all — so it never compares a fact against a filler.
+ *
+ * THE FOURTH IS THE REMAINDER, AND IT WAS FOUND BY A PROBE rather than reasoned
+ * about. Two tails dated by the SAME block, one a single event past its dating and
+ * one thirty-eight past, tied on the first three numbers — and the tie fell to
+ * whichever came first, so the chain published *with 1 event(s) written after it*
+ * about a record holding thirty-nine undated events. Weakest means weakest on this
+ * axis too, so the larger remainder wins and the published count is a floor no tail
+ * falls below.
+ *
+ * WHAT IT STILL DOES NOT DO, said out loud: the instant and the remainder can name
+ * DIFFERENT tails, and this takes the instant first, because the instant is what the
+ * layer proves and the remainder is what qualifies it. The per-tail truth is in
+ * {@link ChainWitness.tails}, and the record's whole undated residual is the verdict's
+ * coverage clause, which is summed across tails.
+ */
+function claimOf(reading: WitnessReading): readonly [number, number, number, number] {
+  const dating = reading.status === 'covered' ? undefined : reading.datedThrough;
+  return [
+    WITNESS_RANK[reading.status],
+    dating === undefined ? 0 : 1,
+    reading.status === 'covered' ? -reading.at : -(dating?.at ?? 0),
+    -(dating?.after ?? 0),
+  ];
+}
+
+/** Whether `a` claims strictly less than `b` — a tie keeps whoever is already held. */
+function claimsLess(a: WitnessReading, b: WitnessReading): boolean {
+  const mine = claimOf(a);
+  const theirs = claimOf(b);
+  for (let i = 0; i < mine.length; i += 1) {
+    const left = mine[i] as number;
+    const right = theirs[i] as number;
+    if (left !== right) return left < right;
+  }
+  return false;
+}
+
+/** Whether a reading says an attestation exists at all — coverage, or a dating. */
+function isDated(reading: WitnessReading): boolean {
+  return reading.status === 'covered' || reading.datedThrough !== undefined;
+}
+
+/** Whether a reading is the ABSENCE — no stored witness at all, rather than a refusal. */
+function isAbsence(reading: WitnessReading): boolean {
+  return reading.status !== 'covered' && reading.absent === true;
+}
+
+/**
+ * What a tail with nothing the VERIFIER proved reads as.
+ *
+ * It is the verifier's sentence and not {@link witnessOfTail}'s, because the two
+ * callers mean different things by an empty list: here it means no checkpoint passed
+ * its signature check, and in `mnema witness` it means the tail sealed none at all.
+ * One sentence for both would have to be vague enough to be true of either.
+ */
+const NO_VERIFIED_CHECKPOINT: UnattestedReading = {
+  status: 'not-covered',
+  detail: 'no checkpoint of this tail passed its signature check',
+};
+
+/**
+ * The chain's witness: the WEAKEST of its tails, over the checkpoints each one
+ * carries.
+ *
+ * Weakest for the reason the level's own fold is weakest (`weakerLevel`): a record is
+ * several tails and a reader is given one answer, so an attestation over one
  * machine's tail must never speak for the machine beside it whose events nobody
- * witnessed. And it is the LAST checkpoint of each tail that is asked about,
- * because an attestation over an earlier one dates what came before it and says
- * nothing about what came after — the same residual `fullySigned` reports one layer
- * down.
+ * witnessed. What is asked of each tail is {@link witnessOfTail} — no longer its last
+ * checkpoint alone, for the reason written there.
  *
  * A tail with no verified checkpoint is `not-covered` and does not need special
  * handling: a chain with any such tail cannot be `fully-signed` either, so the top
@@ -356,29 +671,32 @@ export interface ChainWitness {
  */
 export function witnessOfChain(
   layout: ChainLayout,
-  through: ReadonlyMap<string, string | null>,
+  proven: ReadonlyMap<string, WitnessedTail>,
 ): ChainWitness {
   const tails: TailWitness[] = [];
-  for (const [tail, checkpoint] of through) {
+  for (const [tail, offered] of proven) {
     tails.push({
       tail,
-      checkpoint,
-      reading:
-        checkpoint === null
-          ? {
-              status: 'not-covered',
-              detail: 'no checkpoint of this tail passed its signature check',
-            }
-          : readWitness(layout, tail, checkpoint),
+      checkpoint: offered.checkpoints[offered.checkpoints.length - 1]?.hash ?? null,
+      reading: witnessOfTail(layout, tail, offered) ?? NO_VERIFIED_CHECKPOINT,
     });
   }
-  const weakest = tails.reduce<WitnessReading | null>(
-    (worst, t) =>
-      worst === null || WITNESS_RANK[t.reading.status] < WITNESS_RANK[worst.status]
-        ? t.reading
-        : worst,
+  const weakest = tails.reduce<TailWitness | null>(
+    (worst, t) => (worst === null || claimsLess(t.reading, worst.reading) ? t : worst),
     null,
   );
-  const reading = weakest ?? NOTHING;
-  return { status: reading.status, detail: reading.detail, tails };
+  const reading = weakest?.reading ?? NOTHING;
+  return {
+    status: reading.status,
+    // THE ABSENCE CANNOT SPEAK FOR A CHAIN THAT HOLDS AN ATTESTATION. `nothing outside
+    // this machine attests this record` is a claim about everything, and with two
+    // tails it can be published for a chain where the other one IS dated — the same
+    // false sentence this delivery exists to remove, one level up. When some tail is
+    // dated, the weakest tail's absence is worded as the absence it actually is.
+    detail:
+      weakest !== null && isAbsence(reading) && tails.some((t) => isDated(t.reading))
+        ? `tail ${oneLine(weakest.tail)} holds no attestation`
+        : reading.detail,
+    tails,
+  };
 }

@@ -25,7 +25,9 @@
  * to hide signed history, because the surviving checkpoints no longer reach the
  * head the last one attested. (Events appended ABOVE the last checkpoint carry
  * only the hash chain and can still be truncated by a keyless party; that is
- * the declared residual window, reported honestly by the verifier.)
+ * the declared residual window, reported honestly by the verifier — and the same
+ * residual T3 reports against the checkpoint an outside witness dated, see
+ * `witnessOfTail` in witness.ts.)
  */
 
 import { createHash } from 'node:crypto';
