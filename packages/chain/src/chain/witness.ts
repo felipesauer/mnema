@@ -20,6 +20,13 @@
  * checkpoint below it. This is why the layer is cheap enough to be honest about —
  * it is not an attestation per event, nor even per checkpoint.
  *
+ * AND THEY ACCUMULATE. Nothing here removes a witness file, so stamping today and
+ * writing tomorrow leaves yesterday's proof under yesterday's digest, still proving
+ * what it proved. The reading therefore asks the NEWEST checkpoint it holds a
+ * confirmed attestation for and reports how far that reaches — see
+ * {@link witnessOfTail}, which is where the premise that only the last checkpoint is
+ * worth asking about was found to be false and what replaced it.
+ *
  * WHAT IS STORED, beside the checkpoints it is about:
  *
  *   tails/<tailId>/witness/<checkpointHash>.ots      the detached proof

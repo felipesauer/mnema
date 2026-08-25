@@ -18,8 +18,13 @@
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { catalogUpcasters, type Fetcher, verify as verifyChainAt } from '@mnema/chain';
-import type { DiscoveryEnv } from '@mnema/core';
+import {
+  catalogUpcasters,
+  checkpointToWitness,
+  type Fetcher,
+  verify as verifyChainAt,
+} from '@mnema/chain';
+import { type DiscoveryEnv, resolveTrees, tailsHeld } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runInit } from './init.js';
 import { runMemory } from './memory.js';
@@ -240,6 +245,30 @@ describe('the reading beside the two acts', () => {
     const ctx = setup();
     const listing = runWitnessList(ctx);
     expect(listing.lines[0]?.checkpoint).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('names the SAME head the two acts file under', () => {
+    // The listing walks the tail's whole checkpoint file now, because an attestation
+    // over an older checkpoint still dates what came before it — so it no longer takes
+    // its head from `checkpointToWitness`, which is what the two acts still use. The
+    // two derivations have to agree or the act files a proof where the listing does
+    // not look, and the person who just stamped is shown `not covered`. Asserted here
+    // rather than assumed, since it is no longer true by construction.
+    const ctx = setup();
+    const root = publicRoot(ctx);
+    const tail = readdirSync(join(root, 'tails'))[0] as string;
+    expect(runWitnessList(ctx).lines[0]?.checkpoint).toBe(checkpointToWitness({ root }, tail));
+  });
+
+  it('counts the events the tail holds, so the reading can say what a dating misses', () => {
+    // The count the third world's sentence is built from. `setup` writes two memories
+    // over the founding events, and the listing takes the number from the enumeration
+    // it already ran rather than reading the tail a second time.
+    const ctx = setup();
+    const root = publicRoot(ctx);
+    const tail = readdirSync(join(root, 'tails'))[0] as string;
+    const held = tailsHeld(resolveTrees(ctx.cwd, ctx.env), catalogUpcasters());
+    expect(held.find((h) => h.tail === tail)?.standing.eventCount).toBeGreaterThan(1);
   });
 });
 

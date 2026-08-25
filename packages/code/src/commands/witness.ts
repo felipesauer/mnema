@@ -13,6 +13,13 @@
  * dates every checkpoint below it. That is what makes the layer cheap enough to be
  * honest about: a stamp is one request, whatever the record holds.
  *
+ * AND A STAMP DOES NOT EXPIRE WHEN THE RECORD GROWS. Writing more events makes the
+ * checkpoint that was stamped no longer the last one, and for a while the product
+ * read that as having nothing — it reported `nothing outside this machine attests
+ * this record` about records holding a valid proof. The reading asks every checkpoint
+ * the tail offers now and takes the newest one that is attested, so a stamp goes on
+ * being worth what it was worth, with the count of what was written since.
+ *
  * IT REFUSES TO STAMP A RECORD THAT IS NOT FULLY SIGNED, and the refusal is the
  * design rather than caution. An attestation is filed under the digest of a
  * checkpoint, and the verifier looks for one under the checkpoint IT PROVED — never
