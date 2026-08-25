@@ -17,9 +17,10 @@
  * impossible.
  */
 
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { BLOCK_HEADER_BYTES } from './bitcoin.js';
@@ -781,6 +782,30 @@ describe('a promise beside another tail', () => {
       ]),
     );
     expect(witness.status).not.toBe('covered');
+  });
+});
+
+describe("where a tail's status comes from", () => {
+  /** The source of the reading, as the file on disk — not the module's exports. */
+  const SOURCE = readFileSync(fileURLToPath(new URL('./witness.ts', import.meta.url)), 'utf-8');
+
+  /** The body of `witnessOfTail`, from its opening brace to the next top-level one. */
+  const bodyOfWalk = (): string => {
+    const at = SOURCE.indexOf('export function witnessOfTail(');
+    expect(at).toBeGreaterThan(-1);
+    const end = SOURCE.indexOf('\n}\n', at);
+    expect(end).toBeGreaterThan(at);
+    return SOURCE.slice(at, end);
+  };
+
+  it('is one derivation, and a reading built past it does not go unnoticed', () => {
+    // A3. The rule — the head's own status, else the request in flight, else the plain
+    // absence — was written twice in the first draft of this delivery, once per world,
+    // and two readings of one rule is the shape that drifts in silence. It is one
+    // closure now, and this is what fails when a world added later words its own.
+    const written = [...bodyOfWalk().matchAll(/\bstatus:\s*([^,\n]+)/g)].map((m) => m[1]);
+    expect(written.length).toBeGreaterThan(1);
+    expect(written.every((value) => value?.startsWith('statusWith('))).toBe(true);
   });
 });
 

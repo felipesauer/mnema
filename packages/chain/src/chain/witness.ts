@@ -562,6 +562,14 @@ export function witnessOfTail(
   // where the dating that follows says everything the head's own reading would.
   const finding: UnattestedReading | null =
     atHead.status === 'covered' || atHead.absent === true ? null : atHead;
+  // ONE RULE FOR THE STATUS, at one site because it is one rule (A3): the head's own,
+  // unless the head had nothing to say, in which case the request in flight speaks, and
+  // the plain absence when there is neither. Every value it can return is one
+  // {@link WITNESS_COVERS} counts for nothing, so the choice moves no level and no exit
+  // code — it decides whether the verdict opens with `not covered` or with `PENDING,
+  // which is not coverage`, and a reader with a request open should wait, not stamp.
+  const statusWith = (open: UnattestedReading | null): UnattestedReading['status'] =>
+    finding?.status ?? open?.status ?? 'not-covered';
   const last = tail.checkpoints.length - 1;
   let promise: UnattestedReading | null = null;
   for (let i = last; i >= 0; i -= 1) {
@@ -577,22 +585,15 @@ export function witnessOfTail(
     }
     const after = lastSeq - checkpoint.toSeq;
     return {
-      // ONE RULE FOR THE STATUS, and it is the same one the sentence follows: the head's
-      // own, unless the head had nothing to say, in which case the request in flight
-      // speaks. Both are states {@link WITNESS_COVERS} counts for nothing, so which one
-      // is chosen moves no level and no exit code — it decides whether the verdict opens
-      // with `not covered` or with `PENDING, which is not coverage`, and a record with a
-      // request open is one whose reader should wait rather than stamp.
-      status: finding?.status ?? promise?.status ?? 'not-covered',
+      status: statusWith(promise),
       detail: tailDetail(finding, { dated: { attested: reading, after }, promise }),
       datedThrough: { at: reading.at, block: reading.block, after },
     };
   }
   if (promise === null) return atHead;
-  // NOTHING CONFIRMED, AND A REQUEST IS OPEN — the case this delivery exists for. The
-  // status is decided by the same rule as the world above.
+  // NOTHING CONFIRMED, AND A REQUEST IS OPEN — the case this delivery exists for.
   return {
-    status: finding?.status ?? promise.status,
+    status: statusWith(promise),
     detail: tailDetail(finding, { dated: null, promise }),
   };
 }
