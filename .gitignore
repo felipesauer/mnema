@@ -6,6 +6,11 @@ coverage/
 *.tgz
 .DS_Store
 
+# The second reader of the chain format is Python (packages/chain/verifier/), so this
+# tree has bytecode caches now. They are build output, like dist/ above.
+__pycache__/
+*.pyc
+
 # Local AI-assistant state (permissions, plans).
 .claude/
 

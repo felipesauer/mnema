@@ -29,7 +29,20 @@
 import { canonicalBytes, canonicalStringify } from '../events/canonical.js';
 import { type KeyObject, type KeyPair, sign, verify } from './keys.js';
 
-const SCHEME = 'mnema-tail/1';
+/**
+ * The scheme a tail proof declares.
+ *
+ * EXPORTED SO THE DOCUMENT CAN NAME IT. `format-doc.test.ts` requires every
+ * `mnema-<thing>/<n>` tag written in `FORMAT.md` to be a constant the code
+ * exports — its own comment says a new section "has to export its own before it
+ * can name it". This artifact went undocumented until an independent verifier
+ * found it in a tail directory and had to guess what it signs (gap G10), so the
+ * document now has a section about it, and this is the constant that section is
+ * checked against. The three readers of the value are all in this file.
+ */
+export const TAILPROOF_SCHEME = 'mnema-tail/1';
+
+const SCHEME = TAILPROOF_SCHEME;
 
 /** A signing key's proof that it owns a given tail id. */
 export interface TailProof {
