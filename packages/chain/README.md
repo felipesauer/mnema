@@ -203,9 +203,21 @@ per catalog kind and the SHA-256 of its canonical bytes, plus the aggregate
 digests. Canonicalize a row's `event`, hash the bytes, compare — that is the whole
 check, and it needs nothing of ours.
 
+[`verifier/`](./verifier/) is the other half of the same idea, and it is what stops
+the paragraph above from being a claim about a document nobody ever implemented: a
+verifier in Python, written **from** `FORMAT.md`, importing nothing of this package.
+It reproduces the 23 vectors and the four aggregate digests, checks T1, T2/T4 and T3
+over real records, and refuses every mutation in `verifier/mutate.py`. It found
+twenty-four points where the document was not enough to write it from, all of which
+are now fixed in the document.
+
 What that does **not** buy is stated in the document itself, in the same terms as
-the table above: it is not an open standard, there is no second implementation,
-and publishing the format adds no external witness.
+the table above: it is not an open standard, and publishing the format adds no
+external witness. The line that used to stand here — *there is no second
+implementation* — is the one `verifier/` falsified, and the document now says
+precisely which half of it fell: the second implementation is independent in the
+**technical** sense (another language, written from the document, sharing no code)
+and not in the **social** one (same author, same repository).
 
 ## License
 

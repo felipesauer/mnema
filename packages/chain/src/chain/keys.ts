@@ -8,9 +8,18 @@
  * fresh pair; checkpoints signed by the old key stay verifiable against the old
  * public key. There is no shared secret to distribute or re-provision.
  *
- * The fingerprint is the SHA-256 of the raw public key, in full. The full
+ * The fingerprint is the SHA-256 of the key's SubjectPublicKeyInfo — its DER
+ * `spki` encoding, the twelve-byte RFC 8410 prefix included — in full. This
+ * used to read "the SHA-256 of the raw public key", which is FALSE and is the
+ * one thing about the derivation the repository said out loud: the raw 32-byte
+ * key is precisely what it is not a hash of. What falsified it was an
+ * independent verifier written from `FORMAT.md`, which had to try four
+ * candidate derivations against the two fingerprints in the frozen records to
+ * find out which one closes (`verifier/mnemaverify/keys.py`, gap G03). The full
  * fingerprint — not a short prefix — is bound into every signed checkpoint, so
- * a signature cannot be re-pointed at a different key while looking valid.
+ * a signature cannot be re-pointed at a different key while looking valid; that
+ * clause is only CHECKABLE by a party who can recompute it, which is why the
+ * derivation is now written here and in `FORMAT.md` section 6.
  *
  * Two identities are derived from that fingerprint, of different natures:
  *   - the SIGNER FINGERPRINT is the fingerprint itself — WHICH physical key
@@ -61,7 +70,7 @@ export function generateKeyPair(): KeyPair {
   return { privateKey, publicKey, fingerprint: fingerprintOf(publicKey) };
 }
 
-/** The full fingerprint of a public key: SHA-256 hex of its raw bytes. */
+/** The full fingerprint of a public key: SHA-256 hex of its DER `spki` encoding. */
 export function fingerprintOf(publicKey: KeyObject): string {
   const raw = publicKey.export({ type: 'spki', format: 'der' });
   return createHash('sha256').update(raw).digest('hex');

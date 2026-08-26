@@ -32,6 +32,7 @@ import { describe, expect, it } from 'vitest';
 
 import { SCHEME } from './chain/checkpoint.js';
 import { ENTRY_DOMAIN, ROOT_DOMAIN } from './chain/hash.js';
+import { TAILPROOF_SCHEME } from './chain/tailproof.js';
 import { VECTORS_FILE, VECTORS_FILE_NAME } from './events/vectors.js';
 
 /** The package root: where `FORMAT.md`, `README.md` and the artifact live. */
@@ -51,15 +52,23 @@ describe('FORMAT.md names the versions the code hashes under', () => {
     expect([...new Set(written)].sort()).toEqual([ENTRY_DOMAIN, ROOT_DOMAIN].sort());
   });
 
-  it('writes no scheme tag but the one a checkpoint declares', () => {
+  it('writes no scheme tag the code does not export', () => {
     // The pattern is the CLASS, not the instance: this codebase has more than one
-    // `mnema-<thing>/<n>` scheme (a tail proof carries its own), and a document that
-    // grew a section about another one would name a version no guard here read. So
-    // any scheme tag the document writes has to be a constant the code exports — a
-    // new section has to export its own before it can name it.
+    // `mnema-<thing>/<n>` scheme, and a document that grew a section about another one
+    // would name a version no guard here read. So any scheme tag the document writes has
+    // to be a constant the code exports — a new section has to export its own before it
+    // can name it.
+    //
+    // THE TAIL PROOF IS THE SECTION THAT ARRIVED. This case expected exactly the
+    // checkpoint's scheme for as long as the document said nothing about `tailproof.json`
+    // — which is how an artifact sat in every tail directory, signed, with no description
+    // anywhere. An independent verifier written from this document found it and had to try
+    // five candidate messages to learn what it signs (gap G10). The document has a section
+    // for it now, so the expected set is both exported constants, and a THIRD scheme still
+    // has to export its own to be nameable.
     const written = [...FORMAT.matchAll(/mnema-[a-z]+\/\d+/g)].map((m) => m[0]);
     expect(written.length).toBeGreaterThan(0);
-    expect([...new Set(written)]).toEqual([SCHEME]);
+    expect([...new Set(written)].sort()).toEqual([SCHEME, TAILPROOF_SCHEME].sort());
   });
 });
 
