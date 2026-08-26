@@ -9,8 +9,14 @@
  * the fact. Reading replays the fact; it does not re-judge it.
  *
  * A closed catalog means a CLOSED SHAPE: an event may carry ONLY the fields its
- * kind declares. Parsing rebuilds the event from exactly those fields, so a
- * forged line cannot smuggle extra data past validation and have it ride along
+ * kind declares. WHAT A KIND DECLARES LIVES IN `schema.ts` AND NOWHERE ELSE —
+ * this module walks that table and has no per-kind branch of its own, and the
+ * published `event-schema.json` is the same table serialized. It used to be a
+ * `switch` of twenty arms here, which is why the declarations could be promised
+ * by `FORMAT.md` section 4 and published by nothing: a second reader had no way
+ * to know them, and measurably accepted an appended event carrying a field no
+ * kind declares. Parsing rebuilds the event from exactly the declared fields, so
+ * a forged line cannot smuggle extra data past validation and have it ride along
  * into the signed bytes. Two consequences that serve the proof:
  *   - Unknown top-level or payload fields are rejected outright.
  *   - The returned event — and therefore its canonical bytes — is the
@@ -27,6 +33,13 @@
 
 import type { CanonicalValue } from './canonical.js';
 import type { CatalogEvent, TransitionFields } from './catalog.js';
+import {
+  ENVELOPE_SCHEMA,
+  type EnvelopeRule,
+  type FieldRule,
+  PAYLOAD_SCHEMA,
+  TRANSITION_FIELDS_SCHEMA,
+} from './schema.js';
 import type { UpcasterRegistry, VersionedEvent } from './upcaster.js';
 
 /** Thrown when a line is not a valid, current-catalog event. */
@@ -34,48 +47,15 @@ export class EventParseError extends Error {
   override readonly name = 'EventParseError';
 }
 
-/** The envelope fields every kind carries, in canonical membership. */
-const ENVELOPE_FIELDS = [
-  'v',
-  'kind',
-  'at',
-  'who',
-  'signerFp',
-  'which',
-  'run',
-  'subject',
-  'payload',
-] as const;
-
-/** The payload fields each kind declares. Anything else is rejected. */
-const PAYLOAD_FIELDS: { readonly [K in CatalogEvent['kind']]: readonly string[] } = {
-  'run.started': ['agent', 'goal'],
-  'run.ended': ['outcome'],
-  'task.created': ['title'],
-  'task.transitioned': ['from', 'to', 'action', 'fields'],
-  'decision.recorded': ['title', 'rationale', 'adr', 'alternatives'],
-  'decision.transitioned': ['from', 'to', 'action', 'by', 'fields'],
-  'identity.founded': ['foundingFp'],
-  'key.enrolled': ['newFp', 'reverseSig'],
-  'key.revoked': ['revokedFp', 'reason'],
-  'memory.captured': ['content'],
-  'observation.recorded': ['about', 'topic', 'text'],
-  'handoff.recorded': ['fromAgent', 'toAgent'],
-  'knowledge.linked': ['target', 'rel'],
-  'skill.created': ['name', 'body'],
-  'skill.transitioned': ['from', 'to', 'action', 'fields'],
-  // No payload field at all: a consultation is entirely envelope. The empty
-  // list is what makes ANY payload key on this kind a rejected line.
-  'skill.consulted': [],
-  'tail.pruned': ['tail', 'throughHash', 'eventCount', 'reason'],
-  'channel.switched': ['on', 'reason'],
-  // No payload field at all, the same as a consultation: the fact is entirely envelope.
-  'channel.served': [],
-  'channel.asked': ['rule', 'path'],
-};
-
-/** The proof/context fields a transition's `fields` object may carry. */
-const TRANSITION_FIELD_KEYS = ['reason', 'note', 'feedback', 'pr_url', 'links'] as const;
+/**
+ * The top-level fields a stored line may carry: the envelope the schema declares,
+ * plus `payload`, which is the only top-level key that is not an envelope field.
+ *
+ * Derived from {@link ENVELOPE_SCHEMA} rather than typed out again, so an envelope
+ * field added there is accepted here without a second edit — the shape that used
+ * to be two lists is one.
+ */
+const ENVELOPE_FIELDS: readonly string[] = [...Object.keys(ENVELOPE_SCHEMA), 'payload'];
 
 /**
  * Parses one canonical (or raw) JSON string into a current-version catalog
@@ -156,15 +136,81 @@ function validateAndRebuild(event: CatalogEvent): CatalogEvent {
   return { ...envelope, payload } as CatalogEvent;
 }
 
-interface RebuiltEnvelope {
-  v: number;
-  kind: string;
-  at: string;
-  who: string;
-  signerFp: string;
-  subject: string;
-  which?: string;
-  run?: string;
+/**
+ * The rebuilt envelope: every declared envelope field that was present, and
+ * nothing else. Typed loosely on purpose — the shape is the schema's, and naming
+ * the fields a second time here is the second list this delivery removed.
+ */
+type RebuiltEnvelope = Record<string, string | number>;
+
+/**
+ * A rebuilt payload value: scalars, the valued `null` of a birth, or nested fields.
+ */
+type PayloadValue = string | number | boolean | null | readonly string[] | TransitionFields;
+
+/**
+ * What a rule answers when the field was legitimately absent.
+ *
+ * A sentinel rather than `undefined`, because `undefined` is also what a present
+ * field holding nothing would read as, and the two must not merge: an omitted key
+ * is rebuilt as an omitted key, while a present `undefined` is a value section 1
+ * refuses outright.
+ */
+const ABSENT = Symbol('absent');
+
+/**
+ * Applies ONE rule to ONE field, and answers the value to rebuild with — or
+ * {@link ABSENT} when the field was legitimately omitted.
+ *
+ * This is the single site of every field rule in the catalog. It is the function
+ * both the reader and the writer reach (through {@link unreadableReason}), and it
+ * is the function the published `event-schema.json` names a rule FOR: a stranger
+ * reading the artifact reads a rule name, and this is what that name means.
+ */
+function applyRule(
+  kind: string,
+  field: string,
+  rule: EnvelopeRule,
+  value: unknown,
+): PayloadValue | typeof ABSENT {
+  switch (rule) {
+    case 'string':
+      requireString(kind, field, value);
+      return value as string;
+    case 'string?':
+      if (value === undefined) return ABSENT;
+      requireString(kind, field, value);
+      return value as string;
+    case 'string|null':
+      requireStringOrNull(kind, field, value);
+      return value as string | null;
+    case 'boolean':
+      requireBoolean(kind, field, value);
+      return value as boolean;
+    case 'count':
+      requirePositiveInteger(kind, field, value);
+      return value as number;
+    case 'string[]?':
+      if (value === undefined) return ABSENT;
+      return requireStringArray(kind, field, value);
+    case 'fields?': {
+      const fields = rebuildTransitionFields(kind, value);
+      return fields === undefined ? ABSENT : fields;
+    }
+    case 'version':
+      requireVersion(kind, field, value);
+      return value as number;
+    case 'kind':
+      requireString(kind, field, value);
+      return value as string;
+    case 'instant':
+      requireIso8601(kind, field, value);
+      return value as string;
+    default:
+      // Exhaustiveness: a rule added to the vocabulary without an arm fails the build,
+      // which is what keeps the published vocabulary and this reader the same size.
+      return assertNeverRule(rule);
+  }
 }
 
 function validateEnvelope(event: CatalogEvent): RebuiltEnvelope {
@@ -174,217 +220,37 @@ function validateEnvelope(event: CatalogEvent): RebuiltEnvelope {
     event as unknown as Record<string, unknown>,
     ENVELOPE_FIELDS,
   );
-  requireIso8601(event.kind, 'at', event.at);
-  requireString(event.kind, 'who', event.who);
-  requireString(event.kind, 'signerFp', event.signerFp);
-  requireString(event.kind, 'subject', event.subject);
-  requireOptionalString(event.kind, 'which', event.which);
-  requireOptionalString(event.kind, 'run', event.run);
-  const rebuilt: RebuiltEnvelope = {
-    v: event.v,
-    kind: event.kind,
-    at: event.at,
-    who: event.who,
-    signerFp: event.signerFp,
-    subject: event.subject,
-  };
-  if (event.which !== undefined) rebuilt.which = event.which;
-  if (event.run !== undefined) rebuilt.run = event.run;
+  const raw = event as unknown as Record<string, unknown>;
+  const rebuilt: RebuiltEnvelope = {};
+  for (const [field, rule] of Object.entries(ENVELOPE_SCHEMA)) {
+    const value = applyRule(event.kind, field, rule, raw[field]);
+    if (value !== ABSENT) rebuilt[field] = value as string | number;
+  }
   return rebuilt;
 }
 
-/** A rebuilt payload value: scalars, the valued `null` of a birth, or nested fields. */
-type PayloadValue = string | number | boolean | null | TransitionFields;
-
+/**
+ * Validates and rebuilds the payload against exactly what its kind declares.
+ *
+ * There is no per-kind branch here and there is not meant to be one: the branch
+ * WAS the reason the declarations could not be published, and a reader that
+ * walks a table is a reader whose table can be handed to somebody else.
+ */
 function validatePayload(event: CatalogEvent): Record<string, PayloadValue> {
   const kind = event.kind;
   requirePayloadObject(event);
-  rejectUnknownKeys(
-    kind,
-    'payload',
-    event.payload as unknown as Record<string, unknown>,
-    PAYLOAD_FIELDS[kind],
-  );
-  switch (event.kind) {
-    case 'run.started': {
-      requireString(kind, 'payload.agent', event.payload.agent);
-      requireOptionalString(kind, 'payload.goal', event.payload.goal);
-      const p: Record<string, string> = { agent: event.payload.agent };
-      if (event.payload.goal !== undefined) p.goal = event.payload.goal;
-      return p;
-    }
-    case 'run.ended': {
-      requireOptionalString(kind, 'payload.outcome', event.payload.outcome);
-      const p: Record<string, string> = {};
-      if (event.payload.outcome !== undefined) p.outcome = event.payload.outcome;
-      return p;
-    }
-    case 'task.created': {
-      requireString(kind, 'payload.title', event.payload.title);
-      return { title: event.payload.title };
-    }
-    case 'task.transitioned': {
-      requireStringOrNull(kind, 'payload.from', event.payload.from);
-      requireString(kind, 'payload.to', event.payload.to);
-      requireString(kind, 'payload.action', event.payload.action);
-      const p: Record<string, PayloadValue> = {
-        from: event.payload.from,
-        to: event.payload.to,
-        action: event.payload.action,
-      };
-      const fields = rebuildTransitionFields(kind, event.payload.fields);
-      if (fields !== undefined) p.fields = fields;
-      return p;
-    }
-    case 'decision.recorded': {
-      requireString(kind, 'payload.title', event.payload.title);
-      requireString(kind, 'payload.rationale', event.payload.rationale);
-      requireString(kind, 'payload.adr', event.payload.adr);
-      requireOptionalString(kind, 'payload.alternatives', event.payload.alternatives);
-      const p: Record<string, PayloadValue> = {
-        title: event.payload.title,
-        rationale: event.payload.rationale,
-        adr: event.payload.adr,
-      };
-      // Rebuilt only when present, so a decision recorded before the field
-      // existed canonicalizes to exactly the bytes it was signed as.
-      if (event.payload.alternatives !== undefined) {
-        p.alternatives = event.payload.alternatives;
-      }
-      return p;
-    }
-    case 'decision.transitioned': {
-      requireStringOrNull(kind, 'payload.from', event.payload.from);
-      requireString(kind, 'payload.to', event.payload.to);
-      requireString(kind, 'payload.action', event.payload.action);
-      requireOptionalString(kind, 'payload.by', event.payload.by);
-      const p: Record<string, PayloadValue> = {
-        from: event.payload.from,
-        to: event.payload.to,
-        action: event.payload.action,
-      };
-      if (event.payload.by !== undefined) p.by = event.payload.by;
-      const fields = rebuildTransitionFields(kind, event.payload.fields);
-      if (fields !== undefined) p.fields = fields;
-      return p;
-    }
-    case 'identity.founded': {
-      requireString(kind, 'payload.foundingFp', event.payload.foundingFp);
-      return { foundingFp: event.payload.foundingFp };
-    }
-    case 'key.enrolled': {
-      requireString(kind, 'payload.newFp', event.payload.newFp);
-      requireString(kind, 'payload.reverseSig', event.payload.reverseSig);
-      return { newFp: event.payload.newFp, reverseSig: event.payload.reverseSig };
-    }
-    case 'key.revoked': {
-      requireString(kind, 'payload.revokedFp', event.payload.revokedFp);
-      requireString(kind, 'payload.reason', event.payload.reason);
-      return { revokedFp: event.payload.revokedFp, reason: event.payload.reason };
-    }
-    case 'memory.captured': {
-      requireString(kind, 'payload.content', event.payload.content);
-      return { content: event.payload.content };
-    }
-    case 'observation.recorded': {
-      requireString(kind, 'payload.about', event.payload.about);
-      requireString(kind, 'payload.topic', event.payload.topic);
-      requireString(kind, 'payload.text', event.payload.text);
-      return {
-        about: event.payload.about,
-        topic: event.payload.topic,
-        text: event.payload.text,
-      };
-    }
-    case 'handoff.recorded': {
-      requireString(kind, 'payload.fromAgent', event.payload.fromAgent);
-      requireString(kind, 'payload.toAgent', event.payload.toAgent);
-      return { fromAgent: event.payload.fromAgent, toAgent: event.payload.toAgent };
-    }
-    case 'knowledge.linked': {
-      requireString(kind, 'payload.target', event.payload.target);
-      // `rel` is an open literal string: any non-empty string is accepted, never
-      // matched against a closed set, so a new relation label needs no upcaster
-      // and a past link with an unfamiliar one is never rejected on read.
-      requireString(kind, 'payload.rel', event.payload.rel);
-      return { target: event.payload.target, rel: event.payload.rel };
-    }
-    case 'skill.created': {
-      requireString(kind, 'payload.name', event.payload.name);
-      requireString(kind, 'payload.body', event.payload.body);
-      return { name: event.payload.name, body: event.payload.body };
-    }
-    case 'skill.transitioned': {
-      // Mirrors task.transitioned: `from` is a state or the birth's null, and
-      // there is no `by` — a skill is not relational.
-      requireStringOrNull(kind, 'payload.from', event.payload.from);
-      requireString(kind, 'payload.to', event.payload.to);
-      requireString(kind, 'payload.action', event.payload.action);
-      const p: Record<string, PayloadValue> = {
-        from: event.payload.from,
-        to: event.payload.to,
-        action: event.payload.action,
-      };
-      const fields = rebuildTransitionFields(kind, event.payload.fields);
-      if (fields !== undefined) p.fields = fields;
-      return p;
-    }
-    case 'skill.consulted':
-      // Nothing to validate and nothing to copy: the fact is the envelope. The
-      // rebuild is a fresh empty object, so a forged key on the stored line is
-      // dropped here AND fails the "stored bytes equal recomputed bytes" check.
-      return {};
-    case 'tail.pruned': {
-      requireString(kind, 'payload.tail', event.payload.tail);
-      requireString(kind, 'payload.throughHash', event.payload.throughHash);
-      // The catalog's first numeric payload field, and the rule on it is the
-      // reader's alone: a count of events in a tail that no longer exists is a
-      // claim nothing on disk can be compared against once the cut has happened,
-      // so what CAN be said is that it is a whole number of at least one. Zero is
-      // refused because a tail with no events has no head to name either — the
-      // write door refuses that tail outright, so no honest producer can reach it.
-      requirePositiveInteger(kind, 'payload.eventCount', event.payload.eventCount);
-      requireString(kind, 'payload.reason', event.payload.reason);
-      // WHAT IS DELIBERATELY NOT CHECKED HERE: whether the named tail is on disk.
-      // That is the WRITE-side rule (see `unprovenWaiverReason`), and it must never
-      // become a read-side one: the waiver exists to survive the cut, so the moment
-      // the tail it names is gone, a reader applying the write rule would refuse
-      // the waiver — and refusing one line refuses the whole tail it lives on,
-      // permanently. The one rule the two sides DO share is the shape above.
-      return {
-        tail: event.payload.tail,
-        throughHash: event.payload.throughHash,
-        eventCount: event.payload.eventCount,
-        reason: event.payload.reason,
-      };
-    }
-    case 'channel.switched': {
-      // The catalog's first BOOLEAN, and the rule on it is that it is one: a `"off"`,
-      // a `0` or a missing key are three ways for two readers to disagree about
-      // whether a channel was on, and this kind is read to decide whether the product
-      // says anything at all.
-      requireBoolean(kind, 'payload.on', event.payload.on);
-      requireOptionalString(kind, 'payload.reason', event.payload.reason);
-      const p: Record<string, PayloadValue> = { on: event.payload.on };
-      if (event.payload.reason !== undefined) p.reason = event.payload.reason;
-      return p;
-    }
-    case 'channel.served':
-      // Nothing to validate and nothing to rebuild. The key list above is empty, so a
-      // payload carrying anything at all was already refused before reaching here.
-      return {};
-    case 'channel.asked': {
-      // Both are REQUIRED, and the rule especially: this is the one kind of the catalog
-      // whose whole standing is that it names what caused it, so a charge with an absent
-      // or empty citation is a line this reader refuses rather than one it lifts.
-      requireString(kind, 'payload.rule', event.payload.rule);
-      requireString(kind, 'payload.path', event.payload.path);
-      return { rule: event.payload.rule, path: event.payload.path };
-    }
-    default:
-      // Exhaustiveness: adding a kind without an arm fails the build.
-      return assertNever(event);
+  const declared = PAYLOAD_SCHEMA[kind] as Record<string, FieldRule> | undefined;
+  if (declared === undefined) {
+    throw new EventParseError(`unhandled event kind: ${JSON.stringify(kind)}`);
   }
+  const raw = event.payload as unknown as Record<string, unknown>;
+  rejectUnknownKeys(kind, 'payload', raw, Object.keys(declared));
+  const rebuilt: Record<string, PayloadValue> = {};
+  for (const [field, rule] of Object.entries(declared)) {
+    const value = applyRule(kind, `payload.${field}`, rule, raw[field]);
+    if (value !== ABSENT) rebuilt[field] = value;
+  }
+  return rebuilt;
 }
 
 /**
@@ -401,30 +267,18 @@ function rebuildTransitionFields(kind: string, raw: unknown): TransitionFields |
     throw new EventParseError(`event "${kind}" needs an object at payload.fields`);
   }
   const obj = raw as Record<string, unknown>;
-  rejectUnknownKeys(kind, 'payload.fields', obj, TRANSITION_FIELD_KEYS);
-  const rebuilt: {
-    reason?: string;
-    note?: string;
-    feedback?: string;
-    pr_url?: string;
-    links?: string[];
-  } = {};
-  requireOptionalString(kind, 'payload.fields.reason', obj.reason);
-  if (obj.reason !== undefined) rebuilt.reason = obj.reason as string;
-  requireOptionalString(kind, 'payload.fields.note', obj.note);
-  if (obj.note !== undefined) rebuilt.note = obj.note as string;
-  requireOptionalString(kind, 'payload.fields.feedback', obj.feedback);
-  if (obj.feedback !== undefined) rebuilt.feedback = obj.feedback as string;
-  requireOptionalString(kind, 'payload.fields.pr_url', obj.pr_url);
-  if (obj.pr_url !== undefined) rebuilt.pr_url = obj.pr_url as string;
-  if (obj.links !== undefined)
-    rebuilt.links = requireStringArray(kind, 'payload.fields.links', obj.links);
+  rejectUnknownKeys(kind, 'payload.fields', obj, Object.keys(TRANSITION_FIELDS_SCHEMA));
+  const rebuilt: Record<string, PayloadValue> = {};
+  for (const [field, rule] of Object.entries(TRANSITION_FIELDS_SCHEMA)) {
+    const value = applyRule(kind, `payload.fields.${field}`, rule, obj[field]);
+    if (value !== ABSENT) rebuilt[field] = value;
+  }
   // An empty `fields` object carries no proof; treat it as absence so it cannot
   // become a second, byte-distinct spelling of "no fields".
   if (Object.keys(rebuilt).length === 0) {
     throw new EventParseError(`event "${kind}" has an empty payload.fields; omit it instead`);
   }
-  return rebuilt;
+  return rebuilt as TransitionFields;
 }
 
 function requireStringArray(kind: string, field: string, value: unknown): string[] {
@@ -463,10 +317,6 @@ function requireString(kind: string, field: string, value: unknown): void {
   if (typeof value !== 'string' || value.length === 0) {
     throw new EventParseError(`event "${kind}" needs a non-empty string at ${field}`);
   }
-}
-
-function requireOptionalString(kind: string, field: string, value: unknown): void {
-  if (value !== undefined) requireString(kind, field, value);
 }
 
 /**
@@ -537,8 +387,30 @@ function requireIso8601(kind: string, field: string, value: unknown): void {
   }
 }
 
-function assertNever(value: never): never {
-  throw new EventParseError(`unhandled event kind: ${JSON.stringify(value)}`);
+/**
+ * Requires the version selector: a whole number of at least one.
+ *
+ * `kind` and `v` together select exactly one payload contract (section 7), so a
+ * version that is not a whole number is not a selector at all — it names no
+ * contract, and a reader that let it through would be rebuilding against a
+ * contract it picked rather than one the line named.
+ */
+function requireVersion(kind: string, field: string, value: unknown): void {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 1) {
+    throw new EventParseError(`event "${kind}" needs a whole number of at least 1 at ${field}`);
+  }
+}
+
+/**
+ * Exhaustiveness over the RULE vocabulary, not over the kinds.
+ *
+ * The kinds are held by {@link PAYLOAD_SCHEMA}'s mapped type — a kind with no row
+ * does not compile. What this holds is the other half: a rule name added to
+ * {@link FieldRule} and published in `event-schema.json` with nothing here to
+ * apply it would be a rule a stranger implements and this reader ignores.
+ */
+function assertNeverRule(rule: never): never {
+  throw new EventParseError(`unhandled field rule: ${JSON.stringify(rule)}`);
 }
 
 /**

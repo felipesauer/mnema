@@ -22,7 +22,10 @@ import hashlib
 
 from . import ots
 from .canonical import UNDEFINED, canonical, canonical_bytes, strict_loads
+from .ed25519 import public_key_of as ed_public_key_of
+from .ed25519 import sign as ed_sign
 from .ed25519 import verify as ed25519_verify
+from . import schema
 from .framed import digest, frame
 from .root import content_root, empty_root
 from .verdict import Refusal, Report
@@ -49,6 +52,17 @@ RFC8032 = (
     ),
 )
 
+# The SECRETS of the three vectors above, which RFC 8032 section 7.1 publishes beside them.
+# They are here because this program SIGNS as well as verifies: `mutate` needs a checkpoint
+# signed by a key no enrolment authorized, and that input cannot be forged by editing bytes -
+# every other check has to keep closing, so the signature has to be real. A key whose secret
+# is in a published RFC is the one key a verifier can hold without holding a secret.
+RFC8032_SECRETS = (
+    "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60",
+    "4ccd089b28ff96da9db6c346ec114e0f5b8a319f35aba624da8cf6ed4fb8a6fb",
+    "c5aa8df43f9f837bedb7442f31dcb7b166d38535076f094b85ce3a2e0b4458f7",
+)
+
 
 def _expect_refusal(report: Report, section: str, what: str, thunk) -> None:
     try:
@@ -72,6 +86,27 @@ def _signatures(report: Report) -> None:
             )
     if good:
         report.ok("6", f"{good} of {len(RFC8032)} RFC 8032 Ed25519 vectors verify", "self-test")
+
+    # THE SIGNER, against the same published data. A signer checked only by this program's
+    # own verifier would be two halves agreeing with each other; these are RFC 8032's own
+    # signatures, byte for byte, and Ed25519 is deterministic so there is exactly one right
+    # answer per (secret, message).
+    signed = 0
+    derived = 0
+    for secret, (public_key, signature, message) in zip(RFC8032_SECRETS, RFC8032):
+        raw = bytes.fromhex(secret)
+        if ed_public_key_of(raw).hex() == public_key:
+            derived += 1
+        if ed_sign(raw, bytes.fromhex(message)).hex() == signature:
+            signed += 1
+    if derived == len(RFC8032):
+        report.ok("6", f"{derived} RFC 8032 secrets derive the public keys the RFC publishes", "self-test")
+    else:
+        report.fail("6", f"only {derived} of {len(RFC8032)} secrets derive their published key", "self-test")
+    if signed == len(RFC8032):
+        report.ok("6", f"{signed} of {len(RFC8032)} RFC 8032 signatures are reproduced by signing", "self-test")
+    else:
+        report.fail("6", f"only {signed} of {len(RFC8032)} RFC 8032 signatures reproduce", "self-test")
 
     public_key, signature, message = RFC8032[1]
     flipped = bytearray(bytes.fromhex(signature))
@@ -328,8 +363,79 @@ def _witness_limits(report: Report) -> None:
     )
 
 
+def _declarations(report: Report) -> None:
+    """Section 4.1's rule vocabulary, one accepted value and one refused value each.
+
+    THIS BATTERY EXISTS BECAUSE A MUTATION FOUND NOTHING. Turning the `instant` rule off
+    left ZERO tests red: every published vector and every frozen record carries a
+    well-formed `at`, and no mutation produced a malformed one, so a rule the document
+    states and this reader implements was exercised by nothing at all. A rule with no input
+    is a rule nobody has checked, and the same was true of `boolean`, `count` and
+    `string|null` on the REFUSING side — the accepting side is covered by rebuilding the 23
+    vectors, which is exactly the half that cannot go wrong quietly.
+
+    It is total over the vocabulary by construction: the loop is over KNOWN_RULES, so a
+    rule added without a row here is reported as unexercised rather than silently skipped.
+    """
+    # (rule, a value it accepts, a value it refuses). `_MISSING` stands for an absent key.
+    cases: dict[str, tuple[object, object]] = {
+        "string": ("a", ""),
+        "string?": (schema._MISSING, ""),
+        "string|null": (None, ""),
+        "boolean": (False, "false"),
+        "count": (1, 0),
+        "string[]?": (["a"], []),
+        "fields?": ({"note": "n"}, {}),
+        "version": (1, 0),
+        "kind": ("memory.captured", ""),
+        "instant": ("2026-07-21T00:00:00.000Z", "2026-07-21T00:00:00Z"),
+    }
+    unexercised = sorted(schema.KNOWN_RULES - set(cases))
+    if unexercised:
+        report.fail(
+            "4.1",
+            "rule(s) in this reader's vocabulary with no self-test case: " + ", ".join(unexercised),
+            "self-test",
+        )
+    declarations = None
+    try:
+        declarations = schema.load()
+    except Refusal as refusal:
+        report.unchecked("4.1", refusal.what, "self-test", "G08")
+    accepted = 0
+    refused = 0
+    for rule, (good, bad) in sorted(cases.items()):
+        try:
+            schema._apply("self-test", "f", rule, good, declarations)
+            accepted += 1
+        except Refusal:
+            report.fail("4.1", f"the rule {rule!r} refuses a value section 4.1 accepts", "self-test")
+        try:
+            schema._apply("self-test", "f", rule, bad, declarations)
+            report.fail("4.1", f"the rule {rule!r} ACCEPTS a value section 4.1 refuses", "self-test")
+        except Refusal:
+            refused += 1
+    if accepted == len(cases) and refused == len(cases):
+        report.ok(
+            "4.1",
+            f"all {len(cases)} field rules of the published vocabulary accept a value and "
+            "refuse one, which is every rule this reader knows",
+            "self-test",
+        )
+    # The instant rule twice more, on the two ways a date can be wrong that a PATTERN alone
+    # cannot tell apart: the shape is right and the date is not.
+    for impossible in ("2026-13-01T00:00:00.000Z", "2026-02-30T00:00:00.000Z"):
+        _expect_refusal(
+            report,
+            "4.1",
+            f"an `at` matching the shape and naming no day: {impossible}",
+            lambda value=impossible: schema._apply("self-test", "at", "instant", value),
+        )
+
+
 def run(report: Report) -> None:
     _signatures(report)
+    _declarations(report)
     _framing(report)
     _canonicalization(report)
     _folding(report)

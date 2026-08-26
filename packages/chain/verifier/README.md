@@ -30,8 +30,17 @@ completing end-to-end tests as a **precondition** for publishing a technical sta
 Certificate Transparency runs on several implementations checking each other.
 
 What a second reader buys is not redundancy. It is that assumptions which work inside one
-product and are false outside it become **visible**. Twenty-four of them did, and they are
+product and are false outside it become **visible**. Twenty-five of them did, and they are
 the deliverable half of this directory — `mnema_verify.py gaps`.
+
+Three of the twenty-five were places the two readers **disagreed about the same bytes**, and
+all three are closed. Two were acceptances — a field no kind declares, on an appended event;
+a signer no enrolment authorized — found by *building the input*, because nine mutations both
+readers refused prove nothing about what this one accepts. The third ran the other way and is
+the quieter of the two failures: this reader **refused an honest event** for carrying
+`which`, which sixteen of the twenty-three published vectors carry, because the document
+described the envelope as the intersection of its own exemplars. Refusing too much looks like
+rigour, so nobody goes looking for it.
 
 ## What it checks
 
@@ -43,6 +52,8 @@ the deliverable half of this directory — `mnema_verify.py gaps`.
 | **T3** | the OpenTimestamps proof's subject is the checkpoint's digest, the path folds to the merkle root the stored header carries, and the header's own hash meets the target it declares — with section 8's three declared limits refused by name |
 | **§1** | the 23 published vectors and the four aggregate digests, plus every refusal section 1 lists |
 | **§4** | byte identity: re-serializing what a line holds reproduces that line exactly |
+| **§4.1** | every event rebuilt from the fields its `(kind, v)` contract declares in `event-schema.json`, and any other refused — which catches a forged field on a **newly appended** event, where byte identity cannot |
+| **§6.2** | enrolment: every event's signer is a key **valid for its anchor** at that point in the fold, with a revocation and a restoring re-add taking effect only when signature-covered |
 | — | the tail id's fingerprint is a key the record carries; the undocumented `tailproof.json`; whether the newest confirmed attestation reaches the last event |
 
 ## What it does not check
@@ -50,24 +61,25 @@ the deliverable half of this directory — `mnema_verify.py gaps`.
 Printed on **every** run, including a verified one, because a gap that looks like coverage
 is worse than an absence.
 
-**Two of these are places where it accepts what the product refuses.** Accepting too much is
-the silent defect of a second reader — it never disagrees, and so never proves anything — so
-both were found by *building the input* rather than by concluding from silence:
+**This list used to have two more entries, and they were places where it ACCEPTED what the
+product refuses.** They are gone, which is the only kind of shrinking this list may do:
 
-- **Enrolment.** Section 6 asks that a signature verify under `signerFp`, and that is what
-  this checks. The product also requires the signer to have been a key *valid for its anchor
-  at that point in the chain* — which the document describes nowhere.
-- **A forged field inside a payload, on an event appended above the last checkpoint.** This
-  is the one a party with **no key** can walk through. The entry hash takes no key, so
-  whoever can write the repository computes it; above the last checkpoint no signature
-  covers it; and the envelope keys are all present. What would refuse it is the per-kind
-  field declaration, and those are published nowhere — so byte identity is all this reader
-  has, and byte identity catches a field added to a line already written, not a new line.
-  Reproduce it with `mutate.py forged-payload-field-appended`. The least this reader can do,
-  and does, is report the window: *N event(s) sit above the last checkpoint and rest on the
-  hash chain ALONE*.
+- **Enrolment** was not in the document at all. It is §6.2 now, and `§6.2` above is it,
+  earned by `mutate.py checkpoint-by-an-unenrolled-key` — a checkpoint whose root folds,
+  whose `prev` chains and whose Ed25519 signature genuinely verifies, and which is refused
+  anyway because nothing ever brought its signer under the anchor its events name.
+- **A forged field inside a payload, on an event appended above the last checkpoint** — the
+  one a party with **no key** could walk through. The declarations are published now
+  (`event-schema.json`, §4.1) and both readers refuse it, naming the same field. Reproduce
+  with `mutate.py forged-payload-field-appended`, and its mirror —
+  `appended-event-missing-a-declared-field`, a **required field left out**, which no amount
+  of byte identity could ever have caught and which one exemplar per kind could never have
+  told anybody about.
 
-The rest are boundaries, not acceptances:
+The window is still reported on every run, because closing those two did not close it:
+*N event(s) sit above the last checkpoint and rest on the hash chain ALONE*.
+
+What is left below are boundaries, not acceptances:
 
 - **Section 7**, that a proof is never recomputed over a lifted reading: no published
   vector carries `v > 1` and no upcaster is published, so there is nothing to lift.
@@ -100,21 +112,31 @@ python3 mutate.py edited-event-chain-repaired /tmp/a-copy-of-a-record
 python3 mnema_verify.py record /tmp/a-copy-of-a-record      # REFUSED, exit 1
 ```
 
-That one is the sharpest. It edits an event and then recomputes **every** `hash` and `prev`
-in the tail, which needs no key at all — the entry hash is keyless. T1 closes again. What
-refuses it is the content root, folded over the event *content* and not over stored hashes,
-which is what section 5 calls the load-bearing invariant of the whole format. Before this
-directory existed, that claim had never been checked by anything but the product's own
-tests.
+That one is the sharpest of the keyless ones. It edits an event and then recomputes **every**
+`hash` and `prev` in the tail, which needs no key at all — the entry hash is keyless. T1
+closes again. What refuses it is the content root, folded over the event *content* and not
+over stored hashes, which is what section 5 calls the load-bearing invariant of the whole
+format. Before this directory existed, that claim had never been checked by anything but the
+product's own tests.
+
+`checkpoint-by-an-unenrolled-key` is its counterpart one layer up, and it is the reason this
+directory can sign as well as verify. Everything sections 1 to 6 ask for **closes**: the
+appended event's entry hash is right, the new checkpoint chains by `prev`, its content root
+folds, and its signature verifies under a key whose committed material hashes to exactly the
+fingerprint it is filed under. The key is RFC 8032 section 7.1's first test vector, whose
+secret the RFC itself publishes — the one key a verifier can hold without holding a secret.
+Only §6.2 refuses it, which is the whole difference between *the signature verifies* and
+*the signer was allowed to sign*.
 
 ## The honest guarantee
 
 **What this buys.** A verdict on a real record, reached from the document and the bytes, by
-a program that has never seen the implementation. Twenty-four places where the document was
-not enough for that, each one written down. A refusal for every mutation in `mutate.py` bar
-the one that exists to demonstrate an acceptance; one disagreement with the product that the
-document does not settle (which attestation dates a record — gap G23); and two places where
-it accepts what the product refuses, both named above.
+a program that has never seen the implementation. Twenty-five places where the document was
+not enough for that, each one written down. **A refusal for every mutation in `mutate.py`,
+with no exception** — the exception used to be the one that existed to demonstrate an
+acceptance, and there is no acceptance left to demonstrate. One disagreement with the product
+that the document does not settle (which attestation dates a record — gap G23), and that is
+all of them.
 
 **What it does not buy.** Independence in the *social* sense. Same author, same repository,
 same interest in it working. It is independent in the **technical** sense — another language,

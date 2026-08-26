@@ -23,11 +23,14 @@ from .verdict import Refusal
 
 ENTRY_DOMAIN = "mnema.entry.v1"
 
-# Gap G14: the envelope is specified nowhere in the document. These seven keys are the
-# intersection of the top-level keys of all 23 published vectors, so the list is derived
-# from published DATA rather than from the code - and `vectors` re-derives it on every run
-# and refuses if the intersection moves, so this constant cannot drift silently.
-ENVELOPE_KEYS = frozenset({"v", "kind", "at", "who", "signerFp", "subject", "payload"})
+# THE ENVELOPE IS NOT DECLARED HERE ANY MORE, and the reason is worth keeping. It used to be
+# a frozenset of seven keys - gap G14 - derived as the INTERSECTION of the top-level keys of
+# the 23 published vectors, because the document said the envelope was those seven names and
+# published nothing a reader could check. The intersection is not the envelope: `which` and
+# `run` are optional, sixteen and three of those same vectors carry them, and this reader
+# consequently REFUSED an honest event for carrying `which` (gap G25). The declarations are
+# published now, so the envelope comes out of `event-schema.json` and an optional field is
+# spelled as one. `schema` reads it; nothing here guesses at it.
 
 LINK_KEYS = frozenset({"hash", "prev", "seq", "tail"})
 LINE_KEYS = frozenset({"event", "link"})

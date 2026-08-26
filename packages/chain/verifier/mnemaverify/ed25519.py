@@ -13,6 +13,15 @@ what makes this file's correctness somebody else's published claim rather than m
 Curve constants and the verification equation are RFC 8032 section 5.1. The equation used
 is the cofactorless one, [S]B == R + [k]A, which is the one the RFC states; the cofactored
 variant accepts a strictly larger set and no honest signer produces the difference.
+
+THERE IS A SIGNER HERE TOO, and it is not for verifying anything. `mutate` needs to produce
+a checkpoint signed by a key NO ENROLMENT AUTHORIZED - the input that separates "the
+signature verifies" from "the signer was allowed to sign", which is section 6.2's whole
+subject. Such an input cannot be built by editing bytes: every other check has to keep
+closing, so the checkpoint has to be genuinely signed, by a key whose secret is known. The
+one used is RFC 8032 section 7.1's first test vector, whose secret is published in the RFC
+itself. `selftest` runs the signer against the RFC's own signatures, so this half is
+somebody else's published claim exactly like the other half.
 """
 
 from __future__ import annotations
@@ -116,3 +125,43 @@ def verify(public_key: bytes, signature: bytes, message: bytes) -> bool:
         % L
     )
     return _equal(_mul(B, s), _add(r, _mul(a, k)))
+
+
+def _encode_point(p: tuple[int, int, int, int]) -> bytes:
+    """RFC 8032 section 5.1.2: y in 255 little-endian bits, with x's low bit on top."""
+    x, y, z, _ = p
+    inverse = pow(z, P - 2, P)
+    x = x * inverse % P
+    y = y * inverse % P
+    return int.to_bytes(y | ((x & 1) << 255), 32, "little")
+
+
+def public_key_of(secret: bytes) -> bytes:
+    """RFC 8032 section 5.1.5: the public key a 32-byte secret determines."""
+    if len(secret) != 32:
+        raise ValueError("an Ed25519 secret is 32 bytes")
+    h = bytearray(hashlib.sha512(secret).digest())
+    h[0] &= 248
+    h[31] &= 127
+    h[31] |= 64
+    s = int.from_bytes(h[:32], "little")
+    return _encode_point(_mul(B, s))
+
+
+def sign(secret: bytes, message: bytes) -> bytes:
+    """RFC 8032 section 5.1.6. Deterministic: the same secret and message always agree."""
+    if len(secret) != 32:
+        raise ValueError("an Ed25519 secret is 32 bytes")
+    digest = hashlib.sha512(secret).digest()
+    h = bytearray(digest[:32])
+    h[0] &= 248
+    h[31] &= 127
+    h[31] |= 64
+    s = int.from_bytes(h, "little")
+    prefix = digest[32:]
+    encoded_a = _encode_point(_mul(B, s))
+    r = int.from_bytes(hashlib.sha512(prefix + message).digest(), "little") % L
+    encoded_r = _encode_point(_mul(B, r))
+    k = int.from_bytes(hashlib.sha512(encoded_r + encoded_a + message).digest(), "little") % L
+    big_s = (r + k * s) % L
+    return encoded_r + int.to_bytes(big_s, 32, "little")

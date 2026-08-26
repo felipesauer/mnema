@@ -13,7 +13,11 @@ from __future__ import annotations
 
 from typing import Literal, NamedTuple
 
-Resolution = Literal["experiment", "external-spec", "unresolved"]
+Resolution = Literal["experiment", "external-spec", "specified", "unresolved"]
+# `specified` is the fourth, and it arrived after the first pass: the document GREW the
+# rule, so this reader implements it from prose and from a published artifact rather than
+# from a guess. It is the only resolution that removes an entry from what this verifier
+# declares it does not check - the other three leave the reading resting on something.
 
 
 class Gap(NamedTuple):
@@ -86,10 +90,16 @@ GAPS: tuple[Gap, ...] = (
     Gap(
         "G08",
         "4",
-        "the per-kind field declarations are published nowhere, so the forged-extra-field "
-        "refusal cannot be implemented from the document",
-        "unresolved",
-        "envelope shape only, intersected from the 23 published vectors; refusal not covered",
+        "the per-kind field declarations were published nowhere, so section 4's rebuild-and-"
+        "reject could not be implemented from the document: an exemplar cannot tell a required "
+        "field from an optional one that happens to be present. Measured as an ACCEPTANCE - an "
+        "event appended keylessly above the last checkpoint, carrying a field no kind declares, "
+        "read as verified here and as unreadable by the product",
+        "specified",
+        "CLOSED: section 4.1 and event-schema.json publish every contract as (kind, v) with a "
+        "rule per field, and this reader rebuilds each event from its own contract. The same "
+        "input is refused now, and so is a REQUIRED field left out, which byte identity could "
+        "never have caught",
     ),
     Gap(
         "G09",
@@ -134,10 +144,12 @@ GAPS: tuple[Gap, ...] = (
     Gap(
         "G14",
         "7",
-        "the event envelope is specified nowhere: section 7 names kind and v, and the other "
-        "five top-level keys exist only in the published vectors",
-        "experiment",
-        "envelope keys intersected from the 23 vectors",
+        "the event envelope was specified nowhere: section 7 named kind and v, and the other "
+        "top-level keys existed only in the published vectors - so the only derivation "
+        "available was the INTERSECTION of them, which is not the envelope (see G25)",
+        "specified",
+        "CLOSED: the envelope is the `envelope` object of event-schema.json, eight names of "
+        "which two are optional, and this reader reads it rather than deriving it",
     ),
     Gap(
         "G15",
@@ -196,13 +208,17 @@ GAPS: tuple[Gap, ...] = (
     Gap(
         "G21",
         "6",
-        "enrolment is not in the document at all: the product requires the signer to be a key "
-        "VALID FOR ITS ANCHOR at that point in the chain, and section 6 asks only that the "
-        "signature verify under signerFp. key.enrolled and key.revoked are published kinds with "
-        "no published semantics",
-        "unresolved",
-        "declared not covered - this is the one place this reader accepts what the product "
-        "refuses, and it is said out loud rather than left to be found",
+        "enrolment was not in the document at all: the product requires the signer to be a key "
+        "VALID FOR ITS ANCHOR at that point in the chain, and section 6 asked only that the "
+        "signature verify under signerFp. key.enrolled and key.revoked were published kinds with "
+        "no published semantics - the bytes of the facts that carry the authorization were "
+        "published and the rule that reads them was not",
+        "specified",
+        "CLOSED: section 6.2 gives the anchor derivation, the fold order across tails, the three "
+        "facts and their conditions, and the two signature-coverage gates. Implemented from it, "
+        "and earned by two mutations - one with no key at all, one with a checkpoint genuinely "
+        "signed by a key the RFC publishes the secret of, where every check below the enrolment "
+        "layer closes",
     ),
     Gap(
         "G22",
@@ -224,6 +240,21 @@ GAPS: tuple[Gap, ...] = (
         "this reader takes the EARLIEST block: an earlier attestation is the stronger existence "
         "claim, and the alternative rule is proof traversal order, which a semantically identical "
         ".ots can reorder. The divergence is pinned by a test rather than hidden",
+    ),
+    Gap(
+        "G25",
+        "7",
+        "THE ONE THAT RAN THE OTHER WAY, and nobody was looking for it because refusing too "
+        "much looks like rigour. Section 7 stated that \"the seven top-level keys of an event "
+        "are at, kind, payload, signerFp, subject, v and who\", which is the INTERSECTION of "
+        "the published vectors and not the envelope: `which` rides on sixteen of the "
+        "twenty-three and `run` on three. A reader that believed the sentence - this one did - "
+        "REFUSES an honest event carrying `which`, on a record the product reads as fine",
+        "specified",
+        "CLOSED by the same artifact as G08 and G14: an optional envelope field is spelled "
+        "`string?` in event-schema.json, so nothing has to be inferred from an exemplar. Found "
+        "by building an HONEST input, which is the only way this class shows up - an acceptance "
+        "is found by building an attack, and an over-refusal is not",
     ),
     Gap(
         "G24",
@@ -252,7 +283,7 @@ def render() -> str:
         f"{len(GAPS)} gaps: "
         + ", ".join(
             f"{how} {sum(1 for g in GAPS if g.how == how)}"
-            for how in ("experiment", "external-spec", "unresolved")
+            for how in ("experiment", "external-spec", "specified", "unresolved")
         ),
         "",
     ]

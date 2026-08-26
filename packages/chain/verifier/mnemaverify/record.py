@@ -17,6 +17,17 @@ The four checks, by the names the product's own document uses for them:
     T2  the content root: each checkpoint's root folds over the events of its range
     T4  the signature: Ed25519 over the canonical bytes, by the key the fingerprint names
     T3  the external witness: the proof's subject, the merkle fold, and the block's work
+
+And two the document did not have until it was measured not having them - each one a place
+this reader disagreed with the product, and each one now read from a published rule rather
+than inferred from an exemplar:
+
+    4.1 the field declarations: every event rebuilt from exactly what its contract
+        declares, so a field no kind declares is refused even on a newly APPENDED event,
+        which byte identity alone can never catch (`schema`, gap G08, gap G25)
+    6.2 enrolment: the signer of every event is a key VALID FOR ITS ANCHOR at that point
+        in the fold, which is a different claim from "the signature verifies"
+        (`enrolment`, gap G21)
 """
 
 from __future__ import annotations
@@ -25,11 +36,10 @@ import os
 import re
 from typing import NamedTuple
 
-from . import bitcoin, ots
-from .canonical import canonical_bytes
+from . import bitcoin, enrolment, ots, schema
 from .checkpoint import Checkpoint, read_checkpoint, read_tailproof
 from .ed25519 import verify as ed25519_verify
-from .entry import ENVELOPE_KEYS, Entry, entry_hash, read_line
+from .entry import Entry, entry_hash, read_line
 from .keys import PublicKey, load_keyring
 from .root import content_root, which_reading_closes
 from .verdict import Refusal, Report
@@ -72,7 +82,9 @@ def _lines(path: str) -> list[tuple[int, bytes]]:
     return out
 
 
-def _read_entries(report: Report, tail_dir: str, tail_id: str) -> list[Entry]:
+def _read_entries(
+    report: Report, tail_dir: str, tail_id: str, declarations: schema.Schema | None
+) -> list[Entry]:
     segments = sorted(name for name in os.listdir(tail_dir) if SEGMENT_NAME.match(name))
     skipped = sorted(
         name
@@ -105,15 +117,47 @@ def _read_entries(report: Report, tail_dir: str, tail_id: str) -> list[Entry]:
                     "the bytes on disk are not the bytes the entry hash was taken over",
                     where,
                 )
-            if set(entry.event) != ENVELOPE_KEYS:
-                report.fail(
-                    "7",
-                    f"envelope keys are {sorted(entry.event)}, not {sorted(ENVELOPE_KEYS)}",
-                    where,
-                    "G14",
-                )
+            _check_declarations(report, declarations, entry, where)
             entries.append(entry)
     return entries
+
+
+def _check_declarations(
+    report: Report, declarations: schema.Schema | None, entry: Entry, where: str
+) -> None:
+    """Section 4.1: rebuild the event from exactly what its contract declares.
+
+    THIS REPLACED A CHECK THAT WAS STRICTER THAN THE FORMAT (gap G25). With no published
+    declarations, the envelope had to be guessed at, and the only derivation available was
+    the INTERSECTION of the top-level keys of the published vectors - which section 7 stated
+    as a fact ("the seven top-level keys of an event are ...") and which is not the envelope
+    at all. `which` is carried by sixteen of the twenty-three vectors and `run` by three, so
+    this reader REFUSED an honest event for carrying one, on a record the product read as
+    fine. Accepting too much is the loud failure of a second reader; refusing too much is the
+    quiet one, because it looks like rigour.
+
+    WHAT IS NOT DONE HERE, AND WHY IT WAS TAKEN OUT. This used to compare the rebuilt event
+    against the stored bytes, "which is what section 4 says the rebuild buys". A mutation
+    turning that comparison off left ZERO tests red, and the reason is that it can never
+    fire: the rebuild REFUSES every key it does not declare rather than dropping it, and
+    copies every value it does declare unchanged, so the rebuilt event is the parsed event
+    whenever it is produced at all. A third statement of section 4's byte identity - beside
+    the canonical-line check and the entry hash, which do fire - is a line of code that looks
+    like a check and is not one, and that is the exact failure this whole delivery is about.
+    """
+    if declarations is None:
+        report.unchecked(
+            "4.1",
+            "the published field declarations could not be read, so no event could be "
+            "rebuilt from its contract",
+            where,
+            "G08",
+        )
+        return
+    try:
+        schema.rebuild(declarations, entry.event)
+    except Refusal as refusal:
+        report.fail(refusal.section, refusal.what, where, "G08")
 
 
 def _check_chain(report: Report, entries: list[Entry], tail_id: str) -> None:
@@ -152,7 +196,12 @@ def _check_chain(report: Report, entries: list[Entry], tail_id: str) -> None:
 def _check_signature(
     report: Report, ring: dict[str, PublicKey], signer: str, signature: str, message: bytes,
     section: str, where: str,
-) -> None:
+) -> bool:
+    """Answers whether the signature VERIFIED, which is not the same as "nothing refused".
+
+    A key that is not in the ring leaves this UNCHECKED and answers False: section 6.2's
+    coverage gate must never treat a signature nobody could check as one that held.
+    """
     key = ring.get(signer)
     if key is None:
         report.unchecked(
@@ -162,14 +211,15 @@ def _check_signature(
             where,
             "G03",
         )
-        return
+        return False
     try:
         raw_signature = bytes.fromhex(signature)
     except ValueError:
         report.fail(section, "the signature is not hex", where)
-        return
+        return False
     if ed25519_verify(key.raw, raw_signature, message):
         report.ok(section, f"the Ed25519 signature verifies under {signer[:12]}...", where)
+        return True
     else:
         report.fail(
             section,
@@ -177,19 +227,34 @@ def _check_signature(
             f"{signer[:12]}...",
             where,
         )
+        return False
+
+
+class Checkpoints(NamedTuple):
+    """What a tail's checkpoints file yielded, and how far a VERIFIED one reaches.
+
+    `covered_through` counts only a checkpoint whose content root folded AND whose signature
+    verified - which is what section 6.2 means by signature-covered. Counting a checkpoint
+    that failed would hand the enrolment fold a window it has no right to trust, and the
+    two gates of 6.2 are exactly about not trusting that window.
+    """
+
+    checkpoints: list[Checkpoint]
+    covered_through: int
 
 
 def _check_checkpoints(
     report: Report, tail_dir: str, tail_id: str, entries: list[Entry],
     ring: dict[str, PublicKey],
-) -> list[Checkpoint]:
+) -> Checkpoints:
     path = os.path.join(tail_dir, CHECKPOINTS_FILE)
     if not os.path.exists(path):
         report.note("6", "no checkpoints file, so nothing is signed here", tail_id, "G13")
-        return []
+        return Checkpoints([], -1)
 
     event_bytes = [entry.event_bytes for entry in entries]
     checkpoints: list[Checkpoint] = []
+    verified: list[Checkpoint] = []
     previous_hash: str | None = None
     previous_to: int | None = None
     readings: set[str] = set()
@@ -226,6 +291,7 @@ def _check_checkpoints(
                 "G11",
             )
 
+        root_held = False
         if checkpoint.to_seq >= len(entries):
             report.unchecked(
                 "5",
@@ -247,6 +313,7 @@ def _check_checkpoints(
                 )
             else:
                 readings.add(reading)
+                root_held = True
                 report.ok(
                     "5",
                     f"the content root folds over seq {checkpoint.from_seq}.."
@@ -254,22 +321,30 @@ def _check_checkpoints(
                     label,
                 )
 
-        _check_signature(
+        signed = _check_signature(
             report, ring, checkpoint.stored["signerFp"], checkpoint.stored["sig"],
             checkpoint.message, "6", label,
         )
+        if root_held and signed:
+            verified.append(checkpoint)
         previous_hash = checkpoint.message_hash
         previous_to = checkpoint.to_seq
 
-    covered_through = max((cp.to_seq for cp in checkpoints), default=-1)
+    # Section 6.2's "covered": the highest seq a checkpoint that VERIFIED reaches, which is
+    # not the highest seq a checkpoint CLAIMS. A checkpoint whose signature failed proves
+    # nothing about the events under it, and treating it as coverage would hand the enrolment
+    # fold a window that a keyless party can write in.
+    covered_through = max((cp.to_seq for cp in verified), default=-1)
     residual = len(entries) - (covered_through + 1)
     if residual > 0:
         report.note(
             "6",
             f"{residual} event(s) sit above the last checkpoint and rest on the hash chain "
             "ALONE: no signature covers them, so a party with no key can append or edit there "
-            "and every signed statement still verifies. This reader cannot refuse such an "
-            "event unless its bytes are malformed - see what is not covered, below",
+            "and every signed statement still verifies. What this reader CAN refuse there is "
+            "an event whose fields its contract does not declare (section 4.1) and one whose "
+            "signer no enrolment authorized (section 6.2); what it cannot tell you is that "
+            "the events are otherwise attested, because nothing signed them",
             tail_id,
             "G08",
         )
@@ -289,7 +364,7 @@ def _check_checkpoints(
             tail_id,
             "G02",
         )
-    return checkpoints
+    return Checkpoints(checkpoints, covered_through)
 
 
 def _check_tailproof(
@@ -550,44 +625,99 @@ def verify_record(root: str, report: Report) -> None:
         report.break_out(f"there are no tails under {tails_dir}")
         return
 
+    declarations = _load_declarations(report)
+
+    entries_by_tail: dict[str, list[Entry]] = {}
+    covered_by_tail: dict[str, int] = {}
     for tail_id in tail_ids:
         tail_dir = os.path.join(tails_dir, tail_id)
         _check_tail_id(report, tail_id, ring)
-        entries = _read_entries(report, tail_dir, tail_id)
+        entries = _read_entries(report, tail_dir, tail_id, declarations)
         _check_chain(report, entries, tail_id)
-        checkpoints = _check_checkpoints(report, tail_dir, tail_id, entries, ring)
+        found = _check_checkpoints(report, tail_dir, tail_id, entries, ring)
         _check_tailproof(report, tail_dir, tail_id, ring)
         last_seq = entries[-1].seq if entries else -1
-        _check_witness(report, tail_dir, tail_id, checkpoints, last_seq)
+        _check_witness(report, tail_dir, tail_id, found.checkpoints, last_seq)
+        entries_by_tail[tail_id] = entries
+        covered_by_tail[tail_id] = found.covered_through
 
+    _check_enrolment(report, entries_by_tail, covered_by_tail, ring)
     declare_scope(report)
+
+
+def _load_declarations(report: Report) -> schema.Schema | None:
+    """The published field declarations, or None with the reason said out loud.
+
+    A reader that could not load them has not found anything wrong; it has been unable to
+    ask, and every event it reads is UNCHECKED under section 4.1 rather than accepted. That
+    is the same distinction the keyring makes between REFUSED and INCOMPLETE, and it exists
+    here for the same reason: a check that silently did not run looks exactly like a check
+    that passed.
+    """
+    try:
+        declarations = schema.load()
+    except Refusal as refusal:
+        report.unchecked("4.1", refusal.what, schema.DEFAULT_SCHEMA, "G08")
+        return None
+    if declarations.unknown_rules:
+        report.unchecked(
+            "4.1",
+            "the published declarations use rule(s) this reader does not know: "
+            + ", ".join(declarations.unknown_rules)
+            + ". A rule it cannot apply is a field it has not checked, said rather than skipped",
+            declarations.path,
+            "G08",
+        )
+    for rule in schema.undefined_rules(declarations):
+        report.note(
+            "4.1",
+            f"the published declarations use the rule {rule!r} and their own glossary does "
+            "not define it, so a reader with only the file has to guess at it",
+            declarations.path,
+            "G08",
+        )
+    report.ok(
+        "4.1",
+        f"{len(declarations.contracts)} published contract(s) read, so every event is rebuilt "
+        "from the fields its kind declares rather than from an exemplar",
+        declarations.path,
+        "G08",
+    )
+    return declarations
+
+
+def _check_enrolment(
+    report: Report,
+    entries_by_tail: dict[str, list[Entry]],
+    covered_by_tail: dict[str, int],
+    ring: dict[str, PublicKey],
+) -> None:
+    """Section 6.2, folded over every tail at once, because enrolment spans them."""
+    if not ring:
+        report.unchecked(
+            "6.2",
+            "no keyring, so an enrolment's reverse signature could not be checked and the "
+            "fold was not run",
+            gap="G21",
+        )
+        return
+    total = sum(len(entries) for entries in entries_by_tail.values())
+    if total == 0:
+        return
+    issues = enrolment.resolve(entries_by_tail, covered_by_tail, ring)
+    for issue in issues:
+        report.fail("6.2", issue.detail, f"{issue.tail[:20]}... seq {issue.seq}", "G21")
+    if not issues:
+        report.ok(
+            "6.2",
+            f"every one of the {total} event(s) is signed by a key VALID FOR ITS ANCHOR at "
+            "its point in the fold, which is a stronger claim than the signature verifying",
+            gap="G21",
+        )
 
 
 def declare_scope(report: Report) -> None:
     """What this verifier does NOT check, said on every run including a verified one."""
-    report.declare_not_covered(
-        "6",
-        "that the signer was ENROLLED - authorized for its anchor at that point in the chain",
-        "enrolment is not in the document at all. Section 6 asks that the signature verify "
-        "under signerFp, and this reader checks exactly that. key.enrolled and key.revoked are "
-        "published kinds with no published semantics, so a signature by any key in keys/ is "
-        "accepted here. THIS IS THE ONE PLACE THIS READER ACCEPTS WHAT THE PRODUCT REFUSES",
-        "G21",
-    )
-    report.declare_not_covered(
-        "4",
-        "the per-kind field rebuild - SO A FORGED FIELD INSIDE A PAYLOAD IS ACCEPTED",
-        "the field declarations of each kind are published nowhere: canonical-vectors.json gives "
-        "one exemplar per kind, from which required and optional cannot be told apart. Byte "
-        "identity of the stored line catches a field added to a line that was already written, "
-        "because the stored hash no longer matches - but not a NEWLY APPENDED event above the "
-        "last checkpoint, whose entry hash the appender computes and whose envelope keys are all "
-        "present. Measured: an event appended keylessly with an extra key inside its payload is "
-        "read as VERIFIED here and as unreadable by the product. This is the SECOND of the two "
-        "places this reader accepts what the product refuses, and the one that a party with no "
-        "key can actually walk through",
-        "G08",
-    )
     report.declare_not_covered(
         "7",
         "that a proof is never recomputed over a lifted reading",

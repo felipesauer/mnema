@@ -13,12 +13,13 @@
  *     names the test that holds it; a renamed or deleted test turns that citation
  *     into a claim with nothing behind it, which is the exact thing the citations
  *     exist to prevent.
- *   - a POINTER to the artifact. The document tells a stranger to download
- *     `canonical-vectors.json`, and the vectors module resolves the same file by
+ *   - a POINTER to an artifact, of which there are now TWO: the document tells a
+ *     stranger to download `canonical-vectors.json` (the exemplars) and
+ *     `event-schema.json` (the declarations), and a module resolves each of them by
  *     path. Two names for one file is two names that can come to differ, so the
- *     document is checked against the module's own constant, and the file is
- *     checked to be one the repository actually carries — the only channel it
- *     travels by (see the document's last section).
+ *     document is checked against each module's own constant, and each file is
+ *     checked to be one the repository actually carries — the only channel they
+ *     travel by (see the document's last section).
  *
  * WHAT IS DELIBERATELY NOT HELD HERE: whether each claim is TRUE. That is the
  * cited test's job, and a guard that tried to do it here would be a second
@@ -33,6 +34,7 @@ import { describe, expect, it } from 'vitest';
 import { SCHEME } from './chain/checkpoint.js';
 import { ENTRY_DOMAIN, ROOT_DOMAIN } from './chain/hash.js';
 import { TAILPROOF_SCHEME } from './chain/tailproof.js';
+import { SCHEMA_FILE, SCHEMA_FILE_NAME } from './events/schema.js';
 import { VECTORS_FILE, VECTORS_FILE_NAME } from './events/vectors.js';
 
 /** The package root: where `FORMAT.md`, `README.md` and the artifact live. */
@@ -91,6 +93,18 @@ describe('FORMAT.md cites tests that exist', () => {
   });
 });
 
+/**
+ * THERE ARE TWO ARTIFACTS NOW, and the rule is the same for both: the document, the
+ * module that resolves the file, and the file on disk are three names for one thing,
+ * and three names are three things that can come to differ. `event-schema.json`
+ * arrived with §4.1 — the vectors are exemplars, the schema is the declarations —
+ * and it reaches a stranger the same way, by being in the repository.
+ */
+const ARTIFACTS = [
+  { what: 'the vectors', name: VECTORS_FILE_NAME, file: VECTORS_FILE },
+  { what: 'the schema', name: SCHEMA_FILE_NAME, file: SCHEMA_FILE },
+] as const;
+
 describe('FORMAT.md points at the artifact the code resolves', () => {
   it('names the file the vectors module names, and no other vectors file', () => {
     expect(FORMAT).toContain(`\`${VECTORS_FILE_NAME}\``);
@@ -100,17 +114,25 @@ describe('FORMAT.md points at the artifact the code resolves', () => {
     expect(named).toEqual([VECTORS_FILE_NAME]);
   });
 
-  it('points at a file that is there', () => {
-    expect(existsSync(fileURLToPath(VECTORS_FILE))).toBe(true);
+  it('names the file the schema module names, and no other schema file', () => {
+    expect(FORMAT).toContain(`\`${SCHEMA_FILE_NAME}\``);
+    const named = [
+      ...new Set([...FORMAT.matchAll(/`([\w-]*schema[\w-]*\.json)`/g)].map((m) => m[1])),
+    ];
+    expect(named).toEqual([SCHEMA_FILE_NAME]);
   });
 
-  it('points at a file the repository carries, since that is its only channel', () => {
+  it.each(ARTIFACTS)('points at a file that is there ($what)', ({ file }) => {
+    expect(existsSync(fileURLToPath(file))).toBe(true);
+  });
+
+  it.each(ARTIFACTS)('$what is a file the repository carries, its only channel', ({ file }) => {
     // The artifact reaches a stranger by being IN the repository — it is in no npm
     // tarball, and `FORMAT.md` says so. A path that a `.gitignore` swallowed would
     // publish nothing while every other case here stayed green, and this tree
     // ignores whole directories by name (`dist/`, `scripts/`, `.refactor/`), so
     // the hazard is real rather than theoretical. `git` is asked directly.
-    const relative = fileURLToPath(VECTORS_FILE).slice(REPO.length);
+    const relative = fileURLToPath(file).slice(REPO.length);
     const tracked = execFileSync('git', ['ls-files', '--', relative], {
       cwd: REPO,
       encoding: 'utf-8',
