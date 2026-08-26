@@ -8,7 +8,8 @@ against their implementation, and get the same digests we do.
 Python, written from this document and importing nothing of the product it checks. It
 reproduces the 23 published vectors and the four aggregate digests, and reaches the same
 verdict as the product over the frozen records in the test suite
-(`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`). Twenty-four points
+(`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`), on honest records
+and on every input the format refuses. Twenty-five points
 where this document was **not enough** for that were found in the writing, and every one of
 them has been fixed here — `python3 verifier/mnema_verify.py gaps` lists them, with which
 were resolved by reading a specification, which by experiment against the published bytes,
@@ -43,6 +44,10 @@ compile until it has one.
 
 To check an implementation: canonicalize each `event` by the rules in §1, SHA-256
 the bytes, and compare with the row's `sha256`.
+
+The vectors are **exemplars, not a schema** — one event per kind, from which a
+required field and an optional one that happens to be present look identical. The
+schema is the other artifact, `event-schema.json`, described in §4.1.
 
 ## 1. Canonicalization: an event becomes bytes
 
@@ -195,6 +200,69 @@ event re-canonicalizes to bytes which differ from the stored line, so the
 verifier's "stored bytes equal recomputed bytes" check refuses the line rather
 than reading past the forgery (`packages/chain/src/chain/chain.test.ts`).
 
+**Byte identity alone is not enough for that, and this document used to leave a
+reader with nothing else.** It catches a field added to a line that was already
+written, because the stored entry hash stops matching. It cannot catch a NEWLY
+APPENDED event carrying one: the entry hash takes no key, so whoever can write
+the repository computes it; above the last checkpoint no signature covers it; and
+the envelope keys are all present. What refuses that is the declaration, and the
+declarations were published nowhere — measured, on an independent verifier built
+from this document, which read such an event as verified while this product read
+it as unreadable. The next section is that hole, closed.
+
+### 4.1 The field declarations
+
+`event-schema.json`, beside this file, is the **second machine-readable half**:
+what every kind declares, in the same closed vocabulary the reader applies. It is
+not a description of the reader — it is the reader's own table, serialized, and a
+guard holds the two byte for byte
+(`packages/chain/src/events/event-schema.test.ts`). The vectors are one exemplar
+per kind, from which required and optional cannot be told apart; this file is the
+schema.
+
+```json
+{"schemaVersion":1,"describedBy":"FORMAT.md","rules":{…},"envelope":{…},"transitionFields":{…},
+ "contracts":[{"kind":"memory.captured","v":1,"payload":{"content":"string"}}, …]}
+```
+
+- **A contract is selected by `kind` and `v` together**, which is the pair every
+  event already carries (§7). A reader looks up the row whose `kind` and `v` both
+  match the line, and **refuses a line whose pair no row declares** — a version
+  ahead of the table is a contract the reader does not have, not one it may guess
+  at. A kind that gains a second version gains a second row; the file's shape does
+  not change, which is what makes such a change one visible row in a diff.
+- **The top-level keys of an event are the keys of `envelope`, plus `payload`.**
+  Six envelope fields are required and two — `which` and `run` — are optional, and
+  an event carrying one of those is an ordinary event rather than an anomaly.
+- **Every object here is CLOSED.** A key that the matching declaration does not
+  name is refused, in the envelope, in the payload, and inside `transitionFields`.
+  The reader rebuilds each object from exactly the declared keys and never returns
+  the parsed one.
+- **A declared field that is optional and absent stays absent** in the rebuild — it
+  is never filled in with a default, an empty string or a `null`, because the
+  rebuild has to canonicalize to the bytes that were signed.
+
+The `rules` object in the file carries a one-line gloss of each rule name, so the
+artifact is readable on its own. This is the normative statement of the same
+vocabulary:
+
+| rule | a field under it is |
+|---|---|
+| `string` | present, and a non-empty string |
+| `string?` | absent, or a non-empty string. Absent is not `null` and not `""` |
+| `string\|null` | present, and either a non-empty string or an explicit `null` — a VALUED absence (the state a birth transition left behind), which is why it is a spelling of its own and not an optional |
+| `boolean` | present, and exactly `true` or `false`. **Nothing is coerced**: `"false"`, `0` and `null` are all falsy in JavaScript and none of them is the position of a switch |
+| `count` | present, and a whole number of at least 1 (a safe integer). A float, a `-0` or a `1e3` is refused |
+| `fields?` | absent, or the object `transitionFields` declares — closed the same way, and **never empty**: an empty `fields` carries no proof, and admitting it would make `{}` a second, byte-distinct spelling of "no fields" |
+| `string[]?` | absent, or a non-empty array of non-empty strings |
+| `version` | (envelope only) present, and a whole number of at least 1; with `kind` it selects the contract |
+| `kind` | (envelope only) present, and the non-empty string naming the contract |
+| `instant` | (envelope only) present, and the exact spelling `Date.prototype.toISOString` produces — UTC, millisecond precision, trailing `Z` — of a real date. Every producer stamps `at` through the clock, which IS `toISOString`, so a timezone offset or a missing sub-second digit is a corrupt or forged line rather than a differently-spelled one |
+
+An implementation that applies this table refuses what this product refuses: the
+same appended event that used to read as verified from outside now reads as
+refused (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`).
+
 ## 5. The content root
 
 A fold over a sequence of events, recomputed **from their canonical bytes**.
@@ -253,13 +321,13 @@ part of it**:
   `sig` alongside the fields. The checkpoints of a tail live in
   `checkpoints.jsonl`, one canonical line each — the eight keys, `sig` included,
   sorted by §1 — in chain order.
-- **Whether the signer was AUTHORIZED is a layer above this one.** §6 is satisfied
-  by a signature that verifies under the key its `signerFp` names. This product
-  additionally requires that key to have been valid for its anchor at that point
-  in the chain, proven by `key.enrolled` and `key.revoked` events on the chain
-  itself (`packages/chain/src/chain/enrollment.test.ts`). **That rule is not
-  specified in this document**, and until it is, an implementation built from this
-  document alone will accept a signature by any key in `keys/` and be right to.
+- **Whether the signer was AUTHORIZED is a layer above this one**, and §6.2 is
+  that layer. §6 is satisfied by a signature that verifies under the key its
+  `signerFp` names; that the key was *valid for its anchor at that point in the
+  chain* is a separate question, answered by folding the chain's own enrolment
+  facts. This used to say the rule "is not specified in this document", and an
+  implementation built from the document alone accepted a signature by any key in
+  `keys/` and was right to. It is specified now.
 - `scheme` is `mnema-checkpoint/1`; a reader refuses a scheme it does not know
   rather than guessing at the fields, and the signature is over the seven keys
   above with `sig` absent
@@ -289,6 +357,83 @@ them counted twice. Only the key holder can sign a statement naming a new tail i
 and a genuine proof does not transfer to a different one, because the id **is** the
 message (`packages/chain/src/chain/format-on-disk.test.ts`).
 
+### 6.2 Enrolment: which key was authorized, and when
+
+A signature that verifies proves **which key** made it. It does not prove that the
+key was allowed to. Those are different claims and the second is the one that
+matters, so this section says how a reader gets it from the record and nothing
+else. It went unwritten while the kinds that carry it — `key.enrolled` and
+`key.revoked` — sat in the published vectors: the bytes of the facts that carry
+the authorization were published, and the rule that reads them was not.
+
+**An identity is one ANCHOR with a set of keys**, and the set changes over the
+length of the chain. The anchor id is derived from a fingerprint:
+
+```
+anchor(fp) = "mnid:" ‖ SHA-256( UTF-8 of the 64-character lower-case fingerprint )   (hex, lower-case)
+```
+
+The hash is over the fingerprint's **hex text**, not over the 32 bytes it spells —
+the same distinction §5 makes for the accumulator, and the same coin-flip if it is
+left unsaid. An anchor is a value distinct from any fingerprint, which is what
+leaves room for several keys under one anchor without the anchor ever being one of
+them.
+
+**The order the facts are folded in.** Enrolment spans tails — a key enrolled on
+one machine authorizes events on another — so the fold runs over **every tail
+merged into one order**: within a tail, `seq` order, which the hash chain proves
+and which nothing may override; across tails, the head with the smallest `at` goes
+next, ties broken by tail id ascending. That is the same k-way merge a reader uses
+for anything else that has to be deterministic across tails.
+
+**Three facts change the set**, and each is refused as an operation — not merely
+recorded — when its own conditions do not hold. `subject` is always the anchor.
+
+| kind | what it must satisfy | what it does |
+|---|---|---|
+| `identity.founded` | `signerFp == payload.foundingFp`, `subject == anchor(foundingFp)`, and `who == subject` | adds `foundingFp` to the anchor's set |
+| `key.enrolled` | `who == subject`; `signerFp` is in the anchor's set **at this point**; and `payload.reverseSig` is a valid Ed25519 signature, by the key `payload.newFp` names, over the UTF-8 of `enroll:<anchor>:<newFp>` | adds `newFp` |
+| `key.revoked` | `who == subject`; `signerFp` is in the anchor's set at this point | removes `payload.revokedFp`, from this point forward |
+
+The `reverseSig` is the new key's own proof of possession, and it is checked
+against `keys/<newFp>.pub` **with that file's fingerprint recomputed** (§6): a
+member could otherwise enrol a key it does not hold, or swap the file afterwards
+and have someone else's signature verify against it.
+
+**And every other event is authentic only if its `signerFp` is in the set of its
+own `who` at its point in the fold.** That is the whole rule; there is no
+"the anchor is my own key" shortcut. A lone key still founds its anchor, so one
+key is a one-member set.
+
+**Two of the three take effect only when they are themselves SIGNATURE-COVERED**,
+and this is the part a reader gets wrong by omission rather than by error. An
+event above the last checkpoint of its tail rests on the hash chain alone, and the
+entry hash takes no key — so a party with no key at all can append there.
+
+- A `key.revoked` in that window is **ignored**. A revocation removes a key that
+  judges OTHER, already-checkpointed events, so honouring an uncovered one would
+  let a keyless party fabricate a tail, revoke a member from it, and flip an
+  honest fully-signed chain to failing — a denial of authenticity with no key. A
+  legitimate revoker checkpoints the revocation; a keyless party cannot, because a
+  checkpoint needs the tail's private key.
+- An `identity.founded` or `key.enrolled` that would **restore a key some covered
+  `key.revoked` removed** is ignored in that window too, and for the mirror
+  reason: it would undo a signed removal and re-authorize that key's later,
+  checkpointed work. A first enrolment, or any addition that restores nothing
+  covered, is not gated — it only ever empowers events naming the added key, and
+  those sit in the same untrusted window anyway.
+
+"Covered" means: the event's own `seq` is at or below the highest `seq` reached by
+a checkpoint of its tail whose signature verified.
+
+**What this does NOT decide**, said here because it looks like it should: whether
+the tail an event sits in is genuine. A keyless party who fabricates a tail under
+a real enrolled fingerprint names a valid signer and passes this fold — and is
+refused earlier, by §3's requirement on the tail id and by §6.1's tail proof. The
+fold only ever runs over tails whose key owns them
+(`packages/chain/src/chain/enrollment.test.ts`,
+`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`).
+
 ## 7. Versions, and why a proof is never recomputed over a reading
 
 Every event carries `kind` and `v`. Together they select exactly one payload
@@ -309,11 +454,17 @@ outside reader to lift. The claim rests on the test above, which lives inside th
 codebase it is about. The first kind to gain a `v2` should gain a published vector
 for the old `v` alongside it.
 
-The seven top-level keys of an event are `at`, `kind`, `payload`, `signerFp`,
-`subject`, `v` and `who`. They are written down here because they were written down
-nowhere: §1 is type-agnostic, so a digest never needed them, but a reader that
-wants to *rebuild* an event does, and the only place they appeared was implicitly
-in the vectors.
+The top-level keys of an event are the keys `event-schema.json` declares under
+`envelope`, plus `payload` — **eight names, of which two are optional**. This
+paragraph used to read *"the seven top-level keys of an event are `at`, `kind`,
+`payload`, `signerFp`, `subject`, `v` and `who`"*, and that sentence was false: it
+was the INTERSECTION of the published vectors, and `which` and `run` are carried
+by sixteen and three of those same vectors respectively. What falsified it is that
+an independent verifier believed it — it took the intersection, as the sentence
+invited, and **refused an honest event for carrying `which`**, on a record this
+product read as fine (§4.1, gap G25). A required field and an optional one look
+identical in an exemplar, which is the whole reason the declarations are now
+published rather than described.
 
 ## 8. The external witness (T3)
 
@@ -444,30 +595,31 @@ Stated plainly, because a published format invites all three readings:
   entry used to read *"there is no second implementation"*, and
   [`verifier/`](./verifier/) is what falsified it: a verifier in Python, written
   from this document, importing nothing of the product, reproducing the published
-  vectors and reaching the same verdict as the product over real records. What that
-  buys is technical independence — another language, another author-session, no
-  shared code — and it is what surfaced the twenty-four points where this document
-  was not enough, which are now fixed above. What it does **not** buy is social
-  independence: same author, same repository, same interest in it working. A format
-  with three implementations maintained by three parties checking each other has a
-  kind of assurance this one still does not have. The step that is taken is the
-  technical one; the step that is not is somebody else.
-- **The per-kind field declarations are not published.** §4 says a reader rebuilds
-  an event from the fields its kind declares and rejects any other. Those
-  declarations exist in the code and in no artifact: `canonical-vectors.json` gives
-  one *exemplar* per kind, from which a stranger cannot tell a required field from
-  an optional one that happens to be present. So an implementation built from this
-  document can refuse a forged EXTRA field on a line that was already written,
-  because the stored hash stops matching — and **cannot refuse a newly APPENDED
-  event carrying one**. That is the consequence worth stating plainly, because a
-  party with no key can reach it: the entry hash takes no key, so whoever can
-  write the repository computes it; above the last checkpoint no signature covers
-  it; and the envelope keys are all present. Measured: such an event reads as
-  verified by an implementation built from this document and as unreadable by this
-  product (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`).
-  The vectors are not a schema, and until the declarations are published this is
-  the widest gap between what this document specifies and what the product
-  enforces.
+  vectors and reaching the same verdict as the product over real records —
+  **including on every input the format refuses**, which is the half that took a
+  second delivery: it accepted two things the product refused (a field no kind
+  declares, on an appended event; a signer no enrolment authorized) and refused one
+  thing the product accepts (an honest event carrying `which`). §4.1 and §6.2 are
+  those three, closed. What that buys is technical independence — another language,
+  another author-session, no shared code — and it is what surfaced the
+  twenty-five points where this document was not enough, which are now fixed above.
+  What it does **not** buy is social independence: same author, same repository,
+  same interest in it working. A format with three implementations maintained by
+  three parties checking each other has a kind of assurance this one still does not
+  have. The step that is taken is the technical one; the step that is not is
+  somebody else.
+- **A change to the format is visible, and that is all that is promised about
+  changing it.** This entry used to say that the per-kind field declarations were
+  not published, and that in consequence an implementation built from this
+  document could not refuse a newly APPENDED event carrying a field no kind
+  declares — the door a party with **no key** could walk through. `event-schema.json`
+  and §4.1 closed it, and the same measurement now runs the other way: the second
+  reader refuses that event
+  (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`). What
+  remains true is the sentence above it: there is no standards body, no registry
+  and no committed process. What IS committed is that a change to the bytes moves a
+  published digest and a change to a contract moves a row of a published file, and
+  both are visible.
 - **Publishing the format adds no witness — and §8 is not the format's doing
   either.** The threat sections 1–7 do not cover is an edit made *with* the signing
   key: a key holder can rewrite and re-sign, and everything there will verify.

@@ -198,18 +198,30 @@ checkpoint. It is written for someone who did not write this code and wants to
 implement a verifier from it — every claim in it names the test that holds it, and
 the version tags in it are read out of the source by a guard.
 
-`canonical-vectors.json` beside it is the machine-readable half: one frozen event
-per catalog kind and the SHA-256 of its canonical bytes, plus the aggregate
-digests. Canonicalize a row's `event`, hash the bytes, compare — that is the whole
-check, and it needs nothing of ours.
+Two machine-readable halves sit beside it. `canonical-vectors.json` is one frozen
+event per catalog kind and the SHA-256 of its canonical bytes, plus the aggregate
+digests: canonicalize a row's `event`, hash the bytes, compare — that is the whole
+check, and it needs nothing of ours. `event-schema.json` is what every kind
+**declares**, as a rule per field: the vectors are exemplars, and from an exemplar a
+required field and an optional one that happens to be present look identical. It is
+not a description of the reader — it is the reader's own table, serialized, and a
+guard holds the two byte for byte.
 
 [`verifier/`](./verifier/) is the other half of the same idea, and it is what stops
 the paragraph above from being a claim about a document nobody ever implemented: a
 verifier in Python, written **from** `FORMAT.md`, importing nothing of this package.
 It reproduces the 23 vectors and the four aggregate digests, checks T1, T2/T4 and T3
 over real records, and refuses every mutation in `verifier/mutate.py`. It found
-twenty-four points where the document was not enough to write it from, all of which
+twenty-five points where the document was not enough to write it from, all of which
 are now fixed in the document.
+
+*Refuses every mutation* is a sentence this page carried while it was not quite true.
+One mutation was **accepted** — an event appended above the last checkpoint carrying a
+field no kind declares, which a party with no key can produce — because the per-kind
+declarations were published nowhere; and one *honest* input was **refused**, an event
+carrying `which`, because the envelope could only be guessed at from the intersection
+of the vectors. `event-schema.json` and the enrolment rule (§4.1, §6.2) closed both,
+and the sentence is now the assertion of a test rather than a summary.
 
 What that does **not** buy is stated in the document itself, in the same terms as
 the table above: it is not an open standard, and publishing the format adds no

@@ -10,10 +10,19 @@ The four aggregates are checked too: the fold over an empty range, the entry has
 genesis entry and of a linked one, and the content root over every vector in file order.
 Those are what pin sections 3 and 5.
 
-And the seven envelope keys `entry` relies on are RE-DERIVED here from the intersection of
-the 23 vectors, rather than trusted as a constant (gap G14 - the envelope is specified
-nowhere in the document). A vector set whose intersection moves reddens this check instead
-of quietly disagreeing with the constant.
+AND THE TWO PUBLISHED ARTIFACTS ARE CHECKED AGAINST EACH OTHER. `event-schema.json` says
+what every kind declares; these vectors are one real event of each. Every vector is rebuilt
+from its own published contract and has to come back byte-identical - so a declaration that
+drifted from the events this product actually writes reddens here, on published data, with
+no record needed.
+
+THAT PAIRING REPLACED A DERIVATION THAT WAS WRONG (gap G25). The envelope used to be
+re-derived here as the INTERSECTION of the vectors' top-level keys, because the document
+said the envelope was seven keys and published nothing else. It is eight names, two of them
+optional: `which` rides on sixteen of these twenty-three vectors and `run` on three, so an
+intersection is not the envelope - and a reader built on it refused an honest event for
+carrying `which`. An intersection can never tell a required field from an optional one, and
+that is the whole reason the declarations are published now.
 """
 
 from __future__ import annotations
@@ -21,8 +30,9 @@ from __future__ import annotations
 import hashlib
 import json
 
+from . import schema as declarations
 from .canonical import canonical_bytes, strict_loads
-from .entry import ENVELOPE_KEYS, entry_hash
+from .entry import entry_hash
 from .root import content_root, empty_root, which_reading_closes
 from .verdict import Refusal, Report
 
@@ -120,22 +130,7 @@ def verify_vectors(path: str, report: Report) -> None:
             if content_root(span, "hex") == declared and reading == "raw":  # pragma: no cover
                 report.fail("5", "both readings of the accumulator agree, which cannot happen", path)
 
-    intersection = frozenset.intersection(*(frozenset(row["event"]) for row in rows))
-    if intersection == ENVELOPE_KEYS:
-        report.ok(
-            "7",
-            f"the envelope is the same {len(intersection)} keys across all {len(rows)} vectors",
-            path,
-            "G14",
-        )
-    else:
-        report.fail(
-            "7",
-            f"the envelope keys derived from the vectors are {sorted(intersection)}, and this "
-            f"verifier was built expecting {sorted(ENVELOPE_KEYS)}",
-            path,
-            "G14",
-        )
+    _check_against_the_declarations(rows, path, report)
 
     kinds = {row["kind"] for row in rows}
     report.note(
@@ -146,3 +141,58 @@ def verify_vectors(path: str, report: Report) -> None:
     )
     report.note("-", f"vectorsVersion {document.get('vectorsVersion')}, describedBy "
                      f"{json.dumps(document.get('describedBy'))}", path)
+
+
+def _check_against_the_declarations(rows: list, path: str, report: Report) -> None:
+    """The exemplars against the schema: every vector rebuilt from its own contract.
+
+    This is the one check in this program that reads BOTH published artifacts and requires
+    them to agree, and it needs no record to run - which is what makes it the cheapest place
+    for a drift between them to show up.
+    """
+    try:
+        published = declarations.load()
+    except Refusal as refusal:
+        report.unchecked("4.1", refusal.what, declarations.DEFAULT_SCHEMA, "G08")
+        return
+    rebuilt = 0
+    for row in rows:
+        name = row.get("name", "<unnamed>")
+        try:
+            result = declarations.rebuild(published, row["event"])
+        except Refusal as refusal:
+            report.fail("4.1", f"vector {name}: {refusal.what}", path, "G08")
+            continue
+        if canonical_bytes(result.event) != canonical_bytes(row["event"]):
+            report.fail(
+                "4.1",
+                f"vector {name} rebuilt from contract {result.contract.kind}@{result.contract.v} "
+                "does not re-serialize to the published event",
+                path,
+                "G08",
+            )
+            continue
+        rebuilt += 1
+    if rebuilt:
+        report.ok(
+            "4.1",
+            f"{rebuilt} of {len(rows)} published vectors rebuild byte-identically from the "
+            "contract the published declarations give their kind, so the two artifacts agree",
+            path,
+            "G08",
+        )
+    kinds_declared = {kind for kind, _ in published.contracts}
+    missing = sorted({row["kind"] for row in rows} - kinds_declared)
+    if missing:
+        report.fail(
+            "4.1", f"the vectors carry kind(s) the declarations do not: {missing}", path, "G08"
+        )
+    unexercised = sorted(kinds_declared - {row["kind"] for row in rows})
+    if unexercised:
+        report.note(
+            "4.1",
+            "the declarations declare kind(s) no published vector exercises: "
+            + ", ".join(unexercised),
+            path,
+            "G08",
+        )
