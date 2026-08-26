@@ -29,6 +29,13 @@
  * worth asking about was found to be false, and where the premise that a promise may
  * be thrown away because it is not coverage was found to be false after it.
  *
+ * AND THE ACTS WALK IT TOO, through {@link witnessWalk}. The reading learned this one
+ * delivery before the acts did, and for that stretch the product contradicted itself:
+ * `verify` reported a request in flight while `mnema witness upgrade` reported that
+ * nothing had been asked, about the same tail in the same minute. They are one
+ * traversal now, so there is no second idea here of which checkpoints are worth
+ * opening or of where a walk down a tail stops.
+ *
  * WHAT IS STORED, beside the checkpoints it is about:
  *
  *   tails/<tailId>/witness/<checkpointHash>.ots      the detached proof
@@ -327,7 +334,19 @@ export function readWitness(
   checkpointHash: string,
 ): WitnessReading {
   const stored = readStoredWitness(layout, tailId, checkpointHash);
-  if (stored === null) return NOTHING;
+  return stored === null ? NOTHING : judgeWitness(stored, checkpointHash);
+}
+
+/**
+ * What one already-read witness proves — {@link readWitness} without the reading.
+ *
+ * IT IS SPLIT OFF FOR THE WALK, and for one reason: {@link witnessWalk} hands the
+ * ACT that completes an attestation the very bytes it judged, so the act does not
+ * open the same file a second time to send it. Reading a proof and ruling on it were
+ * one function while nothing but a verdict asked, and a verdict never needs the bytes
+ * back.
+ */
+function judgeWitness(stored: StoredWitness, checkpointHash: string): WitnessReading {
   // THE PARSE *AND* THE WALK, under one guard. The walk applies the path's operations,
   // and one of them can be unavailable rather than wrong — OpenSSL 3 moved `ripemd160`
   // behind its legacy provider, so a node built without it cannot run that step. Left
@@ -398,16 +417,23 @@ export function readWitness(
 }
 
 /**
- * The checkpoint a witness is FILED UNDER for a tail: the last one it stored.
+ * The checkpoint a NEW witness is FILED UNDER for a tail: the last one it stored.
  *
- * ONE ANSWER FOR TWO CALLERS, which is the only reason it is a function. The act
- * that stamps and the reading that lists both have to name the same checkpoint, or
- * an attestation lands at a path nothing looks at. The verifier is the third caller
- * and deliberately does NOT use this: it names the checkpoint it PROVED, because a
- * verifier that trusted the last stored line would be reading a file it has not
- * judged. The two agree exactly when the tail verifies — which is the state the
- * stamping act refuses to proceed without, and `chain.test.ts` is where that
- * agreement is asserted rather than assumed.
+ * IT HAS ONE CALLER LEFT, and the two that went are worth naming because each left
+ * for a different reason. The listing stopped asking it when the reading learned to
+ * walk the whole tail; `mnema witness upgrade` stopped when the ACT did, because a
+ * verb that completes proofs already on the disk has no business asking where a new
+ * one would go — asking it was how that verb came to report `nothing has been asked
+ * about this checkpoint yet` over a record `verify` was, in the same minute, reporting
+ * a request in flight for. What is left is the one question this answers: where the
+ * act that ASKS files what it gets back.
+ *
+ * The verifier deliberately does not use it either: it names the checkpoint it PROVED,
+ * because a verifier that trusted the last stored line would be reading a file it has
+ * not judged. The two agree exactly when the tail verifies — which is the state the
+ * stamping act refuses to proceed without, and `chain.test.ts` is where that agreement
+ * is asserted rather than assumed. `witness.test.ts` in `@mnema/code` is where the
+ * listing's head and this one are held together now that they are derived apart.
  */
 export function checkpointToWitness(layout: ChainLayout, tailId: string): string | null {
   const last = lastTailCheckpoint(layout, tailId);
@@ -470,6 +496,67 @@ function stampedCheckpoints(layout: ChainLayout, tailId: string): ReadonlySet<st
       .filter((name) => name.endsWith(PROOF_SUFFIX))
       .map((name) => name.slice(0, -PROOF_SUFFIX.length)),
   );
+}
+
+/**
+ * One stored witness the walk reached: which checkpoint it is filed under, the bytes
+ * that were read, and what they prove.
+ *
+ * THE BYTES TRAVEL BECAUSE ONE CALLER NEEDS THEM BACK. A verdict only ever wants the
+ * ruling, but the act that completes an attestation has to send the proof it just
+ * judged — and an act that re-opened the file would be an act reading a second time
+ * the thing the walk already told it about.
+ */
+export interface WalkedWitness {
+  /** Whether this is the tail's newest checkpoint of the ones the caller offered. */
+  readonly head: boolean;
+  readonly checkpoint: ProvenCheckpoint;
+  /** The two files, read but not judged — what an act sends back to a calendar. */
+  readonly stored: StoredWitness;
+  readonly reading: WitnessReading;
+}
+
+/**
+ * Every stored witness a tail holds, NEWEST FIRST, ending at the first one that
+ * reaches coverage.
+ *
+ * IT IS ONE TRAVERSAL FOR THE READING AND FOR THE ACT, and that is the whole reason it
+ * is a function (A3). The reading walks down from the head and answers with the newest
+ * confirmed attestation; the act walks down from the head and completes what has not
+ * confirmed. Written twice, the two drifted, and the drift was visible in the product:
+ * the reading walked the tail while `mnema witness upgrade` asked only
+ * {@link checkpointToWitness} — so a record whose stamp sat under an older checkpoint
+ * had `verify` reporting a request in flight and `upgrade`, in the same minute,
+ * reporting that nothing had been asked about it. Two verbs of one product contradicting
+ * each other about one disk.
+ *
+ * WHY IT STOPS AT THE FIRST COVERED ONE, for both callers. The reading's answer IS the
+ * newest confirmed attestation, so nothing under it can change a sentence: a proof below
+ * one that confirmed dates a smaller prefix at a later instant, which is weaker on both
+ * axes the verdict reports. For the act the same fact is a cost rule — every checkpoint
+ * past that point is a request to a calendar whose answer no reading would ever quote.
+ *
+ * IT SKIPS A CHECKPOINT WHOSE FILE IS GONE rather than reporting an absence for it. The
+ * membership test comes from one `readdir`, so between that snapshot and the read the
+ * file can be removed; the reading such a checkpoint would get is {@link NOTHING}, which
+ * is exactly what a walk that never stopped there would have produced anyway.
+ */
+export function* witnessWalk(
+  layout: ChainLayout,
+  tailId: string,
+  checkpoints: readonly ProvenCheckpoint[],
+): Generator<WalkedWitness> {
+  const stamped = stampedCheckpoints(layout, tailId);
+  const last = checkpoints.length - 1;
+  for (let i = last; i >= 0; i -= 1) {
+    const checkpoint = checkpoints[i] as ProvenCheckpoint;
+    if (!stamped.has(checkpoint.hash)) continue;
+    const stored = readStoredWitness(layout, tailId, checkpoint.hash);
+    if (stored === null) continue;
+    const reading = judgeWitness(stored, checkpoint.hash);
+    yield { head: i === last, checkpoint, stored, reading };
+    if (reading.status === 'covered') return;
+  }
 }
 
 /**
@@ -545,23 +632,18 @@ export function witnessOfTail(
 ): WitnessReading | null {
   const head = tail.checkpoints[tail.checkpoints.length - 1];
   if (head === undefined) return null;
-  const stamped = stampedCheckpoints(layout, tailId);
-  const atHead = stamped.has(head.hash) ? readWitness(layout, tailId, head.hash) : NOTHING;
   const lastSeq = tail.events - 1;
-  // Dated to its head — the state that reads as coverage, and the only one that does.
-  // The head CHECKPOINT being attested is not enough: events written above it are
-  // outside the dating exactly as events above the last checkpoint are outside the
-  // signature, and a clause that said `covered` over those was claiming a reach it
-  // did not have.
-  if (atHead.status === 'covered' && head.toSeq >= lastSeq) return atHead;
-  // WHAT THE HEAD'S OWN FILE CONTRIBUTES, decided once here rather than at each of the
-  // sentences below. A refusal about that file stays true beside anything an older
-  // checkpoint proves and beside any request in flight, so it is kept; the ABSENCE is a
-  // claim about the whole record which those same facts falsify, so it gives way. `covered`
-  // reaches this line only in the world above — a head dated but not to the last event —
-  // where the dating that follows says everything the head's own reading would.
-  const finding: UnattestedReading | null =
-    atHead.status === 'covered' || atHead.absent === true ? null : atHead;
+  // What the head's own file said, and the ABSENCE until the walk says otherwise: a
+  // head with no stored witness is never yielded, so this is the value that stands.
+  let atHead: WitnessReading = NOTHING;
+  // WHAT THE HEAD'S OWN FILE CONTRIBUTES, decided once at the head rather than at each
+  // of the sentences below. A refusal about that file stays true beside anything an
+  // older checkpoint proves and beside any request in flight, so it is kept; the
+  // ABSENCE is a claim about the whole record which those same facts falsify, so it
+  // gives way. `covered` reaches that line only in the world below — a head dated but
+  // not to the last event — where the dating says everything the head's own would.
+  let finding: UnattestedReading | null = null;
+  let promise: UnattestedReading | null = null;
   // ONE RULE FOR THE STATUS, at one site because it is one rule (A3): the head's own,
   // unless the head had nothing to say, in which case the request in flight speaks, and
   // the plain absence when there is neither. Every value it can return is one
@@ -570,20 +652,26 @@ export function witnessOfTail(
   // which is not coverage`, and a reader with a request open should wait, not stamp.
   const statusWith = (open: UnattestedReading | null): UnattestedReading['status'] =>
     finding?.status ?? open?.status ?? 'not-covered';
-  const last = tail.checkpoints.length - 1;
-  let promise: UnattestedReading | null = null;
-  for (let i = last; i >= 0; i -= 1) {
-    const checkpoint = tail.checkpoints[i] as ProvenCheckpoint;
-    if (!stamped.has(checkpoint.hash)) continue;
-    const reading = i === last ? atHead : readWitness(layout, tailId, checkpoint.hash);
+  for (const walked of witnessWalk(layout, tailId, tail.checkpoints)) {
+    const { reading } = walked;
+    if (walked.head) {
+      atHead = reading;
+      // Dated to its head — the state that reads as coverage, and the only one that
+      // does. The head CHECKPOINT being attested is not enough: events written above it
+      // are outside the dating exactly as events above the last checkpoint are outside
+      // the signature, and a clause that said `covered` over those was claiming a reach
+      // it did not have.
+      if (reading.status === 'covered' && head.toSeq >= lastSeq) return reading;
+      finding = reading.status === 'covered' || reading.absent === true ? null : reading;
+    }
     if (reading.status !== 'covered') {
       // The NEWEST request still open, and only from BELOW the head: the head's own is
       // already `finding`, and saying it twice would put one file's sentence in the line
       // two times over.
-      if (i !== last && reading.status === 'pending') promise ??= reading;
+      if (!walked.head && reading.status === 'pending') promise ??= reading;
       continue;
     }
-    const after = lastSeq - checkpoint.toSeq;
+    const after = lastSeq - walked.checkpoint.toSeq;
     return {
       status: statusWith(promise),
       detail: tailDetail(finding, { dated: { attested: reading, after }, promise }),
@@ -591,7 +679,8 @@ export function witnessOfTail(
     };
   }
   if (promise === null) return atHead;
-  // NOTHING CONFIRMED, AND A REQUEST IS OPEN — the case this delivery exists for.
+  // NOTHING CONFIRMED, AND A REQUEST IS OPEN — the case the delivery before this one
+  // exists for, and the state the act now has a way out of.
   return {
     status: statusWith(promise),
     detail: tailDetail(finding, { dated: null, promise }),
