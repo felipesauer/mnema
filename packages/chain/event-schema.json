@@ -1,0 +1,197 @@
+{
+  "schemaVersion": 1,
+  "describedBy": "FORMAT.md",
+  "rules": {
+    "string": "present, and a non-empty string",
+    "string?": "absent, or a non-empty string; absent is not null and not the empty string",
+    "string|null": "present, and either a non-empty string or an explicit null",
+    "boolean": "present, and exactly true or false; nothing is coerced",
+    "count": "present, and a whole number of at least 1",
+    "fields?": "absent, or the transitionFields object below, closed the same way and never empty",
+    "string[]?": "absent, or a non-empty array of non-empty strings",
+    "version": "present, and a whole number of at least 1; with kind it selects this contract",
+    "kind": "present, and the non-empty string naming this contract",
+    "instant": "present, and the exact spelling Date.prototype.toISOString produces (UTC, millisecond precision, trailing Z) of a real date"
+  },
+  "envelope": {
+    "v": "version",
+    "kind": "kind",
+    "at": "instant",
+    "who": "string",
+    "signerFp": "string",
+    "subject": "string",
+    "which": "string?",
+    "run": "string?"
+  },
+  "transitionFields": {
+    "reason": "string?",
+    "note": "string?",
+    "feedback": "string?",
+    "pr_url": "string?",
+    "links": "string[]?"
+  },
+  "contracts": [
+    {
+      "kind": "channel.asked",
+      "v": 1,
+      "payload": {
+        "rule": "string",
+        "path": "string"
+      }
+    },
+    {
+      "kind": "channel.served",
+      "v": 1,
+      "payload": {}
+    },
+    {
+      "kind": "channel.switched",
+      "v": 1,
+      "payload": {
+        "on": "boolean",
+        "reason": "string?"
+      }
+    },
+    {
+      "kind": "decision.recorded",
+      "v": 1,
+      "payload": {
+        "title": "string",
+        "rationale": "string",
+        "adr": "string",
+        "alternatives": "string?"
+      }
+    },
+    {
+      "kind": "decision.transitioned",
+      "v": 1,
+      "payload": {
+        "from": "string|null",
+        "to": "string",
+        "action": "string",
+        "by": "string?",
+        "fields": "fields?"
+      }
+    },
+    {
+      "kind": "handoff.recorded",
+      "v": 1,
+      "payload": {
+        "fromAgent": "string",
+        "toAgent": "string"
+      }
+    },
+    {
+      "kind": "identity.founded",
+      "v": 1,
+      "payload": {
+        "foundingFp": "string"
+      }
+    },
+    {
+      "kind": "key.enrolled",
+      "v": 1,
+      "payload": {
+        "newFp": "string",
+        "reverseSig": "string"
+      }
+    },
+    {
+      "kind": "key.revoked",
+      "v": 1,
+      "payload": {
+        "revokedFp": "string",
+        "reason": "string"
+      }
+    },
+    {
+      "kind": "knowledge.linked",
+      "v": 1,
+      "payload": {
+        "target": "string",
+        "rel": "string"
+      }
+    },
+    {
+      "kind": "memory.captured",
+      "v": 1,
+      "payload": {
+        "content": "string"
+      }
+    },
+    {
+      "kind": "observation.recorded",
+      "v": 1,
+      "payload": {
+        "about": "string",
+        "topic": "string",
+        "text": "string"
+      }
+    },
+    {
+      "kind": "run.ended",
+      "v": 1,
+      "payload": {
+        "outcome": "string?"
+      }
+    },
+    {
+      "kind": "run.started",
+      "v": 1,
+      "payload": {
+        "agent": "string",
+        "goal": "string?"
+      }
+    },
+    {
+      "kind": "skill.consulted",
+      "v": 1,
+      "payload": {}
+    },
+    {
+      "kind": "skill.created",
+      "v": 1,
+      "payload": {
+        "name": "string",
+        "body": "string"
+      }
+    },
+    {
+      "kind": "skill.transitioned",
+      "v": 1,
+      "payload": {
+        "from": "string|null",
+        "to": "string",
+        "action": "string",
+        "fields": "fields?"
+      }
+    },
+    {
+      "kind": "tail.pruned",
+      "v": 1,
+      "payload": {
+        "tail": "string",
+        "throughHash": "string",
+        "eventCount": "count",
+        "reason": "string"
+      }
+    },
+    {
+      "kind": "task.created",
+      "v": 1,
+      "payload": {
+        "title": "string"
+      }
+    },
+    {
+      "kind": "task.transitioned",
+      "v": 1,
+      "payload": {
+        "from": "string|null",
+        "to": "string",
+        "action": "string",
+        "fields": "fields?"
+      }
+    }
+  ]
+}

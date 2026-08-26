@@ -34,10 +34,48 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
 
+import base64  # noqa: E402
+import hashlib  # noqa: E402
+
 from mnemaverify.canonical import canonical_bytes, strict_loads  # noqa: E402
+from mnemaverify.checkpoint import CHECKPOINT_KEYS, CHECKPOINT_SCHEME, signed_message  # noqa: E402
+from mnemaverify.ed25519 import public_key_of, sign  # noqa: E402
 from mnemaverify.entry import entry_hash  # noqa: E402
+from mnemaverify.root import content_root  # noqa: E402
 
 OTHER_KEY = "6bc98177967e959aefddb48f3e757e4358c6fb30910f44d5aa75247e05cdbc10"
+
+# A KEY NOBODY ENROLLED, and one whose secret is published so it can actually sign.
+#
+# Section 6.2 is the difference between "the signature verifies" and "the signer was allowed
+# to sign it", and an input that separates the two cannot be made by editing bytes: every
+# other check has to keep closing, so the signature has to be REAL. RFC 8032 section 7.1's
+# first test vector is the one key a verifier can hold the secret of without holding a
+# secret - the RFC publishes it. Its public half is committed into the record like any
+# other, correctly named by its own fingerprint, so nothing about the KEY is wrong. What is
+# wrong is that no `identity.founded` and no `key.enrolled` ever brought it in.
+UNENROLLED_SECRET = bytes.fromhex(
+    "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60"
+)
+_SPKI_ED25519_PREFIX = bytes.fromhex("302a300506032b6570032100")
+
+
+def _unenrolled_public() -> tuple[str, str]:
+    """The committed form of that key: its fingerprint, and the PEM to write beside it."""
+    der = _SPKI_ED25519_PREFIX + public_key_of(UNENROLLED_SECRET)
+    body = base64.b64encode(der).decode("ascii")
+    pem = f"-----BEGIN PUBLIC KEY-----\n{body}\n-----END PUBLIC KEY-----\n"
+    return hashlib.sha256(der).hexdigest(), pem
+
+
+def _commit_the_unenrolled_key(root: str) -> str:
+    """Write it into `keys/`, so the reader can look it up and check its material."""
+    fingerprint, pem = _unenrolled_public()
+    keys = os.path.join(root, "keys")
+    os.makedirs(keys, exist_ok=True)
+    with open(os.path.join(keys, fingerprint + ".pub"), "w", encoding="utf-8") as handle:
+        handle.write(pem)
+    return fingerprint
 
 
 def _tail_dir(root: str) -> str:
@@ -221,14 +259,17 @@ def witness_headers_swapped(root: str) -> tuple[bool, str]:
 def forged_payload_field_appended(root: str) -> tuple[bool, str]:
     """An event appended KEYLESSLY, with a field inside its payload that no kind declares.
 
-    THIS IS THE ONE THIS VERIFIER DOES NOT REFUSE, and it ships here so that the acceptance is
-    demonstrable rather than merely declared. The entry hash takes no key, so anybody who can
-    write the repository can append; above the last checkpoint no signature covers the event;
-    and the envelope keys are all present, so the only thing that could refuse it is the
-    per-kind field declaration - which FORMAT.md publishes nowhere (gap G08).
+    THIS USED TO BE THE ONE THIS VERIFIER DID NOT REFUSE, and it shipped here so the
+    acceptance was demonstrable rather than merely declared. The entry hash takes no key, so
+    anybody who can write the repository can append; above the last checkpoint no signature
+    covers the event; and the envelope keys are all present, so the only thing that could
+    refuse it was the per-kind field declaration - which FORMAT.md published nowhere (gap
+    G08). Byte identity, all this reader had, catches a field added to a line that was
+    ALREADY written and cannot catch a new one.
 
-    The product refuses it, by rebuilding the event from the fields its kind declares. A
-    second reader built from the document cannot, and says so.
+    Section 4.1 and `event-schema.json` closed it, and both readers refuse it now. It stays
+    here as the input that proves they do: an acceptance that was named, built, and then
+    removed is worth more as a standing test than as a paragraph saying it used to happen.
     """
     path = _segment(root)
     lines = _read_lines(path)
@@ -322,6 +363,179 @@ def tail_relocated(root: str) -> tuple[bool, str]:
     return os.path.isdir(fabricated), f"the tail copied into tails/{tail[:20]}... and re-chained"
 
 
+def _append(root: str, event: dict) -> tuple[dict, int]:
+    """Append one event to the tail, keylessly - the entry hash takes no key.
+
+    Returns the link it wrote and the seq. This is the window every mutation below works
+    in, and it is the honest shape of the attack: above the last checkpoint no signature
+    covers anything, so whoever can write the repository can put a line there and close the
+    chain behind it.
+    """
+    path = _segment(root)
+    lines = _read_lines(path)
+    last = strict_loads(lines[-1].decode("utf-8"))
+    tail = last["link"]["tail"]
+    seq = last["link"]["seq"] + 1
+    previous = last["link"]["hash"]
+    link = {
+        "hash": entry_hash(canonical_bytes(event), tail, seq, previous),
+        "prev": previous,
+        "seq": seq,
+        "tail": tail,
+    }
+    lines.append(canonical_bytes({"event": event, "link": link}))
+    _rewrite(path, lines)
+    return link, seq
+
+
+def _last_event(root: str) -> dict:
+    lines = _read_lines(_segment(root))
+    return dict(strict_loads(lines[-1].decode("utf-8"))["event"])
+
+
+def appended_event_missing_a_declared_field(root: str) -> tuple[bool, str]:
+    """An event appended KEYLESSLY with a REQUIRED payload field left out.
+
+    THE HALF OF A DECLARATION AN EXEMPLAR CANNOT CARRY. The published vectors give one event
+    per kind; from one event, a field that is required and a field that is optional and
+    happens to be present look exactly the same. So this is the mutation that says whether a
+    reader has the DECLARATIONS or only an example: the line is well-formed JSON, canonical,
+    correctly hashed, its envelope is complete, and every field it does carry is a field its
+    kind declares. What refuses it is `content` being declared `string` rather than
+    `string?` - which is written down in `event-schema.json` and in section 4.1, and nowhere
+    at all before them.
+    """
+    event = _last_event(root)
+    payload = event.get("payload")
+    if not isinstance(payload, dict) or not payload:
+        return False, "the last event carries no payload field to leave out"
+    dropped = sorted(payload)[0]
+    event["payload"] = {key: value for key, value in payload.items() if key != dropped}
+    _, seq = _append(root, event)
+    return True, f"seq {seq} appended with its payload.{dropped} left out"
+
+
+def appended_event_by_an_unenrolled_key(root: str) -> tuple[bool, str]:
+    """An event appended KEYLESSLY, naming a signer no enrolment ever authorized.
+
+    NO KEY IS NEEDED TO BUILD THIS - not even the unenrolled one. The entry hash takes no
+    key, and an event is not individually signed, so a party who can write the repository
+    writes a line naming whatever `signerFp` they like. The public key is committed beside
+    it, correctly named by its own material, so a reader that checks fingerprints finds a
+    perfectly good key. What refuses it is section 6.2: no `identity.founded` and no
+    `key.enrolled` ever brought that key under this anchor, so it is not valid for the
+    `who` the event names.
+    """
+    fingerprint = _commit_the_unenrolled_key(root)
+    event = _last_event(root)
+    if event.get("signerFp") == fingerprint:
+        return False, "the last event is already signed by the unenrolled key"
+    event["signerFp"] = fingerprint
+    _, seq = _append(root, event)
+    return True, f"seq {seq} appended naming the unenrolled signer {fingerprint[:12]}..."
+
+
+def appended_event_with_a_loose_instant(root: str) -> tuple[bool, str]:
+    """An event appended KEYLESSLY whose `at` drops its milliseconds.
+
+    `2026-08-23T06:03:01Z` is a perfectly good ISO-8601 instant and it is not the one this
+    format writes: section 4.1 declares `at` under the rule `instant`, which is the exact
+    spelling `toISOString` produces. The distinction is not pedantry - the reader's ordering
+    across tails compares these strings, so two spellings of one instant are two positions.
+    A reader implementing "some ISO-8601 string" accepts this and diverges.
+    """
+    event = _last_event(root)
+    at = event.get("at")
+    if not isinstance(at, str) or not at.endswith("Z") or "." not in at:
+        return False, "the last event's `at` is not the millisecond form, so there is nothing to drop"
+    event["at"] = at.split(".")[0] + "Z"
+    _, seq = _append(root, event)
+    return True, f"seq {seq} appended with `at` spelled {event['at']}"
+
+
+def appended_event_with_a_wrong_typed_field(root: str) -> tuple[bool, str]:
+    """A `channel.switched` appended KEYLESSLY whose `on` is the STRING "off".
+
+    THE ONE BOOLEAN IN THE CATALOG, and the one rule that cannot be reached by touching the
+    frozen records at all: no event in them is of this kind. So the event is fabricated -
+    with the record's own anchor and its own signing fingerprint, so nothing about its
+    identity is wrong and section 6.2 has no quarrel with it. What refuses it is `on` being
+    declared `boolean`: `"off"`, `0` and a missing key are three ways for two readers to
+    disagree about whether a channel was on, and this is the kind a product reads to decide
+    whether it says anything at all.
+    """
+    template = _last_event(root)
+    event = {
+        "v": 1,
+        "kind": "channel.switched",
+        "at": template["at"],
+        "who": template["who"],
+        "signerFp": template["signerFp"],
+        "subject": "edit-rules-push",
+        "payload": {"on": "off", "reason": "a string where the declaration says boolean"},
+    }
+    _, seq = _append(root, event)
+    return True, f"seq {seq} appended as a channel.switched whose `on` is the string \"off\""
+
+
+def appended_event_from_a_newer_catalog(root: str) -> tuple[bool, str]:
+    """An event appended KEYLESSLY claiming a version no published contract declares.
+
+    Section 4.1: `kind` and `v` TOGETHER select one contract, and a reader refuses a pair
+    the table does not declare rather than guessing at the fields. The alternative - reading
+    an unknown version under the newest contract it happens to have - is how a forger gets a
+    payload validated against rules that were never meant for it, and how an honest reader
+    silently misreads a future event as a present one.
+    """
+    event = _last_event(root)
+    event["v"] = int(event.get("v", 1)) + 1
+    _, seq = _append(root, event)
+    return True, f"seq {seq} appended claiming {event['kind']}@{event['v']}"
+
+
+def checkpoint_by_an_unenrolled_key(root: str) -> tuple[bool, str]:
+    """A GENUINELY SIGNED checkpoint, by a key no enrolment authorized - and nothing else wrong.
+
+    This is section 6.2's `edited-event-chain-repaired`: everything the format checks below
+    the enrolment layer CLOSES. The appended event's entry hash is right. The new checkpoint
+    chains by `prev` to the one before it. Its content root folds over the event it covers.
+    Its Ed25519 signature verifies, under a key whose committed material hashes to exactly
+    the fingerprint it is filed under. Every requirement of sections 1 through 6 holds.
+
+    The only thing wrong is the one the document did not use to say: the signer was never
+    brought under the anchor its events name. A reader that stops at "the signature verifies"
+    accepts this, which is what "the signature verifies" is worth on its own.
+    """
+    fingerprint = _commit_the_unenrolled_key(root)
+    checkpoints = _checkpoints(root)
+    if not os.path.exists(checkpoints):
+        return False, "there is no checkpoints file to extend"
+    lines = _read_lines(checkpoints)
+    last = strict_loads(lines[-1].decode("utf-8"))
+    if last["signerFp"] == fingerprint:
+        return False, "the last checkpoint is already signed by the unenrolled key"
+
+    event = _last_event(root)
+    event["signerFp"] = fingerprint
+    _, seq = _append(root, event)
+
+    stored = {
+        "contentRoot": content_root([canonical_bytes(event)]),
+        "fromSeq": seq,
+        "prev": hashlib.sha256(signed_message(last, CHECKPOINT_KEYS)).hexdigest(),
+        "scheme": CHECKPOINT_SCHEME,
+        "signerFp": fingerprint,
+        "tail": _tail_dir(root).rsplit(os.sep, 1)[-1],
+        "toSeq": seq,
+    }
+    message = signed_message(stored, CHECKPOINT_KEYS)
+    lines.append(canonical_bytes({**stored, "sig": sign(UNENROLLED_SECRET, message).hex()}))
+    return (
+        _rewrite(checkpoints, lines),
+        f"cp[{seq}..{seq}] genuinely signed by the unenrolled {fingerprint[:12]}...",
+    )
+
+
 def _flip_payload(payload: object) -> object:
     """Change one string in a payload, or add one if it holds none."""
     if isinstance(payload, dict):
@@ -344,6 +558,12 @@ MUTATIONS = {
     "key-renamed": key_renamed,
     "keys-removed": keys_removed,
     "forged-payload-field-appended": forged_payload_field_appended,
+    "appended-event-missing-a-declared-field": appended_event_missing_a_declared_field,
+    "appended-event-by-an-unenrolled-key": appended_event_by_an_unenrolled_key,
+    "appended-event-from-a-newer-catalog": appended_event_from_a_newer_catalog,
+    "appended-event-with-a-loose-instant": appended_event_with_a_loose_instant,
+    "appended-event-with-a-wrong-typed-field": appended_event_with_a_wrong_typed_field,
+    "checkpoint-by-an-unenrolled-key": checkpoint_by_an_unenrolled_key,
     "tail-relocated": tail_relocated,
 }
 

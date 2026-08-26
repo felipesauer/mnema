@@ -15,7 +15,7 @@
  * implementations completing end-to-end tests as a PRECONDITION for publishing a
  * standard. Certificate Transparency runs on several implementations checking each other.
  * What that buys is not redundancy — it is that assumptions which work inside one product
- * and are false outside it become visible. Twenty-four of them did; `python3
+ * and are false outside it become visible. Twenty-five of them did; `python3
  * verifier/mnema_verify.py gaps` lists them, and one of them is a place where the two readers,
  * both faithful to the document, DATE THE SAME RECORD DIFFERENTLY.
  *
@@ -24,22 +24,30 @@
  * the level, the witness status, the block, the instant, the remainder. A verdict that
  * moved on one axis fails on that axis's name.
  *
- * THE ASYMMETRY IS DECLARED, NOT HIDDEN, AND IT HAS TWO MEMBERS. Accepting too much is the
- * silent defect of a second reader — it never disagrees, and so never proves anything — so
- * both places where this one accepts what the product refuses are named, and both were found
- * by CONSTRUCTING the input rather than by concluding from silence:
+ * THE ASYMMETRY IS GONE, AND WHAT IT TOOK IS WORTH SAYING. This file used to declare two
+ * places where the second reader ACCEPTED what the product refuses, both found by
+ * constructing the input rather than by concluding from the silence of nine mutations that
+ * both readers refused:
  *
  *   - ENROLMENT (gap G21). Section 6 asks that a signature verify under `signerFp`, and that
- *     is what this checks. The product also requires the signer to have been a key valid for
- *     its anchor at that point in the chain, which the document describes nowhere.
+ *     was all this checked. The product also requires the signer to have been a key valid
+ *     for its anchor at that point in the chain — a different claim, and the one that
+ *     matters — which the document described nowhere. Section 6.2 is that rule, written.
  *   - A FORGED FIELD INSIDE A PAYLOAD, on an event appended above the last checkpoint (gap
- *     G08). This is the one a party with no key can actually walk through, and it has a case
- *     of its own below. The per-kind field declarations are published nowhere, so the refusal
- *     section 4 promises cannot be implemented from the document.
+ *     G08) — the one a party with NO KEY can walk through. The per-kind declarations were
+ *     published nowhere, so the refusal section 4 promises could not be implemented from the
+ *     document. Section 4.1 and `event-schema.json` publish them.
  *
- * So the agreement asserted here is agreement over what the document SPECIFIES, and two cases
- * in this file assert that the second reader says so — because a gap that looks like coverage
- * is worse than an absence.
+ * AND THERE WAS A THIRD, IN THE OTHER DIRECTION, which nobody had gone looking for because
+ * refusing too much LOOKS LIKE RIGOUR (gap G25). With no declarations published, the only
+ * derivation of the envelope available to a stranger was the intersection of the vectors'
+ * top-level keys — which section 7 stated as a fact — so the second reader REFUSED an honest
+ * event carrying `which`, a field sixteen of the twenty-three published vectors carry. It is
+ * the quieter failure of the two: an acceptance is found by building an attack, and an
+ * over-refusal is found only by building an honest input, which is not where anybody looks.
+ *
+ * So every input `mutate.py` builds is now refused by BOTH readers, and the case that says
+ * so is the count in `leaves exactly ONE row out of the refusal loop`.
  *
  * IT NEEDS `python3`, AND IT FAILS RATHER THAN SKIPS WITHOUT IT. A second reader nobody
  * runs is prose again, and a skipped case is a case nobody reads. Python 3 is on the runner
@@ -346,15 +354,90 @@ const MUTATIONS = [
     productBreaks: 'witness',
   },
   {
+    // THE ROW THAT INVERTED. It was `accepted: true` — the door a party with NO KEY could
+    // walk through, and the sharper of the two places this reader accepted what the product
+    // refuses. Section 4.1 and `event-schema.json` published the declarations, and it is a
+    // refusal on both sides now. Both readers even name the same field.
     name: 'forged-payload-field-appended',
-    // ACCEPTED here and refused by the product — the asymmetry, not a refusal. It is in this
-    // table so the enumeration from `mutate.py list` stays total, and it has its own describe.
-    refusals: 0,
-    section: '4',
-    says: '',
-    productLayer: undefined,
-    productBreaks: 'accepted-here',
-    accepted: true,
+    refusals: 1,
+    section: '4.1',
+    says: 'which its contract does not declare',
+    productLayer: 'T1',
+    productBreaks: 'ok',
+  },
+  {
+    // THE OTHER HALF OF A DECLARATION, and the half an exemplar can never carry: from one
+    // published event, a required field and an optional one that happens to be present look
+    // identical. Nothing is added here — a field is left OUT — so byte identity, an envelope
+    // check and a hash chain all pass, and only `content: string` refuses it.
+    name: 'appended-event-missing-a-declared-field',
+    refusals: 1,
+    section: '4.1',
+    says: 'needs a non-empty string at payload.content',
+    productLayer: 'T1',
+    productBreaks: 'ok',
+  },
+  {
+    // THE PAIR IS THE SELECTOR, and refusing a pair the table does not declare is the rule
+    // that keeps a future event from being read under a present contract. It is also the
+    // shape the interoperability world settles this with — in-toto's `predicateType` is a
+    // URI carrying the major version, and it changes when the change is incompatible.
+    name: 'appended-event-from-a-newer-catalog',
+    refusals: 1,
+    section: '4.1',
+    says: 'no published contract declares',
+    productLayer: 'T1',
+    productBreaks: 'ok',
+  },
+  {
+    // THE ENVELOPE'S OWN VOCABULARY, on an input a mutation had to be built for: `at` under
+    // the rule `instant` is the exact spelling `toISOString` produces, not "some ISO-8601
+    // string". The distinction is load-bearing rather than pedantic — the merge across
+    // tails compares these strings, so two spellings of one instant are two positions.
+    name: 'appended-event-with-a-loose-instant',
+    refusals: 1,
+    section: '4.1',
+    says: 'UTC millisecond instant',
+    productLayer: 'T1',
+    productBreaks: 'ok',
+  },
+  {
+    // THE ONE BOOLEAN IN THE CATALOG, on a kind the frozen records do not contain at all —
+    // so the event is fabricated with the record's own anchor and fingerprint, and only its
+    // TYPE is wrong. `"off"`, `0` and a missing key are three ways for two readers to
+    // disagree about whether a channel was on.
+    name: 'appended-event-with-a-wrong-typed-field',
+    refusals: 1,
+    section: '4.1',
+    says: 'needs true or false at payload.on',
+    productLayer: 'T1',
+    productBreaks: 'ok',
+  },
+  {
+    // SECTION 6.2, WITH NO KEY AT ALL. An event is not individually signed, so a party who
+    // can write the repository names whatever `signerFp` they like above the last
+    // checkpoint. The key is committed and its material hashes to its own name; what it is
+    // not is a member.
+    name: 'appended-event-by-an-unenrolled-key',
+    refusals: 1,
+    section: '6.2',
+    says: 'is not a key enrolled for',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    // SECTION 6.2's `edited-event-chain-repaired`: the checkpoint is GENUINELY SIGNED, by a
+    // key whose secret is RFC 8032's own published test vector. Its root folds, its `prev`
+    // chains, its signature verifies under a key whose committed material hashes to exactly
+    // the fingerprint it is filed under — every requirement of sections 1 to 6 holds. The
+    // only thing wrong is that nothing ever enrolled the signer, which is the difference
+    // between "the signature verifies" and "the signer was allowed to".
+    name: 'checkpoint-by-an-unenrolled-key',
+    refusals: 1,
+    section: '6.2',
+    says: 'is not a key enrolled for',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
   },
   {
     name: 'keys-removed',
@@ -399,17 +482,23 @@ describe('the second reader refuses, and the mutation that earns each refusal sh
    * enumeration from `mutate.py list` above stays total, and it belongs to the INCOMPLETE
    * describe below instead: a check that could not run is not a check that refused, and a
    * loop that asserted REFUSED over it would be asserting the wrong thing.
+   *
+   * THERE USED TO BE A SECOND EXCLUSION, and its removal is the delivery. A row could carry
+   * `accepted: true`, meaning this reader read the mutation as VERIFIED while the product
+   * refused it — `forged-payload-field-appended` was that row. Section 4.1 closed it, so the
+   * filter is `incomplete` alone and the count below is 1. The count is asserted rather than
+   * left implicit precisely because a filter with nothing to exclude excludes nothing
+   * SILENTLY: a future acceptance smuggled back in as a row-level flag would make this loop
+   * skip it and every case here would stay green.
    */
-  const REFUSING = MUTATIONS.filter(
-    (mutation) => !('incomplete' in mutation) && !('accepted' in mutation),
-  );
+  const REFUSING = MUTATIONS.filter((mutation) => !('incomplete' in mutation));
 
-  it('leaves exactly two rows out of the refusal loop, and says which and why', () => {
-    expect(MUTATIONS.length - REFUSING.length).toBe(2);
+  it('leaves exactly ONE row out of the refusal loop, and no row is an acceptance', () => {
+    expect(MUTATIONS.length - REFUSING.length).toBe(1);
     expect(MUTATIONS.filter((m) => 'incomplete' in m).map((m) => m.name)).toEqual(['keys-removed']);
-    expect(MUTATIONS.filter((m) => 'accepted' in m).map((m) => m.name)).toEqual([
-      'forged-payload-field-appended',
-    ]);
+    // NO ROW MAY BE AN ACCEPTANCE. This is the assertion the delivery is measured by: every
+    // input `mutate.py` builds that the product refuses is refused here too.
+    expect(MUTATIONS.filter((m) => m.refusals === 0 && !('incomplete' in m))).toEqual([]);
   });
 
   it.each(REFUSING)('refuses $name, and says so under section $section', (mutation) => {
@@ -436,9 +525,11 @@ describe('the second reader refuses, and the mutation that earns each refusal sh
       `no refusal under section ${mutation.section} said ${mutation.says}`,
     ).toBe(true);
 
-    // And the product refuses the same bytes. A mutation only one reader catches belongs to
-    // the asymmetry instead, which has two named members (G21, G08) and its own cases below —
-    // never to this loop.
+    // And the product refuses the same bytes. THERE IS NO LONGER ANYWHERE ELSE FOR A ROW TO
+    // GO: this loop used to have an escape hatch for a mutation only one reader catches — the
+    // asymmetry, which had two named members (G21, G08) — and both are closed, so every row
+    // but `keys-removed` runs here and a future acceptance has to redden rather than be
+    // filed.
     //
     // WHICH AXIS THE PRODUCT REFUSES ON IS PART OF THE ROW, and it is not `ok` for the two
     // witness rows: `ok` is documented as "nothing verifiable is broken", and T3 is
@@ -612,29 +703,31 @@ describe('a check that could not run is reported as neither pass nor refusal', (
 });
 
 /**
- * THE DOOR A PARTY WITH NO KEY CAN WALK THROUGH — and this reader cannot close it.
+ * THE DOOR A PARTY WITH NO KEY COULD WALK THROUGH, AND WHAT CLOSED IT.
  *
  * Section 4 promises that "a reader rebuilds the event from the fields its kind declares and
  * rejects any other, so a forged extra field cannot ride along into the signed bytes". The
- * per-kind declarations are published NOWHERE — `canonical-vectors.json` gives one exemplar per
- * kind, from which a stranger cannot tell a required field from an optional one that happens to
- * be present (gap G08). So a verifier built from the document has only byte identity, and byte
- * identity is enough for a field added to a line that was already written, because the stored
- * hash stops matching.
+ * per-kind declarations used to be published NOWHERE — `canonical-vectors.json` gives one
+ * exemplar per kind, from which a stranger cannot tell a required field from an optional one
+ * that happens to be present (gap G08). So a verifier built from the document had only byte
+ * identity, and byte identity is enough for a field added to a line that was ALREADY written,
+ * because the stored hash stops matching.
  *
- * It is NOT enough for a newly appended event. The entry hash takes no key, so whoever can
+ * It is not enough for a newly appended event. The entry hash takes no key, so whoever can
  * write the repository computes it; above the last checkpoint no signature covers the event;
- * and the envelope keys are all present. The product refuses it by rebuilding from the kind.
- * This reader accepts it.
+ * and the envelope keys are all present. This reader accepted it, and said so on every run.
  *
- * THIS CASE EXISTS BECAUSE THE QUESTION WAS ASKED PROPERLY. "Does the second reader accept
- * anything the product refuses?" cannot be answered by looking at nine mutations that both
- * refuse — that is concluding from silence. It was answered by building the input, and the
- * answer was yes. What the delivery does about it is say so in the verifier's own output, on
- * every run, and pin it here.
+ * `event-schema.json` and section 4.1 are that hole closed, and the cases below are the same
+ * inputs asserting the opposite of what they used to. Both readers refuse, and — because both
+ * are applying one published rule rather than each its own — both name the same field.
+ *
+ * THE SECOND CASE IS THE ONE AN EXEMPLAR COULD NEVER HAVE ANSWERED: a field left OUT. Nothing
+ * rides along, nothing is added, every field present is declared; what refuses it is that
+ * `content` is declared `string` and not `string?`, which is a distinction one example of an
+ * event does not carry and a schema does.
  */
-describe('the second reader accepts a forged payload field, and says that it does', () => {
-  it('reads as VERIFIED here and is refused by the product', () => {
+describe('the second reader refuses a forged payload field, which it used to accept', () => {
+  it('is refused by BOTH readers, and both name the field', () => {
     const record = copyOf('witnessed-record');
     const applied = JSON.parse(
       python([MUTATE, 'forged-payload-field-appended', record]).stdout,
@@ -642,14 +735,34 @@ describe('the second reader accepts a forged payload field, and says that it doe
     expect(applied.applied, applied.detail).toBe(true);
 
     const there = secondReading(record);
-    expect(there.verdict, 'if this ever refuses, this case and gap G08 are both out of date').toBe(
-      'VERIFIED',
+    expect(there.verdict, 'this used to be VERIFIED, and closing that is the delivery').toBe(
+      'REFUSED',
     );
-    expect(refusals(there)).toEqual([]);
+    expect(refusals(there).map((f) => f.section)).toEqual(['4.1']);
+    expect(refusals(there)[0]?.what).toContain('forgedInsidePayload');
 
     const here = verify(record, catalogUpcasters());
-    expect(here.ok, 'the product must refuse it, or there is no asymmetry to pin').toBe(false);
+    expect(here.ok).toBe(false);
     expect(here.level).toBe('unreadable');
+    // THE SAME FIELD NAMED BY BOTH. Two readers refusing for two unrelated reasons would
+    // pass a verdict comparison and prove nothing about the rule being one rule.
+    expect(here.issues.map((issue) => issue.detail).join('\n')).toContain('forgedInsidePayload');
+  });
+
+  it('refuses a REQUIRED field left out, which byte identity can never catch', () => {
+    const record = copyOf('witnessed-record');
+    const applied = JSON.parse(
+      python([MUTATE, 'appended-event-missing-a-declared-field', record]).stdout,
+    ) as { applied: boolean; detail: string };
+    expect(applied.applied, applied.detail).toBe(true);
+
+    const there = secondReading(record);
+    expect(there.verdict).toBe('REFUSED');
+    expect(refusals(there)[0]?.what).toContain('payload.content');
+
+    const here = verify(record, catalogUpcasters());
+    expect(here.ok).toBe(false);
+    expect(here.issues.map((issue) => issue.detail).join('\n')).toContain('payload.content');
   });
 
   it('says out loud that the appended event rests on the hash chain alone', () => {
@@ -675,21 +788,74 @@ describe('the second reader accepts a forged payload field, and says that it doe
     ).toContain('there is no keyless window');
   });
 
-  it('names the forged payload field among what it does not cover', () => {
+  it('no longer names the per-kind rebuild among what it does not cover', () => {
+    // A5/A10: the observable that this case used to assert is GONE, and asserting its
+    // absence is what keeps the removal honest. A `NOT COVERED` entry left standing over a
+    // check that now runs is the worst of both — it understates the reader and it trains a
+    // future reader of the output to discount the list.
     const there = secondReading(copyOf('witnessed-record'));
-    const declared = there.notCovered.find((entry) => entry.what.includes('per-kind field'));
-    expect(declared?.what).toContain('FORGED FIELD INSIDE A PAYLOAD');
-    expect(declared?.why).toContain('SECOND of the two places');
+    const declared = there.notCovered.map((entry) => `${entry.what} ${entry.section}`).join('\n');
+    expect(declared).not.toContain('per-kind field');
+    expect(declared).not.toContain('FORGED FIELD INSIDE A PAYLOAD');
+  });
+
+  it('reports the per-kind rebuild as a check that RAN, over every contract it read', () => {
+    // NON-VACUITY OF THE REMOVAL: an entry taken out of `NOT COVERED` without the check
+    // arriving would satisfy the case above while covering strictly less than before.
+    const there = secondReading(copyOf('witnessed-record'));
+    const passed = there.findings
+      .filter((finding) => finding.level === 'ok')
+      .map((finding) => `${finding.section} ${finding.what}`)
+      .join('\n');
+    expect(passed).toContain('published contract(s) read');
+    expect(passed).toMatch(/4\.1/);
   });
 });
 
 describe('what the second reader does NOT check, said by the second reader', () => {
-  it('names enrolment as the one place it accepts what the product refuses', () => {
+  it('no longer names enrolment among what it does not check, because it checks it', () => {
     const there = secondReading(copyOf('witnessed-record'));
     const declared = there.notCovered.map((entry) => entry.what).join('\n');
-    expect(declared).toContain('ENROLLED');
-    const why = there.notCovered.find((entry) => entry.what.includes('ENROLLED'));
-    expect(why?.section).toBe('6');
+    expect(declared).not.toContain('ENROLLED');
+    // And the check that replaced the disclaimer RAN and passed, over every event.
+    const passed = there.findings
+      .filter((finding) => finding.level === 'ok')
+      .map((finding) => `${finding.section} ${finding.what}`)
+      .join('\n');
+    expect(passed).toContain('VALID FOR ITS ANCHOR');
+    expect(passed).toMatch(/6\.2/);
+  });
+
+  it('refuses a GENUINELY SIGNED checkpoint whose signer nothing enrolled', () => {
+    // SECTION 6.2's `edited-event-chain-repaired`. Every check below the enrolment layer
+    // closes — the root folds, `prev` chains, and the Ed25519 signature verifies under a key
+    // whose committed material hashes to exactly the fingerprint it is filed under. A reader
+    // that stops at "the signature verifies" reads this as fine, which is what that clause
+    // is worth on its own.
+    const record = copyOf('witnessed-record');
+    const applied = JSON.parse(
+      python([MUTATE, 'checkpoint-by-an-unenrolled-key', record]).stdout,
+    ) as { applied: boolean; detail: string };
+    expect(applied.applied, applied.detail).toBe(true);
+
+    const there = secondReading(record);
+    expect(there.verdict).toBe('REFUSED');
+    expect(refusals(there).map((f) => f.section)).toEqual(['6.2']);
+    // THE FORGED CHECKPOINT'S OWN SIGNATURE VERIFIED, and that is the point of the case
+    // rather than a detail: had it not, the refusal would be section 6's and section 6.2
+    // would be untested. The mutation appends `cp[4..4]`, so that is the line to ask about.
+    const forgedCheckpoint = there.findings.filter(
+      (finding) => finding.where.includes('cp[4..4]') && finding.level === 'ok',
+    );
+    expect(
+      forgedCheckpoint.map((finding) => finding.what).join('\n'),
+      'the forged checkpoint has to pass sections 5 and 6, or 6.2 is not what refused it',
+    ).toContain('Ed25519 signature verifies');
+    expect(forgedCheckpoint.map((finding) => finding.section).sort()).toEqual(['5', '6']);
+
+    const here = verify(record, catalogUpcasters());
+    expect(here.ok).toBe(false);
+    expect(here.issues.map((issue) => issue.detail).join('\n')).toContain('is not a key enrolled');
   });
 
   it('names every other boundary too, on a verdict that PASSED', () => {
@@ -698,11 +864,14 @@ describe('what the second reader does NOT check, said by the second reader', () 
     const there = secondReading(copyOf('witnessed-record'));
     expect(there.verdict).toBe('VERIFIED');
     const declared = there.notCovered.map((entry) => entry.what).join('\n');
-    expect(declared).toContain('per-kind field rebuild');
     expect(declared).toContain('never recomputed over a lifted reading');
     expect(declared).toContain('authorized cut from tampering');
     expect(declared).toContain("header's place in the Bitcoin chain");
-    expect(there.notCovered.length).toBeGreaterThanOrEqual(5);
+    expect(declared).toContain('explicit undefined property');
+    // THE LIST IS SHORTER BY EXACTLY THE TWO THIS DELIVERY CLOSED, and the count is asserted
+    // both ways: a list that grew silently is a check somebody stopped running, and a list
+    // that shrank without the check arriving is the entry removed rather than the limitation.
+    expect(there.notCovered).toHaveLength(4);
   });
 
   it('says which gaps in FORMAT.md the reading leaned on', () => {
