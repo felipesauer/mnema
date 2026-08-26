@@ -427,7 +427,7 @@ complete -c mnema -f -n '__mnema_at "tail prune"' -l color -x -a 'auto always ne
 
 # mnema witness
 complete -c mnema -f -n '__mnema_at "witness"' -a 'stamp' -d 'ask an outside witness to date each tail\'s last checkpoint (T3)'
-complete -c mnema -f -n '__mnema_at "witness"' -a 'upgrade' -d 'go back for the attestations this record is waiting on'
+complete -c mnema -f -n '__mnema_at "witness"' -a 'upgrade' -d 'go back for every attestation this record is waiting on (T3)'
 complete -c mnema -f -n '__mnema_at "witness"' -l global
 complete -c mnema -f -n '__mnema_at "witness"' -s h -l help
 complete -c mnema -f -n '__mnema_at "witness"' -s V -l version

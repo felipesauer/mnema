@@ -1012,3 +1012,61 @@ $ mnema tail prune --help
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema witness stamp --help
+$ mnema witness stamp --help
+| Usage: mnema witness stamp [options]
+|
+| ask an outside witness to date each tail's last checkpoint (T3)
+|
+| Options:
+|   --calendar <url...>  the timestamp calendars to ask — several, because any one
+|                        of them is enough and a proof asked of one server is a
+|                        proof that stops completing when that server does.
+|                        Defaults to the public OpenTimestamps calendars.
+|   --global             also cover this machine's global tree — left out by
+|                        default, exactly as `verify` leaves it out: it belongs to
+|                        no project and is present in every one (default: false)
+|   -h, --help           display help for command
+|
+| What leaves this machine: the SHA-256 of one checkpoint's signed message, and
+| nothing else — no id, no title, no body, no count. Each calendar is handed a hash
+| of that digest with a nonce of its own, so no two of them see the same value.
+|
+| It refuses a tree that is not fully signed: an attestation is filed under the
+| digest of a checkpoint, and the verifier looks for one under the checkpoint IT
+| proved. Below that level the two can be different checkpoints.
+|
+| The answer is a PROMISE, not a proof. It confirms when a Bitcoin block carries it,
+| which is minutes to hours later; `mnema witness upgrade` is the return visit, and
+| until then `verify` reads PENDING, which is not coverage.
+
+### mnema witness upgrade --help
+$ mnema witness upgrade --help
+| Usage: mnema witness upgrade [options]
+|
+| go back for every attestation this record is waiting on (T3)
+|
+| Options:
+|   --calendar <url...>  the calendars to ask, when the defaults are not the ones
+|                        used
+|   --blocks <url>       where a block header is read from once an attestation
+|                        confirms. Asked ONCE per block: the 80 bytes are then
+|                        part of the record, and every verification after that is
+|                        arithmetic on this machine. Defaults to a public block
+|                        explorer.
+|   --global             also cover this machine's global tree — left out by
+|                        default, exactly as `verify` leaves it out: it belongs to
+|                        no project and is present in every one (default: false)
+|   -h, --help           display help for command
+|
+| It goes back for EVERY request the tail still has open, not only the newest one.
+| Proofs stay under the checkpoint they were filed under and the head moves on, so a
+| request made this morning is usually no longer the head by the time a calendar has
+| an answer for it. Newest first, and it stops at the first one that confirms: below
+| that point a proof dates less of the record at a later instant, so no reading would
+| ever quote it. One that cannot be carried through is reported and the rest go on.
+|
+| Safe to repeat: a calendar with nothing yet answers so, and the proof comes back
+| as it went in. A header this fetches is checked against the block it claims to be
+| — it hashes to that block's id — so a substituted one is not a matter of trust.

@@ -246,7 +246,11 @@ yesterday's digest, still proving that that checkpoint existed at that instant. 
 reader takes the **newest** checkpoint it holds a confirmed attestation for — and the
 newest request still open, for when there is no confirmed one — and reports
 three things together — the instant, the block, and **how many events were written after
-the checkpoint that instant dates**. A record whose newest attestation reaches its last
+the checkpoint that instant dates**. The ACT that completes a request walks the same way,
+newest first, stopping at the first attestation that confirms
+(`packages/code/src/commands/witness.test.ts`); it asked only about the last checkpoint
+for a while after the reader stopped doing so, which left a record able to hold a request
+the reader reported and the act would not finish. A record whose newest attestation reaches its last
 event reads `covered`; one dated to an earlier point reads `not covered` and says the
 date and the remainder in one sentence, because a date without a boundary claims more
 than it holds. (Before this, a reader asked only about the last checkpoint, so a record

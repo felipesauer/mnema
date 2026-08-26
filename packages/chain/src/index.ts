@@ -116,17 +116,20 @@ export {
   tailWaiversIn,
 } from './chain/waiver.js';
 // T3, the external witness. What crosses this line is what the SURFACE uses — the two
-// acts, where a witness is filed, and how one reads, both per checkpoint and per tail.
-// `witnessOfChain` stays inside: the verifier is its only caller, and an export nothing
-// calls is a value with no reason to be a contract.
+// acts, where a witness is filed, and how one reads, per checkpoint, per tail, and as
+// the walk down the tail that the reading and the act that completes an attestation
+// share. `witnessOfChain` stays inside: the verifier is its only caller, and an export
+// nothing calls is a value with no reason to be a contract.
 export {
   checkpointToWitness,
   type ProvenCheckpoint,
   readStoredWitness,
   readWitness,
+  type WalkedWitness,
   type WitnessedTail,
   type WitnessReading,
   witnessOfTail,
+  witnessWalk,
   writeWitness,
 } from './chain/witness.js';
 export {

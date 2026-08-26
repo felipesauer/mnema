@@ -87,7 +87,7 @@ _mnema_described() {
       'help:display help for command' ;;
     'witness') printf '%s\n' \
       'stamp:ask an outside witness to date each tail'\''s last checkpoint (T3)' \
-      'upgrade:go back for the attestations this record is waiting on' ;;
+      'upgrade:go back for every attestation this record is waiting on (T3)' ;;
     'switch') printf '%s\n' \
       'off:stop a channel handing the record to a model unasked' \
       'on:let a channel hand the record to a model again' ;;
