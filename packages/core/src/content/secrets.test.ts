@@ -14,38 +14,80 @@ import { detectSecrets, SECRET_CLASSES, scrubSecrets, secretPlaceholder } from '
  * the investigation. Only the output can answer.
  */
 
-/** One real-shaped value per recognized class, and the class it must be read as. */
-const SAMPLES: readonly { readonly class: string; readonly text: string }[] = [
-  { class: 'aws-access-key', text: 'AKIAIOSFODNN7EXAMPLE' },
-  { class: 'github-token', text: `ghp_${'A1b2C3d4E5'.repeat(4)}` },
-  { class: 'openai-key', text: `sk-proj-${'Xy9'.repeat(12)}` },
-  { class: 'stripe-key', text: `sk_live_${'4a7B'.repeat(8)}` },
-  { class: 'slack-token', text: 'xoxb-123456789012-abcdefghijkl' },
-  { class: 'google-api-key', text: `AIza${'Sy0aB-c_9'.repeat(4)}` },
-  { class: 'npm-token', text: `npm_${'z9Y8x7W6v5'.repeat(4)}` },
-  {
-    class: 'jwt',
-    text: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27u',
-  },
-  {
-    class: 'private-key-block',
-    text: '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQ\n-----END PRIVATE KEY-----',
-  },
-];
+/**
+ * One real-shaped value per recognized class: the value that must be gone from the
+ * output, and the string written into the sentence to carry it — the same string for
+ * every class but `url-password`, whose secret is a slot inside a URL.
+ *
+ * Keyed BY class, so `SECRET_CLASSES` drives every loop below instead of a list kept
+ * in step by hand. That is the ruler this file measures with, and it answers two
+ * questions the old array could not: a class added to the sieve with no sample here
+ * fails, and a class whose sample an EARLIER shape already swallows fails too. The
+ * second is the defect that reported a key of Anthropic's shape as `openai-key`.
+ */
+interface Sample {
+  /** The exact string that must not survive into the output. */
+  readonly value: string;
+  /** What is written into the text: the value, or the thing that contains it. */
+  readonly holder: string;
+}
+
+const SAMPLES: Readonly<Record<string, Sample>> = {
+  'aws-access-key': itself('AKIAIOSFODNN7EXAMPLE'),
+  'github-token': itself(`ghp_${'A1b2C3d4E5'.repeat(4)}`),
+  'anthropic-key': itself(`sk-ant-api03-${'Xy9'.repeat(12)}`),
+  'openai-key': itself(`sk-proj-${'Xy9'.repeat(12)}`),
+  'stripe-key': itself(`sk_live_${'4a7B'.repeat(8)}`),
+  'slack-token': itself('xoxb-123456789012-abcdefghijkl'),
+  'google-api-key': itself(`AIza${'Sy0aB-c_9'.repeat(4)}`),
+  'npm-token': itself(`npm_${'z9Y8x7W6v5'.repeat(4)}`),
+  jwt: itself(
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27u',
+  ),
+  'private-key-block': itself(
+    '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQ\n-----END PRIVATE KEY-----',
+  ),
+  // The one class whose secret is not the whole of what is written: the password
+  // sits in a slot, and the URL around it is what has to survive.
+  'url-password': { value: 'Tr0ub4dor3', holder: 'postgres://svc:Tr0ub4dor3@db.internal/app' },
+};
+
+/** A sample whose value IS what gets written into the text. */
+function itself(value: string): Sample {
+  return { value, holder: value };
+}
+
+/** The sentence every sample is scrubbed inside — the context has to come back. */
+function wrote(sample: Sample): string {
+  return `deploying with ${sample.holder} against staging`;
+}
 
 describe('scrubSecrets — the value is absent from the output', () => {
-  for (const sample of SAMPLES) {
-    it(`takes a ${sample.class} out of the text it was written into`, () => {
-      const text = `deploying with ${sample.text} against staging`;
-      const scrubbed = scrubSecrets(text);
+  it('carries one sample per recognized class — the ruler the loops below measure with', () => {
+    // Both directions. A class with no sample would be skipped by every loop in
+    // this file while looking covered, and a sample for a class the sieve does not
+    // have is a test measuring nothing.
+    expect(Object.keys(SAMPLES).sort()).toEqual([...SECRET_CLASSES].sort());
+  });
+
+  for (const secret of SECRET_CLASSES) {
+    it(`takes a ${secret} out of the text it was written into, and calls it a ${secret}`, () => {
+      const sample = SAMPLES[secret];
+      const scrubbed = scrubSecrets(wrote(sample));
 
       // THE assertion: the value is not in the output. Anywhere, in any form.
-      expect(scrubbed.text).not.toContain(sample.text);
-      // And the context around it survived — the record is still worth having.
-      expect(scrubbed.text).toContain('deploying with');
-      expect(scrubbed.text).toContain('against staging');
-      expect(scrubbed.text).toContain(secretPlaceholder(sample.class as never));
-      expect(scrubbed.replaced).toContain(sample.class);
+      expect(scrubbed.text).not.toContain(sample.value);
+      // And in EXACT form: the sentence with the value swapped for the placeholder
+      // and nothing else moved. It says three things at once — the context around
+      // the value survived so the record is still worth having, the placeholder
+      // went where the value was, and no FRAGMENT or digest of the value came with
+      // it. `not.toContain(value)` alone would pass on a placeholder carrying the
+      // first eight characters of the key, which is the leak the module refuses.
+      expect(scrubbed.text).toBe(wrote(sample).replace(sample.value, secretPlaceholder(secret)));
+      // EXACTLY this class, and nothing else: the assertion that fails when an
+      // earlier shape swallows a later one's prefix, which is how `sk-ant-…` came
+      // back named `openai-key`.
+      expect(scrubbed.replaced).toEqual([secret]);
     });
   }
 
@@ -118,9 +160,9 @@ describe('scrubSecrets — a cleaned text is clean', () => {
   // SAME detector over the existing record, so a placeholder that still read as a
   // credential would make every already-cleaned record appear in the report
   // forever. A report that always fires is a report nobody reads.
-  for (const sample of SAMPLES) {
-    it(`finds nothing left in a text whose ${sample.class} was already replaced`, () => {
-      const once = scrubSecrets(`context ${sample.text} context`);
+  for (const secret of SECRET_CLASSES) {
+    it(`finds nothing left in a text whose ${secret} was already replaced`, () => {
+      const once = scrubSecrets(wrote(SAMPLES[secret]));
       expect(detectSecrets(once.text)).toEqual([]);
       expect(scrubSecrets(once.text).text).toBe(once.text);
     });
@@ -133,6 +175,70 @@ describe('scrubSecrets — a cleaned text is clean', () => {
     expect(once.text).toBe('postgres://svc:<SECRET:url-password>@db.internal/app');
     expect(detectSecrets(once.text)).toEqual([]);
     expect(scrubSecrets(once.text).replaced).toEqual([]);
+  });
+});
+
+describe('scrubSecrets — the `sk-` family, where the prefix does not name the issuer', () => {
+  // `sk-` is a convention several issuers reuse, so the prefix alone does not say
+  // whose key it is. Order in `SECRET_CLASSES` is what decides the name a value is
+  // reported under, and these cases pin the outcome of that order — the refusal was
+  // never in doubt, the NAME was, and the name is what a person reads.
+  const ANTHROPIC = `sk-ant-api03-${'Xy9'.repeat(12)}`;
+  const ANTHROPIC_ADMIN = `sk-ant-admin01-${'Xy9'.repeat(12)}`;
+  const OPENAI_PROJECT = `sk-proj-${'Xy9'.repeat(12)}`;
+  const NO_ISSUER_PREFIX = `sk-${'Ab3'.repeat(9)}`;
+
+  it('names ANTHROPIC on a key of Anthropic’s shape, not the issuer whose prefix it shares', () => {
+    const scrubbed = scrubSecrets(`the key is ${ANTHROPIC} in staging`);
+
+    expect(scrubbed.text).not.toContain(ANTHROPIC);
+    expect(scrubbed.replaced).toEqual(['anthropic-key']);
+    // The WRONG name, asserted ABSENT. It is the defect this class exists to fix:
+    // `mnema decision import` printed `(openai-key)` beside a file holding one of
+    // these, and a reader would have gone to rotate the wrong account's key.
+    expect(scrubbed.replaced).not.toContain('openai-key');
+    expect(scrubbed.text).not.toContain('openai-key');
+  });
+
+  it('names Anthropic after the family prefix, whatever product code follows it', () => {
+    // The shape stops at `sk-ant-` on purpose: `api03` and `admin01` are product
+    // codes, and pinning them would make the next one report the wrong issuer again.
+    expect(detectSecrets(`rotate ${ANTHROPIC_ADMIN} today`)).toEqual(['anthropic-key']);
+  });
+
+  it('leaves OpenAI’s own shapes to OpenAI', () => {
+    expect(detectSecrets(`rotate ${OPENAI_PROJECT} today`)).toEqual(['openai-key']);
+    expect(detectSecrets(`rotate ${NO_ISSUER_PREFIX} today`)).toEqual(['openai-key']);
+  });
+
+  it('refuses EVERY member of the family — naming one of them cannot have opened a hole', () => {
+    // The coverage question, asked WITHOUT reference to the label. Before this class
+    // existed all four were replaced under one name; all four are still replaced,
+    // once each. A reordering that opened a gap fails here and not somewhere later.
+    for (const key of [ANTHROPIC, ANTHROPIC_ADMIN, OPENAI_PROJECT, NO_ISSUER_PREFIX]) {
+      const scrubbed = scrubSecrets(`use ${key} now`);
+
+      expect(scrubbed.text).not.toContain(key);
+      expect(scrubbed.replaced).toHaveLength(1);
+    }
+  });
+
+  it('replaces both when one field carries a key from each issuer', () => {
+    const scrubbed = scrubSecrets(`old ${OPENAI_PROJECT} and new ${ANTHROPIC}`);
+
+    expect(scrubbed.text).not.toContain(OPENAI_PROJECT);
+    expect(scrubbed.text).not.toContain(ANTHROPIC);
+    expect([...scrubbed.replaced].sort()).toEqual(['anthropic-key', 'openai-key']);
+  });
+
+  it('takes an Anthropic key out of a URL’s password slot under its OWN name', () => {
+    // `url-password` is the class whose shape is "whatever sits in this position",
+    // and it runs last — so a value that carries an issuer prefix is named by the
+    // prefix, and only a password with no shape of its own falls through to it.
+    const scrubbed = scrubSecrets(`https://u:${ANTHROPIC}@api.internal/v1`);
+
+    expect(scrubbed.text).not.toContain(ANTHROPIC);
+    expect(scrubbed.replaced).toEqual(['anthropic-key']);
   });
 });
 
@@ -201,6 +307,20 @@ describe('scrubSecrets — the limits, stated as tests', () => {
       expect(scrubSecrets(uncaught.text).replaced).toEqual([]);
     });
   }
+
+  it('calls a `sk-` key with no issuer prefix `openai-key` — a best guess, not a reading', () => {
+    // A declared LIMIT, and the reason `anthropic-key` did not close the whole
+    // question: `sk-` alone is shared by OpenAI's legacy keys and by every other
+    // issuer that reuses the convention without a prefix of its own, and nothing in
+    // the value says which. Refusing under the likeliest name beats accepting for
+    // want of a name, and asserting the name here makes a better one a deliberate
+    // change rather than a drift.
+    const key = `sk-${'Ab3'.repeat(9)}`;
+    const scrubbed = scrubSecrets(`some other vendor: ${key}`);
+
+    expect(scrubbed.text).not.toContain(key);
+    expect(scrubbed.replaced).toEqual(['openai-key']);
+  });
 
   it('leaves the BODY of an UNCLOSED PEM block, replacing only its header', () => {
     // Losing the header too would be strictly worse (nothing would match at all),
