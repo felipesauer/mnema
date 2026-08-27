@@ -4,13 +4,16 @@
 `2026-08-17-pilot/` holds four cells — one task, four arms, one run — `2026-08-18-full/` holds
 round 1's 112, `2026-08-18-mechanism/` holds eight cells of a fifth arm that are a mechanism check
 and not a measurement, `2026-08-20-full/` holds round 2's 208, and `2026-08-21-full/` holds round
-3's 160. Round 4 has three directories and **none of them is a measurement of an arm**:
+3's 160. Round 4 has **four** directories and **none of them is a measurement of an arm**:
 `2026-08-24-pilot/` holds four cells over that round's own pilot task, `2026-08-24-sieve-aborted/`
 holds the 55 cells of a sieve that was stopped when the account's session limit turned 33 of them
 into the vendor refusing to run — **published aborted, because a run that went badly is not
-overwritten** — and `2026-08-24-sieve/` holds the complete sieve's 128, whose cells are discarded
+overwritten** — `2026-08-24-sieve/` holds the complete sieve's 128, whose cells are discarded
 by that round's own rule and whose result is that **one candidate of sixteen survived, so round 4's
-comparison does not run.** What each one is, and why their counts do not add up to each other, is
+comparison does not run**, and `2026-08-27-gate-demand/` holds 16 cells of `base` over those same
+sixteen candidates, whose subject is the **task** and not the arm: it turns the sieve report's
+inspection — *"8 of the 16 gates demand a value that only the decision carries"* — into a number,
+and the number is **6**. What each one is, and why their counts do not add up to each other, is
 named in [the index](../../README.md). This directory was committed empty on
 purpose: the pre-registration beside it is worth what the order is worth, and the order is visible
 here.
@@ -39,6 +42,15 @@ it true. What fixes the form is not prose: it is
 directory this file and [the index](../../README.md) name and fails if one is absent, and reads
 every directory that exists and fails if either file leaves it out. The count in the first
 paragraph goes stale the same way a fifth time; from now on it goes stale RED.)*
+
+*(**And the fifth time came on 27 Aug 2026, with `2026-08-27-gate-demand/`, and the prediction above
+is the first premise in this file that a later entry CONFIRMS rather than falsifies.** The count
+went from three directories to four in the same commit that created the fourth, and it did so
+because the guard names the omission by directory rather than by attention. It was checked to be
+load-bearing rather than assumed: deleting the new name from this paragraph turns that case red on
+the direction that says a directory on disk is unnamed, and deleting the directory instead turns it
+red on the other direction — two mutations, two reds, recorded in the delivery that landed the
+capture.)*
 
 A run lands one directory named for its date and mode — `2026-08-17-pilot/`,
 `2026-08-20-full/` — holding:
