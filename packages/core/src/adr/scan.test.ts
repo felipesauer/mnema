@@ -120,7 +120,12 @@ describe('reading a directory of decision documents', () => {
     const refusal = scan.refused[0];
     expect(refusal?.code).toBe('HOLDS_A_SECRET');
     expect(refusal?.path).toBe(`${base}/0002-leaky.md`);
-    expect(refusal?.classes?.length).toBeGreaterThan(0);
+    // The CLASS, not merely a count. This assertion used to read
+    // `classes.length > 0`, which passed while the class was `openai-key`: the value
+    // in this very test is Anthropic's shape, and `sk-` is a prefix two issuers
+    // share. A count cannot tell a right name from a wrong one, and the name is the
+    // whole of what a person acts on.
+    expect(refusal?.classes).toEqual(['anthropic-key']);
     // The class travels and the value never does — the record's own posture.
     expect(JSON.stringify(scan)).not.toContain('sk-ant-api03-ABCDEFGHIJ');
   });

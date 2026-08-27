@@ -52,10 +52,21 @@
  * safety.
  */
 
-/** The classes of credential the scrubber recognizes, in the order it applies them. */
+/**
+ * The classes of credential the scrubber recognizes, in the order it applies them.
+ *
+ * This list is the ONE address of that order: {@link scrubSecrets} walks it, and
+ * the shapes next door are a lookup keyed by it rather than a second sequence. The
+ * order carries meaning — see `SHAPES` for the prefix families it resolves — so two
+ * copies of it would be two readings of one rule.
+ */
 export const SECRET_CLASSES = [
   'aws-access-key',
   'github-token',
+  // `anthropic-key` before `openai-key`: `sk-ant-` is the longer of two prefixes
+  // that share `sk-`, so the specific one has to be tried first. Moving it after
+  // `openai-key` still refuses the value and reports the WRONG issuer.
+  'anthropic-key',
   'openai-key',
   'stripe-key',
   'slack-token',
@@ -103,64 +114,79 @@ export function secretPlaceholder(secret: SecretClass): string {
  */
 const PEM_BODY_SPAN = 8_192;
 
-/** A recognized credential format: the class it belongs to and the shape it takes. */
-interface SecretPattern {
-  readonly class: SecretClass;
-  /**
-   * The shape, always global. It matches the SECRET ONLY — no capture groups,
-   * ever (see the module comment), so a replacement is the whole match.
-   */
-  readonly re: RegExp;
-}
-
 /**
- * The formats, in application order. Order fixes only which class is reported
- * when two shapes could describe the same span; no two patterns here overlap
- * (`sk-` and `sk_` are different prefixes), and each runs over the text the
- * previous ones already cleaned, so a placeholder is never re-matched.
+ * The shape of each class, as a LOOKUP. The order lives in
+ * {@link SECRET_CLASSES} and nowhere else; the keys below are written in that same
+ * order for legibility only, and nothing reads this object's own key order.
+ *
+ * The type is a mapped record over {@link SecretClass}, so a class added to the
+ * list does not compile until it has a shape here. That is the point: a class with
+ * no shape would never fire, and an audit would report a clean record while the
+ * value went to the chain.
+ *
+ * SHARED PREFIXES EXIST, AND ORDER IS WHAT RESOLVES THEM. This comment used to
+ * claim that "no two patterns here overlap (`sk-` and `sk_` are different
+ * prefixes)". That premise was false, and a real key falsified it: `sk-` is a
+ * convention several issuers reuse, so a key of Anthropic's shape (`sk-ant-…`) was
+ * matched by the OpenAI shape and reported to a person as `openai-key` — the
+ * refusal right, the name wrong. The rule now: within a family that shares a
+ * prefix, the class whose prefix is MORE SPECIFIC comes first in
+ * {@link SECRET_CLASSES}, and the general one is the fallback label. `sk-` is the
+ * only such family in this table today.
+ *
+ * The rule is held by `secrets.test.ts`, which walks `SECRET_CLASSES` and asserts
+ * each class's sample is reported as EXACTLY that class. A class added behind a
+ * prefix an earlier shape already swallows fails there rather than shipping the
+ * wrong name — which is what this table had no way to catch before.
+ *
+ * Every shape is global, and matches the SECRET ONLY — no capture groups, ever
+ * (see the module comment), so a replacement is the whole match. Each runs over the
+ * text the previous ones already cleaned, so a placeholder is never re-matched.
  */
-const PATTERNS: readonly SecretPattern[] = [
-  { class: 'aws-access-key', re: /\b(?:AKIA|ASIA|ABIA|ACCA)[0-9A-Z]{16,}\b/g },
-  { class: 'github-token', re: /\bgh[pousr]_[A-Za-z0-9]{36,}\b/g },
-  { class: 'openai-key', re: /\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}\b/g },
-  { class: 'stripe-key', re: /\b(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{20,}\b/g },
-  { class: 'slack-token', re: /\bxox[baprs]-[A-Za-z0-9-]{10,}\b/g },
+const SHAPES: { readonly [K in SecretClass]: RegExp } = {
+  'aws-access-key': /\b(?:AKIA|ASIA|ABIA|ACCA)[0-9A-Z]{16,}\b/g,
+  'github-token': /\bgh[pousr]_[A-Za-z0-9]{36,}\b/g,
+  // Anthropic's own prefix, tried before the shared one. The suffix after `sk-ant-`
+  // is left open (`api03`, `admin01`, and whatever comes next) because the family
+  // name is what identifies the issuer, not the product code inside it.
+  'anthropic-key': /\bsk-ant-[A-Za-z0-9_-]{20,}\b/g,
+  // The FALLBACK of the `sk-` family: OpenAI's legacy and project keys, and any
+  // other issuer that reuses the convention without a prefix of its own. So the
+  // NAME here is a best guess over a certain refusal — a trade asserted as a
+  // declared limit in the tests rather than left to be discovered by a reader.
+  'openai-key': /\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}\b/g,
+  'stripe-key': /\b(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{20,}\b/g,
+  'slack-token': /\bxox[baprs]-[A-Za-z0-9-]{10,}\b/g,
   // No trailing `\b`: a key one character longer than the issuer's current
   // length would otherwise stop matching, which is the failure mode the
   // minimum-length rule exists to avoid.
-  { class: 'google-api-key', re: /\bAIza[0-9A-Za-z_-]{30,}/g },
-  { class: 'npm-token', re: /\bnpm_[A-Za-z0-9]{36,}\b/g },
-  { class: 'jwt', re: /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g },
+  'google-api-key': /\bAIza[0-9A-Za-z_-]{30,}/g,
+  'npm-token': /\bnpm_[A-Za-z0-9]{36,}\b/g,
+  jwt: /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g,
   // The WHOLE block when it is closed, so the key material goes with the header.
   // The closing half is optional on purpose: a truncated paste with no END marker
   // would otherwise match nothing at all, and losing the header too is strictly
   // worse than losing only the body. What that costs is stated as a limit rather
   // than hidden — an unclosed block leaves its body in the text.
-  {
-    class: 'private-key-block',
-    re: new RegExp(
-      '-----BEGIN (?:[A-Z ]+ )?PRIVATE KEY-----' +
-        String.raw`(?:[\s\S]{0,${PEM_BODY_SPAN}}?-----END (?:[A-Z ]+ )?PRIVATE KEY-----)?`,
-      'g',
-    ),
-  },
+  'private-key-block': new RegExp(
+    '-----BEGIN (?:[A-Z ]+ )?PRIVATE KEY-----' +
+      String.raw`(?:[\s\S]{0,${PEM_BODY_SPAN}}?-----END (?:[A-Z ]+ )?PRIVATE KEY-----)?`,
+    'g',
+  ),
   // The password half of `scheme://user:PASSWORD@host`, and only that half: the
   // scheme, the user and the host are the context that makes the record useful,
   // so they survive. The context is a LOOKBEHIND rather than a capture group,
   // which is what makes the match the secret itself.
   //
-  // The `(?!<SECRET:)` is what keeps this pattern from matching its OWN
+  // The `(?!<SECRET:)` is what keeps this shape from matching its OWN
   // placeholder. It is the only class whose shape is "whatever sits in this
   // position", so a cleaned URL still has something in the password slot — and
   // without the guard the detector would report a credential in text it had
   // already cleaned. That matters most for the audit, which reads the same
   // detector: every scrubbed record would show up in it forever, and a report that
   // always fires is a report nobody reads.
-  {
-    class: 'url-password',
-    re: /(?<=\b[a-z][a-z0-9+.-]*:\/\/[^\s/:@]+:)(?!<SECRET:)[^\s/@]{3,}(?=@)/g,
-  },
-];
+  'url-password': /(?<=\b[a-z][a-z0-9+.-]*:\/\/[^\s/:@]+:)(?!<SECRET:)[^\s/@]{3,}(?=@)/g,
+};
 
 /** Text with every recognized credential replaced, and what was taken out of it. */
 export interface ScrubbedText {
@@ -185,8 +211,8 @@ export interface ScrubbedText {
 export function scrubSecrets(text: string): ScrubbedText {
   let out = text;
   let replaced: SecretClass[] | undefined;
-  for (const pattern of PATTERNS) {
-    const pass = scrubWith(out, pattern);
+  for (const secret of SECRET_CLASSES) {
+    const pass = scrubWith(out, secret, SHAPES[secret]);
     if (pass.replaced.length === 0) continue;
     out = pass.text;
     replaced = replaced === undefined ? [...pass.replaced] : [...replaced, ...pass.replaced];
@@ -213,17 +239,17 @@ export function detectSecrets(text: string): readonly SecretClass[] {
 }
 
 /**
- * One pattern's pass over the text. Returns the input untouched when nothing
- * matched, so a clean field costs a scan and no allocation.
+ * One class's pass over the text, under the shape that class is recognized by.
+ * Returns the input untouched when nothing matched, so a clean field costs a scan
+ * and no allocation.
  *
- * The pattern's `lastIndex` is reset before the scan: these are module-level
+ * The shape's `lastIndex` is reset before the scan: these are module-level
  * regexes with the global flag, and a previous partial scan would otherwise make
  * the next call start in the middle of the text. The zero-length guard cannot
  * trigger for any pattern here (each requires literal characters) and is there so
  * a future one cannot turn into an endless loop.
  */
-function scrubWith(text: string, pattern: SecretPattern): ScrubbedText {
-  const re = pattern.re;
+function scrubWith(text: string, secret: SecretClass, re: RegExp): ScrubbedText {
   re.lastIndex = 0;
   let match = re.exec(text);
   if (match === null) return { text, replaced: [] };
@@ -237,8 +263,8 @@ function scrubWith(text: string, pattern: SecretPattern): ScrubbedText {
       match = re.exec(text);
       continue;
     }
-    parts.push(text.slice(copied, match.index), secretPlaceholder(pattern.class));
-    replaced.push(pattern.class);
+    parts.push(text.slice(copied, match.index), secretPlaceholder(secret));
+    replaced.push(secret);
     copied = match.index + match[0].length;
     match = re.exec(text);
   }
