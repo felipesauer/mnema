@@ -234,7 +234,7 @@ export function chainRootForScope(trees: ResolvedTrees, scope: Scope): string | 
 /** Options for opening a tree, minus the key root — that comes from the trees. */
 export interface OpenTreeOptions {
   readonly maxSegmentBytes?: number;
-  readonly checkpointEvery?: number;
+  readonly maxUnsignedEvents?: number;
 }
 
 /**

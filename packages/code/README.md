@@ -847,8 +847,8 @@ arithmetic on this machine.
 
 It goes back for **every** request the tail still has open, not only the newest one, and
 that is not a refinement: a proof stays under the checkpoint it was filed under while the
-head moves on every 64 events, so by the time a calendar has an answer the request is
-usually somewhere else entirely. Asking only about the head meant this verb answered
+head moves on every write, so by the time a calendar has an answer the request is usually
+somewhere else entirely. Asking only about the head meant this verb answered
 `nothing has been asked about this checkpoint yet` about records `verify` was reporting a
 request in flight for — the same product contradicting itself about the same disk. It
 walks newest first and stops at the first attestation that confirms, because a proof below

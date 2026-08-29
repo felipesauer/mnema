@@ -142,8 +142,8 @@ export {
 } from './chain/witness-request.js';
 export {
   ChainWriter,
-  DEFAULT_CHECKPOINT_EVERY,
   DEFAULT_MAX_SEGMENT_BYTES,
+  DEFAULT_MAX_UNSIGNED_EVENTS,
   type WriterOptions,
 } from './chain/writer.js';
 export {

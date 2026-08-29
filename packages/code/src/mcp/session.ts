@@ -667,6 +667,18 @@ function ensureRun(session: Session, trees: ResolvedTrees, scope: Scope): string
     throw new Error(`could not open a session run: ${started.code} — ${started.message}`);
   }
   session.runs.set(root, { id: started.id, trees, scope });
+  // SIGNED HERE, because opening a run is an act of writing and every act of writing
+  // signs what it wrote. Nothing above this line guarantees a later one: a call whose
+  // operation is REFUSED checkpoints nothing (by design — see the tools), so the
+  // founding and this `run.started` would rest on the hash chain alone with no writer
+  // ever coming back for them. Measured before this line existed: a session whose
+  // first tool call was refused left the tree at `hash-chain-only` with 2 events
+  // uncovered.
+  //
+  // It costs ONE checkpoint per session per tree, not one per call: the map lookup
+  // above returns early for every later write to this tree. See
+  // `every-write-signs-what-it-wrote.test.ts`.
+  ctx.writer.checkpoint();
   // The moment a reading connection became a writing one — in this tree, which the
   // line names, because a connection now opens a run per project it writes to and a
   // line that named only the run would leave a reader counting runs with no way to
@@ -742,6 +754,15 @@ export function closeSession(session: Session): SessionClose {
         // of the client: it is already in hand, and a close whose executor came from
         // the wire could name an agent other than the one that did the work.
         const ended = endRun(ctx, { run: run.id, which: session.which });
+        // Signed here, and this is the last chance anything has: the connection is
+        // over, so no later write will come back to cover this `run.ended`. Measured
+        // before this line existed: a session that recorded a task and then closed
+        // left the tree at `signed-through-last-checkpoint` with the end of its own
+        // run uncovered — a record that had been fully signed a moment earlier, put
+        // back below that by the act of closing, permanently and silently. Signing
+        // only what landed: a refused close leaves nothing pending, so this is a
+        // no-op there rather than a second signature over the same range.
+        if (ended.ok) ctx.writer.checkpoint();
         (ended.ok ? closed : leftOpen).push(run.id);
       } catch {
         leftOpen.push(run.id);
