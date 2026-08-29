@@ -87,11 +87,33 @@ export interface StampedWitness {
   readonly refusals: readonly WitnessRefusal[];
 }
 
-/** What the calendars and the block source are asked through. */
-export interface WitnessNetwork {
-  readonly calendars?: readonly string[];
+/**
+ * What the RETURN VISIT asks through — a block source, and the fetcher behind both acts.
+ *
+ * IT HAS NO CALENDARS, AND THE ABSENCE IS THE TYPE DOING THE ARGUING. A return visit
+ * does not pick who to ask: {@link upgradeNode} walks the proof's own pending
+ * attestations and each one carries the URI of the calendar that took it, so the
+ * address is the record's rather than the caller's. While the two acts shared one
+ * shape, a caller could hand this one a list of calendars and the compiler had nothing
+ * to say — and one did. `mnema witness upgrade --calendar` was a public option whose
+ * value was carried through three layers into this parameter and read by nothing, while
+ * its help said `the calendars to ask, when the defaults are not the ones used`; there
+ * are no defaults on this path, because there is no choice on this path. The option is
+ * gone and the shape is split, so writing one here does not compile.
+ */
+export interface WitnessReturnVisit {
   readonly blockSource?: string;
   readonly fetch?: Fetcher;
+}
+
+/**
+ * What the calendars and the block source are asked through — the ASK's shape.
+ *
+ * It is the return visit's plus the one thing only {@link stampCheckpoint} has to
+ * decide: which calendars are handed a digest nobody holds yet.
+ */
+export interface WitnessNetwork extends WitnessReturnVisit {
+  readonly calendars?: readonly string[];
 }
 
 const OTS_HEADERS: Readonly<Record<string, string>> = {
@@ -176,7 +198,7 @@ export interface CompletedWitness {
  */
 export async function completeWitness(
   proofBytes: Buffer,
-  network: WitnessNetwork = {},
+  network: WitnessReturnVisit = {},
 ): Promise<CompletedWitness> {
   const call = network.fetch ?? fetch;
   const refusals: WitnessRefusal[] = [];
@@ -268,7 +290,7 @@ async function askCalendar(
 /** Fetches one block's 80-byte header, or names what would not answer. */
 async function blockHeader(
   height: number,
-  network: WitnessNetwork,
+  network: WitnessReturnVisit,
   call: Fetcher,
   refusals: WitnessRefusal[],
 ): Promise<Buffer | null> {

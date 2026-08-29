@@ -106,7 +106,6 @@ export function registerWitness(program: Command, wiring: Wiring): Declared {
   witness
     .command('upgrade')
     .description('go back for every attestation this record is waiting on (T3)')
-    .option('--calendar <url...>', 'the calendars to ask, when the defaults are not the ones used')
     .option(
       '--blocks <url>',
       'where a block header is read from once an attestation confirms. Asked ONCE per ' +
@@ -127,17 +126,18 @@ export function registerWitness(program: Command, wiring: Wiring): Declared {
         'Safe to repeat: a calendar with nothing yet answers so, and the proof comes back',
         'as it went in. A header this fetches is checked against the block it claims to be',
         "— it hashes to that block's id — so a substituted one is not a matter of trust.",
+        '',
+        'There is no --calendar here, and the reason is that there is nothing to choose:',
+        'every request the walk finds NAMES the calendar that took it, and that is the one',
+        'asked. Only `stamp` picks, because only `stamp` sends something nobody holds yet.',
       ].join('\n'),
     )
     .option('--global', GLOBAL_HELP, false)
-    .action(async (opts: { calendar?: string[]; blocks?: string; global: boolean }) => {
+    .action(async (opts: { blocks?: string; global: boolean }) => {
       const { runWitnessUpgrade } = await import('../commands/witness.js');
       const act = await runWitnessUpgrade(
         { ...here(), global: opts.global },
-        {
-          ...(opts.calendar === undefined ? {} : { calendars: opts.calendar }),
-          ...(opts.blocks === undefined ? {} : { blockSource: opts.blocks }),
-        },
+        opts.blocks === undefined ? {} : { blockSource: opts.blocks },
       );
       await report(wiring, act);
     });
