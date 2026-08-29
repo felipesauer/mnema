@@ -204,6 +204,40 @@ describe('the return visit', () => {
     expect(after.refusals.map((r) => r.reason)).toContain('did not answer with a header');
   });
 
+  it('asks the block source it was GIVEN, and the public one when it was given none', async () => {
+    // The elo for `mnema witness upgrade --blocks`. Until this case existed the option
+    // reached `blockSource` and nothing anywhere asserted that the value was honoured —
+    // its sibling on the same act was a flag whose value was read by nobody at all, and
+    // the two were indistinguishable from outside.
+    const before = await pending();
+    const answer = (url: string): Response =>
+      url.includes('/timestamp/')
+        ? anchored()
+        : url.includes('/block-height/')
+          ? new Response(`${'0'.repeat(63)}1`)
+          : new Response(BLOCK_800000_HEADER);
+
+    const chosen = stubbed(answer);
+    await completeWitness(before, {
+      blockSource: 'https://chosen.invalid/api',
+      fetch: chosen.fetch,
+    });
+    const asked = chosen.sent.map((one) => one.url).filter((url) => !url.includes('/timestamp/'));
+    expect(asked.length).toBeGreaterThan(0);
+    for (const url of asked) expect(url.startsWith('https://chosen.invalid/api/')).toBe(true);
+
+    // The other side, and the one that makes the first mean something: with no value
+    // given, the default is what is asked — so the assertion above is about the value
+    // arriving rather than about this being the only address there is.
+    const fallback = stubbed(answer);
+    await completeWitness(before, { fetch: fallback.fetch });
+    const otherwise = fallback.sent
+      .map((one) => one.url)
+      .filter((url) => !url.includes('/timestamp/'));
+    expect(otherwise.length).toBe(asked.length);
+    for (const url of otherwise) expect(url.includes('chosen.invalid')).toBe(false);
+  });
+
   it('names a block source that will not say which block a height is', async () => {
     const before = await pending();
     const { fetch } = stubbed((url) =>

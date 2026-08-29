@@ -141,7 +141,7 @@ _mnema_flags() {
     'tail prune') echo '--reason --which -h --help -V --version --color' ;;
     'witness') echo '--global -h --help -V --version --color' ;;
     'witness stamp') echo '--calendar --global -h --help -V --version --color' ;;
-    'witness upgrade') echo '--calendar --blocks --global -h --help -V --version --color' ;;
+    'witness upgrade') echo '--blocks --global -h --help -V --version --color' ;;
     'switch') echo '-h --help -V --version --color' ;;
     'switch off') echo '--reason --scope --which -h --help -V --version --color' ;;
     'switch on') echo '--reason --scope --which -h --help -V --version --color' ;;

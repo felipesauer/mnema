@@ -14,6 +14,15 @@
  * would pass with the flag ignored; asserting that the failure names the typed value —
  * and does NOT name the defaults — is what makes the flag's arrival the thing under
  * test.
+ *
+ * AND THE OTHER ACT DOES NOT TAKE ONE, which is the half this file was missing. `upgrade`
+ * declared a `--calendar` of its own and its help said `the calendars to ask, when the
+ * defaults are not the ones used`. Both halves of that sentence were false: the return
+ * visit has no defaults, because it makes no choice — the walk asks each pending
+ * attestation the calendar THAT attestation names. The value was carried from the flag
+ * into `{ calendars }`, through the adapter and into `completeWitness`, and read by
+ * nothing. It is gone, and what pins it here is the pair: `stamp` still decides, and
+ * `upgrade` refuses the word.
  */
 
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
@@ -104,6 +113,37 @@ describe('the calendars a stamp is asked of', () => {
     const { said } = await invoke('witness');
     expect(said).toContain('not covered');
     expect(said).toContain('nothing outside this machine attests this record');
+  });
+});
+
+describe('the calendars a return visit goes back to', () => {
+  it('are not a flag: `upgrade` refuses the word, and names it', async () => {
+    const { said } = await invoke('witness', 'upgrade', '--calendar', 'https://chosen.invalid');
+    // The token, not merely a failure: a caller who typed it has to read which word
+    // was not understood, and a bare "usage" would be the same message for anything.
+    expect(said).toContain('--calendar');
+    expect(said).toContain('mnema witness upgrade');
+    // And nothing was asked of the value: it never became an address.
+    expect(said).not.toContain('chosen.invalid');
+  });
+
+  it('are not offered by its help either — the sentence that was false is gone', async () => {
+    const { said } = await invoke('witness', 'upgrade', '--help');
+    // The DECLARATION, not the word: the help says the word, on purpose, to answer the
+    // question the flag used to answer wrongly. What may not come back is the option.
+    expect(said).not.toContain('--calendar <url...>');
+    expect(said).not.toContain('when the defaults are not the ones used');
+    expect(said).toContain('There is no --calendar here');
+    // `--blocks` is the option on this act that DOES feed: the block source has a
+    // default and is a choice, and the header fetch reads it.
+    expect(said).toContain('--blocks');
+  });
+
+  it('leaves `stamp` deciding — the two acts are not one flag', async () => {
+    // The other direction of the same pair. Without this, removing the wrong one of
+    // the two would pass every case above.
+    const { said } = await invoke('witness', 'stamp', '--help');
+    expect(said).toContain('--calendar');
   });
 });
 
