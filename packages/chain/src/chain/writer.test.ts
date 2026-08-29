@@ -78,7 +78,7 @@ const env = (w: ChainWriter, subject: string) => ({
 });
 
 /** Opens a writer whose key root is the chain root — the simple test layout. */
-function openChain(opts?: { checkpointEvery?: number; maxSegmentBytes?: number }): ChainWriter {
+function openChain(opts?: { maxUnsignedEvents?: number; maxSegmentBytes?: number }): ChainWriter {
   return openChainForWriting(root, { keyRoot: root, ...opts });
 }
 
@@ -91,7 +91,7 @@ function found(w: ChainWriter): ChainWriter {
   return w;
 }
 
-function openFounded(opts?: { checkpointEvery?: number; maxSegmentBytes?: number }): ChainWriter {
+function openFounded(opts?: { maxUnsignedEvents?: number; maxSegmentBytes?: number }): ChainWriter {
   return found(openChain(opts));
 }
 
@@ -149,7 +149,7 @@ describe('reading the tip of a tail', () => {
   });
 
   it('reads only the last segment when every event is already checkpointed', () => {
-    const w = openFounded({ checkpointEvery: NEVER, maxSegmentBytes: ONE_PER_SEGMENT });
+    const w = openFounded({ maxUnsignedEvents: NEVER, maxSegmentBytes: ONE_PER_SEGMENT });
     appendTasks(w, 4);
     const cp = forceCheckpoint(w);
     expect(cp.toSeq).toBe(4); // the founding plus 4 tasks, all covered
@@ -163,7 +163,7 @@ describe('reading the tip of a tail', () => {
   });
 
   it('walks back a segment when the uncheckpointed range crosses a boundary', () => {
-    const w = openFounded({ checkpointEvery: NEVER, maxSegmentBytes: ONE_PER_SEGMENT });
+    const w = openFounded({ maxUnsignedEvents: NEVER, maxSegmentBytes: ONE_PER_SEGMENT });
     appendTasks(w, 1);
     expect(forceCheckpoint(w).toSeq).toBe(1);
     appendTasks(w, 3, 1); // seq 2, 3, 4 — one per segment
@@ -175,7 +175,7 @@ describe('reading the tip of a tail', () => {
   });
 
   it('reads the whole tail when no checkpoint covers any of it', () => {
-    const w = openFounded({ checkpointEvery: NEVER, maxSegmentBytes: ONE_PER_SEGMENT });
+    const w = openFounded({ maxUnsignedEvents: NEVER, maxSegmentBytes: ONE_PER_SEGMENT });
     appendTasks(w, 3);
 
     // minSeq -1: nothing is covered, so the next checkpoint has to start at seq
@@ -185,7 +185,7 @@ describe('reading the tip of a tail', () => {
   });
 
   it('walks past a last segment that the heal emptied', () => {
-    const w = openFounded({ checkpointEvery: NEVER, maxSegmentBytes: ONE_PER_SEGMENT });
+    const w = openFounded({ maxUnsignedEvents: NEVER, maxSegmentBytes: ONE_PER_SEGMENT });
     appendTasks(w, 2); // seq 0..2, one per segment
     // A crash left a segment holding nothing but a torn fragment, which a
     // recovering writer truncated to empty. The walk must keep going back.
@@ -196,7 +196,7 @@ describe('reading the tip of a tail', () => {
   });
 
   it('reads the lines above the coverage, not the segment holding them', () => {
-    const w = openFounded({ checkpointEvery: NEVER });
+    const w = openFounded({ maxUnsignedEvents: NEVER });
     appendTasks(w, 200);
     expect(forceCheckpoint(w).toSeq).toBe(200);
     appendTasks(w, 2, 200); // seq 201, 202, into the same segment
@@ -207,7 +207,7 @@ describe('reading the tip of a tail', () => {
   });
 
   it('agrees with the whole tail on every shape of coverage', () => {
-    const w = openFounded({ checkpointEvery: NEVER, maxSegmentBytes: ONE_PER_SEGMENT });
+    const w = openFounded({ maxUnsignedEvents: NEVER, maxSegmentBytes: ONE_PER_SEGMENT });
     appendTasks(w, 3); // seq 0..3, one per segment
     tipAgreesWithTheWholeTail(-1); // nothing covered: the tip owes the whole tail
     expect(forceCheckpoint(w).toSeq).toBe(3);
@@ -217,7 +217,7 @@ describe('reading the tip of a tail', () => {
   });
 
   it('agrees with the whole tail when a crash tore the last line', () => {
-    const w = openFounded({ checkpointEvery: NEVER });
+    const w = openFounded({ maxUnsignedEvents: NEVER });
     appendTasks(w, 2);
     const segment = segmentPath(layout(), tailIdOf(), 1);
     writeFileSync(segment, `${readFileSync(segment, 'utf-8')}{"event":{"kin`, 'utf-8');
@@ -246,19 +246,19 @@ describe('reading the last checkpoint of a tail', () => {
   });
 
   it('finds nothing in an empty checkpoints file', () => {
-    openFounded({ checkpointEvery: NEVER });
+    openFounded({ maxUnsignedEvents: NEVER });
     writeFileSync(checkpointsPath(layout(), tailIdOf()), '', 'utf-8');
     expect(agreesWithTheWholeFile()).toBeUndefined();
   });
 
   it('finds the only checkpoint of a tail that has one', () => {
-    const w = openFounded({ checkpointEvery: NEVER });
+    const w = openFounded({ maxUnsignedEvents: NEVER });
     const only = forceCheckpoint(w);
     expect(agreesWithTheWholeFile()).toEqual(only);
   });
 
   it('finds the last of many', () => {
-    const w = openFounded({ checkpointEvery: NEVER });
+    const w = openFounded({ maxUnsignedEvents: NEVER });
     forceCheckpoint(w);
     appendTasks(w, 2);
     forceCheckpoint(w);
@@ -268,7 +268,7 @@ describe('reading the last checkpoint of a tail', () => {
   });
 
   it('drops a torn last line that fails to parse and takes the one before it', () => {
-    const w = openFounded({ checkpointEvery: NEVER });
+    const w = openFounded({ maxUnsignedEvents: NEVER });
     const intact = forceCheckpoint(w);
     appendFileSync(checkpointsPath(layout(), tailIdOf()), '{"tail":"m-', 'utf-8');
 
@@ -276,7 +276,7 @@ describe('reading the last checkpoint of a tail', () => {
   });
 
   it('takes a torn last line that happens to parse, as the whole-file read does', () => {
-    const w = openFounded({ checkpointEvery: NEVER });
+    const w = openFounded({ maxUnsignedEvents: NEVER });
     appendTasks(w, 1);
     const last = forceCheckpoint(w);
     const file = checkpointsPath(layout(), tailIdOf());
@@ -286,7 +286,7 @@ describe('reading the last checkpoint of a tail', () => {
   });
 
   it('takes the last line STORED, not the highest seq it holds', () => {
-    const w = openFounded({ checkpointEvery: NEVER });
+    const w = openFounded({ maxUnsignedEvents: NEVER });
     const first = forceCheckpoint(w);
     appendTasks(w, 2);
     const second = forceCheckpoint(w);
@@ -304,7 +304,7 @@ describe('reading the last checkpoint of a tail', () => {
   });
 
   it('is indifferent to corruption further up, which the whole-file read is not', () => {
-    const w = openFounded({ checkpointEvery: NEVER });
+    const w = openFounded({ maxUnsignedEvents: NEVER });
     forceCheckpoint(w);
     appendTasks(w, 2);
     const last = forceCheckpoint(w);
@@ -332,12 +332,12 @@ describe('the writer resumes from the end of the tail', () => {
   });
 
   it('has nothing left to sign on a fully checkpointed tail, and continues the seq', () => {
-    const first = openFounded({ checkpointEvery: NEVER });
+    const first = openFounded({ maxUnsignedEvents: NEVER });
     appendTasks(first, 3);
     expect(forceCheckpoint(first).toSeq).toBe(3);
     const headHash = readTailEntries(layout(), tailIdOf(), upcasters).at(-1)?.link.hash;
 
-    const resumed = openChain({ checkpointEvery: NEVER });
+    const resumed = openChain({ maxUnsignedEvents: NEVER });
     expect(resumed.checkpoint()).toBeNull(); // the buffer refilled empty
     const next = resumed.append(taskCreated(env(resumed, 't-next'), { title: 'next' }));
     expect(next.link.seq).toBe(4);
@@ -346,12 +346,12 @@ describe('the writer resumes from the end of the tail', () => {
   });
 
   it('signs the events a crash left uncheckpointed, contiguously from the coverage', () => {
-    const crashed = openFounded({ checkpointEvery: NEVER });
+    const crashed = openFounded({ maxUnsignedEvents: NEVER });
     appendTasks(crashed, 2); // seq 0..2
     expect(forceCheckpoint(crashed).toSeq).toBe(2);
     appendTasks(crashed, 4, 2); // seq 3..6, and then the process dies
 
-    const resumed = openChain({ checkpointEvery: NEVER });
+    const resumed = openChain({ maxUnsignedEvents: NEVER });
     const cp = forceCheckpoint(resumed);
     // Coverage stays contiguous: the next checkpoint starts at the seq right
     // after the last covered one and reaches the head.
@@ -363,12 +363,12 @@ describe('the writer resumes from the end of the tail', () => {
   });
 
   it('signs an uncheckpointed range that crosses segment boundaries whole', () => {
-    const crashed = openFounded({ checkpointEvery: NEVER, maxSegmentBytes: ONE_PER_SEGMENT });
+    const crashed = openFounded({ maxUnsignedEvents: NEVER, maxSegmentBytes: ONE_PER_SEGMENT });
     appendTasks(crashed, 1);
     expect(forceCheckpoint(crashed).toSeq).toBe(1);
     appendTasks(crashed, 3, 1); // seq 2..4, one segment each
 
-    const resumed = openChain({ checkpointEvery: NEVER, maxSegmentBytes: ONE_PER_SEGMENT });
+    const resumed = openChain({ maxUnsignedEvents: NEVER, maxSegmentBytes: ONE_PER_SEGMENT });
     const cp = forceCheckpoint(resumed);
     expect(cp.fromSeq).toBe(2);
     expect(cp.toSeq).toBe(4);
@@ -378,7 +378,7 @@ describe('the writer resumes from the end of the tail', () => {
   });
 
   it('does not take a torn fragment that happens to parse as the head', () => {
-    const w = openFounded({ checkpointEvery: NEVER });
+    const w = openFounded({ maxUnsignedEvents: NEVER });
     appendTasks(w, 2); // seq 0..2
     const survivor = readTailEntries(layout(), tailIdOf(), upcasters).at(-2);
 
@@ -389,7 +389,7 @@ describe('the writer resumes from the end of the tail', () => {
     const segment = segmentPath(layout(), tailIdOf(), 1);
     truncateSync(segment, readFileSync(segment).length - 1);
 
-    const resumed = openChain({ checkpointEvery: NEVER });
+    const resumed = openChain({ maxUnsignedEvents: NEVER });
     const next = resumed.append(taskCreated(env(resumed, 't-after'), { title: 'after' }));
     expect(next.link.seq).toBe(2);
     expect(next.link.prev).toBe(survivor?.link.hash);
@@ -400,14 +400,14 @@ describe('the writer resumes from the end of the tail', () => {
   });
 
   it('does not take a torn fragment that fails to parse as the head', () => {
-    const w = openFounded({ checkpointEvery: NEVER });
+    const w = openFounded({ maxUnsignedEvents: NEVER });
     appendTasks(w, 2);
     const head = readTailEntries(layout(), tailIdOf(), upcasters).at(-1);
 
     const segment = segmentPath(layout(), tailIdOf(), 1);
     writeFileSync(segment, `${readFileSync(segment, 'utf-8')}{"event":{"kin`, 'utf-8');
 
-    const resumed = openChain({ checkpointEvery: NEVER });
+    const resumed = openChain({ maxUnsignedEvents: NEVER });
     const next = resumed.append(taskCreated(env(resumed, 't-after'), { title: 'after' }));
     expect(next.link.seq).toBe(3);
     expect(next.link.prev).toBe(head?.link.hash);
@@ -418,11 +418,11 @@ describe('the writer resumes from the end of the tail', () => {
   it('resumes a tail whose last entry outweighs a read chunk', () => {
     // A free-text field is capped at 64 KiB, so one entry can be heavier than
     // the chunk the backward walk reads in. Nothing may assume a line fits.
-    const w = openFounded({ checkpointEvery: NEVER });
+    const w = openFounded({ maxUnsignedEvents: NEVER });
     w.append(memoryCaptured(env(w, 'm-big'), { content: 'z'.repeat(80 * 1024) }));
     const head = forceCheckpoint(w);
 
-    const resumed = openChain({ checkpointEvery: NEVER });
+    const resumed = openChain({ maxUnsignedEvents: NEVER });
     const next = resumed.append(taskCreated(env(resumed, 't-after'), { title: 'after' }));
     expect(next.link.seq).toBe(2);
     expect(lastTailCheckpoint(layout(), tailIdOf())).toEqual(head);
@@ -431,7 +431,7 @@ describe('the writer resumes from the end of the tail', () => {
   });
 
   it('heals a torn fragment heavier than a read chunk', () => {
-    const w = openFounded({ checkpointEvery: NEVER });
+    const w = openFounded({ maxUnsignedEvents: NEVER });
     appendTasks(w, 1);
     const head = readTailEntries(layout(), tailIdOf(), upcasters).at(-1);
     const segment = segmentPath(layout(), tailIdOf(), 1);
@@ -439,7 +439,7 @@ describe('the writer resumes from the end of the tail', () => {
     // the heal has to cut back to the newline above all of them.
     appendFileSync(segment, `{"event":{"kind":"${'k'.repeat(80 * 1024)}`, 'utf-8');
 
-    const resumed = openChain({ checkpointEvery: NEVER });
+    const resumed = openChain({ maxUnsignedEvents: NEVER });
     const next = resumed.append(taskCreated(env(resumed, 't-after'), { title: 'after' }));
     expect(next.link.seq).toBe(2);
     expect(next.link.prev).toBe(head?.link.hash);
@@ -448,7 +448,7 @@ describe('the writer resumes from the end of the tail', () => {
   });
 
   it('covers a batch bigger than the checkpoint cadence with one checkpoint', () => {
-    const w = openChain({ checkpointEvery: 2 });
+    const w = openChain({ maxUnsignedEvents: 2 });
     found(w); // seq 0 — one event short of the cadence
     const batch = [
       ...taskBirth(env(w, 't-1'), { title: 'ship', initial: 'draft' }),
@@ -466,7 +466,7 @@ describe('the writer resumes from the end of the tail', () => {
   });
 
   it('refuses to sign when the buffered events do not fill the range', () => {
-    const w = openFounded({ checkpointEvery: NEVER });
+    const w = openFounded({ maxUnsignedEvents: NEVER });
     appendTasks(w, 3); // seq 0..3, none of them covered
 
     // A lost line is a gap: the last entry still says seq 3, so the range is
@@ -478,7 +478,7 @@ describe('the writer resumes from the end of the tail', () => {
       .filter((line) => line.length > 0);
     writeFileSync(segment, `${[lines[0], lines[2], lines[3]].join('\n')}\n`, 'utf-8');
 
-    const resumed = openChain({ checkpointEvery: NEVER });
+    const resumed = openChain({ maxUnsignedEvents: NEVER });
     expect(() => resumed.checkpoint()).toThrow(/seq 0\.\.3: the range covers 4 event\(s\) but 3/);
   });
 });
@@ -499,7 +499,7 @@ describe('the bytes a checkpoint signs did not change', () => {
   }
 
   it('signs byte-identical checkpoints to the ones a re-read of the tail produces', () => {
-    const w = openFounded({ checkpointEvery: NEVER });
+    const w = openFounded({ maxUnsignedEvents: NEVER });
     appendTasks(w, 3);
 
     // Ed25519 is deterministic, so equal bytes here means the signed message —
@@ -522,7 +522,7 @@ describe('the bytes a checkpoint signs did not change', () => {
     // Spelled with escapes so a normalizing editor cannot quietly recompose it.
     const decomposed = 'cafe\u0301 — deja\u0300 vu';
     expect(decomposed).not.toBe(decomposed.normalize('NFC')); // else this proves nothing
-    const w = openFounded({ checkpointEvery: NEVER });
+    const w = openFounded({ maxUnsignedEvents: NEVER });
     w.append(memoryCaptured(env(w, 'm-1'), { content: decomposed }));
 
     const reRead = signFromAReReadOfTheTail(0, 1, null);
@@ -557,7 +557,7 @@ describe('the writer refuses what no reader could accept', () => {
   }
 
   it('throws on append and leaves the tail exactly as it was', () => {
-    const w = found(openChain({ checkpointEvery: NEVER }));
+    const w = found(openChain({ maxUnsignedEvents: NEVER }));
     w.append(memoryCaptured(env(w, 'm-1'), { content: 'a real memory' }));
     const before = tailBytes();
 
@@ -580,7 +580,7 @@ describe('the writer refuses what no reader could accept', () => {
     // unreadable must not leave the first on the tail: a `task.created` with no
     // state burns the id permanently, because the projection drops a stateless
     // subject and every later move on it answers UNKNOWN_TASK.
-    const w = found(openChain({ checkpointEvery: NEVER }));
+    const w = found(openChain({ maxUnsignedEvents: NEVER }));
     const before = tailBytes();
 
     const birth = taskBirth(env(w, 't-1'), { title: 'a real title', initial: 'DRAFT' });
@@ -599,7 +599,7 @@ describe('the writer refuses what no reader could accept', () => {
     // Ordering, stated as behaviour: the check runs ahead of the size decision, so
     // a refused event never leaves a fresh empty segment behind for the next write
     // to land in.
-    const w = found(openChain({ checkpointEvery: NEVER, maxSegmentBytes: ONE_PER_SEGMENT }));
+    const w = found(openChain({ maxUnsignedEvents: NEVER, maxSegmentBytes: ONE_PER_SEGMENT }));
     const segmentsBefore = orderedSegments(layout(), tailIdOf()).length;
     expect(() => w.append(taskCreated(env(w, 't-1'), { title: '' }))).toThrow(EventParseError);
     expect(orderedSegments(layout(), tailIdOf()).length).toBe(segmentsBefore);
@@ -609,7 +609,7 @@ describe('the writer refuses what no reader could accept', () => {
     // The buffer is what the next checkpoint signs. A refused event that reached it
     // would make the coverage claim a range the bytes do not contain — an honest
     // tail then reads as tampered.
-    const w = found(openChain({ checkpointEvery: NEVER }));
+    const w = found(openChain({ maxUnsignedEvents: NEVER }));
     expect(() => w.append(memoryCaptured(env(w, ''), { content: 'c' }))).toThrow(EventParseError);
     w.append(memoryCaptured(env(w, 'm-1'), { content: 'one' }));
     // The founding plus this one event is the whole range the checkpoint claims.

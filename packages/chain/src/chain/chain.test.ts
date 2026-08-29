@@ -78,13 +78,13 @@ function found(w: ChainWriter): ChainWriter {
  */
 function openChain(
   chainRoot: string,
-  opts?: { checkpointEvery?: number; maxSegmentBytes?: number },
+  opts?: { maxUnsignedEvents?: number; maxSegmentBytes?: number },
 ): ChainWriter {
   return openChainForWriting(chainRoot, { keyRoot: chainRoot, ...opts });
 }
 
 /** Opens a writer and founds its anchor in one step. */
-function openFounded(opts?: { checkpointEvery?: number; maxSegmentBytes?: number }): ChainWriter {
+function openFounded(opts?: { maxUnsignedEvents?: number; maxSegmentBytes?: number }): ChainWriter {
   return found(openChain(root, opts));
 }
 
@@ -104,7 +104,7 @@ function promiseOver(digest: string): Buffer {
   });
 }
 
-function writeSome(count: number, opts?: { checkpointEvery?: number; maxSegmentBytes?: number }) {
+function writeSome(count: number, opts?: { maxUnsignedEvents?: number; maxSegmentBytes?: number }) {
   const w = openFounded(opts);
   for (let i = 0; i < count; i += 1) {
     w.append(taskCreated(env(w, `t-${i}`), { title: `task ${i}` }));
@@ -114,7 +114,7 @@ function writeSome(count: number, opts?: { checkpointEvery?: number; maxSegmentB
 
 describe('chain — write then verify (happy path, T1/T2/T4)', () => {
   it('verifies a freshly written chain green', () => {
-    const w = writeSome(10, { checkpointEvery: 4 });
+    const w = writeSome(10, { maxUnsignedEvents: 4 });
     w.checkpoint(); // cover the tail fully
     const result = verify(root);
     expect(result.ok).toBe(true);
@@ -145,7 +145,7 @@ describe('chain — write then verify (happy path, T1/T2/T4)', () => {
     // are the words every reader of this product has matched on. A `toMatch` goes on
     // passing with a whole sentence appended after the words it looked for, which is
     // exactly the change this delivery makes to the record NEXT to this one.
-    writeSome(3, { checkpointEvery: 1 });
+    writeSome(3, { maxUnsignedEvents: 1 });
     const result = verify(root);
     expect(result.clauses.find((clause) => clause.of === 'witness')?.text).toBe(
       'external witness (T3): not covered — nothing outside this machine attests this record',
@@ -157,7 +157,7 @@ describe('chain — write then verify (happy path, T1/T2/T4)', () => {
     // that exists in a unit test and nowhere else, and four defects of this series
     // were exactly that. So: a real chain, a real checkpoint, an attestation filed
     // under that checkpoint's own digest, and the verdict asked what it now says.
-    const w = writeSome(3, { checkpointEvery: 1 });
+    const w = writeSome(3, { maxUnsignedEvents: 1 });
     const tail = tailIdOf(root);
     const through = lastCheckpointHashOf(root, tail);
     writeWitness({ root }, tail, through, { proof: promiseOver(through) });
@@ -172,7 +172,7 @@ describe('chain — write then verify (happy path, T1/T2/T4)', () => {
   it('reads the witness for the checkpoint it PROVED, not for whatever file is there', () => {
     // An attestation filed under a name that is not this checkpoint's digest attests
     // nothing here, however impeccable it is about the digest it does name.
-    writeSome(3, { checkpointEvery: 1 });
+    writeSome(3, { maxUnsignedEvents: 1 });
     const tail = tailIdOf(root);
     const through = lastCheckpointHashOf(root, tail);
     writeWitness({ root }, tail, through, { proof: promiseOver('b'.repeat(64)) });
@@ -185,7 +185,7 @@ describe('chain — write then verify (happy path, T1/T2/T4)', () => {
     // The last LINE of `checkpoints.jsonl` and the last checkpoint that VERIFIED are
     // different things the moment somebody appends a bad one, and a witness looked
     // for under the wrong one would be a T3 answer about a checkpoint T2/T4 refused.
-    writeSome(3, { checkpointEvery: 1 });
+    writeSome(3, { maxUnsignedEvents: 1 });
     const tail = tailIdOf(root);
     const good = lastCheckpointHashOf(root, tail);
     const stored = readFileSync(checkpointsPath({ root }, tail), 'utf-8').trim().split('\n');
@@ -201,7 +201,7 @@ describe('chain — write then verify (happy path, T1/T2/T4)', () => {
   });
 
   it('reports the uncheckpointed window as a declared residual, not a failure', () => {
-    writeSome(5, { checkpointEvery: 100 }); // no checkpoint fires
+    writeSome(5, { maxUnsignedEvents: 100 }); // no checkpoint fires
     const result = verify(root);
     expect(result.ok).toBe(true); // T1 still holds
     // 5 tasks + the founding event, none checkpointed.
@@ -213,7 +213,7 @@ describe('chain — write then verify (happy path, T1/T2/T4)', () => {
     // The birth transition's `null` must survive the full round-trip: it is part
     // of the signed content, so if reading coerced or dropped it the checkpoint
     // would fail. Green here proves `from: null` is a first-class signed fact.
-    const w = openFounded({ checkpointEvery: 100 });
+    const w = openFounded({ maxUnsignedEvents: 100 });
     const [created, transitioned] = taskBirth(env(w, 't-1'), { title: 'ship', initial: 'draft' });
     w.append(created);
     w.append(transitioned);
@@ -233,7 +233,7 @@ describe('chain — write then verify (happy path, T1/T2/T4)', () => {
 
 describe('chain — appendAll writes a batch atomically', () => {
   it('appends a birth pair as one write, chained and verifiable', () => {
-    const w = openFounded({ checkpointEvery: 100 });
+    const w = openFounded({ maxUnsignedEvents: 100 });
     const birth = taskBirth(env(w, 't-1'), { title: 'ship', initial: 'draft' });
     const entries = w.appendAll(birth);
     w.checkpoint();
@@ -256,7 +256,7 @@ describe('chain — appendAll writes a batch atomically', () => {
   });
 
   it('a later single append continues the seq after a batch', () => {
-    const w = openFounded({ checkpointEvery: 100 });
+    const w = openFounded({ maxUnsignedEvents: 100 });
     w.appendAll(taskBirth(env(w, 't-1'), { title: 't', initial: 'draft' }));
     const next = w.append(
       taskTransitioned(env(w, 't-1'), { from: 'draft', to: 'ready', action: 'submit' }),
@@ -268,7 +268,7 @@ describe('chain — appendAll writes a batch atomically', () => {
   });
 
   it('an empty batch writes nothing', () => {
-    const w = openChain(root, { checkpointEvery: 100 });
+    const w = openChain(root, { maxUnsignedEvents: 100 });
     expect(w.appendAll([])).toEqual([]);
     expect(readTailEntries({ root }, tailIdOf(root), catalogUpcasters())).toHaveLength(0);
   });
@@ -276,7 +276,7 @@ describe('chain — appendAll writes a batch atomically', () => {
   it('writes the whole batch in ONE segment file (no straddle)', () => {
     // Both lines land in the same segment, so a birth pair is never split across
     // a rotation boundary — part of what makes it one atomic unit on disk.
-    const w = openFounded({ checkpointEvery: 100 });
+    const w = openFounded({ maxUnsignedEvents: 100 });
     w.appendAll(taskBirth(env(w, 't-1'), { title: 't', initial: 'draft' }));
     expect(orderedSegments({ root }, tailIdOf(root))).toHaveLength(1);
   });
@@ -284,7 +284,7 @@ describe('chain — appendAll writes a batch atomically', () => {
 
 describe('chain — T1 (hash chain) catches corruption and reordering', () => {
   it('flags a content edit at the exact seq (entry hash mismatch)', () => {
-    writeSome(5, { checkpointEvery: 100 });
+    writeSome(5, { maxUnsignedEvents: 100 });
     tamperLine(root, 2, (entry) => {
       entry.event.payload.title = 'EDITED';
       return entry;
@@ -296,7 +296,7 @@ describe('chain — T1 (hash chain) catches corruption and reordering', () => {
   });
 
   it('flags a reordering (prev-hash break)', () => {
-    writeSome(4, { checkpointEvery: 100 });
+    writeSome(4, { maxUnsignedEvents: 100 });
     const seg = orderedSegments({ root }, tailIdOf(root))[0] as string;
     const lines = readFileSync(seg, 'utf-8').split('\n').filter(Boolean);
     // swap entries at index 1 and 2
@@ -310,7 +310,7 @@ describe('chain — T1 (hash chain) catches corruption and reordering', () => {
 
 describe('chain — T2 (INVARIANT: content root is recomputed from bytes, not stored hashes)', () => {
   it('catches a content edit even after ALL entry hashes are repaired', () => {
-    writeSome(6, { checkpointEvery: 100 });
+    writeSome(6, { maxUnsignedEvents: 100 });
     const w = openChain(root);
     w.checkpoint(); // sign a checkpoint over all 6
 
@@ -327,7 +327,7 @@ describe('chain — T2 (INVARIANT: content root is recomputed from bytes, not st
   });
 
   it('a checkpoint verifies with the right key and fails with a wrong-content range', () => {
-    writeSome(4, { checkpointEvery: 100 });
+    writeSome(4, { maxUnsignedEvents: 100 });
     openChain(root).checkpoint();
     // Sanity: unedited chain with a signed checkpoint verifies green.
     expect(verify(root).ok).toBe(true);
@@ -336,7 +336,7 @@ describe('chain — T2 (INVARIANT: content root is recomputed from bytes, not st
 
 describe('chain — T4 (anonymous verify with only committed material)', () => {
   it('verifies from public keys + files, with the private key removed', () => {
-    writeSome(5, { checkpointEvery: 2 });
+    writeSome(5, { maxUnsignedEvents: 2 });
     openChain(root).checkpoint();
     // Simulate a clone that has no private key (never committed).
     removePrivateKeys(root);
@@ -345,7 +345,7 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
   });
 
   it('fails if the committed public key is swapped for a different one', () => {
-    writeSome(4, { checkpointEvery: 2 });
+    writeSome(4, { maxUnsignedEvents: 2 });
     openChain(root).checkpoint();
     swapPublicKeyForAStranger(root);
     const result = verify(root);
@@ -360,7 +360,7 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
     // The signature verifies against the swapped file — so the only thing that
     // catches it is re-deriving the loaded key's fingerprint and matching it to
     // the claimed one.
-    writeSome(6, { checkpointEvery: 100 });
+    writeSome(6, { maxUnsignedEvents: 100 });
     openChain(root).checkpoint();
     expect(verify(root).ok).toBe(true);
 
@@ -399,7 +399,7 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
     // key. Both T1 and the checkpoint signature pass — the ONLY thing that
     // catches it is binding each event's claimed identity to the signer of the
     // range. Without that, the envelope's `who`/`signerFp` are decorative.
-    const w = openFounded({ checkpointEvery: 100 });
+    const w = openFounded({ maxUnsignedEvents: 100 });
     for (let i = 0; i < 4; i += 1) w.append(taskCreated(env(w, `t-${i}`), { title: `task ${i}` }));
     expect(verify(root).ok).toBe(true);
 
@@ -451,7 +451,7 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
     // event so `which` equals `who` — self-authorization — re-sign with their
     // honest key, and (before the binding guard covered `which`) verify green.
     // The signed record must uphold the same who != which the gate enforces.
-    const w = openFounded({ checkpointEvery: 100 });
+    const w = openFounded({ maxUnsignedEvents: 100 });
     for (let i = 0; i < 3; i += 1) w.append(taskCreated(env(w, `t-${i}`), { title: `task ${i}` }));
     expect(verify(root).ok).toBe(true);
 
@@ -483,7 +483,7 @@ describe('chain — T4 (anonymous verify with only committed material)', () => {
 
 describe('chain — deletion and rollback', () => {
   it('catches deletion of a checkpointed entry (range no longer matches)', () => {
-    writeSome(6, { checkpointEvery: 100 });
+    writeSome(6, { maxUnsignedEvents: 100 });
     openChain(root).checkpoint(); // signs 0..5
     // Adversary deletes the last checkpointed entry (seq 5): only 0..4 remain,
     // but the checkpoint still claims 0..5.
@@ -502,7 +502,7 @@ describe('chain — deletion and rollback', () => {
     // An append below the last checkpoint carries only the keyless hash chain,
     // so a party without the key can add one and T1 stays green. verify must
     // count it as residual and say plainly it is not signed — never imply it is.
-    writeSome(4, { checkpointEvery: 100 });
+    writeSome(4, { maxUnsignedEvents: 100 });
     openChain(root).checkpoint(); // signs 0..3
     const w = openChain(root);
     w.append(taskCreated(env(w, 't-forged'), { title: 'appended after checkpoint' }));
@@ -532,7 +532,7 @@ describe('chain — checkpoint chaining defends signed history from a dropped tr
     // defense: build the two-checkpoint chain, then drop the second checkpoint
     // AND its events, and confirm verify does not silently equal a chain that
     // only ever had 0..3.
-    const w = openFounded({ checkpointEvery: 100 });
+    const w = openFounded({ maxUnsignedEvents: 100 });
     for (let i = 0; i < 4; i += 1) w.append(taskCreated(env(w, `t-${i}`), { title: `task ${i}` }));
     w.checkpoint(); // signs 0..4 (founding + 4 tasks, prev=null)
     for (let i = 4; i < 8; i += 1) w.append(taskCreated(env(w, `t-${i}`), { title: `task ${i}` }));
@@ -560,7 +560,7 @@ describe('chain — checkpoint chaining defends signed history from a dropped tr
   });
 
   it('flags a chain break when an EARLIER checkpoint is dropped but later ones kept', () => {
-    const w = openFounded({ checkpointEvery: 100 });
+    const w = openFounded({ maxUnsignedEvents: 100 });
     for (let i = 0; i < 4; i += 1) w.append(taskCreated(env(w, `t-${i}`), { title: `task ${i}` }));
     w.checkpoint(); // 0..4, prev=null
     for (let i = 4; i < 8; i += 1) w.append(taskCreated(env(w, `t-${i}`), { title: `task ${i}` }));
@@ -603,7 +603,7 @@ describe('chain — checkpoint coverage must be contiguous from seq 0 (no unsign
     // 1..2 — validly signed, but silent about seq 0. Without the coverage clause
     // the verifier would advance its cursor to 2 and report the whole tail as
     // fully signed, attesting an event no signature ever covered.
-    writeSome(2, { checkpointEvery: 100 });
+    writeSome(2, { maxUnsignedEvents: 100 });
     const tail = tailIdOf(root);
     const gapped = signRange(tail, 1, 2, null);
     writeFileSync(checkpointsPath({ root }, tail), `${serializeCheckpoint(gapped)}\n`);
@@ -621,7 +621,7 @@ describe('chain — checkpoint coverage must be contiguous from seq 0 (no unsign
     // 0..1 signed, then 3..4 signed with a correct `prev` link — the checkpoint
     // chain is intact and both signatures verify, so seq 2 would slip through as
     // covered on the strength of its neighbours alone.
-    writeSome(4, { checkpointEvery: 100 });
+    writeSome(4, { maxUnsignedEvents: 100 });
     const tail = tailIdOf(root);
     const first = signRange(tail, 0, 1, null);
     const second = signRange(tail, 3, 4, checkpointHash(first));
@@ -643,7 +643,7 @@ describe('chain — checkpoint coverage must be contiguous from seq 0 (no unsign
 
 describe('chain — tolerates a torn final line, rejects mid-file corruption', () => {
   it('drops a torn trailing write (crash mid-append) so verify and recovery still work', () => {
-    writeSome(4, { checkpointEvery: 100 });
+    writeSome(4, { maxUnsignedEvents: 100 });
     const seg = orderedSegments({ root }, tailIdOf(root))[0] as string;
     // Simulate a crash mid-append: a partial line with NO trailing newline.
     appendFileSync(seg, '{"event":{"kind":"task.created","v":1,"at":"t","who":"h","sub');
@@ -675,7 +675,7 @@ describe('chain — tolerates a torn final line, rejects mid-file corruption', (
     // verdict: the caller got the parser's message ("not valid JSON: Unexpected end
     // of JSON input") with no tail, no position, and no `issues` to read. The
     // refusal is the same; it has an address now.
-    writeSome(4, { checkpointEvery: 100 });
+    writeSome(4, { maxUnsignedEvents: 100 });
     const seg = orderedSegments({ root }, tailIdOf(root))[0] as string;
     const lines = readFileSync(seg, 'utf-8').split('\n').filter(Boolean);
     // Corrupt a MIDDLE line (has a newline after it) — real corruption.
@@ -700,7 +700,7 @@ describe('chain — tolerates a torn final line, rejects mid-file corruption', (
   it('reports an unreadable CHECKPOINT line the same way — the rule is the read, not the file', () => {
     // The second stored file a tail is verified over. A rule that lived only where
     // it was first needed would leave this one throwing.
-    writeSome(4, { checkpointEvery: 2 });
+    writeSome(4, { maxUnsignedEvents: 2 });
     const file = checkpointsPath({ root }, tailIdOf(root));
     const lines = readFileSync(file, 'utf-8').split('\n').filter(Boolean);
     expect(lines.length).toBeGreaterThan(1);
@@ -717,7 +717,7 @@ describe('chain — tolerates a torn final line, rejects mid-file corruption', (
 
 describe('chain — fullySigned distinguishes authenticated from residual', () => {
   it('is true only when every event is covered by a verified signature', () => {
-    writeSome(4, { checkpointEvery: 100 });
+    writeSome(4, { maxUnsignedEvents: 100 });
     openChain(root).checkpoint();
     const result = verify(root);
     expect(result.ok).toBe(true);
@@ -730,7 +730,7 @@ describe('chain — fullySigned distinguishes authenticated from residual', () =
 describe('chain — segmentation by size', () => {
   it('spans multiple segments and still verifies', () => {
     // Tiny cap forces a seal every few entries.
-    writeSome(20, { maxSegmentBytes: 300, checkpointEvery: 100 });
+    writeSome(20, { maxSegmentBytes: 300, maxUnsignedEvents: 100 });
     const segments = orderedSegments({ root }, tailIdOf(root));
     expect(segments.length).toBeGreaterThan(1);
     const result = verify(root);
@@ -739,7 +739,7 @@ describe('chain — segmentation by size', () => {
   });
 
   it('recovers writer state across process restarts (continues the same tail)', () => {
-    writeSome(3, { checkpointEvery: 100 });
+    writeSome(3, { maxUnsignedEvents: 100 });
     const w2 = openChain(root); // fresh writer, same tail
     w2.append(taskTransitioned(env(w2, 't-0'), { from: 'ready', to: 'done', action: 'finish' }));
     const result = verify(root);
@@ -946,7 +946,7 @@ describe('chain — one key on several installations keeps distinct tails (copy-
     // named `<uncommitted>-<anything>` is still rejected, because its
     // fingerprint prefix is not a committed key. This is the keyless
     // duplication attack, now wearing the new tail-id shape.
-    const w = writeSome(2, { checkpointEvery: 1000 });
+    const w = writeSome(2, { maxUnsignedEvents: 1000 });
     void w;
     const realTail = tailIdOf(root);
     const fake = `${'a'.repeat(64)}-deadbeefdeadbeefdeadbeefdeadbeef`; // fake fp prefix
@@ -1030,8 +1030,8 @@ describe('chain — one key on several installations keeps distinct tails (copy-
 
 describe('chain — crash resilience beyond the torn last entry (audit)', () => {
   it('tolerates a torn last checkpoint line: verify does not throw, reads the intact prefix', () => {
-    writeSome(4, { checkpointEvery: 2 });
-    openChain(root, { checkpointEvery: 2 }).checkpoint();
+    writeSome(4, { maxUnsignedEvents: 2 });
+    openChain(root, { maxUnsignedEvents: 2 }).checkpoint();
     // A crash while signing a second checkpoint leaves a partial line, no newline.
     appendFileSync(checkpointsPath({ root }, tailIdOf(root)), '{"scheme":"mnema-checkp');
     // Before the fix this THREW a JSON SyntaxError out of verify — a verifier
@@ -1045,27 +1045,27 @@ describe('chain — crash resilience beyond the torn last entry (audit)', () => 
   });
 
   it('a fresh writer resumes after a torn checkpoint instead of being locked out', () => {
-    writeSome(4, { checkpointEvery: 2 });
-    openChain(root, { checkpointEvery: 2 }).checkpoint();
+    writeSome(4, { maxUnsignedEvents: 2 });
+    openChain(root, { maxUnsignedEvents: 2 }).checkpoint();
     appendFileSync(checkpointsPath({ root }, tailIdOf(root)), '{"scheme":"mnema-checkp');
     // recover() reads the checkpoints; a torn line used to throw from the
     // constructor, wedging the machine shut on its own tail.
     expect(() => {
-      const w = openChain(root, { checkpointEvery: 2 });
+      const w = openChain(root, { maxUnsignedEvents: 2 });
       w.append(taskCreated(env(w, 't-after'), { title: 'after crash' }));
     }).not.toThrow();
     expect(verify(root).ok).toBe(true);
   });
 
   it('heals a torn last entry on recovery so the NEXT append does not bury it', () => {
-    writeSome(3, { checkpointEvery: 100 });
+    writeSome(3, { maxUnsignedEvents: 100 });
     const seg = orderedSegments({ root }, tailIdOf(root))[0] as string;
     // Crash mid-append: a partial line with no trailing newline.
     appendFileSync(seg, '{"event":{"v":1,"kind":"task.created"');
     // Recover + resume. Without the heal, the next complete line lands AFTER the
     // fragment, turning the once-benign torn line into a permanent mid-file
     // corruption that every later read throws on.
-    const w = openChain(root, { checkpointEvery: 100 });
+    const w = openChain(root, { maxUnsignedEvents: 100 });
     w.append(taskCreated(env(w, 't-after'), { title: 'after crash' }));
     // Re-read and re-verify AFTER the resume — this is what the old recovery
     // test never did, so it missed the resurrection of the torn fragment.
@@ -1082,7 +1082,7 @@ describe('chain — an entry is bound to the tail directory it lives in (audit)'
   it('rejects a residual tail relocated/duplicated under a fabricated directory name', () => {
     // No checkpoint: the events sit in the residual window, where no checkpoint's
     // own `tail` field can catch a relocation.
-    const w = writeSome(2, { checkpointEvery: 1000 });
+    const w = writeSome(2, { maxUnsignedEvents: 1000 });
     void w;
     const realFp = tailIdOf(root);
     const fake = 'f'.repeat(64);
@@ -1101,7 +1101,7 @@ describe('chain — an entry is bound to the tail directory it lives in (audit)'
     // `link.tail == <dir>` holds again. No key is needed. The only thing left to
     // catch it is that the fabricated directory's fingerprint is not a committed
     // key. Without that binding this counted every event twice, green.
-    const w = writeSome(2, { checkpointEvery: 1000 });
+    const w = writeSome(2, { maxUnsignedEvents: 1000 });
     void w;
     const realFp = tailIdOf(root);
     const fake = 'f'.repeat(64);
@@ -1135,7 +1135,7 @@ describe('chain — an entry is bound to the tail directory it lives in (audit)'
     // closes it: the forged sibling has no signature over its own id (the
     // attacker lacks the private key), so the copied proof does not match and a
     // fresh one cannot be minted.
-    const w = writeSome(2, { checkpointEvery: 1000 });
+    const w = writeSome(2, { maxUnsignedEvents: 1000 });
     void w;
     const realTail = tailIdOf(root);
     const fp = fingerprintOfTail(realTail); // a REAL committed fingerprint

@@ -2,10 +2,16 @@
  * The append-only writer for one machine's tail.
  *
  * A writer owns exactly one tail: it appends events as sealed entries, chains
- * each to its predecessor, seals a segment once it passes the size cap, and
- * signs a checkpoint every so often. Because each machine writes only its own
- * tail, there is never an in-file merge — concurrency across machines is
- * resolved by reading many tails, not by locking one file.
+ * each to its predecessor, seals a segment once it passes the size cap, and signs a
+ * checkpoint when the caller asks or when one act of writing has left too many
+ * events unsigned. Because each machine writes only its own tail, there is never an
+ * in-file merge — concurrency across machines is resolved by reading many tails, not
+ * by locking one file.
+ *
+ * WHO DECIDES WHEN IT SIGNS. The writer holds a CEILING and nothing more (see
+ * {@link DEFAULT_MAX_UNSIGNED_EVENTS}); the CADENCE belongs to the writing paths,
+ * which sign what they wrote before they return. Reading `checkpoint()` as a knob
+ * the writer turns on a schedule is the misreading this file corrected.
  *
  * The tail id pairs the signing key's fingerprint with this installation's id,
  * `<fingerprint>-<installationId>`. WHICH key signs (the signer fingerprint)
@@ -53,12 +59,34 @@ import { unprovenWaiverReason } from './waiver.js';
 /** Seal a segment once it grows past this many bytes (segments rotate by size). */
 export const DEFAULT_MAX_SEGMENT_BYTES = 4 * 1024 * 1024;
 
-/** Sign a checkpoint after this many uncheckpointed events. */
-export const DEFAULT_CHECKPOINT_EVERY = 64;
+/**
+ * The most events one act of writing may leave unsigned before the writer signs on
+ * its own. A CEILING, not the cadence — the sibling of {@link
+ * DEFAULT_MAX_SEGMENT_BYTES}, and read the same way: 4 MiB is not how big a segment
+ * is, it is how big one may get.
+ *
+ * THE NAME USED TO BE `DEFAULT_MAX_UNSIGNED_EVENTS`, and the premise that rename
+ * falsifies is written down here because it cost a whole reading of this file. That
+ * name says "sign every 64 events", so the product's actual cadence — one signature
+ * per act of writing, whatever its size — read as a mechanism that never fires, and
+ * the bench recorded it as DEAD CODE (`.refactor/RECONSTRUCTION.md`, and the A2
+ * ledger in `ARCHITECTURE.md`, both said "inert"). It is not dead: it fires whenever
+ * ONE act writes more than this many events, and the product has such an act —
+ * `mnema decision import --write` puts two events on the tail per ADR through a
+ * single writer and signs once at the end, so a directory of 33 ADRs crosses it. That
+ * is measured, on the real command, in `every-write-signs-what-it-wrote.test.ts`.
+ *
+ * So the two numbers answer different questions and neither is the other's default:
+ * the CADENCE is one signature per act (kept by the writing paths, and guarded by
+ * that same file); this is the most an act may leave open before the writer stops
+ * waiting for it.
+ */
+export const DEFAULT_MAX_UNSIGNED_EVENTS = 64;
 
 export interface WriterOptions {
   readonly maxSegmentBytes?: number;
-  readonly checkpointEvery?: number;
+  /** The ceiling above; see {@link DEFAULT_MAX_UNSIGNED_EVENTS}. */
+  readonly maxUnsignedEvents?: number;
 }
 
 export class ChainWriter {
@@ -88,7 +116,7 @@ export class ChainWriter {
   private pending: WrittenEvent[] = [];
 
   private readonly maxSegmentBytes: number;
-  private readonly checkpointEvery: number;
+  private readonly maxUnsignedEvents: number;
 
   private readonly tailId: string;
 
@@ -100,7 +128,7 @@ export class ChainWriter {
     options: WriterOptions = {},
   ) {
     this.maxSegmentBytes = options.maxSegmentBytes ?? DEFAULT_MAX_SEGMENT_BYTES;
-    this.checkpointEvery = options.checkpointEvery ?? DEFAULT_CHECKPOINT_EVERY;
+    this.maxUnsignedEvents = options.maxUnsignedEvents ?? DEFAULT_MAX_UNSIGNED_EVENTS;
     this.tailId = `${keyPair.fingerprint}-${installationId}`;
     mkdirSync(tailDir(layout, this.tailId), { recursive: true });
     this.ensureTailProof();
@@ -265,7 +293,7 @@ export class ChainWriter {
     // could ever find.
     this.pending.push(entry.written);
 
-    this.maybeCheckpoint();
+    this.capUnsignedWindow();
     return entry;
   }
 
@@ -316,7 +344,7 @@ export class ChainWriter {
     // Same rule as the single append: buffered only after the write landed.
     for (const entry of entries) this.pending.push(entry.written);
 
-    this.maybeCheckpoint();
+    this.capUnsignedWindow();
     return entries;
   }
 
@@ -353,13 +381,22 @@ export class ChainWriter {
   }
 
   /**
-   * Signs a checkpoint over the uncheckpointed tail if enough events have
-   * accumulated. Coverage stays contiguous: each checkpoint starts at the seq
-   * right after the previous one's end.
+   * Holds the unsigned window under the ceiling: signs a checkpoint once one act of
+   * writing has left more than {@link DEFAULT_MAX_UNSIGNED_EVENTS} events above the
+   * last one. Coverage stays contiguous — each checkpoint starts at the seq right
+   * after the previous one's end.
+   *
+   * It is NOT the product's cadence and does not set it. Every writing path signs
+   * what it wrote before it returns, which is a far tighter rule than this one and is
+   * guarded separately (`every-write-signs-what-it-wrote.test.ts`). What this catches
+   * is the act too big to wait for: a bulk import, a session serving a long list of
+   * patterns. Without it, one act could put an unbounded number of events on the tail
+   * with nothing signed until the end, and a crash halfway would leave every one of
+   * them resting on the hash chain alone.
    */
-  private maybeCheckpoint(): void {
+  private capUnsignedWindow(): void {
     const uncovered = this.nextSeq - 1 - this.lastCheckpointedSeq;
-    if (uncovered < this.checkpointEvery) return;
+    if (uncovered < this.maxUnsignedEvents) return;
     this.checkpoint();
   }
 

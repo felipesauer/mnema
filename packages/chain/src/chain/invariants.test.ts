@@ -63,9 +63,9 @@ function found(w: ChainWriter): ChainWriter {
 }
 
 /** Writes `count` tasks (after founding) with the given cadence and returns the writer. */
-function writeChain(count: number, checkpointEvery: number) {
+function writeChain(count: number, maxUnsignedEvents: number) {
   // keyRoot == chainRoot: the simple single-root layout (see chain.test.ts).
-  const w = found(openChainForWriting(root, { keyRoot: root, checkpointEvery }));
+  const w = found(openChainForWriting(root, { keyRoot: root, maxUnsignedEvents }));
   for (let i = 0; i < count; i += 1) {
     w.append(taskCreated(env(w, `t-${i}`), { title: `task ${i}` }));
   }
@@ -108,7 +108,7 @@ function writeManyTails(specs: readonly TailSpec[]): number {
       const w = found(
         openChainForWriting(tailRoot, {
           keyRoot: tailRoot,
-          checkpointEvery: spec.every,
+          maxUnsignedEvents: spec.every,
           maxSegmentBytes: spec.maxSegmentBytes,
         }),
       );
@@ -149,7 +149,7 @@ describe('invariant — an honestly written chain always verifies', () => {
 
   for (const count of counts) {
     for (const every of cadences) {
-      it(`ok is true for ${count} events, checkpointEvery=${every}`, () => {
+      it(`ok is true for ${count} events, maxUnsignedEvents=${every}`, () => {
         writeChain(count, every);
         const r = verify(root);
         expect(r.ok).toBe(true);
@@ -182,7 +182,7 @@ describe('invariant — fullySigned iff no residual, and residual accounting is 
     let r = verify(root);
     expect(r.fullySigned).toBe(false);
     expect(r.uncheckpointedEvents).toBe(6); // founding + 5 tasks, none covered
-    openChainForWriting(root, { keyRoot: root, checkpointEvery: 1000 }).checkpoint();
+    openChainForWriting(root, { keyRoot: root, maxUnsignedEvents: 1000 }).checkpoint();
     r = verify(root);
     expect(r.fullySigned).toBe(true);
     expect(r.uncheckpointedEvents).toBe(0);
@@ -327,7 +327,7 @@ describe('invariant — the summary is the clauses, joined, and splits back into
 
   for (const count of counts) {
     for (const every of cadences) {
-      it(`holds for ${count} events, checkpointEvery=${every}`, () => {
+      it(`holds for ${count} events, maxUnsignedEvents=${every}`, () => {
         writeChain(count, every);
         assertOneVerdict(verify(root));
       });

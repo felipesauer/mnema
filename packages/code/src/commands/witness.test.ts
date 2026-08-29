@@ -274,8 +274,8 @@ describe('going back for what has not confirmed', () => {
     // `verify` said an attestation had been requested and had not confirmed, and this
     // act said `nothing has been asked about this checkpoint yet` — and skipped. The
     // window is a working day: the two stamps this package's own fixture carries were
-    // asked for at 00:52 and served complete at 12:49, and 64 events under the head is
-    // one `mnema decision import`.
+    // asked for at 00:52 and served complete at 12:49, and ONE `mnema memory` is enough
+    // to put the head somewhere else — which is exactly what this case drives below.
     //
     // Built by the product (A13): stamp, write, stamp, write. Nothing is placed by hand.
     const ctx = setup();

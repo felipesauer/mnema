@@ -47,8 +47,15 @@
  * AND GOING BACK IS NOT ONE CHECKPOINT EITHER. Stamping asks about the head, which is
  * right — a new attestation belongs over the newest thing there is to date. Going back
  * asked about the head too, which was not: proofs accumulate under the digests they were
- * filed under, and the head moves on every 64 events, so the request a person was waiting
- * on ended up somewhere `mnema witness upgrade` never looked. `verify` said an attestation
+ * filed under, and the head moves on EVERY WRITE, so the request a person was waiting on
+ * ended up somewhere `mnema witness upgrade` never looked.
+ *
+ * That sentence used to read "the head moves on every 64 events", and the premise behind
+ * it was that the writer's ceiling sets the cadence. It does not: every writing path
+ * signs what it wrote before it returns, so the head moves once per act — measured at
+ * 1.03 events per checkpoint on a fresh record, not 64. The correction makes this
+ * argument stronger rather than weaker, because it means a request goes stale after ONE
+ * `mnema memory`, not after a bulk import. `verify` said an attestation
  * had been requested and had not confirmed; the verb that exists to finish it said nothing
  * had been asked. Two verbs of one product, one disk, one minute. It walks the whole tail
  * now, through the same {@link witnessWalk} the reading walks.

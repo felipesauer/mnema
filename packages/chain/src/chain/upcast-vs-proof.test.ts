@@ -123,7 +123,7 @@ const env = (w: ChainWriter, subject: string) => ({
  * the synthetic ladder touches, plus the founding that does not lift.
  */
 function writeChainBeforeTheBump(opts: { checkpoint: boolean }): void {
-  const w = openChainForWriting(root, { keyRoot: root, checkpointEvery: NEVER });
+  const w = openChainForWriting(root, { keyRoot: root, maxUnsignedEvents: NEVER });
   w.append(identityFounded(env(w, w.anchor), { foundingFp: w.signerFingerprint }));
   w.append(taskCreated(env(w, 't-1'), { title: 'written under v1' }));
   w.append(runStarted(env(w, 'r-1'), { agent: 'claude', goal: DROPPED_GOAL }));
@@ -229,7 +229,7 @@ describe('a chain written before a version bump still proves itself', () => {
     const resumed = openChainForWriting(root, {
       keyRoot: root,
       upcasters: registry,
-      checkpointEvery: NEVER,
+      maxUnsignedEvents: NEVER,
     });
     resumed.append(taskCreated(env(resumed, 't-2'), { title: 'appended after the bump' }));
     const checkpoint = resumed.checkpoint();

@@ -3,11 +3,23 @@
  *
  * Four defects of this series were one shape: an option plumbed to the end with
  * nothing feeding it. `disambiguate` exported and called by nobody,
- * `DEFAULT_CHECKPOINT_EVERY` inert, `transport.onclose` with no production caller,
- * `configProject` documented and set by no flag. Every one of them passed every
- * test of the code UNDER the gap, because that code was right: the resolver
- * honoured the value it was handed, and nobody handed it one. No review catches
- * this class, because the defect is an ABSENCE — there is nothing to look at.
+ * `transport.onclose` with no production caller, `configProject` documented and set
+ * by no flag. Every one of them passed every test of the code UNDER the gap, because
+ * that code was right: the resolver honoured the value it was handed, and nobody
+ * handed it one. No review catches this class, because the defect is an ABSENCE —
+ * there is nothing to look at.
+ *
+ * THE FOURTH NAME CAME OFF THIS LIST, and what it was replaced with is worth more
+ * than the row. It read `DEFAULT_CHECKPOINT_EVERY inert`, and the premise behind that
+ * word was that a constant no production caller ever OVERRIDES is a constant nothing
+ * uses. That is false, and it was falsified by measuring: the value is the writer's
+ * default, so production runs ON it rather than around it, and `mnema decision import
+ * --write` crosses it on a directory of 33 ADRs (measured in
+ * `every-write-signs-what-it-wrote.test.ts`). Its sibling `DEFAULT_MAX_SEGMENT_BYTES`
+ * is unfed by exactly the same test and nobody has ever called it dead. So the shape
+ * this file hunts is *exported and never REFERENCED*, which is what it actually
+ * checks; *never overridden by a caller* is a different question and not a defect.
+ * The constant now says what it is: `DEFAULT_MAX_UNSIGNED_EVENTS`.
  *
  * So this walks the public surface itself. For every VALUE a package's entry point
  * exports, some non-test file under `packages/*​/src` must reference it in code.
