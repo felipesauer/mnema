@@ -14,6 +14,13 @@
  * the defaults are not the ones used`. It is the fifth defect of that shape in this
  * product, and the first four were all found by somebody using them.
  *
+ * IT SHIPPED BLIND TO THE SHAPE IT WAS BUILT FOR, and this is the amendment. An option
+ * ADDED to a command that has an action was cleared, because an action that never names
+ * the option produced the same empty answer as an action that reads it in place. Only
+ * the `--help` golden went red, by holding bytes, and a golden is updated with `-u` by
+ * whoever added the option. The discriminant is in {@link verdictOf}: the action's own
+ * source either names the value or it does not, and those are opposite facts.
+ *
  * WHY NEITHER GREP FINDS IT, which is the whole design of what follows:
  *
  *   - THE NAME CHANGES ON THE WAY. `opts.calendar` leaves as `calendars`, `opts.which`
@@ -49,8 +56,21 @@
  *     are what assert the effect (`mcp-flag-reaches-the-server`, `the-witness-flags-reach-the-act`).
  *   - IT IS NOT THE MCP SURFACE. The tools take an input object each, not options, and
  *     they are the second surface with the same rule.
- *   - A COMMAND WITH NO ACTION OF ITS OWN CANNOT BE TRACED, and there is one such option
- *     ({@link NOT_TRACEABLE}).
+ *   - A COMMAND WITH NO ACTION OF ITS OWN CANNOT BE TRACED, and there are two such
+ *     options ({@link NOT_TRACEABLE}).
+ *   - AN ACTION THAT HANDS ITS OPTIONS OBJECT AWAY WHOLE is traced under the attribute's
+ *     own name ({@link handsTheWholeObjectAway}), and the options object is taken to be
+ *     the LAST parameter the handler declares. No handler on this surface has that shape
+ *     today — all 94 traceable options are named by the action that received them — so
+ *     the clause is written against a future one and is exercised only by cases this
+ *     file owns.
+ *   - AN ACTION THAT REACHES ITS OPTIONS ONLY UNDER A COMPUTED NAME would be ACCUSED
+ *     wrongly. `opts[flag]` writes no attribute, so the discriminant reads it as an
+ *     option the action ignores. With the clause above it is the second and last way
+ *     closing the hole can err, and it errs LOUDLY rather than quietly — the accusation
+ *     names the option, and the answer is an entry in {@link NOT_TRACEABLE}. No handler
+ *     on this surface reads options that way; `guard`'s three fields are indexed at the
+ *     far end (`fields[field]` in `core/workflow/gate.ts`), not in the action.
  */
 
 import { readFileSync } from 'node:fs';
@@ -232,16 +252,96 @@ function enclosingGroup(code: string, at: number): string | null {
 }
 
 /**
+ * Where the action's own source NAMES the option — `something.attribute` — or -1.
+ *
+ * ONE FUNCTION AND TWO CALLERS, BECAUSE IT IS ONE QUESTION ASKED TWICE.
+ * {@link destinationsOf} asks it to decide whether there is anything to trace, and
+ * {@link verdictOf} asks it to decide what an EMPTY answer means. Written out twice
+ * these two drift apart silently, and the drift is invisible: both spellings would
+ * still clear every option that is read.
+ */
+export function namedAt(actionSource: string, attribute: string): number {
+  return codeOnly(actionSource).search(new RegExp(`[A-Za-z_$][\\w$]*\\.${attribute}\\b`));
+}
+
+/** An action's parameter names in order, and where its body starts. */
+interface Signature {
+  readonly names: string[];
+  readonly bodyFrom: number;
+}
+
+/** The parameter list of a handler, split on top-level commas only. */
+function signature(code: string): Signature {
+  const open = code.indexOf('(');
+  const arrow = code.indexOf('=>');
+  // `opts => …` has no parameter list to read; the first `(` there is inside the body.
+  if (open < 0 || (arrow >= 0 && open > arrow)) return { names: [], bodyFrom: 0 };
+  const names: string[] = [];
+  const take = (span: string): void => {
+    const name = /^\s*(?:readonly\s+)?([A-Za-z_$][\w$]*)/.exec(span);
+    if (name !== null) names.push(name[1] as string);
+  };
+  let depth = 0;
+  let start = open + 1;
+  for (let i = open; i < code.length; i += 1) {
+    const char = code[i] as string;
+    if ('([{'.includes(char)) depth += 1;
+    else if (')]}'.includes(char)) {
+      depth -= 1;
+      if (depth === 0) {
+        take(code.slice(start, i));
+        return { names, bodyFrom: i + 1 };
+      }
+    } else if (char === ',' && depth === 1) {
+      take(code.slice(start, i));
+      start = i + 1;
+    }
+  }
+  return { names: [], bodyFrom: 0 };
+}
+
+/**
+ * Whether the action hands its OPTIONS OBJECT away whole, under no key of its own.
+ *
+ * `run(ctx, opts)` and `run(ctx, { ...opts })` forward every option at once, and the
+ * value then travels under the attribute's OWN name — so there is a destination, it is
+ * just not written down anywhere. Without this the amendment below would accuse every
+ * option of such a command, which is the one way closing that hole could do damage.
+ *
+ * THE OPTIONS OBJECT IS TAKEN TO BE THE LAST PARAMETER the handler declares, because
+ * commander calls `action(...operands, options, command)` and every handler in this
+ * workspace stops at `options`. A handler that declared only operands would have its
+ * last operand read as the options object here — a MISS, never an accusation, which is
+ * the direction this file errs in on purpose.
+ */
+function handsTheWholeObjectAway(code: string): boolean {
+  const { names, bodyFrom } = signature(code);
+  const options = names.at(-1);
+  if (options === undefined) return false;
+  const body = code.slice(bodyFrom);
+  return (
+    new RegExp(`[(,]\\s*${options}\\s*[,)]`).test(body) ||
+    new RegExp(`\\.\\.\\.\\s*${options}\\b`).test(body)
+  );
+}
+
+/**
  * The names an option's value is handed away under, taken from the action's own source.
  *
- * An EMPTY answer means the value never leaves the action, which is what every `--json`
- * does: it is read there, it chooses a branch, and nothing downstream ever sees it.
+ * An EMPTY answer means the action hands this value to nothing — either because it
+ * reads it in place, which is what every `--json` does, or because it never names it at
+ * all. Those are opposites and this function does not tell them apart; {@link verdictOf}
+ * does, with {@link namedAt}.
  */
 export function destinationsOf(actionSource: string, attribute: string): Set<string> {
   const code = codeOnly(actionSource);
   const keys = new Set<string>();
-  const used = code.search(new RegExp(`[A-Za-z_$][\\w$]*\\.${attribute}\\b`));
-  if (used < 0) return keys;
+  const used = namedAt(actionSource, attribute);
+  if (used < 0) {
+    // Never named: the only way the value still travels is inside the whole object.
+    if (handsTheWholeObjectAway(code)) keys.add(attribute);
+    return keys;
+  }
   // One step: `KEY: <expression naming opts.attribute>`.
   for (const match of code.matchAll(
     new RegExp(`([A-Za-z_$][\\w$]*)\\s*:\\s*[^,;{}()]*[A-Za-z_$][\\w$]*\\.${attribute}\\b`, 'g'),
@@ -351,20 +451,42 @@ interface Verdict {
   readonly read: string[];
 }
 
+/**
+ * The verdict for one option, from the action that received it.
+ *
+ * AN EMPTY SET OF DESTINATIONS HAS TWO OPPOSITE MEANINGS, and the discriminant is
+ * whether the action's own source NAMES the option:
+ *
+ *   - IT NAMES IT AND FORWARDS NOTHING — the action is the reader, and there is no
+ *     second layer for anything to be dropped in. Every `--json` is this, fourteen of
+ *     them, and they are the scenario the clause was written for.
+ *   - IT NEVER NAMES IT — nothing read the value and nothing was handed it. The option
+ *     is IGNORED, which is exactly what this file exists to refuse.
+ *
+ * READING THE SECOND AS THE FIRST IS THE HOLE THIS GUARD SHIPPED WITH. An option added
+ * to a command that HAS an action came back `read: ['the action itself']` for a reason
+ * that was never about it; only the `--help` golden went red, by holding bytes. The
+ * case is pinned by `separates the option the action READS from the one it IGNORES`.
+ */
+export function verdictOf(option: string, actionSource: string, attribute: string): Verdict {
+  const destinations = [...destinationsOf(actionSource, attribute)].sort();
+  if (destinations.length === 0) {
+    const named = namedAt(actionSource, attribute) >= 0;
+    return { option, destinations, read: named ? ['the action itself'] : [] };
+  }
+  const reachable = reachableFrom(entryPoints(actionSource));
+  const read = destinations.flatMap((key) =>
+    readSites(reachable, key).map((site) => `${key} in ${site}`),
+  );
+  return { option, destinations, read };
+}
+
 /** Where each option's value is read, or an empty `read` when it is read nowhere. */
 function verdicts(): Verdict[] {
   return OPTIONS.map((declared) => {
     const option = `${declared.where} ${declared.flags}`;
     if (declared.action === undefined) return { option, destinations: [], read: [] };
-    const destinations = [...destinationsOf(declared.action, declared.attribute)].sort();
-    // Handed away under no name at all: the action is the reader, and there is no
-    // second layer for anything to be dropped in.
-    if (destinations.length === 0) return { option, destinations, read: ['the action itself'] };
-    const reachable = reachableFrom(entryPoints(declared.action));
-    const read = destinations.flatMap((key) =>
-      readSites(reachable, key).map((site) => `${key} in ${site}`),
-    );
-    return { option, destinations, read };
+    return verdictOf(option, declared.action, declared.attribute);
   });
 }
 
@@ -496,6 +618,72 @@ describe('every option the CLI declares feeds something', () => {
     // Read and never forwarded: the action is the reader. Every `--json` is this.
     expect([...destinationsOf('(opts) => { if (opts.json === true) out(x); }', 'json')]).toEqual(
       [],
+    );
+  });
+
+  it('separates the option the action READS from the one it IGNORES', () => {
+    // Both of these reach an EMPTY set of destinations, and they are opposite facts.
+    // The action that NAMES the option is its reader, and there is no second layer for
+    // anything to be dropped in — every `--json` on the surface is this.
+    expect(
+      verdictOf('mnema x --json', '(opts) => { if (opts.json === true) out(x); }', 'json').read,
+    ).toEqual(['the action itself']);
+    // The action that names its OTHER options and not this one was handed a value it
+    // does nothing with. Reading this as the case above is what let an option added to
+    // a command WITH an action come back cleared, and it is the whole subject here.
+    expect(
+      verdictOf('mnema x --nobody', '(opts) => { run(ctx, { global: opts.global }); }', 'nobody'),
+    ).toEqual({ option: 'mnema x --nobody', destinations: [], read: [] });
+    // And the same question of the product's own handler rather than a string this
+    // test wrote, which is the form the defect actually took: an option declared on
+    // `witness upgrade` — a command that HAS an action — and named by nobody.
+    const action = OPTIONS.find((one) => one.where === 'mnema witness upgrade')?.action ?? '';
+    expect(action).toContain('runWitnessUpgrade');
+    expect(
+      verdictOf('mnema witness upgrade --blocks', action, 'blocks').read.length,
+    ).toBeGreaterThan(0);
+    expect(verdictOf('mnema witness upgrade --nothing', action, 'nothingReadsThis').read).toEqual(
+      [],
+    );
+  });
+
+  it('still clears an action that hands its options object away whole', () => {
+    // The clause the discriminant must not break, and the ONE way closing the hole
+    // could do damage: `run(ctx, opts)` writes no key, so the value travels under the
+    // attribute's own name — and asked of the real path, that name has a reader.
+    expect([...destinationsOf('(opts) => runWitnessUpgrade(ctx, opts)', 'blockSource')]).toEqual([
+      'blockSource',
+    ]);
+    expect(
+      verdictOf('mnema x --blocks', '(opts) => runWitnessUpgrade(ctx, opts)', 'blockSource').read
+        .length,
+    ).toBeGreaterThan(0);
+    // A spread is the other way it is written, and it forwards just as whole.
+    expect([...destinationsOf('(opts) => run(ctx, { ...opts })', 'anything')]).toEqual([
+      'anything',
+    ]);
+    // It is the LAST parameter that is the options object: an OPERAND handed away
+    // whole says nothing about the options beside it, and reading it as one would
+    // clear every option of that command.
+    expect([...destinationsOf('(id, opts) => run(ctx, id, { a: 1 })', 'anything')]).toEqual([]);
+  });
+
+  it('finds no handler on this surface that hands its options away whole', () => {
+    // THE CLAUSE ABOVE HAS NO SCENARIO IN THE PRODUCT: every traceable option is named
+    // by the action that received it, so `handsTheWholeObjectAway` is exercised by the
+    // cases just above and by nothing that ships. It is a case of its own, not a fifth
+    // assertion in the one above, because a clause with no scenario is one nobody
+    // notices going wrong — and a neighbouring failure must not be able to hide it.
+    // The day a handler forwards its options whole this goes red, and the count on
+    // {@link handsTheWholeObjectAway} has to be taken again.
+    const unnamed = OPTIONS.filter(
+      (one) => one.action !== undefined && namedAt(one.action, one.attribute) < 0,
+    ).map((one) => `${one.where} ${one.flags}`);
+    expect(unnamed).toEqual([]);
+    // And not vacuously: the walk did reach the actions, so an empty list above is a
+    // statement about handlers that were read rather than about handlers that were not.
+    expect(OPTIONS.filter((one) => one.action !== undefined).length).toBeGreaterThanOrEqual(
+      OPTION_FLOOR - 1,
     );
   });
 
