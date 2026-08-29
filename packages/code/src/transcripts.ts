@@ -206,9 +206,23 @@ export function sessionsOfProject(
       firstAt: held.firstAt,
       lastWrittenMs: held.lastWrittenMs,
     }))
-    .sort((a, b) =>
-      a.firstAt === b.firstAt ? a.id.localeCompare(b.id) : a.firstAt < b.firstAt ? -1 : 1,
-    );
+    .sort(oldestSessionFirst);
+}
+
+/**
+ * Sessions oldest first, ties broken by id ascending — the ONE direction this listing
+ * wants, and the opposite of the record's `newestFirst`.
+ *
+ * A host session is read as a span, and a span is served in the order it happened, so
+ * the ascending tie-break is the one that AGREES with the instant here. Written as a
+ * named comparator rather than inline at the call because
+ * `one-rule-for-newest-first.test.ts` requires every ordering over an instant to carry
+ * a name it can classify — an unnamed one cannot be told from a seventh writing of the
+ * newest-first rule.
+ */
+function oldestSessionFirst(a: HostSession, b: HostSession): number {
+  if (a.firstAt === b.firstAt) return a.id.localeCompare(b.id);
+  return a.firstAt < b.firstAt ? -1 : 1;
 }
 
 /**

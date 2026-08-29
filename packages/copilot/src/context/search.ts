@@ -234,10 +234,25 @@ export function searchRecords(
   // Re-order by the core's own rule: the merge must land where a single tree
   // holding the same records would have landed, or the answer would depend on
   // how the record happens to be split across trees.
-  found.sort((a, b) => compareSearchHits(a.hit, b.hit));
+  found.sort(byTheRecordsOwnOrder);
   const hits = found.slice(0, effectiveLimit(query.limit)).map(toRecordHit);
   const hidden = hiddenByLimit(matched, hits);
   return { hits, total, ...(hidden.length > 0 ? { hidden } : {}) };
+}
+
+/**
+ * The merged hits in the order one tree would have served them: the core's
+ * {@link compareSearchHits}, which is relevance and then `newestFirst`.
+ *
+ * It asks rather than repeats, and it carries a name rather than sitting inline at the
+ * call, because `one-rule-for-newest-first.test.ts` classifies orderings over an instant
+ * by name — an ordering that means *newest first* has to be visible as one.
+ */
+function byTheRecordsOwnOrder(
+  a: { readonly hit: SearchHit },
+  b: { readonly hit: SearchHit },
+): number {
+  return compareSearchHits(a.hit, b.hit);
 }
 
 /**

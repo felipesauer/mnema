@@ -129,9 +129,10 @@ function stateOf(sources: readonly ScopedCache[], channel: string): ChannelState
     if (row !== null && !row.on) off.push({ source, row });
   }
   if (off.length === 0) return { channel, on: true };
-  const decided = off.sort(
-    (a, b) => compare(a.row.switchedAt, b.row.switchedAt) || compare(a.row.who, b.row.who),
-  )[0] as { readonly source: ScopedCache; readonly row: ChannelSwitchProjection };
+  const decided = off.sort(earliestSwitchOffFirst)[0] as {
+    readonly source: ScopedCache;
+    readonly row: ChannelSwitchProjection;
+  };
   return {
     channel,
     on: false,
@@ -141,6 +142,23 @@ function stateOf(sources: readonly ScopedCache[], channel: string): ChannelState
     ...(decided.row.reason !== undefined ? { reason: decided.row.reason } : {}),
     travels: decided.source.scope === TRAVELS_TO_A_CLONE,
   };
+}
+
+/**
+ * The switch-off that answers for a channel: earliest instant first, ties broken by who
+ * — oldest first, which is the opposite of the record's `newestFirst` and is deliberate.
+ *
+ * A channel is off because SOMEONE turned it off, and the answer names the switch that
+ * did it, so the FIRST one is the one that holds; a later tree turning the same channel
+ * off again did not decide anything. Written as a named comparator rather than inline at
+ * the call because `one-rule-for-newest-first.test.ts` requires every ordering over an
+ * instant to carry a name it can classify.
+ */
+function earliestSwitchOffFirst(
+  a: { readonly row: ChannelSwitchProjection },
+  b: { readonly row: ChannelSwitchProjection },
+): number {
+  return compare(a.row.switchedAt, b.row.switchedAt) || compare(a.row.who, b.row.who);
 }
 
 /**
