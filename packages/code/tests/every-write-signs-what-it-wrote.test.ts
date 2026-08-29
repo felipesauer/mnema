@@ -107,6 +107,17 @@ import {
  *   - A path that signs SOMETHING but not everything it wrote. The question asked is
  *     "is anything uncovered when you return", so a checkpoint over the wrong range
  *     would have to be caught by the writer's own range assertion, not here.
+ *   - THE SOURCE GUARD READS THAT A CHECKPOINT IS WRITTEN, NEVER THAT IT RUNS. A
+ *     signature behind a condition that is never true reads exactly like one that
+ *     signs. Measured: inverting `recordServices`'s `appended > 0` lights the
+ *     behavioural half and ONE test, and the source half stays green — which is the
+ *     division of labour between the two halves rather than a hole, and the reason
+ *     neither is delivered alone.
+ *   - A path that signs through a LOCAL HELPER instead of on its own line. That is
+ *     deliberate and it is the strictness the guard is for: the checkpoint has to be
+ *     visible where the write is, because a helper is one more place a later path can
+ *     be routed around. Measured: moving `runTask`'s checkpoint into a one-line helper
+ *     — byte-identical output — lights the source half and nothing else.
  *   - A path outside `packages/code/src`. An embedder calling `@mnema/core/write`
  *     directly owns its own signing; the core's operations deliberately do not sign
  *     (`enrollKey` and `revokeKey` are the two that do, because they complete an act
