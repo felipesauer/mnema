@@ -242,6 +242,291 @@ describe('scrubSecrets — the `sk-` family, where the prefix does not name the 
   });
 });
 
+/**
+ * The 24 names below are REAL: directory and branch names this repository's own work
+ * produced, read as the skill id a person would type. They are a frozen sample of the
+ * 194 the cut was measured over, chosen so that every spelling of every one of them is
+ * long enough to reach the sieve — a corpus that fell short of the pattern would
+ * measure nothing at all.
+ */
+const CHOSEN_NAMES: readonly string[] = [
+  'a-ceiling-on-the-cases-that-wait',
+  'a-line-of-success-is-one-line',
+  'an-anchor-you-can-read-and-type',
+  'attack-the-structural-criterion',
+  'a-write-invalidates-what-it-changed',
+  'context-reads-on-the-surface',
+  'defer-the-run-to-the-first-write',
+  'every-public-option-has-a-caller',
+  'find-and-count-across-the-workspace',
+  'intelligence-on-the-surface',
+  'move-what-lives-in-another-project',
+  'naming-a-path-asserts-a-project',
+  'no-field-slips-past-the-door',
+  'one-place-that-writes-the-output',
+  'read-across-the-workspace',
+  'refusal-names-the-trees-it-searched',
+  'resume-a-tail-in-constant-time',
+  'screen-what-enters-the-record',
+  'shrinking-keeps-the-history',
+  'stop-announcing-an-inert-effect',
+  'the-address-says-what-it-covers',
+  'the-bare-name-asks-what-you-want',
+  'the-console-measures-columns',
+  'the-cost-comes-from-the-host',
+];
+
+/** The spellings a person writes the same name in, and what each is for. */
+const SPELLINGS: readonly { readonly how: string; readonly write: (name: string) => string }[] = [
+  { how: 'plain', write: (name) => `sk-${name}` },
+  { how: 'under Anthropic’s own prefix', write: (name) => `sk-ant-${name}` },
+  { how: 'under the project prefix', write: (name) => `sk-proj-${name}` },
+  { how: 'versioned', write: (name) => `sk-${name}-v2` },
+  { how: 'behind an ADR number', write: (name) => `sk-adr-17-${name}` },
+  { how: 'with underscores', write: (name) => `sk-${name.replace(/-/g, '_')}` },
+  { how: 'behind a year', write: (name) => `sk-${name}-2026` },
+];
+
+/** The same name in camelCase — the spelling the cut deliberately does NOT rescue. */
+function inCamelCase(name: string): string {
+  return `sk-${name.replace(/-(.)/g, (_, letter: string) => letter.toUpperCase())}`;
+}
+
+describe('scrubSecrets — a name a person chose is not a credential', () => {
+  it('records the name someone typed, not a placeholder where it used to be', () => {
+    // The delivery case, at the unit that decides it. The assertion is the NAME —
+    // not the absence of a placeholder, which would also pass on a sieve that had
+    // eaten the name and put nothing in its place.
+    const chosen = 'sk-check-the-tenant-scope-first';
+    const scrubbed = scrubSecrets(chosen);
+
+    expect(scrubbed.text).toBe(chosen);
+    expect(scrubbed.replaced).toEqual([]);
+  });
+
+  it('records the whole SENTENCE a name is mentioned inside', () => {
+    // The shape fires mid-text, so the damage was never limited to a name field: a
+    // memory that merely MENTIONED such an id was recorded mutilated.
+    const sentence = 'the skill sk-check-the-tenant-scope-first governs this path';
+    expect(scrubSecrets(sentence).text).toBe(sentence);
+  });
+
+  for (const spelling of SPELLINGS) {
+    it(`leaves every one of the ${CHOSEN_NAMES.length} names alone, written ${spelling.how}`, () => {
+      const destroyed = CHOSEN_NAMES.filter(
+        (name) =>
+          scrubSecrets(`the skill ${spelling.write(name)} governs this path`).replaced.length > 0,
+      );
+      expect(destroyed).toEqual([]);
+    });
+  }
+
+  it('still destroys all of them in camelCase — the cost of the cut, as a count', () => {
+    // NOT an oversight, and the assertion is written as a count so it cannot be
+    // read as one. A capital letter is the mark of the dense alphabet every real
+    // key in this table is drawn from, and rescuing camelCase would give up the
+    // OpenAI legacy format entirely.
+    //
+    // It is also this file's NON-VACUITY witness for everything above: the same
+    // names, one spelling away, DO reach the sieve and DO come back replaced. A
+    // corpus that never matched the pattern would pass every case above while
+    // measuring nothing.
+    const destroyed = CHOSEN_NAMES.filter(
+      (name) => scrubSecrets(inCamelCase(name)).replaced.length > 0,
+    );
+    expect(destroyed).toHaveLength(CHOSEN_NAMES.length);
+  });
+});
+
+/**
+ * One name-shaped value written under each class's prefix, and what the sieve must
+ * say about it.
+ *
+ * Keyed BY class so `SECRET_CLASSES` drives the loop, exactly as `SAMPLES` does: a
+ * class added to the sieve with no probe here fails, and so does a probe for a class
+ * the sieve does not have. This is where "which prefixes the name rule is reached
+ * from" is pinned — the table inside the module decides it, and a change to that
+ * table shows up here as a named failure rather than as a shift in a corpus count.
+ */
+interface NameProbe {
+  /** A name written under the class's prefix, or the nearest thing to one. */
+  readonly text: string;
+  /** What the sieve must report, and why that is the right answer. */
+  readonly verdict: readonly SecretClass[];
+  readonly why: string;
+}
+
+const NAME_UNDER_EACH_PREFIX: Readonly<Record<string, NameProbe>> = {
+  'aws-access-key': {
+    text: 'akia-check-the-tenant-scope-first',
+    verdict: [],
+    why: 'the prefix is four CAPITALS; no slug wears it',
+  },
+  'github-token': {
+    text: 'ghp_check_the_tenant_scope_first_thing',
+    verdict: [],
+    why: 'the body admits no separator, so a slug never reaches the length',
+  },
+  'anthropic-key': {
+    text: 'sk-ant-eater-does-not-eat-any-ants',
+    verdict: [],
+    why: 'the rule reaches this class: `ant` is a word, and this shape runs FIRST',
+  },
+  'openai-key': {
+    text: 'sk-check-the-tenant-scope-first',
+    verdict: [],
+    why: 'the rule reaches this class: `sk` is this product’s own verb, abbreviated',
+  },
+  'stripe-key': {
+    text: 'sk_live_check_the_tenant_scope_first',
+    verdict: [],
+    why: 'the body admits no separator',
+  },
+  'slack-token': {
+    text: 'xoxb-check-the-tenant-scope-first',
+    verdict: ['slack-token'],
+    why: 'A DECLARED LIMIT. This shape DOES swallow a name — 191 of the 194 measured — and it is left that way on purpose: `xoxb` is nobody’s word, no name among the 194 begins with one, so relaxing it would give up a real issuer to rescue a name that does not exist',
+  },
+  'google-api-key': {
+    text: 'AIza-check-the-tenant-scope-first-thing',
+    verdict: ['google-api-key'],
+    why: 'the same declared limit, for the same reason: `AIza` is an invented token, not a word anyone chooses',
+  },
+  'npm-token': {
+    text: 'npm_check_the_tenant_scope_first_thing',
+    verdict: [],
+    why: 'the body admits no separator',
+  },
+  jwt: {
+    text: 'eyj-check-the-tenant-scope-first-thing',
+    verdict: [],
+    why: 'the prefix needs a capital J and two dots; a slug has neither',
+  },
+  'private-key-block': {
+    text: 'begin-private-key-check-the-tenant-scope',
+    verdict: [],
+    why: 'the shape is a PEM header in full, dashes and capitals included',
+  },
+  'url-password': {
+    text: 'postgres://svc:check-the-tenant-scope@db.internal/app',
+    verdict: ['url-password'],
+    why: 'RIGHT, not a limit: this class’s shape is "whatever sits in this position", and a name typed into a password slot is a password',
+  },
+};
+
+describe('scrubSecrets — which prefixes the name rule is reached from', () => {
+  it('carries one probe per recognized class — the ruler this section measures with', () => {
+    expect(Object.keys(NAME_UNDER_EACH_PREFIX).sort()).toEqual([...SECRET_CLASSES].sort());
+  });
+
+  for (const secret of SECRET_CLASSES) {
+    const probe = NAME_UNDER_EACH_PREFIX[secret] as NameProbe;
+    it(`under ${secret}, a name is ${probe.verdict.length === 0 ? 'left alone' : 'still replaced'} — ${probe.why}`, () => {
+      expect(detectSecrets(`the skill ${probe.text} governs this path`)).toEqual(probe.verdict);
+    });
+  }
+});
+
+/**
+ * Random draws in the formats their issuers define, so "no key stopped being caught"
+ * is a COUNT and not a claim.
+ *
+ * The draws are deterministic — a fixed seed through a small generator — because a
+ * suite that asserts over fresh randomness asserts a probability, and a probability
+ * fails one run in some hundreds and gets called a flake instead of a finding.
+ *
+ * No value here is a credential: every one is generated in this process from digits
+ * and letters, matches nothing anybody issued, and is printed nowhere.
+ */
+const KEY_DRAWS = 5_000;
+
+/** A small deterministic generator — the same draws on every machine, every run. */
+function rolls(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let mixed = Math.imul(state ^ (state >>> 15), state | 1);
+    mixed ^= mixed + Math.imul(mixed ^ (mixed >>> 7), mixed | 61);
+    return ((mixed ^ (mixed >>> 14)) >>> 0) / 4_294_967_296;
+  };
+}
+
+const LOWERCASE = 'abcdefghijklmnopqrstuvwxyz';
+const BASE62 = `${LOWERCASE}${LOWERCASE.toUpperCase()}0123456789`;
+const BASE64URL = `${BASE62}-_`;
+const HEX = '0123456789abcdef';
+
+/** The formats the cut is measured against — every `sk-` family shape in the wild. */
+const KEY_FORMATS: readonly {
+  readonly who: string;
+  readonly of: (roll: () => number) => string;
+}[] = [
+  {
+    who: 'an OpenAI legacy key, 48 characters with the fixed infix',
+    of: (r) => `sk-${pickFrom(r, BASE62, 20)}T3BlbkFJ${pickFrom(r, BASE62, 20)}`,
+  },
+  { who: 'an OpenAI legacy key, 48 characters plain', of: (r) => `sk-${pickFrom(r, BASE62, 48)}` },
+  {
+    who: 'an OpenAI legacy key, the shorter 32-character spelling',
+    of: (r) => `sk-${pickFrom(r, BASE62, 32)}`,
+  },
+  { who: 'an OpenAI project key', of: (r) => `sk-proj-${pickFrom(r, BASE64URL, 156)}` },
+  { who: 'an OpenAI service-account key', of: (r) => `sk-svcacct-${pickFrom(r, BASE64URL, 100)}` },
+  { who: 'an OpenAI admin key', of: (r) => `sk-admin-${pickFrom(r, BASE64URL, 100)}` },
+  { who: 'an Anthropic api03 key', of: (r) => `sk-ant-api03-${pickFrom(r, BASE64URL, 95)}` },
+  { who: 'an Anthropic admin01 key', of: (r) => `sk-ant-admin01-${pickFrom(r, BASE64URL, 95)}` },
+  { who: 'a DeepSeek key, 32 hex', of: (r) => `sk-${pickFrom(r, HEX, 32)}` },
+  {
+    who: 'an OpenRouter key, an issuer tag then 64 hex',
+    of: (r) => `sk-or-v1-${pickFrom(r, HEX, 64)}`,
+  },
+  { who: 'a Moonshot key, 48 base62', of: (r) => `sk-${pickFrom(r, BASE62, 48)}` },
+  { who: 'an OpenAI-compatible key, 40 base62', of: (r) => `sk-${pickFrom(r, BASE62, 40)}` },
+  {
+    who: 'an OpenAI-compatible key, UUID-shaped',
+    of: (r) =>
+      `sk-${pickFrom(r, HEX, 8)}-${pickFrom(r, HEX, 4)}-${pickFrom(r, HEX, 4)}-${pickFrom(r, HEX, 4)}-${pickFrom(r, HEX, 12)}`,
+  },
+];
+
+/** `count` characters drawn from `alphabet` by the generator. */
+function pickFrom(roll: () => number, alphabet: string, count: number): string {
+  let out = '';
+  for (let index = 0; index < count; index += 1) {
+    out += alphabet[Math.floor(roll() * alphabet.length)];
+  }
+  return out;
+}
+
+describe('scrubSecrets — the differential: no key stopped being caught', () => {
+  for (const [index, format] of KEY_FORMATS.entries()) {
+    it(`replaces ${KEY_DRAWS} of ${KEY_DRAWS} draws of ${format.who}`, () => {
+      const roll = rolls(0x5eed + index);
+      const escaped: number[] = [];
+      for (let draw = 0; draw < KEY_DRAWS; draw += 1) {
+        const key = format.of(roll);
+        const scrubbed = scrubSecrets(`rotate ${key} today`);
+        // The value is ABSENT from the output — never "the report is non-empty".
+        if (scrubbed.text.includes(key)) escaped.push(draw);
+      }
+      // The draw NUMBERS, so a failure names which ones and the key itself is never
+      // printed. This is the line that cannot fail: zero secrets stopped being caught.
+      expect(escaped).toEqual([]);
+    });
+  }
+
+  it('names the shape a lowercase-only issuer would have — the coverage the cut costs', () => {
+    // Stated as a test rather than left in a comment, because it IS what the cut
+    // gives up: a key drawn from a lowercase-only alphabet is words by shape, and no
+    // shape-based sieve can tell it from a name. None of the thirteen formats above
+    // mints one. If one ever does, this case is where the argument gets reopened.
+    const roll = rolls(0xf00d);
+    const hypothetical = `sk-${pickFrom(roll, LOWERCASE, 48)}`;
+
+    expect(scrubSecrets(`rotate ${hypothetical} today`).replaced).toEqual([]);
+  });
+});
+
 describe('scrubSecrets — what it does NOT flag', () => {
   // The values this product itself stamps on every event. An entropy rule would
   // replace all of them (measured: 13,094 hits over a real archive, of which

@@ -778,6 +778,58 @@ describe('mnema CLI — skill, end to end', () => {
     return (out.match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
   }
 
+  it('records the name a person chose, even when it starts like a key', async () => {
+    // THE DELIVERY CASE, reproduced at the surface the defect was found on. `sk-` is
+    // a prefix several key issuers reuse AND two letters a person reaches for in a
+    // product whose verb is `skill`, so the sieve replaced the name with
+    // `<SECRET:openai-key>` — permanently, because the record is append-only.
+    await run(['init'], capture().io);
+    const chosen = 'sk-check-the-tenant-scope-first';
+    const c = capture();
+    await run(['skill', chosen, '--body', 'always check the tenant scope'], c.io);
+    expect(c.failed()).toBe(false);
+
+    // The NAME is asserted, not the absence of a placeholder: a sieve that ate the
+    // name and left nothing would satisfy "no placeholder" and fail a person.
+    expect(c.out.join('\n')).toContain(`Proposed skill "${chosen}"`);
+    // And nothing was reported as replaced, because nothing was.
+    expect(c.out.join('\n')).not.toContain('replaced before recording');
+
+    const root = resolveTrees(repo, {
+      xdgDataHome: join(sandbox, 'data'),
+      home: join(sandbox, 'home'),
+    }).projectPublic as string;
+    // The RECORD is what has to carry it — the printed line is a copy, and the copy
+    // is not what the next session reads.
+    const created = orderedEvents({ root }, catalogUpcasters()).filter(
+      (event) => event.kind === 'skill.created',
+    );
+    expect(created.map((event) => (event.payload as { name: string }).name)).toEqual([chosen]);
+  });
+
+  it('records the whole sentence a memory MENTIONS such a name inside', async () => {
+    // The shape fires mid-text, so the damage was never limited to a name field: any
+    // memory, decision or observation that merely NAMED a skill like this one was
+    // recorded mutilated.
+    await run(['init'], capture().io);
+    const sentence = 'the skill sk-check-the-tenant-scope-first governs this path';
+    const c = capture();
+    await run(['memory', sentence], c.io);
+    expect(c.failed()).toBe(false);
+    expect(c.out.join('\n')).not.toContain('replaced before recording');
+
+    const root = resolveTrees(repo, {
+      xdgDataHome: join(sandbox, 'data'),
+      home: join(sandbox, 'home'),
+    }).projectPublic as string;
+    const captured = orderedEvents({ root }, catalogUpcasters()).filter(
+      (event) => event.kind === 'memory.captured',
+    );
+    expect(captured.map((event) => (event.payload as { content: string }).content)).toEqual([
+      sentence,
+    ]);
+  });
+
   it('proposes a skill, prints its name and id (no alias), and verifies', async () => {
     await run(['init'], capture().io);
     const c = capture();

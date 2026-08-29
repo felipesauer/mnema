@@ -112,7 +112,7 @@ verbatim. The surfaces never upgrade a verdict into a stronger claim.
 | **What a run cost** | Not proven at all, and `mnema usage` says so on its own last line. The record holds no cost — deliberately: the number lives in Claude Code's transcripts, which the host deletes on a retention it decides, so a cost recorded in the chain would be a signed figure whose only witness is gone in weeks. So the verb crosses the two readings when you ask, reports **tokens and a model id — never dollars, and never a price table**, and names the host session it read so you can check the same file. Which session belongs to which run is that command's **inference from two clocks**, not a fact the record states: one session in a run's window is attributed, more than one is named and *not* attributed, and none says `no transcript` rather than `0`. |
 | **An exported skill is what the record proves** | The BODY is, byte for byte — `mnema skill export` writes the recorded text verbatim, and nothing summarizes, reformats or improves it. The `description` beside it is **not** signed and is not in the record: the skills specification requires one, the chain has no field for it, so it is derived at export time by a stated rule (the first sentence of the body, cut to 1024 characters) or given with `--description`. **No model produces it.** Only an **adopted** pattern leaves — a proposal dropped into a host's skills directory is read as how the work is done here, and a deprecated one wears a live one's face — and there is no `--force`. The `metadata` carries the record id and the whole identity that adopted it, so a third party with the repository can check the line with `mnema show` and `mnema verify`. Nothing comes back the other way: **there is no import**, because a `SKILL.md` from elsewhere would enter as a body signed by us asserting a provenance we do not have. |
 | **An exported audit feed is the record** | It is a **projection** of it, and it is not the proof. `mnema export` emits one OCSF Entity Management event per line for a SIEM, and it carries the **envelope only** — when, which operation, who authorized it, which agent executed it, in which session, over which entity, signed by which key. **No payload of any kind leaves**: not a memory's text, not a decision's rationale, not an observation's body. The reason is the row below — the record holds credentials mnema does not recognize, and a feed carrying bodies would push them off this machine into somebody's search index, permanently. A line that is **altered in transit is not detectable by the SIEM**: the signature in the record covers mnema's own canonical bytes, not this projection, so nothing here is an attestation and OCSF's `record_integrity` profile is deliberately **not** used. What each line does carry is enough to find the fact back in the record — the subject, the original instant, and the tree — so the answer to *is this line real* is a question you ask `mnema show` and `mnema verify`, never the index. Nothing in mnema ever reads a feed back, and the verb **sends nothing anywhere**: it writes to standard output and whoever forwards it decides the rest. |
-| **Credentials stay out of the record** | Only the ones mnema *recognizes*. A value in a known format — a cloud key, an API token, a PEM private key, a password inside a URL — is replaced with a typed placeholder before anything is written, and the reply names what was replaced. A proprietary token, a password written out in prose, a base64 blob: those are written verbatim, and nothing deletes a fact afterwards. It reduces the damage; it does not make the record safe to paste secrets into. |
+| **Credentials stay out of the record** | Only the ones mnema *recognizes*, and only where the value does not read as a name you chose. A value in a known format — a cloud key, an API token, a PEM private key, a password inside a URL — is replaced with a typed placeholder before anything is written, and the reply names what was replaced. A proprietary token, a password written out in prose, a base64 blob: those are written verbatim, and nothing deletes a fact afterwards. It reduces the damage; it does not make the record safe to paste secrets into. |
 
 The honest summary: **local cryptography covers alteration; an external witness
 covers omission, dates the record, and ties it to an identity.** This paragraph
@@ -519,11 +519,17 @@ the host and the database all survive, because the useful part of the note was
 never the secret. Nothing is replaced in silence: the reply says what went and
 tells you to rotate, which is the only remedy an append-only record leaves.
 
-Two limits, both stated rather than hidden. **It catches only formats it
+Three limits, all stated rather than hidden. **It catches only formats it
 recognizes** — a proprietary token or a password in prose goes in verbatim, so
-the placeholder is damage reduction and not a licence to paste secrets. And a
-single field holds at most 64 KiB: a longer one is **refused**, never truncated,
-so nothing is dropped without your knowing.
+the placeholder is damage reduction and not a licence to paste secrets. **A value
+that reads as a name is left alone** — `sk-` is a prefix several key issuers
+reuse and also the two letters you reach for when you name a skill, so a value
+whose every piece is a lowercase word is recorded the way you typed it; measured
+against thirteen key formats that costs nothing, 0 of 260,000 draws stopped being
+caught, and what it does cost is a name written in camelCase, because an
+uppercase letter is the mark of a key drawn at random. And a single field holds
+at most 64 KiB: a longer one is **refused**, never truncated, so nothing is
+dropped without your knowing.
 
 For everything written before that door existed:
 
