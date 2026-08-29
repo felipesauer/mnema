@@ -1048,17 +1048,14 @@ $ mnema witness upgrade --help
 | go back for every attestation this record is waiting on (T3)
 |
 | Options:
-|   --calendar <url...>  the calendars to ask, when the defaults are not the ones
-|                        used
-|   --blocks <url>       where a block header is read from once an attestation
-|                        confirms. Asked ONCE per block: the 80 bytes are then
-|                        part of the record, and every verification after that is
-|                        arithmetic on this machine. Defaults to a public block
-|                        explorer.
-|   --global             also cover this machine's global tree — left out by
-|                        default, exactly as `verify` leaves it out: it belongs to
-|                        no project and is present in every one (default: false)
-|   -h, --help           display help for command
+|   --blocks <url>  where a block header is read from once an attestation
+|                   confirms. Asked ONCE per block: the 80 bytes are then part of
+|                   the record, and every verification after that is arithmetic on
+|                   this machine. Defaults to a public block explorer.
+|   --global        also cover this machine's global tree — left out by default,
+|                   exactly as `verify` leaves it out: it belongs to no project
+|                   and is present in every one (default: false)
+|   -h, --help      display help for command
 |
 | It goes back for EVERY request the tail still has open, not only the newest one.
 | Proofs stay under the checkpoint they were filed under and the head moves on, so a
@@ -1070,3 +1067,7 @@ $ mnema witness upgrade --help
 | Safe to repeat: a calendar with nothing yet answers so, and the proof comes back
 | as it went in. A header this fetches is checked against the block it claims to be
 | — it hashes to that block's id — so a substituted one is not a matter of trust.
+|
+| There is no --calendar here, and the reason is that there is nothing to choose:
+| every request the walk finds NAMES the calendar that took it, and that is the one
+| asked. Only `stamp` picks, because only `stamp` sends something nobody holds yet.

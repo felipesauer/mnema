@@ -76,6 +76,7 @@ import {
   type WitnessNetwork,
   type WitnessReading,
   type WitnessRefusal,
+  type WitnessReturnVisit,
   witnessOfTail,
   witnessWalk,
   writeWitness,
@@ -373,7 +374,7 @@ export async function runWitnessStamp(
  */
 export async function runWitnessUpgrade(
   ctx: WitnessContext,
-  network: WitnessNetwork = {},
+  network: WitnessReturnVisit = {},
 ): Promise<WitnessAct> {
   const { chains, trees } = heldChains(ctx);
   const outcomes: WitnessOutcome[] = [];
@@ -384,7 +385,7 @@ export async function runWitnessUpgrade(
 /** What going back for one tail's open attestations did, checkpoint by checkpoint. */
 async function upgradeTail(
   chain: HeldChain,
-  network: WitnessNetwork,
+  network: WitnessReturnVisit,
 ): Promise<readonly WitnessOutcome[]> {
   const checkpoints = storedCheckpoints(chain);
   if (checkpoints.length === 0) return [skipped(chain, 'the tail has no checkpoint to witness')];

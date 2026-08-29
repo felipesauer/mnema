@@ -441,7 +441,6 @@ complete -c mnema -f -n '__mnema_at "witness stamp"' -s V -l version
 complete -c mnema -f -n '__mnema_at "witness stamp"' -l color -x -a 'auto always never'
 
 # mnema witness upgrade
-complete -c mnema -f -n '__mnema_at "witness upgrade"' -l calendar -r
 complete -c mnema -f -n '__mnema_at "witness upgrade"' -l blocks -r
 complete -c mnema -f -n '__mnema_at "witness upgrade"' -l global
 complete -c mnema -f -n '__mnema_at "witness upgrade"' -s h -l help
