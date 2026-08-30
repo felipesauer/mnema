@@ -30,16 +30,24 @@
  * ways to spell *descending* is open, and a ban over an open set is a list of the ones
  * somebody thought of. The scan is now built the other way up.
  *
- * WHAT IS ASSERTED, and the four parts are different:
+ * WHAT IS ASSERTED, and the five parts are different:
  *   - EVERY ORDERING THE PRODUCT INSTALLS IS ON A ROSTER. An ordering reaches a reader
  *     through `sort`/`toSorted`, through `reverse`/`toReversed`, or through SQL. The
  *     first two are enumerated from the DIRECTORY, not from a list, and each one is
  *     matched against {@link THE_ORDERINGS}. A site that is not on it is red whatever
  *     it is spelled like — which is the half a shape ban cannot have.
  *   - AN ORDERING OVER AN INSTANT CARRIES A NAME. A comparator written inline at the
- *     call may not read an instant field, so every ordering that could be the rule is
- *     forced to be a named function the roster can classify. This is what makes the
- *     roster's three classes exhaustive instead of aspirational.
+ *     call may not REACH an instant — not by naming one of its fields, and not by
+ *     calling anything declared in `src` that does. So every ordering that could be the
+ *     rule is forced to be a named function the roster can classify, which is what makes
+ *     the roster's three classes exhaustive instead of aspirational. Both halves are
+ *     load-bearing: asking only the first left an arrow that hands the pair to a helper
+ *     at ZERO red, and that is the shape the cross-tree search merge was written in.
+ *   - THE ROSTER RE-EARNS ITS OWN CLASSIFICATION. A comparator the table calls
+ *     {@link OTHER} has to show its body reaches no instant either. Without it, a name
+ *     that never changes and means nothing newest-first could be rewritten into a
+ *     descending instant comparison and stay green: the roster would agree, and nothing
+ *     below would be asking it for the rule.
  *   - AN ORDERING THAT MEANS NEWEST-FIRST ASKS THE RULE. For each roster entry marked
  *     {@link NEWEST}, the named comparator's own body has to reach `newestFirst`. This
  *     assertion has NO shape in it: rewriting `byStartedDesc` into a `Date.parse`
@@ -51,8 +59,10 @@
  *     can only say the comparison is in one place; it cannot say that place is right.
  *
  * The old shape ban is KEPT, widened, as a backstop — see {@link DESCENDING_BY_HAND}.
- * It is the only thing watching the bodies of the OLDEST-first comparators, which by
- * construction do not reach `newestFirst` and so have nothing above to check them.
+ * It is the only thing watching the bodies of the OLDEST-first comparators: they must
+ * reach an instant, so the check above them cannot apply, and they do not reach
+ * `newestFirst` by design, so the check below them cannot either. They are the one class
+ * this file holds by shape alone, and the measurement of what that is worth is below.
  *
  * WHERE THE SCAN IS STILL BLIND, named rather than left to be discovered:
  *   - A bare `sort()` is allowed with no roster entry. It is not an oversight: with no
