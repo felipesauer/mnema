@@ -58,13 +58,21 @@
  *   - A bare `sort()` is allowed with no roster entry. It is not an oversight: with no
  *     comparator, `sort` orders by the string form ASCENDING, and there is no argument
  *     it can be given to point the other way. It cannot express the rule.
- *   - An OLDEST-first comparator rewritten into a descending one is caught only by
- *     {@link DESCENDING_BY_HAND}, which is shape-limited. Measured instead: flipping
- *     `oldestFirst` in `exposure.ts` turns 5 behaviour tests red, so the four sites of
- *     that class are held by their own cases rather than by this file.
+ *   - An OLDEST-first comparator rewritten into a descending one has nothing above to
+ *     catch it — it does not reach `newestFirst` by design — so it is held only by
+ *     {@link DESCENDING_BY_HAND}, which is shape-limited. There is no shared rule to
+ *     make it ask, because the four break their ties on four different second keys
+ *     (id, who, `from`/`to`/role, id/scope/project) and the instant clause alone is
+ *     just a string comparison.
+ *     Measured, so the class is not read as uniform: flipping `oldestFirst` in
+ *     `exposure.ts` turns 4 red, 3 of them behaviour cases in `exposure.test.ts`.
+ *     Flipping `earliestSwitchOffFirst` in `switches.ts` turns 1 red, and it is this
+ *     file's backstop — NO behaviour case anywhere names `channelStates`, so nothing
+ *     else in the suite sees that direction change.
  *   - An instant read through a computed key (`a[field]`) is invisible to the check
- *     that an inline comparator names no instant. Measured: zero sites in `src` reach
- *     any field by a computed key inside a comparator.
+ *     that an inline comparator names no instant. Measured: of the comparators in
+ *     `src`, one indexes a tuple by a literal (`a[0]`, in `witness.ts`) and ZERO reach
+ *     a field by a variable key.
  *   - SQL is not rostered here. Measured instead: `ORDER BY ... DESC` appears in `src`
  *     exactly once, inside {@link NEWEST_FIRST_SQL}; every other `ORDER BY` is
  *     ascending, and ascending cannot be the rule.
@@ -93,6 +101,11 @@ const THE_ONE_SITE = 'core/src/projections/newest-first.ts';
  * the two escapes that were measured on the trunk after the first version of this file
  * named them as possible.
  *
+ * The swapped-helper term reads a PATH and not a bare field. Written `b.at` only, it
+ * left `compare(b.row.switchedAt, a.row.switchedAt)` — the real shape of the one site
+ * that reads its instant through a nested row — at zero red, which is the second time
+ * this file's shape half was measured short of what the product actually writes.
+ *
  * This list is a BACKSTOP and not the guard: the set of ways to spell *descending* is
  * open, so any ban over it is a list of what somebody thought of. It is kept because it
  * is the only thing that reads the bodies of the OLDEST-first comparators, and because
@@ -110,7 +123,7 @@ const DESCENDING_BY_HAND = [
   /\.(?:at|[A-Za-z]+At)\b\s*<[^?;{}]{0,64}\?\s*1\s*:\s*-1/,
   /\.(?:at|[A-Za-z]+At)\b\s*>[^?;{}]{0,64}\?\s*-1\s*:\s*1/,
   /(?:Date\.parse|\.getTime\(\))[^;{}]{0,96}-\s*(?:Date\.parse|new Date|[A-Za-z_$][\w$]*\.getTime)/,
-  /\w*[Cc]ompare\w*\(\s*b\.(?:at|[A-Za-z]+At)\b\s*,\s*a\.(?:at|[A-Za-z]+At)\b/,
+  /\w*[Cc]ompare\w*\(\s*b(?:\.[\w$]+)*\.(?:at|[A-Za-z]+At)\b\s*,\s*a(?:\.[\w$]+)*\.(?:at|[A-Za-z]+At)\b/,
 ];
 
 /** A field this record would call an instant, wherever it is read. */
@@ -305,6 +318,40 @@ function bodyOf(code: string, name: string): string | null {
   return opens === -1 ? null : balancedFrom(code, opens);
 }
 
+/**
+ * Every `function` and `const` declared in this code, with its body.
+ *
+ * Used for one thing: to answer *does this name read an instant*, about a name an inline
+ * comparator CALLS. An arrow at the call site that reads no instant of its own but hands
+ * the pair to a helper that does is a descending ordering with nothing of the rule in
+ * sight — measured at zero red before this was written, and it is the shape the search
+ * merge itself was written in until this delivery named it.
+ */
+function declarationsIn(code: string): Map<string, string> {
+  const found = new Map<string, string>();
+  const declares = /\b(?:function\s+([A-Za-z_$][\w$]*)|const\s+([A-Za-z_$][\w$]*)\s*=)/g;
+  for (const match of code.matchAll(declares)) {
+    if (match[1] !== undefined) {
+      const body = bodyOf(code, match[1]);
+      if (body !== null) found.set(match[1], body);
+      continue;
+    }
+    // A `const`: everything to the end of the statement, brackets counted so an object
+    // or an arrow with a block body is taken whole.
+    let depth = 0;
+    const from = (match.index as number) + match[0].length;
+    let index = from;
+    for (; index < code.length; index++) {
+      const here = code[index] as string;
+      if ('([{'.includes(here)) depth++;
+      else if (')]}'.includes(here)) depth--;
+      else if (here === ';' && depth <= 0) break;
+    }
+    found.set(match[2] as string, code.slice(from, index));
+  }
+  return found;
+}
+
 /** Every non-test source file under `<package>/src`, relative to {@link PACKAGES}. */
 function sourcesUnder(directory: string): string[] {
   const found: string[] = [];
@@ -335,6 +382,21 @@ const CODE = new Map(
 
 /** Every ordering the product installs, from the directory rather than from a list. */
 const INSTALLED = SOURCES.flatMap((file) => orderingsIn(file, CODE.get(file) as string));
+
+/**
+ * Every name declared anywhere in `src` whose body reads an instant field.
+ *
+ * `newestFirst` is in it, deliberately: an ordering that means newest-first has to be a
+ * NAMED comparator the roster classifies, so reaching the rule from an arrow at the call
+ * site is red too. The answer to that red is a name, not an exception.
+ */
+const TOUCHES_AN_INSTANT = new Set(
+  SOURCES.flatMap((file) =>
+    [...declarationsIn(CODE.get(file) as string)]
+      .filter(([, body]) => AN_INSTANT_FIELD.test(body))
+      .map(([name]) => name),
+  ),
+);
 
 /** A `sort`/`toSorted` whose comparator is a plain name. */
 const NAMED = INSTALLED.filter(
@@ -405,10 +467,18 @@ describe('one rule for newest first', () => {
 
     // What makes the roster's three classes exhaustive: an ordering that could be the
     // rule is forced to carry a name, and a name is what the table above classifies.
+    // BOTH ways of reaching an instant are asked, because only asking the first left the
+    // escape at ZERO red: an arrow that reads no instant itself and hands the pair to a
+    // helper that does — which is how the cross-tree search merge was written.
     expect(inline.length).toBeGreaterThanOrEqual(9);
-    expect(
-      inline.filter((each) => AN_INSTANT_FIELD.test(each.argument)).map((each) => each.file),
-    ).toEqual([]);
+    const reaching = inline.filter(
+      (each) =>
+        AN_INSTANT_FIELD.test(each.argument) ||
+        [...each.argument.matchAll(/\b([A-Za-z_$][\w$]*)\s*\(/g)].some((call) =>
+          TOUCHES_AN_INSTANT.has(call[1] as string),
+        ),
+    );
+    expect(reaching.map((each) => `${each.file} :: ${each.argument}`)).toEqual([]);
   });
 
   it('turns nothing around that was put in order', () => {
