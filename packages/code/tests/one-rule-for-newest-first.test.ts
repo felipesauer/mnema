@@ -74,11 +74,12 @@
  *     make it ask, because the four break their ties on four different second keys
  *     (id, who, `from`/`to`/role, id/scope/project) and the instant clause alone is
  *     just a string comparison.
- *     Measured, so the class is not read as uniform: flipping `oldestFirst` in
- *     `exposure.ts` turns 4 red, 3 of them behaviour cases in `exposure.test.ts`.
- *     Flipping `earliestSwitchOffFirst` in `switches.ts` turns 1 red, and it is this
- *     file's backstop — NO behaviour case anywhere names `channelStates`, so nothing
- *     else in the suite sees that direction change.
+ *     Measured on all four, so the class is not read as uniform. Flipped to descending,
+ *     each turns red as: `exposure.ts` 4 (3 of them behaviour), `references.ts` 3 (2),
+ *     `transcripts.ts` 2 (1), `switches.ts` **1, and it is this file's backstop** — no
+ *     behaviour case anywhere names `channelStates`, so nothing else in the suite sees
+ *     that direction change. Three of the four are held by their own answers; the
+ *     fourth is held by a shape, and that is the weakest claim in this file.
  *   - An instant read through a computed key (`a[field]`) is invisible to the check
  *     that an inline comparator names no instant. Measured: of the comparators in
  *     `src`, one indexes a tuple by a literal (`a[0]`, in `witness.ts`) and ZERO reach

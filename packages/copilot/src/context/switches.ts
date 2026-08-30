@@ -148,11 +148,18 @@ function stateOf(sources: readonly ScopedCache[], channel: string): ChannelState
  * The switch-off that answers for a channel: earliest instant first, ties broken by who
  * — oldest first, which is the opposite of the record's `newestFirst` and is deliberate.
  *
- * A channel is off because SOMEONE turned it off, and the answer names the switch that
- * did it, so the FIRST one is the one that holds; a later tree turning the same channel
- * off again did not decide anything. Written as a named comparator rather than inline at
- * the call because `one-rule-for-newest-first.test.ts` requires every ordering over an
- * instant to carry a name it can classify.
+ * THE INTENT is that a channel is off because someone turned it off, and the answer
+ * names the switch that did it, so the FIRST one holds; a later tree turning the same
+ * channel off again decided nothing. That is intent and not an asserted property: NO
+ * test anywhere names {@link channelStates} or `channelIsOn`, and flipping this
+ * comparator to descending was measured turning exactly ONE case red — the structural
+ * scan in `one-rule-for-newest-first.test.ts`, which sees the shape and not the answer.
+ * The other three oldest-first orderings in this product each have behaviour cases that
+ * catch the same flip (3, 2 and 1 of them); this one has none.
+ *
+ * Written as a named comparator rather than inline at the call because
+ * `one-rule-for-newest-first.test.ts` requires every ordering over an instant to carry a
+ * name it can classify.
  */
 function earliestSwitchOffFirst(
   a: { readonly row: ChannelSwitchProjection },
