@@ -398,6 +398,21 @@ const TOUCHES_AN_INSTANT = new Set(
   ),
 );
 
+/**
+ * Whether this piece of code reaches an instant — by naming one of its fields, or by
+ * calling something that does.
+ *
+ * The second half is the one that was measured missing. Asked of an arrow at a call
+ * site it is what stops an unclassified ordering; asked of a comparator the roster
+ * calls {@link OTHER} it is what stops the roster's own classification going stale.
+ */
+function reachesAnInstant(code: string): boolean {
+  if (AN_INSTANT_FIELD.test(code)) return true;
+  return [...code.matchAll(/\b([A-Za-z_$][\w$]*)\s*\(/g)].some((call) =>
+    TOUCHES_AN_INSTANT.has(call[1] as string),
+  );
+}
+
 /** A `sort`/`toSorted` whose comparator is a plain name. */
 const NAMED = INSTALLED.filter(
   (each) => each.operation !== 'reverse' && each.operation !== 'toReversed',
@@ -471,13 +486,7 @@ describe('one rule for newest first', () => {
     // escape at ZERO red: an arrow that reads no instant itself and hands the pair to a
     // helper that does — which is how the cross-tree search merge was written.
     expect(inline.length).toBeGreaterThanOrEqual(9);
-    const reaching = inline.filter(
-      (each) =>
-        AN_INSTANT_FIELD.test(each.argument) ||
-        [...each.argument.matchAll(/\b([A-Za-z_$][\w$]*)\s*\(/g)].some((call) =>
-          TOUCHES_AN_INSTANT.has(call[1] as string),
-        ),
-    );
+    const reaching = inline.filter((each) => reachesAnInstant(each.argument));
     expect(reaching.map((each) => `${each.file} :: ${each.argument}`)).toEqual([]);
   });
 
@@ -514,6 +523,19 @@ describe('one rule for newest first', () => {
     // stops reaching the rule and goes red without the scan knowing what a descending
     // comparison looks like — which is the half the old ban could never have.
     expect(notAsking.map((each) => asKey(each.file, each.by))).toEqual([]);
+  });
+
+  it('holds the roster to its own classification — nothing else touches an instant', () => {
+    const lying = THE_ORDERINGS.filter((each) => each.means === OTHER).filter((each) => {
+      const body = bodyOf(CODE.get(each.file) as string, each.by);
+      return body === null || reachesAnInstant(body);
+    });
+
+    // Without this, a comparator the table calls `not an instant` could be rewritten
+    // into a descending instant comparison of any shape and stay green: its name never
+    // changes, so the roster agrees; it means nothing newest-first, so nothing above
+    // asks it for the rule. The classification has to be re-earned from the body.
+    expect(lying.map((each) => asKey(each.file, each.by))).toEqual([]);
   });
 
   it('leaves the oldest-first orderings alone — the control', () => {
