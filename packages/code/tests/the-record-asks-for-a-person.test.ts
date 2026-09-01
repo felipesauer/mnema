@@ -469,17 +469,23 @@ describe('the asking is a FACT, and the service is one too', () => {
     // that the value cannot be a caller's: the ids that reach a charge come out of the
     // derivations of what is in force, which hold what the product minted.
     //
-    // The link's own subject is PROSE and IS screened, which is what this proves. Handed
-    // something in a credential's shape, the record keeps the scrubbed form — so the
-    // credential never reaches the chain, and it can never match an in-force id either, so
-    // no charge can be built that cites it. Both halves, in one case.
+    // The link's own subject goes through the door, which is what this proves. It used to
+    // prove it by the SCRUBBED FORM being what the record kept — `<SECRET:aws-access-key>`
+    // as the subject — and that reading is gone: a subject is what a fact is ABOUT, so a
+    // replaced one makes the fact be about something else. The subject is classified a
+    // NAME and the write is REFUSED, which reaches the same conclusion by a shorter route
+    // and a stronger one: no spelling of the value is on the chain at all, so none can
+    // match an in-force id and no charge can be built that cites it. Both halves, in one
+    // case.
     const looksLikeAKey = 'AKIAIOSFODNN7EXAMPLE';
-    await did('link', looksLikeAKey, 'src/billing', '--rel', 'asks-for-a-person');
+    const refused = await mnema('link', looksLikeAKey, 'src/billing', '--rel', 'asks-for-a-person');
+    expect(refused.failed).toBe(true);
+    expect(refused.err.join('\n')).toContain('NAME_HOLDS_A_SECRET');
     const subjects = eventsIn('public')
       .filter((event) => event.kind === 'knowledge.linked')
       .map((event) => event.subject);
     expect(subjects).not.toContain(looksLikeAKey);
-    expect(subjects).toContain('<SECRET:aws-access-key>');
+    expect(subjects).not.toContain('<SECRET:aws-access-key>');
     // And nothing gates: no rule in force answers to either spelling, so no `channel.asked`
     // exists to carry one.
     expect(decision(connect(), 'src/billing/invoice.ts')).toEqual({});

@@ -1652,7 +1652,8 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         'an API token, a private key, a password inside a URL — across ALL trees of ' +
         'ALL projects in this workspace. Use it to answer "is a secret already in the ' +
         'record?", which writing can no longer cause but the past can: values in a ' +
-        'recognized format are replaced before anything is written today, and ' +
+        'recognized format never reach the chain today — replaced in a body, and ' +
+        'REFUSING the whole write in a name — and ' +
         'everything recorded before that was not. It reports WHERE and never WHAT: ' +
         'the id, the kind, the tree, the PROJECT and the instant, plus the CLASS — ' +
         'never the value, so reading it cannot leak what it found. A record in a ' +

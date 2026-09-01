@@ -3,12 +3,17 @@
  * governs <path>`, read back by `mnema rules <path>` and by the tool an agent calls.
  *
  * THE WRITE HALF ALREADY EXISTED, and proving that is half of what this file is for.
- * `rel` is an open literal the parser never closes and `target` is classified PROSE
- * by the content door, so a path travels through the existing verb with no field, no
- * version and no upcaster behind it. The cases below hold that as a property rather
- * than as a claim: a path with a credential inside it comes back with the door's
- * placeholder in it, exactly as any other prose does, and a path without one comes
- * back byte for byte.
+ * `rel` is an open literal the parser never closes and `target` is the CALLER'S by the
+ * content door's classification, so a path travels through the existing verb with no
+ * field, no version and no upcaster behind it. The cases below hold that as a property
+ * rather than as a claim: a path without a credential comes back byte for byte, and a
+ * path with one is REFUSED.
+ *
+ * That second half is a rewrite. It read "a path with a credential inside it comes
+ * back with the door's placeholder in it, exactly as any other prose does", which was
+ * true of a door that treated every field alike. `target` is a NAME — the reading is a
+ * lookup by exact string — so `src/<SECRET:aws-access-key>/deploy.ts` would be an
+ * address of no file, recorded permanently. The door refuses it instead.
  *
  * NOTHING HERE CHARGES. The reading refuses nothing, blocks nothing and grades
  * nothing, and that is asserted rather than said: every invocation exits clean, and
@@ -204,21 +209,29 @@ describe('a path survives the write half the product already had', () => {
     expect(reading.rules[0]?.rule).toBe(rule);
   });
 
-  it('screens a path exactly as it screens any other prose', async () => {
-    // The content door classifies `target` as PROSE — it holds whatever a caller sent
-    // — so a credential inside a path is replaced before anything is written, and the
-    // reply says so. That is not new behaviour and this is what proves the relation
-    // did not step around it.
+  it('refuses a path that reads as a credential, and records nothing', async () => {
+    // WHAT THIS CASE USED TO ASSERT, and what falsified it. It said the door "screens a
+    // path exactly as it screens any other prose": `target` was classified PROSE, so a
+    // credential inside a path was REPLACED and the reply said `replaced`. The premise
+    // under that was that screening a field leaves the field. It does not, for an
+    // address: `src/<SECRET:aws-access-key>/deploy.ts` is an address of no file, this
+    // relation is read back by exact string, and the record cannot be edited. So
+    // `target` is classified a NAME now and the whole write is refused — which is what
+    // this proves, together with the half that matters more: the chain is untouched.
     const rule = await decide('how the deploy works');
     const secret = 'src/AKIAIOSFODNN7EXAMPLE/deploy.ts';
     const linked = await addressAt(rule, secret);
-    expect(linked.failed, linked.err.join(' / ')).toBe(false);
-    expect(linked.out.join('\n')).toContain('replaced');
+    expect(linked.failed).toBe(true);
+    // It says the class and the field, and it quotes neither the value nor a piece of it.
+    const said = linked.err.join('\n');
+    expect(said).toContain('NAME_HOLDS_A_SECRET');
+    expect(said).toContain('aws-access-key');
+    expect(said).toContain('target');
+    expect(said).not.toContain('AKIAIOSFODNN7EXAMPLE');
 
+    // And nothing landed — not the value, and not a redacted stand-in for it either.
     const reading = await reported('src');
-    const recorded = reading.stale.concat(reading.rules)[0]?.recorded ?? '';
-    expect(recorded).not.toContain('AKIAIOSFODNN7EXAMPLE');
-    expect(recorded).toContain('src/');
+    expect(reading.stale.concat(reading.rules)).toEqual([]);
   });
 
   it('refuses nothing about the address: a path naming nothing is recorded', async () => {

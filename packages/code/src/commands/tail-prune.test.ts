@@ -166,7 +166,7 @@ describe('mnema tail prune', () => {
     expect(waiver.run).toBe('01980000-0000-7000-8000-000000000001');
   });
 
-  it('screens the reason like any other prose a caller writes', () => {
+  it('redacts the reason like any other body a caller writes', () => {
     const { repo, env } = setup();
     const publicRoot = rootOf(repo, env, 'public');
     const foreign = mergeAForeignTail(publicRoot, 'other-machine');

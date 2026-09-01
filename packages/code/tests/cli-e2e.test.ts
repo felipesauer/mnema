@@ -830,6 +830,66 @@ describe('mnema CLI — skill, end to end', () => {
     ]);
   });
 
+  it('refuses a skill NAME that reads as a credential, and records nothing', async () => {
+    // THE DELIVERY CASE, at the surface. `xoxb-` is not anybody's word — the rule that
+    // rescues a sayable name deliberately does not reach it, measured and pinned by
+    // name in `secrets.test.ts` — so this value IS caught. What changed is what happens
+    // next: it used to be recorded as `<SECRET:slack-token>`, a skill nobody can name,
+    // ask for or export, permanently. Now the person is told and nothing is written.
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(['skill', 'xoxb-123456789012-abcdefghijkl', '--body', 'never mind'], c.io);
+    expect(c.failed()).toBe(true);
+
+    // The refusal says the class (what to rotate) and the field (what to rename), and
+    // it quotes no part of the value — a terminal is scrollback and a CI log.
+    const said = c.err.join('\n');
+    expect(said).toContain('Refused (NAME_HOLDS_A_SECRET)');
+    expect(said).toContain('slack-token');
+    expect(said).toContain('"name"');
+    expect(said).not.toContain('xoxb-123456789012-abcdefghijkl');
+
+    // AND NOTHING WAS RECORDED. The message is not the assertion: a reply can be right
+    // about a write that happened anyway, so the chain is read back and the absence of
+    // the EVENT is what this asserts, not the absence of the value.
+    const root = resolveTrees(repo, {
+      xdgDataHome: join(sandbox, 'data'),
+      home: join(sandbox, 'home'),
+    }).projectPublic as string;
+    const events = orderedEvents({ root }, catalogUpcasters());
+    expect(events.filter((event) => event.kind === 'skill.created')).toEqual([]);
+    expect(JSON.stringify(events)).not.toContain('xoxb-');
+    expect(JSON.stringify(events)).not.toContain('<SECRET:');
+  });
+
+  it('still records a memory whose BODY holds a credential, with the value replaced', async () => {
+    // The other half, and the case that would fail if this delivery had turned into
+    // "refuse everything". A body with the credential replaced is still the fact: the
+    // sentence says where the key lives, which is what a later reader needs, and the
+    // key itself did not enter.
+    await run(['init'], capture().io);
+    const c = capture();
+    await run(
+      ['memory', `the key is sk-ant-api03-${'Xy9'.repeat(12)} and it lives in the vault`],
+      c.io,
+    );
+    expect(c.failed(), c.err.join('\n')).toBe(false);
+    // Not silent: the reply names the class and says to rotate.
+    expect(c.out.join('\n')).toContain('1 value(s) replaced before recording');
+    expect(c.out.join('\n')).toContain('<SECRET:anthropic-key>');
+
+    const root = resolveTrees(repo, {
+      xdgDataHome: join(sandbox, 'data'),
+      home: join(sandbox, 'home'),
+    }).projectPublic as string;
+    const captured = orderedEvents({ root }, catalogUpcasters()).filter(
+      (event) => event.kind === 'memory.captured',
+    );
+    expect(captured.map((event) => (event.payload as { content: string }).content)).toEqual([
+      'the key is <SECRET:anthropic-key> and it lives in the vault',
+    ]);
+  });
+
   it('proposes a skill, prints its name and id (no alias), and verifies', async () => {
     await run(['init'], capture().io);
     const c = capture();

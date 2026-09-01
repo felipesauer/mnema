@@ -112,7 +112,7 @@ verbatim. The surfaces never upgrade a verdict into a stronger claim.
 | **What a run cost** | Not proven at all, and `mnema usage` says so on its own last line. The record holds no cost — deliberately: the number lives in Claude Code's transcripts, which the host deletes on a retention it decides, so a cost recorded in the chain would be a signed figure whose only witness is gone in weeks. So the verb crosses the two readings when you ask, reports **tokens and a model id — never dollars, and never a price table**, and names the host session it read so you can check the same file. Which session belongs to which run is that command's **inference from two clocks**, not a fact the record states: one session in a run's window is attributed, more than one is named and *not* attributed, and none says `no transcript` rather than `0`. |
 | **An exported skill is what the record proves** | The BODY is, byte for byte — `mnema skill export` writes the recorded text verbatim, and nothing summarizes, reformats or improves it. The `description` beside it is **not** signed and is not in the record: the skills specification requires one, the chain has no field for it, so it is derived at export time by a stated rule (the first sentence of the body, cut to 1024 characters) or given with `--description`. **No model produces it.** Only an **adopted** pattern leaves — a proposal dropped into a host's skills directory is read as how the work is done here, and a deprecated one wears a live one's face — and there is no `--force`. The `metadata` carries the record id and the whole identity that adopted it, so a third party with the repository can check the line with `mnema show` and `mnema verify`. Nothing comes back the other way: **there is no import**, because a `SKILL.md` from elsewhere would enter as a body signed by us asserting a provenance we do not have. |
 | **An exported audit feed is the record** | It is a **projection** of it, and it is not the proof. `mnema export` emits one OCSF Entity Management event per line for a SIEM, and it carries the **envelope only** — when, which operation, who authorized it, which agent executed it, in which session, over which entity, signed by which key. **No payload of any kind leaves**: not a memory's text, not a decision's rationale, not an observation's body. The reason is the row below — the record holds credentials mnema does not recognize, and a feed carrying bodies would push them off this machine into somebody's search index, permanently. A line that is **altered in transit is not detectable by the SIEM**: the signature in the record covers mnema's own canonical bytes, not this projection, so nothing here is an attestation and OCSF's `record_integrity` profile is deliberately **not** used. What each line does carry is enough to find the fact back in the record — the subject, the original instant, and the tree — so the answer to *is this line real* is a question you ask `mnema show` and `mnema verify`, never the index. Nothing in mnema ever reads a feed back, and the verb **sends nothing anywhere**: it writes to standard output and whoever forwards it decides the rest. |
-| **Credentials stay out of the record** | Only the ones mnema *recognizes*, and only where the value does not read as a name you chose. A value in a known format — a cloud key, an API token, a PEM private key, a password inside a URL — is replaced with a typed placeholder before anything is written, and the reply names what was replaced. A proprietary token, a password written out in prose, a base64 blob: those are written verbatim, and nothing deletes a fact afterwards. It reduces the damage; it does not make the record safe to paste secrets into. |
+| **Credentials stay out of the record** | Only the ones mnema *recognizes*, and only where the value does not read as a name you chose. A value in a known format — a cloud key, an API token, a PEM private key, a password inside a URL — never reaches the chain, and which of two things happens depends on the field. In a **body** (a memory's text, a decision's reasoning, a note) it is replaced with a typed placeholder and the reply names what was replaced: the fact survives the redaction. In a **name** — a title, a skill's name, an agent, a run, either end of a link — the whole write is **refused** and nothing is recorded, because a name with a placeholder in it is not that thing redacted, it is a different thing under its id, permanently. A proprietary token, a password written out in prose, a base64 blob: those are written verbatim, and nothing deletes a fact afterwards. It reduces the damage; it does not make the record safe to paste secrets into. |
 
 The honest summary: **local cryptography covers alteration; an external witness
 covers omission, dates the record, and ties it to an identity.** This paragraph
@@ -518,6 +518,26 @@ What landed is the sentence with two placeholders in it — the scheme, the user
 the host and the database all survive, because the useful part of the note was
 never the secret. Nothing is replaced in silence: the reply says what went and
 tells you to rotate, which is the only remedy an append-only record leaves.
+
+That is what happens in a **body**. In a **name** the door refuses instead:
+
+```sh
+mnema skill "xoxb-123456789012-abcdefghijkl" --body "never mind"
+#> Refused (NAME_HOLDS_A_SECRET): "name" reads as slack-token, and it is a name the
+#>   record is addressed by — so replacing it would record a different entity, not a
+#>   redacted one. Nothing was recorded. Name it something else; if the value itself
+#>   matters, rotate it.
+```
+
+Replacing means different things in the two. A body with the secret taken out is
+still the fact — the decision still says what was decided. A name with the secret
+taken out is not that thing redacted, it is a **different thing wearing its id**:
+nothing can look it up, nobody can name it back, and the record is append-only, so
+it stays that way. The fields that work this way are the ones the record is
+addressed by — a task's or decision's title, a skill's name, an observation's topic
+and what it is about, either end of a link and the relation between them, the agent
+and the run stamped on every event of a session. The refusal names the class and the
+field and never the value, and it happens before anything is written.
 
 Three limits, all stated rather than hidden. **It catches only formats it
 recognizes** — a proprietary token or a password in prose goes in verbatim, so

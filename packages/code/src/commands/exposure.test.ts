@@ -56,10 +56,19 @@ describe('mnema exposure — the record scanned for credential shapes', () => {
     // This is the whole point of the door: what an agent writes today cannot land
     // as a recognized credential, so a report over a record written today is empty
     // even when every write TRIED to record one.
+    //
+    // It TRIES in both of the door's two ways, because the door has two answers now.
+    // A BODY is recorded redacted, so the memory and the proof below land and the
+    // report still finds nothing in them. A NAME is refused outright, so the title is
+    // the one write here that leaves no event at all — asserted, because a refusal and
+    // a redaction are indistinguishable in an empty report, and the case would pass on
+    // a door that had quietly stopped writing anything.
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
     runMemory({ cwd: repo, env }, { content: `remember ${SECRET}`, scope: 'public' });
-    const created = runTask({ cwd: repo, env }, { title: `open ${SECRET}`, scope: 'public' });
+    const refused = runTask({ cwd: repo, env }, { title: `open ${SECRET}`, scope: 'public' });
+    expect(refused.ok).toBe(false);
+    const created = runTask({ cwd: repo, env }, { title: 'open the deploy', scope: 'public' });
     if (!created.ok) throw new Error('setup: task refused');
     runTaskTransition(
       { cwd: repo, env },

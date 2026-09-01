@@ -36,8 +36,8 @@ import {
   type RegistrationFault,
 } from '@mnema/chain';
 import {
-  type ContentTooLargeErr,
   type ScreenedWrite,
+  type ScreenRefusal,
   screenContent,
   screened,
 } from '../content/screen.js';
@@ -360,7 +360,7 @@ export function enrollKey(
 export function revokeKey(
   ctx: WriteContext,
   input: { revokedFp: string; reason: string },
-): IdentityOk | ContentTooLargeErr | UnreadableEventErr {
+): IdentityOk | ScreenRefusal | UnreadableEventErr {
   const text = screenContent({ reason: input.reason });
   if (!text.ok) return text;
 

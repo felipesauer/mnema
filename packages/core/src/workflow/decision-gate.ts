@@ -102,7 +102,14 @@ export type DecisionGateErrorCode =
    * free-text field goes through (see `screenContent`), and the gate reports it
    * rather than translating it, so a refusal reads the same wherever it happened.
    */
-  | 'CONTENT_TOO_LARGE';
+  | 'CONTENT_TOO_LARGE'
+  /**
+   * The agent name read as a credential. From the same door and reported the same
+   * way, and it is a REFUSAL rather than a replacement because the name is what the
+   * record is addressed by: an agent recorded as `<SECRET:…>` did the work of nobody,
+   * on every event of the session. See `screenContent`.
+   */
+  | 'NAME_HOLDS_A_SECRET';
 
 /** The gate refused: a typed reason and a human-readable message. */
 export interface DecisionGateErr {

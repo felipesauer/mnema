@@ -165,6 +165,12 @@ export type RevokeMemberErrorCode =
   | 'CANNOT_VOUCH'
   /** The reason given was over the per-field size limit. */
   | 'CONTENT_TOO_LARGE'
+  /**
+   * A name field of the revocation read as a credential. It cannot be the reason —
+   * that is a body and is redacted — so today it is the pinned `run` or the agent
+   * name on the envelope, and it is a refusal for the reason those are names.
+   */
+  | 'NAME_HOLDS_A_SECRET'
   /** The reason came in empty, and no read would have accepted the fact. */
   | 'UNREADABLE_EVENT';
 

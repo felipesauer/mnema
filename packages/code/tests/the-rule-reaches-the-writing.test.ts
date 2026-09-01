@@ -368,7 +368,7 @@ describe('the line of a pushed rule is one line', () => {
 
   it('collapses an ADDRESS that carries a break, where one can reach the line', async () => {
     // The address is a caller's string too — `--rel governs` takes whatever was typed and
-    // the content door classifies a link target as prose — but the segment comparison
+    // the content door classifies a link target as the caller's — but the segment comparison
     // narrows how it can reach a line: an address holding a break matches only a path
     // holding the same break, which no file has. So the vector is an agent asking about
     // such a path, and it is reachable, which is why this case exists rather than a
