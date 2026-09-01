@@ -53,11 +53,39 @@ jobs:
         run: pnpm build
 
       # The JSON report is kept because it carries a duration per case, and durations off the
-      # runner are the one thing no workstation and no container can supply. It is what answered
+      # runner are the one thing no workstation and no container can supply. It ANSWERED, once,
       # the question `the-ceiling-belongs-to-the-case` names as beyond a source scan — whether
-      # any case is near the ceiling it shares — and it is what would answer it again.
+      # any case is near the ceiling it shares. It is no longer the only thing that does: `pnpm
+      # test` now also leaves the ledger the step below reads, which carries the ceiling each
+      # case ran under as well as its duration, and answers that question on every run instead
+      # of on the day somebody downloads this artifact and reads it by hand.
       - name: Test
-        run: pnpm test --reporter=default --reporter=json --outputFile.json=vitest-report.json
+        run: pnpm test --reporter=json --outputFile.json=vitest-report.json
+
+      # WHY IT WENT RED, AND ONLY WHEN IT DID. `pnpm test` leaves a ledger behind — a duration,
+      # the ceiling each case actually ran under, and what the machine was doing in that case's
+      # own window. This reads it and RE-RUNS every red on its own, so the page says which reds
+      # reproduce alone (the guard catching something) and which do not. Two deliveries had to
+      # discount reds by hand as machine contention before this existed.
+      #
+      # It cannot turn a red green: the step above has already failed by the time this runs, and
+      # this one is `continue-on-error` so that a broken ruler here never masks the red it was
+      # asked to explain.
+      - name: Why it went red
+        if: failure()
+        continue-on-error: true
+        run: pnpm why-it-went-red --summary "$GITHUB_STEP_SUMMARY" --json why-it-went-red-verdict.json
+
+      - name: Upload the verdict
+        if: failure()
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: why-it-went-red-node${{ matrix.node }}
+          path: |
+            why-it-went-red.json
+            why-it-went-red-verdict.json
+          if-no-files-found: warn
 
       - name: Upload test report
         if: always()

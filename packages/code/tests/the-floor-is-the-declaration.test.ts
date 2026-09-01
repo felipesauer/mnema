@@ -20,6 +20,12 @@
  * walks the entry's STATIC imports and states what they reach. The milliseconds
  * belong in a report.
  *
+ * THE HALF OF THAT WHICH HAS SINCE CHANGED, and it does not change this file's shape.
+ * "A flake somebody switches off" assumed a red nobody could tell from contention;
+ * `.github/why-it-went-red/` now re-runs a red ALONE and says which reds reproduce.
+ * A timed assertion here would still be the wrong instrument — it would measure this
+ * machine rather than the floor — but it would no longer be indistinguishable noise.
+ *
  * AND THE FLOOR GREW BACK ANYWAY, TWICE, WHICH IS WHY THE COUNTS BELOW ARE EXACT.
  * This paragraph used to end at *"the record of an earlier pass says the floor had
  * been brought to 90 ms, and nineteen PRs later it was 121, because nothing

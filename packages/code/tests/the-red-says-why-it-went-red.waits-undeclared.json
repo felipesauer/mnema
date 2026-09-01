@@ -1,0 +1,58 @@
+{
+  "wroteAt": "2026-09-01T18:30:14.522Z",
+  "root": "/home/runner/work/mnema/mnema",
+  "cores": 16,
+  "platform": "linux",
+  "recordingFloor": 500,
+  "sharedCeiling": 5000,
+  "atSharedCeiling": 1,
+  "collected": 2,
+  "ran": 2,
+  "ceilings": [
+    5000,
+    30000
+  ],
+  "unhandled": [],
+  "moduleErrors": [],
+  "loadSamples": 26,
+  "cases": [
+    {
+      "file": "packages/code/tests/zz-temporary-accusation-probe.test.ts",
+      "titles": [
+        "a case that waits",
+        "waits on something and never says so"
+      ],
+      "state": "passed",
+      "duration": 2818.329,
+      "startTime": 1788287408886,
+      "ceiling": 5000,
+      "retries": 0,
+      "errors": [],
+      "load": {
+        "samples": 11,
+        "runnableMost": 45,
+        "runnableMean": 38.8,
+        "lagMost": 6
+      }
+    },
+    {
+      "file": "packages/code/tests/zz-temporary-accusation-probe.test.ts",
+      "titles": [
+        "a case that waits",
+        "waits, and says so at its own it"
+      ],
+      "state": "passed",
+      "duration": 2801.089,
+      "startTime": 1788287411704,
+      "ceiling": 30000,
+      "retries": 0,
+      "errors": [],
+      "load": {
+        "samples": 11,
+        "runnableMost": 50,
+        "runnableMean": 40,
+        "lagMost": 4
+      }
+    }
+  ]
+}

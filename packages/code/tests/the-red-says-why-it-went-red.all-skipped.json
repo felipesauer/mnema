@@ -1,0 +1,73 @@
+{
+  "numTotalTestSuites": 9,
+  "numPassedTestSuites": 9,
+  "numFailedTestSuites": 0,
+  "numPendingTestSuites": 0,
+  "numTotalTests": 31,
+  "numPassedTests": 0,
+  "numFailedTests": 0,
+  "numPendingTests": 31,
+  "numTodoTests": 0,
+  "snapshot": {
+    "added": 0,
+    "failure": false,
+    "filesAdded": 0,
+    "filesRemoved": 0,
+    "filesRemovedList": [],
+    "filesUnmatched": 0,
+    "filesUpdated": 0,
+    "matched": 0,
+    "total": 0,
+    "unchecked": 0,
+    "uncheckedKeysByFile": [],
+    "unmatched": 0,
+    "updated": 0,
+    "didUpdate": false
+  },
+  "startTime": 1788287956099,
+  "success": true,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "the ledger reads the run, because the source cannot carry a duration"
+          ],
+          "fullName": "the ledger reads the run, because the source cannot carry a duration derives the shared ceiling from what the run actually ran under",
+          "status": "skipped",
+          "title": "derives the shared ceiling from what the run actually ran under",
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "the ledger reads the run, because the source cannot carry a duration"
+          ],
+          "fullName": "the ledger reads the run, because the source cannot carry a duration and the real captures carry a shared ceiling of five seconds, inherited by the many",
+          "status": "skipped",
+          "title": "and the real captures carry a shared ceiling of five seconds, inherited by the many",
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        },
+        {
+          "ancestorTitles": [
+            "the ledger reads the run, because the source cannot carry a duration"
+          ],
+          "fullName": "the ledger reads the run, because the source cannot carry a duration names the titles a case sits under, outermost first",
+          "status": "skipped",
+          "title": "names the titles a case sits under, outermost first",
+          "failureMessages": [],
+          "meta": {},
+          "tags": []
+        }
+      ],
+      "startTime": 1788287956099,
+      "endTime": 1788287956099,
+      "status": "passed",
+      "message": "",
+      "name": "/home/runner/work/mnema/mnema/packages/code/tests/the-red-says-why-it-went-red.test.ts"
+    }
+  ]
+}
