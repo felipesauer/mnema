@@ -439,7 +439,7 @@ describe('the record arrives unasked', () => {
     // land here rather than in a session.
     const declared = buildProgram({ out: () => {}, err: () => {}, fail: () => {} }).verbs;
     for (const line of reached) {
-      const verb = declared.find((one) => one.command.name() === line.split(' ')[0]);
+      const verb = declared.find((one) => one.act.name() === line.split(' ')[0]);
       expect(verb?.effect, line).toBe('reads');
     }
   });
@@ -467,7 +467,7 @@ describe('the record arrives unasked', () => {
     expect(server.command).toBe('mnema');
     expect(server.args).toEqual(['mcp']);
     const declared = buildProgram({ out: () => {}, err: () => {}, fail: () => {} }).verbs;
-    const commands: readonly Command[] = declared.map((one) => one.command);
+    const commands: readonly Command[] = declared.map((one) => one.act);
     expect(commands.map((one) => one.name())).toContain('mcp');
 
     const hooks = readJson<HooksFile>(HOOKS);

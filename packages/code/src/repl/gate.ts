@@ -78,8 +78,8 @@ export type Disposition =
  */
 export function verbsOffered(verbs: readonly Declared[], self: string): readonly string[] {
   return verbs
-    .filter((verb) => verb.effect === 'reads' && verb.command.name() !== self)
-    .map((verb) => verb.command.name());
+    .filter((verb) => verb.effect === 'reads' && verb.act.name() !== self)
+    .map((verb) => verb.act.name());
 }
 
 /**
@@ -115,7 +115,7 @@ export function dispositionOf(line: string, verbs: readonly Declared[], self: st
   // The DECISION was made above and it is one membership test; what follows only
   // chooses which true sentence to say, so a wording that fell through could never
   // widen what the session runs.
-  const declared = verbs.find((verb) => verb.command.name() === first);
+  const declared = verbs.find((verb) => verb.act.name() === first);
   if (declared?.effect === 'mutates') {
     return {
       does: 'refuse',

@@ -150,7 +150,7 @@ export function theDoors(verbs: readonly Declared[], inProject: boolean): readon
  * an empty column is exactly what a rename would leave behind.
  */
 function whatItDeclares(verbs: readonly Declared[], verb: string): string {
-  return verbs.find((declared) => declared.command.name() === verb)?.command.description() ?? '';
+  return verbs.find((declared) => declared.act.name() === verb)?.act.description() ?? '';
 }
 
 /**

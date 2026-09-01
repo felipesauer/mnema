@@ -64,7 +64,7 @@ const DECLARED = declared();
 
 /** The verbs on one side of the classification, in registration order. */
 function verbsThat(effect: Declared['effect']): string[] {
-  return DECLARED.filter((verb) => verb.effect === effect).map((verb) => verb.command.name());
+  return DECLARED.filter((verb) => verb.effect === effect).map((verb) => verb.act.name());
 }
 
 // ---------------------------------------------------------------------------

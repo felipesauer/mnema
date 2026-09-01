@@ -51,6 +51,7 @@ import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
+import { buildMcpServer } from '../src/mcp/server.js';
 import { openSession, type Session } from '../src/mcp/session.js';
 import { runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
 import {
@@ -591,17 +592,19 @@ describe('the door is the command line’s alone', () => {
     // governs its own work through the door built for agents would be an agent that opts
     // out of the record.
     //
-    // Read off the SERVER'S SOURCE, the way its sibling reads the tool a hook names: a tool
-    // is registered by a literal there, so the registrations are the enumeration and no
-    // client has to be connected to count them.
-    const source = readFileSync(join(REPO, 'packages', 'code', 'src', 'mcp', 'server.ts'), 'utf-8');
-    const registered = [...source.matchAll(/server\.registerTool\(\n {4}'([a-z_]+)'/g)].map(
-      (found) => found[1] as string,
-    );
-    // Non-vacuity first: a regex that stopped matching would make the absence below free.
+    // Read off the SERVER ITSELF, which now answers what it registered: every tool is
+    // hung with a declaration of what it can do to the record, and those declarations
+    // travel back (`mcp/server.ts`). THIS USED TO MATCH THE SOURCE TEXT for
+    // `server.registerTool(\n    '<name>'`, and the registration shape changed under it —
+    // caught only because the count below is asserted, which is the whole argument for
+    // asserting it. A pattern over somebody's formatting is not an enumeration.
+    const { tools } = buildMcpServer({ env, log: () => undefined });
+    const registered = tools.map((tool) => tool.act);
+    // Non-vacuity first: a list that came back empty would make the absence below free.
     expect(registered.length).toBeGreaterThan(20);
     expect(registered).toContain('rules_before_an_edit');
     expect(registered.filter((name) => /switch/.test(name))).toEqual([]);
+    const source = readFileSync(join(REPO, 'packages', 'code', 'src', 'mcp', 'server.ts'), 'utf-8');
     // And the writing surface of the core does export the operation, so the absence above is
     // a door this product declined to open rather than a capability it does not have.
     expect(source).not.toContain('switchChannel');

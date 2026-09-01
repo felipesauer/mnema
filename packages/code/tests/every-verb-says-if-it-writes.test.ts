@@ -62,13 +62,18 @@
  *     is measured in `a-terminal-of-its-own.test.ts` instead, where the session is driven
  *     over a real record and what reached the chain is counted the same way: the
  *     measurement moved, it was not dropped.
- *   - The MCP tools are a second surface with the same rule and are NOT classified here.
- *     There are twenty-four of them (`mcp/server.ts`), they are reached only through a
- *     server this surface's `mcp` verb starts, and that verb is already declared a write —
- *     so a caller reading these declarations refuses the whole server in one, which is
- *     what a read-only session needs. Said out loud because the discriminant finds them
- *     and this file leaves them alone: they are the only other place in the product where
- *     a caller invokes something that may write.
+ *   - The MCP tools are a second surface with the same rule and are not classified here —
+ *     they are classified THERE now, by the same two functions and the same type
+ *     (`record-effect.ts`), and held to it by `every-tool-says-if-it-writes.test.ts`,
+ *     which exercises each one and counts what reached the chain exactly as this file
+ *     does. THIS SENTENCE USED TO SAY THERE WERE TWENTY-FOUR OF THEM AND THAT THEY
+ *     DECLARED NOTHING. Both halves were wrong: the server registers TWENTY-FIVE, and the
+ *     twenty-four came from the hand-kept list in that file's own doc-comment, which had
+ *     been one tool short since `rules_before_an_edit` was added. A count read off prose
+ *     is not a count. They are still reached only through a server this surface's `mcp`
+ *     verb starts, and that verb is declared a write, so a caller reading THESE
+ *     declarations refuses the whole server in one — which is what a read-only session
+ *     needs, and why this file's pass never depended on the tools being classified.
  *   - The declaration is per TOP-LEVEL verb. No group mixes a read with a write today,
  *     and the exercise runs the invocation the table names, not every subcommand — a read
  *     group whose subcommand wrote would need a row of its own here.
@@ -116,12 +121,12 @@ const DECLARED = declared();
 
 /** What each verb said, by the name commander routes it under. */
 const EFFECT_BY_VERB = new Map<string, RecordEffect>(
-  DECLARED.map((verb) => [verb.command.name(), verb.effect]),
+  DECLARED.map((verb) => [verb.act.name(), verb.effect]),
 );
 
 /** The verbs on one side of the classification, in the order they were registered. */
 function verbsThat(effect: RecordEffect): string[] {
-  return DECLARED.filter((verb) => verb.effect === effect).map((verb) => verb.command.name());
+  return DECLARED.filter((verb) => verb.effect === effect).map((verb) => verb.act.name());
 }
 
 // ---------------------------------------------------------------------------
@@ -442,7 +447,7 @@ function mergeAForeignTail(into: string, machine: string): string {
  * none.
  */
 function offersJson(verb: string): boolean {
-  const command = DECLARED.find((one) => one.command.name() === verb)?.command;
+  const command = DECLARED.find((one) => one.act.name() === verb)?.act;
   return command?.options.some((option) => option.long === '--json') === true;
 }
 

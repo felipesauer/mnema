@@ -12,7 +12,7 @@
 
 import { Command } from 'commander';
 import { describe, expect, it } from 'vitest';
-import type { Declared } from '../wiring/verb.js';
+import { type Declared, readsTheRecord } from '../wiring/verb.js';
 import { asTheSession } from './asking.js';
 
 /** What this session knows itself as — shaped like the value the panel is drawn with. */
@@ -20,7 +20,7 @@ const ME = 'mnid:7d30343b';
 
 /** A read of this file's own, hung with whatever a case needs to declare. */
 function declares(name: string, hang: (command: Command) => Command = (one) => one): Declared {
-  return { command: hang(new Command(name).description(`what ${name} does`)), effect: 'reads' };
+  return readsTheRecord(hang(new Command(name).description(`what ${name} does`)));
 }
 
 /** The verbs a case is about: one that requires the asker's identity, and one that does not. */
