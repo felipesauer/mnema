@@ -1,0 +1,269 @@
+{
+  "wroteAt": "2026-09-01T18:26:46.207Z",
+  "root": "/home/runner/work/mnema/mnema",
+  "cores": 16,
+  "platform": "linux",
+  "recordingFloor": 500,
+  "sharedCeiling": 5000,
+  "atSharedCeiling": 3989,
+  "collected": 4190,
+  "ran": 4190,
+  "ceilings": [
+    5000,
+    30000,
+    60000,
+    120000,
+    180000,
+    240000,
+    300000,
+    400000
+  ],
+  "unhandled": [],
+  "moduleErrors": [],
+  "loadSamples": 441,
+  "cases": [
+    {
+      "file": "packages/code/tests/the-opening-fits-the-screen.test.ts",
+      "titles": [
+        "the drawing gives way so the page fits, rather than the page being cut",
+        "gives no drawing up above the floor, and the floor rung is answered whatever the height"
+      ],
+      "state": "passed",
+      "duration": 19459.465,
+      "startTime": 1788287129287,
+      "ceiling": 300000,
+      "retries": 0,
+      "errors": [],
+      "load": {
+        "samples": 73,
+        "runnableMost": 71,
+        "runnableMean": 57.8,
+        "lagMost": 539
+      }
+    },
+    {
+      "file": "packages/code/tests/the-opening-fits-the-screen.test.ts",
+      "titles": [
+        "the drawing gives way so the page fits, rather than the page being cut",
+        "never draws what the width alone allows, and the opening is whole at every height"
+      ],
+      "state": "passed",
+      "duration": 16694.356,
+      "startTime": 1788287112587,
+      "ceiling": 180000,
+      "retries": 0,
+      "errors": [],
+      "load": {
+        "samples": 64,
+        "runnableMost": 80,
+        "runnableMean": 61.1,
+        "lagMost": 596
+      }
+    },
+    {
+      "file": "packages/code/tests/a-palette-for-the-words.test.ts",
+      "titles": [
+        "opening the palette never makes the frame outgrow the screen",
+        "ends on the last row with the list open, at 80 columns"
+      ],
+      "state": "passed",
+      "duration": 13784.582,
+      "startTime": 1788287172317,
+      "ceiling": 300000,
+      "retries": 0,
+      "errors": [],
+      "load": {
+        "samples": 53,
+        "runnableMost": 85,
+        "runnableMean": 60.6,
+        "lagMost": 65
+      }
+    },
+    {
+      "file": "packages/chain/src/chain/bitcoin.test.ts",
+      "titles": [
+        "a header that met its own claim and nothing more",
+        "is refused at every difficulty a millisecond can reach, not merely at the easiest"
+      ],
+      "state": "passed",
+      "duration": 4441.385,
+      "startTime": 1788287160268,
+      "ceiling": 5000,
+      "retries": 0,
+      "errors": [],
+      "load": {
+        "samples": 17,
+        "runnableMost": 67,
+        "runnableMean": 58,
+        "lagMost": 17
+      }
+    },
+    {
+      "file": "packages/code/tests/the-record-arrives-unasked.test.ts",
+      "titles": [
+        "the record arrives unasked",
+        "carries the declaration of the channel it says it is"
+      ],
+      "state": "passed",
+      "duration": 4065.544,
+      "startTime": 1788287163605,
+      "ceiling": 5000,
+      "retries": 0,
+      "errors": [],
+      "load": {
+        "samples": 16,
+        "runnableMost": 61,
+        "runnableMean": 55.3,
+        "lagMost": 24
+      }
+    },
+    {
+      "file": "packages/code/tests/the-name-in-full-blocks.test.ts",
+      "titles": [
+        "the ladder is total: every window gets a drawing, and never a richer one than a bigger window",
+        "answers every size of a grid, and never richer on a smaller window it draws on"
+      ],
+      "state": "passed",
+      "duration": 3878.536,
+      "startTime": 1788287167113,
+      "ceiling": 5000,
+      "retries": 0,
+      "errors": [],
+      "load": {
+        "samples": 16,
+        "runnableMost": 72,
+        "runnableMean": 58.2,
+        "lagMost": 8
+      }
+    },
+    {
+      "file": "packages/code/tests/the-opening-fits-the-height.test.ts",
+      "titles": [
+        "the arrangement is chosen by the height as well as the width",
+        "never spends more than a third of the screen on the region that never moves"
+      ],
+      "state": "passed",
+      "duration": 3755.869,
+      "startTime": 1788287136792,
+      "ceiling": 5000,
+      "retries": 0,
+      "errors": [],
+      "load": {
+        "samples": 15,
+        "runnableMost": 71,
+        "runnableMean": 59.3,
+        "lagMost": 103
+      }
+    },
+    {
+      "file": "packages/code/tests/the-record-arrives-unasked.test.ts",
+      "titles": [
+        "the record arrives unasked",
+        "says nothing at all when the document channel is switched OFF"
+      ],
+      "state": "failed",
+      "duration": 3326.495,
+      "startTime": 1788287156629,
+      "ceiling": 5000,
+      "retries": 0,
+      "errors": [
+        {
+          "message": "expected '{\"hookSpecificOutput\":{\"hookEventName…' to be '' // Object.is equality",
+          "shape": "it threw"
+        }
+      ],
+      "load": {
+        "samples": 13,
+        "runnableMost": 59,
+        "runnableMean": 54.8,
+        "lagMost": 9
+      }
+    },
+    {
+      "file": "packages/code/tests/the-opening-fits-the-height.test.ts",
+      "titles": [
+        "the arrangement is chosen by the height as well as the width",
+        "walks the same three forms down the screen, and the last rung fits every size"
+      ],
+      "state": "passed",
+      "duration": 2769.996,
+      "startTime": 1788287134021,
+      "ceiling": 5000,
+      "retries": 0,
+      "errors": [],
+      "load": {
+        "samples": 11,
+        "runnableMost": 71,
+        "runnableMean": 60.1,
+        "lagMost": 6
+      }
+    },
+    {
+      "file": "packages/code/tests/one-source-for-a-vocabulary.test.ts",
+      "titles": [
+        "no declaration writes a vocabulary out by hand",
+        "finds none in either surface"
+      ],
+      "state": "passed",
+      "duration": 2547.833,
+      "startTime": 1788287176344,
+      "ceiling": 5000,
+      "retries": 0,
+      "errors": [],
+      "load": {
+        "samples": 10,
+        "runnableMost": 68,
+        "runnableMean": 61.2,
+        "lagMost": 28
+      }
+    },
+    {
+      "file": "packages/code/tests/the-switch-is-a-fact.test.ts",
+      "titles": [
+        "a channel that is switched off stops",
+        "goes quiet when brief-document is switched off, and speaks again when it is on"
+      ],
+      "state": "failed",
+      "duration": 340.923,
+      "startTime": 1788287149893,
+      "ceiling": 5000,
+      "retries": 0,
+      "errors": [
+        {
+          "message": "brief-document still speaks while switched off: expected true to be false // Object.is equality",
+          "shape": "it threw"
+        }
+      ],
+      "load": {
+        "samples": 1,
+        "runnableMost": 56,
+        "runnableMean": 56,
+        "lagMost": 0
+      }
+    },
+    {
+      "file": "packages/code/tests/the-switch-is-a-fact.test.ts",
+      "titles": [
+        "a channel that is switched off stops",
+        "refuses `mnema brief` on stderr with a non-zero exit, naming the switch"
+      ],
+      "state": "failed",
+      "duration": 149.335,
+      "startTime": 1788287151029,
+      "ceiling": 5000,
+      "retries": 0,
+      "errors": [
+        {
+          "message": "expected false to be true // Object.is equality",
+          "shape": "it threw"
+        }
+      ],
+      "load": {
+        "samples": 1,
+        "runnableMost": 58,
+        "runnableMean": 58,
+        "lagMost": 1
+      }
+    }
+  ]
+}
