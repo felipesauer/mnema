@@ -22,10 +22,19 @@
  * All three spell the same thing, so the scan below is one needle over everything the
  * workspace ships.
  *
- * WHAT IT DOES NOT COVER, said out loud rather than left to be discovered: whether a case
- * that waits actually HAS its own ceiling. That question needs a DURATION, and a scan over
- * source has none — it is answered by running the suite and reading the durations, which is
- * not something a guard can do without becoming the thing it measures.
+ * WHAT THIS SCAN DOES NOT COVER, and where that went. The sentence here said the second
+ * question — whether a case that waits actually HAS a ceiling of its own — "needs a DURATION,
+ * and a scan over source has none", and then that it was "not something a guard can do without
+ * becoming the thing it measures". THE FIRST HALF STANDS AND THE SECOND WAS FALSIFIED, by
+ * building the thing it said could not be built: `.github/why-it-went-red/` reads the durations
+ * off a run that already happened rather than measuring inside one. A reporter writes each
+ * case's duration and the ceiling it actually ran under — vitest resolves `options.timeout` per
+ * case, so the shared ceiling and a declared one arrive already told apart — and a reader
+ * afterwards re-times, ALONE, every case that spent more of the shared ceiling than its budget.
+ * The guard never becomes the thing it measures because it does not run inside the run.
+ *
+ * SO THIS SCAN IS STILL THE WHOLE OF THE BAN and none of the second question. It stays a scan:
+ * the three shapes that lift the ceiling for everybody are text, and text is what it reads.
  *
  * AND THE DURATIONS WERE READ, on 21 Aug 2026, because CI reaching this trunk made them
  * available for the first time. Of 3484 cases, 3286 wait under the shared five seconds — read

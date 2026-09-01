@@ -28,9 +28,10 @@
     "lint": "biome check --error-on-warnings packages/ plugin/ .claude-plugin/",
     "lint:fix": "biome check --write packages/ plugin/ .claude-plugin/",
     "format": "biome format --write packages/",
-    "test": "vitest run",
+    "test": "vitest run --reporter=default --reporter=./.github/why-it-went-red/ledger.mjs",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage --reporter=default --reporter=./.github/why-it-went-red/ledger.mjs",
+    "why-it-went-red": "node .github/why-it-went-red/verdict.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.4",

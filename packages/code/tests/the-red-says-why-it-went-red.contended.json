@@ -1,0 +1,226 @@
+{
+  "wroteAt": "2026-09-01T18:20:11.700Z",
+  "root": "/home/runner/work/mnema/mnema",
+  "cores": 16,
+  "platform": "linux",
+  "recordingFloor": 500,
+  "sharedCeiling": 5000,
+  "atSharedCeiling": 3989,
+  "collected": 4190,
+  "ran": 4190,
+  "ceilings": [
+    5000,
+    30000,
+    60000,
+    120000,
+    180000,
+    240000,
+    300000,
+    400000
+  ],
+  "unhandled": [],
+  "moduleErrors": [],
+  "loadSamples": 412,
+  "cases": [
+    {
+      "file": "packages/code/tests/the-opening-fits-the-screen.test.ts",
+      "titles": [
+        "the drawing gives way so the page fits, rather than the page being cut",
+        "gives no drawing up above the floor, and the floor rung is answered whatever the height"
+      ],
+      "state": "passed",
+      "duration": 19933.146,
+      "startTime": 1788286738003,
+      "ceiling": 300000,
+      "retries": 0,
+      "errors": [],
+      "load": {
+        "samples": 74,
+        "runnableMost": 78,
+        "runnableMean": 60,
+        "lagMost": 408
+      }
+    },
+    {
+      "file": "packages/code/tests/the-opening-fits-the-screen.test.ts",
+      "titles": [
+        "the drawing gives way so the page fits, rather than the page being cut",
+        "never draws what the width alone allows, and the opening is whole at every height"
+      ],
+      "state": "passed",
+      "duration": 16026.453,
+      "startTime": 1788286721976,
+      "ceiling": 180000,
+      "retries": 0,
+      "errors": [],
+      "load": {
+        "samples": 63,
+        "runnableMost": 77,
+        "runnableMean": 60.7,
+        "lagMost": 136
+      }
+    },
+    {
+      "file": "packages/code/tests/the-screen-is-ours.test.ts",
+      "titles": [
+        "the middle region scrolls, and the two fixed regions do not",
+        "does not jump a reader who has walked back when something new lands"
+      ],
+      "state": "passed",
+      "duration": 11089.013,
+      "startTime": 1788286754973,
+      "ceiling": 240000,
+      "retries": 0,
+      "errors": [],
+      "load": {
+        "samples": 44,
+        "runnableMost": 73,
+        "runnableMean": 60.9,
+        "lagMost": 35
+      }
+    },
+    {
+      "file": "packages/code/tests/the-record-arrives-unasked.test.ts",
+      "titles": [
+        "the record arrives unasked",
+        "says nothing at all when the document channel is switched OFF"
+      ],
+      "state": "failed",
+      "duration": 5078.46,
+      "startTime": 1788286720684,
+      "ceiling": 5000,
+      "retries": 0,
+      "errors": [
+        {
+          "message": "Test timed out in 5000ms.",
+          "shape": "the ceiling ended it"
+        }
+      ],
+      "load": {
+        "samples": 20,
+        "runnableMost": 80,
+        "runnableMean": 60.5,
+        "lagMost": 16
+      }
+    },
+    {
+      "file": "packages/code/tests/the-record-arrives-unasked.test.ts",
+      "titles": [
+        "the record arrives unasked",
+        "carries the declaration of the channel it says it is"
+      ],
+      "state": "failed",
+      "duration": 5071.695,
+      "startTime": 1788286730062,
+      "ceiling": 5000,
+      "retries": 0,
+      "errors": [
+        {
+          "message": "Test timed out in 5000ms.",
+          "shape": "the ceiling ended it"
+        }
+      ],
+      "load": {
+        "samples": 21,
+        "runnableMost": 77,
+        "runnableMean": 62.2,
+        "lagMost": 5
+      }
+    },
+    {
+      "file": "packages/chain/src/chain/bitcoin.test.ts",
+      "titles": [
+        "a header that met its own claim and nothing more",
+        "is refused at every difficulty a millisecond can reach, not merely at the easiest"
+      ],
+      "state": "passed",
+      "duration": 4628.634,
+      "startTime": 1788286770885,
+      "ceiling": 5000,
+      "retries": 0,
+      "errors": [],
+      "load": {
+        "samples": 18,
+        "runnableMost": 71,
+        "runnableMean": 57.7,
+        "lagMost": 51
+      }
+    },
+    {
+      "file": "packages/code/tests/the-name-in-full-blocks.test.ts",
+      "titles": [
+        "the ladder is total: every window gets a drawing, and never a richer one than a bigger window",
+        "answers every size of a grid, and never richer on a smaller window it draws on"
+      ],
+      "state": "passed",
+      "duration": 4351.064,
+      "startTime": 1788286763534,
+      "ceiling": 5000,
+      "retries": 0,
+      "errors": [],
+      "load": {
+        "samples": 17,
+        "runnableMost": 83,
+        "runnableMean": 62.4,
+        "lagMost": 26
+      }
+    },
+    {
+      "file": "packages/code/tests/the-record-arrives-unasked.test.ts",
+      "titles": [
+        "the record arrives unasked",
+        "hands over exactly what the verb prints"
+      ],
+      "state": "passed",
+      "duration": 3009.075,
+      "startTime": 1788286725763,
+      "ceiling": 5000,
+      "retries": 0,
+      "errors": [],
+      "load": {
+        "samples": 12,
+        "runnableMost": 75,
+        "runnableMean": 60.3,
+        "lagMost": 4
+      }
+    },
+    {
+      "file": "packages/code/tests/one-source-for-a-vocabulary.test.ts",
+      "titles": [
+        "no declaration writes a vocabulary out by hand",
+        "finds none in either surface"
+      ],
+      "state": "passed",
+      "duration": 2817.076,
+      "startTime": 1788286747035,
+      "ceiling": 5000,
+      "retries": 0,
+      "errors": [],
+      "load": {
+        "samples": 10,
+        "runnableMost": 66,
+        "runnableMean": 58.1,
+        "lagMost": 366
+      }
+    },
+    {
+      "file": "packages/copilot/tests/the-bench-leaves-nothing-behind.test.ts",
+      "titles": [
+        "the bench leaves nothing behind",
+        "makes a directory under the machine’s temp, and this case can name it"
+      ],
+      "state": "passed",
+      "duration": 2691.688,
+      "startTime": 1788286770401,
+      "ceiling": 5000,
+      "retries": 0,
+      "errors": [],
+      "load": {
+        "samples": 11,
+        "runnableMost": 66,
+        "runnableMean": 56.5,
+        "lagMost": 16
+      }
+    }
+  ]
+}

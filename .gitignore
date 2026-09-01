@@ -2,6 +2,10 @@ node_modules/
 dist/
 *.tsbuildinfo
 coverage/
+
+# What a run of the suite leaves for `.github/why-it-went-red/` to read. An artifact of a
+# run, like coverage/ above: rewritten by every run and never reviewed.
+why-it-went-red.json
 *.log
 *.tgz
 .DS_Store
