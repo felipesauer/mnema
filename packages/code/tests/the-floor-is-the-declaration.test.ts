@@ -373,6 +373,16 @@ const FLOOR_MODULES: readonly string[] = [
   'presentation/styled.ts',
   'presentation/verdict.ts',
   'presentation/width.ts',
+  // THE SECOND MODULE ON THE FLOOR THAT IS A RULE RATHER THAN A DECLARATION, and it is
+  // here for the reason `record-framing.ts` below it is. Every verb SAYS what it can do
+  // to the record as it registers, which is eager by construction — commander has the
+  // declaration before it routes a word — and what the two words MEAN is now one module
+  // above both surfaces, so the MCP's tools cannot come to classify by a second reading
+  // (`record-effect.ts`). Spelling the effect in the wiring instead would be exactly the
+  // duplication that module exists to have ended. What it costs is ONE file with NO
+  // imports at all: a closed type of two members and two one-line constructors, reaching
+  // no adapter, no record and no package — which the walk above is what proves.
+  'record-effect.ts',
   // THE ONE MODULE HERE THAT IS NOT A DECLARATION AND NOT A SENTENCE, and it is on the
   // floor by a decision rather than by the rule. `mnema switch` declares its channel
   // argument out of the closed set of channels this product pushes, and that set lives

@@ -33,6 +33,7 @@ import type { DiscoveryEnv } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
 import { editRulesNotice, ourWordsIn } from '../src/edit-rules-push.js';
+import { buildMcpServer } from '../src/mcp/server.js';
 import { openSession, type Session } from '../src/mcp/session.js';
 import { runGoverningRulesTool, runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
 import { tellsWhatToDo } from '../src/record-framing.js';
@@ -476,11 +477,14 @@ describe('the plugin names the server the host will answer to', () => {
       .filter((hook) => hook.type === 'mcp_tool')
       .map((hook) => hook.tool);
     expect(tools).toEqual(['rules_before_an_edit']);
-    const registered = readFileSync(
-      join(REPO, 'packages', 'code', 'src', 'mcp', 'server.ts'),
-      'utf-8',
-    );
-    for (const tool of tools) expect(registered).toContain(`server.registerTool(\n    '${tool}'`);
+    // Asked of the SERVER, which answers what it registered — every tool travels back
+    // with what calling it can do to the record (`mcp/server.ts`). This used to look for
+    // `server.registerTool(\n    '<name>'` in the source text, which is a check on
+    // somebody's formatting: the registration shape changed and this went red for a
+    // reason that had nothing to do with the hook.
+    const registered = buildMcpServer({ env, log: () => undefined }).tools.map((one) => one.act);
+    expect(registered.length).toBeGreaterThan(20);
+    for (const tool of tools) expect(registered).toContain(tool);
   });
   describe('the words this channel writes say what the text is, never what to do', () => {
     // A NOTICE IS TWO VOICES, and only one of them can be held to the tie. The framing,

@@ -7,21 +7,30 @@
  * once the handshake has run (so `clientInfo` and the client's roots are
  * available), and closes that session's run when the connection ends. There is
  * no domain logic here and none in the tools — the logic is the core's gate and
- * operations, reached through the session and the adapters. Each registered tool
- * (capture_memory, record_observation, record_handoff, link_knowledge,
- * create_task, task_transition, record_decision, decision_transition, create_skill,
- * skill_transition, bootstrap, focus, resume, next_actions, guard, skills,
- * search, read_record, governing_rules, and the
- * five `audit_*` intelligence reads — audit_timeline, audit_refs,
- * audit_accountability, audit_antipatterns, audit_exposure) delegates to a pure
- * adapter in {@link ./tools.js}. The
- * reads (focus/resume/next_actions/guard/search/read_record, like bootstrap) are READ-ONLY — they
- * derive from the session's projection cache; they open no writer. `guard` is a
- * dry-run of the gate: it simulates a move and returns the verdict, having
- * written nothing. `skills` is the one read that also writes: it serves a pattern's
- * body AND records the consultation, a fact nothing else could
- * recover afterwards.
- * The `audit_*` reads are read-only too, and they are the AUDITOR's view: every
+ * operations, reached through the session and the adapters. Every registered tool
+ * delegates to a pure adapter in {@link ./tools.js}, and every one of them DECLARES what
+ * calling it can do to the record, in the same two words a verb of the command line
+ * declares in (`record-effect.ts`): the registrar takes the declaration where the SDK
+ * takes a name, so a tool cannot be hung here without answering.
+ *
+ * THIS PARAGRAPH USED TO NAME THE TOOLS ONE BY ONE, and the list is gone because it was
+ * WRONG. It spelled twenty-four names against twenty-five registrations —
+ * `rules_before_an_edit` was never added to it — and the missing name is a tool that
+ * WRITES, so the sentence under it ("`skills` is the one read that also writes") had
+ * quietly become false as well: two tools answer a read's question and append while doing
+ * it. A hand-kept list of what a file registers is the thing that goes stale the one time
+ * it matters, and this one had. What enumerates the tools now is
+ * `every-tool-says-if-it-writes.test.ts`, which reads them off `tools/list` — what the
+ * protocol actually serves — and holds every one to its own declaration.
+ *
+ * The reads derive from the session's projection cache or fold its tails; they open no
+ * writer. `guard` is a dry-run of the gate: it simulates a move and returns the verdict,
+ * having written nothing. TWO tools answer a reading's question and record while doing
+ * it, which is why both declare `mutates`: `skills` serves a pattern's body AND records
+ * the consultation, and `rules_before_an_edit` hands the session the rules addressed at a
+ * path AND appends the asking and the service. Neither fact could be recovered
+ * afterwards by anything else.
+ * The `audit_*` reads are read-only, and they are the AUDITOR's view: every
  * tree the session can see. Three of them read the session's warm caches like the
  * rest; `audit_antipatterns` folds the raw event stream, because it asks which
  * events have a given SHAPE rather than which touch a given entity; and
@@ -74,13 +83,15 @@ import {
   SEARCH_KINDS,
   SEARCH_MAX_LIMIT,
 } from '@mnema/core';
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { McpServer, type ToolCallback } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import type { ZodRawShapeCompat } from '@modelcontextprotocol/sdk/server/zod-compat.js';
 import { RootsListChangedNotificationSchema } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { discoveryEnv } from '../env.js';
 import { movedLine } from '../moved-record.js';
 import { oneLine } from '../one-line.js';
+import { type Declared, mutatesTheRecord, readsTheRecord } from '../record-effect.js';
 import {
   type Landed,
   landedNotice,
@@ -312,20 +323,28 @@ export interface McpServerOptions {
 
 /**
  * Builds the configured MCP server and returns it alongside `connect`, which
- * attaches a stdio transport and starts serving, and `armClose`, which wires the
- * ways this process can learn the connection ended.
+ * attaches a stdio transport and starts serving, `armClose`, which wires the
+ * ways this process can learn the connection ended, and `tools`, which is what every
+ * registered tool declared about the record.
  *
- * The three are split for one reason each. `connect` is separate so a test can build
- * the server and drive its tools without spawning a transport. `armClose` is separate
- * because it is the half of the close that CANNOT be exercised through a transport: it
- * attaches to the process, and a test that signalled the real process would signal the
- * test runner. `connect` calls it, so production wires itself; a test calls it with a
- * fake process and gets the whole path — trigger, close, the `run.ended` on disk.
+ * The three functions are split for one reason each. `connect` is separate so a test can
+ * build the server and drive its tools without spawning a transport. `armClose` is
+ * separate because it is the half of the close that CANNOT be exercised through a
+ * transport: it attaches to the process, and a test that signalled the real process would
+ * signal the test runner. `connect` calls it, so production wires itself; a test calls it
+ * with a fake process and gets the whole path — trigger, close, the `run.ended` on disk.
+ *
+ * `tools` is not a function and answers a different kind of question: what this server
+ * SERVES and what each of those can do. It travels for the reason `registerVerbs`'
+ * answer travels on the other surface — a classification nothing can ask about is a
+ * comment with a type annotation — and `every-tool-says-if-it-writes.test.ts` is what
+ * asks it, against the tools the protocol actually lists.
  */
 export function buildMcpServer(options: McpServerOptions = {}): {
   readonly server: McpServer;
   readonly connect: () => Promise<void>;
   readonly armClose: (lifecycle?: Lifecycle) => () => void;
+  readonly tools: readonly DeclaredTool[];
 } {
   const env = options.env ?? discoveryEnv();
   const log = options.log ?? ((line) => process.stderr.write(`${line}\n`));
@@ -467,7 +486,11 @@ export function buildMcpServer(options: McpServerOptions = {}): {
     }
   });
 
-  registerTools(server, ensureSession);
+  // Every tool, each declaring what calling it can do to the record. The declarations
+  // are collected as they are registered — never listed beside the registrations, which
+  // is the list that goes stale the one time it matters.
+  const declaredTools: DeclaredTool[] = [];
+  registerTools(declaringInto(server, declaredTools), ensureSession);
 
   /**
    * Ends the connection's session: every run it opened, then its caches.
@@ -523,17 +546,69 @@ export function buildMcpServer(options: McpServerOptions = {}): {
     await server.connect(transport);
   };
 
-  return { server, connect, armClose };
+  return { server, connect, armClose, tools: declaredTools };
+}
+
+/**
+ * One tool, and what calling it can do to the record — the same declaration a verb of
+ * the command line makes, over the same two words (`record-effect.ts`).
+ *
+ * The ACT is the tool's name, which is the value the protocol serves it under. It is
+ * spelled once per tool: the registrar takes the declaration and hands the name to the
+ * SDK, so a rename cannot leave a declaration pointing at a tool that no longer exists.
+ */
+type DeclaredTool = Declared<string>;
+
+/**
+ * How a tool is hung on this server: with a DECLARATION where the SDK takes a name.
+ *
+ * THIS IS WHAT MAKES THE CLASSIFICATION COMPULSORY, and it is the MCP's version of the
+ * shape the command line has had all along — there a registrar that answers with nothing
+ * is not a `Verb` and cannot enter the list (`wiring/verb.ts`). Here the server itself
+ * never reaches {@link registerTools}: what reaches it is this function and nothing else,
+ * so a tool added tomorrow has no way to be registered without passing through
+ * {@link mutatesTheRecord} or {@link readsTheRecord} first. A bare name does not compile.
+ *
+ * It mirrors the SDK's own signature rather than narrowing it, so the input schema still
+ * types the handler's argument: the whole value of these tool definitions is that the
+ * fields an agent may send are the fields the handler destructures, and a wrapper that
+ * lost that inference would have bought a declaration at the price of the contract.
+ */
+type ToolRegistrar = <Input extends ZodRawShapeCompat | undefined = undefined>(
+  what: DeclaredTool,
+  config: { title?: string; description?: string; inputSchema?: Input },
+  handle: ToolCallback<Input>,
+) => void;
+
+/**
+ * The registrar for `server`, collecting every declaration into `declared`.
+ *
+ * The declarations travel back rather than being discarded, for the reason the command
+ * line's do: a classification is only worth declaring if it can be ASKED. The entry
+ * ignores the answer, having nothing to decide with it today — the same as `cli.ts`,
+ * where `registerVerbs` has returned the verbs' declarations since before anything read
+ * them, and where the first production reader (the read-only session) arrived afterwards.
+ * What reads these now is the guard, and a reviewer.
+ */
+function declaringInto(server: McpServer, declared: DeclaredTool[]): ToolRegistrar {
+  return (what, config, handle) => {
+    declared.push(what);
+    server.registerTool(what.act, config, handle);
+  };
 }
 
 /**
  * Registers the tools. Each is a thin wrapper: it ensures the session, calls the
  * pure adapter, and shapes the response. The wiring adds only the schema and the
  * text envelope; all behavior is in the adapter and the core.
+ *
+ * It takes the REGISTRAR and not the server, which is the whole of the enforcement: a
+ * tool cannot be hung here without saying which side it is on, because there is nothing
+ * in scope that would take a name.
  */
-function registerTools(server: McpServer, ensureSession: () => Promise<Session>): void {
-  server.registerTool(
-    'capture_memory',
+function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session>): void {
+  tool(
+    mutatesTheRecord('capture_memory'),
     {
       title: 'Capture a memory',
       description:
@@ -569,8 +644,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     },
   );
 
-  server.registerTool(
-    'record_observation',
+  tool(
+    mutatesTheRecord('record_observation'),
     {
       title: 'Record an observation',
       description:
@@ -610,8 +685,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     },
   );
 
-  server.registerTool(
-    'record_handoff',
+  tool(
+    mutatesTheRecord('record_handoff'),
     {
       title: 'Record a handoff',
       description:
@@ -653,8 +728,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     },
   );
 
-  server.registerTool(
-    'link_knowledge',
+  tool(
+    mutatesTheRecord('link_knowledge'),
     {
       title: 'Link knowledge',
       description:
@@ -708,8 +783,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     },
   );
 
-  server.registerTool(
-    'create_task',
+  tool(
+    mutatesTheRecord('create_task'),
     {
       title: 'Create a task',
       description:
@@ -745,8 +820,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     },
   );
 
-  server.registerTool(
-    'task_transition',
+  tool(
+    mutatesTheRecord('task_transition'),
     {
       title: 'Move a task through the workflow',
       description:
@@ -790,8 +865,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     },
   );
 
-  server.registerTool(
-    'record_decision',
+  tool(
+    mutatesTheRecord('record_decision'),
     {
       title: 'Record a decision',
       description:
@@ -845,8 +920,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     },
   );
 
-  server.registerTool(
-    'decision_transition',
+  tool(
+    mutatesTheRecord('decision_transition'),
     {
       title: 'Move a decision through the workflow',
       description:
@@ -891,8 +966,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     },
   );
 
-  server.registerTool(
-    'create_skill',
+  tool(
+    mutatesTheRecord('create_skill'),
     {
       title: 'Propose a skill',
       description:
@@ -931,8 +1006,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     },
   );
 
-  server.registerTool(
-    'skill_transition',
+  tool(
+    mutatesTheRecord('skill_transition'),
     {
       title: 'Move a skill through the workflow',
       description:
@@ -972,8 +1047,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     },
   );
 
-  server.registerTool(
-    'bootstrap',
+  tool(
+    readsTheRecord('bootstrap'),
     {
       title: 'Bootstrap the session',
       description:
@@ -1035,8 +1110,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     },
   );
 
-  server.registerTool(
-    'skills',
+  tool(
+    mutatesTheRecord('skills'),
     {
       title: 'Skills — the patterns to work by, and the ones awaiting a ruling',
       description:
@@ -1107,8 +1182,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     },
   );
 
-  server.registerTool(
-    'focus',
+  tool(
+    readsTheRecord('focus'),
     {
       title: 'Focus — what I am touching now',
       description:
@@ -1125,8 +1200,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     },
   );
 
-  server.registerTool(
-    'resume',
+  tool(
+    readsTheRecord('resume'),
     {
       title: 'Resume — where I left off',
       description:
@@ -1144,8 +1219,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     },
   );
 
-  server.registerTool(
-    'next_actions',
+  tool(
+    readsTheRecord('next_actions'),
     {
       title: 'Next actions — what moves a task allows',
       description:
@@ -1174,8 +1249,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     },
   );
 
-  server.registerTool(
-    'guard',
+  tool(
+    readsTheRecord('guard'),
     {
       title: 'Guard — would a move be allowed?',
       description:
@@ -1234,8 +1309,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     },
   );
 
-  server.registerTool(
-    'search',
+  tool(
+    readsTheRecord('search'),
     {
       title: 'Search — find what has been recorded',
       description:
@@ -1300,8 +1375,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     },
   );
 
-  server.registerTool(
-    'read_record',
+  tool(
+    readsTheRecord('read_record'),
     {
       title: 'Read record — one whole record by id',
       description:
@@ -1355,8 +1430,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
   // different mechanism for reaching a project and a real cost — the trees are the same
   // list either way, so the coverage of an answer never depends on how it is computed.
 
-  server.registerTool(
-    'audit_timeline',
+  tool(
+    readsTheRecord('audit_timeline'),
     {
       title: 'Audit — the full history of an entity',
       description:
@@ -1385,8 +1460,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     },
   );
 
-  server.registerTool(
-    'audit_refs',
+  tool(
+    readsTheRecord('audit_refs'),
     {
       title: 'Audit — what an entity is connected to',
       description:
@@ -1436,8 +1511,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     },
   );
 
-  server.registerTool(
-    'governing_rules',
+  tool(
+    readsTheRecord('governing_rules'),
     {
       title: 'Which recorded rules govern this path',
       description:
@@ -1478,8 +1553,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     },
   );
 
-  server.registerTool(
-    'rules_before_an_edit',
+  tool(
+    mutatesTheRecord('rules_before_an_edit'),
     {
       title: 'The rules of the record for a file about to change',
       description:
@@ -1520,8 +1595,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     },
   );
 
-  server.registerTool(
-    'audit_accountability',
+  tool(
+    readsTheRecord('audit_accountability'),
     {
       title: 'Audit — who authorized what',
       description:
@@ -1568,8 +1643,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     },
   );
 
-  server.registerTool(
-    'audit_exposure',
+  tool(
+    readsTheRecord('audit_exposure'),
     {
       title: 'Audit — where a credential may already be recorded',
       description:
@@ -1607,8 +1682,8 @@ function registerTools(server: McpServer, ensureSession: () => Promise<Session>)
     },
   );
 
-  server.registerTool(
-    'audit_antipatterns',
+  tool(
+    readsTheRecord('audit_antipatterns'),
     {
       title: 'Audit — recurring shapes in the record',
       description:

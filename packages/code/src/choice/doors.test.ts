@@ -33,9 +33,9 @@ const outsideOne = theDoors(verbs, false);
 
 /** What a declaration says a verb does, asked of the program rather than retyped. */
 function declares(verb: string): string {
-  const found = verbs.find((declared) => declared.command.name() === verb);
+  const found = verbs.find((declared) => declared.act.name() === verb);
   expect(found, `this program no longer declares \`${verb}\``).toBeDefined();
-  return found?.command.description() ?? '';
+  return found?.act.description() ?? '';
 }
 
 describe('the doors are a function of the directory', () => {
@@ -70,8 +70,7 @@ describe('the doors are a function of the directory', () => {
     for (const door of [...inAProject, ...outsideOne]) {
       expect(door.argv.length, door.word).toBe(1);
       const word = door.argv[0] as string;
-      const known =
-        word.startsWith('-') || verbs.some((declared) => declared.command.name() === word);
+      const known = word.startsWith('-') || verbs.some((declared) => declared.act.name() === word);
       expect(known, `\`mnema ${word}\` is not a line this program answers to`).toBe(true);
     }
   });

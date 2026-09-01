@@ -37,7 +37,7 @@ import { type CliIo, run } from '../src/cli.js';
 import { dispositionOf } from '../src/repl/gate.js';
 import { PREFIX, SESSION_WORDS, WHAT_EACH_WORD_DOES } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
-import type { Declared } from '../src/wiring/verb.js';
+import { type Declared, readsTheRecord } from '../src/wiring/verb.js';
 
 /** `packages/code/src`, where the production sources and the goldens are. */
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
@@ -203,9 +203,7 @@ async function helpOfTheVerb(): Promise<string[]> {
 }
 
 /** A surface of one read, so a disposition can be asked for without a project. */
-const VERBS: readonly Declared[] = [
-  { command: new Command('look').description('a read'), effect: 'reads' },
-];
+const VERBS: readonly Declared[] = [readsTheRecord(new Command('look').description('a read'))];
 
 describe('the verb’s help lists the words the gate answers to, and says what each does', () => {
   it('names every one of them, with a gloss, and nothing else that looks like one', async () => {

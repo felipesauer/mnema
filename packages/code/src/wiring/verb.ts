@@ -49,6 +49,7 @@
 
 import type { Command } from 'commander';
 import type { Render } from '../presentation/render.js';
+import type { Declared as DeclaredAct } from '../record-effect.js';
 import type { RenderingAt } from './color.js';
 import type { CliIo } from './io.js';
 import type { PinnedRun } from './run-pin.js';
@@ -87,66 +88,34 @@ export interface Wiring {
 }
 
 /**
- * What a verb can do to the RECORD, which every one of them declares.
- *
- * `mutates` says this verb CAN change the record: append an event to a chain, change
- * this machine's key material, or alter what a verifier rules on. `reads` says it
- * cannot. The claim is about the POWER and never about the exercise: a write refused
- * for a missing project appended nothing and is still a write, and a caller deciding
- * what to allow has to know what a verb could do, not what it happened to do last time.
- *
- * THE THIRD CLAUSE IS NEW AND IT ARRIVED WITH A COUNTEREXAMPLE. This said "append an
- * event or touch key material" for as long as those were the only two ways to change
- * anything, and `witness` is neither: it writes an external attestation beside a tail's
- * checkpoints, appends nothing, mints nothing, and moves `verify` from `not-covered` to
- * `covered`. Under the old wording it would have classified as a READ — which is the
- * unsafe side — so the wording widened to the thing all three have in common, which is
- * what a verifier would afterwards say. `every-verb-says-if-it-writes.test.ts` measures
- * the first two and DECLARES that it cannot see the third, rather than counting its
- * silence as evidence.
- *
- * IT IS NOT "TOUCHES DISK", and the difference is not academic. Most reads open the
- * projection cache and rebuild it, which writes a file — and none of that reaches the
- * record a reader cites or a verifier rules on. The other direction is what makes the
- * wording earn its place: the `skills` TOOL on the MCP surface serves a pattern's body
- * and records that a run was served it, so a reading that mints a fact belongs on the
- * `mutates` side.
- *
- * WHY IT IS DECLARED RATHER THAN DERIVED. It was looked for first. `grep writer` over
- * the adapters names fifteen files, and six of them are reads — `show`, `timeline`,
- * `resume`, `next-actions`, `brief`, `accountability` — because the word is in their
- * PROSE, so the search answers with false positives rather than a set. `pinnedRun()` is
- * asked at eleven sites, and the three writes that stamp no session (`init`, `key`,
- * `run` itself) are not among them, so it answers "carries a run", which is a different
- * question (see `cli.ts`). Nothing in the code answered this one, so it is stated here,
- * next to the verb, by the verb.
+ * WHAT A VERB CAN DO TO THE RECORD is not decided here — it is the same question the MCP
+ * surface's tools answer, and it is asked and worded in ONE place for both of them
+ * (`record-effect.ts`). This file re-exports the three names so a verb's wiring imports
+ * everything it needs from the module it already imports its own shape from; the rule,
+ * the two words and the argument for declaring rather than deriving are over there.
  *
  * The declaration is per TOP-LEVEL verb, which is the unit commander routes and the unit
  * a caller gates. A group is classified by its most powerful member: no group mixes the
  * two today, and one that did would be `mutates` — the safe side for anything reading
- * this to decide what to run.
+ * this to decide what to run. The MCP surface has no groups at all, so it does not
+ * inherit this limit; a tool is one act with one input object.
  *
- * `every-verb-says-if-it-writes.test.ts` is what keeps the declaration honest: it walks
- * the registered program so every verb is classified, and it EXERCISES each one in a
- * sandbox and counts what reached the chain, so a verb declared `reads` that writes is
- * accused by the record rather than by a review.
+ * `every-verb-says-if-it-writes.test.ts` is what keeps THIS surface's declarations
+ * honest: it walks the registered program so every verb is classified, and it EXERCISES
+ * each one in a sandbox and counts what reached the chain, so a verb declared `reads`
+ * that writes is accused by the record rather than by a review.
  */
-export type RecordEffect = 'mutates' | 'reads';
+export type { RecordEffect } from '../record-effect.js';
+export { mutatesTheRecord, readsTheRecord } from '../record-effect.js';
 
 /**
  * What registering a verb answers with: the command that was hung, and what that command
  * can do to the record.
  *
- * The command travels rather than its name, so no verb spells its own name twice — the
- * name a caller types is read off the declaration commander holds, which is the same
- * object it routes with.
+ * It is {@link DeclaredAct} over a `Command` and nothing more — the same shape a tool's
+ * declaration has, so neither surface can drift into a classification of its own.
  */
-export interface Declared {
-  /** The top-level command the verb hung on the program. */
-  readonly command: Command;
-  /** What it can do to the record. */
-  readonly effect: RecordEffect;
-}
+export type Declared = DeclaredAct<Command>;
 
 /**
  * A verb's wiring: it declares the command, hangs it on the program, and says what the
@@ -156,29 +125,8 @@ export interface Declared {
  * nothing is not a `Verb` and cannot enter {@link Wiring}'s list, so a verb added
  * tomorrow does not COMPILE until it has said which side it is on — the same shape the
  * core's routing table uses to keep an event kind from being written with no tree
- * (`core/src/topology/routing.ts`). A table of names kept somewhere else would have been
- * the thing that goes stale, silently, the one time it matters.
+ * (`core/src/topology/routing.ts`), and the same shape the MCP's registrar has for its
+ * tools (`mcp/server.ts`). A table of names kept somewhere else would have been the
+ * thing that goes stale, silently, the one time it matters.
  */
 export type Verb = (program: Command, wiring: Wiring) => Declared;
-
-/**
- * The verb CAN change the record: it appends an event, or it touches key material.
- *
- * Used by every write there is, `mcp` among them — the server serves every write TOOL there
- * is, so the verb that starts it can do everything they can. That is not everything this
- * product can do: `tail prune` has no tool and never will, so the MCP's reach is the tools'
- * and this verb's classification is about the tools it serves.
- */
-export function mutatesTheRecord(command: Command): Declared {
-  return { command, effect: 'mutates' };
-}
-
-/**
- * The verb CANNOT change the record: nothing it does reaches a chain or a key.
- *
- * It is the honest answer for `completion` too, which reads no record at all: the
- * question has two sides, and "reads nothing" is on this one.
- */
-export function readsTheRecord(command: Command): Declared {
-  return { command, effect: 'reads' };
-}
