@@ -3404,33 +3404,46 @@ describe('MCP — what enters the record', () => {
 
   it('every write tool declares the contract in its own description', async () => {
     const project = makeProject('proj');
-    const { server } = buildMcpServer({ env, log: () => {} });
+    const { server, tools: declaredTools } = buildMcpServer({ env, log: () => {} });
     const client = await connectClient(server, [pathToFileURL(project).href]);
 
     const tools = await client.listTools();
-    const writes = [
-      'capture_memory',
-      'record_observation',
-      'record_handoff',
-      'link_knowledge',
-      'create_task',
-      'task_transition',
-      'record_decision',
-      'decision_transition',
-      'create_skill',
-      'skill_transition',
-    ];
-    for (const name of writes) {
-      const description = tools.tools.find((t) => t.name === name)?.description ?? '';
+    // THE WRITES COME FROM THE DECLARATIONS, not from a list typed here. This case used
+    // to carry ten names, and it had gone quietly short: the server registers TWELVE
+    // tools that can reach the record, and the two the list did not have are exactly the
+    // two below — so the missing names were the interesting ones, which is the shape a
+    // hand-kept list always ends up in.
+    const writes = declaredTools.filter((one) => one.effect === 'mutates').map((one) => one.act);
+    // The two writes that carry NO content contract, each with the reason, reconciled
+    // both ways: a write that stops stating it has to arrive here, and one that starts
+    // has to leave. The contract is about the FREE TEXT a caller supplies — credentials
+    // it must not hold, the byte limit it is refused over — and these two take none: the
+    // first takes a skill id, the second a path, and what they append is minted from
+    // what the record already holds.
+    const NO_CONTENT_OF_ITS_OWN: Readonly<Record<string, string>> = {
+      skills: 'takes an id and serves a body; it carries SERVED_PATTERN_CONTRACT instead',
+      rules_before_an_edit:
+        'takes a path and appends the asking and the service; the agent supplies no ' +
+        'content, and the description says the asking is recorded',
+    };
+    const describes = (name: string): string =>
+      tools.tools.find((t) => t.name === name)?.description ?? '';
+    const silent = writes.filter((name) => !describes(name).includes('RECORDING IS PERMANENT'));
+    expect(silent.slice().sort()).toEqual(Object.keys(NO_CONTENT_OF_ITS_OWN).sort());
+
+    for (const name of writes.filter((one) => !(one in NO_CONTENT_OF_ITS_OWN))) {
+      const description = describes(name);
       // The three facts the contract has to state, at the point the agent reads it.
       expect(description, `${name}: permanence`).toContain('RECORDING IS PERMANENT');
       expect(description, `${name}: where it lands`).toContain('committed to the repository');
       expect(description, `${name}: the limit of the defense`).toContain('written verbatim');
     }
+    // Non-vacuity: the loop above ran over the ten writes that DO take content, so a
+    // declaration list that came back empty could not leave this case green.
+    expect(writes.filter((one) => !(one in NO_CONTENT_OF_ITS_OWN))).toHaveLength(10);
 
     // And a READ carries none of it — there is nothing to declare about a read.
-    const read = tools.tools.find((t) => t.name === 'search')?.description ?? '';
-    expect(read).not.toContain('RECORDING IS PERMANENT');
+    expect(describes('search')).not.toContain('RECORDING IS PERMANENT');
 
     await client.close();
   });

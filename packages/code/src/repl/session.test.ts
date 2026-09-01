@@ -22,7 +22,7 @@ import { theSessionsOwnWords } from './session.js';
 
 /** One declaration of this file's own, with the description a menu would print. */
 function declares(name: string, effect: Declared['effect']): Declared {
-  return { command: new Command(name).description(`what ${name} does`), effect };
+  return { act: new Command(name).description(`what ${name} does`), effect };
 }
 
 /**

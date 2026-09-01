@@ -115,7 +115,7 @@ function names(word: string): boolean {
  * honest limit of reading a line without parsing it.
  */
 function reached(argv: readonly string[], verbs: readonly Declared[]): readonly Command[] {
-  const verb = verbs.find((declared) => declared.command.name() === argv[0])?.command;
+  const verb = verbs.find((declared) => declared.act.name() === argv[0])?.act;
   if (verb === undefined) return [];
   const commands = [verb];
   let at = verb;
