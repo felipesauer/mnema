@@ -40,8 +40,8 @@
 
 import { channelAsked, channelServed, channelSwitched } from '@mnema/chain';
 import {
-  type ContentTooLargeErr,
   type ScreenedWrite,
+  type ScreenRefusal,
   screenContent,
   screened,
 } from '../content/screen.js';
@@ -67,7 +67,7 @@ export interface SwitchOk extends ScreenedWrite {
  * There is no refusal for a channel this package does not know, because it knows none
  * (see the module note), and none for switching a channel to where it already stands.
  */
-export type SwitchError = SelfAuthorizedErr | ContentTooLargeErr | UnreadableEventErr;
+export type SwitchError = SelfAuthorizedErr | ScreenRefusal | UnreadableEventErr;
 
 /** What the caller asks to switch. */
 export interface SwitchInput {
@@ -99,7 +99,8 @@ export interface SwitchInput {
  */
 export function switchChannel(ctx: WriteContext, input: SwitchInput): SwitchOk | SwitchError {
   const content = screenContent({
-    channel: input.channel,
+    // The channel is handed in as `subject`, which is what it becomes on the event.
+    subject: input.channel,
     ...(input.reason !== undefined ? { reason: input.reason } : {}),
     run: input.run,
   });
@@ -118,7 +119,7 @@ export function switchChannel(ctx: WriteContext, input: SwitchInput): SwitchOk |
         at: (ctx.clock ?? systemClock)(),
         who,
         signerFp: ctx.writer.signerFingerprint,
-        subject: content.fields.channel,
+        subject: content.fields.subject,
         ...(which !== undefined ? { which } : {}),
         ...(content.fields.run !== undefined ? { run: content.fields.run } : {}),
       },
@@ -131,7 +132,7 @@ export function switchChannel(ctx: WriteContext, input: SwitchInput): SwitchOk |
   if (!appended.ok) return appended;
   return {
     ok: true,
-    channel: content.fields.channel,
+    channel: content.fields.subject,
     on: input.on,
     ...screened([...content.replaced, ...agent.replaced]),
   };
@@ -174,7 +175,7 @@ export interface AskedOk extends ScreenedWrite {
 }
 
 /** The refusals either can earn — the ones every fact can, and nothing of their own. */
-export type ChannelFactError = SelfAuthorizedErr | ContentTooLargeErr | UnreadableEventErr;
+export type ChannelFactError = SelfAuthorizedErr | ScreenRefusal | UnreadableEventErr;
 
 /** What the caller records: which channel, in which run, driven by which agent. */
 export interface ServedInput {
@@ -212,7 +213,7 @@ export function recordChannelServed(
   ctx: WriteContext,
   input: ServedInput,
 ): ServedOk | ChannelFactError {
-  const content = screenContent({ channel: input.channel, run: input.run });
+  const content = screenContent({ subject: input.channel, run: input.run });
   if (!content.ok) return content;
 
   const who = authorizingAnchor(ctx);
@@ -226,7 +227,7 @@ export function recordChannelServed(
       at: (ctx.clock ?? systemClock)(),
       who,
       signerFp: ctx.writer.signerFingerprint,
-      subject: content.fields.channel,
+      subject: content.fields.subject,
       ...(agent.which !== undefined ? { which: agent.which } : {}),
       ...(content.fields.run !== undefined ? { run: content.fields.run } : {}),
     }),
@@ -234,7 +235,7 @@ export function recordChannelServed(
   if (!appended.ok) return appended;
   return {
     ok: true,
-    channel: content.fields.channel,
+    channel: content.fields.subject,
     ...screened([...content.replaced, ...agent.replaced]),
   };
 }
@@ -253,7 +254,7 @@ export function recordChannelAsked(
   input: AskedInput,
 ): AskedOk | ChannelFactError {
   const content = screenContent({
-    channel: input.channel,
+    subject: input.channel,
     path: input.path,
     run: input.run,
   });
@@ -271,7 +272,7 @@ export function recordChannelAsked(
         at: (ctx.clock ?? systemClock)(),
         who,
         signerFp: ctx.writer.signerFingerprint,
-        subject: content.fields.channel,
+        subject: content.fields.subject,
         ...(agent.which !== undefined ? { which: agent.which } : {}),
         ...(content.fields.run !== undefined ? { run: content.fields.run } : {}),
       },
@@ -281,7 +282,7 @@ export function recordChannelAsked(
   if (!appended.ok) return appended;
   return {
     ok: true,
-    channel: content.fields.channel,
+    channel: content.fields.subject,
     rule: input.rule,
     ...screened([...content.replaced, ...agent.replaced]),
   };

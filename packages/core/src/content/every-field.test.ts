@@ -32,9 +32,11 @@ import {
   ENVELOPE_TEXT,
   type FieldNature,
   fieldNature,
+  leafKey,
   PAYLOAD_TEXT,
-  proseFieldsOf,
   SUBJECT_TEXT,
+  screenedFieldsOf,
+  screensAsAName,
 } from './fields.js';
 import { FIELD_BYTE_LIMIT } from './screen.js';
 import { detectSecrets } from './secrets.js';
@@ -61,9 +63,20 @@ import { detectSecrets } from './secrets.js';
  *   1. required in `fields.ts` (the build fails until it is classified), and
  *   2. required to arrive here carrying its marker (this file fails until a driver
  *      passes it), and
- *   3. required to arrive clean (this file fails until the operation screens it).
+ *   3. required to arrive clean, or to be REFUSED, according to which of the two
+ *      the classification calls it (this file fails until the operation does it).
  * A field cannot become invisible by nobody remembering it, which is the whole of
  * what the old shape could not promise.
+ *
+ * AND THE THIRD OBLIGATION IS NOW TWO, WHICH IS WHY THERE ARE TWO PASSES. The door
+ * redacts a BODY and refuses a NAME, and the two outcomes exclude each other: a
+ * refused write leaves no body to inspect, and a landed one proves nothing about the
+ * refusal. So one pass poisons every body and leaves the names carrying only their
+ * marker — asserting that bodies come back clean AND that names come back
+ * untouched — and a second pass poisons ONE name at a time and asserts the write was
+ * refused with nothing of that kind on the chain. Which fields each pass poisons is
+ * read from the same table, so a field that changes nature moves between the passes
+ * without an edit here.
  *
  * THE OTHER HALF IS THE IDENTIFIERS, and it is not a smaller version of the same
  * check. A fingerprint is compared, a reverse-signature is verified byte for byte,
@@ -87,7 +100,7 @@ const upcasters = catalogUpcasters();
 /** Every kind the catalog can hold — the enumeration both axes are measured against. */
 const CATALOG = Object.keys(LATEST_VERSION) as EventKind[];
 
-/** The value every prose field is asked to carry. It must never be found. */
+/** The value a poisoned field is asked to carry. It must never be found. */
 const SECRET = 'AKIAIOSFODNN7EXAMPLE';
 
 /** A second class in the same value, so one pass covers two shapes of credential. */
@@ -117,9 +130,31 @@ function marker(kind: EventKind, path: string): string {
   return `probe--${kind}--${path}`;
 }
 
-/** Every field poisoned: the marker for its path, plus two classes of credential. */
-function poisoning(kind: EventKind): Poison {
-  return (path) => `${marker(kind, path)} ${SECRET} ${PASSWORD_URL}`;
+/** The classification's answer for one driven path, whatever half of the event it is on. */
+function natureAt(kind: EventKind, path: string): FieldNature | undefined {
+  return fieldNature(kind, path);
+}
+
+/** A value carrying its marker and two classes of credential. */
+function dirty(kind: EventKind, path: string): string {
+  return `${marker(kind, path)} ${SECRET} ${PASSWORD_URL}`;
+}
+
+/**
+ * Every BODY poisoned; every name and every identifier carrying its marker alone.
+ *
+ * This is the pass that can LAND, so it is the one that measures redaction. The names
+ * carry the marker rather than nothing, which is what lets the same pass assert they
+ * arrived UNTOUCHED — a name asserted only to be free of credentials would pass on a
+ * door that silently dropped it.
+ */
+function poisoningBodies(kind: EventKind): Poison {
+  return (path) => (natureAt(kind, path) === 'body' ? dirty(kind, path) : marker(kind, path));
+}
+
+/** One field poisoned and every other clean, so a refusal has exactly one cause. */
+function poisoningOnly(kind: EventKind, target: string): Poison {
+  return (path) => (path === target ? dirty(kind, path) : marker(kind, path));
 }
 
 /** One field over the ceiling and every other field clean, so a refusal has one cause. */
@@ -129,8 +164,8 @@ function oversizeAt(kind: EventKind, target: string): Poison {
 
 /**
  * The transition proof, built from the classification rather than typed: every
- * prose leaf under `fields` is poisoned, so a sixth proof field added to the catalog
- * is carried here the day it is classified.
+ * caller-supplied leaf under `fields` is poisoned, so a sixth proof field added to the
+ * catalog is carried here the day it is classified.
  *
  * `links` is the one leaf that is a LIST rather than a field, and the classification
  * records a field's nature, not its arity. A future list-valued leaf passed here as a
@@ -139,7 +174,7 @@ function oversizeAt(kind: EventKind, target: string): Poison {
  */
 function proofFor(kind: EventKind, text: Poison): TransitionFields {
   const fields: Record<string, string | string[]> = {};
-  for (const path of proseFieldsOf(kind)) {
+  for (const path of screenedFieldsOf(kind)) {
     if (!path.startsWith('payload.fields.')) continue;
     const key = path.slice('payload.fields.'.length);
     fields[key] = key === 'links' ? [text(path)] : text(path);
@@ -425,6 +460,39 @@ interface Driven {
   readonly asked: ReadonlySet<string>;
 }
 
+/**
+ * The paths one drive of `kind` asked for that the classification calls NAMES — the
+ * fields the refusal pass runs over, observed rather than listed.
+ */
+function namesOf(kind: EventKind, driven: Driven): string[] {
+  return [...driven.asked].filter((path) => fieldNature(kind, path) === 'name');
+}
+
+/**
+ * Asserts a refused write left NO trace of itself on the chain.
+ *
+ * Measured by the MARKER rather than by the absence of an event of the kind, and
+ * that distinction was measured rather than assumed: a birth writes a PAIR, so
+ * `createTask` leaves a `task.transitioned` of its own, and "no event of this kind"
+ * is false for three kinds whose write under test was correctly refused. Only a
+ * driver's poison ever carries a marker — every setup uses literals — so a chain
+ * holding none of them is a chain the refused write did not touch.
+ *
+ * One function, called from both refusal passes, because it is one claim: two
+ * spellings of "nothing landed" is where one of them ends up weaker.
+ */
+function nothingLanded(kind: EventKind, driven: Driven, path: string): void {
+  for (const event of driven.events) {
+    for (const leaf of textLeaves(event)) {
+      expect(leaf.value, `${kind} recorded "${path}" despite refusing it`).not.toContain(
+        `probe--${kind}--`,
+      );
+      expect(leaf.value, `${kind} recorded the credential from "${path}"`).not.toContain(SECRET);
+      expect(leaf.value, `${kind} recorded a placeholder for "${path}"`).not.toContain('<SECRET:');
+    }
+  }
+}
+
 /** Drives one kind into a sandbox of its own and reads the whole chain back. */
 function drive(kind: EventKind, text: Poison): Driven {
   const root = mkdtempSync(join(tmpdir(), 'mnema-field-'));
@@ -467,28 +535,39 @@ describe('the classification is total over the catalog, in both halves', () => {
     // A classification with an empty half would pass every assertion in this file
     // while proving nothing about the half that is missing.
     const natures = (values: readonly FieldNature[]): Record<FieldNature, number> => ({
-      prose: values.filter((nature) => nature === 'prose').length,
+      name: values.filter((nature) => nature === 'name').length,
+      body: values.filter((nature) => nature === 'body').length,
       identifier: values.filter((nature) => nature === 'identifier').length,
     });
 
+    // The envelope holds names and identifiers and NO body, and that is stated rather
+    // than checked as "greater than zero": both caller-supplied envelope fields are
+    // stamped on every event of a session, and neither is something the record says.
     const envelope = natures(Object.values(ENVELOPE_TEXT));
-    expect(envelope.prose).toBeGreaterThan(0);
+    expect(envelope.name).toBeGreaterThan(0);
     expect(envelope.identifier).toBeGreaterThan(0);
+    expect(envelope.body).toBe(0);
 
+    // Nor is any subject a body: a subject is what a fact is ABOUT, so it is either
+    // addressed by or derived. This is the invariant `screenContent` leans on when it
+    // answers for the key `subject` without being told the kind.
     const subject = natures(Object.values(SUBJECT_TEXT));
-    expect(subject.prose).toBeGreaterThan(0);
+    expect(subject.name).toBeGreaterThan(0);
     expect(subject.identifier).toBeGreaterThan(0);
+    expect(subject.body).toBe(0);
 
+    // The payloads are where all three live.
     const payload = natures(CATALOG.flatMap((kind) => Object.values(PAYLOAD_TEXT[kind])));
-    expect(payload.prose).toBeGreaterThan(0);
+    expect(payload.name).toBeGreaterThan(0);
+    expect(payload.body).toBeGreaterThan(0);
     expect(payload.identifier).toBeGreaterThan(0);
 
     // And the enumeration itself is not empty, so "every field is classified" is a
     // statement about a real catalog rather than about nothing.
     expect(CATALOG.length).toBeGreaterThan(10);
-    expect(Object.keys(ENVELOPE_TEXT).length + payload.prose + payload.identifier).toBeGreaterThan(
-      30,
-    );
+    expect(
+      Object.keys(ENVELOPE_TEXT).length + payload.name + payload.body + payload.identifier,
+    ).toBeGreaterThan(30);
   });
 
   it('answers nothing for a field the catalog does not declare', () => {
@@ -514,7 +593,7 @@ describe('every kind the catalog can hold is driven onto the chain', () => {
     // A driver that wrote nothing, or wrote something else, would make every
     // assertion below vacuous for its kind.
     for (const kind of CATALOG) {
-      const driven = drive(kind, poisoning(kind));
+      const driven = drive(kind, poisoningBodies(kind));
       expect(driven.result.ok, `${kind}: ${JSON.stringify(driven.result)}`).toBe(true);
       expect(
         driven.events.some((event) => event.kind === kind),
@@ -526,8 +605,8 @@ describe('every kind the catalog can hold is driven onto the chain', () => {
 
 describe('no field slips past the door', () => {
   for (const kind of CATALOG) {
-    it(`screens every prose field of ${kind}, and leaves its identifiers alone`, () => {
-      const driven = drive(kind, poisoning(kind));
+    it(`redacts every body of ${kind}, and leaves its names and identifiers alone`, () => {
+      const driven = drive(kind, poisoningBodies(kind));
       expect(driven.result.ok, `${kind}: ${JSON.stringify(driven.result)}`).toBe(true);
 
       const own = driven.events.filter((event) => event.kind === kind);
@@ -541,36 +620,96 @@ describe('no field slips past the door', () => {
           // it is a value on the chain that nobody decided anything about.
           expect(nature, `${kind} has an unclassified text field at "${leaf.path}"`).toBeDefined();
 
-          if (nature === 'prose') {
-            // It went through the door: both credentials are gone, and the
-            // detector finds nothing left in what was recorded.
+          if (nature === 'body') {
+            // It went through the door and was REDACTED: both credentials are gone,
+            // and the detector finds nothing left in what was recorded.
             expect(leaf.value, `${kind}.${leaf.path}`).not.toContain(SECRET);
             expect(leaf.value, `${kind}.${leaf.path}`).not.toContain(PASSWORD);
             expect(detectSecrets(leaf.value), `${kind}.${leaf.path}`).toEqual([]);
-            // And the driver reached it: a prose value with no marker of this kind
-            // is a field something else filled in, not one this pass poisoned.
+            // And the driver reached it: a body with no marker of this kind is a
+            // field something else filled in, not one this pass poisoned.
             expect(leaf.value, `${kind}.${leaf.path} was not driven`).toContain(`probe--${kind}--`);
             if (leaf.value.includes(marker(kind, leaf.path))) reached.add(leaf.path);
             continue;
           }
 
-          // The other half: the door did NOT run here. No marker (nothing poisoned
-          // it) and no placeholder (nothing cleaned it), so the value the record
-          // proves things with is the value it was given.
+          if (nature === 'name') {
+            // A name went through the door too, and came back UNTOUCHED. It was
+            // handed only its marker, so what proves the door left it alone is that
+            // a marker of this kind is still there and no placeholder is: a name the
+            // door had altered would fail here even though it never held a credential.
+            //
+            // A marker of this KIND rather than of this PATH, because one field can
+            // fill two: a run's `agent` IS the envelope's `which`, so the envelope
+            // leaf carries the payload's marker and always will. The per-path
+            // coverage is the `reached` set below, which only counts an exact match.
+            expect(leaf.value, `${kind}.${leaf.path} was not driven`).toContain(`probe--${kind}--`);
+            expect(leaf.value, `${kind}.${leaf.path} was scrubbed`).not.toContain('<SECRET:');
+            if (leaf.value.includes(marker(kind, leaf.path))) reached.add(leaf.path);
+            continue;
+          }
+
+          // The third: the door did NOT run here. No marker (nothing poisoned it)
+          // and no placeholder (nothing cleaned it), so the value the record proves
+          // things with is the value it was given.
           expect(leaf.value, `${kind}.${leaf.path} was poisoned`).not.toContain('probe--');
           expect(leaf.value, `${kind}.${leaf.path} was scrubbed`).not.toContain('<SECRET:');
         }
       }
 
       // The coverage the old shape could not give: every field the classification
-      // calls prose was actually filled by this driver, at its own path. A field
-      // added to this kind and forgotten by the driver fails right here, before
-      // anyone gets to the question of whether it was screened.
-      for (const path of proseFieldsOf(kind)) {
+      // says the door owes a pass over was actually filled by this driver, at its own
+      // path. A field added to this kind and forgotten by the driver fails right
+      // here, before anyone gets to the question of what the door did to it.
+      for (const path of screenedFieldsOf(kind)) {
         expect(reached.has(path), `${kind} never drove "${path}"`).toBe(true);
       }
     });
   }
+});
+
+describe('a name carrying a credential refuses the write, on every field of every kind', () => {
+  // THE OTHER OUTCOME, driven one field at a time. Poisoning them together would
+  // prove only that SOME name refuses; each is driven alone so the refusal is
+  // attributable, and every other field of the same write is clean so nothing else
+  // could have caused it.
+  //
+  // Which fields these are is not listed: it is the paths the driver ASKED for in the
+  // clean pass, filtered by the classification. A name added to a kind is driven here
+  // the day it is classified and the driver passes it, and a field that changes from
+  // body to name moves into this pass with no edit.
+  for (const kind of CATALOG) {
+    it(`refuses ${kind} for a credential in any name it takes`, () => {
+      const clean = drive(kind, poisoningBodies(kind));
+      expect(clean.result.ok, `${kind}: ${JSON.stringify(clean.result)}`).toBe(true);
+
+      for (const path of namesOf(kind, clean)) {
+        const driven = drive(kind, poisoningOnly(kind, path));
+        expect(driven.result.ok, `${kind} accepted a credential in "${path}"`).toBe(false);
+        if (driven.result.ok) continue;
+        expect(driven.result.code, `${kind}.${path}`).toBe('NAME_HOLDS_A_SECRET');
+        // And the refused write left nothing behind — a message can be right about a
+        // write that happened anyway.
+        nothingLanded(kind, driven, path);
+      }
+    });
+  }
+
+  it('drove enough names to mean something', () => {
+    // The vacuous form of every case above is a kind with no name field: the loop
+    // does not run and the case passes. This drives the whole catalog once more and
+    // counts what those loops WOULD run over, so a classification that quietly
+    // stopped calling anything a name fails here rather than going green on twenty
+    // empty loops. It re-drives rather than reading a counter the cases filled,
+    // because a counter makes every case above depend on the ones before it — and
+    // then running one of them alone reports a failure that is not there.
+    const driven = CATALOG.flatMap((kind) =>
+      namesOf(kind, drive(kind, poisoningBodies(kind))).map((path) => `${kind} ${path}`),
+    );
+    expect(driven.length).toBeGreaterThan(20);
+    // And it is not one kind's fields twenty times over.
+    expect(new Set(driven.map((one) => one.split(' ')[0])).size).toBeGreaterThan(10);
+  });
 });
 
 describe('the envelope’s own text goes through the door on every kind that carries it', () => {
@@ -580,18 +719,23 @@ describe('the envelope’s own text goes through the door on every kind that car
   // session. They are driven on their own axis for that reason: per kind they would
   // prove the same thing once per kind and still say nothing about the surface.
   const shared = Object.entries(ENVELOPE_TEXT)
-    .filter(([, nature]) => nature === 'prose')
+    .filter(([, nature]) => nature !== 'identifier')
     .map(([path]) => path);
 
-  it('has prose on the envelope to answer for', () => {
+  it('has caller-supplied text on the envelope to answer for, and it is all names', () => {
     expect(shared.length).toBeGreaterThan(0);
+    // Both of them, and the fact that neither is a body, is what lets the two cases
+    // below assert a REFUSAL rather than a redaction.
+    for (const path of shared) {
+      expect(fieldNature('task.created', path), path).toBe('name');
+    }
   });
 
   for (const path of shared) {
-    it(`carries "${path}" cleaned, wherever a write puts it on the chain`, () => {
+    it(`carries "${path}" untouched, wherever a write puts it on the chain`, () => {
       let carried = 0;
       for (const kind of CATALOG) {
-        const driven = drive(kind, poisoning(kind));
+        const driven = drive(kind, poisoningBodies(kind));
         expect(driven.result.ok, `${kind}: ${JSON.stringify(driven.result)}`).toBe(true);
         // The events of the kind under test. A driver's SETUP writes are events of
         // other kinds, and each of those is the kind under test in its own turn.
@@ -603,11 +747,32 @@ describe('the envelope’s own text goes through the door on every kind that car
           expect(value, `${kind}.${path}`).not.toContain(PASSWORD);
           expect(detectSecrets(value), `${kind}.${path}`).toEqual([]);
           expect(value, `${kind}.${path} was not driven`).toContain('probe--');
+          // A name is carried, not cleaned: no write may put a placeholder here.
+          expect(value, `${kind}.${path} was scrubbed`).not.toContain('<SECRET:');
         }
       }
       // Non-vacuity: a pass where no event carried the field at all would assert
       // nothing, and would look identical to a pass where every write dropped it.
       expect(carried, `no event carried "${path}"`).toBeGreaterThan(0);
+    });
+
+    it(`refuses "${path}" carrying a credential, on every kind that takes it`, () => {
+      // The envelope's own axis for the refusal, and the shape that caught `which`
+      // unscreened in the first place: driven ACROSS the surface at once, because a
+      // per-kind proof would say the same thing twenty times and still miss a kind
+      // that stopped passing the field. `run` rides here for the same reason.
+      let refused = 0;
+      for (const kind of CATALOG) {
+        const clean = drive(kind, poisoningBodies(kind));
+        if (!clean.asked.has(path)) continue;
+        refused += 1;
+        const driven = drive(kind, poisoningOnly(kind, path));
+        expect(driven.result.ok, `${kind} accepted a credential in "${path}"`).toBe(false);
+        if (driven.result.ok) continue;
+        expect(driven.result.code, `${kind}.${path}`).toBe('NAME_HOLDS_A_SECRET');
+        nothingLanded(kind, driven, path);
+      }
+      expect(refused, `no write took "${path}"`).toBeGreaterThan(0);
     });
   }
 });
@@ -620,7 +785,7 @@ describe('the size ceiling holds on every field the door owes', () => {
   // field filled indirectly is charged to the input the caller actually hands in.
   for (const kind of CATALOG) {
     it(`refuses an oversize value in any field ${kind} takes`, () => {
-      const clean = drive(kind, poisoning(kind));
+      const clean = drive(kind, poisoningBodies(kind));
       expect(clean.result.ok).toBe(true);
 
       for (const path of clean.asked) {
@@ -634,14 +799,14 @@ describe('the size ceiling holds on every field the door owes', () => {
 });
 
 describe('an identifier is never screened, even when it looks like a credential', () => {
-  it('records a fingerprint and a signature verbatim while cleaning the prose beside them', () => {
+  it('records a fingerprint and a signature verbatim while cleaning the body beside them', () => {
     // The half that keeps the guard from becoming the damage. `revokedFp`,
     // `newFp` and `reverseSig` are the identifiers a caller supplies, so they are
     // the only ones that can be handed a value in a credential's shape — and the
     // record has to keep them byte for byte, because a fingerprint is compared and
     // a reverse-signature is verified over exactly these bytes.
     //
-    // The same write carries prose in the same event, so one assertion pair shows
+    // The same write carries a body in the same event, so one assertion pair shows
     // both halves: the reason is cleaned, the fingerprint is not.
     const root = mkdtempSync(join(tmpdir(), 'mnema-ident-'));
     try {
@@ -664,7 +829,7 @@ describe('an identifier is never screened, even when it looks like a credential'
       if (revocation?.kind !== 'key.revoked') return;
       // Intact, in the exact shape it was handed.
       expect(revocation.payload.revokedFp).toBe(SECRET);
-      // And the prose of the very same event went through the door.
+      // And the body of the very same event went through the door.
       expect(revocation.payload.reason).toBe('retired, and <SECRET:aws-access-key>');
 
       const enrollment = events.find((event) => event.kind === 'key.enrolled');
@@ -680,11 +845,11 @@ describe('an identifier is never screened, even when it looks like a credential'
 
   it('keeps a minted id, an anchor and a state out of the door on every kind', () => {
     // The general form of the same rule, over the whole catalog: nothing the record
-    // derives ever comes back carrying a placeholder, however dirty the prose beside
+    // derives ever comes back carrying a placeholder, however dirty the body beside
     // it was. Without this, a door made total over the fields would be one edit away
     // from replacing the record's own identity with `<SECRET:…>`.
     for (const kind of CATALOG) {
-      const driven = drive(kind, poisoning(kind));
+      const driven = drive(kind, poisoningBodies(kind));
       for (const event of driven.events) {
         for (const leaf of textLeaves(event)) {
           if (fieldNature(event.kind, leaf.path) !== 'identifier') continue;
@@ -692,5 +857,48 @@ describe('an identifier is never screened, even when it looks like a credential'
         }
       }
     }
+  });
+});
+
+describe('the door and the guard read one table, at the two addresses it is asked by', () => {
+  // THE ONE PLACE THIS RULE COULD DIVERGE. The classification is keyed by (kind, path)
+  // because that is what an event is walked by; the door is handed KEYS, because that
+  // is what a caller writes (`{ title, rationale }`). Something has to bridge the two,
+  // and a second table listing name-fields by key would be a second enumeration of the
+  // catalog's fields — the exact shape of the defect `fields.ts` exists to prevent. So
+  // the bridge is a fold over the same tables, and this is what holds the fold to them.
+  //
+  // A conflict cannot even reach here: a key two kinds classify differently THROWS at
+  // load. What this catches is the other direction — a fold that answered a key the
+  // tables classify, and answered it wrong.
+  it('answers by key exactly what it answers by path, for every field of every kind', () => {
+    let checked = 0;
+    for (const kind of CATALOG) {
+      for (const path of screenedFieldsOf(kind)) {
+        const nature = fieldNature(kind, path);
+        expect(screensAsAName(leafKey(path)), `${kind}.${path} (${String(nature)})`).toBe(
+          nature === 'name',
+        );
+        checked += 1;
+      }
+    }
+    for (const [key, nature] of Object.entries(ENVELOPE_TEXT) as [string, FieldNature][]) {
+      if (nature === 'identifier') continue;
+      expect(screensAsAName(key), key).toBe(nature === 'name');
+      checked += 1;
+    }
+    // Non-vacuity, and it is not the same as the count above: this loop can only
+    // check what `screenedFieldsOf` yields, so a classification that stopped
+    // yielding anything would agree with the door about nothing at all.
+    expect(checked).toBeGreaterThan(30);
+  });
+
+  it('answers a key no table classifies with the side that refuses', () => {
+    // Unreachable from anything that compiles — `ScreenedKey` is a closed union built
+    // from these tables — so this is a test of the FALLBACK rather than of a path a
+    // caller can take. It is `name` because an unclassified field is one nobody has
+    // decided about: declining to write it is recoverable, and writing a corrupted
+    // name into an append-only log is not.
+    expect(screensAsAName('no such field of any payload')).toBe(true);
   });
 });

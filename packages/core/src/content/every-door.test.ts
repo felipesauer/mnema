@@ -109,10 +109,13 @@ describe('the content door runs at every write point', () => {
     return found;
   }
 
-  it('takes the credential out of every field of every operation', () => {
-    // One pass through the whole writing surface, with the secret in EVERY
-    // free-text field each operation carries.
-    const task = createTask(ctx, { title: `open ${SECRET}`, which: 'agent' });
+  it('takes the credential out of every BODY of every operation', () => {
+    // One pass through the whole writing surface, with the secret in every field
+    // each operation carries THAT THE DOOR REDACTS. The names are clean here and
+    // dirty in the case below, because the door's two answers cannot be driven in
+    // one pass: a name carrying a credential refuses the write, so a single pass
+    // over everything would prove the redaction of nothing.
+    const task = createTask(ctx, { title: 'open the deploy', which: 'agent' });
     expect(task.ok).toBe(true);
     if (!task.ok) return;
 
@@ -131,7 +134,7 @@ describe('the content door runs at every write point', () => {
     expect(moved.ok).toBe(true);
 
     const decision = recordDecision(ctx, {
-      title: `use ${SECRET}`,
+      title: 'use the vault',
       rationale: `because ${PASSWORD_URL}`,
       alternatives: `we turned down ${PASSWORD_URL}, and also ${SECRET}`,
       which: 'agent',
@@ -164,7 +167,7 @@ describe('the content door runs at every write point', () => {
     ).toBe(true);
 
     const skill = createSkill(ctx, {
-      name: `deploy with ${SECRET}`,
+      name: 'deploy the service',
       body: `run it against ${PASSWORD_URL}`,
       which: 'agent',
     });
@@ -181,37 +184,42 @@ describe('the content door runs at every write point', () => {
     expect(captureMemory(ctx, { content: `remember ${SECRET}`, which: 'agent' }).ok).toBe(true);
     expect(
       recordObservation(ctx, {
-        // The reference too: it is an id by contract but never validated, so it is
-        // a field a credential can arrive in like any other.
-        about: `about ${SECRET}`,
-        topic: `topic ${SECRET}`,
+        // `about` and `topic` are NAMES — the entity the note is about, and the label
+        // it is filed under — so they are clean here and refused in the case below.
+        about: 'the deploy',
+        topic: 'flakiness',
         text: `text ${PASSWORD_URL}`,
         which: 'agent',
       }).ok,
     ).toBe(true);
     expect(
+      // Every text field a handoff carries is a name — who it came from, who it goes
+      // to, and the task it is about — so this kind has no body at all and appears
+      // only in the refusal case below. It is driven clean here so the chain holds one.
       recordHandoff(ctx, {
-        task: `task ${SECRET}`,
-        fromAgent: `from ${SECRET}`,
-        toAgent: `to ${PASSWORD_URL}`,
+        task: 'the deploy task',
+        fromAgent: 'the opener',
+        toAgent: 'the closer',
         which: 'agent',
       }).ok,
     ).toBe(true);
     expect(
+      // A link is the same: both endpoints and the relation are addressed by exact
+      // string, so all three are names.
       linkKnowledge(ctx, {
-        subject: `subject ${SECRET}`,
-        target: `target ${PASSWORD_URL}`,
-        rel: `relates-to ${SECRET}`,
+        subject: 'the deploy',
+        target: 'the runbook',
+        rel: 'relates-to',
         which: 'agent',
       }).ok,
     ).toBe(true);
 
-    const run = startRun(ctx, { agent: `agent ${SECRET}`, goal: `goal ${PASSWORD_URL}` });
+    const run = startRun(ctx, { agent: 'the opener', goal: `goal ${PASSWORD_URL}` });
     expect(run.ok).toBe(true);
     if (!run.ok) return;
-    expect(
-      endRun(ctx, { run: run.id, which: `agent ${SECRET}`, outcome: `outcome ${SECRET}` }).ok,
-    ).toBe(true);
+    expect(endRun(ctx, { run: run.id, which: 'the closer', outcome: `outcome ${SECRET}` }).ok).toBe(
+      true,
+    );
 
     // The identity family's one free-text field.
     expect(revokeKey(ctx, { revokedFp: 'f'.repeat(64), reason: `retired: ${SECRET}` }).ok).toBe(
@@ -229,22 +237,74 @@ describe('the content door runs at every write point', () => {
     }
   });
 
+  it('refuses every operation whose NAME carries one, leaving the chain untouched', () => {
+    // The other half of the same sweep, driven at the same write points: the credential
+    // is in a NAME this time, every body is clean, and each write must be refused with
+    // nothing appended. Two passes rather than one because the outcomes exclude each
+    // other — a refused write records no body to inspect.
+    //
+    // It is by WRITE POINT, which is the axis this file owns; `every-field.test.ts` runs
+    // the same rule by FIELD, derived from the classification. Both, because a point
+    // that forgot a field and a field no point passes are different defects and each
+    // guard is blind to the other's.
+    const dirty = `deploy-${SECRET}`;
+    const refusals = [
+      createTask(ctx, { title: dirty }),
+      recordDecision(ctx, { title: dirty, rationale: 'clean' }),
+      createSkill(ctx, { name: dirty, body: 'clean' }),
+      recordObservation(ctx, { about: dirty, topic: 'clean', text: 'clean' }),
+      recordObservation(ctx, { about: 'x', topic: dirty, text: 'clean' }),
+      recordHandoff(ctx, { task: dirty, fromAgent: 'a', toAgent: 'b' }),
+      recordHandoff(ctx, { task: 'x', fromAgent: dirty, toAgent: 'b' }),
+      recordHandoff(ctx, { task: 'x', fromAgent: 'a', toAgent: dirty }),
+      linkKnowledge(ctx, { subject: dirty, target: 'b', rel: 'r' }),
+      linkKnowledge(ctx, { subject: 'a', target: dirty, rel: 'r' }),
+      linkKnowledge(ctx, { subject: 'a', target: 'b', rel: dirty }),
+      recordConsultation(ctx, { skill: dirty }),
+      startRun(ctx, { agent: dirty }),
+      captureMemory(ctx, { content: 'clean', run: dirty }),
+    ];
+    for (const refusal of refusals) {
+      expect(refusal.ok, JSON.stringify(refusal)).toBe(false);
+      if (refusal.ok) continue;
+      expect(refusal.code).toBe('NAME_HOLDS_A_SECRET');
+      // The refusal never carries the value, not even the part that matched.
+      expect(refusal.message).not.toContain(SECRET);
+    }
+
+    // Nothing was appended by any of them. The founding is the one event a first
+    // write leaves, so this counts what a refusal cannot add rather than asserting
+    // an empty chain — and the count is taken after fourteen attempts.
+    expect(recordedText().join('\n')).not.toContain(SECRET);
+    expect(
+      orderedEvents(ctx.layout, upcasters).some((event) => event.kind !== 'identity.founded'),
+    ).toBe(false);
+  });
+
   it('reports what it replaced on every operation that replaced something', () => {
     // The scrub is never silent (the caller has to be able to rotate), so every
     // operation carries the report back. Absence of the report is what says
     // "nothing was taken out" — asserted on the clean write below.
-    const task = createTask(ctx, { title: `open ${SECRET}` });
-    expect(task.ok && task.replaced).toEqual(['aws-access-key']);
+    const task = createTask(ctx, { title: 'open the deploy' });
+    expect(task.ok).toBe(true);
+    if (!task.ok) return;
+    const moved = transitionTask(ctx, {
+      id: task.id,
+      action: 'submit',
+      fields: { note: `see ${SECRET}` },
+    });
+    expect(moved.ok && moved.replaced).toEqual(['aws-access-key']);
 
     const memory = captureMemory(ctx, { content: `remember ${PASSWORD_URL}` });
     expect(memory.ok && memory.replaced).toEqual(['url-password']);
 
     const decision = recordDecision(ctx, {
-      title: `use ${SECRET}`,
+      title: 'use the vault',
       rationale: `because ${PASSWORD_URL}`,
+      alternatives: `we turned down ${SECRET}`,
     });
-    // Both fields, both classes, one report.
-    expect(decision.ok && decision.replaced).toEqual(['aws-access-key', 'url-password']);
+    // Both fields, both classes, one report — in the order the fields were handed in.
+    expect(decision.ok && decision.replaced).toEqual(['url-password', 'aws-access-key']);
 
     // The third text field a decision carries reports through the same one screen,
     // in field order — so a credential typed into what was TURNED DOWN is named in
@@ -315,98 +375,107 @@ describe('the executing agent goes through the same door', () => {
   /** An agent name carrying a credential — the value that must never be recorded. */
   const DIRTY = `agent-${SECRET}`;
 
-  it('takes the credential out of the agent name at every write point', () => {
+  it('refuses at every write point when the agent name carries one', () => {
     // The whole writing surface again, but with the secret in `which` ONLY and
     // every payload field clean. A payload-only sweep passes this while the chain
     // holds the credential on every one of these events — which is what happened.
-    const task = createTask(ctx, { title: 'clean title', which: DIRTY });
-    expect(task.ok).toBe(true);
-    if (!task.ok) return;
-    expect(transitionTask(ctx, { id: task.id, action: 'submit', which: DIRTY }).ok).toBe(true);
+    //
+    // WHAT THIS CASE USED TO ASSERT. It drove the same points and then checked that
+    // the record had kept `agent-<SECRET:aws-access-key>` — the credential gone and
+    // the agent, as it put it, "surviving as an agent". That last clause was the
+    // premise, and it is false: `agent-<SECRET:aws-access-key>` is not an agent that
+    // exists, no reading of who did what can key on it, and the session it labels can
+    // never be attributed to anybody. `which` is a NAME, so every one of these writes
+    // is refused instead, and the chain keeps nothing at all.
+    const setup = createTask(ctx, { title: 'a task to move', which: 'a clean agent' });
+    expect(setup.ok).toBe(true);
+    if (!setup.ok) return;
+    const decided = recordDecision(ctx, { title: 'clean', rationale: 'clean' });
+    expect(decided.ok).toBe(true);
+    if (!decided.ok) return;
+    const made = createSkill(ctx, { name: 'clean', body: 'clean' });
+    expect(made.ok).toBe(true);
+    if (!made.ok) return;
+    const before = orderedEvents(ctx.layout, upcasters).length;
 
-    const decision = recordDecision(ctx, { title: 'clean', rationale: 'clean', which: DIRTY });
-    expect(decision.ok).toBe(true);
-    if (!decision.ok) return;
-    expect(
-      acceptDecision(ctx, { id: decision.id, fields: { note: 'clean' }, which: DIRTY }).ok,
-    ).toBe(true);
+    const refusals = [
+      createTask(ctx, { title: 'clean title', which: DIRTY }),
+      transitionTask(ctx, { id: setup.id, action: 'submit', which: DIRTY }),
+      recordDecision(ctx, { title: 'clean', rationale: 'clean', which: DIRTY }),
+      acceptDecision(ctx, { id: decided.id, fields: { note: 'clean' }, which: DIRTY }),
+      createSkill(ctx, { name: 'clean', body: 'clean', which: DIRTY }),
+      reviewSkill(ctx, { id: made.id, fields: { note: 'clean' }, which: DIRTY }),
+      recordConsultation(ctx, { skill: made.id, which: DIRTY }),
+      captureMemory(ctx, { content: 'clean', which: DIRTY }),
+      recordObservation(ctx, { about: 'x', topic: 'clean', text: 'clean', which: DIRTY }),
+      recordHandoff(ctx, { task: 'x', fromAgent: 'a', toAgent: 'b', which: DIRTY }),
+      linkKnowledge(ctx, { subject: 'a', target: 'b', rel: 'r', which: DIRTY }),
+      // The session's agent IS its `which`, in the payload and on the envelope both.
+      startRun(ctx, { agent: DIRTY, goal: 'clean' }),
+    ];
+    for (const refusal of refusals) {
+      expect(refusal.ok, JSON.stringify(refusal)).toBe(false);
+      if (refusal.ok) continue;
+      expect(refusal.code).toBe('NAME_HOLDS_A_SECRET');
+    }
 
-    const skill = createSkill(ctx, { name: 'clean', body: 'clean', which: DIRTY });
-    expect(skill.ok).toBe(true);
-    if (!skill.ok) return;
-    expect(reviewSkill(ctx, { id: skill.id, fields: { note: 'clean' }, which: DIRTY }).ok).toBe(
-      true,
-    );
-    expect(recordConsultation(ctx, { skill: skill.id, which: DIRTY }).ok).toBe(true);
-
-    expect(captureMemory(ctx, { content: 'clean', which: DIRTY }).ok).toBe(true);
-    expect(
-      recordObservation(ctx, { about: 'x', topic: 'clean', text: 'clean', which: DIRTY }).ok,
-    ).toBe(true);
-    expect(recordHandoff(ctx, { task: 'x', fromAgent: 'a', toAgent: 'b', which: DIRTY }).ok).toBe(
-      true,
-    );
-    expect(linkKnowledge(ctx, { subject: 'a', target: 'b', rel: 'r', which: DIRTY }).ok).toBe(true);
-    // The session's agent IS its `which`, in the payload and on the envelope both.
-    expect(startRun(ctx, { agent: DIRTY, goal: 'clean' }).ok).toBe(true);
-
-    const text = recorded();
-    expect(text.length).toBeGreaterThan(0);
-    for (const value of text) {
+    // Nothing landed, and the count is against the three setup writes rather than
+    // against zero — an empty chain would also satisfy "holds no credential".
+    expect(orderedEvents(ctx.layout, upcasters).length).toBe(before);
+    for (const value of recorded()) {
       expect(value).not.toContain(SECRET);
       expect(detectSecrets(value)).toEqual([]);
     }
-    // And the agent survived as an agent — the record still says which one executed.
-    expect(text).toContain('agent-<SECRET:aws-access-key>');
+    // And the placeholder is not there either: the old behaviour is gone, not hidden.
+    expect(recorded().join('\n')).not.toContain('<SECRET:');
   });
 
-  it('reports the agent name it cleaned even when the payload was clean', () => {
-    // The failure this closes is not a leak but a SILENCE: the fact was recorded
-    // with a placeholder and nobody was told, so a live credential stayed
-    // unrotated because the reply read as an ordinary success.
-    const task = createTask(ctx, { title: 'nothing sensitive here', which: DIRTY });
-    expect(task.ok && task.replaced).toEqual(['aws-access-key']);
-
-    const memory = captureMemory(ctx, { content: 'nothing sensitive here', which: DIRTY });
-    expect(memory.ok && memory.replaced).toEqual(['aws-access-key']);
-
-    // Both halves in one report, the payload's class and the agent's, with no
-    // caller having to merge two reports (or forget to).
-    const both = captureMemory(ctx, { content: `db at ${PASSWORD_URL}`, which: DIRTY });
-    expect(both.ok && both.replaced).toEqual(['url-password', 'aws-access-key']);
+  it('still reports what it cleaned in the BODY when the agent name is clean', () => {
+    // The failure this closes is not a leak but a SILENCE: a fact recorded with a
+    // placeholder and nobody told, so a live credential stays unrotated because the
+    // reply read as an ordinary success. It is now the half of that which SURVIVES:
+    // a dirty `which` is a refusal and cannot be silent, and what still travels on a
+    // success is the body's report.
+    const memory = captureMemory(ctx, { content: `db at ${PASSWORD_URL}`, which: 'a clean agent' });
+    expect(memory.ok && memory.replaced).toEqual(['url-password']);
 
     // A gated move reports it too — its own screen only ever saw the proof fields.
+    const task = createTask(ctx, { title: 'a task to move', which: 'a clean agent' });
     expect(task.ok).toBe(true);
     if (!task.ok) return;
     const moved = transitionTask(ctx, {
       id: task.id,
       action: 'submit',
-      fields: { note: 'clean' },
-      which: DIRTY,
+      fields: { note: `see ${SECRET}` },
+      which: 'a clean agent',
     });
     expect(moved.ok && moved.replaced).toEqual(['aws-access-key']);
-
-    // And the consultation, the one write whose report used to have nowhere to go.
-    const skill = createSkill(ctx, { name: 'n', body: 'b' });
-    expect(skill.ok).toBe(true);
-    if (!skill.ok) return;
-    const consulted = recordConsultation(ctx, { skill: skill.id, which: DIRTY });
-    expect(consulted.ok && consulted.replaced).toEqual(['aws-access-key']);
 
     // Absence still means "nothing was taken out", on the same field.
     const clean = captureMemory(ctx, { content: 'clean', which: 'agent' });
     expect(clean.ok && clean.replaced).toBeUndefined();
   });
 
-  it('records an all-credential agent name as the bare placeholder', () => {
-    // The degenerate case, decided rather than left to chance: a `which` that is
-    // ENTIRELY a credential comes back as `<SECRET:…>`. Odd to read, but honest,
-    // and strictly better than stamping the key itself on every event of a session
-    // — and the caller is told, so it can reconnect with a name.
+  it('refuses an all-credential agent name, and appends nothing', () => {
+    // The degenerate case, and the one whose OLD answer this delivery reversed. It
+    // used to record a `which` that is entirely a credential as the bare placeholder
+    // — "odd to read, but honest", the comment said, "and strictly better than
+    // stamping the key itself on every event of a session". The second half of that
+    // is still true; the first was not honest, it was unattributable. An event whose
+    // agent is `<SECRET:aws-access-key>` names nobody, and it is stamped on every
+    // event of the session, so the session as a whole becomes unattributable. There
+    // is a third option the old reading did not consider, and it is the one taken:
+    // do not record the fact, and say so while the caller can still reconnect under
+    // a name.
+    expect(orderedEvents(ctx.layout, upcasters).length).toBe(0);
     const task = createTask(ctx, { title: 'clean', which: SECRET });
-    expect(task.ok && task.replaced).toEqual(['aws-access-key']);
-    expect(recorded()).toContain('<SECRET:aws-access-key>');
-    expect(recorded().join('\n')).not.toContain(SECRET);
+    expect(task.ok).toBe(false);
+    if (task.ok) return;
+    expect(task.code).toBe('NAME_HOLDS_A_SECRET');
+    expect(task.message).toContain('aws-access-key');
+    expect(task.message).not.toContain(SECRET);
+    // Not the value, and not a placeholder standing in for it: the chain is empty.
+    expect(orderedEvents(ctx.layout, upcasters).length).toBe(0);
   });
 
   it('refuses an oversize agent name without appending anything', () => {

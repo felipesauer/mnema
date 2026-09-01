@@ -34,8 +34,8 @@ import {
   type UpcasterRegistry,
 } from '@mnema/chain';
 import {
-  type ContentTooLargeErr,
   type ScreenedWrite,
+  type ScreenRefusal,
   screenContent,
   screened,
 } from '../content/screen.js';
@@ -63,7 +63,7 @@ export interface DecisionWriteContext {
 export type DecisionWriteError =
   | DecisionGateErr
   /** A free-text field was over the size limit (see {@link screenContent}). */
-  | ContentTooLargeErr
+  | ScreenRefusal
   /** A read would not have accepted the event (see {@link appendEvent}). */
   | UnreadableEventErr
   /**

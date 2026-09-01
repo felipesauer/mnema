@@ -42,8 +42,8 @@
 
 import { tailPruned, tailStanding } from '@mnema/chain';
 import {
-  type ContentTooLargeErr,
   type ScreenedWrite,
+  type ScreenRefusal,
   screenContent,
   screened,
 } from '../content/screen.js';
@@ -74,7 +74,7 @@ export interface PruneOk extends ScreenedWrite {
  */
 export type PruneError =
   | SelfAuthorizedErr
-  | ContentTooLargeErr
+  | ScreenRefusal
   | UnreadableEventErr
   | { readonly ok: false; readonly code: 'UNKNOWN_TAIL'; readonly message: string }
   | { readonly ok: false; readonly code: 'TAIL_IS_OWN'; readonly message: string };

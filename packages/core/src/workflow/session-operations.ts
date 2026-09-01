@@ -62,8 +62,8 @@
 
 import { runEnded, runStarted } from '@mnema/chain';
 import {
-  type ContentTooLargeErr,
   type ScreenedWrite,
+  type ScreenRefusal,
   screenContent,
   screened,
 } from '../content/screen.js';
@@ -107,7 +107,7 @@ export interface EndRunOk extends ScreenedWrite {
 /** Opening a run was refused before touching the chain. */
 export type StartRunError =
   /** A free-text field was over the size limit (see {@link screenContent}). */
-  | ContentTooLargeErr
+  | ScreenRefusal
   /** A read would not have accepted the event (see {@link appendEvent}). */
   | UnreadableEventErr
   /**
@@ -119,7 +119,7 @@ export type StartRunError =
 /** Closing a run was refused before touching the chain. */
 export type EndRunError =
   /** A free-text field was over the size limit (see {@link screenContent}). */
-  | ContentTooLargeErr
+  | ScreenRefusal
   /** A read would not have accepted the event (see {@link appendEvent}). */
   | UnreadableEventErr
   /**
