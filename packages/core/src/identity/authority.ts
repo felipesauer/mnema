@@ -54,7 +54,7 @@
  */
 
 import { ANCHOR_PREFIX } from '@mnema/chain';
-import { type ContentTooLargeErr, screenContent } from '../content/screen.js';
+import { type ScreenRefusal, screenContent } from '../content/screen.js';
 import type { SecretClass } from '../content/secrets.js';
 import { canonicalIdentity } from './who.js';
 
@@ -87,13 +87,14 @@ export interface ExecutingAgentOk {
  * The executing agent resolved, or the refusal it earned: it is the authorizing
  * identity, or the name was over the size limit.
  */
-export type ExecutingAgent = ExecutingAgentOk | SelfAuthorizedErr | ContentTooLargeErr;
+export type ExecutingAgent = ExecutingAgentOk | SelfAuthorizedErr | ScreenRefusal;
 
 /**
  * Resolves the executing agent against the identity that authorizes the write:
  * screens the name, canonicalizes it, and checks it is not that identity. Returns
  * the `which` an event should record (absent when there is no agent) together with
- * what the screen replaced, or refuses `CONTENT_TOO_LARGE` / `WHO_IS_WHICH`.
+ * what the screen replaced, or refuses `CONTENT_TOO_LARGE` / `NAME_HOLDS_A_SECRET` /
+ * `WHO_IS_WHICH`.
  *
  * `who` is expected in canonical form already: a gate canonicalizes it to answer
  * "is there a human at all" (its own, distinct refusal), and a writer's anchor is
@@ -105,11 +106,20 @@ export type ExecutingAgent = ExecutingAgentOk | SelfAuthorizedErr | ContentTooLa
  * session operation, whose payload `agent` IS the envelope's `which`) passes it
  * through here at no cost and reports the same classes once.
  *
- * A name that is ENTIRELY a credential comes back as the bare placeholder, and
- * that is the intended reading: the agent stays in the record as
- * `<SECRET:aws-access-key>`, which is odd to look at but honest, and strictly
- * better than stamping the credential itself on every event of the session. The
- * caller is told, so it can re-open the session with a name.
+ * A name that carries a credential is REFUSED, and the whole write with it. That
+ * reverses what this comment used to say, and the sentence is kept rather than
+ * deleted because the premise in it is the thing that was wrong: it read "a name
+ * that is ENTIRELY a credential comes back as the bare placeholder … odd to look at
+ * but honest, and strictly better than stamping the credential itself on every event
+ * of the session." The comparison was right and the conclusion did not follow — those
+ * were not the only two options. An agent recorded as `<SECRET:aws-access-key>` is not
+ * an odd-looking agent, it is no agent: nothing keys on it, the session it labels can
+ * never be attributed, and the record cannot be edited. The third option is to record
+ * nothing and say so, which is what happens now, and the caller is still told — at the
+ * only moment it can act, which is before the session has any facts in it.
+ *
+ * Held by `every-door.test.ts`, "refuses an all-credential agent name, and appends
+ * nothing", and by the whole `which` axis of `every-field.test.ts`.
  */
 export function resolveExecutingAgent(who: string, which: unknown): ExecutingAgent {
   // Screened BEFORE canonicalizing: what is compared against `who` below has to be

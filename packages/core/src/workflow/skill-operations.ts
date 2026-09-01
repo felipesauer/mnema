@@ -32,8 +32,8 @@ import {
   type UpcasterRegistry,
 } from '@mnema/chain';
 import {
-  type ContentTooLargeErr,
   type ScreenedWrite,
+  type ScreenRefusal,
   screenContent,
   screened,
 } from '../content/screen.js';
@@ -61,7 +61,7 @@ export interface SkillWriteContext {
 export type SkillWriteError =
   | SkillGateErr
   /** A free-text field was over the size limit (see {@link screenContent}). */
-  | ContentTooLargeErr
+  | ScreenRefusal
   /** A read would not have accepted the event (see {@link appendEvent}). */
   | UnreadableEventErr
   /** The skill acted on does not exist (no `skill.created` for this id). */
@@ -208,10 +208,11 @@ export interface ConsultationInput {
  * observable from serving a body, and a field claiming it would be an assertion
  * the record cannot back.
  *
- * It carries no prose, but it does go through the content door, because the id it
+ * It carries no body, but it does go through the content door, because the id it
  * names becomes the event's SUBJECT and is never validated — so it is a field
  * through which an unbounded value could reach the chain, and a fat event is what
- * the size limit exists to keep out. The refusal is unreachable from any surface
+ * the size limit exists to keep out. A subject is a NAME, so a credential in it
+ * refuses the write rather than being replaced. The refusal is unreachable from any surface
  * (the caller has just READ the skill it names, so the id came from a projection),
  * and the check is here for the reason the authority invariant is checked where it
  * always holds: an invariant enforced only where someone remembered it is a habit,
@@ -220,12 +221,13 @@ export interface ConsultationInput {
 export function recordConsultation(
   ctx: SkillWriteContext,
   input: ConsultationInput,
-): ConsultationOk | SelfAuthorizedErr | ContentTooLargeErr | UnreadableEventErr {
+): ConsultationOk | SelfAuthorizedErr | ScreenRefusal | UnreadableEventErr {
   // Both of its caller-supplied strings in one screen: the skill id that becomes
   // the SUBJECT, and the run that pins the fact to a session. Neither is proved
   // here, so both are fields through which an unbounded — or dirty — value could
   // reach the chain.
-  const named = screenContent({ skill: input.skill, run: input.run });
+  // The skill id is handed in as `subject`, which is what it becomes.
+  const named = screenContent({ subject: input.skill, run: input.run });
   if (!named.ok) return named;
 
   const who = authorizingAnchor(ctx);
@@ -235,7 +237,7 @@ export function recordConsultation(
   // A REFERENCE to an already-minted id: canonicalized (NFC, the chain's stored
   // form) so a reader keys on the same string, but never minted here. It runs after
   // the screen so the canonicalization is bounded by the size limit.
-  const skill = canonicalId(named.fields.skill) ?? named.fields.skill;
+  const skill = canonicalId(named.fields.subject) ?? named.fields.subject;
 
   // Found this installation's anchor before the fact, so its signer is a key
   // valid for its anchor at verify. A no-op once founded.

@@ -49,8 +49,8 @@ import {
   type UpcasterRegistry,
 } from '@mnema/chain';
 import {
-  type ContentTooLargeErr,
   type ScreenedWrite,
+  type ScreenRefusal,
   screenContent,
   screened,
 } from '../content/screen.js';
@@ -78,7 +78,7 @@ export interface WriteContext {
 export type WriteError =
   | GateErr
   /** A free-text field was over the size limit (see {@link screenContent}). */
-  | ContentTooLargeErr
+  | ScreenRefusal
   /** A read would not have accepted the event (see {@link appendEvent}). */
   | UnreadableEventErr
   /** The task does not exist (no `task.created` for this id). */

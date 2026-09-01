@@ -3641,7 +3641,7 @@ describe('MCP — what enters the record', () => {
     await client.close();
   });
 
-  it('the server logs the agent name as the chain records it, and still warns on the append', async () => {
+  it('refuses every write of a session whose client announced a credential as its name', async () => {
     const project = makeProject('proj');
     // The host's log, collected where the server would write stderr — a channel
     // that leaves mnema and may be persisted, so it goes through the door too.
@@ -3651,32 +3651,49 @@ describe('MCP — what enters the record', () => {
     // and nobody reads it, which is what makes it the field to worry about.
     const client = await connectClient(server, [pathToFileURL(project).href], `agent-${SECRET}`);
 
-    // A clean write. The reply STILL warns, because the door screens the announced
-    // name on this append — the whole reason the session carries it announced. A
-    // session that screened once at open and stored the clean value would record
-    // exactly the same fact and tell the agent nothing.
+    // A CLEAN write, and it is still refused — because the field carrying a credential
+    // is not the content, it is the agent. This case used to assert the other half of
+    // the same mechanism: that the reply "STILL warns", because the door screened the
+    // announced name on every append and reported `<SECRET:aws-access-key>`. The
+    // warning was right and the write behind it was not. `which` is a NAME, stamped on
+    // every event of the session, so a session opened under one recorded every fact of
+    // that session as executed by an agent that does not exist — permanently, on a log
+    // nothing edits. The refusal reaches this reply through the run the write has to
+    // open, and it names the class without quoting the value.
     const captured = await client.callTool({
       name: 'capture_memory',
       arguments: { content: 'a note with nothing in it' },
     });
     const reply = textOf(captured);
-    expect(reply).toContain('1 value(s) replaced before recording');
-    expect(reply).toContain('<SECRET:aws-access-key>');
+    expect(reply).toContain('NAME_HOLDS_A_SECRET');
+    expect(reply).toContain('aws-access-key');
+    expect(reply).not.toContain(SECRET);
+    expect(reply).not.toContain('<SECRET:');
+
+    // And NOTHING was written under the swapped name: not the memory, and not the
+    // session run a write has to open first. The chain is what is asked, never the
+    // reply — a message can be right about a write that happened anyway.
+    const written = recordedText(join(project, PROJECT_DIR, 'private'));
+    expect(written.join('\n')).not.toContain(SECRET);
+    expect(written.join('\n')).not.toContain('<SECRET:');
+    expect(written).not.toContain('a note with nothing in it');
 
     // The assertion over the log is ABSENCE of the value, in every line collected.
     expect(logged.some((line) => line.startsWith('session opened:'))).toBe(true);
     for (const line of logged) expect(line).not.toContain(SECRET);
 
-    // And the log and the record agree on WHO ACTED: the string the lines show is
-    // read back off the chain, not restated here.
+    // And no event names an agent AT ALL, which is the sharper form of the same
+    // claim. It used to read `['agent-<SECRET:aws-access-key>']` — the log and the
+    // chain agreeing on a `which` that named nobody. They agree on nothing now
+    // because there is nothing: the run never opened, so no event carries the field.
     const privateRoot = join(project, PROJECT_DIR, 'private');
     const recorded = new Set(
       [...orderedEvents({ root: privateRoot }, catalogUpcasters())]
         .map((event) => event.which)
         .filter((which): which is string => which !== undefined),
     );
-    expect([...recorded]).toEqual(['agent-<SECRET:aws-access-key>']);
-    expect(logged.some((line) => line.includes(`which=${[...recorded][0]}`))).toBe(true);
+    expect([...recorded]).toEqual([]);
+    expect(logged.some((line) => line.startsWith('session run '))).toBe(false);
 
     await client.close();
   });

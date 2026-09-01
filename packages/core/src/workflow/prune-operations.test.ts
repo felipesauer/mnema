@@ -100,7 +100,7 @@ describe('authorizing a cut reads its claims off the record', () => {
     expect(waiver.who).not.toBe(other.anchor);
   });
 
-  it('screens the reason like any other prose a caller writes', () => {
+  it('redacts the reason like any other body a caller writes', () => {
     const ctx = contextIn(root);
     const other = secondMachine();
     const done = authorizeTailPrune(ctx, {

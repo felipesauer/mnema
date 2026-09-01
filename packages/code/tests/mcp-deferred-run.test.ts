@@ -589,10 +589,17 @@ describe('the log never carries the announced name', () => {
 
     await client.callTool({ name: 'capture_memory', arguments: { content: 'a fact' } });
 
-    // Once the run exists the agent IS named — as the chain recorded it.
-    const runLine = logged.find((line) => line.startsWith('session run ')) as string;
-    expect(runLine).toContain('which=agent-<SECRET:aws-access-key>');
+    // And no run line is written at all, because no run opened. This case used to
+    // assert the other outcome — "once the run exists the agent IS named — as the
+    // chain recorded it", `which=agent-<SECRET:aws-access-key>` — and the premise
+    // under that was that the chain would record such an agent. It no longer does:
+    // `which` is a name, so the write that would have opened the run is refused and
+    // the log has nothing to name. The absence is asserted TOGETHER with the presence
+    // of the handshake line, so a log that stopped being written at all fails here.
+    expect(logged.some((line) => line.startsWith('session opened:'))).toBe(true);
+    expect(logged.find((line) => line.startsWith('session run '))).toBeUndefined();
     for (const line of logged) expect(line).not.toContain(SECRET);
+    for (const line of logged) expect(line).not.toContain('<SECRET:');
 
     await client.close();
   });

@@ -62,8 +62,8 @@ import {
   observationRecorded,
 } from '@mnema/chain';
 import {
-  type ContentTooLargeErr,
   type ScreenedWrite,
+  type ScreenRefusal,
   screenContent,
   screened,
 } from '../content/screen.js';
@@ -86,7 +86,7 @@ export interface CaptureOk extends ScreenedWrite {
  * authorized itself, one of its fields was over the size limit, or a field the
  * catalog needs came in empty and no read would have accepted the fact.
  */
-export type FactError = SelfAuthorizedErr | ContentTooLargeErr | UnreadableEventErr;
+export type FactError = SelfAuthorizedErr | ScreenRefusal | UnreadableEventErr;
 
 /** What the caller asks to capture. */
 export interface CaptureInput {
@@ -291,7 +291,9 @@ export function recordHandoff(ctx: WriteContext, input: HandoffInput): HandoffOk
   // The run joins them on the same grounds as `task`: a caller's string nothing
   // here proves, riding the envelope of every event of the session.
   const agents = screenContent({
-    task: input.task,
+    // Handed in as `subject`, which is what it BECOMES and the key the classification
+    // answers under — a subject is a name on every kind whose subject reaches the door.
+    subject: input.task,
     fromAgent: input.fromAgent,
     toAgent: input.toAgent,
     run: input.run,
@@ -302,7 +304,7 @@ export function recordHandoff(ctx: WriteContext, input: HandoffInput): HandoffOk
   const agent = resolveExecutingAgent(who, input.which);
   if (!agent.ok) return agent;
   const which = agent.which;
-  const task = canonicalId(agents.fields.task) ?? agents.fields.task;
+  const task = canonicalId(agents.fields.subject) ?? agents.fields.subject;
 
   ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
