@@ -20,7 +20,7 @@
   "main": "./dist/index.js",
   "dependencies": {
     "@mnema/chain": "workspace:*",
-    "better-sqlite3": "^13.0.1"
+    "better-sqlite3": "^13.0.3"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13"
