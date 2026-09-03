@@ -83,6 +83,49 @@ const READ = SCANNED.map((file) => ({
   text: readFileSync(file, 'utf-8'),
 }));
 
+/** Tab, newline and carriage return are layout. Every other C0 byte is nobody's character. */
+const LAYOUT: readonly number[] = [0x09, 0x0a, 0x0d];
+
+/**
+ * WHERE A READER CANNOT SEE ONE, spelled by code point for the same reason the glyphs above are:
+ * written out, this file would be the list.
+ *
+ * IT WAS ALREADY WRITTEN DOWN, AND ONLY IN PROSE. The construction is one idiom — a NUL joining
+ * the parts of a composite map key — and it is written at four places in three files. Product
+ * code writes it as an escape and says why, at `copilot/src/intelligence/references.ts:248`:
+ * "written as an escape and not as a raw byte, so that an editor shows it". The bench harness
+ * writes it as an escape twice, at `measurements/p1/harness/run.mjs:269` and `:271`. And
+ * `code/tests/support/witnessing.ts:531` wrote it RAW — one byte, inside the instrument of the
+ * guard whose whole question is whether anything in this repository names a file. The odd one
+ * out was the only one nothing could ask about: that file came back from `file(1)` as `data`
+ * rather than as text, and `grep` answered for it with `binary file matches` in place of the
+ * line, so the definition of `importClauses` could not be found by searching for it.
+ *
+ * NOTHING IN THE TOOLCHAIN ASKED EITHER. Biome's `noControlCharactersInRegex` is the only rule in
+ * the class; it reaches regex literals, this one was in a template literal, and it is switched off
+ * at sixteen places in eleven files. `the-opening-fits-the-screen.test.ts:359` reads as though it
+ * covered this — its own comment names "an escape, a NUL, a zero-width space" — and it cannot
+ * express one: its class is `codePointAt(0) >= 0x80` over a single module, so a NUL is beneath its
+ * threshold and outside its corpus, twice over.
+ *
+ * C0 AND DEL, AND NOT C1. Read as UTF-8, which is how every file here is read, a raw 0x80-0x9f
+ * byte is not that code point — it is invalid UTF-8 and arrives as U+FFFD, which this does not
+ * accuse and should not. So the class stops at what a raw byte can actually be: below 0x20, or
+ * DEL. Naming C1 would read as coverage and deliver none.
+ *
+ * ZERO-WIDTH IS DELIBERATELY OUT. A zero-width space is a VALUE this product accepts as a name and
+ * refuses on purpose, and the fixtures that pin that behaviour have to hold one. A ban reaching
+ * them would be red the day it was written.
+ */
+const hiddenAt = (text: string): readonly number[] => {
+  const at: number[] = [];
+  for (let index = 0; index < text.length; index += 1) {
+    const code = text.charCodeAt(index);
+    if ((code < 0x20 && !LAYOUT.includes(code)) || code === 0x7f) at.push(index);
+  }
+  return at;
+};
+
 describe('a paragraph carries its own weight, without a glyph to carry it', () => {
   it('is marked by neither glyph, anywhere the workspace ships', () => {
     const marked = READ.filter((file) => CARRIED_BY_A_GLYPH.test(file.text))
@@ -149,5 +192,51 @@ describe('a paragraph carries its own weight, without a glyph to carry it', () =
     // leave alone, and so is prose about the glyphs that says the word instead of drawing it.
     expect(CARRIED_BY_A_GLYPH.test(' * IT USED TO SAY SOMETHING ELSE, and it did.')).toBe(false);
     expect(CARRIED_BY_A_GLYPH.test('// a warning nobody reads is not a warning')).toBe(false);
+  });
+
+  it('holds no byte a reader cannot see either, over the same corpus', () => {
+    const hiding = READ.filter((file) => hiddenAt(file.text).length > 0)
+      .map((file) => {
+        const [first] = hiddenAt(file.text) as [number];
+        return `${file.where}:${file.text.slice(0, first).split('\n').length}`;
+      })
+      .sort();
+    expect(hiding, 'a byte nobody can see is in a file this workspace ships').toEqual([]);
+
+    // AND THE CORPUS REACHES THE FILE THAT COST THIS GUARD. Asserted here rather than left to
+    // the counts above: narrowing the scan out of the helper tree leaves every one of them
+    // green, because a hundred other files under `packages/code/tests/` satisfy them — measured,
+    // and it is how a guard goes quiet without a case to say so.
+    expect(
+      READ.map((file) => file.where),
+      'the helper tree, where the byte was, is not scanned',
+    ).toContain('packages/code/tests/support/witnessing.ts');
+  });
+
+  it('and would find one at either end of the class, or in the middle of a line', () => {
+    // Non-vacuity at every edge the class draws, each built from a code point — a sample written
+    // whole would put this file in the list above, and one of them cannot be written at all.
+    const nul = String.fromCodePoint(0x00);
+    const esc = String.fromCodePoint(0x1b);
+    const del = String.fromCodePoint(0x7f);
+    expect(hiddenAt(`a${nul}b`)).toEqual([1]);
+    expect(hiddenAt(`x${esc}[31m`)).toEqual([1]);
+    expect(hiddenAt(`y${del}`)).toEqual([1]);
+    // The two ends of the C0 range, so neither bound can be trimmed in silence.
+    expect(hiddenAt(String.fromCodePoint(0x01))).toEqual([0]);
+    expect(hiddenAt(String.fromCodePoint(0x1f))).toEqual([0]);
+    // Layout is not a violation, or every file in the workspace is one.
+    expect(hiddenAt('a\tb\r\nc')).toEqual([]);
+    // Nor is the first printable character, which is the bound on the other side.
+    expect(hiddenAt(String.fromCodePoint(0x20))).toEqual([]);
+    // Nor is a high code point: this bans the invisible, not the non-ASCII. Both of these are
+    // written by code point too — the second is the zero-width space the class leaves alone, and
+    // spelling it out would be the very byte this file exists to keep out of a source.
+    expect(hiddenAt(`a${String.fromCodePoint(0x2550)}b`)).toEqual([]);
+    expect(hiddenAt(`a${String.fromCodePoint(0x200b)}b`)).toEqual([]);
+    // Nor is the replacement character, which is what a raw C1 byte becomes on the way in:
+    // it is invalid UTF-8, so the reader above hands this file U+FFFD and never U+0085. That
+    // is why the class stops at DEL — naming C1 would advertise a reach it cannot have.
+    expect(hiddenAt(String.fromCodePoint(0xfffd))).toEqual([]);
   });
 });
