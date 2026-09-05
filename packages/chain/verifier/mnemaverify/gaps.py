@@ -377,8 +377,10 @@ def audit(catalogue: tuple[Gap, ...] = GAPS) -> None:
     TOTALITY, SAID THE ONLY WAY THIS TREE CAN SAY IT. `Standing` is a `Literal` and no type
     checker runs over this directory, so the annotation checks nothing on its own; what does
     check is that `standing` is a NamedTuple field with NO DEFAULT, which makes a gap written
-    without one a TypeError at import, plus the three rules below, which fire the same way.
-    A new `unresolved` gap therefore cannot exist without saying which kind of hole it is.
+    without one a TypeError at import, plus the four rules below - an id used twice, a standing
+    that is not one of the three, an open gap that is not a hole or a hole that is not open, and
+    a limit with no words for a verdict to print - which fire the same way. A new `unresolved`
+    gap therefore cannot exist without saying which kind of hole it is.
 
     The trunk's suite calls this over five deliberately broken catalogues, built in memory
     and never on disk, which is what keeps it from being decoration. That suite is not named

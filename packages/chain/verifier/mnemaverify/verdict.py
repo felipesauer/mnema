@@ -18,13 +18,13 @@ absence.
 
 IT IS PRINTED ON EVERY RUN THAT READS A RECORD - a verified one, a refused one, and one
 this program broke on before it read a byte. That sentence used to say "on every run",
-and it was false in four places: `self-test` and `vectors` read no record and print
-none, and `record` itself declared the block on its LAST line, so a run that broke out
-early - no record, no tails/ directory, no tails - printed a verdict with the block
-missing. `verify_record` now declares it first, and the trunk's suite runs all three
-cases - VERIFIED, REFUSED and BROKEN - against this list. That suite is NOT NAMED HERE
-on purpose: nothing in this directory may name a module of the product, which is the
-guard on the only thing a second reader is worth, and a file name is a name.
+and it was false on `self-test` and on `vectors`, which read no record, and on all THREE
+of `record`'s own early returns - no record, no tails/ directory, no tails - because the
+block was declared on the LAST line of the walk, below every one of them. `verify_record`
+declares it first now, and the trunk's suite runs VERIFIED, REFUSED and BROKEN against
+this list. That suite is NOT NAMED HERE on purpose: nothing in this directory may name a
+module of the product, which is the guard on the only thing a second reader is worth, and
+a file name is a name.
 
 The list itself is not written anywhere in this package: `gaps.scope()` derives it from
 the registry, so an entry is added by classifying a gap and in no other way.
