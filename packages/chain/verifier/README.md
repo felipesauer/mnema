@@ -9,6 +9,7 @@ python3 mnema_verify.py vectors                        # reproduce the 23 publis
 python3 mnema_verify.py self-test                      # RFC 8032, section 1, section 8's limits
 python3 mnema_verify.py all --record <dir>             # all three
 python3 mnema_verify.py gaps                           # where FORMAT.md did not suffice
+python3 mnema_verify.py --json gaps                    # the same registry as data
 python3 mutate.py list                                 # the inputs it has to refuse
 ```
 
@@ -58,8 +59,16 @@ rigour, so nobody goes looking for it.
 
 ## What it does not check
 
-Printed on **every** run, including a verified one, because a gap that looks like coverage
-is worse than an absence.
+Printed on **every run that reads a record** — a verified one, a refused one, and one this
+program broke on before it read a byte — because a gap that looks like coverage is worse
+than an absence. `self-test` and `vectors` read no record and print none.
+
+**This section is not a list.** It is held against what the program prints, entry for entry,
+in both directions, by
+[`second-reader-says-what-it-does-not-check.test.ts`](../src/chain/second-reader-says-what-it-does-not-check.test.ts).
+It said three things while the program said four — the README never named G06 — because it
+was a list. `python3 mnema_verify.py --json gaps` prints the same five rows from the same
+function the verdict prints them with.
 
 **This list used to have two more entries, and they were places where it ACCEPTED what the
 product refuses.** They are gone, which is the only kind of shrinking this list may do:
@@ -76,16 +85,41 @@ product refuses.** They are gone, which is the only kind of shrinking this list 
   of byte identity could ever have caught and which one exemplar per kind could never have
   told anybody about.
 
-The window is still reported on every run, because closing those two did not close it:
+The window is still reported on every record read, because closing those two did not
+close it:
 *N event(s) sit above the last checkpoint and rest on the hash chain ALONE*.
 
-What is left below are boundaries, not acceptances:
+What is left below are boundaries, not acceptances. Four of them are gaps the registry
+classifies as a **limit of this reader** — a question no record can answer, so silence about
+it says nothing — and the fifth is a limit `FORMAT.md` draws on itself, which is not a gap
+and has no id:
 
-- **Section 7**, that a proof is never recomputed over a lifted reading: no published
-  vector carries `v > 1` and no upcaster is published, so there is nothing to lift.
-- **An authorized cut.** A sequence gap is reported and located; whether it was authorized
-  cannot be read from here, because the document does not say what authorizes one.
-- **The stored header's place in the Bitcoin chain** — which section 8 says of itself.
+<!-- NOT COVERED: each bullet's italic phrase and its trailing gap id are one row of
+     `mnema_verify.py --json gaps`'s `scope`, verbatim and in order. Both directions are
+     asserted; do not edit a bullet without the program, or the program without a bullet. -->
+
+- §1 — *the refusal of an explicit undefined property, over a record on disk*. JSON has no
+  `undefined`, so no line can carry one; §1's refusal is exercised through an in-memory
+  sentinel in `self-test` and is unreachable from a file. (G06)
+- §3 — *telling an authorized cut from tampering*. A sequence gap is reported and located;
+  whether it was authorized cannot be read from here, because the document does not say what
+  authorizes one — and neither can the **absence** of one, because a removal that took a
+  whole tail leaves nothing discontinuous to report. (G09)
+- §7 — *that a proof is never recomputed over a lifted reading*. No published vector carries
+  `v > 1` and no upcaster is published, so there is nothing to lift. (G18)
+- §8 — *which attestation inside a checkpoint dates the record, when it carries more than
+  one*. §8 names which **checkpoint** and not which **attestation**, so the instant a verdict
+  prints is this reader's rule — the earliest attested block — and the product reads a
+  different one off the same bytes. Which of the two the format means is not settled here,
+  and is not this reader's to settle. (G23)
+- §8 — *the stored header's place in the Bitcoin chain* — which section 8 says of itself.
+
+The other three unresolved gaps are **findings about a record**, not limits: contiguity
+between checkpoint ranges (G11), a `.blocks` sidecar with fewer headers than the proof has
+attestations (G19), and the unit of §8's thousand-step limit (G20). Each is observable, and
+each is reported by name with its location where a record has it — so announcing them here,
+on a record that does not, would say of every record what is true of some. `mnema_verify.py
+gaps` marks which of the seven is which.
 
 ## The verdict, and the four things it can be
 
