@@ -158,6 +158,30 @@ export function everyCommandOf(program: Command): readonly Command[] {
   return found;
 }
 
+/**
+ * The words a caller types to reach a command, without the program's own name:
+ * `['task', 'move']`, and `[]` for the program itself.
+ *
+ * IT LIVES BESIDE {@link everyCommandOf} BECAUSE THE TWO ARE ONE QUESTION — which pages
+ * this surface has — and the answer was being read in five places, each with its own
+ * climb up `parent`. Two of them were production (this module's own {@link spoken}, the
+ * completion tree's) and the drift they could have had is not hypothetical: one of the
+ * two includes the program's name in what it returns and the other does not, which is
+ * exactly the kind of difference a second implementation is for.
+ */
+export function pathOf(command: Command): readonly string[] {
+  return chainTo(command)
+    .slice(1)
+    .map((at) => at.name());
+}
+
+/** The commands from the program down to `command`, the program first. One climb. */
+function chainTo(command: Command): readonly Command[] {
+  const chain: Command[] = [];
+  for (let at: Command | null = command; at !== null; at = at.parent) chain.unshift(at);
+  return chain;
+}
+
 // ---------------------------------------------------------------------------
 // The wordings — each one reads a declaration, and none reads a message
 // ---------------------------------------------------------------------------
@@ -332,9 +356,9 @@ function spelledArgument(argument: Argument): string {
 
 /** The name a caller types to reach this command: `mnema task move`. */
 function spoken(command: Command): string {
-  const names: string[] = [];
-  for (let at: Command | null = command; at !== null; at = at.parent) names.unshift(at.name());
-  return names.join(' ');
+  return chainTo(command)
+    .map((at) => at.name())
+    .join(' ');
 }
 
 /** The line to type, exactly as this command's own `--help` prints it. */
