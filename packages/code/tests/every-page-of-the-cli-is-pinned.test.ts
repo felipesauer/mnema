@@ -13,8 +13,10 @@
  * hand — one array of verbs, one of `[verb, sub]` pairs — and it held 45 of the 52 pages
  * the program answers on. Nothing in it was stale: it was SHORT. Three of the seven missing
  * were one feature, `switch`, whose group and both acts shipped with nothing asserting a
- * byte of what they tell a person about turning the record off, and every delivery between
- * that one and this one was green over it. That is what a hand-kept list of what a file
+ * byte of what they tell a person BEFORE they act — what `--scope` decides, and what a
+ * switch recorded privately costs. (What the act answers back was pinned all along, in the
+ * writes transcript; it is the instructions that nothing held.) Every delivery between that
+ * one and this one was green over it. That is what a hand-kept list of what a file
  * registers does: it rots on the one occasion it matters, silently, because a list nobody
  * writes to is never red.
  *
@@ -42,7 +44,14 @@ const silent: CliIo = { out: () => {}, err: () => {}, fail: () => {} };
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 
-/** The committed transcript of every page, as `cli.golden.test.ts` writes it. */
+/**
+ * The committed transcript of every page, as `cli.golden.test.ts` writes it.
+ *
+ * Read at module load, which under `vitest -u` can be one version behind the file the
+ * golden is rewriting in the same run. The failure that buys is a red that clears on the
+ * next run — a stale read can only report a page as unpinned that has just been pinned,
+ * never the reverse — so it is named here rather than locked against.
+ */
 const GOLDEN = readFileSync(join(HERE, '../src/cli.help.golden.txt'), 'utf8');
 
 /**

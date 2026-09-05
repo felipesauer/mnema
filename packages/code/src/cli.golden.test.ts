@@ -96,9 +96,14 @@ function section(into: keyof typeof transcript, label: string): void {
  * `switch on` had no pinned help, and three of those seven are one feature: the switch
  * shipped its group and both its acts with nothing asserting a byte of what they tell a
  * person, and every delivery between that one and this one was green over it. A page
- * nobody pins is a page anybody can reword or delete with no test moving, and the two
- * `switch` pages are where this surface tells a reader what happens when they turn the
- * record off.
+ * nobody pins is a page anybody can reword or delete with no test moving.
+ *
+ * AND WHAT WAS MISSING IS THE HALF A PERSON READS FIRST. The writes transcript already
+ * pinned what `switch off` answers — the listing, and the sentence saying what did NOT
+ * stop — so the report of the act was covered. What nothing held was the page somebody
+ * reads BEFORE acting: what `--scope` decides, that its default commits the switch to
+ * every clone, and what a private one costs. A surface can have its answer pinned and
+ * its instructions not, and counting sections would not have shown it.
  *
  * A LIST CANNOT CATCH THAT, because the failure of a hand-kept list is that it is not
  * written to, and nothing is red when it is not. So the walk is `everyCommandOf`, the
