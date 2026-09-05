@@ -349,6 +349,19 @@ $ mnema run --help
 |   and reported back, but what mnema does not recognize is written verbatim.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
 
+### mnema status --help
+$ mnema status --help
+| Usage: mnema status [options]
+|
+| show where things stand: the work, what governs, what awaits a ruling
+|
+| Options:
+|   --actor <id>  the identity whose session to report — the `mnid:…` from `mnema
+|                 accountability`, or the short form the reads print (any prefix
+|                 that names one identity here)
+|   --json        emit the faithful opening context as JSON
+|   -h, --help    display help for command
+
 ### mnema focus --help
 $ mnema focus --help
 | Usage: mnema focus [options]
@@ -493,6 +506,21 @@ $ mnema exposure --help
 |   --json      emit the faithful report as JSON (still without any value)
 |   -h, --help  display help for command
 
+### mnema export --help
+$ mnema export --help
+| Usage: mnema export [options]
+|
+| emit the record as an OCSF audit feed (NDJSON, envelope only — never a body)
+|
+| Options:
+|   --from <iso>     include only facts at or after this ISO-8601 instant
+|   --to <iso>       include only facts at or before this ISO-8601 instant
+|   --who <id>       include only facts authorized by this identity — the `mnid:…`
+|                    from `mnema accountability`, or the short form the reads
+|                    print (any prefix that names one identity here)
+|   --which <agent>  include only facts executed by this agent
+|   -h, --help       display help for command
+
 ### mnema refs --help
 $ mnema refs --help
 | Usage: mnema refs [options] <id>
@@ -538,6 +566,22 @@ $ mnema skills --help
 |   An act with no agent behind it was a person acting directly.
 |   A consultation is one run served the body — not that the work followed it,
 |   and counted in this project’s trees and the machine-global one, no other.
+
+### mnema usage --help
+$ mnema usage --help
+| Usage: mnema usage [options]
+|
+| what each run cost, read from this machine's Claude Code transcripts
+|
+| Options:
+|   -h, --help  display help for command
+|
+| What each line says, and what it does not:
+|   Tokens and the model id. Never dollars — no price table is carried here.
+|   One host session in the run's window is attributed and named, so you can check it.
+|   More than one is named and NOT attributed: there is no tie-break that is not invented.
+|   None says `no transcript`, never `0` — no record of the cost is not a cost of zero.
+|   Nothing is recorded: the chain has no field for this, and reading writes nothing.
 
 ### mnema brief --help
 $ mnema brief --help
@@ -601,6 +645,44 @@ $ mnema tail --help
 |   prune [options] <tail>  record that one whole tail was authorized to be cut
 |                           (it removes nothing)
 |   help [command]          display help for command
+
+### mnema witness --help
+$ mnema witness --help
+| Usage: mnema witness [options] [command]
+|
+| ask an outside witness to date this record, and read where that stands
+|
+| Options:
+|   --global           also cover this machine's global tree — left out by
+|                      default, exactly as `verify` leaves it out: it belongs to
+|                      no project and is present in every one (default: false)
+|   -h, --help         display help for command
+|
+| Commands:
+|   stamp [options]    ask an outside witness to date each tail's last checkpoint
+|                      (T3)
+|   upgrade [options]  go back for every attestation this record is waiting on
+|                      (T3)
+
+### mnema switch --help
+$ mnema switch --help
+| Usage: mnema switch [options] [command]
+|
+| turn off, or back on, what mnema hands to a model unasked
+|
+| Options:
+|   -h, --help               display help for command
+|
+| Commands:
+|   off [options] <channel>  stop a channel handing the record to a model unasked
+|   on [options] <channel>   let a channel hand the record to a model again
+|
+| What each line of `mnema switch` says, and why it is on it:
+|   The name is what `switch off` and `switch on` take.
+|   What it carries is what stops arriving when it is off.
+|   An off switch says who made it and when, and whether a clone of this
+|   repository holds it — a switch recorded privately governs only this machine.
+|   Nothing arrives switched off: a channel with no switch is on.
 
 ### mnema verify --help
 $ mnema verify --help
@@ -1071,3 +1153,67 @@ $ mnema witness upgrade --help
 | There is no --calendar here, and the reason is that there is nothing to choose:
 | every request the walk finds NAMES the calendar that took it, and that is the one
 | asked. Only `stamp` picks, because only `stamp` sends something nobody holds yet.
+
+### mnema switch off --help
+$ mnema switch off --help
+| Usage: mnema switch off [options] <channel>
+|
+| stop a channel handing the record to a model unasked
+|
+| Arguments:
+|   channel          the channel to switch (brief-document, edit-rules-push,
+|                    edit-asks-a-person)
+|
+| Options:
+|   --reason <text>  why (recorded in the fact; never required)
+|   --scope <scope>  where the switch is born: public (team-visible), private
+|                    (this machine, this project), or global (personal,
+|                    cross-project). Defaults to public — the switch travels with
+|                    the repository, so the team reads it and the document a
+|                    session opens with says so. A private switch governs only
+|                    this machine and no committed file can report it.
+|   --which <agent>  the agent that executed this, when an agent (a script, a CI
+|                    step) is driving mnema — omit it when you are acting
+|                    directly. Declared, never assumed; it names the executor. See
+|                    --scope for where the fact lands. A value that names no agent
+|                    (an unset variable) is refused, never credited to you.
+|   -h, --help       display help for command
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema switch on --help
+$ mnema switch on --help
+| Usage: mnema switch on [options] <channel>
+|
+| let a channel hand the record to a model again
+|
+| Arguments:
+|   channel          the channel to switch (brief-document, edit-rules-push,
+|                    edit-asks-a-person)
+|
+| Options:
+|   --reason <text>  why (recorded in the fact; never required)
+|   --scope <scope>  where the switch is born: public (team-visible), private
+|                    (this machine, this project), or global (personal,
+|                    cross-project). Defaults to public — the switch travels with
+|                    the repository, so the team reads it and the document a
+|                    session opens with says so. A private switch governs only
+|                    this machine and no committed file can report it.
+|   --which <agent>  the agent that executed this, when an agent (a script, a CI
+|                    step) is driving mnema — omit it when you are acting
+|                    directly. Declared, never assumed; it names the executor. See
+|                    --scope for where the fact lands. A value that names no agent
+|                    (an unset variable) is refused, never credited to you.
+|   -h, --help       display help for command
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
