@@ -58,6 +58,73 @@ import { appendFileSync, readdirSync, readFileSync, statSync, writeFileSync } fr
 import { isAbsolute, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+/**
+ * ONE REPORT FILE FOUND IN THE NIGHT'S ARTIFACTS: which label wrote it, which run of that label
+ * it is, and where it sits on disk.
+ *
+ * @typedef {{ label: string, seq: number, path: string }} Found
+ */
+
+/**
+ * A VITEST JSON REPORT AS IT ARRIVES — every field optional, because `tally` is what checks
+ * them. THIS TYPE STATES WHAT IS READ, NOT WHAT IS VERIFIED: `tally` checks that `testResults`
+ * is an array and `numTotalTests` a number, and NOTHING checks the fields under them.
+ *
+ * @typedef {{
+ *   status?: string,
+ *   title?: string,
+ *   ancestorTitles?: string[],
+ * }} ReportedCase
+ * @typedef {{ name?: string, status?: string, assertionResults?: ReportedCase[] }} ReportedModule
+ * @typedef {{
+ *   numTotalTests?: number,
+ *   success?: boolean,
+ *   testResults: ReportedModule[],
+ * }} Report
+ */
+
+/** ONE CASE THAT FAILED IN ONE RUN, named by the file it lives in. */
+/** @typedef {{ file: string, name: string }} Failure */
+
+/**
+ * ONE ROW OF THE RATE TABLE: a case, and every run of the night it failed in.
+ *
+ * @typedef {{ file: string, name: string, runs: string[] }} Row
+ */
+
+/**
+ * WHAT ONE NIGHT SAYS — TWO SHAPES, NOT ONE. A broken tally publishes no rate, and the type says
+ * so: `cases` is `null` when nothing readable was read, and the page returns before the table.
+ *
+ * @typedef {{
+ *   verdict: 'RULER BROKEN' | 'FLAKY' | 'CLEAN',
+ *   broken: string[],
+ *   read: number,
+ *   expect: number,
+ *   perLabel: number,
+ *   labels: { label: string, count: number }[],
+ *   cases: { least: number, most: number } | null,
+ *   rows: Row[],
+ * }} Tally
+ */
+
+/**
+ * WHAT A THROWN THING SAID. A `catch` binding is `unknown`, and reaching for `.message` on it is
+ * how a reporter of failures fails while reporting one.
+ *
+ * @param {unknown} thrown
+ * @returns {string}
+ */
+function whySaid(thrown) {
+  if (thrown instanceof Error) {
+    // `code` is what a filesystem refusal says, and it is the half a reader needs: `ENOENT`
+    // rather than the sentence around it.
+    const code = /** @type {{ code?: string }} */ (thrown).code;
+    return code ?? thrown.message;
+  }
+  return String(thrown);
+}
+
 /** The name a report file must carry: `run--<label>--<seq>.json`. */
 const REPORT_NAME = /^run--([a-z0-9][a-z0-9-]*)--(\d+)\.json$/;
 
@@ -80,6 +147,10 @@ export const EXIT = { CLEAN: 0, FLAKY: 1, BROKEN: 2 };
  * unpacks every artifact into a subdirectory of its own, so the two copies of one run that a
  * re-run or a mislabelled job produces land in DIFFERENT directories, and a per-directory check
  * sees neither of them twice. It counted three reports where two runs existed.
+ *
+ * @param {string} dir
+ * @param {Map<string, string>} [seen]
+ * @returns {{ reports: Found[], problems: string[] }}
  */
 export function collectReports(dir, seen = new Map()) {
   const problems = [];
@@ -87,7 +158,7 @@ export function collectReports(dir, seen = new Map()) {
   try {
     names = readdirSync(dir).sort();
   } catch (why) {
-    const said = why.code ?? why.message;
+    const said = whySaid(why);
     return { reports: [], problems: [`the reports directory could not be read: ${dir} (${said})`] };
   }
 
@@ -103,14 +174,17 @@ export function collectReports(dir, seen = new Map()) {
     if (!name.endsWith('.json')) continue;
 
     const named = REPORT_NAME.exec(name);
-    if (named === null) {
+    const label = named?.[1];
+    const seq = named?.[2];
+    if (label === undefined || seq === undefined) {
       problems.push(`a report file does not carry a label and a sequence in its name: ${path}`);
       continue;
     }
-    const [, label, seq] = named;
     const key = `${label}--${seq}`;
     if (seen.has(key)) {
-      problems.push(`two reports claim the label and sequence "${key}": ${seen.get(key)} and ${path}`);
+      problems.push(
+        `two reports claim the label and sequence "${key}": ${seen.get(key)} and ${path}`,
+      );
       continue;
     }
     seen.set(key, path);
@@ -122,8 +196,13 @@ export function collectReports(dir, seen = new Map()) {
 /**
  * The failures one report names, deduplicated. A case that appears twice in one report is ONE run
  * in which it failed: the unit of this whole instrument is the run, not the assertion.
+ *
+ * @param {Report} report
+ * @param {string} root
+ * @returns {Failure[]}
  */
 export function failuresIn(report, root) {
+  /** @param {unknown} absolute */
   const where = (absolute) => {
     if (typeof absolute !== 'string' || absolute === '') return '(unnamed file)';
     if (!isAbsolute(absolute)) return absolute;
@@ -131,7 +210,12 @@ export function failuresIn(report, root) {
     return inside.startsWith('..') ? absolute : inside;
   };
 
+  /** @type {Map<string, Failure>} */
   const found = new Map();
+  /**
+   * @param {string} file
+   * @param {string} name
+   */
   const add = (file, name) => {
     const key = `${file} ${name}`;
     if (!found.has(key)) found.set(key, { file, name });
@@ -156,6 +240,9 @@ export function failuresIn(report, root) {
 /**
  * The night. Every refusal is collected rather than thrown at the first one, so a broken run says
  * everything that is wrong with it in one read instead of one thing per re-run.
+ *
+ * @param {{ dir: string, root: string, expect: number, perLabel: number }} asked
+ * @returns {Tally}
  */
 export function tally({ dir, root, expect, perLabel }) {
   const broken = [];
@@ -179,7 +266,7 @@ export function tally({ dir, root, expect, perLabel }) {
     try {
       parsed = JSON.parse(readFileSync(report.path, 'utf-8'));
     } catch (why) {
-      broken.push(`a report is not parseable JSON: ${report.path} (${why.message})`);
+      broken.push(`a report is not parseable JSON: ${report.path} (${whySaid(why)})`);
       continue;
     }
     const shaped =
@@ -188,11 +275,15 @@ export function tally({ dir, root, expect, perLabel }) {
       Array.isArray(parsed.testResults) &&
       typeof parsed.numTotalTests === 'number';
     if (!shaped) {
-      broken.push(`a report is missing the fields this counts, numTotalTests and testResults: ${report.path}`);
+      broken.push(
+        `a report is missing the fields this counts, numTotalTests and testResults: ${report.path}`,
+      );
       continue;
     }
     if (parsed.numTotalTests === 0) {
-      broken.push(`a report ran NO case at all, and vitest writes this file even when it finds no test files: ${report.path}`);
+      broken.push(
+        `a report ran NO case at all, and vitest writes this file even when it finds no test files: ${report.path}`,
+      );
       continue;
     }
 
@@ -214,7 +305,9 @@ export function tally({ dir, root, expect, perLabel }) {
     }
     for (const [label, count] of [...labels].sort()) {
       if (count !== perLabel) {
-        broken.push(`label "${label}" carries ${count} run${count === 1 ? '' : 's'}, not the ${perLabel} asked for`);
+        broken.push(
+          `label "${label}" carries ${count} run${count === 1 ? '' : 's'}, not the ${perLabel} asked for`,
+        );
       }
     }
   }
@@ -235,7 +328,12 @@ export function tally({ dir, root, expect, perLabel }) {
   };
 }
 
-/** What the exit code is for a tally. Two reds, and they mean different things. */
+/**
+ * What the exit code is for a tally. Two reds, and they mean different things.
+ *
+ * @param {Tally} result
+ * @returns {number}
+ */
 export function exitCodeOf(result) {
   if (result.verdict === 'RULER BROKEN') return EXIT.BROKEN;
   if (result.verdict === 'FLAKY') return EXIT.FLAKY;
@@ -245,9 +343,16 @@ export function exitCodeOf(result) {
 /**
  * The page. A broken ruler prints its inventory and NO rate table: a partial table beside the
  * word "broken" is exactly the thing somebody quotes later without the word.
+ *
+ * @param {Tally} result
+ * @returns {string}
  */
 export function render(result) {
   const out = [];
+  /**
+   * @param {number} failed
+   * @param {number} of
+   */
   const percent = (failed, of) => `${((failed / of) * 100).toFixed(1)}%`;
 
   if (result.verdict === 'RULER BROKEN') {
@@ -270,9 +375,15 @@ export function render(result) {
 
   const runs = result.read;
   const many = result.labels.length === 1 ? '' : 's';
-  out.push(result.verdict === 'CLEAN' ? '## No case failed in any run' : '## Cases that failed at least once');
+  out.push(
+    result.verdict === 'CLEAN'
+      ? '## No case failed in any run'
+      : '## Cases that failed at least once',
+  );
   out.push('');
-  out.push(`**${runs} runs** of the suite, ${result.perLabel} per label, over ${result.labels.length} label${many}.`);
+  out.push(
+    `**${runs} runs** of the suite, ${result.perLabel} per label, over ${result.labels.length} label${many}.`,
+  );
   if (result.cases !== null) {
     out.push(
       result.cases.least === result.cases.most
@@ -284,7 +395,9 @@ export function render(result) {
 
   if (result.verdict === 'CLEAN') {
     out.push('A green night is **not** evidence that there is no flake. At 30 runs this misses a');
-    out.push('one-in-twenty flake 21% of the time and a one-in-a-hundred flake 74% of the time. The');
+    out.push(
+      'one-in-twenty flake 21% of the time and a one-in-a-hundred flake 74% of the time. The',
+    );
     out.push('detection is in the accumulation across nights, never in any one of them.');
   } else {
     out.push('| case | file | failed | of | rate | which runs |');
@@ -292,7 +405,9 @@ export function render(result) {
     for (const row of result.rows) {
       const failed = row.runs.length;
       const name = row.name.replaceAll('|', '\\|');
-      out.push(`| ${name} | \`${row.file}\` | ${failed} | ${runs} | ${percent(failed, runs)} | ${row.runs.join(', ')} |`);
+      out.push(
+        `| ${name} | \`${row.file}\` | ${failed} | ${runs} | ${percent(failed, runs)} | ${row.runs.join(', ')} |`,
+      );
     }
     out.push('');
     out.push('A row reading **every** run is a case that is broken at this commit, not a flake.');
@@ -302,12 +417,25 @@ export function render(result) {
   out.push('| label | runs | runs with a failure |');
   out.push('|---|---:|---:|');
   for (const { label, count } of result.labels) {
-    const hit = new Set(result.rows.flatMap((row) => row.runs.filter((run) => run.startsWith(`${label}#`))));
+    const hit = new Set(
+      result.rows.flatMap((row) => row.runs.filter((run) => run.startsWith(`${label}#`))),
+    );
     out.push(`| \`${label}\` | ${count} | ${hit.size} |`);
   }
   return `${out.join('\n')}\n`;
 }
 
+/**
+ * @param {readonly string[]} argv
+ * @returns {{
+ *   dir: string,
+ *   root: string,
+ *   expect: number,
+ *   perLabel: number,
+ *   summary: string,
+ *   json: string,
+ * }}
+ */
 function readArgs(argv) {
   const args = {
     dir: 'reports',
@@ -317,6 +445,7 @@ function readArgs(argv) {
     summary: '',
     json: '',
   };
+  /** @type {Record<string, keyof typeof args>} */
   const takes = {
     '--reports': 'dir',
     '--root': 'root',
@@ -326,12 +455,13 @@ function readArgs(argv) {
     '--json': 'json',
   };
   for (let index = 0; index < argv.length; index += 2) {
-    const flag = argv[index];
+    const flag = argv[index] ?? '';
     const into = takes[flag];
     if (into === undefined) throw new Error(`unknown argument: ${flag}`);
     const value = argv[index + 1];
     if (value === undefined) throw new Error(`argument ${flag} was given no value`);
-    args[into] = into === 'expect' || into === 'perLabel' ? Number(value) : value;
+    if (into === 'expect' || into === 'perLabel') args[into] = Number(value);
+    else args[into] = value;
   }
   return args;
 }

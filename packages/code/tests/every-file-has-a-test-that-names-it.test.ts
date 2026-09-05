@@ -154,7 +154,7 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * and leaves 2145, which clears that floor and reddens nothing else in this file. Restate
  * this number when the tree gains an import, which is the point of writing it down.
  */
-const CLAUSES_IN_THE_TREE = 2370;
+const CLAUSES_IN_THE_TREE = 2381;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
