@@ -57,7 +57,7 @@
 
 import type { Argument, Command, Help, Option } from 'commander';
 import { valuesDeclaredOn } from '../wiring/enumerated.js';
-import { everyCommandOf } from '../wiring/misuse.js';
+import { everyCommandOf, pathOf } from '../wiring/misuse.js';
 
 /** One flag, in every spelling the parser answers to, and what may follow it. */
 export interface CompletionFlag {
@@ -137,15 +137,6 @@ function nodeOf(command: Command): CompletionNode {
  */
 function enumeratedBy(declaration: Argument | Option): readonly string[] {
   return [...(declaration.argChoices ?? []), ...valuesDeclaredOn(declaration)];
-}
-
-/** The words that reach a command, without the program's own name. */
-function pathOf(command: Command): readonly string[] {
-  const names: string[] = [];
-  for (let at: Command | null = command; at.parent !== null; at = at.parent) {
-    names.unshift(at.name());
-  }
-  return names;
 }
 
 /**

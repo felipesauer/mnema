@@ -46,7 +46,8 @@ import { listTails, memoryCaptured } from '@mnema/chain';
 import { PROJECT_DIR, resolveTrees } from '@mnema/core';
 import { openTreeForWriting } from '@mnema/core/write';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { type CliIo, run } from './cli.js';
+import { buildProgram, type CliIo, run } from './cli.js';
+import { everyCommandOf, pathOf } from './wiring/misuse.js';
 
 /** Where the fixture lives for the length of this file. */
 let sandbox: string;
@@ -85,6 +86,43 @@ function section(into: keyof typeof transcript, label: string): void {
   if (transcript[into].length > 0) transcript[into].push('');
   transcript[into].push(`### ${label}`);
 }
+
+/**
+ * EVERY PAGE OF `--help` THIS PROGRAM HAS, read off the program instead of listed here.
+ *
+ * IT WAS TWO ARRAYS WRITTEN BY HAND — one of verbs, one of `[verb, sub]` pairs — and what
+ * they held was 45 of the 52 pages the program answers on. Nothing in them was stale;
+ * they were SHORT. `status`, `export`, `usage`, `witness`, `switch`, `switch off` and
+ * `switch on` had no pinned help, and three of those seven are one feature: the switch
+ * shipped its group and both its acts with nothing asserting a byte of what they tell a
+ * person, and every delivery between that one and this one was green over it. A page
+ * nobody pins is a page anybody can reword or delete with no test moving.
+ *
+ * AND WHAT WAS MISSING IS THE HALF A PERSON READS FIRST. The writes transcript already
+ * pinned what `switch off` answers — the listing, and the sentence saying what did NOT
+ * stop — so the report of the act was covered. What nothing held was the page somebody
+ * reads BEFORE acting: what `--scope` decides, that its default commits the switch to
+ * every clone, and what a private one costs. A surface can have its answer pinned and
+ * its instructions not, and counting sections would not have shown it.
+ *
+ * A LIST CANNOT CATCH THAT, because the failure of a hand-kept list is that it is not
+ * written to, and nothing is red when it is not. So the walk is `everyCommandOf`, the
+ * same function the completion tree reads the surface with, and the root is dropped —
+ * `mnema --help` is already pinned above, under its own label.
+ *
+ * ORDERED BY DEPTH, and the reason is what the file is for rather than taste: the walk is
+ * depth-first, so `task move` would land between `task` and `decision` and every page
+ * after the first group would MOVE. A golden whose diff is a reordering cannot be read,
+ * and the seven pages arriving here had to be read one at a time before their bytes were
+ * accepted. Depth-first within each depth, so the order inside a depth is still the
+ * program's own — which is what the two arrays already held, verb for verb.
+ */
+const EVERY_PAGE: readonly (readonly string[])[] = everyCommandOf(
+  buildProgram({ out: () => {}, err: () => {}, fail: () => {} }).program,
+)
+  .map((command) => pathOf(command))
+  .filter((page) => page.length > 0)
+  .sort((a, b) => a.length - b.length);
 
 /**
  * Runs `mnema <argv>` in the fixture and appends the encoded transcript to `into`.
@@ -874,64 +912,9 @@ beforeAll(async () => {
   section('help', 'the program');
   await mnema('help', '--help');
   await mnema('help', '--version');
-  for (const verb of [
-    'init',
-    'task',
-    'decision',
-    'skill',
-    'memory',
-    'observe',
-    'handoff',
-    'link',
-    'run',
-    'focus',
-    'resume',
-    'next-actions',
-    'guard',
-    'search',
-    'show',
-    'timeline',
-    'accountability',
-    'antipatterns',
-    'exposure',
-    'refs',
-    'rules',
-    'skills',
-    'brief',
-    'key',
-    'tail',
-    'verify',
-    'mcp',
-    'repl',
-    'completion',
-  ]) {
-    section('help', `mnema ${verb} --help`);
-    await mnema('help', verb, '--help');
-  }
-  for (const pair of [
-    ['task', 'move'],
-    ['decision', 'move'],
-    ['decision', 'supersede'],
-    ['decision', 'import'],
-    ['skill', 'move'],
-    ['skill', 'export'],
-    ['run', 'start'],
-    ['run', 'end'],
-    ['key', 'restore'],
-    ['key', 'request'],
-    ['key', 'enroll'],
-    ['key', 'revoke'],
-    ['tail', 'list'],
-    ['tail', 'prune'],
-    // The two acts that speak to somebody else. Their help declares WHAT LEAVES THIS
-    // MACHINE and, for `upgrade`, how far down a tail it reaches and where it stops —
-    // affirmations about behaviour with nothing pinning the bytes until now. The list
-    // above is kept by hand, which is exactly how a page goes unpinned.
-    ['witness', 'stamp'],
-    ['witness', 'upgrade'],
-  ]) {
-    section('help', `mnema ${pair.join(' ')} --help`);
-    await mnema('help', ...pair, '--help');
+  for (const page of EVERY_PAGE) {
+    section('help', `mnema ${page.join(' ')} --help`);
+    await mnema('help', ...page, '--help');
   }
 }, 240_000);
 
