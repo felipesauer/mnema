@@ -1,0 +1,26 @@
+{
+  // THE FIVE `.mjs` FILES THIS REPOSITORY RUNS AS AN INSTRUMENT, read with the same lens as
+  // everything else. `plugin/hooks/session-start.mjs` is SHIPPED — it is the first thing a
+  // Claude Code user receives from this product — and the four under `.github/` are what decide
+  // whether a red was the guard or the machine, how often the suite lied, and what it left in
+  // `/tmp`. An error in a ruler is an error in the ruler, and this bench has measured what a
+  // broken ruler costs twice.
+  //
+  // WHY A PROJECT AND NOT A SCRIPT. `pnpm typecheck` is `tsc -b` over the references below, and
+  // a second entry point would be a second answer to "is this repository type-checked". This is
+  // the FIFTH reference of `tsconfig.json`, so the command that already exists reaches them.
+  //
+  // `noEmit`, because nothing consumes a declaration of these: the host spawns the hook by path
+  // with no build, and the rulers are run by `node` from the repository. Everything else comes
+  // from `tsconfig.base.json`, which is the point — the same `strict`, the same
+  // `noUncheckedIndexedAccess`, the same `exactOptionalPropertyTypes` the product is held to.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "rootDir": ".",
+    "types": ["node"]
+  },
+  "include": [".github/**/*.mjs", "plugin/**/*.mjs"]
+}

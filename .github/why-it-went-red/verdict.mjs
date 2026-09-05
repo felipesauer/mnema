@@ -57,10 +57,117 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync, appendFileSync } from 'node:fs';
+import { appendFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+/**
+ * WHAT THE LEDGER WROTE, NAMED OFF THE FILE THAT WRITES IT rather than restated here. A second
+ * description of one file's contents is the shape that lets the writer and the reader come to
+ * disagree about a field, which is a ruler that cannot say it broke.
+ *
+ * @typedef {import('./ledger.mjs').Book} Book
+ * @typedef {import('./ledger.mjs').Load} Load
+ */
+
+/**
+ * ONE RE-RUN'S ANSWER. `ran: false` is what a caller must branch on before it looks at `failed`:
+ * a re-run that selected no case writes a report all the same.
+ *
+ * @typedef {{ ran: false, why: string } | { ran: true, failed: boolean, duration: number }} Alone
+ */
+
+/**
+ * WHAT THE RE-RUNNER IS, as a type, so a caller cannot hand `decide` something that does not
+ * answer `ran`.
+ *
+ * @typedef {(which: { root: string, file: string, titles: readonly string[] }) => Alone} Rerunner
+ */
+
+/**
+ * A VITEST JSON REPORT AS IT ARRIVES — every field optional, because `whatRan` is what checks
+ * them. THIS TYPE STATES WHAT IS READ, NOT WHAT IS VERIFIED: the two guards at the top of that
+ * function check that `testResults` is an array and `numTotalTests` a number, and NOTHING checks
+ * the fields under them. A report whose `assertionResults` is not an array satisfies this type's
+ * `?` and still throws, and no case covers that.
+ *
+ * @typedef {{
+ *   status?: string,
+ *   title?: string,
+ *   ancestorTitles?: string[],
+ *   duration?: number,
+ * }} ReportedCase
+ * @typedef {{ status?: string, assertionResults?: ReportedCase[] }} ReportedModule
+ * @typedef {{ numTotalTests?: number, testResults?: ReportedModule[] }} Report
+ */
+
+/**
+ * A RED, AS THE PAGE PUBLISHES IT.
+ *
+ * @typedef {{
+ *   file: string,
+ *   name: string,
+ *   duration: number,
+ *   ceiling: number | null,
+ *   shape: string,
+ *   said: string,
+ *   load: Load | null,
+ *   says: string,
+ *   why: string,
+ *   alone: number | null,
+ * }} Red
+ */
+
+/**
+ * A CASE ACCUSED OF WAITING WITHOUT SAYING SO.
+ *
+ * @typedef {{
+ *   file: string,
+ *   name: string,
+ *   inSuite: number,
+ *   alone: number,
+ *   ceiling: number | null,
+ *   says: string,
+ * }} Accused
+ */
+
+/**
+ * WHAT ONE READING SAYS — TWO SHAPES, NOT ONE WITH FOUR OPTIONAL FIELDS. A broken reading
+ * carries no budget, no re-timed count and no tally of reds, because a partial table beside the
+ * word "broken" is exactly the thing somebody quotes later without the word. Written as a union
+ * on the verdict, the page's own early return is what proves it: past
+ * `verdict === 'RULER BROKEN'` the four are present, and before it they cannot be read at all.
+ *
+ * @typedef {{
+ *   verdict: 'RULER BROKEN',
+ *   broken: string[],
+ *   reds: Red[],
+ *   accused: Accused[],
+ * }} BrokenRuler
+ * @typedef {{
+ *   verdict: 'CLEAN' | 'SOMETHING TO READ',
+ *   broken: string[],
+ *   reds: Red[],
+ *   accused: Accused[],
+ *   budget: number,
+ *   retimed: number,
+ *   caught: number,
+ *   notAlone: number,
+ * }} Published
+ * @typedef {BrokenRuler | Published} Reading
+ */
+
+/**
+ * WHAT A THROWN THING SAID. A `catch` binding is `unknown`, and reaching for `.message` on it is
+ * how a reporter of failures fails while reporting one.
+ *
+ * @param {unknown} thrown
+ * @returns {string}
+ */
+function whySaid(thrown) {
+  return thrown instanceof Error ? thrown.message : String(thrown);
+}
 
 /**
  * HOW MUCH OF THE SHARED CEILING A CASE MAY SPEND, ALONE, WITHOUT DECLARING ONE OF ITS OWN.
@@ -108,12 +215,20 @@ export const EXIT = { CLEAN: 0, SOMETHING: 1, BROKEN: 2 };
  * built from the arrow-joined name selects nothing at all, silently, and a re-run that selected
  * nothing once came back from this file as `ran: true`. Pinned by
  * `the-red-says-why-it-went-red`.
+ *
+ * @param {readonly string[]} titles
+ * @returns {{ shown: string, selects: string }}
  */
 export function namesOf(titles) {
   return { shown: titles.join(' > '), selects: titles.join(' ') };
 }
 
-/** A name, as a pattern that matches itself and nothing longer. */
+/**
+ * A name, as a pattern that matches itself and nothing longer.
+ *
+ * @param {string} name
+ * @returns {string}
+ */
 export function asPattern(name) {
   return `^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`;
 }
@@ -126,6 +241,8 @@ export function asPattern(name) {
  * report all the same, with `numTotalTests: 0`, which is the shape that once let a bench read a
  * full green night off a suite that never ran. `ran: false` is what a caller must branch on
  * before it looks at `failed`.
+ *
+ * @type {Rerunner}
  */
 export function runAlone({ root, file, titles }) {
   const { shown, selects } = namesOf(titles);
@@ -155,7 +272,7 @@ export function runAlone({ root, file, titles }) {
     try {
       parsed = JSON.parse(readFileSync(report, 'utf-8'));
     } catch (why) {
-      return { ran: false, why: `the re-run wrote no readable report (${why.message})` };
+      return { ran: false, why: `the re-run wrote no readable report (${whySaid(why)})` };
     }
     return whatRan(parsed, { shown, selects });
   } finally {
@@ -173,6 +290,10 @@ export function runAlone({ root, file, titles }) {
  * read that as "it ran and it passed" for a case that never ran, which is the vacuous-ruler shape
  * this bench has been bitten by twice. What counts is how many cases carrying this name actually
  * RAN, and `all-skipped.json` beside the test is a real capture of the report that lies.
+ *
+ * @param {Report} parsed
+ * @param {{ shown: string, selects: string }} names
+ * @returns {Alone}
  */
 export function whatRan(parsed, { shown, selects }) {
   if (!Array.isArray(parsed?.testResults) || typeof parsed?.numTotalTests !== 'number') {
@@ -194,12 +315,20 @@ export function whatRan(parsed, { shown, selects }) {
   }
   return {
     ran: true,
-    failed: mine[0].status === 'failed',
-    duration: Math.round(mine[0].duration ?? 0),
+    failed: mine[0]?.status === 'failed',
+    duration: Math.round(mine[0]?.duration ?? 0),
   };
 }
 
-/** What a ledger must carry before anything below may read it. */
+/**
+ * What a ledger must carry before anything below may read it.
+ *
+ * `Partial<Book>`, because this IS the check: a parameter typed as the thing being
+ * checked for would say the check had already happened.
+ *
+ * @param {Partial<Book> | null} ledger
+ * @returns {string[]}
+ */
 export function faultsIn(ledger) {
   const faults = [];
   if (ledger === null || typeof ledger !== 'object') return ['the ledger is not an object'];
@@ -226,6 +355,9 @@ export function faultsIn(ledger) {
 /**
  * THE READING. `alone` is handed in rather than reached for, which is what makes it one
  * mechanism: the reds and the accusations are the same call, and a test can count that they are.
+ *
+ * @param {{ ledger: Book, alone: Rerunner, budget?: number, limit?: number }} how
+ * @returns {Reading}
  */
 export function decide({ ledger, alone, budget = BUDGET, limit = ACCUSATION_LIMIT }) {
   const broken = faultsIn(ledger);
@@ -244,7 +376,7 @@ export function decide({ ledger, alone, budget = BUDGET, limit = ACCUSATION_LIMI
       said: (one.errors ?? [])[0]?.message ?? '',
       load: one.load ?? null,
       says: again.ran === false ? UNREADABLE : again.failed ? CAUGHT : NOT_ALONE,
-      why: again.why ?? '',
+      why: again.ran === false ? again.why : '',
       alone: again.ran === true ? again.duration : null,
     });
   }
@@ -268,7 +400,9 @@ export function decide({ ledger, alone, budget = BUDGET, limit = ACCUSATION_LIMI
     for (const one of candidates) {
       const again = alone({ root: ledger.root, file: one.file, titles: one.titles });
       if (again.ran === false) {
-        broken.push(`a slow case could not be re-timed: ${namesOf(one.titles).shown} — ${again.why}`);
+        broken.push(
+          `a slow case could not be re-timed: ${namesOf(one.titles).shown} — ${again.why}`,
+        );
         continue;
       }
       retimed += 1;
@@ -297,14 +431,25 @@ export function decide({ ledger, alone, budget = BUDGET, limit = ACCUSATION_LIMI
   };
 }
 
-/** What the exit code is for a reading. Two reds, and they mean different things. */
+/**
+ * What the exit code is for a reading. Two reds, and they mean different things.
+ *
+ * @param {Reading} result
+ * @returns {number}
+ */
 export function exitCodeOf(result) {
   if (result.verdict === 'RULER BROKEN') return EXIT.BROKEN;
   if (result.verdict === 'CLEAN') return EXIT.CLEAN;
   return EXIT.SOMETHING;
 }
 
-/** How a case's window looked, in words, for a reader — and never for a branch above. */
+/**
+ * How a case's window looked, in words, for a reader — and never for a branch above.
+ *
+ * @param {Load | null | undefined} load
+ * @param {number} cores
+ * @returns {string}
+ */
 function loadSaid(load, cores) {
   if (load === null || load === undefined) return 'no sample fell in its window';
   const runnable =
@@ -317,6 +462,10 @@ function loadSaid(load, cores) {
 /**
  * The page. A broken ruler prints its inventory and NO verdict: a partial table beside the words
  * "broken" is exactly the thing somebody quotes later without the words.
+ *
+ * @param {Reading} result
+ * @param {number} [cores]
+ * @returns {string}
  */
 export function render(result, cores = 0) {
   const out = [];
@@ -340,7 +489,9 @@ export function render(result, cores = 0) {
       `**${result.caught}** of ${result.reds.length} red${result.reds.length === 1 ? '' : 's'} reproduced when run alone. Only those are the guard catching something.`,
     );
     out.push('');
-    out.push('| case | file | in the suite | alone | ceiling | verdict | the machine, while it ran |');
+    out.push(
+      '| case | file | in the suite | alone | ceiling | verdict | the machine, while it ran |',
+    );
     out.push('|---|---|---:|---:|---:|---|---|');
     for (const red of result.reds) {
       const name = red.name.replaceAll('|', '\\|');
@@ -395,14 +546,20 @@ export function render(result, cores = 0) {
   return `${out.join('\n')}\n`;
 }
 
+/**
+ * @param {readonly string[]} argv
+ * @returns {{ ledger: string, summary: string, json: string }}
+ */
 function readArgs(argv) {
   const args = { ledger: 'why-it-went-red.json', summary: '', json: '' };
+  /** @type {Record<string, keyof typeof args>} */
   const takes = { '--ledger': 'ledger', '--summary': 'summary', '--json': 'json' };
   for (let index = 0; index < argv.length; index += 2) {
-    const into = takes[argv[index]];
-    if (into === undefined) throw new Error(`unknown argument: ${argv[index]}`);
+    const flag = argv[index] ?? '';
+    const into = takes[flag];
+    if (into === undefined) throw new Error(`unknown argument: ${flag}`);
     const value = argv[index + 1];
-    if (value === undefined) throw new Error(`argument ${argv[index]} was given no value`);
+    if (value === undefined) throw new Error(`argument ${flag} was given no value`);
     args[into] = value;
   }
   return args;
@@ -414,7 +571,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try {
     ledger = JSON.parse(readFileSync(args.ledger, 'utf-8'));
   } catch (why) {
-    process.stdout.write(`## RULER BROKEN\n\n- the ledger could not be read: ${why.message}\n`);
+    process.stdout.write(`## RULER BROKEN\n\n- the ledger could not be read: ${whySaid(why)}\n`);
     process.exitCode = EXIT.BROKEN;
   }
   if (ledger !== null) {

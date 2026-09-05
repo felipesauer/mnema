@@ -26,9 +26,37 @@
  * directory — each is exit 2 and a named reason, never a clean sweep.
  */
 
-import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+
+/**
+ * ONE COMMAND LINE ON THIS MACHINE, as `/proc` gives it up.
+ *
+ * @typedef {{ pid: number, line: string }} CommandLine
+ */
+
+/**
+ * WHAT A SWEEP CAN SAY. `left-behind` and `nothing-left-behind` are readings; `ruler-broken` is
+ * the refusal, and it is a THIRD value rather than an empty reading for the reason this whole
+ * family of files exists — an instrument that cannot say it broke reads the same as a clean one.
+ *
+ * @typedef {'left-behind' | 'nothing-left-behind' | 'ruler-broken'} Verdict
+ */
+
+/**
+ * A SWEEP'S READING. `code` follows `.github/why-it-went-red/` — 0 nothing to read, 1 something
+ * to read, 2 it could not tell — and it is pinned to the verdict beside it by
+ * `what-the-suite-left-behind.test.ts` ("keeps the three verdicts on three exit codes").
+ *
+ * @typedef {{
+ *   verdict: Verdict,
+ *   code: 0 | 1 | 2,
+ *   why: string,
+ *   alive: readonly string[],
+ *   leftBehind: string[],
+ * }} Sweep
+ */
 
 /** Every prefix this workspace builds a sandbox under begins with it. */
 export const THE_FAMILY = 'mnema-';
@@ -51,7 +79,13 @@ export const THE_BASELINE = 'what-the-suite-left-behind.json';
  */
 const A_SUITE = /(?:^|\/)vitest(?:\/|\.[cm]?js\b|(?=\s|$))/;
 
-/** The directories under `where` whose name begins with `prefix`. */
+/**
+ * The directories under `where` whose name begins with `prefix`.
+ *
+ * @param {string} where
+ * @param {string} [prefix]
+ * @returns {string[]}
+ */
 export function sandboxesUnder(where, prefix = THE_FAMILY) {
   return readdirSync(where, { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && entry.name.startsWith(prefix))
@@ -63,15 +97,21 @@ export function sandboxesUnder(where, prefix = THE_FAMILY) {
  * The command lines of every process on this machine, from `/proc`. Linux only, and a process
  * that exits between the listing and the read is skipped rather than thrown over — it is not
  * running, which is the only thing being asked.
+ *
+ * @param {string} [procfs]
+ * @returns {CommandLine[]}
  */
 export function commandLinesFromProc(procfs = '/proc') {
+  /** @type {CommandLine[]} */
   const lines = [];
   for (const entry of readdirSync(procfs, { withFileTypes: true })) {
     if (!/^\d+$/.test(entry.name)) continue;
     try {
       lines.push({
         pid: Number(entry.name),
-        line: readFileSync(join(procfs, entry.name, 'cmdline'), 'utf-8').replaceAll('\0', ' ').trim(),
+        line: readFileSync(join(procfs, entry.name, 'cmdline'), 'utf-8')
+          .replaceAll('\0', ' ')
+          .trim(),
       });
     } catch {
       // Gone between the listing and the read: not running.
@@ -90,6 +130,10 @@ export function commandLinesFromProc(procfs = '/proc') {
  * the real machine found zero suites while it was itself running inside one. A pid cannot be
  * mistaken for another process, and the sweep's own command line says `sweep.mjs`, never
  * `vitest`, so nothing else needs excluding.
+ *
+ * @param {readonly CommandLine[]} commandLines
+ * @param {number} [self]
+ * @returns {string[]}
  */
 export function liveSuites(commandLines, self = process.pid) {
   return commandLines
@@ -103,6 +147,13 @@ export function liveSuites(commandLines, self = process.pid) {
  *
  * `verdict` is one of `left-behind`, `nothing-left-behind`, or `ruler-broken`; the exit codes
  * follow `.github/why-it-went-red/` — 0 nothing to read, 1 something to read, 2 it could not tell.
+ *
+ * @param {{
+ *   now: readonly string[],
+ *   alive: readonly string[],
+ *   baseline: readonly string[] | null,
+ * }} world
+ * @returns {Sweep}
  */
 export function sweep({ now, alive, baseline }) {
   if (alive.length > 0) {
@@ -136,7 +187,13 @@ export function sweep({ now, alive, baseline }) {
       };
 }
 
-/** The verdict as the page a person reads. */
+/**
+ * The verdict as the page a person reads.
+ *
+ * @param {Sweep} result
+ * @param {string} where
+ * @returns {string}
+ */
 export function asProse(result, where) {
   if (result.verdict === 'nothing-left-behind') {
     return `NOTHING LEFT BEHIND — no new ${THE_FAMILY}* directory under ${where}.`;
@@ -152,6 +209,20 @@ export function asProse(result, where) {
   ].join('\n');
 }
 
+/**
+ * THE VALUE AFTER `--name`, or the fallback.
+ *
+ * The fallback's type is CARRIED THROUGH rather than widened, because the two callers below
+ * differ in exactly that: `--tmp` and `--prefix` fall back to a string and are then read as one,
+ * while `--summary` and `--json` fall back to `null` and are compared against it. A single
+ * `string | null` return would make every caller narrow a value three of them cannot receive.
+ *
+ * @template {string | null} T
+ * @param {readonly string[]} argv
+ * @param {string} name
+ * @param {T} fallback
+ * @returns {string | T}
+ */
 function optionOf(argv, name, fallback) {
   const at = argv.indexOf(`--${name}`);
   return at === -1 ? fallback : (argv[at + 1] ?? fallback);
@@ -162,7 +233,10 @@ function optionOf(argv, name, fallback) {
  * one reads this machine, and a caller that wants to exercise the reporting has to supply its
  * own — because the real one is right, and refuses, for as long as the suite is running.
  */
-export function main(argv = process.argv.slice(2), aliveNow = () => liveSuites(commandLinesFromProc())) {
+export function main(
+  argv = process.argv.slice(2),
+  aliveNow = () => liveSuites(commandLinesFromProc()),
+) {
   const where = optionOf(argv, 'tmp', tmpdir());
   const prefix = optionOf(argv, 'prefix', THE_FAMILY);
   const baselineAt = optionOf(argv, 'baseline', THE_BASELINE);
@@ -210,7 +284,8 @@ export function main(argv = process.argv.slice(2), aliveNow = () => liveSuites(c
   const prose = asProse(result, where);
   process.stdout.write(`${prose}\n`);
   if (summaryAt !== null) writeFileSync(summaryAt, `## What the suite left behind\n\n${prose}\n`);
-  if (jsonAt !== null) writeFileSync(jsonAt, `${JSON.stringify({ where, prefix, ...result }, null, 2)}\n`);
+  if (jsonAt !== null)
+    writeFileSync(jsonAt, `${JSON.stringify({ where, prefix, ...result }, null, 2)}\n`);
   return result.code;
 }
 

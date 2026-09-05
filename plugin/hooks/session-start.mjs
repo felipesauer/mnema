@@ -114,6 +114,10 @@ function whereTheSessionIs() {
  *
  * `null` is every silent outcome collapsed into one value, so there is ONE gate above
  * and a single place to remove if this plugin ever stopped being quiet.
+ *
+ * @param {string} cwd Where to run the verb — the host's project directory, or this
+ *   process's own when the host announced none.
+ * @returns {string | null}
  */
 function theDocument(cwd) {
   const ran = spawnSync(BINARY, ['brief'], {

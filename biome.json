@@ -9,6 +9,7 @@
     "includes": [
       "packages/**/*.ts",
       "!packages/**/dist/**",
+      ".github/**/*.mjs",
       "plugin/**/*.mjs",
       "plugin/**/*.json",
       ".claude-plugin/*.json"
