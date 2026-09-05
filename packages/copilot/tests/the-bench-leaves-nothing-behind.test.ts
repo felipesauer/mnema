@@ -4,14 +4,25 @@
  * WHY THIS EXISTS BESIDE THE STRUCTURAL CASE. `every-sandbox-is-removed-where-it-was-made.test.ts`
  * reads every file in the workspace and asks whether a file that makes a sandbox under `tmpdir()`
  * also removes one. That question is answerable by reading, and it is the question that would
- * have gone red on this defect — but it is answered by the FILE, not by the PATH, and the defect
- * had a second half the file cannot see: fifteen caller files removed `bench.root`, the chain
- * root several levels inside the sandbox, and every one of them satisfied a rule about removal.
- * The sandbox itself outlived all of them: 296 per suite run, 47.237 in `/tmp` when an audit
- * finally counted.
+ * have gone red on this defect. The defect had a second half: fifteen caller files removed
+ * `bench.root`, the chain root several levels inside the sandbox, and every one of them satisfied
+ * a rule about removal. The sandbox itself outlived all of them: 296 per suite run, 47.237 in
+ * `/tmp` when an audit finally counted.
  *
- * SO THIS ONE FOLLOWS THE PATH. It names the directory `makeBench` created, and then asks the
- * filesystem whether it is still there.
+ * THIS PARAGRAPH USED TO SAY THAT QUESTION WAS ANSWERED *"by the FILE, not by the PATH"*, and that
+ * is no longer what the structural case does. It now follows the created NAME to the removal that
+ * reaches it — through a loop, a collection, or the field a helper returns it as — so the shape
+ * this file's second half describes (`rmSync(join(sandbox, 'chain'))`, aimed inside rather than at)
+ * is caught by reading, in one file, and has a case of its own there. What survives of the old
+ * division of labour is narrower and worth naming: the structural case reads ONE file at a time,
+ * so a sandbox made in one file and removed in another is still beyond it, and that is exactly
+ * `makeBench` and its callers.
+ *
+ * SO THIS ONE FOLLOWS THE PATH ACROSS FILES. It names the directory `makeBench` created, and then
+ * asks the filesystem whether it is still there. It does that for ONE of the 187 prefixes this
+ * workspace builds under — the one whose helper hands back a root the sandbox can be derived from.
+ * The other 186 are swept by `.github/what-the-suite-left-behind/`, from outside the suite, for
+ * the reason the paragraph below gives.
  *
  * IT USED TO NAME IT BY A DIFF OF `tmpdir()`, AND THAT WAS A RACE. The first case listed the
  * sandboxes before and after the call and required exactly ONE new one — but vitest runs several

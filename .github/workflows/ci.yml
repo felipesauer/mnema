@@ -52,6 +52,14 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # WHAT THE SUITE LEAVES IN /tmp, half one. 187 prefixes are built under `tmpdir()` by this
+      # workspace and exactly one of them is watched by a test, because the obvious watch — list
+      # the directory before and after — is a race inside a suite that runs several files at once.
+      # It is not a race here: nothing of ours is running at this point in the job, so what appears
+      # between this listing and the one after the last vitest step is what the run left.
+      - name: What the suite left behind (before)
+        run: pnpm what-the-suite-left-behind --record
+
       # The JSON report is kept because it carries a duration per case, and durations off the
       # runner are the one thing no workstation and no container can supply. It ANSWERED, once,
       # the question `the-ceiling-belongs-to-the-case` names as beyond a source scan — whether
@@ -106,3 +114,23 @@ jobs:
       - name: Coverage gate
         if: matrix.node == '22'
         run: pnpm test:coverage
+
+      # …and half two, which is why it sits at the END of the job rather than beside the test
+      # step: the coverage gate above is a SECOND run of the suite, and a sweep taken between the
+      # two would read a /tmp the second run is about to write. It refuses outright if any vitest
+      # is still alive, so an ordering mistake here reports `RULER BROKEN` rather than a wrong
+      # answer — and `continue-on-error`, because a leaked directory is worth a red build no more
+      # than a broken ruler is worth masking the reds above it.
+      - name: What the suite left behind (after)
+        if: always()
+        continue-on-error: true
+        run: pnpm what-the-suite-left-behind --summary "$GITHUB_STEP_SUMMARY" --json what-the-suite-left-behind-verdict.json
+
+      - name: Upload what the suite left behind
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: what-the-suite-left-behind-node${{ matrix.node }}
+          path: what-the-suite-left-behind-verdict.json
+          if-no-files-found: ignore
