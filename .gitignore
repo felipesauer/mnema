@@ -6,6 +6,10 @@ coverage/
 # What a run of the suite leaves for `.github/why-it-went-red/` to read. An artifact of a
 # run, like coverage/ above: rewritten by every run and never reviewed.
 why-it-went-red.json
+
+# The before-listing `.github/what-the-suite-left-behind/` takes with the suite stopped. A fact
+# about one machine at one instant: committed, every sweep after the first reads a stranger's /tmp.
+what-the-suite-left-behind.json
 *.log
 *.tgz
 .DS_Store

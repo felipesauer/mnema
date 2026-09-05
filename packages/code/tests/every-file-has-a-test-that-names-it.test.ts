@@ -154,7 +154,7 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * and leaves 2145, which clears that floor and reddens nothing else in this file. Restate
  * this number when the tree gains an import, which is the point of writing it down.
  */
-const CLAUSES_IN_THE_TREE = 2362;
+const CLAUSES_IN_THE_TREE = 2370;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -260,6 +260,8 @@ const LED_NOWHERE: Readonly<Record<string, string>> = {
     'The script that re-runs one red case alone and prints the verdict. Same tree and same extension as the reporter beside it, and the same consequence: nothing about this file is asserted THROUGH the scanner, only by the cases that import it directly.',
   'packages/code/tests/the-sampler-counts-or-refuses.test.ts -> ../../../.github/flake-sampler/summarize.mjs':
     'The summariser the flake sampler folds N runs with. It lives under .github/ beside the workflow that calls it rather than in a package, because nothing the product ships imports it — which is exactly why the scanner cannot reach it.',
+  'packages/code/tests/what-the-suite-left-behind.test.ts -> ../../../.github/what-the-suite-left-behind/sweep.mjs':
+    'The sweep that reports which sandboxes under the machine temp directory outlived a run of the suite. It answers from OUTSIDE the suite, with no worker alive, which is the one place the before-and-after listing is not a race — so it can be neither a package nor reachable by a walk of one.',
   'packages/copilot/tests/readme-example.test.ts -> ../src/index.js':
     "The copilot package's barrel. This one DOES exist under packages/, and is unresolvable for the other reason entirely: the coverage gate excludes a package's src/index.ts from what it measures, PRODUCTION implements that exclusion, and so the barrel is in no corpus for a specifier to land in.",
   'packages/core/src/index.test.ts -> ./index.js':
@@ -687,8 +689,8 @@ describe('every file has a test that names it', () => {
     });
     // Non-vacuity in both parts: the walk really did follow specifiers, and the list
     // really does hold rows — a scanner returning nothing would satisfy the line above.
-    expect(unresolved.length).toBe(5);
-    expect(Object.keys(LED_NOWHERE)).toHaveLength(5);
+    expect(unresolved.length).toBe(6);
+    expect(Object.keys(LED_NOWHERE)).toHaveLength(6);
     // And each row says what THAT module is, by the ledger's rule, at the ledger's floor.
     const why = Object.values(LED_NOWHERE);
     expect(new Set(why).size).toBe(why.length);
