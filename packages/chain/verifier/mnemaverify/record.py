@@ -73,11 +73,30 @@ class Coverage(NamedTuple):
 
 
 def _lines(path: str) -> list[tuple[int, bytes]]:
+    """Every line of a `.jsonl` that CLAIMS to be one, numbered from 1.
+
+    ONLY A ZERO-LENGTH LINE IS DROPPED, and the distinction is the whole function. A file
+    written with a trailing newline splits into a final empty piece that was never a line,
+    so dropping the empty ones is reading the terminator rather than skipping content. This
+    used to drop every line that was blank AFTER `.strip()`, which quietly took whitespace
+    with it - and section 4 says each line of a segment is the CANONICAL serialization
+    (section 1) of the stored object, section 6 says the checkpoints are "one canonical line
+    each", and section 1.6 says canonical bytes carry "no insignificant whitespace". A line
+    of spaces is therefore not a line this format has, and passing over it is a leniency the
+    document does not license.
+
+    MEASURED, BEFORE IT WAS A REFUSAL: one line of a single space appended to
+    `checkpoints.jsonl` - or to a segment - left this reader saying VERIFIED, exit 0, over
+    bytes the product refuses as UNREADABLE. That is the asymmetry class this suite declares
+    closed (G21, G08) with a member alive in it, and it arrived on the one file the freshness
+    probe never stats at all. A whitespace line now reaches the parser like any other and is
+    refused under section 1, located by file and number, by the rule that was already there.
+    """
     with open(path, "rb") as handle:
         raw = handle.read()
     out: list[tuple[int, bytes]] = []
     for number, line in enumerate(raw.split(b"\n"), start=1):
-        if line.strip():
+        if line:
             out.append((number, line))
     return out
 
@@ -293,11 +312,22 @@ def _check_checkpoints(
 
         root_held = False
         if checkpoint.to_seq >= len(entries):
+            # WHY THIS IS UNCHECKED AND NOT A FAIL, and why it cites G09. A signed
+            # checkpoint naming events the tail does not hold looks like the record
+            # contradicting itself, and the product reads it that way (`broken`). But
+            # section 6 makes `prev` the hash of the previous checkpoint's signed message,
+            # so dropping a checkpoint breaks the chain - which means a cut that removed
+            # events HAS to leave the checkpoints that covered them standing over nothing.
+            # A range with no entries under it is therefore the residue an AUTHORIZED cut
+            # must leave, and section 3 says of exactly this that a party reading only the
+            # document "cannot tell an authorized cut from tampering, and the honest thing
+            # for them to do is report the gap and stop". This is that report, and the stop.
             report.unchecked(
                 "5",
                 f"the range reaches seq {checkpoint.to_seq} and the tail holds "
                 f"{len(entries)} entries, so the root could not be folded",
                 label,
+                "G09",
             )
         else:
             span = event_bytes[checkpoint.from_seq : checkpoint.to_seq + 1]
