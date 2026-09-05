@@ -4,6 +4,7 @@
     { "path": "packages/chain" },
     { "path": "packages/core" },
     { "path": "packages/copilot" },
-    { "path": "packages/code" }
+    { "path": "packages/code" },
+    { "path": "tsconfig.rulers.json" }
   ]
 }
