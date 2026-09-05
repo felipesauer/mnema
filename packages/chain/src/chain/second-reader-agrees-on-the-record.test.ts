@@ -62,7 +62,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { cpSync, mkdtempSync, rmSync } from 'node:fs';
+import { appendFileSync, cpSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -139,6 +139,15 @@ function copyOf(fixture: string): string {
   const record = join(root, fixture);
   cpSync(join(FIXTURES, fixture), record, { recursive: true });
   return record;
+}
+
+/** The one tail of a record, and the first segment in it — for writing a line by hand. */
+function segmentOf(record: string): string {
+  const tails = join(record, 'tails');
+  const tail = readdirSync(tails)[0] as string;
+  const segment = readdirSync(join(tails, tail)).find((name) => /^\d{6}\.jsonl$/.test(name));
+  if (segment === undefined) throw new Error('the fixture has no segment');
+  return join(tails, tail, segment);
 }
 
 describe('the second reader can be run at all', () => {
@@ -467,6 +476,36 @@ const MUTATIONS = [
     productLayer: 'T2/T4',
     productBreaks: 'ok',
   },
+  {
+    name: 'blank-line-in-a-segment',
+    refusals: 1,
+    section: '1',
+    says: 'not JSON',
+    productLayer: 'T1',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'blank-line-in-the-checkpoints',
+    refusals: 1,
+    section: '1',
+    says: 'not JSON',
+    productLayer: 'T1',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'blank-segment-same-size',
+    // The SECOND row that is not a refusal, and the reason the count below is 2. See the
+    // INCOMPLETE describe: a checkpoint whose range outruns the entries present is the
+    // residue an authorized cut must leave, and section 3 tells a reader of the document
+    // alone to report it and stop. It is in this table so the enumeration from
+    // `mutate.py list` stays total.
+    refusals: 0,
+    section: '5',
+    says: '',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+    incomplete: true,
+  },
 ] as const;
 
 describe('the second reader refuses, and the mutation that earns each refusal ships with it', () => {
@@ -478,10 +517,22 @@ describe('the second reader refuses, and the mutation that earns each refusal sh
   });
 
   /**
-   * Every row but the one that is not a refusal. `keys-removed` is in the table so the
-   * enumeration from `mutate.py list` above stays total, and it belongs to the INCOMPLETE
-   * describe below instead: a check that could not run is not a check that refused, and a
-   * loop that asserted REFUSED over it would be asserting the wrong thing.
+   * Every row but the TWO that are not refusals. Both are in the table so the enumeration
+   * from `mutate.py list` above stays total, and both belong to the INCOMPLETE describe
+   * below instead: a check that could not run is not a check that refused, and a loop that
+   * asserted REFUSED over either would be asserting the wrong thing.
+   *
+   * THE SECOND MEMBER ARRIVED WITH THIS DELIVERY and its admission is the argued part.
+   * `blank-segment-same-size` is the freshness probe's declared blind spot as an input — a
+   * record whose segments were emptied without a byte count moving — and it leaves signed
+   * checkpoints naming events the tail no longer holds. That reads like the record
+   * contradicting itself, which is how the product reads it (`broken`). It is admitted here
+   * anyway because section 6 makes `prev` the hash of the previous checkpoint's signed
+   * message, so a cut CANNOT take the checkpoints that covered the events with it: a range
+   * with no entries under it is the shape an authorized cut is obliged to leave, and section
+   * 3 says of precisely that case that a party reading only the document "cannot tell an
+   * authorized cut from tampering, and the honest thing for them to do is report the gap and
+   * stop". So this reader reports and stops, under G09.
    *
    * THERE USED TO BE A SECOND EXCLUSION, and its removal is the delivery. A row could carry
    * `accepted: true`, meaning this reader read the mutation as VERIFIED while the product
@@ -493,9 +544,13 @@ describe('the second reader refuses, and the mutation that earns each refusal sh
    */
   const REFUSING = MUTATIONS.filter((mutation) => !('incomplete' in mutation));
 
-  it('leaves exactly ONE row out of the refusal loop, and no row is an acceptance', () => {
-    expect(MUTATIONS.length - REFUSING.length).toBe(1);
-    expect(MUTATIONS.filter((m) => 'incomplete' in m).map((m) => m.name)).toEqual(['keys-removed']);
+  it('leaves exactly TWO rows out of the refusal loop, and no row is an acceptance', () => {
+    expect(MUTATIONS.length - REFUSING.length).toBe(2);
+    expect(
+      MUTATIONS.filter((m) => 'incomplete' in m)
+        .map((m) => m.name)
+        .sort(),
+    ).toEqual(['blank-segment-same-size', 'keys-removed']);
     // NO ROW MAY BE AN ACCEPTANCE. This is the assertion the delivery is measured by: every
     // input `mutate.py` builds that the product refuses is refused here too.
     expect(MUTATIONS.filter((m) => m.refusals === 0 && !('incomplete' in m))).toEqual([]);
@@ -699,6 +754,120 @@ describe('a check that could not run is reported as neither pass nor refusal', (
     JSON.parse(python([MUTATE, 'keys-removed', record]).stdout);
     expect(verify(record, catalogUpcasters()).level).toBe('broken');
     expect(secondReading(record).verdict).toBe('INCOMPLETE');
+  });
+
+  it("answers INCOMPLETE over the freshness probe's blind spot, and cites the gap it rests on", () => {
+    // WHAT THE PROBE HANDS OVER, asked of both readers for the first time. `chainExtent`
+    // pairs each tail with its last segment's SIZE and declares what it therefore cannot
+    // see; `mcp-locate-cache.test.ts` performs exactly this edit to prove the warm
+    // projections answer without a replay behind them. Nothing asked what the readers then
+    // SAY about those bytes, and the answer is the second member of the INCOMPLETE class.
+    const record = copyOf('witnessed-record');
+    const applied = JSON.parse(python([MUTATE, 'blank-segment-same-size', record]).stdout) as {
+      applied: boolean;
+      detail: string;
+    };
+    expect(applied.applied, applied.detail).toBe(true);
+
+    const there = secondReading(record);
+    expect(there.verdict).toBe('INCOMPLETE');
+    expect(there.exit).toBe(2);
+    expect(refusals(there)).toEqual([]);
+
+    // NON-VACUITY, and the sentence the delivery turns on: what could not be checked is the
+    // ROOT, over ranges naming events the tail no longer holds — reported with the count, so
+    // "report the gap and stop" is a report and not a shrug.
+    const unchecked = there.findings.filter((finding) => finding.level === 'UNCHECKED');
+    expect(unchecked.length).toBe(3);
+    expect(unchecked.map((finding) => finding.what).join('\n')).toContain(
+      'the tail holds 0 entries, so the root could not be folded',
+    );
+    // AND IT NAMES WHICH HOLE IN THE DOCUMENT IT RESTS ON. An UNCHECKED with no gap id is a
+    // reader declining without saying on whose authority; G09 is the authority, because the
+    // undecidable half is whether the cut was authorized.
+    expect([...new Set(unchecked.map((finding) => finding.gap))]).toEqual(['G09']);
+    expect(there.gapsLeanedOn).toContain('G09');
+  });
+
+  it('is where the product reads a CONTRADICTION and the second reader reads a cut it cannot judge', () => {
+    // THE DISAGREEMENT, PINNED — and it is not the one at `keys-removed`. There the second
+    // reader has no tool: the keyring is gone and no signature can be checked. HERE it holds
+    // every tool the document publishes — the keys are present, the checkpoint signatures
+    // verify — and what it lacks is a rule for what it is looking at.
+    //
+    // The product answers `broken`: a signed checkpoint whose range outruns the entries
+    // present is the record contradicting its own signature, and it will not call that fine.
+    // The second reader answers INCOMPLETE, and section 3 is why: `prev` chains the
+    // checkpoints (section 6), so a cut cannot take the checkpoints that covered the events
+    // with it — a range over no entries is what an AUTHORIZED cut is obliged to leave behind.
+    // The document says of exactly this that a reader of it alone "cannot tell an authorized
+    // cut from tampering, and the honest thing for them to do is report the gap and stop".
+    // Both readings are faithful. The product is entitled to the stronger one because it
+    // knows something the document does not publish: no operation in it removes an event —
+    // `tail prune` records the authorization and deletes nothing.
+    const record = copyOf('witnessed-record');
+    JSON.parse(python([MUTATE, 'blank-segment-same-size', record]).stdout);
+
+    const here = verify(record, catalogUpcasters());
+    expect(here.level).toBe('broken');
+    expect(here.ok).toBe(false);
+    // WHICH AXIS, not a boolean: the product's own words for it.
+    expect(here.issues.map((issue) => issue.detail).join('\n')).toContain('range-mismatch');
+    expect([...new Set(here.issues.map((issue) => issue.layer))]).toEqual(['T2/T4']);
+
+    expect(secondReading(record).verdict).toBe('INCOMPLETE');
+  });
+});
+
+/**
+ * A LINE OF WHITESPACE, WHICH THIS READER USED TO WALK PAST — the acceptance this delivery
+ * closed, and it was found where nobody was looking: at what the freshness probe hands over.
+ *
+ * `chainExtent` costs one `readdir` per tail plus one `stat` on that tail's LAST SEGMENT, and
+ * it declares the two things it therefore cannot see. `checkpoints.jsonl` is not among the
+ * files it stats at all — `freshness.test.ts` pins that as "a checkpoint appended with no
+ * event behind it" — so bytes written there reach `verify` unannounced, in any quantity and
+ * at any size. That is the door, and asking what the two readers say once through it is what
+ * turned this up.
+ *
+ * WHAT THEY SAID. One line holding a single space, appended to `checkpoints.jsonl` or to a
+ * segment: this reader answered VERIFIED, exit 0, over bytes the product refuses as
+ * UNREADABLE. An acceptance, in the class this file's header declares closed with two named
+ * former members (G21, G08) — and it was alive while the header said so.
+ *
+ * WHY THE PRODUCT IS RIGHT AND THIS READER WAS WRONG, from the document rather than from the
+ * product: section 4 says each line of a segment is the CANONICAL serialization (section 1)
+ * of the stored object, section 6 says the checkpoints are "one canonical line each", and
+ * section 1.6 says canonical bytes carry "no insignificant whitespace". A line of spaces is
+ * not a line this format has. `_lines` dropped every line that was blank after `.strip()`,
+ * which read the trailing-newline terminator and took whitespace with it; it now drops only
+ * ZERO-LENGTH lines, and a whitespace line reaches the parser and is refused under section 1
+ * by the rule that was already there. No new check — a leniency removed.
+ *
+ * THE OTHER SIDE IS ASSERTED TOO, and it is why the fix is not "refuse anything blank": a
+ * genuinely empty line is the terminator, and both readers pass over it. An over-correction
+ * would refuse every well-formed file there is, which is the G25 failure mode — refusing too
+ * much looks like rigour — and the case below is built from an HONEST input for that reason.
+ */
+describe('a line of whitespace is not a line this format has, in either file', () => {
+  it('is refused where a line of NO length is passed over — the same file, one byte apart', () => {
+    // ONE RECORD PER READING, and the discriminant is one byte: `" "` against `""`. Asserting
+    // the refusal alone would be satisfied by a reader that refused every blank line, which
+    // would refuse every file that ends in a newline.
+    const refused = copyOf('witnessed-record');
+    appendFileSync(segmentOf(refused), ' \n');
+    const onSpace = secondReading(refused);
+    expect(onSpace.verdict).toBe('REFUSED');
+    expect(refusals(onSpace).map((finding) => finding.section)).toEqual(['1']);
+    expect(verify(refused, catalogUpcasters()).ok).toBe(false);
+
+    const tolerated = join(root, 'the-same-record-with-an-empty-line');
+    cpSync(join(FIXTURES, 'witnessed-record'), tolerated, { recursive: true });
+    appendFileSync(segmentOf(tolerated), '\n');
+    expect(secondReading(tolerated).verdict).toBe('VERIFIED');
+    // AND THE PRODUCT AGREES ON THE TOLERATED SIDE, which is what makes it the rule's edge
+    // rather than this reader's taste.
+    expect(verify(tolerated, catalogUpcasters()).ok).toBe(true);
   });
 });
 

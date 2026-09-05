@@ -351,7 +351,17 @@ describe('a session shows what another process wrote while it was open', () => {
     // IT DOES NOT COVER A ROW ADDED ABOVE THE BADGE, and that is written here rather
     // than left implied: the palette opens there, so a region that grew UPWARDS would leave
     // this reading identical. Measured — a mutation that put the occurrences in the palette
-    // left this case green. The half with teeth is the boundary case below.
+    // left this case green.
+    //
+    // IT USED TO SAY "the half with teeth is the boundary case below", AND THERE IS NO SUCH
+    // CASE. It was the session run at the shortest height where a growing region could be
+    // walked over the point at which the library redraws the whole screen, and it died with
+    // that boundary — the note further down this file records the removal. Nothing grows with
+    // what a session says any more: the middle region is a fixed-height window onto a roll, so
+    // there is no boundary left for an occurrence to cross and no case to point at. What
+    // covers the row above the badge now is `tests/the-input-has-its-own-place.test.ts`, where
+    // the region above the area is a NUMBER the arrangement is chosen under, asserted at a
+    // nonzero value rather than inferred from a page.
     const before = shapeOfTheInput(ran.bytes.slice(0, ran.at[1]));
     const after = shapeOfTheInput(ran.bytes.slice(0, ran.at[3]));
     expect(after).toEqual(before);

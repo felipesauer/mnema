@@ -207,6 +207,48 @@ describe('the area has forms, and the tallest one that fits is the one drawn', (
     for (const rows of [2, 1, 0]) expect(at(rows), `${rows}`).toBe('bare');
   });
 
+  it('moves every rung of that ladder by the height of the region above it', () => {
+    // THE FIELD THAT WAS READ IN PRODUCTION AND EXERCISED NOWHERE. `header` is what the area
+    // has to fit UNDER, and `areaFor` subtracts it twice — once to choose the form, once to
+    // budget the list of words. Every case in this repository passed it as nought, so both
+    // subtractions could be DELETED and nothing went red: measured, 119 cases across the five
+    // files that call `areaFor` stayed green with `- request.header` removed from either site.
+    // The console is the caller that passes a real one (`repl/console.ts`, from the opening's
+    // own height), so the arithmetic was live and unwitnessed.
+    //
+    // THE ASSERTION IS THE DISPLACEMENT, not a second table of thresholds: a ladder read off a
+    // screen three rows shorter is the same ladder, and pinning the offset is what fails if
+    // the subtraction goes away.
+    const at = (rows: number, header: number) =>
+      areaFor({ ...showingEverything, rows, header }).form;
+    for (const [rows, form] of [
+      [8, 'full'],
+      [7, 'ruled'],
+      [6, 'bare'],
+    ] as const) {
+      expect(at(rows, 3), `${rows} rows under a header of 3`).toBe(form);
+      // NOT VACUOUS: the same height without the header is a rung further UP, so the two
+      // readings really are of different arrangements rather than of one the header cannot
+      // reach. `full` at 8 is the exception by construction — it is `full` either way.
+      if (form !== 'full') expect(at(rows, 0)).not.toBe(form);
+    }
+  });
+
+  it('takes the same rows off the list of words, with the form held still', () => {
+    // THE SECOND SUBTRACTION, isolated. Above the threshold the header also moves, the FORM
+    // moves with it and the row count says nothing about which arithmetic did it — so this
+    // asks at a height where the form is the same either way and only the budget can differ.
+    const roomFor = (header: number) =>
+      areaFor({ ...showingEverything, rows: 30, palette: 40, header });
+    const withNothing = roomFor(0);
+    const underThree = roomFor(3);
+    expect(underThree.form).toBe(withNothing.form); // or this is measuring the ladder again
+    expect(withNothing.above - underThree.above).toBe(3);
+    // AND THE LIST IS REALLY BEING CLIPPED at both, or the difference would be between two
+    // budgets neither of which was binding.
+    expect(withNothing.above).toBeGreaterThan(0);
+  });
+
   it('never draws the badge when there is none, at any height there is', () => {
     // NO PROJECT, NO BADGE, and it is the FORM that does not exist rather than a row drawn
     // empty — so a session outside a project gets the ruled arrangement at every height

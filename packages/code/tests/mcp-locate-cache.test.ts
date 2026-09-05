@@ -50,6 +50,7 @@ import {
   ensureTree,
   skillCreated,
   taskCreated,
+  verify,
 } from '@mnema/chain';
 import {
   chainRootForScope,
@@ -344,6 +345,21 @@ describe('the projections answer first — the chain is not replayed for an enti
     })();
     expect(byReplay).not.toBe('public');
     expect(viaSession(session, created.id)).toBe('public');
+
+    // AND THE OTHER HALF, WHICH USED TO BE A COMMENT. Saying "tampering is `verify`'s
+    // subject" while never calling it left the claim resting on the sentence above rather
+    // than on the product: this file used the probe's blind spot and never asked what the
+    // thing the blind spot defers to actually says. It says the record is broken — the
+    // checkpoints still name a range of events the tail no longer holds — so the projection
+    // answering `public` is a warm read of a record a verifier refuses, which is the whole
+    // shape of the trade and now an assertion.
+    const verdict = verify(
+      chainRootForScope(session.trees, 'public') as string,
+      catalogUpcasters(),
+    );
+    expect(verdict.ok).toBe(false);
+    expect(verdict.level).toBe('broken');
+    expect(verdict.issues.map((issue) => issue.detail).join('\n')).toContain('range-mismatch');
 
     closeSession(session);
   });

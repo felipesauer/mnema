@@ -103,8 +103,11 @@ and has no id:
   sentinel in `self-test` and is unreachable from a file. (G06)
 - §3 — *telling an authorized cut from tampering*. A sequence gap is reported and located;
   whether it was authorized cannot be read from here, because the document does not say what
-  authorizes one — and neither can the **absence** of one, because a removal that took a
-  whole tail leaves nothing discontinuous to report. (G09)
+  authorizes one. The cut itself **is** reported: this bullet used to claim that a removal
+  taking a whole tail leaves nothing discontinuous to report, and emptying a record's segments
+  in place falsifies that — §6 makes `prev` the hash of the previous checkpoint's signed
+  message, so a cut cannot take the checkpoints with it, and every range left outrunning the
+  entries present is named under §5. What stays unreadable is the **authorization**. (G09)
 - §7 — *that a proof is never recomputed over a lifted reading*. No published vector carries
   `v > 1` and no upcaster is published, so there is nothing to lift. (G18)
 - §8 — *which attestation inside a checkpoint dates the record, when it carries more than

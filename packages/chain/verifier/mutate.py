@@ -536,6 +536,90 @@ def checkpoint_by_an_unenrolled_key(root: str) -> tuple[bool, str]:
     )
 
 
+def blank_segment_same_size(root: str) -> tuple[bool, str]:
+    """Every segment replaced by its own length in newlines - THE FRESHNESS PROBE'S BLIND SPOT.
+
+    `chainExtent` pairs each tail with its last segment and that segment's SIZE, which is
+    monotone under the only operation a writer performs, and its docstring declares what it
+    therefore cannot see: "a rewrite that preserves the size". This is that rewrite, in the
+    form that takes the most away - every event of every segment gone, every file the byte
+    count it had, so a reader holding a projection is handed a record it has no reason to
+    re-read.
+
+    It is not a hypothetical. A reader that RETAINS a replay decides whether to rebuild by
+    comparing sizes, so a record edited this way is one it has no reason to read again - and
+    a freshness signal chosen for costing one `stat` is entitled to miss it, since answering
+    it means recomputing hashes and checking signatures. That is this program's job, and what
+    was missing was any input asking what a verifier SAYS once the cheap signal has waved a
+    record like this through.
+
+    Section 6 chains the checkpoints by `prev`, so emptying the events cannot take the
+    checkpoints with them: what is left is a signed range naming events the tail does not
+    hold, which section 3 says a reader of the document alone must report and stop at.
+    """
+    tails = os.path.join(root, "tails")
+    touched = 0
+    for name in sorted(os.listdir(tails)):
+        tail = os.path.join(tails, name)
+        if not os.path.isdir(tail):
+            continue
+        for segment in sorted(n for n in os.listdir(tail) if n.endswith(".jsonl") and n[:-6].isdigit()):
+            path = os.path.join(tail, segment)
+            size = os.path.getsize(path)
+            with open(path, "rb") as handle:
+                before = handle.read()
+            after = b"\n" * size
+            if after == before:
+                continue
+            with open(path, "wb") as handle:
+                handle.write(after)
+            # THE SIZE IS THE CLAIM, so it is checked rather than assumed: a mutation that
+            # changed the byte count would be one the probe CAN see, and this case would
+            # quietly stop being the case it says it is.
+            if os.path.getsize(path) != size:
+                return False, f"{segment} changed size, so this is not the blind spot"
+            touched += 1
+    return touched > 0, f"{touched} segment(s) emptied in place, every byte count unchanged"
+
+
+def blank_line_in_a_segment(root: str) -> tuple[bool, str]:
+    """One line of whitespace among the events - a line the format does not have.
+
+    Section 4 says each line of a segment is the CANONICAL serialization (section 1) of the
+    stored object, and section 1.6 says canonical bytes carry "no insignificant whitespace".
+    So a line of spaces is not a line this format has, and a reader that passes over it is
+    being lenient where the document is not.
+
+    This reader WAS: it dropped every line that was blank after `.strip()`, and one space on
+    a line of its own left it saying VERIFIED, exit 0, over bytes the product refuses as
+    UNREADABLE. An acceptance is the loud half of the asymmetry this suite declares closed,
+    and it was alive.
+    """
+    path = _segment(root)
+    lines = _read_lines(path)
+    lines.append(b" ")
+    return _rewrite(path, lines), "a line of one space appended to the segment"
+
+
+def blank_line_in_the_checkpoints(root: str) -> tuple[bool, str]:
+    """The same line, in the file the freshness probe never stats AT ALL.
+
+    The other call site of the rule above, and the sharper one: a freshness signal built from
+    the size of a tail's last SEGMENT does not watch `checkpoints.jsonl` under any size at
+    all, so whatever is written here arrives unannounced, in any quantity. One space on a
+    line of its own used to leave this reader VERIFIED.
+
+    Two mutations rather than one because the rule has two call sites, and a rule applied at
+    N points is worth a case at N points.
+    """
+    path = _checkpoints(root)
+    if not os.path.exists(path):
+        return False, "there is no checkpoints file"
+    lines = _read_lines(path)
+    lines.append(b" ")
+    return _rewrite(path, lines), "a line of one space appended to checkpoints.jsonl"
+
+
 def _flip_payload(payload: object) -> object:
     """Change one string in a payload, or add one if it holds none."""
     if isinstance(payload, dict):
@@ -565,6 +649,9 @@ MUTATIONS = {
     "appended-event-with-a-wrong-typed-field": appended_event_with_a_wrong_typed_field,
     "checkpoint-by-an-unenrolled-key": checkpoint_by_an_unenrolled_key,
     "tail-relocated": tail_relocated,
+    "blank-segment-same-size": blank_segment_same_size,
+    "blank-line-in-a-segment": blank_line_in_a_segment,
+    "blank-line-in-the-checkpoints": blank_line_in_the_checkpoints,
 }
 
 
