@@ -13,8 +13,21 @@ Four states, and the exit code is one of them:
   BROKEN   (3)   nothing was checked at all, or the verifier itself failed.
 
 NOT COVERED is a fifth thing and deliberately not a state: it is what this verifier
-declares it does not check. It is printed on every run, including a verified one,
-because a gap that looks like coverage is worse than an absence.
+declares it does not check, because a gap that looks like coverage is worse than an
+absence.
+
+IT IS PRINTED ON EVERY RUN THAT READS A RECORD - a verified one, a refused one, and one
+this program broke on before it read a byte. That sentence used to say "on every run",
+and it was false on `self-test` and on `vectors`, which read no record, and on all THREE
+of `record`'s own early returns - no record, no tails/ directory, no tails - because the
+block was declared on the LAST line of the walk, below every one of them. `verify_record`
+declares it first now, and the trunk's suite runs VERIFIED, REFUSED and BROKEN against
+this list. That suite is NOT NAMED HERE on purpose: nothing in this directory may name a
+module of the product, which is the guard on the only thing a second reader is worth, and
+a file name is a name.
+
+The list itself is not written anywhere in this package: `gaps.scope()` derives it from
+the registry, so an entry is added by classifying a gap and in no other way.
 """
 
 from __future__ import annotations

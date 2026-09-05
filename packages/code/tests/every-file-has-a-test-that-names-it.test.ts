@@ -154,7 +154,7 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * and leaves 2145, which clears that floor and reddens nothing else in this file. Restate
  * this number when the tree gains an import, which is the point of writing it down.
  */
-const CLAUSES_IN_THE_TREE = 2356;
+const CLAUSES_IN_THE_TREE = 2362;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -1252,7 +1252,7 @@ describe('the scanner’s parts, each on input of its own', () => {
       .map((one) => `${one.where}: ${one.clause.trim().slice(0, 40)}`);
     expect(invented).toEqual([]);
     // HOW MANY, NOT AT LEAST HOW MANY, because a floor cannot see the scanner stop
-    // seeing. This was `toBeGreaterThan(2000)` and the tree yields 2356: dropping `_`
+    // seeing. This was `toBeGreaterThan(2000)` and the tree yields 2362: dropping `_`
     // alone from the clause's word class loses 211 real imports and leaves 2145, which
     // clears that floor and every other assertion in this file — measured. A count goes
     // red the moment a clause the grammar used to match stops matching.
