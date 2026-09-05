@@ -144,9 +144,13 @@ GAPS: tuple[Gap, ...] = (
         "is indistinguishable from tampering",
         "unresolved",
         "the word waiver appears once in the whole document, inside a test path. A sequence "
-        "gap is reported and located; whether it was authorized cannot be read from here - "
-        "and neither can the ABSENCE of one, because a removal that took a whole tail, or "
-        "the end of one, leaves nothing discontinuous to report",
+        "gap is reported and located; whether it was authorized cannot be read from here. "
+        "THE CUT THAT TOOK THE END OF A TAIL IS REPORTED TOO, and this used to say it was "
+        "not: the claim was that such a removal leaves nothing discontinuous to report, and "
+        "a record whose segments were emptied in place falsifies it - the checkpoints stay, "
+        "and section 6 forces them to, so each one whose range outruns the entries present "
+        "is named with its location under section 5. What cannot be read is still whether "
+        "any of it was authorized, which is why this is a reader-limit and not a finding",
         standing="reader-limit",
         not_checked="telling an authorized cut from tampering",
     ),
