@@ -36,7 +36,7 @@ import os
 import re
 from typing import NamedTuple
 
-from . import bitcoin, enrolment, ots, schema
+from . import bitcoin, enrolment, gaps, ots, schema
 from .checkpoint import Checkpoint, read_checkpoint, read_tailproof
 from .ed25519 import verify as ed25519_verify
 from .entry import Entry, entry_hash, read_line
@@ -592,6 +592,7 @@ def _check_tail_id(report: Report, tail_id: str, ring: dict[str, PublicKey]) -> 
 
 
 def verify_record(root: str, report: Report) -> None:
+    declare_scope(report)
     if not os.path.isdir(root):
         report.break_out(f"there is no record at {root}")
         return
@@ -642,7 +643,6 @@ def verify_record(root: str, report: Report) -> None:
         covered_by_tail[tail_id] = found.covered_through
 
     _check_enrolment(report, entries_by_tail, covered_by_tail, ring)
-    declare_scope(report)
 
 
 def _load_declarations(report: Report) -> schema.Schema | None:
@@ -717,32 +717,23 @@ def _check_enrolment(
 
 
 def declare_scope(report: Report) -> None:
-    """What this verifier does NOT check, said on every run including a verified one."""
-    report.declare_not_covered(
-        "7",
-        "that a proof is never recomputed over a lifted reading",
-        "no published vector carries v > 1 and no upcaster is published, so there is nothing "
-        "from outside to lift. The claim is checkable only from inside today",
-        "G18",
-    )
-    report.declare_not_covered(
-        "3",
-        "telling an authorized cut from tampering",
-        "the word waiver appears once in the whole document, inside a test path. A sequence gap "
-        "is reported and located; whether it was authorized cannot be read from here",
-        "G09",
-    )
-    report.declare_not_covered(
-        "8",
-        "the stored header's place in the Bitcoin chain",
-        "section 8 says this itself: the header is checked for its work, not for its place. "
-        "A reader who needs that follows the block id into an explorer, or runs the ots client "
-        "against a node",
-    )
-    report.declare_not_covered(
-        "1",
-        "the refusal of an explicit undefined property, over a record on disk",
-        "JSON has no undefined, so no line can carry one. The rule is exercised through an "
-        "in-memory sentinel in self-test and is unreachable from a file",
-        "G06",
-    )
+    """What this reader does NOT check, read off the registry rather than written here.
+
+    THE DEFECT THIS REPLACES. This function used to hold four `declare_not_covered` calls
+    with their prose typed into it, and it was one of three places that said the same thing:
+    `gaps.py` classified nothing, this said four, and `verifier/README.md` said three. They
+    drifted - the README never named G06, and G23, the one place the two readers date the
+    same record differently, was said in NO verdict at all. A reader who ran this program
+    and got VERIFIED was never told that the instant it printed is this reader's rule and
+    not the document's.
+
+    So the list has one source: `gaps.scope()`, which reads it off the `standing` field of
+    the registry. There is nothing to add here, and nothing that CAN be added here.
+
+    IT RUNS BEFORE ANY CHECK, which is why it is the first thing `verify_record` does. The
+    old call site was the last line of the walk, so every `break_out` above it - no record,
+    no tails/ directory, no tails - returned a BROKEN verdict with the block missing, on
+    exactly the runs where a reader is most likely to fix something and try again.
+    """
+    for entry in gaps.scope():
+        report.declare_not_covered(entry.section, entry.what, entry.why, entry.gap)

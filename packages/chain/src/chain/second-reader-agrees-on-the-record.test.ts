@@ -868,10 +868,19 @@ describe('what the second reader does NOT check, said by the second reader', () 
     expect(declared).toContain('authorized cut from tampering');
     expect(declared).toContain("header's place in the Bitcoin chain");
     expect(declared).toContain('explicit undefined property');
-    // THE LIST IS SHORTER BY EXACTLY THE TWO THIS DELIVERY CLOSED, and the count is asserted
-    // both ways: a list that grew silently is a check somebody stopped running, and a list
-    // that shrank without the check arriving is the entry removed rather than the limitation.
-    expect(there.notCovered).toHaveLength(4);
+    // FOUR BECAME FIVE, and the defect that moved it is not that a fifth limitation appeared.
+    // It is that G23 — §8 naming which CHECKPOINT dates a record and not which ATTESTATION
+    // inside it, the one place the two readers read the same bytes to different instants —
+    // was a limit of this reader that NO verdict had ever printed. The list was written by
+    // hand at the bottom of the walk, so it held whatever somebody had thought to type;
+    // `gaps.py` classifies each unresolved gap now and `gaps.scope()` derives the block, so
+    // the count moves only when a classification does.
+    expect(declared).toContain('which attestation inside a checkpoint dates the record');
+    // The count stays asserted both ways: a list that grew silently is a check somebody
+    // stopped running, and a list that shrank without the check arriving is the entry removed
+    // rather than the limitation. Which rows those are, and that they are the registry's, is
+    // `second-reader-says-what-it-does-not-check.test.ts`.
+    expect(there.notCovered).toHaveLength(5);
   });
 
   it('says which gaps in FORMAT.md the reading leaned on', () => {

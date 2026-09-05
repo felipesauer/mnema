@@ -7,7 +7,9 @@
     python3 mnema_verify.py all [--record DIR ...]
     python3 mnema_verify.py gaps
 
-    --json    the verdict as one JSON object on stdout, for a caller that compares it
+    --json    the verdict as one JSON object on stdout, for a caller that compares it.
+              On `gaps` it is the registry instead, with what this reader does not check
+              derived from it - the same list `record` prints, from the same function.
 
 Exit codes are the verdict, and there are four of them because there are four things a
 verifier can honestly say:
@@ -107,7 +109,17 @@ def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
 
     if args.command == "gaps":
-        sys.stdout.write(gaps.render())
+        # `--json` IS HONOURED HERE, and for a while it was not: the flag is global, this
+        # branch returned before anything looked at it, and `--json gaps` printed prose to a
+        # caller that had asked for an object. A flag that arrives and feeds nothing is the
+        # same defect in miniature as a list nobody derives.
+        if args.json:
+            payload = gaps.as_dict()
+            payload["command"] = args.command
+            json.dump(payload, sys.stdout, indent=2, sort_keys=True)
+            sys.stdout.write("\n")
+        else:
+            sys.stdout.write(gaps.render())
         return 0
 
     if args.command == "canonicalize":
