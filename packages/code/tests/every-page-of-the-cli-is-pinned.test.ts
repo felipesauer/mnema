@@ -11,10 +11,10 @@
  *
  * IT IS THE FAILURE THAT WAS ACTUALLY HAD. The list of pages in the golden was written by
  * hand — one array of verbs, one of `[verb, sub]` pairs — and it held 45 of the 52 pages
- * the program answers on. Nothing in it was stale: it was SHORT. Five of the seven missing
+ * the program answers on. Nothing in it was stale: it was SHORT. Three of the seven missing
  * were one feature, `switch`, whose group and both acts shipped with nothing asserting a
- * byte of what they tell a person about turning the record off, and roughly a hundred
- * deliveries went by with nothing saying so. That is what a hand-kept list of what a file
+ * byte of what they tell a person about turning the record off, and every delivery between
+ * that one and this one was green over it. That is what a hand-kept list of what a file
  * registers does: it rots on the one occasion it matters, silently, because a list nobody
  * writes to is never red.
  *

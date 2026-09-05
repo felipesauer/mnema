@@ -93,9 +93,9 @@ function section(into: keyof typeof transcript, label: string): void {
  * IT WAS TWO ARRAYS WRITTEN BY HAND — one of verbs, one of `[verb, sub]` pairs — and what
  * they held was 45 of the 52 pages the program answers on. Nothing in them was stale;
  * they were SHORT. `status`, `export`, `usage`, `witness`, `switch`, `switch off` and
- * `switch on` had no pinned help, and five of those seven are one feature: the switch
+ * `switch on` had no pinned help, and three of those seven are one feature: the switch
  * shipped its group and both its acts with nothing asserting a byte of what they tell a
- * person, and around a hundred deliveries went by without anything saying so. A page
+ * person, and every delivery between that one and this one was green over it. A page
  * nobody pins is a page anybody can reword or delete with no test moving, and the two
  * `switch` pages are where this surface tells a reader what happens when they turn the
  * record off.
