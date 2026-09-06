@@ -69,8 +69,23 @@ import { getTask, listTasks, listTasksByState } from './task-store.js';
 export interface CacheOptions {
   /**
    * Where to store the SQLite file. Defaults to in-memory — a cache that lives
-   * only for the process, rebuilt on open. A persistent path arrives with the
-   * surfaces that need a warm cache across runs.
+   * only for the process, rebuilt on open.
+   *
+   * NO PRODUCTION CALLER SETS IT, and that is a fact rather than a gap waiting to
+   * be filled. This said "a persistent path arrives with the surfaces that need a
+   * warm cache across runs"; the surface arrived and chose otherwise. The MCP
+   * session holds a cache warm for the length of the session
+   * (`code/src/mcp/cache-registry.ts`) and opens it with `upcasters` alone, as do
+   * all six `ProjectionCache.open` sites in the workspace — a warm cache IN the
+   * process turned out to be what that surface needed, and a file on disk would
+   * add an invalidation nobody has to do today.
+   *
+   * WHAT IT IS FOR, then, is the property no in-memory cache can demonstrate:
+   * `cache.test.ts` and `advance.test.ts` open a path, close it, open it again and
+   * assert the tables survived. That is a real capability of this class and the
+   * option is how it is reached, so it stays — named here rather than left looking
+   * like plumbing somebody forgot to connect, which is the shape this workspace has
+   * paid for four times.
    */
   readonly dbPath?: string;
   /** Upcaster registry for reading the chain; defaults to the catalog's. */
