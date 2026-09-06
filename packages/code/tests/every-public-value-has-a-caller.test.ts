@@ -55,6 +55,25 @@
  *     `mcp-flag-reaches-the-server.test.ts`, which asserts that a flag REACHES
  *     the option. Said out loud here so a pass is not read as covering both.
  *
+ *     THE FRAILTY IS NOW A NUMBER, and the number is why the second shape still has
+ *     no guard. Asked from the READ end rather than the setter end — a field READ in
+ *     production and written as `<name>:` by no production file — the sweep over
+ *     packages/*​/src sees 345 optional-field declarations under 100 distinct names and accuses
+ *     SIX. Five of the six would have to be excused on the day it was born: `json`,
+ *     `require` and `allowNoRecord` are fed by the commander from `--json`,
+ *     `--require` and `--allow-no-record`, so no product file ever writes the key;
+ *     `parseArg` is a commander hook it calls itself; `fetch`
+ *     (`chain/src/chain/witness-request.ts:106`) is a network seam with a `?? fetch`
+ *     default and only tests pass one. A guard needing five exceptions to be born is
+ *     the shape the paragraph above refuses, so it was not built.
+ *
+ *     THE SIXTH IS REAL AND IS NAMED WHERE IT LIVES: `CacheOptions.dbPath`, public on
+ *     `@mnema/core`, read at `core/src/projections/cache.ts:106`, and set by no
+ *     production caller — all six `ProjectionCache.open` sites pass `upcasters`
+ *     alone. It is not dead: it is the seam `cache.test.ts` and `advance.test.ts`
+ *     prove persistence across a close and re-open through. Its own doc now says so,
+ *     which is what a one-instance class gets instead of a guard.
+ *
  * Known blind spots, so nobody reads more into a pass than it says: a class method
  * or object key that happens to share an exported value's name reads as a
  * reference to it, and `import * as ns` would hide every use behind a property
