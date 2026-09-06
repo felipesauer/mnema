@@ -15,6 +15,7 @@ import { join } from 'node:path';
 import {
   type CatalogEvent,
   catalogUpcasters,
+  channelSwitched,
   decisionBirth,
   decisionTransitioned,
   handoffRecorded,
@@ -383,14 +384,23 @@ export function birthSkill(
   return id;
 }
 
-/** Appends a `skill.transitioned`, optionally executed by an agent. */
+/**
+ * Appends a `skill.transitioned`, optionally executed by an agent and optionally
+ * inside a run.
+ *
+ * BOTH ENVELOPE SLOTS ARE THE CALLER'S because a reading exists that is ABOUT them:
+ * `patternMoveWitness` asks which SESSION moved a pattern, and the product fills that
+ * slot from the run pinned when the move was made (`skill-operations.ts` copies
+ * `pinned.fields.run` into the envelope). A helper that could not vary it could only
+ * ever build the answer for a move nobody pinned.
+ */
 export function moveSkill(
   b: Bench,
   id: string,
   from: string,
   to: string,
   action: string,
-  which?: string,
+  opts: { readonly which?: string; readonly run?: string } = {},
 ): void {
   b.writer.append(
     skillTransitioned(
@@ -399,7 +409,8 @@ export function moveSkill(
         who: b.who,
         signerFp: b.writer.signerFingerprint,
         subject: id,
-        ...(which !== undefined ? { which } : {}),
+        ...(opts.which !== undefined ? { which: opts.which } : {}),
+        ...(opts.run !== undefined ? { run: opts.run } : {}),
       },
       { from, to, action, fields: { note: `${action}ed` } },
     ),
@@ -412,6 +423,46 @@ export function deprecateSkill(b: Bench, id: string, from = 'adopted'): void {
     skillTransitioned(
       { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
       { from, to: 'deprecated', action: 'deprecate', fields: { reason: 'unused' } },
+    ),
+  );
+}
+
+/**
+ * Appends one `channel.switched` — somebody moved the switch of a pushing channel.
+ *
+ * THE INSTANT AND THE ANCHOR ARE THE CALLER'S, and both because the fold over trees is
+ * ABOUT them: `channelStates` answers with the EARLIEST switch-off across the
+ * trees and breaks a tie by `who`, so a tie is only testable if two trees can be given
+ * the same `switchedAt` and two different anchors. `b.now()` is monotonic by design and
+ * a bench has one anchor, so neither could be built otherwise. A projection replays
+ * `who` as written and never re-judges it — the same licence {@link RunSpec.who} takes,
+ * and an anchor is written in the shape the product mints (`mnid:` and hex).
+ *
+ * The scope of the fact is NOT here: a bench writes its own tree, and what a tree IS to
+ * the reading is the `scope` the caller pairs with the cache when it builds a
+ * `ScopedCache`.
+ */
+export function switchChannel(
+  b: Bench,
+  channel: string,
+  on: boolean,
+  opts: {
+    readonly at?: string;
+    readonly who?: string;
+    readonly which?: string;
+    readonly reason?: string;
+  } = {},
+): void {
+  b.writer.append(
+    channelSwitched(
+      {
+        at: opts.at ?? b.now(),
+        who: opts.who ?? b.who,
+        signerFp: b.writer.signerFingerprint,
+        subject: channel,
+        ...(opts.which !== undefined ? { which: opts.which } : {}),
+      },
+      { on, ...(opts.reason !== undefined ? { reason: opts.reason } : {}) },
     ),
   );
 }

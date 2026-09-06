@@ -37,8 +37,8 @@ describe('patternProvenance — where a pattern came from', () => {
     adopter?: string,
   ): string {
     birthSkill(b, id, name, 'proposed', proposer);
-    moveSkill(b, id, 'proposed', 'reviewed', 'review', adopter);
-    moveSkill(b, id, 'reviewed', 'adopted', 'adopt', adopter);
+    moveSkill(b, id, 'proposed', 'reviewed', 'review', { which: adopter });
+    moveSkill(b, id, 'reviewed', 'adopted', 'adopt', { which: adopter });
     return id;
   }
 
