@@ -8,6 +8,18 @@
  * is enumerated from the parser itself, and what has to exist is a READ of the value on
  * the path the option's own action takes.
  *
+ * AND BETWEEN THE TWO OF US ONE DIRECTION IS STILL UNCOVERED, which is said here so the
+ * pair is not read as closing the subject. This guard walks CLI options and asks for a
+ * read; the sister walks exported values and asks for a caller. A field of a LIBRARY
+ * options object — not a flag, so no parser enumerates it — is asked neither question.
+ * Measured rather than guessed: read-in-production-and-written-by-no-production-file
+ * accuses 6 of 345 optional-field declarations, and 5 of the 6 are artefacts a guard
+ * would have to excuse on its first day (three commander-fed flags, a commander hook,
+ * a network seam). The count that would justify building it is therefore ONE —
+ * `CacheOptions.dbPath` — and one instance gets the per-case treatment this file's
+ * own sister paragraph names, not a third guard. The full sweep is in the sister's
+ * doc-comment.
+ *
  * IT WAS BUILT BECAUSE THE SURFACE HELD ONE. `mnema witness upgrade --calendar` accepted
  * URLs, the wiring put them in `{ calendars }`, the adapter forwarded the object, and
  * `completeWitness` never read the key — while the help said `the calendars to ask, when

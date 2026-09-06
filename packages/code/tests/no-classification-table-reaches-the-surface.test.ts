@@ -15,14 +15,26 @@
  * invalidates. It is here by the same mechanism and for the same reason: it declares
  * itself hidden, so the sweep finds it.
  *
- * It is the second guard of a pair that could not go red. Measured in the delivery
- * before this one: making a surface classify for itself (`state === 'adopted'`
- * instead of asking) leaves ONE red, and it comes from
- * `every-public-value-has-a-caller.test.ts` — the accessor loses its only consumer —
- * never from behaviour. That red is conditional on the accessor still being
- * exported: a duplicator that also tidies the now-uncalled export away leaves
- * NOTHING red (measured in this slice's report). Inside a single package the
- * duplication was always silent.
+ * It is the second guard of a pair that cannot go red, and THE ONE RED IT USED TO
+ * PROMISE IS GONE. The sentence here read: making a surface classify for itself
+ * (`state === 'adopted'` instead of asking) leaves ONE red, and it comes from
+ * `every-public-value-has-a-caller.test.ts` — the accessor loses its only consumer.
+ * What falsified it is running that same mutation again over the whole suite.
+ * Replacing `decisionDisposition(state)` in `presentation/state.ts` with the
+ * comparison written out — output byte for byte the same — leaves 4376 of 4376
+ * GREEN, and the same mutation on `skillDisposition` leaves 4376 of 4376 GREEN too.
+ *
+ * The premise underneath was that the accessor had ONE consumer, and none of the
+ * three does: `skillDisposition` is read by `served-patterns.ts` and
+ * `skill-export.ts` besides this surface, `decisionDisposition` by its own module's
+ * `statesMeaning` calls, `taskDisposition` by `copilot`'s `tasks.ts`. A surface that
+ * stops asking takes A consumer away and never the last one, so the sister guard has
+ * nothing to say. The duplication is silent everywhere, not only inside one package.
+ *
+ * THE RULER WAS CHECKED IN THE SAME BATTERY, because two zeros with no proof the run
+ * can go red are not a measurement: the same edit made WRONG — `accepted` painted
+ * `closed` — goes red 4 times in 2 files (`a-state-is-a-position.test.ts`,
+ * `styled.test.ts`). The zeros above are this guard's silence and not a broken run.
  *
  * So this walks the public surface, in both directions of one rule:
  *   - no table a module declares hidden reaches an entry point's runtime exports;
@@ -49,14 +61,41 @@
  * WHAT IT DOES NOT DO, so a pass is not read as more than it says:
  *   - IT DOES NOT CATCH REIMPLEMENTATION FROM SCRATCH. A surface that writes
  *     `state === 'adopted'` for itself touches neither the table nor the accessor,
- *     and nothing here sees it. The alternative was measured and refused: a scan for
- *     a state literal in a comparison, outside the machine's own house, finds ONE
- *     site in this workspace and it is a FALSE POSITIVE —
- *     `core/src/workflow/identity-operations.ts:161`, `decided.source === 'adopted'`,
+ *     and nothing here sees it. TWO scans have now been measured and both refused,
+ *     and it is the SECOND that decides the limit — the first argument, kept below
+ *     because it was right about the scan it was about, does not reach it.
+ *
+ *     THE COARSE SCAN CARRIES AN EXCEPTION. `grep -rnE "(===|!==|case) '<state>'"`
+ *     over packages/*​/src finds ONE production site and it is a FALSE POSITIVE:
+ *     `core/src/workflow/identity-operations.ts:162`, `decided.source === 'adopted'`,
  *     where `adopted` is where an anchor came from and merely a homonym of the skill
  *     state. A guard born needing an allowlist already carries an exception, and the
- *     exception accretes until somebody switches the guard off. It was not built;
- *     this limit is the price, and it is the whole of what stays uncovered.
+ *     exception accretes until somebody switches the guard off.
+ *
+ *     THE NARROW SCAN CARRIES NO EXCEPTION AND NO POWER, which is the finding that
+ *     keeps this limit written instead of closed. Restricted to the property a
+ *     reimplementation actually compares —
+ *     `grep -rnE "\bstate\s*(===|!==)\s*'<state>'"` over packages/*​/src, with the
+ *     states taken from `DECISION_STATES`, `SKILL_STATES` and `TASK_STATES` — it
+ *     finds ZERO, in
+ *     production and in test code alike; the only three hits anywhere in the
+ *     workspace are three sentences of this file's own prose. So it is born clean and
+ *     the paragraph above does not apply to it. What refuses it is that it cannot see
+ *     the defect. Written five ways with identical behaviour, that scan catches ONE,
+ *     the inline literal; it misses the state word behind a named constant, behind an
+ *     array `.includes`, on a differently named field, and behind a one-line alias.
+ *
+ *     AND THE MISSED SHAPE IS THE HOUSE STYLE, not a hypothetical.
+ *     `core/src/projections/skill.ts` holds `const ADOPTED = 'adopted'` and asks
+ *     `event.payload.to === ADOPTED` — legitimately, a POSITION question inside the
+ *     fold that computes state, and invisible to both scans only because the field is
+ *     called `to` and the word sits behind a constant. Widen either scan far enough
+ *     to reach that shape and that site is the innocent it accuses. Narrow and
+ *     powerless, or wide and born with an exception: neither was built.
+ *
+ *     This limit is the price, and it is the whole of what stays uncovered. HOW
+ *     total it is, is the paragraph at the top of this file: the reimplementation
+ *     leaves nothing red at all.
  *   - It is blind to a table keyed by a SUBSET of a machine's states, and to one
  *     keyed by a vocabulary that is not a machine's states at all: `LATEST_VERSION`
  *     is keyed by every event kind and is public on purpose, and `UNROUTED_KINDS` is
