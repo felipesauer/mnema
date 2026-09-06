@@ -54,7 +54,7 @@
  * THAT file — what reaches it today and what that reaches instead — so it can be drained
  * one row at a time. It can only shrink.
  *
- * AND IT CANNOT DISSOLVE ITSELF. The ledger's keys are 81 path strings. Under a rule that
+ * AND IT CANNOT DISSOLVE ITSELF. The ledger's keys are 79 path strings. Under a rule that
  * read path literals, listing a file as debt would witness it and every entry would go
  * stale the moment it was written. Naming requires an IMPORT here, so a table of strings
  * names nothing — asserted below rather than assumed.
@@ -154,7 +154,7 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * and leaves 2145, which clears that floor and reddens nothing else in this file. Restate
  * this number when the tree gains an import, which is the point of writing it down.
  */
-const CLAUSES_IN_THE_TREE = 2381;
+const CLAUSES_IN_THE_TREE = 2391;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -564,17 +564,9 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: 'Declares the `witness` group and prints its outcomes; the one suite driving it proves --calendar and --global reach commands/witness.ts, and no golden ever invokes the verb.',
   },
-  'packages/copilot/src/context/switches.ts': {
-    reached: 'nobody imports it',
-    why: "The OFF-wins fold across trees; the only value a relative-chain test observes is the brief's `{ on: true }` default, so the off branch, the tie-break and `travels` go unseen.",
-  },
   'packages/copilot/src/intelligence/events.ts': {
     reached: 'nobody imports it',
     why: 'CatalogEvent and EventKind, two aliases computed from orderedEvents across a package boundary: nothing of it survives compilation, so the two tests naming it borrow a vocabulary and never a value.',
-  },
-  'packages/copilot/src/intelligence/pattern-moves.ts': {
-    reached: 'nobody imports it',
-    why: 'The three-answer pattern-move reading; the suite its own docstring cites lives in packages/code and reaches it as `@mnema/copilot`, exercising the built dist and not this source.',
   },
   'packages/copilot/src/sources.ts': {
     reached: 'nobody imports it',
@@ -660,9 +652,9 @@ describe('every file has a test that names it', () => {
     const found = unwitnessed();
     const byReach = (reach: Reach): number =>
       [...found.values()].filter((one) => one === reach).length;
-    expect(PRODUCTION.length - found.size).toBe(214);
-    expect(found.size).toBe(81);
-    expect(byReach('nobody imports it')).toBe(81);
+    expect(PRODUCTION.length - found.size).toBe(216);
+    expect(found.size).toBe(79);
+    expect(byReach('nobody imports it')).toBe(79);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -670,7 +662,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(81);
+    expect(reasons).toHaveLength(79);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.
@@ -703,7 +695,7 @@ describe('every file has a test that names it', () => {
   });
 
   it('cannot be dissolved by the ledger that describes it', () => {
-    // The keys below are 81 paths. Naming requires an IMPORT, so listing a file here
+    // The keys below are 79 paths. Naming requires an IMPORT, so listing a file here
     // cannot witness it — and this file, which mentions every one of them, imports no
     // product file at all.
     const self = TEST_TREE.find((one) =>

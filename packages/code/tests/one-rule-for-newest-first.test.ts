@@ -76,10 +76,12 @@
  *     just a string comparison.
  *     Measured on all four, so the class is not read as uniform. Flipped to descending,
  *     each turns red as: `exposure.ts` 4 (3 of them behaviour), `references.ts` 3 (2),
- *     `transcripts.ts` 2 (1), `switches.ts` **1, and it is this file's backstop** — no
- *     behaviour case anywhere names `channelStates`, so nothing else in the suite sees
- *     that direction change. Three of the four are held by their own answers; the
- *     fourth is held by a shape, and that is the weakest claim in this file.
+ *     `transcripts.ts` 2 (1), `switches.ts` 4 (3). The last figure REPLACES a premise
+ *     this file used to state: `switches.ts` turned exactly 1 red and that one was this
+ *     file's own backstop, because no behaviour case anywhere named `channelStates`.
+ *     `copilot/src/context/switches.test.ts` falsified it — it asks the fold with two
+ *     trees and in both source orders — and all four are now held by their own answers
+ *     rather than three of them.
  *   - An instant read through a computed key (`a[field]`) is invisible to the check
  *     that an inline comparator names no instant. Measured: of the comparators in
  *     `src`, one indexes a tuple by a literal (`a[0]`, in `witness.ts`) and ZERO reach

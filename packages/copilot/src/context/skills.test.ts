@@ -153,8 +153,8 @@ describe('adoptedSkills — the body comes with the agent that adopted it', () =
   it('names the agent that adopted the pattern', () => {
     const b = bench();
     birthSkill(b, 'sk-1', 'Small PRs', 'proposed', 'agent-A');
-    moveSkill(b, 'sk-1', 'proposed', 'reviewed', 'review', 'agent-A');
-    moveSkill(b, 'sk-1', 'reviewed', 'adopted', 'adopt', 'agent-A');
+    moveSkill(b, 'sk-1', 'proposed', 'reviewed', 'review', { which: 'agent-A' });
+    moveSkill(b, 'sk-1', 'reviewed', 'adopted', 'adopt', { which: 'agent-A' });
     const cache = b.cache();
     try {
       expect(adoptedSkills([cache])).toEqual([
@@ -190,8 +190,8 @@ describe('adoptedSkills — the body comes with the agent that adopted it', () =
   it('reports the ADOPTER, not the proposer, when they are different agents', () => {
     const b = bench();
     birthSkill(b, 'sk-1', 'Small PRs', 'proposed', 'agent-A');
-    moveSkill(b, 'sk-1', 'proposed', 'reviewed', 'review', 'agent-A');
-    moveSkill(b, 'sk-1', 'reviewed', 'adopted', 'adopt', 'agent-B');
+    moveSkill(b, 'sk-1', 'proposed', 'reviewed', 'review', { which: 'agent-A' });
+    moveSkill(b, 'sk-1', 'reviewed', 'adopted', 'adopt', { which: 'agent-B' });
     const cache = b.cache();
     try {
       expect(adoptedSkills([cache])[0]?.adoptedBy).toBe('agent-B');
