@@ -15,6 +15,7 @@
  */
 
 import { rmSync } from 'node:fs';
+import { isAnchorId } from '@mnema/core';
 import { afterEach, describe, expect, it } from 'vitest';
 import { type Bench, makeBench, switchChannel } from '../../tests/support/chain.js';
 import type { ScopedCache } from '../sources.js';
@@ -30,13 +31,40 @@ const CHANNEL = 'edit-rules-push';
 /**
  * Two anchors in the shape the product mints, ordered so the second key of the tie-break
  * has a direction a case can name. `EARLIER_ANCHOR` sorts first as a string.
+ *
+ * THE WIDTH WAS WRONG, AND IS NOW CHECKED RATHER THAN CLAIMED. These were first written
+ * with THIRTY-TWO hex, under a premise this comment stated in those words. An anchor is
+ * `mnid:` and SIXTY-FOUR, and `isAnchorId` — the predicate the surface itself resolves a
+ * typed anchor with — answered `false` for both of them.
+ *
+ * Nothing here asserted any less for it, and that is the point: this fold never reads the
+ * width of a `who`, it only orders two of them, so a fixture could carry a value no record
+ * could ever hold and every case would stay green over a world that cannot exist. What
+ * falsified the premise is `isAnchorId` run on the two values; what keeps it falsifiable is
+ * the case below, which runs it again on every anchor this file writes.
  */
-const EARLIER_ANCHOR = 'mnid:1111111111111111111111111111aaaa';
-const LATER_ANCHOR = 'mnid:9999999999999999999999999999ffff';
+const EARLIER_ANCHOR = `mnid:${'1'.repeat(60)}aaaa`;
+const LATER_ANCHOR = `mnid:${'9'.repeat(60)}ffff`;
 
 /** Two instants a case can hand two trees, in a stated order. */
 const EARLIER = '2026-02-01T00:00:00.000Z';
 const LATER = '2026-03-01T00:00:00.000Z';
+
+describe('the anchors these cases hand the fold are anchors the product could have minted', () => {
+  it('is asked of the predicate the surface resolves a typed anchor with', () => {
+    // The fold under test never reads the WIDTH of a `who` — it only orders two of them —
+    // so a fixture carrying a value no record could hold leaves every case below green
+    // over a world that cannot exist. These two were exactly that at thirty-two hex. The
+    // check lives here and not in the prose above because a claim in a comment cannot go
+    // red, and this one had already been false for a whole delivery.
+    expect(isAnchorId(EARLIER_ANCHOR)).toBe(true);
+    expect(isAnchorId(LATER_ANCHOR)).toBe(true);
+    // And the direction the tie-break cases name is a property of these two VALUES and
+    // not of the rule, so it is pinned here: an edit to either that reversed it would
+    // otherwise turn `the anchor breaks the tie` into a case passing for the wrong reason.
+    expect(EARLIER_ANCHOR < LATER_ANCHOR).toBe(true);
+  });
+});
 
 describe('channelStates — where a switch stands across the trees a caller can see', () => {
   let benches: Bench[] = [];
@@ -113,13 +141,19 @@ describe('channelStates — where a switch stands across the trees a caller can 
   it('a tree whose last switch turned it ON says nothing about the other trees', () => {
     // One tree cannot switch a channel back on for another, so an ON row is not a vote:
     // the OFF in the second tree still decides, and the answer names IT.
+    // THE ON ROW IS THE ONE THAT WOULD WIN. It is written at the EARLIER instant and by
+    // the anchor that sorts first, so a rule counting it as a vote would answer with IT —
+    // by a different anchor, at a different instant, from a tree of the other scope. The
+    // earlier draft of this case had the ON row late and losing on both keys, which made
+    // it green under the very mutation its name is about: an ON row counted as a vote
+    // still lost the tie-break, and the bytes came out the same.
     const team = bench();
     const mine = bench();
-    switchChannel(team, CHANNEL, true, { at: LATER, who: LATER_ANCHOR });
-    switchChannel(mine, CHANNEL, false, { at: EARLIER, who: EARLIER_ANCHOR });
+    switchChannel(team, CHANNEL, true, { at: EARLIER, who: EARLIER_ANCHOR });
+    switchChannel(mine, CHANNEL, false, { at: LATER, who: LATER_ANCHOR });
 
     expect(channelStates([source(team), source(mine, 'private')], [CHANNEL])).toStrictEqual([
-      { channel: CHANNEL, on: false, by: EARLIER_ANCHOR, at: EARLIER, travels: false },
+      { channel: CHANNEL, on: false, by: LATER_ANCHOR, at: LATER, travels: false },
     ]);
   });
 

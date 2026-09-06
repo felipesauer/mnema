@@ -22,6 +22,7 @@ import {
   type Bench,
   birthSkill,
   consultSkill,
+  deprecateSkill,
   makeBench,
   moveSkill,
   startRun,
@@ -134,6 +135,29 @@ describe('patternMoveWitness — which of three answers the record gives about a
     expect(witness.consulted).toEqual([]);
   });
 
+  it('a run that read TWO patterns read BOTH of them, not just the last', () => {
+    // THE COLLECTION ACCUMULATES PER RUN: a session's second consultation joins its first
+    // rather than replacing it. That is the left-hand side of the `??` in the collect, and
+    // nothing else in this suite reached it — every other case here gives a run exactly one
+    // consultation, so a collection keeping only the LAST reading of each session answered
+    // all of them identically. Measured: with the accumulation dropped, this case is the
+    // one that reddens, and it names `sk-first` as MOVED WITHOUT CONSULTING — an accusation
+    // against a session that demonstrably read it.
+    const b = bench();
+    startRun(b, 'run-a', { agent: 'claude' });
+    birthSkill(b, 'sk-first', 'The one it read first');
+    birthSkill(b, 'sk-second', 'The one it read second');
+    consultSkill(b, 'sk-first', { run: 'run-a' });
+    consultSkill(b, 'sk-second', { run: 'run-a' });
+    moveSkill(b, 'sk-first', 'proposed', 'reviewed', 'review', { run: 'run-a' });
+    moveSkill(b, 'sk-second', 'proposed', 'reviewed', 'review', { run: 'run-a' });
+
+    const witness = patternMoveWitness(b.events());
+    expect(ids(witness.consulted)).toEqual(['sk-first', 'sk-second']);
+    expect(witness.movedWithoutConsulting).toEqual([]);
+    expect(witness.notObservable).toEqual([]);
+  });
+
   it('the order inside the session is not asked: a consultation AFTER the move still counts', () => {
     // The unit is the SESSION and not the instant, because the stream is a k-way merge
     // across trees whose total order is this product's tie-break and not an order two
@@ -158,7 +182,7 @@ describe('patternMoveWitness — which of three answers the record gives about a
     moveSkill(b, 'sk-review', 'proposed', 'reviewed', 'review', { run: 'run-a' });
     moveSkill(b, 'sk-adopt', 'reviewed', 'adopted', 'adopt', { run: 'run-a' });
     moveSkill(b, 'sk-reject', 'proposed', 'rejected', 'reject', { run: 'run-a' });
-    moveSkill(b, 'sk-deprecate', 'adopted', 'deprecated', 'deprecate', { run: 'run-a' });
+    deprecateSkill(b, 'sk-deprecate', { run: 'run-a' });
 
     const witness = patternMoveWitness(b.events());
     const all = [...witness.consulted, ...witness.movedWithoutConsulting, ...witness.notObservable];

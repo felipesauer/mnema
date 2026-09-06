@@ -31,7 +31,13 @@ import {
   taskBirth,
   taskTransitioned,
 } from '@mnema/chain';
-import { chainRootForScope, orderedEvents, ProjectionCache, resolveTrees } from '@mnema/core';
+import {
+  chainRootForScope,
+  orderedEvents,
+  ProjectionCache,
+  resolveTrees,
+  skillGate,
+} from '@mnema/core';
 import { openTreeForWriting } from '@mnema/core/write';
 import { onTestFinished } from 'vitest';
 
@@ -400,8 +406,73 @@ export function moveSkill(
   from: string,
   to: string,
   action: string,
-  opts: { readonly which?: string; readonly run?: string } = {},
+  opts: MoveOpts = {},
 ): void {
+  appendMove(b, id, from, to, action, { note: `${action}ed` }, opts);
+}
+
+/**
+ * Appends a `skill.transitioned {action: 'deprecate'}`, which carries a `reason` and not
+ * a `note` — because that is what the gate requires of THIS action and of no other.
+ *
+ * IT IS NOT A CONVENIENCE OVER {@link moveSkill}, it is the only correct way to write
+ * one. `moveSkill` fills the proof slot with a `note`, and a `deprecate` carrying a note
+ * is refused `MISSING_PROOF`; two cases wrote one that way and stayed green, because
+ * neither read the fields back. What stops the third is {@link appendMove}, not this
+ * comment.
+ */
+export function deprecateSkill(b: Bench, id: string, opts: DeprecateOpts = {}): void {
+  appendMove(b, id, opts.from ?? 'adopted', 'deprecated', 'deprecate', { reason: 'unused' }, opts);
+}
+
+/** The envelope slots a case may choose on a move. */
+interface MoveOpts {
+  readonly which?: string;
+  readonly run?: string;
+}
+
+/** The same, plus the state a deprecation leaves — `adopted` unless a case says otherwise. */
+interface DeprecateOpts extends MoveOpts {
+  readonly from?: string;
+}
+
+/**
+ * Appends one move, having first asked the PRODUCT whether it is one.
+ *
+ * THE BENCH MAY NOT WRITE WHAT THE GATE WOULD REFUSE. A fixture carrying proof the
+ * product rejects is a suite green over a record that could not exist, and it does not
+ * announce itself: nothing downstream reads a transition's fields back, so the write
+ * lands, the projection folds it, and every assertion about the fold passes. Measured —
+ * `deprecate` requires a `reason` where the other three actions require a `note`, and two
+ * cases wrote `{ note: 'deprecateed' }` through {@link moveSkill}; `skillGate` answers
+ * `REFUSED (MISSING_PROOF)` on exactly those fields.
+ *
+ * So the check is the product's own gate rather than a rule restated here, and it throws
+ * rather than returning: a bench that quietly declined to write would turn one bad
+ * fixture into a case asserting over an empty record.
+ */
+function appendMove(
+  b: Bench,
+  id: string,
+  from: string,
+  to: string,
+  action: string,
+  fields: TransitionFields,
+  opts: MoveOpts,
+): void {
+  const verdict = skillGate({
+    who: b.who,
+    from,
+    action,
+    fields,
+    ...(opts.which !== undefined ? { which: opts.which } : {}),
+  });
+  if (!verdict.ok) {
+    throw new Error(
+      `the bench cannot write a move the product refuses: ` +
+        `${from} --${action}--> ${to} is ${verdict.code} (${verdict.message})`,
+    );
+  }
   b.writer.append(
     skillTransitioned(
       {
@@ -412,17 +483,7 @@ export function moveSkill(
         ...(opts.which !== undefined ? { which: opts.which } : {}),
         ...(opts.run !== undefined ? { run: opts.run } : {}),
       },
-      { from, to, action, fields: { note: `${action}ed` } },
-    ),
-  );
-}
-
-/** Appends a `skill.transitioned {action: 'deprecate'}`. */
-export function deprecateSkill(b: Bench, id: string, from = 'adopted'): void {
-  b.writer.append(
-    skillTransitioned(
-      { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
-      { from, to: 'deprecated', action: 'deprecate', fields: { reason: 'unused' } },
+      { from, to, action, fields },
     ),
   );
 }
