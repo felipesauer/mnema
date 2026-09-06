@@ -179,12 +179,16 @@ describe('patternMoveWitness — which of three answers the record gives about a
     moveSkill(b, 'sk-1', 'reviewed', 'adopted', 'adopt', { which: 'claude', run: 'run-a' });
 
     const [byHand, byAgent] = patternMoveWitness(b.events()).notObservable;
-    expect(byHand).toEqual({
+    // `toStrictEqual` and not `toEqual`: the latter treats a key present and undefined
+    // as a key absent, so the whole property this case exists for would be invisible to
+    // it. Measured — carrying `run: event.run` unconditionally left this case GREEN under
+    // `toEqual` and reddens it under `toStrictEqual`.
+    expect(byHand).toStrictEqual({
       skill: 'sk-1',
       action: 'review',
       at: '2026-01-01T00:00:02.000Z',
     });
-    expect(byAgent).toEqual({
+    expect(byAgent).toStrictEqual({
       skill: 'sk-1',
       action: 'adopt',
       at: '2026-01-01T00:00:03.000Z',

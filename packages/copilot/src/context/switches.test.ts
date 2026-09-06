@@ -67,7 +67,7 @@ describe('channelStates — where a switch stands across the trees a caller can 
     const team = bench();
     const mine = bench();
 
-    expect(channelStates([source(team), source(mine, 'private')], [CHANNEL])).toEqual([
+    expect(channelStates([source(team), source(mine, 'private')], [CHANNEL])).toStrictEqual([
       { channel: CHANNEL, on: true },
     ]);
   });
@@ -82,7 +82,7 @@ describe('channelStates — where a switch stands across the trees a caller can 
       reason: 'too noisy',
     });
 
-    expect(channelStates([source(team), source(mine, 'private')], [CHANNEL])).toEqual([
+    expect(channelStates([source(team), source(mine, 'private')], [CHANNEL])).toStrictEqual([
       {
         channel: CHANNEL,
         on: false,
@@ -98,12 +98,14 @@ describe('channelStates — where a switch stands across the trees a caller can 
   it('a switch with no agent and no reason carries neither key', () => {
     // A person switching it directly leaves no `which`, and a switch with no stated
     // reason leaves no `reason`; the answer says so by having no key rather than an
-    // empty one.
+    // empty one. `toStrictEqual` throughout this file, and not `toEqual`: the latter
+    // reads a key present and undefined as a key absent, which is the exact distinction
+    // three cases here are about.
     const team = bench();
     const mine = bench();
     switchChannel(team, CHANNEL, false, { at: EARLIER, who: EARLIER_ANCHOR });
 
-    expect(channelStates([source(team), source(mine, 'private')], [CHANNEL])).toEqual([
+    expect(channelStates([source(team), source(mine, 'private')], [CHANNEL])).toStrictEqual([
       { channel: CHANNEL, on: false, by: EARLIER_ANCHOR, at: EARLIER, travels: true },
     ]);
   });
@@ -116,7 +118,7 @@ describe('channelStates — where a switch stands across the trees a caller can 
     switchChannel(team, CHANNEL, true, { at: LATER, who: LATER_ANCHOR });
     switchChannel(mine, CHANNEL, false, { at: EARLIER, who: EARLIER_ANCHOR });
 
-    expect(channelStates([source(team), source(mine, 'private')], [CHANNEL])).toEqual([
+    expect(channelStates([source(team), source(mine, 'private')], [CHANNEL])).toStrictEqual([
       { channel: CHANNEL, on: false, by: EARLIER_ANCHOR, at: EARLIER, travels: false },
     ]);
   });
@@ -129,7 +131,7 @@ describe('channelStates — where a switch stands across the trees a caller can 
     switchChannel(team, CHANNEL, false, { at: EARLIER, who: EARLIER_ANCHOR });
     switchChannel(team, CHANNEL, true, { at: LATER, who: EARLIER_ANCHOR });
 
-    expect(channelStates([source(team), source(mine, 'private')], [CHANNEL])).toEqual([
+    expect(channelStates([source(team), source(mine, 'private')], [CHANNEL])).toStrictEqual([
       { channel: CHANNEL, on: true },
     ]);
   });
@@ -197,7 +199,7 @@ describe('channelStates — where a switch stands across the trees a caller can 
     switchChannel(team, 'edit-asks-a-person', false, { at: EARLIER, who: EARLIER_ANCHOR });
     switchChannel(team, 'xyzzy', false, { at: EARLIER, who: EARLIER_ANCHOR });
 
-    expect(channelStates([source(team)], ['edit-asks-a-person', CHANNEL])).toEqual([
+    expect(channelStates([source(team)], ['edit-asks-a-person', CHANNEL])).toStrictEqual([
       {
         channel: 'edit-asks-a-person',
         on: false,
@@ -213,7 +215,7 @@ describe('channelStates — where a switch stands across the trees a caller can 
     const team = bench();
     switchChannel(team, CHANNEL, false, { at: EARLIER, who: EARLIER_ANCHOR });
 
-    expect(channelStates([source(team)], [])).toEqual([]);
+    expect(channelStates([source(team)], [])).toStrictEqual([]);
   });
 });
 
