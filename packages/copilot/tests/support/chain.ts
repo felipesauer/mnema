@@ -496,8 +496,14 @@ function appendMove(
  * trees and breaks a tie by `who`, so a tie is only testable if two trees can be given
  * the same `switchedAt` and two different anchors. `b.now()` is monotonic by design and
  * a bench has one anchor, so neither could be built otherwise. A projection replays
- * `who` as written and never re-judges it — the same licence {@link RunSpec.who} takes,
- * and an anchor is written in the shape the product mints (`mnid:` and hex).
+ * `who` as written and never re-judges it — the same licence {@link RunSpec.who} takes.
+ *
+ * THE SHAPE IS THE CALLER'S TO GET RIGHT, and this sentence used to say only that an
+ * anchor is `mnid:` and hex. It is `mnid:` and SIXTY-FOUR hex, and the first caller of
+ * this helper wrote thirty-two — a value `isAnchorId` refuses, carried by every case in
+ * `switches.test.ts` for a whole delivery. Nothing here can catch that: a projection
+ * replaying `who` is exactly a projection that does not judge it. What catches it is the
+ * case in that file which runs the predicate on the anchors it writes.
  *
  * The scope of the fact is NOT here: a bench writes its own tree, and what a tree IS to
  * the reading is the `scope` the caller pairs with the cache when it builds a

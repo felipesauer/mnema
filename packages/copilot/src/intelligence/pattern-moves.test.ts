@@ -122,8 +122,15 @@ describe('patternMoveWitness — which of three answers the record gives about a
   });
 
   it('a consultation carrying no run witnesses nothing for the run that moved next', () => {
-    // It names no session, so there is no move it can be the reading FOR. Counting it
-    // would credit the reading to whichever session happened to move a pattern after it.
+    // It names no session, so there is no move it can be the reading FOR.
+    //
+    // THAT SENTENCE USED TO CLAIM MORE, AND THE CLAIM WAS FALSE. It said counting such a
+    // consultation would credit the reading to whichever session happened to move a
+    // pattern after it. It cannot: the collect is keyed by RUN, so a reading with no run
+    // is filed under a key no move with a run ever asks for. The module doc carries the
+    // measurement, and the module doc was rewritten while this line was left standing —
+    // the two then said opposite things about the same guard. What this case pins is the
+    // ANSWER the record gives for such a stream, and never a defence against that.
     const b = bench();
     startRun(b, 'run-a', { agent: 'claude' });
     birthSkill(b, 'sk-1', 'Small PRs');

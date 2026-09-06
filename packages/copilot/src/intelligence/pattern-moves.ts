@@ -160,6 +160,13 @@ const WHAT_IT_CAN_WITNESS = [
  * mutation that still compiles (collect it, keyed by the absent run) leaves the whole
  * suite green, which is what says the guard is redundant to the answer rather than that
  * the suite is blind to it.
+ *
+ * BOTH ENDS OF THAT GUARD ARE NOW MEASURED, and both are redundant for one reason. On the
+ * reading side, collapsing `event.run === undefined ? undefined : …` to the lookup alone
+ * also leaves the whole suite green: `Map.get(undefined)` is `undefined`, which is the
+ * answer the ternary was written to produce. Two guards, two zeroes, one redundancy — of
+ * TYPE and not of behaviour, which is why neither is removed and why removing either is a
+ * change of signature rather than a tidy.
  */
 export function patternMoveWitness(events: readonly CatalogEvent[]): PatternMoveWitness {
   const consultedInRun = new Map<string, Set<string>>();
