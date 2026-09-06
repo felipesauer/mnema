@@ -54,7 +54,10 @@
  * `packages/code/tests/what-the-record-can-witness.test.ts` — the third answer and the
  * absence of the accusing sentence from it, a person driving the real CLI
  * (`run start` → `show` → `skill move`) and coming back NOT OBSERVABLE, and a digest of
- * the sandbox proving the reading wrote nothing.
+ * the sandbox proving the reading wrote nothing. That suite reaches this module as
+ * `@mnema/copilot` and drives the CLI through a subprocess, which is a reach and not a
+ * reading of this source; `pattern-moves.test.ts` beside it asks the function directly,
+ * over a chain a bench writes, and its subject is the border between the two silences.
  */
 
 import type { CatalogEvent } from './events.js';
@@ -147,8 +150,23 @@ const WHAT_IT_CAN_WITNESS = [
  * doc on why the order inside a session is not asked.
  *
  * A consultation carrying no run is not collected at all. It witnesses nothing: it names
- * no session, so there is no move it can be the reading for, and counting it as one would
- * attribute a reading to whichever session happened to move a pattern next.
+ * no session, so there is no move it can be the reading for.
+ *
+ * WHAT THAT GUARD BUYS IS THE TYPE AND NOT AN ANSWER, and the sentence that used to stand
+ * here said otherwise — that counting such a consultation would attribute a reading to
+ * whichever session happened to move a pattern next. It could not: the collection is
+ * keyed by RUN, so a consultation with no run would be filed under a key no move with a
+ * run can ask for, and a move with no run asks for nothing. Measured — the nearest
+ * mutation that still compiles (collect it, keyed by the absent run) leaves the whole
+ * suite green, which is what says the guard is redundant to the answer rather than that
+ * the suite is blind to it.
+ *
+ * BOTH ENDS OF THAT GUARD ARE NOW MEASURED, and both are redundant for one reason. On the
+ * reading side, collapsing `event.run === undefined ? undefined : …` to the lookup alone
+ * also leaves the whole suite green: `Map.get(undefined)` is `undefined`, which is the
+ * answer the ternary was written to produce. Two guards, two zeroes, one redundancy — of
+ * TYPE and not of behaviour, which is why neither is removed and why removing either is a
+ * change of signature rather than a tidy.
  */
 export function patternMoveWitness(events: readonly CatalogEvent[]): PatternMoveWitness {
   const consultedInRun = new Map<string, Set<string>>();

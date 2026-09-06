@@ -1,6 +1,12 @@
 import { rmSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
-import { type Bench, birthSkill, makeBench, moveSkill } from '../../tests/support/chain.js';
+import {
+  type Bench,
+  birthSkill,
+  deprecateSkill,
+  makeBench,
+  moveSkill,
+} from '../../tests/support/chain.js';
 import type { ScopedCache } from '../sources.js';
 import { patternProvenance } from './provenance.js';
 
@@ -37,8 +43,8 @@ describe('patternProvenance — where a pattern came from', () => {
     adopter?: string,
   ): string {
     birthSkill(b, id, name, 'proposed', proposer);
-    moveSkill(b, id, 'proposed', 'reviewed', 'review', adopter);
-    moveSkill(b, id, 'reviewed', 'adopted', 'adopt', adopter);
+    moveSkill(b, id, 'proposed', 'reviewed', 'review', { which: adopter });
+    moveSkill(b, id, 'reviewed', 'adopted', 'adopt', { which: adopter });
     return id;
   }
 
@@ -109,7 +115,7 @@ describe('patternProvenance — where a pattern came from', () => {
   it('keeps the adoption of a pattern later deprecated — it WAS live, and by whom', () => {
     const b = bench();
     adoptedBy(b, 'sk-1', 'Retired', 'agent-A', 'agent-A');
-    moveSkill(b, 'sk-1', 'adopted', 'deprecated', 'deprecate');
+    deprecateSkill(b, 'sk-1');
 
     const [entry] = patternProvenance([source(b)]);
     expect(entry?.state).toBe('deprecated');

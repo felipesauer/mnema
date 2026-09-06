@@ -15,6 +15,7 @@ import { join } from 'node:path';
 import {
   type CatalogEvent,
   catalogUpcasters,
+  channelSwitched,
   decisionBirth,
   decisionTransitioned,
   handoffRecorded,
@@ -30,7 +31,13 @@ import {
   taskBirth,
   taskTransitioned,
 } from '@mnema/chain';
-import { chainRootForScope, orderedEvents, ProjectionCache, resolveTrees } from '@mnema/core';
+import {
+  chainRootForScope,
+  orderedEvents,
+  ProjectionCache,
+  resolveTrees,
+  skillGate,
+} from '@mnema/core';
 import { openTreeForWriting } from '@mnema/core/write';
 import { onTestFinished } from 'vitest';
 
@@ -383,15 +390,89 @@ export function birthSkill(
   return id;
 }
 
-/** Appends a `skill.transitioned`, optionally executed by an agent. */
+/**
+ * Appends a `skill.transitioned`, optionally executed by an agent and optionally
+ * inside a run.
+ *
+ * BOTH ENVELOPE SLOTS ARE THE CALLER'S because a reading exists that is ABOUT them:
+ * `patternMoveWitness` asks which SESSION moved a pattern, and the product fills that
+ * slot from the run pinned when the move was made (`skill-operations.ts` copies
+ * `pinned.fields.run` into the envelope). A helper that could not vary it could only
+ * ever build the answer for a move nobody pinned.
+ */
 export function moveSkill(
   b: Bench,
   id: string,
   from: string,
   to: string,
   action: string,
-  which?: string,
+  opts: MoveOpts = {},
 ): void {
+  appendMove(b, id, from, to, action, { note: `${action}ed` }, opts);
+}
+
+/**
+ * Appends a `skill.transitioned {action: 'deprecate'}`, which carries a `reason` and not
+ * a `note` — because that is what the gate requires of THIS action and of no other.
+ *
+ * IT IS NOT A CONVENIENCE OVER {@link moveSkill}, it is the only correct way to write
+ * one. `moveSkill` fills the proof slot with a `note`, and a `deprecate` carrying a note
+ * is refused `MISSING_PROOF`; two cases wrote one that way and stayed green, because
+ * neither read the fields back. What stops the third is {@link appendMove}, not this
+ * comment.
+ */
+export function deprecateSkill(b: Bench, id: string, opts: DeprecateOpts = {}): void {
+  appendMove(b, id, opts.from ?? 'adopted', 'deprecated', 'deprecate', { reason: 'unused' }, opts);
+}
+
+/** The envelope slots a case may choose on a move. */
+interface MoveOpts {
+  readonly which?: string;
+  readonly run?: string;
+}
+
+/** The same, plus the state a deprecation leaves — `adopted` unless a case says otherwise. */
+interface DeprecateOpts extends MoveOpts {
+  readonly from?: string;
+}
+
+/**
+ * Appends one move, having first asked the PRODUCT whether it is one.
+ *
+ * THE BENCH MAY NOT WRITE WHAT THE GATE WOULD REFUSE. A fixture carrying proof the
+ * product rejects is a suite green over a record that could not exist, and it does not
+ * announce itself: nothing downstream reads a transition's fields back, so the write
+ * lands, the projection folds it, and every assertion about the fold passes. Measured —
+ * `deprecate` requires a `reason` where the other three actions require a `note`, and two
+ * cases wrote `{ note: 'deprecateed' }` through {@link moveSkill}; `skillGate` answers
+ * `REFUSED (MISSING_PROOF)` on exactly those fields.
+ *
+ * So the check is the product's own gate rather than a rule restated here, and it throws
+ * rather than returning: a bench that quietly declined to write would turn one bad
+ * fixture into a case asserting over an empty record.
+ */
+function appendMove(
+  b: Bench,
+  id: string,
+  from: string,
+  to: string,
+  action: string,
+  fields: TransitionFields,
+  opts: MoveOpts,
+): void {
+  const verdict = skillGate({
+    who: b.who,
+    from,
+    action,
+    fields,
+    ...(opts.which !== undefined ? { which: opts.which } : {}),
+  });
+  if (!verdict.ok) {
+    throw new Error(
+      `the bench cannot write a move the product refuses: ` +
+        `${from} --${action}--> ${to} is ${verdict.code} (${verdict.message})`,
+    );
+  }
   b.writer.append(
     skillTransitioned(
       {
@@ -399,19 +480,56 @@ export function moveSkill(
         who: b.who,
         signerFp: b.writer.signerFingerprint,
         subject: id,
-        ...(which !== undefined ? { which } : {}),
+        ...(opts.which !== undefined ? { which: opts.which } : {}),
+        ...(opts.run !== undefined ? { run: opts.run } : {}),
       },
-      { from, to, action, fields: { note: `${action}ed` } },
+      { from, to, action, fields },
     ),
   );
 }
 
-/** Appends a `skill.transitioned {action: 'deprecate'}`. */
-export function deprecateSkill(b: Bench, id: string, from = 'adopted'): void {
+/**
+ * Appends one `channel.switched` — somebody moved the switch of a pushing channel.
+ *
+ * THE INSTANT AND THE ANCHOR ARE THE CALLER'S, and both because the fold over trees is
+ * ABOUT them: `channelStates` answers with the EARLIEST switch-off across the
+ * trees and breaks a tie by `who`, so a tie is only testable if two trees can be given
+ * the same `switchedAt` and two different anchors. `b.now()` is monotonic by design and
+ * a bench has one anchor, so neither could be built otherwise. A projection replays
+ * `who` as written and never re-judges it — the same licence {@link RunSpec.who} takes.
+ *
+ * THE SHAPE IS THE CALLER'S TO GET RIGHT, and this sentence used to say only that an
+ * anchor is `mnid:` and hex. It is `mnid:` and SIXTY-FOUR hex, and the first caller of
+ * this helper wrote thirty-two — a value `isAnchorId` refuses, carried by every case in
+ * `switches.test.ts` for a whole delivery. Nothing here can catch that: a projection
+ * replaying `who` is exactly a projection that does not judge it. What catches it is the
+ * case in that file which runs the predicate on the anchors it writes.
+ *
+ * The scope of the fact is NOT here: a bench writes its own tree, and what a tree IS to
+ * the reading is the `scope` the caller pairs with the cache when it builds a
+ * `ScopedCache`.
+ */
+export function switchChannel(
+  b: Bench,
+  channel: string,
+  on: boolean,
+  opts: {
+    readonly at?: string;
+    readonly who?: string;
+    readonly which?: string;
+    readonly reason?: string;
+  } = {},
+): void {
   b.writer.append(
-    skillTransitioned(
-      { at: b.now(), who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
-      { from, to: 'deprecated', action: 'deprecate', fields: { reason: 'unused' } },
+    channelSwitched(
+      {
+        at: opts.at ?? b.now(),
+        who: opts.who ?? b.who,
+        signerFp: b.writer.signerFingerprint,
+        subject: channel,
+        ...(opts.which !== undefined ? { which: opts.which } : {}),
+      },
+      { on, ...(opts.reason !== undefined ? { reason: opts.reason } : {}) },
     ),
   );
 }
