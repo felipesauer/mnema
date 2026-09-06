@@ -148,14 +148,19 @@ function stateOf(sources: readonly ScopedCache[], channel: string): ChannelState
  * The switch-off that answers for a channel: earliest instant first, ties broken by who
  * — oldest first, which is the opposite of the record's `newestFirst` and is deliberate.
  *
- * THE INTENT is that a channel is off because someone turned it off, and the answer
- * names the switch that did it, so the FIRST one holds; a later tree turning the same
- * channel off again decided nothing. That is intent and not an asserted property: NO
- * test anywhere names {@link channelStates} or `channelIsOn`, and flipping this
- * comparator to descending was measured turning exactly ONE case red — the structural
- * scan in `one-rule-for-newest-first.test.ts`, which sees the shape and not the answer.
- * The other three oldest-first orderings in this product each have behaviour cases that
- * catch the same flip (3, 2 and 1 of them); this one has none.
+ * A CHANNEL IS OFF BECAUSE SOMEONE TURNED IT OFF, and the answer names the switch that
+ * did it, so the FIRST one holds; a later tree turning the same channel off again
+ * decided nothing.
+ *
+ * THAT USED TO BE INTENT AND IS NOW ASSERTED. The premise written here was that NO test
+ * anywhere named {@link channelStates} or `channelIsOn`, and that flipping this
+ * comparator to descending turned exactly ONE case red — the structural scan in
+ * `one-rule-for-newest-first.test.ts`, which sees the shape and not the answer. What
+ * falsified it is `switches.test.ts`, which asks the fold with two trees and in both
+ * source orders; remeasured with it in place, the same flip turns FOUR red, three of
+ * them behaviour cases that name the answer. Dropping the second key alone — leaving the
+ * instants ascending — turns exactly one red, `two trees saying off at the SAME instant`,
+ * which is the case that exists for it.
  *
  * Written as a named comparator rather than inline at the call because
  * `one-rule-for-newest-first.test.ts` requires every ordering over an instant to carry a
