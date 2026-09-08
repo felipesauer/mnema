@@ -52,11 +52,11 @@
  *      the stream a report goes to. Nothing is written there by anybody, so this pass
  *      says nothing about the record — it is the exit code and the silence.
  *   2. THE PAIR, OVER EVERY PATH FOUND TO ASK. In a project of its own, the same line is
- *      run twice: once with a session the record has no record of, where it must fail and
- *      append NOTHING, and once with no session open, where it must SUCCEED and append to
- *      the chain. The second half is what keeps the first from being vacuous — "it wrote
- *      nothing" means something only where the same line, in the same project, wrote
- *      something.
+ *      run twice: once with a session the record has no record of, where it must fail,
+ *      append NOTHING and leave the key material it found alone, and once with no session
+ *      open, where it must SUCCEED and append to the chain. The second half is what keeps
+ *      the first from being vacuous — "it wrote nothing" means something only where the
+ *      same line, in the same project, wrote something.
  *
  * WHAT IT DOES NOT COVER, so a pass is not read as more than it is. Three paths are not
  * exercised — `mcp` serves a connection for its lifetime and would never return, `repl`
@@ -64,6 +64,22 @@
  * over the network — and this file says nothing about them either way. None of the three
  * stamps a run today; if one came to, the compiler fact above is still what stops it from
  * writing, and this guard is what would not notice a missing `io.fail()`.
+ *
+ * AND THREE MORE ARE NOT REACHED, which is a different thing from not being exercised.
+ * `mnema run`, `mnema key` and `mnema tail` declare subcommands and no act of their own,
+ * so the parser answers the bare form with usage and no code of this surface runs. A line
+ * like that comes back looking exactly like a verb that does not stamp a run, so the three
+ * are MEASURED and named rather than left to be counted as answers — the pin is that there
+ * are no others, because a fourth would be a synthesised line the declaration could not
+ * answer for.
+ *
+ * WHAT IS NOT GUARDED AT ALL, and it is the order. The set of paths that ask is total only
+ * while `pinnedRun()` is reached before any refusal that depends on there being a project.
+ * Two shapes on this surface already return earlier than it does — `parseScope(...) ===
+ * INVALID` in `wiring/task.ts` and in `wiring/decision.ts` — and both are reachable only
+ * with a value no synthesised line passes, so the derivation is total today. A verb that
+ * checked the project first and forgot its `io.fail()` would be classified here as a path
+ * that never asked, and nothing would say so.
  */
 
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -138,6 +154,9 @@ const NO_SUCH_SESSION = 'Refused (UNKNOWN_RUN)';
 /** A well-formed id no record holds — the pin a stale shell carries. */
 const A_RUN_NOBODY_OPENED = '00000000-0000-7000-8000-000000000000';
 
+/** What the surface puts on the stream when the PARSER, not a verb, answered. */
+const THE_PARSER_ANSWERED = 'Usage: mnema';
+
 // ---------------------------------------------------------------------------
 // What is accused
 // ---------------------------------------------------------------------------
@@ -151,6 +170,17 @@ interface Refused {
   readonly failed: boolean;
   /** What went to the stream a report goes to. */
   readonly printed: readonly string[];
+  /**
+   * Whether the PARSER answered instead of the path — the one way `asked: false` lies.
+   *
+   * A synthesised line the declaration could not answer for is refused before any action
+   * of this surface runs, and it would then be counted as a path that does not stamp a
+   * run, silently. It is measured off the usage line, which is the one thing only a parser
+   * refusal puts on the stream: `wiring/misuse.ts` gives every command of the program one
+   * voice for a misuse, and the second line of every one of those is the `usage()` the help
+   * prints. A verb's own refusal never carries it.
+   */
+  readonly parserAnswered: boolean;
 }
 
 /**
@@ -276,6 +306,7 @@ async function everyPathUnderARefusedRun(): Promise<Refused[]> {
           asked: outcome.err.join('\n').includes(THE_PIN_REFUSED),
           failed: outcome.failed,
           printed: outcome.out,
+          parserAnswered: outcome.err.join('\n').includes(THE_PARSER_ANSWERED),
         });
       }
       return measured;
@@ -338,9 +369,30 @@ describe('the refused run is refused everywhere', () => {
       'task',
       'task move',
     ]);
-    // Every path was reached: a line that stopped at the parser would have been counted
-    // as one that does not ask, silently.
+    // The count is the walk's, and it says only that: every path the walk found was
+    // exercised except the ones declared unexercisable. It is not the claim underneath —
+    // "every path was REACHED" — because the two sides of it are the same arithmetic: the
+    // loop pushes a row per routed path unconditionally, so a line that never arrived
+    // anywhere is a row like any other.
     expect(measured.length).toBe(theSurface().length - Object.keys(SERVES_OR_REACHES_OUT).length);
+
+    // SO THE CLAIM IS MEASURED SEPARATELY, and it does not hold for three: a line that
+    // stopped at the parser was counted as a path that does not ask, silently, and here
+    // are the ones it happened to. All three are groups whose bare form routes nothing —
+    // they declare subcommands and no act of their own, so the parser answers with usage
+    // and no code of this surface runs. They have no run to be refused and nothing here is
+    // said about them; what this pins is that there are no OTHERS. A fourth arriving is a
+    // synthesised line the declaration could not answer for, which would have been read as
+    // a verb that does not stamp a run.
+    expect(
+      measured
+        .filter((one) => one.parserAnswered)
+        .map((one) => one.path)
+        .sort(),
+    ).toEqual(['key', 'run', 'tail']);
+    // And the two facts are exclusive, which is what makes the first list readable: a path
+    // the parser answered for cannot also have been heard by the pin resolver.
+    expect(measured.filter((one) => one.parserAnswered && one.asked)).toEqual([]);
   }, 120_000);
 
   it('the same line writes with no session open, and writes NOTHING with one that cannot be proven', async () => {
@@ -349,7 +401,7 @@ describe('the refused run is refused everywhere', () => {
     // twice, and the writing half is asserted to have reached the chain.
     const asks = (await everyPathUnderARefusedRun()).filter((one) => one.asked);
     const complaints: string[] = [];
-    const paired: string[] = [];
+    const bothHalvesSeen: string[] = [];
 
     for (const one of asks) {
       const routed = theSurface().find((r) => r.path === one.path) as Routed;
@@ -361,7 +413,8 @@ describe('the refused run is refused everywhere', () => {
       process.env[RUN_ENV] = A_RUN_NOBODY_OPENED;
       const beforeRefusal = held(sandbox);
       const refused = await mnema(line);
-      const appendedWhileRefused = held(sandbox).events - beforeRefusal.events;
+      const afterRefusal = held(sandbox);
+      const appendedWhileRefused = afterRefusal.events - beforeRefusal.events;
       if (!refused.err.join('\n').includes(NO_SUCH_SESSION)) {
         complaints.push(`${one.path}: the resolver did not refuse a session inside a project`);
       }
@@ -369,6 +422,14 @@ describe('the refused run is refused everywhere', () => {
       if (refused.out.length > 0) complaints.push(`${one.path}: reported with the run refused`);
       if (appendedWhileRefused !== 0) {
         complaints.push(`${one.path}: appended ${appendedWhileRefused} with the run refused`);
+      }
+      // BOTH HALVES OF WHAT THE RECORD HOLDS, because the reading has two and its own doc
+      // says why: a key minted, adopted or installed by something that claimed to read is a
+      // change to the record even though no event was appended. Reading the event count
+      // alone would let a refused run that touched key material and appended nothing read
+      // as clean.
+      if (afterRefusal.keys !== beforeRefusal.keys) {
+        complaints.push(`${one.path}: key material changed with the run refused`);
       }
 
       // AND THE SAME LINE, UNPINNED, in the same project: it has to go through and reach
@@ -381,14 +442,17 @@ describe('the refused run is refused everywhere', () => {
         complaints.push(`${one.path}: refused unpinned — ${allowed.err.join(' / ')}`);
       }
       if (appended <= 0) complaints.push(`${one.path}: appended nothing unpinned`);
-      paired.push(one.path);
+      // WHAT WAS MEASURED, not that the loop ran: a path is recorded here only where the
+      // refused half appended nothing and the unpinned half appended something. Pushing
+      // unconditionally would make the count below the loop counting its own iterations.
+      if (appendedWhileRefused === 0 && appended > 0) bothHalvesSeen.push(one.path);
     }
 
     expect(complaints).toEqual([]);
     // The pair covered the whole derived set, so no site's "wrote nothing" rests on a line
     // that could not have written anything in the first place.
-    expect(paired.length).toBe(asks.length);
-    expect(paired.length).toBe(15);
+    expect([...bothHalvesSeen].sort()).toEqual([...asks].map((one) => one.path).sort());
+    expect(bothHalvesSeen.length).toBe(15);
   }, 300_000);
 
   it('accuses a path that asks and forgets to fail — on a program of its own', async () => {
@@ -451,6 +515,7 @@ describe('the refused run is refused everywhere', () => {
         asked: outcome.err.join('\n').includes(THE_PIN_REFUSED),
         failed: outcome.failed,
         printed: outcome.out,
+        parserAnswered: outcome.err.join('\n').includes(THE_PARSER_ANSWERED),
       });
     }
 

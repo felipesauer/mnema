@@ -5,11 +5,22 @@
  * `wiring/report.ts` states this as a rule: "one wording, because a person who ran the
  * wrong command in the wrong directory reads this line and nothing else", with three
  * verbs overriding the way BACK because a machine recovering an identity is not a machine
- * founding a project. Nothing checked it. What that cost was measured: of the thirty-eight
- * places on this surface that report a refusal, four had never been reached by any test —
- * `accountability`, `antipatterns`, `timeline` and `witness` — and for three of them the
- * reason is one reason, not three. Their ONLY refusal is this one, and no case ran a read
- * outside a project.
+ * founding a project. Nothing checked THE RULE. What that cost was measured: of the
+ * thirty-eight places on this surface that report a refusal, four had never been reached
+ * by any test — `accountability`, `antipatterns`, `timeline` and `witness` — and for three
+ * of them the reason is one reason, not three: their ONLY refusal is this one.
+ *
+ * WHAT WAS ALREADY RUN OUTSIDE A PROJECT, because the sentence above once said nothing
+ * was, and that was false. NINE paths were: the golden of the reads opens with a section
+ * headed `### outside a project` and pins `search`, `exposure`, `brief`, `usage` and
+ * `verify` there with their text and their exit code (`src/cli.reads.golden.txt`);
+ * `the-floor-is-the-declaration.test.ts` runs `verify` outside one in a REAL process and
+ * pins the exit status; and four more cases each drive one path — `resume`, `guard submit`
+ * and `key restore` (`cli-e2e.test.ts`), `brief` again, and `status`
+ * (`where-things-stand.test.ts`). None of them is redundant with this file and none makes
+ * it redundant: the golden pins the whole wording, the floor pins a process's status, the
+ * four pin one path each — and what none of them asks is whether the rule holds over the
+ * paths nobody thought to name, which is where all four unreached refusals were.
  *
  * SO THE GUARD IS THE RULE, not four cases. Every path the program routes is invoked in a
  * directory that is not a project, and each one lands in exactly one of four boxes:
@@ -94,6 +105,34 @@ const ANSWERS_ANYWAY: Readonly<Record<string, string>> = {
   completion: 'the script it writes is generated from the declarations, and no record is consulted',
   witness: 'it reports on the tails it can see, and says so when there are none',
   'witness upgrade': 'the same: with no tail waiting on an attestation there is nothing to refuse',
+};
+
+/**
+ * THE SENTENCE THE TWO WITNESS ROWS OF BOX 3 ANSWER WITH, whole — and a finding inside it.
+ *
+ * `witness` and `witness upgrade` are the two rows above whose reason is that they report
+ * on the tails they can see and say so when there are none. This is what saying so IS, and
+ * until it was read here nothing read it: the wording is written THREE times in `src` —
+ * `presentation/tails.ts`, `presentation/witness.ts` and `wiring/witness.ts` — and only the
+ * first of the three had ever been asserted (`the-verb-says-which-tails.test.ts`, over
+ * `mnema tail list`). The other two are the two paths below, one each.
+ *
+ * THE TREE LIST IS EMPTY, and that is recorded rather than repaired. Outside a project the
+ * only tree that resolves is this machine's global one, which every witness path leaves out
+ * unless asked, so the sentence names nothing and reads `looked in .` — a list with no
+ * items and a full stop. Asking is not available on the acts either: `--global` is declared
+ * on the group AND on each act, and `mnema witness upgrade --global` binds it to the GROUP,
+ * whose value no act reads. That is commander's documented arithmetic — a parent stops
+ * consuming its own options at a subcommand only under `enablePositionalOptions()`, which
+ * this program does not set — so the flag on `stamp` and on `upgrade` feeds nothing. What a
+ * verb prints, and which command a flag binds to, are not a coverage slice's to change.
+ */
+const NO_TAIL_HOLDS_EVENTS = 'No tail holds events in any tree here — looked in .';
+
+/** Which path is the one reader of which copy of that sentence. */
+const SAYS_NO_TAIL_HOLDS_EVENTS: Readonly<Record<string, string>> = {
+  witness: 'src/presentation/witness.ts',
+  'witness upgrade': 'src/wiring/witness.ts',
 };
 
 /**
@@ -198,6 +237,17 @@ describe('outside a project the surface says so', () => {
     // and a declaration for a path that stopped answering is stale.
     const answeredAnyway = answered.filter((one) => !one.failed).map((one) => one.path);
     expect(reconcile(answeredAnyway, ANSWERS_ANYWAY)).toEqual({ unexpected: [], stale: [] });
+
+    // AND TWO OF BOX 3 SAY THEIR LINE, whole — the half a reconciliation of names cannot
+    // see. Each of the two is the only reader of one of the three copies of that wording in
+    // `src`, so a copy that drifted, or one that stopped being printed at all, is red here
+    // and named. Both are in box 3 by declaration, checked so that a path which started
+    // FAILING could not slip out of this assertion by leaving the box.
+    for (const [path, copy] of Object.entries(SAYS_NO_TAIL_HOLDS_EVENTS)) {
+      expect(Object.keys(ANSWERS_ANYWAY), `${path} left box 3`).toContain(path);
+      const one = answered.find((row) => row.path === path);
+      expect(one?.said, `${path} (${copy}) said: ${one?.said}`).toBe(NO_TAIL_HOLDS_EVENTS);
+    }
     const refusedOtherwise = answered
       .filter((one) => one.failed && !one.said.includes(THERE_IS_NO_PROJECT))
       .map((one) => one.path);
@@ -221,6 +271,7 @@ describe('outside a project the surface says so', () => {
       ...Object.keys(NAMES_ITS_OWN_WAY_BACK),
       ...Object.keys(ANSWERS_ANYWAY),
       ...Object.keys(REFUSES_SOMETHING_ELSE_FIRST),
+      ...Object.keys(SAYS_NO_TAIL_HOLDS_EVENTS),
       ...pathsNamedInTables(),
     ];
     expect(named.filter((path) => !surface.includes(path))).toEqual([]);

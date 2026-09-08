@@ -32,6 +32,7 @@
 import type { Argument, Command, Option } from 'commander';
 import { buildProgram, type CliIo } from '../../src/cli.js';
 import { valuesDeclaredOn } from '../../src/wiring/enumerated.js';
+import { everyCommandOf, pathOf } from '../../src/wiring/misuse.js';
 
 /** One invocable command path, and the declaration that says what it takes. */
 export interface Routed {
@@ -46,15 +47,21 @@ export interface Routed {
  *
  * Groups are included alongside their subcommands, because a group is invocable in its
  * own right on this surface: `mnema task <title>` creates and `mnema switch` lists.
+ *
+ * THE WALK AND THE NAMING ARE THE PRODUCT'S OWN, not a second pair written here.
+ * `wiring/misuse.ts` already answers both halves — {@link everyCommandOf} for which pages
+ * this surface has and {@link pathOf} for the words a caller types to reach one — because
+ * that module gives every command of the program the one voice and has to reach every
+ * command to do it. Its own doc says why the two live together: the answer had been read
+ * in five places, each with its own climb up `parent`, and two of those were production
+ * spellings that disagreed about whether the program's own name is part of what they
+ * return. A sixth spelling here would be the same drift with a test's name on it, and the
+ * only difference it needs — the program itself is not an invocable path — is a filter.
  */
-export function routes(program: Command, prefix: readonly string[] = []): Routed[] {
-  const found: Routed[] = [];
-  for (const command of program.commands) {
-    const path = [...prefix, command.name()];
-    found.push({ path: path.join(' '), command });
-    found.push(...routes(command, path));
-  }
-  return found;
+export function routes(program: Command): Routed[] {
+  return everyCommandOf(program)
+    .filter((command) => command !== program)
+    .map((command) => ({ path: pathOf(command).join(' '), command }));
 }
 
 /** A port that writes nowhere — for building a program only to look at it. */

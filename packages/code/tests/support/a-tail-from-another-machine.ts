@@ -7,12 +7,21 @@
  * is the shape this uses: copy the tail directory and the PUBLIC half of the key that
  * signed it, and throw the other machine away.
  *
- * IT WAS WRITTEN OUT ONCE AND A SECOND CASE NEEDED IT, which is the shape this bench keeps
- * paying for — two spellings of one fixture is how one of them quietly stops producing
- * what its caller assumes. It came out of `every-verb-says-if-it-writes.test.ts`, where
- * the surface is exercised verb by verb, and the second caller is the guard over the run
- * a write is pinned to, which has to make the same verb succeed before it can show a
- * refused run stopping it.
+ * IT IS WRITTEN OUT SIX TIMES IN THIS PACKAGE, and this is one of the six. `grep 'function
+ * mergeAForeignTail'` finds it here, in `src/commands/tail-list.test.ts` and
+ * `tail-prune.test.ts`, and in `tests/the-verb-says-which-tails.test.ts`,
+ * `the-verb-that-does-not-cut.test.ts` and `every-write-signs-what-it-wrote.test.ts`. This
+ * one came out of `every-verb-says-if-it-writes.test.ts`, where the surface is exercised
+ * verb by verb, and its second caller is the guard over the run a write is pinned to, which
+ * has to make the same verb succeed before it can show a refused run stopping it.
+ *
+ * THE SIX HAVE ALREADY DRIFTED, which is the whole argument for there being one: three
+ * signatures between them (two arguments, one, none), two return shapes (the tail id, or
+ * the id and the anchor), and — the difference that matters — FOUR of the six leave the
+ * donor machine on the disk. A caller measuring what a record holds across an invocation
+ * would then be measuring a tree that still has somebody else's whole machine beside it.
+ * Only this one and the one in `every-write-signs-what-it-wrote.test.ts` remove it.
+ * Collapsing the other four is a slice of its own, not a line of this one.
  */
 
 import { cpSync, readdirSync, rmSync } from 'node:fs';

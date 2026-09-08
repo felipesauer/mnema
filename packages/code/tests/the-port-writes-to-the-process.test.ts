@@ -21,7 +21,7 @@
  * HOW IT DOES NOT POISON THE RUN, which is the reason this was worth being careful about
  * rather than just worth doing. It writes to the real `process.stdout` and it sets the
  * real `process.exitCode`, so a case that got either half wrong would leave the suite
- * printing into its own report, or exiting non-zero with every case green. Both are
+ * printing into its own report, or exiting non-zero with every case green. All three are
  * borrowed inside a `try` and given back in a `finally` — which runs even when an
  * assertion throws — and nothing is asserted until after they are back.
  */
@@ -33,16 +33,28 @@ import { type CliIo, processIo, writeLines } from '../src/wiring/io.js';
 type Written = string[];
 
 /**
- * Runs `use` with both real streams borrowed, and gives them back whatever happens.
+ * Runs `use` with both real streams and the real exit code borrowed, and gives all three
+ * back whatever happens.
  *
- * The two are replaced together, so a line that went to the WRONG one is visible as an
- * empty list beside a list of two: checking one stream at a time cannot tell "it wrote
- * nothing" from "it wrote to the other one".
+ * The two streams are replaced together, so a line that went to the WRONG one is visible
+ * as an empty list beside a list of two: checking one stream at a time cannot tell "it
+ * wrote nothing" from "it wrote to the other one".
+ *
+ * THE EXIT CODE IS IN THE SAME `finally`, and it is the one of the three that would poison
+ * the whole run rather than one case: a value set and not given back ends the suite
+ * non-zero with every assertion green. It belongs here and not in a case because the only
+ * `finally` that covers it is one that wraps the CALL — a restore written after the call,
+ * however carefully, is skipped by anything the call throws, and the mechanism that kept
+ * the suite honest would then be "nothing in this window throws today".
  */
-function withBothStreamsBorrowed(use: () => void): { out: Written; err: Written } {
+function withTheProcessBorrowed(use: () => void): { out: Written; err: Written } {
   const out: Written = [];
   const err: Written = [];
-  const real = { out: process.stdout.write, err: process.stderr.write };
+  const real = {
+    out: process.stdout.write,
+    err: process.stderr.write,
+    exitCode: process.exitCode,
+  };
   try {
     process.stdout.write = ((chunk: unknown) => {
       out.push(String(chunk));
@@ -56,13 +68,14 @@ function withBothStreamsBorrowed(use: () => void): { out: Written; err: Written 
   } finally {
     process.stdout.write = real.out;
     process.stderr.write = real.err;
+    process.exitCode = real.exitCode;
   }
   return { out, err };
 }
 
 describe('the port writes to the process', () => {
   it('puts a report on stdout and a refusal on stderr, each ending in a newline', () => {
-    const written = withBothStreamsBorrowed(() => {
+    const written = withTheProcessBorrowed(() => {
       processIo.out('Captured memory 0198f0a4-0000-7000-8000-000000000000');
       processIo.err('Refused (UNKNOWN_RUN): MNEMA_RUN names a run this project has no record of');
     });
@@ -77,17 +90,16 @@ describe('the port writes to the process', () => {
   });
 
   it('records a non-zero exit rather than throwing, and nothing is printed by failing', () => {
-    const inherited = process.exitCode;
     let observed: typeof process.exitCode;
-    const written = withBothStreamsBorrowed(() => {
-      // Borrowed and given back like the streams. A case that set this and walked away
-      // would end the whole run non-zero with every assertion green — the shape that
-      // makes a suite lie in the direction nobody checks.
+    const written = withTheProcessBorrowed(() => {
+      // Cleared to the value `fail()` has to move it OFF, and given back by the same
+      // `finally` the streams are: a case that set this and walked away would end the whole
+      // run non-zero with every assertion green — the shape that makes a suite lie in the
+      // direction nobody checks.
       process.exitCode = undefined;
       processIo.fail();
       observed = process.exitCode;
     });
-    process.exitCode = inherited;
 
     // TWO VALUES, not one: `fail()` is a change, and a guard that only read the value
     // after would pass on a process that was already exiting non-zero.
