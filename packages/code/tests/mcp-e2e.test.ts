@@ -2599,6 +2599,40 @@ describe('MCP server — end to end over a real client', () => {
     await client.close();
   });
 
+  it('every tool that describes a reported run describes what it WROTE', async () => {
+    // The prose an agent reads is the only place it learns a field exists, and a
+    // mutation battery found nothing holding it: falsifying the sentence left the whole
+    // suite green. This is that hole closed, and it is written over `tools/list` — what
+    // the server actually serves — rather than over the constant in the source.
+    //
+    // The rule is stated as an implication rather than a list of four tool names: any
+    // tool that describes the asker-relative fields of a run is a tool whose answer
+    // carries a run, so a fifth one appending the same contract is covered the day it
+    // is written, and a contract split in two is caught rather than half-kept.
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    const { tools } = await client.listTools();
+    const describingARun = tools.filter((t) => (t.description ?? '').includes('`thisSession`'));
+    // NOT vacuous: there really are tools of this shape, and if the phrase this filter
+    // keys on is reworded the count goes to zero and this line says so.
+    expect(describingARun.map((t) => t.name).sort()).toEqual([
+      'bootstrap',
+      'focus',
+      'guard',
+      'resume',
+    ]);
+    for (const tool of describingARun) {
+      expect(tool.description, `${tool.name} must say what a run wrote`).toContain('`wrote`');
+      expect(tool.description, `${tool.name} must say what an EMPTY tally means`).toContain(
+        'An EMPTY array means the run',
+      );
+    }
+
+    await client.close();
+  });
+
   it('focus / resume / next_actions read the session context over the real transport', async () => {
     const project = makeProject('proj');
     const { server } = buildMcpServer({ env, log: () => {} });

@@ -2589,6 +2589,38 @@ describe('mnema CLI — run (the session), end to end', () => {
     expect(c.out.join('\n')).toContain('· wrote nothing');
   });
 
+  it('`focus` says what each open run has written, not only how long it has been open', async () => {
+    // The hole a mutation battery found: `focus` prints the clause and NOTHING held it.
+    // Handing the wording function a run that wrote nothing left every case green,
+    // because the only fixture that reached this line was a run that had written
+    // nothing anyway — a guard blind for want of a value, not for want of a case.
+    //
+    // Two runs, one that recorded work and one that recorded none, so the line tells
+    // them apart on the axis this clause exists for.
+    const anchor = await initHere();
+    const worked = await startRun('claude-code', 'with work in it');
+    process.env.MNEMA_RUN = worked.id;
+    // A TASK and not a memory: routing sends a memory to the private tree while the run
+    // stays in the committed one, and a projection is per tree — so the pair would show
+    // a run that wrote nothing while something was written. (The same limit the
+    // idleness case below is built around.)
+    await run(['task', 'a job done in that session'], capture().io);
+    delete process.env.MNEMA_RUN;
+    const empty = await startRun('other-agent', 'with nothing in it');
+
+    const f = capture();
+    await run(['focus', '--actor', anchor], f.io);
+    expect(f.failed()).toBe(false);
+    const lines = f.out.join('\n').split('\n');
+    const forWorked = lines.find((l) => l.includes(worked.id)) ?? '';
+    const forEmpty = lines.find((l) => l.includes(empty.id)) ?? '';
+    // A task is born as a pair — the creation and the move into its initial state.
+    expect(forWorked).toContain('· wrote 1 task.created, 1 task.transitioned');
+    expect(forEmpty).toContain('· wrote nothing');
+    // Still ONE line per run: the clause rides the run's own line, like the durations.
+    expect(lines).toHaveLength(3);
+  });
+
   it('`focus` says how long each open run has been open and how long since it recorded', async () => {
     // What makes a list of leftover runs readable. Two runs, one with a fact pinned to
     // it and one with none, and the difference is stated rather than left to a blank:
