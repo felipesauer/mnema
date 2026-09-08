@@ -32,7 +32,7 @@
 import type { Argument, Command, Option } from 'commander';
 import { buildProgram, type CliIo } from '../../src/cli.js';
 import { valuesDeclaredOn } from '../../src/wiring/enumerated.js';
-import { everyCommandOf, pathOf } from '../../src/wiring/misuse.js';
+import { everyCommandOf, pathOf, usageOf } from '../../src/wiring/misuse.js';
 
 /** One invocable command path, and the declaration that says what it takes. */
 export interface Routed {
@@ -238,6 +238,57 @@ export function lineFor(routed: Routed, fixture: Fixture): string[] {
   }
   words.push(...(ALSO_NEEDS[routed.path] ?? []));
   return words;
+}
+
+// ---------------------------------------------------------------------------
+// Which voice answered a line
+// ---------------------------------------------------------------------------
+
+/**
+ * The shape a usage error takes when the parser raised a code the product has no wording
+ * for: the code, then the message it came with.
+ *
+ * It is the third of the parser's three answers and the only one that carries no usage
+ * line, so {@link theParserAnswered} would miss it on the line's shape alone. The
+ * discriminant is the CODE's namespace and not the sentence — `commander.` is an
+ * identifier, and the sentence after it is a dependency's English.
+ *
+ * `wiring/report.ts` frames a refusal this way for the product's own codes too
+ * (`Refused (UNPROVEN_RUN): …`), which is exactly why the prefix has to be matched WITH
+ * the namespace: a verb's own no takes the same shape.
+ */
+export const A_CODE_NOBODY_WORDED = 'Refused (commander.';
+
+/**
+ * WHETHER THE PARSER ANSWERED A LINE, rather than the path the line names.
+ *
+ * A caller that walks the surface asking what each path DID has one way of being wrong
+ * that it cannot see: a synthesised line the declaration could not answer for is refused
+ * before any action runs, and it then looks exactly like a path that does not do the
+ * thing being measured. So the parser's answer has to be identifiable, and this is the
+ * one place that says how.
+ *
+ * IT IS THE PRODUCT'S OWN FUNCTION THAT IS READ, not a copy of its text.
+ * `wiring/misuse.ts` gives every command of the program one voice for a misuse and puts
+ * {@link usageOf} under the sentence; commander heads the help with `Usage: ` and the same
+ * line. So the line to type is what both of the parser's answers carry and a verb's own
+ * refusal never does — and calling `usageOf` is what keeps this from drifting from the
+ * shape it is looking for.
+ *
+ * WHAT THAT COST WHEN IT WAS A LITERAL, since this function exists because of it. The
+ * guard used to look for `Usage: mnema`, which the help carries and the misuse voice does
+ * NOT: the prefix is commander's help formatter's, added outside `usageOf`. All seven
+ * worded codes therefore read as "the parser did not answer" — measured against the built
+ * binary, `mnema task`, `mnema decision <title>`, `mnema link a b --rel` and
+ * `mnema completion powershell` each print their sentence and an indented usage line with
+ * no `Usage:` anywhere on it.
+ *
+ * `said` is what went to the stream a refusal goes to. Both of the parser's answers are
+ * written there — the misuse voice by `speakUsageErrors`, and the help shown INSTEAD of an
+ * error by commander itself.
+ */
+export function theParserAnswered(routed: Routed, said: string): boolean {
+  return said.includes(usageOf(routed.command)) || said.includes(A_CODE_NOBODY_WORDED);
 }
 
 /** Every table here that names a path, for a caller reconciling them against the walk. */

@@ -67,6 +67,7 @@ import {
   pathsNamedInTables,
   SERVES_A_CONNECTION,
   SERVES_OR_REACHES_OUT,
+  theParserAnswered,
   theSurface,
 } from './support/the-line-a-path-takes.js';
 import { held } from './support/the-record-held.js';
@@ -149,6 +150,25 @@ const NO_TAIL_TO_WITNESS =
   'Refused (NO_TAIL): there is no tail here to witness — nothing has been recorded in these trees';
 
 /**
+ * THE ONE REASON IN THAT TABLE THAT IS NOT PROSE, because it is the only one a guard can
+ * ask the surface about.
+ *
+ * A reconciliation of NAMES can say a path refused something else first without ever
+ * reading what it said, so every reason in the table beside it is a note to a reader. This
+ * one is checked: `support/the-line-a-path-takes.ts` tells the parser's answer from a
+ * verb's own — off the product's own `usageOf`, which both of the parser's answers carry —
+ * and the case below asserts it for each path declared with this string, and asserts it is
+ * FALSE for every path that landed in box 1.
+ *
+ * It was written as three copies of a sentence nothing read. What that shape cost was
+ * measured next door, in the guard that classifies the same three paths for the run pin:
+ * it looked for the literal `Usage: mnema`, which the help carries and the misuse voice
+ * does not, and so it saw none of the seven codes the surface words.
+ */
+const THE_PARSER_ANSWERED_FIRST =
+  'a group whose bare form routes nothing: the parser answers with usage';
+
+/**
  * A path whose own refusal arrives before the project is ever missed — with what it says.
  *
  * THE FIRST FOUR ARE STRUCTURE and the last two are a FINDING. `run`, `key` and `tail`
@@ -160,9 +180,9 @@ const NO_TAIL_TO_WITNESS =
  * because what a verb SAYS is not a coverage slice's to change.
  */
 const REFUSES_SOMETHING_ELSE_FIRST: Readonly<Record<string, string>> = {
-  run: 'a group whose bare form routes nothing: the parser answers with usage',
-  key: 'a group whose bare form routes nothing: the parser answers with usage',
-  tail: 'a group whose bare form routes nothing: the parser answers with usage',
+  run: THE_PARSER_ANSWERED_FIRST,
+  key: THE_PARSER_ANSWERED_FIRST,
+  tail: THE_PARSER_ANSWERED_FIRST,
   'run end': 'with no id and no MNEMA_RUN there is no session named, which it says first',
   show: 'FINDING: it answers "No record <id> here" where there is no record at all',
   'skill export': 'FINDING: it answers "No skill <id> here" where there is no record at all',
@@ -175,6 +195,8 @@ interface Answered {
   readonly path: string;
   readonly failed: boolean;
   readonly said: string;
+  /** Whether the PARSER answered rather than the path — read off the declaration. */
+  readonly parserAnswered: boolean;
 }
 
 /** What a declaration table tolerates, and what it does not — checked both ways. */
@@ -217,7 +239,13 @@ describe('outside a project the surface says so', () => {
           },
         };
         await run(lineFor(routed, NOTHING_FOUNDED), io);
-        answered.push({ path: routed.path, failed, said: [...err, ...out].join('\n') });
+        const said = [...err, ...out].join('\n');
+        answered.push({
+          path: routed.path,
+          failed,
+          said,
+          parserAnswered: theParserAnswered(routed, said),
+        });
       }
     } finally {
       process.chdir(restore.cwd);
@@ -276,6 +304,19 @@ describe('outside a project the surface says so', () => {
       unexpected: [],
       stale: [],
     });
+
+    // AND THE ONE REASON IN BOX 4 THAT IS CHECKABLE IS CHECKED, both ways. A path declared
+    // as answered by the parser has to have been, and — the half that keeps it from being
+    // a discriminant that says yes to everything — no path in box 1 may look like one.
+    // Three copies of that sentence were three notes to a reader before this.
+    const byTheParser = answered.filter((one) => one.parserAnswered).map((one) => one.path);
+    expect([...byTheParser].sort()).toEqual(
+      Object.entries(REFUSES_SOMETHING_ELSE_FIRST)
+        .filter(([, why]) => why === THE_PARSER_ANSWERED_FIRST)
+        .map(([path]) => path)
+        .sort(),
+    );
+    expect(missedTheProject.filter((one) => one.parserAnswered).map((one) => one.path)).toEqual([]);
 
     // The four boxes are the whole surface, and box 1 holds most of it — a walk that
     // stopped finding paths would leave every reconciliation above passing over nothing.
