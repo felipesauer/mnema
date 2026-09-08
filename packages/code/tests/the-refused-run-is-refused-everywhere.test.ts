@@ -73,6 +73,17 @@
  * are no others, because a fourth would be a synthesised line the declaration could not
  * answer for.
  *
+ * THE PIN ITSELF WAS HALF BLIND WHEN IT WAS WRITTEN, and the correction is the shape worth
+ * keeping. It looked for the literal `Usage: mnema`, on the premise that the misuse voice
+ * carries the usage line the help prints. The TEXT is the same and the LINE is not: `Usage: `
+ * is added outside `usageOf` by commander's help formatter, so the pin saw the help and none
+ * of the seven codes the surface words — `mnema task`, `mnema decision <title>`,
+ * `mnema link a b --rel` and `mnema completion powershell` each came back `asked: false` AND
+ * `parserAnswered: false`, which is exactly the silent misclassification the pin is for. It
+ * now reads the product's own `usageOf` (`support/the-line-a-path-takes.ts`), covers the
+ * parser's third answer — a code nobody worded, which carries no usage line — by its code's
+ * namespace, and the case that names all three is what fails if the literal comes back.
+ *
  * WHAT IS NOT GUARDED AT ALL, and it is the order. The set of paths that ask is total only
  * while `pinnedRun()` is reached before any refusal that depends on there being a project.
  * Two shapes on this surface already return earlier than it does — `parseScope(...) ===
@@ -86,13 +97,15 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PROJECT_DIR } from '@mnema/core';
-import { Command } from 'commander';
+import { Command, CommanderError } from 'commander';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
 import { renderPlain } from '../src/presentation/plain.js';
+import { misuseReport, usageOf } from '../src/wiring/misuse.js';
 import { PIN_REFUSED, pinnedRunResolver, RUN_ENV } from '../src/wiring/run-pin.js';
 import { mergeAForeignTail } from './support/a-tail-from-another-machine.js';
 import {
+  A_CODE_NOBODY_WORDED,
   type Fixture,
   lineFor,
   NOTHING_FOUNDED,
@@ -101,6 +114,7 @@ import {
   type Routed,
   routes,
   SERVES_OR_REACHES_OUT,
+  theParserAnswered,
   theSurface,
 } from './support/the-line-a-path-takes.js';
 import { held } from './support/the-record-held.js';
@@ -154,8 +168,20 @@ const NO_SUCH_SESSION = 'Refused (UNKNOWN_RUN)';
 /** A well-formed id no record holds — the pin a stale shell carries. */
 const A_RUN_NOBODY_OPENED = '00000000-0000-7000-8000-000000000000';
 
-/** What the surface puts on the stream when the PARSER, not a verb, answered. */
-const THE_PARSER_ANSWERED = 'Usage: mnema';
+/**
+ * WHAT SAYS THE PARSER ANSWERED is `support/the-line-a-path-takes.ts`'s, and it was a
+ * literal here.
+ *
+ * The literal was `Usage: mnema`, and the premise under it — written in the field's doc
+ * below — was that the second line of the misuse voice is the usage line the help prints,
+ * so a scan for the help's usage line would see both of the parser's answers. HALF OF
+ * THAT IS FALSE: the text is the same, but `Usage: ` is added OUTSIDE it by commander's
+ * help formatter, and the misuse voice indents `usageOf(command)` with no prefix at all.
+ * So the literal saw the help and none of the seven worded codes.
+ *
+ * What replaced it reads the product's own {@link usageOf}, so it cannot drift from the
+ * line it looks for, and it lives beside the walk because two files ask this question.
+ */
 
 // ---------------------------------------------------------------------------
 // What is accused
@@ -175,12 +201,31 @@ interface Refused {
    *
    * A synthesised line the declaration could not answer for is refused before any action
    * of this surface runs, and it would then be counted as a path that does not stamp a
-   * run, silently. It is measured off the usage line, which is the one thing only a parser
-   * refusal puts on the stream: `wiring/misuse.ts` gives every command of the program one
-   * voice for a misuse, and the second line of every one of those is the `usage()` the help
-   * prints. A verb's own refusal never carries it.
+   * run, silently. What says so is {@link theParserAnswered}, which reads the product's
+   * own `usageOf` rather than a copy of its text; the case below names the parser's three
+   * answers and asserts this field over each of them.
    */
   readonly parserAnswered: boolean;
+}
+
+/**
+ * WHAT ONE LINE DID, in the terms both passes read — one function, because two sites read
+ * them.
+ *
+ * The two were four fields copied, and the copy is how the defect this pass closes stayed
+ * invisible: the classification lived in each site's expression, so neither could be
+ * wrong on its own and both were. A field added here reaches both, and a site that
+ * measured a path without going through this cannot exist.
+ */
+function whatItDid(routed: Routed, outcome: Outcome): Refused {
+  const said = outcome.err.join('\n');
+  return {
+    path: routed.path,
+    asked: said.includes(THE_PIN_REFUSED),
+    failed: outcome.failed,
+    printed: outcome.out,
+    parserAnswered: theParserAnswered(routed, said),
+  };
 }
 
 /**
@@ -300,14 +345,7 @@ async function everyPathUnderARefusedRun(): Promise<Refused[]> {
         const where = join(own, 'at', routed.path.replace(/ /g, '-'));
         mkdirSync(where, { recursive: true });
         process.chdir(where);
-        const outcome = await mnema(lineFor(routed, NOTHING_FOUNDED));
-        measured.push({
-          path: routed.path,
-          asked: outcome.err.join('\n').includes(THE_PIN_REFUSED),
-          failed: outcome.failed,
-          printed: outcome.out,
-          parserAnswered: outcome.err.join('\n').includes(THE_PARSER_ANSWERED),
-        });
+        measured.push(whatItDid(routed, await mnema(lineFor(routed, NOTHING_FOUNDED))));
       }
       return measured;
     } finally {
@@ -455,6 +493,77 @@ describe('the refused run is refused everywhere', () => {
     expect(bothHalvesSeen.length).toBe(15);
   }, 300_000);
 
+  it('tells the parser’s three answers from a verb’s own, and names what the literal missed', async () => {
+    // THE PIN'S OWN NON-VACUITY, and the reason it is a case rather than a comment: the
+    // classification above only ever reports three paths, and it reported them for a
+    // literal that could not have seen four of the parser's seven codes. So each of the
+    // parser's answers is provoked BY NAME here, and so is a verb's own no beside them.
+    process.env.HOME = join(sandbox, 'home');
+    process.env.XDG_DATA_HOME = join(sandbox, 'data');
+    process.env[RUN_ENV] = A_RUN_NOBODY_OPENED;
+    process.chdir(sandbox);
+    const at = (path: string): Routed => theSurface().find((one) => one.path === path) as Routed;
+
+    // ONE · THE MISUSE VOICE, at the four lines measured against the built binary when
+    // this was found. Each is a line the DECLARATION could not answer for, which is the
+    // shape the pin exists to catch, and the literal `Usage: mnema` saw none of them: the
+    // prefix is commander's help formatter's, and this voice never goes through it.
+    const misused: readonly (readonly [string, readonly string[], string])[] = [
+      ['task', ['task'], 'a required positional given nothing'],
+      ['decision', ['decision', 'a title'], 'the SECOND positional given nothing'],
+      ['link', ['link', 'a', 'b', '--rel'], 'a flag that takes a value given none'],
+      ['completion', ['completion', 'powershell'], 'a value the declaration’s parser refuses'],
+    ];
+    for (const [path, argv, why] of misused) {
+      const outcome = await mnema(argv);
+      const said = whatItDid(at(path), outcome);
+      const where = `mnema ${argv.join(' ')} — ${why}`;
+      expect(said.parserAnswered, where).toBe(true);
+      // And it is not the pin resolver that spoke, which is the whole reason a lie here
+      // is silent: `asked: false` on its own reads as a verb that stamps no run.
+      expect(said.asked, where).toBe(false);
+      expect(said.failed, where).toBe(true);
+
+      // WHAT FALSIFIED THE PREMISE, asserted on the SAME output rather than only written
+      // in a comment: this voice carries the usage line WITHOUT the help's prefix. A
+      // guard that goes back to looking for the prefix is red here and above.
+      //
+      // The absence is asserted BESIDE what is present, in this order, because an
+      // absence alone goes vacuous the day the invocation stops printing: an empty
+      // stream contains no `Usage:` either. The line to type is what has to be there.
+      const stream = outcome.err.join('\n');
+      expect(stream, where).toContain(`  ${usageOf(at(path).command)}`);
+      expect(stream, where).not.toContain('Usage:');
+    }
+
+    // TWO · THE HELP SHOWN INSTEAD OF AN ERROR — the answer the literal DID see, kept
+    // asserted so the repair is not read as having moved the boundary.
+    const bare = await mnema(['run']);
+    expect(theParserAnswered(at('run'), bare.err.join('\n'))).toBe(true);
+    expect(bare.err.join('\n')).toContain('Usage: mnema run');
+
+    // THREE · A CODE NOBODY WORDED, which is the one of the three that carries no usage
+    // line at all: it comes out as the code and the message, the same shape a verb's own
+    // refusal takes. So it is told apart by the code's NAMESPACE, and the line it is read
+    // off is the product's, built here because no invocation of this surface raises a code
+    // the file does not word (`one-voice-for-a-no.test.ts` owns that half).
+    const unworded = misuseReport({
+      command: at('task').command,
+      error: new CommanderError(1, 'commander.somethingNobodyWorded', 'whatever it says'),
+      typed: [],
+    }).map((line) => renderPlain(line));
+    expect(unworded.length).toBe(1);
+    expect(theParserAnswered(at('task'), unworded.join('\n'))).toBe(true);
+    expect(unworded[0]).toContain(A_CODE_NOBODY_WORDED);
+
+    // AND THE CONTRAST, without which every line above would pass on a discriminant that
+    // answers `true` to anything: a line the DECLARATION answered for, refused by the pin
+    // resolver, carries neither the usage line nor a commander code.
+    const refused = whatItDid(at('link'), await mnema(lineFor(at('link'), NOTHING_FOUNDED)));
+    expect(refused.asked).toBe(true);
+    expect(refused.parserAnswered).toBe(false);
+  }, 60_000);
+
   it('accuses a path that asks and forgets to fail — on a program of its own', async () => {
     // THE MECHANISM'S NON-VACUITY, and it is the shape the trunk cannot show: with the
     // surface honest, the two cases above only ever say "nothing is accused". So a program
@@ -509,14 +618,7 @@ describe('the refused run is refused everywhere', () => {
       const line = lineFor(routed, NOTHING_FOUNDED);
       const port = capture();
       await aProgramOfItsOwn(port.io).parseAsync(line, { from: 'user' });
-      const outcome = port.outcome();
-      measured.push({
-        path: routed.path,
-        asked: outcome.err.join('\n').includes(THE_PIN_REFUSED),
-        failed: outcome.failed,
-        printed: outcome.out,
-        parserAnswered: outcome.err.join('\n').includes(THE_PARSER_ANSWERED),
-      });
+      measured.push(whatItDid(routed, port.outcome()));
     }
 
     // Both were found to ask — so the derivation sees a command nothing told it about —
@@ -527,10 +629,26 @@ describe('the refused run is refused everywhere', () => {
     // The accusation's other two edges, on rows of its own: a path that never asked is not
     // judged, and one that reported after being refused is.
     expect(
-      accused([{ path: 'never-asks', asked: false, failed: false, printed: ['a report'] }]),
+      accused([
+        {
+          path: 'never-asks',
+          asked: false,
+          failed: false,
+          printed: ['a report'],
+          parserAnswered: false,
+        },
+      ]),
     ).toEqual([]);
     expect(
-      accused([{ path: 'talks-anyway', asked: true, failed: true, printed: ['a report'] }]),
+      accused([
+        {
+          path: 'talks-anyway',
+          asked: true,
+          failed: true,
+          printed: ['a report'],
+          parserAnswered: false,
+        },
+      ]),
     ).toEqual(['talks-anyway: printed a report after the run was refused']);
   }, 60_000);
 });
