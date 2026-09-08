@@ -13,10 +13,15 @@
  *     the word appears in their PROSE. The usual trap on this bench is a phrase that
  *     under-counts; this one over-counts, which is worse, because the extra names look
  *     like the answer.
- *   - `pinnedRun()` is asked at ELEVEN sites, and `init`, `key` and `run` are not among
+ *   - `pinnedRun()` is asked at FOURTEEN sites, and `init`, `key` and `run` are not among
  *     them while all three write. It identifies "stamps a session", a different
  *     question, and a list built from it would have handed a read-only session the verb
- *     that founds an identity.
+ *     that founds an identity. THIS SAID ELEVEN, which was true the day it was written
+ *     and stopped being true as the surface grew; the figure was then copied into
+ *     `record-effect.ts`, where it was wrong on arrival. Fourteen written sites serve
+ *     fifteen command paths, and neither number is counted by eye any more —
+ *     `the-refused-run-is-refused-everywhere.test.ts` derives the paths that ask from the
+ *     program and reddens when the set changes.
  *
  * So each verb declares it (`wiring/verb.ts`), the type makes the declaration
  * compulsory, and this file is the other half: a declaration nothing checks is a comment
@@ -79,12 +84,10 @@
  *     group whose subcommand wrote would need a row of its own here.
  */
 
-import { cpSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
-import { catalogUpcasters, openChainForWriting } from '@mnema/chain';
 import { PROJECT_DIR } from '@mnema/core';
-import { createTask } from '@mnema/core/write';
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo, run } from '../src/cli.js';
@@ -92,6 +95,7 @@ import { renderPlain } from '../src/presentation/plain.js';
 import { registerVerbs } from '../src/wiring/index.js';
 import type { PinnedRun } from '../src/wiring/run-pin.js';
 import type { Declared, RecordEffect } from '../src/wiring/verb.js';
+import { mergeAForeignTail } from './support/a-tail-from-another-machine.js';
 import { held } from './support/the-record-held.js';
 
 // ---------------------------------------------------------------------------
@@ -410,32 +414,6 @@ async function fixture(name: string): Promise<Fixture> {
       join(sandbox, name, 'other-machine'),
     ),
   };
-}
-
-/**
- * A second machine's tail, merged into `into` the way an offline copy is: its tail
- * directory and the public half of the key that signed it.
- *
- * The machine itself is thrown away afterwards, so nothing this function leaves behind
- * is inside the window {@link held} measures across an invocation — what remains is the
- * merged copy, which is part of the project every row is exercised over.
- */
-function mergeAForeignTail(into: string, machine: string): string {
-  const writer = openChainForWriting(machine, { keyRoot: machine });
-  const created = createTask(
-    { writer, layout: { root: machine }, upcasters: catalogUpcasters() },
-    { title: 'work another machine did' },
-  );
-  if (!created.ok) throw new Error(`fixture: the other machine wrote nothing: ${created.code}`);
-  writer.checkpoint();
-  for (const tail of readdirSync(join(machine, 'tails'))) {
-    cpSync(join(machine, 'tails', tail), join(into, 'tails', tail), { recursive: true });
-  }
-  for (const key of readdirSync(join(machine, 'keys'))) {
-    if (key.endsWith('.pub')) cpSync(join(machine, 'keys', key), join(into, 'keys', key));
-  }
-  rmSync(machine, { recursive: true, force: true });
-  return writer.tail;
 }
 
 /**

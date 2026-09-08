@@ -125,7 +125,17 @@ export interface TailWitnessLine {
 /** What the trees here hold, tail by tail. */
 export interface WitnessListing {
   readonly lines: readonly TailWitnessLine[];
-  /** The trees this looked in — always non-empty, since the global tree resolves. */
+  /**
+   * The trees this looked in, which CAN be empty — and the sentence above it used to say
+   * it could not.
+   *
+   * That sentence is true where it was written: `commands/tail-list.ts` answers with
+   * `treesSearched(trees)` whole, and the machine-global tree always resolves. Here the
+   * same list is filtered by `--global`, which every path of this group leaves off by
+   * default, so outside a project there is nothing left. A reading that interpolates this
+   * then prints `looked in .` — a list with no items and a full stop — and that is what a
+   * caller sees today.
+   */
   readonly trees: readonly Scope[];
 }
 
