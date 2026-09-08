@@ -45,7 +45,10 @@
  *      it would produce can have been observed. This counted as an import until the
  *      second reading of the scanner, and six files were called witnessed on the strength
  *      of it alone — `writer.ts`, `record-effect.ts`, `run-pin.ts`, `intelligence/
- *      events.ts`, `sources.ts` and `workflow/clock.ts`, each now a row below.
+ *      events.ts`, `sources.ts` and `workflow/clock.ts`, each then a row below. FIVE of
+ *      them still are: `run-pin.ts` was drained when the guard over a refused run began
+ *      importing its sentinel as a VALUE and asserting about what a program handed it
+ *      answers (`the-refused-run-is-refused-everywhere.test.ts`).
  *
  * THE LEDGER IS A BOOK OF DEBT, NOT A DISPENSATION. It is reconciled in FOUR directions at
  * once: a product file with no witness that is not in it is accused, an entry that has
@@ -54,7 +57,7 @@
  * THAT file — what reaches it today and what that reaches instead — so it can be drained
  * one row at a time. It can only shrink.
  *
- * AND IT CANNOT DISSOLVE ITSELF. The ledger's keys are 79 path strings. Under a rule that
+ * AND IT CANNOT DISSOLVE ITSELF. The ledger's keys are 77 path strings. Under a rule that
  * read path literals, listing a file as debt would witness it and every entry would go
  * stale the moment it was written. Naming requires an IMPORT here, so a table of strings
  * names nothing — asserted below rather than assumed.
@@ -154,7 +157,7 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * and leaves 2145, which clears that floor and reddens nothing else in this file. Restate
  * this number when the tree gains an import, which is the point of writing it down.
  */
-const CLAUSES_IN_THE_TREE = 2391;
+const CLAUSES_IN_THE_TREE = 2420;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -464,10 +467,6 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: "The handoff verb's three positionals and its id-less echo; cli-e2e asserts the recorded event and the sentence, never that this file makes --which the author, not the subject.",
   },
-  'packages/code/src/wiring/io.ts': {
-    reached: 'nobody imports it',
-    why: 'The CliIo port itself; every test injects its own port so processIo never runs, doors.test.ts imports the type only, and writeLines just relays lines other modules composed.',
-  },
   'packages/code/src/wiring/key.ts': {
     reached: 'nobody imports it',
     why: "The key group's four subcommands and the advice they print; cli-e2e asserts what restore, enroll and revoke did to the record, not the sentences this file prints about it.",
@@ -511,10 +510,6 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   'packages/code/src/wiring/rules.ts': {
     reached: 'nobody imports it',
     why: "The rules verb's wiring for reading which recorded rules govern a path; the-rule-has-an-address.test.ts drives it only to compare the CLI's answer with the governing_rules tool's.",
-  },
-  'packages/code/src/wiring/run-pin.ts': {
-    reached: 'nobody imports it',
-    why: 'pinnedRunResolver and the PIN_REFUSED sentinel: the single test naming it imports the PinnedRun type to describe a stub of its own, and asserts about the verb wiring that was handed the stub.',
   },
   'packages/code/src/wiring/run.ts': {
     reached: 'nobody imports it',
@@ -652,9 +647,9 @@ describe('every file has a test that names it', () => {
     const found = unwitnessed();
     const byReach = (reach: Reach): number =>
       [...found.values()].filter((one) => one === reach).length;
-    expect(PRODUCTION.length - found.size).toBe(216);
-    expect(found.size).toBe(79);
-    expect(byReach('nobody imports it')).toBe(79);
+    expect(PRODUCTION.length - found.size).toBe(218);
+    expect(found.size).toBe(77);
+    expect(byReach('nobody imports it')).toBe(77);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -662,7 +657,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(79);
+    expect(reasons).toHaveLength(77);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.
