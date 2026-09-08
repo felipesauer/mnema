@@ -361,8 +361,20 @@ function spoken(command: Command): string {
     .join(' ');
 }
 
-/** The line to type, exactly as this command's own `--help` prints it. */
-function usageOf(command: Command): string {
+/**
+ * The line to type, exactly as this command's own `--help` prints it.
+ *
+ * EXPORTED BECAUSE A GUARD READS IT TO TELL THE TWO VOICES APART, and it has to be this
+ * function rather than a copy. Both of the parser's answers carry this line — the help
+ * heads it with commander's `Usage: `, and the second line of a misuse above is it,
+ * indented — and a verb's own refusal never carries it, so it is what says the PARSER
+ * answered a line and not the path it names. A guard that retyped the text would go on
+ * passing while matching nothing the day the shape changed, which is what happened:
+ * `the-refused-run-is-refused-everywhere.test.ts` looked for `Usage: mnema` and therefore
+ * saw the help and NONE of the seven misuse wordings, because the prefix is the help
+ * formatter's and not this line's.
+ */
+export function usageOf(command: Command): string {
   return command.createHelp().commandUsage(command);
 }
 
