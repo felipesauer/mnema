@@ -2564,6 +2564,41 @@ describe('MCP server — end to end over a real client', () => {
     await client.close();
   });
 
+  it('resume tells an agent WHAT was written in its run, over the real transport', async () => {
+    // The elo, asserted where it can actually break: the field is on the projection and
+    // the tool hands back a serialized object, so a case that called the derivation
+    // directly would stay green with nothing reaching the wire. This one reads the TEXT
+    // the server sent and parses that.
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    // Three writes of two kinds through the server, so the tally is a tally and not a
+    // one-entry list that any grouping would produce by accident.
+    await client.callTool({ name: 'create_task', arguments: { title: 'one job' } });
+    await client.callTool({ name: 'create_task', arguments: { title: 'another job' } });
+    await client.callTool({
+      name: 'capture_memory',
+      arguments: { content: 'worth keeping', scope: 'public' },
+    });
+
+    const resumeRes = await client.callTool({ name: 'resume' });
+    const resume = JSON.parse(textOf(resumeRes)) as {
+      lastRun: { wrote: { kind: string; count: number }[] } | null;
+    };
+    // A task is born as a pair (`task.created` + the transition into its initial
+    // state), so two tasks are four facts across two kinds — and the two equal counts
+    // are what put the tie-break in the claim: equal counts order by the kind's own
+    // spelling.
+    expect(resume.lastRun?.wrote).toEqual([
+      { kind: 'task.created', count: 2 },
+      { kind: 'task.transitioned', count: 2 },
+      { kind: 'memory.captured', count: 1 },
+    ]);
+
+    await client.close();
+  });
+
   it('focus / resume / next_actions read the session context over the real transport', async () => {
     const project = makeProject('proj');
     const { server } = buildMcpServer({ env, log: () => {} });

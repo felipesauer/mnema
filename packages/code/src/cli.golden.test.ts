@@ -738,6 +738,22 @@ beforeAll(async () => {
     'the record is set up',
   );
   delete process.env.MNEMA_RUN;
+
+  // ── The run that DID something, read while it is still the latest one.
+  //
+  // Every other reading of a run in this transcript lands on the second one, which is
+  // opened below and stays empty — so without this pair the file would pin `wrote` in
+  // its empty case only, and a clause that never shows a value is a clause a change
+  // could empty without moving a byte here. Read HERE, between the two runs, because
+  // `resume` answers with the latest and the second one is a line away.
+  //
+  // Nothing volatile crosses: the run has ENDED, so it carries no age and no idleness
+  // — which is also the case the phrase treats differently, `wrote` riding an ended run
+  // where the durations do not.
+  section('reads', 'the run that did something');
+  await mnema('reads', 'resume', '--actor', anchor);
+  await mnema('reads', 'resume', '--actor', anchor, '--json');
+
   const second = await mnema(
     'writes',
     'run',

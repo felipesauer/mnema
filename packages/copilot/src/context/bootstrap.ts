@@ -180,7 +180,10 @@
  * one per list, because a slice written twice is a rule written twice.
  *
  * What still makes the rest lean is the filtering:
- *   - the actor's focus comes from `resume`, already scoped to the actor;
+ *   - the actor's focus comes from `resume`, already scoped to the actor — and the run
+ *     it names now carries WHAT WAS WRITTEN IN IT (`core`'s `RunProjection.wrote`),
+ *     which is the same NAMES-not-bodies economy read off a session instead of a list:
+ *     a tally per kind, bounded by the catalog, never the facts themselves;
  *   - the work list carries ONLY live tasks — those a reader still has something to
  *     do about, which is `advancing` or `stalled` (see {@link liveWork}) — most
  *     recently touched first, so the freshest work leads and the cut falls on the

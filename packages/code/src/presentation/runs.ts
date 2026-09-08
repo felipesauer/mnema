@@ -3,13 +3,14 @@
  *
  * `focus` lists the open runs, `resume` names the last one and `status` says where the
  * actor left off as one half of a wider answer, and all three need the same things said
- * the same way: how long a run has been open, how long since it recorded anything, what
- * the LAST one was, how many are still open, and what a run IS for the reader who has
- * none. Three readings wording that separately is three wordings, and the second one to
- * change would be the one nobody noticed.
+ * the same way: how long a run has been open, how long since it recorded anything, WHAT
+ * was written in it, what the LAST one was, how many are still open, and what a run IS
+ * for the reader who has none. Three readings wording that separately is three wordings,
+ * and the second one to change would be the one nobody noticed.
  */
 
 import type { Resume } from '@mnema/copilot';
+import type { WrittenInRun } from '@mnema/core';
 import { oneLine } from '../one-line.js';
 import { fact } from './detail.js';
 import type { Line } from './line.js';
@@ -58,6 +59,13 @@ export const NO_RUNS_HINT: readonly Line[] = [
  * the rule `wiring/on-one-line.ts` states and the reason the three halves are joined
  * rather than nested: a fragment carrying its own punctuation, collapsed, loses the
  * space it opens with, and `for a — g` becomes `for a— g`.
+ *
+ * WHAT WAS WRITTEN RIDES IT WHETHER THE RUN IS OPEN OR ENDED, which is the one part of
+ * this phrase that is NOT under the age's rule. An age beside an ended run would read
+ * as time still passing; a tally beside one reads as what that session did, and the
+ * reader of an ENDED run is exactly the person asking "where was I" — the question this
+ * phrase exists for. Asserted in `cli-e2e.test.ts` — "`resume` says what was written in
+ * the run, ended or open".
  */
 export function lastRunPhrase(run: {
   readonly id: string;
@@ -65,11 +73,13 @@ export function lastRunPhrase(run: {
   readonly goal?: string;
   readonly ageSeconds?: number;
   readonly idleSeconds?: number;
+  readonly wrote: readonly WrittenInRun[];
 }): string {
   return (
     `last run ${run.id} (${run.open ? 'open' : 'ended'})` +
     (run.goal === undefined ? '' : ` — ${oneLine(run.goal)}`) +
-    (run.open ? runAgeSuffix(run) : '')
+    (run.open ? runAgeSuffix(run) : '') +
+    wroteSuffix(run)
   );
 }
 
@@ -127,6 +137,56 @@ export function runAgeSuffix(run: {
       ? 'nothing recorded in it'
       : `last recorded ${humanDuration(run.idleSeconds)} ago`;
   return ` · ${age} · ${idle}`;
+}
+
+/**
+ * WHAT was written in a run — the tally per kind, commonest first, appended to the
+ * run's OWN line.
+ *
+ * The order and the entries are the projection's (`core`'s `run.ts`); this only words
+ * them. It is the answer to the complaint that put this clause here: every reading of a
+ * run reported the CONTAINER — an id, a goal, two durations — and none of them said
+ * what was put in it, so a session that recorded a decision and one that recorded
+ * nothing but a memory printed the same line.
+ *
+ * IT IS UNCUT, and that is the projection's ceiling kept rather than a second decision
+ * made here. The entries are over the event catalog, a closed union, so the clause is
+ * bounded by the number of kinds however long the session ran — which is why there is
+ * no `+N more` and no total beside it, the shape the four lists of `status` need
+ * because a record holds entities without limit.
+ *
+ * WHAT THAT BOUND COSTS, measured rather than assumed: the golden transcript pins one
+ * run that every write of the fixture was pinned to — 10 kinds, 30 facts — and its
+ * clause is 10 entries and about 210 characters (`cli.reads.golden.txt`, "the run that
+ * did something"). That is the worst shape a real record produces, and it wraps on a
+ * narrow terminal rather than truncating. The trade is deliberate: a cut here would be
+ * a second observable decision to document and to keep in step with the projection's
+ * order, in exchange for a line that is already the LONGEST one this file can word.
+ *
+ * "wrote nothing" IS SAID, and it is said even beside {@link runAgeSuffix}'s own
+ * "nothing recorded in it", which for an OPEN run is the same fact from the other axis.
+ * The two are left to agree rather than one being dropped: dropping this half when the
+ * other happens to be present would make the clause conditional on the run being open,
+ * which is the rule written in two places — and the case that needs it most is the
+ * ENDED run, where `runAgeSuffix` does not run at all and silence would be the only
+ * answer a reader got.
+ *
+ * THE SITE THIS CLAUSE DELIBERATELY DOES NOT REACH is `mnema usage`, which is the
+ * other reading in this package that lists runs (`presentation/usage.ts`). It was found
+ * by asking who reads `listRuns`, not by anybody's list, and it is left alone because
+ * it answers a different question: what a session COST, joined to the host's
+ * transcripts, in a fixed-width table whose closing statement says the numbers are not
+ * the record's. What a run wrote is the record's, and putting it in that table would
+ * mix the two halves the report exists to keep apart.
+ *
+ * Nothing here goes through `oneLine`: every value on this clause is the record's own
+ * — a kind is one of the catalog's literals and a count is a number — so there is no
+ * text an actor typed for a newline to hide in. That is the classification
+ * `tests/the-line-a-reading-words-is-one-line.test.ts` holds for this line.
+ */
+export function wroteSuffix(run: { readonly wrote: readonly WrittenInRun[] }): string {
+  if (run.wrote.length === 0) return ' · wrote nothing';
+  return ` · wrote ${run.wrote.map((w) => `${w.count} ${w.kind}`).join(', ')}`;
 }
 
 /**

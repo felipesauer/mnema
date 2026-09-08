@@ -159,6 +159,7 @@ const opening = bootstrap([cache], {
 });
 const lastGoal = opening.resume.lastRun?.goal; // "ship the parser"
 const openFor = opening.resume.lastRun?.ageSeconds; // how long it has been open
+const didWrite = opening.resume.lastRun?.wrote; // WHAT went in: [{ kind, count }, …]
 const firstJob = opening.work[0]; // the freshest live task — a NAME
 const more = opening.workTotal > opening.work.length; // was the list cut?
 const patterns = opening.skills.map((s) => s.name); // names only — one line each

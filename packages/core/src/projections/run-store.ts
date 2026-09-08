@@ -2,14 +2,21 @@
  * Persisting and querying the run projection in SQLite.
  *
  * The pure fold ({@link projectRuns}) produces run state; this module writes it
- * to the `runs` table and reads it back. Two shape mismatches are handled at
+ * to the `runs` table and reads it back. Three shape mismatches are handled at
  * this boundary: the projection's optional fields (goal, outcome, endedAt,
- * lastFactAt) are bound as SQL NULL when absent, and the `open` boolean is stored
- * as 0/1 because a STRICT table has no boolean type.
+ * lastFactAt) are bound as SQL NULL when absent, the `open` boolean is stored
+ * as 0/1 because a STRICT table has no boolean type, and `wrote` — an array, which
+ * no column type holds — crosses as JSON.
+ *
+ * `wrote` is NOT an optional handled by NULL, and that asymmetry is the projection's
+ * own: an empty tally is the ANSWER for a run that wrote nothing, so it crosses as
+ * `[]` and comes back as `[]`. Binding it as NULL would turn a fact the fold knows
+ * into an absence a reader has to guess at, which is the distinction the field exists
+ * to make.
  */
 
 import type { SqliteDatabase } from '../db/sqlite.js';
-import type { RunProjection } from './run.js';
+import type { RunProjection, WrittenInRun } from './run.js';
 
 /** The `runs` row shape as stored. */
 interface RunRow {
@@ -22,6 +29,7 @@ interface RunRow {
   readonly started_at: string;
   readonly ended_at: string | null;
   readonly last_fact_at: string | null;
+  readonly wrote: string;
 }
 
 /** The bound-parameter shape: every column present, optionals as null. */
@@ -35,6 +43,7 @@ interface RunParams {
   readonly startedAt: string;
   readonly endedAt: string | null;
   readonly lastFactAt: string | null;
+  readonly wrote: string;
 }
 
 /**
@@ -44,8 +53,8 @@ interface RunParams {
  */
 export function materializeRuns(db: SqliteDatabase, runs: Iterable<RunProjection>): void {
   const insert = db.prepare(
-    `INSERT INTO runs (id, agent, who, goal, outcome, open, started_at, ended_at, last_fact_at)
-     VALUES (@id, @agent, @who, @goal, @outcome, @open, @startedAt, @endedAt, @lastFactAt)`,
+    `INSERT INTO runs (id, agent, who, goal, outcome, open, started_at, ended_at, last_fact_at, wrote)
+     VALUES (@id, @agent, @who, @goal, @outcome, @open, @startedAt, @endedAt, @lastFactAt, @wrote)`,
   );
   for (const run of runs) {
     insert.run(toParams(run));
@@ -82,6 +91,10 @@ function toParams(run: RunProjection): RunParams {
     startedAt: run.startedAt,
     endedAt: run.endedAt ?? null,
     lastFactAt: run.lastFactAt ?? null,
+    // The array as written by the fold, order included: the fold's order is total
+    // (see `orderedWrites`), so the text is a function of the events alone and two
+    // caches over one chain hold the same bytes here.
+    wrote: JSON.stringify(run.wrote),
   };
 }
 
@@ -92,6 +105,11 @@ function toProjection(row: RunRow): RunProjection {
     who: row.who,
     open: row.open === 1,
     startedAt: row.started_at,
+    // Not defended against malformed text: this column is written by `toParams` in
+    // this same file and by nothing else, and the cache is dropped and replayed
+    // rather than migrated — so a row this cannot parse is a bug in the pair above,
+    // not input a reader should be quietly recovering from.
+    wrote: JSON.parse(row.wrote) as readonly WrittenInRun[],
   };
   if (row.goal !== null) projection.goal = row.goal;
   if (row.outcome !== null) projection.outcome = row.outcome;

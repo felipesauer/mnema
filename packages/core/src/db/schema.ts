@@ -77,7 +77,17 @@ CREATE TABLE IF NOT EXISTS runs (
   started_at TEXT NOT NULL,
   ended_at   TEXT,
   -- 'at' of the most recent event PINNED to this run; NULL when it has none.
-  last_fact_at TEXT
+  last_fact_at TEXT,
+  -- WHAT was written in the run: the tally per event kind, JSON-encoded as the
+  -- ordered array the projection produces ([] when the run wrote nothing, never
+  -- NULL — absence would say "unknown", and the fold always knows).
+  --
+  -- JSON in a column rather than a table of (run, kind, count) rows, and the
+  -- reason is the query nobody makes: this tally is only ever read BESIDE its run,
+  -- never filtered or grouped by kind, so a relational shape would charge every
+  -- read of a run for a join that serves no reader. The refs table sets the
+  -- precedent for a JSON column here, and it is read the same way when it must be.
+  wrote        TEXT NOT NULL
 ) STRICT;
 
 CREATE INDEX IF NOT EXISTS idx_runs_open ON runs (open);

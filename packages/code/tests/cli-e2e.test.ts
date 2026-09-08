@@ -2522,6 +2522,73 @@ describe('mnema CLI — run (the session), end to end', () => {
     expect(s.err.join('\n')).toContain('Run `mnema init`');
   });
 
+  it('`resume` says what was written in the run, ended or open', async () => {
+    // The complaint this closes: every reading of a run reported the CONTAINER. Before
+    // the clause, a session that recorded three facts of two kinds and one that
+    // recorded nothing printed lines that differed only by a duration.
+    //
+    // The ENDED run is the case that matters most and the one `runAgeSuffix` cannot
+    // reach: it prints no age and no idleness, so without this clause a finished
+    // session — which is exactly what "where was I" lands on — said nothing at all
+    // about what happened in it.
+    const anchor = await initHere();
+    const worked = await startRun('claude-code', 'a session that did things');
+    process.env.MNEMA_RUN = worked.id;
+    await run(['task', 'one job'], capture().io);
+    await run(['task', 'another job'], capture().io);
+    await run(['memory', 'something worth keeping', '--scope', 'public'], capture().io);
+    delete process.env.MNEMA_RUN;
+
+    // While it is OPEN: the clause rides beside the durations, not instead of them.
+    const open = capture();
+    await run(['resume', '--actor', anchor], open.io);
+    expect(open.failed()).toBe(false);
+    // Two kinds per task, and that is the record being literal rather than a surprise:
+    // a task is BORN as a `task.created` and a `task.transitioned` into its initial
+    // state, so a session that opened two tasks wrote four facts. The two 2s also make
+    // the tie-break part of the claim — equal counts are ordered by the kind's own
+    // spelling, which is why `task.created` leads `task.transitioned`.
+    expect(open.out.join('\n')).toContain(
+      '· wrote 2 task.created, 2 task.transitioned, 1 memory.captured',
+    );
+    expect(open.out.join('\n')).toMatch(/· open \d+[dhms]/);
+
+    // And once it has ENDED, where the durations stop and this clause does not.
+    await run(['run', 'end', worked.id, '--which', 'claude-code'], capture().io);
+    const ended = capture();
+    await run(['resume', '--actor', anchor], ended.io);
+    const line = ended.out.join('\n');
+    expect(line).toContain('(ended)');
+    expect(line).not.toMatch(/· open \d+[dhms]/);
+    expect(line).toContain('· wrote 2 task.created, 2 task.transitioned, 1 memory.captured');
+
+    // The VALUE, off `--json`, so the words above are not the only thing asserted:
+    // commonest kind first, and the count with it.
+    const j = capture();
+    await run(['resume', '--actor', anchor, '--json'], j.io);
+    const parsed = JSON.parse(j.out.join('\n')) as {
+      lastRun: { wrote: Array<{ kind: string; count: number }> };
+    };
+    expect(parsed.lastRun.wrote).toEqual([
+      { kind: 'task.created', count: 2 },
+      { kind: 'task.transitioned', count: 2 },
+      { kind: 'memory.captured', count: 1 },
+    ]);
+  });
+
+  it('`resume` says a run wrote NOTHING rather than leaving the clause off', async () => {
+    // Distinguishable from "I do not know", which is what silence would claim. A run
+    // that opened and closed with no write in it is a real state — a session whose
+    // first write did not land — and the reading has to say so.
+    const anchor = await initHere();
+    const empty = await startRun('claude-code', 'a session that did nothing');
+    await run(['run', 'end', empty.id, '--which', 'claude-code'], capture().io);
+
+    const c = capture();
+    await run(['resume', '--actor', anchor], c.io);
+    expect(c.out.join('\n')).toContain('· wrote nothing');
+  });
+
   it('`focus` says how long each open run has been open and how long since it recorded', async () => {
     // What makes a list of leftover runs readable. Two runs, one with a fact pinned to
     // it and one with none, and the difference is stated rather than left to a blank:

@@ -203,6 +203,8 @@ describe('ProjectionCache — runs', () => {
       goal: 'ship',
       open: true,
       startedAt: at(0),
+      // Through the cache too, and empty because this run holds only its own birth.
+      wrote: [],
     });
     expect(cache.listOpenRuns().map((r) => r.id)).toEqual(['r-1']);
 
