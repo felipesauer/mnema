@@ -136,6 +136,19 @@ const SAYS_NO_TAIL_HOLDS_EVENTS: Readonly<Record<string, string>> = {
 };
 
 /**
+ * WHAT THE FOURTH OF THE FOUR UNREACHED REFUSALS SAYS, whole.
+ *
+ * `wiring/witness.ts` reports its act's refusal two lines above the sentence in
+ * {@link SAYS_NO_TAIL_HOLDS_EVENTS}, and it was reached by the same walk and read by
+ * nothing for the same reason: a box that reconciles NAMES can say a path refused
+ * something else first without ever reading what it said. `witness stamp` is the only
+ * path that reaches it, and this is the only place on the surface it can be exercised at
+ * all — over a record holding a tail it would go out to a calendar.
+ */
+const NO_TAIL_TO_WITNESS =
+  'Refused (NO_TAIL): there is no tail here to witness — nothing has been recorded in these trees';
+
+/**
  * A path whose own refusal arrives before the project is ever missed — with what it says.
  *
  * THE FIRST FOUR ARE STRUCTURE and the last two are a FINDING. `run`, `key` and `tail`
@@ -248,6 +261,14 @@ describe('outside a project the surface says so', () => {
       const one = answered.find((row) => row.path === path);
       expect(one?.said, `${path} (${copy}) said: ${one?.said}`).toBe(NO_TAIL_HOLDS_EVENTS);
     }
+
+    // AND SO DOES THE ONE ROW OF BOX 4 whose refusal is its own rather than the parser's.
+    // The other six there are answered by commander or by an id, and their wording belongs
+    // to the files that own those; this one is the act's, and reading its name alone left
+    // the line nobody's.
+    const stamped = answered.find((row) => row.path === 'witness stamp');
+    expect(Object.keys(REFUSES_SOMETHING_ELSE_FIRST)).toContain('witness stamp');
+    expect(stamped?.said, `witness stamp said: ${stamped?.said}`).toBe(NO_TAIL_TO_WITNESS);
     const refusedOtherwise = answered
       .filter((one) => one.failed && !one.said.includes(THERE_IS_NO_PROJECT))
       .map((one) => one.path);
