@@ -2623,8 +2623,16 @@ describe('MCP server — end to end over a real client', () => {
       'guard',
       'resume',
     ]);
+    // THREE THINGS, not one, and the third is here because a mutation showed the first
+    // two were not enough: falsifying the SCOPE of the sentence — "EVERY run reported"
+    // turned into "NO run reported" — left both of the others intact and the suite
+    // green. A description that mentions a field while lying about when it is there is
+    // worse than one that omits it, so the claim itself is asserted, not just the name.
     for (const tool of describingARun) {
       expect(tool.description, `${tool.name} must say what a run wrote`).toContain('`wrote`');
+      expect(tool.description, `${tool.name} must say it is on EVERY run reported`).toContain(
+        'EVERY run reported — open or ',
+      );
       expect(tool.description, `${tool.name} must say what an EMPTY tally means`).toContain(
         'An EMPTY array means the run',
       );
