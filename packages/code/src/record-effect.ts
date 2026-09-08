@@ -23,10 +23,21 @@
  * and it is not in the code. `grep writer` over the adapters names FIFTEEN files and six
  * of them are reads — `show`, `timeline`, `resume`, `next-actions`, `brief`,
  * `accountability` — because the word is in their PROSE, so the search answers with
- * false positives rather than a set. `pinnedRun()` is asked at eleven sites, and the
+ * false positives rather than a set. `pinnedRun()` is asked at FOURTEEN sites, and the
  * three writes that stamp no session (`init`, `key`, `run` itself) are not among them,
  * so it answers "carries a run", which is a different question. Nothing in the code
  * answered this one, so each act states it, next to itself, in its own voice.
+ *
+ * THAT FIGURE SAID ELEVEN AND WAS ALREADY WRONG WHEN IT WAS WRITTEN HERE, which is the
+ * same trap this file names two paragraphs down about the tools. Eleven was true on the
+ * day it was first typed, in the guard over this surface's declarations; it was copied
+ * into this file a month later, by which time the surface asked at fourteen, and neither
+ * copy was ever counted again. Nothing here depends on the number — the argument is that
+ * the question is a DIFFERENT question — but a wrong count in the reasoning is a wrong
+ * count. It is fourteen sites over fifteen command paths (`switch off` and `switch on`
+ * are declared by one function), and the paths are now DERIVED from the program rather
+ * than counted by eye: `the-refused-run-is-refused-everywhere.test.ts` measures which
+ * paths ask, and its list is red the day the set changes.
  *
  * The MCP surface has a discriminant the command line lacks — every write there goes
  * through one door (`mcp/session.ts`'s `openWrite`) — and it is still declared rather
