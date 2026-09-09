@@ -57,7 +57,7 @@
  * THAT file — what reaches it today and what that reaches instead — so it can be drained
  * one row at a time. It can only shrink.
  *
- * AND IT CANNOT DISSOLVE ITSELF. The ledger's keys are 77 path strings. Under a rule that
+ * AND IT CANNOT DISSOLVE ITSELF. The ledger's keys are 75 path strings. Under a rule that
  * read path literals, listing a file as debt would witness it and every entry would go
  * stale the moment it was written. Naming requires an IMPORT here, so a table of strings
  * names nothing — asserted below rather than assumed.
@@ -157,7 +157,7 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * and leaves 2145, which clears that floor and reddens nothing else in this file. Restate
  * this number when the tree gains an import, which is the point of writing it down.
  */
-const CLAUSES_IN_THE_TREE = 2422;
+const CLAUSES_IN_THE_TREE = 2440;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -290,13 +290,21 @@ const LED_NOWHERE: Readonly<Record<string, string>> = {
  * production is accused. A row cannot be added in silence either — the counts below move
  * with it.
  *
- * THE SHAPE OF WHAT IS LEFT, so the next slice can pick its ground — counted off the rows
- * below, not estimated: thirty-four modules under `wiring/`, which are commander
- * declarations composed into `cli.ts` and driven by `cli-e2e`; twelve under
- * `presentation/`, which render lines nothing reads back; four projection stores in `core`,
- * reached only as `ProjectionCache` method bodies; four under `completion/`; four under
- * `commands/`; and three barrels, which export and declare nothing. The remaining twenty
- * are scattered, and the largest thing they share is the erasure in point 4 above.
+ * THE SHAPE OF WHAT IS LEFT, so the next slice can pick its ground: thirty-two modules
+ * under `wiring/`, which are commander declarations composed into `cli.ts` and driven by
+ * `cli-e2e`; twelve under `presentation/`, which render lines nothing reads back; four
+ * projection stores in `core`, reached only as `ProjectionCache` method bodies; four under
+ * `completion/`; four under `commands/`; and three barrels, which export and declare
+ * nothing. The remaining sixteen are scattered, and the largest thing they share is the
+ * erasure in point 4 above.
+ *
+ * AND THAT PARAGRAPH SAID *counted off the rows below, not estimated*, WHICH WAS NOT TRUE.
+ * It said thirty-four under `wiring/` and twenty scattered while the rows said thirty-two
+ * and eighteen, and the sentence three paragraphs up said seventy-seven where the line
+ * inside the case that reads it said seventy-nine: three numbers about this table, written
+ * by hand, drifting each time a row was drained. They are counted now, by a case, off the
+ * very keys — {@link THE_SHAPE_OF_WHAT_IS_LEFT} — so a shape this comment states and the
+ * table does not hold is red rather than stale prose.
  */
 const UNWITNESSED: Readonly<Record<string, Debt>> = {
   'packages/chain/src/chain/enrollment.ts': {
@@ -318,14 +326,6 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   'packages/chain/src/one-line.ts': {
     reached: 'nobody imports it',
     why: 'oneLine, the whitespace-collapse rule: its sibling test reads this file as text to prove it declares no import, and never once calls the function it is about.',
-  },
-  'packages/code/src/choice/asked.ts': {
-    reached: 'nobody imports it',
-    why: "theChoice, the bare-name menu's key reducer: the one in-process case asserts only that the help was NOT printed, reading the drawn page inside an until() wait.",
-  },
-  'packages/code/src/choice/screen.ts': {
-    reached: 'nobody imports it',
-    why: 'openScreen, the ink adapter that draws the menu: the test that names it parses import declarations to prove ink is loaded dynamically, and renders no row itself.',
   },
   'packages/code/src/commands/export.ts': {
     reached: 'nobody imports it',
@@ -613,6 +613,36 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
 // The guard
 // ---------------------------------------------------------------------------
 
+/**
+ * THE SHAPE OF WHAT IS LEFT, as numbers a case can check — the header's own paragraph,
+ * written where it can be read back.
+ *
+ * It is here and not in the prose because the prose drifted twice: a delivery drains rows
+ * and the sentence about how many are left goes on saying the old figure, which is the
+ * exact shape this whole file exists to refuse. A group is decided by {@link groupOf}, one
+ * reading, so nothing can fall in two.
+ */
+const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
+  wiring: 32,
+  presentation: 12,
+  projections: 4,
+  completion: 4,
+  commands: 4,
+  barrels: 3,
+  scattered: 16,
+};
+
+/** Which group of the shape above a debt row belongs to. One reading, so nothing falls in two. */
+function groupOf(path: string): string {
+  if (path.includes('/src/wiring/')) return 'wiring';
+  if (path.includes('/src/presentation/')) return 'presentation';
+  if (path.includes('/src/projections/')) return 'projections';
+  if (path.includes('/src/completion/')) return 'completion';
+  if (path.includes('/src/commands/')) return 'commands';
+  if (path.endsWith('/index.ts')) return 'barrels';
+  return 'scattered';
+}
+
 describe('every file has a test that names it', () => {
   it('walks the universe the coverage gate measures, not one of its own', () => {
     // One statement of what production is. If the gate's globs change, this walk has to
@@ -647,17 +677,31 @@ describe('every file has a test that names it', () => {
     const found = unwitnessed();
     const byReach = (reach: Reach): number =>
       [...found.values()].filter((one) => one === reach).length;
-    expect(PRODUCTION.length - found.size).toBe(218);
-    expect(found.size).toBe(77);
-    expect(byReach('nobody imports it')).toBe(77);
+    expect(PRODUCTION.length - found.size).toBe(220);
+    expect(found.size).toBe(75);
+    expect(byReach('nobody imports it')).toBe(75);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
+  });
+
+  it('holds the shape its own header states, counted off the keys', () => {
+    // THE HEADER SAID *counted off the rows below, not estimated* AND WAS NOT. Two of its
+    // three numbers had drifted a delivery behind the table — the paragraph up there says
+    // which, and this is what makes the sentence checkable instead of decorative. Every key
+    // falls in exactly one group and the groups add up to the whole table, so a row drained
+    // without the prose moving reddens HERE, on the group it left.
+    const shape: Record<string, number> = {};
+    for (const path of Object.keys(UNWITNESSED))
+      shape[groupOf(path)] = (shape[groupOf(path)] ?? 0) + 1;
+    expect(shape).toEqual(THE_SHAPE_OF_WHAT_IS_LEFT);
+    const counted = Object.values(THE_SHAPE_OF_WHAT_IS_LEFT).reduce((all, one) => all + one, 0);
+    expect(counted).toBe(Object.keys(UNWITNESSED).length);
   });
 
   it('carries a reason for that file, and no two rows carry the same one', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(77);
+    expect(reasons).toHaveLength(75);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.
@@ -690,7 +734,7 @@ describe('every file has a test that names it', () => {
   });
 
   it('cannot be dissolved by the ledger that describes it', () => {
-    // The keys below are 79 paths. Naming requires an IMPORT, so listing a file here
+    // The keys below are 75 paths. Naming requires an IMPORT, so listing a file here
     // cannot witness it — and this file, which mentions every one of them, imports no
     // product file at all.
     const self = TEST_TREE.find((one) =>
