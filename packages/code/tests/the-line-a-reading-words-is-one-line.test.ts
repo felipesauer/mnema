@@ -772,6 +772,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'composed',
     why: 'the idle clause composed above, on the same terms',
   },
+  "runs.ts « · wrote {}» run.wrote.map((w) => `${w.count} ${w.kind}`).join(', ') #1": {
+    verdict: 'minted',
+    why: 'what the run wrote — each entry a count and one of the catalog’s own kind literals, neither of them anything an actor typed',
+  },
   'runs.ts «{}{}» count #1': {
     verdict: 'minted',
     why: 'how many of a unit the duration holds — a number',
@@ -1294,7 +1298,7 @@ describe('every value this layer puts on a line is classified', () => {
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
     expect(FOUND.builders.length).toBeGreaterThan(10);
-    expect(FOUND.sites.length).toBe(200);
+    expect(FOUND.sites.length).toBe(201);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1316,7 +1320,7 @@ describe('every value this layer puts on a line is classified', () => {
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
     expect(count('collapsed')).toBe(47);
-    expect(count('minted')).toBe(116);
+    expect(count('minted')).toBe(117);
     expect(count('composed')).toBe(37);
     expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(47);
   });

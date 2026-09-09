@@ -24,7 +24,7 @@
  * sides from drifting together.
  */
 
-import { type CatalogEvent, memoryCaptured, runEnded, runStarted } from '@mnema/chain';
+import { type CatalogEvent, memoryCaptured, runEnded, runStarted, taskCreated } from '@mnema/chain';
 import Database from 'better-sqlite3';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ensureSchema } from '../db/schema.js';
@@ -113,6 +113,29 @@ describe('run-store — what goes in comes back out', () => {
     expect(getRun(db, 'busy')?.lastFactAt).toBe(at(3));
     // A run nothing was pinned to has NO such key. Not null, not undefined: absent.
     expect(getRun(db, 'idle')).not.toHaveProperty('lastFactAt');
+  });
+
+  it('carries WHAT was written across the boundary, tally and order alike', () => {
+    // A round-trip against the fold would pass with `[]` on both sides, which is the
+    // shape that proves nothing. So the VALUE is asserted here, whole: the counts, and
+    // the order the fold decided, read back out of the column.
+    const events: CatalogEvent[] = [
+      runStarted(env('busy', 0), { agent: 'claude' }),
+      memoryCaptured(inRun('m-1', 1, 'busy'), { content: 'one' }),
+      taskCreated(inRun('t-1', 2, 'busy'), { title: 'a job' }),
+      memoryCaptured(inRun('m-2', 3, 'busy'), { content: 'two' }),
+      runStarted(env('idle', 4), { agent: 'claude' }),
+    ];
+    materializeRuns(db, fold(events));
+
+    expect(getRun(db, 'busy')?.wrote).toEqual([
+      { kind: 'memory.captured', count: 2 },
+      { kind: 'task.created', count: 1 },
+    ]);
+    // And the empty tally comes back EMPTY rather than absent: the column is NOT NULL,
+    // so a run that wrote nothing crosses as `[]` and stays an answer on the far side.
+    expect(getRun(db, 'idle')).toHaveProperty('wrote');
+    expect(getRun(db, 'idle')?.wrote).toEqual([]);
   });
 
   it('stores `open` as the integer a STRICT table can hold, and agrees with itself', () => {

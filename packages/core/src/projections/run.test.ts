@@ -1,4 +1,11 @@
-import { type CatalogEvent, memoryCaptured, runEnded, runStarted } from '@mnema/chain';
+import {
+  type CatalogEvent,
+  memoryCaptured,
+  observationRecorded,
+  runEnded,
+  runStarted,
+  taskCreated,
+} from '@mnema/chain';
 import { describe, expect, it } from 'vitest';
 import { projectRuns } from './run.js';
 
@@ -22,6 +29,10 @@ describe('projectRuns — the reader rule', () => {
       goal: 'ship the thing',
       open: true,
       startedAt: at(0),
+      // Present and EMPTY on a run that has written nothing — the whole point of the
+      // field being non-optional. This is an exact-shape assertion, so it is also what
+      // fails if the fold ever stops attaching it.
+      wrote: [],
     });
   });
 
@@ -141,5 +152,98 @@ describe('projectRuns — when the run last did something', () => {
     // alone must not produce a run with no birth, agent or authorizer.
     const events = [memoryCaptured(inRun('m-1', 1, 'r-elsewhere'), { content: 'over there' })];
     expect(projectRuns(events).has('r-elsewhere')).toBe(false);
+  });
+});
+
+describe('projectRuns — WHAT was written in the run', () => {
+  it('tallies the facts pinned to it, per kind, and says how many of each', () => {
+    // The complaint this answers, in one line: the reads reported the CONTAINER. A run
+    // that recorded three different sorts of fact and one that recorded a single note
+    // reported identically, because `lastFactAt` says WHEN and can never say WHAT.
+    const events: CatalogEvent[] = [
+      runStarted(env('r-1', 0), { agent: 'claude' }),
+      memoryCaptured(inRun('m-1', 1, 'r-1'), { content: 'first' }),
+      taskCreated(inRun('t-1', 2, 'r-1'), { title: 'a job' }),
+      memoryCaptured(inRun('m-2', 3, 'r-1'), { content: 'second' }),
+      observationRecorded(inRun('o-1', 4, 'r-1'), { about: 't-1', topic: 'why', text: 'a note' }),
+      memoryCaptured(inRun('m-3', 5, 'r-1'), { content: 'third' }),
+    ];
+    // The VALUE, whole: commonest kind first, and the two that tie broken by the kind's
+    // own spelling. Asserting the array entire is what makes the order part of the
+    // claim rather than something a reader may or may not get.
+    expect(projectRuns(events).get('r-1')?.wrote).toEqual([
+      { kind: 'memory.captured', count: 3 },
+      { kind: 'observation.recorded', count: 1 },
+      { kind: 'task.created', count: 1 },
+    ]);
+  });
+
+  it('answers EMPTY for a run that wrote nothing — never absent', () => {
+    // Distinguishable from "I do not know", which is what an absent field claims. The
+    // fold saw the whole stream, so it knows the answer is none, and a zero-length list
+    // is how it says so. `lastFactAt` beside it IS absent in this same case, and the
+    // pair of assertions is the difference stated rather than described.
+    const events = [runStarted(env('r-1', 0), { agent: 'claude' })];
+    const run = projectRuns(events).get('r-1');
+    expect(run).toHaveProperty('wrote');
+    expect(run?.wrote).toEqual([]);
+    expect(run).not.toHaveProperty('lastFactAt');
+  });
+
+  it('does not count the run’s OWN birth or end as something written in it', () => {
+    // Neither carries a `run` — their subject IS the run — so a session's own
+    // bookkeeping is not work it did. Same rule `lastFactAt` follows, off the same slot.
+    const events: CatalogEvent[] = [
+      runStarted(env('r-1', 0), { agent: 'claude', goal: 'g' }),
+      runEnded(env('r-1', 5), { outcome: 'o' }),
+    ];
+    expect(projectRuns(events).get('r-1')?.wrote).toEqual([]);
+  });
+
+  it('keeps each run’s own tally apart', () => {
+    const events: CatalogEvent[] = [
+      runStarted(env('r-1', 0), { agent: 'claude' }),
+      runStarted(env('r-2', 1), { agent: 'cursor' }),
+      memoryCaptured(inRun('m-1', 2, 'r-1'), { content: 'in one' }),
+      taskCreated(inRun('t-1', 3, 'r-2'), { title: 'in the other' }),
+      taskCreated(inRun('t-2', 4, 'r-2'), { title: 'in the other again' }),
+    ];
+    const runs = projectRuns(events);
+    expect(runs.get('r-1')?.wrote).toEqual([{ kind: 'memory.captured', count: 1 }]);
+    expect(runs.get('r-2')?.wrote).toEqual([{ kind: 'task.created', count: 2 }]);
+  });
+
+  it('orders the tally the same way whatever order the kinds arrive in', () => {
+    // The order is stored and compared (`run-store.ts` round-trips the array, and the
+    // incremental fold is asserted byte-identical to a full replay), so it has to be a
+    // function of the counts and the names alone. Two streams with the SAME tally and
+    // the opposite arrival order must fold to the same array.
+    const forward: CatalogEvent[] = [
+      runStarted(env('r-1', 0), { agent: 'claude' }),
+      taskCreated(inRun('t-1', 1, 'r-1'), { title: 'one' }),
+      memoryCaptured(inRun('m-1', 2, 'r-1'), { content: 'two' }),
+    ];
+    const backward: CatalogEvent[] = [
+      runStarted(env('r-1', 0), { agent: 'claude' }),
+      memoryCaptured(inRun('m-1', 1, 'r-1'), { content: 'two' }),
+      taskCreated(inRun('t-1', 2, 'r-1'), { title: 'one' }),
+    ];
+    // NOT vacuous: both really did record one of each, so the tie-break is the only
+    // thing deciding the order here.
+    expect(projectRuns(forward).get('r-1')?.wrote).toEqual([
+      { kind: 'memory.captured', count: 1 },
+      { kind: 'task.created', count: 1 },
+    ]);
+    expect(projectRuns(backward).get('r-1')?.wrote).toEqual(projectRuns(forward).get('r-1')?.wrote);
+  });
+
+  it('tallies a fact pinned to a run this stream never opened — and drops the run', () => {
+    // The rule the module already states, met by the new field: an accumulator is
+    // created for any `run` seen on an envelope, and one with no birth is not projected.
+    // The tally must not resurrect it.
+    const events: CatalogEvent[] = [
+      memoryCaptured(inRun('m-1', 1, 'elsewhere'), { content: 'another tree opened it' }),
+    ];
+    expect(projectRuns(events).has('elsewhere')).toBe(false);
   });
 });

@@ -42,6 +42,19 @@
  * it. The order is a property of the CONTENT (`startedAt`, then id), so adding a
  * tree to the list never reshuffles what an asker sees.
  *
+ * WHAT A REPORTED RUN NOW SAYS THAT IT DID NOT, and the sentence it falsified was
+ * this module's shape rather than its prose. A measurement over a real record put the
+ * complaint as one line — every read that reports a run reports the CONTAINER, never
+ * what was put in it — and it was true of the whole of {@link ReportedRun}: `id`,
+ * `agent`, `who`, `goal`, `outcome`, `open`, `startedAt`, `endedAt`, `lastFactAt`, and
+ * the three fields added here. `lastFactAt` says WHEN the last fact landed and nothing
+ * can be inferred from it about WHAT landed, so a session that recorded a decision and
+ * one that recorded a passing note reported identically. The fold answers it now
+ * (`core`'s `RunProjection.wrote`), so every run reported through here carries the
+ * tally of what was written in it — this file adds nothing to it, because it is a fact
+ * of the record and not of the asker's position, which is the line the three fields
+ * below are on the other side of.
+ *
  * WHAT IT DELIBERATELY DOES NOT DO: decide whether an open run is ABANDONED. The
  * record holds no fact about a process — no pid, no boot id — so "old" and "idle"
  * are what an asker can be told, and "dead" is not. A live agent sitting idle is
@@ -98,6 +111,13 @@ export interface ActorScope extends AskerContext {
  * record to produce them. That is deliberate: the defect they answer is a session's
  * life cycle, and a permanent field on a signed, append-only event is the wrong
  * place for a detail whose useful life is minutes.
+ *
+ * WHAT IS NOT ADDED HERE is `wrote` — what the run recorded, by kind. It arrives on
+ * the projection this extends and is passed through untouched, because it is a
+ * property of the RECORD: two askers reading one run read the same tally, whereas the
+ * three fields below are answers only this asker's position can give. The same test
+ * that proves the three are attached proves this one is not recomputed
+ * (`focus.test.ts` — "carries what the run wrote, as the projection folded it").
  */
 export interface ReportedRun extends RunProjection {
   /**

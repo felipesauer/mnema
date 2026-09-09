@@ -129,7 +129,7 @@ export {
   tallyAuthorship,
   walkReferences,
 } from './projections/reference-store.js';
-export { projectRuns, type RunProjection } from './projections/run.js';
+export { projectRuns, type RunProjection, type WrittenInRun } from './projections/run.js';
 export { getRun, listOpenRuns, listRuns } from './projections/run-store.js';
 export {
   compareSearchHits,

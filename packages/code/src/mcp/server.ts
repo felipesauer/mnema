@@ -243,6 +243,13 @@ const DECISION_VERDICTS = andListed(actionsRequiring('decision', 'note'));
  * missing MEANS something (a run that recorded nothing at all), and a reader left to
  * infer that from silence would infer whatever it already believed.
  *
+ * `wrote` is said here too, though it is not one of the asker-relative fields the rest
+ * of this text is about: it is on EVERY run reported, open or ended, and an agent that
+ * does not know a field exists does not read it. It is the one thing here that says
+ * what a session DID rather than how it stands, which is what "where was I" actually
+ * asks — and the empty array is spelled out for the same reason the absent
+ * `idleSeconds` is, except that here the emptiness is the answer rather than a gap.
+ *
  * And it says what none of this proves. An open run is not evidence of a live
  * session: nothing in the record says a process is running, so a run left behind by
  * a session that was killed is indistinguishable from one an agent is idle inside.
@@ -257,7 +264,13 @@ const OPEN_RUN_CONTRACT =
   'it started) and, when anything has been recorded in it, `idleSeconds` (since its ' +
   'last recorded fact); NO `idleSeconds` means the run has recorded nothing at all. ' +
   "Both compare this machine's clock with the writer's, so a run written on another " +
-  'machine reports whatever those two clocks differ by. None of this says a ' +
+  'machine reports whatever those two clocks differ by. EVERY run reported — open or ' +
+  'ended — also carries `wrote`: what was written IN it, as one `{kind, count}` entry ' +
+  'per kind of fact recorded there, commonest first. An EMPTY array means the run ' +
+  'recorded nothing (it is never absent, so an empty one is an answer and not a gap), ' +
+  'and the run’s own start and end are not counted — only the work. The `kind` is the ' +
+  'catalog’s own, so `search` takes it verbatim; the facts themselves are not listed, ' +
+  'and `audit_timeline` on an entity is what serves those. None of this says a ' +
   'run is dead — nothing in the record speaks about a process — so an old idle run ' +
   'may be abandoned or may be a session waiting; closing one is `mnema run end <id>`.';
 

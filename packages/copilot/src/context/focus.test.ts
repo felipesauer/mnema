@@ -3,7 +3,9 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   asking,
   type Bench,
+  birthSkill,
   capture,
+  consultSkill,
   endRun,
   makeBench,
   startRun,
@@ -348,6 +350,32 @@ describe('what a reported run says about its age and its idleness', () => {
       expect(r.lastRun).not.toHaveProperty('idleSeconds');
       // Whose it is is still answered: that is not a property of being open.
       expect(r.lastRun?.thisSession).toBe(false);
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('carries what the run wrote, as the projection folded it', () => {
+    // The case the one below cannot make: a run with NOTHING in it has `wrote: []` on
+    // both sides, so a comparison over it would hold with the field dropped entirely.
+    // Here the run recorded three facts of two kinds, and the reported run has to say
+    // so — the complaint this answers is that a reported run described the container.
+    bench = makeBench();
+    startRun(bench, 'run-1', { agent: 'claude', goal: 'the goal' });
+    birthSkill(bench, 'skill-1', 'Small PRs', 'adopted');
+    capture(bench, 'mem-1', 'one', 'run-1');
+    capture(bench, 'mem-2', 'two', 'run-1');
+    consultSkill(bench, 'skill-1', { run: 'run-1' });
+    const cache = bench.cache();
+    try {
+      const [reported] = focus([cache], asking(bench.who)).openRuns;
+      expect(reported?.wrote).toEqual([
+        { kind: 'memory.captured', count: 2 },
+        { kind: 'skill.consulted', count: 1 },
+      ]);
+      // And it is the PROJECTION's answer, passed through: this module derives the
+      // three asker-relative fields and must not recompute this one.
+      expect(reported?.wrote).toEqual(cache.getRun('run-1')?.wrote);
     } finally {
       cache.close();
     }
