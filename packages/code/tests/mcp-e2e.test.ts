@@ -2564,6 +2564,83 @@ describe('MCP server — end to end over a real client', () => {
     await client.close();
   });
 
+  it('resume tells an agent WHAT was written in its run, over the real transport', async () => {
+    // The elo, asserted where it can actually break: the field is on the projection and
+    // the tool hands back a serialized object, so a case that called the derivation
+    // directly would stay green with nothing reaching the wire. This one reads the TEXT
+    // the server sent and parses that.
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    // Three writes of two kinds through the server, so the tally is a tally and not a
+    // one-entry list that any grouping would produce by accident.
+    await client.callTool({ name: 'create_task', arguments: { title: 'one job' } });
+    await client.callTool({ name: 'create_task', arguments: { title: 'another job' } });
+    await client.callTool({
+      name: 'capture_memory',
+      arguments: { content: 'worth keeping', scope: 'public' },
+    });
+
+    const resumeRes = await client.callTool({ name: 'resume' });
+    const resume = JSON.parse(textOf(resumeRes)) as {
+      lastRun: { wrote: { kind: string; count: number }[] } | null;
+    };
+    // A task is born as a pair (`task.created` + the transition into its initial
+    // state), so two tasks are four facts across two kinds — and the two equal counts
+    // are what put the tie-break in the claim: equal counts order by the kind's own
+    // spelling.
+    expect(resume.lastRun?.wrote).toEqual([
+      { kind: 'task.created', count: 2 },
+      { kind: 'task.transitioned', count: 2 },
+      { kind: 'memory.captured', count: 1 },
+    ]);
+
+    await client.close();
+  });
+
+  it('every tool that describes a reported run describes what it WROTE', async () => {
+    // The prose an agent reads is the only place it learns a field exists, and a
+    // mutation battery found nothing holding it: falsifying the sentence left the whole
+    // suite green. This is that hole closed, and it is written over `tools/list` — what
+    // the server actually serves — rather than over the constant in the source.
+    //
+    // The rule is stated as an implication rather than a list of four tool names: any
+    // tool that describes the asker-relative fields of a run is a tool whose answer
+    // carries a run, so a fifth one appending the same contract is covered the day it
+    // is written, and a contract split in two is caught rather than half-kept.
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    const { tools } = await client.listTools();
+    const describingARun = tools.filter((t) => (t.description ?? '').includes('`thisSession`'));
+    // NOT vacuous: there really are tools of this shape, and if the phrase this filter
+    // keys on is reworded the count goes to zero and this line says so.
+    expect(describingARun.map((t) => t.name).sort()).toEqual([
+      'bootstrap',
+      'focus',
+      'guard',
+      'resume',
+    ]);
+    // THREE THINGS, not one, and the third is here because a mutation showed the first
+    // two were not enough: falsifying the SCOPE of the sentence — "EVERY run reported"
+    // turned into "NO run reported" — left both of the others intact and the suite
+    // green. A description that mentions a field while lying about when it is there is
+    // worse than one that omits it, so the claim itself is asserted, not just the name.
+    for (const tool of describingARun) {
+      expect(tool.description, `${tool.name} must say what a run wrote`).toContain('`wrote`');
+      expect(tool.description, `${tool.name} must say it is on EVERY run reported`).toContain(
+        'EVERY run reported — open or ',
+      );
+      expect(tool.description, `${tool.name} must say what an EMPTY tally means`).toContain(
+        'An EMPTY array means the run',
+      );
+    }
+
+    await client.close();
+  });
+
   it('focus / resume / next_actions read the session context over the real transport', async () => {
     const project = makeProject('proj');
     const { server } = buildMcpServer({ env, log: () => {} });

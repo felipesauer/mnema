@@ -289,6 +289,73 @@ $ mnema verify
 |   census [key-without-tail] public <backup-key-fingerprint>: committed public key has no tail on disk — the tail may have been dropped (a botched merge), never written (an empty tail is not versioned), or removed
 | private: no record here — nothing has been written to this tree on this machine, so there is nothing to rule on
 
+### the run that did something
+$ mnema resume --actor <anchor>
+| <anchor-short> last run <run-first> (ended) — set the record up · wrote 8 task.transitioned, 5 decision.transitioned, 5 knowledge.linked, 3 decision.recorded, 3 skill.transitioned, 2 memory.captured, 1 handoff.recorded, 1 observation.recorded, 1 skill.created, 1 task.created
+|   0 run(s) still open
+$ mnema resume --actor <anchor> --json
+| {
+|   "actor": "<anchor>",
+|   "lastRun": {
+|     "id": "<run-first>",
+|     "agent": "agent-alpha",
+|     "who": "<anchor>",
+|     "open": false,
+|     "startedAt": "<at:01>",
+|     "wrote": [
+|       {
+|         "kind": "task.transitioned",
+|         "count": 8
+|       },
+|       {
+|         "kind": "decision.transitioned",
+|         "count": 5
+|       },
+|       {
+|         "kind": "knowledge.linked",
+|         "count": 5
+|       },
+|       {
+|         "kind": "decision.recorded",
+|         "count": 3
+|       },
+|       {
+|         "kind": "skill.transitioned",
+|         "count": 3
+|       },
+|       {
+|         "kind": "memory.captured",
+|         "count": 2
+|       },
+|       {
+|         "kind": "handoff.recorded",
+|         "count": 1
+|       },
+|       {
+|         "kind": "observation.recorded",
+|         "count": 1
+|       },
+|       {
+|         "kind": "skill.created",
+|         "count": 1
+|       },
+|       {
+|         "kind": "task.created",
+|         "count": 1
+|       }
+|     ],
+|     "goal": "set the record up",
+|     "outcome": "the record is set up",
+|     "endedAt": "<at:31>",
+|     "lastFactAt": "<at:30>",
+|     "thisSession": false
+|   },
+|   "focus": {
+|     "actor": "<anchor>",
+|     "openRuns": []
+|   }
+| }
+
 ### a populated project
 $ mnema search
 | 13 record(s):
@@ -1217,7 +1284,7 @@ $ mnema antipatterns --json
 | }
 $ mnema status --actor <anchor>
 | <anchor-short> — where things stand.
-|   last run <run-second> (open) — read the record back · open <duration> · nothing recorded in it
+|   last run <run-second> (open) — read the record back · open <duration> · nothing recorded in it · wrote nothing
 |   1 run(s) still open
 |
 | 3 live task(s):
@@ -1242,7 +1309,8 @@ $ mnema status --actor <anchor> --json
 |       "agent": "agent-beta",
 |       "who": "<anchor>",
 |       "open": true,
-|       "startedAt": "<at:31>",
+|       "startedAt": "<at:32>",
+|       "wrote": [],
 |       "goal": "read the record back",
 |       "thisSession": false,
 |       "ageSeconds": <seconds>
@@ -1255,7 +1323,8 @@ $ mnema status --actor <anchor> --json
 |           "agent": "agent-beta",
 |           "who": "<anchor>",
 |           "open": true,
-|           "startedAt": "<at:31>",
+|           "startedAt": "<at:32>",
+|           "wrote": [],
 |           "goal": "read the record back",
 |           "thisSession": false,
 |           "ageSeconds": <seconds>
@@ -1312,10 +1381,10 @@ $ mnema status --actor <anchor> --json
 | }
 $ mnema focus --actor <anchor-short>
 | <anchor-short> — 1 open run(s):
-|   <run-second>  agent-beta — read the record back · open <duration> · nothing recorded in it
+|   <run-second>  agent-beta — read the record back · open <duration> · nothing recorded in it · wrote nothing
 $ mnema focus --actor <anchor>
 | <anchor-short> — 1 open run(s):
-|   <run-second>  agent-beta — read the record back · open <duration> · nothing recorded in it
+|   <run-second>  agent-beta — read the record back · open <duration> · nothing recorded in it · wrote nothing
 $ mnema focus --actor <anchor> --json
 | {
 |   "actor": "<anchor>",
@@ -1325,7 +1394,8 @@ $ mnema focus --actor <anchor> --json
 |       "agent": "agent-beta",
 |       "who": "<anchor>",
 |       "open": true,
-|       "startedAt": "<at:31>",
+|       "startedAt": "<at:32>",
+|       "wrote": [],
 |       "goal": "read the record back",
 |       "thisSession": false,
 |       "ageSeconds": <seconds>
@@ -1333,7 +1403,7 @@ $ mnema focus --actor <anchor> --json
 |   ]
 | }
 $ mnema resume --actor <anchor>
-| <anchor-short> last run <run-second> (open) — read the record back · open <duration> · nothing recorded in it
+| <anchor-short> last run <run-second> (open) — read the record back · open <duration> · nothing recorded in it · wrote nothing
 |   1 run(s) still open
 $ mnema resume --actor <anchor> --json
 | {
@@ -1343,7 +1413,8 @@ $ mnema resume --actor <anchor> --json
 |     "agent": "agent-beta",
 |     "who": "<anchor>",
 |     "open": true,
-|     "startedAt": "<at:31>",
+|     "startedAt": "<at:32>",
+|     "wrote": [],
 |     "goal": "read the record back",
 |     "thisSession": false,
 |     "ageSeconds": <seconds>
@@ -1356,7 +1427,8 @@ $ mnema resume --actor <anchor> --json
 |         "agent": "agent-beta",
 |         "who": "<anchor>",
 |         "open": true,
-|         "startedAt": "<at:31>",
+|         "startedAt": "<at:32>",
+|         "wrote": [],
 |         "goal": "read the record back",
 |         "thisSession": false,
 |         "ageSeconds": <seconds>
@@ -1491,8 +1563,8 @@ $ mnema switch
 |   edit-asks-a-person  on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
 $ mnema usage
 | 2 run(s):
-|   <run-second>  agent-beta      <at:31> → open  no transcript
-|   <run-first>  agent-alpha     <at:01> → <at:30>  no transcript
+|   <run-second>  agent-beta      <at:32> → open  no transcript
+|   <run-first>  agent-alpha     <at:01> → <at:31>  no transcript
 |
 | Read from <sandbox>/home/.claude/projects — 0 host session(s) there record work in this project.
 | These counts come from Claude Code's own transcripts on this machine, not from the record: nothing here is signed, `mnema verify` does not cover it, and the host deletes a transcript on a retention it decides. Which host session belongs to which run is this reading inferring it from two clocks, not a fact the record states. Nothing was written to produce it.

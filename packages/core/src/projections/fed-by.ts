@@ -20,10 +20,11 @@
  *     is FALSE, and this is where it is false: `channel.asked` and
  *     `channel.served` are read by `audit_accountability`, `audit_refs` and
  *     `audit_timeline` through this index.
- *   - `runs` reads EVERY kind too, and by one field rather than by a `kind` test:
+ *   - `runs` reads EVERY kind too, and by the ENVELOPE rather than by a `kind` test:
  *     `lastFactAt` is the latest `at` of any event whose envelope PINS it to the
- *     run (`run.ts`). A fold that reads the envelope reads every kind, whatever
- *     its `kind` switch says.
+ *     run, and `wrote` tallies those same events by kind (`run.ts`). A fold that
+ *     reads the envelope reads every kind, whatever its `kind` switch says — and
+ *     the second field made that literal, since the tally's own keys ARE the kinds.
  *
  * So no kind feeds nothing, and a design that had skipped work for one would have
  * served a stale index and a stale idleness. What is left is still worth the

@@ -17,6 +17,7 @@ import {
   birthDecision,
   birthSkill,
   birthTask,
+  consultSkill,
   makeBench,
   moveDecision,
   moveTask,
@@ -34,6 +35,10 @@ describe('README example', () => {
     moveTask(bench, task, 'DRAFT', 'READY', 'submit');
     moveTask(bench, task, 'READY', 'IN_PROGRESS', 'start');
     birthSkill(bench, 'skill-3', 'Small PRs', 'adopted');
+    // Two facts PINNED to the run, so `wrote` below is a tally and not an empty
+    // array: an example whose every field is the empty case documents nothing.
+    consultSkill(bench, 'skill-3', { run: 'run-42' });
+    consultSkill(bench, 'skill-3', { run: 'run-42' });
     birthDecision(bench, 'dec-5', 'Hand-rolled arithmetic');
     moveDecision(bench, 'dec-5', 'proposed', 'accepted', 'accept');
     const cache = bench.cache();
@@ -52,6 +57,7 @@ describe('README example', () => {
       });
       const lastGoal = opening.resume.lastRun?.goal; // "ship the parser"
       const openFor = opening.resume.lastRun?.ageSeconds; // how long it has been open
+      const didWrite = opening.resume.lastRun?.wrote; // WHAT went in: [{ kind, count }, …]
       const firstJob = opening.work[0]; // the freshest live task — a NAME
       const more = opening.workTotal > opening.work.length; // was the list cut?
       const patterns = opening.skills.map((s) => s.name); // names only
@@ -95,6 +101,7 @@ describe('README example', () => {
 
       expect(lastGoal).toBe('ship the parser');
       expect(openFor).toBeTypeOf('number');
+      expect(didWrite).toEqual([{ kind: 'skill.consulted', count: 2 }]);
       expect(firstJob?.id).toBe('task-7');
       // One task in the record, so nothing was cut — the example's own claim.
       expect(more).toBe(false);

@@ -7,7 +7,7 @@
 
 import type { Command } from 'commander';
 import { asId, itemLine } from '../presentation/items.js';
-import { NO_RUNS_HINT, runAgeSuffix } from '../presentation/runs.js';
+import { NO_RUNS_HINT, runAgeSuffix, wroteSuffix } from '../presentation/runs.js';
 import { here } from './context.js';
 import { writeLines } from './io.js';
 import { onOneLine } from './on-one-line.js';
@@ -58,6 +58,14 @@ export function registerFocus(program: Command, wiring: Wiring): Declared {
         // stays the rule a reader counts by. `thisSession` is NOT printed: a read
         // opens no run, so it is false in every line here, and a constant is noise
         // rather than honesty (`--json` carries it, being the faithful object).
+        //
+        // And WHAT each one wrote, from the same module, because this reading needs
+        // it for the reason the durations were added: what tells two leftover runs
+        // apart is what happened inside them, and until this clause a session that
+        // recorded a decision and one that recorded nothing at all differed only by
+        // a number of seconds. The clause is `wroteSuffix`'s and not this file's —
+        // `resume` and `status` print the same words through `lastRunPhrase`, and a
+        // second wording here is the drift that module exists to prevent.
         io.out(
           render(
             itemLine([
@@ -70,7 +78,8 @@ export function registerFocus(program: Command, wiring: Wiring): Declared {
               // and a collapse would eat the space this one opens with.
               onOneLine`${run.agent}` +
                 (run.goal !== undefined ? onOneLine` — ${run.goal}` : '') +
-                runAgeSuffix(run),
+                runAgeSuffix(run) +
+                wroteSuffix(run),
             ]),
           ),
         );
