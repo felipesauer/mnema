@@ -1107,7 +1107,14 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         'no total. ' +
         '`search` reaches past the cuts (kind `task`, or kind `decision` or `skill` ' +
         'with a `state`, with a `limit`), ordered by when each was recorded rather ' +
-        'than by when it last moved.' +
+        'than by when it last moved. ' +
+        'EVERY LIST ABOVE IS ABOUT A TASK, A DECISION OR A PATTERN, and the record ' +
+        'holds kinds that are about none of them — a memory, an observation. This ' +
+        'read does not look at those, so five empty lists are NOT a statement that ' +
+        'the record is empty. `unread` says what was not looked at and how much of ' +
+        'it there is, one entry per kind, and it is ABSENT when there is nothing ' +
+        'to declare — so a record that really is empty reads as empty. Each entry ' +
+        'names the `kind` to pass to `search` for it.' +
         OPEN_RUN_CONTRACT,
     },
     async () => {

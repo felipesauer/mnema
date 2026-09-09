@@ -1300,6 +1300,10 @@ $ mnema status --actor <anchor>
 |
 | 1 awaiting a judgement:
 |   <decision-imported>  decision  ADR-3 · Keep the runbook where the work is (proposed)
+|
+| Not looked at here:
+|   memory (4) — mnema search --kind memory
+|   observation (1) — mnema search --kind observation
 $ mnema status --actor <anchor> --json
 | {
 |   "resume": {
@@ -1377,7 +1381,17 @@ $ mnema status --actor <anchor> --json
 |       "updatedAt": "<at:15>"
 |     }
 |   ],
-|   "awaitingJudgementTotal": 1
+|   "awaitingJudgementTotal": 1,
+|   "unread": [
+|     {
+|       "kind": "memory",
+|       "held": 4
+|     },
+|     {
+|       "kind": "observation",
+|       "held": 1
+|     }
+|   ]
 | }
 $ mnema focus --actor <anchor-short>
 | <anchor-short> — 1 open run(s):

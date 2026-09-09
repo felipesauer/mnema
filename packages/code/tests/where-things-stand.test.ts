@@ -294,6 +294,12 @@ describe('mnema status — the opening read, over a record that reaches every ce
     // NAMES, NEVER BODIES — the derivation's rule, kept by the surface that prints it.
     expect(text).not.toContain('One reviewable change with its tests.');
     expect(text).not.toContain('a wiki page goes stale');
+    // THE SECOND CONTRAST for the section that says what was not looked at: this
+    // fixture is full — seven records across all three machines — and every one of them
+    // is a kind this reading DOES look at. So the section is absent, which is what
+    // separates "declares when something is outside" from "declares whenever there is
+    // anything at all".
+    expect(text).not.toContain('Not looked at here:');
   }, 60_000);
 
   it('says every half is empty, in words, over a project that holds nothing', async () => {
@@ -315,6 +321,52 @@ describe('mnema status — the opening read, over a record that reaches every ce
     expect(said).toContain('Nothing awaiting a judgement.');
     // And nothing is invented: no count, no header, no item.
     expect(printed.join('\n')).not.toMatch(/\d+ (of \d+ )?(live|decision|adopted|awaiting)/);
+    // THE CONTRAST for the section below. A record that really is empty must keep
+    // reading as empty: the fifth section is about what was NOT looked at, and over a
+    // record holding nothing there is nothing it did not look at. Without this, the
+    // case beside it passes over any record at all.
+    expect(printed.join('\n')).not.toContain('Not looked at here:');
+  }, 30_000);
+
+  it('says what it did not look at, over a record whose whole content falls outside its lists', async () => {
+    const initiated = await mnema('init');
+    const identity = initiated.find((line) => line.trim().startsWith('identity:')) as string;
+    const anchor = identity.trim().slice('identity:'.length).trim();
+    // THE REPRODUCTION, on the surface that printed it. Three memories and nothing
+    // else — every list of this reading is about a task, a decision or a pattern, so
+    // all four are correctly empty and the record is not.
+    const started = await mnema('run', 'start', '--which', 'probe', '--goal', 'x');
+    const opened = started.find((line) => line.startsWith('Started run '));
+    if (opened === undefined) throw new Error('fixture: run start printed no run');
+    process.env.MNEMA_RUN = opened.slice('Started run '.length).trim();
+    await mnema('memory', 'the deploy needs the token in the env');
+    await mnema('memory', 'staging mirrors prod since july');
+    await mnema('memory', 'the retry budget is three');
+
+    const printed = await mnema('status', '--actor', anchor);
+    const text = printed.join('\n');
+    // The four sentences of "nothing" are still there and still true.
+    for (const empty of [
+      'No live tasks.',
+      'No decisions in force.',
+      'No adopted patterns.',
+      'Nothing awaiting a judgement.',
+    ]) {
+      expect(printed.map((line) => line.trim())).toContain(empty);
+    }
+    // The run line above them says three facts were written. Before this slice those
+    // were the two halves of one screen: a session that wrote three memories, and four
+    // sentences a reader takes as a statement that the record is empty.
+    expect(text).toContain('wrote 3 memory.captured');
+    // What the screen says now.
+    expect(text).toContain('Not looked at here:');
+    expect(text).toContain('memory (3) — mnema search --kind memory');
+    // A kind and a count, and the command that reaches them. Never the memories.
+    expect(text).not.toContain('the deploy needs the token');
+    expect(text).not.toContain('staging mirrors prod');
+    // And it declares only what it did not look at: the reading has no observation to
+    // count, so no line claims one.
+    expect(text).not.toContain('observation (');
   }, 30_000);
 
   it('refuses outside a project rather than answering about nothing', async () => {

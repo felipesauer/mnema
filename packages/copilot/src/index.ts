@@ -125,6 +125,12 @@ export { type ChannelState, channelIsOn, channelStates } from './context/switche
 // they are called by `bootstrap` and by nothing outside this package, and an export
 // with no consumer is the shape `every-public-value-has-a-caller.test.ts` catches.
 export type { WorkItem } from './context/tasks.js';
+// The TYPE only, for `WorkItem`'s reason: `UnreadKind` is what `Bootstrap.unread` is
+// made of, and a surface that renders that field has to be able to write the type of
+// one entry. `unreadKinds` stays in — it is called by `bootstrap` and by nothing
+// outside this package — and the table it reads is held off this surface outright
+// (see `unread.ts`).
+export type { UnreadKind } from './context/unread.js';
 export {
   type GuardWithFocus,
   guard,

@@ -164,6 +164,24 @@
  * is what keeps a host's cache of that prompt prefix valid — so the fix is a change
  * with its own reasoning, not a fourth call to {@link capped}.
  *
+ * AND THE THIRD HALF IS ABOUT THE KINDS THIS READ NEVER OPENS. The two above
+ * declare a limit from INSIDE the lists — each item is a name, and three of the four
+ * lists say how many they cut. Both are about tasks, decisions and patterns, which
+ * is everything these five lists are about, and so is the third declaration this
+ * module makes ({@link Bootstrap.decisionsTotal}: a decision that does not govern is
+ * left out) and the fourth (a task that is over is on NEITHER list). FOUR statements
+ * of a limit, all four scoped to the entities already served — and a record holds
+ * memories and observations, which no machine rules on and no list here shows.
+ *
+ * Over a record holding three memories and nothing else, this answer was five empty
+ * lists. Nothing in it was wrong and nothing in it said what it had not looked at,
+ * which on the command line printed four sentences of "nothing" under a session line
+ * reading `wrote 3 memory.captured`. {@link Bootstrap.unread} is the declaration
+ * that was missing: the kinds this read does not open, counted, absent when there is
+ * nothing to declare. It is a COUNT and not a list, deliberately — see
+ * {@link unreadKinds} for why this limit is a field where the read's constant limits
+ * are prose, and for the kinds it still does not reach.
+ *
  * What has NOT changed is the part that was right: nothing here estimates tokens
  * or measures bytes. A count of items is a property this layer can be correct
  * about; a token budget is not. Asserted in `bootstrap.test.ts` — "cuts the work
@@ -241,6 +259,7 @@ import {
   tasksAwaitingJudgement,
   type WorkItem,
 } from './tasks.js';
+import { type UnreadKind, unreadKinds } from './unread.js';
 
 /**
  * How many items of ONE list an opening context serves.
@@ -350,6 +369,32 @@ export interface Bootstrap {
    * the cut.
    */
   readonly awaitingJudgementTotal: number;
+  /**
+   * The kinds of record this read does NOT look at, and how many of each the record
+   * holds — absent when there are none, which over a record that really is empty is
+   * every time.
+   *
+   * THE FOURTH DECLARATION OF A LIMIT, and the first one that is not about an entity
+   * this read already serves. The other three qualify a list from the inside: a
+   * decision that does not govern "is left out", a task that is over is "on NEITHER
+   * list", a total larger than its list "means there is more it does not show". Each
+   * one is about tasks, decisions or patterns — and so a reader who has been told all
+   * three still has no way to learn that the record holds a KIND none of the five
+   * lists is about. This field says it, and it says how much (see
+   * {@link unreadKinds}).
+   *
+   * Never a body and never a name: a kind and a number. What it is FOR is the second
+   * read — `search`, with this `kind` — and it is deliberately not a list of the
+   * records themselves, because whether the knowledge kinds get a list of their own
+   * in this answer is an open decision and a count does not take it.
+   *
+   * Asserted in `bootstrap.test.ts` — "declares the knowledge it does not look at,
+   * over a record whose content is entirely outside its lists" and "declares nothing
+   * over a record that holds nothing — the KEY is absent, not empty". The derivation's
+   * own cases, including the totality over every searchable kind, are in
+   * `unread.test.ts`.
+   */
+  readonly unread?: readonly UnreadKind[];
 }
 
 /**
@@ -388,6 +433,7 @@ export function bootstrap(caches: readonly ProjectionCache[], scope: ActorScope)
       ...skillsAwaitingJudgement(caches),
     ].sort(byUpdatedDesc),
   );
+  const unread = unreadKinds(caches);
   return {
     resume: resume(caches, scope),
     work: work.served,
@@ -397,6 +443,11 @@ export function bootstrap(caches: readonly ProjectionCache[], scope: ActorScope)
     decisionsTotal: decisions.total,
     awaitingJudgement: awaiting.served,
     awaitingJudgementTotal: awaiting.total,
+    // Absent when there is nothing to declare, which is the `hidden` idiom of
+    // `searchRecords` and the reason an empty record's answer is unchanged by this
+    // slice — see `unread.ts` for why this one is a field and the read's constant
+    // limits are prose.
+    ...(unread.length > 0 ? { unread } : {}),
   };
 }
 
