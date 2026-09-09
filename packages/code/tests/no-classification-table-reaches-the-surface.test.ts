@@ -237,14 +237,15 @@ const HIDDEN = await declaredHidden();
  * The assertion runs on what the sweep found; this is what fails if the sweep starts
  * finding something else, which is the failure a claim-driven guard has to be loud
  * about: reword the sentence in one of those docs and the guard would otherwise cover
- * nothing and pass. Checked in both directions, so a SEVENTH module that declares
- * itself hidden — or a table added to one of these six — announces itself here
+ * nothing and pass. Checked in both directions, so an EIGHTH module that declares
+ * itself hidden — or a table added to one of these seven — announces itself here
  * instead of arriving silently. It said "a fifth… one of these four" while there were
  * five entries over four modules; the count is written from the table below now.
  */
 const DECLARED_HIDDEN: Readonly<Record<string, readonly string[]>> = {
   'copilot/src/context/decisions.ts': ['DECISION_DISPOSITION'],
   'copilot/src/context/skills.ts': ['SKILL_DISPOSITION'],
+  'copilot/src/context/unread.ts': ['SERVED_BY_THE_OPENING'],
   'core/src/content/fields.ts': ['ENVELOPE_TEXT', 'PAYLOAD_TEXT', 'SUBJECT_TEXT'],
   'core/src/projections/fed-by.ts': ['FED_BY_KIND'],
   'core/src/topology/routing.ts': ['UNROUTED_KINDS'],
@@ -384,7 +385,7 @@ describe('no classification table reaches the surface', () => {
   });
 
   it('keeps every table its module declares hidden off every entry point', () => {
-    // The rule. Seven tables in five modules, each one declaring in its own doc that it
+    // The rule. Eight tables in seven modules, each one declaring in its own doc that it
     // is not on the package's public surface — now checked instead of asserted.
     expect(leaked(publishedValues())).toEqual([]);
   });

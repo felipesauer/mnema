@@ -3568,6 +3568,16 @@ describe('MCP — what enters the record', () => {
     expect(description).toContain('awaitingJudgement');
     expect(description).toContain('`skills` with the id');
     expect(description).not.toContain('Not `skills` for the pattern');
+    // AND THE KIND NO LIST IS ABOUT. Every list this tool serves is about a task, a
+    // decision or a pattern, so the three totals above declare a cut and none of them
+    // can say that the record holds a KIND the read never opens. The declaration that
+    // says it is a FIELD, and the description names the field and what to do with it —
+    // prose alone cannot tell a full record from an empty one, and prose in ANOTHER
+    // tool (which is where this advice used to live, in `search`'s description) reaches
+    // a reader who never opens that tool.
+    expect(description).toContain('unread');
+    expect(description).toContain('ABSENT when there is nothing');
+    expect(description).toContain('`search`');
     // The tools it points at exist under exactly those names.
     const named = new Set(tools.tools.map((t) => t.name));
     expect(named.has('next_actions') && named.has('skills') && named.has('read_record')).toBe(true);
@@ -3580,6 +3590,60 @@ describe('MCP — what enters the record', () => {
       const advertised = JSON.stringify(tools.tools.find((t) => t.name === door));
       expect(advertised, `${door} says where the id came from`).toContain('bootstrap');
     }
+
+    await client.close();
+  });
+
+  it('serves `unread` over the wire when the record holds what no list is about', async () => {
+    // THE ELO, in the shape `mcp-flag-reaches-the-server.test.ts` uses: not that the
+    // derivation is right (that is `copilot`'s), but that the field the description
+    // above promises actually ARRIVES in the payload an agent parses — and that it is
+    // absent when there is nothing to declare, which is what keeps five empty lists
+    // over an empty record honest.
+    const project = makeProject('proj');
+    const { server } = buildMcpServer({ env, log: () => {} });
+    const client = await connectClient(server, [pathToFileURL(project).href]);
+
+    // Nothing recorded yet: the answer is five empty lists, and NO declaration.
+    const empty = JSON.parse(textOf(await client.callTool({ name: 'bootstrap' }))) as {
+      work: unknown[];
+      decisions: unknown[];
+      skills: unknown[];
+      awaitingJudgement: unknown[];
+      unread?: unknown;
+    };
+    expect([empty.work, empty.decisions, empty.skills, empty.awaitingJudgement]).toEqual([
+      [],
+      [],
+      [],
+      [],
+    ]);
+    expect(empty).not.toHaveProperty('unread');
+
+    // Three memories: every list is still correctly empty, and the record is not.
+    for (const content of [
+      'the deploy needs the token in the env',
+      'staging mirrors prod since july',
+      'the retry budget is three',
+    ]) {
+      await client.callTool({ name: 'capture_memory', arguments: { content } });
+    }
+    const served = JSON.parse(textOf(await client.callTool({ name: 'bootstrap' }))) as {
+      work: unknown[];
+      decisions: unknown[];
+      skills: unknown[];
+      awaitingJudgement: unknown[];
+      unread?: { kind: string; held: number }[];
+    };
+    expect([served.work, served.decisions, served.skills, served.awaitingJudgement]).toEqual([
+      [],
+      [],
+      [],
+      [],
+    ]);
+    expect(served.unread).toEqual([{ kind: 'memory', held: 3 }]);
+    // A kind and a count. The bodies stay where the second read serves them.
+    expect(JSON.stringify(served.unread)).not.toContain('deploy');
 
     await client.close();
   });

@@ -1,0 +1,33 @@
+# stamp
+commit:  432c9d10 (working tree, this slice applied)
+node:    v24.14.0
+machine: Linux 7.0.0-29-generic, 16 cpus
+load:    3.87 3.24 2.51
+when:    2026-09-08T21:34:55-04:00
+
+record: {"tasks":30,"decisions":15,"skills":25,"memories":20,"observations":10}
+iterations per timer: 400
+
+CONTROL  bootstrap (a)      0.4214 ms
+CONTROL  bootstrap (b)      0.3912 ms
+         noise floor        0.0302 ms  <- no smaller gap is a finding
+
+FORWARD  whole read         0.4072 ms
+FORWARD  the declaration    0.1426 ms
+REVERSE  the declaration    0.1405 ms
+REVERSE  whole read         0.3977 ms
+
+whole read, both orders     0.4024 ms
+declaration, both orders    0.1416 ms
+the declaration is          35.2% of the read
+
+order gap, whole read       0.0095 ms
+order gap, the declaration  0.0021 ms
+(identical work has to tie; a gap above the noise floor is the machine)
+
+--- how it scales ---
+scale  searchable  declaration   whole read    share
+1      75          0.1256 ms     0.3236 ms     38.8%
+5      375         0.1773 ms     0.4475 ms     39.6%
+20     1500        0.4113 ms     0.9458 ms     43.5%
+50     3750        0.8621 ms     1.9308 ms     44.7%

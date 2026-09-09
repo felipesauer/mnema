@@ -1,6 +1,7 @@
 /**
  * Where things stand, for a person: the actor's session, then the four lists the
- * opening context holds — FORM A four times over, under one heading.
+ * opening context holds — FORM A four times over, under one heading — and then what
+ * the reading did not look at.
  *
  * The MCP surface hands the same answer back as structure, because its consumer is a
  * machine; here the consumer is a person, so it is lines. Nothing is derived on the way:
@@ -24,6 +25,17 @@
  * the exact shape the derivation's own doc calls the worst an opening read can have: an
  * empty answer that looks like an answer. So each list says it is empty in its own
  * words, and a reader can tell "nothing is waiting on anybody" from "I forgot to look".
+ *
+ * THAT SENTENCE WAS WRITTEN AS A RULE FOR THIS WHOLE READING, and it is a rule for the
+ * four LISTS. It was believed to be enough, and the measurement that falsified it is the
+ * one this reading is named after: four sentences of "nothing", over a record holding
+ * three memories, with `wrote 3 memory.captured` on the session line directly above
+ * them. Every one of the four was true, because none of the four is about a memory —
+ * and a person reading the screen has no way to learn that from a screen where every
+ * section says nothing. The fifth section ({@link unreadLines}) is what says it, and it
+ * follows the OPPOSITE rule for the reason given there: it is absent when it is empty,
+ * because a section about what was not looked at has nothing to report when there was
+ * nothing to look at.
  *
  * ONE LINE PER ITEM, which is why every field an actor wrote goes through `oneLine`: a
  * title or a pattern name holding a newline would put a second line under a header that
@@ -70,6 +82,45 @@ export function statusReport(render: Render, status: Bootstrap, actor: string): 
     ...skillLines(render, status),
     '',
     ...awaitingLines(render, status),
+    ...unreadLines(status),
+  ];
+}
+
+/**
+ * What this reading did not look at — the one section that is not a list, and the one
+ * that is ABSENT when it has nothing to say.
+ *
+ * IT IS THE OPPOSITE RULE FROM THE FOUR ABOVE, and the difference is what each
+ * silence means. A list that is empty has been LOOKED AT and found empty, so leaving
+ * it out would read as "I forgot to look" — which is why each of them states it. This
+ * section is about kinds nothing here looks at, so an empty one has no fact behind it:
+ * printing `Nothing else recorded.` over a record with no memories would be this
+ * surface asserting something it never asked. The derivation returns the field only
+ * when there is something in it (`copilot`'s `unread.ts`), and this follows it.
+ *
+ * MEASURED, and it is why the section exists: over a record holding three memories
+ * and nothing else, the four sections above printed four sentences of "nothing", with
+ * the session line above them reading `wrote 3 memory.captured`. One screen saying
+ * both. Asserted in `code/tests/where-things-stand.test.ts` — "says what it did not
+ * look at, over a record whose whole content falls outside its lists", against the
+ * contrast case beside it.
+ *
+ * It names the command that reaches each kind, in full, rather than saying "use
+ * search": a reader who has just been told there is something they cannot see is the
+ * reader least able to guess the flag.
+ *
+ * `memory (3)` is `search`'s own heading for a kind and its count, taken rather than
+ * invented — the four lists above can write `3 live task(s)` because `task` takes an
+ * `s`, and `memory` does not. One reading that says `memory (3)` and another that says
+ * `3 memory(s)` about the same three records is two vocabularies for one fact.
+ */
+function unreadLines(status: Bootstrap): string[] {
+  const unread = status.unread ?? [];
+  if (unread.length === 0) return [];
+  return [
+    '',
+    'Not looked at here:',
+    ...unread.map((item) => `  ${item.kind} (${item.held}) — mnema search --kind ${item.kind}`),
   ];
 }
 
