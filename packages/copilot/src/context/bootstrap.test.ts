@@ -7,6 +7,7 @@ import {
   birthDecision,
   birthSkill,
   birthTask,
+  capture,
   deprecateSkill,
   makeBench,
   moveDecision,
@@ -777,6 +778,53 @@ describe('bootstrap — the opening context, focused on the actor', () => {
       expect(b.resume.focus.openRuns).toEqual([]);
       // The work list is workspace-wide, so it is still there.
       expect(b.work.map((w) => w.id)).toEqual(['task-1']);
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('declares the knowledge it does not look at, over a record whose content is entirely outside its lists', () => {
+    bench = makeBench();
+    // The reproduction this slice was written from, through the WHOLE answer: a
+    // session that wrote three memories, and five lists that are about none of them.
+    startRun(bench, 'run-1', { agent: 'probe', goal: 'x' });
+    capture(bench, 'mem-1', 'the deploy needs the token in the env', 'run-1');
+    capture(bench, 'mem-2', 'staging mirrors prod since july', 'run-1');
+    capture(bench, 'mem-3', 'the retry budget is three', 'run-1');
+    const cache = bench.cache();
+    try {
+      const b = bootstrap([cache], asking(bench.who));
+      // Every list correct, and every one of them empty.
+      expect([b.work, b.decisions, b.skills, b.awaitingJudgement]).toEqual([[], [], [], []]);
+      // And the answer no longer stops there. Without this field the five empty lists
+      // are the whole of it, and a reader takes that as a statement about the record —
+      // which is exactly what the run line beside them contradicts.
+      expect(b.unread).toEqual([{ kind: 'memory', held: 3 }]);
+      expect(b.resume.lastRun?.wrote).toEqual([{ kind: 'memory.captured', count: 3 }]);
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('declares nothing over a record that holds nothing — the KEY is absent, not empty', () => {
+    bench = makeBench();
+    const cache = bench.cache();
+    try {
+      const b = bootstrap([cache], asking(bench.who));
+      // An empty array would be a fourth kind of statement on a screen that already
+      // says "nothing" four times, and it would be one this read did not measure.
+      // Absence is the `hidden` idiom of `searchRecords`, taken for its reason.
+      expect(b).not.toHaveProperty('unread');
+      expect(Object.keys(b).sort()).toEqual([
+        'awaitingJudgement',
+        'awaitingJudgementTotal',
+        'decisions',
+        'decisionsTotal',
+        'resume',
+        'skills',
+        'work',
+        'workTotal',
+      ]);
     } finally {
       cache.close();
     }
