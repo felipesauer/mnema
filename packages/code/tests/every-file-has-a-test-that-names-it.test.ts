@@ -177,9 +177,12 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * in it, which found two projects and exported from one of them. It went 2530 -> 2543
  * when `the-address-names-a-rule-a-reader-can-open.test.ts` arrived: thirteen clauses,
  * counted in it, which founds a project, clones its committed tree and asks four
- * readings the same question.
+ * readings the same question. It went 2543 -> 2549 when
+ * `the-address-a-proof-names-is-checked.test.ts` arrived: six clauses, counted in it,
+ * which plants a proof as bytes and reads the line the real program prints about an
+ * address it declined to contact.
  */
-const CLAUSES_IN_THE_TREE = 2543;
+const CLAUSES_IN_THE_TREE = 2549;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
