@@ -592,6 +592,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the id that superseded it, on the same terms',
   },
+  'record.ts «derived from {}» oneLine(path) #1': {
+    verdict: 'collapsed',
+    why: 'a path the writer supplied as a link target, which nothing validates on the way in',
+  },
   'record.ts «created {} · updated {}» body.record.createdAt #1': {
     verdict: 'minted',
     why: 'an ISO-8601 instant off the record',
@@ -1310,7 +1314,7 @@ describe('every value this layer puts on a line is classified', () => {
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
     expect(FOUND.builders.length).toBeGreaterThan(10);
-    expect(FOUND.sites.length).toBe(204);
+    expect(FOUND.sites.length).toBe(205);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1331,10 +1335,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(47);
+    expect(count('collapsed')).toBe(48);
     expect(count('minted')).toBe(120);
     expect(count('composed')).toBe(37);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(47);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(48);
   });
 
   it('every reason says where the value comes from', () => {

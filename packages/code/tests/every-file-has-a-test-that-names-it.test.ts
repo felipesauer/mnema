@@ -57,7 +57,7 @@
  * THAT file — what reaches it today and what that reaches instead — so it can be drained
  * one row at a time. It can only shrink.
  *
- * AND IT CANNOT DISSOLVE ITSELF. The ledger's keys are 75 path strings. Under a rule that
+ * AND IT CANNOT DISSOLVE ITSELF. The ledger's keys are 74 path strings. Under a rule that
  * read path literals, listing a file as debt would witness it and every entry would go
  * stale the moment it was written. Naming requires an IMPORT here, so a table of strings
  * names nothing — asserted below rather than assumed.
@@ -163,9 +163,11 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * `ALIAS_PREFIXES` to enumerate the arms of a vocabulary from the vocabulary itself: one
  * clause, counted in that file, not read off the failure. It went 2454 -> 2465 when
  * `every-description-reaches-the-model.test.ts` arrived: eleven clauses, counted in that
- * file — a sandbox, a project, a client, a transport, and the server it connects to.
+ * file — a sandbox, a project, a client, a transport, and the server it connects to. It
+ * went 2465 -> 2482 when `the-origin-travels-beside-the-label.test.ts` arrived:
+ * seventeen clauses, counted in that file, which drives six verbs and one tool.
  */
-const CLAUSES_IN_THE_TREE = 2465;
+const CLAUSES_IN_THE_TREE = 2482;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -390,10 +392,6 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   'packages/code/src/presentation/exposure.ts': {
     reached: 'nobody imports it',
     why: "Builds the exposure report's rows and closing facts; the cases that drive it are about the credential value NOT being printed, so its column order and date cut go unobserved.",
-  },
-  'packages/code/src/presentation/record.ts': {
-    reached: 'nobody imports it',
-    why: 'The five-branch read of one whole record; `show` is substring-checked on a decision and a skill only, so its memory, observation and task branches ride on the golden alone.',
   },
   'packages/code/src/presentation/render.ts': {
     reached: 'nobody imports it',
@@ -632,7 +630,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
   wiring: 32,
-  presentation: 12,
+  presentation: 11,
   projections: 4,
   completion: 4,
   commands: 4,
@@ -685,9 +683,9 @@ describe('every file has a test that names it', () => {
     const found = unwitnessed();
     const byReach = (reach: Reach): number =>
       [...found.values()].filter((one) => one === reach).length;
-    expect(PRODUCTION.length - found.size).toBe(221);
-    expect(found.size).toBe(75);
-    expect(byReach('nobody imports it')).toBe(75);
+    expect(PRODUCTION.length - found.size).toBe(222);
+    expect(found.size).toBe(74);
+    expect(byReach('nobody imports it')).toBe(74);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -709,7 +707,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(75);
+    expect(reasons).toHaveLength(74);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.
@@ -742,7 +740,7 @@ describe('every file has a test that names it', () => {
   });
 
   it('cannot be dissolved by the ledger that describes it', () => {
-    // The keys below are 75 paths. Naming requires an IMPORT, so listing a file here
+    // The keys below are 74 paths. Naming requires an IMPORT, so listing a file here
     // cannot witness it — and this file, which mentions every one of them, imports no
     // product file at all.
     const self = TEST_TREE.find((one) =>

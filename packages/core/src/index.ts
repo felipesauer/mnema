@@ -17,7 +17,12 @@
 // are re-exported here for one reason — the copilot may not name `@mnema/chain` (its
 // boundary test bans the specifier, because that package holds writers), and a reader
 // that typed a literal instead would be the second place a label lives.
-export { ADDRESS_RELATIONS, ASKS_FOR_A_PERSON_RELATION, GOVERNS_RELATION } from '@mnema/chain';
+export {
+  ADDRESS_RELATIONS,
+  ASKS_FOR_A_PERSON_RELATION,
+  DERIVED_FROM_RELATION,
+  GOVERNS_RELATION,
+} from '@mnema/chain';
 // Reading a directory of decision documents somebody else already wrote — the
 // market's ADR form, turned into the four things this product records. It is a pure
 // READ of text and of a directory: no writer, no key, no event, and no model. What it

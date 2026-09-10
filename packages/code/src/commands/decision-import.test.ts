@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { catalogUpcasters } from '@mnema/chain';
 import {
+  DERIVED_FROM_RELATION,
   type DiscoveryEnv,
   orderedEvents,
   projectDecisions,
@@ -10,7 +11,7 @@ import {
   resolveTrees,
 } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { DERIVED_FROM_RELATION, runDecisionImport } from './decision-import.js';
+import { runDecisionImport } from './decision-import.js';
 import { runInit } from './init.js';
 
 let sandbox: string;

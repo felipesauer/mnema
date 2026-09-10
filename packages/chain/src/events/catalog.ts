@@ -504,7 +504,8 @@ export const ASKS_FOR_A_PERSON_RELATION = 'asks-for-a-person';
  * and something has to walk it, while a provenance points at one file and nothing
  * walks anything. That is why the import needed no member here, and why a reader
  * asking "what does this cover" must ask this constant and not ask whether the target
- * looks like a path.
+ * looks like a path. The provenance is still not a member — and it is now
+ * {@link DERIVED_FROM_RELATION}, a name of its own, because three parties spell it.
  *
  * It still says nothing about what each one DOES — one informs, the other stops
  * somebody — because that is the power, and a reader of an address needs the shape.
@@ -523,10 +524,28 @@ export const ADDRESS_RELATIONS = [GOVERNS_RELATION, ASKS_FOR_A_PERSON_RELATION] 
  * listed again, so a third one cannot be recommended here and stay unknown to the
  * readers that ask what an address covers.
  */
+export const DERIVED_FROM_RELATION = 'derived-from';
+
+/**
+ * The relation a PROVENANCE takes: the subject was derived from what the target names.
+ *
+ * It is the third label whose target is not an id — `mnema decision import` writes one
+ * per proposal, pointing at the project-relative path of the document the decision was
+ * read out of — and it is NOT a member of {@link ADDRESS_RELATIONS}, which is the one
+ * distinction worth the paragraph. An address COVERS a subtree and something walks it;
+ * a provenance names one file and nothing walks anything.
+ *
+ * IT IS A CONSTANT BECAUSE THE STRING WAS WRITTEN TWICE. `decision import` declared its
+ * own `DERIVED_FROM_RELATION` in the command line's package while this set held the bare
+ * literal, so the writer's label and the recommended vocabulary were two strings that
+ * happened to agree. Now the reads want it too — `show`, `show --json` and `read_record`
+ * carry a record's provenance — and a third spelling is how the write and the read come
+ * to disagree about which edge is a provenance. One site, imported by all three.
+ */
 export const RECOMMENDED_LINK_RELATIONS = [
   'supersedes',
   'relates-to',
-  'derived-from',
+  DERIVED_FROM_RELATION,
   'contradicts',
   ...ADDRESS_RELATIONS,
 ] as const;

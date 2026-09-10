@@ -57,6 +57,45 @@ export interface RecordContext {
   readonly consultations?: number;
 }
 
+/**
+ * Where the record says it came from, as facts — one line each, all of them.
+ *
+ * A provenance is a FACT and not a body, so it obeys the rule the paragraph above
+ * states: everything over the blank line is one line per item. The target goes through
+ * {@link oneLine} for the same reason an observation's `about` does — it is a value the
+ * writer supplied and the record never validated, so one holding a newline would
+ * otherwise write a second, well-formed fact this record does not hold.
+ *
+ * It is a target and not a path: `derived-from` takes an id as readily as a file name,
+ * and the command line's golden already held a task derived from another task.
+ *
+ * ALL OF THEM, in the order the read handed them (by target — see `originOf`), because
+ * a record may assert several and choosing one of N would put the answer at the mercy
+ * of row order.
+ */
+function originFacts(render: Render, body: RecordBody): string[] {
+  return (body.origin ?? []).map((path) => render(fact(`derived from ${oneLine(path)}`)));
+}
+
+/**
+ * Puts the facts a kind does not know about where every other fact of this read is:
+ * under the subject line and ABOVE the body, which is the one blank line each arm
+ * emits.
+ *
+ * It is positional rather than pushed inside the five arms, and that is the choice A1
+ * asks about: pushing it per kind would be one rule at five sites, and the fifth is the
+ * one that would be forgotten. The invariant it leans on is stated in this file's own
+ * doc — a body is separated from the facts by exactly one empty line — and a kind that
+ * prints no body (a task) has no empty line, so the facts go last, which is still above
+ * nothing. `the-origin-travels-beside-the-label.test.ts` drives both shapes.
+ */
+function aboveTheBody(lines: string[], facts: readonly string[]): string[] {
+  if (facts.length === 0) return lines;
+  const body = lines.indexOf('');
+  lines.splice(body === -1 ? lines.length : body, 0, ...facts);
+  return lines;
+}
+
 /** The lines one whole record prints for a person. */
 export function recordReport(render: Render, body: RecordBody, context: RecordContext): string[] {
   const lines = [render(subjectLine(`${body.kind} ${body.id}`, body.scope))];
@@ -120,5 +159,5 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
       lines.push(body.record.body);
       break;
   }
-  return lines;
+  return aboveTheBody(lines, originFacts(render, body));
 }

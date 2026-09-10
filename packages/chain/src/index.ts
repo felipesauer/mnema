@@ -186,6 +186,7 @@ export {
   type ChannelAskedV1,
   type ChannelServedV1,
   type ChannelSwitchedV1,
+  DERIVED_FROM_RELATION,
   type DecisionRecordedV1,
   type DecisionTransitionedV1,
   type EventKind,

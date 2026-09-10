@@ -60,6 +60,7 @@
 
 import {
   compareSearchHits,
+  DERIVED_FROM_RELATION,
   type DecisionProjection,
   effectiveLimit,
   type MemoryProjection,
@@ -159,6 +160,7 @@ export type RecordBody =
       readonly id: string;
       readonly scope: Scope;
       readonly project?: string;
+      readonly origin?: readonly string[];
       readonly record: MemoryProjection;
     }
   | {
@@ -166,6 +168,7 @@ export type RecordBody =
       readonly id: string;
       readonly scope: Scope;
       readonly project?: string;
+      readonly origin?: readonly string[];
       readonly record: ObservationProjection;
     }
   | {
@@ -173,6 +176,7 @@ export type RecordBody =
       readonly id: string;
       readonly scope: Scope;
       readonly project?: string;
+      readonly origin?: readonly string[];
       readonly record: DecisionProjection;
     }
   | {
@@ -180,6 +184,7 @@ export type RecordBody =
       readonly id: string;
       readonly scope: Scope;
       readonly project?: string;
+      readonly origin?: readonly string[];
       readonly record: TaskProjection;
     }
   | {
@@ -187,6 +192,7 @@ export type RecordBody =
       readonly id: string;
       readonly scope: Scope;
       readonly project?: string;
+      readonly origin?: readonly string[];
       readonly record: SkillProjection;
     };
 
@@ -282,6 +288,62 @@ function hiddenByLimit(
 }
 
 /**
+ * Where a record was DERIVED FROM, as the record itself says: the target of every
+ * `derived-from` edge whose subject is this id, in the tree that holds it.
+ *
+ * WHY A READ CARRIES THIS AT ALL. `mnema decision import` reads a directory of ADRs and
+ * freezes its own `ADR-<n>` into each decision, so a file named `ADR-008` becomes `ADR-2`
+ * here — deliberately, because two projects can both hold an ADR-1 and a label
+ * re-derived on read silently cites a different decision. The source's number is not
+ * lost: it is in the file NAME, which the import records as a provenance edge. But the
+ * three reads that serve one record whole did not carry that edge, and `brief` sends a
+ * reader to exactly one of them for the argument behind a decision — so the door the
+ * product NAMES was the door without the fact.
+ *
+ * ALL OF THEM, NEVER ONE OF N. A subject may carry several provenance edges (a document
+ * that moved, a second source linked by hand), and a read that reduced N to 1 would be
+ * choosing by whatever order rows came back in — the defect class this bench has already
+ * paid for, where the order of a third party's file decided which of two sentences a
+ * verdict printed. So it is a list, in `listLinksFrom`'s order: by target, a property of
+ * the CONTENT rather than of when the edges were written.
+ *
+ * THE TREE THAT HOLDS THE RECORD, AND ONLY IT. A link is legitimately cross-tree, so a
+ * `derived-from` edge asserted in the private tree could name a public decision. This
+ * read does not go looking for one, for three reasons that agree: the import writes the
+ * decision and its provenance through ONE writer into ONE tree, so the pair is same-tree
+ * by construction; `show` stops at the first tree that answers, because opening the rest
+ * costs a full replay each and its doc names the only two kinds worth that; and this is
+ * the answer that TRAVELS — a clone holding the public tree prints the same provenance,
+ * while an origin drawn from the private tree would print on this machine and vanish in
+ * the clone, which is a read whose answer depends on who asks. The cross-tree edge is
+ * NOT lost: `mnema refs` crosses trees by design and labels each assertion with the tree
+ * that made it.
+ *
+ * It is ABSENT rather than empty when the record asserts none, so a decision written
+ * here by hand — the ordinary case — carries no field at all, and nobody can read `[]`
+ * as "derived from nothing in particular".
+ *
+ * THE TARGET IS WHATEVER THE LINK ASSERTED, and the import is not the only writer of
+ * one. This was drafted as though a provenance always named a FILE, and the command
+ * line's own golden falsified it before a line of it shipped: `cli.reads.golden.txt`
+ * already held a task derived from another task, so the field now prints an id there.
+ * The catalog's rule stands unchanged — `target` is the caller's string, an id or a
+ * path, resolved by whoever reads it — and this read passes it through rather than
+ * deciding which of the two it is. `mnema refs` is still the read that says whether a
+ * target RESOLVES.
+ */
+function originOf(
+  cache: ScopedCache['cache'],
+  id: string,
+): { readonly origin?: readonly string[] } {
+  const derived = cache
+    .listLinksFrom(id)
+    .filter((edge) => edge.rel === DERIVED_FROM_RELATION)
+    .map((edge) => edge.target);
+  return derived.length > 0 ? { origin: derived } : {};
+}
+
+/**
  * Reads one whole record by id, from the first tree in `sources` that holds it,
  * or null when none does.
  *
@@ -295,10 +357,17 @@ function hiddenByLimit(
  */
 export function readRecord(sources: readonly ScopedCache[], id: string): RecordBody | null {
   for (const { scope, project, cache } of sources) {
-    // The holder, named once for whichever kind answers: an id and the two halves
-    // of where it lives. Built per source rather than per kind so the five returns
-    // below cannot come to disagree about what "where" means.
-    const held = { id, scope, ...(project !== undefined ? { project } : {}) };
+    // The holder, named once for whichever kind answers: an id, the two halves of
+    // where it lives, and where it CAME FROM when the record says so. Built per source
+    // rather than per kind so the five returns below cannot come to disagree about
+    // what "where" means — which is also why the provenance is read here and not in
+    // one arm: nothing about a `derived-from` edge is particular to a decision.
+    const held = {
+      id,
+      scope,
+      ...(project !== undefined ? { project } : {}),
+      ...originOf(cache, id),
+    };
     const memory = cache.getMemory(id);
     if (memory !== null) return { kind: 'memory', ...held, record: memory };
     const observation = cache.getObservation(id);

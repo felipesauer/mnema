@@ -480,11 +480,15 @@ $ mnema show <task-runbook>
 | task <task-runbook>  ·  public
 |   Write the deploy runbook (IN_PROGRESS)
 |   created <at:02> · updated <at:22>
+|   derived from <task-chore>
 $ mnema show <task-runbook> --json
 | {
 |   "kind": "task",
 |   "id": "<task-runbook>",
 |   "scope": "public",
+|   "origin": [
+|     "<task-chore>"
+|   ],
 |   "record": {
 |     "id": "<task-runbook>",
 |     "title": "Write the deploy runbook",
@@ -1592,6 +1596,7 @@ $ mnema show <task-runbook>
 | task <task-runbook>  ·  public
 |   Write the deploy runbook (IN_PROGRESS)
 |   created <at:02> · updated <at:22>
+|   derived from <task-chore>
 $ mnema show <decision-runbook>
 | decision <decision-runbook>  ·  public
 |   ADR-1 — Keep the runbook in the record (accepted)
