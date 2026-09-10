@@ -27,7 +27,7 @@ import { BLOCK_HEADER_BYTES } from './bitcoin.js';
 import type { ChainLayout } from './layout.js';
 import { witnessBlocksPath, witnessProofPath } from './layout.js';
 import { meetsRequirement, provenLevel } from './level.js';
-import { serializeOtsProof } from './ots.js';
+import { type OtsAttestation, serializeOtsProof } from './ots.js';
 import {
   readStoredWitness,
   readWitness,
@@ -134,6 +134,94 @@ describe('an attestation that reached a block', () => {
     expect(reading.status).toBe('pending');
     expect(reading.detail).toContain(`block ${BLOCK_800000_HEIGHT}`);
     expect(reading.detail).toContain('does not carry');
+  });
+});
+
+/**
+ * ONE SET OF FACTS, ONE SENTENCE — whatever order the third-party file lists them in.
+ *
+ * WHERE THIS COMES FROM. The two non-coverage readings shared one accumulator under
+ * `??=`, so whichever the walk reached first won. Measured on the record below, with
+ * only the order of the two attestations swapped: *an attestation was requested from
+ * <uri> and has not confirmed* one way, *anchored in Bitcoin block 800000, whose header
+ * this record does not carry* the other. A real calendar writes its attestation before
+ * an upgrade appends a block's, so the first sentence is what the product printed and
+ * the second never appeared — the more precise of the two, in a record whose anchoring
+ * had already happened.
+ *
+ * BOTH ORDERS ARE ASSERTED, and asserted to the BYTE rather than by a substring: the
+ * defect was that one order produced a different sentence, so a case that accepted
+ * either would be the defect's own tolerance written down.
+ */
+describe('a proof that reached a block AND a calendar, with no header stored', () => {
+  const digest = BLOCK_800000_MERKLE_ROOT;
+  const CALENDAR = 'https://alice.btc.calendar.opentimestamps.org';
+  const HEADERLESS = `anchored in Bitcoin block ${BLOCK_800000_HEIGHT}, whose header this record does not carry`;
+  const WAITING = `an attestation was requested from ${CALENDAR} and has not confirmed`;
+
+  /** A proof reaching the digest itself through the attestations given, in that order. */
+  function mixedProof(attestations: readonly OtsAttestation[]): Buffer {
+    return serializeOtsProof(Buffer.from(digest, 'hex'), { attestations, steps: [] });
+  }
+
+  const BLOCK: OtsAttestation = { kind: 'bitcoin', height: BLOCK_800000_HEIGHT };
+  const CALL: OtsAttestation = { kind: 'pending', uri: CALENDAR };
+
+  it('reports the ABSENT HEADER when the block is listed first', () => {
+    writeWitness(layout, TAIL, digest, { proof: mixedProof([BLOCK, CALL]) });
+    expect(readWitness(layout, TAIL, digest).detail).toBe(HEADERLESS);
+  });
+
+  it('reports the ABSENT HEADER when the CALENDAR is listed first — the order that lost', () => {
+    // The order a real proof carries, and the one the product was measured getting
+    // wrong. Nothing about the facts differs from the case above.
+    writeWitness(layout, TAIL, digest, { proof: mixedProof([CALL, BLOCK]) });
+    expect(readWitness(layout, TAIL, digest).detail).toBe(HEADERLESS);
+  });
+
+  it('is PENDING either way, so neither order moves a level or an exit code', () => {
+    // The precedence decides which sentence a person reads and nothing else:
+    // `WITNESS_COVERS` counts neither state, and this is what says so.
+    for (const order of [
+      [BLOCK, CALL],
+      [CALL, BLOCK],
+    ] as const) {
+      writeWitness(layout, TAIL, digest, { proof: mixedProof(order) });
+      expect(readWitness(layout, TAIL, digest).status).toBe('pending');
+    }
+  });
+
+  it('THE CONTRAST — a proof with only the calendar still says the calendar', () => {
+    // Without this, the two cases above would pass over a product that had simply
+    // stopped printing the calendar's sentence at all.
+    writeWitness(layout, TAIL, digest, { proof: mixedProof([CALL]) });
+    expect(readWitness(layout, TAIL, digest).detail).toBe(WAITING);
+  });
+
+  it('names the LOWEST height among several absent headers, not the first reached', () => {
+    // The same tie-break FORMAT.md §8 takes for the confirmed set, for the same
+    // reason: a report picked by traversal order is one a reordered `.ots` changes.
+    // Listed highest first, so first-reached and lowest are different answers.
+    writeWitness(layout, TAIL, digest, {
+      proof: mixedProof([
+        { kind: 'bitcoin', height: BLOCK_800000_HEIGHT + 2 },
+        { kind: 'bitcoin', height: BLOCK_800000_HEIGHT + 1 },
+        BLOCK,
+      ]),
+    });
+    expect(readWitness(layout, TAIL, digest).detail).toBe(HEADERLESS);
+  });
+
+  it('still yields to a CONFIRMED attestation, which outranks both', () => {
+    // The ordering this delivery did not touch: coverage beats every non-coverage.
+    // A block whose header IS stored, beside one whose header is not.
+    writeWitness(layout, TAIL, digest, {
+      proof: mixedProof([{ kind: 'bitcoin', height: BLOCK_800000_HEIGHT + 1 }, BLOCK, CALL]),
+      headers: new Map([[BLOCK_800000_HEIGHT, HEADER]]),
+    });
+    const reading = readWitness(layout, TAIL, digest);
+    expect(reading.status).toBe('covered');
+    expect(reading.detail).toContain(`Bitcoin block ${BLOCK_800000_HEIGHT} at `);
   });
 });
 

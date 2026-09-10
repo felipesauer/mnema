@@ -516,6 +516,19 @@ does both at once, attesting blocks 963688, 963689 and 963690 while shipping two
 The pairing is by the height the attestation declares. A bitcoin attestation whose header
 is absent is simply one that cannot be folded offline; it is neither coverage nor a break.
 
+**Nothing confirmed, and more than one thing reached.** A proof can reach a block whose
+header is absent *and* a calendar that has not answered. Both are the same non-coverage,
+so neither moves a level — but a reader that reduces them to ONE statement must not let
+the order the branches of a third-party file were serialized in decide which. That is the
+paragraph below's rule, on this side of it: a semantically identical `.ots` can reorder,
+so an order-picked report is one two faithful readers disagree about over the same bytes.
+Where a **height** breaks the tie, take the **lowest** — the same tie-break as below, so
+this document holds one rule over that set and not two. This document does **not** require
+one statement: publishing the whole set is order-independent by construction, and the
+reference reader in `verifier/` does exactly that. The rule was missing, and the product
+was measured reporting either of two sentences for one set of facts, chosen by which
+attestation the file happened to list first (`packages/chain/src/chain/witness.test.ts`).
+
 **Which attestation dates the record, when a checkpoint has several.** It usually has
 several — three calendars, three attestations, and they land in different blocks. Take
 the **earliest confirmed block** among them: an attestation in an earlier block is the

@@ -176,10 +176,16 @@ export type Role = (typeof ROLES)[number];
  * fell over it is `verify`'s `hash-chain-only`: the level of a record whose hash chain
  * holds and whose signatures were never checked, because none was there to check. Green
  * would be a pass over exactly the record the levels were introduced to stop calling
- * verified; red would fail a project between its first event and its first checkpoint,
- * which is a legitimate state, and a gate that always fails is a gate somebody switches
- * off. The middle is the only truthful hue it has, and the difference from the count is
- * that a level is a RANK on a closed scale, not one category among several.
+ * verified. THE ARGUMENT AGAINST RED WAS *it would fail a project between its first
+ * event and its first checkpoint, which is a legitimate state* — and that state is gone:
+ * every write seals a checkpoint, so `mnema init` already leaves a fully signed record
+ * and there is no window to be in the middle of (`every-write-signs-what-it-wrote.test.ts`
+ * is the rule; `wiring/verify.ts` carries the measurement). Red is still wrong, on the
+ * ground that survived it: the default `--require=chained` accepts this level and exits
+ * 0, so a red clause would be the one word of the verdict calling FAILED what the same
+ * invocation is passing. The middle is the only truthful hue it has, and the difference
+ * from the count is that a level is a RANK on a closed scale, not one category among
+ * several.
  *
  * The list is ordered worst news last, which is the only thing its order says: nothing
  * reads a severity by index, and the tables that consume it are total over the union.

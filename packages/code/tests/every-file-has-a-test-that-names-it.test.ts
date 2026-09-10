@@ -155,9 +155,12 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * `toBeGreaterThan(2000)`, and the narrowing of the clause grammar is one character away
  * from losing real imports in silence: dropping `_` from `[\w$*,{}\s]` loses 211 of these
  * and leaves 2145, which clears that floor and reddens nothing else in this file. Restate
- * this number when the tree gains an import, which is the point of writing it down.
+ * this number when the tree gains an import, which is the point of writing it down. It
+ * went 2446 -> 2453 when `the-strict-gate-catches-the-forgery.test.ts` arrived with seven
+ * clauses, and the delta was checked against that file rather than accepted from the
+ * failure — a count restated from whatever the run reported is a count that pins nothing.
  */
-const CLAUSES_IN_THE_TREE = 2446;
+const CLAUSES_IN_THE_TREE = 2453;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 

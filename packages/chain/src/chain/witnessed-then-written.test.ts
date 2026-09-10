@@ -138,13 +138,28 @@ describe('a record that was dated, and then written to', () => {
     //
     // Before this delivery the walk dropped both and the record answered the words of a
     // record nobody had ever stamped.
+    //
+    // AND THIS CASE WAS PINNING THE WRONG SENTENCE, which is how the next defect stayed
+    // alive under a green test. It asserted *an attestation was requested from
+    // <calendar> and has not confirmed* — a sentence about waiting on a calendar — over
+    // the state its own name describes, where the anchoring already HAPPENED and only a
+    // header is absent. The remedies differ: one is waited on, the other is fetched. The
+    // right sentence existed in `witness.ts` and lost a race between two accumulators
+    // filled with `??=`, decided by the order this third-party proof lists its
+    // attestations in. So this record's real bytes were the defect's own witness, and
+    // the fix is `witness.ts`'s declared precedence — see
+    // `witness.test.ts`'s "a proof that reached a block AND a calendar".
     for (const hash of [OLDER, NEWER]) rmSync(witnessBlocksPath({ root }, TAIL, hash));
     const result = verify(root, catalogUpcasters());
     expect(clauseOf(result)).toBe(
-      'external witness (T3): PENDING, which is not coverage — an attestation was ' +
-        'requested from https://alice.btc.calendar.opentimestamps.org and has not confirmed',
+      'external witness (T3): PENDING, which is not coverage — anchored in Bitcoin ' +
+        `block ${BLOCK}, whose header this record does not carry`,
     );
     expect(result.summary).not.toContain('nothing outside this machine attests this record');
+    // Non-vacuity on the half that changed: the calendar's words are what this used to
+    // say, so their absence is what says the precedence took effect and not merely that
+    // some sentence came out.
+    expect(result.summary).not.toContain('has not confirmed');
   });
 
   it('is still NOT coverage with only the request showing — the level does not move', () => {
@@ -169,11 +184,16 @@ describe('a record that was dated, and then written to', () => {
     const result = verify(root, catalogUpcasters());
     // The older checkpoint is still dated, and the newer one is still waiting: both
     // facts, in one sentence, with the date belonging to the confirmed attestation.
+    //
+    // THE SECOND CLAUSE USED TO NAME THE CALENDAR, for the reason the case above gives:
+    // the newer checkpoint is headerless, not un-answered. The block is named twice on
+    // purpose and both are true of different files — the OLDER checkpoint's sidecar
+    // still carries the header that dates it, and the NEWER one's was removed above, so
+    // its own attestation in the same block cannot be folded here.
     expect(clauseOf(result)).toBe(
       `external witness (T3): PENDING, which is not coverage — the last attested checkpoint ` +
         `is dated by Bitcoin block ${BLOCK} at ${ATTESTED_AT}, with 2 event(s) written after ` +
-        `it, and an attestation was requested from ` +
-        `https://alice.btc.calendar.opentimestamps.org and has not confirmed`,
+        `it, and anchored in Bitcoin block ${BLOCK}, whose header this record does not carry`,
     );
   });
 
