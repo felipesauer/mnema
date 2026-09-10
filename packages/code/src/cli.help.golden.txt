@@ -528,6 +528,10 @@ $ mnema export --help
 |                    from `mnema accountability`, or the short form the reads
 |                    print (any prefix that names one identity here)
 |   --which <agent>  include only facts executed by this agent
+|   --global         also cover this machine's global tree — left out by default:
+|                    it belongs to no project and is present in every one, and
+|                    this is the only read that leaves the machine (default:
+|                    false)
 |   -h, --help       display help for command
 |
 | The window:
@@ -667,8 +671,9 @@ $ mnema witness --help
 |
 | Options:
 |   --global           also cover this machine's global tree — left out by
-|                      default, exactly as `verify` leaves it out: it belongs to
-|                      no project and is present in every one (default: false)
+|                      default: it belongs to no project and is present in every
+|                      one, and a witness over a tree no verdict reads is work
+|                      with no reader (default: false)
 |   --json             emit where the proof stands as JSON instead of prose — one
 |                      entry per tail, with the reading as the verifier derived it
 |   -h, --help         display help for command
@@ -706,11 +711,10 @@ $ mnema verify --help
 | verify this project's record — its committed tree and its private one
 |
 | Options:
-|   --global               also verify this machine's global tree, the personal
-|                          record across all projects. Off by default: that tree
-|                          belongs to no project and is present in every one, so a
-|                          weakness in it would lower the verdict of every project
-|                          on this disk
+|   --global               also cover this machine's global tree — left out by
+|                          default: it belongs to no project and is present in
+|                          every one, so a weakness in it would lower the verdict
+|                          of every project on this disk
 |   --workspace <path...>  verify the projects at these paths instead of this one,
 |                          and give ONE verdict over all of them — the aggregate
 |                          is the weakest, so no project passes on another's
@@ -1128,8 +1132,9 @@ $ mnema witness stamp --help
 |                        proof that stops completing when that server does.
 |                        Defaults to the public OpenTimestamps calendars.
 |   --global             also cover this machine's global tree — left out by
-|                        default, exactly as `verify` leaves it out: it belongs to
-|                        no project and is present in every one (default: false)
+|                        default: it belongs to no project and is present in every
+|                        one, and a witness over a tree no verdict reads is work
+|                        with no reader (default: false)
 |   -h, --help           display help for command
 |
 | What leaves this machine: the SHA-256 of one checkpoint's signed message, and
@@ -1155,9 +1160,10 @@ $ mnema witness upgrade --help
 |                   confirms. Asked ONCE per block: the 80 bytes are then part of
 |                   the record, and every verification after that is arithmetic on
 |                   this machine. Defaults to a public block explorer.
-|   --global        also cover this machine's global tree — left out by default,
-|                   exactly as `verify` leaves it out: it belongs to no project
-|                   and is present in every one (default: false)
+|   --global        also cover this machine's global tree — left out by default:
+|                   it belongs to no project and is present in every one, and a
+|                   witness over a tree no verdict reads is work with no reader
+|                   (default: false)
 |   -h, --help      display help for command
 |
 | It goes back for EVERY request the tail still has open, not only the newest one.

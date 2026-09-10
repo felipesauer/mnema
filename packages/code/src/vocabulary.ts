@@ -225,6 +225,34 @@ export function windowDeclaration(subject: WindowSubject): string {
 }
 
 // ---------------------------------------------------------------------------
+// The machine-global tree — one axis, one sentence, four verbs
+// ---------------------------------------------------------------------------
+
+/**
+ * What `--global` says, in the same words wherever it is offered.
+ *
+ * FOUR VERBS ASK THE SAME QUESTION and it was spelled TWO ways: `witness` and its two
+ * subcommands shared one string, and `verify` had a longer one of its own. A third
+ * spelling was one verb away — `export` is the one that needed the flag next, and it is
+ * the only read that leaves the machine, so the sentence a person reads before pushing
+ * a feed to a SIEM would have been the newest of three.
+ *
+ * The SHARED half is why the tree is left out: it belongs to no project and is present
+ * in every one, so including it by default would put the same personal record inside
+ * every project's answer. The per-verb half is what that COSTS in that verb, and it
+ * varies because the consequence does — a weakness lowers a verdict, a witness over a
+ * tree no verdict reads is work with no reader, and a feed carries it off the machine.
+ * That is the same shape `windowGloss` has: one sentence, and the clause that varies
+ * named rather than left to whoever writes the next one.
+ */
+export function globalTreeGloss(consequence: string): string {
+  return (
+    "also cover this machine's global tree — left out by default: it belongs to no " +
+    `project and is present in every one, ${consequence}`
+  );
+}
+
+// ---------------------------------------------------------------------------
 // The workflow actions, and the proof each one needs
 // ---------------------------------------------------------------------------
 

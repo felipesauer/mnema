@@ -125,7 +125,7 @@ _mnema_flags() {
     'accountability') echo '--from --to --who --which --json -h --help -V --version --color' ;;
     'antipatterns') echo '--json -h --help -V --version --color' ;;
     'exposure') echo '--json -h --help -V --version --color' ;;
-    'export') echo '--from --to --who --which -h --help -V --version --color' ;;
+    'export') echo '--from --to --who --which --global -h --help -V --version --color' ;;
     'refs') echo '--direction --depth --json -h --help -V --version --color' ;;
     'rules') echo '--json -h --help -V --version --color' ;;
     'skills') echo '--json -h --help -V --version --color' ;;

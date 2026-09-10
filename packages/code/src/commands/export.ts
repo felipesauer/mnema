@@ -37,9 +37,9 @@
 
 import { catalogUpcasters } from '@mnema/chain';
 import { type AuditEvent, auditFeed } from '@mnema/copilot';
-import { type AuthorshipFilter, type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { type AuthorshipFilter, type DiscoveryEnv, resolveTrees, type Scope } from '@mnema/core';
 import { resolveAnchorInRecord } from '../anchors.js';
-import { scopedEvents } from '../intelligence-source.js';
+import { recordTrees, scopedEventsOf } from '../intelligence-source.js';
 import { VERSION } from '../version.js';
 
 /** What the export command needs — injected so it is testable. */
@@ -64,6 +64,18 @@ export interface ExportDone {
   readonly ok: true;
   /** The events themselves — the faithful objects a line is written from. */
   readonly events: readonly AuditEvent[];
+  /**
+   * WHICH TREES THE FEED COVERS, so a filtered one can be told from a complete one.
+   *
+   * NDJSON has no header and no line declares the set: every line names the tree it
+   * came FROM (`metadata.log_name`), which says where a fact was, and says nothing
+   * about where the reader was not allowed to look. So "no global fact exists" and
+   * "the global tree was left out" arrive identical, and the surface is the only
+   * place that can tell them apart. It is a fact about THIS invocation and varies with
+   * it, which is why it is a field here and a line the verb writes rather than prose
+   * in a help text.
+   */
+  readonly trees: readonly Scope[];
 }
 
 /** The read was refused — no project to export, or a `--who` that names no identity. */
@@ -88,19 +100,40 @@ export type ExportRefused =
  */
 export function runExport(
   ctx: ExportContext,
-  input: AuthorshipFilter = {},
+  input: AuthorshipFilter & { readonly global?: boolean } = {},
 ): ExportDone | ExportRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
   if (trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
-  let filter = input;
-  if (input.who !== undefined) {
-    const who = resolveAnchorInRecord(trees, input.who);
+  const { global: alsoGlobal, ...asked } = input;
+  let filter: AuthorshipFilter = asked;
+  if (asked.who !== undefined) {
+    const who = resolveAnchorInRecord(trees, asked.who);
     if (!who.ok) {
       return { ok: false, reason: 'REFUSED', code: who.code, message: who.message };
     }
-    filter = { ...input, who: who.anchor };
+    filter = { ...asked, who: who.anchor };
   }
-  return { ok: true, events: auditFeed(scopedEvents(trees, catalogUpcasters()), PRODUCER, filter) };
+  // THE TREE LOCK. `this project's record` is the committed tree and the private one —
+  // exactly what it means for `verify`, and for the same reason: the machine-global tree
+  // belongs to no project and is present in every one. Off by default here matters more
+  // than anywhere else, because this is the only read that LEAVES the machine: run inside
+  // one project it used to carry the id, the instant and the author of a fact written in
+  // another, so whoever forwarded the feed to a company's SIEM sent along what they had
+  // written at home.
+  //
+  // ADDITIVE, and that is what makes the worst shape unrepresentable. A selector that
+  // could ask for the global tree ALONE would fabricate a broken session in the feed: a
+  // run opens in the public tree and pins facts written in the global one, so a
+  // global-only cut shows lines correlated to a session that never opens. `--global` can
+  // only ever ADD, so the public tree is in every feed this verb emits.
+  const covered = recordTrees(trees, undefined).filter(
+    (tree) => tree.scope !== 'global' || alsoGlobal === true,
+  );
+  return {
+    ok: true,
+    trees: covered.map((tree) => tree.scope),
+    events: auditFeed(scopedEventsOf(covered, catalogUpcasters()), PRODUCER, filter),
+  };
 }

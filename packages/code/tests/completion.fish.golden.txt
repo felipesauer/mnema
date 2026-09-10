@@ -338,6 +338,7 @@ complete -c mnema -f -n '__mnema_at "export"' -l from -r
 complete -c mnema -f -n '__mnema_at "export"' -l to -r
 complete -c mnema -f -n '__mnema_at "export"' -l who -r
 complete -c mnema -f -n '__mnema_at "export"' -l which -r
+complete -c mnema -f -n '__mnema_at "export"' -l global
 complete -c mnema -f -n '__mnema_at "export"' -s h -l help
 complete -c mnema -f -n '__mnema_at "export"' -s V -l version
 complete -c mnema -f -n '__mnema_at "export"' -l color -x -a 'auto always never'

@@ -59,6 +59,7 @@ import { fact } from '../presentation/detail.js';
 import type { Line, Severity } from '../presentation/line.js';
 import type { Render } from '../presentation/render.js';
 import { type Clause, clauseStatement, statement } from '../presentation/verdict.js';
+import { globalTreeGloss } from '../vocabulary.js';
 import { here } from './context.js';
 import { enumeratedOption, glossedList, LEVEL_REQUIREMENTS, listed } from './enumerated.js';
 import type { CliIo } from './io.js';
@@ -357,10 +358,7 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
     .description("verify this project's record — its committed tree and its private one")
     .option(
       '--global',
-      "also verify this machine's global tree, the personal record across all " +
-        'projects. Off by default: that tree belongs to no project and is present ' +
-        'in every one, so a weakness in it would lower the verdict of every project ' +
-        'on this disk',
+      globalTreeGloss('so a weakness in it would lower the verdict of every project on this disk'),
     )
     .option(
       '--workspace <path...>',

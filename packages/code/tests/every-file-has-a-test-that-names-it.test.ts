@@ -57,7 +57,7 @@
  * THAT file — what reaches it today and what that reaches instead — so it can be drained
  * one row at a time. It can only shrink.
  *
- * AND IT CANNOT DISSOLVE ITSELF. The ledger's keys are 74 path strings. Under a rule that
+ * AND IT CANNOT DISSOLVE ITSELF. The ledger's keys are 73 path strings. Under a rule that
  * read path literals, listing a file as debt would witness it and every entry would go
  * stale the moment it was written. Naming requires an IMPORT here, so a table of strings
  * names nothing — asserted below rather than assumed.
@@ -172,9 +172,11 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * three files. It went 2505 -> 2513 when `one-window-three-readings.test.ts` arrived —
  * the test a doc-comment had named for as long as it stood, and which did not exist:
  * eight clauses, counted in it. It went 2513 -> 2520 when
- * `the-proof-answers-a-machine.test.ts` arrived: seven clauses, counted in it.
+ * `the-proof-answers-a-machine.test.ts` arrived: seven clauses, counted in it. It went
+ * 2520 -> 2530 when `the-feed-covers-this-project.test.ts` arrived: ten clauses, counted
+ * in it, which found two projects and exported from one of them.
  */
-const CLAUSES_IN_THE_TREE = 2520;
+const CLAUSES_IN_THE_TREE = 2530;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -343,10 +345,6 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   'packages/chain/src/one-line.ts': {
     reached: 'nobody imports it',
     why: 'oneLine, the whitespace-collapse rule: its sibling test reads this file as text to prove it declares no import, and never once calls the function it is about.',
-  },
-  'packages/code/src/commands/export.ts': {
-    reached: 'nobody imports it',
-    why: 'runExport, the OCSF audit feed reader: no test imports it, and the feed is asserted as NDJSON text captured off the io port, so its ExportDone return is never held.',
   },
   'packages/code/src/commands/rules.ts': {
     reached: 'nobody imports it',
@@ -640,7 +638,7 @@ const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
   presentation: 11,
   projections: 4,
   completion: 4,
-  commands: 4,
+  commands: 3,
   barrels: 3,
   scattered: 16,
 };
@@ -690,9 +688,9 @@ describe('every file has a test that names it', () => {
     const found = unwitnessed();
     const byReach = (reach: Reach): number =>
       [...found.values()].filter((one) => one === reach).length;
-    expect(PRODUCTION.length - found.size).toBe(225);
-    expect(found.size).toBe(74);
-    expect(byReach('nobody imports it')).toBe(74);
+    expect(PRODUCTION.length - found.size).toBe(226);
+    expect(found.size).toBe(73);
+    expect(byReach('nobody imports it')).toBe(73);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -714,7 +712,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(74);
+    expect(reasons).toHaveLength(73);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.
@@ -747,7 +745,7 @@ describe('every file has a test that names it', () => {
   });
 
   it('cannot be dissolved by the ledger that describes it', () => {
-    // The keys below are 74 paths. Naming requires an IMPORT, so listing a file here
+    // The keys below are 73 paths. Naming requires an IMPORT, so listing a file here
     // cannot witness it — and this file, which mentions every one of them, imports no
     // product file at all.
     const self = TEST_TREE.find((one) =>
