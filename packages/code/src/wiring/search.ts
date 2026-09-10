@@ -10,6 +10,7 @@
 
 import { SEARCH_DEFAULT_LIMIT, SEARCH_MAX_LIMIT, type SearchKind } from '@mnema/core';
 import type { Command } from 'commander';
+import { windowGloss, windowHelp } from '../vocabulary.js';
 import { here } from './context.js';
 import { enumeratedOption, listed, SCOPES, SEARCH_KINDS } from './enumerated.js';
 import { writeLines } from './io.js';
@@ -32,9 +33,10 @@ export function registerSearch(program: Command, wiring: Wiring): Declared {
       ),
     )
     .addOption(enumeratedOption('--scope <scope>', `only this tree: ${listed(SCOPES)}`, SCOPES))
-    .option('--state <state>', 'only records in this state (excludes kinds that have none)')
-    .option('--from <iso>', 'only records at or after this ISO-8601 instant')
-    .option('--to <iso>', 'only records at or before this ISO-8601 instant')
+    .option('--state <state>', 'only records in this state NOW (excludes kinds that have none)')
+    .option('--from <iso>', windowGloss('from', 'record'))
+    .option('--to <iso>', windowGloss('to', 'record'))
+    .addHelpText('after', windowHelp('record'))
     .option(
       '--limit <n>',
       `how many to return (default ${SEARCH_DEFAULT_LIMIT}, max ${SEARCH_MAX_LIMIT})`,

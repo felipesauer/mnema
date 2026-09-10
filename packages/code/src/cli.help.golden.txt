@@ -437,12 +437,17 @@ $ mnema search --help
 |   --kind <kind>    only this kind of record: memory, observation, decision,
 |                    task, skill
 |   --scope <scope>  only this tree: public, private, global
-|   --state <state>  only records in this state (excludes kinds that have none)
-|   --from <iso>     only records at or after this ISO-8601 instant
-|   --to <iso>       only records at or before this ISO-8601 instant
+|   --state <state>  only records in this state NOW (excludes kinds that have
+|                    none)
+|   --from <iso>     only records at or after this ISO-8601 instant (inclusive)
+|   --to <iso>       only records at or before this ISO-8601 instant (inclusive)
 |   --limit <n>      how many to return (default 20, max 200)
 |   --json           emit the faithful index as JSON (one ordered list)
 |   -h, --help       display help for command
+|
+| The window:
+|   A window (`from`/`to`) selects RECORDS by the instant each was RECORDED —
+|   never by when one last moved, and never by the state it is in now.
 
 ### mnema show --help
 $ mnema show --help
@@ -477,14 +482,18 @@ $ mnema accountability --help
 | show who authorized what across the record (optionally windowed/filtered)
 |
 | Options:
-|   --from <iso>     include only facts at or after this ISO-8601 instant
-|   --to <iso>       include only facts at or before this ISO-8601 instant
+|   --from <iso>     only facts at or after this ISO-8601 instant (inclusive)
+|   --to <iso>       only facts at or before this ISO-8601 instant (inclusive)
 |   --who <id>       count only facts authorized by this identity — the `mnid:…`
 |                    from `mnema accountability`, or the short form the reads
 |                    print (any prefix that names one identity here)
 |   --which <agent>  count only facts executed by this agent
 |   --json           emit the faithful account object as JSON
 |   -h, --help       display help for command
+|
+| The window:
+|   A window (`from`/`to`) selects the FACTS themselves,
+|   by the instant each was recorded.
 
 ### mnema antipatterns --help
 $ mnema antipatterns --help
@@ -513,13 +522,17 @@ $ mnema export --help
 | emit the record as an OCSF audit feed (NDJSON, envelope only — never a body)
 |
 | Options:
-|   --from <iso>     include only facts at or after this ISO-8601 instant
-|   --to <iso>       include only facts at or before this ISO-8601 instant
+|   --from <iso>     only facts at or after this ISO-8601 instant (inclusive)
+|   --to <iso>       only facts at or before this ISO-8601 instant (inclusive)
 |   --who <id>       include only facts authorized by this identity — the `mnid:…`
 |                    from `mnema accountability`, or the short form the reads
 |                    print (any prefix that names one identity here)
 |   --which <agent>  include only facts executed by this agent
 |   -h, --help       display help for command
+|
+| The window:
+|   A window (`from`/`to`) selects the FACTS themselves,
+|   by the instant each was recorded.
 
 ### mnema refs --help
 $ mnema refs --help

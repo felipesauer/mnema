@@ -19,6 +19,7 @@
  */
 
 import type { Command } from 'commander';
+import { windowGloss, windowHelp } from '../vocabulary.js';
 import { here } from './context.js';
 import { ACTOR_HELP } from './options.js';
 import { reportRefusal } from './report.js';
@@ -30,8 +31,9 @@ export function registerExport(program: Command, wiring: Wiring): Declared {
   const exported = program
     .command('export')
     .description('emit the record as an OCSF audit feed (NDJSON, envelope only — never a body)')
-    .option('--from <iso>', 'include only facts at or after this ISO-8601 instant')
-    .option('--to <iso>', 'include only facts at or before this ISO-8601 instant')
+    .option('--from <iso>', windowGloss('from', 'fact'))
+    .option('--to <iso>', windowGloss('to', 'fact'))
+    .addHelpText('after', windowHelp('fact'))
     .option('--who <id>', `include only facts authorized by this identity — ${ACTOR_HELP}`)
     // A FILTER over who already acted, not a declaration of who is acting — so it carries
     // no `declaredAgent` parser, exactly as `accountability`'s does not: nothing is being

@@ -169,9 +169,11 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * 2482 -> 2505 over three files of one delivery: `the-moves-say-what-they-said.test.ts`
  * with eighteen, and the two sibling units beside the modules they name — the catalog's
  * proof reader with three and the projection's with two. Twenty-three, counted in the
- * three files.
+ * three files. It went 2505 -> 2513 when `one-window-three-readings.test.ts` arrived —
+ * the test a doc-comment had named for as long as it stood, and which did not exist:
+ * eight clauses, counted in it.
  */
-const CLAUSES_IN_THE_TREE = 2505;
+const CLAUSES_IN_THE_TREE = 2513;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -667,7 +669,7 @@ describe('every file has a test that names it', () => {
     expect(PRODUCTION).toContain('packages/code/src/wiring/index.ts');
     expect(PRODUCTION).toContain('packages/core/src/topology/index.ts');
     expect(PRODUCTION).not.toContain('packages/core/src/index.ts');
-    expect(PRODUCTION).toHaveLength(298);
+    expect(PRODUCTION).toHaveLength(299);
     expect(TEST_TREE.length).toBeGreaterThan(250);
     // No file is in both corpora, which is what keeps a test from witnessing itself.
     const tests = new Set(TEST_TREE.map((one) => one.path));
@@ -687,7 +689,7 @@ describe('every file has a test that names it', () => {
     const found = unwitnessed();
     const byReach = (reach: Reach): number =>
       [...found.values()].filter((one) => one === reach).length;
-    expect(PRODUCTION.length - found.size).toBe(224);
+    expect(PRODUCTION.length - found.size).toBe(225);
     expect(found.size).toBe(74);
     expect(byReach('nobody imports it')).toBe(74);
     expect(byReach('imported, and no assertion observes it')).toBe(0);

@@ -60,6 +60,7 @@ import { NEWEST_FIRST_SQL, newestFirst } from './newest-first.js';
 import { proofText, type TransitionProof } from './proof.js';
 import type { SkillProjection } from './skill.js';
 import type { TaskProjection } from './task.js';
+import { windowConditions } from './window.js';
 
 /** The entity kinds the index holds — the ones that carry text a person wrote. */
 export const SEARCH_KINDS = ['memory', 'observation', 'decision', 'task', 'skill'] as const;
@@ -403,14 +404,13 @@ function whereClause(query: SearchQuery, match: string | undefined): WhereClause
     conditions.push('state = @state');
     params.state = query.state;
   }
-  if (query.from !== undefined) {
-    conditions.push('at >= @from');
-    params.from = query.from;
-  }
-  if (query.to !== undefined) {
-    conditions.push('at <= @to');
-    params.to = query.to;
-  }
+  // The window is not this query's own rule: it is `projections/window.ts`, the same
+  // one the authorship tally and the audit feed ask. What differs is only what the
+  // window is OVER — here the instant a record was made, there the instant of a fact —
+  // and that difference is declared rather than left to the flag's name.
+  const window = windowConditions('at', query);
+  conditions.push(...window.sql);
+  Object.assign(params, window.params);
   return {
     sql: conditions.length === 0 ? '' : `WHERE ${conditions.join(' AND ')}`,
     params,

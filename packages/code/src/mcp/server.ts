@@ -115,6 +115,8 @@ import {
   slashed,
   TASK_ACTIONS,
   type Workflow,
+  windowDeclaration,
+  windowGloss,
 } from '../vocabulary.js';
 import { armSessionClose, type Lifecycle } from './lifecycle.js';
 import { namedProjects } from './route.js';
@@ -1350,8 +1352,14 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
           .string()
           .optional()
           .describe('Only records in this state (excludes kinds that have none).'),
-        from: z.string().optional().describe('Only records at or after this ISO-8601 instant.'),
-        to: z.string().optional().describe('Only records at or before this ISO-8601 instant.'),
+        from: z
+          .string()
+          .optional()
+          .describe(`${windowGloss('from', 'record')}. ${windowDeclaration('record')}`),
+        to: z
+          .string()
+          .optional()
+          .describe(`${windowGloss('to', 'record')}. ${windowDeclaration('record')}`),
         limit: z
           .number()
           .int()
@@ -1627,11 +1635,11 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         from: z
           .string()
           .optional()
-          .describe('Include only facts at or after this ISO-8601 instant.'),
+          .describe(`${windowGloss('from', 'fact')}. ${windowDeclaration('fact')}`),
         to: z
           .string()
           .optional()
-          .describe('Include only facts at or before this ISO-8601 instant.'),
+          .describe(`${windowGloss('to', 'fact')}. ${windowDeclaration('fact')}`),
         who: z.string().optional().describe('Count only facts authorized by this anchor id.'),
         which: z.string().optional().describe('Count only facts executed by this agent.'),
       },
