@@ -63,6 +63,13 @@ export function witnessWord(status: WitnessReading['status']): string {
  * NEITHER PHRASE SAYS `refused`, and that is deliberate: `refusal` is already this
  * surface's word for an act that would not run, and these two lines appear beside acts
  * that DID run.
+ *
+ * THE CASE THAT HOLDS THIS IS `code/tests/the-address-a-proof-names-is-checked.test.ts`,
+ * and it is named here because for one round nothing did. A mutation swapping the second
+ * phrase back to the first left the whole suite green: the address check is witnessed six
+ * ways in `chain`, the SHAPE of the line is pinned by `a-line-of-success-is-one-line`,
+ * and no case anywhere read the WORDS. That file drives the real program over a planted
+ * proof and asserts both directions — this phrase present, `did not answer` absent.
  */
 const REFUSED: Readonly<Record<WitnessRefusalKind, string>> = {
   unanswered: 'did not answer',
