@@ -90,8 +90,8 @@ const LEVEL_MEANS: Readonly<Record<LevelRequirement, string>> = {
   chained: 'the default — fail only on a break, which is what a bare `verify` has always done',
   signed:
     'also fail unless every event is covered by a verified signature — every write here ' +
-    'signs what it wrote, so a healthy project passes and what this catches is a record ' +
-    'whose checkpoints were removed or did not verify',
+    'signs what it wrote, so it passes whenever nothing is mid-write, and what it catches ' +
+    'is a record whose checkpoints were removed or did not verify',
   witnessed:
     'also fail unless an external witness dates the record — `mnema witness stamp` asks ' +
     'for one, and it passes once a Bitcoin block carries it, never while it is pending',

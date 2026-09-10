@@ -452,9 +452,11 @@ const NO_ATTESTATION: UnattestedReading = {
  * state. Both are `pending` — {@link WITNESS_COVERS} counts neither, so no level and
  * no exit code move — and the choice is only which sentence a person reads. This one
  * names a BLOCK: the work is done and the record is one committed file short of
- * proving it offline, which `mnema witness upgrade` fetches. The other names a
- * calendar nobody has heard back from. A reader told to wait when what they need is
- * to fetch a header waits forever.
+ * proving it offline, and that file is fetchable — {@link completeWitness} asks for
+ * the header of every bitcoin attestation it reaches, on a proof that is already
+ * anchored as much as on one that just became so, which is what `mnema witness
+ * upgrade` runs. The other sentence names a calendar nobody has heard back from. A
+ * reader told to wait when what they need is to fetch a header waits forever.
  *
  * It is neither coverage nor a break, which is FORMAT.md §8's own sentence about this
  * exact state, and the status keeps saying so.

@@ -218,8 +218,8 @@ exit codes are asserted side by side in
 
 **What "broken" means is the caller's to declare.** `--require=signed` also fails
 when any event of any tree it covered is not covered by a verified signature — every
-write here signs what it wrote, so a healthy project passes it and what it catches is
-a record whose checkpoints were removed or did not verify. `--require=witnessed` also
+write here signs what it wrote, so it passes whenever nothing is mid-write, and what it
+catches is a record whose checkpoints were removed or did not verify. `--require=witnessed` also
 fails when no external witness dates the record (`mnema witness stamp` asks for one;
 it passes once a Bitcoin block carries it, and never while it is pending). Asking
 costs nothing: `--require` is a comparison of levels, not extra work.
