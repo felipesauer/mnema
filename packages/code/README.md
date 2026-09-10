@@ -194,21 +194,56 @@ mnema verify --workspace ~/work/api ~/work/web
 #> 2 path(s) named → 2 distinct: 2 project(s) covered. …
 ```
 
-`mnema verify` exits non-zero when the record is broken — in **either** tree, in
+`mnema verify` exits non-zero when the record is **broken** — in **either** tree, in
 **any** project it was told to cover, and the line says which — so it drops into
 CI as a check with no extra wiring. It also exits non-zero when a **named** path
 holds no record at all, because a set that quietly skipped a mistyped path would
 be a green gate over a project nobody verified; `--allow-no-record` accepts the
 gap and rules on the rest, and it never accepts a break.
-**What "broken" means is the caller's to declare:**
-`--require=signed` also fails when any event of any tree it covered is not
-covered by a verified
-signature, and `--require=witnessed` when no external witness dates the record
-(`mnema witness stamp` asks for one; it passes once a Bitcoin block carries it,
-and never while it is pending). The default stays
-`--require=chained` — a break and nothing else — because events above the last
-checkpoint are the normal state of a session in flight, and a check that fails
-every time is a check somebody turns off.
+
+**A break is not the only way a record can lie, and the default does not catch the
+others.** This paragraph used to say `verify` exits non-zero "when the record is
+broken" and leave it there, which reads as a promise about forgery. It is not one.
+Measured, against a record forged by hand: rewrite one fact, recompute the hash
+links with this product's own function, empty that tail's `checkpoints.jsonl` — and
+`mnema verify` exits **0**, printing `local integrity verified (T1 only) — no
+signature was checked`, while `mnema search` serves the forged fact. Nothing is
+broken there: the hash chain is consistent, and the signatures that would have
+contradicted it are gone. A crude edit — a `sed`, no rehash — *is* caught and exits
+1; what walks past the default is somebody who can rebuild the chain.
+
+**What catches that record is `--require=signed`**, which exits 1 on it, and the two
+exit codes are asserted side by side in
+`packages/code/tests/the-strict-gate-catches-the-forgery.test.ts`. So:
+
+**What "broken" means is the caller's to declare.** `--require=signed` also fails
+when any event of any tree it covered is not covered by a verified signature — every
+write here signs what it wrote, so it passes whenever nothing is mid-write, and what it
+catches is a record whose checkpoints were removed or did not verify. `--require=witnessed` also
+fails when no external witness dates the record (`mnema witness stamp` asks for one;
+it passes once a Bitcoin block carries it, and never while it is pending). Asking
+costs nothing: `--require` is a comparison of levels, not extra work.
+
+**The default stays `--require=chained` — a break and nothing else — and the reason
+is not the one written here before.** That read *because events above the last
+checkpoint are the normal state of a session in flight*; every write seals a
+checkpoint now, so `--require=signed` passes in every state this product reaches and
+the gate that "always fails" fails in none of them. The reason that survives is about
+what a stranger is told. There are three ways to forge a record and the strict gate
+catches one — the attacker who edits a tail's events, drops that tail's checkpoints,
+and neither removes the whole tail nor writes a fact afterwards. Made the default, it
+would hand somebody who cloned a record with a whole person's history deleted
+`verified (T1/T2/T4); all events are signature-covered`, **exit 0**, plus the belief
+that a strict gate had ruled on it. The permissive default at least says `no
+signature was checked` over the record it cannot vouch for.
+
+**And what neither value answers, said plainly.** A removed tail is reported but is
+not a break: `verify` crosses the committed keys against the tails on disk and prints
+`N committed key(s) without a tail (see census — informational, not a break)`, exit 0.
+A tail removed *together with its key* is not reported at all — that record reads
+`0 tail(s); no events yet`, indistinguishable from a fresh one, and only a history
+outside this record (a git log, an external witness) can testify to what was taken
+out. No value of `--require` closes that; it changes which forgery goes green.
 
 ### Bold, dim, and what a pipe gets
 

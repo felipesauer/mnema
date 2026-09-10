@@ -28,11 +28,21 @@
  *
  * WHY NOT FAIL when no signature was checked — the exit git and cosign take. A
  * project between its first event and its first checkpoint is a legitimate state,
- * and so is every session in flight (events above the last checkpoint are the
- * normal residual). A verdict that fails there teaches its reader to ignore it, and
- * an ignored verdict is worse than none. So the tool REPORTS the level and the
- * caller declares the minimum it accepts — {@link LevelRequirement}, the shape
- * `npm audit --audit-level` settled on.
+ * and so is a record whose consumer checkpoints on a CADENCE, where the events above
+ * the last one are a standing residual. A verdict that fails there teaches its reader
+ * to ignore it, and an ignored verdict is worse than none. So the tool REPORTS the
+ * level and the caller declares the minimum it accepts — {@link LevelRequirement},
+ * the shape `npm audit --audit-level` settled on.
+ *
+ * THE CADENCE IS THE CONSUMER'S, AND THAT QUALIFIER USED TO BE MISSING. This read
+ * *and so is every session in flight*, which is a claim about all consumers and is
+ * false of the one in this workspace: `@mnema/code` seals a checkpoint at the end of
+ * every act of writing, so its residual is empty whenever nothing is mid-write, and
+ * `--require=signed` was measured passing in every state it reaches. Nothing about
+ * the FORMAT changed — the residual is a property of it and a consumer that seals
+ * less often still verifies — so the reasoning above holds for that consumer and no
+ * longer pretends to hold for all of them. `README.md`'s truncation row carries the
+ * same correction and names the rule that enforces it downstream.
  */
 
 /**
@@ -152,9 +162,14 @@ export type LevelRequirement = (typeof LEVEL_REQUIREMENTS)[number];
  * requirement added tomorrow does not compile until it names the level it needs.
  *
  * `chained` is the default a surface declares, and it asks for exactly what
- * `verify` has always exited non-zero on: a break. It does NOT ask for a
- * signature, because demanding one by default would fail every session in flight
- * — and a gate that always fails is a gate somebody switches off.
+ * `verify` has always exited non-zero on: a break. It does NOT ask for a signature,
+ * because a consumer that checkpoints on a cadence has a standing residual and a
+ * gate that always fails is a gate somebody switches off. THE REASON WRITTEN HERE
+ * WAS *demanding one by default would fail every session in flight*, without the
+ * qualifier — see the note at the top of this file for the consumer that falsified
+ * the unqualified form. A surface whose every write seals still has a reason of its
+ * own to keep this default, and it is a different one: `@mnema/code` states it above
+ * `DEFAULT_REQUIREMENT` in `wiring/verify.ts`.
  */
 const REQUIRED_LEVEL: Readonly<Record<LevelRequirement, ProvenLevel>> = {
   chained: 'hash-chain-only',

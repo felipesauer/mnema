@@ -703,10 +703,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'a calendar URI read out of a file in the tree — anybody who can write the tree chooses it',
     },
-  '@mnema/chain chain/witness.ts «anchored in Bitcoin block {}, whose header this record does not carry» attestation.height #1':
+  '@mnema/chain chain/witness.ts «anchored in Bitcoin block {}, whose header this record does not carry» height #1':
     {
       verdict: 'minted',
-      why: 'the same height, in the state where the record has the anchor and not the header',
+      why: 'the same height, in the state where the record has the anchor and not the header — the LOWEST such height, chosen by the caller rather than by the order the proof lists its attestations in',
     },
   '@mnema/chain chain/witness.ts «tail {} holds no attestation» oneLine(weakest.tail) #1': {
     verdict: 'collapsed',
