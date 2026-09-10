@@ -17,6 +17,13 @@
 // are re-exported here for one reason — the copilot may not name `@mnema/chain` (its
 // boundary test bans the specifier, because that package holds writers), and a reader
 // that typed a literal instead would be the second place a label lives.
+//
+// The proof a MOVE carried is not among them, and the absence is deliberate:
+// `transitionProse`, `proofFields` and `PROOF_FIELDS` also live in the chain, and their
+// consumers name that package directly — this package's own fold
+// (`projections/proof.ts`) and the command line's presentation layer, neither of which
+// is banned from the specifier. A re-export nobody imported would be a public value
+// with no caller, which is the shape amarra A2 exists to kill.
 export {
   ADDRESS_RELATIONS,
   ASKS_FOR_A_PERSON_RELATION,
@@ -114,6 +121,15 @@ export {
 } from './projections/knowledge-store.js';
 export { type Dated, NEWEST_FIRST_SQL, newestFirst } from './projections/newest-first.js';
 export { orderedEvents, orderedEventsOfRecord, type RecordOrder } from './projections/order.js';
+// What each move of a record SAID, and how it is read back out of one column. One
+// shape for the three state machines that have moves, so the three folds and the
+// three reads cannot come to disagree about what a move's proof is.
+// Only the SHAPE crosses the boundary: the command line's `show` prints a proof and
+// needs to name its type. The four functions around it — the fold's reader, the index's
+// text, and the two halves of the column encoding — have callers inside this package
+// and nowhere else, so they stay internal rather than becoming public values whose only
+// callers are their own package.
+export type { TransitionProof } from './projections/proof.js';
 export {
   type AuthorshipFilter,
   type AuthorshipTally,

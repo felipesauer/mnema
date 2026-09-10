@@ -8,7 +8,6 @@
  */
 
 import type { Command } from 'commander';
-import { asWhen, itemLine } from '../presentation/items.js';
 import { here } from './context.js';
 import { onOneLine } from './on-one-line.js';
 import { reportRefusal } from './report.js';
@@ -25,6 +24,10 @@ export function registerTimeline(program: Command, wiring: Wiring): Declared {
     .action(async (id: string, opts: { json?: boolean }) => {
       const { anchorText } = await import('../anchors.js');
       const { runTimeline } = await import('../commands/timeline.js');
+      // Loaded when the verb runs, not while the program is being declared: this
+      // module reaches the chain for the reader that turns a move's fields into text,
+      // and a static import here would put that on the floor every invocation pays.
+      const { historyLine, saidLine } = await import('../presentation/occurrence.js');
       const result = runTimeline(here(), { id });
       if (!result.ok) {
         reportRefusal(wiring, result);
@@ -45,22 +48,15 @@ export function registerTimeline(program: Command, wiring: Wiring): Declared {
         return;
       }
       io.out(onOneLine`${id} — ${result.entries.length} event(s):`);
+      // One line per event — when, what kind, the role the queried entity appears
+      // by, and who authorized it — and under it, INDENTED, what that move said when
+      // it said anything. Both lines are composed in `presentation/occurrence.ts`,
+      // which is where a value that enters a line is collapsed; this layer hands over
+      // the values and prints what comes back.
       for (const entry of result.entries) {
-        io.out(
-          render(
-            itemLine([
-              // A whole instant leads every line here, and it is the widest column of
-              // the read — said as an instant, the kind and the role beside it become
-              // what a story reads as. Nothing else on the line is an id: the `who`
-              // is an identity written through its anchor, which is a NAME a reader is
-              // meant to read (see `anchors.ts`).
-              asWhen(entry.at),
-              entry.kind,
-              `[${entry.role}]`,
-              anchorText(result.anchors, entry.who),
-            ]),
-          ),
-        );
+        io.out(render(historyLine(entry, anchorText(result.anchors, entry.who))));
+        const said = saidLine(entry.event);
+        if (said !== undefined) io.out(render(said));
       }
     });
   return readsTheRecord(timeline);

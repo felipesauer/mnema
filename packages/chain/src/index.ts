@@ -212,6 +212,7 @@ export {
 } from './events/catalog.js';
 export type { Envelope, Which, Who } from './events/envelope.js';
 export { EventParseError, parseEvent, toCanonical, unreadableReason } from './events/parse.js';
+export { PROOF_FIELDS, proofFields, transitionProse } from './events/proof.js';
 export { catalogUpcasters } from './events/registry.js';
 export {
   type LatestVersions,

@@ -42,6 +42,7 @@
  */
 
 import type { RecordBody } from '@mnema/copilot';
+import type { TransitionProof } from '@mnema/core';
 import { type AnchorForms, anchorText } from '../anchors.js';
 import { oneLine } from '../one-line.js';
 import { consultedLine } from './consultation.js';
@@ -55,6 +56,37 @@ export interface RecordContext {
   readonly anchors: AnchorForms;
   /** How many runs consulted this pattern; absent for anything but a skill. */
   readonly consultations?: number;
+}
+
+/**
+ * WHAT EACH MOVE SAID — a second body, headed, below the facts.
+ *
+ * The prose a transition carried (`note`, `reason`, `feedback`, and the locators
+ * beside them) is the ONLY body a task ever has, and measured before this existed it
+ * came out of `mnema timeline --json` and out of nothing else: not this read, not
+ * `timeline` without the flag, not `search`. A fact in the signed chain that only a
+ * flag can reach is a fact written for a flag.
+ *
+ * IT IS A BODY AND NOT A FACT, and the precedent is three lines up: a decision's
+ * `alternatives` is already a second headed body, served whole below the blank line,
+ * because collapsing an argument into one line damages the one thing the read exists
+ * for. A note is the same kind of value — a paragraph somebody wrote — so it is served
+ * the same way. The line that NAMES each move stays a one-liner: the action and the
+ * instant are the record's own words and go through the same `fact` shape as everything
+ * above.
+ *
+ * ABSENT WHEN NOTHING SAID ANYTHING — no heading, no blank line — for the reason the
+ * `alternatives` section is absent: an empty section makes a reader wonder what was
+ * left out, and most transitions carry nothing at all.
+ */
+function movesSaid(proof: readonly TransitionProof[] | undefined): string[] {
+  if (proof === undefined || proof.length === 0) return [];
+  const lines = ['', 'What each move said:'];
+  for (const one of proof) {
+    lines.push(`${oneLine(one.action)} · ${oneLine(one.at)}`);
+    lines.push(one.said);
+  }
+  return lines;
 }
 
 /**
@@ -145,18 +177,21 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
         lines.push('Considered and turned down:');
         lines.push(body.record.alternatives);
       }
+      lines.push(...movesSaid(body.record.proof));
       break;
     case 'task':
       lines.push(render(statedFact(oneLine(body.record.title), asState(body.record.state))));
       lines.push(
         render(fact(`created ${body.record.createdAt} · updated ${body.record.updatedAt}`)),
       );
+      lines.push(...movesSaid(body.record.proof));
       break;
     case 'skill':
       lines.push(render(statedFact(oneLine(body.record.name), asState(body.record.state))));
       lines.push(render(fact(consultedLine(context.consultations ?? 0))));
       lines.push('');
       lines.push(body.record.body);
+      lines.push(...movesSaid(body.record.proof));
       break;
   }
   return aboveTheBody(lines, originFacts(render, body));

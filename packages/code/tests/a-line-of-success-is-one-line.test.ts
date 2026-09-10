@@ -378,11 +378,6 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'an alias (`<prefix>-<hex>`, derived from the id) and the uuid',
   },
-  'timeline.ts «[{}]» #1': {
-    verdict: 'minted',
-    why: 'the role an entity appears by — a closed word of this reading',
-  },
-
   // --- lines a value from outside reaches ----------------------------------------
   'antipatterns.ts «{}» #1': {
     verdict: 'collapsed',
@@ -602,7 +597,7 @@ describe('every line this wiring words is classified', () => {
     // 28 of these, and a walk that regressed to a line-wise pattern would land near it.
     expect(FOUND.files).toBeGreaterThan(35);
     expect(FOUND.calls).toBeGreaterThan(80);
-    expect(FOUND.sites.length).toBe(68);
+    expect(FOUND.sites.length).toBe(67);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -623,7 +618,7 @@ describe('every line this wiring words is classified', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(32);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(36);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(35);
     expect(FOUND.sites.filter((site) => site.tagged).length).toBe(32);
   });
 

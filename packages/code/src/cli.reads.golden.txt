@@ -346,8 +346,8 @@ $ mnema resume --actor <anchor> --json
 |     ],
 |     "goal": "set the record up",
 |     "outcome": "the record is set up",
-|     "endedAt": "<at:31>",
-|     "lastFactAt": "<at:30>",
+|     "endedAt": "<at:32>",
+|     "lastFactAt": "<at:31>",
 |     "thisSession": false
 |   },
 |   "focus": {
@@ -409,15 +409,6 @@ $ mnema search runbook --json
 | {
 |   "hits": [
 |     {
-|       "id": "<task-runbook>",
-|       "kind": "task",
-|       "scope": "public",
-|       "at": "<at:02>",
-|       "title": "Write the deploy runbook",
-|       "derived": false,
-|       "state": "IN_PROGRESS"
-|     },
-|     {
 |       "id": "<decision-wiki>",
 |       "kind": "decision",
 |       "scope": "public",
@@ -434,6 +425,15 @@ $ mnema search runbook --json
 |       "title": "Keep the runbook where the work is",
 |       "derived": false,
 |       "state": "proposed"
+|     },
+|     {
+|       "id": "<task-runbook>",
+|       "kind": "task",
+|       "scope": "public",
+|       "at": "<at:02>",
+|       "title": "Write the deploy runbook",
+|       "derived": false,
+|       "state": "IN_PROGRESS"
 |     },
 |     {
 |       "id": "<decision-runbook>",
@@ -481,6 +481,16 @@ $ mnema show <task-runbook>
 |   Write the deploy runbook (IN_PROGRESS)
 |   created <at:02> · updated <at:22>
 |   derived from <task-chore>
+|
+| What each move said:
+| complete · <at:18>
+| note: the first draft is in
+| reopen · <at:19>
+| reason: it has no rollback section
+| approve · <at:21>
+| note: the rollback section reads well
+| reopen · <at:22>
+| reason: the rollback step is wrong
 $ mnema show <task-runbook> --json
 | {
 |   "kind": "task",
@@ -494,7 +504,29 @@ $ mnema show <task-runbook> --json
 |     "title": "Write the deploy runbook",
 |     "state": "IN_PROGRESS",
 |     "createdAt": "<at:02>",
-|     "updatedAt": "<at:22>"
+|     "updatedAt": "<at:22>",
+|     "proof": [
+|       {
+|         "action": "complete",
+|         "at": "<at:18>",
+|         "said": "note: the first draft is in"
+|       },
+|       {
+|         "action": "reopen",
+|         "at": "<at:19>",
+|         "said": "reason: it has no rollback section"
+|       },
+|       {
+|         "action": "approve",
+|         "at": "<at:21>",
+|         "said": "note: the rollback section reads well"
+|       },
+|       {
+|         "action": "reopen",
+|         "at": "<at:22>",
+|         "said": "reason: the rollback step is wrong"
+|       }
+|     ]
 |   }
 | }
 $ mnema refs <decision-runbook>
@@ -580,7 +612,7 @@ $ mnema refs <decision-runbook> --json
 |       "from": "<decision-wiki>",
 |       "to": "<decision-runbook>",
 |       "role": "by",
-|       "at": "<at:23>",
+|       "at": "<at:24>",
 |       "kind": "decision.transitioned",
 |       "who": "<anchor>",
 |       "scope": "public"
@@ -699,7 +731,7 @@ $ mnema exposure --json
 |       "id": "<memory-unscreened>",
 |       "kind": "memory.captured",
 |       "scope": "public",
-|       "at": "<at:29>",
+|       "at": "<at:30>",
 |       "classes": [
 |         "github-token"
 |       ]
@@ -718,10 +750,14 @@ $ mnema timeline <task-runbook>
 |   <at:16>  task.transitioned  [subject]  <anchor-short>
 |   <at:17>  task.transitioned  [subject]  <anchor-short>
 |   <at:18>  task.transitioned  [subject]  <anchor-short>
+|   note: the first draft is in
 |   <at:19>  task.transitioned  [subject]  <anchor-short>
+|   reason: it has no rollback section
 |   <at:20>  task.transitioned  [subject]  <anchor-short>
 |   <at:21>  task.transitioned  [subject]  <anchor-short>
+|   note: the rollback section reads well
 |   <at:22>  task.transitioned  [subject]  <anchor-short>
+|   reason: the rollback step is wrong
 $ mnema timeline <task-runbook> --json
 | [
 |   {
@@ -1168,7 +1204,7 @@ $ mnema antipatterns --json
 |         {
 |           "v": 1,
 |           "kind": "decision.transitioned",
-|           "at": "<at:23>",
+|           "at": "<at:24>",
 |           "who": "<anchor>",
 |           "signerFp": "<fingerprint:01>",
 |           "subject": "<decision-wiki>",
@@ -1194,7 +1230,7 @@ $ mnema antipatterns --json
 |         {
 |           "v": 1,
 |           "kind": "skill.transitioned",
-|           "at": "<at:28>",
+|           "at": "<at:29>",
 |           "who": "<anchor>",
 |           "signerFp": "<fingerprint:01>",
 |           "subject": "<skill-fridays>",
@@ -1262,25 +1298,25 @@ $ mnema antipatterns --json
 |       {
 |         "skill": "<skill-slices>",
 |         "action": "review",
-|         "at": "<at:24>",
+|         "at": "<at:25>",
 |         "run": "<run-first>"
 |       },
 |       {
 |         "skill": "<skill-slices>",
 |         "action": "adopt",
-|         "at": "<at:25>",
-|         "run": "<run-first>"
-|       },
-|       {
-|         "skill": "<skill-fridays>",
-|         "action": "review",
 |         "at": "<at:26>",
 |         "run": "<run-first>"
 |       },
 |       {
 |         "skill": "<skill-fridays>",
-|         "action": "adopt",
+|         "action": "review",
 |         "at": "<at:27>",
+|         "run": "<run-first>"
+|       },
+|       {
+|         "skill": "<skill-fridays>",
+|         "action": "adopt",
+|         "at": "<at:28>",
 |         "run": "<run-first>"
 |       }
 |     ]
@@ -1317,7 +1353,7 @@ $ mnema status --actor <anchor> --json
 |       "agent": "agent-beta",
 |       "who": "<anchor>",
 |       "open": true,
-|       "startedAt": "<at:32>",
+|       "startedAt": "<at:33>",
 |       "wrote": [],
 |       "goal": "read the record back",
 |       "thisSession": false,
@@ -1331,7 +1367,7 @@ $ mnema status --actor <anchor> --json
 |           "agent": "agent-beta",
 |           "who": "<anchor>",
 |           "open": true,
-|           "startedAt": "<at:32>",
+|           "startedAt": "<at:33>",
 |           "wrote": [],
 |           "goal": "read the record back",
 |           "thisSession": false,
@@ -1412,7 +1448,7 @@ $ mnema focus --actor <anchor> --json
 |       "agent": "agent-beta",
 |       "who": "<anchor>",
 |       "open": true,
-|       "startedAt": "<at:32>",
+|       "startedAt": "<at:33>",
 |       "wrote": [],
 |       "goal": "read the record back",
 |       "thisSession": false,
@@ -1431,7 +1467,7 @@ $ mnema resume --actor <anchor> --json
 |     "agent": "agent-beta",
 |     "who": "<anchor>",
 |     "open": true,
-|     "startedAt": "<at:32>",
+|     "startedAt": "<at:33>",
 |     "wrote": [],
 |     "goal": "read the record back",
 |     "thisSession": false,
@@ -1445,7 +1481,7 @@ $ mnema resume --actor <anchor> --json
 |         "agent": "agent-beta",
 |         "who": "<anchor>",
 |         "open": true,
-|         "startedAt": "<at:32>",
+|         "startedAt": "<at:33>",
 |         "wrote": [],
 |         "goal": "read the record back",
 |         "thisSession": false,
@@ -1516,7 +1552,7 @@ $ mnema skills --json
 |     "state": "adopted",
 |     "scope": "public",
 |     "adoption": {
-|       "at": "<at:25>"
+|       "at": "<at:26>"
 |     },
 |     "selfAdopted": false
 |   },
@@ -1526,7 +1562,7 @@ $ mnema skills --json
 |     "state": "deprecated",
 |     "scope": "private",
 |     "adoption": {
-|       "at": "<at:27>"
+|       "at": "<at:28>"
 |     },
 |     "selfAdopted": false
 |   }
@@ -1581,8 +1617,8 @@ $ mnema switch
 |   edit-asks-a-person  on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
 $ mnema usage
 | 2 run(s):
-|   <run-second>  agent-beta      <at:32> → open  no transcript
-|   <run-first>  agent-alpha     <at:01> → <at:31>  no transcript
+|   <run-second>  agent-beta      <at:33> → open  no transcript
+|   <run-first>  agent-alpha     <at:01> → <at:32>  no transcript
 |
 | Read from <sandbox>/home/.claude/projects — 0 host session(s) there record work in this project.
 | These counts come from Claude Code's own transcripts on this machine, not from the record: nothing here is signed, `mnema verify` does not cover it, and the host deletes a transcript on a retention it decides. Which host session belongs to which run is this reading inferring it from two clocks, not a fact the record states. Nothing was written to produce it.
@@ -1597,6 +1633,16 @@ $ mnema show <task-runbook>
 |   Write the deploy runbook (IN_PROGRESS)
 |   created <at:02> · updated <at:22>
 |   derived from <task-chore>
+|
+| What each move said:
+| complete · <at:18>
+| note: the first draft is in
+| reopen · <at:19>
+| reason: it has no rollback section
+| approve · <at:21>
+| note: the rollback section reads well
+| reopen · <at:22>
+| reason: the rollback step is wrong
 $ mnema show <decision-runbook>
 | decision <decision-runbook>  ·  public
 |   ADR-1 — Keep the runbook in the record (accepted)
@@ -1606,18 +1652,32 @@ $ mnema show <decision-runbook>
 |
 | Considered and turned down:
 | a shared spreadsheet: it has no history and nobody reviews it
+|
+| What each move said:
+| accept · <at:23>
+| note: we agreed in review
 $ mnema show <decision-wiki>
 | decision <decision-wiki>  ·  public
 |   ADR-2 — Keep the runbook in the wiki (superseded)
 |   superseded by <decision-runbook>
 |
 | it is where we look
+|
+| What each move said:
+| supersede · <at:24>
+| reason: the record replaces it
 $ mnema show <skill-slices>
 | skill <skill-slices>  ·  public
 |   One slice per PR (adopted)
 |   never consulted
 |
 | A slice is one reviewable change with its tests.
+|
+| What each move said:
+| review · <at:25>
+| note: it reads well
+| adopt · <at:26>
+| note: we work this way already
 $ mnema show <memory-runbook>
 | memory <memory-runbook>  ·  public
 |   captured <at:07> by <anchor-short>

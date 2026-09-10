@@ -55,7 +55,13 @@ CREATE TABLE IF NOT EXISTS tasks (
   state      TEXT NOT NULL,
   -- 'at' of the birth (task.created), and of the last transition.
   created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
+  updated_at TEXT NOT NULL,
+  -- What each move of this task SAID: the transitions' own fields, as JSON, in
+  -- the chain's order. NULL when no transition ever carried proof — the absence is
+  -- the fact, so it is never '[]'. It is prose that lives nowhere else in the
+  -- cache: measured, a --note came out of "timeline --json" and out of nothing
+  -- else, so "show" could not print it and the index could not find it.
+  proof      TEXT
 ) STRICT;
 
 CREATE INDEX IF NOT EXISTS idx_tasks_state ON tasks (state);
@@ -112,7 +118,10 @@ CREATE TABLE IF NOT EXISTS decisions (
   supersedes    TEXT,
   -- 'at' of decision.recorded, and of the last transition.
   created_at    TEXT NOT NULL,
-  updated_at    TEXT NOT NULL
+  updated_at    TEXT NOT NULL,
+  -- What each move of this decision SAID: the transitions' own fields, as JSON,
+  -- in the chain's order. NULL when no transition ever carried proof.
+  proof         TEXT
 ) STRICT;
 
 CREATE INDEX IF NOT EXISTS idx_decisions_state ON decisions (state);
@@ -226,7 +235,10 @@ CREATE TABLE IF NOT EXISTS skills (
   adopted_by  TEXT,
   -- 'at' of skill.created, and of the last transition.
   created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
+  updated_at TEXT NOT NULL,
+  -- What each move of this pattern SAID: the transitions' own fields, as JSON,
+  -- in the chain's order. NULL when no transition ever carried proof.
+  proof      TEXT
 ) STRICT;
 
 -- Speeds the by-state queries: the 'adopted' skills are the live patterns the

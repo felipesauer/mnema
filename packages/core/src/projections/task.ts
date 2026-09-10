@@ -19,6 +19,7 @@
  */
 
 import type { CatalogEvent } from '@mnema/chain';
+import { proofOf, type TransitionProof } from './proof.js';
 
 /** Current projected state of one task. */
 export interface TaskProjection {
@@ -31,6 +32,12 @@ export interface TaskProjection {
   readonly createdAt: string;
   /** `at` of the last transition. */
   readonly updatedAt: string;
+  /**
+   * What each move of this task SAID, in the chain's own order — absent when no
+   * transition ever carried proof. See `projections/proof.ts` for why it is every
+   * move and not the last one.
+   */
+  readonly proof?: readonly TransitionProof[];
 }
 
 /** Mutable accumulator; existence and state are tracked separately, then joined. */
@@ -39,6 +46,7 @@ interface TaskAccumulator {
   createdAt?: string;
   state?: string;
   updatedAt?: string;
+  proof?: TransitionProof[];
 }
 
 /**
@@ -61,6 +69,11 @@ export function projectTasks(events: readonly CatalogEvent[]): Map<string, TaskP
       const entry = getOrInit(acc, event.subject);
       entry.state = event.payload.to;
       entry.updatedAt = event.at;
+      const said = proofOf(event);
+      if (said !== undefined) {
+        entry.proof ??= [];
+        entry.proof.push(said);
+      }
     }
   }
 
@@ -83,6 +96,7 @@ export function projectTasks(events: readonly CatalogEvent[]): Map<string, TaskP
       state: entry.state,
       createdAt: entry.createdAt,
       updatedAt: entry.updatedAt,
+      ...(entry.proof !== undefined ? { proof: entry.proof } : {}),
     });
   }
   return result;
