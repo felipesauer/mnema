@@ -128,8 +128,8 @@ describe('the address a proof names, on the surface a person reads', () => {
 
   it('does not tell its owner to come back and ask again', () => {
     // `ask again later` is advice, and repeating this act over an address the product
-    // will not contact resolves nothing — the eternal PENDING D18 rejected the
-    // four-host floor for, arriving one branch further in.
+    // will not contact resolves nothing — the eternal PENDING a fixed list of four hosts
+    // was rejected for, arriving one branch further in.
     expect(said).not.toContain('ask again later');
     expect(said).toContain('names could be asked — see below');
   });

@@ -291,10 +291,11 @@ export interface CompletedWitness {
    * ASK ABOUT. Once an address can be refused before it is contacted, `complete: false`
    * covers two different futures: a calendar that has nothing YET, which repeating the
    * act resolves, and a proof naming somewhere this machine will not go, which repeating
-   * the act cannot. D18 rejected a fixed floor of four hosts precisely for turning a
-   * legitimate proof into eternal PENDING `while the screen says to go back and ask
-   * again` — so a design that keeps that sentence for an address it will never ask has
-   * reproduced the thing it was chosen over. Zero with refusals on the list is that case.
+   * the act cannot. A fixed floor of four exact hosts was rejected for this layer
+   * precisely because it turns a legitimate proof into eternal PENDING while the screen
+   * says to go back and ask again — so a design that keeps that sentence for an address
+   * it will never ask has reproduced the thing it was chosen over. Zero with refusals on
+   * the list is that case.
    */
   readonly asked: number;
 }

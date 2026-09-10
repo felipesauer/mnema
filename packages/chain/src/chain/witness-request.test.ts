@@ -379,7 +379,7 @@ describe('the address a return visit was handed', () => {
   it('DOES follow a redirect that stays on the same host', async () => {
     // The promise the wildcard exists to keep, one layer down: an operator moving its
     // own path is ordinary maintenance, and refusing it would turn a legitimate proof
-    // into PENDING for ever — which is the outcome D18 rejected the four-host floor for.
+    // into PENDING for ever, which is the outcome a fixed list of four hosts was rejected for.
     const moved = `${CALENDARS[0]}/api/timestamp/moved`;
     const { fetch, sent } = stubbed((url) =>
       url === moved ? new Response(null, { status: 404 }) : redirected(moved),
@@ -462,7 +462,7 @@ describe('what the rule allows, read off the rule', () => {
     expect(DEFAULT_CALENDARS.length).toBeGreaterThan(0);
   });
 
-  it('carries the operator D18 named, which no default of this package is at', () => {
+  it('carries an operator no default of this package is at, so the list is not the defaults', () => {
     expect(WITNESS_OPERATOR_DOMAINS).toContain('eternitywall.com');
     const defaults = DEFAULT_CALENDARS.map((one) => new URL(one).hostname);
     expect(defaults.some((host) => host.endsWith('eternitywall.com'))).toBe(false);

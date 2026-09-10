@@ -436,7 +436,7 @@ describe('going back for what has not confirmed', () => {
     // AND THE LINE DOES NOT GIVE ADVICE THAT CANNOT COME TRUE. `ask again later` is what
     // this act says about a calendar that has nothing yet, and repeating it resolves
     // that; repeating it over an address this machine will not contact resolves nothing,
-    // which is the eternal PENDING D18 rejected the four-host floor for.
+    // which is the eternal PENDING a fixed list of four hosts was rejected for.
     expect(act.outcomes.map((one) => one.detail)).toEqual([
       `no address checkpoint ${checkpointToWitness({ root: publicRoot(ctx) }, tailOf(publicRoot(ctx)))} names could be asked — see below`,
     ]);
