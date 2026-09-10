@@ -21,6 +21,11 @@
  * No id, no title, no body, no count, and no way back: the calendars see a hash of a
  * hash.
  *
+ * WHO IS ASKED IS NOT THE PROOF'S TO DECIDE, and that is a separate claim from the one
+ * above. A return visit reads its address off a file, so a `.ots` anybody can write is
+ * an instruction about who this machine talks to; {@link refuseCalendarAddress} is the
+ * one place that decides, and {@link WITNESS_OPERATOR_DOMAINS} is what it decides by.
+ *
  * ASYNCHRONY IS NOT AN INCONVENIENCE HERE, IT IS THE MECHANISM. A calendar answers
  * immediately with a promise; the promise becomes a proof when a Bitcoin block
  * carries the aggregate root, which is minutes to hours later. {@link stampCheckpoint}
@@ -72,16 +77,88 @@ export const DEFAULT_CALENDARS: readonly string[] = [
  */
 export const DEFAULT_BLOCK_SOURCE = 'https://blockstream.info/api';
 
+/**
+ * The operator domains a calendar address may name — WILDCARD, per label, not a host list.
+ *
+ * IT EXISTS BECAUSE ONE OF THE TWO ACTS TAKES ITS ADDRESS FROM A FILE. What
+ * {@link stampCheckpoint} asks is chosen by whoever owns the machine; what
+ * {@link completeWitness} asks is written in the proof it was handed, and a proof is a
+ * file a project can receive. Measured on the built product before this existed: a
+ * forged `.ots` naming `http://127.0.0.1:<port>/attacker-chosen` was contacted, scheme,
+ * host, port and path all intact, and the act reported no refusal at all — so the verb
+ * was a network probe anybody could aim by sending somebody a file, and its owner could
+ * not tell. What travels is still a hash of a hash (see the head of this module); what
+ * leaked was CONTACT.
+ *
+ * BY OPERATOR AND NOT BY HOST, and the difference is a promise this layer can keep.
+ * These calendars are named `alice`, `bob` and `finney` today and nobody outside the
+ * operators decides what they are named tomorrow; a list of four exact hosts would turn a
+ * legitimate proof taken by a fifth into PENDING for ever, while the reading tells its
+ * owner to go back and ask again. A label boundary is required — `endsWith('.' + domain)`
+ * — so `notopentimestamps.org` does not pass for being a suffix, and
+ * `opentimestamps.org.evil.test` does not pass for containing one.
+ *
+ * WHAT IT DOES NOT COVER, said out loud rather than implied: an operator who is asked
+ * still learns that this machine holds a record and when it asked, and a host inside
+ * these domains can still be pointed anywhere its own DNS says. This shuts the door on
+ * the file choosing the address, and on nothing else.
+ */
+export const WITNESS_OPERATOR_DOMAINS: readonly string[] = [
+  'opentimestamps.org',
+  'eternitywall.com',
+  'catallaxy.com',
+];
+
+/**
+ * Whether an address a proof named may be asked, and if not, why — in the words the
+ * refusal carries.
+ *
+ * THE ONE DOOR. Both places that could contact somebody on this path go through it: the
+ * URI a pending attestation carries, and the destination a calendar redirects to. Two
+ * readings of "may we talk to this" is the shape that produces a rule with a hole in one
+ * of them, so there is one.
+ */
+export function refuseCalendarAddress(uri: string): string | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(uri);
+  } catch {
+    return 'is not an address';
+  }
+  // NOT https IS A REFUSAL AND NOT A DOWNGRADE, because the alternative is this machine
+  // announcing over cleartext, to whoever is on the path, that it holds a record.
+  if (parsed.protocol !== 'https:') return `${parsed.protocol}// is not https`;
+  // The trailing dot is the same name to DNS and a different string to `endsWith`.
+  const host = parsed.hostname.toLowerCase().replace(/\.$/, '');
+  const operator = WITNESS_OPERATOR_DOMAINS.find(
+    (domain) => host === domain || host.endsWith(`.${domain}`),
+  );
+  if (operator === undefined) return `${host} is not a timestamp calendar operator`;
+  return null;
+}
+
 /** How this module reaches the network — injected so a test drives it without one. */
 export type Fetcher = (url: string, init?: RequestInit) => Promise<Response>;
+
+/**
+ * WHY an address is on the refusal list — the two are different news to a reader.
+ *
+ * `unanswered` is somebody else's fault and it is ordinary: several calendars are asked
+ * precisely so one of them can be down. `not-asked` is THIS machine's own act — the
+ * address was refused before a packet left — and it is the one a reader has to be able to
+ * tell apart, because "the calendar is down, ask again later" and "your proof names
+ * somewhere I will not go" call for opposite responses.
+ */
+export type WitnessRefusalKind = 'unanswered' | 'not-asked';
 
 /** What a calendar or a block source refused, named rather than thrown. */
 export interface WitnessRefusal {
   readonly where: string;
   readonly reason: string;
+  readonly kind: WitnessRefusalKind;
 }
 
-/** The bytes of a proof, and what would not answer while it was made. */
+/** The bytes of a proof, and what would not answer or was not asked while it was made. */
 export interface StampedWitness {
   readonly proof: Buffer;
   readonly refusals: readonly WitnessRefusal[];
@@ -92,10 +169,22 @@ export interface StampedWitness {
  *
  * IT HAS NO CALENDARS, AND THE ABSENCE IS THE TYPE DOING THE ARGUING. A return visit
  * does not pick who to ask: {@link upgradeNode} walks the proof's own pending
- * attestations and each one carries the URI of the calendar that took it, so the
- * address is the record's rather than the caller's. While the two acts shared one
- * shape, a caller could hand this one a list of calendars and the compiler had nothing
- * to say — and one did. `mnema witness upgrade --calendar` was a public option whose
+ * attestations and each one carries the URI of the calendar that took it.
+ *
+ * THIS COMMENT USED TO FINISH THAT SENTENCE WITH `so the address is the record's rather
+ * than the caller's`, AND IT ARGUED THE DEFECT AS THE DESIGN. The mechanism it describes
+ * is exactly right and the conclusion is backwards: a record can be a file somebody sent
+ * you, so "the record's rather than the caller's" means the address belongs to whoever
+ * wrote the file — and the caller, who owns the machine, has no say. Measured on the
+ * built product: a forged proof aimed the verb at a chosen host and port, the redirect it
+ * answered with was followed to a second host, and both times the act reported no refusal.
+ * Having no calendars in this shape is still right, for the reason the rest of this
+ * comment gives; it is just not a reason to trust the file. {@link refuseCalendarAddress}
+ * is what decides now, and the absence below is about the CALLER not choosing, never
+ * about the file being allowed to.
+ *
+ * While the two acts shared one shape, a caller could hand this one a list of calendars
+ * and the compiler had nothing to say — and one did. `mnema witness upgrade --calendar` was a public option whose
  * value was carried through three layers into this parameter and read by nothing, while
  * its help said `the calendars to ask, when the defaults are not the ones used`; there
  * are no defaults on this path, because there is no choice on this path. The option is
@@ -163,10 +252,17 @@ export async function stampCheckpoint(
       steps.push({
         op: 'append',
         arg: nonce,
-        next: { attestations: [], steps: [{ op: 'sha256', next: parseOtsTimestamp(body) }] },
+        next: {
+          attestations: [],
+          steps: [{ op: 'sha256', next: parseOtsTimestamp(body) }],
+        },
       });
     } catch (error) {
-      refusals.push({ where: calendar, reason: (error as Error).message });
+      refusals.push({
+        where: calendar,
+        reason: (error as Error).message,
+        kind: 'unanswered',
+      });
     }
   }
   if (steps.length === 0) {
@@ -174,7 +270,10 @@ export async function stampCheckpoint(
       `witness: no calendar answered (${refusals.map((r) => `${r.where}: ${r.reason}`).join('; ')})`,
     );
   }
-  return { proof: serializeOtsProof(digest, { attestations: [], steps }), refusals };
+  return {
+    proof: serializeOtsProof(digest, { attestations: [], steps }),
+    refusals,
+  };
 }
 
 /** A proof after a return visit: its bytes, the headers it now needs, what refused. */
@@ -185,6 +284,19 @@ export interface CompletedWitness {
   readonly refusals: readonly WitnessRefusal[];
   /** Whether a Bitcoin attestation is now reachable with a header to check it. */
   readonly complete: boolean;
+  /**
+   * How many of the proof's open requests were actually put to a calendar.
+   *
+   * IT EXISTS SO A CALLER CANNOT SAY `ask again later` ABOUT A PROOF NOBODY WILL EVER
+   * ASK ABOUT. Once an address can be refused before it is contacted, `complete: false`
+   * covers two different futures: a calendar that has nothing YET, which repeating the
+   * act resolves, and a proof naming somewhere this machine will not go, which repeating
+   * the act cannot. D18 rejected a fixed floor of four hosts precisely for turning a
+   * legitimate proof into eternal PENDING `while the screen says to go back and ask
+   * again` — so a design that keeps that sentence for an address it will never ask has
+   * reproduced the thing it was chosen over. Zero with refusals on the list is that case.
+   */
+  readonly asked: number;
 }
 
 /**
@@ -202,8 +314,9 @@ export async function completeWitness(
 ): Promise<CompletedWitness> {
   const call = network.fetch ?? fetch;
   const refusals: WitnessRefusal[] = [];
+  const asked: string[] = [];
   const proof = parseOtsProof(proofBytes);
-  const upgraded = await upgradeNode(proof.timestamp, proof.digest, call, refusals);
+  const upgraded = await upgradeNode(proof.timestamp, proof.digest, call, refusals, asked);
   const after: OtsProof = { ...proof, timestamp: upgraded };
   const headers = new Map<number, Buffer>();
   for (const { attestation } of reachedAttestations(after)) {
@@ -216,6 +329,7 @@ export async function completeWitness(
     headers,
     refusals,
     complete: headers.size > 0,
+    asked: asked.length,
   };
 }
 
@@ -233,11 +347,12 @@ async function upgradeNode(
   message: Buffer,
   call: Fetcher,
   refusals: WitnessRefusal[],
+  asked: string[],
 ): Promise<OtsTimestamp> {
   const steps: OtsTimestamp['steps'][number][] = [];
   for (const step of node.steps) {
     const { next, ...op } = step;
-    const applied = await upgradeNode(next, applyOtsOp(op, message), call, refusals);
+    const applied = await upgradeNode(next, applyOtsOp(op, message), call, refusals, asked);
     steps.push({ ...op, next: applied } as OtsTimestamp['steps'][number]);
   }
   const attestations = [...node.attestations];
@@ -249,7 +364,7 @@ async function upgradeNode(
     // every time anybody runs the verb — measured here as a proof that went from
     // four attestations to six on the second pass over the same bytes.
     if (reachesBitcoin({ attestations, steps })) continue;
-    const answer = await askCalendar(attestation.uri, message, call, refusals);
+    const answer = await askCalendar(attestation.uri, message, call, refusals, asked);
     if (answer === null) continue;
     steps.push(...answer.steps);
     attestations.push(...answer.attestations);
@@ -265,26 +380,92 @@ function reachesBitcoin(node: OtsTimestamp): boolean {
   );
 }
 
+/**
+ * How many redirects one calendar may send this act through before it gives up.
+ *
+ * A number and not `0`, because a calendar moving its own path — a trailing slash, an
+ * `/api` prefix — is ordinary maintenance and refusing it would break a legitimate
+ * operator for no gain. Every hop is checked, so the count bounds work rather than trust.
+ */
+const REDIRECT_LIMIT = 3;
+
 /** Asks one calendar what became of a commitment; null when it still has nothing. */
 async function askCalendar(
   uri: string,
   message: Buffer,
   call: Fetcher,
   refusals: WitnessRefusal[],
+  asked: string[],
 ): Promise<OtsTimestamp | null> {
+  // THE ADDRESS CAME OUT OF A FILE, so it is asked about before it is asked.
+  const refused = refuseCalendarAddress(uri);
+  if (refused !== null) {
+    refusals.push({ where: uri, reason: refused, kind: 'not-asked' });
+    return null;
+  }
+  asked.push(uri);
   try {
-    const response = await call(`${uri}/timestamp/${message.toString('hex')}`, {
-      headers: { Accept: OTS_HEADERS.Accept as string },
-    });
+    const response = await ask(`${uri}/timestamp/${message.toString('hex')}`, call, refusals);
+    if (response === null) return null;
     // Not yet aggregated into a block is the ORDINARY answer, not a refusal: it is
     // what every proof gets for its first hour or so of life.
     if (response.status === 404) return null;
     if (!response.ok) throw new Error(`answered ${response.status}`);
     return parseOtsTimestamp(Buffer.from(await response.arrayBuffer()));
   } catch (error) {
-    refusals.push({ where: uri, reason: (error as Error).message });
+    refusals.push({
+      where: uri,
+      reason: (error as Error).message,
+      kind: 'unanswered',
+    });
     return null;
   }
+}
+
+/**
+ * One request to an address already allowed, following a redirect only while it stays
+ * where it was — `null` once a hop was refused, which is already on the list.
+ *
+ * THE REDIRECT IS THE HALF THAT MAKES THE ALLOWLIST WORTH HAVING. Without it the check
+ * above is ornamental: an allowed host answers `302` and the act follows it anywhere,
+ * which is the second thing measured on the built product — a first host was asked, and
+ * the machine went on to a second one nothing had ever named. `redirect: 'manual'` is
+ * what stops the runtime from doing it before this code sees the answer; the hop is then
+ * held to the SAME host and to {@link refuseCalendarAddress}, so a same-host downgrade to
+ * cleartext is refused too.
+ */
+async function ask(
+  url: string,
+  call: Fetcher,
+  refusals: WitnessRefusal[],
+): Promise<Response | null> {
+  let at = url;
+  for (let hop = 0; hop <= REDIRECT_LIMIT; hop += 1) {
+    const response = await call(at, {
+      headers: { Accept: OTS_HEADERS.Accept as string },
+      redirect: 'manual',
+    });
+    if (response.status < 300 || response.status >= 400) return response;
+    const location = response.headers.get('location');
+    // A 3xx with nowhere to go is the calendar's own answer, and `!ok` words it below.
+    if (location === null || location === '') return response;
+    let to: URL;
+    try {
+      to = new URL(location, at);
+    } catch {
+      return response;
+    }
+    const elsewhere = to.host !== new URL(at).host;
+    const refused = elsewhere
+      ? 'is a different host from the one the proof named'
+      : refuseCalendarAddress(to.href);
+    if (refused !== null) {
+      refusals.push({ where: to.href, reason: refused, kind: 'not-asked' });
+      return null;
+    }
+    at = to.href;
+  }
+  throw new Error(`redirected more than ${REDIRECT_LIMIT} times`);
 }
 
 /** Fetches one block's 80-byte header, or names what would not answer. */
@@ -306,7 +487,11 @@ async function blockHeader(
     if (header.length !== BLOCK_HEADER_BYTES) throw new Error('did not answer with a header');
     return header;
   } catch (error) {
-    refusals.push({ where: `${base} (block ${height})`, reason: (error as Error).message });
+    refusals.push({
+      where: `${base} (block ${height})`,
+      reason: (error as Error).message,
+      kind: 'unanswered',
+    });
     return null;
   }
 }

@@ -149,8 +149,15 @@ export function registerWitness(program: Command, wiring: Wiring): Declared {
         "— it hashes to that block's id — so a substituted one is not a matter of trust.",
         '',
         'There is no --calendar here, and the reason is that there is nothing to choose:',
-        'every request the walk finds NAMES the calendar that took it, and that is the one',
-        'asked. Only `stamp` picks, because only `stamp` sends something nobody holds yet.',
+        'every request the walk finds NAMES the calendar that took it. Only `stamp` picks,',
+        'because only `stamp` sends something nobody holds yet.',
+        '',
+        'The address a request names is checked before it is asked, because it was read off',
+        'a FILE and a proof can arrive from anywhere: it has to be an https address at one',
+        'of the public timestamp operators, and a redirect is followed only while it stays',
+        'on the same host. Anything else is reported by name and not contacted — a separate',
+        'line from the one a calendar that is down gets, because they call for opposite',
+        'responses.',
       ].join('\n'),
     )
     .option('--global', GLOBAL_HELP, false)
@@ -167,7 +174,7 @@ export function registerWitness(program: Command, wiring: Wiring): Declared {
 }
 
 /**
- * What an act prints: a line per tail it touched, then whoever would not answer.
+ * What an act prints: a line per tail it touched, then every address it did not reach.
  *
  * It loads the state's word rather than spelling one, and it loads it INSIDE the
  * action for the reason every other verb here loads its work there: an eager import
@@ -179,7 +186,7 @@ async function report(
   act: Awaited<ReturnType<typeof import('../commands/witness.js').runWitnessStamp>>,
 ): Promise<void> {
   const { io, render } = wiring;
-  const { witnessWord } = await import('../presentation/witness.js');
+  const { witnessRefusalWord, witnessWord } = await import('../presentation/witness.js');
   if (!act.ok) {
     reportRefusal(wiring, act, {});
     return;
@@ -208,10 +215,22 @@ async function report(
     );
     // Whoever would not answer is NAMED rather than counted: several calendars are
     // asked precisely so one of them can be down, and a reader deciding whether that
-    // matters needs to know which one it was. Both halves come from outside — a URL
-    // the caller typed, and somebody else's error message.
+    // matters needs to know which one it was.
+    //
+    // THE VERB IS THE KIND'S, AND THIS COMMENT USED TO GET THE ORIGIN WRONG. It said
+    // `both halves come from outside — a URL the caller typed, and somebody else's error
+    // message`, which is true of `stamp` and false of the act next to it: `upgrade` takes
+    // no address at all, and every URL it names was read off a proof FILE. That is why
+    // there are two verbs now — `did not answer` for a calendar that is down, and the
+    // other for an address this machine declined to contact — and why the value is still
+    // collapsed either way. The kind is a closed word of this package; the two ends are
+    // still outside.
     for (const refusal of outcome.refusals) {
-      io.out(render(fact(onOneLine`${refusal.where} did not answer: ${refusal.reason}`)));
+      io.out(
+        render(
+          fact(onOneLine`${refusal.where} ${witnessRefusalWord(refusal.kind)}: ${refusal.reason}`),
+        ),
+      );
     }
   }
 }

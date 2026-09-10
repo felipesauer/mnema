@@ -257,17 +257,18 @@ export interface WitnessOutcome {
    * What the act did, in one word a report can branch on.
    *
    * `failed` is the act's own, and it is not {@link WitnessOutcome.refusals}: a refusal
-   * names WHO would not answer, which is ordinary and expected — several calendars are
-   * asked precisely so one of them can be down. `failed` says this one proof could not be
-   * carried through at all, and it exists so that saying so does not mean abandoning the
-   * proofs beside it.
+   * names an address that was not reached — either because it would not answer, which is
+   * ordinary and expected (several calendars are asked precisely so one of them can be
+   * down), or because this machine declined to ask it at all, which its `kind` says.
+   * `failed` says this one proof could not be carried through at all, and it exists so
+   * that saying so does not mean abandoning the proofs beside it.
    */
   readonly did: 'stamped' | 'completed' | 'waiting' | 'skipped' | 'failed';
   /** Why, in the words the report prints. */
   readonly detail: string;
   /** Where the tail stands after the act. */
   readonly reading: WitnessReading;
-  /** Whoever would not answer while this tail was worked on. */
+  /** Every address not reached while this tail was worked on, and why — see `kind`. */
   readonly refusals: readonly WitnessRefusal[];
 }
 
@@ -447,7 +448,12 @@ async function upgradeTail(
         confirmed ? 'completed' : 'waiting',
         confirmed
           ? `the attestation over checkpoint ${at} has confirmed`
-          : `no calendar has a block for checkpoint ${at} yet — ask again later`,
+          : done.asked === 0
+            ? // `ask again later` IS ADVICE, and advice about an address this machine
+              // will not contact is advice that never comes true. When nothing was put
+              // to anybody the line says so, and the addresses are named underneath.
+              `no address checkpoint ${at} names could be asked — see below`
+            : `no calendar has a block for checkpoint ${at} yet — ask again later`,
         after,
       ),
       refusals: done.refusals,

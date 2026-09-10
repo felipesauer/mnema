@@ -136,9 +136,12 @@ export {
 export {
   completeWitness,
   type Fetcher,
+  refuseCalendarAddress,
   stampCheckpoint,
+  WITNESS_OPERATOR_DOMAINS,
   type WitnessNetwork,
   type WitnessRefusal,
+  type WitnessRefusalKind,
   type WitnessReturnVisit,
 } from './chain/witness-request.js';
 export {

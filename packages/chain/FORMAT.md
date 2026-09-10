@@ -593,6 +593,18 @@ is with, when the proof names one — and it still raises no level and satisfies
 `packages/chain/src/chain/witnessed-then-written.test.ts`,
 `packages/code/src/commands/witness.test.ts`).
 
+**The URI a `pending` leaf carries is an address, and the format does not vouch for
+it.** It is `varbytes` written by whoever answered the original request, so a `.ots` — a
+file that travels, and that any client will hand you — names who a return visit talks to
+next. Reading it is this format's business; going there is not, and the act that does go
+holds it to an https host at a public timestamp operator, refusing a redirect that leaves
+that host (`packages/chain/src/chain/witness-request.ts`,
+`packages/chain/src/chain/witness-request.test.ts`). Measured on the built product before
+that check existed: a forged proof aimed the act at a chosen host and port over cleartext,
+its redirect was followed to a second host, and the act reported no refusal either time.
+Nothing about the bytes changed — the value on the path is still a hash of a hash — so
+what this closes is contact and not disclosure.
+
 **The attestations accumulate, and a reader asks all of them.** Nothing in this format
 removes a witness file: stamp today, write tomorrow, and yesterday's `.ots` stays under
 yesterday's digest, still proving that that checkpoint existed at that instant. So a
