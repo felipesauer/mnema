@@ -44,7 +44,7 @@ import { openSession, type Session } from '../src/mcp/session.js';
 import { runGoverningRulesTool } from '../src/mcp/tools.js';
 
 /**
- * The gate's three numbers, which every case in this file must read as zero.
+ * The gate's four numbers, which every case in this file must read as zero.
  *
  * Named rather than spelled at each assertion, and it is a claim rather than boilerplate:
  * this file is about the relation that INFORMS, so the relation that STOPS somebody has
@@ -52,7 +52,7 @@ import { runGoverningRulesTool } from '../src/mcp/tools.js';
  * walks had started sharing a list. The gate's own cases are with the charge
  * (`the-record-asks-for-a-person.test.ts`).
  */
-const NO_GATE = { matching: 0, addressed: 0, stale: 0 };
+const NO_GATE = { matching: 0, addressed: 0, stale: 0, unresolved: 0 };
 
 let sandbox: string;
 let repo: string;
@@ -243,6 +243,7 @@ describe('a path survives the write half the product already had', () => {
       matching: 0,
       governing: 1,
       stale: 1,
+      unresolved: 0,
       asks: NO_GATE,
     });
   });
@@ -276,14 +277,18 @@ describe('the reading answers, and charges nothing', () => {
     expect(reading.counts.governing).toBe(1);
   });
 
-  it('prints three numbers even when all three are zero', async () => {
+  it('prints four numbers even when all four are zero', async () => {
     const shown = await page('src/anything.ts');
-    expect(shown).toContain('0 govern this path · 0 address this project · 0 address nothing here');
+    expect(shown).toContain(
+      '0 govern this path · 0 address this project · 0 address nothing here · ' +
+        '0 name a rule not here',
+    );
     const reading = await reported('src/anything.ts');
     expect(reading.counts).toEqual({
       matching: 0,
       governing: 0,
       stale: 0,
+      unresolved: 0,
       asks: NO_GATE,
     });
   });
@@ -336,6 +341,7 @@ describe('the reading answers, and charges nothing', () => {
       matching: 0,
       governing: 1,
       stale: 0,
+      unresolved: 0,
       asks: NO_GATE,
     });
   });
@@ -356,6 +362,7 @@ describe('the reading answers, and charges nothing', () => {
       matching: 1,
       governing: 2,
       stale: 1,
+      unresolved: 0,
       asks: NO_GATE,
     });
     expect(reading.stale.map((one) => one.address)).toEqual(['dangling']);
@@ -373,6 +380,7 @@ describe('the reading answers, and charges nothing', () => {
       matching: 1,
       governing: 2,
       stale: 1,
+      unresolved: 0,
       asks: NO_GATE,
     });
     await page('src/file.ts');
@@ -423,6 +431,7 @@ describe('both surfaces answer out of the same derivation', () => {
       matching: 2,
       governing: 3,
       stale: 1,
+      unresolved: 0,
       asks: NO_GATE,
     });
   });

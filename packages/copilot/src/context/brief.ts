@@ -344,6 +344,20 @@ function channelPair(
  * the difference that matters: a link whose subject is a superseded decision, or a task,
  * or an id no tree here holds, is a link this document says nothing about. Counting those
  * would tell the reader to expect a rule at an edit that nothing will ever push.
+ *
+ * THAT CLAUSE WAS THE ONLY READING OF THE PRODUCT THAT GOT IT RIGHT, and it is worth
+ * saying so here because it looks like a detail. Measured in a clone over a record holding
+ * two `governs` edges written into the PUBLIC tree whose subjects live in the PRIVATE one:
+ * `mnema rules` and `governing_rules` both answered `3 govern this path` where ONE
+ * governed, while this number said one. The counting readings now ask
+ * `intelligence/governance.ts` whether an address names a rule they can READ, and report
+ * the unreadable ones as their own class.
+ *
+ * THIS COUNT IS STILL A SECOND STATEMENT OF THAT RULE, and it stays one deliberately: it
+ * counts RULES and they count ADDRESSES, so one rule addressed at two paths is one here
+ * and two there. Routing it through their function would change what this number MEANS.
+ * What is shared is the question, and the answer agrees because both are derived from
+ * whether the subject resolves at all.
  */
 function countAddressed(
   travels: readonly ProjectionCache[],

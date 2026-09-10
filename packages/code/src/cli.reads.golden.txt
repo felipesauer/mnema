@@ -60,35 +60,39 @@ $ mnema refs no-such-id --direction out --depth 1
 |   nothing references it, and it references nothing.
 $ mnema rules docs/runbook/rollback.md
 | docs/runbook/rollback.md  ·  in this project
-|   0 govern this path · 0 address this project · 0 address nothing here
-|   0 ask for a person here · 0 ask in this project · 0 ask about nothing here
+|   0 govern this path · 0 address this project · 0 address nothing here · 0 name a rule not here
+|   0 ask for a person here · 0 ask in this project · 0 ask about nothing here · 0 name a rule not here
 $ mnema rules docs/runbook/rollback.md --json
 | {
 |   "path": "<sandbox>/project/docs/runbook/rollback.md",
 |   "relative": "docs/runbook/rollback.md",
 |   "rules": [],
 |   "stale": [],
+|   "unresolved": [],
 |   "asks": [],
 |   "asksStale": [],
+|   "asksUnresolved": [],
 |   "counts": {
 |     "matching": 0,
 |     "governing": 0,
 |     "stale": 0,
+|     "unresolved": 0,
 |     "asks": {
 |       "matching": 0,
 |       "addressed": 0,
-|       "stale": 0
+|       "stale": 0,
+|       "unresolved": 0
 |     }
 |   }
 | }
 $ mnema rules .
 | .  ·  in this project
-|   0 govern this path · 0 address this project · 0 address nothing here
-|   0 ask for a person here · 0 ask in this project · 0 ask about nothing here
+|   0 govern this path · 0 address this project · 0 address nothing here · 0 name a rule not here
+|   0 ask for a person here · 0 ask in this project · 0 ask about nothing here · 0 name a rule not here
 $ mnema rules /elsewhere/src/app.ts
 | /elsewhere/src/app.ts  ·  outside this project
-|   0 govern this path · 0 address this project · 0 address nothing here
-|   0 ask for a person here · 0 ask in this project · 0 ask about nothing here
+|   0 govern this path · 0 address this project · 0 address nothing here · 0 name a rule not here
+|   0 ask for a person here · 0 ask in this project · 0 ask about nothing here · 0 name a rule not here
 $ mnema exposure
 | Nothing recognizable in 2 record(s).
 |   Read here: this project’s trees and the machine-global tree — no other project.
@@ -647,8 +651,8 @@ $ mnema refs <task-runbook> --direction out --depth 1
 |   → target:derived-from  <task-chore> (task)  [public]
 $ mnema rules docs/runbook/rollback.md
 | docs/runbook/rollback.md  ·  in this project
-|   1 govern this path · 2 address this project · 1 address nothing here
-|   0 ask for a person here · 0 ask in this project · 0 ask about nothing here
+|   1 govern this path · 2 address this project · 1 address nothing here · 0 name a rule not here
+|   0 ask for a person here · 0 ask in this project · 0 ask about nothing here · 0 name a rule not here
 |
 | governing this path, most specific first (1)
 |   docs/runbook  Keep the runbook in the record (accepted)  <decision-runbook>  [public]
@@ -691,30 +695,34 @@ $ mnema rules docs/runbook/rollback.md --json
 |       "at": "<at:14>"
 |     }
 |   ],
+|   "unresolved": [],
 |   "asks": [],
 |   "asksStale": [],
+|   "asksUnresolved": [],
 |   "counts": {
 |     "matching": 1,
 |     "governing": 2,
 |     "stale": 1,
+|     "unresolved": 0,
 |     "asks": {
 |       "matching": 0,
 |       "addressed": 0,
-|       "stale": 0
+|       "stale": 0,
+|       "unresolved": 0
 |     }
 |   }
 | }
 $ mnema rules .
 | .  ·  in this project
-|   0 govern this path · 2 address this project · 1 address nothing here
-|   0 ask for a person here · 0 ask in this project · 0 ask about nothing here
+|   0 govern this path · 2 address this project · 1 address nothing here · 0 name a rule not here
+|   0 ask for a person here · 0 ask in this project · 0 ask about nothing here · 0 name a rule not here
 |
 | addressing nothing in the working tree (1)
 |   docs/gone-away  Keep the runbook in the record (accepted)  <decision-runbook>  [public]
 $ mnema rules /elsewhere/src/app.ts
 | /elsewhere/src/app.ts  ·  outside this project
-|   0 govern this path · 2 address this project · 1 address nothing here
-|   0 ask for a person here · 0 ask in this project · 0 ask about nothing here
+|   0 govern this path · 2 address this project · 1 address nothing here · 0 name a rule not here
+|   0 ask for a person here · 0 ask in this project · 0 ask about nothing here · 0 name a rule not here
 |
 | addressing nothing in the working tree (1)
 |   docs/gone-away  Keep the runbook in the record (accepted)  <decision-runbook>  [public]

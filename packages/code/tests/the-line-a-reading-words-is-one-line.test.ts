@@ -713,9 +713,13 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'how many addresses the project’s record holds at all — a count',
   },
-  'rules.ts «{} address nothing here» counts.stale #1': {
+  'rules.ts «{} address nothing here · {} name a rule not here» counts.stale #1': {
     verdict: 'minted',
     why: 'how many addresses name nothing in the working tree — a count',
+  },
+  'rules.ts «{} address nothing here · {} name a rule not here» counts.unresolved #1': {
+    verdict: 'minted',
+    why: 'how many addresses name a rule no tree here holds — a count, and the one that used to be folded into the number beside it and read as rules that govern',
   },
   'rules.ts «{} ask for a person here · {} ask in » counts.asks.matching #1': {
     verdict: 'minted',
@@ -725,9 +729,13 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'how many gate addresses the project’s record holds at all — a count',
   },
-  'rules.ts «this project · {} ask about nothing here» counts.asks.stale #1': {
+  'rules.ts «this project · {} ask about nothing here · » counts.asks.stale #1': {
     verdict: 'minted',
     why: 'how many gate addresses name nothing in the working tree — a count, and the one that says a gate stopped closing in silence',
+  },
+  'rules.ts «{} name a rule not here» counts.asks.unresolved #1': {
+    verdict: 'minted',
+    why: 'how many gate addresses name a rule no tree here holds — a gate counted from an address nobody can read would say a write is watched by a rule a reader cannot open',
   },
   'rules.ts «{} ({})» heading #1': {
     verdict: 'minted',
@@ -1342,7 +1350,7 @@ describe('every value this layer puts on a line is classified', () => {
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
     expect(FOUND.builders.length).toBeGreaterThan(10);
-    expect(FOUND.sites.length).toBe(212);
+    expect(FOUND.sites.length).toBe(214);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1364,7 +1372,7 @@ describe('every value this layer puts on a line is classified', () => {
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
     expect(count('collapsed')).toBe(54);
-    expect(count('minted')).toBe(120);
+    expect(count('minted')).toBe(122);
     expect(count('composed')).toBe(38);
     expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(54);
   });

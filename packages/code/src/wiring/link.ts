@@ -11,7 +11,12 @@
  */
 
 import type { Command } from 'commander';
-import { RECOMMENDED_RELATIONS, RECORD_CONTRACT_HELP, reachNotice } from '../recorded-content.js';
+import {
+  RECOMMENDED_RELATIONS,
+  RECORD_CONTRACT_HELP,
+  reachNotice,
+  subjectReachNotice,
+} from '../recorded-content.js';
 import { here } from './context.js';
 import { scopeOption } from './enumerated.js';
 import { writeLines } from './io.js';
@@ -84,6 +89,12 @@ export function registerLink(program: Command, wiring: Wiring): Declared {
           // after typing a wide address is the first one.
           writeLines(io, reachNotice(result.reach));
           reportRecorded(result, io);
+          // AFTER the tree notice, and that order is the argument. `reportRecorded` says
+          // where the edge landed — "it reaches every clone" for the public tree — and
+          // this is the qualifier on that very sentence: what reaches the clone is the
+          // address, and the rule it names may not. A qualifier printed before the
+          // sentence it qualifies is a sentence a reader has to hold and then revise.
+          writeLines(io, subjectReachNotice(result.scope, result.subjectScope));
           return;
         }
         reportRefusal(wiring, result);
