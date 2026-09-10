@@ -72,12 +72,26 @@ import { type Declared, readsTheRecord, type Wiring } from './verb.js';
  * Total over the chain's `LevelRequirement`, so a fourth level does not compile until
  * this says what asking for it does — the omission the help used to be able to make
  * silently, since the three were typed out in a sentence nothing compared to anything.
+ *
+ * `signed` USED TO SAY *expect this to fail while a session is in flight*, AND THAT
+ * PREMISE IS DEAD. It was written when a checkpoint was sealed on a cadence, so the
+ * events above the last one were a standing residual and asking for a signature failed
+ * on any healthy project. Since then, every path that writes SEALS what it wrote — the
+ * rule `every-write-signs-what-it-wrote.test.ts` enumerates over every writing verb and
+ * every tool — so the residual is empty whenever nothing is mid-write, and the gate that
+ * "always fails" was measured failing in no state this product can reach: fresh `init`,
+ * a fresh clone, an open run with a fact pinned to it, a whole MCP session including a
+ * refused tool, the private and global trees, and a record of twenty thousand events.
+ * What it DOES fail on is the forgery the default lets through, which is the sentence
+ * that replaced it — `the-strict-gate-catches-the-forgery.test.ts` builds that record
+ * and asserts both exit codes.
  */
 const LEVEL_MEANS: Readonly<Record<LevelRequirement, string>> = {
   chained: 'the default — fail only on a break, which is what a bare `verify` has always done',
   signed:
-    'also fail unless every event is covered by a verified signature — expect this to fail ' +
-    'while a session is in flight',
+    'also fail unless every event is covered by a verified signature — every write here ' +
+    'signs what it wrote, so a healthy project passes and what this catches is a record ' +
+    'whose checkpoints were removed or did not verify',
   witnessed:
     'also fail unless an external witness dates the record — `mnema witness stamp` asks ' +
     'for one, and it passes once a Bitcoin block carries it, never while it is pending',
@@ -87,11 +101,22 @@ const LEVEL_MEANS: Readonly<Record<LevelRequirement, string>> = {
  * The minimum this surface accepts when the caller declares nothing: a break, and
  * nothing more — which is what `mnema verify` has always exited non-zero on.
  *
- * Asking for a signature by default is refused deliberately. Events above the last
- * checkpoint are the normal state of a session in flight, so `signed` as the
- * default would fail on a healthy project in the middle of its work, every time;
- * a gate that always fails is a gate somebody turns off, and then the break it
- * existed for goes out with it.
+ * Asking for a signature by default is refused deliberately, AND THE REASON WRITTEN HERE
+ * BEFORE WAS FALSE. It read: *events above the last checkpoint are the normal state of a
+ * session in flight, so `signed` as the default would fail on a healthy project in the
+ * middle of its work, every time*. Every write seals a checkpoint now, so `--require
+ * signed` was measured passing in every state this product reaches — see the note above
+ * {@link LEVEL_MEANS} for the states and the rule that killed the premise.
+ *
+ * THE REASON THAT SURVIVES IS A DIFFERENT ONE, and it is about what a stranger is told.
+ * There are three ways to forge a record and the strict gate catches only one of them:
+ * the attacker who edits a tail's events, drops that tail's checkpoints, and neither
+ * removes the whole tail nor writes a fact afterwards. Made the default, it would hand
+ * somebody who cloned a record with a whole person's history deleted `verified
+ * (T1/T2/T4); all events are signature-covered`, exit 0 — and the belief that a strict
+ * gate had ruled on it. The permissive default at least says `no signature was checked`
+ * over the record it cannot vouch for. Asking is free either way: `--require` is a rank
+ * comparison and no extra work, so the caller who wants the strict reading says so.
  *
  * Exported for the console's opening panel, which verifies without a caller to declare
  * anything: it shows what the record IS and never gates on it, so the minimum it asks
@@ -601,11 +626,17 @@ function censusLocus(note: CensusNote): string {
  *     had been deleted; red is a project between its first event and its first
  *     checkpoint, which is a legitimate state, and a verdict that fails on it teaches its
  *     reader to ignore verdicts. It is neither, and there is a hue for neither.
- *   - the three signed rungs are GREEN, including `signed-through-last-checkpoint`. Its
- *     residual is the normal state of a session in flight, the clause beside it says how
- *     many events rest on the hash chain alone, and a caller who cannot live with that
- *     says `--require=signed` and gets an exit code. Yellow there would be a caution on
- *     nearly every healthy project, and a caution that is always on is not one.
+ *   - the three signed rungs are GREEN, including `signed-through-last-checkpoint`. The
+ *     clause beside it says how many events rest on the hash chain alone, and a caller
+ *     who cannot live with that says `--require=signed` and gets an exit code. THE
+ *     ARGUMENT WRITTEN HERE WAS *its residual is the normal state of a session in
+ *     flight*, so yellow would be a caution on nearly every healthy project — and that
+ *     premise is dead: every write seals a checkpoint, so this rung is not what a
+ *     healthy project reads at all (see the note above {@link LEVEL_MEANS}). Green
+ *     survives on the narrower ground the rung actually stands on now: the signatures
+ *     that exist VERIFIED, which is good news about a real proof, and the residual it
+ *     names is a truncation or a mid-write and is stated in the clause rather than
+ *     painted. Yellow is reserved for the rung where NO signature was checked.
  *
  * It lives in this verb rather than in the refusal funnel because it is not a refusal:
  * `verify` naming a broken tree DID what it was asked. `every-refusal-is-red.test.ts`

@@ -154,8 +154,12 @@ describe('the six probes, as the verdict answers them now', () => {
     expect(said.summary).toContain('local integrity verified (T1 only) — no signature was checked');
     expect(said.summary).toMatch(/\d+ event\(s\) are hash-chained but NOT yet signature-covered/);
     expect(said.summary).not.toContain('above the last checkpoint');
-    // Exit stays 0 by default — nothing verifiable is broken, and a project between
-    // its first event and its first checkpoint is a legitimate state.
+    // Exit stays 0 by default — nothing verifiable is broken. THE SECOND HALF OF THIS
+    // NOTE WAS FALSE: it read *and a project between its first event and its first
+    // checkpoint is a legitimate state*, and no such state exists here, because every
+    // write seals a checkpoint (`every-write-signs-what-it-wrote.test.ts`). What this
+    // exit code actually is, is the forgery the default lets through — asserted with
+    // its contrast in `the-strict-gate-catches-the-forgery.test.ts`.
     expect(said.failed).toBe(false);
     // A caller that needs signatures says so, and gets a non-zero exit for it.
     const gated = await verify('--require=signed');

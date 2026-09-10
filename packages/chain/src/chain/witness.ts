@@ -371,11 +371,40 @@ function judgeWitness(stored: StoredWitness, checkpointHash: string): WitnessRea
     };
   }
 
+  // THE THREE THINGS A PROOF CAN REACH, EACH ACCUMULATED APART, and the precedence
+  // declared once at the return below rather than decided by the order the branches of
+  // a third-party file were serialized in.
+  //
+  // THE PREMISE THAT FELL, and what falsified it. These were TWO accumulators, and the
+  // headerless reading and the calendar's shared the second one under `??=`: whichever
+  // the walk reached first won. Measured on one digest, one block and one calendar, with
+  // no headers stored — the same facts both times, only the order of the two
+  // attestations in the file swapped:
+  //
+  //   pending listed first  -> "an attestation was requested from <uri> and has not confirmed"
+  //   bitcoin listed first  -> "anchored in Bitcoin block 800000, whose header this record does not carry"
+  //
+  // A real calendar writes its own attestation before an upgrade appends a block's, so
+  // the first line is what the product printed and the second never appeared. §8 of
+  // FORMAT.md already refuses that dependence in the sentence beside this one — it is
+  // why the DATE is not the first confirmed block a walk reaches — and this is the same
+  // refusal on the unattested side. `witness.test.ts` pins both orders to one sentence.
   let anchored: AttestedReading | null = null;
-  let waiting: UnattestedReading | null = null;
+  // The LOWEST height among the bitcoin attestations no header was stored for. Lowest
+  // rather than first-reached for the reason above, and lowest rather than any other
+  // tie-break because §8 already picked this one for the confirmed set: two rules over
+  // one set of attestations is how a document comes to disagree with itself.
+  let headerless: number | null = null;
+  let unconfirmed: UnattestedReading | null = null;
   for (const { attestation, message } of reached) {
     if (attestation.kind === 'pending') {
-      waiting ??= {
+      // STILL FIRST-REACHED, AND DECLARED SO. Among several calendars there is no
+      // ordering that means anything — §8 declares none, a reader waits the same for
+      // any of them, and a lexicographic one would be a rule this format never
+      // published. So the sentence's bytes still depend on the file's order when a
+      // proof carries more than one open request. Found by the same sweep that found
+      // the race above and left, because the fix would be an invented rule.
+      unconfirmed ??= {
         status: 'pending',
         detail: `an attestation was requested from ${oneLine(attestation.uri)} and has not confirmed`,
       };
@@ -384,10 +413,7 @@ function judgeWitness(stored: StoredWitness, checkpointHash: string): WitnessRea
     if (attestation.kind !== 'bitcoin') continue;
     const bytes = stored.headers.get(attestation.height);
     if (bytes === undefined) {
-      waiting ??= {
-        status: 'pending',
-        detail: `anchored in Bitcoin block ${attestation.height}, whose header this record does not carry`,
-      };
+      if (headerless === null || attestation.height < headerless) headerless = attestation.height;
       continue;
     }
     const header = parseBlockHeader(bytes);
@@ -410,10 +436,36 @@ function judgeWitness(stored: StoredWitness, checkpointHash: string): WitnessRea
       block: attestation.height,
     };
   }
-  return (
-    anchored ??
-    waiting ?? { status: 'not-covered', detail: 'the stored proof reaches no attestation' }
-  );
+  return anchored ?? headerlessReading(headerless) ?? unconfirmed ?? NO_ATTESTATION;
+}
+
+/** The stored proof reached nothing at all — neither a block nor an open request. */
+const NO_ATTESTATION: UnattestedReading = {
+  status: 'not-covered',
+  detail: 'the stored proof reaches no attestation',
+};
+
+/**
+ * A bitcoin attestation this record cannot fold, because the header is not here.
+ *
+ * IT OUTRANKS AN OPEN REQUEST, and that is the ordering this function exists to
+ * state. Both are `pending` — {@link WITNESS_COVERS} counts neither, so no level and
+ * no exit code move — and the choice is only which sentence a person reads. This one
+ * names a BLOCK: the work is done and the record is one committed file short of
+ * proving it offline, which `mnema witness upgrade` fetches. The other names a
+ * calendar nobody has heard back from. A reader told to wait when what they need is
+ * to fetch a header waits forever.
+ *
+ * It is neither coverage nor a break, which is FORMAT.md §8's own sentence about this
+ * exact state, and the status keeps saying so.
+ */
+function headerlessReading(height: number | null): UnattestedReading | null {
+  return height === null
+    ? null
+    : {
+        status: 'pending',
+        detail: `anchored in Bitcoin block ${height}, whose header this record does not carry`,
+      };
 }
 
 /**
