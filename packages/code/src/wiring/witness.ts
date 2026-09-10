@@ -62,10 +62,28 @@ export function registerWitness(program: Command, wiring: Wiring): Declared {
     .command('witness')
     .description('ask an outside witness to date this record, and read where that stands')
     .option('--global', GLOBAL_HELP, false)
-    .action(async (opts: { global: boolean }) => {
+    .option(
+      '--json',
+      'emit where the proof stands as JSON instead of prose — one entry per tail, ' +
+        'with the reading as the verifier derived it',
+    )
+    .action(async (opts: { global: boolean; json?: boolean }) => {
       const { runWitnessList } = await import('../commands/witness.js');
-      const { witnessReport } = await import('../presentation/witness.js');
       const listing = runWitnessList({ ...here(), global: opts.global });
+      // AN ADAPTER, WORDING NOTHING. `runWitnessList` already answers as structure —
+      // per tail: which tree, which checkpoint, and the reading the verifier derived —
+      // so this hands that over as it came. The prose reading is the same facts in
+      // another shape, and neither is composed from the other's words.
+      //
+      // It is the second of the two reads that had no machine-readable answer, and
+      // together with `verify` it was the whole PROOF layer: every other read of this
+      // product takes `--json`. What the pair makes legible is knowingly incomplete,
+      // and `verify --json` is where that is declared, as a field.
+      if (opts.json === true) {
+        io.out(JSON.stringify(listing, null, 2));
+        return;
+      }
+      const { witnessReport } = await import('../presentation/witness.js');
       writeLines(io, witnessReport(render, listing.lines, listing.trees));
     });
 

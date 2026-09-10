@@ -669,6 +669,8 @@ $ mnema witness --help
 |   --global           also cover this machine's global tree — left out by
 |                      default, exactly as `verify` leaves it out: it belongs to
 |                      no project and is present in every one (default: false)
+|   --json             emit where the proof stands as JSON instead of prose — one
+|                      entry per tail, with the reading as the verifier derived it
 |   -h, --help         display help for command
 |
 | Commands:
@@ -736,6 +738,10 @@ $ mnema verify --help
 |                          external witness dates the record — `mnema witness
 |                          stamp` asks for one, and it passes once a Bitcoin block
 |                          carries it, never while it is pending)
+|   --json                 emit the verdict as JSON instead of prose — the whole
+|                          reading, per tree, plus what NO --require value
+|                          answers. The exit code is unchanged: this changes the
+|                          shape of the answer, never the answer
 |   -h, --help             display help for command
 
 ### mnema mcp --help

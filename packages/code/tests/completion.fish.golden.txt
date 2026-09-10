@@ -429,6 +429,7 @@ complete -c mnema -f -n '__mnema_at "tail prune"' -l color -x -a 'auto always ne
 complete -c mnema -f -n '__mnema_at "witness"' -a 'stamp' -d 'ask an outside witness to date each tail\'s last checkpoint (T3)'
 complete -c mnema -f -n '__mnema_at "witness"' -a 'upgrade' -d 'go back for every attestation this record is waiting on (T3)'
 complete -c mnema -f -n '__mnema_at "witness"' -l global
+complete -c mnema -f -n '__mnema_at "witness"' -l json
 complete -c mnema -f -n '__mnema_at "witness"' -s h -l help
 complete -c mnema -f -n '__mnema_at "witness"' -s V -l version
 complete -c mnema -f -n '__mnema_at "witness"' -l color -x -a 'auto always never'
@@ -437,6 +438,7 @@ complete -c mnema -f -n '__mnema_at "witness"' -l color -x -a 'auto always never
 complete -c mnema -f -n '__mnema_at "witness stamp"' -l calendar -r
 complete -c mnema -f -n '__mnema_at "witness stamp"' -l global
 complete -c mnema -f -n '__mnema_at "witness stamp"' -s h -l help
+complete -c mnema -f -n '__mnema_at "witness stamp"' -l json
 complete -c mnema -f -n '__mnema_at "witness stamp"' -s V -l version
 complete -c mnema -f -n '__mnema_at "witness stamp"' -l color -x -a 'auto always never'
 
@@ -444,6 +446,7 @@ complete -c mnema -f -n '__mnema_at "witness stamp"' -l color -x -a 'auto always
 complete -c mnema -f -n '__mnema_at "witness upgrade"' -l blocks -r
 complete -c mnema -f -n '__mnema_at "witness upgrade"' -l global
 complete -c mnema -f -n '__mnema_at "witness upgrade"' -s h -l help
+complete -c mnema -f -n '__mnema_at "witness upgrade"' -l json
 complete -c mnema -f -n '__mnema_at "witness upgrade"' -s V -l version
 complete -c mnema -f -n '__mnema_at "witness upgrade"' -l color -x -a 'auto always never'
 
@@ -477,6 +480,7 @@ complete -c mnema -f -n '__mnema_at "verify"' -l global
 complete -c mnema -f -n '__mnema_at "verify"' -l workspace -r
 complete -c mnema -f -n '__mnema_at "verify"' -l allow-no-record
 complete -c mnema -f -n '__mnema_at "verify"' -l require -x -a 'chained signed witnessed'
+complete -c mnema -f -n '__mnema_at "verify"' -l json
 complete -c mnema -f -n '__mnema_at "verify"' -s h -l help
 complete -c mnema -f -n '__mnema_at "verify"' -s V -l version
 complete -c mnema -f -n '__mnema_at "verify"' -l color -x -a 'auto always never'

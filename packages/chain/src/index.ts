@@ -81,6 +81,7 @@ export {
   LEVEL_REQUIREMENTS,
   type LevelRequirement,
   meetsRequirement,
+  NOT_ANSWERED_BY_ANY_REQUIREMENT,
   type ProvenLevel,
   requiredLevel,
   weakerLevel,

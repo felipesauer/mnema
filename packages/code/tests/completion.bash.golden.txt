@@ -68,13 +68,13 @@ _mnema_flags() {
     'tail') echo '-h --help -V --version --color' ;;
     'tail list') echo '-h --help -V --version --color' ;;
     'tail prune') echo '--reason --which -h --help -V --version --color' ;;
-    'witness') echo '--global -h --help -V --version --color' ;;
-    'witness stamp') echo '--calendar --global -h --help -V --version --color' ;;
-    'witness upgrade') echo '--blocks --global -h --help -V --version --color' ;;
+    'witness') echo '--global --json -h --help -V --version --color' ;;
+    'witness stamp') echo '--calendar --global -h --help --json -V --version --color' ;;
+    'witness upgrade') echo '--blocks --global -h --help --json -V --version --color' ;;
     'switch') echo '-h --help -V --version --color' ;;
     'switch off') echo '--reason --scope --which -h --help -V --version --color' ;;
     'switch on') echo '--reason --scope --which -h --help -V --version --color' ;;
-    'verify') echo '--global --workspace --allow-no-record --require -h --help -V --version --color' ;;
+    'verify') echo '--global --workspace --allow-no-record --require --json -h --help -V --version --color' ;;
     'mcp') echo '--project -h --help -V --version --color' ;;
     'repl') echo '-h --help -V --version --color' ;;
     'completion') echo '-h --help -V --version --color' ;;

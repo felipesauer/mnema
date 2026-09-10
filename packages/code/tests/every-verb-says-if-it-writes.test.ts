@@ -435,8 +435,12 @@ function offersJson(verb: string): boolean {
  * A read's human summary and its `--json` object are two code paths, and a write behind
  * the one this file did not run would be invisible. The number is asserted so a
  * `command.options` that stopped answering cannot silently halve the exercise.
+ *
+ * IT WENT 14 -> 16 when `verify` and `witness` gained `--json`. They were the only two
+ * reads of this product that refused it, and they are the PROOF layer — so the delivery
+ * that gave them one is visible here as a count, which is what this number is for.
  */
-const EXERCISED_IN_BOTH_FORMS = 14;
+const EXERCISED_IN_BOTH_FORMS = 16;
 
 /** Exercises every verb the table names, each in its own project, and measures the record. */
 async function exerciseEverything(): Promise<Exercised[]> {

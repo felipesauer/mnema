@@ -171,9 +171,10 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * proof reader with three and the projection's with two. Twenty-three, counted in the
  * three files. It went 2505 -> 2513 when `one-window-three-readings.test.ts` arrived —
  * the test a doc-comment had named for as long as it stood, and which did not exist:
- * eight clauses, counted in it.
+ * eight clauses, counted in it. It went 2513 -> 2520 when
+ * `the-proof-answers-a-machine.test.ts` arrived: seven clauses, counted in it.
  */
-const CLAUSES_IN_THE_TREE = 2513;
+const CLAUSES_IN_THE_TREE = 2520;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
