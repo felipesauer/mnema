@@ -30,6 +30,7 @@
  */
 
 import type { CatalogEvent } from '@mnema/chain';
+import { proofOf, type TransitionProof } from './proof.js';
 
 /** The state whose transition marks a pattern as live — the one adoption. */
 const ADOPTED = 'adopted';
@@ -72,6 +73,12 @@ export interface SkillProjection {
   readonly createdAt: string;
   /** `at` of the last transition. */
   readonly updatedAt: string;
+  /**
+   * What each move of this pattern SAID, in the chain's own order — absent when no
+   * transition ever carried proof. See `projections/proof.ts` for why it is every
+   * move and not the last one.
+   */
+  readonly proof?: readonly TransitionProof[];
 }
 
 /** Mutable accumulator; existence and state are tracked separately, then joined. */
@@ -83,6 +90,7 @@ interface SkillAccumulator {
   adoption?: SkillAdoption;
   createdAt?: string;
   updatedAt?: string;
+  proof?: TransitionProof[];
 }
 
 /**
@@ -110,6 +118,11 @@ export function projectSkills(events: readonly CatalogEvent[]): Map<string, Skil
       const entry = getOrInit(acc, event.subject);
       entry.state = event.payload.to;
       entry.updatedAt = event.at;
+      const said = proofOf(event);
+      if (said !== undefined) {
+        entry.proof ??= [];
+        entry.proof.push(said);
+      }
       if (event.payload.to === ADOPTED) {
         entry.adoption =
           event.which === undefined ? { at: event.at } : { at: event.at, by: event.which };
@@ -141,6 +154,7 @@ export function projectSkills(events: readonly CatalogEvent[]): Map<string, Skil
     };
     // Set only when the record holds one: an absent actor is "a person acted
     // directly", and a key holding `undefined` would read as a missing value.
+    if (entry.proof !== undefined) projection.proof = entry.proof;
     if (entry.proposedBy !== undefined) projection.proposedBy = entry.proposedBy;
     if (entry.adoption !== undefined) projection.adoption = entry.adoption;
     result.set(id, projection);

@@ -9,6 +9,7 @@
 
 import type { Command } from 'commander';
 import { itemLine } from '../presentation/items.js';
+import { windowGloss, windowHelp } from '../vocabulary.js';
 import { here } from './context.js';
 import { ACTOR_HELP } from './options.js';
 import { reportRefusal } from './report.js';
@@ -20,8 +21,9 @@ export function registerAccountability(program: Command, wiring: Wiring): Declar
   const accountability = program
     .command('accountability')
     .description('show who authorized what across the record (optionally windowed/filtered)')
-    .option('--from <iso>', 'include only facts at or after this ISO-8601 instant')
-    .option('--to <iso>', 'include only facts at or before this ISO-8601 instant')
+    .option('--from <iso>', windowGloss('from', 'fact'))
+    .option('--to <iso>', windowGloss('to', 'fact'))
+    .addHelpText('after', windowHelp('fact'))
     .option('--who <id>', `count only facts authorized by this identity — ${ACTOR_HELP}`)
     // The one `--which` that is NOT a declaration of who acted but a FILTER over
     // who already did, so it carries no {@link declaredAgent}: nothing is being

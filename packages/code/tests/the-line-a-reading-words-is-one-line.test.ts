@@ -592,6 +592,38 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the id that superseded it, on the same terms',
   },
+  'record.ts «derived from {}» oneLine(path) #1': {
+    verdict: 'collapsed',
+    why: 'a path the writer supplied as a link target, which nothing validates on the way in',
+  },
+  'record.ts «{} · {}» oneLine(one.action) #1': {
+    verdict: 'collapsed',
+    why: 'the action a move recorded — a literal of the record, naming the proof under it',
+  },
+  'record.ts «{} · {}» oneLine(one.at) #1': {
+    verdict: 'collapsed',
+    why: 'the instant that move was recorded at, off the record',
+  },
+  'occurrence.ts asWhen(oneLine(entry.at)) #1': {
+    verdict: 'collapsed',
+    why: 'the instant a history entry happened at, leading its line',
+  },
+  'occurrence.ts itemLine(oneLine(entry.kind)) #1': {
+    verdict: 'collapsed',
+    why: 'the event kind of a history entry, as the catalog spells it',
+  },
+  'occurrence.ts «[{}]» oneLine(entry.role) #1': {
+    verdict: 'collapsed',
+    why: 'the role the queried entity appears by — a closed word of this reading, collapsed because a list of one-line events is what surrounds it',
+  },
+  'occurrence.ts itemLine(who) #1': {
+    verdict: 'composed',
+    why: 'the actor, already written through its anchor by the caller — anchors.ts decides how short an identity may be spelled',
+  },
+  'occurrence.ts fact(oneLine(said)) #1': {
+    verdict: 'collapsed',
+    why: 'what a move said, indented under its own event line: prose a writer supplied, in a list where a newline would forge a second history entry',
+  },
   'record.ts «created {} · updated {}» body.record.createdAt #1': {
     verdict: 'minted',
     why: 'an ISO-8601 instant off the record',
@@ -681,9 +713,13 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'how many addresses the project’s record holds at all — a count',
   },
-  'rules.ts «{} address nothing here» counts.stale #1': {
+  'rules.ts «{} address nothing here · {} name a rule not here» counts.stale #1': {
     verdict: 'minted',
     why: 'how many addresses name nothing in the working tree — a count',
+  },
+  'rules.ts «{} address nothing here · {} name a rule not here» counts.unresolved #1': {
+    verdict: 'minted',
+    why: 'how many addresses name a rule no tree here holds — a count, and the one that used to be folded into the number beside it and read as rules that govern',
   },
   'rules.ts «{} ask for a person here · {} ask in » counts.asks.matching #1': {
     verdict: 'minted',
@@ -693,9 +729,13 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'how many gate addresses the project’s record holds at all — a count',
   },
-  'rules.ts «this project · {} ask about nothing here» counts.asks.stale #1': {
+  'rules.ts «this project · {} ask about nothing here · » counts.asks.stale #1': {
     verdict: 'minted',
     why: 'how many gate addresses name nothing in the working tree — a count, and the one that says a gate stopped closing in silence',
+  },
+  'rules.ts «{} name a rule not here» counts.asks.unresolved #1': {
+    verdict: 'minted',
+    why: 'how many gate addresses name a rule no tree here holds — a gate counted from an address nobody can read would say a write is watched by a rule a reader cannot open',
   },
   'rules.ts «{} ({})» heading #1': {
     verdict: 'minted',
@@ -1310,7 +1350,7 @@ describe('every value this layer puts on a line is classified', () => {
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
     expect(FOUND.builders.length).toBeGreaterThan(10);
-    expect(FOUND.sites.length).toBe(204);
+    expect(FOUND.sites.length).toBe(214);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1331,10 +1371,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(47);
-    expect(count('minted')).toBe(120);
-    expect(count('composed')).toBe(37);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(47);
+    expect(count('collapsed')).toBe(54);
+    expect(count('minted')).toBe(122);
+    expect(count('composed')).toBe(38);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(54);
   });
 
   it('every reason says where the value comes from', () => {
@@ -1441,6 +1481,8 @@ const SERVED_WHOLE: Readonly<Record<string, string>> = {
   'body.record.rationale': 'the argument a decision was accepted on',
   'body.record.alternatives': 'what that decision turned down — a second paragraph, headed',
   'body.record.body': 'a pattern’s body, which is the instruction itself',
+  'one.said':
+    'what one move of a record said — a paragraph somebody wrote, headed the way a decision’s alternatives are, and the only body a task will ever have',
 };
 
 describe('the body is served whole, and it is the only thing that is', () => {

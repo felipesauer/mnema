@@ -55,6 +55,7 @@
  */
 
 import type { CatalogEvent } from '@mnema/chain';
+import { proofOf, type TransitionProof } from './proof.js';
 
 /** Current projected state of one decision. */
 export interface DecisionProjection {
@@ -80,6 +81,12 @@ export interface DecisionProjection {
   readonly createdAt: string;
   /** `at` of the last transition. */
   readonly updatedAt: string;
+  /**
+   * What each move of this decision SAID, in the chain's own order — absent when no
+   * transition ever carried proof. See `projections/proof.ts` for why it is every
+   * move and not the last one.
+   */
+  readonly proof?: readonly TransitionProof[];
 }
 
 /** A collision of the `adr` label: one label held by two or more decisions. */
@@ -101,6 +108,7 @@ interface DecisionAccumulator {
   supersedes?: string;
   createdAt?: string;
   updatedAt?: string;
+  proof?: TransitionProof[];
 }
 
 /**
@@ -136,6 +144,11 @@ export function projectDecisions(events: readonly CatalogEvent[]): Map<string, D
       const entry = getOrInit(acc, event.subject);
       entry.state = event.payload.to;
       entry.updatedAt = event.at;
+      const said = proofOf(event);
+      if (said !== undefined) {
+        entry.proof ??= [];
+        entry.proof.push(said);
+      }
       if (event.payload.by !== undefined) {
         // Multi-entity: the subject is superseded BY the successor, and the
         // successor SUPERSEDES the subject. Record the link on both sides.
@@ -170,6 +183,7 @@ export function projectDecisions(events: readonly CatalogEvent[]): Map<string, D
       createdAt: entry.createdAt,
       updatedAt: entry.updatedAt,
     };
+    if (entry.proof !== undefined) projection.proof = entry.proof;
     if (entry.alternatives !== undefined) projection.alternatives = entry.alternatives;
     if (entry.supersededBy !== undefined) projection.supersededBy = entry.supersededBy;
     if (entry.supersedes !== undefined) projection.supersedes = entry.supersedes;

@@ -15,6 +15,7 @@
  */
 
 import type { SqliteDatabase } from '../db/sqlite.js';
+import { proofColumn, proofFromColumn } from './proof.js';
 import type { SkillProjection } from './skill.js';
 
 /** The `skills` row shape as stored. */
@@ -28,6 +29,8 @@ interface SkillRow {
   readonly adopted_by: string | null;
   readonly created_at: string;
   readonly updated_at: string;
+  /** What each move said, JSON-encoded — null when no move said anything. */
+  readonly proof: string | null;
 }
 
 /** The bound-parameter shape: every column present, optionals as null. */
@@ -41,6 +44,7 @@ interface SkillParams {
   readonly adoptedBy: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
+  readonly proof: string | null;
 }
 
 /**
@@ -50,8 +54,8 @@ interface SkillParams {
  */
 export function materializeSkills(db: SqliteDatabase, skills: Iterable<SkillProjection>): void {
   const insert = db.prepare(
-    `INSERT INTO skills (id, name, body, state, proposed_by, adopted_at, adopted_by, created_at, updated_at)
-     VALUES (@id, @name, @body, @state, @proposedBy, @adoptedAt, @adoptedBy, @createdAt, @updatedAt)`,
+    `INSERT INTO skills (id, name, body, state, proposed_by, adopted_at, adopted_by, created_at, updated_at, proof)
+     VALUES (@id, @name, @body, @state, @proposedBy, @adoptedAt, @adoptedBy, @createdAt, @updatedAt, @proof)`,
   );
   for (const skill of skills) {
     insert.run(toParams(skill));
@@ -90,6 +94,7 @@ function toParams(skill: SkillProjection): SkillParams {
     adoptedBy: skill.adoption?.by ?? null,
     createdAt: skill.createdAt,
     updatedAt: skill.updatedAt,
+    proof: proofColumn(skill.proof),
   };
 }
 
@@ -109,6 +114,8 @@ function toProjection(row: SkillRow): SkillProjection {
     projection.adoption =
       row.adopted_by === null ? { at: row.adopted_at } : { at: row.adopted_at, by: row.adopted_by };
   }
+  const said = proofFromColumn(row.proof);
+  if (said.proof !== undefined) projection.proof = said.proof;
   return projection;
 }
 

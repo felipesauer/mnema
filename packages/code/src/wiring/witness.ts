@@ -34,6 +34,7 @@
 
 import type { Command } from 'commander';
 import { fact } from '../presentation/detail.js';
+import { globalTreeGloss } from '../vocabulary.js';
 import { here } from './context.js';
 import { writeLines } from './io.js';
 import { onOneLine } from './on-one-line.js';
@@ -41,12 +42,14 @@ import { reportRefusal } from './report.js';
 import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
 /**
- * What `--global` says, in the same words on all three, because it is the same
- * question: `verify` leaves the machine-global tree out of a project's verdict unless
- * it is asked, and a witness over a tree no verdict reads is work with no reader.
+ * What `--global` says here — the shared sentence, plus what covering it costs a
+ * witness. It used to be typed out in this file; the shared half is
+ * {@link globalTreeGloss} now, because `export` became the fourth verb to ask the same
+ * question and a third spelling was one verb away.
  */
-const GLOBAL_HELP =
-  "also cover this machine's global tree — left out by default, exactly as `verify` leaves it out: it belongs to no project and is present in every one";
+const GLOBAL_HELP = globalTreeGloss(
+  'and a witness over a tree no verdict reads is work with no reader',
+);
 
 /** What the acts say about the one thing a reader of `--help` wants to know. */
 const WHAT_TRAVELS = [
@@ -62,10 +65,28 @@ export function registerWitness(program: Command, wiring: Wiring): Declared {
     .command('witness')
     .description('ask an outside witness to date this record, and read where that stands')
     .option('--global', GLOBAL_HELP, false)
-    .action(async (opts: { global: boolean }) => {
+    .option(
+      '--json',
+      'emit where the proof stands as JSON instead of prose — one entry per tail, ' +
+        'with the reading as the verifier derived it',
+    )
+    .action(async (opts: { global: boolean; json?: boolean }) => {
       const { runWitnessList } = await import('../commands/witness.js');
-      const { witnessReport } = await import('../presentation/witness.js');
       const listing = runWitnessList({ ...here(), global: opts.global });
+      // AN ADAPTER, WORDING NOTHING. `runWitnessList` already answers as structure —
+      // per tail: which tree, which checkpoint, and the reading the verifier derived —
+      // so this hands that over as it came. The prose reading is the same facts in
+      // another shape, and neither is composed from the other's words.
+      //
+      // It is the second of the two reads that had no machine-readable answer, and
+      // together with `verify` it was the whole PROOF layer: every other read of this
+      // product takes `--json`. What the pair makes legible is knowingly incomplete,
+      // and `verify --json` is where that is declared, as a field.
+      if (opts.json === true) {
+        io.out(JSON.stringify(listing, null, 2));
+        return;
+      }
+      const { witnessReport } = await import('../presentation/witness.js');
       writeLines(io, witnessReport(render, listing.lines, listing.trees));
     });
 

@@ -429,12 +429,28 @@ function judgeWitness(stored: StoredWitness, checkpointHash: string): WitnessRea
         detail: `the stored header for Bitcoin block ${attestation.height} carries another merkle root`,
       };
     }
-    anchored ??= {
-      status: 'covered',
-      detail: `Bitcoin block ${attestation.height} at ${new Date(header.time * 1000).toISOString()}`,
-      at: header.time,
-      block: attestation.height,
-    };
+    // THE LOWEST HEIGHT, not the first the walk reaches — the same tie-break the
+    // headerless branch above uses, and now the same one for BOTH sets, which is what
+    // §8 means by holding one rule over them. It was `??=` here, and that made the date
+    // this product publishes a function of the order the branches of a third party's
+    // file were serialized in: two faithful readers of the same bytes printed 963690
+    // and 963688 over the frozen `witnessed-record`, and the second reader was the one
+    // following the published format.
+    //
+    // BY HEIGHT AND NOT BY INSTANT, and the difference is not pedantry: a block's
+    // `nTime` is declared by whoever mined it and consensus only BOUNDS it — greater
+    // than the median of the previous eleven, less than now plus two hours — so a lower
+    // block may carry a later instant. Electing by height is what the reference
+    // OpenTimestamps client does (it orders attestations by ascending height and stops
+    // at the first valid one), and it does not rest on a field a miner declares.
+    if (anchored === null || attestation.height < anchored.block) {
+      anchored = {
+        status: 'covered',
+        detail: `Bitcoin block ${attestation.height} at ${new Date(header.time * 1000).toISOString()}`,
+        at: header.time,
+        block: attestation.height,
+      };
+    }
   }
   return anchored ?? headerlessReading(headerless) ?? unconfirmed ?? NO_ATTESTATION;
 }

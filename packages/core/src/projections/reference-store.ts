@@ -48,6 +48,7 @@
 
 import type { CatalogEvent, EventKind } from '@mnema/chain';
 import type { SqliteDatabase } from '../db/sqlite.js';
+import { windowConditions, withinWindow } from './window.js';
 
 /** The ways an entity can appear in a fact. */
 export const REFERENCE_ROLES = ['subject', 'about', 'target', 'by'] as const;
@@ -155,15 +156,22 @@ export interface AuthorshipFilter {
  * tree. A reading that has to emit the facts THEMSELVES has no table to group: it holds
  * the ordered events and decides one at a time. Neither can be expressed as the other —
  * a `WHERE` clause cannot yield an event, and a predicate over a stream cannot be a
- * `GROUP BY` — so the rule is stated twice, and what keeps the two from drifting is not
- * this signature. `one-window-two-readings.test.ts` runs both over the same record with
- * the same matrix of filters and asserts they select the same set; a condition added to
- * one and not the other is red there rather than in a review.
+ * `GROUP BY` — so the SHAPE is stated twice, and the window inside both is not: both
+ * ask `projections/window.ts`.
  *
- * The window is inclusive on both ends and compared on the ISO strings DIRECTLY, which
- * is the same comparison the SQL makes: ISO-8601 UTC stamps sort lexically, in the order
- * the chain merges on. Parsing to a date here would be a second notion of order, and the
- * one place the two readings could disagree about a boundary instant.
+ * THIS PARAGRAPH USED TO END WITH A TEST THAT DOES NOT EXIST. It said
+ * `one-window-two-readings.test.ts` ran both readings over one record and asserted they
+ * selected the same set — *"red there rather than in a review"*. There was no such file,
+ * and no test named `matchesAuthorship` at all, so the reconciliation was an intention
+ * written as a fact for as long as the sentence stood. The count was wrong as well: the
+ * full-text index has a window of its own, which made THREE. What reconciles them now is
+ * `one-window-three-readings.test.ts`, and it exists.
+ *
+ * The WINDOW is not decided here: it is {@link withinWindow}, one rule for all three
+ * reads that take `--from`/`--to`, inclusive on both ends and compared on the ISO
+ * strings directly. It used to be spelled out on these two lines, and the paragraph
+ * below said a test reconciled it with the SQL reading — see `projections/window.ts`
+ * for what was wrong with that sentence, and with its count.
  *
  * A `which` filter excludes the facts a person authored with no agent, exactly as
  * `which = @which` never matches a NULL — the narrowing a caller asking about an agent
@@ -173,8 +181,7 @@ export function matchesAuthorship(
   event: Pick<CatalogEvent, 'at' | 'who' | 'which'>,
   filter: AuthorshipFilter,
 ): boolean {
-  if (filter.from !== undefined && event.at < filter.from) return false;
-  if (filter.to !== undefined && event.at > filter.to) return false;
+  if (!withinWindow(event.at, filter)) return false;
   if (filter.who !== undefined && event.who !== filter.who) return false;
   if (filter.which !== undefined && event.which !== filter.which) return false;
   return true;
@@ -362,16 +369,9 @@ export function tallyAuthorship(
   db: SqliteDatabase,
   filter: AuthorshipFilter = {},
 ): AuthorshipTally[] {
-  const conditions = [`role = 'subject'`];
-  const params: Record<string, string> = {};
-  if (filter.from !== undefined) {
-    conditions.push('at >= @from');
-    params.from = filter.from;
-  }
-  if (filter.to !== undefined) {
-    conditions.push('at <= @to');
-    params.to = filter.to;
-  }
+  const window = windowConditions('at', filter);
+  const conditions = [`role = 'subject'`, ...window.sql];
+  const params: Record<string, string> = { ...window.params };
   if (filter.who !== undefined) {
     conditions.push('who = @who');
     params.who = filter.who;

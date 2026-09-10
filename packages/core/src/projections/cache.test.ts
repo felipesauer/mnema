@@ -550,6 +550,11 @@ describe('ProjectionCache — skills', () => {
       state: 'reviewed',
       createdAt: at(0),
       updatedAt: at(1),
+      // The move this fixture writes carries a `note`, so the projection now carries
+      // what it said. `sk-2` is born and never moved with proof, and the assertion
+      // below is over its id alone — the absence is covered where it is asserted, in
+      // `the-moves-say-what-they-said.test.ts`.
+      proof: [{ action: 'review', at: at(1), said: 'note: n' }],
     });
     expect(cache.listSkillsByState('proposed').map((s) => s.id)).toEqual(['sk-2']);
     expect(cache.listSkillsByState('reviewed').map((s) => s.id)).toEqual(['sk-1']);

@@ -186,7 +186,17 @@ export interface GovernanceCounts {
   /** How many of those name something the working tree does not hold. */
   readonly stale: number;
   /**
-   * The same three numbers for the relation that ASKS FOR A PERSON — the gate rather
+   * How many addresses name a rule this read cannot READ — the subject resolves in no
+   * tree it can see.
+   *
+   * NOT part of `governing`, and that is the number this field exists to correct: they
+   * were counted as rules that govern, so a clone was told `3 govern this path` where
+   * one governed. It is beside the others rather than folded away because the record
+   * really holds the address, and an absence nobody counted is an absence nobody fixes.
+   */
+  readonly unresolved: number;
+  /**
+   * The same four numbers for the relation that ASKS FOR A PERSON — the gate rather
    * than the text.
    *
    * They are here, and they are three rather than one, because the gate has exactly the
@@ -200,7 +210,7 @@ export interface GovernanceCounts {
   readonly asks: AddressCounts;
 }
 
-/** The three numbers of ONE relation's addresses around a path. */
+/** The four numbers of ONE relation's addresses around a path. */
 export interface AddressCounts {
   /** How many of that relation's addresses cover the path asked about. */
   readonly matching: number;
@@ -208,6 +218,8 @@ export interface AddressCounts {
   readonly addressed: number;
   /** How many of those name something the working tree does not hold. */
   readonly stale: number;
+  /** How many name a rule this read cannot read — see {@link GovernanceCounts.unresolved}. */
+  readonly unresolved: number;
 }
 
 /** Which rules govern a path, and what the record's addresses look like around it. */
@@ -235,6 +247,16 @@ export interface GoverningRules {
    */
   readonly stale: readonly AddressedRule[];
   /**
+   * The addresses whose RULE this read cannot reach — the subject resolves in no tree
+   * it can see. Named for the same reason `stale` is, and separate from it because the
+   * two are different repairs: a stale address is moved, and an unresolved one means
+   * the rule it names is somewhere this reader is not.
+   *
+   * They carry no `kind`, no `name` and no `state`, because nothing was read to fill
+   * them — which is what the id beside each is for.
+   */
+  readonly unresolved: readonly AddressedRule[];
+  /**
    * The addresses that ASK FOR A PERSON around this path — the gate, reported beside
    * the text rather than instead of it.
    *
@@ -247,7 +269,15 @@ export interface GoverningRules {
   readonly asks: readonly AddressedRule[];
   /** The gate addresses that match nothing in the working tree. Same order rule. */
   readonly asksStale: readonly AddressedRule[];
-  /** The three numbers, and the other relation's three. */
+  /**
+   * The gate addresses whose RULE this read cannot reach. Same order rule.
+   *
+   * The worse half of the same defect: a gate counted from an address nobody can read
+   * would tell a person a write is watched by a rule they cannot open. It is reported
+   * here and it charges nobody — the charge has always narrowed to what is in force.
+   */
+  readonly asksUnresolved: readonly AddressedRule[];
+  /** The four numbers, and the other relation's four. */
   readonly counts: GovernanceCounts;
 }
 
@@ -272,16 +302,20 @@ export function governingRules(
     ...(asked !== null ? { relative: posix(asked) } : {}),
     rules: ordered(governs.matching),
     stale: ordered(governs.stale),
+    unresolved: ordered(governs.unresolved),
     asks: ordered(asks.matching),
     asksStale: ordered(asks.stale),
+    asksUnresolved: ordered(asks.unresolved),
     counts: {
       matching: governs.matching.length,
       governing: governs.all.length,
       stale: governs.stale.length,
+      unresolved: governs.unresolved.length,
       asks: {
         matching: asks.matching.length,
         addressed: asks.all.length,
         stale: asks.stale.length,
+        unresolved: asks.unresolved.length,
       },
     },
   };
@@ -307,18 +341,26 @@ function addressesUnder(
   readonly all: readonly Addressed[];
   readonly matching: readonly Addressed[];
   readonly stale: readonly Addressed[];
+  readonly unresolved: readonly Addressed[];
 } {
-  const all: Addressed[] = [];
+  const found: Addressed[] = [];
   for (const source of sources) {
     if (!governsThisProject(source, query.root)) continue;
     for (const edge of source.cache.linksByRelation(relation)) {
-      all.push(describe(sources, source, edge, query));
+      found.push(describe(sources, source, edge, query));
     }
   }
+  // THREE DISJOINT CLASSES, and the disjointness is what keeps the numbers from double
+  // counting. An address whose subject does not resolve is UNRESOLVED and nothing else:
+  // saying its address also went stale would be a claim about a rule nobody can read.
+  const readable = found.filter(readableRule);
   return {
-    all,
-    matching: asked === null ? [] : all.filter((entry) => covers(entry.segments, asked)),
-    stale: all.filter((entry) => !entry.rule.onDisk),
+    // `all` is what this project's record holds as RULES — the middle number — so an
+    // address naming nothing readable is not in it.
+    all: readable,
+    matching: asked === null ? [] : readable.filter((entry) => covers(entry.segments, asked)),
+    stale: readable.filter((entry) => !entry.rule.onDisk),
+    unresolved: found.filter((entry) => !readableRule(entry)),
   };
 }
 
@@ -331,6 +373,45 @@ interface Addressed {
   readonly rule: AddressedRule;
   /** The address as segments, or null when it addresses nothing in this project. */
   readonly segments: readonly string[] | null;
+  /**
+   * Whether the SUBJECT resolves to a record in a tree this read can see.
+   *
+   * Carried explicitly rather than inferred from the absence of `kind`, because the
+   * whole point of {@link readableRule} is that one question has one answer here. An
+   * address whose subject resolves nowhere is not a rule that governs — nobody can read
+   * what it says — and it used to be counted as one.
+   */
+  readonly resolves: boolean;
+}
+
+/**
+ * AN ADDRESS WHOSE SUBJECT DOES NOT RESOLVE IS NOT A RULE THAT GOVERNS.
+ *
+ * The one site that decides it, and the reason it needs a site at all. MEASURED in a
+ * clone: a `governs` edge written into the PUBLIC tree whose subject is a decision in
+ * the PRIVATE tree — which `mnema link --scope public` accepts today — travels with the
+ * repository while the rule it names does not. Over one such record with two of them,
+ * the four readings of this graph disagreed about the same committed bytes:
+ *
+ *   mnema rules src        3 govern this path      two of them printed `(unresolved)`
+ *   governing_rules        counts.governing: 3     two entries with no kind, no state
+ *   mnema brief            1 of the rules …        right
+ *   the edit gate          named one rule          right
+ *
+ * AND THE TWO THAT WERE RIGHT WERE RIGHT BY ACCIDENT. `brief` and the gate go through
+ * {@link inForceUnder}, which keeps only rules it can find in the in-force set — so an
+ * unresolved subject fell out because it has no STATE, not because anything asked whether
+ * it resolved. A correctness nothing states is a correctness the next reading does not
+ * inherit, which is exactly what the two that were wrong demonstrate.
+ *
+ * IT IS NOT DROPPED, and that is the other half. The record really does hold the address;
+ * a reader who saw the count fall silently would have lost a fact. So it becomes its own
+ * class beside `stale`, counted and NAMED — the same treatment, for the same reason: a
+ * count of broken addresses is fixed by making the count smaller, and a list is fixed by
+ * looking at what it names.
+ */
+function readableRule(entry: Addressed): boolean {
+  return entry.resolves;
 }
 
 /** The rules of a list, most specific first. */
@@ -364,6 +445,7 @@ function describe(
   const placed = segments === null ? {} : { address: posix(segments), segments: segments.length };
   return {
     segments,
+    resolves: record !== null,
     rule: {
       rule: edge.subject,
       recorded: edge.target,
@@ -632,6 +714,13 @@ function inForceUnder(
     path: query.path,
     ...(asked !== null ? { relative: posix(asked) } : {}),
     rules: ordered(found.matching).flatMap((rule) => {
+      // THIS FILTER USED TO BE THE ONLY THING KEEPING AN UNREADABLE RULE OUT OF HERE,
+      // and it kept it out for the wrong reason. An address whose subject resolves
+      // nowhere has no STATE, so it was never in the in-force set and fell out — which
+      // made `brief` and the edit gate right by accident while `rules` and
+      // `governing_rules` counted it as a rule that governs. `addressesUnder` now
+      // answers the question by name, so what is left here is the narrowing this
+      // function is actually about: a rule that IS readable and is not in force.
       const name = inForce.get(rule.rule);
       if (name === undefined) return [];
       return [

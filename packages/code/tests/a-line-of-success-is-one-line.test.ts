@@ -378,11 +378,6 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'an alias (`<prefix>-<hex>`, derived from the id) and the uuid',
   },
-  'timeline.ts «[{}]» #1': {
-    verdict: 'minted',
-    why: 'the role an entity appears by — a closed word of this reading',
-  },
-
   // --- lines a value from outside reaches ----------------------------------------
   'antipatterns.ts «{}» #1': {
     verdict: 'collapsed',
@@ -483,6 +478,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   'tail.ts «The tail is still on disk at {} — nothing was removed.» #1': {
     verdict: 'collapsed',
     why: 'a path under the project root',
+  },
+  'export.ts «covering: {}» #1': {
+    verdict: 'minted',
+    why: 'the trees this feed covered, joined from the closed scope vocabulary — the declaration that lets a filtered feed be told from a complete one',
   },
   'timeline.ts «No history recorded for {}.» #1': {
     verdict: 'collapsed',

@@ -360,7 +360,11 @@ describe('the README says what the program says, entry for entry', () => {
     // this reader walks past, would leave every case below comparing two empty arrays.
     const bullets = pinnedBullets();
     expect(bullets.length).toBe(catalogue().scope.length);
-    expect(bullets.length).toBeGreaterThanOrEqual(5);
+    // FOUR, and it was five: the §8 entry about which attestation dates a record left
+    // the list because the document had already answered it (see the block at the end of
+    // this file). The floor moves with the list rather than being a floor under a number
+    // nobody restated.
+    expect(bullets.length).toBeGreaterThanOrEqual(4);
   });
 
   it('carries each row phrase and its id, in order', () => {
@@ -389,7 +393,7 @@ describe('the README says what the program says, entry for entry', () => {
     // The paragraph under the list explains why three unresolved gaps are NOT in it. That
     // paragraph is a list of ids too, so it is held against the registry the same way.
     const md = readFileSync(VERIFIER_README, 'utf-8');
-    const at = md.indexOf('The other three unresolved gaps are');
+    const at = md.indexOf('The other unresolved gaps are');
     expect(at, 'the README stopped explaining what it leaves out').toBeGreaterThan(0);
     const paragraph = md.slice(at, md.indexOf('\n\n', at));
     const named = [...paragraph.matchAll(/\bG\d\d\b/g)].map((found) => found[0]).sort();
@@ -450,36 +454,43 @@ describe('the block is printed on every run that reads a record', () => {
 });
 
 /**
- * THE DISAGREEMENT REACHES THE PERSON READING THE VERDICT — which it did not, for as long as
- * it has existed.
+ * THE DISAGREEMENT THIS BLOCK ANNOUNCED IS GONE, AND IT WAS NEVER AN AMBIGUITY.
  *
- * `second-reader-agrees-on-the-record.test.ts` pins the divergence itself: the product dates
- * `witnessed-record` at block 963690 and this reader at 963688, both faithful to §8, which
- * names which CHECKPOINT to take and not which ATTESTATION inside it. That case keeps the
- * finding from being deleted at the next merge. It does nothing for the stranger who runs
- * `mnema_verify.py record`, reads an instant, and has no way to learn that another reader of
- * the same bytes reads a different one.
+ * It used to declare, in every verdict over a record this reader dated, that another reader
+ * of the same bytes read a different instant — the product at block 963690, this reader at
+ * 963688 — and it called that a place *"§8 does not decide"*. THE PREMISE WAS FALSE. §8 says
+ * *"Take the earliest confirmed block among them"*, and it said so before this declaration
+ * was written: G23, G19 and a note in the product's own test all entered in one commit and
+ * all three went stale against the document they audit. So the honest reading was never "two
+ * faithful readers disagree"; it was "the product is out of conformance with the format it
+ * publishes", and announcing an ambiguity was announcing something that did not exist.
  *
- * WHICH ATTESTATION IS "THE INSTANT" IS NOT DECIDED HERE, and this delivery does not decide
- * it. Announcing that it is undecided is not the same act as settling it, and it is the one
- * of the two a second reader may perform on its own.
+ * A DECLARATION OF A HOLE THAT IS NOT THERE IS NOT A CAUTIOUS DECLARATION — it is a wrong
+ * one, and it costs more than silence: a stranger reading it would conclude the format left
+ * the question open, and would have no way to learn from this verdict that the product was
+ * simply not following it. That is why the entry is gone rather than reworded.
+ *
+ * WHAT SURVIVES IS THE NOTE THAT NAMES THE BLOCK, and the case below is what keeps it. The
+ * verdict still says which block dated the record, which is what a reader needs in order to
+ * re-derive the date from the 80 bytes themselves.
  */
-describe('the instant a verdict prints says whose rule it is', () => {
-  it('declares the choice, on the record where the two readers make it differently', () => {
+describe('the instant a verdict prints names the block it came from', () => {
+  it('declares no ambiguity about which attestation dates the record, because there is none', () => {
+    // The other direction of the same fact, and the one that keeps this from being an
+    // absence nobody notices: the entry is GONE from what the verdict says it does not
+    // check, because the resolution it was derived from stopped being `unresolved`.
     const there = reading(copyOf('witnessed-record'));
-    const entry = there.notCovered.find((row) => row.gap === 'G23');
-    expect(entry, 'the one disagreement between the two readers, said in no verdict').toBeDefined();
-    expect(entry?.section).toBe('8');
-    expect(entry?.what).toContain('which attestation inside a checkpoint dates the record');
-    // The rule this reader applies, named — so the instant above can be re-read under the
-    // other one by whoever needs to.
-    expect(entry?.why).toContain('EARLIEST block');
-    expect(entry?.why).toContain('the product reads a different one');
+    expect(there.notCovered.map((row) => row.gap)).not.toContain('G23');
+    // And the registry says which sentence closed it, so the absence above is explained
+    // somewhere a reader can reach rather than merely being an absence.
+    const gaps = python([VERIFIER, 'gaps']);
+    expect(gaps.stdout).toContain('Take the earliest confirmed block');
   });
 
-  it('prints that instant in the same verdict, so the declaration has something to qualify', () => {
-    // NON-VACUITY: a disclaimer about which instant is quoted is worth nothing on a run that
-    // quotes none. This is the note the entry above is about.
+  it('prints the block it dated the record from, which is what a reader re-derives it from', () => {
+    // NON-VACUITY: the declaration above is about a verdict that dates a record at all.
+    // This is the note it is about, and the block is the lowest confirmed one — the rule
+    // both readers now apply.
     const dated = reading(copyOf('witnessed-record'))
       .findings.filter((finding) => finding.level === 'note' && finding.section === '8')
       .map((finding) => finding.what)

@@ -11,10 +11,11 @@ describe('deriveAlias', () => {
   });
 
   it('prefixes by kind', () => {
-    const id = 'x';
-    expect(deriveAlias('task', id).startsWith('t-')).toBe(true);
-    expect(deriveAlias('epic', id).startsWith('e-')).toBe(true);
-    expect(deriveAlias('sprint', id).startsWith('s-')).toBe(true);
+    // Two lines used to stand here, one per other kind, and they were the whole
+    // evidence that `epic` and `sprint` existed. Nothing in production ever passed
+    // either — the arms were a public option with no caller — so they are gone, and
+    // the enumeration below is what covers whatever kinds the map actually declares.
+    expect(deriveAlias('task', 'x').startsWith('t-')).toBe(true);
   });
 
   it('the hex is the sha256 prefix of the id, not the id itself', () => {
@@ -64,10 +65,16 @@ describe('the short form collides, and that is the accepted cost', () => {
     expect(a).not.toBe(b);
   });
 
-  it('a kind prefix separates what a hash prefix does not', () => {
-    // The same overlap across kinds is not even a collision: `t-` and `e-` differ.
-    expect(deriveAlias('task', 'task-93')).not.toBe(deriveAlias('epic', 'task-367'));
-  });
+  /*
+   * A second case stood here — "a kind prefix separates what a hash prefix does not"
+   * — and it used the `epic` arm as its INSTRUMENT, not as its subject: it needed two
+   * kinds to show that the same hash overlap across kinds is not a collision. With one
+   * kind the separation it demonstrated cannot be produced, so the case is removed
+   * rather than left green over a comparison of `t-` with itself. What replaces it is
+   * nothing, and that is the honest answer: the prefix separating two kinds is a
+   * property of a vocabulary with two kinds, and this one has one. The day the epic
+   * comes back, this case comes back with it.
+   */
 });
 
 describe('property: derivation is stable at scale', () => {

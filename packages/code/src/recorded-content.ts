@@ -87,6 +87,52 @@ export function reachNotice(reach: AddressReach | undefined): string[] {
 }
 
 /**
+ * WHAT THE LINK JUST RECORDED WILL REACH, AND WHAT THE RULE IT NAMES WILL NOT.
+ *
+ * The lines a link prints when it travels further than its subject, and NONE when it
+ * does not — which is the ordinary case, so the ordinary write is unchanged.
+ *
+ * MEASURED, and it is why these lines exist. `mnema link --scope public --rel governs
+ * <a-private-decision> <path>` is accepted today. The edge is committed and reaches
+ * every clone; the decision it names never leaves the machine. So the reply said
+ * *"Landed in the public tree — committed with the repository, so it reaches every
+ * clone"*, which is true of the EDGE and reads as a promise about the RULE — and over a
+ * record with two of those, a clone was told `3 govern this path` where one governed.
+ *
+ * IT DOES NOT REFUSE, and the decision behind that is not this function's. Whether a
+ * clone should be told about a rule its owner chose to keep private is the owner's
+ * question and it is open; what was not open is the product asserting a false fact. So
+ * this SAYS what just happened, at the one moment the person can still write the rule
+ * where it belongs, and records nothing about it.
+ *
+ * TWO CASES, because the repairs differ. A subject in a narrower tree is a rule that
+ * exists and does not travel — move it, or address it from the tree it lives in. A
+ * subject in NO tree is a rule nobody here has written, which is usually a mistyped id.
+ */
+export function subjectReachNotice(landedIn: Scope, subjectScope: Scope | undefined): string[] {
+  // Only the tree that travels can promise a clone anything, so only a link that landed
+  // there can over-promise. A link in a machine-local tree reaches exactly as far as
+  // everything else on the machine, whichever tree its subject is in.
+  if (landedIn !== TRAVELS) return [];
+  if (subjectScope === TRAVELS) return [];
+  if (subjectScope === undefined) {
+    return [
+      '  No tree here holds the rule it names, so this address reaches every clone and',
+      '  names nothing a reader of one can open. Check the id, or record the rule.',
+    ];
+  }
+  return [
+    `  The rule it names is in the ${subjectScope} tree, which does not travel — so this`,
+    '  address reaches every clone and the rule it names does not. A reader of one gets',
+    '  the address and no rule; record the rule where the address is, or address it from',
+    '  the tree it lives in.',
+  ];
+}
+
+/** The one tree a clone of the repository gets. */
+const TRAVELS: Scope = 'public';
+
+/**
  * The lines to print after a write that replaced something, or none at all when
  * it did not.
  *

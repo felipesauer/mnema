@@ -59,11 +59,12 @@ function asking(path: string, present: readonly string[] = []): GovernanceQuery 
  *
  * Named rather than spelled at each assertion, and it is a claim rather than boilerplate:
  * every case below is about the relation that INFORMS, so the relation that stops somebody
- * must read zero in all three — and it reading anything else would mean the two walks had
- * started sharing a list. The gate's own cases live with the charge that stands on them
+ * must read zero in all FOUR — and it reading anything else would mean the two walks had
+ * started sharing a list. The fourth is `unresolved`: an address naming a rule this read
+ * cannot reach, which used to be counted as a rule that governs. The gate's own cases live with the charge that stands on them
  * (`code/tests/the-record-asks-for-a-person.test.ts`).
  */
-const NO_GATE = { matching: 0, addressed: 0, stale: 0 };
+const NO_GATE = { matching: 0, addressed: 0, stale: 0, unresolved: 0 };
 
 /** The rules of a reading, as `address → id`, in the order the reading put them. */
 const addresses = (rules: readonly { address?: string; rule: string }[]): string[] =>
@@ -97,6 +98,7 @@ describe('governance — an address is a prefix by segment', () => {
       matching: 0,
       governing: 1,
       stale: 0,
+      unresolved: 0,
       asks: NO_GATE,
     });
   });
@@ -149,8 +151,8 @@ describe('governance — the order comes from the data', () => {
   });
 });
 
-describe('governance — three numbers, always', () => {
-  it('answers with all three when there is nothing at all', () => {
+describe('governance — four numbers, always', () => {
+  it('answers with all four when there is nothing at all', () => {
     const b = bench();
     capture(b, 'mem-1', 'a note that addresses nothing');
 
@@ -159,6 +161,7 @@ describe('governance — three numbers, always', () => {
       matching: 0,
       governing: 0,
       stale: 0,
+      unresolved: 0,
       asks: NO_GATE,
     });
     expect(reading.rules).toEqual([]);
@@ -179,6 +182,7 @@ describe('governance — three numbers, always', () => {
       matching: 1,
       governing: 2,
       stale: 1,
+      unresolved: 0,
       asks: NO_GATE,
     });
     // NAMED, not merely counted — a count of dead addresses is fixed by making the
@@ -200,6 +204,7 @@ describe('governance — three numbers, always', () => {
       matching: 0,
       governing: 1,
       stale: 1,
+      unresolved: 0,
       asks: NO_GATE,
     });
     expect(addresses(reading.stale)).toEqual(['src/gone → orphan']);
@@ -218,6 +223,7 @@ describe('governance — three numbers, always', () => {
       matching: 1,
       governing: 2,
       stale: 1,
+      unresolved: 0,
       asks: NO_GATE,
     });
   });
@@ -285,6 +291,7 @@ describe('governance — what it normalizes, and what it does not', () => {
       matching: 0,
       governing: 1,
       stale: 1,
+      unresolved: 0,
       asks: NO_GATE,
     });
     expect(reading.stale[0]?.address).toBeUndefined();
@@ -407,17 +414,34 @@ describe('governance — what a rule IS travels with it, and is never judged', (
     });
   });
 
-  it('reports a rule no visible tree authored, without inventing one', () => {
+  it('reports a rule no visible tree authored as UNRESOLVED, not as one that governs', () => {
+    // THIS CASE USED TO ASSERT THE DEFECT. It read the address off `.rules` — the list
+    // of what GOVERNS the path — and checked only that the fields it could not fill
+    // were absent. So "an address naming a rule nothing here holds is a rule that
+    // governs" was the asserted behaviour, and the number beside it said so too:
+    // measured in a clone, `3 govern this path` where one governed.
     const b = bench();
     link(b, 'never-written', 'src', 'governs');
+    const reading = governingRules([tree(b)], asking('src/file.ts', ['src']));
 
-    const [rule] = governingRules([tree(b)], asking('src/file.ts', ['src'])).rules;
+    // It is NOT among the rules that govern, and it is not counted as one.
+    expect(reading.rules).toEqual([]);
+    expect(reading.counts.matching).toBe(0);
+    expect(reading.counts.governing).toBe(0);
+    // NOR is it dropped: the record holds the address, so it is its own class, counted
+    // and named. An absence nobody counted is an absence nobody fixes.
+    expect(reading.counts.unresolved).toBe(1);
+    const [rule] = reading.unresolved;
     expect(rule?.rule).toBe('never-written');
     expect(rule?.kind).toBeUndefined();
     expect(rule?.name).toBeUndefined();
     expect(rule?.scope).toBeUndefined();
     // And the edge itself is still fully attributed — the assertion is a fact.
     expect(rule?.assertedIn).toBe('public');
+    // NOT stale either, and the two are different repairs: a stale address is moved,
+    // and this one means the rule is somewhere this reader is not.
+    expect(reading.stale).toEqual([]);
+    expect(reading.counts.stale).toBe(0);
   });
 
   it('gives a memory no name rather than excerpting one', () => {

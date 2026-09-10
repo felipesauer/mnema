@@ -57,7 +57,7 @@
  * THAT file — what reaches it today and what that reaches instead — so it can be drained
  * one row at a time. It can only shrink.
  *
- * AND IT CANNOT DISSOLVE ITSELF. The ledger's keys are 75 path strings. Under a rule that
+ * AND IT CANNOT DISSOLVE ITSELF. The ledger's keys are 72 path strings. Under a rule that
  * read path literals, listing a file as debt would witness it and every entry would go
  * stale the moment it was written. Naming requires an IMPORT here, so a table of strings
  * names nothing — asserted below rather than assumed.
@@ -159,8 +159,27 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * went 2446 -> 2453 when `the-strict-gate-catches-the-forgery.test.ts` arrived with seven
  * clauses, and the delta was checked against that file rather than accepted from the
  * failure — a count restated from whatever the run reported is a count that pins nothing.
+ * It went 2453 -> 2454 when `every-public-value-has-a-caller.test.ts` began importing
+ * `ALIAS_PREFIXES` to enumerate the arms of a vocabulary from the vocabulary itself: one
+ * clause, counted in that file, not read off the failure. It went 2454 -> 2465 when
+ * `every-description-reaches-the-model.test.ts` arrived: eleven clauses, counted in that
+ * file — a sandbox, a project, a client, a transport, and the server it connects to. It
+ * went 2465 -> 2482 when `the-origin-travels-beside-the-label.test.ts` arrived:
+ * seventeen clauses, counted in that file, which drives six verbs and one tool. It went
+ * 2482 -> 2505 over three files of one delivery: `the-moves-say-what-they-said.test.ts`
+ * with eighteen, and the two sibling units beside the modules they name — the catalog's
+ * proof reader with three and the projection's with two. Twenty-three, counted in the
+ * three files. It went 2505 -> 2513 when `one-window-three-readings.test.ts` arrived —
+ * the test a doc-comment had named for as long as it stood, and which did not exist:
+ * eight clauses, counted in it. It went 2513 -> 2520 when
+ * `the-proof-answers-a-machine.test.ts` arrived: seven clauses, counted in it. It went
+ * 2520 -> 2530 when `the-feed-covers-this-project.test.ts` arrived: ten clauses, counted
+ * in it, which found two projects and exported from one of them. It went 2530 -> 2543
+ * when `the-address-names-a-rule-a-reader-can-open.test.ts` arrived: thirteen clauses,
+ * counted in it, which founds a project, clones its committed tree and asks four
+ * readings the same question.
  */
-const CLAUSES_IN_THE_TREE = 2453;
+const CLAUSES_IN_THE_TREE = 2543;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -330,14 +349,6 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: 'oneLine, the whitespace-collapse rule: its sibling test reads this file as text to prove it declares no import, and never once calls the function it is about.',
   },
-  'packages/code/src/commands/export.ts': {
-    reached: 'nobody imports it',
-    why: 'runExport, the OCSF audit feed reader: no test imports it, and the feed is asserted as NDJSON text captured off the io port, so its ExportDone return is never held.',
-  },
-  'packages/code/src/commands/rules.ts': {
-    reached: 'nobody imports it',
-    why: "runRules, the CLI's thin wrapper over readGoverningRules: no test imports it, and its printed --json page is asserted only against the MCP twin those tests import directly.",
-  },
   'packages/code/src/commands/skills.ts': {
     reached: 'nobody imports it',
     why: "The `mnema skills` provenance-audit adapter; no test imports it, and the verb's lazy import means its tree resolution is only ever read back off printed report lines in cli-e2e.",
@@ -385,10 +396,6 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   'packages/code/src/presentation/exposure.ts': {
     reached: 'nobody imports it',
     why: "Builds the exposure report's rows and closing facts; the cases that drive it are about the credential value NOT being printed, so its column order and date cut go unobserved.",
-  },
-  'packages/code/src/presentation/record.ts': {
-    reached: 'nobody imports it',
-    why: 'The five-branch read of one whole record; `show` is substring-checked on a decision and a skill only, so its memory, observation and task branches ride on the golden alone.',
   },
   'packages/code/src/presentation/render.ts': {
     reached: 'nobody imports it',
@@ -627,10 +634,10 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
   wiring: 32,
-  presentation: 12,
+  presentation: 11,
   projections: 4,
   completion: 4,
-  commands: 4,
+  commands: 2,
   barrels: 3,
   scattered: 16,
 };
@@ -660,7 +667,7 @@ describe('every file has a test that names it', () => {
     expect(PRODUCTION).toContain('packages/code/src/wiring/index.ts');
     expect(PRODUCTION).toContain('packages/core/src/topology/index.ts');
     expect(PRODUCTION).not.toContain('packages/core/src/index.ts');
-    expect(PRODUCTION).toHaveLength(296);
+    expect(PRODUCTION).toHaveLength(299);
     expect(TEST_TREE.length).toBeGreaterThan(250);
     // No file is in both corpora, which is what keeps a test from witnessing itself.
     const tests = new Set(TEST_TREE.map((one) => one.path));
@@ -680,9 +687,9 @@ describe('every file has a test that names it', () => {
     const found = unwitnessed();
     const byReach = (reach: Reach): number =>
       [...found.values()].filter((one) => one === reach).length;
-    expect(PRODUCTION.length - found.size).toBe(221);
-    expect(found.size).toBe(75);
-    expect(byReach('nobody imports it')).toBe(75);
+    expect(PRODUCTION.length - found.size).toBe(227);
+    expect(found.size).toBe(72);
+    expect(byReach('nobody imports it')).toBe(72);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -704,7 +711,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(75);
+    expect(reasons).toHaveLength(72);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.
@@ -737,7 +744,7 @@ describe('every file has a test that names it', () => {
   });
 
   it('cannot be dissolved by the ledger that describes it', () => {
-    // The keys below are 75 paths. Naming requires an IMPORT, so listing a file here
+    // The keys below are 72 paths. Naming requires an IMPORT, so listing a file here
     // cannot witness it — and this file, which mentions every one of them, imports no
     // product file at all.
     const self = TEST_TREE.find((one) =>

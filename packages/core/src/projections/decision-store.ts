@@ -9,6 +9,7 @@
 
 import type { SqliteDatabase } from '../db/sqlite.js';
 import type { DecisionProjection } from './decision.js';
+import { proofColumn, proofFromColumn } from './proof.js';
 
 /** The `decisions` row shape as stored. */
 interface DecisionRow {
@@ -22,6 +23,8 @@ interface DecisionRow {
   readonly supersedes: string | null;
   readonly created_at: string;
   readonly updated_at: string;
+  /** What each move said, JSON-encoded — null when no move said anything. */
+  readonly proof: string | null;
 }
 
 /** The bound-parameter shape: every column present, optionals as null. */
@@ -36,6 +39,7 @@ interface DecisionParams {
   readonly supersedes: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
+  readonly proof: string | null;
 }
 
 /**
@@ -48,8 +52,8 @@ export function materializeDecisions(
   decisions: Iterable<DecisionProjection>,
 ): void {
   const insert = db.prepare(
-    `INSERT INTO decisions (id, adr, title, rationale, alternatives, state, superseded_by, supersedes, created_at, updated_at)
-     VALUES (@id, @adr, @title, @rationale, @alternatives, @state, @supersededBy, @supersedes, @createdAt, @updatedAt)`,
+    `INSERT INTO decisions (id, adr, title, rationale, alternatives, state, superseded_by, supersedes, created_at, updated_at, proof)
+     VALUES (@id, @adr, @title, @rationale, @alternatives, @state, @supersededBy, @supersedes, @createdAt, @updatedAt, @proof)`,
   );
   for (const decision of decisions) {
     insert.run(toParams(decision));
@@ -89,6 +93,7 @@ function toParams(decision: DecisionProjection): DecisionParams {
     supersedes: decision.supersedes ?? null,
     createdAt: decision.createdAt,
     updatedAt: decision.updatedAt,
+    proof: proofColumn(decision.proof),
   };
 }
 
@@ -107,6 +112,8 @@ function toProjection(row: DecisionRow): DecisionProjection {
   if (row.alternatives !== null) projection.alternatives = row.alternatives;
   if (row.superseded_by !== null) projection.supersededBy = row.superseded_by;
   if (row.supersedes !== null) projection.supersedes = row.supersedes;
+  const said = proofFromColumn(row.proof);
+  if (said.proof !== undefined) projection.proof = said.proof;
   return projection;
 }
 
