@@ -243,12 +243,17 @@ GAPS: tuple[Gap, ...] = (
         "G19",
         "8",
         "the .blocks sidecar may carry FEWER headers than the proof has bitcoin attestations, "
-        "and the document does not say whether a missing header is an incomplete file to refuse "
-        "or a normal absence to ignore",
-        "unresolved",
-        "measured: witnessed-record attests blocks 963688/963689/963690 and ships two headers; "
-        "963689 has none. Reported by name, not refused",
-        standing="record-finding",
+        "and it was not written whether a missing header is an incomplete file to refuse or a "
+        "normal absence to ignore",
+        "specified",
+        "section 8 now says it: the pairing is by the height the attestation declares, and a "
+        'bitcoin attestation whose header is absent "is simply one that cannot be folded '
+        'offline; it is neither coverage nor a break". This reader reports it by name and '
+        "refuses nothing - measured on witnessed-record, which attests 963688/963689/963690 "
+        "and ships two headers, 963689 having none. THIS ENTRY WAS `unresolved` AFTER THAT "
+        "SENTENCE WAS WRITTEN, in the same commit as G23 and for the same reason: the registry "
+        "was a delivery behind the document",
+        standing="settled",
     ),
     Gap(
         "G20",
@@ -292,17 +297,21 @@ GAPS: tuple[Gap, ...] = (
     Gap(
         "G23",
         "8",
-        'section 8 says "the instant" as though a checkpoint had ONE attestation, and the normal '
-        "case is several - it names which CHECKPOINT to take and not which ATTESTATION inside it, "
-        "so two faithful readers date the same record differently",
-        "unresolved",
-        "this reader takes the EARLIEST block: an earlier attestation is the stronger existence "
-        "claim, and the alternative rule is proof traversal order, which a semantically identical "
-        ".ots can reorder. So the instant a verdict prints is THIS reader's rule and not the "
-        "document's, and the product reads a different one off the same bytes. The divergence "
-        "is pinned by a test rather than hidden, and is not this reader's to settle",
-        standing="reader-limit",
-        not_checked="which attestation inside a checkpoint dates the record, when it carries more than one",
+        "a checkpoint normally has SEVERAL confirmed attestations - three calendars land in "
+        "three blocks - so naming which checkpoint to take does not say which attestation "
+        "inside it dates the record",
+        "specified",
+        'section 8 says "Take the earliest confirmed block among them", and this reader takes '
+        "the lowest height. THE ENTRY STOOD `unresolved` LONG AFTER THAT SENTENCE EXISTED: it, "
+        "G19 beside it, and the note in the product's own test all entered in one commit and "
+        "all three went stale against the document they audit, while the PRODUCT read the "
+        "first attestation proof traversal reached and dated the frozen witnessed-record "
+        "twenty minutes later than this reader did. That was never two faithful readers "
+        "disagreeing - it was the product out of conformance with its own published format, "
+        "and it now elects by height too. By HEIGHT and not by instant: a block's nTime is "
+        "declared by whoever mined it and consensus only bounds it, so a lower block may "
+        "carry a later instant",
+        standing="settled",
     ),
     Gap(
         "G25",

@@ -9,7 +9,8 @@
  * that could construct that pair for a checkpoint it had just signed would be a test
  * that had found a SHA-256 preimage. So the record is frozen instead — founded by
  * this product's own CLI, stamped through the public OpenTimestamps calendars on
- * 2026-08-23, and confirmed in Bitcoin block 963690 the same morning.
+ * 2026-08-23, and confirmed in Bitcoin blocks 963688, 963689 and 963690 the same morning
+ * — three calendars, three attestations, and the record is dated from the lowest.
  *
  * WHAT A STRANGER CAN CHECK, WITHOUT THIS PRODUCT. The `.ots` in the fixture is the
  * ecosystem's own file: `ots verify` against a Bitcoin node answers the same question
@@ -87,9 +88,16 @@ const TAIL =
 /** The checkpoint the attestation is filed under — the last one the record sealed. */
 const CHECKPOINT = 'f84396462713a5fd1fefd3a043cddb2eed81c00f5fead86f0474bfaa551c42e2';
 
-/** The block that carries it, and the instant that block claims. */
-const BLOCK = 963690;
-const ATTESTED_AT = 1787466198;
+/**
+ * The block this record is DATED FROM, and the instant that block claims.
+ *
+ * The lowest of the three the proof reaches, which is the rule `FORMAT.md` §8 names.
+ * It was 963690 and 1787466198 here — the first attestation a walk of the proof reached
+ * that had a header — and the product read the frozen record twenty minutes later than
+ * the reference verifier did over the same bytes.
+ */
+const BLOCK = 963688;
+const ATTESTED_AT = 1787464981;
 
 let root: string;
 
@@ -151,10 +159,66 @@ describe('a record an outside witness has dated', () => {
   });
 });
 
+describe('which of the three attestations dates it, and what that still depends on', () => {
+  it('applies the rule the published document states, and the document states it', () => {
+    // THE PAIR, and neither half is worth much alone. A mutation that rewrote §8's rule
+    // — from "the earliest confirmed block among them, which is the one of lowest
+    // height" to "the confirmed block a walk of the proof reaches first" — reddened
+    // NOTHING: measured, as row M9.4 of this delivery's battery. The document could say
+    // one thing and the code do another, which is precisely the state this whole
+    // delivery found and fixed, and nothing would have noticed the next time.
+    //
+    // So the document's words and the code's behaviour are asserted TOGETHER: this is
+    // not a text pin, it is "the format names this rule AND the product applies it".
+    // Drift either way is red.
+    const format = readFileSync(new URL('../../FORMAT.md', import.meta.url), 'utf-8');
+    expect(format).toContain('earliest confirmed block');
+    expect(format).toContain('lowest height');
+    const result = verify(root, catalogUpcasters());
+    const reached = [963688, 963689, 963690];
+    expect(Math.min(...reached)).toBe(BLOCK);
+    expect(result.summary).toContain(`Bitcoin block ${BLOCK}`);
+  });
+
+  it('takes the lowest confirmed block, and the higher one is still proven', () => {
+    // The proof reaches 963688, 963689 and 963690; the sidecar carries headers for the
+    // first and the last. The verdict quotes the LOWEST of the two it can fold, which is
+    // the rule `FORMAT.md` §8 names — and the other one is not unproven, it is simply not
+    // the one elected. Without this second half the case would pass over a reader that had
+    // stopped folding 963690 at all.
+    const result = verify(root, catalogUpcasters());
+    expect(result.summary).toContain(`Bitcoin block ${BLOCK}`);
+    expect(result.summary).not.toContain('963690');
+    expect(result.witness).toBe('covered');
+  });
+
+  it('moves the published date when a header leaves the sidecar — the limit, measured', () => {
+    // THE ELECTION DOES NOT MAKE THE DATE INDEPENDENT OF THE WRITER'S SIDECAR, and the
+    // delivery that changed the rule was partly sold on the claim that it would. Measured
+    // here rather than argued: drop the lowest block's header and the verdict dates the
+    // record from the next one it can fold, twenty minutes later, over a proof that did
+    // not change. The election buys agreement between two readers over the bytes as
+    // shipped, and independence from the order a third party serialized an `.ots` in. It
+    // does not buy this, and `FORMAT.md` §8 says so instead of implying otherwise.
+    const sidecar = witnessBlocksPath({ root }, TAIL, CHECKPOINT);
+    const kept = readFileSync(sidecar, 'utf-8')
+      .split('\n')
+      .filter((line) => line.trim() !== '' && !line.includes(`"height":${BLOCK}`));
+    // NON-VACUITY of the surgery: the file really held the elected block's header, and
+    // really still holds another one.
+    expect(kept).toHaveLength(1);
+    writeFileSync(sidecar, `${kept.join('\n')}\n`, 'utf-8');
+
+    const result = verify(root, catalogUpcasters());
+    expect(result.witness).toBe('covered');
+    expect(result.summary).toContain('Bitcoin block 963690 at 2026-08-23T06:23:18.000Z');
+  });
+});
+
 describe('what the attestation is, and is not, evidence of', () => {
   it('falls to PENDING when the block header goes and the anchor stays', () => {
     // The state a record is in between asking and confirming, reached here by taking
-    // away the 80 bytes: the proof still reaches block 963690 and this machine can no
+    // away the 80 bytes: the proof still reaches its blocks and this machine can no
     // longer check that it does. It is not coverage, and the level drops one rung.
     rmSync(witnessBlocksPath({ root }, TAIL, CHECKPOINT));
     const result = verify(root, catalogUpcasters());

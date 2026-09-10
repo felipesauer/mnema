@@ -202,26 +202,22 @@ const RECORDS = [
     fixture: 'witnessed-record',
     level: 'externally-witnessed',
     witness: 'covered',
-    // The second reader takes the earliest attested block; the product takes the first one
-    // proof traversal reaches. Both are valid attestations of the same checkpoint — see
-    // `the two readers date it differently` below, and gap G23.
+    // ONE block from both readers: the lowest confirmed one, which is what §8 names.
+    // The product used to take the first attestation proof traversal reached that had a
+    // header — 963690 — and the two readers dated the same record twenty minutes apart.
     block: 963688,
     instant: '2026-08-23T06:03:01',
-    product: 963690,
-    productInstant: '2026-08-23T06:23:18',
     remainder: 0,
   },
   {
     fixture: 'witnessed-then-written',
     level: 'fully-signed',
     witness: 'not-covered',
-    // Here the two rules land on the same block, because the earliest attested block is
-    // also the first one traversal reaches. The agreement is a coincidence of this file's
-    // fork order, which is precisely why G23 is a gap and not a preference.
+    // This one agreed even under the old rule, because its lowest attested block is also
+    // the first one traversal reaches. That coincidence is why the disagreement needed a
+    // second fixture to be visible at all, and it is why this row stays.
     block: 963937,
     instant: '2026-08-25T01:47:34',
-    product: 963937,
-    productInstant: '2026-08-25T01:47:34',
     remainder: 1,
   },
 ] as const;
@@ -241,12 +237,13 @@ describe.each(RECORDS)('both readers over $fixture', (record) => {
     const here = verify(copyOf(record.fixture), catalogUpcasters());
     const there = secondReading(copyOf(record.fixture));
     // Each reader's sentence is its own words, so the comparison is on the numbers both
-    // derived from an 80-byte header. WHICH of a checkpoint's attestations is reported is
-    // where the two diverge (gap G23) — that divergence has its own case below, and the
-    // block asserted here is the one THIS reader's rule picks.
-    expect(here.summary, "the product's sentence").toContain(`Bitcoin block ${record.product}`);
+    // derived from an 80-byte header — and now on ONE number, because which of a
+    // checkpoint's attestations is reported is a rule the document names and both
+    // readers apply. It used to be the one place they diverged; the block below used to
+    // need two columns.
+    expect(here.summary, "the product's sentence").toContain(`Bitcoin block ${record.block}`);
     expect(notes(there), "the second reader's sentence").toContain(`bitcoin block ${record.block}`);
-    expect(here.summary).toContain(record.productInstant);
+    expect(here.summary).toContain(record.instant);
     expect(notes(there)).toContain(record.instant);
   });
 
@@ -634,44 +631,57 @@ describe('the second reader refuses, and the mutation that earns each refusal sh
 });
 
 /**
- * THE ONE PLACE THE TWO READERS DISAGREE, PINNED RATHER THAN HIDDEN — gap G23.
+ * THE ONE PLACE THE TWO READERS USED TO DISAGREE, AND WHY IT IS NOW AN AGREEMENT.
  *
- * Section 8 says a reader "takes the NEWEST checkpoint it holds a confirmed attestation
- * for" and reports "the instant, the block, and how many events were written after the
- * checkpoint that instant dates". It settles which CHECKPOINT. It says nothing about which
- * ATTESTATION inside it, and the normal case is several: section 8 itself talks about
- * calendars in the plural, and `witnessed-record` carries three.
+ * THE PREMISE THIS BLOCK RESTED ON WAS THAT THE DOCUMENT DID NOT DECIDE. It said section 8
+ * "settles which CHECKPOINT" and "says nothing about which ATTESTATION inside it", and that
+ * the divergence was therefore a finding to be kept rather than a defect to be fixed. That
+ * is false, and the document itself falsified it: §8 says *"Take the earliest confirmed
+ * block among them"*, with its reason written out. The gap registry, the note in this file
+ * and G19 beside it all entered in ONE commit (`889116a7`, #583) and all three went stale
+ * against the very document they audit. So this was never two faithful readers disagreeing:
+ * it was the PRODUCT out of conformance with the format it publishes, and the second reader
+ * following it.
  *
- * So the two readers, each faithful to the document, date the same record differently:
+ * The product elected the first bitcoin attestation proof traversal reached that had a
+ * header — 963690 at 06:23:18Z — while the second reader took the lowest block, 963688 at
+ * 06:03:01Z. Both were valid attestations of the same checkpoint, each folding to its own
+ * block's merkle root, which is what made this a conformance question and not an
+ * arithmetic one.
  *
- *   the product        block 963690 at 06:23:18Z   the first bitcoin attestation proof
- *                                                  traversal reaches that has a header
- *   the second reader  block 963688 at 06:03:01Z   the earliest attested block
+ * WHAT DID NOT SURVIVE THE MEASUREMENT, and it is written here because the fix was sold
+ * partly on it: *"the published date stops depending on which headers the writer kept"* is
+ * FALSE. Deleting the 963688 line from the `.blocks` sidecar moves the published date to
+ * 06:23:18 under BOTH rules — the fragility is in the sidecar and the election does not
+ * remove it. What the election buys is the two readers agreeing over the bytes as shipped,
+ * and independence from the order a third party serialized an `.ots` in. Nothing more.
  *
- * BOTH ARE VALID ATTESTATIONS OF THE SAME CHECKPOINT: each folds to its own block's merkle
- * root, and both blocks carry real work. The reason this is a finding and not a preference
- * is twofold. An earlier attestation is the STRONGER claim — existing at 06:03 implies
- * existing at 06:23 and not the reverse, so the product understates its own evidence by
- * twenty minutes here. And "proof traversal order" is a serialization detail of a
- * third-party file: reordering the fork branches of an `.ots`, which changes nothing about
- * what it proves, changes the date the product reports.
- *
- * THIS CASE IS THE DISAGREEMENT MADE PERMANENT. It fails if either reader changes its rule,
- * which is what "disagreement is red" is for; leaving the suite red instead would have
- * deleted the finding at the first merge.
+ * AND BY HEIGHT, NOT BY INSTANT. §8's justification used to argue from monotonicity of
+ * TIME — existing at the earlier instant implies existing at the later one — and Bitcoin
+ * consensus does not guarantee that ordering: `nTime` is declared by whoever mined the
+ * block and is only bounded (above the median of the previous eleven, below now plus two
+ * hours), so a lower block may carry a later instant. The election is by HEIGHT, which is
+ * what the reference OpenTimestamps client does and what rests on no declared field.
+ * `witnessed-record` has no such inversion, so nothing here tests that distinction and the
+ * document now says so instead of implying otherwise.
  */
-describe('the two readers date the same record differently, and the document does not decide', () => {
-  it('reports different blocks for one checkpoint, and both blocks really carry it', () => {
+describe('the two readers date the same record, from the block the document names', () => {
+  it('reports one block for one checkpoint, and that block really carries it', () => {
     const record = copyOf('witnessed-record');
     const here = verify(record, catalogUpcasters());
     const there = secondReading(copyOf('witnessed-record'));
 
-    expect(here.summary).toContain('Bitcoin block 963690 at 2026-08-23T06:23:18.000Z');
+    // ONE date, from both readers, over the same bytes — the lowest confirmed block.
+    expect(here.summary).toContain('Bitcoin block 963688 at 2026-08-23T06:03:01.000Z');
     expect(notes(there)).toContain('bitcoin block 963688 at 2026-08-23T06:03:01+00:00');
+    // AND THE ONE THE PRODUCT USED TO NAME IS GONE FROM ITS SENTENCE. Without this the
+    // case above would pass over a reader that printed both.
+    expect(here.summary).not.toContain('963690');
 
-    // NON-VACUITY, and the whole point: the block the second reader names is not a block
-    // it merely found in a file — the path folds to its merkle root and its own hash meets
-    // the target it declares. So does the one the product names. Neither reader is wrong.
+    // NON-VACUITY, and it is what makes the election a CHOICE rather than the only
+    // arithmetic available: the block the product no longer names is still proven — the
+    // path folds to its merkle root and its own hash meets the target it declares. Both
+    // attestations are valid; the rule picks between valid ones.
     const proven = there.findings
       .filter((finding) => finding.level === 'ok' && finding.section === '8')
       .map((finding) => finding.what)
@@ -680,9 +690,9 @@ describe('the two readers date the same record differently, and the document doe
     expect(proven).toContain("the path folds to block 963690's merkle root");
   });
 
-  it('agrees on everything the document DOES settle: covered, and the remainder', () => {
-    // The divergence is confined to which instant is quoted. The verdict section 8 asks
-    // for — whether the newest attestation reaches the last event — is the same in both.
+  it('agrees on the rest of what the document settles: covered, and the remainder', () => {
+    // These held while the two readers still quoted different instants, which is what
+    // made the divergence a conformance question and not an arithmetic one.
     const here = verify(copyOf('witnessed-record'), catalogUpcasters());
     const there = secondReading(copyOf('witnessed-record'));
     expect(here.witness).toBe('covered');
@@ -691,11 +701,18 @@ describe('the two readers date the same record differently, and the document doe
     expect(notes(there)).toContain('which is every event written');
   });
 
-  it('names the gap it leaned on to pick a rule at all', () => {
+  it('no longer leans on a gap, and the registry says so', () => {
+    // The registry is the audit of the document, and it had drifted from it: G23 stood
+    // `unresolved` while §8 already decided. It is `specified` now — the resolution
+    // reserved for a rule the document GREW — and the entry says which sentence.
     const run = python([VERIFIER, 'gaps']);
     expect(run.status).toBe(0);
     expect(run.stdout).toContain('G23');
-    expect(run.stdout).toContain('as though a checkpoint had ONE attestation');
+    expect(run.stdout).toContain('Take the earliest confirmed block');
+    // And it is out of what the verifier declares it does not check, because that list
+    // is derived from the resolution rather than kept by hand.
+    const declared = python([VERIFIER, 'verify', copyOf('witnessed-record')]);
+    expect(declared.stdout).not.toContain('G23');
   });
 });
 
@@ -1037,19 +1054,26 @@ describe('what the second reader does NOT check, said by the second reader', () 
     expect(declared).toContain('authorized cut from tampering');
     expect(declared).toContain("header's place in the Bitcoin chain");
     expect(declared).toContain('explicit undefined property');
-    // FOUR BECAME FIVE, and the defect that moved it is not that a fifth limitation appeared.
-    // It is that G23 — §8 naming which CHECKPOINT dates a record and not which ATTESTATION
-    // inside it, the one place the two readers read the same bytes to different instants —
-    // was a limit of this reader that NO verdict had ever printed. The list was written by
-    // hand at the bottom of the walk, so it held whatever somebody had thought to type;
-    // `gaps.py` classifies each unresolved gap now and `gaps.scope()` derives the block, so
-    // the count moves only when a classification does.
-    expect(declared).toContain('which attestation inside a checkpoint dates the record');
+    // IT WENT FOUR -> FIVE -> FOUR, and each move is a different kind of thing.
+    //
+    // The rise: G23 — believed to be the one place the two readers read the same bytes to
+    // different instants — was a limit of this reader that NO verdict had ever printed,
+    // because the list was written by hand at the bottom of the walk and held whatever
+    // somebody had thought to type. `gaps.py` classifies each unresolved gap now and
+    // `gaps.scope()` derives the block, so the count moves only when a classification does.
+    //
+    // The fall: G23 was never an ambiguity of the document. §8 already said "Take the
+    // earliest confirmed block among them", and it said so before the entry was written —
+    // what was out of conformance was the PRODUCT, which elected the first attestation a
+    // walk of the proof reached. It elects by height now, the entry is `specified`, and it
+    // left this list BY BEING ANSWERED. A declaration of a hole that is not there is not
+    // caution: a stranger reading it would conclude the format left the question open.
+    expect(declared).not.toContain('which attestation inside a checkpoint dates the record');
     // The count stays asserted both ways: a list that grew silently is a check somebody
     // stopped running, and a list that shrank without the check arriving is the entry removed
     // rather than the limitation. Which rows those are, and that they are the registry's, is
     // `second-reader-says-what-it-does-not-check.test.ts`.
-    expect(there.notCovered).toHaveLength(5);
+    expect(there.notCovered).toHaveLength(4);
   });
 
   it('says which gaps in FORMAT.md the reading leaned on', () => {

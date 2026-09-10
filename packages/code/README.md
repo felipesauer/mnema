@@ -913,12 +913,22 @@ quote it:
 ```sh
 mnema witness upgrade
 #> 8f21ab…-3c9d0e… (public): completed — the attestation over checkpoint f84396… has confirmed
-#>   external witness (T3): covered — Bitcoin block 963690 at 2026-08-23T06:23:18.000Z
+#>   external witness (T3): covered — Bitcoin block 963688 at 2026-08-23T06:03:01.000Z
 
 mnema verify --require=witnessed
 #> public: local integrity verified (T1/T2/T4) and witnessed (T3); 1 tail(s); all events are
-#> signature-covered; external witness (T3): covered — Bitcoin block 963690 at 2026-08-23T06:23:18.000Z
+#> signature-covered; external witness (T3): covered — Bitcoin block 963688 at 2026-08-23T06:03:01.000Z
 ```
+
+A checkpoint normally has **several** confirmed attestations — three calendars land in
+three blocks, and this record's proof reaches 963688, 963689 and 963690. The one a verdict
+quotes is the **lowest block**, which is the rule `chain/FORMAT.md` §8 names. It used to be
+the first attestation a walk of the proof reached that had a header, which meant the date
+this product published depended on the order a third party serialized an `.ots` file in —
+and over this very record the reference verifier in `chain/verifier/` read 06:03:01 while
+the product read 06:23:18, twenty minutes apart from the same bytes. By **height** and not
+by instant: a block's `nTime` is declared by whoever mined it and consensus only bounds it,
+so a lower block may carry a later one.
 
 `verify` **never touches a network**. It reads the proof and the header out of the
 record, checks that the proof commits to the checkpoint it proved, that the path folds

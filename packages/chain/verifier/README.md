@@ -110,19 +110,24 @@ and has no id:
   entries present is named under §5. What stays unreadable is the **authorization**. (G09)
 - §7 — *that a proof is never recomputed over a lifted reading*. No published vector carries
   `v > 1` and no upcaster is published, so there is nothing to lift. (G18)
-- §8 — *which attestation inside a checkpoint dates the record, when it carries more than
-  one*. §8 names which **checkpoint** and not which **attestation**, so the instant a verdict
-  prints is this reader's rule — the earliest attested block — and the product reads a
-  different one off the same bytes. Which of the two the format means is not settled here,
-  and is not this reader's to settle. (G23)
 - §8 — *the stored header's place in the Bitcoin chain* — which section 8 says of itself.
 
-The other three unresolved gaps are **findings about a record**, not limits: contiguity
-between checkpoint ranges (G11), a `.blocks` sidecar with fewer headers than the proof has
-attestations (G19), and the unit of §8's thousand-step limit (G20). Each is observable, and
-each is reported by name with its location where a record has it — so announcing them here,
-on a record that does not, would say of every record what is true of some. `mnema_verify.py
-gaps` marks which of the seven is which.
+The other unresolved gaps are **findings about a record**, not limits: contiguity between
+checkpoint ranges (G11) and the unit of §8's thousand-step limit (G20). Each is observable,
+and each is reported by name with its location where a record has it — so announcing them
+here, on a record that does not, would say of every record what is true of some.
+`mnema_verify.py gaps` marks which is which.
+
+**TWO ENTRIES LEFT THIS LIST BY BEING ALREADY ANSWERED, and the way they left is worth the
+sentence.** *Which attestation inside a checkpoint dates the record* (G23) stood as a limit
+of this reader while §8 already said *"Take the earliest confirmed block among them"*, and
+*a `.blocks` sidecar with fewer headers than the proof has attestations* (G19) stood as an
+open question while §8 already said such an attestation *"is neither coverage nor a break"*.
+Both entries, and the note in the product's own test, entered in one commit and all three
+went stale against the document they audit. What was actually wrong in the first case was
+the PRODUCT: it elected the first attestation a walk of the proof reached and dated the
+frozen record twenty minutes later than this reader did. It elects by height now, and the
+two readers agree.
 
 ## The verdict, and the four things it can be
 
@@ -171,9 +176,10 @@ Only §6.2 refuses it, which is the whole difference between *the signature veri
 a program that has never seen the implementation. Twenty-five places where the document was
 not enough for that, each one written down. **A refusal for every mutation in `mutate.py`,
 with no exception** — the exception used to be the one that existed to demonstrate an
-acceptance, and there is no acceptance left to demonstrate. One disagreement with the product
-that the document does not settle (which attestation dates a record — gap G23), and that is
-all of them.
+acceptance, and there is no acceptance left to demonstrate. **No disagreement with the
+product left**: there was one, and it was not an ambiguity of the document — §8 named the
+rule and the product did not follow it, so the product changed and the readers now date the
+same record from the same block.
 
 **What it does not buy.** Independence in the *social* sense. Same author, same repository,
 same interest in it working. It is independent in the **technical** sense — another language,
