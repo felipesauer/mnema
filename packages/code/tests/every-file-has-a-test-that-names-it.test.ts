@@ -159,8 +159,11 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * went 2446 -> 2453 when `the-strict-gate-catches-the-forgery.test.ts` arrived with seven
  * clauses, and the delta was checked against that file rather than accepted from the
  * failure — a count restated from whatever the run reported is a count that pins nothing.
+ * It went 2453 -> 2454 when `every-public-value-has-a-caller.test.ts` began importing
+ * `ALIAS_PREFIXES` to enumerate the arms of a vocabulary from the vocabulary itself: one
+ * clause, counted in that file, not read off the failure.
  */
-const CLAUSES_IN_THE_TREE = 2453;
+const CLAUSES_IN_THE_TREE = 2454;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
