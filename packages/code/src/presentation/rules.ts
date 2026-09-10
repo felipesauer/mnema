@@ -52,7 +52,7 @@ export function rulesReport(render: Render, governed: GoverningRules): string[] 
     render(
       fact(
         `${counts.matching} govern this path · ${counts.governing} address this project · ` +
-          `${counts.stale} address nothing here`,
+          `${counts.stale} address nothing here · ${counts.unresolved} name a rule not here`,
       ),
     ),
     // A SECOND LINE AND NOT MORE COLUMNS ON THE FIRST. The two relations answer different
@@ -63,7 +63,8 @@ export function rulesReport(render: Render, governed: GoverningRules): string[] 
     render(
       fact(
         `${counts.asks.matching} ask for a person here · ${counts.asks.addressed} ask in ` +
-          `this project · ${counts.asks.stale} ask about nothing here`,
+          `this project · ${counts.asks.stale} ask about nothing here · ` +
+          `${counts.asks.unresolved} name a rule not here`,
       ),
     ),
   ];
@@ -75,7 +76,9 @@ export function rulesReport(render: Render, governed: GoverningRules): string[] 
    * "which rule is the specific one" is scanning that column. What the rule IS comes
    * second, and it is the one field that can be missing — a memory has no title of
    * its own, and an id no visible tree authored has nothing at all — so the kind, or
-   * the word `unresolved`, stands in its place rather than an empty column. Every
+   * the word `unresolved`, stands in its place rather than an empty column. That last
+   * case now has a GROUP of its own, so the word is a label under a heading that says
+   * the same thing rather than the only sign that a row is not a rule at all. Every
    * column is written HERE rather than in a helper that returns the array: a value
    * built behind a function call is a value the layer's own guard cannot see, which
    * is how this row hid five of its fields on the first writing of it.
@@ -110,5 +113,13 @@ export function rulesReport(render: Render, governed: GoverningRules): string[] 
   group('asking for a person here, most specific first', governed.asks);
   group('addressing nothing in the working tree', governed.stale);
   group('asking about nothing in the working tree', governed.asksStale);
+  // THE FOURTH GROUP, and it is the one this read used to fold into the FIRST. An
+  // address whose subject resolves in no tree here was printed under "governing this
+  // path" with `(unresolved)` where a title goes, and counted in the number beside it:
+  // measured in a clone, `3 govern this path` where one governed. They are their own
+  // group now, and the heading says what is wrong with them rather than leaving a
+  // reader to read a missing title.
+  group('naming a rule no tree here holds', governed.unresolved);
+  group('asking on behalf of a rule no tree here holds', governed.asksUnresolved);
   return lines;
 }

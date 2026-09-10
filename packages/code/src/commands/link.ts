@@ -30,6 +30,7 @@ import type { AddressReach } from '@mnema/copilot';
 import {
   chainRootForScope,
   type DiscoveryEnv,
+  locateEntityScope,
   resolveScope,
   resolveTrees,
   type Scope,
@@ -65,6 +66,24 @@ export interface LinkRecorded extends Replacement, Landed {
    * one — and nothing in the product said this number before.
    */
   readonly reach?: AddressReach;
+  /**
+   * WHERE THE SUBJECT RESOLVES — the tree that holds the rule this link names, or
+   * ABSENT when no tree here holds it at all.
+   *
+   * Resolved at WRITE time, which is the only moment it is worth anything: a link is
+   * accepted with a subject in any tree, or in none, and the person who just typed one
+   * can still write the rule where it belongs. Read afterwards it is somebody else's
+   * puzzle in a clone.
+   *
+   * MEASURED, and it is why this field exists. `mnema link --scope public --rel governs
+   * <a-private-decision> <path>` is accepted today: the edge is committed and reaches
+   * every clone, and the decision it names never leaves the machine. Over a record with
+   * two of those, a clone was told `3 govern this path` where one governed. The counting
+   * is fixed where the reads are; this is the other half of the order the decision set —
+   * the WRITE says what it just did, at the moment it can still be undone by writing
+   * something else.
+   */
+  readonly subjectScope?: Scope;
 }
 
 /** The record was refused. */
@@ -133,10 +152,16 @@ export function runLink(
   // link recorded outside a project (global) reports no reach: there is no root for an
   // address to be relative to, which is the same reason `mnema rules` refuses there.
   const root = projectRoot(trees.projectPublic);
+  // WHERE THE RULE THIS LINK NAMES ACTUALLY LIVES, asked after the write and before the
+  // reply. It costs one replay per tree, on the write path of a verb that already opened
+  // a writer and signed a checkpoint — and it buys the only sentence that can be true at
+  // the moment it matters (see `LinkRecorded.subjectScope`).
+  const subjectScope = locateEntityScope(trees, input.subject, catalogUpcasters());
   return {
     ok: true,
     subject: input.subject,
     target: input.target,
+    ...(subjectScope !== undefined ? { subjectScope } : {}),
     // The relation AS RECORDED — screened, so the echo shows what landed.
     rel: recorded.rel,
     scope,

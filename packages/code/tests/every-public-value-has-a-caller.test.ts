@@ -47,13 +47,28 @@
  *     bulk, the guard would be switched off, and a guard nobody runs is worse than
  *     no guard. Enumeration is by RUNTIME KEY, so a type cannot enter by accident:
  *     it is gone before this file runs.
- *   - IT COVERS ONE OF THE TWO SHAPES. This one is a whole VALUE exported with no
- *     caller. The other is a FIELD of an options object that nobody sets — what
+ *   - IT COVERS ONE OF THREE SHAPES. This one is a whole VALUE exported with no
+ *     caller. The second is a FIELD of an options object that nobody sets — what
  *     `configProject` and `transport.onclose` were — and catching that one
  *     mechanically means enumerating every option interface and every setter of
  *     it, which is frailer; it already has a per-case mould in
  *     `mcp-flag-reaches-the-server.test.ts`, which asserts that a flag REACHES
  *     the option. Said out loud here so a pass is not read as covering both.
+ *
+ *     THE THIRD SHAPE IS AN ARM of a public record whose whole value IS called: it
+ *     lives at the bottom of this file, and it is here because it was found the way
+ *     the other two were — by a defect. `ALIAS_PREFIXES` declared `task`, `epic` and
+ *     `sprint`; production passed `'task'` at all four call sites and never the other
+ *     two. The value had a caller, so this guard was silent and right to be — an arm
+ *     is not a value, and enumeration is by runtime key of the MODULE, not of the
+ *     records inside it. Whether the third shape deserves a general sweep is a
+ *     NUMBER, and the number says no: exactly two public exports are flat records
+ *     (`ALIAS_PREFIXES` and `@mnema/chain`'s `LATEST_VERSION`), and `LATEST_VERSION`
+ *     would need an exception on the day it was born, because its arms are keyed by
+ *     the closed catalogue and fed by the catalogue rather than chosen by a caller.
+ *     A guard with one subject and one exception is the shape the paragraph above
+ *     refuses, so what stands is the per-case mould, for the one record whose arm a
+ *     caller SELECTS.
  *
  *     THE FRAILTY IS NOW A NUMBER, and the number is why the second shape still has
  *     no guard. Asked from the READ end rather than the setter end — a field READ in
@@ -84,6 +99,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ALIAS_PREFIXES } from '@mnema/core';
 import { describe, expect, it } from 'vitest';
 import { codeOnly, sourceFiles } from './support/reading-source.js';
 
@@ -614,5 +630,91 @@ describe('every public value has a caller', () => {
         .get('@mnema/core')
         ?.has('PACKAGE_NAME'),
     ).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The third shape: an arm of a public record that a caller SELECTS
+// ---------------------------------------------------------------------------
+
+/** A call to `deriveAlias`, wherever it stands. */
+const A_DERIVE_ALIAS_CALL = /deriveAlias\(/g;
+/** The kind it passes, read from the call's own first argument. */
+const THE_KIND_IT_PASSES = /^deriveAlias\(\s*'([^']*)'/;
+
+/**
+ * Which alias kinds ONE file passes, read from its call sites and not from a list.
+ *
+ * The kind is a string literal, so the blanker this file uses everywhere else is the
+ * wrong reader for it: `codeOnly` exists to blank literals, and the argument is one.
+ * It is still the thing that decides whether a call is CODE, because it preserves
+ * positions — a `deriveAlias(` that survives blanking is at the same offset in the
+ * raw source, and one written inside a doc-comment is not there at all. So the two are
+ * read together: the blanked text says WHERE a real call is, and the raw text at that
+ * offset says WHAT it passes. Nothing in the shared scanner had to change to ask this,
+ * and no second scanner was written to ask it.
+ *
+ * IT TAKES A SOURCE RATHER THAN WALKING THE TREE, and that is not tidiness. Asked over
+ * production only, the blanking step is redundant TODAY: no production comment happens
+ * to spell a call with a literal kind, so replacing `codeOnly(source)` with `source`
+ * changes nothing and leaves the guard at ZERO — measured, as row M2.2 of this
+ * delivery's battery. A step whose removal reddens nothing is a step nothing proves. So
+ * the reader is a function over text, and the case below drives it on prose it owns; the
+ * same mutation now reddens that case instead of passing in silence.
+ */
+function kindsPassedIn(source: string): Set<string> {
+  const passed = new Set<string>();
+  const code = codeOnly(source);
+  for (const call of code.matchAll(A_DERIVE_ALIAS_CALL)) {
+    const kind = THE_KIND_IT_PASSES.exec(source.slice(call.index ?? 0))?.[1];
+    if (kind !== undefined) passed.add(kind);
+  }
+  return passed;
+}
+
+/** The same question over every production file the workspace has. */
+function kindsProductionPasses(): Set<string> {
+  const passed = new Set<string>();
+  for (const pkg of PACKAGE_LIST) {
+    for (const path of sourceFiles(join(PACKAGES, pkg.directory, 'src'))) {
+      for (const kind of kindsPassedIn(readFileSync(path, 'utf-8'))) passed.add(kind);
+    }
+  }
+  return passed;
+}
+
+describe('every arm of a selected vocabulary has a caller', () => {
+  it('production passes every kind `ALIAS_PREFIXES` declares, and no other', () => {
+    // The enumeration comes from the value itself, so an arm added tomorrow is subject
+    // to this without the file being edited — which is the whole point, since the two
+    // arms this replaces were added once and never fed. Both directions: an arm nobody
+    // passes fails on the left, and a kind production passes that the map does not
+    // declare fails on the right (the compiler would refuse it first, and this says so
+    // out loud rather than trusting a check that lives in another tool).
+    expect([...kindsProductionPasses()].sort()).toEqual(Object.keys(ALIAS_PREFIXES).sort());
+  });
+
+  it('reads a call in code and not one in prose', () => {
+    // The instrument's own case, driven through the SAME reader the assertion above
+    // uses. A new instrument gets one because this series has been accused BY one: the
+    // reader that finds a call has to tell a call from a sentence about a call, and
+    // `alias.ts`'s own doc-comment names the function repeatedly. Over production alone
+    // this direction is unprovable — nothing there spells a call in prose — so the input
+    // is owned here, which is what makes the blanking step's removal visible.
+    expect([
+      ...kindsPassedIn("/** Something like deriveAlias('epic', id) used to work. */"),
+    ]).toEqual([]);
+    expect([...kindsPassedIn("const label = deriveAlias('task', id);")]).toEqual(['task']);
+    // A call whose kind is not a literal is not a kind, and reporting the next token as
+    // one would let any identifier bless an arm.
+    expect([...kindsPassedIn('const label = deriveAlias(kind, id);')]).toEqual([]);
+  });
+
+  it('finds the call sites at all', () => {
+    // Non-vacuity of the sweep: a scanner that found nothing would make the assertion
+    // above compare two empty sets on the day the map went empty, and pass. Four sites
+    // is what production has — two on each surface, task birth and task move.
+    expect(kindsProductionPasses().size).toBeGreaterThan(0);
+    expect(Object.keys(ALIAS_PREFIXES).length).toBeGreaterThan(0);
   });
 });

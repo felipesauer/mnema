@@ -154,6 +154,36 @@ export function provenLevel(facts: ProvenFacts): ProvenLevel {
  */
 export const LEVEL_REQUIREMENTS = ['chained', 'signed', 'witnessed'] as const;
 
+/**
+ * WHAT NO VALUE OF `--require` ANSWERS — the verdict's own declared holes.
+ *
+ * A verdict this product can serve to a machine has to carry its limits, or the
+ * machine reads a `level` and an exit code and concludes it has been told everything.
+ * These are the two the record cannot close on its own, both measured:
+ *
+ *   - a tail removed together with its key is not reported AT ALL. That record reads
+ *     `0 tail(s); no events yet`, indistinguishable from a fresh one, and only a
+ *     history outside the record — a git log, an external witness — can testify to
+ *     what was taken out.
+ *   - a removed tail whose committed key REMAINS is reported, and is not a break: the
+ *     keys are crossed against the tails on disk and the count comes out as a census
+ *     note with exit 0. The roster exists and detects; whether that should be a break
+ *     is a decision nobody has taken.
+ *
+ * IT IS A CONSTANT AND NOT A PARAGRAPH, because it is printed in two places that must
+ * not drift: `packages/code/README.md` says it in prose to a person, and `verify
+ * --json` carries it as a field to whatever reads the verdict. A reader of the JSON who
+ * had to find the README to learn this is a reader who will not.
+ *
+ * Choosing a `--require` value does not shrink this list: it changes which forgery goes
+ * green. That sentence is why the list belongs beside {@link LEVEL_REQUIREMENTS} rather
+ * than beside any one of them.
+ */
+export const NOT_ANSWERED_BY_ANY_REQUIREMENT: readonly string[] = [
+  'A tail removed together with its committed key is not reported at all: that record reads as one with no events yet, indistinguishable from a fresh one. Only a history outside this record can testify to what was removed.',
+  'A removed tail whose committed key remains IS reported — as a census note, informational, not a break, so the exit stays 0.',
+];
+
 /** What a caller may demand — see {@link LEVEL_REQUIREMENTS}. */
 export type LevelRequirement = (typeof LEVEL_REQUIREMENTS)[number];
 

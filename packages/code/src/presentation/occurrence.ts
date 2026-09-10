@@ -27,8 +27,9 @@
  * (`tests/what-the-agent-just-did.test.ts`).
  */
 
-import type { CatalogEvent } from '@mnema/chain';
+import { type CatalogEvent, proofFields, transitionProse } from '@mnema/chain';
 import { A_PERSON, oneLine } from '../one-line.js';
+import { fact } from './detail.js';
 import { asId, asWhen, itemLine } from './items.js';
 import type { Line } from './line.js';
 
@@ -43,4 +44,51 @@ export function occurrenceLine(event: CatalogEvent): Line {
     asId(oneLine(event.subject)),
     `${BY} ${oneLine(event.which ?? A_PERSON)}`,
   ]);
+}
+
+/**
+ * ONE EVENT OF A HISTORY, as `mnema timeline` prints it: when, what kind, the role by
+ * which the queried entity appears in it, and who authorized it.
+ *
+ * It moved here from the verb's own wiring, and the reason is the rule this layer
+ * exists for. The wiring may not collapse a value on its own — the two files that still
+ * do are named as exceptions with an open question over each — and a history line has
+ * to collapse, for the same reason {@link occurrenceLine} does: a list where every line
+ * is one event lets a value holding a newline forge an event that never happened. The
+ * doc above already argued the two lines are one idea; now they are one module.
+ *
+ * The `who` is written through its anchor by the caller, because how short an identity
+ * may be spelled depends on every identity the RECORD knows, which is not this line's
+ * question.
+ */
+export function historyLine(
+  entry: { readonly at: string; readonly kind: string; readonly role: string },
+  who: string,
+): Line {
+  return itemLine([
+    asWhen(oneLine(entry.at)),
+    oneLine(entry.kind),
+    `[${oneLine(entry.role)}]`,
+    who,
+  ]);
+}
+
+/**
+ * WHAT THAT MOVE SAID, as the annotation indented under its own event line — absent
+ * when the event carried no proof, and when it is not a move at all.
+ *
+ * The words are in the signed chain and, measured before this existed, they came out of
+ * `mnema timeline --json` and out of nothing else. The whole point of a history is the
+ * words beside each step, and a list that shows only the shape of a step sends its
+ * reader to a flag.
+ *
+ * IT IS COLLAPSED, and `show` serves the same value WHOLE. That is not two rules: there
+ * the proof is a body under one record, with no list around it for a second line to
+ * imitate; here it is an annotation inside a list whose every line is an event, so a
+ * `note` holding a newline could otherwise write a second, well-formed history entry
+ * about something that never happened.
+ */
+export function saidLine(event: CatalogEvent): Line | undefined {
+  const said = transitionProse(proofFields(event));
+  return said === '' ? undefined : fact(oneLine(said));
 }

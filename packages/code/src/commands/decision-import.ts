@@ -37,11 +37,18 @@
  * one.
  *
  * THE PROVENANCE IS A FACT OF THE RECORD, not a sentence inside the rationale. Each
- * proposal is linked to the file it came from, under `derived-from`, which is one of
- * the relation labels the catalog already recommends — so this needed no new field,
- * no version and no upcaster, and none of the published canonical vectors move. That
- * link is ALSO what makes a second run idempotent: a file already on the far end of
- * a `derived-from` edge is a file already imported, whatever its title says now.
+ * proposal is linked to the file it came from, under {@link DERIVED_FROM_RELATION} —
+ * a label the catalog already recommended — so this needed no new field, no version
+ * and no upcaster, and none of the published canonical vectors move. That link is
+ * ALSO what makes a second run idempotent: a file already on the far end of a
+ * `derived-from` edge is a file already imported, whatever its title says now.
+ *
+ * THE LABEL USED TO BE DECLARED HERE, and it moved because a third party wanted it.
+ * The catalog held the bare literal in its recommended set while this file held a
+ * constant of its own, so the writer's label and the published vocabulary were two
+ * strings that happened to agree; now the READS carry a record's provenance too, and
+ * a third spelling is how a write and a read come to disagree about which edge is a
+ * provenance. It is one site in the catalog, imported by all three.
  *
  * ONE WRITER, ONE CHECKPOINT. The whole directory is written through a single open
  * writer and signed once at the end, rather than N times through N invocations. That
@@ -52,6 +59,7 @@ import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { catalogUpcasters } from '@mnema/chain';
 import {
   chainRootForScope,
+  DERIVED_FROM_RELATION,
   type DiscoveryEnv,
   resolveScope,
   resolveTrees,
@@ -63,21 +71,6 @@ import {
 } from '@mnema/core';
 import { linkKnowledge, openTreeForWriting, recordDecision } from '@mnema/core/write';
 import { withScopedCaches } from '../tree-sources.js';
-
-/**
- * The relation a proposal asserts about the file it was read from.
- *
- * `derived-from` is already in the catalog's recommended set, so this cost the
- * record no new label. Its target here is a PATH and not an id — the same shape
- * `governs` and `asks-for-a-person` use, and legal for the same reason the catalog
- * gives: `target` is whatever the caller sent, resolved by whoever reads it. What
- * separates this from those two is not the shape but the power: they ADDRESS a part
- * of the tree (compared by segments, covering whatever is under it), while this one
- * points at the single file a fact came out of. That distinction is why
- * `ADDRESS_RELATIONS` does not gain a member here, and it is written down where that
- * constant is declared.
- */
-export const DERIVED_FROM_RELATION = 'derived-from';
 
 /** What the import needs — injected so it is testable. */
 export interface DecisionImportContext {

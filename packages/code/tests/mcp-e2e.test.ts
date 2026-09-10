@@ -2628,13 +2628,19 @@ describe('MCP server — end to end over a real client', () => {
     // turned into "NO run reported" — left both of the others intact and the suite
     // green. A description that mentions a field while lying about when it is there is
     // worse than one that omits it, so the claim itself is asserted, not just the name.
+    //
+    // THE THREE PHRASES WERE REWRITTEN, not the three properties. The host cuts a
+    // description at 2048 characters and `bootstrap` was losing 54% of itself, so this
+    // contract was compressed to every declaration and no justification. The scope
+    // clause survived the compression BECAUSE of the mutation named above — it is the
+    // one clause here whose falsification a battery proved nothing else catches.
     for (const tool of describingARun) {
       expect(tool.description, `${tool.name} must say what a run wrote`).toContain('`wrote`');
-      expect(tool.description, `${tool.name} must say it is on EVERY run reported`).toContain(
-        'EVERY run reported — open or ',
+      expect(tool.description, `${tool.name} must say it is on EVERY run`).toContain(
+        'EVERY run, open or ended, carries `wrote`',
       );
       expect(tool.description, `${tool.name} must say what an EMPTY tally means`).toContain(
-        'An EMPTY array means the run',
+        'EMPTY meaning nothing was recorded',
       );
     }
 
@@ -3272,7 +3278,8 @@ describe('MCP server — end to end over a real client', () => {
       matching: 1,
       governing: 2,
       stale: 1,
-      asks: { matching: 0, addressed: 0, stale: 0 },
+      unresolved: 0,
+      asks: { matching: 0, addressed: 0, stale: 0, unresolved: 0 },
     });
     expect(governed.stale.map((one) => one.address)).toEqual(['src/long-gone']);
 
@@ -3297,7 +3304,8 @@ describe('MCP server — end to end over a real client', () => {
       matching: 0,
       governing: 2,
       stale: 1,
-      asks: { matching: 0, addressed: 0, stale: 0 },
+      unresolved: 0,
+      asks: { matching: 0, addressed: 0, stale: 0, unresolved: 0 },
     });
   });
 
@@ -3566,7 +3574,12 @@ describe('MCP — what enters the record', () => {
     // whose door refuses its own items is an index that lies, and that was true in
     // whichever direction the door went.
     expect(description).toContain('awaitingJudgement');
-    expect(description).toContain('`skills` with the id');
+    // The phrase moved and the property did not. It read '`skills` with the id' until
+    // the host's 2048-character ceiling forced this description down from 4478; the
+    // three doors now share one clause that says they are all reached BY ID, which is
+    // the fact this line is about.
+    expect(description).toContain('For the rest, by id:');
+    expect(description).toContain('`skills` for a pattern');
     expect(description).not.toContain('Not `skills` for the pattern');
     // AND THE KIND NO LIST IS ABOUT. Every list this tool serves is about a task, a
     // decision or a pattern, so the three totals above declare a cut and none of them

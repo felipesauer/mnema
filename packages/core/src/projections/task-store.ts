@@ -8,6 +8,7 @@
  */
 
 import type { SqliteDatabase } from '../db/sqlite.js';
+import { proofColumn, proofFromColumn } from './proof.js';
 import type { TaskProjection } from './task.js';
 
 /** The `tasks` row shape as stored. */
@@ -17,6 +18,8 @@ interface TaskRow {
   readonly state: string;
   readonly created_at: string;
   readonly updated_at: string;
+  /** What each move said, JSON-encoded — null when no move said anything. */
+  readonly proof: string | null;
 }
 
 /**
@@ -26,11 +29,13 @@ interface TaskRow {
  */
 export function materializeTasks(db: SqliteDatabase, tasks: Iterable<TaskProjection>): void {
   const insert = db.prepare(
-    `INSERT INTO tasks (id, title, state, created_at, updated_at)
-     VALUES (@id, @title, @state, @createdAt, @updatedAt)`,
+    `INSERT INTO tasks (id, title, state, created_at, updated_at, proof)
+     VALUES (@id, @title, @state, @createdAt, @updatedAt, @proof)`,
   );
   for (const task of tasks) {
-    insert.run(task);
+    // The proof is spread over the projection rather than passed as the projection,
+    // because a bound parameter has to be a scalar and `proof` is a list.
+    insert.run({ ...task, proof: proofColumn(task.proof) });
   }
 }
 
@@ -61,5 +66,6 @@ function toProjection(row: TaskRow): TaskProjection {
     state: row.state,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    ...proofFromColumn(row.proof),
   };
 }

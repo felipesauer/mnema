@@ -81,6 +81,7 @@ export {
   LEVEL_REQUIREMENTS,
   type LevelRequirement,
   meetsRequirement,
+  NOT_ANSWERED_BY_ANY_REQUIREMENT,
   type ProvenLevel,
   requiredLevel,
   weakerLevel,
@@ -186,6 +187,7 @@ export {
   type ChannelAskedV1,
   type ChannelServedV1,
   type ChannelSwitchedV1,
+  DERIVED_FROM_RELATION,
   type DecisionRecordedV1,
   type DecisionTransitionedV1,
   type EventKind,
@@ -211,6 +213,7 @@ export {
 } from './events/catalog.js';
 export type { Envelope, Which, Who } from './events/envelope.js';
 export { EventParseError, parseEvent, toCanonical, unreadableReason } from './events/parse.js';
+export { PROOF_FIELDS, proofFields, transitionProse } from './events/proof.js';
 export { catalogUpcasters } from './events/registry.js';
 export {
   type LatestVersions,

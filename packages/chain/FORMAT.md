@@ -531,14 +531,35 @@ attestation the file happened to list first (`packages/chain/src/chain/witness.t
 
 **Which attestation dates the record, when a checkpoint has several.** It usually has
 several — three calendars, three attestations, and they land in different blocks. Take
-the **earliest confirmed block** among them: an attestation in an earlier block is the
-stronger claim, since existing at that instant implies existing at every later one, and
-the alternative — the first one a walk of the proof happens to reach — makes the reported
-date depend on the order the branches of a third-party file were serialized in. This
-sentence was missing, and its absence is the one thing two faithful readers of this
-document have been measured disagreeing about
-(`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`, which pins both
-answers and the reason).
+the **earliest confirmed block** among them, which is the one of **lowest height**: an
+attestation in an earlier block is the stronger claim, and the alternative — the first
+one a walk of the proof happens to reach — makes the reported date depend on the order
+the branches of a third-party file were serialized in.
+
+**By HEIGHT, and the instant is the block's own declared `nTime`.** This paragraph used
+to argue from time — *existing at that instant implies existing at every later one* —
+and Bitcoin's consensus does not guarantee that ordering. A block's `nTime` is declared
+by whoever mined it and is only BOUNDED: above the median of the preceding eleven blocks,
+below the receiving node's clock plus two hours. So a block of lower height may carry a
+later instant, and an election by instant would rest on a miner's field. Height is the
+chain's own order, it is what the reference OpenTimestamps client elects by (it orders
+attestations by ascending height and stops at the first valid one), and the instant a
+reader prints is then that block's declared `nTime` — which the consensus bounds rather
+than fixes. No published vector has a height and an instant in opposite orders, so
+nothing in this document's own corpus exercises the distinction; it is written down
+because a reader who inferred monotonicity from the old sentence would have inferred it
+from prose and not from the chain.
+
+This rule was missing, and its absence was the one thing two faithful readers of this
+document were measured disagreeing about: the product elected the first attestation a
+walk reached that had a header and dated the frozen `witnessed-record` twenty minutes
+later than the reference reader did
+(`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`, which now pins
+the agreement and the reason it was ever a disagreement). **What the rule does not buy,
+measured:** the published date still depends on which headers the writer kept — deleting
+one line of the `.blocks` sidecar moves it under either rule. The election makes two
+readers agree over the bytes as shipped, and makes the answer independent of an `.ots`
+file's serialization order. It does not make it independent of the sidecar.
 
 **What a reader refuses before it reads.** Both files are committed, so a clone opens
 whatever the last person to write the repository put there. Three limits are declared

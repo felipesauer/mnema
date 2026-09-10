@@ -55,6 +55,8 @@ import {
   SKILL_TRANSITIONS,
   TASK_ACTIONS,
   TRANSITIONS,
+  WINDOW_IS_OVER,
+  type WindowSubject,
 } from '@mnema/core';
 
 /**
@@ -169,6 +171,86 @@ export const SCOPES = Object.keys(SCOPE_GLOSS) as readonly Scope[];
  * construction rather than by two people wording it alike.
  */
 export const SCOPE_CHOICES = glossedChoice(SCOPES, SCOPE_GLOSS);
+
+// ---------------------------------------------------------------------------
+// The window — one sentence, and the noun that says which axis
+// ---------------------------------------------------------------------------
+
+/**
+ * What `--from` and `--to` narrow, in the one sentence every door prints.
+ *
+ * Three reads take a window and they were glossed in two wordings — *"include only
+ * facts at or after this ISO-8601 instant"* on `accountability` and `export`, *"only
+ * records at or after"* on `search`. The two wordings were not a style drift: they name
+ * two different AXES, because `accountability` and `export` select the facts themselves
+ * while `search` selects records by the instant each was made. What was wrong is that
+ * one flag name covered both and nothing said which one a caller had.
+ *
+ * So the sentence is one and the axis is the NOUN. It leads with the noun and then the
+ * edge because that is the order a reader needs them in, and because a flag's gloss is
+ * read in a column about sixty characters wide — the first version of this put the axis
+ * in a trailing clause and the terminal folded the edge off the end of the line, which
+ * is the one part of the sentence that cannot be guessed.
+ *
+ * The FULL declaration of what a window is over — including the clause that says a
+ * record's instant is not when it last moved — is the domain's own
+ * {@link WINDOW_IS_OVER}, printed where there is room for it: the verb's own
+ * description and the tool's.
+ */
+export function windowGloss(end: 'from' | 'to', subject: WindowSubject): string {
+  const edge = end === 'from' ? 'at or after' : 'at or before';
+  return `only ${subject}s ${edge} this ISO-8601 instant (inclusive)`;
+}
+
+/**
+ * The whole declaration, for the help text under a verb that takes a window.
+ *
+ * A flag's gloss has a column; a paragraph under the flags does not, so this is where
+ * the clause that cannot be shortened goes — that a record's instant is the one it was
+ * RECORDED at, and not the one it last moved at, nor anything about the state it is in
+ * now. It is the sentence the measured defect needs: `search --kind decision --to <T>`
+ * prints a decision with TODAY's state inside a window it was in force in, and a reader
+ * who has this paragraph knows that answer is about births and not about what was in
+ * force.
+ */
+export function windowHelp(subject: WindowSubject): string {
+  // The breaks are the domain's own (see `WINDOW_IS_OVER`), so nothing here decides a
+  // width — this surface names the five modules that may, and a vocabulary is not one.
+  return ['', 'The window:', ...WINDOW_IS_OVER[subject].map((line) => `  ${line}`)].join('\n');
+}
+
+/** The same sentence flat, for a door that wants one line — a tool's field description. */
+export function windowDeclaration(subject: WindowSubject): string {
+  return WINDOW_IS_OVER[subject].join(' ');
+}
+
+// ---------------------------------------------------------------------------
+// The machine-global tree — one axis, one sentence, four verbs
+// ---------------------------------------------------------------------------
+
+/**
+ * What `--global` says, in the same words wherever it is offered.
+ *
+ * FOUR VERBS ASK THE SAME QUESTION and it was spelled TWO ways: `witness` and its two
+ * subcommands shared one string, and `verify` had a longer one of its own. A third
+ * spelling was one verb away — `export` is the one that needed the flag next, and it is
+ * the only read that leaves the machine, so the sentence a person reads before pushing
+ * a feed to a SIEM would have been the newest of three.
+ *
+ * The SHARED half is why the tree is left out: it belongs to no project and is present
+ * in every one, so including it by default would put the same personal record inside
+ * every project's answer. The per-verb half is what that COSTS in that verb, and it
+ * varies because the consequence does — a weakness lowers a verdict, a witness over a
+ * tree no verdict reads is work with no reader, and a feed carries it off the machine.
+ * That is the same shape `windowGloss` has: one sentence, and the clause that varies
+ * named rather than left to whoever writes the next one.
+ */
+export function globalTreeGloss(consequence: string): string {
+  return (
+    "also cover this machine's global tree — left out by default: it belongs to no " +
+    `project and is present in every one, ${consequence}`
+  );
+}
 
 // ---------------------------------------------------------------------------
 // The workflow actions, and the proof each one needs

@@ -59,6 +59,7 @@ import { fact } from '../presentation/detail.js';
 import type { Line, Severity } from '../presentation/line.js';
 import type { Render } from '../presentation/render.js';
 import { type Clause, clauseStatement, statement } from '../presentation/verdict.js';
+import { globalTreeGloss } from '../vocabulary.js';
 import { here } from './context.js';
 import { enumeratedOption, glossedList, LEVEL_REQUIREMENTS, listed } from './enumerated.js';
 import type { CliIo } from './io.js';
@@ -357,10 +358,7 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
     .description("verify this project's record — its committed tree and its private one")
     .option(
       '--global',
-      "also verify this machine's global tree, the personal record across all " +
-        'projects. Off by default: that tree belongs to no project and is present ' +
-        'in every one, so a weakness in it would lower the verdict of every project ' +
-        'on this disk',
+      globalTreeGloss('so a weakness in it would lower the verdict of every project on this disk'),
     )
     .option(
       '--workspace <path...>',
@@ -387,32 +385,46 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
         LEVEL_REQUIREMENTS,
       ),
     )
+    .option(
+      '--json',
+      'emit the verdict as JSON instead of prose — the whole reading, per tree, plus ' +
+        'what NO --require value answers. The exit code is unchanged: this changes the ' +
+        'shape of the answer, never the answer',
+    )
     .action(
       async (opts: {
         require?: string;
         global?: boolean;
         workspace?: string[];
         allowNoRecord?: boolean;
+        json?: boolean;
       }) => {
-        const { requiredLevel } = await import('@mnema/chain');
+        // Loaded when the verb runs, never while the program is declared: an eager
+        // import of the domain here is on the floor of every invocation.
+        const { requiredLevel, NOT_ANSWERED_BY_ANY_REQUIREMENT } = await import('@mnema/chain');
         const { runVerify, runVerifyWorkspace } = await import('../commands/verify.js');
         const requirement = parseRequirement(opts.require, wiring);
         if (requirement === INVALID_REQUIREMENT) return;
         const global = opts.global === true;
         const allowWithoutRecord = opts.allowNoRecord === true;
         if (opts.workspace !== undefined) {
-          reportSet(
-            wiring,
-            runVerifyWorkspace({
-              ...here(),
-              requirement,
-              global,
-              named: opts.workspace,
-              allowWithoutRecord,
-            }),
-            requiredLevel,
-            oneLine,
-          );
+          const set = runVerifyWorkspace({
+            ...here(),
+            requirement,
+            global,
+            named: opts.workspace,
+            allowWithoutRecord,
+          });
+          if (opts.json === true) {
+            reportAsJson(
+              wiring,
+              set,
+              set.requirementMet && set.coverageMet,
+              NOT_ANSWERED_BY_ANY_REQUIREMENT,
+            );
+            return;
+          }
+          reportSet(wiring, set, requiredLevel, oneLine);
           return;
         }
         // A DECLARATION WITH NO SUBJECT IS REFUSED RATHER THAN IGNORED. There are no
@@ -431,6 +443,10 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
         const result = runVerify({ ...here(), requirement, global });
         if (!result.ok) {
           reportRefusal(wiring, { reason: 'NO_PROJECT' });
+          return;
+        }
+        if (opts.json === true) {
+          reportAsJson(wiring, result, result.requirementMet, NOT_ANSWERED_BY_ANY_REQUIREMENT);
           return;
         }
         for (const tree of result.trees) report(io, render, tree);
@@ -461,6 +477,42 @@ export function registerVerify(program: Command, wiring: Wiring): Declared {
       },
     );
   return readsTheRecord(verify);
+}
+
+/**
+ * THE VERDICT AS JSON — the whole reading, plus what it does not answer.
+ *
+ * It is an ADAPTER and it words nothing. `runVerify` already returns the reading as
+ * structure — per tree, what could and could not be proven, the aggregate level, the
+ * requirement and whether it was met — so this hands that over as it came, for exactly
+ * the reason the prose reading does not re-word a guarantee: a second composition is
+ * where "local integrity" quietly becomes "verified". The two readings are therefore
+ * the same facts in two shapes, and neither is derived from the other's words.
+ *
+ * THE EXIT CODE IS THE SAME VERDICT, unchanged. A caller who adds `--json` has changed
+ * the shape of the answer and not the answer, so the criterion is passed in rather than
+ * recomputed here — the same value the prose path acts on, from the command.
+ *
+ * IT CARRIES `notAnswered`, AND THAT IS THE POINT OF THE FIELD RATHER THAN A NOTE.
+ * The verdict this makes machine-readable is knowingly insufficient — a tail removed
+ * with its key is not reported at all, and a removed tail whose key remains is a census
+ * note with exit 0 — and a reader who has to find the README to learn that is a reader
+ * who will not. It is {@link NOT_ANSWERED_BY_ANY_REQUIREMENT}, the one site the README
+ * says the same thing from, so the two cannot drift.
+ *
+ * THE JSON GOES TO STDOUT AND THE PROSE'S ERRORS DO NOT FOLLOW IT. A machine reading
+ * this parses one document; a second stream of sentences beside it would be prose the
+ * caller asked not to have.
+ */
+function reportAsJson(
+  wiring: Wiring,
+  reading: object,
+  met: boolean,
+  notAnswered: readonly string[],
+): void {
+  const { io } = wiring;
+  io.out(JSON.stringify({ ...reading, notAnswered }, null, 2));
+  if (!met) io.fail();
 }
 
 /**

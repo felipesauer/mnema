@@ -752,10 +752,18 @@ def declare_scope(report: Report) -> None:
     THE DEFECT THIS REPLACES. This function used to hold four `declare_not_covered` calls
     with their prose typed into it, and it was one of three places that said the same thing:
     `gaps.py` classified nothing, this said four, and `verifier/README.md` said three. They
-    drifted - the README never named G06, and G23, the one place the two readers date the
-    same record differently, was said in NO verdict at all. A reader who ran this program
-    and got VERIFIED was never told that the instant it printed is this reader's rule and
-    not the document's.
+    drifted - the README never named G06, and G23, which was then believed to be the one
+    place the two readers date the same record differently, was said in NO verdict at all.
+    A reader who ran this program and got VERIFIED was never told that the instant it
+    printed is this reader's rule and not the document's.
+
+    G23 IS SETTLED NOW, AND IT WAS NOT AN AMBIGUITY EITHER. Section 8 already said "Take
+    the earliest confirmed block among them" while the registry still called the question
+    open; what was actually wrong was the PRODUCT, which elected the first attestation a
+    walk of the proof reached. It elects by height now, the two readers date the frozen
+    record from the same block, and the entry left this list by being answered rather than
+    by being reworded. The defect this docstring describes is unchanged: one list, one
+    source, and a `standing` field that decides.
 
     So the list has one source: `gaps.scope()`, which reads it off the `standing` field of
     the registry. There is nothing to add here, and nothing that CAN be added here.

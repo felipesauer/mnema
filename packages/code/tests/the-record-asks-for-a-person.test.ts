@@ -277,7 +277,12 @@ describe('the reply asks for a person, and only when the record does', () => {
     const result = runGoverningRulesTool(connect(), { path: 'src/billing/invoice.ts' });
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error('unreachable');
-    expect(result.value.counts.asks).toEqual({ matching: 1, addressed: 1, stale: 0 });
+    expect(result.value.counts.asks).toEqual({
+      matching: 1,
+      addressed: 1,
+      stale: 0,
+      unresolved: 0,
+    });
     expect(result.value.asks[0]?.state).toBe('superseded');
   });
 
@@ -547,7 +552,12 @@ describe('one derivation answers both relations', () => {
     const result = runGoverningRulesTool(connect(), { path: 'src/billing/invoice.ts' });
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error('unreachable');
-    expect(result.value.counts.asks).toEqual({ matching: 1, addressed: 2, stale: 1 });
+    expect(result.value.counts.asks).toEqual({
+      matching: 1,
+      addressed: 2,
+      stale: 1,
+      unresolved: 0,
+    });
     expect(result.value.asksStale.map((one) => one.address)).toEqual(['src/ledger-that-moved']);
     // Named in the report a person reads, too — a count goes down by making the count go
     // down, and a list goes down by looking at what it names.

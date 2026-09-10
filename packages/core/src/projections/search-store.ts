@@ -57,8 +57,10 @@ import { oneLine } from '../one-line.js';
 import type { DecisionProjection } from './decision.js';
 import type { MemoryProjection, ObservationProjection } from './knowledge.js';
 import { NEWEST_FIRST_SQL, newestFirst } from './newest-first.js';
+import { proofText, type TransitionProof } from './proof.js';
 import type { SkillProjection } from './skill.js';
 import type { TaskProjection } from './task.js';
+import { windowConditions } from './window.js';
 
 /** The entity kinds the index holds — the ones that carry text a person wrote. */
 export const SEARCH_KINDS = ['memory', 'observation', 'decision', 'task', 'skill'] as const;
@@ -254,7 +256,7 @@ export function materializeSearch(db: SqliteDatabase, sources: SearchSources): v
     insert.run(
       row(
         decision.title,
-        decisionBody(decision),
+        withProof(decisionBody(decision), decision.proof),
         decision.id,
         'decision',
         decision.state,
@@ -263,11 +265,29 @@ export function materializeSearch(db: SqliteDatabase, sources: SearchSources): v
     );
   }
   for (const task of sources.tasks) {
-    // A task is a title and a state; there is no prose under it to index.
-    insert.run(row(task.title, '', task.id, 'task', task.state, task.createdAt));
+    // A TASK'S PROSE IS WHAT ITS MOVES SAID, and this used to read "a task is a title
+    // and a state; there is no prose under it to index". That premise was false and was
+    // falsified by asking the product: a transition carries `note`, `reason` and
+    // `feedback`, they enter the signed chain, and `mnema search <the words of a note>`
+    // answered "nothing recorded". A task is the kind for which this is the ONLY body it
+    // will ever have.
+    insert.run(
+      row(task.title, withProof('', task.proof), task.id, 'task', task.state, task.createdAt),
+    );
   }
   for (const skill of sources.skills) {
-    insert.run(row(skill.name, skill.body, skill.id, 'skill', skill.state, skill.createdAt));
+    // The pattern, then what each ruling on it said — the review that sent it back is
+    // where the words about a pattern's fitness actually are.
+    insert.run(
+      row(
+        skill.name,
+        withProof(skill.body, skill.proof),
+        skill.id,
+        'skill',
+        skill.state,
+        skill.createdAt,
+      ),
+    );
   }
 }
 
@@ -384,14 +404,13 @@ function whereClause(query: SearchQuery, match: string | undefined): WhereClause
     conditions.push('state = @state');
     params.state = query.state;
   }
-  if (query.from !== undefined) {
-    conditions.push('at >= @from');
-    params.from = query.from;
-  }
-  if (query.to !== undefined) {
-    conditions.push('at <= @to');
-    params.to = query.to;
-  }
+  // The window is not this query's own rule: it is `projections/window.ts`, the same
+  // one the authorship tally and the audit feed ask. What differs is only what the
+  // window is OVER — here the instant a record was made, there the instant of a fact —
+  // and that difference is declared rather than left to the flag's name.
+  const window = windowConditions('at', query);
+  conditions.push(...window.sql);
+  Object.assign(params, window.params);
   return {
     sql: conditions.length === 0 ? '' : `WHERE ${conditions.join(' AND ')}`,
     params,
@@ -429,6 +448,33 @@ function decisionBody(decision: DecisionProjection): string {
   return decision.alternatives === undefined
     ? decision.rationale
     : `${decision.rationale}\n\n${decision.alternatives}`;
+}
+
+/**
+ * A record's own body with what its MOVES said appended — the same separator, for the
+ * same reason, and one function so the three kinds that have moves cannot drift.
+ *
+ * The prose a transition carried (`note`, `reason`, `feedback`) is the only body a task
+ * ever has and the only place a review's send-back is written. It is joined onto the
+ * body rather than indexed as a row of its own, because a hit has to point at the
+ * RECORD: a searcher looking for the words of a note wants the task, not a fact about
+ * it, and a second row per move would return the same task once per note.
+ *
+ * A record whose moves said nothing indexes byte-identically to before, which is what
+ * keeps this from moving the rank of every record in the tree.
+ *
+ * IT DOES MOVE THE RANK OF THE RECORDS THAT DO CARRY PROOF, and the number is in the
+ * command line's own golden. bm25 normalizes by the tokens of the whole ROW, so a task
+ * that was a title alone used to rank as a very short document: in `cli.reads.golden.txt`
+ * the task matching "runbook" fell from FIRST to THIRD of four hits the moment its four
+ * moves' prose joined its body. That is the same price the `alternatives` half of a
+ * decision already pays, written down for the same reason — it is paid only by records
+ * that carry the field, and it buys the record being findable by the words in it at all.
+ */
+function withProof(body: string, proof: readonly TransitionProof[] | undefined): string {
+  const said = proofText(proof);
+  if (said === '') return body;
+  return body === '' ? said : `${body}\n\n${said}`;
 }
 
 function row(

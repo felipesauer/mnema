@@ -467,6 +467,17 @@ export type LinkRecordedResult =
   | (Extract<FactRecordedResult, { readonly ok: true }> & {
       /** What the address covers, absent for a relation whose target is an id. */
       readonly reach?: AddressReach;
+      /**
+       * WHICH TREE HOLDS THE RULE THIS LINK NAMES — absent when none here does.
+       *
+       * A link written into the tree that TRAVELS whose subject lives in one that does
+       * not is an address that reaches every clone naming a rule no reader of one can
+       * open. Measured: over a record with two of those, a clone was told `3 govern this
+       * path` where one governed. The reads that count them are fixed where the counting
+       * is; this is what the WRITE says, at the moment the caller can still record the
+       * rule where the address is.
+       */
+      readonly subjectScope?: Scope;
     })
   | Extract<FactRecordedResult, { readonly ok: false }>;
 
@@ -512,12 +523,27 @@ export function runLinkKnowledge(
   // for an address to be relative to and reports no reach.
   const root = trees.projectPublic === undefined ? undefined : dirname(trees.projectPublic);
   const reach = root === undefined ? undefined : reachOfAddress(recorded.rel, input.target, root);
+  // WHERE THE RULE THIS LINK NAMES LIVES, asked here for the same reason the command
+  // line asks it: a link is accepted with a subject in any tree or in none, and this is
+  // the moment the caller can still write the rule where it belongs. The rule is the
+  // command's (`commands/link.ts`), stated in both doors because both doors write the
+  // edge — the read that COUNTS them is one function and this one is not, because a
+  // write reports what it just did and there is nothing to share but the question.
+  //
+  // IT ASKS THE SESSION'S OWN LOCATE, not the core's. This surface answers that question
+  // from its warm projections and falls back to a replay only when they come up empty,
+  // and `mcp-locate-cache.test.ts` refuses any file here that reaches for the core's
+  // one-record locate — a second walk is a second rule to keep in step. Written the other
+  // way first, and that guard is what caught it.
+  const located = locateEntity(session, input.subject);
+  const subjectScope = located.outcome === 'found' ? located.home.scope : undefined;
   // The relation AS RECORDED — screened, so the echo shows what landed.
   return {
     ok: true,
     recorded: [recorded.rel],
     scope: route.scope,
     ...(reach !== undefined ? { reach } : {}),
+    ...(subjectScope !== undefined ? { subjectScope } : {}),
     ...forwardReplacement(recorded),
   };
 }
