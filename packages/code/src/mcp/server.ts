@@ -255,24 +255,29 @@ const DECISION_VERDICTS = andListed(actionsRequiring('decision', 'note'));
  * a session that was killed is indistinguishable from one an agent is idle inside.
  * The reads report; the person or the agent decides, and `mnema run end <id>` is how
  * a decision gets recorded.
+ *
+ * WHY IT IS SHORTER THAN THE RULES IT CARRIES. The host truncates a tool description
+ * at 2048 characters and appends `… [truncated]`, and nothing warns. This text is
+ * appended to four descriptions, one of which — `bootstrap`, at 4478 — lost 54% of
+ * itself that way, and what a cut takes is the END, where every limit this project
+ * declares happens to be written. So what stayed on the wire is every DECLARATION an
+ * agent acts on, and what moved up here is the REASONING behind them, which is for
+ * whoever maintains this and was never read by a model. Two clauses moved sideways
+ * instead of up, to a tool this text NAMES, because the agent calls what is named:
+ * `search` now says the `kind` is the catalog's own and taken verbatim, and
+ * `audit_timeline` already said it serves an entity's own events. The ceiling is held
+ * by `every-description-reaches-the-model.test.ts`, which fails on the next word.
  */
 const OPEN_RUN_CONTRACT =
-  ' Each run reported carries `thisSession` — true when THIS connection opened it, ' +
-  'false when it came from elsewhere (another session on this machine, live or ' +
-  'abandoned): every session on a machine shares one authorizing identity, so the ' +
-  'record alone cannot tell them apart. An OPEN run also carries `ageSeconds` (since ' +
-  'it started) and, when anything has been recorded in it, `idleSeconds` (since its ' +
-  'last recorded fact); NO `idleSeconds` means the run has recorded nothing at all. ' +
-  "Both compare this machine's clock with the writer's, so a run written on another " +
-  'machine reports whatever those two clocks differ by. EVERY run reported — open or ' +
-  'ended — also carries `wrote`: what was written IN it, as one `{kind, count}` entry ' +
-  'per kind of fact recorded there, commonest first. An EMPTY array means the run ' +
-  'recorded nothing (it is never absent, so an empty one is an answer and not a gap), ' +
-  'and the run’s own start and end are not counted — only the work. The `kind` is the ' +
-  'catalog’s own, so `search` takes it verbatim; the facts themselves are not listed, ' +
-  'and `audit_timeline` on an entity is what serves those. None of this says a ' +
-  'run is dead — nothing in the record speaks about a process — so an old idle run ' +
-  'may be abandoned or may be a session waiting; closing one is `mnema run end <id>`.';
+  ' Runs: `thisSession` is true only when THIS connection opened it — false means ' +
+  'another session on this machine, live or abandoned, which the record cannot tell ' +
+  'apart. An OPEN run carries `ageSeconds`, and `idleSeconds` only once it has ' +
+  'recorded something, so NO `idleSeconds` means it recorded nothing; both compare ' +
+  'this clock with the writer’s. EVERY run, open or ended, carries `wrote`: one ' +
+  '`{kind, count}` per kind recorded in it, commonest first, never absent, EMPTY ' +
+  'meaning nothing was recorded; the run’s own start and end are not counted, and ' +
+  '`audit_timeline` serves the facts. An open run is no proof of a live session; ' +
+  '`mnema run end <id>` closes one.';
 
 /**
  * The agent a connection is recorded as when the client's own name is no name.
@@ -1064,57 +1069,39 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
     readsTheRecord('bootstrap'),
     {
       title: 'Bootstrap the session',
+      // THE LONGEST DESCRIPTION ON THIS SERVER, and the one the host's 2048-character
+      // ceiling cut in half — 4478 characters, 2430 of them dropped with `…
+      // [truncated]` and no warning. What a cut takes is the END, and the end of this
+      // text was where every limit of the read was declared: what `unread` means, why a
+      // decision that does not govern is left out, what a total larger than its list
+      // says. Half the teaching of the last two deliveries never reached a model.
+      //
+      // So every DECLARATION is still here and the JUSTIFICATIONS are gone: not
+      // deleted, moved to where the reader who needs them is (this comment and
+      // {@link OPEN_RUN_CONTRACT}'s doc), because the model reads the description and
+      // the maintainer reads the source. What went sideways rather than up went to a
+      // tool THIS TEXT NAMES, which is the rule the bench measured — the agent calls
+      // what is named: `read_record` now says what an ADR-<n> label is, and `search`
+      // says its own ordering and that `kind` is the catalog's own word.
       description:
-        "The opening context for this session's actor: where they left off, the " +
-        'LIVE work, the patterns to work by, the DECISIONS IN FORCE — what ' +
-        'this project has already settled and has not replaced — and what is ' +
-        'AWAITING A JUDGEMENT. Derived from the ' +
-        'chain. Every list is NAMES: a task arrives as id, title and state, a pattern ' +
-        'as id and name, a decision as id, title and its ADR-<n> label — which is a ' +
-        'display name a person cites, numbered within one tree and never an identity, ' +
-        'so two of the trees below can each hold an ADR-1 and only the id tells them ' +
-        'apart — call `next_actions` with a task id for the moves it allows, ' +
-        '`skills` with a skill id for the pattern itself, and `read_record` with a ' +
-        'decision id for its rationale, the argument behind it. Only a decision in ' +
-        'force is listed: one still proposed, rejected, or superseded by a later ' +
-        'decision does not govern and is left out. ' +
-        '`awaitingJudgement` is the other side of that: everything somebody has to ' +
-        'RULE ON before it means anything — a task `IN_REVIEW`, a decision still ' +
-        '`proposed`, a pattern `proposed` or `reviewed`. It is one list holding all ' +
-        'three, and each item says ' +
-        'which it is in `kind` and what is owed in `state` (`proposed` needs the ' +
-        'first ruling, `reviewed` needs the adoption call, `IN_REVIEW` needs the ' +
-        'approve-or-send-back call). Each has a read that ' +
-        'serves the rest of it, by the same id: `read_record` for a `decision`’s ' +
-        'argument, `skills` with the id for a `skill`’s pattern — which is ' +
-        'served labelled with its state, and NOT as a way of working here, because ' +
-        'nobody can rule on a pattern without reading it, and asking for it records ' +
-        'the consultation like any other — and `next_actions` for a `task`’s ' +
-        'verdicts. What the lists above never carry is a body, so ' +
-        'a `skill` here is a name until you ask. ' +
-        'BOTH LISTS ASK WHAT THE STATE MEANS, never whether a move is legal: `reopen` ' +
-        'is always legal from `DONE` and `supersede` from an accepted decision, so ' +
-        'that rule would report everything finished as still to do. A task that is ' +
-        'DONE or CANCELED is therefore on NEITHER list — ask `search` (kind `task`) ' +
-        'for it. ' +
-        'It is NOT more work to do: it is what a person has left open, and the ' +
-        'useful move is usually to raise it rather than to move it yourself. ' +
-        'Three of the four lists are CUT to the freshest ' +
-        'items; `workTotal`, `decisionsTotal` and `awaitingJudgementTotal` say how ' +
-        'many there are in all, so a ' +
-        'number larger than its own list means there is more it does not show. The ' +
-        'patterns are the exception — every adopted one is listed, so that list has ' +
-        'no total. ' +
-        '`search` reaches past the cuts (kind `task`, or kind `decision` or `skill` ' +
-        'with a `state`, with a `limit`), ordered by when each was recorded rather ' +
-        'than by when it last moved. ' +
-        'EVERY LIST ABOVE IS ABOUT A TASK, A DECISION OR A PATTERN, and the record ' +
-        'holds kinds that are about none of them — a memory, an observation. This ' +
-        'read does not look at those, so five empty lists are NOT a statement that ' +
-        'the record is empty. `unread` says what was not looked at and how much of ' +
-        'it there is, one entry per kind, and it is ABSENT when there is nothing ' +
-        'to declare — so a record that really is empty reads as empty. Each entry ' +
-        'names the `kind` to pass to `search` for it.' +
+        "The opening context for this session's actor: where they left off, the LIVE work, " +
+        'the patterns, the DECISIONS IN FORCE — settled here and not replaced — and what ' +
+        'is AWAITING A JUDGEMENT. Derived from the chain. Every list is NAMES, never ' +
+        'bodies: a task as id, title and state, a pattern as id and name, a decision as ' +
+        'id, title and its ADR-<n> label. For the rest, by id: `next_actions` for a ' +
+        'task’s moves, `skills` for a pattern (asking records the consultation), ' +
+        '`read_record` for a decision’s argument and its label. Only a decision IN FORCE ' +
+        'is listed: proposed, rejected or superseded is left out. `awaitingJudgement` is ' +
+        'one list of all three: `kind` says which, `state` what is owed — `proposed` the ' +
+        'first ruling, `reviewed` the adoption call, `IN_REVIEW` the approve-or-send-back. ' +
+        'A DONE or CANCELED task is on NEITHER list; ask `search` (kind `task`). Three ' +
+        'lists are CUT to the freshest; `workTotal`, `decisionsTotal` and ' +
+        '`awaitingJudgementTotal` say how many in all, so a total larger than its list ' +
+        'means more is not shown, and `search` reaches past every cut. Every adopted ' +
+        'pattern is listed, so it has no total. EVERY LIST HERE IS ABOUT A TASK, A ' +
+        'DECISION OR A PATTERN, so empty lists do NOT mean the record is empty: `unread` ' +
+        'names each kind not looked at, with how much, to pass to `search`; it is ABSENT ' +
+        'when there is nothing to declare.' +
         OPEN_RUN_CONTRACT,
     },
     async () => {
@@ -1349,7 +1336,9 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         'own words, so the merged order is a good approximation and not one global ' +
         'ranking; and `limit` can fill the answer from one project — when it leaves ' +
         'another project’s matches out entirely, the reply names that project under ' +
-        '`hidden`, and asking again with a larger limit reaches them. Read-only.',
+        '`hidden`, and asking again with a larger limit reaches them. The order is ' +
+        'when each was RECORDED, not when it last moved, and `kind` is the catalog’s ' +
+        'own name, taken verbatim — the one `unread` hands you. Read-only.',
       inputSchema: {
         term: z
           .string()
@@ -1411,7 +1400,9 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         'says which project and which tree hold it. A skill id is refused here and ' +
         'pointed at the `skills` tool, which serves a pattern’s body and records ' +
         'the consultation. An id no project holds is refused, in a reply that names ' +
-        'where it looked. Read-only.',
+        'where it looked. A decision’s ADR-<n> label is a display name a person ' +
+        'cites, numbered within one tree and never an identity: two trees can each ' +
+        'hold an ADR-1, and only the id tells them apart. Read-only.',
       inputSchema: {
         id: z.string().min(1).describe('The record id (from `search`, or from `bootstrap`).'),
       },

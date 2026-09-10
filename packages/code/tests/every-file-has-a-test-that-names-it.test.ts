@@ -161,9 +161,11 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * failure — a count restated from whatever the run reported is a count that pins nothing.
  * It went 2453 -> 2454 when `every-public-value-has-a-caller.test.ts` began importing
  * `ALIAS_PREFIXES` to enumerate the arms of a vocabulary from the vocabulary itself: one
- * clause, counted in that file, not read off the failure.
+ * clause, counted in that file, not read off the failure. It went 2454 -> 2465 when
+ * `every-description-reaches-the-model.test.ts` arrived: eleven clauses, counted in that
+ * file — a sandbox, a project, a client, a transport, and the server it connects to.
  */
-const CLAUSES_IN_THE_TREE = 2454;
+const CLAUSES_IN_THE_TREE = 2465;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
