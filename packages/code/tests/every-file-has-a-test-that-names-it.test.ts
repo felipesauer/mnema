@@ -183,9 +183,13 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * address it declined to contact. It went 2549 -> 2556 when
  * `the-sentence-reaches-every-door.test.ts` arrived: seven clauses, counted in it, which
  * reads the promise off every door that carries it and sweeps the tracked tree for the
- * clauses the sentence it replaced affirmed.
+ * clauses the sentence it replaced affirmed. It went 2556 -> 2578 over four files of one
+ * delivery, which made a package's published example the example that runs: five clauses
+ * in the chain's case and seven in the core's (each opens a chain in a sandbox, and the
+ * core's reaches two barrels because writing lives on a subpath), and five each in the two
+ * guards over the pages. Twenty-two, counted in the four files.
  */
-const CLAUSES_IN_THE_TREE = 2556;
+const CLAUSES_IN_THE_TREE = 2578;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -293,6 +297,10 @@ const LED_NOWHERE: Readonly<Record<string, string>> = {
     'The summariser the flake sampler folds N runs with. It lives under .github/ beside the workflow that calls it rather than in a package, because nothing the product ships imports it — which is exactly why the scanner cannot reach it.',
   'packages/code/tests/what-the-suite-left-behind.test.ts -> ../../../.github/what-the-suite-left-behind/sweep.mjs':
     'The sweep that reports which sandboxes under the machine temp directory outlived a run of the suite. It answers from OUTSIDE the suite, with no worker alive, which is the one place the before-and-after listing is not a race — so it can be neither a package nor reachable by a walk of one.',
+  'packages/chain/src/readme-example.test.ts -> ./index.js':
+    "The chain package's barrel, named by the case that runs its README example from inside src/. Excluded by the same glob as the two below, and reached by the shortest specifier of the three because this package keeps its cases beside its sources rather than under tests/.",
+  'packages/core/tests/readme-example.test.ts -> ../src/index.js':
+    "The core package's barrel, named by the case that runs its README example. It is the third file to reach a barrel and the second to reach THIS one, and it is listed separately from the case that sits inside src/ because the two land on the same file through different specifiers — a row is about the specifier, not about the module it fails to reach.",
   'packages/copilot/tests/readme-example.test.ts -> ../src/index.js':
     "The copilot package's barrel. This one DOES exist under packages/, and is unresolvable for the other reason entirely: the coverage gate excludes a package's src/index.ts from what it measures, PRODUCTION implements that exclusion, and so the barrel is in no corpus for a specifier to land in.",
   'packages/core/src/index.test.ts -> ./index.js':
@@ -736,8 +744,8 @@ describe('every file has a test that names it', () => {
     });
     // Non-vacuity in both parts: the walk really did follow specifiers, and the list
     // really does hold rows — a scanner returning nothing would satisfy the line above.
-    expect(unresolved.length).toBe(6);
-    expect(Object.keys(LED_NOWHERE)).toHaveLength(6);
+    expect(unresolved.length).toBe(8);
+    expect(Object.keys(LED_NOWHERE)).toHaveLength(8);
     // And each row says what THAT module is, by the ledger's rule, at the ledger's floor.
     const why = Object.values(LED_NOWHERE);
     expect(new Set(why).size).toBe(why.length);

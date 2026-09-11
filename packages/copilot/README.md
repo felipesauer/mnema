@@ -91,7 +91,7 @@ so if two clones ever disagreed about it, the chain is the one that decides.
 - **`guard`** — the workflow gate asked as a question: "may I do this move, and
   if not, why?" — the gate's own typed verdict, returned without writing anything.
 
-## What it guarantees — and what it does not
+## What it proves — and what it does not
 
 The proof lives one layer down, in `@mnema/core` and the chain beneath it. This
 layer makes no proof of its own; being clear about that is the point.

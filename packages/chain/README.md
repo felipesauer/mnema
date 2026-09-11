@@ -138,30 +138,56 @@ Requires Node ≥ 22.12.0. The package is ESM-only.
 Open a chain for writing, append events, checkpoint, and verify:
 
 ```ts
-import { openChainForWriting, taskBirth, verify } from '@mnema/chain';
+import { identityFounded, openChainForWriting, taskBirth, verify } from '@mnema/chain';
 
-// One writer owns this machine's tail. The signing key pair is loaded from the
-// chain root, or created there on first use (the private key stays local).
-const writer = openChainForWriting('.mnema/chain');
+// The chain is committed and shared; the private key is not, so the two roots are separate.
+const root = '.mnema/chain';
+const keyRoot = '/a/path/outside/the/repository';
+
+// One writer owns this machine's tail. The key pair is loaded from `keyRoot` — or
+// minted there on first use — and its PUBLIC half is copied into the chain, which
+// is what lets a stranger verify with no secret.
+const writer = openChainForWriting(root, { keyRoot });
+
+// The proof fields every event carries. Neither identity is a name somebody typed:
+// `who` is the ANCHOR derived from the key, `signerFp` is the fingerprint of the
+// key that signs, and the writer holds both. `which` IS a free name — an agent has
+// no key of its own, so the machine signs on its behalf.
+const proof = {
+  at: new Date().toISOString(),
+  who: writer.anchor,
+  signerFp: writer.signerFingerprint,
+  which: 'claude',
+};
+
+// Found the anchor before writing any work under it: this event is what says "this
+// key speaks for this identity". Every later event's signer is checked against it,
+// so a chain whose first event is a task verifies RED — the signature is good and
+// nothing enrolled the key that made it.
+const founding = identityFounded(
+  { ...proof, subject: writer.anchor },
+  { foundingFp: writer.signerFingerprint },
+);
 
 // A task's birth is two atomic events: it exists (task.created) and it has an
 // initial state (task.transitioned from null). State lives only in transitions.
-const envelope = {
-  at: new Date().toISOString(),
-  who: 'alice',        // the human who authorized the work — the root of authority
-  which: 'claude',     // the agent that executed it
-  subject: 'task-01',  // the entity this event is about
-};
-for (const event of taskBirth(envelope, { title: 'Ship the parser', initial: 'todo' })) {
-  writer.append(event);
-}
+// `initial` is a literal this package does not judge — which state a task starts
+// in belongs to the domain above (see `@mnema/core`), never to the proof engine.
+const birth = taskBirth(
+  { ...proof, subject: 'task-01' },
+  { title: 'Ship the parser', initial: 'DRAFT' },
+);
+
+// One call, so no reader ever sees a created task that has no state — and nothing
+// is ever written under an anchor the record has not founded.
+writer.appendAll([founding, ...birth]);
 
 // Sign a checkpoint over everything appended so far.
 writer.checkpoint();
 
 // Anyone can verify the whole chain — aggregating every tail — from the root.
-const result = verify('.mnema/chain');
-console.log(result.level, result.ok, result.fullySigned, result.summary);
+const result = verify(root);
+// result.ok is true, result.level is 'fully-signed', and `summary` words it.
 ```
 
 Verification needs no private key: it uses only the committed events and public

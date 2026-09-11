@@ -1,6 +1,24 @@
 /**
- * The README usage example, run as a real test so it can never be fiction.
- * If this drifts from the README, fix one or the other — the example must run.
+ * The README's usage example, RUN — and run as the very bytes the page publishes.
+ *
+ * THIS FILE USED TO PROMISE SOMETHING IT DID NOT DO. It said: *"If this drifts from the
+ * README, fix one or the other — the example must run."* That is an intention, not a
+ * guard, and the file was a parallel TRANSLATION of the page rather than a reading of it.
+ * What falsified it, measured on 11/09/2026 against `a41a9ea8`: renaming `bootstrap` to
+ * `bootstrapZZZ` inside the README's own ```ts block — an edit that makes the published
+ * example impossible to run — left this case green. The two copies had also already aged
+ * four lines apart, in ways nobody introduced on purpose: three comment rewraps, and two
+ * places where the page said more than the code that ran.
+ *
+ * WHAT MAKES THE SENTENCE TRUE NOW. The region between the two markers below is compared,
+ * line for line, against the page's block by
+ * `packages/code/tests/the-example-is-read-from-the-page.test.ts`. A name changed on the
+ * page and left alone here turns the suite red, and so does the reverse; the same
+ * rename now reddens two cases.
+ *
+ * NOTHING BELOW IS ELIDED. The state this example reads over is elided by the PAGE, in
+ * the prose above its block ("given a rebuilt cache over your chain"), and the setup
+ * above the first marker is that prose made real.
  */
 import { rmSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
@@ -48,8 +66,8 @@ describe('README example', () => {
     try {
       // ---- README example begins ----
       // Where did I leave off, what can I do next, by what patterns, and what is settled?
-      // `asOf` is the clock the ages are measured against; `sessionRuns` are the
-      // runs this caller opened itself (none, for a caller that has only read).
+      // `asOf` is the clock the ages are measured against; `sessionRuns` are the runs
+      // this caller opened itself (none, for a caller that has only read).
       const opening = bootstrap([cache], {
         actor: 'alice',
         asOf: new Date().toISOString(),
@@ -60,7 +78,7 @@ describe('README example', () => {
       const didWrite = opening.resume.lastRun?.wrote; // WHAT went in: [{ kind, count }, …]
       const firstJob = opening.work[0]; // the freshest live task — a NAME
       const more = opening.workTotal > opening.work.length; // was the list cut?
-      const patterns = opening.skills.map((s) => s.name); // names only
+      const patterns = opening.skills.map((s) => s.name); // names only — one line each
       const governing = opening.decisions.map((d) => `${d.adr} ${d.title}`); // names only
 
       // A name that turned out to matter: ask what that ONE task allows.
@@ -70,17 +88,16 @@ describe('README example', () => {
       const [pattern] = adoptedSkills([cache]); // each carries its `body`
 
       // A decision that bears on the task at hand: ask for the argument behind it.
-      // `readRecord` spans trees, so it takes each cache paired with the tree it
-      // stands for — `chainRoot` is that tree's chain directory (see `@mnema/core`).
+      // `readRecord` spans trees, so it takes each cache paired with the tree it stands
+      // for — `chainRoot` is that tree's chain directory (see `@mnema/core`).
       const settled = opening.decisions[0];
       const sources = [{ scope: 'public' as const, chainRoot, cache }];
-      const argued = settled && readRecord(sources, settled.id); // { kind: 'decision', … }
+      const argued = settled && readRecord(sources, settled.id); // { kind: 'decision', record: … }
 
       // Everything that governs, whole — for a file an agent host reads on its own.
-      // Same two derivations as `bootstrap`, with no cut: every rule or none. It takes
-      // the scoped sources and keeps the PUBLIC ones, because the file it feeds is
-      // committed: a rule in the private or the global tree governs your work and does
-      // not travel.
+      // Same two derivations as `bootstrap`, with no cut: every rule or none. It takes the
+      // scoped sources and keeps the PUBLIC ones, because the file it feeds is committed:
+      // a rule in the private or the global tree governs your work and does not travel.
       // The channel names are the CALLER's: this package reports where each of the two
       // unasked channels stands and cannot invent one.
       const governs = brief(sources, {
