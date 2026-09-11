@@ -1,11 +1,11 @@
 # @mnema/core
 
 The work domain of [mnema](https://github.com/felipesauer/mnema), built on top of
-[`@mnema/chain`](../chain). Where the chain proves *what happened*, core turns those
-events into something you can work with: the projections that replay the chain into
-a queryable cache, the workflow and the gate that decides which changes are allowed,
-and the identity layer that gives an entity a human-facing name without that name
-ever becoming its identity.
+[`@mnema/chain`](../chain). Where the chain holds the signed record of *what
+happened*, core turns those events into something you can work with: the
+projections that replay the chain into a queryable cache, the workflow and the
+gate that decides which changes are allowed, and the identity layer that gives
+an entity a human-facing name without that name ever becoming its identity.
 
 The chain stays the source of truth. Core never invents state — every row it holds
 is folded from events the chain already proved, and it can be thrown away and rebuilt

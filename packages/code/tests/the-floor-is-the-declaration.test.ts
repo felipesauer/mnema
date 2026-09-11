@@ -379,6 +379,15 @@ const FLOOR_MODULES: readonly string[] = [
   'presentation/styled.ts',
   'presentation/verdict.ts',
   'presentation/width.ts',
+  // I PUT THIS ON THE FLOOR: the sentence this product promises, which commander needs
+  // before it can print a word of help — `.description()` is read as the program is
+  // built, so there is no later moment to defer it to. It is here rather than typed into
+  // `cli.ts` because it was typed into NINE places and nothing held them together, and a
+  // tenth spelling in the entry is the shape the module exists to have ended
+  // (`the-sentence-reaches-every-door.test.ts`). What it costs is ONE file with no
+  // imports at all — two string constants, reaching no adapter, no record and no
+  // package, which the walk above is what proves.
+  'promise.ts',
   // THE SECOND MODULE ON THE FLOOR THAT IS A RULE RATHER THAN A DECLARATION, and it is
   // here for the reason `record-framing.ts` below it is. Every verb SAYS what it can do
   // to the record as it registers, which is eager by construction — commander has the

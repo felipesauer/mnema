@@ -180,9 +180,12 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * readings the same question. It went 2543 -> 2549 when
  * `the-address-a-proof-names-is-checked.test.ts` arrived: six clauses, counted in it,
  * which plants a proof as bytes and reads the line the real program prints about an
- * address it declined to contact.
+ * address it declined to contact. It went 2549 -> 2556 when
+ * `the-sentence-reaches-every-door.test.ts` arrived: seven clauses, counted in it, which
+ * reads the promise off every door that carries it and sweeps the tracked tree for the
+ * clauses the sentence it replaced affirmed.
  */
-const CLAUSES_IN_THE_TREE = 2549;
+const CLAUSES_IN_THE_TREE = 2556;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -670,7 +673,7 @@ describe('every file has a test that names it', () => {
     expect(PRODUCTION).toContain('packages/code/src/wiring/index.ts');
     expect(PRODUCTION).toContain('packages/core/src/topology/index.ts');
     expect(PRODUCTION).not.toContain('packages/core/src/index.ts');
-    expect(PRODUCTION).toHaveLength(299);
+    expect(PRODUCTION).toHaveLength(300);
     expect(TEST_TREE.length).toBeGreaterThan(250);
     // No file is in both corpora, which is what keeps a test from witnessing itself.
     const tests = new Set(TEST_TREE.map((one) => one.path));
@@ -690,7 +693,7 @@ describe('every file has a test that names it', () => {
     const found = unwitnessed();
     const byReach = (reach: Reach): number =>
       [...found.values()].filter((one) => one === reach).length;
-    expect(PRODUCTION.length - found.size).toBe(227);
+    expect(PRODUCTION.length - found.size).toBe(228);
     expect(found.size).toBe(72);
     expect(byReach('nobody imports it')).toBe(72);
     expect(byReach('imported, and no assertion observes it')).toBe(0);

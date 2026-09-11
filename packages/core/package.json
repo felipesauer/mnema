@@ -2,7 +2,7 @@
   "name": "@mnema/core",
   "version": "0.0.0",
   "private": true,
-  "description": "The mnema work domain: workflow gates, projections, identity, and queries. Depends on @mnema/chain.",
+  "description": "The mnema work domain: the gate over the SHAPE of a change, projections, identity, and queries. Depends on @mnema/chain.",
   "author": "Felipe Sauer (https://github.com/felipesauer)",
   "license": "MIT",
   "type": "module",
