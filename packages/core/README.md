@@ -25,9 +25,10 @@ at any time.
   person (`canonicalIdentity`) and of an id (`canonicalId`) that keep what is
   validated equal to what is written.
 
-## What it guarantees — and what it does not
+## What it proves — and what it does not
 
-Core makes a few promises, and is precise about their limits:
+Core proves nothing on its own: proof is the chain's job and core rests on it. What
+it holds to is narrower than that, and each of these says where it stops:
 
 | Property | What holds |
 |---|---|
@@ -36,11 +37,10 @@ Core makes a few promises, and is precise about their limits:
 | **The gate enforces on write, not on read** | Authority (a human authorized it, and is not the agent that executed it), legality (the transition is one the workflow allows), and proof (the required fields are present) are checked before the event is appended. A read trusts what a write already gated. |
 | **A human name is never an identity** | The alias and the citable `ADR-42` label are display only. The entity's identity is its id; a label can collide between offline clones and that is a signal to reconcile, never a broken record. The signal is `adrCollisions`, asked of ONE chain — the only unit the number is sequential in, since two trees each numbering their first decision `ADR-1` is the design working. |
 
-What core does **not** do: it does not prove anything — that is the chain's job, and
-core rests on it. It does not talk to the outside world (no MCP, no CLI); those are
-thin adapters built on top, in another package. And it does not resolve *who wins*
-when two machines change the same entity offline — the projection is deterministic,
-but the merge policy is a separate concern.
+What core does **not** do, beyond making no proof of its own: it does not talk to the
+outside world (no MCP, no CLI); those are thin adapters built on top, in another
+package. And it does not resolve *who wins* when two machines change the same entity
+offline — the projection is deterministic, but the merge policy is a separate concern.
 
 ## Install
 
@@ -56,28 +56,37 @@ Record work through the gate, then read it back from the cache:
 
 ```ts
 import { catalogUpcasters, openChainForWriting } from '@mnema/chain';
-import { createTask, transitionTask, ProjectionCache } from '@mnema/core';
+import { ProjectionCache } from '@mnema/core';
+import { createTask, transitionTask } from '@mnema/core/write';
 
+// The chain is committed and shared; the private key is not, so the two roots are separate.
 const root = '.mnema/chain';
-const writer = openChainForWriting(root);
+const keyRoot = '/a/path/outside/the/repository';
+
 // A write reads state from the chain and appends to it; the context names both.
+const writer = openChainForWriting(root, { keyRoot });
 const ctx = { writer, layout: { root }, upcasters: catalogUpcasters() };
 
-// Create a task and move it — each write runs the gate first. `who` is the human
-// who authorized it; `which` is the agent that executed it; they must differ.
-const created = createTask(ctx, { id: 'task-01', title: 'Ship the parser', who: 'alice', which: 'claude' });
+// Create a task and move it — each write runs the gate first. The caller supplies
+// neither the id nor the author. The id is MINTED here, from randomness, so two
+// offline clones never mint the same one; `who` is derived from the writing key,
+// so authorship cannot be forged by typing a name. `which` — the agent that
+// carried the work out — IS the caller's, because an agent has no key.
+const created = createTask(ctx, { title: 'Ship the parser', which: 'claude' });
 if (created.ok) {
-  // DRAFT → READY: `submit` requires no proof fields, so none are needed.
-  transitionTask(ctx, { id: 'task-01', action: 'submit', who: 'alice', which: 'claude' });
+  // DRAFT → READY: `submit` requires no proof fields, so none are needed. The id
+  // to move with is the one the create handed back.
+  transitionTask(ctx, { id: created.id, action: 'submit', which: 'claude' });
   // An action that carries proof supplies it — e.g. cancelling requires a reason:
-  // transitionTask(ctx, { id: 'task-01', action: 'cancel', who: 'alice', which: 'claude',
+  // transitionTask(ctx, { id: created.id, action: 'cancel', which: 'claude',
   //   fields: { reason: 'superseded by a new approach' } });
 }
 
 // Read state from the cache — rebuilt from the chain, never authored directly.
 const cache = ProjectionCache.open(root);
 cache.rebuild();
-console.log(cache.getTask('task-01')); // { id, title, state, ... } or null
+const task = created.ok ? cache.getTask(created.id) : null;
+// task is { id, title, state: 'READY', … }, or null for an id nothing created.
 ```
 
 A refused write (unauthorized, illegal transition, or missing proof) returns a typed
