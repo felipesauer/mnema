@@ -9,7 +9,7 @@
   "homepage": "https://github.com/felipesauer/mnema",
   "repository": "https://github.com/felipesauer/mnema",
   "license": "MIT",
-  "keywords": ["audit-trail", "provenance", "accountability", "adr", "local-first"],
+  "keywords": ["audit-trail", "append-only", "accountability", "adr", "local-first"],
   "mcpServers": {
     "mnema": {
       "command": "mnema",
