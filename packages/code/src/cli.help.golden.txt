@@ -2,7 +2,9 @@
 $ mnema
 ! Usage: mnema [options] [command]
 !
-! A tamper-evident, local-first audit chain for AI-agent work.
+! A signed, append-only record of the decisions behind AI-agent work — the
+! decision, the reasoning, and who wrote it down, in the repository where the work
+! happens.
 !
 ! Options:
 !   -V, --version                           output the version number
@@ -51,7 +53,9 @@ $ mnema
 $ mnema --help
 | Usage: mnema [options] [command]
 |
-| A tamper-evident, local-first audit chain for AI-agent work.
+| A signed, append-only record of the decisions behind AI-agent work — the
+| decision, the reasoning, and who wrote it down, in the repository where the work
+| happens.
 |
 | Options:
 |   -V, --version                           output the version number

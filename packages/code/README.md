@@ -1,14 +1,23 @@
 # @mnema/code
 
-The command line and MCP server for [mnema](https://github.com/felipesauer/mnema):
-two surfaces over one tamper-evident record of AI-agent work. The agent writes
-through MCP while it works; you read, audit, and verify from the terminal.
+A signed, append-only record of the decisions behind AI-agent work — the
+decision, the reasoning, and who wrote it down, in the repository where the
+work happens.
 
-This is the package you install. It holds no domain logic of its own — it
-resolves where you are, calls one function in the packages below it, and prints
-what came back. The workflow rules, the projections, and the proof live in
-`@mnema/core` and `@mnema/chain`; keeping the surfaces thin is what makes the
-CLI and the MCP tools behave identically, because they are the same call.
+Tamper-evident, not tamper-proof: what is still in the record has not changed
+since it was signed, and a stranger can check that without your keys and
+without installing this.
+
+This is the package you install: the command line and MCP server for
+[mnema](https://github.com/felipesauer/mnema), two surfaces over one record. The
+agent writes through MCP while it works; you read, audit, and verify from the
+terminal.
+
+It holds no domain logic of its own — it resolves where you are, calls one
+function in the packages below it, and prints what came back. The workflow
+rules, the projections, and the proof live in `@mnema/core` and `@mnema/chain`;
+keeping the surfaces thin is what makes the CLI and the MCP tools behave
+identically, because they are the same call.
 
 ## What it gives you
 

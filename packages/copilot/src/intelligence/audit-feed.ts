@@ -21,10 +21,17 @@
  * that never passed a screen.
  *
  * So the feed carries the ENVELOPE: when, which operation, who authorized it, which agent
- * executed it, in which session, over which entity, attested by which key. That is what an
- * audit trail is, and a SIEM asks for nothing else. The body of a memory, the text of a
- * decision, the prose of an observation — none of it is a fact of authorship, and all of it
- * is where a credential lives.
+ * executed it, in which session, over which entity, SIGNED by which key. That is what an
+ * audit trail is, and a SIEM asks for nothing else. This line used to read *attested* by
+ * which key, and three paragraphs below the same comment says *nothing here is an
+ * attestation* — the word claimed a verification that neither this module nor the line it
+ * writes performs. `signerFp` names the credential that signed the ORIGINAL fact; whether
+ * a signature actually covers that fact is a question for `mnema verify`, which reports
+ * events written after the last checkpoint as resting on the hash chain alone. The
+ * product's own README says *signed by which key* in both places it describes this feed.
+ *
+ * The body of a memory, the text of a decision, the prose of an observation — none of it
+ * is a fact of authorship, and all of it is where a credential lives.
  *
  * THE GUARANTEE IS STRUCTURAL, NOT A HABIT. {@link AuditEnvelope} is the envelope's
  * fields and nothing else, so a payload is not something this module declines to read — it
@@ -54,9 +61,12 @@
  *
  * IT IS NOT THE PROOF, and the temptation had a name. OCSF has a `record_integrity`
  * profile that attaches cryptographic attestations to an event and speaks of *"a sequence
- * of events forming a tamper-evident hash chain"* — a description of this product. It is
- * deliberately NOT applied. An attestation there is computed over a canonical serialization
- * of the OCSF EVENT; the signature this record holds covers mnema's own canonical bytes,
+ * of events forming a tamper-evident hash chain"* — a true description of this record's
+ * MECHANISM, which is why the temptation had teeth. It is not this product's promise: that
+ * one is a signed, append-only record of DECISIONS, and it states the limit the profile's
+ * wording leaves out (`packages/code/src/promise.ts`). The profile is deliberately NOT
+ * applied. An attestation there is computed over a canonical serialization of the OCSF
+ * EVENT; the signature this record holds covers mnema's own canonical bytes,
  * which are a different serialization of a different shape. Emitting the profile would
  * present a signature as attesting a document it never covered. So `signerFp` travels as
  * what it is — the identifier of the credential that signed the original fact — and a line
@@ -352,7 +362,7 @@ export interface AuditEntity {
   readonly type_id: number;
 }
 
-/** Who authorized the fact, attested by which key, executed by which agent. */
+/** Who authorized the fact, signed by which key, executed by which agent. */
 export interface AuditActor {
   readonly user: {
     /** The authorizing human — the anchor id, derived from a key and unforgeable. */

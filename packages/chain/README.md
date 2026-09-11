@@ -1,10 +1,10 @@
 # @mnema/chain
 
 The proof engine at the core of [mnema](https://github.com/felipesauer/mnema): a
-tamper-evident, append-only event log for the work of AI agents. It records what
-happened as typed, self-contained events, chains them so nothing can be silently
-altered, and lets anyone verify the record — with or without the private key that
-signed it.
+signed, append-only event log for the work of AI agents. It records what happened
+as typed, self-contained events and chains them, so that what is still in the log
+has not changed since it was signed — tamper-evident, not tamper-proof — and a
+stranger can check that, with or without the private key that signed it.
 
 This package is the part that carries the proof, so it is deliberately small: it
 has **zero runtime dependencies** and knows nothing about databases, projections,

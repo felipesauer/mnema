@@ -25,6 +25,7 @@
 import { IdentityUnavailableError } from '@mnema/core';
 import { Command, CommanderError, Option } from 'commander';
 import type { Render } from './presentation/render.js';
+import { PRODUCT_PROMISE } from './promise.js';
 import { VERSION } from './version.js';
 import {
   COLOR_HELP,
@@ -121,7 +122,7 @@ export function buildProgram(
   const program = new Command();
   program
     .name('mnema')
-    .description('A tamper-evident, local-first audit chain for AI-agent work.')
+    .description(PRODUCT_PROMISE)
     .version(VERSION)
     // Declared on the program and not on a verb: one question about one invocation,
     // asked before the verb (`mnema --color=never verify`). commander refuses a value
