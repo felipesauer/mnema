@@ -29,7 +29,7 @@
   "files": [
     "dist/"
   ],
-  "homepage": "https://felipesauer.github.io/mnema/",
+  "homepage": "https://github.com/felipesauer/mnema",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/felipesauer/mnema.git"
