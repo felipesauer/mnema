@@ -139,6 +139,7 @@ export {
   stampCheckpoint,
   type WitnessNetwork,
   type WitnessRefusal,
+  type WitnessRefusalKind,
   type WitnessReturnVisit,
 } from './chain/witness-request.js';
 export {

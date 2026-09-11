@@ -505,9 +505,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: '`@mnema/chain`’s reading, one of whose states quotes a calendar URI read off a file',
   },
-  'witness.ts «{} did not answer: {}» #1': {
+  'witness.ts «{} {}: {}» #1': {
     verdict: 'collapsed',
-    why: 'a URL the caller typed, and somebody else’s error message about it',
+    why:
+      'an address that was not reached — read off a proof FILE on the `upgrade` path, ' +
+      'never typed there — and somebody else’s error message or this product’s own reason',
   },
 
   // --- values another package worded, on a line this one lays out -------------------
@@ -779,9 +781,11 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
     'fingerprint and a random suffix, never typed',
   'witness.ts «external witness (T3): {} — {}» #1':
     'the neighbour of that line, printed in the same breath and about the same tail',
-  'witness.ts «{} did not answer: {}» #1':
-    'needs one calendar that answered and one that did not IN ONE ACT — with none ' +
-    'answering the act refuses instead, so this line needs a network',
+  'witness.ts «{} {}: {}» #1':
+    'needs a proof already on disk whose pending attestation names the address, which ' +
+    'no argv puts there: `stamp` writes whatever the calendar ANSWERED with, so reaching ' +
+    'this from a command line means a calendar answering — driven, with both of its ' +
+    'verbs, in `commands/witness.test.ts`',
 };
 
 describe('every closed site is either driven or named', () => {

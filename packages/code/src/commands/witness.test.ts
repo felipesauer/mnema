@@ -119,7 +119,25 @@ function network(answer: (url: string) => Response | Error): {
   return { fetch, sent };
 }
 
-const CALENDAR = 'https://calendar.invalid';
+/**
+ * The calendar every case here stamps with — an OPERATOR address, and that is the point.
+ *
+ * It was `https://calendar.invalid` and nothing ever reached it, because the fetcher is a
+ * parameter. Then the return visit began checking the address it reads off the proof, and
+ * `.invalid` names no timestamp operator: four cases went red and THREE WENT ON PASSING
+ * over a product that contacted nobody — the ones asserting what the record said rather
+ * than what left the machine. Each of those three now asserts the contact as well, which
+ * is what stops this file from testing the SKIP while its names say `going back`.
+ *
+ * THE OTHER ADDRESSES IN THIS FILE STAY `.invalid` ON PURPOSE. `stamp` takes its
+ * calendars from whoever owns the machine and checks nothing, so a case handing it
+ * `https://down.invalid` is exercising the real path — and the pair, kept side by side,
+ * is what says the check is on the DATA path and not on the configuration one.
+ */
+const CALENDAR = 'https://alice.btc.calendar.opentimestamps.org';
+
+/** An address a proof can name and the return visit will not go to. */
+const NOT_AN_OPERATOR = 'https://calendar.attacker.test';
 
 /**
  * What a calendar says when it has only just been asked, WRITTEN OUT IN BYTES.
@@ -130,16 +148,34 @@ const CALENDAR = 'https://calendar.invalid';
  * production (which is the shape four defects of this series took). So the answer is a
  * VECTOR, small enough to read here:
  *
- *   00                    this member is an attestation
- *   83dfe30d2ef90c8e      the tag of a calendar's "I am working on it"
- *   19                    the payload is 25 bytes
- *   18 https://…invalid   which is a length-prefixed URI of 24
+ *   00                          this member is an attestation
+ *   83dfe30d2ef90c8e            the tag of a calendar's "I am working on it"
+ *   2e                          the payload is 46 bytes
+ *   2d https://alice…org        which is a length-prefixed URI of 45
  *
  * It is asserted against the reader on the way in (the first case that uses it fails
  * loudly if this stops parsing), so it cannot rot into bytes nothing accepts.
+ *
+ * THE URI IN HERE IS THE ONE A RETURN VISIT GOES BACK TO, AND IT IS THE CALENDAR'S AND
+ * NOT THE CALLER'S. It used to spell `https://calendar.invalid`, which is what made the
+ * addresses in this file look like a detail: the value `stamp` is HANDED never reaches
+ * the proof at all — what lands in the file is whatever the answer says, so the address
+ * a later `upgrade` contacts is chosen by whoever answered. That is a second way in
+ * beside a forged file, and neither the queue item nor the study for this named it.
  */
 const CALENDAR_ANSWER = Buffer.from(
-  '0083dfe30d2ef90c8e191868747470733a2f2f63616c656e6461722e696e76616c6964',
+  '0083dfe30d2ef90c8e2e2d68747470733a2f2f616c6963652e6274632e63616c656e6461722e6f70656e74696d657374616d70732e6f7267',
+  'hex',
+);
+
+/**
+ * The same answer, from a calendar that names somebody else — the byte-level version of
+ * the way in the comment above describes.
+ *
+ *   1f 1e https://calendar.attacker.test    a length-prefixed URI of 30
+ */
+const CALENDAR_ANSWER_NAMING_A_STRANGER = Buffer.from(
+  '0083dfe30d2ef90c8e1f1e68747470733a2f2f63616c656e6461722e61747461636b65722e74657374',
   'hex',
 );
 
@@ -242,7 +278,7 @@ describe('asking an outside witness to date the record', () => {
     expect(act.ok).toBe(true);
     if (!act.ok) return;
     expect(act.outcomes[0]?.refusals).toEqual([
-      { where: 'https://down.invalid', reason: 'connection refused' },
+      { where: 'https://down.invalid', reason: 'connection refused', kind: 'unanswered' },
     ]);
     expect(act.outcomes[0]?.reading.status).toBe('pending');
   });
@@ -264,6 +300,10 @@ describe('going back for what has not confirmed', () => {
     await runWitnessStamp(ctx, { calendars: [CALENDAR], fetch: asked.fetch });
     const back = network(() => new Response(null, { status: 404 }));
     const act = await runWitnessUpgrade(ctx, { fetch: back.fetch });
+    // THE CONTACT, and not only the sentence. `waiting` is also what this act says about
+    // an address it declined to ask, so without this line the case reads the same over a
+    // return visit that went back for nothing at all.
+    expect(back.sent.filter((one) => one.url.includes('/timestamp/'))).toHaveLength(1);
     expect(act.ok && act.outcomes.map((o) => o.did)).toEqual(['waiting']);
     expect(verifyChainAt(publicRoot(ctx), catalogUpcasters()).witness).toBe('pending');
     expect(verifyChainAt(publicRoot(ctx), catalogUpcasters()).level).toBe('fully-signed');
@@ -357,6 +397,52 @@ describe('going back for what has not confirmed', () => {
     expect(readFileSync(join(witness, `${head}.ots`)).toString()).toBe('not a proof at all');
   });
 
+  it('does not go to an address the ANSWER named, when the answer named a stranger', async () => {
+    // THE TWO PATHS, IN ONE CASE, AND THE ADDRESS IS NEITHER OF THE OBVIOUS ONES. The
+    // calendar asked here is a real operator, typed by whoever owns the machine — that is
+    // configuration, and this check is not its business. What the operator ANSWERS with
+    // is a URI, it goes into the proof file verbatim, and it is the address the return
+    // visit reads back later: so the pending attestation this stamp writes points at
+    // `calendar.attacker.test` without anybody having typed it. Measured on the built
+    // product before the check existed, that shape reached a chosen host and port and
+    // the act reported no refusal at all.
+    const ctx = setup();
+    const asked = network(() => new Response(CALENDAR_ANSWER_NAMING_A_STRANGER, { status: 200 }));
+    await runWitnessStamp(ctx, { calendars: [CALENDAR], fetch: asked.fetch });
+    expect(asked.sent.map((one) => one.url)).toEqual([`${CALENDAR}/digest`]);
+    // The stranger is really in the file — otherwise the case below passes on a record
+    // that simply has nothing open.
+    expect(
+      runWitnessList(ctx)
+        .lines.map((one) => one.reading.detail)
+        .join(' '),
+    ).toContain(NOT_AN_OPERATOR);
+
+    const back = network(() => new Error('nothing here should be reached'));
+    const act = await runWitnessUpgrade(ctx, { fetch: back.fetch });
+    // WHAT LEFT THE MACHINE, which is the assertion the message cannot stand in for.
+    expect(back.sent).toEqual([]);
+    expect(act.ok).toBe(true);
+    if (!act.ok) return;
+    // And the owner is TOLD, by a fact of its own kind: before this, the act answered
+    // `refusals: []` and there was nothing anywhere to read.
+    expect(act.outcomes.flatMap((one) => one.refusals)).toEqual([
+      {
+        where: NOT_AN_OPERATOR,
+        reason: 'calendar.attacker.test is not a timestamp calendar operator',
+        kind: 'not-asked',
+      },
+    ]);
+    // AND THE LINE DOES NOT GIVE ADVICE THAT CANNOT COME TRUE. `ask again later` is what
+    // this act says about a calendar that has nothing yet, and repeating it resolves
+    // that; repeating it over an address this machine will not contact resolves nothing,
+    // which is the eternal PENDING a fixed list of four hosts was rejected for.
+    expect(act.outcomes.map((one) => one.detail)).toEqual([
+      `no address checkpoint ${checkpointToWitness({ root: publicRoot(ctx) }, tailOf(publicRoot(ctx)))} names could be asked — see below`,
+    ]);
+    expect(act.outcomes.map((one) => one.detail).join(' ')).not.toContain('ask again later');
+  });
+
   it('does not go back to the network for a proof that is already complete', async () => {
     // Network spent in silence is what this avoids, and the ecosystem's own client warns
     // about the other half: `ots upgrade` writes a `.bak` before it replaces a proof,
@@ -429,10 +515,13 @@ describe('the two verbs, over one disk', () => {
     cpSync(WITNESSED_THEN_WRITTEN, publicRoot(ctx), { recursive: true });
 
     const before = runWitnessList(ctx);
-    const { fetch } = network(() => new Response(null, { status: 404 }));
+    const { fetch, sent } = network(() => new Response(null, { status: 404 }));
     const act = await runWitnessUpgrade(ctx, { fetch });
     expect(act.ok).toBe(true);
     if (!act.ok) return;
+    // The iff holds trivially over an act that asked nobody: every tail is `waiting` and
+    // none says `nothing has been asked`. So the walk has to really have gone out.
+    expect(sent.filter((one) => one.url.includes('/timestamp/'))).not.toEqual([]);
     expect(before.lines.length).toBeGreaterThan(2);
     // Both halves of the iff are exercised, which is the thing the mutation caught.
     const absence = 'nothing outside this machine attests this record';
@@ -468,8 +557,11 @@ describe('the two verbs, over one disk', () => {
     await runWitnessStamp(ctx, { calendars: [CALENDAR], fetch: asked.fetch });
     runMemory({ cwd: ctx.cwd, env: ctx.env }, { content: 'written while waiting' });
     const before = runWitnessList(ctx).lines.map((l) => l.reading.detail);
-    const { fetch } = network(() => new Response(null, { status: 404 }));
+    const { fetch, sent } = network(() => new Response(null, { status: 404 }));
     await runWitnessUpgrade(ctx, { fetch });
+    // An act that asked nobody also moves no sentence, so the property is only about
+    // repeating the act once the calendar really was asked again.
+    expect(sent.filter((one) => one.url.includes('/timestamp/'))).not.toEqual([]);
     expect(runWitnessList(ctx).lines.map((l) => l.reading.detail)).toEqual(before);
   });
 

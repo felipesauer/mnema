@@ -21,7 +21,7 @@
  * the chain's own one-line rule before it ever reaches here (see `witness.ts`).
  */
 
-import type { WitnessReading } from '@mnema/chain';
+import type { WitnessReading, WitnessRefusalKind } from '@mnema/chain';
 import type { Scope } from '@mnema/core';
 import { asId, asScope, asWord, column, itemLine } from './items.js';
 import type { Render } from './render.js';
@@ -48,6 +48,37 @@ const SAID: Readonly<Record<WitnessReading['status'], string>> = {
 /** How one witness state reads, wherever this surface says it. */
 export function witnessWord(status: WitnessReading['status']): string {
   return SAID[status];
+}
+
+/**
+ * What each KIND of refusal reads — TOTAL over the union, the same way {@link SAID} is.
+ *
+ * TWO FACTS THAT WERE ONE SENTENCE, AND THE SENTENCE WAS THE WRONG ONE FOR THE SECOND.
+ * Every refusal on this path used to print `did not answer`, which is true of a calendar
+ * that is down and false of an address this machine declined to contact — and the second
+ * is the one its owner most needs to read, because it is the only line saying a proof
+ * they were handed names somewhere the product will not go. `did not answer` invites
+ * "ask again later"; this one invites "look at where that file came from".
+ *
+ * NEITHER PHRASE SAYS `refused`, and that is deliberate: `refusal` is already this
+ * surface's word for an act that would not run, and these two lines appear beside acts
+ * that DID run.
+ *
+ * THE CASE THAT HOLDS THIS IS `code/tests/the-address-a-proof-names-is-checked.test.ts`,
+ * and it is named here because for one round nothing did. A mutation swapping the second
+ * phrase back to the first left the whole suite green: the address check is witnessed six
+ * ways in `chain`, the SHAPE of the line is pinned by `a-line-of-success-is-one-line`,
+ * and no case anywhere read the WORDS. That file drives the real program over a planted
+ * proof and asserts both directions — this phrase present, `did not answer` absent.
+ */
+const REFUSED: Readonly<Record<WitnessRefusalKind, string>> = {
+  unanswered: 'did not answer',
+  'not-asked': 'was not asked by this machine',
+};
+
+/** How one refusal's KIND reads, wherever this surface says it. */
+export function witnessRefusalWord(kind: WitnessRefusalKind): string {
+  return REFUSED[kind];
 }
 
 /** One tail's standing, as this report takes it. */
