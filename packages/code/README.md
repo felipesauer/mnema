@@ -930,6 +930,15 @@ the product read 06:23:18, twenty minutes apart from the same bytes. By **height
 by instant: a block's `nTime` is declared by whoever mined it and consensus only bounds it,
 so a lower block may carry a later one.
 
+**The address a return visit goes back to is checked before it is asked.** Every open
+request names the calendar that took it, and that name was written by whoever answered —
+into a file a project can be handed. So the verb goes only to an https address at a
+public timestamp operator, follows a redirect only while it stays on the same host, and
+reports anything else by name without contacting it, in a line of its own: *was not
+asked by this machine*, which is a different fact from *did not answer* and calls for a
+different response. By operator domain and not by exact host, so a proof taken by a
+calendar nobody has heard of yet still completes.
+
 `verify` **never touches a network**. It reads the proof and the header out of the
 record, checks that the proof commits to the checkpoint it proved, that the path folds
 to the merkle root the header carries, and that the header did the work it declares.

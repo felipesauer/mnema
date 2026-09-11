@@ -1178,8 +1178,15 @@ $ mnema witness upgrade --help
 | — it hashes to that block's id — so a substituted one is not a matter of trust.
 |
 | There is no --calendar here, and the reason is that there is nothing to choose:
-| every request the walk finds NAMES the calendar that took it, and that is the one
-| asked. Only `stamp` picks, because only `stamp` sends something nobody holds yet.
+| every request the walk finds NAMES the calendar that took it. Only `stamp` picks,
+| because only `stamp` sends something nobody holds yet.
+|
+| The address a request names is checked before it is asked, because it was read off
+| a FILE and a proof can arrive from anywhere: it has to be an https address at one
+| of the public timestamp operators, and a redirect is followed only while it stays
+| on the same host. Anything else is reported by name and not contacted — a separate
+| line from the one a calendar that is down gets, because they call for opposite
+| responses.
 
 ### mnema switch off --help
 $ mnema switch off --help

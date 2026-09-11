@@ -113,7 +113,13 @@ witnesses do different halves of that, and neither does the other's:
   a request that has not confirmed is reported too, with the calendar it is with,
   because a promise that counts for nothing is still not the same fact as no promise.
   FORMAT.md §8 is the bytes; `witness.ts` is the reading; nothing on the verifying
-  path touches a network.
+  path touches a network. The two acts that DO touch one are held to an address list:
+  a return visit reads its address off the proof, which is a file a record can receive,
+  so it goes only to an https host at a public timestamp operator and follows a redirect
+  only while it stays on the same host — anything else is named and not contacted
+  (`refuseCalendarAddress`, `packages/chain/src/chain/witness-request.test.ts`). What
+  travels was never the record's content; what this closes is being made to talk to
+  somebody of a file's choosing.
 - **A git remote.** It preserves the files a deletion would remove and gives a
   committed public key a provenance the crypto alone cannot, which is the half a
   timestamp does not reach. Committing the chain to git stays the recommended path
