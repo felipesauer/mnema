@@ -6,12 +6,16 @@
  * terminal of the person who holds the record; this one writes what somebody forwards to
  * a SIEM, which indexes it, keeps it, and lets a stranger search it. That is what decides
  * its shape: it carries the ENVELOPE — when, which operation, who authorized it, which
- * agent executed it, in which session, over which entity, attested by which key — and no
- * payload of any kind. The reason is `mnema exposure`'s: the product refuses to print a
- * value that looks like a credential even to the person standing in front of the record,
- * and a feed carrying bodies would push exactly that off the machine and into an index.
- * `@mnema/copilot`'s `audit-feed.ts` holds the argument in full and enforces it in the
- * type it reads.
+ * agent executed it, in which session, over which entity, SIGNED by which key — and no
+ * payload of any kind. This line used to read *attested* by which key, the same wording
+ * `audit-feed.ts` carried, and it claimed a verification this verb does not perform:
+ * `signerFp` names the credential that signed the ORIGINAL fact, while whether a signature
+ * covers that fact is a question for `mnema verify`, and nothing in this projection is an
+ * attestation. The reason for the envelope is `mnema exposure`'s: the product refuses to
+ * print a value that looks like a credential even to the person standing in front of the
+ * record, and a feed carrying bodies would push exactly that off the machine and into an
+ * index. `@mnema/copilot`'s `audit-feed.ts` holds the argument in full and enforces it in
+ * the type it reads.
  *
  * IT SENDS NOTHING ANYWHERE. The feed goes to standard output and stops there. Whoever
  * forwards it decides where it goes, over which transport, with which credential — this
