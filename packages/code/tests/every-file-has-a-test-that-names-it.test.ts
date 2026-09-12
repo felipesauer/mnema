@@ -193,9 +193,13 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * and compiles it against the built declarations, and three in
  * `tests/support/published-examples.ts`, the roster both guards over the pages now read so
  * there is one list and not two. Nine, counted in the two files — the comparison guard's
- * own count did not move, because the import it lost to that module it gained back.
+ * own count did not move, because the import it lost to that module it gained back. It went
+ * 2587 -> 2594 when the attribution footer got a machine: seven clauses in
+ * `the-link-cannot-come-back.test.ts`, which builds a repository under a temp directory of
+ * its own and commits into it, so it reaches `node:child_process` and `node:fs` as well as
+ * the scanner under `.github/` that the row in {@link LED_NOWHERE} is about.
  */
-const CLAUSES_IN_THE_TREE = 2587;
+const CLAUSES_IN_THE_TREE = 2594;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -301,6 +305,8 @@ const LED_NOWHERE: Readonly<Record<string, string>> = {
     'The script that re-runs one red case alone and prints the verdict. Same tree and same extension as the reporter beside it, and the same consequence: nothing about this file is asserted THROUGH the scanner, only by the cases that import it directly.',
   'packages/code/tests/the-sampler-counts-or-refuses.test.ts -> ../../../.github/flake-sampler/summarize.mjs':
     'The summariser the flake sampler folds N runs with. It lives under .github/ beside the workflow that calls it rather than in a package, because nothing the product ships imports it — which is exactly why the scanner cannot reach it.',
+  'packages/code/tests/the-link-cannot-come-back.test.ts -> ../../../.github/the-link-cannot-come-back/scan.mjs':
+    'The scan that refuses an attribution footer in a commit message or a pull request description before either reaches the trunk. It runs on a runner against the event payload rather than inside the suite, so like the three .mjs rows above it sits under .github/ where no walk of packages/ can reach it.',
   'packages/code/tests/what-the-suite-left-behind.test.ts -> ../../../.github/what-the-suite-left-behind/sweep.mjs':
     'The sweep that reports which sandboxes under the machine temp directory outlived a run of the suite. It answers from OUTSIDE the suite, with no worker alive, which is the one place the before-and-after listing is not a race — so it can be neither a package nor reachable by a walk of one.',
   'packages/chain/src/readme-example.test.ts -> ./index.js':
@@ -750,8 +756,8 @@ describe('every file has a test that names it', () => {
     });
     // Non-vacuity in both parts: the walk really did follow specifiers, and the list
     // really does hold rows — a scanner returning nothing would satisfy the line above.
-    expect(unresolved.length).toBe(8);
-    expect(Object.keys(LED_NOWHERE)).toHaveLength(8);
+    expect(unresolved.length).toBe(9);
+    expect(Object.keys(LED_NOWHERE)).toHaveLength(9);
     // And each row says what THAT module is, by the ledger's rule, at the ledger's floor.
     const why = Object.values(LED_NOWHERE);
     expect(new Set(why).size).toBe(why.length);
