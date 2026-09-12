@@ -340,15 +340,25 @@ describe('the scan is wired where it can be right', () => {
     expect(job).toContain("if: github.event_name == 'pull_request'");
   });
 
-  it('checks out the whole history, or the scan would refuse on every run', () => {
+  it('checks out the whole history, under the checkout step and not in a sentence', () => {
     // TRAP TWO. A default checkout on a `pull_request` is depth 1 and the base commit is not
     // in it; `git rev-list` then exits non-zero and the guard's normal state becomes RULER
     // BROKEN, which is a guard nobody reads.
-    expect(theJob()).toContain('fetch-depth: 0');
+    //
+    // AND THIS CASE WAS BLIND WHEN IT WAS WRITTEN. It read `toContain('fetch-depth: 0')` over
+    // the job INCLUDING its comments, and the comment above the checkout step quotes the
+    // setting to explain it — so deleting the `with:` block left the string in the file and
+    // the mutation lit nothing. `theJob` now drops every comment line, and the shape below
+    // requires the value to sit under the checkout's own `with:` rather than anywhere.
+    expect(theJob()).toMatch(/uses: actions\/checkout@v7\n\s+with:\n\s+fetch-depth: 0/);
   });
 
   it('never passes --commits-only, which would leave nineteen of the leaks unread', () => {
+    // Over the settings, not over the prose: the comment above this job says out loud that CI
+    // must never pass it, and an assertion over the job's text would be red for that sentence.
     expect(theJob()).not.toContain('--commits-only');
+    // Non-vacuity: the step whose flags this is about has to be in what was read.
+    expect(theJob()).toContain('scan.mjs');
   });
 
   it('does not commit what it writes on a runner', () => {
@@ -362,10 +372,23 @@ describe('the scan is wired where it can be right', () => {
     );
   });
 
-  /** The job of this guard, as text, or `''` when `ci.yml` has none. */
+  /**
+   * The job of this guard with its PROSE STRIPPED, or `''` when `ci.yml` has none.
+   *
+   * A comment is a mention and not a setting, and both directions of that bit here: the
+   * comment above the checkout quotes `fetch-depth: 0` to explain it, which made the case
+   * asserting the setting blind; and the comment above the job names `--commits-only` to say
+   * CI must never pass it, which would make the case forbidding it red for a sentence. Reading
+   * the settings alone is what makes both cases about what the runner will DO.
+   */
   function theJob(): string {
     const at = workflow.indexOf('\n  the-link-cannot-come-back:');
-    return at === -1 ? '' : workflow.slice(at);
+    if (at === -1) return '';
+    return workflow
+      .slice(at)
+      .split('\n')
+      .filter((line) => !/^\s*#/.test(line))
+      .join('\n');
   }
 });
 
