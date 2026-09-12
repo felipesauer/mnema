@@ -9,8 +9,11 @@
  * and so does the reverse. Without it, running "an example" proves nothing about the one
  * a reader copies.
  *
- * WHAT IT CAUGHT THE DAY IT WAS WRITTEN. The published example did not compile. Measured
- * on 11/09/2026 by type-checking the extracted block against the built `.d.ts`:
+ * WHAT IT CAUGHT THE DAY IT WAS WRITTEN, AND WHAT NOW KEEPS CATCHING IT. The published
+ * example did not compile. That was measured once, by hand, on 11/09/2026 by type-checking
+ * the extracted block against the built `.d.ts`; it is a case now —
+ * `code/tests/the-example-is-type-checked.test.ts` does that reading on every run, so an
+ * error of this kind cannot come back the way it came. What it found:
  * `openChainForWriting('.mnema/chain')` was called with one argument where the signature
  * takes two (the key root has no default, deliberately), and the envelope literal was
  * missing `signerFp`, which every event carries. The page also said the key pair "is

@@ -19,6 +19,12 @@
  * NOTHING BELOW IS ELIDED. The state this example reads over is elided by the PAGE, in
  * the prose above its block ("given a rebuilt cache over your chain"), and the setup
  * above the first marker is that prose made real.
+ *
+ * WHICH MAKES THIS THE ONE PAGE WHOSE BLOCK DOES NOT COMPILE ALONE: it names `cache` and
+ * `chainRoot` and declares neither. `code/tests/the-example-is-type-checked.test.ts`
+ * supplies them with the two types this setup really produces — `bench.cache()` and
+ * `bench.root` — and holds that supply to exactly the names the page needs, so a
+ * declaration cannot quietly grow into one the page never asked for.
  */
 import { rmSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';

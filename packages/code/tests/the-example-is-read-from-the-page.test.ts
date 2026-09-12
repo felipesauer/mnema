@@ -32,8 +32,14 @@
  *   - Running the corrected chain example revealed one more thing no type-checker sees:
  *     it verified RED, because no event founded the anchor its signer belongs to. The
  *     page taught a sequence that produces a record `verify` refuses.
- * Of the ten, `tsc` could have caught nine at any point in the alpha and never did,
- * because nothing type-checks a fenced code block.
+ * Of the ten, `tsc` could have caught nine at any point in the alpha and never did.
+ * THE REASON GIVEN HERE WAS "because nothing type-checks a fenced code block", AND IT IS
+ * NO LONGER TRUE: `the-example-is-type-checked.test.ts` extracts each page's block into a
+ * sandbox and compiles it against the built declarations, every run. What falsified the
+ * sentence was measuring what this file alone protects — putting one of those ten errors
+ * back on the PAGE and in the CASE together left this guard, and the whole suite, green.
+ * Two identical copies agree whether they compile or not, which is the half a comparison
+ * can never cover.
  *
  * THE SHAPE, AND WHY THIS ONE. Three ways were open: compare the page with the body that
  * runs, extract the block and execute it, or generate the page from the case. This file
@@ -51,6 +57,12 @@
  * goes red and the fix is to edit the case and dedent again — which is the workflow, not
  * a defect.
  *
+ * WHERE THE ROSTER LIVES. The list of pages is not in this file: a second rule now stands
+ * over the same roster — the example a package publishes TYPE-CHECKS, in
+ * `the-example-is-type-checked.test.ts` — and two copies of a list is the shape that ends
+ * with one guard covering a page the other does not. Both read
+ * `support/published-examples.ts`.
+ *
  * WHAT IS ELIDED, AND WHY IT CANNOT GROW IN SILENCE. Two packages name directories on the
  * page (`.mnema/chain` and a key root); a case that ran those literals would found an
  * identity and write events inside this repository, which amarra A6 forbids. So each
@@ -61,116 +73,16 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { existsSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-
-/**
- * The workspace root, found by its MARKER and never by counting `..` upwards. A count is
- * a fact about where this file sits today; one `mv` turns it into a path that resolves to
- * a directory with no packages in it, and every case below then passes over nothing.
- */
-const ROOT = ((): string => {
-  let at = dirname(fileURLToPath(import.meta.url));
-  for (;;) {
-    if (existsSync(join(at, 'pnpm-workspace.yaml'))) return at;
-    const up = dirname(at);
-    if (up === at) throw new Error('no pnpm-workspace.yaml above this file');
-    at = up;
-  }
-})();
-
-const read = (relative: string): string => readFileSync(join(ROOT, relative), 'utf8');
-
-/** A package whose README publishes a runnable example, and the case that runs it. */
-interface PublishedExample {
-  /** The package directory under `packages/`. */
-  readonly pkg: string;
-  /** The page, relative to the workspace root. */
-  readonly readme: string;
-  /** The case holding the marked region, relative to the workspace root. */
-  readonly test: string;
-  /**
-   * How the page's import specifiers read inside the case. The page names the PUBLIC
-   * specifier a reader would type; the case reaches the same barrel through the path it
-   * has. Every specifier the page's block imports from must appear here, so an import
-   * added to the page cannot slip past the comparison of names.
-   */
-  readonly specifiers: Readonly<Record<string, string>>;
-  /**
-   * The exact lines the case does not carry, in order, at the top of the page's body.
-   * Declared as TEXT, never as a count — see the header.
-   */
-  readonly elided: readonly string[];
-  /** Why those lines are elided. One reason per entry; two entries never share one. */
-  readonly whyElided: string;
-}
-
-const PUBLISHED_EXAMPLES: readonly PublishedExample[] = [
-  {
-    pkg: 'chain',
-    readme: 'packages/chain/README.md',
-    test: 'packages/chain/src/readme-example.test.ts',
-    specifiers: { '@mnema/chain': './index.js' },
-    elided: [
-      '// The chain is committed and shared; the private key is not, so the two roots are separate.',
-      "const root = '.mnema/chain';",
-      "const keyRoot = '/a/path/outside/the/repository';",
-      '',
-    ],
-    whyElided:
-      'Running these two literals would create a chain and mint a signing key inside the working tree — the case points both at a sandbox it makes and removes (A6).',
-  },
-  {
-    pkg: 'core',
-    readme: 'packages/core/README.md',
-    test: 'packages/core/tests/readme-example.test.ts',
-    specifiers: {
-      '@mnema/chain': '@mnema/chain',
-      '@mnema/core': '../src/index.js',
-      '@mnema/core/write': '../src/write.js',
-    },
-    elided: [
-      '// The chain is committed and shared; the private key is not, so the two roots are separate.',
-      "const root = '.mnema/chain';",
-      "const keyRoot = '/a/path/outside/the/repository';",
-      '',
-    ],
-    whyElided:
-      'The same two literals, and the same reason: this example WRITES, so running the page verbatim would leave a founded identity and two events in this repository.',
-  },
-  {
-    pkg: 'copilot',
-    readme: 'packages/copilot/README.md',
-    test: 'packages/copilot/tests/readme-example.test.ts',
-    specifiers: { '@mnema/copilot': '../src/index.js' },
-    elided: [],
-    whyElided:
-      'Nothing is elided: this package only READS, and the state its example reads over is elided by the page itself, in the prose above the block ("given a rebuilt cache over your chain").',
-  },
-];
-
-/**
- * A package README that publishes no runnable TypeScript, and why. Reconciled against the
- * disk in both directions by the case below — an entry that grows a ```ts block is
- * accused, and so is a README in neither list.
- */
-const NO_RUNNABLE_EXAMPLE: readonly { pkg: string; why: string }[] = [
-  {
-    pkg: 'code',
-    why: 'It is the manual for a command line, not for a library: 996 lines with ZERO ```ts blocks and 22 shell ones. A guard over it means running the built binary twenty-two times in a sandbox, which is a piece of work with a cost of its own and no overlap with reading a page.',
-  },
-];
-
-/** The single ```ts block of a page, as lines. A page with none, or with two, is refused. */
-function publishedBlock(markdown: string): string[] {
-  const blocks = [...markdown.matchAll(/^```ts\n([\s\S]*?)^```$/gm)].map((m) => m[1] as string);
-  if (blocks.length !== 1) {
-    throw new Error(`expected exactly one \`\`\`ts block, found ${blocks.length}`);
-  }
-  return (blocks[0] as string).replace(/\n$/, '').split('\n');
-}
+import {
+  NO_RUNNABLE_EXAMPLE,
+  PUBLISHED_EXAMPLES,
+  publishedBlock,
+  ROOT,
+  read,
+} from './support/published-examples.js';
 
 /** The marked region of a case, dedented to the page's margin. */
 function runnableBody(source: string): string[] {
