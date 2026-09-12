@@ -4,8 +4,7 @@
  * WHAT THE COMPARISON GUARD DOES NOT DO, MEASURED. `the-example-is-read-from-the-page`
  * proves the page and the body that runs are one text. It cannot prove that text is
  * CORRECT: two identical copies pass whether they compile or not. Measured on 11/09/2026
- * against `9248fec8`, with the script this delivery was handed
- * (`evidence/verification-type-error-returns-2026-09-11.sh`): putting `id: 'task-01'` back
+ * against `9248fec8`: putting `id: 'task-01'` back
  * into `createTask`'s input — one of the ten type errors the comparison guard's own
  * delivery had just fixed by hand — on the PAGE and in the CASE together left the suite at
  * `19 passed (19)` and `tsc -b` at exit 0. Nine of those ten can return the same way.
@@ -192,18 +191,23 @@ const UNDEFINED_NAME = new Map<number, RegExp>([
  * `tsc`'s report, one entry per accusation, attributed to the file it names. Run with the
  * sandbox as the working directory so a file is named by its own basename.
  */
+/**
+ * Where the compiler is. This is a path and not a resolution because `typescript` does not
+ * export `bin/tsc`: `createRequire(…).resolve('typescript/bin/tsc')` throws
+ * ERR_PACKAGE_PATH_NOT_EXPORTED, measured. A path can go wrong when the install layout
+ * changes — and when it does, this file goes RED rather than quiet, because the canary
+ * below requires the compiler to have spoken.
+ */
+const COMPILER = join(ROOT, 'node_modules/typescript/bin/tsc');
+
 function compile(dir: string, files: readonly string[]): Diagnostic[] {
   let output = '';
   try {
-    execFileSync(
-      process.execPath,
-      [join(ROOT, 'node_modules/typescript/bin/tsc'), '--pretty', 'false', '-p', 'tsconfig.json'],
-      {
-        cwd: dir,
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'pipe'],
-      },
-    );
+    execFileSync(process.execPath, [COMPILER, '--pretty', 'false', '-p', 'tsconfig.json'], {
+      cwd: dir,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
   } catch (error) {
     const failure = error as { stdout?: string; stderr?: string };
     output = `${failure.stdout ?? ''}${failure.stderr ?? ''}`;

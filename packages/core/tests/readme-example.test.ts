@@ -8,9 +8,12 @@
  * translation of it: a name changed on the page and left alone here turns the suite red,
  * and so does the reverse.
  *
- * WHAT IT CAUGHT THE DAY IT WAS WRITTEN. The published example did not compile, and it
- * was wrong about the design in three separate ways. Measured on 11/09/2026 by
- * type-checking the extracted block against the built `.d.ts`: `createTask` and
+ * WHAT IT CAUGHT THE DAY IT WAS WRITTEN, AND WHAT NOW KEEPS CATCHING IT. The published
+ * example did not compile, and it was wrong about the design in three separate ways. That
+ * was measured once, by hand, on 11/09/2026 by type-checking the extracted block against
+ * the built `.d.ts`; it is a case now — `code/tests/the-example-is-type-checked.test.ts`
+ * does that reading on every run. Both errors below were put back, on the page and here
+ * together, to check that it does. What it found: `createTask` and
  * `transitionTask` were imported from `@mnema/core`, where neither is exported — they
  * live on `@mnema/core/write`, and the split is the structural boundary that lets a
  * read-only consumer depend on this package without being able to name a writer. The

@@ -32,8 +32,14 @@
  *   - Running the corrected chain example revealed one more thing no type-checker sees:
  *     it verified RED, because no event founded the anchor its signer belongs to. The
  *     page taught a sequence that produces a record `verify` refuses.
- * Of the ten, `tsc` could have caught nine at any point in the alpha and never did,
- * because nothing type-checks a fenced code block.
+ * Of the ten, `tsc` could have caught nine at any point in the alpha and never did.
+ * THE REASON GIVEN HERE WAS "because nothing type-checks a fenced code block", AND IT IS
+ * NO LONGER TRUE: `the-example-is-type-checked.test.ts` extracts each page's block into a
+ * sandbox and compiles it against the built declarations, every run. What falsified the
+ * sentence was measuring what this file alone protects — putting one of those ten errors
+ * back on the PAGE and in the CASE together left this guard, and the whole suite, green.
+ * Two identical copies agree whether they compile or not, which is the half a comparison
+ * can never cover.
  *
  * THE SHAPE, AND WHY THIS ONE. Three ways were open: compare the page with the body that
  * runs, extract the block and execute it, or generate the page from the case. This file
