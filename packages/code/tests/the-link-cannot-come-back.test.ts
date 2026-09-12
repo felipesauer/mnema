@@ -421,6 +421,24 @@ describe('the scan takes its range and its pull request off the runner, never of
   let written = 0;
 
   /**
+   * POINT `GITHUB_EVENT_PATH` AT A PAYLOAD, as every runner does, undone after the case.
+   *
+   * A case about *there is no event* is only a case where the variable IS set: where it is
+   * unset, the absence it asserts belongs to the machine and not to the product, and two cases
+   * of this file were green on this workstation and red on the runner for exactly that reason.
+   */
+  function onTheRunner(eventPath: string): void {
+    process.env.GITHUB_EVENT_PATH = eventPath;
+  }
+
+  const withoutARunnersEvent = process.env.GITHUB_EVENT_PATH;
+
+  afterEach(() => {
+    if (withoutARunnersEvent === undefined) delete process.env.GITHUB_EVENT_PATH;
+    else process.env.GITHUB_EVENT_PATH = withoutARunnersEvent;
+  });
+
+  /**
    * THE SCAN AS `ci.yml` RUNS IT: a subprocess, a working directory that is a repository, and
    * `GITHUB_EVENT_PATH` pointing at a payload. A subprocess rather than a call, because the
    * working directory is what `commitsIn` reads and the environment is what `pullRequestFrom`
@@ -445,6 +463,13 @@ describe('the scan takes its range and its pull request off the runner, never of
   });
 
   it('has no range at all when the event names no pull request', () => {
+    // THE SECOND LINE ASSERTS THE ABSENCE UNDER A RUNNER'S ENVIRONMENT, WHICH IS THE ONLY PLACE
+    // IT MEANS ANYTHING. It read `rangeFrom([], undefined)` under whatever `GITHUB_EVENT_PATH`
+    // the machine happened to have, and `undefined` used to activate a default that read that
+    // variable: green here, where it is unset, while on the runner it took the range off the
+    // live pull request and called that no event. `onTheRunner` sets the variable, so the case
+    // now fails on the shape it is about instead of being skipped by the environment.
+    onTheRunner(anEvent({ pull_request: { base: { sha: 'aaa' }, head: { sha: 'bbb' } } }));
     expect(rangeFrom([], anEvent({ ref: 'refs/heads/main-v1' }))).toBe(null);
     expect(rangeFrom([], undefined)).toBe(null);
   });
@@ -463,6 +488,10 @@ describe('the scan takes its range and its pull request off the runner, never of
   });
 
   it('has no pull request when there is no event, and none when the file is unreadable', () => {
+    // UNDER A RUNNER'S ENVIRONMENT, for the reason written in the case above: with a default on
+    // the parameter, `pullRequestFrom(undefined)` answered `null` on a workstation and answered
+    // with the live description on a runner, and only the first of those was ever observed.
+    onTheRunner(anEvent({ pull_request: { title: 'A title', body: 'A body' } }));
     expect(pullRequestFrom(undefined)).toBe(null);
     expect(pullRequestFrom(join(sandbox, 'no-such-file.json'))).toBe(null);
   });

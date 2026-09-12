@@ -342,10 +342,20 @@ export function commitsIn(range, cwd = process.cwd()) {
  * `body` is `null` on a pull request opened with an empty description — that is an examined empty
  * body, not a missing one, and the two must not read the same.
  *
- * @param {string | undefined} [eventPath]
+ * THE PATH IS ASKED FOR AND NEVER DEFAULTED, AND THAT IS A REPAIR. This read
+ * `eventPath = process.env.GITHUB_EVENT_PATH` until 2026-09-12, and `undefined` is both the
+ * value this function's own contract spends on *there is no event* AND the value that activates
+ * a default in JavaScript. So `pullRequestFrom(undefined)` did not mean what it said: on a
+ * workstation the variable is unset and it answered `null`, and on a runner the variable is set
+ * and it answered with the live pull request. The case asserting the absence branch passed here
+ * and read the real description there — skipped by the environment rather than run. The
+ * environment is read at one site now, in `main`, so there is no default for `undefined` to
+ * activate and the absence branch answers the same under every environment.
+ *
+ * @param {string | undefined} eventPath
  * @returns {PullRequest | null}
  */
-export function pullRequestFrom(eventPath = process.env.GITHUB_EVENT_PATH) {
+export function pullRequestFrom(eventPath) {
   if (eventPath === undefined || eventPath === '') return null;
   try {
     const event = JSON.parse(readFileSync(eventPath, 'utf-8'));
@@ -366,11 +376,16 @@ export function pullRequestFrom(eventPath = process.env.GITHUB_EVENT_PATH) {
  * guarantee — the workflow asks for `fetch-depth: 0` and a case reads `ci.yml` and fails if that
  * line goes away. When the base is missing, `git rev-list` exits non-zero and `main` refuses.
  *
+ * THE PATH IS ASKED FOR AND NEVER DEFAULTED, for the reason written over `pullRequestFrom`: a
+ * default on a parameter whose type already spends `undefined` on *there is no event* cannot be
+ * told apart from the absence it exists to handle, and the difference shows up only where the
+ * variable is set, which is the runner and never the workstation.
+ *
  * @param {readonly string[]} argv
- * @param {string | undefined} [eventPath]
+ * @param {string | undefined} eventPath
  * @returns {string | null}
  */
-export function rangeFrom(argv, eventPath = process.env.GITHUB_EVENT_PATH) {
+export function rangeFrom(argv, eventPath) {
   const given = optionOf(argv, 'range', null);
   if (given !== null) return given;
   if (eventPath === undefined || eventPath === '') return null;
@@ -401,12 +416,16 @@ export function rangeFrom(argv, eventPath = process.env.GITHUB_EVENT_PATH) {
  * @returns {0 | 1 | 2}
  */
 export function main(argv = process.argv.slice(2), world = {}) {
+  // THE ONE PLACE THE ENVIRONMENT IS READ. Both readers take the path as an argument, so this
+  // line is the whole of what `GITHUB_EVENT_PATH` decides — and the note over `pullRequestFrom`
+  // says what the defaults that used to live on them cost.
+  const eventPath = process.env.GITHUB_EVENT_PATH;
   const readCommits = world.commits ?? ((range) => commitsIn(range));
-  const readPullRequest = world.pullRequest ?? (() => pullRequestFrom());
+  const readPullRequest = world.pullRequest ?? (() => pullRequestFrom(eventPath));
   const summaryAt = optionOf(argv, 'summary', null);
   const jsonAt = optionOf(argv, 'json', null);
 
-  const range = rangeFrom(argv);
+  const range = rangeFrom(argv, eventPath);
   if (range === null) {
     return report(
       {
