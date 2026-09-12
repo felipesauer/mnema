@@ -54,13 +54,22 @@
  *     block against a wrong type and requires it to go red, which is what says the ban is
  *     protecting something rather than decorating it.
  *
+ * A COMPILER THAT NEVER RAN LOOKS EXACTLY LIKE A CLEAN COMPILE, so one file in the sandbox
+ * is written to be WRONG. `CANARY` below is a type error a stranger could not argue with,
+ * and a case requires the compiler to have said so. Without it, a `tsc` that fails to start
+ * — a missing binary, a sandbox that could not be written — hands back an empty report, and
+ * every case above reads "no diagnostics about my file" as success. This bench has twice
+ * shipped a mutation matrix whose runner died before running anything and whose parser read
+ * that silence as zero failures; this is the same hole in a different instrument.
+ *
  * THE ROSTER IS SWEPT, NOT LISTED. The rule is "a published TypeScript block is checked",
  * so the discriminant is a ```ts fence in a tracked file — not a README under `packages/`.
- * The comparison guard reconciles the README of each directory under `packages`, which
- * is blind to
- * `packages/chain/verifier/README.md`, `plugin/README.md` and thirteen others that are
- * tracked Markdown outside that directory. The case at the bottom sweeps every tracked file
- * instead, so a block published anywhere new must be classified before it can be ignored.
+ * The comparison guard reconciles the README of each directory under `packages`, which is
+ * four files of the forty-two tracked Markdown files in this workspace: it is blind to
+ * `packages/chain/verifier/README.md` and `plugin/README.md`, to thirteen further READMEs
+ * under `measurements` and `.github`, and to twenty-three other pages besides. The case at
+ * the bottom sweeps all forty-two instead, so a block published anywhere new must be
+ * classified before it can be ignored.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -128,6 +137,16 @@ const STRICTNESS = [
  * check into noise; a cast or a `@ts-` directive is the same silence written differently.
  */
 const ESCAPE_HATCHES = ['any', 'never', 'unknown'];
+
+/**
+ * A file written to be WRONG, so silence from the compiler can be told apart from a clean
+ * compile. The error is chosen to survive any strictness setting: assigning a string to a
+ * `number` is refused by `tsc` with every flag off.
+ */
+const CANARY = {
+  name: 'a-compiler-that-ran.ts',
+  text: "const refused: number = 'not a number';",
+};
 
 /** The names a preamble declares, read from the preamble itself so there is one list. */
 export function declaredNames(preamble: readonly string[]): string[] {
@@ -234,6 +253,7 @@ beforeAll(() => {
     writeFileSync(join(sandbox, name), `${lines.join('\n')}\n`);
     files.push(name);
   };
+  put(CANARY.name, [CANARY.text]);
   for (const example of PUBLISHED_EXAMPLES) {
     const block = publishedBlock(read(example.readme));
     // The page as a stranger would compile it.
@@ -345,6 +365,13 @@ describe('the check is not laxer than the repository', () => {
 });
 
 describe('the roster is every block this workspace publishes', () => {
+  it('the compiler ran, and said so — every case above is read from its report', () => {
+    // Every other case in this file reads an ABSENCE of diagnostics as a page compiling.
+    // This one reads a PRESENCE, so a `tsc` that never started cannot be mistaken for one
+    // that found nothing.
+    expect(about(CANARY.name).map((one) => one.code)).toEqual([2322]);
+  });
+
   it('the declarations each page is checked against are on disk', () => {
     // A missing `dist` makes every case above pass over a module that cannot be resolved,
     // or fail with a message about resolution that reads like a defect in a page. Named
@@ -367,7 +394,9 @@ describe('the roster is every block this workspace publishes', () => {
     const publishing = execFileSync('git', ['ls-files', '-z'], { cwd: ROOT, encoding: 'utf8' })
       .split('\0')
       .filter((file) => file.endsWith('.md'))
-      .filter((file) => read(file).includes('\n```ts\n'))
+      // Every spelling of the fence, not only the one three pages use today: a page that
+      // said ```typescript would otherwise publish TypeScript nothing here reads.
+      .filter((file) => /^```(ts|tsx|typescript)$/m.test(read(file)))
       .sort();
     expect(publishing).toEqual(PUBLISHED_EXAMPLES.map((example) => example.readme).sort());
   });
@@ -377,6 +406,7 @@ describe('the roster is every block this workspace publishes', () => {
     // it was not pointed at — the reading above would then be about the wrong text.
     expect(diagnostics.filter((one) => one.file.startsWith('UNATTRIBUTED:'))).toEqual([]);
     const expected =
+      1 +
       PUBLISHED_EXAMPLES.length * 2 +
       PUBLISHED_EXAMPLES.filter((one) => one.pagePreamble.length > 0).length;
     expect(written.length).toBe(expected);
