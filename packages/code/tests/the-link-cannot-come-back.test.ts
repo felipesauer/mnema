@@ -443,6 +443,37 @@ describe('the scan takes its range and its pull request off the runner, never of
     expect(JSON.parse(readFileSync(jsonAt, 'utf-8')).found).toHaveLength(1);
   });
 
+  it('drives the whole instrument with NO seam, on this very repository', () => {
+    // THE DEFAULT WIRING, WHICH THE CASE ABOVE CANNOT REACH. Every other case here hands
+    // `main` its own readers, so the arrows that fall back to `commitsIn` and to
+    // `pullRequestFrom` — the two the runner actually uses — would be unexercised code in a
+    // file that looks thoroughly tested. This runs the real ones over the real history, with
+    // the range given by hand because there is no event on this machine.
+    //
+    // `--commits-only` is what makes it a legal reading rather than a refusal here: a
+    // workstation has no pull request to hand over, and the scan says so on its own page.
+    const summaryAt = join(sandbox, 'summary.md');
+    const jsonAt = join(sandbox, 'verdict.json');
+    const code = main([
+      '--range',
+      'HEAD~3..HEAD',
+      '--commits-only',
+      '--summary',
+      summaryAt,
+      '--json',
+      jsonAt,
+    ]);
+    expect(code, 'the footer came back onto this branch').toBe(0);
+    expect(JSON.parse(readFileSync(jsonAt, 'utf-8')).examinedCommits).toBe(3);
+    // The summary is APPENDED, because `$GITHUB_STEP_SUMMARY` is one file several steps write.
+    expect(readFileSync(summaryAt, 'utf-8')).toContain('NO ATTRIBUTION FOOTER');
+    main(['--range', 'HEAD~3..HEAD', '--commits-only', '--summary', summaryAt]);
+    expect(
+      readFileSync(summaryAt, 'utf-8').match(/NO ATTRIBUTION FOOTER/g),
+      'the summary was overwritten rather than appended to',
+    ).toHaveLength(2);
+  });
+
   it('refuses through main when git could not read the range', () => {
     expect(
       main(['--range', 'x..y'], {

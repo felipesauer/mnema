@@ -116,6 +116,12 @@ fails if the condition goes away, if the checkout stops being deep, or if the st
   every commit body on this trunk: **zero** such lines. The reading stays the strict one, because
   a false positive costs one red build and an amend, and a false negative cost 194 rewritten
   commits;
+- **the message typed into the squash box at merge time.** GitHub composes that body out of the
+  pull request and its commits, both of which this reads, so the default is covered — but a
+  maintainer who types a footer into the box at the moment of merging is past every pre-merge
+  check there is. The thirteen generated-with lines on this trunk arrived as squash bodies
+  composed from what the guard now reads, which is why the default being covered is worth
+  something;
 - **who wrote the change.** It says the record does not credit the tool. It does not say who did
   the work, and it is not trying to.
 
