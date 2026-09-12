@@ -38,7 +38,7 @@
  * and this guard's whole failure mode is two definitions of one rule.
  */
 
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -310,11 +310,28 @@ describe('the scan reads real git, and reads every commit of a range', () => {
     expect(() => commitsIn(`${missing}..HEAD`, sandbox)).toThrow();
   });
 
-  it('is green over the last commits of this very repository', () => {
-    // NOT VACUOUS. The trunk was swept and rewritten on 2026-09-11; if this ever goes red the
-    // footer came back, which is the whole claim.
-    const commits = commitsIn('HEAD~5..HEAD', ROOT);
-    expect(commits, 'the range over this repository read nothing').toHaveLength(5);
+  it("is green over a range of this trunk's own message shapes", () => {
+    // THE ZERO CONTROL OVER THE GIT READER — every other case here ends in a finding, so
+    // without this one nothing says the real reader stays quiet over ordinary messages.
+    //
+    // IT READ THIS REPOSITORY'S OWN HISTORY UNTIL 2026-09-12, AND THAT WAS FALSE. It ran
+    // `commitsIn('HEAD~5..HEAD', ROOT)` and called itself not vacuous because the trunk had
+    // been swept. The guard's job takes `fetch-depth: 0`, but THE SUITE DOES NOT RUN IN IT —
+    // it runs in the matrix job, whose default checkout is depth 1. `HEAD~5` does not resolve
+    // there, `git rev-list` exits non-zero, and the case was red on every runner while being
+    // green on any workstation that had the commits. A case whose universe the checkout
+    // decides is a case the checkout can empty.
+    //
+    // The messages below are the literals this file already keeps, for the reason written
+    // above them: one long ordinary message that names the vendor AND the tool AND carries a
+    // legitimate trailer, and a dependabot bump. Five arbitrary commits of the trunk were a
+    // weaker universe than this, not a stronger one.
+    const base = aRepositoryWithABase();
+    writeCommit(AN_ORDINARY_MESSAGE);
+    writeCommit(`Bump a dependency\n\n${THE_DEPENDABOT_TRAILERS}`);
+    writeCommit('The example a package publishes is the example that runs (#616)');
+    const commits = commitsIn(`${base}..HEAD`, sandbox);
+    expect(commits, 'the range read fewer than the three commits on it').toHaveLength(3);
     expect(judge({ commits, pullRequest: 'not-asked' }).found).toEqual([]);
   });
 });
@@ -393,11 +410,28 @@ describe('the scan is wired where it can be right', () => {
 });
 
 describe('the scan takes its range and its pull request off the runner, never off a shell', () => {
-  /** An event payload as a runner writes it, in this sandbox. */
+  /** An event payload as a runner writes it, in this sandbox, under a name of its own. */
   function anEvent(payload: unknown): string {
-    const at = join(sandbox, 'event.json');
+    written += 1;
+    const at = join(sandbox, `event-${written}.json`);
     writeFileSync(at, JSON.stringify(payload));
     return at;
+  }
+
+  let written = 0;
+
+  /**
+   * THE SCAN AS `ci.yml` RUNS IT: a subprocess, a working directory that is a repository, and
+   * `GITHUB_EVENT_PATH` pointing at a payload. A subprocess rather than a call, because the
+   * working directory is what `commitsIn` reads and the environment is what `pullRequestFrom`
+   * reads, and both of those belong to a process rather than to an argument.
+   */
+  function asARunner(eventPath: string, ...argv: string[]) {
+    return spawnSync('node', [join(ROOT, '.github/the-link-cannot-come-back/scan.mjs'), ...argv], {
+      cwd: sandbox,
+      encoding: 'utf-8',
+      env: { ...process.env, GITHUB_EVENT_PATH: eventPath },
+    });
   }
 
   it('reads both ends of the range out of the payload', () => {
@@ -443,35 +477,61 @@ describe('the scan takes its range and its pull request off the runner, never of
     expect(JSON.parse(readFileSync(jsonAt, 'utf-8')).found).toHaveLength(1);
   });
 
-  it('drives the whole instrument with NO seam, on this very repository', () => {
-    // THE DEFAULT WIRING, WHICH THE CASE ABOVE CANNOT REACH. Every other case here hands
-    // `main` its own readers, so the arrows that fall back to `commitsIn` and to
-    // `pullRequestFrom` — the two the runner actually uses — would be unexercised code in a
-    // file that looks thoroughly tested. This runs the real ones over the real history, with
-    // the range given by hand because there is no event on this machine.
+  it('drives the whole instrument the way a runner does, with NO seam anywhere', () => {
+    // THE DEFAULT WIRING, WHICH THE CASE ABOVE CANNOT REACH. Every other case hands `main` its
+    // own readers or its own event path, so the three fallbacks a runner actually takes — the
+    // range out of the event, `commitsIn` against the working directory, `pullRequestFrom`
+    // against `GITHUB_EVENT_PATH` — would be unexercised code in a file that looks thoroughly
+    // tested. This is `ci.yml`'s own command: `node scan.mjs`, a working directory that is a
+    // repository, and the event variable pointing at the payload.
     //
-    // `--commits-only` is what makes it a legal reading rather than a refusal here: a
-    // workstation has no pull request to hand over, and the scan says so on its own page.
+    // WHAT IT REPLACES WAS WRONG TWICE, and a red runner on 2026-09-12 found both halves. It
+    // ran `--range HEAD~3..HEAD` over THIS repository, which the matrix job's depth-1 checkout
+    // does not have. And it passed `--commits-only`, which makes `main` take the `'not-asked'`
+    // branch and never call `readPullRequest` at all — so `pullRequestFrom`, one of the two
+    // arrows its own comment named, was the one arrow it did not exercise. The red half below
+    // is what closes that: the footer sits in the event's `body` and nowhere else, so a finding
+    // can only have arrived through the real reader.
+    const base = aRepositoryWithABase();
+    writeCommit('One');
+    writeCommit('Two');
+    const head = writeCommit('Three');
     const summaryAt = join(sandbox, 'summary.md');
     const jsonAt = join(sandbox, 'verdict.json');
-    const code = main([
-      '--range',
-      'HEAD~3..HEAD',
-      '--commits-only',
-      '--summary',
-      summaryAt,
-      '--json',
-      jsonAt,
-    ]);
-    expect(code, 'the footer came back onto this branch').toBe(0);
-    expect(JSON.parse(readFileSync(jsonAt, 'utf-8')).examinedCommits).toBe(3);
-    // The summary is APPENDED, because `$GITHUB_STEP_SUMMARY` is one file several steps write.
+    const clean = anEvent({
+      pull_request: {
+        title: 'A title',
+        body: 'A description.',
+        base: { sha: base },
+        head: { sha: head },
+      },
+    });
+
+    const green = asARunner(clean, '--summary', summaryAt, '--json', jsonAt);
+    expect(green.status, `the scan did not go green: ${green.stdout}${green.stderr}`).toBe(0);
+    const verdict = JSON.parse(readFileSync(jsonAt, 'utf-8'));
+    expect(verdict.examinedCommits, 'the range off the event read other than three').toBe(3);
+    expect(verdict.examinedPullRequest, 'the description half was never read').toBe(true);
     expect(readFileSync(summaryAt, 'utf-8')).toContain('NO ATTRIBUTION FOOTER');
-    main(['--range', 'HEAD~3..HEAD', '--commits-only', '--summary', summaryAt]);
+
+    // The summary is APPENDED, because `$GITHUB_STEP_SUMMARY` is one file several steps write.
+    asARunner(clean, '--summary', summaryAt);
     expect(
       readFileSync(summaryAt, 'utf-8').match(/NO ATTRIBUTION FOOTER/g),
       'the summary was overwritten rather than appended to',
     ).toHaveLength(2);
+
+    const dirty = anEvent({
+      pull_request: {
+        title: 'A title',
+        body: `A description.\n\n${THE_GENERATED_WITH}`,
+        base: { sha: base },
+        head: { sha: head },
+      },
+    });
+    const red = asARunner(dirty, '--json', jsonAt);
+    expect(red.status, 'the footer in the description did not reach the reading').toBe(1);
+    expect(JSON.parse(readFileSync(jsonAt, 'utf-8')).found[0].where).toBe('the pull request body');
   });
 
   it('refuses through main when git could not read the range', () => {
