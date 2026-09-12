@@ -187,9 +187,15 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * delivery, which made a package's published example the example that runs: five clauses
  * in the chain's case and seven in the core's (each opens a chain in a sandbox, and the
  * core's reaches two barrels because writing lives on a subpath), and five each in the two
- * guards over the pages. Twenty-two, counted in the four files.
+ * guards over the pages. Twenty-two, counted in the four files. It went 2578 -> 2587 when
+ * the example a package publishes became type-checked as well as compared: six clauses in
+ * `the-example-is-type-checked.test.ts`, which extracts each page's block into a sandbox
+ * and compiles it against the built declarations, and three in
+ * `tests/support/published-examples.ts`, the roster both guards over the pages now read so
+ * there is one list and not two. Nine, counted in the two files — the comparison guard's
+ * own count did not move, because the import it lost to that module it gained back.
  */
-const CLAUSES_IN_THE_TREE = 2578;
+const CLAUSES_IN_THE_TREE = 2587;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
