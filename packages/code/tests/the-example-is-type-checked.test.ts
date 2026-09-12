@@ -81,8 +81,10 @@ import {
   PUBLISHED_EXAMPLES,
   type PublishedExample,
   publishedBlock,
+  publishesTypeScript,
   ROOT,
   read,
+  TYPESCRIPT_FENCES,
 } from './support/published-examples.js';
 
 /**
@@ -394,9 +396,7 @@ describe('the roster is every block this workspace publishes', () => {
     const publishing = execFileSync('git', ['ls-files', '-z'], { cwd: ROOT, encoding: 'utf8' })
       .split('\0')
       .filter((file) => file.endsWith('.md'))
-      // Every spelling of the fence, not only the one three pages use today: a page that
-      // said ```typescript would otherwise publish TypeScript nothing here reads.
-      .filter((file) => /^```(ts|tsx|typescript)$/m.test(read(file)))
+      .filter((file) => publishesTypeScript(read(file)))
       .sort();
     expect(publishing).toEqual(PUBLISHED_EXAMPLES.map((example) => example.readme).sort());
   });
@@ -438,6 +438,31 @@ describe('the reading FIRES', () => {
 
   it('a hatch in the NAME is not a hatch — only the type is read', () => {
     expect(reachesForSilence(['declare const any: string;'])).toEqual([]);
+  });
+
+  it('a page is found by its fence, in every spelling — not only the one in use', () => {
+    // THE SPELLINGS ARE WRITTEN OUT, NOT READ FROM THE LIST UNDER TEST. They were read from
+    // it first, and narrowing `TYPESCRIPT_FENCES` back to `ts` alone then left every case in
+    // this file GREEN: a loop over the constant it is meant to hold narrows with it, which
+    // is a corpus that cannot fail. Written out, the same narrowing reddens this case.
+    expect(publishesTypeScript('prose\n```ts\nconst a = 1;\n```\n')).toBe(true);
+    expect(publishesTypeScript('prose\n```tsx\nconst a = 1;\n```\n')).toBe(true);
+    expect(publishesTypeScript('prose\n```typescript\nconst a = 1;\n```\n')).toBe(true);
+    expect(publishesTypeScript('prose\n```sh\nmnema resume\n```\n')).toBe(false);
+    expect(publishesTypeScript('prose\n```\nplain\n```\n')).toBe(false);
+    // `tsv` opens with the same two letters as `ts`: a reading that did not close the fence
+    // at the end of the line would call a table of values TypeScript.
+    expect(publishesTypeScript('prose\n```tsv\nnot code\n```\n')).toBe(false);
+    // And the list is the one these are about, so neither reading can drift from the other.
+    expect([...TYPESCRIPT_FENCES].sort()).toEqual(['ts', 'tsx', 'typescript']);
+  });
+
+  it('the block is extracted by the same vocabulary the sweep finds it with', () => {
+    expect(publishedBlock('```ts\nconst a = 1;\n```\n')).toEqual(['const a = 1;']);
+    expect(publishedBlock('```tsx\nconst a = 1;\n```\n')).toEqual(['const a = 1;']);
+    expect(publishedBlock('```typescript\nconst a = 1;\n```\n')).toEqual(['const a = 1;']);
+    expect(() => publishedBlock('no block here')).toThrow(/found 0/);
+    expect(() => publishedBlock('```ts\na\n```\n```ts\nb\n```\n')).toThrow(/found 2/);
   });
 
   it('a wrong type is written over the annotation and not over the name', () => {

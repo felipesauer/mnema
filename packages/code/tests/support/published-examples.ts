@@ -147,11 +147,32 @@ export const NO_RUNNABLE_EXAMPLE: readonly { pkg: string; why: string }[] = [
   },
 ];
 
-/** The single ```ts block of a page, as lines. A page with none, or with two, is refused. */
+/**
+ * The fence languages that count as published TypeScript. Three pages use the first one
+ * today; the other two are here so a page cannot leave the reach of either guard by
+ * spelling its fence differently. Detecting a block and extracting one read the SAME list,
+ * because a sweep that finds a page whose block the extractor then cannot see would accuse
+ * the page for the wrong reason.
+ */
+export const TYPESCRIPT_FENCES = ['ts', 'tsx', 'typescript'];
+
+const FENCED = '^```(?:' + TYPESCRIPT_FENCES.join('|') + ')$';
+
+/** Whether a page publishes TypeScript at all — the discriminant the roster is swept by. */
+export function publishesTypeScript(markdown: string): boolean {
+  return new RegExp(FENCED, 'm').test(markdown);
+}
+
+/**
+ * The single TypeScript block of a page, as lines. A page with none, or with two, is
+ * refused: this reads a page the roster has already said publishes exactly one.
+ */
 export function publishedBlock(markdown: string): string[] {
-  const blocks = [...markdown.matchAll(/^```ts\n([\s\S]*?)^```$/gm)].map((m) => m[1] as string);
+  const blocks = [
+    ...markdown.matchAll(new RegExp(FENCED.slice(0, -1) + '\\n([\\s\\S]*?)^```$', 'gm')),
+  ].map((m) => m[1] as string);
   if (blocks.length !== 1) {
-    throw new Error(`expected exactly one \`\`\`ts block, found ${blocks.length}`);
+    throw new Error(`expected exactly one TypeScript block, found ${blocks.length}`);
   }
   return (blocks[0] as string).replace(/\n$/, '').split('\n');
 }
