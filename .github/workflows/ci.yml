@@ -134,3 +134,54 @@ jobs:
           name: what-the-suite-left-behind-node${{ matrix.node }}
           path: what-the-suite-left-behind-verdict.json
           if-no-files-found: ignore
+
+  # THE LINK CANNOT COME BACK. This repository does not credit the tool that wrote a change in
+  # the change's own record, and for 243 pull requests that held because somebody remembered it.
+  # A sweep on 2026-09-11 found the trunk carrying one co-author trailer and thirteen
+  # generated-with lines, and nineteen more in merged pull request DESCRIPTIONS. Undoing it cost
+  # 194 rewritten commits and a force-push onto a protected branch. The rule now has a machine.
+  #
+  # WHY IT IS A JOB OF ITS OWN AND NOT A STEP OF THE MATRIX. It needs the whole history and the
+  # matrix does not; making the shared checkout deep would pay for that twice, on every run, for
+  # two steps that never look past the working tree. Here it is one small job that runs in
+  # parallel with them and adds nothing to the wall clock.
+  #
+  # WHY `pull_request` ONLY, and this is a decision rather than an omission. The guard exists to
+  # refuse the footer BEFORE it reaches the trunk. On `push` the commit is already in, so a red
+  # there repairs nothing and blocks every merge behind it until the history is rewritten — which
+  # is the state this repository was in for seven weeks. The pull request description, the half
+  # that carried nineteen of the thirty-three leaks, does not exist on a `push` event at all.
+  # `the-link-cannot-come-back.test.ts` reads this file and fails if the condition goes away, if
+  # the checkout stops being deep, or if the step ever passes `--commits-only`.
+  the-link-cannot-come-back:
+    name: the link cannot come back
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    steps:
+      # `fetch-depth: 0` because the scan reads `<base.sha>..<head.sha>` out of the event payload,
+      # and a default checkout on a `pull_request` is depth 1 — the base commit is not there, so
+      # `git rev-list` would exit non-zero. That is a refusal and not a green, which is the point
+      # of the canary; but a guard whose normal state is RULER BROKEN is a guard nobody reads.
+      # Measured on this repository: 16.43 MiB packed and 601 commits on the trunk, a full clone
+      # against a depth-1 one is 0.59 s against 0.25 s and 13 MB against 4 MB of `.git`, with no
+      # network in either — the runner adds the transfer of the difference.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # `node` and not `pnpm`, deliberately: the scan imports nothing but `node:` builtins, so
+      # there is no install to do, and a guard that can go red because a package manager failed
+      # to set itself up is a guard that gets switched off for a reason that has nothing to do
+      # with what it guards. `package.json` carries the same path under
+      # `pnpm the-link-cannot-come-back` for running it by hand, and the test reconciles the two.
+      - name: The link cannot come back
+        run: node .github/the-link-cannot-come-back/scan.mjs --summary "$GITHUB_STEP_SUMMARY" --json the-link-cannot-come-back.json
+
+      - name: Upload what it found
+        if: failure()
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: the-link-cannot-come-back
+          path: the-link-cannot-come-back.json
+          if-no-files-found: ignore

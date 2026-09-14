@@ -1,10 +1,15 @@
 {
-  // THE FIVE `.mjs` FILES THIS REPOSITORY RUNS AS AN INSTRUMENT, read with the same lens as
-  // everything else. `plugin/hooks/session-start.mjs` is SHIPPED — it is the first thing a
-  // Claude Code user receives from this product — and the four under `.github/` are what decide
-  // whether a red was the guard or the machine, how often the suite lied, and what it left in
-  // `/tmp`. An error in a ruler is an error in the ruler, and this bench has measured what a
-  // broken ruler costs twice.
+  // EVERY `.mjs` THIS REPOSITORY RUNS AS AN INSTRUMENT, read with the same lens as everything
+  // else. `plugin/hooks/session-start.mjs` is SHIPPED — it is the first thing a Claude Code user
+  // receives from this product — and the five under `.github/` decide whether a red was the guard
+  // or the machine, how often the suite lied, what it left in `/tmp`, and whether the change
+  // about to be merged credits the tool that wrote it. An error in a ruler is an error in the
+  // ruler, and this bench has measured what a broken ruler costs twice.
+  //
+  // THE COUNT IS NOT WRITTEN HERE, and that is the second thing this comment has learnt: it said
+  // FIVE until 2026-09-12 and a sixth instrument arrived without it. The globs below reach the
+  // tree, and `the-rulers-are-read-by-the-rules.test.ts` reconciles what they reach against the
+  // disk in both directions.
   //
   // WHY A PROJECT AND NOT A SCRIPT. `pnpm typecheck` is `tsc -b` over the references below, and
   // a second entry point would be a second answer to "is this repository type-checked". This is

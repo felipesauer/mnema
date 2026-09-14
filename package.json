@@ -34,7 +34,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage --reporter=default --reporter=./.github/why-it-went-red/ledger.mjs",
     "why-it-went-red": "node .github/why-it-went-red/verdict.mjs",
-    "what-the-suite-left-behind": "node .github/what-the-suite-left-behind/sweep.mjs"
+    "what-the-suite-left-behind": "node .github/what-the-suite-left-behind/sweep.mjs",
+    "the-link-cannot-come-back": "node .github/the-link-cannot-come-back/scan.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.11",

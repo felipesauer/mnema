@@ -10,6 +10,10 @@ why-it-went-red.json
 # The before-listing `.github/what-the-suite-left-behind/` takes with the suite stopped. A fact
 # about one machine at one instant: committed, every sweep after the first reads a stranger's /tmp.
 what-the-suite-left-behind.json
+
+# What `.github/the-link-cannot-come-back/` found, written on a runner so a red build can hand
+# the lines over as an artifact. An artifact of a run, like the two above.
+the-link-cannot-come-back.json
 *.log
 *.tgz
 .DS_Store
