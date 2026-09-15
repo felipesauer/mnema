@@ -546,7 +546,13 @@ function theAnswerOn(ran: Ran, columns: number, rows: number): Screen {
  * and the four that were left showed the tail of the answer with the list of verbs and the
  * heading that closes it both past the top of the window.
  *
- * IT WAS FIVE, THEN SIX, THEN TWENTY-THREE, AND IT IS EIGHTEEN. Six was the answer while the
+ * IT WAS FIVE, THEN SIX, THEN TWENTY-THREE, THEN EIGHTEEN, AND IT IS SIXTEEN. Two rows of the
+ * answer moved BELOW the landmark when the patterns' heading started saying how many are
+ * awaiting a judgement — this counts what is above `## Patterns adopted`, and the document now
+ * carries a blank and a sentence under it. The window shows the same twenty-three rows of roll
+ * it showed before; what moved is where the landmark sits in them.
+ *
+ * IT WAS FIVE, THEN SIX, THEN TWENTY-THREE, AND IT WAS EIGHTEEN. Six was the answer while the
  * floor was twenty-four rows: the arrangement held eight of them and the input area five, so
  * eleven were left and six of those were the answer's. At a floor of fifty-one the arrangement
  * held seventeen and twenty-three of the twenty-nine left were the answer's. THE FLOOR IS
@@ -557,7 +563,7 @@ function theAnswerOn(ran: Ran, columns: number, rows: number): Screen {
  * the two floors gets a console at all now, and one on a taller window is unaffected. Measured
  * on a real terminal, at the floor.
  */
-const SHOWS_OF_THE_ANSWER = 18;
+const SHOWS_OF_THE_ANSWER = 16;
 
 /**
  * WHAT THE ARRANGEMENT COSTS ON THAT SCREEN — the second stick, and the one that says the
@@ -651,13 +657,22 @@ describe('the answer a caller asked for is on the page, at the shortest window t
       columns,
       rows,
       project: deep,
-      // THREE ANSWERS RATHER THAN ONE, and the floor moving is what forced it. One read filled a
-      // twenty-four-row window twice over; the window is the floor's own height now — forty-two,
-      // worked out from the drawing (`src/repl/floor.ts`) — so one answer no longer pushes the
-      // opening past the top — and a walk back with nothing above the page is a
-      // keystroke that draws NO frame, which is what the step waiting for one measured. The
-      // assertions below are what say the opening really did leave, so the count is a fixture and
-      // never the promise.
+      // ONE ANSWER, AND IT WAS TWO. The count is a fixture and never the promise — the
+      // assertions below are what say the opening really did leave — so it moves with the
+      // size of the longest answer this session gives, which is what it has always been
+      // worked out from. At twenty-four rows one read filled the window twice over; when
+      // the floor became forty-two, one read no longer pushed the opening past the top and
+      // this became two. The document grew four rows when each heading started saying how
+      // many are awaiting a judgement, and one read reaches past the top again.
+      //
+      // WHY IT IS THE SMALLEST COUNT THAT WORKS, and this is the half worth writing down.
+      // Asking twice at this size draws NOTHING: measured on a real pty, the second read
+      // put zero bytes on the wire in five seconds and the answer appeared only in the
+      // transcript on the way out. It is not this delivery's: on the record before it, with
+      // a document four rows shorter, the THIRD read did exactly the same — so a console
+      // that stops drawing once the roll has taken enough answers is a defect of its own,
+      // declared in this delivery's report, and what changed here is the margin. This case
+      // is about the walk back, so it asks for the least it needs and stays clear of it.
       // AND THE SECOND ASK WAITS FOR THE OPENING TO HAVE GONE, which is the one wait that
       // means what this case is about. A step that waited for *a frame* ended wherever the
       // stream was quiet — measured in whole-suite runs, twice: the page it left behind still
@@ -667,7 +682,6 @@ describe('the answer a caller asked for is on the page, at the shortest window t
       // is a frame it caused with the opening no longer in it.
       steps: [
         opens,
-        asks,
         {
           types: `${A_LONG_READ}\r`,
           // THE PAGE, NOT WHAT ARRIVED. The case below reads the settled page and asserts both
@@ -688,7 +702,7 @@ describe('the answer a caller asked for is on the page, at the shortest window t
     // ends of ONE of them is the first answer's, which the opening is still on. What the case is
     // about is what the roll has pushed off the page, so what it reads is where the page came to
     // rest ({@link theSettledScreen}).
-    const asked = theSettledScreen(ran.bytes.slice(0, ran.at[2] as number), columns, rows);
+    const asked = theSettledScreen(ran.bytes.slice(0, ran.at[1] as number), columns, rows);
     // THE OPENING REALLY DID LEAVE THE PAGE, or there is nothing to walk back to: neither what
     // the session is nor the sentence it lands under the mark is on the page after the answer.
     expect(asked.text, 'the opening never left the page').not.toContain(OPENED);
@@ -705,7 +719,7 @@ describe('the answer a caller asked for is on the page, at the shortest window t
     // one this found, three rows into the drawing. The premise was that the pages carrying the
     // opening are a set of two, and it was never true; what makes it two is WHEN you look. So
     // the page is taken where the walk ENDED, which is the subject anyway.
-    const top = theSettledScreen(ran.bytes.slice(0, ran.at[3] as number), columns, rows);
+    const top = theSettledScreen(ran.bytes.slice(0, ran.at[2] as number), columns, rows);
     expect(rowOf(top, OPENED), 'what the session is did not come back').toBeGreaterThanOrEqual(0);
     expect(rowOf(top, UNDER_THE_PANEL), 'the oldest line is not on the roll').toBeGreaterThan(
       rowOf(top, OPENED),

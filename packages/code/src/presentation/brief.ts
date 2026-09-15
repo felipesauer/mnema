@@ -47,6 +47,24 @@
  * it is still pure over the record, so the `diff` that detects a stale copy means exactly
  * what it meant before.
  *
+ * "ONE NUMBER" WAS TRUE WHEN IT WAS WRITTEN AND THERE ARE FOUR NOW, and the sentence is
+ * kept rather than quietly widened because the ARGUMENT in it is what the new ones stand
+ * on. The doctrine above refuses a total for omission by SIZE, and it is right: with the
+ * whole list printed, a total is the list's own length and buys the reader nothing. What
+ * falsified the sentence as a rule about totals is omission by STATE. Measured on a real
+ * project: this document printed `## Decisions in force (6)` over a record holding 247
+ * decisions. Every word of it was true — each heading counts what is printed under it —
+ * and a reader of ONLY this file, which is the reader it is written for, came away
+ * believing the project had decided six things. The 241 were not cut; they are not in
+ * force, so they are correctly absent from a document about what governs. Their NUMBER is
+ * a different fact from the list's length, and it is exactly the fact that makes the
+ * heading legible ({@link whatAwaitsAJudgement}).
+ *
+ * The two counts of what is waiting are pure over the record for the reason the address
+ * count is — a state is a fact of the chain — so the `diff` still means one thing. What
+ * they are NOT is a queue: see the note on {@link whatAwaitsAJudgement} for why a count
+ * is affordable where the list the `--help` refuses would not be.
+ *
  * A HANDLE THAT DOES NOT IDENTIFY IS DECLARED TOO, and it is the same doctrine again
  * rather than a new one. The `ADR-<n>` beside each rule is here to be CITED — it is
  * the short name a person writes into a commit — and it is numbered inside one chain,
@@ -61,10 +79,19 @@
  * is absent from this file — and an absence a reader cannot see is exactly what "no
  * silent cut" forbids, whether the cause is a limit or a scope. So the document names
  * its scope before any of the content ({@link WHAT_TRAVELS}) and says that a heading's
- * number is what is printed under it. What it does NOT do is count what it left out:
- * a "3 private rules omitted" would put a fact about the private tree into the file
+ * number is what is printed under it. What it does NOT do is count what the SCOPE left
+ * out: a "3 private rules omitted" would put a fact about the private tree into the file
  * that gets committed, and would move with that tree — two things this document exists
  * not to do.
+ *
+ * THAT SENTENCE READ "COUNT WHAT IT LEFT OUT", FLAT, AND THIS DELIVERY FALSIFIED IT. The
+ * document now counts what the STATE left out — the decisions and the patterns recorded
+ * here that are awaiting a judgement — and the difference between the two counts is the
+ * whole of why one is refused and the other is not. A private rule is in another tree: its
+ * number moves when that tree moves, on one machine, inside a file that is committed and
+ * compared with `diff`. A proposal is in THIS tree, and its number moves only when this
+ * record does. The word that was missing from the old sentence is the one carrying the
+ * argument, and it is in it now.
  */
 
 import type { AdrCollision, Brief, ChannelState } from '@mnema/copilot';
@@ -370,6 +397,100 @@ const NO_PATTERNS = [
 ];
 
 /**
+ * The words one heading's WAITING paragraph is built from — the one it says when the
+ * number is one, the one it says when it is not, and the sentence under both.
+ *
+ * A SHAPE PER HEADING RATHER THAN A PARAMETER PER WORD, and the reason is the mistake it
+ * makes impossible. The two headings say almost the same thing, and the half-sentence
+ * that differs is the NOUN — a decision is not a pattern, and neither governs by being
+ * proposed. Four positional strings would compile with any two of them swapped, which
+ * would put the patterns' sentence under the decisions' heading and read as a working
+ * document saying something the record never said. It is the argument {@link
+ * BriefChannels} is built on, in the layer that words the lines.
+ */
+interface WaitingWords {
+  /** What the count is followed by when exactly one is waiting. */
+  readonly one: string;
+  /** What it is followed by otherwise — zero never reaches either ({@link none}). */
+  readonly many: string;
+  /** The sentence under the count, whatever the count is. */
+  readonly rest: readonly string[];
+  /** The whole paragraph when nothing is waiting, which is a fact and gets said. */
+  readonly none: string;
+}
+
+/**
+ * What the decisions' heading says about the calls that are recorded here and NOT in
+ * force — the paragraph this delivery exists for.
+ *
+ * IT NAMES `bootstrap` AND NOT `mnema status`, and the choice is the division this file
+ * already draws rather than a preference. The doors named in the document are the ones
+ * its READER can open: an agent has `read_record` and `skills` here, and `mnema show`
+ * and `mnema status` are named in the verb's `--help`, where the person who typed it
+ * reads. The list of what is waiting is `bootstrap`'s answer on the agent's side and
+ * `mnema status`'s on the person's — the same derivation through two doors — so each
+ * surface names its own and neither borrows the other's.
+ *
+ * AND NAMING A DOOR IS NOT THE SAME AS DEPENDING ON ONE. The FACT is on the line: how
+ * many are waiting, and that none of them is below. A reader that asks nothing further
+ * has been told the thing that makes the heading above legible, which is the whole
+ * charge this paragraph answers to; the door is there for the reader that wants the
+ * names, and nothing here is completed by a second call.
+ */
+const DECISIONS_WAITING: WaitingWords = {
+  one: 'more decision is recorded here and awaiting a judgement, and it is not below.',
+  many: 'more decisions are recorded here and awaiting a judgement, and none is below.',
+  rest: ['Nothing waiting governs anything yet; ask `bootstrap` for what is waiting.'],
+  none: 'No other decision recorded here is awaiting a judgement.',
+};
+
+/**
+ * The same paragraph for the patterns' heading, and it does NOT repeat the door.
+ *
+ * That is {@link whatAsksForAPerson}'s rule kept rather than a new one: the paragraph
+ * above already names the read that answers, and `bootstrap` answers for BOTH in one
+ * reply — so a second pointer here would be a line paid for on every prompt to say a
+ * sentence the reader has just read.
+ */
+const PATTERNS_WAITING: WaitingWords = {
+  one: 'more pattern is recorded here and awaiting a judgement, and it is not below.',
+  many: 'more patterns are recorded here and awaiting a judgement, and none is below.',
+  rest: ['Nothing waiting is a way of working here yet.'],
+  none: 'No other pattern recorded here is awaiting a judgement.',
+};
+
+/**
+ * How many of this kind are recorded here and waiting on somebody, said under the
+ * heading that counts what IS in force.
+ *
+ * WHY THE HEADING NEEDS IT. `## Decisions in force (6)` is true over a record holding
+ * 247 decisions and it leaves a reader believing the project decided six things — and
+ * the reader of this file is a model, reading this file alone. The heading's own
+ * doctrine is honest and it is not enough: a number that counts what is printed cannot
+ * say anything about what is not.
+ *
+ * IT IS A COUNT AND NEVER A LIST, and that is the line between this and the work queue
+ * the verb refuses to carry (`wiring/brief.ts`). A queue changes by the hour, so a copy
+ * of one in a file regenerated by hand is wrong between two runs. A COUNT over the
+ * record moves only when the record does, exactly like the two counts above it, so the
+ * `diff` that detects a stale copy still means one thing. Printing the 241 names would
+ * be the queue; saying there are 241 is not.
+ *
+ * ZERO IS SAID IN WORDS, like every other empty thing in this document. A paragraph that
+ * disappeared at zero would make the first proposal look like a rewrite of the file, and
+ * — the reason that matters more — a reader who is told nothing is waiting knows
+ * something a reader who is told nothing does not.
+ *
+ * The singular and the plural are two constants of this module chosen by the count beside
+ * them, which is {@link whatHasAnAddress}'s shape: no value from the record reaches the
+ * choice.
+ */
+function whatAwaitsAJudgement(awaiting: number, words: WaitingWords): string[] {
+  if (awaiting === 0) return [words.none];
+  return [`${awaiting} ${awaiting === 1 ? words.one : words.many}`, ...words.rest];
+}
+
+/**
  * The whole document, as lines — the committed governance the composition handed over,
  * ready to be redirected into the file an agent host reads. It prints what it is given
  * and counts what it prints; which trees that came from is settled before it (see
@@ -397,6 +518,7 @@ export function briefDocument(governance: Brief): string[] {
       governance.decisions.length === 0
         ? NO_DECISIONS
         : [...WHERE_THE_RATIONALE_IS, ...ambiguousLabels(governance.collisions)],
+      whatAwaitsAJudgement(governance.decisionsAwaiting, DECISIONS_WAITING),
       governance.decisions.map((decision) =>
         rule(`${decision.adr} — ${decision.title}`, decision.id),
       ),
@@ -406,6 +528,7 @@ export function briefDocument(governance: Brief): string[] {
       'Patterns adopted',
       governance.skills.length,
       governance.skills.length === 0 ? NO_PATTERNS : WHERE_THE_PATTERN_IS,
+      whatAwaitsAJudgement(governance.skillsAwaiting, PATTERNS_WAITING),
       governance.skills.map((skill) => rule(skill.name, skill.id)),
     ),
   ];
@@ -413,14 +536,23 @@ export function briefDocument(governance: Brief): string[] {
 
 /**
  * One section: the heading with how many are PRINTED under it, what to do about them,
- * then one line each.
+ * what is recorded here and still waiting on somebody, then one line each.
  *
  * The number is `items.length` and it is taken from the caller for that reason — the
  * count and the bullets come from one list, so a heading that says three over four
  * bullets is not a state this can reach. It is not a total of the record: what the
- * composition left out because it does not travel is declared in words at the top
+ * composition left out because it does not TRAVEL is declared in words at the top
  * ({@link WHAT_TRAVELS}), never as a number here, since a number would be a fact about
- * the private tree inside a committed file.
+ * the private tree inside a committed file. What the STATE left out is a different
+ * question and it is answered — see {@link whatAwaitsAJudgement} — which is why that
+ * paragraph is a parameter of this function rather than a sentence in one caller.
+ *
+ * THE WAITING PARAGRAPH IS ITS OWN, AND NOT A CLAUSE ON `says`. The two answer
+ * different readers: `says` is about the rules PRINTED under the heading — where their
+ * argument is, which door serves it — and this one is about rules that are not there at
+ * all. Read as one paragraph they would be a sentence about the list followed by a
+ * sentence contradicting it, in the file whose reader is the one that cannot tell two
+ * facts apart unless they are spelled out.
  *
  * Written once for both, because the two sections are the same shape and a shape
  * written twice is a shape that drifts — a heading that counts in one and not in the
@@ -431,9 +563,17 @@ function section(
   heading: string,
   printed: number,
   says: readonly string[],
+  waiting: readonly string[],
   items: readonly string[],
 ): string[] {
-  return [`## ${heading} (${printed})`, '', ...says, ...(items.length > 0 ? ['', ...items] : [])];
+  return [
+    `## ${heading} (${printed})`,
+    '',
+    ...says,
+    '',
+    ...waiting,
+    ...(items.length > 0 ? ['', ...items] : []),
+  ];
 }
 
 /**

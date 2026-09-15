@@ -116,8 +116,8 @@ import {
   type Scope,
 } from '@mnema/core';
 import type { ScopedCache } from '../sources.js';
-import { type DecisionRef, decisionsInForce } from './decisions.js';
-import { adoptedSkills, type SkillRef } from './skills.js';
+import { type DecisionRef, decisionsAwaitingJudgement, decisionsInForce } from './decisions.js';
+import { adoptedSkills, type SkillRef, skillsAwaitingJudgement } from './skills.js';
 import { type ChannelState, channelStates } from './switches.js';
 
 /**
@@ -202,6 +202,50 @@ export interface Brief {
    * committed and compared with `diff`.
    */
   readonly asking: number;
+  /**
+   * How many decisions of the tree that travels are recorded and AWAITING A JUDGEMENT
+   * — proposed, and nothing has ruled on them yet.
+   *
+   * WHY A COUNT OF WHAT IS NOT PRINTED IS IN THIS ANSWER, since everything else it
+   * carries is about what IS. It is {@link Brief.addressed}'s argument applied to the
+   * other silence, and the document says so in the same words: a number that is not a
+   * list's length, here because it makes a silence readable. The silence is the heading
+   * itself. Measured on a real project: the document printed `## Decisions in force (6)`
+   * over a record holding 247 decisions, and every word of it was true — each heading
+   * counts what is printed under it — while the impression it left was that the project
+   * had decided six things. A reader of this file is a model, and a model reading that
+   * heading has nothing at all to tell it that 241 more calls are recorded and waiting.
+   *
+   * NOTHING WAS CUT BY SIZE AND THAT IS WHY THIS IS NOT THE TOTAL THE DOCUMENT REFUSES.
+   * The doctrine against totals was written about omission by LIMIT — with the whole
+   * list printed, a total is the list's own length and says nothing. These were left
+   * out by STATE: they are not in force, so they are correctly absent from a document
+   * about what governs, and their number is a fact the list's length cannot carry.
+   *
+   * IT STAYS PURE OVER THE RECORD. A state is a fact of the chain like any other, so
+   * two clones print the same number and the `diff` that detects a stale copy means
+   * exactly what it meant.
+   *
+   * COUNTED BY {@link decisionsAwaitingJudgement}, the derivation `bootstrap` already
+   * lists from, so "awaiting a judgement" is one rule here and not two — a document
+   * that counted a different set from the reading that NAMES them would send a reader
+   * to look for rules that are not there. Zero prints too, in words.
+   */
+  readonly decisionsAwaiting: number;
+  /**
+   * How many patterns of the tree that travels are recorded and awaiting a judgement —
+   * proposed or reviewed, with the adoption call still to make.
+   *
+   * It is here for {@link Brief.decisionsAwaiting}'s reason, on the other heading, and
+   * it is a SECOND number rather than a sum with it: the two headings are two silences,
+   * and one number over both would tell a reader that something is waiting without
+   * saying which of the two lists it is missing from. The same asymmetry the two channel
+   * states have.
+   *
+   * Counted by {@link skillsAwaitingJudgement}, for the reason the decisions' count is
+   * taken from the reading that names them.
+   */
+  readonly skillsAwaiting: number;
   /**
    * Where the channel that pushes a rule at an EDIT stands, in the tree that travels.
    *
@@ -304,6 +348,12 @@ export function brief(sources: readonly ScopedCache[], channels: BriefChannels):
     // vocabulary of channels belongs to the surface that pushes them, and this package has
     // no idea what any of them are.
     asking: countAsking(travels, [...decisions, ...skills]),
+    // Asked of the COMMITTED sources alone, like the rest: a document that counted the
+    // private tree's proposals would move with that tree, and it is compared with `diff`.
+    // The two derivations are `bootstrap`'s own, called for their LENGTH — the count and
+    // the reading that names them cannot come to disagree about what is waiting.
+    decisionsAwaiting: decisionsAwaitingJudgement(travels).length,
+    skillsAwaiting: skillsAwaitingJudgement(travels).length,
     // Asked of the COMMITTED sources alone, for the reason the whole answer is: a switch
     // this file could not carry would make the document claim a mechanism is on when the
     // machine reading it has turned it off. Both channels in ONE call, so the fold, the

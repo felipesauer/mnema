@@ -124,6 +124,40 @@ function fieldsOf(document: AdrDocument): readonly string[] {
 }
 
 /**
+ * The names in `directory` that are DECISION DOCUMENTS by their file name alone —
+ * markdown, minus the furniture — in file-name order.
+ *
+ * IT IS SPLIT OUT BECAUSE A SECOND READER ASKS THE NAME QUESTION WITHOUT ASKING THE
+ * CONTENT ONE. `mnema status` reports how many documents of a base the record has no
+ * decision for, and that answer needs the file names and nothing else: opening every
+ * file to triage its fields would pay the whole import's cost on an opening read, to
+ * decide a question the names already settle. A second `readdirSync` with a second
+ * copy of the extension test and of {@link NOT_A_DECISION} is how the two readers
+ * would come to disagree about what counts as a document — one of them counting a
+ * `README.md` the other never proposes — so there is one function and two callers.
+ *
+ * A directory that does not exist, or that cannot be listed, comes back EMPTY rather
+ * than throwing, for {@link scanAdrDirectory}'s reason: a typo in a path must not look
+ * like a failure of the product.
+ *
+ * IT ANSWERS ABOUT NAMES AND NEVER ABOUT CONTENT, which is the limit a caller has to
+ * carry. A file named here can still be refused by the scan — retired, over the field
+ * limit, or holding something shaped like a credential — so a caller counting these is
+ * counting files a person may look at, not proposals the record would accept.
+ */
+export function adrFileNames(directory: string): string[] {
+  try {
+    return readdirSync(directory, { withFileTypes: true })
+      .filter((entry) => entry.isFile() && MARKDOWN.test(entry.name))
+      .map((entry) => entry.name)
+      .filter((name) => !NOT_A_DECISION.includes(name.replace(MARKDOWN, '').toLowerCase()))
+      .sort();
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Reads every markdown file in `directory` as a decision document, and returns
  * what it read beside what it refused and why.
  *
@@ -133,16 +167,7 @@ function fieldsOf(document: AdrDocument): readonly string[] {
  * product.
  */
 export function scanAdrDirectory(directory: string): AdrScan {
-  let names: string[];
-  try {
-    names = readdirSync(directory, { withFileTypes: true })
-      .filter((entry) => entry.isFile() && MARKDOWN.test(entry.name))
-      .map((entry) => entry.name)
-      .filter((name) => !NOT_A_DECISION.includes(name.replace(MARKDOWN, '').toLowerCase()))
-      .sort();
-  } catch {
-    return { read: [], refused: [] };
-  }
+  const names = adrFileNames(directory);
 
   const read: ScannedDecision[] = [];
   const refused: ScanRefusal[] = [];
