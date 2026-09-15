@@ -196,14 +196,20 @@ export class ChainWriter {
     this.maxUnsignedEvents = options.maxUnsignedEvents ?? DEFAULT_MAX_UNSIGNED_EVENTS;
     this.tailId = `${keyPair.fingerprint}-${installationId}`;
     mkdirSync(tailDir(layout, this.tailId), { recursive: true });
-    // Birth and recovery are under the lock for the same reason appending is. The
-    // recovery TRUNCATES a torn trailing fragment, so running it while another
-    // process is appending would cut bytes that process is about to finish writing;
-    // and `ensureTailProof` is a read-then-write of one path, which two fresh
-    // processes would otherwise both take.
-    this.underTailLock(() => {
-      this.ensureTailProof();
-    });
+    // NOTHING ELSE HAPPENS HERE, and that is a change this delivery made deliberately.
+    // Birth (`ensureTailProof`) and recovery both touch the tail's files — the
+    // recovery TRUNCATES a torn trailing fragment — so both have to be under the lock,
+    // and taking it here would be a third lock cycle per act on top of the append's
+    // and the checkpoint's. Measured, in `lone-writer-cost.mjs`, against a base of
+    // 0.569 ms per act: three cycles cost 0.891 ms, two cost 0.815 ms. So both moved
+    // INSIDE {@link underTailLock}, where the first act pays for them once: the
+    // starting {@link mark} is a value no real tail can produce, so the first act
+    // always recovers.
+    //
+    // A writer that never appends therefore never recovers and never writes a tail
+    // proof. That is not a loss: every reader of a tail proof reads it off the disk
+    // beside the entries it is about, and a tail with no entries has nothing to prove
+    // ownership OF.
   }
 
   /**
@@ -232,6 +238,7 @@ export class ChainWriter {
     // has a name for.
     return withTailLock(tailLockPath(this.layout, this.tailId), () => {
       this.resyncIfMoved();
+      this.ensureTailProof();
       const result = act();
       this.mark = this.readMark();
       return result;
