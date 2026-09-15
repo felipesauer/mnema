@@ -100,10 +100,26 @@ export function decisionsOutsideTheRecord(
   const found: DecisionsOutside[] = [];
   for (const directory of [...bases].sort()) {
     const names = adrFileNames(join(root, ...directory.split('/')));
-    const outside = names.filter((name) => !imported.has(`${directory}/${name}`)).length;
+    const outside = names.filter((name) => !imported.has(inBase(directory, name))).length;
     if (outside > 0) found.push({ directory, outside });
   }
   return found;
+}
+
+/**
+ * A file of `directory`, spelled the way the RECORD spells it — which is the only spelling
+ * the lookup above can ask about.
+ *
+ * THE ROOT IS THE CASE THIS EXISTS FOR, and it was a defect before it was a function. A
+ * project that keeps its decisions at the top of the repository is imported with
+ * `mnema decision import .`, and the provenance recorded for each is a bare file name with
+ * no directory in it. The base derived back from such a target is `.`, and a key built as
+ * `${directory}/${name}` spelled it `./0001-utc.md` — which matches nothing, so every
+ * document of that base counted as outside the record for ever. Measured: a root base with
+ * one document imported and one written afterwards reported two outside instead of one.
+ */
+function inBase(directory: string, name: string): string {
+  return directory === '.' ? name : `${directory}/${name}`;
 }
 
 /**

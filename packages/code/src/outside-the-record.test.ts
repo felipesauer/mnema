@@ -24,7 +24,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { adrFileNames, type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runDecisionImport } from './commands/decision-import.js';
 import { runInit } from './commands/init.js';
@@ -142,35 +142,77 @@ describe('which decision documents this checkout holds that the record has none 
   it('drops a `derived-from` target that is not a path under this project', () => {
     // THE DOOR. The relation is open and `mnema link` writes whatever target somebody's
     // command line sends — a record id, an absolute path, a `..` climbing out of the
-    // repository — and this reading turns a target into a directory it LISTS. Every one
-    // of these is written by the product, through the verb a person would use.
+    // repository — and this reading turns a target into a directory it LISTS. Every one of
+    // these is written by the product, through the verb a person would use.
+    //
+    // EVERY FORGED BASE HOLDS A REAL DOCUMENT, and that is the whole of what makes this
+    // case worth running. The first version pointed at directories that do not exist, so
+    // the door could be opened wide and the answer stayed empty for a reason that had
+    // nothing to do with the door — mutation said so: `insideRoot` made to return `true`
+    // for everything left 4697 of 4697 green. With the directories PRESENT, the same
+    // mutation makes this reading walk out of the repository and report what it finds
+    // there, which is the defect the filter is for.
     const { repo, env } = setup();
     adr(repo, 'docs/decisions/0001-utc.md', 'Use UTC everywhere');
     const imported = runDecisionImport({ cwd: repo, env }, { from: 'docs/decisions', write: true });
     if (!imported.ok) throw new Error('fixture: the import refused');
     const subject = imported.proposals[0]?.id;
     if (subject === undefined) throw new Error('fixture: the import proposed nothing');
+
+    // A base OUTSIDE the repository, reachable by climbing, holding a real document.
+    mkdirSync(join(sandbox, 'outside'), { recursive: true });
+    writeFileSync(
+      join(sandbox, 'outside', '0001-elsewhere.md'),
+      '# Somebody else’s decision\n\n## Context\n\nnot this project’s\n',
+    );
+    // A document at the ROOT of the repository, which no target below names: the root is a
+    // legitimate base when the record names it (the case beside this one), so what this
+    // proves is that it does not become one by accident.
+    adr(repo, '0001-at-the-root.md', 'A decision at the root');
+    // And an ABSOLUTE path whose tail, joined onto the root, is a directory that exists.
+    adr(repo, 'etc/decisions/0001-absolute.md', 'A decision under a forged absolute');
+
     for (const target of [
-      '/etc/decisions/0001-secret.md',
       '../outside/0001-elsewhere.md',
-      'docs/../../climbing/0001-up.md',
+      'docs/../outside/0001-elsewhere.md',
       '0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b01',
+      '/etc/decisions/0001-absolute.md',
       'https://example.invalid/adr/0001.md',
     ]) {
       const linked = runLink({ cwd: repo, env }, { subject, target, rel: 'derived-from' });
       expect(linked.ok, target).toBe(true);
     }
-    // Not one of them became a base: the only directory named is the one the import
-    // wrote, and it has nothing outside.
+    // Not one of them became a base: the only directory named is the one the import wrote,
+    // and it has nothing outside.
     expect(outside(repo, env)).toEqual([]);
 
-    // NOT VACUOUS, and this is the half that matters: the edges really are in the
-    // record, so the answer above is the filter's and not an empty relation.
+    // NOT VACUOUS, in both directions. The edges really are in the record…
     const held = withScopedCaches(
       resolveTrees(repo, env),
       (sources) => sources.flatMap((source) => source.cache.linksByRelation('derived-from')).length,
     );
     expect(held).toBe(6);
+    // …and every forged base really does hold a document this reading would report, which
+    // is what the door is standing between. Asked of the one thing that can answer it: the
+    // same file-name reading the walk itself uses.
+    for (const base of [join(sandbox, 'outside'), repo, join(repo, 'etc', 'decisions')]) {
+      expect(adrFileNames(base).length, base).toBeGreaterThan(0);
+    }
+  });
+
+  it('takes the repository ROOT as a base when the record names it, and not before', () => {
+    // `mnema decision import .` is a legitimate run — a project that keeps its decisions at
+    // the top of the repository — and the provenance it records is a bare file name, with
+    // no directory in it. So a target with no slash names the root, which is why the case
+    // above can prove that a document lying there does NOT make the root a base on its own:
+    // what decides is whether the record named it.
+    const { repo, env } = setup();
+    adr(repo, '0001-utc.md', 'Use UTC everywhere');
+    expect(outside(repo, env)).toEqual([]);
+
+    runDecisionImport({ cwd: repo, env }, { from: '.', write: true });
+    adr(repo, '0002-ids.md', 'Mint ids as uuidv7');
+    expect(outside(repo, env)).toEqual([{ directory: '.', outside: 1 }]);
   });
 
   it('names its bases in order, and only the ones with something outside', () => {
