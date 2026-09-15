@@ -109,7 +109,10 @@ describe('which decision documents this checkout holds that the record has none 
     const { repo, env } = setup();
     adr(repo, 'docs/decisions/0001-utc.md', 'Use UTC everywhere');
     adr(repo, 'docs/decisions/0002-ids.md', 'Mint ids as uuidv7');
-    runDecisionImport({ cwd: repo, env }, { from: 'docs/decisions', write: true, scope: 'private' });
+    runDecisionImport(
+      { cwd: repo, env },
+      { from: 'docs/decisions', write: true, scope: 'private' },
+    );
     expect(outside(repo, env)).toEqual([]);
 
     // NOT VACUOUS: the private tree really is where they landed, so the silence above
@@ -163,8 +166,9 @@ describe('which decision documents this checkout holds that the record has none 
 
     // NOT VACUOUS, and this is the half that matters: the edges really are in the
     // record, so the answer above is the filter's and not an empty relation.
-    const held = withScopedCaches(resolveTrees(repo, env), (sources) =>
-      sources.flatMap((source) => source.cache.linksByRelation('derived-from')).length,
+    const held = withScopedCaches(
+      resolveTrees(repo, env),
+      (sources) => sources.flatMap((source) => source.cache.linksByRelation('derived-from')).length,
     );
     expect(held).toBe(6);
   });
