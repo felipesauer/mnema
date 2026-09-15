@@ -57,6 +57,7 @@ export function registerSearch(program: Command, wiring: Wiring): Declared {
       ) => {
         const { runSearch } = await import('../commands/search.js');
         const { searchReport } = await import('../presentation/search.js');
+        const { linkBreakNotice } = await import('./integrity.js');
         const scope = parseScope(opts.scope, wiring);
         if (scope === INVALID) return;
         const limit = parseLimit(opts.limit, wiring);
@@ -83,6 +84,9 @@ export function registerSearch(program: Command, wiring: Wiring): Declared {
           );
           return;
         }
+        // BEFORE the hits, and on the other stream — so it survives a pipe into
+        // `head`, and so `--json` stays the machine-readable thing it promises to be.
+        for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
         if (opts.json === true) {
           io.out(JSON.stringify(result.result, null, 2));
           return;

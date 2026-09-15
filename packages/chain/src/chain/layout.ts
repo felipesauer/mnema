@@ -111,6 +111,28 @@ export function tailProofPath(layout: ChainLayout, tailId: string): string {
 }
 
 /**
+ * The lock one writer holds while it reads a tail's end and appends to it.
+ *
+ * IT IS NOT UNDER `tails/`, and that placement is the point. The record is `tails/`
+ * and the committed public keys; a lock is machinery, it exists between two syscalls
+ * of one append and is unlinked on the way out. Putting it beside the segments would
+ * have been closer to what it guards and would have made "not part of the record" a
+ * thing to remember rather than a thing to see — and it would have had to be excused
+ * from the tree's own rule that NOTHING under `tails/` is hidden from git, which is
+ * the rule that keeps the proof surface reachable by a clone. A separate directory
+ * costs one `.gitignore` line and needs no exception.
+ *
+ * It is per TAIL and not per tree: two installations on one machine writing the same
+ * tree own different tails and must not wait on each other.
+ *
+ * A holder killed with SIGKILL leaves the file behind — the next writer breaks it, see
+ * `tail-lock.ts` — so the directory is one git ignores.
+ */
+export function tailLockPath(layout: ChainLayout, tailId: string): string {
+  return join(layout.root, 'locks', `${tailId}.lock`);
+}
+
+/**
  * Where a tail's external witnesses live — one directory, beside the checkpoints
  * they are about.
  *

@@ -219,7 +219,11 @@ describe('mnema search (finding what was recorded)', () => {
 
     const found = runSearch({ cwd: repo, env }, { term: 'zebra' });
 
-    expect(found).toEqual({ ok: true, result: { hits: [], total: 0 } });
+    // WHOLE-OBJECT, so a field added to the answer has to be accounted for here —
+    // and `linkBreaks` is: a record the product wrote on its own chains, so the read
+    // reports nothing about it. An empty index and an intact record are two different
+    // answers and this is the case that says both.
+    expect(found).toEqual({ ok: true, result: { hits: [], total: 0 }, linkBreaks: [] });
   });
 
   it('writes nothing — not an event, not a byte', () => {

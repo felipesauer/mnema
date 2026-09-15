@@ -4,9 +4,23 @@
  * A writer owns exactly one tail: it appends events as sealed entries, chains
  * each to its predecessor, seals a segment once it passes the size cap, and signs a
  * checkpoint when the caller asks or when one act of writing has left too many
- * events unsigned. Because each machine writes only its own tail, there is never an
- * in-file merge — concurrency across machines is resolved by reading many tails, not
- * by locking one file.
+ * events unsigned.
+ *
+ * THE PREMISE THIS FILE HELD, AND WHAT FALSIFIED IT. It said: "Because each machine
+ * writes only its own tail, there is never an in-file merge — concurrency across
+ * machines is resolved by reading many tails, not by locking one file." The first
+ * half is still true and the conclusion was still wrong, because the sentence
+ * reasons about MACHINES and the danger is between PROCESSES. Two sessions on one
+ * machine in one project share the identity, so they share the installation id, so
+ * they share the tail: they are not two machines, they are two writers of one file,
+ * and "each machine writes only its own tail" never said anything about them. What
+ * falsified it is a measurement rather than an argument — two concurrent
+ * `mnema decision` runs corrupted the chain in 15 of 20 rounds, and two MCP sessions
+ * calling `record_observation` did the same, which is the plugin with two windows of
+ * the host open on one project. So a tail IS locked now, for the window between
+ * reading its end and appending to it; `tail-lock.ts` holds the mechanism and the
+ * reasoning, and {@link ChainWriter.underTailLock} is the single door every write
+ * here goes through.
  *
  * WHO DECIDES WHEN IT SIGNS. The writer holds a CEILING and nothing more (see
  * {@link DEFAULT_MAX_UNSIGNED_EVENTS}); the CADENCE belongs to the writing paths,
@@ -25,10 +39,20 @@
  *
  * State (head hash, next seq, current segment, and the events no checkpoint
  * covers yet) is recovered from the END of the tail on construction, so a fresh
- * process continues an existing tail correctly without re-reading its history.
+ * process continues an existing tail correctly without re-reading its history. It is
+ * recovered AGAIN, under the lock, whenever the tail's files turn out to have moved
+ * since this writer last looked — which is what makes the held state safe to keep
+ * between appends instead of being re-read on every one. See {@link ChainWriter.mark}.
  */
 
-import { appendFileSync, existsSync, mkdirSync, truncateSync, writeFileSync } from 'node:fs';
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  statSync,
+  truncateSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname } from 'node:path';
 
 import type { CatalogEvent } from '../events/catalog.js';
@@ -49,10 +73,12 @@ import {
   checkpointsPath,
   segmentPath,
   tailDir,
+  tailLockPath,
   tailProofPath,
 } from './layout.js';
 import { linesFromEnd } from './lines.js';
 import { lastTailCheckpoint, orderedSegments, readTailTip } from './store.js';
+import { withTailLock } from './tail-lock.js';
 import { serializeTailProof, signTailProof } from './tailproof.js';
 import { unprovenWaiverReason } from './waiver.js';
 
@@ -89,6 +115,44 @@ export interface WriterOptions {
   readonly maxUnsignedEvents?: number;
 }
 
+/**
+ * What this writer last left the tail's files looking like — the witness it asks,
+ * under the lock, before it trusts the state it is holding.
+ *
+ * It exists to keep ONE cost from coming back. The obvious way to be safe against
+ * another process is to re-read the tail's end before every append, but this writer's
+ * recovery reads every event above the last checkpoint, and the ceiling on that
+ * window is a thousand in this workspace's own tests — so a per-append recovery is
+ * quadratic in exactly the acts that write the most. Three `stat` calls answer the
+ * only question that matters instead: did anything change since we looked? For a
+ * process writing alone — which is nearly every process — the answer is always no,
+ * and the recovery runs once, as it did before.
+ *
+ * The three are not a sample, they are the complete set of ways another writer can
+ * change what this one is holding: it can grow the segment we are writing (bytes),
+ * roll onto the next one (a segment we do not know about appearing), or sign a
+ * checkpoint (the coverage moving under our buffer).
+ *
+ * THIS COMMENT ONCE ARGUED that `nextSegment` was redundant — "a roll is always
+ * preceded by growth we would have seen" — and the mutation battery falsified it:
+ * blinding the mark to a new segment left ZERO tests red, which is a finding and not
+ * a pass, and writing the case the argument said was unreachable turned it red. The
+ * growth that pushes a segment over its cap happens BEFORE this writer's mark is
+ * taken, not after; so the other writer opens, sees a full segment, rolls, and writes
+ * every byte of its entry somewhere this writer is not looking. The segment we are
+ * watching does not move at all. The case is
+ * `tail-lock.test.ts > notices the other writer rolling onto a segment this one does
+ * not know about`.
+ */
+interface TailMark {
+  /** Size of the segment this writer believes it is appending to, or -1 if absent. */
+  readonly segmentBytes: number;
+  /** Whether the segment AFTER it exists — somebody else rolled. */
+  readonly nextSegment: boolean;
+  /** Size of `checkpoints.jsonl`, or -1 if absent. */
+  readonly checkpointBytes: number;
+}
+
 export class ChainWriter {
   private head: string | null = null;
   private nextSeq = 0;
@@ -115,6 +179,16 @@ export class ChainWriter {
    */
   private pending: WrittenEvent[] = [];
 
+  /**
+   * The tail as this writer last left it. Compared under the lock before every act;
+   * a difference means another process wrote and the held state is stale. See
+   * {@link TailMark}.
+   *
+   * It starts as a value no real tail can produce, so the first act always recovers
+   * rather than trusting a default that happens to match an empty tail.
+   */
+  private mark: TailMark = { segmentBytes: -2, nextSegment: false, checkpointBytes: -2 };
+
   private readonly maxSegmentBytes: number;
   private readonly maxUnsignedEvents: number;
 
@@ -131,8 +205,81 @@ export class ChainWriter {
     this.maxUnsignedEvents = options.maxUnsignedEvents ?? DEFAULT_MAX_UNSIGNED_EVENTS;
     this.tailId = `${keyPair.fingerprint}-${installationId}`;
     mkdirSync(tailDir(layout, this.tailId), { recursive: true });
+    // THE TAIL IS BORN HERE AND RECOVERED LATER, and the split is the answer to two
+    // things at once.
+    //
+    // Recovery cannot happen here, because it TRUNCATES a torn trailing fragment, and
+    // cutting a file another process is appending to is the very hazard this delivery
+    // closed. So it moved under the lock, into the first act — the starting {@link
+    // mark} is a value no real tail can produce, so that act always recovers.
+    //
+    // Birth cannot move WITH it, because taking the lock in a constructor makes
+    // `openChainForWriting` block on another process's append, and a caller that only
+    // wants to read `tail` or `anchor` off a writer would then wait out a budget meant
+    // for writing. So the directory and the ownership proof are written here, unlocked.
+    //
+    // THAT LEAVES ONE UNGUARDED RACE, and it is benign by construction rather than by
+    // hope: two fresh processes can both find the proof absent and both write it. The
+    // bytes are a signature over the tail id with the same key, and Ed25519 is
+    // deterministic — so the two writes are byte-for-byte identical, and whichever
+    // lands second leaves the file holding exactly what the first one put there.
     this.ensureTailProof();
+  }
+
+  /**
+   * THE ONE DOOR every act that touches this tail's files goes through: it takes the
+   * tail's lock, brings the held state back in line with the disk if another process
+   * moved it, runs the act, and records where it left the files.
+   *
+   * There is one of these rather than three because the rule — "read the end and
+   * append to it as one indivisible act" — is one rule, and a rule with three
+   * readings is the shape that produces the divergence nobody notices. The public
+   * doors ({@link append}, {@link appendAll}, {@link checkpoint}) are thin wrappers
+   * that do nothing but call this; their bodies moved into `*Locked` siblings, which
+   * may be called ONLY from inside it. That split is also what keeps the lock
+   * non-reentrant: {@link capUnsignedWindow} signs through {@link signLocked}, never
+   * through the public {@link checkpoint}, so an append that crosses the ceiling does
+   * not try to take a lock it is already holding.
+   *
+   * The mark is written AFTER the act and only if it returned. An act that threw may
+   * have left the files in a state this writer's fields do not describe, so leaving
+   * the mark stale is the conservative answer: the next act sees "moved" and recovers.
+   */
+  private underTailLock<T>(act: () => T): T {
+    // No options: the writer takes the lock's own budgets. They are not a knob this
+    // class forwards, because nothing in the product would have a reason to differ
+    // from them, and an option no caller sets is the defect this workspace already
+    // has a name for.
+    return withTailLock(tailLockPath(this.layout, this.tailId), () => {
+      this.resyncIfMoved();
+      const result = act();
+      this.mark = this.readMark();
+      return result;
+    });
+  }
+
+  /**
+   * Re-reads the tail's end if, and only if, its files are not where this writer left
+   * them. The cheap question that keeps the expensive one rare — see {@link TailMark}.
+   */
+  private resyncIfMoved(): void {
+    const now = this.readMark();
+    if (
+      now.segmentBytes === this.mark.segmentBytes &&
+      now.nextSegment === this.mark.nextSegment &&
+      now.checkpointBytes === this.mark.checkpointBytes
+    ) {
+      return;
+    }
     this.recover();
+  }
+
+  private readMark(): TailMark {
+    return {
+      segmentBytes: sizeOf(segmentPath(this.layout, this.tailId, this.segment)),
+      nextSegment: sizeOf(segmentPath(this.layout, this.tailId, this.segment + 1)) >= 0,
+      checkpointBytes: sizeOf(checkpointsPath(this.layout, this.tailId)),
+    };
   }
 
   /**
@@ -267,8 +414,18 @@ export class ChainWriter {
    * a checkpoint when enough uncheckpointed events have accumulated.
    *
    * Refuses first what no reader could accept ({@link refuseUnreadable}).
+   *
+   * Indivisible against another process writing this tail: reading the end and
+   * appending to it happen under the tail's lock ({@link underTailLock}).
+   *
+   * @throws {TailBusyError} if another process holds the tail past the wait budget.
+   * Nothing is appended.
    */
   append(event: CatalogEvent): Entry {
+    return this.underTailLock(() => this.appendLocked(event));
+  }
+
+  private appendLocked(event: CatalogEvent): Entry {
     refuseUnreadable(event);
     this.refuseUnprovenWaiver(event);
     if (this.segmentBytes >= this.maxSegmentBytes) {
@@ -312,9 +469,19 @@ export class ChainWriter {
    * EVERY event is checked against the reader's rule before ANY is sealed
    * ({@link refuseUnreadable}), so a batch whose second event is unreadable does
    * not leave the first one on the tail — the atom holds for the refusal too.
+   *
+   * The lock is taken ONCE for the whole batch, not once per event, so a birth pair
+   * cannot be split by another process any more than it can by a crash.
+   *
+   * @throws {TailBusyError} if another process holds the tail past the wait budget.
+   * Nothing is appended.
    */
   appendAll(events: readonly CatalogEvent[]): Entry[] {
     if (events.length === 0) return [];
+    return this.underTailLock(() => this.appendAllLocked(events));
+  }
+
+  private appendAllLocked(events: readonly CatalogEvent[]): Entry[] {
     for (const event of events) {
       refuseUnreadable(event);
       this.refuseUnprovenWaiver(event);
@@ -397,7 +564,9 @@ export class ChainWriter {
   private capUnsignedWindow(): void {
     const uncovered = this.nextSeq - 1 - this.lastCheckpointedSeq;
     if (uncovered < this.maxUnsignedEvents) return;
-    this.checkpoint();
+    // {@link signLocked}, never the public {@link checkpoint}: this runs from inside
+    // an append that is already holding the tail's lock, and the lock does not nest.
+    this.signLocked();
   }
 
   /**
@@ -410,9 +579,18 @@ export class ChainWriter {
    * that range would be a silent break of the proof — a verifier recomputing the
    * root from the bytes would then read an honest tail as tampered. It refuses
    * loudly instead. The mismatch is not reachable by any legitimate use: the
-   * buffer is appended to on every successful write and emptied only here.
+   * buffer is appended to on every successful write and emptied only here — AND the
+   * coverage it reads is brought back in line with the disk under the lock first, so
+   * a range another process has already signed is not signed a second time.
+   *
+   * @throws {TailBusyError} if another process holds the tail past the wait budget.
+   * Nothing is signed.
    */
   checkpoint(): Checkpoint | null {
+    return this.underTailLock(() => this.signLocked());
+  }
+
+  private signLocked(): Checkpoint | null {
     const fromSeq = this.lastCheckpointedSeq + 1;
     const toSeq = this.nextSeq - 1;
     if (toSeq < fromSeq) return null;
@@ -471,6 +649,21 @@ function refuseUnreadable(event: CatalogEvent): void {
   throw new EventParseError(
     `refusing to seal an event no reader could accept: ${reason}. Nothing was appended.`,
   );
+}
+
+/**
+ * A file's size in bytes, or -1 if it is not there.
+ *
+ * Absent and empty have to be TOLD APART here — a segment that does not exist yet and
+ * one a recovery truncated to nothing are different states of the tail — so the
+ * answer is a number a size can never be, not a zero that both would produce.
+ */
+function sizeOf(filePath: string): number {
+  try {
+    return statSync(filePath).size;
+  } catch {
+    return -1;
+  }
 }
 
 function ensureDir(filePath: string): void {

@@ -23,6 +23,7 @@ import { type CanonicalValue, canonicalStringify } from '../events/canonical.js'
 import type { CatalogEvent } from '../events/catalog.js';
 import { parseEvent } from '../events/parse.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
+import { oneLine } from '../one-line.js';
 import { entryHash, type WrittenEvent, writtenAsBuilt, writtenAsStored } from './hash.js';
 
 /** The chain-link fields the writer stamps onto an event. */
@@ -154,4 +155,76 @@ function parseLink(raw: unknown): EntryLink {
     throw new EntryParseError('entry link needs a hash');
   }
   return { tail: obj.tail, seq: obj.seq, prev: obj.prev, hash: obj.hash };
+}
+
+/**
+ * WHY one entry does not follow the one before it on its tail — or `undefined` if it
+ * does. The THREE structural questions, and nothing that costs a hash.
+ *
+ * ONE RULE, TWO READERS, and that is the whole reason this is a function rather than a
+ * loop inside the verifier. The verifier asks it to form a T1 verdict (it goes on to
+ * recompute each entry's hash, which is the part that needs the key material and the
+ * cost that comes with it); the plain READ of a tail asks it so it can say that what it
+ * is about to serve does not chain (`store.ts`). Two loops spelling the same three
+ * comparisons is how one of them comes to accept a tail the other refuses — and a
+ * reader more lenient than the verdict is precisely the shape that lets a broken record
+ * be served in silence.
+ *
+ * It answers with the FINDING and not with the sentence, and {@link describeLinkBreak}
+ * words it. That split is not ceremony: a caller that wants to branch on WHICH of the
+ * three broke can, and the sentence has one author, so the verdict and the read cannot
+ * come to describe the same bytes differently.
+ *
+ * It is per ENTRY rather than per tail so the verifier's loop keeps reporting the FIRST
+ * thing wrong in the order it meets it: a hash mismatch at seq 2 must still win over a
+ * seq gap at seq 5, which a whole-tail structural pass run first would have quietly
+ * reversed.
+ *
+ * `expectedPrev` is null for the first entry of a tail, and `expectedSeq` counts from 0
+ * — seqs run contiguously from the tail's birth, which is what makes a duplicate one
+ * detectable at all.
+ */
+export type LinkBreakKind =
+  /**
+   * The entry is stored under a tail it does not name. The entry hash proves the line
+   * is self-consistent, not that it lives where it claims: without this, copying a
+   * tail's segments into a fabricated directory reads as a second, independent tail
+   * whose chain checks out, and every event is counted twice.
+   */
+  | { readonly kind: 'foreign-tail'; readonly named: string; readonly storedUnder: string }
+  | { readonly kind: 'seq-gap'; readonly expected: number; readonly found: number }
+  | { readonly kind: 'prev-break' };
+
+export function linkBreakAt(
+  tail: string,
+  entry: Entry,
+  expectedSeq: number,
+  expectedPrev: string | null,
+): LinkBreakKind | undefined {
+  if (entry.link.tail !== tail) {
+    return { kind: 'foreign-tail', named: entry.link.tail, storedUnder: tail };
+  }
+  if (entry.link.seq !== expectedSeq) {
+    return { kind: 'seq-gap', expected: expectedSeq, found: entry.link.seq };
+  }
+  if (entry.link.prev !== expectedPrev) return { kind: 'prev-break' };
+  return undefined;
+}
+
+/**
+ * The sentence a {@link LinkBreakKind} is reported as — the ONE wording, read by the
+ * verdict and by the reads alike.
+ *
+ * Total over the union, so a fourth way for a tail to stop chaining does not compile
+ * until somebody has said what a reader should be told about it.
+ */
+export function describeLinkBreak(broke: LinkBreakKind): string {
+  switch (broke.kind) {
+    case 'foreign-tail':
+      return `entry names tail ${oneLine(broke.named)}, stored under ${oneLine(broke.storedUnder)}`;
+    case 'seq-gap':
+      return `seq gap: expected ${broke.expected}, found ${broke.found}`;
+    case 'prev-break':
+      return 'prev-hash break: does not chain to the previous entry';
+  }
 }

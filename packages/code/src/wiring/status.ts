@@ -30,11 +30,17 @@ export function registerStatus(program: Command, wiring: Wiring): Declared {
       const { anchorText } = await import('../anchors.js');
       const { runStatus } = await import('../commands/status.js');
       const { statusReport } = await import('../presentation/status.js');
+      const { linkBreakNotice } = await import('./integrity.js');
       const result = runStatus(here(), { actor: opts.actor });
       if (!result.ok) {
         reportRefusal(wiring, result);
         return;
       }
+      // BEFORE the answer, and on the other stream. The opening read is where a
+      // person finds out where things stand, so it is where they have to find out
+      // that what follows came off a record whose proof is broken — and it goes
+      // first because a notice under a screenful of status is a notice nobody reads.
+      for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
       if (opts.json === true) {
         // The faithful object, byte for byte what the agent surface serves — which is
         // the property that keeps one derivation from becoming two.
