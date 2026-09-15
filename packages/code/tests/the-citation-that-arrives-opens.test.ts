@@ -56,6 +56,18 @@ import { sourceFiles } from './support/reading-source.js';
 const GATEWAY = 'ADR-008-the-gateway-is-idempotent.md';
 /** What that file says, so a case can prove it opened THAT one and not another. */
 const GATEWAY_BODY = 'Retries were duplicating charges, so every write carries a key.';
+/**
+ * A SECOND source, in the same directory, so a channel can be asked which rule a path
+ * belongs to rather than whether it printed one.
+ *
+ * MEASURED: without a second imported decision, a derivation that dropped the subject
+ * from its query — serving every provenance the tree holds to every rule — left this file
+ * entirely green. That mutation is the defect this delivery exists to fix, arriving from
+ * the other side, and one fixture cannot see it.
+ */
+const LEDGER = 'ADR-011-the-ledger-is-append-only.md';
+/** What the second file says. */
+const LEDGER_BODY = 'Nothing is edited in place, so an auditor can replay the whole of it.';
 
 /** `packages/code/src` — the tree the last case walks. */
 const SOURCE = fileURLToPath(new URL('../src', import.meta.url));
@@ -97,17 +109,37 @@ function idIn(said: Said): string {
   return id;
 }
 
-/** Imports the ADR directory for real, accepts the one decision, and returns its id. */
-async function importedAndAccepted(): Promise<string> {
+/**
+ * Imports the ADR directory for real, accepts every decision it proposed, and returns
+ * them keyed by the file each came out of.
+ *
+ * A decision an import proposes is born `proposed` — structurally, because a repository
+ * that already decided is not this product's to accept on its behalf — so each has to be
+ * accepted before any of these channels carries it at all.
+ */
+async function importedAndAccepted(): Promise<Map<string, string>> {
   const imported = await mnema('decision', 'import', 'docs/adr', '--write');
   expect(imported.failed, imported.err.join(' / ')).toBe(false);
-  const id = idIn(imported);
-  // A decision an import proposes is born `proposed` — structurally, because a repository
-  // that already decided is not this product's to accept on its behalf — so it has to be
-  // accepted before any of these channels carries it at all.
-  const accepted = await mnema('decision', 'move', 'accept', id, '--note', 'still holds');
-  expect(accepted.failed, accepted.err.join(' / ')).toBe(false);
-  return id;
+  // The echo names each proposal on one line and the file it came out of on the NEXT, so
+  // the id is carried forward rather than looked for twice — the pairing is the echo's own
+  // and a case that matched both on one line would silently find neither.
+  const byFile = new Map<string, string>();
+  let last: string | undefined;
+  for (const line of imported.out) {
+    last = line.match(/\(([0-9a-f-]{20,})\)/)?.[1] ?? last;
+    const file = line.match(/ from docs\/adr\/(\S+\.md)$/)?.[1];
+    if (file === undefined || last === undefined) continue;
+    byFile.set(file, last);
+    const accepted = await mnema('decision', 'move', 'accept', last, '--note', 'still holds');
+    expect(accepted.failed, accepted.err.join(' / ')).toBe(false);
+  }
+  expect([...byFile.keys()].sort()).toEqual([GATEWAY, LEDGER]);
+  return byFile;
+}
+
+/** The one decision this case is about, out of the import that recorded both. */
+async function gatewayRule(): Promise<string> {
+  return (await importedAndAccepted()).get(GATEWAY) as string;
 }
 
 /** Gives a rule an address under one relation. */
@@ -164,6 +196,11 @@ function provenancesIn(text: string): string[] {
   );
 }
 
+/** The rule bullets of the committed document, and nothing else it prints. */
+function bullets(text: string): string[] {
+  return text.split('\n').filter((line) => line.startsWith('- **'));
+}
+
 /** Opens a project-relative path from disk, or throws naming it. */
 function opened(relative: string): string {
   const full = join(repo, relative);
@@ -181,6 +218,10 @@ beforeEach(async () => {
   writeFileSync(
     join(repo, 'docs', 'adr', GATEWAY),
     ['# ADR-008 — The gateway is idempotent', '', '## Context', '', GATEWAY_BODY, ''].join('\n'),
+  );
+  writeFileSync(
+    join(repo, 'docs', 'adr', LEDGER),
+    ['# ADR-011 — The ledger is append-only', '', '## Context', '', LEDGER_BODY, ''].join('\n'),
   );
   originalCwd = process.cwd();
   originalXdg = process.env.XDG_DATA_HOME;
@@ -205,62 +246,76 @@ afterEach(() => {
 });
 
 describe('a rule that arrives unasked carries a path that opens', () => {
-  it('opens from the committed document', async () => {
-    const rule = await importedAndAccepted();
+  it('opens from the committed document, each rule with its own source', async () => {
+    const rules = await importedAndAccepted();
     const text = await briefText();
 
-    // THE DIVERGENCE, asserted rather than assumed: the file says 008 and the document
-    // cites ADR-1. This is the record for which the whole item exists.
-    expect(text).toContain('**ADR-1 — The gateway is idempotent**');
-    expect(text).not.toContain('ADR-008 —');
-    // ONE LINE still holds: the rule, its id and its provenance are one bullet.
-    const bullet = text.split('\n').filter((line) => line.startsWith('- **'));
-    expect(bullet).toEqual([
-      `- **ADR-1 — The gateway is idempotent** · \`${rule}\` · ${DERIVED_FROM} \`docs/adr/${GATEWAY}\``,
-    ]);
-    // AND IT OPENS. Not "a path is printed" — the bytes behind it are read back.
-    expect(opened(provenancesIn(text)[0] as string)).toContain(GATEWAY_BODY);
+    // THE DIVERGENCE, asserted rather than assumed: the files say 008 and 011 and the
+    // document cites ADR-1 and ADR-2. These are the records for which the item exists.
+    // AND THE PAIRING IS ASSERTED, which is the half a field alone does not buy: each
+    // bullet carries the source THAT rule came out of, so a derivation serving every
+    // provenance the tree holds to every rule cannot pass here.
+    // Sorted, because the ORDER of the two bullets is the document's own — most recently
+    // settled first — and this case is about the PAIRING on each line, not about that.
+    expect(bullets(text).sort()).toEqual(
+      [
+        `- **ADR-1 — The gateway is idempotent** · \`${rules.get(GATEWAY) ?? ''}\` · ${DERIVED_FROM} \`docs/adr/${GATEWAY}\``,
+        `- **ADR-2 — The ledger is append-only** · \`${rules.get(LEDGER) ?? ''}\` · ${DERIVED_FROM} \`docs/adr/${LEDGER}\``,
+      ].sort(),
+    );
+    // AND THEY OPEN. Not "a path is printed" — the bytes behind each are read back, and
+    // they are the bytes of the document that rule was made from.
+    expect(opened(`docs/adr/${GATEWAY}`)).toContain(GATEWAY_BODY);
+    expect(opened(`docs/adr/${LEDGER}`)).toContain(LEDGER_BODY);
+    expect(provenancesIn(text).sort()).toEqual([`docs/adr/${GATEWAY}`, `docs/adr/${LEDGER}`]);
   });
 
-  it('opens from the rules pushed before an edit', async () => {
-    const rule = await importedAndAccepted();
-    await addressAt(rule, 'src/collate', 'governs');
-    const { context } = pushed('src/collate/fold.ts');
+  it('opens from the rules pushed before an edit, per path', async () => {
+    const rules = await importedAndAccepted();
+    await addressAt(rules.get(GATEWAY) as string, 'src/collate', 'governs');
+    await addressAt(rules.get(LEDGER) as string, 'src/ledger', 'governs');
 
-    const line = (context ?? '').split('\n')[2];
-    expect(line).toBe(
-      `“The gateway is idempotent” — governs src/collate · ${rule} · ${DERIVED_FROM} docs/adr/${GATEWAY}`,
+    const collate = pushed('src/collate/fold.ts').context ?? '';
+    expect(collate.split('\n')[2]).toBe(
+      `“The gateway is idempotent” — governs src/collate · ${rules.get(GATEWAY) ?? ''} · ${DERIVED_FROM} docs/adr/${GATEWAY}`,
     );
     // THIS CHANNEL PRINTS NO LABEL AT ALL, so before this the uuid was the whole of what a
     // reader could follow, through the one tool the measurements say is not called. The
     // only `ADR-` on the line is inside the FILE NAME, and it is the source's own number —
     // 008, not the 1 the record froze. A case asserting the absence of the string would
     // now be asserting the absence of the fix.
-    expect(context).not.toContain('ADR-1 ');
-    expect(context).toContain('ADR-008');
-    expect(opened(provenancesIn(context ?? '')[0] as string)).toContain(GATEWAY_BODY);
+    expect(collate).not.toContain('ADR-1 ');
+    expect(collate).toContain('ADR-008');
+    expect(opened(provenancesIn(collate)[0] as string)).toContain(GATEWAY_BODY);
+
+    // The OTHER path gets the other rule's source, and neither leaks into the other.
+    const ledger = pushed('src/ledger/append.ts').context ?? '';
+    expect(provenancesIn(ledger)).toEqual([`docs/adr/${LEDGER}`]);
+    expect(opened(provenancesIn(ledger)[0] as string)).toContain(LEDGER_BODY);
   });
 
-  it('opens from the charge that stops a write', async () => {
+  it('opens from the charge that stops a write, per path', async () => {
     // THE SITE THE ITEM DID NOT NAME, and the sharpest of the three: this text comes back
     // as the result of a REFUSED call, to a reader whose work has stopped and who is most
     // likely to want the argument before arguing with it.
-    const rule = await importedAndAccepted();
-    await addressAt(rule, 'src/collate', 'asks-for-a-person');
-    const { ask } = pushed('src/collate/fold.ts');
+    const rules = await importedAndAccepted();
+    await addressAt(rules.get(GATEWAY) as string, 'src/collate', 'asks-for-a-person');
+    await addressAt(rules.get(LEDGER) as string, 'src/ledger', 'asks-for-a-person');
 
-    const line = (ask ?? '').split('\n')[2];
-    expect(line).toBe(
-      `“The gateway is idempotent” — asks for a person at src/collate · ${rule} · ${DERIVED_FROM} docs/adr/${GATEWAY}`,
+    const collate = pushed('src/collate/fold.ts').ask ?? '';
+    expect(collate.split('\n')[2]).toBe(
+      `“The gateway is idempotent” — asks for a person at src/collate · ${rules.get(GATEWAY) ?? ''} · ${DERIVED_FROM} docs/adr/${GATEWAY}`,
     );
-    expect(opened(provenancesIn(ask ?? '')[0] as string)).toContain(GATEWAY_BODY);
+    expect(opened(provenancesIn(collate)[0] as string)).toContain(GATEWAY_BODY);
+    expect(provenancesIn(pushed('src/ledger/append.ts').ask ?? '')).toEqual([`docs/adr/${LEDGER}`]);
   });
 });
 
 describe('what the channels say when the record asserts no provenance', () => {
   it('gives a rule decided here no provenance at all, on all three', async () => {
     // THE CONTRAST. Without it, a product that stamped the field on everything would pass
-    // every case above. Absent, and the line is whole without it.
+    // every case above. Absent, and the line is whole without it. Nothing is imported in
+    // this case, so the ADRs on disk are a directory the record never read.
     const recorded = await mnema('decision', 'Queues are at-least-once', 'The broker says so.');
     expect(recorded.failed, recorded.err.join(' / ')).toBe(false);
     const rule = idIn(recorded);
@@ -284,35 +339,41 @@ describe('what the channels say when the record asserts no provenance', () => {
 
 describe('a rule the record derives from more than one source', () => {
   it('carries every one of them, in the record’s own order, on one line', async () => {
-    const rule = await importedAndAccepted();
-    // A second source, linked by hand — the shape a document that MOVED leaves behind.
-    // Its target sorts BEFORE the imported one, so a channel taking "the first row" and
-    // one taking "all of them" cannot agree by accident.
+    const rules = await importedAndAccepted();
+    const gateway = rules.get(GATEWAY) as string;
+    // A second source for ONE of the two rules, linked by hand — the shape a document that
+    // MOVED leaves behind. Its target sorts BEFORE the imported one, so a channel taking
+    // "the first row" and one taking "all of them" cannot agree by accident, and the rule
+    // that did NOT get it says whether the extra source stayed where it was put.
     writeFileSync(join(repo, 'docs', 'adr', '0001-gateway-notes.md'), 'The notes.\n');
-    await addressAt(rule, 'docs/adr/0001-gateway-notes.md', 'derived-from');
-    await addressAt(rule, 'src/collate', 'governs');
+    await addressAt(gateway, 'docs/adr/0001-gateway-notes.md', 'derived-from');
+    await addressAt(gateway, 'src/collate', 'governs');
 
-    const expected = ['docs/adr/0001-gateway-notes.md', `docs/adr/${GATEWAY}`];
+    const both = ['docs/adr/0001-gateway-notes.md', `docs/adr/${GATEWAY}`];
     const text = await briefText();
-    expect(provenancesIn(text)).toEqual(expected);
+    // The rule that got the second source carries both, in the record's own order — and
+    // the rule that did not carries exactly one, which is what says the extra source
+    // stayed where it was put.
+    expect(bullets(text).map(provenancesIn).sort()).toEqual([both, [`docs/adr/${LEDGER}`]]);
     // ONE LINE PER RULE SURVIVES N SOURCES, which is the invariant the shape was chosen
     // for: two provenances are two FIELDS, never two bullets.
-    expect(text.split('\n').filter((line) => line.startsWith('- **'))).toHaveLength(1);
+    expect(bullets(text)).toHaveLength(2);
     const { context } = pushed('src/collate/fold.ts');
-    expect(provenancesIn(context ?? '')).toEqual(expected);
+    expect(provenancesIn(context ?? '')).toEqual(both);
     expect((context ?? '').split('\n')).toHaveLength(3);
-    for (const path of expected) expect(opened(path).length).toBeGreaterThan(0);
+    for (const path of both) expect(opened(path).length).toBeGreaterThan(0);
   });
 });
 
 describe('a provenance asserted privately about a public rule', () => {
   it('reaches none of the three, and `mnema refs` serves it', async () => {
-    const rule = await importedAndAccepted();
-    await addressAt(rule, 'src/collate', 'governs');
-    await addressAt(rule, 'src/collate', 'asks-for-a-person');
+    const rules = await importedAndAccepted();
+    const gateway = rules.get(GATEWAY) as string;
+    await addressAt(gateway, 'src/collate', 'governs');
+    await addressAt(gateway, 'src/collate', 'asks-for-a-person');
     const hidden = await mnema(
       'link',
-      rule,
+      gateway,
       'notes/why-i-really-did-it.md',
       '--rel',
       'derived-from',
@@ -323,14 +384,17 @@ describe('a provenance asserted privately about a public rule', () => {
 
     // A path of ONE machine, in a document that is committed and in a text pushed at
     // everybody's edit, would be a citation that resolves for exactly one reader.
-    const text = await briefText();
     const { context, ask } = pushed('src/collate/fold.ts');
-    for (const served of [text, context ?? '', ask ?? '']) {
+    expect(provenancesIn(await briefText()).sort()).toEqual([
+      `docs/adr/${GATEWAY}`,
+      `docs/adr/${LEDGER}`,
+    ]);
+    for (const served of [context ?? '', ask ?? '']) {
       expect(provenancesIn(served)).toEqual([`docs/adr/${GATEWAY}`]);
     }
     // NOT LOST, and this half is what makes the sentence above honest rather than a
     // silent drop: the read built to cross trees serves it.
-    const refs = await mnema('refs', rule);
+    const refs = await mnema('refs', gateway);
     expect(refs.failed, refs.err.join(' / ')).toBe(false);
     expect(refs.out.join('\n')).toContain('notes/why-i-really-did-it.md');
   });
@@ -367,14 +431,18 @@ describe('the word a provenance is introduced with has one source', () => {
     // The other half, and without it the case above passes on four modules that import a
     // constant and print something else. Asserted on the BYTES of all four channels — the
     // three that push and the read that serves one record whole.
-    const rule = await importedAndAccepted();
+    const rule = await gatewayRule();
     await addressAt(rule, 'src/collate', 'governs');
     await addressAt(rule, 'src/collate', 'asks-for-a-person');
     const shown = await mnema('show', rule);
+    const expected = [`docs/adr/${GATEWAY}`];
     expect(shown.failed, shown.err.join(' / ')).toBe(false);
     const { context, ask } = pushed('src/collate/fold.ts');
-    for (const served of [await briefText(), context ?? '', ask ?? '', shown.out.join('\n')]) {
-      expect(provenancesIn(served)).toEqual([`docs/adr/${GATEWAY}`]);
+    // The document carries both rules; the two pushed texts and `show` carry the one this
+    // case addressed and asked about.
+    expect(provenancesIn(await briefText()).sort()).toEqual([...expected, `docs/adr/${LEDGER}`]);
+    for (const served of [context ?? '', ask ?? '', shown.out.join('\n')]) {
+      expect(provenancesIn(served)).toEqual(expected);
     }
   });
 });
