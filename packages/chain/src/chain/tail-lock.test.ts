@@ -59,12 +59,12 @@ const env = (w: ChainWriter, subject: string) => ({
 });
 
 /** A writer on the shared tail. Every one of these lands on the SAME tail id. */
-function openWriter(opts?: { maxUnsignedEvents?: number }): ChainWriter {
+function openWriter(opts?: { maxUnsignedEvents?: number; maxSegmentBytes?: number }): ChainWriter {
   return openChainForWriting(root, { keyRoot: root, ...opts });
 }
 
 /** Founds the anchor so `verify` can reach green, and returns the writer. */
-function founded(opts?: { maxUnsignedEvents?: number }): ChainWriter {
+function founded(opts?: { maxUnsignedEvents?: number; maxSegmentBytes?: number }): ChainWriter {
   const w = openWriter(opts);
   w.append(identityFounded(env(w, w.anchor), { foundingFp: w.signerFingerprint }));
   return w;
@@ -147,6 +147,29 @@ describe('two writers of one tail do not write over each other', () => {
       expect(from).toBe(expected);
       expected = (to as number) + 1;
     }
+    expect(verify(root, upcasters).ok).toBe(true);
+  });
+
+  it('notices the other writer rolling onto a segment this one does not know about', () => {
+    // THE CASE THE FIRST DRAFT OF THIS FILE DID NOT HAVE, and it was the mutation
+    // that found it: blinding the mark to a new segment left 0 tests red. The
+    // doc-comment on `TailMark` argued the case was unreachable — "a roll is always
+    // PRECEDED by growth we would have seen" — and that is false. The growth that
+    // pushes a segment over its cap happens BEFORE this writer's mark is taken, so
+    // the other writer's next append lands in a segment whose birth is the only
+    // trace: the segment we are watching does not change size at all.
+    //
+    // A cap of one byte makes every append roll, which is what puts three acts
+    // inside that window instead of four million.
+    const a = founded({ maxSegmentBytes: 1, maxUnsignedEvents: 10_000 });
+    const b = openWriter({ maxSegmentBytes: 1, maxUnsignedEvents: 10_000 });
+
+    a.append(task(a, 'a1')); // rolls: lands in a segment of its own
+    b.append(task(b, 'b1')); // rolls again, in a segment `a` has never seen
+    a.append(task(a, 'a2')); // only a NEW SEGMENT says the tail moved
+
+    const seqs = entries().map((entry) => entry.link.seq);
+    expect(seqs).toStrictEqual([0, 1, 2, 3]);
     expect(verify(root, upcasters).ok).toBe(true);
   });
 

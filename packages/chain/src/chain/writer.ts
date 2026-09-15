@@ -131,9 +131,18 @@ export interface WriterOptions {
  * The three are not a sample, they are the complete set of ways another writer can
  * change what this one is holding: it can grow the segment we are writing (bytes),
  * roll onto the next one (a segment we do not know about appearing), or sign a
- * checkpoint (the coverage moving under our buffer). A roll is always PRECEDED by
- * growth we would have seen, so `nextSegment` is a belt to `segmentBytes`' braces —
- * it covers the one window where both happen between our last look and this one.
+ * checkpoint (the coverage moving under our buffer).
+ *
+ * THIS COMMENT ONCE ARGUED that `nextSegment` was redundant — "a roll is always
+ * preceded by growth we would have seen" — and the mutation battery falsified it:
+ * blinding the mark to a new segment left ZERO tests red, which is a finding and not
+ * a pass, and writing the case the argument said was unreachable turned it red. The
+ * growth that pushes a segment over its cap happens BEFORE this writer's mark is
+ * taken, not after; so the other writer opens, sees a full segment, rolls, and writes
+ * every byte of its entry somewhere this writer is not looking. The segment we are
+ * watching does not move at all. The case is
+ * `tail-lock.test.ts > notices the other writer rolling onto a segment this one does
+ * not know about`.
  */
 interface TailMark {
   /** Size of the segment this writer believes it is appending to, or -1 if absent. */
