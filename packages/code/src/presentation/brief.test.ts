@@ -89,6 +89,20 @@ function pattern(n: number, name = `Pattern number ${n}`) {
   return { id: `0198f3c1-7a2e-7b41-9c05-3d8e6f2a2b${String(n).padStart(2, '0')}`, name };
 }
 
+/**
+ * The same rule, with the provenance the record asserts for it — as many sources as asked
+ * for.
+ *
+ * A13: every target here is a value a `derived-from` link really takes. The relation holds
+ * whatever the writer typed, a path or an id, and neither is validated on the way in.
+ */
+function derivedFrom(rule: { readonly id: string }, sources: number) {
+  return {
+    ...rule,
+    origin: Array.from({ length: sources }, (_, at) => `docs/adr/ADR-00${at + 1}-a-source.md`),
+  };
+}
+
 /** The document as one string, the way a stream receives it. */
 function printed(brief: Brief): string {
   return briefDocument(brief).join('\n');
@@ -231,6 +245,40 @@ describe('the brief costs one line per rule', () => {
     // test instead of a decision.
     expect(none).toBe(38);
     expect(none).toBeLessThanOrEqual(42);
+  });
+
+  it('grows by one line per rule however many sources the rule names', () => {
+    // THE SLOPE ABOVE WENT BLIND ON A FIELD THIS FILE'S FIXTURE DOES NOT SET, and that is
+    // why this case is separate rather than folded into it. Measured: printing a rule's
+    // provenance on a LINE OF ITS OWN — the shape `presentation/record.ts` uses, and the
+    // one the delivery that put this fact here refused — left `twoEach - oneEach` at
+    // exactly 2 and the whole of that case green, because every rule in it has no
+    // provenance at all. A rule WITH one is the only input that can tell the two shapes
+    // apart, and the invariant is about rules the record actually holds.
+    const bare = briefDocument(governance({ decisions: [decision(1)] })).length;
+    const one = briefDocument(governance({ decisions: [derivedFrom(decision(1), 1)] })).length;
+    const three = briefDocument(governance({ decisions: [derivedFrom(decision(1), 3)] })).length;
+    expect(one).toBe(bare);
+    expect(three).toBe(bare);
+    // And the slope itself, over rules that all carry one: still exactly one line each,
+    // for decisions and patterns alike.
+    const oneEach = briefDocument(
+      governance({
+        decisions: [derivedFrom(decision(1), 1)],
+        skills: [derivedFrom(pattern(1), 2)],
+      }),
+    ).length;
+    const twoEach = briefDocument(
+      governance({
+        decisions: [derivedFrom(decision(1), 1), derivedFrom(decision(2), 3)],
+        skills: [derivedFrom(pattern(1), 2), derivedFrom(pattern(2), 1)],
+      }),
+    ).length;
+    expect(twoEach - oneEach).toBe(2);
+    // NOT VACUOUS: the provenances are on the lines, so what was just measured is the cost
+    // of a document that carries them and not of one that dropped them.
+    const text = printed(governance({ decisions: [derivedFrom(decision(1), 3)] }));
+    expect(text.split('derived from')).toHaveLength(4);
   });
 
   it('says how many rules there are, and prints exactly that many', () => {
