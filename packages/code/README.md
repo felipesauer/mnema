@@ -640,9 +640,18 @@ mnema brief
 #> Each was accepted, and none of them superseded. For the argument behind one, ask
 #> `read_record` for its id.
 #>
+#> 241 more decisions are recorded here and awaiting a judgement, and none is below.
+#> Nothing waiting governs anything yet; ask `bootstrap` for what is waiting.
+#>
 #> - **ADR-2 — Keep the runbook in the record** · `019faa06-30e1-7a41-9c05-3d8e6f2a1b44`
 #> - **ADR-1 — Rotate the credentials every quarter** · `019faa06-335f-7b02-8e11-6c2fa9d41e07`
 ```
+
+Each heading says how many are **awaiting a judgement** — recorded here, ruled on by
+nobody, and not in the list under it. A heading that counted only what it printed was
+true and left the wrong impression: `## Decisions in force (6)` over a record holding
+247 decisions reads, to the agent this file is written for, as a project that decided
+six things. Zero says so in words, for the reason every other empty thing here does.
 
 The verb writes **nothing**: the redirection is yours, so the file stays a file you
 own — mnema has never written outside its own tree, and a generated file with two
@@ -664,9 +673,11 @@ It carries the **rules and the names** — a decision by title and `ADR-<n>` lab
 pattern by name — and neither body: `mnema show <id>` is the argument behind a
 decision and the text of a pattern. It carries **no work list**, deliberately: a
 queue changes by the hour, and a copy of one in a hand-regenerated file would be
-wrong between two runs, which is the one thing this record exists not to be. And it
-is never **cut by size** — a rule missing from the file is a rule the agent does not
-follow.
+wrong between two runs, which is the one thing this record exists not to be. The
+counts of what is awaiting a judgement are not that: a count over the record moves
+only when the record does, where the names in it move by the hour — and the names are
+`mnema status --actor <id>`. And it is never **cut by size** — a rule missing from the
+file is a rule the agent does not follow.
 
 What it does leave out is the record that **does not travel**. A decision or a pattern
 recorded with `--scope private`, or in your machine-global tree, governs your own work
