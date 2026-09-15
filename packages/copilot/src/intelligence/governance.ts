@@ -106,11 +106,12 @@ import {
   ASKS_FOR_A_PERSON_RELATION,
   GOVERNS_RELATION,
   type LinkEdge,
+  type ProjectionCache,
   type Scope,
   type SearchKind,
 } from '@mnema/core';
 import { decisionsInForce } from '../context/decisions.js';
-import { type RecordBody, readRecord } from '../context/search.js';
+import { originOf, type RecordBody, readRecord } from '../context/search.js';
 import { adoptedSkills } from '../context/skills.js';
 import type { ScopedCache } from '../sources.js';
 
@@ -601,6 +602,22 @@ export interface PushedRule {
    * direction that cannot mislead.
    */
   readonly travels: boolean;
+  /**
+   * Where the record says the rule CAME FROM — the target of every `derived-from` edge
+   * the rule's own tree asserts about it. Absent when it asserts none, which is the
+   * ordinary case for a rule decided here rather than imported.
+   *
+   * WHY A PUSHED LINE CARRIES IT. Everything else on the line is a handle into this
+   * product: the id opens with `read_record`, and the measurements behind the informing
+   * channel say that tool is not called. A provenance is the one fact on the line that
+   * opens with the tools the reader is ALREADY holding — `cat`, a file read — so it is
+   * what makes an unasked text followable without asking for anything.
+   *
+   * IT IS A TARGET AND NOT A PATH, and nothing here checks that it resolves: the
+   * relation takes an id as readily as a file name, and the reads that serve this fact
+   * on request pass it through for the same reason. `mnema refs` says whether it lands.
+   */
+  readonly origin?: readonly string[];
 }
 
 /** The rules in force addressed at a path, and the path they were matched against. */
@@ -723,6 +740,14 @@ function inForceUnder(
       // function is actually about: a rule that IS readable and is not in force.
       const name = inForce.get(rule.rule);
       if (name === undefined) return [];
+      // WHERE IT CAME FROM, read out of the tree that HOLDS the rule and no other. A
+      // link is legitimately cross-tree, so the private tree may assert a provenance
+      // about a public decision; serving that here would put a file of one machine into
+      // a text pushed at everybody's edit, and the id beside it would resolve in a clone
+      // while the path would not. `rule.scope` is the rule's own tree and it is defined
+      // for everything that reaches this point — an address whose subject resolves
+      // nowhere has no state, so it was never in the in-force set.
+      const origin = originOf(cachesOf(sources, rule.scope), rule.rule);
       return [
         {
           id: rule.rule,
@@ -733,10 +758,31 @@ function inForceUnder(
           // not a case, and it prints something true either way.
           address: rule.address ?? rule.recorded,
           travels: rule.scope === TRAVELS_TO_A_CLONE,
+          // Absent, never empty: a rule decided here has no provenance, and an empty
+          // list would give the line a field with nothing in it.
+          ...(origin.length > 0 ? { origin } : {}),
         },
       ];
     }),
   };
+}
+
+/**
+ * The caches of `sources` that are in `scope` — the trees a rule of that scope lives in.
+ *
+ * It is a FILTER and not a lookup because a caller may be holding several projects' trees
+ * at one scope, and this module never decides which project a rule belongs to: the query
+ * carries a root and the addressing does that work. What this narrowing buys is the one
+ * thing that is this module's to get right — that a fact read about a rule comes from the
+ * kind of tree the rule itself lives in, so nothing private is served beside a rule that
+ * travels.
+ *
+ * An undefined scope means no tree here holds the rule at all, and it selects nothing:
+ * there is no tree to have asserted anything about a record nobody can read.
+ */
+function cachesOf(sources: readonly ScopedCache[], scope: Scope | undefined): ProjectionCache[] {
+  if (scope === undefined) return [];
+  return sources.filter((source) => source.scope === scope).map((source) => source.cache);
 }
 
 /**

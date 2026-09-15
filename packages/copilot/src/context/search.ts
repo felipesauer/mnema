@@ -289,7 +289,19 @@ function hiddenByLimit(
 
 /**
  * Where a record was DERIVED FROM, as the record itself says: the target of every
- * `derived-from` edge whose subject is this id, in the tree that holds it.
+ * `derived-from` edge whose subject is this id, in the trees the caller hands over.
+ *
+ * THE ONE READING OF THIS FACT, and that is why it is exported. It answers `readRecord`
+ * below, the committed document (`context/brief.ts`) and the two channels that PUSH
+ * (`intelligence/governance.ts`), which is four callers in three modules — and a rule
+ * read four ways is the shape that produces a silent divergence between what one channel
+ * cites and what another does, over the same edge.
+ *
+ * WHICH TREES IS THE CALLER'S, and the parameter is a list for that reason rather than
+ * for reach. `readRecord` passes the ONE tree that holds the record (see below); the
+ * document and the pushes pass the trees they are already composed of, which is where
+ * each of them has already decided what travels. A default here would be this function
+ * deciding a question that belongs to four different answers.
  *
  * WHY A READ CARRIES THIS AT ALL. `mnema decision import` reads a directory of ADRs and
  * freezes its own `ADR-<n>` into each decision, so a file named `ADR-008` becomes `ADR-2`
@@ -300,15 +312,25 @@ function hiddenByLimit(
  * reader to exactly one of them for the argument behind a decision — so the door the
  * product NAMES was the door without the fact.
  *
+ * "THE THREE READS" WAS THE WHOLE OF IT AND IT IS NOT ANY MORE, and the sentence is kept
+ * because its argument is what the rest stands on. Those three are the reads somebody
+ * ASKS for. Measured on a real clone of 247 imported decisions: 241 of the labels name a
+ * different file from the one they came from, and five of the six the committed document
+ * printed were among them. That document and the two texts pushed at an edit are the
+ * channels that arrive UNASKED, and they carried the label without the edge — so the one
+ * reader who never chose to read was the one reader with no way to open anything. They
+ * are the N+1 site of this rule, and they are callers of this function now.
+ *
  * ALL OF THEM, NEVER ONE OF N. A subject may carry several provenance edges (a document
  * that moved, a second source linked by hand), and a read that reduced N to 1 would be
  * choosing by whatever order rows came back in — the defect class this bench has already
  * paid for, where the order of a third party's file decided which of two sentences a
- * verdict printed. So it is a list, in `listLinksFrom`'s order: by target, a property of
- * the CONTENT rather than of when the edges were written.
+ * verdict printed. So it is a list, ordered by target — a property of the CONTENT rather
+ * than of when the edges were written or of where the caller put a tree in its list.
  *
- * THE TREE THAT HOLDS THE RECORD, AND ONLY IT. A link is legitimately cross-tree, so a
- * `derived-from` edge asserted in the private tree could name a public decision. This
+ * THE TREE THAT HOLDS THE RECORD, AND ONLY IT, is what `readRecord` passes. A link is
+ * legitimately cross-tree, so a
+ * `derived-from` edge asserted in the private tree could name a public decision. That
  * read does not go looking for one, for three reasons that agree: the import writes the
  * decision and its provenance through ONE writer into ONE tree, so the pair is same-tree
  * by construction; `show` stops at the first tree that answers, because opening the rest
@@ -319,9 +341,11 @@ function hiddenByLimit(
  * NOT lost: `mnema refs` crosses trees by design and labels each assertion with the tree
  * that made it.
  *
- * It is ABSENT rather than empty when the record asserts none, so a decision written
- * here by hand — the ordinary case — carries no field at all, and nobody can read `[]`
- * as "derived from nothing in particular".
+ * EMPTY WHEN THE RECORD ASSERTS NONE, and turning that into an ABSENCE is the caller's:
+ * `readRecord` serves a record whole and drops the field so nobody reads `[]` as "derived
+ * from nothing in particular", while a channel that composes a LINE has no field to drop
+ * and simply prints nothing. The distinction is a property of a served shape, so it is
+ * made where the shape is.
  *
  * THE TARGET IS WHATEVER THE LINK ASSERTED, and the import is not the only writer of
  * one. This was drafted as though a provenance always named a FILE, and the command
@@ -332,15 +356,27 @@ function hiddenByLimit(
  * deciding which of the two it is. `mnema refs` is still the read that says whether a
  * target RESOLVES.
  */
-function originOf(
-  cache: ScopedCache['cache'],
-  id: string,
-): { readonly origin?: readonly string[] } {
-  const derived = cache
-    .listLinksFrom(id)
+export function originOf(caches: readonly ScopedCache['cache'][], id: string): string[] {
+  return caches
+    .flatMap((cache) => cache.listLinksFrom(id))
     .filter((edge) => edge.rel === DERIVED_FROM_RELATION)
-    .map((edge) => edge.target);
-  return derived.length > 0 ? { origin: derived } : {};
+    .map((edge) => edge.target)
+    .sort(byTarget);
+}
+
+/**
+ * String order over the targets, as a number — the ONE order this answer has.
+ *
+ * `listLinksFrom` already returns a cache's own edges by target, so for the single-tree
+ * call this is a re-sort of a sorted list and changes nothing. It is here for the caller
+ * that passes SEVERAL caches: concatenation would order by the position of a tree in the
+ * caller's list, and one of those callers is the committed document, whose whole claim is
+ * that the same record is the same bytes. `localeCompare` is deliberately not used — its
+ * answer depends on the machine's ICU data, which is the class of thing that document
+ * must not hold.
+ */
+function byTarget(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 /**
@@ -362,11 +398,15 @@ export function readRecord(sources: readonly ScopedCache[], id: string): RecordB
     // rather than per kind so the five returns below cannot come to disagree about
     // what "where" means — which is also why the provenance is read here and not in
     // one arm: nothing about a `derived-from` edge is particular to a decision.
+    // ABSENT RATHER THAN EMPTY when the record asserts none, so a decision written here
+    // by hand — the ordinary case — carries no field at all and nobody reads `[]` as
+    // "derived from nothing in particular".
+    const origin = originOf([cache], id);
     const held = {
       id,
       scope,
       ...(project !== undefined ? { project } : {}),
-      ...originOf(cache, id),
+      ...(origin.length > 0 ? { origin } : {}),
     };
     const memory = cache.getMemory(id);
     if (memory !== null) return { kind: 'memory', ...held, record: memory };

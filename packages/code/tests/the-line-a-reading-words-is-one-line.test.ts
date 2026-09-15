@@ -474,13 +474,25 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'how many rules are printed under the heading — a count this document made',
   },
-  'brief.ts «- **{}** · \\`{}\\`» oneLine(name) #1': {
+  'brief.ts «- **{}** · \\`{}\\`{}» oneLine(name) #1': {
     verdict: 'collapsed',
     why: 'the rule’s name: a title an actor wrote, or a pattern’s name',
   },
-  'brief.ts «- **{}** · \\`{}\\`» oneLine(id) #1': {
+  'brief.ts «- **{}** · \\`{}\\`{}» oneLine(id) #1': {
     verdict: 'collapsed',
     why: 'the record id — minted, and collapsed anyway because the rule is the line’s',
+  },
+  'brief.ts «- **{}** · \\`{}\\`{}» from #1': {
+    verdict: 'composed',
+    why: 'the provenance fields, one per source — each already collapsed in the template below, which is why this bullet can take them whole',
+  },
+  'brief.ts « · {} \\`{}\\`» DERIVED_FROM #1': {
+    verdict: 'minted',
+    why: 'the one word this product introduces a provenance with, a constant of `provenance.ts` shared by the four printers of the fact',
+  },
+  'brief.ts « · {} \\`{}\\`» oneLine(target) #1': {
+    verdict: 'collapsed',
+    why: 'where the record says the rule came from — a link target the writer supplied, which nothing validates on the way in, on the sharpest line there is',
   },
   'brief.ts «\\`{}\\`» oneLine(id) #1': {
     verdict: 'collapsed',
@@ -600,7 +612,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the id that superseded it, on the same terms',
   },
-  'record.ts «derived from {}» oneLine(path) #1': {
+  'record.ts «{} {}» DERIVED_FROM #1': {
+    verdict: 'minted',
+    why: 'the one word this product introduces a provenance with — a constant of `provenance.ts`, shared so the four channels that print this fact cannot drift into two words for it',
+  },
+  'record.ts «{} {}» oneLine(path) #1': {
     verdict: 'collapsed',
     why: 'a path the writer supplied as a link target, which nothing validates on the way in',
   },
@@ -1370,7 +1386,7 @@ describe('every value this layer puts on a line is classified', () => {
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
     expect(FOUND.builders.length).toBeGreaterThan(10);
-    expect(FOUND.sites.length).toBe(219);
+    expect(FOUND.sites.length).toBe(223);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1391,10 +1407,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(56);
-    expect(count('minted')).toBe(125);
-    expect(count('composed')).toBe(38);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(56);
+    expect(count('collapsed')).toBe(57);
+    expect(count('minted')).toBe(127);
+    expect(count('composed')).toBe(39);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(57);
   });
 
   it('every reason says where the value comes from', () => {

@@ -41,8 +41,9 @@
  *
  * ## Every value on a line came out of the record, so every one is ONE line
  *
- * The rule's name, the address somebody typed, and the id — a link's subject reaches the
- * chain without being checked to exist, so all three are callers' strings. They go through
+ * The rule's name, the address somebody typed, the id, and the provenance — a link's
+ * subject and its target both reach the chain without being checked to exist, so all of
+ * them are callers' strings. They go through
  * {@link oneLine} HERE, at the one place a line is built. A name holding a newline would end
  * its own line and start a second one, and on this channel the second line would read as a
  * rule this project never made, in the text explaining why somebody's work stopped.
@@ -50,6 +51,7 @@
 
 import type { PushedRule, RulesAtPath } from '@mnema/copilot';
 import { oneLine } from './one-line.js';
+import { DERIVED_FROM } from './provenance.js';
 import { recordFramingBlock } from './record-framing.js';
 
 /**
@@ -120,15 +122,33 @@ export function ourWordsInAsking(at: RulesAtPath): readonly string[] {
 }
 
 /**
- * One rule, as one line: what it says, the address that asked, and the id.
+ * One rule, as one line: what it says, the address that asked, the id, and where the
+ * record says the rule came from.
  *
  * The words differ from the informing channel's by one — `asks for a person at` where that
  * one says `governs` — and the difference is the relation's own label rather than a
  * flourish: a reader who sees both channels in one session must be able to tell which fact
- * produced which text, and the relation is the only thing that separates them. The id comes
- * last because it is what a reader copies, and here that is what somebody supersedes,
- * removes or argues with to get their afternoon back.
+ * produced which text, and the relation is the only thing that separates them.
+ *
+ * THE PROVENANCE IS LAST, AND THIS IS THE CHANNEL THAT MOST NEEDED IT. This module was not
+ * named by the item that put the fact on the two channels that inform; it was found by
+ * asking which sites carry a {@link PushedRule}, and it is the sharpest of the three. The
+ * reader of this text has had their write STOPPED, and what they are handed to act on is a
+ * name somebody typed and a uuid that opens through one tool. The id is still here — it is
+ * what somebody supersedes, removes or argues with to get their afternoon back, and a
+ * charge that cannot name the fact that caused it does not happen — but a person who wants
+ * to read the ARGUMENT before arguing can now open a file instead of asking for one.
+ *
+ * ONE FIELD PER SOURCE, the word repeated rather than the targets joined by a comma, for
+ * the reason the informing channel gives: a file name may hold a comma.
+ *
+ * It goes through {@link oneLine} with the rest, on the same terms: a link's target is a
+ * caller's string, and on THIS channel a second line would read as a rule this project
+ * never made, inside the text explaining why somebody's work stopped.
  */
 function askLine(rule: PushedRule): string {
-  return `“${oneLine(rule.name)}” — asks for a person at ${oneLine(rule.address)} · ${oneLine(rule.id)}`;
+  const from = (rule.origin ?? [])
+    .map((target) => ` · ${DERIVED_FROM} ${oneLine(target)}`)
+    .join('');
+  return `“${oneLine(rule.name)}” — asks for a person at ${oneLine(rule.address)} · ${oneLine(rule.id)}${from}`;
 }

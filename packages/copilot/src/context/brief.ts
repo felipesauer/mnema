@@ -117,8 +117,31 @@ import {
 } from '@mnema/core';
 import type { ScopedCache } from '../sources.js';
 import { type DecisionRef, decisionsAwaitingJudgement, decisionsInForce } from './decisions.js';
+import { originOf } from './search.js';
 import { adoptedSkills, type SkillRef, skillsAwaitingJudgement } from './skills.js';
 import { type ChannelState, channelStates } from './switches.js';
+
+/**
+ * A rule of this document with the provenance the record asserts for it — the file it
+ * was derived from, when it was derived from one.
+ *
+ * WHY IT IS ON THE RULE AND NOT LEFT TO A SECOND READ. The `ADR-<n>` beside a rule is a
+ * counter of THIS chain, and `decision import` freezes it at write time: measured on a
+ * real project of 247 imported decisions, 241 of those labels name a different file from
+ * the one the decision came from, and five of the six this document printed were among
+ * them. The label is still the citable handle and it is not re-derived (two clones would
+ * then cite different decisions), so what closes the gap is the other fact the record
+ * already holds — the `derived-from` edge the import wrote, whose target carries the
+ * source's own number inside it.
+ *
+ * ABSENT, NEVER EMPTY, for the reason `readRecord` gives: a rule decided here by hand has
+ * no provenance at all, and an empty list would read as "derived from nothing".
+ *
+ * IT IS A TARGET AND NOT A PATH, as everywhere else this fact is served: `derived-from`
+ * takes an id as readily as a file name. Nothing here checks that it resolves, and
+ * nothing here touches a disk — this document must be a pure function of the record.
+ */
+export type WithOrigin<T> = T & { readonly origin?: readonly string[] };
 
 /**
  * The one tree whose record TRAVELS — typed, so a typo fails the build.
@@ -140,13 +163,13 @@ export interface Brief {
    * `alternatives` it turned down. Both come from {@link readRecord}, asked about
    * the one decision that bears on the task at hand.
    */
-  readonly decisions: readonly DecisionRef[];
+  readonly decisions: readonly WithOrigin<DecisionRef>[];
   /**
    * The patterns adopted in the tree that travels, by name, ordered by name. Never
    * the body: the pattern itself comes from {@link adoptedSkills}, asked for the one
    * that matches.
    */
-  readonly skills: readonly SkillRef[];
+  readonly skills: readonly WithOrigin<SkillRef>[];
   /**
    * The `ADR-<n>` labels PRINTED above that more than one decision of the same
    * chain answers to, each with every id that carries it. Empty in the ordinary
@@ -331,7 +354,7 @@ export function brief(sources: readonly ScopedCache[], channels: BriefChannels):
   const decisions = decisionsInForce(travels);
   const skills = adoptedSkills(travels);
   return {
-    decisions,
+    decisions: decisions.map((decision) => withOrigin(travels, decision)),
     // The body is dropped by MAPPING, not by typing: a `ServedSkill` satisfies
     // `SkillRef`, so assigning the list straight across would compile and carry
     // every pattern's whole text along at run time — into a file that is read on
@@ -339,7 +362,7 @@ export function brief(sources: readonly ScopedCache[], channels: BriefChannels):
     // What it drops the `state` for is narrower: this file carries only what
     // GOVERNS, and `adoptedSkills` answers `adopted` and nothing else, so a state
     // printed here would be one word repeated once per rule.
-    skills: skills.map(({ id, name }) => ({ id, name })),
+    skills: skills.map(({ id, name }) => withOrigin(travels, { id, name })),
     collisions: printedCollisions(travels, decisions),
     addressed: countAddressed(travels, [...decisions, ...skills]),
     // Asked of the COMMITTED sources alone, for the reason the whole answer is: a switch
@@ -362,6 +385,29 @@ export function brief(sources: readonly ScopedCache[], channels: BriefChannels):
     // "off" means, in one paragraph.
     ...channelPair(committed, channels),
   };
+}
+
+/**
+ * One rule with the provenance the committed record asserts for it, or the rule
+ * unchanged when it asserts none.
+ *
+ * THE TREES THAT TRAVEL, AND ONLY THEM — the same list every other fact of this document
+ * is read from. A `derived-from` edge asserted in the private tree names a file of this
+ * machine, and putting one here would print on the machine that wrote it and vanish in
+ * the clone, inside a file that is committed and compared with `diff`. `mnema refs` is
+ * the read that crosses trees.
+ *
+ * It is {@link originOf} and not a second reading of the same edge: the record's own
+ * provenance is what `show`, `show --json` and `read_record` already serve, and a
+ * document citing a different answer from the read it sends people to would be the
+ * divergence this file spends its length avoiding.
+ */
+function withOrigin<T extends { readonly id: string }>(
+  travels: readonly ProjectionCache[],
+  rule: T,
+): WithOrigin<T> {
+  const origin = originOf(travels, rule.id);
+  return origin.length > 0 ? { ...rule, origin } : rule;
 }
 
 /**

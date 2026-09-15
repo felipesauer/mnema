@@ -45,6 +45,7 @@ import type { RecordBody } from '@mnema/copilot';
 import type { TransitionProof } from '@mnema/core';
 import { type AnchorForms, anchorText } from '../anchors.js';
 import { oneLine } from '../one-line.js';
+import { DERIVED_FROM } from '../provenance.js';
 import { consultedLine } from './consultation.js';
 import { fact, statedFact, subjectLine } from './detail.js';
 import type { Render } from './render.js';
@@ -101,12 +102,19 @@ function movesSaid(proof: readonly TransitionProof[] | undefined): string[] {
  * It is a target and not a path: `derived-from` takes an id as readily as a file name,
  * and the command line's golden already held a task derived from another task.
  *
+ * THE WORD IS NOT THIS FILE'S ANY MORE ({@link DERIVED_FROM}). It was, while the fact was
+ * served only by the reads somebody ASKS for; the channels that arrive unasked print it
+ * too now — the committed document and the two texts pushed at an edit — and four
+ * printers spelling one relation by hand is the shape that drifts. The collapse stays
+ * here, inside this template, because that is what the line guard over this layer can
+ * see.
+ *
  * ALL OF THEM, in the order the read handed them (by target — see `originOf`), because
  * a record may assert several and choosing one of N would put the answer at the mercy
  * of row order.
  */
 function originFacts(render: Render, body: RecordBody): string[] {
-  return (body.origin ?? []).map((path) => render(fact(`derived from ${oneLine(path)}`)));
+  return (body.origin ?? []).map((path) => render(fact(`${DERIVED_FROM} ${oneLine(path)}`)));
 }
 
 /**
