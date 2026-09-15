@@ -95,7 +95,7 @@ import type { UpcasterRegistry } from '../events/upcaster.js';
 import { oneLine } from '../one-line.js';
 import { type Checkpoint, checkpointHash, verifyCheckpoint } from './checkpoint.js';
 import { resolveIdentity } from './enrollment.js';
-import type { Entry } from './entry.js';
+import { describeLinkBreak, type Entry, linkBreakAt } from './entry.js';
 import { entryHash } from './hash.js';
 import { fingerprintOf, type KeyObject, publicKeyFromPem } from './keys.js';
 import { type ChainLayout, publicKeyPath, tailFingerprint, tailProofPath } from './layout.js';
@@ -595,40 +595,22 @@ function verifyHashChain(tail: string, entries: readonly Entry[], issues: TailIs
   let expectedPrev: string | null = null;
   let expectedSeq = 0;
   for (const entry of entries) {
-    // Bind the entry to the tail directory it was read from. `entry.link.tail`
-    // is the value stored IN the line and is folded into the entry hash, but the
-    // hash alone only proves the line is self-consistent — not that it lives
-    // where it claims. Without this check, copying a tail's segments into a
-    // fabricated `tails/<other>/` directory (its stored link.tail still naming
-    // the original) reads as a second, independent tail: the hash chain within
-    // it still checks out, so verify stays green and a projection counts every
-    // event twice. Requiring the stored tail to equal the directory closes that
-    // relocation/duplication path — including in the residual window, where no
-    // checkpoint's own `tail` field would otherwise catch it.
-    if (entry.link.tail !== tail) {
+    // THE THREE STRUCTURAL QUESTIONS ARE NOT ASKED HERE ANY MORE — they are asked by
+    // {@link linkBreakAt}, which the plain READ of a tail asks too (`store.ts`). They
+    // used to be spelled out in this loop, and a reader that served the tail without
+    // asking them was how a chain `verify` exits 1 over was still answered by
+    // `search` and `status` with no word about it. A verdict and a reading that
+    // disagree about whether a tail chains is the divergence the shared function
+    // exists to make impossible; the layering below (the entry hash, and everything
+    // T2/T4 does) stays this file's.
+    const broke = linkBreakAt(tail, entry, expectedSeq, expectedPrev);
+    if (broke !== undefined) {
+      // A break makes everything after it unanchored; stop here.
       issues.push({
         tail,
         layer: 'T1',
         seq: entry.link.seq,
-        detail: `entry names tail ${oneLine(entry.link.tail)}, stored under ${oneLine(tail)}`,
-      });
-      return;
-    }
-    if (entry.link.seq !== expectedSeq) {
-      issues.push({
-        tail,
-        layer: 'T1',
-        seq: entry.link.seq,
-        detail: `seq gap: expected ${expectedSeq}, found ${entry.link.seq}`,
-      });
-      return; // a gap makes everything after it unanchored; stop here
-    }
-    if (entry.link.prev !== expectedPrev) {
-      issues.push({
-        tail,
-        layer: 'T1',
-        seq: entry.link.seq,
-        detail: 'prev-hash break: does not chain to the previous entry',
+        detail: describeLinkBreak(broke),
       });
       return;
     }

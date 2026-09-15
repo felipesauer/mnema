@@ -15,6 +15,7 @@ import {
   type ChainLayout,
   catalogUpcasters,
   type EventKind,
+  type LinkBreak,
   type UpcasterRegistry,
 } from '@mnema/chain';
 import { ensureSchema } from '../db/schema.js';
@@ -105,6 +106,20 @@ export class ProjectionCache {
    */
   private order: readonly CatalogEvent[] = [];
   private frontier: ChainFrontier | undefined;
+  /**
+   * The tails of this tree that do not chain, as of the last replay.
+   *
+   * It is held HERE rather than asked for on demand because it is a by-product of the
+   * reading that already happened — asking again would mean reading the chain a second
+   * time to learn something the first reading had in its hands. The reads that serve
+   * this cache take it from {@link linkBreaks}.
+   *
+   * {@link refresh} never leaves it stale: the incremental path refuses to call a
+   * broken run of arrivals a suffix (`AN_ARRIVAL_DOES_NOT_CHAIN`), so a break that
+   * appears after the last full replay forces one, and a full replay always rewrites
+   * this.
+   */
+  private breaks: readonly LinkBreak[] = [];
 
   private constructor(
     private readonly db: SqliteDatabase,
@@ -134,6 +149,25 @@ export class ProjectionCache {
     rebuild(this.db, replay.events);
     this.order = replay.events;
     this.frontier = replay.frontier;
+    this.breaks = replay.linkBreaks;
+  }
+
+  /**
+   * Where this tree's record stops chaining — empty for every record the product
+   * wrote on its own, and the one thing a READ can say about the proof without paying
+   * for `verify`.
+   *
+   * It answers a question no projection can: the tables are built from the events in
+   * order, and a duplicate `seq` puts BOTH events in them, so a search over a broken
+   * record looks exactly like a search over an intact one. The fact that the two
+   * cannot both be in the right place lives in the entries' links, which the
+   * projections do not carry, so the reading has to hand it up or it is gone.
+   *
+   * It does NOT mean the record is otherwise sound, and no reader may print it as if
+   * it did: signatures, checkpoints and witnesses are not asked here. `verify` rules.
+   */
+  get linkBreaks(): readonly LinkBreak[] {
+    return this.breaks;
   }
 
   /**

@@ -35,8 +35,10 @@ import {
   type CatalogEvent,
   type ChainLayout,
   type Entry,
+  type LinkBreak,
   listTails,
   orderedSegments,
+  readTail,
   readTailEntries,
   readTailTip,
   type UpcasterRegistry,
@@ -61,6 +63,8 @@ interface TailStream {
    */
   readonly tail: string;
   readonly lastSeq: number;
+  /** Where this tail stopped chaining, if it did — carried with the reading of it. */
+  readonly linkBreak?: LinkBreak;
 }
 
 /**
@@ -123,6 +127,16 @@ export interface ChainFrontier {
 export interface ChainReplay {
   readonly events: CatalogEvent[];
   readonly frontier: ChainFrontier;
+  /**
+   * The tails that do not chain — one entry per tail, the FIRST break in each.
+   *
+   * It rides on the replay rather than being asked for separately because that is
+   * what keeps it from being optional in practice: the events and the fact that the
+   * events do not add up come off the same reading, so a caller cannot take one and
+   * forget the other existed. Empty on an intact record, which is every record the
+   * product writes on its own.
+   */
+  readonly linkBreaks: readonly LinkBreak[];
 }
 
 /**
@@ -147,7 +161,10 @@ export function chainReplay(layout: ChainLayout, upcasters: UpcasterRegistry): C
     });
   }
   const events = mergeStreams(streams);
-  return { events, frontier: { tails, events: events.length } };
+  const linkBreaks = streams
+    .map((stream) => stream.linkBreak)
+    .filter((broken): broken is LinkBreak => broken !== undefined);
+  return { events, frontier: { tails, events: events.length }, linkBreaks };
 }
 
 /** What a chain holds beyond a frontier, when that can be said as a suffix. */
@@ -164,7 +181,11 @@ export type ChainArrivals =
       /** No suffix describes the difference — the whole order has to be read again. */
       readonly suffix: false;
       /** Which of the three ways that happens, for the caller that reports it. */
-      readonly why: 'A_TAIL_IS_GONE' | 'A_TAIL_WAS_CUT' | 'AN_ARRIVAL_IS_NOT_LATER';
+      readonly why:
+        | 'A_TAIL_IS_GONE'
+        | 'A_TAIL_WAS_CUT'
+        | 'AN_ARRIVAL_IS_NOT_LATER'
+        | 'AN_ARRIVAL_DOES_NOT_CHAIN';
     };
 
 /**
@@ -213,6 +234,12 @@ export type ChainArrivals =
  *     other tails under the merge's own comparison. Ordinary in a pulled clone, whose
  *     tail carries a colleague's older facts, and ordinary from a clock that stepped
  *     back.
+ *   - `AN_ARRIVAL_DOES_NOT_CHAIN` — the arrivals do not run contiguously on from where
+ *     the frontier stopped. This one is NOT ordinary: it is a break in the record's
+ *     own proof, and the answer is deliberately the same as for the other three —
+ *     read the whole chain again — because the full reading is what can say WHERE the
+ *     break is ({@link ChainReplay.linkBreaks}), and the incremental walk, which never
+ *     sees the entries below the boundary, cannot.
  *
  * The caller's move in all three is the same and is not this function's to make: read
  * the whole chain again.
@@ -244,6 +271,13 @@ export function chainArrivals(
         ? readTailEntries(layout, tail, upcasters)
         : aboveBoundary(readTailTip(layout, tail, upcasters, covered.lastSeq), covered.lastSeq);
     if (entries === undefined) return { suffix: false, why: 'A_TAIL_WAS_CUT' };
+    // The arrivals have to run on from the boundary the frontier stopped at, by the
+    // verifier's own rule. The `prev` of the first arrival is not checkable here (the
+    // frontier keeps the seq it reached, not the hash), so this asks the question the
+    // boundary CAN answer, and hands the rest to the full reading.
+    if (arrivalsDoNotChain(tail, entries, covered?.lastSeq ?? -1)) {
+      return { suffix: false, why: 'AN_ARRIVAL_DOES_NOT_CHAIN' };
+    }
     const lastSeq =
       entries.length === 0
         ? (covered?.lastSeq ?? -1)
@@ -381,6 +415,24 @@ export function orderedEventsOfRecord(
 }
 
 /**
+ * Whether the entries arriving after a boundary fail to run contiguously on from it.
+ *
+ * It is the seq half of {@link linkBreakAt}'s rule, asked where only that half can be
+ * asked. A duplicate seq — two sessions appending at the same position, the defect
+ * this delivery closed on the writing side — lands entirely above the boundary, so
+ * this sees it; a break BELOW the boundary was already ruled on by the reading that
+ * set the frontier.
+ */
+function arrivalsDoNotChain(tail: string, entries: readonly Entry[], boundarySeq: number): boolean {
+  let expected = boundarySeq + 1;
+  for (const entry of entries) {
+    if (entry.link.tail !== tail || entry.link.seq !== expected) return true;
+    expected += 1;
+  }
+  return false;
+}
+
+/**
  * The same streams with fresh cursors — one read, several merges. It copies the
  * cursor and SHARES the events, because draining a stream is what consumes it and
  * the events are what cost something to obtain.
@@ -403,13 +455,18 @@ function rewound(streams: readonly TailStream[]): TailStream[] {
  */
 function streamsOf(layout: ChainLayout, upcasters: UpcasterRegistry, prefix: string): TailStream[] {
   return listTails(layout).map((tail) => {
-    const entries = readTailEntries(layout, tail, upcasters);
+    // `readTail` rather than `readTailEntries`: the same bytes, plus what the read
+    // had to notice about them. A reading that took only the entries is how a chain
+    // the verifier refuses was served by every read with no word about it.
+    const read = readTail(layout, tail, upcasters);
+    const entries = read.entries;
     return {
       key: `${prefix}${tail}`,
       events: entries.map((entry) => entry.event),
       cursor: 0,
       tail,
       lastSeq: entries.length === 0 ? -1 : (entries[entries.length - 1] as Entry).link.seq,
+      ...(read.linkBreak !== undefined ? { linkBreak: read.linkBreak } : {}),
     };
   });
 }

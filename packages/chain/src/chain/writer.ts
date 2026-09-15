@@ -205,20 +205,25 @@ export class ChainWriter {
     this.maxUnsignedEvents = options.maxUnsignedEvents ?? DEFAULT_MAX_UNSIGNED_EVENTS;
     this.tailId = `${keyPair.fingerprint}-${installationId}`;
     mkdirSync(tailDir(layout, this.tailId), { recursive: true });
-    // NOTHING ELSE HAPPENS HERE, and that is a change this delivery made deliberately.
-    // Birth (`ensureTailProof`) and recovery both touch the tail's files — the
-    // recovery TRUNCATES a torn trailing fragment — so both have to be under the lock,
-    // and taking it here would be a third lock cycle per act on top of the append's
-    // and the checkpoint's. Measured, in `lone-writer-cost.mjs`, against a base of
-    // 0.569 ms per act: three cycles cost 0.891 ms, two cost 0.815 ms. So both moved
-    // INSIDE {@link underTailLock}, where the first act pays for them once: the
-    // starting {@link mark} is a value no real tail can produce, so the first act
-    // always recovers.
+    // THE TAIL IS BORN HERE AND RECOVERED LATER, and the split is the answer to two
+    // things at once.
     //
-    // A writer that never appends therefore never recovers and never writes a tail
-    // proof. That is not a loss: every reader of a tail proof reads it off the disk
-    // beside the entries it is about, and a tail with no entries has nothing to prove
-    // ownership OF.
+    // Recovery cannot happen here, because it TRUNCATES a torn trailing fragment, and
+    // cutting a file another process is appending to is the very hazard this delivery
+    // closed. So it moved under the lock, into the first act — the starting {@link
+    // mark} is a value no real tail can produce, so that act always recovers.
+    //
+    // Birth cannot move WITH it, because taking the lock in a constructor makes
+    // `openChainForWriting` block on another process's append, and a caller that only
+    // wants to read `tail` or `anchor` off a writer would then wait out a budget meant
+    // for writing. So the directory and the ownership proof are written here, unlocked.
+    //
+    // THAT LEAVES ONE UNGUARDED RACE, and it is benign by construction rather than by
+    // hope: two fresh processes can both find the proof absent and both write it. The
+    // bytes are a signature over the tail id with the same key, and Ed25519 is
+    // deterministic — so the two writes are byte-for-byte identical, and whichever
+    // lands second leaves the file holding exactly what the first one put there.
+    this.ensureTailProof();
   }
 
   /**
@@ -247,7 +252,6 @@ export class ChainWriter {
     // has a name for.
     return withTailLock(tailLockPath(this.layout, this.tailId), () => {
       this.resyncIfMoved();
-      this.ensureTailProof();
       const result = act();
       this.mark = this.readMark();
       return result;

@@ -65,3 +65,43 @@ export function withScopedCaches<T>(
 export function caches(sources: readonly ScopedCache[]): ProjectionCache[] {
   return sources.map((source) => source.cache);
 }
+
+/** A tail that does not chain, and which of the trees it is in. */
+export interface ScopedLinkBreak {
+  readonly scope: Scope;
+  readonly tail: string;
+  readonly seq: number;
+  readonly detail: string;
+}
+
+/**
+ * The tails that do not chain, across every tree a read opened.
+ *
+ * ONE READING FOR EVERY READ THAT WANTS IT. A read's answer comes out of the
+ * projections, and the projections cannot hold this: a duplicate `seq` puts both
+ * events in the tables, so a search over a broken record is indistinguishable from a
+ * search over a sound one. The fact lives in the entries' links, and the cache carries
+ * it up from the replay that already read them ({@link ProjectionCache.linkBreaks}) —
+ * so this costs a read nothing beyond the reading it already did.
+ *
+ * IT IS NOT A VERDICT AND MAY NOT BE PRINTED AS ONE. It answers one structural
+ * question — does each tail run on from the entry before it — and says nothing about
+ * signatures, checkpoints or witnesses. A read that printed "the record is sound"
+ * because this came back empty would be claiming what only `verify` can.
+ *
+ * WHICH READS ASK IT IS NOT YET TOTAL, and that is this delivery's declared debt:
+ * `search` and `status` ask, and the other fifteen callers of
+ * {@link withScopedCaches} do not. Making it total means an output port at a door that
+ * today has none — the read verbs return values and the wiring prints them — which is
+ * a change across every `here()` in the surface and belongs to its own delivery.
+ */
+export function linkBreaksOf(sources: readonly ScopedCache[]): readonly ScopedLinkBreak[] {
+  return sources.flatMap((source) =>
+    source.cache.linkBreaks.map((broken) => ({
+      scope: source.scope,
+      tail: broken.tail,
+      seq: broken.seq,
+      detail: broken.detail,
+    })),
+  );
+}

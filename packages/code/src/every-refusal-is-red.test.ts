@@ -58,6 +58,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { codeOnly } from '../tests/support/reading-source.js';
 import { buildProgram, type CliIo, run } from './cli.js';
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
@@ -145,10 +146,20 @@ describe('a refusal is worded in exactly one place', () => {
     //
     // Counted per SITE and not per file, so a module with one rendered call and one
     // raw one is still accused.
-    const sites = (source: string): number => source.split('io.err(').length - 1;
+    //
+    // ASKED OF THE CODE, NOT OF THE FILE. It read raw text, and a module whose
+    // doc-comment QUOTED the call it is about — explaining why it hands back lines
+    // instead of bytes — was accused of writing an unpainted one. That is the same
+    // blindness `every-sandbox-is-removed-where-it-was-made.test.ts` paid for, and
+    // `codeOnly` is the one function this workspace already has for it; a second
+    // comment-stripper written here would be the second reading of a rule that has one.
+    const sites = (source: string): number => codeOnly(source).split('io.err(').length - 1;
     const rendered = (source: string): number =>
-      source.match(/io\.err\(\s*(?:to\.)?render\(/g)?.length ?? 0;
+      codeOnly(source).match(/io\.err\(\s*(?:to\.)?render\(/g)?.length ?? 0;
     const guilty = shipped().filter((file) => sites(sourceOf(file)) !== rendered(sourceOf(file)));
+    // And the strip is not vacuous: a call that is only ever MENTIONED is not a site.
+    expect(sites('/** a verb may not call io.err(x) bare */')).toBe(0);
+    expect(sites('io.err(render(line));')).toBe(1);
     // ONE module writes to stderr without rendering, and it is not reporting a no:
     // `mcp` serves JSON-RPC on stdout, so the server's diagnostics go to the other
     // stream. A log line is not a refusal and painting it would say it was.

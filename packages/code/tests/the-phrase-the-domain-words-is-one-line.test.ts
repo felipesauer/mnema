@@ -640,20 +640,28 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the JSON reader’s own complaint, which quotes the stored bytes it choked on',
   },
-  '@mnema/chain chain/verify.ts «entry names tail {}, stored under {}» oneLine(entry.link.tail) #1':
+  // THESE FOUR MOVED, and the move is the whole of what changed about them. The three
+  // structural questions a tail is asked — is the entry stored under the tail it names,
+  // does its seq follow, does its prev chain — are now ONE function in `chain/entry.ts`
+  // that the verdict and the plain READ of a tail both ask, because a reader more
+  // lenient than the verifier is what let a record `verify` refuses be searched with no
+  // word about it. The verdict still reaches these sentences, through a wording
+  // function called at its `detail:` — which is what keeps this walk able to see them —
+  // and the values are the same four, so the verdicts below are the ones they had.
+  '@mnema/chain chain/entry.ts «entry names tail {}, stored under {}» oneLine(broke.named) #1': {
+    verdict: 'collapsed',
+    why: 'the tail a stored entry NAMES — the very field this finding exists to disagree with',
+  },
+  '@mnema/chain chain/entry.ts «entry names tail {}, stored under {}» oneLine(broke.storedUnder) #1':
     {
       verdict: 'collapsed',
-      why: 'the tail a stored entry NAMES — the very field this finding exists to disagree with',
+      why: 'the directory it was actually found in',
     },
-  '@mnema/chain chain/verify.ts «entry names tail {}, stored under {}» oneLine(tail) #1': {
-    verdict: 'collapsed',
-    why: 'the directory it was actually found in',
-  },
-  '@mnema/chain chain/verify.ts «seq gap: expected {}, found {}» expectedSeq #1': {
+  '@mnema/chain chain/entry.ts «seq gap: expected {}, found {}» broke.expected #1': {
     verdict: 'minted',
-    why: 'a number this walk counted while reading the tail',
+    why: 'a number the walk that found the break counted while reading the tail',
   },
-  '@mnema/chain chain/verify.ts «seq gap: expected {}, found {}» entry.link.seq #1': {
+  '@mnema/chain chain/entry.ts «seq gap: expected {}, found {}» broke.found #1': {
     verdict: 'minted',
     why: 'a whole number — the catalog refuses the entry before this if it is not one',
   },

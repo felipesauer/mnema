@@ -41,7 +41,7 @@
 import { type Bootstrap, bootstrap } from '@mnema/copilot';
 import { type Clock, type DiscoveryEnv, resolveTrees, systemClock } from '@mnema/core';
 import { type AnchorForms, anchorForms, resolveTypedAnchor } from '../anchors.js';
-import { caches, withScopedCaches } from '../tree-sources.js';
+import { caches, linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
 
 /** What the status command needs — injected so it is testable. */
 export interface StatusContext {
@@ -60,6 +60,12 @@ export interface StatusDone {
   readonly status: Bootstrap;
   /** How each identity this record knows is written for a person. */
   readonly anchors: AnchorForms;
+  /**
+   * The tails among those read that do not chain — empty for a sound record. See
+   * {@link linkBreaksOf}: the opening read is where a person finds out, and the
+   * answer below is derived from a record this says whether to trust.
+   */
+  readonly linkBreaks: readonly ScopedLinkBreak[];
 }
 
 /** There was no project here, or the actor named no identity in it. */
@@ -98,6 +104,7 @@ export function runStatus(
     return {
       ok: true,
       anchors,
+      linkBreaks: linkBreaksOf(sources),
       // No run is this command's own: a read opens none, and the process is gone by the
       // time the next one asks. So the "prefer my own run" rule has nothing to prefer
       // and the answer stays the actor's latest — which is the right one for a person

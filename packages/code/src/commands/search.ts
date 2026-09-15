@@ -31,7 +31,7 @@ import {
   resolveTrees,
   type Scope,
 } from '@mnema/core';
-import { withScopedCaches } from '../tree-sources.js';
+import { linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
 
 /** What the search command needs — injected so it is testable. */
 export interface SearchContext {
@@ -46,6 +46,16 @@ export interface SearchDone {
   readonly ok: true;
   /** The hits, each marked with its tree, plus the true total. */
   readonly result: RecordSearch;
+  /**
+   * The tails among those read that do not chain — empty for a sound record.
+   *
+   * It travels WITH the answer rather than instead of it, because nothing was lost:
+   * every hit below is a fact somebody wrote and is still on the tail. What a break
+   * costs is the proof that nothing was inserted between them, and a reader who is
+   * shown the hits and not this would be shown a record and told nothing about the
+   * one thing that is wrong with it.
+   */
+  readonly linkBreaks: readonly ScopedLinkBreak[];
 }
 
 /** The search was refused before it ran. */
@@ -73,5 +83,6 @@ export function runSearch(ctx: SearchContext, input: RecordQuery = {}): SearchDo
   return withScopedCaches(trees, (sources) => ({
     ok: true,
     result: searchRecords(sources, input),
+    linkBreaks: linkBreaksOf(sources),
   }));
 }

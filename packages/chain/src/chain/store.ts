@@ -11,7 +11,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import { type Checkpoint, parseCheckpoint } from './checkpoint.js';
-import { type Entry, parseEntry } from './entry.js';
+import { describeLinkBreak, type Entry, linkBreakAt, parseEntry } from './entry.js';
 import {
   type ChainLayout,
   checkpointsPath,
@@ -130,7 +130,16 @@ function entriesOfSegment(file: string, upcasters: UpcasterRegistry, isLast: boo
   return { entries, partialFinalLine };
 }
 
-/** What a whole tail held: its entries, and whether it ends in a partial write. */
+/** Where a tail stops chaining, and what is wrong there. */
+export interface LinkBreak {
+  readonly tail: string;
+  /** The seq of the entry that does not follow the one before it. */
+  readonly seq: number;
+  /** The same sentence the verifier's T1 issue carries — see {@link linkBreakAt}. */
+  readonly detail: string;
+}
+
+/** What a whole tail held: its entries, and what the read had to tolerate. */
 export interface TailRead {
   readonly entries: Entry[];
   /**
@@ -139,16 +148,40 @@ export interface TailRead {
    * an attempt to append garbage — which is why it is REPORTED rather than judged.
    */
   readonly partialFinalLine: boolean;
+  /**
+   * The first place the tail stops chaining, if it does — a duplicate seq, a gap, an
+   * entry whose `prev` names something else, an entry stored under a tail it does not
+   * name.
+   *
+   * REPORTED, NOT THROWN, and not dropped either. Throwing would take the whole
+   * record away over a break that costs no fact: every event above and below a
+   * duplicate seq is still on disk, still readable, still the thing somebody wrote —
+   * what a break destroys is the PROOF that nothing was inserted. Dropping it is what
+   * the reads used to do, and it is why a chain `verify` exits 1 over could be
+   * searched, listed and summarised with no word about it anywhere.
+   *
+   * It is the FIRST break and not all of them: past it, every later seq and `prev` is
+   * measured against an expectation the break already invalidated, so a list would be
+   * a list of consequences. The verdict that enumerates belongs to `verify`.
+   */
+  readonly linkBreak?: LinkBreak;
 }
 
 /**
- * Reads a whole tail: every entry in seq order across its segments, and whether
- * its physical end was a fragment the read had to drop.
+ * Reads a whole tail: every entry in seq order across its segments, whether its
+ * physical end was a fragment the read had to drop, and whether it CHAINS.
  *
  * The verifier is what needs the second half — it has to report what it could not
  * check — and everything else only wants the entries ({@link readTailEntries}).
  * Both walk this one function, so a reader cannot see a different tail than the
  * verdict was formed over.
+ *
+ * The third half is new, and it is the half that makes that sentence true rather than
+ * merely tidy: reading the same bytes is not the same as reaching the same conclusion
+ * about them. The link check here is the verifier's own ({@link linkBreakAt}), so a
+ * reader cannot be more lenient than the verdict; it costs three comparisons per
+ * entry and no hash, which is why a read can afford it and a signature check is still
+ * `verify`'s alone.
  */
 export function readTail(
   layout: ChainLayout,
@@ -164,7 +197,25 @@ export function readTail(
     for (const entry of read.entries) entries.push(entry);
     if (read.partialFinalLine) partialFinalLine = true;
   }
-  return { entries, partialFinalLine };
+  const linkBreak = firstLinkBreak(tailId, entries);
+  return linkBreak === undefined
+    ? { entries, partialFinalLine }
+    : { entries, partialFinalLine, linkBreak };
+}
+
+/** The first entry that does not follow the one before it, asked of the shared rule. */
+function firstLinkBreak(tailId: string, entries: readonly Entry[]): LinkBreak | undefined {
+  let expectedSeq = 0;
+  let expectedPrev: string | null = null;
+  for (const entry of entries) {
+    const broke = linkBreakAt(tailId, entry, expectedSeq, expectedPrev);
+    if (broke !== undefined) {
+      return { tail: tailId, seq: entry.link.seq, detail: describeLinkBreak(broke) };
+    }
+    expectedPrev = entry.link.hash;
+    expectedSeq += 1;
+  }
+  return undefined;
 }
 
 /**

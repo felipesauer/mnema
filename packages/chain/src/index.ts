@@ -88,12 +88,15 @@ export {
 } from './chain/level.js';
 export {
   holdsRecord,
+  type LinkBreak,
   listPublicKeyFingerprints,
   listTails,
   orderedSegments,
+  readTail,
   readTailCheckpoints,
   readTailEntries,
   readTailTip,
+  type TailRead,
 } from './chain/store.js';
 export { ensureTree } from './chain/tree.js';
 export {
