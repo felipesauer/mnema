@@ -272,10 +272,14 @@ $ mnema brief
 | No decision has been recorded and accepted in this project, so the record has none
 | to hand over.
 |
+| No other decision recorded here is awaiting a judgement.
+|
 | ## Patterns adopted (0)
 |
 | No pattern has been adopted here yet — which is not the same as there being no way
 | of working here. The record holds none to hand over.
+|
+| No other pattern recorded here is awaiting a judgement.
 $ mnema tail list
 | 1 tail(s):
 |   <tail-own>  public   2 event(s) through <tail-head-an-empty-project-1>  the tail of <anchor>  ·  no waiver
@@ -1352,6 +1356,9 @@ $ mnema status --actor <anchor>
 | Not looked at here:
 |   memory (4) — mnema search --kind memory
 |   observation (1) — mnema search --kind observation
+|
+| Not in the record:
+|   docs/adr (2) — mnema decision import docs/adr
 $ mnema status --actor <anchor> --json
 | {
 |   "resume": {
@@ -1605,12 +1612,17 @@ $ mnema brief
 | Each was accepted, and none of them superseded. For the argument behind one, ask
 | `read_record` for its id.
 |
+| 1 more decision is recorded here and awaiting a judgement, and it is not below.
+| Nothing waiting governs anything yet; ask `bootstrap` for what is waiting.
+|
 | - **ADR-1 — Keep the runbook in the record** · `<decision-runbook>`
 |
 | ## Patterns adopted (1)
 |
 | Adopted here, and expected to be worked by. For the pattern itself, ask `skills`
 | for its id.
+|
+| No other pattern recorded here is awaiting a judgement.
 |
 | - **One slice per PR** · `<skill-slices>`
 $ mnema tail list

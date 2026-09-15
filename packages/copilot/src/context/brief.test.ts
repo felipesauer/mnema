@@ -131,6 +131,11 @@ describe('brief — everything that governs the work here', () => {
       collisions: [],
       addressed: 0,
       asking: 0,
+      // Nothing is waiting: the one decision and the one pattern of this record were both
+      // carried all the way to in force, so the counts that make the headings legible are
+      // zero — a legitimate value the document says in words.
+      decisionsAwaiting: 0,
+      skillsAwaiting: 0,
       // Nothing switched either, which is a channel being on — and the answers carry no
       // attribution at all, because there is no switch to attribute them to.
       editPush: { channel: CHANNELS.editPush, on: true },
@@ -290,8 +295,10 @@ describe('brief — everything that governs the work here', () => {
       'asksAPerson',
       'collisions',
       'decisions',
+      'decisionsAwaiting',
       'editPush',
       'skills',
+      'skillsAwaiting',
     ]);
     expect(JSON.stringify(composed)).not.toContain('Write the deploy runbook');
     expect(JSON.stringify(composed)).not.toContain('task-ready');
@@ -302,6 +309,65 @@ describe('brief — everything that governs the work here', () => {
         .work.map((w) => w.id)
         .sort(),
     ).toEqual(['task-draft', 'task-ready', 'task-third']);
+  });
+
+  it('counts what is recorded here and AWAITING A JUDGEMENT, per kind, in the tree that travels', () => {
+    // WHAT THIS NUMBER IS FOR. The heading counts what is printed under it, which is
+    // honest and is not enough: measured on a real project, `## Decisions in force (6)`
+    // over a record of 247 decisions left the reader of this file — a model, reading this
+    // file alone — believing the project had decided six things. The 241 were not cut by
+    // size; they are not in force. Their number is the fact the heading cannot carry.
+    const team = bench();
+    const machine = bench();
+    accept(team, 'dec-live', 'The one call that governs');
+    // Three waiting, and three that are NOT: a rejected call and an accepted one are
+    // both ruled on, and neither may be counted as waiting on anybody.
+    birthDecision(team, 'dec-open-1', 'Still on the table');
+    birthDecision(team, 'dec-open-2', 'Also on the table');
+    birthDecision(team, 'dec-open-3', 'The third on the table');
+    reject(team, 'dec-no', 'Turned down');
+    adopt(team, 'sk-live', 'How the team works');
+    // TWO waiting patterns, a different number from the decisions': a count asserted
+    // against a record where both are the same passes a composition that computes one
+    // of them and prints it twice.
+    birthSkill(team, 'sk-open-1', 'A pattern nobody has reviewed');
+    birthSkill(team, 'sk-open-2', 'A second pattern nobody has reviewed');
+    moveSkill(team, 'sk-open-2', 'proposed', 'reviewed', 'review');
+    // The private tree holds five more of each, and NONE of them may reach a committed
+    // file: a number that moved with another machine's tree would make `mnema brief |
+    // diff - AGENTS.md` report a difference that is not the record's.
+    for (const n of [1, 2, 3, 4, 5]) {
+      birthDecision(machine, `dec-mine-${n}`, `My own call ${n}`);
+      birthSkill(machine, `sk-mine-${n}`, `My own pattern ${n}`);
+    }
+    const committed = tree(team, 'public');
+    const mine = tree(machine, 'private');
+
+    const composed = brief([committed, mine], CHANNELS);
+    expect({ decisions: composed.decisionsAwaiting, skills: composed.skillsAwaiting }).toEqual({
+      decisions: 3,
+      skills: 2,
+    });
+    // NOT THE LIST'S LENGTH, which is the number already in the heading: one rule is in
+    // force here and three are waiting, so a count taken from the printed list would
+    // have said one.
+    expect(composed.decisions).toHaveLength(1);
+    expect(composed.skills).toHaveLength(1);
+    // ONE RULE FOR "AWAITING A JUDGEMENT", and this is the half that keeps the document
+    // from counting a set the reading that NAMES them does not hold. The opening context
+    // is asked over the committed tree alone here, so the two answers are about the same
+    // record, and its list is reconciled item for item against this count.
+    const opening = bootstrap([committed.cache], asking(team.who));
+    const waiting = opening.awaitingJudgement;
+    expect(waiting.filter((item) => item.kind === 'decision')).toHaveLength(
+      composed.decisionsAwaiting,
+    );
+    expect(waiting.filter((item) => item.kind === 'skill')).toHaveLength(composed.skillsAwaiting);
+    // And the union really did hold the private ones, or the filter above was over
+    // nothing: the agent's own context, over both trees, counts every one of them.
+    const both = bootstrap([committed.cache, mine.cache], asking(team.who)).awaitingJudgement;
+    expect(both.filter((item) => item.kind === 'decision').length).toBe(8);
+    expect(both.filter((item) => item.kind === 'skill').length).toBe(7);
   });
 
   it('carries no BODY and no RATIONALE — the keys are absent, not empty', () => {
@@ -557,6 +623,8 @@ describe('brief — everything that governs the work here', () => {
       collisions: [],
       addressed: 0,
       asking: 0,
+      decisionsAwaiting: 0,
+      skillsAwaiting: 0,
       editPush: { channel: CHANNELS.editPush, on: true },
       asksAPerson: { channel: CHANNELS.asksAPerson, on: true },
     });
@@ -566,6 +634,8 @@ describe('brief — everything that governs the work here', () => {
       collisions: [],
       addressed: 0,
       asking: 0,
+      decisionsAwaiting: 0,
+      skillsAwaiting: 0,
       editPush: { channel: CHANNELS.editPush, on: true },
       asksAPerson: { channel: CHANNELS.asksAPerson, on: true },
     });
@@ -581,6 +651,8 @@ describe('brief — everything that governs the work here', () => {
       collisions: [],
       addressed: 0,
       asking: 0,
+      decisionsAwaiting: 0,
+      skillsAwaiting: 0,
       editPush: { channel: CHANNELS.editPush, on: true },
       asksAPerson: { channel: CHANNELS.asksAPerson, on: true },
     });

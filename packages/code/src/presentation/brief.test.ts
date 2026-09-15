@@ -33,6 +33,10 @@ function governance(over: Partial<Brief> = {}): Brief {
     collisions: [],
     addressed: 0,
     asking: 0,
+    // Nothing waiting by default, so every case that is not about the waiting paragraph
+    // reads the skeleton's own sentence — and the cases that ARE about it say a number.
+    decisionsAwaiting: 0,
+    skillsAwaiting: 0,
     editPush: { channel: 'edit-rules-push', on: true },
     asksAPerson: { channel: 'edit-asks-a-person', on: true },
     ...over,
@@ -202,10 +206,16 @@ describe('the brief costs one line per rule', () => {
     // is not the slope and is not asserted as if it were.
     expect(oneEach - none).toBeGreaterThan(0);
     // And the fixed part is small enough to be worth having in a file read on every
-    // prompt: measured at 34 lines with both lists empty, against the ~200 the market
+    // prompt: measured at 38 lines with both lists empty, against the ~200 the market
     // publishes for a whole project memory. It was 21 before the document had to name
     // the scope it carries and say what its counts count, 25 before it said how many of
-    // the rules have an ADDRESS, and 30 before that paragraph grew the switch.
+    // the rules have an ADDRESS, 30 before that paragraph grew the switch, and 34 before
+    // each heading said how many are recorded here AWAITING A JUDGEMENT.
+    //
+    // THE LAST FOUR ARE THE WAITING PARAGRAPHS, one blank and one sentence under each
+    // heading, and they are the growth that buys back an impression the document was
+    // leaving. Measured on a real project: `## Decisions in force (6)` over a record of
+    // 247 decisions, true in every word and read as "this project decided six things".
     //
     // THE LAST FOUR ARE THE GATE, and they are the growth in this list that is not about
     // explaining a silence. The record can hold a rule that STOPS a write, and a reader
@@ -219,8 +229,8 @@ describe('the brief costs one line per rule', () => {
     // did: a declaration is the one thing this skeleton is allowed to grow for, and a
     // bound sitting on the measured value turns the next honest sentence into a failing
     // test instead of a decision.
-    expect(none).toBe(34);
-    expect(none).toBeLessThanOrEqual(38);
+    expect(none).toBe(38);
+    expect(none).toBeLessThanOrEqual(42);
   });
 
   it('says how many rules there are, and prints exactly that many', () => {
@@ -265,17 +275,26 @@ describe('the brief costs one line per rule', () => {
     expect(firstRule).toBeGreaterThan(declared);
   });
 
-  it('counts nothing it did not print — no total of the record, no tally of omissions', () => {
+  it('tallies no omission of SCOPE — no "(1 of 4)", no count of the private tree', () => {
     // The second half of the declaration, as an ABSENCE. A heading that said "(1 of 4)"
     // — or a line counting the private rules — would put a fact about a tree that does
     // not travel into a file that gets committed, and would make the document move when
     // that tree moves, which is what the byte-check exists to rule out.
+    //
+    // THIS CASE WAS CALLED "counts nothing it did not print" AND THAT NAME WAS TOO WIDE.
+    // The document now counts what the STATE left out (the case below), and the two are
+    // not the same claim: a private rule's number moves when another tree moves, on one
+    // machine, and a proposal's number moves only when THIS record does. What is refused
+    // here is the first, and the name says so now.
     const text = printed(governance({ decisions: [decision(1)], skills: [pattern(1)] }));
     expect(text).toContain('## Decisions in force (1)');
     expect(text).toContain('## Patterns adopted (1)');
     expect(text).not.toMatch(/\(\d+\s+of\s+\d+\)/);
     expect(text).not.toMatch(/omitted|hidden|not shown|elsewhere in the record/i);
-    // The only numbers in the document are the two counts of what is printed.
+    // The only numbers in PARENTHESES are the two counts of what is printed. The
+    // sentence that used to stand here said "the only numbers in the document", and it
+    // was already false when it was written — the address count and the gate count are
+    // both bare numbers in the first two paragraphs.
     expect(text.match(/\(\d+\)/g)).toEqual(['(1)', '(1)']);
   });
 
@@ -297,6 +316,147 @@ describe('the brief costs one line per rule', () => {
     expect(text).toContain('`read_record`');
     expect(text).toContain('`skills`');
     expect(printed(governance())).not.toContain('`read_record`');
+  });
+});
+
+/**
+ * The document under each heading, split at the second one — what a reader of that
+ * section actually has in front of it.
+ *
+ * Every case about the waiting paragraphs reads through this rather than through the
+ * whole text, and that is the one thing they could not do without it: the two paragraphs
+ * differ by a NOUN, so a composition that printed the patterns' sentence under the
+ * decisions' heading would leave both sentences present in the document and every
+ * `toContain` over the whole of it green.
+ */
+function sections(brief: Brief): { decisions: string; patterns: string } {
+  const lines = briefDocument(brief);
+  const split = lines.findIndex((line) => line.startsWith('## Patterns adopted'));
+  if (split < 0) throw new Error('fixture: the document printed no patterns heading');
+  return {
+    decisions: lines.slice(0, split).join('\n'),
+    patterns: lines.slice(split).join('\n'),
+  };
+}
+
+describe('the brief says what is recorded here and awaiting a judgement', () => {
+  it('says the number under each heading, and the two numbers do not swap', () => {
+    // THE DEFECT THIS PARAGRAPH EXISTS FOR, at the scale it was measured: a heading that
+    // says six over a record holding 247 decisions. Every word of the heading is true and
+    // the reader of this file — a model, reading this file alone — comes away believing
+    // the project decided six things.
+    //
+    // TWO DIFFERENT VALUES, AND THEY ARE READ OFF DIFFERENT HALVES OF THE DOCUMENT. A
+    // case with one number, or with both numbers equal, passes over a composition that
+    // printed the same count twice and over one that swapped them.
+    const both = sections(
+      governance({
+        decisions: [decision(1)],
+        skills: [pattern(1)],
+        decisionsAwaiting: 241,
+        skillsAwaiting: 7,
+      }),
+    );
+    expect(both.decisions).toContain('## Decisions in force (1)');
+    expect(both.decisions).toContain(
+      '241 more decisions are recorded here and awaiting a judgement, and none is below.',
+    );
+    expect(both.patterns).toContain('## Patterns adopted (1)');
+    expect(both.patterns).toContain(
+      '7 more patterns are recorded here and awaiting a judgement, and none is below.',
+    );
+    // Neither number reached the other section — the half that makes the assertion above
+    // about placement rather than about presence.
+    expect(both.patterns).not.toContain('241');
+    expect(both.decisions).not.toContain('7 more');
+  });
+
+  it('moves with the count: a second record, a second number, nothing else changed', () => {
+    // The guard that cannot be satisfied by a constant. A paragraph that printed a fixed
+    // number — or the count of what is PRINTED, which is the number already in the
+    // heading — passes any case that asserts one value; it fails the moment two records
+    // that differ only in what is waiting have to print two different documents.
+    const fewer = printed(governance({ decisions: [decision(1)], decisionsAwaiting: 3 }));
+    const more = printed(governance({ decisions: [decision(1)], decisionsAwaiting: 241 }));
+    expect(fewer).toContain('3 more decisions are recorded here');
+    expect(more).toContain('241 more decisions are recorded here');
+    expect(fewer).not.toContain('241');
+    expect(more).not.toContain('3 more decisions');
+    // And the heading did NOT move: what is in force is one decision in both, so the
+    // number in the paragraph is not a second reading of the list's length.
+    for (const text of [fewer, more]) expect(text).toContain('## Decisions in force (1)');
+  });
+
+  it('agrees with itself at one, in the document’s own two-constant shape', () => {
+    const one = sections(
+      governance({ decisions: [decision(1)], decisionsAwaiting: 1, skillsAwaiting: 1 }),
+    );
+    expect(one.decisions).toContain(
+      '1 more decision is recorded here and awaiting a judgement, and it is not below.',
+    );
+    expect(one.patterns).toContain(
+      '1 more pattern is recorded here and awaiting a judgement, and it is not below.',
+    );
+  });
+
+  it('says ZERO in words, under both headings, and never makes the paragraph vanish', () => {
+    // The skeleton rule, on the paragraph that would most plausibly have been left out
+    // when it has nothing to report. A section that disappeared at zero would make the
+    // first proposal read as a rewrite of the file — and a reader told that nothing is
+    // waiting knows something a reader told nothing does not.
+    const empty = sections(governance());
+    expect(empty.decisions).toContain('No other decision recorded here is awaiting a judgement.');
+    expect(empty.patterns).toContain('No other pattern recorded here is awaiting a judgement.');
+    // And with rules in force, which is the other state the paragraph has to hold in.
+    const inForce = sections(governance({ decisions: [decision(1)], skills: [pattern(1)] }));
+    expect(inForce.decisions).toContain('No other decision recorded here is awaiting a judgement.');
+    expect(inForce.patterns).toContain('No other pattern recorded here is awaiting a judgement.');
+  });
+
+  it('COUNTS and never lists — no title, no id, no state of what is waiting', () => {
+    // The line between this paragraph and the work queue the verb refuses to carry. A
+    // count over the record moves when the record moves, which is what keeps `mnema brief
+    // | diff - AGENTS.md` meaning one thing; a list of 241 names is a queue, and a copy of
+    // a queue in a hand-regenerated file is wrong between two runs.
+    const text = printed(
+      governance({ decisions: [decision(1)], skills: [pattern(1)], decisionsAwaiting: 241 }),
+    );
+    expect(text).toContain('241 more decisions are recorded here');
+    // Exactly one bullet per rule IN FORCE, and no state word anywhere: the paragraph
+    // adds a number and nothing that reads like an item.
+    expect(text.split('\n').filter((line) => line.startsWith('- **'))).toHaveLength(2);
+    expect(text).not.toMatch(/\bproposed\b|\breviewed\b|\brejected\b/i);
+  });
+
+  it('holds the document’s own rules while it counts: no clock, no path, no identity', () => {
+    // The paragraph is pure over the record like everything else here — a state is a
+    // fact of the chain, so two clones print the same number.
+    const text = printed(
+      governance({
+        decisions: [decision(1), decision(2)],
+        skills: [pattern(1)],
+        decisionsAwaiting: 241,
+        skillsAwaiting: 7,
+      }),
+    );
+    expect(text).not.toMatch(/\d{4}-\d{2}-\d{2}/);
+    expect(text).not.toMatch(/\d{2}:\d{2}:\d{2}/);
+    expect(text).not.toMatch(/(^|[^\w-])\/(?:home|tmp|Users)\//);
+    // Non-vacuity: the numbers this case is about really are in the text it scanned.
+    expect(text).toContain('241 more decisions');
+    expect(text).toContain('7 more patterns');
+  });
+
+  it('names the door its own reader can open, and not the person’s', () => {
+    // The division the verb's help states: the file is read by an agent, so the door in
+    // it is an agent's. `mnema status` answers the same question for the person who
+    // typed a verb, and it is named in `mnema brief --help` rather than here.
+    const text = printed(governance({ decisions: [decision(1)], decisionsAwaiting: 241 }));
+    expect(text).toContain('ask `bootstrap` for what is waiting');
+    expect(text).not.toContain('mnema status');
+    // And the pointer is not repeated under the second heading — that read answers for
+    // both, and a line here would be paid for on every prompt to say it twice.
+    expect(text.split('`bootstrap`')).toHaveLength(2);
   });
 });
 

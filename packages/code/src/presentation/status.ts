@@ -8,6 +8,18 @@
  * every item, every count and every order comes from `@mnema/copilot`'s `bootstrap`
  * exactly as it arrived, and what this module decides is only how each reads.
  *
+ * THAT SENTENCE WAS ABOUT ONE SOURCE AND THERE ARE TWO NOW, and the rule it states is
+ * kept rather than weakened: nothing is derived HERE. A sixth section reports which
+ * decision bases of this checkout hold documents the record has no decision for, and
+ * that fact is not `bootstrap`'s — it is read from the DISK, by this package, and
+ * handed to this module already counted ({@link statusReport}'s `outside`,
+ * `commands/status.ts`). It is a separate argument rather than a field of the
+ * derivation for a reason that is the derivation's own: `bootstrap` is served byte for
+ * byte through `--json` and through the MCP, and a count of files in one working tree
+ * is not something those two doors can promise each other. So this module still
+ * composes and never computes, and the second source is named where it enters instead
+ * of being smuggled in as if it were the first.
+ *
  * NAMES, NEVER BODIES, and that is the derivation's rule kept rather than a layout
  * choice. A pattern appears as its name and a decision as its title and `ADR-<n>`
  * label; neither body is here, and `mnema show <id>` is the second read that serves one
@@ -54,6 +66,7 @@
 
 import type { AwaitingJudgement, Bootstrap } from '@mnema/copilot';
 import { oneLine } from '../one-line.js';
+import type { DecisionsOutside } from '../outside-the-record.js';
 import { fact } from './detail.js';
 import { asId, column, itemLine } from './items.js';
 import type { Render } from './render.js';
@@ -69,8 +82,23 @@ import { widthOfText } from './width.js';
  */
 const KIND_WIDTH = widthOfText('decision');
 
-/** The lines `mnema status` prints: the actor's session, then the four lists. */
-export function statusReport(render: Render, status: Bootstrap, actor: string): string[] {
+/**
+ * The lines `mnema status` prints: the actor's session, then the four lists, then the
+ * two sections about what this reading did NOT cover.
+ *
+ * `outside` is the second argument that is not `bootstrap`'s, and it is last for the
+ * reason {@link unreadLines} is: the four lists are the answer, and what the answer does
+ * not reach belongs under it rather than above it. It is REQUIRED and has no default —
+ * an optional parameter would let a second surface print this screen with the section
+ * silently missing, which is the shape of omission this whole reading exists not to
+ * have.
+ */
+export function statusReport(
+  render: Render,
+  status: Bootstrap,
+  actor: string,
+  outside: readonly DecisionsOutside[],
+): string[] {
   return [
     `${actor} — where things stand.`,
     ...sessionLines(render, status),
@@ -83,6 +111,46 @@ export function statusReport(render: Render, status: Bootstrap, actor: string): 
     '',
     ...awaitingLines(render, status),
     ...unreadLines(status),
+    ...outsideLines(outside),
+  ];
+}
+
+/**
+ * The decision documents this repository holds that the record has no decision for —
+ * the second section that is ABSENT when it has nothing to say.
+ *
+ * IT FOLLOWS {@link unreadLines}'S RULE AND NOT THE FOUR LISTS', for that section's
+ * reason exactly. An empty list above has been looked at and found empty, so leaving it
+ * out would read as "I forgot to look". This one is about files on a disk, and there is
+ * nothing to report when a project has never imported a decision base — printing
+ * `Nothing outside the record.` there would be this surface asserting something about a
+ * directory it was never pointed at. The reading returns entries only where there is
+ * something outside (`outside-the-record.ts`), and this follows it.
+ *
+ * MEASURED, and it is why the section exists: on a real project, four documents in a
+ * base the record had already imported from were outside it, three of them written the
+ * day before, with the product running. The information that a gesture was owed reached
+ * nobody — the only way to learn it was to run the import, which is the gesture.
+ *
+ * IT NAMES THE VERB WITH THE DIRECTORY IN IT, in full, for the reason the section above
+ * names its command in full: a reader who has just been told there is something the
+ * record does not have is the reader least able to guess the argument. And it names
+ * `decision import`, which PROPOSES and never accepts, because what to do about a
+ * document outside the record is the reader's call and not this product's.
+ *
+ * `docs/decisions (4)` is the shape the section above uses — a name, its count, and the
+ * command that reaches it — taken rather than invented, so two readings do not spell one
+ * fact two ways.
+ */
+function outsideLines(outside: readonly DecisionsOutside[]): string[] {
+  if (outside.length === 0) return [];
+  return [
+    '',
+    'Not in the record:',
+    ...outside.map(
+      (base) =>
+        `  ${oneLine(base.directory)} (${base.outside}) — mnema decision import ${oneLine(base.directory)}`,
+    ),
   ];
 }
 

@@ -199,7 +199,7 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * its own and commits into it, so it reaches `node:child_process` and `node:fs` as well as
  * the scanner under `.github/` that the row in {@link LED_NOWHERE} is about.
  */
-const CLAUSES_IN_THE_TREE = 2612;
+const CLAUSES_IN_THE_TREE = 2622;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -693,7 +693,7 @@ describe('every file has a test that names it', () => {
     expect(PRODUCTION).toContain('packages/code/src/wiring/index.ts');
     expect(PRODUCTION).toContain('packages/core/src/topology/index.ts');
     expect(PRODUCTION).not.toContain('packages/core/src/index.ts');
-    expect(PRODUCTION).toHaveLength(302);
+    expect(PRODUCTION).toHaveLength(303);
     expect(TEST_TREE.length).toBeGreaterThan(250);
     // No file is in both corpora, which is what keeps a test from witnessing itself.
     const tests = new Set(TEST_TREE.map((one) => one.path));
@@ -713,7 +713,7 @@ describe('every file has a test that names it', () => {
     const found = unwitnessed();
     const byReach = (reach: Reach): number =>
       [...found.values()].filter((one) => one === reach).length;
-    expect(PRODUCTION.length - found.size).toBe(230);
+    expect(PRODUCTION.length - found.size).toBe(231);
     expect(found.size).toBe(72);
     expect(byReach('nobody imports it')).toBe(72);
     expect(byReach('imported, and no assertion observes it')).toBe(0);

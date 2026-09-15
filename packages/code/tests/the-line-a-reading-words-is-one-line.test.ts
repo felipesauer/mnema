@@ -450,6 +450,14 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'when the gate was switched off — an instant out of the record, collapsed for the same reason the anchor is',
     },
+  'brief.ts «{} {}» awaiting #1': {
+    verdict: 'minted',
+    why: 'how many of this kind are recorded here and awaiting a judgement — a count this document made, and the number that makes the heading above it legible',
+  },
+  'brief.ts «{} {}» awaiting === 1 ? words.one : words.many #1': {
+    verdict: 'minted',
+    why: 'one of two sentences written in this module, chosen by the count beside it — the shape the address paragraph uses, and the words are constants of this file handed in by the call above',
+  },
   'brief.ts «{} — {}» decision.adr #1': {
     verdict: 'composed',
     why: 'the `ADR-<n>` half of a rule’s name — the whole name is collapsed by `rule` below',
@@ -912,6 +920,18 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the same word again, as the flag that reaches it — a kind is what `--kind` takes',
   },
+  'status.ts «  {} ({}) — mnema decision import {}» oneLine(base.directory) #1': {
+    verdict: 'collapsed',
+    why: 'the directory a `derived-from` edge names — a path somebody’s command line sent into the record, and an open relation anybody may write, so a break in it would forge a second line under this heading',
+  },
+  'status.ts «  {} ({}) — mnema decision import {}» base.outside #1': {
+    verdict: 'minted',
+    why: 'how many documents of that base the record has no decision for — a count this reading made over the file names',
+  },
+  'status.ts «  {} ({}) — mnema decision import {}» oneLine(base.directory) #2': {
+    verdict: 'collapsed',
+    why: 'the same path again, as the argument the verb takes — collapsed a second time because it is a second site of the same value, which is the rule this layer applies per FIELD',
+  },
   'status.ts «{} of {}» shown #1': { verdict: 'minted', why: 'how many a list shows — a count' },
   'status.ts «{} of {}» total #1': { verdict: 'minted', why: 'how many there are — a count' },
   'status.ts «{}» total #1': {
@@ -1350,7 +1370,7 @@ describe('every value this layer puts on a line is classified', () => {
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
     expect(FOUND.builders.length).toBeGreaterThan(10);
-    expect(FOUND.sites.length).toBe(214);
+    expect(FOUND.sites.length).toBe(219);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1371,10 +1391,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(54);
-    expect(count('minted')).toBe(122);
+    expect(count('collapsed')).toBe(56);
+    expect(count('minted')).toBe(125);
     expect(count('composed')).toBe(38);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(54);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(56);
   });
 
   it('every reason says where the value comes from', () => {

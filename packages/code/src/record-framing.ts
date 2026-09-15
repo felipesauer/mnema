@@ -38,6 +38,29 @@
  * call returns one text block — which is the division `recorded-content.ts` already
  * draws for the record contract.
  *
+ * WHAT A PUSHED CHANNEL MUST CARRY, AND IT IS THE ONE RULE HERE THAT IS NOT ABOUT
+ * WORDING. No essential reading may depend on a SECOND call. A channel in this union
+ * lands in front of a model that did not ask for it, and the measurement that settles
+ * how such a reader behaves is four rounds of use over a record of 247 real decisions:
+ * the agent does not make the follow-up call. It went looking through a door that was
+ * not the one designed for it, and over what reached it — 6,278 bytes of opening
+ * context, 4.4% of it rule content — it concluded there was nothing there. So a channel
+ * that states half a fact and points at a tool for the rest has stated nothing, and the
+ * pointer is not the repair.
+ *
+ * WHAT THAT DOES AND DOES NOT FORBID, because the distinction is the whole of using it.
+ * It forbids a channel whose fact is INCOMPLETE without the call: "some rules govern
+ * this file, ask `governing_rules`" is that shape and is why the push carries the rules
+ * themselves. It does not forbid naming a door — every framing here names one, and the
+ * document's own paragraphs name `read_record`, `skills` and `bootstrap` after stating
+ * their fact in full. The test is whether a reader that asks nothing further has been
+ * told the thing the channel exists to tell it.
+ *
+ * IT IS RECORDED HERE RATHER THAN IN A NOTE because this is the module a channel's
+ * author has to open: the two tables over {@link ModelChannel} are total, so a channel
+ * added tomorrow does not compile until somebody reads this file. A criterion that lived
+ * anywhere else would govern nothing.
+ *
  * A CHANNEL THAT CARRIES NO DECLARATION IS IN A TABLE TOO ({@link UNFRAMED_CHANNELS}),
  * with the reason, rather than absent. The type of that table is
  * `Exclude<ModelChannel, FramedChannel>`, so a channel added to the union does not

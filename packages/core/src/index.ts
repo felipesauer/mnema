@@ -46,6 +46,7 @@ export type {
 } from './adr/read.js';
 export {
   type AdrScan,
+  adrFileNames,
   type ScannedDecision,
   type ScanRefusal,
   type ScanRefusalCode,

@@ -49,7 +49,15 @@ export function registerStatus(program: Command, wiring: Wiring): Declared {
       }
       writeLines(
         io,
-        statusReport(render, result.status, anchorText(result.anchors, result.status.resume.actor)),
+        statusReport(
+          render,
+          result.status,
+          anchorText(result.anchors, result.status.resume.actor),
+          // The one fact on this screen that is not the derivation's: it is read from
+          // the disk and is deliberately not in `--json`, which serves the opening
+          // context byte for byte and nothing else (`commands/status.ts`).
+          result.outside,
+        ),
       );
     });
   return readsTheRecord(status);

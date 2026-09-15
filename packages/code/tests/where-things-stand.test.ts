@@ -36,7 +36,7 @@
  * second reading of the same rule — the thing the guards below exist to prevent.
  */
 
-import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -74,6 +74,19 @@ function capture(): { io: CliIo; out: string[]; err: string[]; failed: () => boo
     err,
     failed: () => failed,
   };
+}
+
+/**
+ * One decision document in the shape the reader accepts: a level-1 title and a named
+ * `##` section.
+ *
+ * It is written the way `adr-tools` and every published template write one, because
+ * that is what the reader was built for — a fixture in some other shape would be
+ * refused by the scan and would make a case about what is outside the record pass for
+ * the wrong reason.
+ */
+function adr(title: string, why: string): string {
+  return `# ${title}\n\n## Context\n\n${why}\n`;
 }
 
 /** Runs `mnema <argv>` through the real entry and answers with what stdout received. */
@@ -369,6 +382,98 @@ describe('mnema status — the opening read, over a record that reaches every ce
     expect(text).not.toContain('observation (');
   }, 30_000);
 
+  it('says which decision documents this checkout holds that the record has none for', async () => {
+    // THE REPRODUCTION, on the surface a person types. Measured on a real project: four
+    // documents in a base the record had already imported from were outside it, three of
+    // them written the day before, with the product running the whole time. Nothing said
+    // so — the only way to find out was to run the import, which is the gesture nobody
+    // remembered.
+    const initiated = await mnema('init');
+    const identity = initiated.find((line) => line.trim().startsWith('identity:')) as string;
+    const anchor = identity.trim().slice('identity:'.length).trim();
+    const base = join(repo, 'docs', 'decisions');
+    mkdirSync(base, { recursive: true });
+    writeFileSync(join(base, '0001-utc.md'), adr('Use UTC everywhere', 'the zone drifts'));
+    writeFileSync(join(base, '0002-ids.md'), adr('Mint ids as uuidv7', 'they sort'));
+    await mnema('decision', 'import', 'docs/decisions', '--write');
+
+    // THE CONTRAST, and it comes first because it is what makes the case below about
+    // the defect rather than about the section existing. Every document of the base is
+    // in the record, so there is nothing outside and the section is ABSENT — the rule
+    // the fifth section already follows, for its reason: a heading over no fact is this
+    // surface asserting something it never asked.
+    const settled = (await mnema('status', '--actor', anchor)).join('\n');
+    expect(settled).not.toContain('Not in the record:');
+
+    // And now the thing that actually happens: somebody writes a decision down and the
+    // record does not have it.
+    writeFileSync(join(base, '0003-retries.md'), adr('Retry three times', 'the budget is three'));
+    const printed = (await mnema('status', '--actor', anchor)).join('\n');
+    expect(printed).toContain('Not in the record:');
+    expect(printed).toContain('docs/decisions (1) — mnema decision import docs/decisions');
+    // The COUNT is of what is outside and not of what the base holds: three files are
+    // there and two of them are in the record.
+    expect(printed).not.toContain('docs/decisions (3)');
+    // It names the verb that PROPOSES and never one that accepts — what to do about a
+    // document outside the record is the reader's call.
+    expect(printed).not.toMatch(/decision (accept|transition)/);
+    // And the number moves with the disk: a second document outside makes it two.
+    writeFileSync(join(base, '0004-zones.md'), adr('Store zones as IANA names', 'offsets lie'));
+    expect((await mnema('status', '--actor', anchor)).join('\n')).toContain(
+      'docs/decisions (2) — mnema decision import docs/decisions',
+    );
+  }, 30_000);
+
+  it('keeps that fact out of `--json`, which is the derivation and nothing else', async () => {
+    // The promise the two doors make each other: `mnema status --json` is byte for byte
+    // what the MCP's `bootstrap` serves. A count of FILES IN ONE CHECKOUT inside that
+    // object would be a fact the agent surface cannot produce and that moves when
+    // somebody switches branch, so it rides beside the derivation and not in it.
+    const initiated = await mnema('init');
+    const identity = initiated.find((line) => line.trim().startsWith('identity:')) as string;
+    const anchor = identity.trim().slice('identity:'.length).trim();
+    const base = join(repo, 'docs', 'decisions');
+    mkdirSync(base, { recursive: true });
+    writeFileSync(join(base, '0001-utc.md'), adr('Use UTC everywhere', 'the zone drifts'));
+    await mnema('decision', 'import', 'docs/decisions', '--write');
+    writeFileSync(join(base, '0002-ids.md'), adr('Mint ids as uuidv7', 'they sort'));
+
+    // NOT VACUOUS: the screen really is reporting it, so the absence below is about the
+    // serialization and not about a record with nothing outside it.
+    expect((await mnema('status', '--actor', anchor)).join('\n')).toContain(
+      'docs/decisions (1) — mnema decision import docs/decisions',
+    );
+    const served = JSON.parse((await mnema('status', '--actor', anchor, '--json')).join('\n'));
+    expect(Object.keys(served as object)).not.toContain('outside');
+    expect(JSON.stringify(served)).not.toContain('docs/decisions');
+  }, 30_000);
+
+  it('says nothing about bases the record never named — it guesses no directory', async () => {
+    // `scanAdrDirectory`'s own rule kept: the caller names the base and the product
+    // never picks one. The directories this reading reports come out of the RECORD —
+    // the `derived-from` edge every imported decision carries — so a repository full of
+    // decision documents that were never imported is a repository this says nothing
+    // about. Silence is the right answer, not a special case.
+    const initiated = await mnema('init');
+    const identity = initiated.find((line) => line.trim().startsWith('identity:')) as string;
+    const anchor = identity.trim().slice('identity:'.length).trim();
+    const base = join(repo, 'docs', 'decisions');
+    mkdirSync(base, { recursive: true });
+    writeFileSync(join(base, '0001-utc.md'), adr('Use UTC everywhere', 'the zone drifts'));
+    writeFileSync(join(base, '0002-ids.md'), adr('Mint ids as uuidv7', 'they sort'));
+
+    expect((await mnema('status', '--actor', anchor)).join('\n')).not.toContain(
+      'Not in the record:',
+    );
+    // NOT VACUOUS: the same two files DO get reported once the record names the base,
+    // so the silence above is about the record having never been pointed at it.
+    await mnema('decision', 'import', 'docs/decisions', '--write');
+    writeFileSync(join(base, '0003-retries.md'), adr('Retry three times', 'the budget is three'));
+    expect((await mnema('status', '--actor', anchor)).join('\n')).toContain(
+      'docs/decisions (1) — mnema decision import docs/decisions',
+    );
+  }, 30_000);
+
   it('refuses outside a project rather than answering about nothing', async () => {
     const initiated = await mnema('init');
     const identity = initiated.find((line) => line.trim().startsWith('identity:')) as string;
@@ -454,9 +559,17 @@ function production(): { path: string; code: string }[] {
  *
  * A door that calls `bootstrap` reaches none of these directly; a door that decided to
  * assemble the answer for itself reaches most of them. That is the discriminant, and it
- * is not "imports from copilot" — `brief` legitimately reaches two of them, because a
- * governance document is the decisions in force and the adopted patterns and nothing
- * else.
+ * is not "imports from copilot".
+ *
+ * THAT PARAGRAPH SAID `brief` REACHES TWO OF THEM AND IT REACHES FOUR NOW. The document
+ * grew the two counts of what is recorded here and AWAITING A JUDGEMENT — the number
+ * that makes `## Decisions in force (6)` legible over a record of 247 — and it takes
+ * them from the derivations `bootstrap` lists from, deliberately, so that the count and
+ * the reading that NAMES them cannot come to disagree. The count of halves stopped
+ * separating the two files on the day that happened, and what replaced it is not a
+ * higher threshold: the brief is reconciled BY NAME below, against the three halves it
+ * may never reach ({@link SESSION_AND_WORK}). A number would have gone on passing if it
+ * had swapped one of its halves for `liveWork`.
  */
 const HALVES = [
   'resume',
@@ -468,9 +581,26 @@ const HALVES = [
   'skillsAwaitingJudgement',
 ] as const;
 
+/**
+ * The halves that are about the SESSION and the WORK — the three a governance document
+ * can never legitimately reach.
+ *
+ * They are the discriminant the count used to stand in for. What separates the
+ * derivation from every other file is not how many halves it touches but WHICH: a
+ * document about what governs is the rules and the rulings still owed on them, and
+ * where somebody left off, what is live and which tasks await a verdict are the opening
+ * read's alone.
+ */
+const SESSION_AND_WORK = ['resume', 'liveWork', 'tasksAwaitingJudgement'] as const;
+
+/** The halves a file's code mentions, by name and in the order {@link HALVES} lists them. */
+function halvesOf(code: string): string[] {
+  return HALVES.filter((half) => new RegExp(`\\b${half}\\b`).test(code));
+}
+
 /** How many of the halves a file's code mentions. */
 function halvesReached(code: string): number {
-  return HALVES.filter((half) => new RegExp(`\\b${half}\\b`).test(code)).length;
+  return halvesOf(code).length;
 }
 
 /** Every production file that CALLS the copilot's `bootstrap`, by path. */
@@ -513,12 +643,27 @@ describe('one derivation, and the doors that serve it', () => {
 
   it('lets nobody but the derivation compose the halves', () => {
     // The other way a second answer grows: not by calling the derivation from somewhere
-    // new, but by assembling it. `brief` reaches TWO halves on purpose and is left
-    // alone; three is the line, and only the derivation crosses it.
-    expect(composesTheOpening(FILES)).toEqual(['copilot/src/context/bootstrap.ts']);
-    expect(
-      halvesReached(FILES.find((file) => file.path === 'copilot/src/context/brief.ts')?.code ?? ''),
-    ).toBe(2);
+    // new, but by assembling it. Two files cross the count now, and the second is
+    // reconciled by NAME rather than excused by a number.
+    expect(composesTheOpening(FILES)).toEqual([
+      'copilot/src/context/bootstrap.ts',
+      'copilot/src/context/brief.ts',
+    ]);
+    const brief = FILES.find((file) => file.path === 'copilot/src/context/brief.ts')?.code ?? '';
+    // WHICH four, exactly. The assertion this replaces was `toBe(2)`, and it would have
+    // gone on passing over a brief that had traded `decisionsInForce` for `liveWork` —
+    // a count cannot tell one half from another, which is the whole failure it existed
+    // to catch.
+    expect(halvesOf(brief)).toEqual([
+      'adoptedSkills',
+      'decisionsInForce',
+      'decisionsAwaitingJudgement',
+      'skillsAwaitingJudgement',
+    ]);
+    // And the three it may never reach, stated as their own absence: a governance
+    // document that learned where somebody left off, or what is live, would be the
+    // second opening answer this whole file exists to prevent.
+    for (const half of SESSION_AND_WORK) expect(halvesOf(brief)).not.toContain(half);
   });
 
   it('accuses a third door and a hand-composed answer — on input of its own', () => {
@@ -545,6 +690,9 @@ describe('one derivation, and the doors that serve it', () => {
     ];
     expect(callsBootstrap(innocent)).toEqual([]);
     expect(composesTheOpening(innocent)).toEqual([]);
+    // And the net that replaced the count has teeth of its own: a brief that reached a
+    // half of the session is named by the half it reached, not by a total.
+    expect(halvesOf('adoptedSkills(c); decisionsInForce(c); liveWork(c);')).toContain('liveWork');
   });
 });
 
