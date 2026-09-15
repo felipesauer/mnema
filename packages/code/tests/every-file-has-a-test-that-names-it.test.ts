@@ -199,7 +199,7 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * its own and commits into it, so it reaches `node:child_process` and `node:fs` as well as
  * the scanner under `.github/` that the row in {@link LED_NOWHERE} is about.
  */
-const CLAUSES_IN_THE_TREE = 2622;
+const CLAUSES_IN_THE_TREE = 2627;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
