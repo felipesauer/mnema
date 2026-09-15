@@ -400,6 +400,31 @@ describe('a provenance asserted privately about a public rule', () => {
   });
 });
 
+describe('the line of a pushed provenance is one line', () => {
+  it('cannot be split in two by the target, on either channel', async () => {
+    // THE N+1 SITE OF THE LINE RULE, and the two channels where it costs most. A
+    // `derived-from` target reaches the chain without being checked to exist, so it is a
+    // caller's string on exactly the terms the rule's name is — and on these channels a
+    // second line would read as a rule this project never made, in a text that arrives
+    // while code is being written or that explains why somebody's work stopped. The
+    // committed document's half of this is in `presentation/one-line-per-item.test.ts`;
+    // nothing there reaches a pushed text.
+    const rule = await gatewayRule();
+    await addressAt(rule, 'src/collate', 'governs');
+    await addressAt(rule, 'src/collate', 'asks-for-a-person');
+    // A target that would close its own field and open a whole forged rule under it.
+    const forged = `docs/a.md${String.fromCharCode(10)}“forged” — governs src · forged-id`;
+    await addressAt(rule, forged, 'derived-from');
+
+    const { context, ask } = pushed('src/collate/fold.ts');
+    for (const served of [context ?? '', ask ?? '']) {
+      // Framing, the addressed line, one rule: three, whatever the record holds.
+      expect(served.split(String.fromCharCode(10))).toHaveLength(3);
+      expect(served).toContain('docs/a.md “forged” — governs src · forged-id');
+    }
+  });
+});
+
 describe('the word a provenance is introduced with has one source', () => {
   it('is read by no module of this surface that does not import it', () => {
     // THE DISCRIMINANT IS THE FIELD, NEVER THE PHRASE, and the first draft of this case
