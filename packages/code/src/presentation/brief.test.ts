@@ -248,32 +248,35 @@ describe('the brief costs one line per rule', () => {
   });
 
   it('grows by one line per rule however many sources the rule names', () => {
-    // THE SLOPE ABOVE WENT BLIND ON A FIELD THIS FILE'S FIXTURE DOES NOT SET, and that is
-    // why this case is separate rather than folded into it. Measured: printing a rule's
-    // provenance on a LINE OF ITS OWN — the shape `presentation/record.ts` uses, and the
-    // one the delivery that put this fact here refused — left `twoEach - oneEach` at
-    // exactly 2 and the whole of that case green, because every rule in it has no
-    // provenance at all. A rule WITH one is the only input that can tell the two shapes
-    // apart, and the invariant is about rules the record actually holds.
-    const bare = briefDocument(governance({ decisions: [decision(1)] })).length;
-    const one = briefDocument(governance({ decisions: [derivedFrom(decision(1), 1)] })).length;
-    const three = briefDocument(governance({ decisions: [derivedFrom(decision(1), 3)] })).length;
-    expect(one).toBe(bare);
-    expect(three).toBe(bare);
+    // TWO THINGS THIS CASE DOES THAT THE SLOPE ABOVE DOES NOT, and both were measured by
+    // putting the defect back.
+    //
+    // 1. THE SLOPE IS BLIND TO A FIELD THIS FILE'S FIXTURE DOES NOT SET. Printing a rule's
+    //    provenance on a LINE OF ITS OWN — the shape `presentation/record.ts` uses, and
+    //    the one the delivery that put this fact here refused — left `twoEach - oneEach`
+    //    at exactly 2 and that whole case green, because no rule in it has a provenance.
+    // 2. THE SLOPE COUNTS ELEMENTS OF AN ARRAY AND NOT LINES OF A DOCUMENT. With the
+    //    fixture fixed, the same mutation STILL passed: a `\n` written into one element
+    //    is two lines in the file and one element in the list. So what is measured here is
+    //    the TEXT, which is what `mnema brief > AGENTS.md` writes and what `diff` reads.
+    //    The one-line rule the fixed prose obeys is not enough on its own: `oneLine`
+    //    closes a break arriving through a VALUE, and this closes one written by the
+    //    module itself.
+    const lines = (over: Parameters<typeof governance>[0]): number =>
+      printed(governance(over)).split('\n').length;
+    const bare = lines({ decisions: [decision(1)] });
+    expect(lines({ decisions: [derivedFrom(decision(1), 1)] })).toBe(bare);
+    expect(lines({ decisions: [derivedFrom(decision(1), 3)] })).toBe(bare);
     // And the slope itself, over rules that all carry one: still exactly one line each,
     // for decisions and patterns alike.
-    const oneEach = briefDocument(
-      governance({
-        decisions: [derivedFrom(decision(1), 1)],
-        skills: [derivedFrom(pattern(1), 2)],
-      }),
-    ).length;
-    const twoEach = briefDocument(
-      governance({
-        decisions: [derivedFrom(decision(1), 1), derivedFrom(decision(2), 3)],
-        skills: [derivedFrom(pattern(1), 2), derivedFrom(pattern(2), 1)],
-      }),
-    ).length;
+    const oneEach = lines({
+      decisions: [derivedFrom(decision(1), 1)],
+      skills: [derivedFrom(pattern(1), 2)],
+    });
+    const twoEach = lines({
+      decisions: [derivedFrom(decision(1), 1), derivedFrom(decision(2), 3)],
+      skills: [derivedFrom(pattern(1), 2), derivedFrom(pattern(2), 1)],
+    });
     expect(twoEach - oneEach).toBe(2);
     // NOT VACUOUS: the provenances are on the lines, so what was just measured is the cost
     // of a document that carries them and not of one that dropped them.
