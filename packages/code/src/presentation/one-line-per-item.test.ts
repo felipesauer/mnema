@@ -159,8 +159,21 @@ describe('the brief prints one line per rule', () => {
    * rules" without a number typed here going stale beside the prose.
    */
   const plain = (brief: Brief): Brief => ({
-    decisions: brief.decisions.map((_d, i) => ({ id: `d-${i}`, adr: `ADR-${i}`, title: `t-${i}` })),
-    skills: brief.skills.map((_s, i) => ({ id: `s-${i}`, name: `n-${i}` })),
+    // THE PROVENANCE IS CARRIED, one break-free target per source the case gave, for the
+    // reason the switch's fields are: a baseline that dropped the field would measure a
+    // document that carries provenances against one that carries none, and the difference
+    // would be read as the break.
+    decisions: brief.decisions.map((d, i) => ({
+      id: `d-${i}`,
+      adr: `ADR-${i}`,
+      title: `t-${i}`,
+      ...plainOrigin(d.origin),
+    })),
+    skills: brief.skills.map((sk, i) => ({
+      id: `s-${i}`,
+      name: `n-${i}`,
+      ...plainOrigin(sk.origin),
+    })),
     // The declaration about the labels is text in the same document, so the baseline
     // carries as many clashes as the case does — otherwise a case about a broken clash
     // line would be measured against a document that has no clash line at all.
@@ -185,6 +198,10 @@ describe('the brief prints one line per rule', () => {
     // paragraph in it.
     asksAPerson: plainState(brief.asksAPerson),
   });
+
+  /** As many break-free targets as the case had, or no field at all when it had none. */
+  const plainOrigin = (origin: readonly string[] | undefined) =>
+    origin === undefined ? {} : { origin: origin.map((_target, i) => `o-${i}`) };
 
   /** One channel state with every value replaced by text holding no whitespace. */
   const plainState = (state: Brief['editPush']): Brief['editPush'] =>
@@ -320,6 +337,27 @@ describe('the brief prints one line per rule', () => {
           decisions: [decision()],
           asksAPerson: gateSwitchedOff({ channel: `a${breaker}b` }),
         }),
+      ];
+      for (const one of cases) {
+        expect(document(one), JSON.stringify(breaker)).toHaveLength(document(plain(one)).length);
+      }
+    }
+  });
+
+  it('holds for the PROVENANCE a rule carries, and for each of several', () => {
+    // THE N+1 SITE OF THIS FILE'S OWN RULE, and it arrived with a field rather than a
+    // caller: a rule now carries where the record says it came FROM, and a `derived-from`
+    // target is a caller's string on exactly the terms the title is — the relation takes
+    // whatever was typed and nothing validates it on the way in. A break in one would put
+    // a line under a heading that counts what is beneath it, and the forged half would
+    // read as a rule this project never made.
+    for (const breaker of BREAKERS) {
+      const cases: Brief[] = [
+        governs({ decisions: [decision({ origin: [`a${breaker}b`] })] }),
+        // SEVERAL, because the field is a list and the collapse is inside the map: a
+        // version that collapsed only the first would pass the case above.
+        governs({ decisions: [decision({ origin: ['plain.md', `a${breaker}b`] })] }),
+        governs({ skills: [{ id: 'sk-1', name: 'a pattern', origin: [`a${breaker}b`] }] }),
       ];
       for (const one of cases) {
         expect(document(one), JSON.stringify(breaker)).toHaveLength(document(plain(one)).length);

@@ -89,6 +89,20 @@ function pattern(n: number, name = `Pattern number ${n}`) {
   return { id: `0198f3c1-7a2e-7b41-9c05-3d8e6f2a2b${String(n).padStart(2, '0')}`, name };
 }
 
+/**
+ * The same rule, with the provenance the record asserts for it — as many sources as asked
+ * for.
+ *
+ * A13: every target here is a value a `derived-from` link really takes. The relation holds
+ * whatever the writer typed, a path or an id, and neither is validated on the way in.
+ */
+function derivedFrom(rule: { readonly id: string }, sources: number) {
+  return {
+    ...rule,
+    origin: Array.from({ length: sources }, (_, at) => `docs/adr/ADR-00${at + 1}-a-source.md`),
+  };
+}
+
 /** The document as one string, the way a stream receives it. */
 function printed(brief: Brief): string {
   return briefDocument(brief).join('\n');
@@ -231,6 +245,43 @@ describe('the brief costs one line per rule', () => {
     // test instead of a decision.
     expect(none).toBe(38);
     expect(none).toBeLessThanOrEqual(42);
+  });
+
+  it('grows by one line per rule however many sources the rule names', () => {
+    // TWO THINGS THIS CASE DOES THAT THE SLOPE ABOVE DOES NOT, and both were measured by
+    // putting the defect back.
+    //
+    // 1. THE SLOPE IS BLIND TO A FIELD THIS FILE'S FIXTURE DOES NOT SET. Printing a rule's
+    //    provenance on a LINE OF ITS OWN — the shape `presentation/record.ts` uses, and
+    //    the one the delivery that put this fact here refused — left `twoEach - oneEach`
+    //    at exactly 2 and that whole case green, because no rule in it has a provenance.
+    // 2. THE SLOPE COUNTS ELEMENTS OF AN ARRAY AND NOT LINES OF A DOCUMENT. With the
+    //    fixture fixed, the same mutation STILL passed: a `\n` written into one element
+    //    is two lines in the file and one element in the list. So what is measured here is
+    //    the TEXT, which is what `mnema brief > AGENTS.md` writes and what `diff` reads.
+    //    The one-line rule the fixed prose obeys is not enough on its own: `oneLine`
+    //    closes a break arriving through a VALUE, and this closes one written by the
+    //    module itself.
+    const lines = (over: Parameters<typeof governance>[0]): number =>
+      printed(governance(over)).split('\n').length;
+    const bare = lines({ decisions: [decision(1)] });
+    expect(lines({ decisions: [derivedFrom(decision(1), 1)] })).toBe(bare);
+    expect(lines({ decisions: [derivedFrom(decision(1), 3)] })).toBe(bare);
+    // And the slope itself, over rules that all carry one: still exactly one line each,
+    // for decisions and patterns alike.
+    const oneEach = lines({
+      decisions: [derivedFrom(decision(1), 1)],
+      skills: [derivedFrom(pattern(1), 2)],
+    });
+    const twoEach = lines({
+      decisions: [derivedFrom(decision(1), 1), derivedFrom(decision(2), 3)],
+      skills: [derivedFrom(pattern(1), 2), derivedFrom(pattern(2), 1)],
+    });
+    expect(twoEach - oneEach).toBe(2);
+    // NOT VACUOUS: the provenances are on the lines, so what was just measured is the cost
+    // of a document that carries them and not of one that dropped them.
+    const text = printed(governance({ decisions: [derivedFrom(decision(1), 3)] }));
+    expect(text.split('derived from')).toHaveLength(4);
   });
 
   it('says how many rules there are, and prints exactly that many', () => {

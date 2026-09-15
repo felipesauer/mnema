@@ -11,7 +11,8 @@
  *
  * ## The thin form, and the number that decided it
  *
- * A rule arrives as its NAME, its ADDRESS and its ID, and never its body. The measured
+ * A rule arrives as its NAME, its ADDRESS, its ID and where the record says it CAME
+ * FROM, and never its body. The measured
  * difference is 3,783 bytes against 401 for one record
  * (`measurements/channel-cost/results/2026-08-19/injection-size.json`), and it is paid on
  * EVERY edit: the median session of this machine edits 34 files, the p90 edits 121 and
@@ -24,6 +25,24 @@
  * than a nicety: the grade this module ships informs and never refuses, and the grade
  * that refuses has to name the rule it came from — a text pushed without the id would
  * leave the later charge with nothing to cite.
+ *
+ * THAT SENTENCE READ "ITS NAME, ITS ADDRESS AND ITS ID", AND THE FOURTH FIELD IS WHY IT
+ * IS REWRITTEN RATHER THAN WIDENED. What it protected is the clause that survives it —
+ * NEVER ITS BODY — and the number behind that clause is the one above: a record's text is
+ * 3,783 bytes against 401, paid on every edit and carried for the rest of the session. A
+ * provenance is not a body. It is an ADDRESS, of the same kind as the one already on the
+ * line: 54 to 80 bytes measured over the rules in force on a real project, against a
+ * rationale that is two orders larger.
+ *
+ * WHAT FALSIFIED THE THREE-FIELD FORM AS A RULE. Nothing on the line could be OPENED. The
+ * `ADR-<n>` this channel does not even print is a counter of the chain — measured on a
+ * real project, 241 of 247 labels name a different file from the one the decision came
+ * out of — and the id opens through `read_record` alone, which four measurements of this
+ * bench say the agent does not call. So the channel that arrives unasked was the only one
+ * giving its reader no path they could follow without asking for something. The
+ * `derived-from` edge was already in the record and already served by the three reads
+ * somebody ASKS for (`presentation/record.ts`); the thin form was thin in the field that
+ * cost nothing and fat in the one that bought nothing.
  *
  * ## It is silent when no rule in force addresses the path, and that is a DECISION
  *
@@ -76,8 +95,9 @@
  * ## The rule of the line
  *
  * Every value on a line came out of the record — the rule's name, the address someone
- * typed into `--rel governs`, and the id, which is a caller's string too since a link's
- * subject reaches the chain without being checked to exist. All three go through
+ * typed into `--rel governs`, the id, and the provenance, the last two being callers'
+ * strings too since a link's subject and its target both reach the chain without being
+ * checked to exist. All of them go through
  * {@link oneLine}, HERE, at the one place a line is built: a name holding a newline
  * would end its own line and start a second one, and the second would read as a rule
  * this project never made, in a text that arrives while code is being written.
@@ -85,6 +105,7 @@
 
 import type { PushedRule, RulesAtPath } from '@mnema/copilot';
 import { oneLine } from './one-line.js';
+import { DERIVED_FROM } from './provenance.js';
 import { recordFramingBlock } from './record-framing.js';
 
 /**
@@ -165,13 +186,32 @@ export function ourWordsIn(at: RulesAtPath): readonly string[] {
 }
 
 /**
- * One rule, as one line: what it says, the address that matched, and the id.
+ * One rule, as one line: what it says, the address that matched, the id, and where the
+ * record says the rule came from.
  *
- * The name is in quotes because it is text somebody wrote, the address follows the
- * relation's own word, and the id comes last because it is what a reader copies. The
- * order is the derivation's — most specific first — so the rule that speaks to this file
- * is the first one read.
+ * The name is in quotes because it is text somebody wrote, and the address follows the
+ * relation's own word. The order is the derivation's — most specific first — so the rule
+ * that speaks to this file is the first one read.
+ *
+ * WHY THE PROVENANCE IS LAST, since the id used to be and for a stated reason: the id is
+ * "what a reader copies". That was the whole of what a reader could do with this line,
+ * and it is what this field changes. An id opens through `read_record` and nothing else;
+ * a provenance opens with what the reader is already holding — a file read. So the field
+ * a reader ACTS on is the last one, which is where this line has always put it, and the
+ * id stays on the line because a charge cites the id (G1) and because a target may name
+ * an id too.
+ *
+ * ONE FIELD PER SOURCE, the word repeated rather than the targets joined by a comma: a
+ * target is a caller's string and a file name may hold one, so a join would leave a
+ * reader unable to tell two sources from one.
+ *
+ * EVERY VALUE ON IT GOES THROUGH {@link oneLine}, here, including this one — a link's
+ * target reaches the chain without being checked, so it is a caller's string on the same
+ * terms as the name and the address.
  */
 function ruleLine(rule: PushedRule): string {
-  return `“${oneLine(rule.name)}” — governs ${oneLine(rule.address)} · ${oneLine(rule.id)}`;
+  const from = (rule.origin ?? [])
+    .map((target) => ` · ${DERIVED_FROM} ${oneLine(target)}`)
+    .join('');
+  return `“${oneLine(rule.name)}” — governs ${oneLine(rule.address)} · ${oneLine(rule.id)}${from}`;
 }

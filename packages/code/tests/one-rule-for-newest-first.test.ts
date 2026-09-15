@@ -171,6 +171,7 @@ const THE_ORDERINGS: readonly Rostered[] = [
   { file: 'copilot/src/context/decisions.ts', by: 'bySettledDesc', means: NEWEST },
   { file: 'copilot/src/context/focus.ts', by: 'byStartedDesc', means: NEWEST },
   { file: 'copilot/src/context/focus.ts', by: 'byStartedDesc', means: NEWEST },
+  { file: 'copilot/src/context/search.ts', by: 'byTarget', means: OTHER },
   {
     file: 'copilot/src/context/search.ts',
     by: 'byTheRecordsOwnOrder',

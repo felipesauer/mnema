@@ -31,6 +31,14 @@
  * constants; nothing here wraps a value, because a wrapper over actor text would be
  * a second way to break a line.
  *
+ * THE LINE HAS A FOURTH FIELD NOW AND THE RULE IS UNCHANGED, which is the point of
+ * saying so here. The bullet carries where the record says the rule CAME FROM
+ * ({@link rule}), because the `ADR-<n>` beside it is a counter of this chain and not the
+ * number of any file — measured on a real project, 241 of 247 labels name a different
+ * file from the one the decision was imported out of. A provenance sits on the SAME line
+ * rather than under it, exactly so that the sentence above stays a fact: two rules are
+ * two lines, whatever any of them was derived from.
+ *
  * THE SKELETON IS ALWAYS THE SAME, empty record or full. A heading that disappeared
  * when its list was empty would make the diff of a first decision look like a
  * rewrite of the file, and — the reason that matters more — an absent section says
@@ -96,6 +104,7 @@
 
 import type { AdrCollision, Brief, ChannelState } from '@mnema/copilot';
 import { oneLine } from '../one-line.js';
+import { DERIVED_FROM } from '../provenance.js';
 import { recordFraming } from '../record-framing.js';
 
 /**
@@ -520,7 +529,7 @@ export function briefDocument(governance: Brief): string[] {
         : [...WHERE_THE_RATIONALE_IS, ...ambiguousLabels(governance.collisions)],
       whatAwaitsAJudgement(governance.decisionsAwaiting, DECISIONS_WAITING),
       governance.decisions.map((decision) =>
-        rule(`${decision.adr} — ${decision.title}`, decision.id),
+        rule(`${decision.adr} — ${decision.title}`, decision.id, decision.origin),
       ),
     ),
     '',
@@ -529,7 +538,7 @@ export function briefDocument(governance: Brief): string[] {
       governance.skills.length,
       governance.skills.length === 0 ? NO_PATTERNS : WHERE_THE_PATTERN_IS,
       whatAwaitsAJudgement(governance.skillsAwaiting, PATTERNS_WAITING),
-      governance.skills.map((skill) => rule(skill.name, skill.id)),
+      governance.skills.map((skill) => rule(skill.name, skill.id, skill.origin)),
     ),
   ];
 }
@@ -577,21 +586,41 @@ function section(
 }
 
 /**
- * One rule, as a bullet: what it says, then the id that asks the record for the
- * rest.
+ * One rule, as a bullet: what it says, the id that asks the record for the rest, and
+ * where the record says the rule came from.
  *
  * The name is bold because it is what the reader acts on, and the id is in a code
  * span because it is what they type into the read that serves the rest.
  *
- * BOTH halves go through {@link oneLine}, and they go through it HERE — the one
+ * THE PROVENANCE IS A FOURTH FIELD ON THE SAME LINE, and the shape is the decision of
+ * this delivery rather than a detail of it. The fact was already served in a line of its
+ * OWN by `show`, `show --json` and `read_record` (`presentation/record.ts`), and copying
+ * that shape here would break the invariant this file is sharpest about: a rule is ONE
+ * line, asserted as a slope in `brief.test.ts` — exactly two lines for two rules, not
+ * "one or more". A line per provenance would make the cost of the file a function of how
+ * many sources a rule happens to name. So it is a field, and the invariant is untouched.
+ *
+ * WHY THE LINE IS WORTH THE BYTES. Everything else on it is a handle into this product:
+ * the `ADR-<n>` is minted by the record's own counter and, on a project whose decisions
+ * were imported, usually does NOT name the file they came from (241 of 247, measured),
+ * and the id opens only through `read_record`. The provenance is the one field a reader
+ * can act on with what they already hold — `cat`, a file read — which is what the reader
+ * of this file, who never asked for it, has.
+ *
+ * ONE FIELD PER SOURCE, and the word is repeated rather than the targets joined. A
+ * target is a caller's string and a file name may hold a comma, so `a, b` would leave a
+ * reader unable to tell two sources from one. Repeating the word costs the word.
+ *
+ * EVERY half goes through {@link oneLine}, and they go through it HERE — the one
  * place a bullet is built. A caller that had to remember to collapse each field
  * before composing it is a caller that will forget on the field added next, and the
  * failure is silent: the file simply grows a rule the project never made. The
  * composed name is collapsed as a whole, so a break in either the label or the title
  * is closed by the same call.
  */
-function rule(name: string, id: string): string {
-  return `- **${oneLine(name)}** · \`${oneLine(id)}\``;
+function rule(name: string, id: string, origin?: readonly string[]): string {
+  const from = (origin ?? []).map((target) => ` · ${DERIVED_FROM} \`${oneLine(target)}\``).join('');
+  return `- **${oneLine(name)}** · \`${oneLine(id)}\`${from}`;
 }
 
 /**
