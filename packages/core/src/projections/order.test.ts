@@ -386,18 +386,29 @@ describe('chainArrivals — a break planted at the boundary', () => {
     expect(served).not.toContain('t-3');
   });
 
-  // The boundary is a BYTE offset, so a tail carrying anything outside ASCII would put
-  // it in the wrong place if the walk ever measured a line in characters.
-  it('resumes correctly over a tail whose entries carry multi-byte text', () => {
+  /**
+   * THE BOUNDARY IS A BYTE OFFSET, so a walk that ever measured a line in CHARACTERS
+   * would put it in the wrong place on any tail carrying text outside ASCII.
+   *
+   * The error has to be big enough to cross a whole stored line before it can be seen —
+   * a title with a few accents understates the offset by a dozen bytes and the backward
+   * walk still stops on the same line. So this writes a title of several hundred CJK
+   * characters, each of which is one UTF-16 code unit and THREE bytes: measured in
+   * characters, the boundary lands well over a thousand bytes short of where the
+   * reading actually stopped, and entries the frontier already covered come back as
+   * arrivals. Measured in bytes, only what was appended after it does.
+   */
+  it('resumes by BYTES over a tail whose entries carry multi-byte text', () => {
     const w = openChainForWriting(rootA, { keyRoot: rootA });
-    w.append(
-      taskCreated(env('t-1', '2026-07-21T00:00:00.000Z'), { title: 'ação • 日本語 — ünïcodé' }),
-    );
+    w.append(taskCreated(env('t-1', '2026-07-21T00:00:00.000Z'), { title: '日本語'.repeat(200) }));
+    w.append(taskCreated(env('t-2', '2026-07-21T00:00:01.000Z'), { title: '漢字'.repeat(200) }));
     const before = chainReplay({ root: rootA }, upcasters);
-    w.append(taskCreated(env('t-2', '2026-07-21T00:00:01.000Z'), { title: 'segundo — 漢字' }));
+    w.append(taskCreated(env('t-3', '2026-07-21T00:00:02.000Z'), { title: 'ação — ünïcodé' }));
 
     const arrived = chainArrivals({ root: rootA }, upcasters, before.frontier);
     expect(arrived.suffix).toBe(true);
-    expect(arrived.suffix === true && arrived.events.map((e) => e.subject)).toEqual(['t-2']);
+    // Exactly the one appended after the frontier — not the covered entries brought
+    // back by a boundary that fell short of where the reading really stopped.
+    expect(arrived.suffix === true && arrived.events.map((e) => e.subject)).toEqual(['t-3']);
   });
 });
