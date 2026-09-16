@@ -21,6 +21,7 @@
 import { catalogUpcasters } from '@mnema/chain';
 import type { ScopedCache } from '@mnema/copilot';
 import { chainRootForScope, ProjectionCache, type ResolvedTrees, type Scope } from '@mnema/core';
+import type { ScopedLinkBreak } from './record-integrity.js';
 
 /** The trees a composed read opens, in a fixed order. */
 export const SCOPES: readonly Scope[] = ['public', 'private', 'global'];
@@ -66,13 +67,7 @@ export function caches(sources: readonly ScopedCache[]): ProjectionCache[] {
   return sources.map((source) => source.cache);
 }
 
-/** A tail that does not chain, and which of the trees it is in. */
-export interface ScopedLinkBreak {
-  readonly scope: Scope;
-  readonly tail: string;
-  readonly seq: number;
-  readonly detail: string;
-}
+export type { ScopedLinkBreak } from './record-integrity.js';
 
 /**
  * The tails that do not chain, across every tree a read opened.
@@ -89,11 +84,22 @@ export interface ScopedLinkBreak {
  * signatures, checkpoints or witnesses. A read that printed "the record is sound"
  * because this came back empty would be claiming what only `verify` can.
  *
- * WHICH READS ASK IT IS NOT YET TOTAL, and that is this delivery's declared debt:
- * `search` and `status` ask, and the other fifteen callers of
- * {@link withScopedCaches} do not. Making it total means an output port at a door that
- * today has none — the read verbs return values and the wiring prints them — which is
- * a change across every `here()` in the surface and belongs to its own delivery.
+ * EVERY READ THAT SERVES THE RECORD ASKS IT, and the guard is
+ * `tests/the-broken-link-reaches-every-reader.test.ts`: it walks the source for the two
+ * ways a read opens the record — this function and a bare `ProjectionCache.open` — and
+ * a file that does neither of "asks this" and "says in {@link SERVES_NO_RECORD_CONTENT}
+ * why it owes nothing" is red.
+ *
+ * IT USED TO BE TWO READS, AND THE REASON RECORDED FOR STOPPING THERE WAS MEASURED AND
+ * FALSE. This doc said making it total *"means an output port at a door that today has
+ * none — the read verbs return values and the wiring prints them — which is a change
+ * across every `here()` in the surface"*, costed at ~60 sites. The premise under it was
+ * that a read would have to be handed an `io`. It does not: the two reads that already
+ * said it did it by returning ONE MORE FIELD, and the wiring — which has an `io`
+ * already — prints it. Counted against the source when the debt was paid: fourteen of
+ * the seventeen reads return an object a field could be added to, and not one call site
+ * took an `io` it did not have. What the number really was is in
+ * `.refactor/active/the-broken-link-reaches-every-reader/report.md`.
  */
 export function linkBreaksOf(sources: readonly ScopedCache[]): readonly ScopedLinkBreak[] {
   return sources.flatMap((source) =>

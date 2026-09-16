@@ -24,7 +24,7 @@
 import { type ReferenceDirection, type ReferenceGraph, references } from '@mnema/copilot';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { isReferenceDirection } from '../reference-directions.js';
-import { withScopedCaches } from '../tree-sources.js';
+import { linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
 
 /** What the refs command needs — injected so it is testable. */
 export interface ReferencesContext {
@@ -39,6 +39,13 @@ export interface ReferencesDone {
   readonly ok: true;
   /** The nodes, the edges, and whether the depth cap cut the answer. */
   readonly graph: ReferenceGraph;
+  /**
+   * The tails among those read that do not chain — empty for a sound record, which is
+   * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
+   * beside it came off a record whose proof this is the state of, and the wiring is what
+   * says so.
+   */
+  readonly linkBreaks: readonly ScopedLinkBreak[];
 }
 
 /** The read was refused before it ran. */
@@ -72,6 +79,7 @@ export function runReferences(
   }
   return withScopedCaches(trees, (sources) => ({
     ok: true,
+    linkBreaks: linkBreaksOf(sources),
     graph: references(sources, {
       id: input.id,
       ...(direction !== undefined ? { direction } : {}),

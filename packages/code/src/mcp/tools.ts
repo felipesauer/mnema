@@ -149,7 +149,9 @@ import {
   EDIT_PUSH_CHANNEL,
   type SwitchableChannel,
 } from '../record-framing.js';
+import type { ScopedLinkBreak } from '../record-integrity.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
+import { linkBreaksOf } from '../tree-sources.js';
 import { type HookEvent, type HookReply, hookReply } from './hook-reply.js';
 import {
   type EntityLocation,
@@ -1138,6 +1140,36 @@ export function workspaceTrees(session: Session): WorkspaceTree[] {
  */
 function locateEntity(session: Session, id: string): EntityLocation {
   return locateEntityAcross(session, workspaceTrees(session), id);
+}
+
+/**
+ * The tails this connection has read that do not chain — empty for a sound record,
+ * which is every record this product wrote on its own.
+ *
+ * IT IS ABOUT WHAT THE SESSION HAS OPENED, and that is the one difference from the
+ * command line's reading of the same fact. A command is a process that opens the trees
+ * of one read and exits, so there the answer and the trees are the same set. A
+ * connection accumulates: by the time a tool answers, the session holds a cache for
+ * every tree any earlier call touched. Telling the agent about all of them is the
+ * honest over-report — those trees are what this session is being served out of — and
+ * the alternative, threading a source list out of fourteen adapters, would put the
+ * rule in fourteen places to make the set smaller than the truth.
+ *
+ * IT COSTS THE REPLY NOTHING. {@link CacheRegistry.opened} neither opens a cache nor
+ * refreshes one, and each cache carries its breaks up from the replay it already did
+ * ({@link ProjectionCache.linkBreaks}). A root the registry holds that no tree of this
+ * workspace names is skipped rather than reported scopeless: a break has to say which
+ * tree it is in, and a root nothing names is one this session can no longer place.
+ */
+export function sessionLinkBreaks(session: Session): readonly ScopedLinkBreak[] {
+  const scopeOf = new Map(workspaceTrees(session).map((tree) => [tree.chainRoot, tree.scope]));
+  const placed: ScopedCache[] = [];
+  for (const open of session.caches.opened()) {
+    const scope = scopeOf.get(open.chainRoot);
+    if (scope === undefined) continue;
+    placed.push({ scope, chainRoot: open.chainRoot, cache: open.cache });
+  }
+  return linkBreaksOf(placed);
 }
 
 /** Every tree of the workspace with its warm projection cache attached. */

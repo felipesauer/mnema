@@ -25,12 +25,16 @@ export function registerResume(program: Command, wiring: Wiring): Declared {
     .option('--json', 'emit the faithful resume object as JSON')
     .action(async (opts: { actor: string; json?: boolean }) => {
       const { anchorText } = await import('../anchors.js');
+      const { linkBreakNotice } = await import('./integrity.js');
       const { runResume } = await import('../commands/resume.js');
       const result = runResume(here(), { actor: opts.actor });
       if (!result.ok) {
         reportRefusal(wiring, result);
         return;
       }
+      // BEFORE the answer, and on the other stream — so it survives a pipe, and so
+      // `--json` stays the machine-readable thing it promises to be.
+      for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
       if (opts.json === true) {
         io.out(JSON.stringify(result.resume, null, 2));
         return;

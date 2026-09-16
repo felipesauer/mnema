@@ -25,7 +25,7 @@
 import { type TimelineEntry, timeline } from '@mnema/copilot';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { type AnchorForms, anchorForms } from '../anchors.js';
-import { withScopedCaches } from '../tree-sources.js';
+import { linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
 
 /** What the timeline command needs — injected so it is testable. */
 export interface TimelineContext {
@@ -44,6 +44,13 @@ export interface TimelineDone {
   readonly entries: readonly TimelineEntry[];
   /** How each identity this record knows is written for a person. */
   readonly anchors: AnchorForms;
+  /**
+   * The tails among those read that do not chain — empty for a sound record, which is
+   * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
+   * beside it came off a record whose proof this is the state of, and the wiring is what
+   * says so.
+   */
+  readonly linkBreaks: readonly ScopedLinkBreak[];
 }
 
 /** The read was refused — there is no project to read a history from. */
@@ -72,6 +79,7 @@ export function runTimeline(
   }
   return withScopedCaches(trees, (sources) => ({
     ok: true,
+    linkBreaks: linkBreaksOf(sources),
     id: input.id,
     entries: timeline(sources, input.id),
     anchors: anchorForms(sources),

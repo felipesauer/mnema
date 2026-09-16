@@ -29,7 +29,7 @@
 import { type Resume, resume } from '@mnema/copilot';
 import { type Clock, type DiscoveryEnv, resolveTrees, systemClock } from '@mnema/core';
 import { type AnchorForms, anchorForms, resolveTypedAnchor } from '../anchors.js';
-import { caches, withScopedCaches } from '../tree-sources.js';
+import { caches, linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
 
 /** What the resume command needs — injected so it is testable. */
 export interface ResumeContext {
@@ -48,6 +48,13 @@ export interface ResumeDone {
   readonly resume: Resume;
   /** How each identity this record knows is written for a person. */
   readonly anchors: AnchorForms;
+  /**
+   * The tails among those read that do not chain — empty for a sound record, which is
+   * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
+   * beside it came off a record whose proof this is the state of, and the wiring is what
+   * says so.
+   */
+  readonly linkBreaks: readonly ScopedLinkBreak[];
 }
 
 /** There was no project here, or the actor named no identity in it. */
@@ -87,6 +94,7 @@ export function runResume(
     return {
       ok: true,
       anchors,
+      linkBreaks: linkBreaksOf(sources),
       // Empty, like `focus`: a read opens no run, so nothing here is this command's
       // own and the "prefer my own run" rule has nothing to prefer. The answer stays
       // what it was — the actor's latest run — which is the right one for a person

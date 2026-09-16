@@ -25,6 +25,7 @@ import {
   ProjectionCache,
   resolveTrees,
 } from '@mnema/core';
+import { linkBreaksOf, type ScopedLinkBreak } from '../tree-sources.js';
 
 /** What the next-actions command needs — injected so it is testable. */
 export interface NextActionsContext {
@@ -41,6 +42,13 @@ export interface NextActionsDone {
   readonly id: string;
   /** The transitions the workflow allows from the task's state; empty when terminal. */
   readonly actions: readonly NextAction[];
+  /**
+   * The tails among those read that do not chain — empty for a sound record, which is
+   * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
+   * beside it came off a record whose proof this is the state of, and the wiring is what
+   * says so.
+   */
+  readonly linkBreaks: readonly ScopedLinkBreak[];
 }
 
 /** The read was refused. */
@@ -88,5 +96,12 @@ export function runNextActions(
   if (actions === null) {
     return { ok: false, reason: 'UNKNOWN_TASK' };
   }
-  return { ok: true, id: input.id, actions };
+  // OVER THE ONE TREE THIS READ OPENED. A task lives in exactly one tree and its state
+  // is read from there, so the proof that matters to this answer is that tree's.
+  return {
+    ok: true,
+    id: input.id,
+    actions,
+    linkBreaks: linkBreaksOf([{ scope, chainRoot: root, cache }]),
+  };
 }

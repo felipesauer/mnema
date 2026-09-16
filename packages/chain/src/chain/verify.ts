@@ -603,6 +603,11 @@ function verifyHashChain(tail: string, entries: readonly Entry[], issues: TailIs
     // disagree about whether a tail chains is the divergence the shared function
     // exists to make impossible; the layering below (the entry hash, and everything
     // T2/T4 does) stays this file's.
+    //
+    // THOSE TWO WERE ONCE THE ONLY READS THAT SAID SO, AND THAT IS NO LONGER TRUE:
+    // every read of `@mnema/code` that serves the record asks it now, on both
+    // surfaces, and the MCP carries it to the agent in the same reply. The sentence
+    // above is history, kept because it names the defect this function exists for.
     const broke = linkBreakAt(tail, entry, expectedSeq, expectedPrev);
     if (broke !== undefined) {
       // A break makes everything after it unanchored; stop here.

@@ -53,6 +53,7 @@ import {
   resolveTrees,
 } from '@mnema/core';
 import { resolveAnchorInRecord } from '../anchors.js';
+import { linkBreaksOf, type ScopedLinkBreak } from '../tree-sources.js';
 
 /** What the guard command needs — injected so it is testable. */
 export interface GuardContext {
@@ -77,6 +78,13 @@ export interface GuardVerdict {
   readonly ok: true;
   /** The gate's verdict, faithful — the same object a real move would act on. */
   readonly verdict: GateResult;
+  /**
+   * The tails among those read that do not chain — empty for a sound record, which is
+   * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
+   * beside it came off a record whose proof this is the state of, and the wiring is what
+   * says so.
+   */
+  readonly linkBreaks: readonly ScopedLinkBreak[];
 }
 
 /** The dry-run could not be attempted — the task, project or actor was not found. */
@@ -145,7 +153,10 @@ export function runGuard(
     ...(fields !== undefined ? { fields } : {}),
     ...(input.which !== undefined ? { which: input.which } : {}),
   });
-  return { ok: true, verdict };
+  // OVER THE ONE TREE THE TASK LIVES IN — the tree whose state this verdict was
+  // simulated against. A dry-run read off a tail that no longer chains is a verdict
+  // about a state whose provenance cannot be proved.
+  return { ok: true, verdict, linkBreaks: linkBreaksOf([{ scope, chainRoot: root, cache }]) };
 }
 
 /**

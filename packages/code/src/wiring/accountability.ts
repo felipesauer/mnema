@@ -40,6 +40,7 @@ export function registerAccountability(program: Command, wiring: Wiring): Declar
         json?: boolean;
       }) => {
         const { anchorText } = await import('../anchors.js');
+        const { linkBreakNotice } = await import('./integrity.js');
         const { runAccountability } = await import('../commands/accountability.js');
         const result = runAccountability(here(), {
           ...(opts.from !== undefined ? { from: opts.from } : {}),
@@ -51,6 +52,9 @@ export function registerAccountability(program: Command, wiring: Wiring): Declar
           reportRefusal(wiring, result);
           return;
         }
+        // BEFORE the answer, and on the other stream — so it survives a pipe, and so
+        // `--json` stays the machine-readable thing it promises to be.
+        for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
         if (opts.json === true) {
           io.out(JSON.stringify(result.account, null, 2));
           return;

@@ -217,6 +217,7 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
     )
     .addHelpText('after', SKILL_EXPORT_HELP);
   skillExport.action(async (id: string, opts: { out: string; description?: string }) => {
+    const { linkBreakNotice } = await import('./integrity.js');
     const { runSkillExport } = await import('../commands/skill-export.js');
     const { exportReport } = await import('../presentation/exported.js');
     // The group's three options mean nothing on an export — nothing is born, nothing
@@ -250,6 +251,11 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
       reportRefusal(wiring, result, { UNKNOWN_SKILL: noSuchRecord('skill', id) });
       return;
     }
+    // The file is already written by now, and that is exactly why this is said: what
+    // left the record and went into somebody else's directory came off a record whose
+    // proof failed, and the person who ran the export is the one who can still decide
+    // what to do about the file.
+    for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
     writeLines(io, exportReport(render, result));
   });
   return mutatesTheRecord(skill);

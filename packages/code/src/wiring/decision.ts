@@ -47,7 +47,7 @@ import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
 /** Registers `mnema decision` on the program. */
 export function registerDecision(program: Command, wiring: Wiring): Declared {
-  const { io, pinnedRun } = wiring;
+  const { io, pinnedRun, render } = wiring;
   const decision = program
     .command('decision')
     .description('record a decision in the current project')
@@ -221,6 +221,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     .addHelpText('after', RECORD_CONTRACT_HELP);
   decisionImport.action(
     async (dir: string, opts: { write?: boolean; scope?: string; which?: string }) => {
+      const { linkBreakNotice } = await import('./integrity.js');
       const { runDecisionImport } = await import('../commands/decision-import.js');
       const parentOpts = (decisionImport.parent?.opts() ?? {}) as {
         scope?: string;
@@ -254,6 +255,11 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
         ...(run !== undefined ? { run } : {}),
       });
       if (result.ok) {
+        // BEFORE the plan, and on the other stream. An import is the one place a read
+        // of the record decides what gets WRITTEN to it — the set of files already
+        // derived is what stops a duplicate — so a broken proof under it is the worst
+        // moment on this surface to be silent about.
+        for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
         writeLines(io, importLines(result));
         return;
       }
