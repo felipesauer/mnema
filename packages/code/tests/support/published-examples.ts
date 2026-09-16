@@ -7,6 +7,11 @@
  * A second copy of the list is the shape that produces divergence in silence — one guard
  * covering a page the other does not — so the list is written here and read twice.
  *
+ * A THIRD GUARD READS THIS FILE AND NOT THIS ROSTER.
+ * `the-shell-a-page-publishes-is-the-shell-that-runs.test.ts` rules over the SHELL blocks,
+ * which no entry here describes, and it takes only {@link ROOT} and {@link read} — one
+ * reading of where the workspace is, rather than a third climb up `..`.
+ *
  * WHAT AN ENTRY CARRIES, AND WHY TWO KINDS OF ELISION LIVE ON IT. `elided` is what the
  * CASE does not carry, because running those lines would found an identity inside this
  * repository; the comparison guard removes them from the page before comparing, and holds
@@ -143,7 +148,7 @@ export const PUBLISHED_EXAMPLES: readonly PublishedExample[] = [
 export const NO_RUNNABLE_EXAMPLE: readonly { pkg: string; why: string }[] = [
   {
     pkg: 'code',
-    why: 'It is the manual for a command line, not for a library: 996 lines with ZERO ```ts blocks and 22 shell ones. A guard over it means running the built binary twenty-two times in a sandbox, which is a piece of work with a cost of its own and no overlap with reading a page.',
+    why: 'It is the manual for a command line, not for a library: ZERO ```ts blocks. Measured on 16/09/2026: 24 fenced blocks, of which 21 ```sh, one ```bash, one ```json, and one with no language declared at all. THE SENTENCE THAT USED TO FOLLOW SAID "a guard over it means running the built binary twenty-two times in a sandbox, which is a piece of work with a cost of its own and no overlap with reading a page", AND THAT PREMISE IS FALSE. What falsified it is `the-shell-a-page-publishes-is-the-shell-that-runs.test.ts`, which resolves every verb and every flag those blocks publish against the program `buildProgram` builds — the page is read, and nothing is executed. This entry excuses the page from the ```ts comparison alone, and from nothing else.',
   },
 ];
 

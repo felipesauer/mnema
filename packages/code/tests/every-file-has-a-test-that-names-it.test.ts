@@ -220,8 +220,13 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * `the-record-is-opened-and-closed-together.test.ts`, which sweeps the package for the
  * open; and `a-sticky-pattern-answers-differently-each-call.test.ts`, which sweeps every
  * package — tests included — for a pattern carrying `g` asked a yes-or-no question.
+ *
+ * It went 2684 -> 2689 when `the-shell-a-page-publishes-is-the-shell-that-runs.test.ts`
+ * arrived: five clauses, of which two are the ones that make it a guard rather than a
+ * reading of text — `commander`, for the declarations a flag is looked up in, and
+ * `../src/cli.js`, for the program those declarations hang on.
  */
-const CLAUSES_IN_THE_TREE = 2684;
+const CLAUSES_IN_THE_TREE = 2689;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
