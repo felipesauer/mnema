@@ -13,7 +13,7 @@
  * THE BYTES ARE THE CONTRACT, and that is a requirement here rather than a
  * quality. A generated file rots: the record moves on and the copy in the
  * repository does not, and a stale rule read as a live one is worse than no file.
- * The only thing that detects it is `mnema brief | diff - AGENTS.md`, so this
+ * The only thing that detects it is `mnema brief | diff - <the file>`, so this
  * document must be a pure function of the record — the same record twice is the
  * same bytes twice. Nothing here reads a clock, a path, a run, an actor or an
  * environment, and every fixed word is a constant rather than something composed at
@@ -182,13 +182,32 @@ const WHAT_TRAVELS = [
  * The check is a pipe and a `diff` rather than a flag of this verb: the record is
  * what mnema is authoritative about, and comparing it to a file the operator keeps
  * wherever they like is a job the shell already does exactly. It is stated here, in
- * the file itself, because the person who finds a stale `AGENTS.md` is not
- * necessarily the person who generated it.
+ * the file itself, because the person who finds a stale copy is not necessarily the
+ * person who generated it.
+ *
+ * IT NAMES NO FILE, AND IT USED TO NAME `AGENTS.md`. The old wording put that name in
+ * both lines, which said two things this module cannot know: that the document is in a
+ * file of that name, and that the name is the one to use. Neither is ours to state —
+ * the redirection belongs to whoever typed it, and nothing here reads a path (the
+ * bytes are the contract, above). `<this file>` is what a reader can resolve whatever
+ * they called it, and it is the same placeholder for the reader that is a model, which
+ * is holding the file at a path when it reads this line.
+ *
+ * AND IT SAYS WHAT THE `>` DOES, which is the half that was missing and cost a real
+ * repository its method file. The recipe was published with a destination that, in a
+ * project that has one, already belongs to somebody — `AGENTS.md` is a convention with
+ * tens of thousands of repositories behind it, and in most of them it is a file with
+ * content. A redirection replaces all of it. The verb cannot refuse, check or merge:
+ * it writes nothing and the shell does the truncating, so the only place this can be
+ * said is the text, and here is the copy of it that travels INSIDE the file — read by
+ * whoever is deciding to regenerate. {@link registerBrief}'s help is the other.
  */
 const HOW_TO_REGENERATE = [
-  'Regenerate this file with `mnema brief > AGENTS.md`, and check it with',
-  '`mnema brief | diff - AGENTS.md` — a difference is either a copy that fell behind the',
-  'record or an edit made here by hand, and an edit here is lost on the next run.',
+  'Regenerate this file with `mnema brief > <this file>`, and check it with',
+  '`mnema brief | diff - <this file>` — a difference is either a copy that fell behind',
+  'the record or an edit made here by hand, and an edit here is lost on the next run.',
+  'The `>` replaces the whole of the file it names, and this document is the whole of',
+  'what it writes: nothing else in that file survives a regeneration.',
 ];
 
 /**

@@ -61,14 +61,16 @@ identically, because they are the same call.
   the reason `mnema exposure` exists. It writes to standard output and sends nothing
   anywhere; what it does and does not promise is in the table below.
 - **A brief an agent reads without being asked** — `mnema brief` prints the
-  decisions in force and the adopted patterns as markdown, so
-  `mnema brief > AGENTS.md` puts what governs the work where an agent host reads it
-  on its own. It carries the **committed** record — what a clone gets, not what one
-  machine keeps — and the document says so, because a file read as instruction is read
-  as the whole of what governs. It is a projection: the record stays the thing with the
-  proof, and the file can be thrown away and made again. The same record always prints
-  the same bytes, which is what makes `mnema brief | diff - AGENTS.md` a staleness
-  check.
+  decisions in force and the adopted patterns as markdown, so `mnema brief > MNEMA.md`
+  puts what governs the work in a file an agent host reads. The redirection is yours and
+  it **replaces the whole of the file it names**, so the example names a file nothing
+  else claims; `AGENTS.md` and `CLAUDE.md` are read by a host on its own and are worth
+  the redirection where no such file exists yet. It carries the **committed** record —
+  what a clone gets, not what one machine keeps — and the document says so, because a
+  file read as instruction is read as the whole of what governs. It is a projection: the
+  record stays the thing with the proof, and the file can be thrown away and made again.
+  The same record always prints the same bytes, which is what makes
+  `mnema brief | diff - MNEMA.md` a staleness check.
 - **A plugin for Claude Code**, in [`plugin/`](../../plugin/), that stops the delivery
   from depending on somebody remembering to regenerate a file. It declares two hooks and
   the MCP server below, in one installation. A `SessionStart` hook runs `mnema brief` and
@@ -617,8 +619,17 @@ the root of the repository is not: `AGENTS.md` is an open convention several hos
 read natively, and `CLAUDE.md` is read when a session opens. `mnema brief` prints
 what governs the work in that form, and where the file goes is your choice.
 
+**The redirection replaces the whole of the file it names.** That is the shell's doing
+and not this verb's — `brief` writes nothing and never learns there was a file — so the
+example below names a file nothing else claims. Send it to `AGENTS.md` or `CLAUDE.md`
+where no such file exists yet, and the host reads it with no further arrangement. Where
+one does exist it is somebody's own method, and this document would replace every word
+of it: keep theirs, and let a line in it name the file below. The
+[plugin](../../plugin/) is the third way — it hands this same document to a session
+with no file in the repository at all.
+
 ```sh
-mnema brief > AGENTS.md
+mnema brief > MNEMA.md
 #> (nothing — the document went to the file)
 
 mnema brief
@@ -661,7 +672,7 @@ The document holds no clock, no session and no path, so **the same record always
 prints the same bytes**. That is what makes the check a pipe:
 
 ```sh
-mnema brief | diff - AGENTS.md
+mnema brief | diff - MNEMA.md
 #> (no output — the file still says what the record says)
 ```
 
