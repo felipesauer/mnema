@@ -45,15 +45,9 @@
 
 import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
 import { type GateResult, guard } from '@mnema/copilot';
-import {
-  chainRootForScope,
-  type DiscoveryEnv,
-  locateEntityScope,
-  ProjectionCache,
-  resolveTrees,
-} from '@mnema/core';
+import { chainRootForScope, type DiscoveryEnv, locateEntityScope, resolveTrees } from '@mnema/core';
 import { resolveAnchorInRecord } from '../anchors.js';
-import { linkBreaksOf, type ScopedLinkBreak } from '../tree-sources.js';
+import { linkBreaksOf, type ScopedLinkBreak, withCache } from '../tree-sources.js';
 
 /** What the guard command needs — injected so it is testable. */
 export interface GuardContext {
@@ -136,27 +130,27 @@ export function runGuard(
     return { ok: false, reason: 'UNKNOWN_TASK' };
   }
   const root = chainRootForScope(trees, scope) as string;
-  const cache = ProjectionCache.open(root, { upcasters });
-  cache.rebuild();
-  const task = cache.getTask(input.id);
-  // `locateEntityScope` found a birth, so a null here means the tail is truncated
-  // below it (the birth is not replayable) — report it as unknown rather than
-  // simulating a move from a state we cannot read.
-  if (task === null) {
-    return { ok: false, reason: 'UNKNOWN_TASK' };
-  }
-  const fields = proofToFields(input.proof);
-  const verdict = guard({
-    from: task.state,
-    action: input.action,
-    who: actor.anchor,
-    ...(fields !== undefined ? { fields } : {}),
-    ...(input.which !== undefined ? { which: input.which } : {}),
+  return withCache(root, upcasters, (cache) => {
+    const task = cache.getTask(input.id);
+    // `locateEntityScope` found a birth, so a null here means the tail is truncated
+    // below it (the birth is not replayable) — report it as unknown rather than
+    // simulating a move from a state we cannot read.
+    if (task === null) {
+      return { ok: false, reason: 'UNKNOWN_TASK' };
+    }
+    const fields = proofToFields(input.proof);
+    const verdict = guard({
+      from: task.state,
+      action: input.action,
+      who: actor.anchor,
+      ...(fields !== undefined ? { fields } : {}),
+      ...(input.which !== undefined ? { which: input.which } : {}),
+    });
+    // OVER THE ONE TREE THE TASK LIVES IN — the tree whose state this verdict was
+    // simulated against. A dry-run read off a tail that no longer chains is a verdict
+    // about a state whose provenance cannot be proved.
+    return { ok: true, verdict, linkBreaks: linkBreaksOf([{ scope, chainRoot: root, cache }]) };
   });
-  // OVER THE ONE TREE THE TASK LIVES IN — the tree whose state this verdict was
-  // simulated against. A dry-run read off a tail that no longer chains is a verdict
-  // about a state whose provenance cannot be proved.
-  return { ok: true, verdict, linkBreaks: linkBreaksOf([{ scope, chainRoot: root, cache }]) };
 }
 
 /**

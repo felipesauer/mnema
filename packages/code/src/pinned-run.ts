@@ -27,13 +27,8 @@
  */
 
 import { catalogUpcasters } from '@mnema/chain';
-import {
-  canonicalId,
-  chainRootForScope,
-  type DiscoveryEnv,
-  ProjectionCache,
-  resolveTrees,
-} from '@mnema/core';
+import { canonicalId, chainRootForScope, type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { withCache } from './tree-sources.js';
 
 /** What resolving a pinned run needs — injected so it is testable. */
 export interface PinnedRunContext {
@@ -99,9 +94,9 @@ export function resolvePinnedRun(
   }
 
   const id = canonicalId(raw);
-  const cache = ProjectionCache.open(root, { upcasters: catalogUpcasters() });
-  cache.rebuild();
-  const found = id === undefined ? null : cache.getRun(id);
+  const found = withCache(root, catalogUpcasters(), (cache) =>
+    id === undefined ? null : cache.getRun(id),
+  );
   if (found === null) {
     return {
       ok: false,

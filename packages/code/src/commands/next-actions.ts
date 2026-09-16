@@ -18,14 +18,8 @@
 
 import { catalogUpcasters } from '@mnema/chain';
 import { type NextAction, nextActionsForTask } from '@mnema/copilot';
-import {
-  chainRootForScope,
-  type DiscoveryEnv,
-  locateEntityScope,
-  ProjectionCache,
-  resolveTrees,
-} from '@mnema/core';
-import { linkBreaksOf, type ScopedLinkBreak } from '../tree-sources.js';
+import { chainRootForScope, type DiscoveryEnv, locateEntityScope, resolveTrees } from '@mnema/core';
+import { linkBreaksOf, type ScopedLinkBreak, withCache } from '../tree-sources.js';
 
 /** What the next-actions command needs — injected so it is testable. */
 export interface NextActionsContext {
@@ -86,22 +80,22 @@ export function runNextActions(
     return { ok: false, reason: 'UNKNOWN_TASK' };
   }
   const root = chainRootForScope(trees, scope) as string;
-  const cache = ProjectionCache.open(root, { upcasters });
-  cache.rebuild();
-  const actions = nextActionsForTask(cache, input.id);
-  // `locateEntityScope` found the birth, so a null here means the tail is
-  // truncated below it (the birth is not replayable through the projection) —
-  // report it as unknown rather than an empty terminal list, which would falsely
-  // claim the task exists with no moves.
-  if (actions === null) {
-    return { ok: false, reason: 'UNKNOWN_TASK' };
-  }
-  // OVER THE ONE TREE THIS READ OPENED. A task lives in exactly one tree and its state
-  // is read from there, so the proof that matters to this answer is that tree's.
-  return {
-    ok: true,
-    id: input.id,
-    actions,
-    linkBreaks: linkBreaksOf([{ scope, chainRoot: root, cache }]),
-  };
+  return withCache(root, upcasters, (cache) => {
+    const actions = nextActionsForTask(cache, input.id);
+    // `locateEntityScope` found the birth, so a null here means the tail is
+    // truncated below it (the birth is not replayable through the projection) —
+    // report it as unknown rather than an empty terminal list, which would falsely
+    // claim the task exists with no moves.
+    if (actions === null) {
+      return { ok: false, reason: 'UNKNOWN_TASK' };
+    }
+    // OVER THE ONE TREE THIS READ OPENED. A task lives in exactly one tree and its state
+    // is read from there, so the proof that matters to this answer is that tree's.
+    return {
+      ok: true,
+      id: input.id,
+      actions,
+      linkBreaks: linkBreaksOf([{ scope, chainRoot: root, cache }]),
+    };
+  });
 }

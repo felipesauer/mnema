@@ -48,8 +48,17 @@
  *   this workstation, 16 cores, node 24 .... 1635 ms
  *   the same, under v8 coverage ............ 2412 ms
  *
- * Nothing came within three seconds of the ceiling, in any of them, so no case needs one of its
- * own today and this ban costs nothing to keep. TWO THINGS IN THAT TABLE ARE WORTH THE READING.
+ * Nothing came within three seconds of the ceiling, in any of them, so no case needed one of its
+ * own on that day and this ban costs nothing to keep.
+ *
+ * ONE CASE NEEDS ONE NOW, AND IT IS THE HALF THE READING ABOVE COULD NOT SEE. The table is of
+ * cases that INHERIT, and it says what the slowest inheriting case cost; it cannot say whether
+ * some case is quietly spending most of everybody's ceiling. `chain/src/chain/tail-lock.test.ts`
+ * was: *refuses a tail a live process is holding* waits out two full lock timeouts on purpose,
+ * 4018 ms with the machine to itself against the shared 5000, and `why-it-went-red` reported it
+ * on every run. It carries a ceiling of its own now, with the wait named beside it. The ban is
+ * unchanged and this is what the ban is FOR — the repair was one line at one `it`, and the
+ * cheap line would have hidden it behind a number nobody would have looked at again. TWO THINGS IN THAT TABLE ARE WORTH THE READING.
  * The runner is not the slow machine — 1595 ms at its worst against this workstation's 1635 ms,
  * near parity — even though the suite's wall clock there is around 3x slower (101-134 s against
  * 36 s). Fewer workers on fewer cores contend less, and the slowest cases are pty and screen

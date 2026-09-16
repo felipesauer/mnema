@@ -18,6 +18,7 @@
  * what comes back.
  */
 
+import type { UpcasterRegistry } from '@mnema/chain';
 import { catalogUpcasters } from '@mnema/chain';
 import type { ScopedCache } from '@mnema/copilot';
 import { chainRootForScope, ProjectionCache, type ResolvedTrees, type Scope } from '@mnema/core';
@@ -25,6 +26,80 @@ import type { ScopedLinkBreak } from './record-integrity.js';
 
 /** The trees a composed read opens, in a fixed order. */
 export const SCOPES: readonly Scope[] = ['public', 'private', 'global'];
+
+/**
+ * THE OPEN AND THE CLOSE ARE ONE CALL, AND THIS MODULE IS THE ONLY PLACE THAT WRITES
+ * EITHER — the whole reason the three functions below exist rather than a `ProjectionCache.open`
+ * at each door.
+ *
+ * Measured: of the six production sites that opened a cache directly, THREE never closed
+ * it — `commands/guard.ts`, `commands/next-actions.ts` and `pinned-run.ts` each opened a
+ * handle and returned. What that leaks today is a SQLite handle and the tables behind it,
+ * in-memory (`CacheOptions.dbPath` has no production caller), in a process that exits a
+ * moment later — so the cost measured on the machine is nothing, and the defect is the
+ * shape rather than the bill. The day one of those three is called from the MCP server,
+ * which stays up, it becomes a handle per request; and a reader had no way to tell the
+ * three that leaked from the three that did not without reading every one of them.
+ *
+ * So the pairing is a function and the guard is structural: `the-record-is-opened-and-closed-
+ * together.test.ts` fails if any module of this package writes `ProjectionCache.open(`
+ * outside this file and the MCP's registry — the one place a cache is deliberately held
+ * open past the call that made it.
+ */
+
+/**
+ * Opens a rebuilt cache over ONE tree, hands it to `read`, and closes it before
+ * returning — including when the read throws.
+ *
+ * The rebuild is inside the `try` and the open is outside it, which is the ordering that
+ * makes the promise true: a replay that throws leaves a handle that this closes anyway.
+ */
+export function withCache<T>(
+  chainRoot: string,
+  upcasters: UpcasterRegistry,
+  read: (cache: ProjectionCache) => T,
+): T {
+  const cache = ProjectionCache.open(chainRoot, { upcasters });
+  try {
+    cache.rebuild();
+    return read(cache);
+  } finally {
+    cache.close();
+  }
+}
+
+/**
+ * The LAZY form: `read` is handed an opener and the growing list of what it opened, and
+ * every tree it opened is closed on the way out.
+ *
+ * It exists for the read that stops as soon as it finds what it came for — `show` walks
+ * the trees in order and opens the next one only when the last did not hold the id — and
+ * a read that opened all three to use one would pay for two replays it never looked at.
+ * {@link withScopedCaches} is this function with the walk filled in, so there is one
+ * close and not two.
+ */
+export function withOpenedCaches<T>(
+  trees: ResolvedTrees,
+  read: (open: (scope: Scope) => ScopedCache | undefined, opened: readonly ScopedCache[]) => T,
+): T {
+  const upcasters = catalogUpcasters();
+  const opened: ScopedCache[] = [];
+  try {
+    return read((scope) => {
+      const root = chainRootForScope(trees, scope);
+      if (root === undefined) return undefined;
+      const cache = ProjectionCache.open(root, { upcasters });
+      // Recorded BEFORE the replay, so a rebuild that throws still leaves a handle the
+      // `finally` below can close. The version this replaced pushed it after.
+      const source: ScopedCache = { scope, chainRoot: root, cache };
+      opened.push(source);
+      cache.rebuild();
+      return source;
+    }, opened);
+  } finally {
+    for (const source of opened) source.cache.close();
+  }
+}
 
 /**
  * Opens a rebuilt cache for every tree `trees` names, hands them to `read`, and
@@ -35,20 +110,10 @@ export function withScopedCaches<T>(
   trees: ResolvedTrees,
   read: (sources: readonly ScopedCache[]) => T,
 ): T {
-  const upcasters = catalogUpcasters();
-  const sources: ScopedCache[] = [];
-  try {
-    for (const scope of SCOPES) {
-      const root = chainRootForScope(trees, scope);
-      if (root === undefined) continue;
-      const cache = ProjectionCache.open(root, { upcasters });
-      cache.rebuild();
-      sources.push({ scope, chainRoot: root, cache });
-    }
-    return read(sources);
-  } finally {
-    for (const source of sources) source.cache.close();
-  }
+  return withOpenedCaches(trees, (open, opened) => {
+    for (const scope of SCOPES) open(scope);
+    return read(opened);
+  });
 }
 
 /**
