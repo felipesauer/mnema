@@ -205,9 +205,14 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * when the broken link had to reach every reader: the two halves of that proof —
  * `the-broken-link-reaches-every-reader.test.ts` over the source and
  * `the-agent-is-told-the-record-does-not-chain.test.ts` over a real MCP client — read
- * the tree, spawn a transport pair and plant a break in a tail by hand.
+ * the tree, spawn a transport pair and plant a break in a tail by hand. It went
+ * 2658 -> 2669 when the same fact had to reach a WRITE: eleven clauses in
+ * `the-write-says-what-it-landed-on.test.ts`, which stands up a real client over a
+ * transport pair, plants a break by hand and calls every tool that records or moves —
+ * so it reaches `node:fs`, `node:os`, `node:path`, `node:url`, the SDK's client and
+ * in-memory transport, and the chain's own `verify` to prove the break is really there.
  */
-const CLAUSES_IN_THE_TREE = 2658;
+const CLAUSES_IN_THE_TREE = 2669;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
