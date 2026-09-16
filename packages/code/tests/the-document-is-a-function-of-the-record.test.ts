@@ -20,27 +20,44 @@
  * would not be a red test; it would be `diff` reporting a difference that is not the
  * record's, which is the one signal this whole document rests on.
  *
- * SO THE GUARD IS THE IMPORT, and it is total rather than clever. `@mnema/copilot` is the
- * package that derives every answer this product serves, and it reaches the world through
- * caches its caller opened: it has never imported a module of the runtime, and the surfaces
- * that DO reach one are in `@mnema/code` (`commands/status.ts` resolves a path,
- * `outside-the-record.ts` lists a directory). A test that asked "is this value
- * volatile" would be a judgement about strings; asking whether the layer can reach a clock
- * or a filesystem at all is a fact about the source, and a new module that decided to is
- * red here on the day it is written rather than on the day two clones disagree.
+ * THE FIRST GUARD WAS THE IMPORT, AND THE IMPORT IS NOT THE ONLY DOOR. That is the premise
+ * this file was written on — *"a layer reaches the world through a module of the runtime, so
+ * match the specifier and the door is shut"* — and it is FALSE, measured the same way it was
+ * arrived at: with `process.cwd()` and `Date.now()` planted in `copilot/src/context/brief.ts`,
+ * the suite came back 4698 of 4698 GREEN and `pnpm lint` green with it. `process`, `Date`,
+ * `Math.random` and `globalThis` are already in scope; a clock needs no `import` at all, and
+ * the very doc-comment above names *"a `cwd`"* as a failure this net catches. It did not.
+ *
+ * SO THE NET IS TWO NETS, one per door, and the property is the promise rather than either
+ * spelling of it. The import net matches the SPECIFIER on the raw source; the global net
+ * matches the identifier on the source with comments, strings and patterns blanked, because
+ * a global is an identifier in code and `codeOnly` is what tells one from a mention of one.
+ * Neither is clever: what is banned is the whole global, with the two members of `Date` that
+ * read no clock named as what they are. That list is a fact of the LANGUAGE — `Date.parse`
+ * and `Date.UTC` are string-and-number functions — rather than a list of what this
+ * repository happens to call today, which is the kind of list that rots.
  *
  * THE PRINTER IS IN IT TOO, for the same reason at the other end: `presentation/brief.ts`
  * composes the bytes, and a printer that read an environment variable would move them just
  * as far. The adapter between them is deliberately NOT in this net — it is where the disk
  * is supposed to be touched, and a guard that accused it would be a guard somebody has to
  * write an exception into within a week.
+ *
+ * ITS SIBLING IS `presentation/parts.test.ts`, AND THEY ASK DIFFERENT QUESTIONS. That one
+ * bans `process.env`, `process.stdout`, `isTTY`, `NO_COLOR` and a colour library in
+ * `code/src/presentation/` — a ban on asking WHERE THE OUTPUT IS GOING, over the raw source,
+ * one directory deep. This one bans reaching the machine at all, over `codeOnly`, across a
+ * whole package and recursively. They overlap on `process` in one directory and neither
+ * subsumes the other, and the reason they are two is that they would be reconciled by
+ * deleting a question: a renderer may not paint, and a derivation may not read a clock, and
+ * the second says nothing about colour.
  */
 
 import { readFileSync } from 'node:fs';
 import { dirname, join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { sourceFiles } from './support/reading-source.js';
+import { codeOnly, sourceFiles } from './support/reading-source.js';
 
 const PACKAGES = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -78,10 +95,56 @@ const PURE: readonly { readonly what: string; readonly root: string }[] = [
 const REACHES_THE_MACHINE =
   /^import\s(?:[^;]*?\bfrom\s+)?['"](?:node:)?(?:fs|path|os|process|child_process|crypto|url|tty|dns|net|http|https)(?:\/[a-z]+)?['"]/m;
 
+/**
+ * A global of this machine, reached with NO import at all — the other door.
+ *
+ * It matches a USE rather than a name, which is what keeps a type annotation out of it:
+ * `Date` alone is `const at: Date`, while `new Date`, `Date(`, `Date.now` and `Math.round`
+ * are the machine being asked something. `process`, `globalThis`, `performance`,
+ * `__dirname` and `__filename` are values wherever they appear, so the bare identifier is
+ * the whole match; `require(` is matched at the call because a `require` in these packages
+ * could only be one.
+ *
+ * IT MUST RUN OVER `codeOnly`. Every one of these names appears in the prose of this
+ * repository — `process` alone is in nine doc-comments of the two roots — and a net over
+ * raw source would accuse every one of them. Blanking comments, strings and patterns is
+ * what turns "the word appears" into "the code does it".
+ */
+const A_GLOBAL_OF_THIS_MACHINE =
+  /\b(?:new\s+Date\b|Date\s*(?:\.\s*[A-Za-z_$][\w$]*|\()|Math\s*\.\s*[A-Za-z_$][\w$]*|process\b|globalThis\b|performance\b|require\s*\(|__dirname\b|__filename\b)/g;
+
+/**
+ * The members of a banned global that read NOTHING — a fact of the language rather than an
+ * allowance for a call site.
+ *
+ * `Date.parse` and `Date.UTC` take a string or numbers and return a number; `Math` is pure
+ * whole except for `Math.random`. Everything else on those two objects reads the clock or
+ * the entropy pool, and everything on the other globals reads the machine. A member that is
+ * not named here goes red on the day it is written — including one nobody has thought of —
+ * which is the opposite of a list of exceptions that grows by one each time.
+ */
+const READ_NOTHING = new Set(['Date.parse', 'Date.UTC']);
+
+/** Whether one matched use is the machine being read. */
+function readsThisMachine(use: string): boolean {
+  const said = use.replace(/\s+/g, '').replace(/^new/, '');
+  if (said.startsWith('Math.')) return said === 'Math.random';
+  if (said.startsWith('Date')) return !READ_NOTHING.has(said);
+  return true;
+}
+
+/** Every use of a machine global in one file's code, prose and literals excluded. */
+function globalsOf(source: string): string[] {
+  return (codeOnly(source).match(A_GLOBAL_OF_THIS_MACHINE) ?? []).filter(readsThisMachine);
+}
+
 /** Every file under `root` whose source reaches the machine, by repo-relative path. */
 function reachTheMachine(root: string): string[] {
   return sourceFiles(root)
-    .filter((path) => REACHES_THE_MACHINE.test(readFileSync(path, 'utf-8')))
+    .filter((path) => {
+      const source = readFileSync(path, 'utf-8');
+      return REACHES_THE_MACHINE.test(source) || globalsOf(source).length > 0;
+    })
     .map((path) =>
       path
         .slice(PACKAGES.length + 1)
@@ -129,6 +192,46 @@ describe('the bytes of the document move when the record moves, and at no other 
     expect(REACHES_THE_MACHINE.test("const said = readFileSync('x');")).toBe(false);
   });
 
+  it('accuses the global that needs no import — the mutation that went green', () => {
+    // THE SECOND NET'S TEETH, and the input is the mutation that falsified this file's own
+    // premise: both of these, planted in `copilot/src/context/brief.ts`, left the suite at
+    // 4698 of 4698 green while the import net was the only one here.
+    expect(globalsOf('const root = process.cwd();')).toEqual(['process']);
+    expect(globalsOf('const at = Date.now();')).toEqual(['Date.now']);
+    // The rest of the door, each on the form somebody would write.
+    expect(globalsOf('const at = new Date();')).toEqual(['new Date']);
+    expect(globalsOf('const pick = Math.random();')).toEqual(['Math.random']);
+    expect(globalsOf('const g = globalThis.crypto;')).toEqual(['globalThis']);
+    expect(globalsOf('const t = performance.now();')).toEqual(['performance']);
+    expect(globalsOf("const x = require('node:fs');")).toEqual(['require(']);
+    expect(globalsOf('const here = __dirname;')).toEqual(['__dirname']);
+  });
+
+  it('leaves the pure members and the prose alone, or it is a net nobody can live with', () => {
+    // THE OTHER HALF OF THE SECOND NET. A guard that accused arithmetic and doc-comments
+    // would be turned off within a week, and these are the exact uses the two roots make
+    // today: three `Date.parse` and seven `Math.<something>`, none of which reads anything.
+    expect(globalsOf('const at = Date.parse(envelope.at);')).toEqual([]);
+    expect(globalsOf('const at = Date.UTC(2026, 0, 1);')).toEqual([]);
+    expect(globalsOf('const w = Math.max(a, b) - Math.floor(c);')).toEqual([]);
+    // A type annotation is not a use, and neither is a word in prose or in a string.
+    expect(globalsOf('function since(at: Date): number { return 1; }')).toEqual([]);
+    expect(globalsOf("const said = 'the process reads Date.now()';")).toEqual([]);
+    // The prose cases carry the comment's OPENING, and that is the probe's own finding
+    // rather than decoration: `codeOnly` blanks a block from `/*`, so a bare ` * …` line
+    // handed to it on its own reads as code and both words are accused. Real source always
+    // carries the opening; a probe that dropped it would be testing a file that cannot
+    // exist, and this one said so by going red.
+    expect(
+      globalsOf('/**\n * a command-line process opens them, and Date.now is read.\n */'),
+    ).toEqual([]);
+    expect(globalsOf('// process.cwd() is banned in this layer, and so is Date.now().')).toEqual(
+      [],
+    );
+    // And a name that merely starts with a banned one is a different name.
+    expect(globalsOf('const processed = performanceBudget;')).toEqual([]);
+  });
+
   it('leaves the ADAPTER out, and says so by naming what it does', () => {
     // The other half of a total rule: the disk is touched, and it is touched where the
     // product says it is. A net that accused these would be a net somebody writes an
@@ -142,11 +245,14 @@ describe('the bytes of the document move when the record moves, and at no other 
   });
 
   it('says what it does NOT cover, so the promise is not wider than the net', () => {
-    // THE LIMIT, AND IT IS A REAL ONE. This guards the DIRECT reach — an import of the
-    // runtime — which is the shape the mutation took and the shape a person writes. A layer
-    // could still reach a disk INDIRECTLY, by importing a function of `@mnema/core` that
-    // does: `resolveTrees` walks the filesystem and `systemClock` reads a clock, and both
-    // are on that package's surface. Nothing here would see it.
+    // THE LIMIT, AND IT IS A REAL ONE — but it is no longer the one this case used to
+    // state. It read "this guards the DIRECT reach — an import of the runtime — which is
+    // the shape the mutation took and the shape a person writes", and that sentence was
+    // what let `process.cwd()` through: a person writes a global just as readily, and
+    // `cwd` was named in the doc-comment above as something caught. Both doors are shut
+    // now, and what remains open is the INDIRECT one: a layer can still reach a disk by
+    // importing a function of `@mnema/core` that does. `resolveTrees` walks the filesystem
+    // and `systemClock` reads a clock, and both are on that package's surface.
     //
     // It is declared rather than closed because closing it is a different guard — which
     // exports of `core` touch the world, derived from `core`'s own source rather than from
