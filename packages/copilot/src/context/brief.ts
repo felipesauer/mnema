@@ -66,8 +66,8 @@
  *     within one chain and frozen at write time, so the union prints one number for
  *     two different rules — and the label exists to be cited. A citable handle that
  *     does not identify is the defect, not the breadth;
- *   - and the private decision's TITLE reached a file whose published recipe is
- *     `mnema brief > AGENTS.md` and a commit. The private tree exists precisely so
+ *   - and the private decision's TITLE reached a file whose published recipe is a
+ *     redirection and a commit. The private tree exists precisely so
  *     that what is in it does not travel.
  * So what this composes is the tree that travels ({@link TRAVELS}) and nothing else:
  * the content of a committed document is what a clone gets, the ADR label is NUMBERED

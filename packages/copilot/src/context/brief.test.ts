@@ -242,8 +242,8 @@ describe('brief — everything that governs the work here', () => {
     // that says the committed rule is served — which is how this defect got here.
     //
     // It is the requirement of the whole slice. What this composes becomes a file with
-    // a published recipe (`mnema brief > AGENTS.md`) and a commit, so a rule recorded
-    // on one machine must not be in it: the private tree exists in order not to travel.
+    // a published recipe (a redirection) and a commit, so a rule recorded on one machine
+    // must not be in it: the private tree exists in order not to travel.
     const team = bench();
     const machine = bench();
     const personal = bench();

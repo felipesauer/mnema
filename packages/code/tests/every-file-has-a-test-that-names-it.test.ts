@@ -197,9 +197,13 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * 2587 -> 2594 when the attribution footer got a machine: seven clauses in
  * `the-link-cannot-come-back.test.ts`, which builds a repository under a temp directory of
  * its own and commits into it, so it reaches `node:child_process` and `node:fs` as well as
- * the scanner under `.github/` that the row in {@link LED_NOWHERE} is about.
+ * the scanner under `.github/` that the row in {@link LED_NOWHERE} is about. It went
+ * 2638 -> 2643 when the published recipe had to say what it overwrites: five clauses in
+ * `the-recipe-says-what-it-overwrites.test.ts`, which builds the program to capture the
+ * help pages as the binary writes them and composes the document beside them, so the two
+ * places that teach `mnema brief >` are ruled on by one reading.
  */
-const CLAUSES_IN_THE_TREE = 2638;
+const CLAUSES_IN_THE_TREE = 2643;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
