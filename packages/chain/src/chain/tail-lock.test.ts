@@ -196,7 +196,25 @@ describe('the lock a writer holds while it appends', () => {
     writeFileSync(path, `${pid} ${since}\n`, 'utf-8');
   }
 
-  it('refuses a tail a live process is holding, and appends nothing', () => {
+  /**
+   * THE ONE CASE IN THIS WORKSPACE WITH A CEILING OF ITS OWN, and the line says what it
+   * waits on: a lock held by a process that is alive and stays alive, which is a wait the
+   * writer is SUPPOSED to serve out. It appends twice — once for the refusal and once for
+   * what the refusal says — so it spends two full `DEFAULT_WAIT_MS` of 2000 ms by design.
+   *
+   * Measured by `pnpm why-it-went-red`: 4044 ms inside the suite and 4018 ms with the
+   * machine to itself, against a shared ceiling of 5000 ms. So it was not failing — it was
+   * spending four fifths of everybody's ceiling while declaring nothing, which is the
+   * reading `.github/why-it-went-red/` calls WAITS WITHOUT SAYING SO, and it was reported
+   * on every run. A case one second from a ceiling it never declared is a red waiting for a
+   * busy minute.
+   *
+   * 20000 ms is five times the 4000 ms it waits on purpose. The margin is sized from the
+   * spread that same ban measured rather than guessed: two runs of one commit on one image
+   * differed more than two machines did, and coverage instrumentation charges 1.48x to the
+   * heaviest case.
+   */
+  it('refuses a tail a live process is holding, and appends nothing', { timeout: 20_000 }, () => {
     const w = founded();
     const before = entries().length;
     const lock = tailLockPath({ root }, w.tail);
