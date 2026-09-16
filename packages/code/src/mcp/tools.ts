@@ -1166,14 +1166,21 @@ function locateEntity(session: Session, id: string): EntityLocation {
  * workspace names is skipped rather than reported scopeless: a break has to say which
  * tree it is in, and a root nothing names is one this session can no longer place.
  *
- * AND THAT COST IS WHAT BOUNDS IT, in two ways a caller has to know rather than
- * discover. A connection whose FIRST call is a write has opened no cache, so it is told
- * nothing — a write marks its tree stale and never opens it. And a cache opened over a
- * tree that was sound, which another process then breaks, keeps answering from the
- * replay it has: the break is at or below the frontier, so the incremental catch-up
- * finds nothing arrived (see {@link ProjectionCache.linkBreaks}, where the measurement
- * is). Both are held end to end by
- * `tests/the-write-says-what-it-landed-on.test.ts`, so they redden rather than fade.
+ * AND THAT COST IS WHAT BOUNDS IT, in a way a caller has to know rather than discover.
+ * A connection whose FIRST call is a write has opened no cache, so it is told nothing —
+ * a write marks its tree stale and never opens it. More than that: a write never
+ * REFRESHES one either, so a connection that has read before is told what its last read
+ * knew, and a break that appeared since reaches it on its next read rather than on this
+ * write. `tests/the-write-says-what-it-landed-on.test.ts` holds both, so they redden
+ * rather than fade.
+ *
+ * A SECOND BOUND USED TO BE HERE AND IS GONE. It said a cache opened over a sound tree
+ * that another process then broke keeps answering from the replay it has, because the
+ * break is at or below the frontier and the catch-up finds nothing arrived. That was
+ * true while the frontier recorded the `seq` it reached; it records the BYTE now, so
+ * the arrivals include a duplicate of the boundary entry and the catch-up rules on it
+ * ({@link ProjectionCache.linkBreaks}). What survives of it is narrower: a break below
+ * the boundary — the bytes a previous reading already took — is still outside.
  */
 export function sessionLinkBreaks(session: Session): readonly ScopedLinkBreak[] {
   const scopeOf = new Map(workspaceTrees(session).map((tree) => [tree.chainRoot, tree.scope]));

@@ -21,7 +21,7 @@ import {
   tailDir,
   tailsDir,
 } from './layout.js';
-import { parsedFromEnd, parseStoredLine } from './lines.js';
+import { locatedFromEnd, parsedFromEnd, parseStoredLine } from './lines.js';
 
 /** Lists the tail ids present in a chain (each is one machine's directory). */
 export function listTails(layout: ChainLayout): string[] {
@@ -87,6 +87,12 @@ interface SegmentRead {
   readonly entries: Entry[];
   /** The file's last line was dropped by the torn-fragment rule. */
   readonly partialFinalLine: boolean;
+  /**
+   * The offset, in bytes, just past the last entry this read ACCEPTED — so a torn
+   * final fragment is not counted, and a resumed read starts where the intact
+   * prefix ended rather than inside the fragment.
+   */
+  readonly bytes: number;
 }
 
 /**
@@ -113,8 +119,19 @@ function entriesOfSegment(file: string, upcasters: UpcasterRegistry, isLast: boo
   // a line refuses to parse. See {@link parseStoredLine}.
   let at = 0;
   const where = (): string => `${file} line ${at}`;
+  // Walked alongside the parse rather than measured afterwards, because the answer is
+  // about THESE bytes: a second pass could be reading a file that grew under it.
+  // `offset` is where the current line starts; `bytes` trails it at the end of the
+  // last ACCEPTED entry, so a torn final fragment leaves the boundary before itself.
+  let offset = 0;
+  let bytes = 0;
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i] as string;
+    // In BYTES, which `line.length` is not: a single non-ASCII character in a title
+    // would put every offset after it past where the entry really ends.
+    const size = Buffer.byteLength(line, 'utf-8');
+    const start = offset;
+    offset += size + 1;
     if (line.length === 0) continue;
     const couldBeTorn = isLast && !endsWithNewline && i === lines.length - 1;
     at = i + 1;
@@ -124,10 +141,33 @@ function entriesOfSegment(file: string, upcasters: UpcasterRegistry, isLast: boo
       (stored) => parseEntry(stored, upcasters),
       where,
     );
-    if (entry !== null) entries.push(entry);
-    else partialFinalLine = true;
+    if (entry !== null) {
+      entries.push(entry);
+      bytes = start + size + 1;
+    } else partialFinalLine = true;
   }
-  return { entries, partialFinalLine };
+  return { entries, partialFinalLine, bytes };
+}
+
+/**
+ * WHERE a reading of a tail stopped — the segment it ended in, and how far into it.
+ *
+ * It is a POSITION and not a `seq`, and that distinction is the whole point. A seq says
+ * which entry a reading ended on, and two entries can carry the same seq: that is
+ * exactly what a broken tail holds. Asked "is the entry at seq N still there?", a tail
+ * whose last entry was appended a second time answers YES — the duplicate IS at seq N —
+ * so a resumed reading anchored on the seq finds its boundary intact and reports that
+ * nothing arrived. Anchored on the byte it stopped at, that duplicate is past the
+ * boundary, so it is an arrival like any other and the chaining rule rules on it.
+ *
+ * `bytes` is past the last entry the reading ACCEPTED, so a torn final fragment falls
+ * outside the boundary and a later reading re-reads it rather than resuming inside it.
+ */
+export interface TailBoundary {
+  /** The segment file the reading ended in, as {@link orderedSegments} names it. */
+  readonly segment: string;
+  /** The offset, in bytes, just past the last entry accepted from that segment. */
+  readonly bytes: number;
 }
 
 /** Where a tail stops chaining, and what is wrong there. */
@@ -165,6 +205,11 @@ export interface TailRead {
    * a list of consequences. The verdict that enumerates belongs to `verify`.
    */
   readonly linkBreak?: LinkBreak;
+  /**
+   * Where this reading stopped, for a later one to resume from — undefined for a tail
+   * that holds no entry at all, which has no position to name.
+   */
+  readonly boundary?: TailBoundary;
 }
 
 /**
@@ -191,16 +236,24 @@ export function readTail(
   const segments = orderedSegments(layout, tailId);
   const entries: Entry[] = [];
   let partialFinalLine = false;
+  let boundary: TailBoundary | undefined;
   for (let s = 0; s < segments.length; s += 1) {
     const file = segments[s] as string;
     const read = entriesOfSegment(file, upcasters, s === segments.length - 1);
     for (const entry of read.entries) entries.push(entry);
     if (read.partialFinalLine) partialFinalLine = true;
+    // The end of the last segment that YIELDED an entry, not of the last segment read.
+    // A tail whose current segment is empty — a writer truncated a torn fragment out of
+    // it — ends, as far as a resumed reading goes, at the end of the sealed one before.
+    if (read.entries.length > 0) boundary = { segment: file, bytes: read.bytes };
   }
   const linkBreak = firstLinkBreak(tailId, entries);
-  return linkBreak === undefined
-    ? { entries, partialFinalLine }
-    : { entries, partialFinalLine, linkBreak };
+  return {
+    entries,
+    partialFinalLine,
+    ...(linkBreak !== undefined ? { linkBreak } : {}),
+    ...(boundary !== undefined ? { boundary } : {}),
+  };
 }
 
 /** The first entry that does not follow the one before it, asked of the shared rule. */
@@ -283,6 +336,65 @@ export function readTailTip(
     if (reachedCoverage) break;
   }
   return tip.reverse();
+}
+
+/** What a resumed reading of a tail found: the arrivals, and where it now stands. */
+export interface TailSince {
+  /** The entries past the boundary, in seq order — empty for a tail that did not move. */
+  readonly arrivals: Entry[];
+  /** Where this reading stopped, for the reading after it. */
+  readonly boundary: TailBoundary;
+}
+
+/**
+ * The entries of a tail PAST a boundary a previous reading left — the arrivals, in seq
+ * order, or undefined when the tail no longer holds that boundary.
+ *
+ * It is {@link readTailTip} asked the question a resumed reading actually has. The tip
+ * is asked for entries above a `seq` and stops at the first entry CARRYING it, which a
+ * duplicate of that entry satisfies; this is asked for entries past a BYTE, which an
+ * entry appended after the boundary cannot satisfy by being a copy of one before it.
+ * That is the difference between a resumed reading that can see a break planted at its
+ * own boundary and one that cannot — see {@link TailBoundary}.
+ *
+ * Undefined means the tail no longer holds the boundary: the segment is gone, or it
+ * holds fewer bytes than the reading that set the boundary took from it. Both are FACTS
+ * rather than edge cases — segments are sealed and append-only, so the only way either
+ * happens is that the tail was cut.
+ *
+ * It costs the arrivals and not the tail: the walk is backwards from the end and stops
+ * at the boundary, so a tail that did not move reads one chunk.
+ */
+export function readTailSince(
+  layout: ChainLayout,
+  tailId: string,
+  upcasters: UpcasterRegistry,
+  boundary: TailBoundary,
+): TailSince | undefined {
+  const segments = orderedSegments(layout, tailId);
+  const at = segments.indexOf(boundary.segment);
+  if (at < 0) return undefined;
+  const arrivals: Entry[] = [];
+  let reached: TailBoundary | undefined;
+  for (let s = segments.length - 1; s >= at; s -= 1) {
+    const file = segments[s] as string;
+    const parse = (line: string): Entry => parseEntry(line, upcasters);
+    for (const found of locatedFromEnd(file, s === segments.length - 1, parse)) {
+      // A line STARTING before the boundary is at or below it: the walk has reached what
+      // the previous reading covered, and everything pushed so far is new. Only the
+      // boundary's OWN segment is walked into — every segment after it arrived whole.
+      if (s === at && found.start < boundary.bytes) {
+        return { arrivals: arrivals.reverse(), boundary: reached ?? boundary };
+      }
+      // The walk's first line is the tail's last, so this is set once and names the end
+      // of the newest entry — `+ 1` for the newline that ends it.
+      reached ??= { segment: file, bytes: found.end + 1 };
+      arrivals.push(found.value);
+    }
+  }
+  // The walk ran off the front of the boundary's segment without reaching the offset:
+  // the file holds fewer bytes than the reading that set the boundary read from it.
+  return undefined;
 }
 
 /**

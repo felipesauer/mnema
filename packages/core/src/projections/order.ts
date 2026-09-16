@@ -39,8 +39,8 @@ import {
   listTails,
   orderedSegments,
   readTail,
-  readTailEntries,
-  readTailTip,
+  readTailSince,
+  type TailBoundary,
   type UpcasterRegistry,
 } from '@mnema/chain';
 
@@ -51,6 +51,15 @@ import {
  * (see {@link streamsOf}) so two trees that happen to share a tail id — the same
  * person's key installs into each — still merge to one stable order.
  */
+/**
+ * What a reading of one tail contributed, and where it left off — the shape both the
+ * resumed reading and the whole one answer in, so {@link chainArrivals} has one case.
+ */
+interface ReadSoFar {
+  readonly arrivals: readonly Entry[];
+  readonly boundary: TailBoundary | undefined;
+}
+
 interface TailStream {
   readonly key: string;
   readonly events: readonly CatalogEvent[];
@@ -63,6 +72,11 @@ interface TailStream {
    */
   readonly tail: string;
   readonly lastSeq: number;
+  /**
+   * Where the reading of this tail stopped, in bytes — undefined for a tail that held
+   * nothing. It rides along for the same reason `lastSeq` does: the reading had it.
+   */
+  readonly boundary?: TailBoundary;
   /** Where this tail stopped chaining, if it did — carried with the reading of it. */
   readonly linkBreak?: LinkBreak;
 }
@@ -94,8 +108,29 @@ export function orderedEvents(layout: ChainLayout, upcasters: UpcasterRegistry):
  * chain no longer holds.
  */
 export interface TailReach {
-  /** The last `seq` read from this tail, or -1 for a tail that held nothing. */
+  /**
+   * The last `seq` read from this tail, or -1 for a tail that held nothing.
+   *
+   * It says what the arrivals must CONTINUE from, and nothing else. It used to say
+   * where to resume READING from as well, and that is the premise {@link boundary}
+   * falsified — see there.
+   */
   readonly lastSeq: number;
+  /**
+   * WHERE the reading stopped, in bytes — the position the arrivals are read from.
+   * Undefined for a tail that held nothing, which has no position to name.
+   *
+   * THE SEQ USED TO BE BOTH, AND THAT WAS THE HOLE. Resuming from `lastSeq` means
+   * asking the tail for the entries above it, and the walk that answers stops at the
+   * first entry CARRYING that seq — which a duplicate of the boundary entry satisfies.
+   * Measured, over a tail whose last entry was appended a second time, a full replay
+   * reported ONE break while a resumed reading reported that nothing had arrived at
+   * all. Resumed from the BYTE, that duplicate is past the boundary, so it is an
+   * arrival like any other and {@link chainArrivals} rules on it with the same rule it
+   * applies to everything else. `order.test.ts` ("a resumed reading sees a duplicate of
+   * the boundary entry") holds it.
+   */
+  readonly boundary: TailBoundary | undefined;
   /** The tail's segment files, in order, as they stood when it was read. */
   readonly segments: readonly string[];
   /**
@@ -156,6 +191,7 @@ export function chainReplay(layout: ChainLayout, upcasters: UpcasterRegistry): C
     // the list is what a later reading needs to know the chain did not shrink.
     tails.set(stream.tail, {
       lastSeq: stream.lastSeq,
+      boundary: stream.boundary,
       segments: orderedSegments(layout, stream.tail),
       latestAt: latestAt(stream.events),
     });
@@ -192,10 +228,10 @@ export type ChainArrivals =
  * What the chain holds beyond `frontier` — as a SUFFIX of the order that frontier
  * covered, or a refusal saying no suffix describes it.
  *
- * It costs the arrivals and not the chain: per tail it reads only the entries above
- * the proven position the frontier recorded ({@link readTailTip}, whose cost is the
- * entries returned and not the file they sit in). A chain that did not move is one
- * boundary entry per tail.
+ * It costs the arrivals and not the chain: per tail it reads only the entries past the
+ * BYTE the frontier stopped at ({@link readTailSince}, whose cost is the entries
+ * returned and not the file they sit in). A chain that did not move is one entry per
+ * tail — the newest, which the backward walk reads before it reaches the boundary.
  *
  * WHY A SUFFIX AND NOT JUST "THE NEW EVENTS". The merge places an event by its `at`
  * against the heads of every other tail, so a tail that arrives holding an OLDER
@@ -241,6 +277,13 @@ export type ChainArrivals =
  *     break is ({@link ChainReplay.linkBreaks}), and the incremental walk, which never
  *     sees the entries below the boundary, cannot.
  *
+ *     IT USED TO MISS THE COMMONEST SHAPE OF BREAK, and the cause was where the
+ *     arrivals were read from rather than this rule. A tail resumed from its last
+ *     `seq` yields nothing when its boundary entry has been appended a second time —
+ *     the duplicate carries that seq, so the walk stops on it and reports an empty
+ *     suffix. Resumed from the boundary BYTE the duplicate is an arrival, this rule
+ *     sees it, and the full reading follows. `order.test.ts` holds it.
+ *
  * The caller's move in all three is the same and is not this function's to make: read
  * the whole chain again.
  */
@@ -263,18 +306,22 @@ export function chainArrivals(
     if (covered !== undefined && !startsWith(segments, covered.segments)) {
       return { suffix: false, why: 'A_TAIL_WAS_CUT' };
     }
-    // A tail nothing was read from — one that appeared, or one that was empty when
-    // the frontier was taken — contributes all of itself. `readTailTip` would do the
-    // same walk with no boundary to stop at, so this asks for the whole tail plainly.
-    const entries =
-      covered === undefined || covered.lastSeq < 0
-        ? readTailEntries(layout, tail, upcasters)
-        : aboveBoundary(readTailTip(layout, tail, upcasters, covered.lastSeq), covered.lastSeq);
-    if (entries === undefined) return { suffix: false, why: 'A_TAIL_WAS_CUT' };
-    // The arrivals have to run on from the boundary the frontier stopped at, by the
-    // verifier's own rule. The `prev` of the first arrival is not checkable here (the
-    // frontier keeps the seq it reached, not the hash), so this asks the question the
-    // boundary CAN answer, and hands the rest to the full reading.
+    // A tail nothing was read from — one that appeared, or one that was empty when the
+    // frontier was taken — contributes all of itself: there is no position to resume
+    // from, so this asks for the whole tail plainly.
+    const since =
+      covered === undefined || covered.boundary === undefined
+        ? wholeTail(layout, tail, upcasters)
+        : readTailSince(layout, tail, upcasters, covered.boundary);
+    if (since === undefined) return { suffix: false, why: 'A_TAIL_WAS_CUT' };
+    const entries = since.arrivals;
+    // The arrivals have to run on from the seq the frontier stopped at, by the
+    // verifier's own rule. It is asked over the ENTRIES PAST THE BOUNDARY BYTE, which
+    // is what lets it see a duplicate of the boundary entry: read from the seq instead,
+    // that duplicate would satisfy the boundary and never be an arrival at all (see
+    // {@link TailReach.boundary}). What is still outside this question is a break BELOW
+    // the boundary — bytes a previous reading already accepted — and that is the full
+    // reading's to find, not this one's.
     if (arrivalsDoNotChain(tail, entries, covered?.lastSeq ?? -1)) {
       return { suffix: false, why: 'AN_ARRIVAL_DOES_NOT_CHAIN' };
     }
@@ -285,6 +332,7 @@ export function chainArrivals(
     const fresh = entries.map((entry) => entry.event);
     reached.set(tail, {
       lastSeq,
+      boundary: since.boundary,
       segments,
       latestAt: greater(covered?.latestAt ?? '', latestAt(fresh)),
     });
@@ -329,18 +377,22 @@ function startsWith(list: readonly string[], prefix: readonly string[]): boolean
 }
 
 /**
- * The entries of a tip strictly above the boundary, or undefined when the tip does
- * not hold the boundary at all.
+ * A tail read WHOLE, in the shape a resumed reading returns — for the tail that has no
+ * boundary to resume from because the frontier found it empty, or did not find it.
  *
- * {@link readTailTip} keeps the entry it stopped on, and that kept entry is the
- * PROOF the tail still holds what was covered: seqs are contiguous along a tail, so
- * the only way an entry at exactly `covered` is missing is that the tail was cut
- * below it. Its absence is therefore a fact and not an edge case.
+ * THIS REPLACED `aboveBoundary`, which took the tip a `seq`-anchored read returned and
+ * sliced off the entry it stopped on, trusting that entry to be the one the frontier
+ * had covered. That trust is what a duplicate of the boundary entry broke: the walk
+ * stopped on the COPY, the slice removed it, and the real arrival — the copy itself —
+ * was gone from the result. Anchored on a byte there is nothing to slice, so nothing to
+ * trust: see {@link TailReach.boundary}.
  */
-function aboveBoundary(tip: readonly Entry[], covered: number): Entry[] | undefined {
-  if (tip.length === 0) return undefined;
-  if ((tip[0] as Entry).link.seq !== covered) return undefined;
-  return tip.slice(1);
+function wholeTail(layout: ChainLayout, tail: string, upcasters: UpcasterRegistry): ReadSoFar {
+  const read = readTail(layout, tail, upcasters);
+  // A tail that holds no entry has no position, so the frontier records `undefined`
+  // for it and the reading after this one reads it whole again — which costs nothing,
+  // because there is nothing there.
+  return { arrivals: read.entries, boundary: read.boundary };
 }
 
 /** The greatest `at` in an order, or the empty string when it holds nothing. */
@@ -444,6 +496,7 @@ function rewound(streams: readonly TailStream[]): TailStream[] {
     cursor: 0,
     tail: stream.tail,
     lastSeq: stream.lastSeq,
+    ...(stream.boundary !== undefined ? { boundary: stream.boundary } : {}),
   }));
 }
 
@@ -466,6 +519,7 @@ function streamsOf(layout: ChainLayout, upcasters: UpcasterRegistry, prefix: str
       cursor: 0,
       tail,
       lastSeq: entries.length === 0 ? -1 : (entries[entries.length - 1] as Entry).link.seq,
+      ...(read.boundary !== undefined ? { boundary: read.boundary } : {}),
       ...(read.linkBreak !== undefined ? { linkBreak: read.linkBreak } : {}),
     };
   });

@@ -1,4 +1,12 @@
-import { cpSync, mkdtempSync, rmSync } from 'node:fs';
+import {
+  appendFileSync,
+  cpSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -9,7 +17,13 @@ import {
   taskTransitioned,
 } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { orderedEvents, orderedEventsOfRecord } from './order.js';
+import {
+  type ChainReplay,
+  chainArrivals,
+  chainReplay,
+  orderedEvents,
+  orderedEventsOfRecord,
+} from './order.js';
 
 let rootA: string;
 let rootB: string;
@@ -202,3 +216,199 @@ describe('orderedEventsOfRecord — the same tails, ordered two ways, read once'
 function bySubject(a: { subject: string }, b: { subject: string }): number {
   return a.subject < b.subject ? -1 : a.subject > b.subject ? 1 : 0;
 }
+
+/**
+ * A RESUMED READING AND THE BOUNDARY IT RESUMES FROM.
+ *
+ * These hold the repair `TailReach.boundary` names. The frontier used to record the
+ * `seq` each tail was read to, and the walk that resumes from a seq stops at the first
+ * entry CARRYING it — which a duplicate of the boundary entry satisfies. Measured, a
+ * full replay reported one break over such a tail and a resumed reading reported that
+ * nothing had arrived. The frontier records the BYTE now.
+ *
+ * The plant is the tail's last line appended again: the same `seq`, the same `prev`,
+ * byte for byte. Its DUPLICATES are the point — a shape whose bytes are identical to
+ * something already read is exactly what a content hash cannot tell apart, which is why
+ * the boundary is a position and not a hash.
+ */
+describe('chainArrivals — a break planted at the boundary', () => {
+  /** The tail's last line, appended again. Returns the seqs the tail then holds. */
+  function duplicateLastEntries(root: string, howMany: number): number[] {
+    const tails = join(root, 'tails');
+    const tail = readdirSync(tails)[0] as string;
+    const file = join(tails, tail, '000001.jsonl');
+    const lines = readFileSync(file, 'utf-8').trimEnd().split('\n');
+    appendFileSync(file, `${lines.slice(lines.length - howMany).join('\n')}\n`, 'utf-8');
+    return readFileSync(file, 'utf-8')
+      .trimEnd()
+      .split('\n')
+      .map((line) => (JSON.parse(line) as { link: { seq: number } }).link.seq);
+  }
+
+  /** A chain of three facts on one tail, and the frontier a full reading of it leaves. */
+  function seeded(): ChainReplay {
+    const w = openChainForWriting(rootA, { keyRoot: rootA });
+    w.append(taskCreated(env('t-1', '2026-07-21T00:00:00.000Z'), { title: 'first' }));
+    w.append(taskCreated(env('t-2', '2026-07-21T00:00:01.000Z'), { title: 'second' }));
+    w.append(taskCreated(env('t-3', '2026-07-21T00:00:02.000Z'), { title: 'third' }));
+    return chainReplay({ root: rootA }, upcasters);
+  }
+
+  // THE CASE THE REPAIR EXISTS FOR, and it is asserted against the FULL reading of the
+  // same bytes rather than against a number written here: the two used to disagree.
+  it.each([
+    ['the last entry', 1],
+    ['the last two', 2],
+    ['the last three', 3],
+  ])('refuses a suffix when %s is duplicated, as the full reading sees a break', (_, many) => {
+    const before = seeded();
+    expect(before.linkBreaks).toHaveLength(0);
+
+    const seqs = duplicateLastEntries(rootA, many);
+    // The plant really is at or below the frontier — nothing NEW is above it.
+    expect(Math.max(...seqs)).toBe(before.frontier.tails.values().next().value?.lastSeq);
+
+    const arrived = chainArrivals({ root: rootA }, upcasters, before.frontier);
+    expect(arrived.suffix).toBe(false);
+    expect(arrived.suffix === false && arrived.why).toBe('AN_ARRIVAL_DOES_NOT_CHAIN');
+    // And the full reading of those same bytes agrees there is exactly one break.
+    expect(chainReplay({ root: rootA }, upcasters).linkBreaks).toHaveLength(1);
+  });
+
+  // THE VACUITY GUARD. Every case above would pass over a `chainArrivals` that refused
+  // every suffix, which would replay the whole chain on every read and cost the hot
+  // path the entire saving it exists for.
+  it('still calls an intact tail a suffix, and a grown one too', () => {
+    const before = seeded();
+    const still = chainArrivals({ root: rootA }, upcasters, before.frontier);
+    expect(still.suffix).toBe(true);
+    expect(still.suffix === true && still.events).toHaveLength(0);
+
+    const w = openChainForWriting(rootA, { keyRoot: rootA });
+    w.append(taskCreated(env('t-4', '2026-07-21T00:00:03.000Z'), { title: 'fourth' }));
+    const grown = chainArrivals({ root: rootA }, upcasters, before.frontier);
+    expect(grown.suffix).toBe(true);
+    expect(grown.suffix === true && grown.events.map((e) => e.subject)).toEqual(['t-4']);
+    expect(chainReplay({ root: rootA }, upcasters).linkBreaks).toHaveLength(0);
+  });
+
+  // The boundary advances past the arrivals, so the NEXT resumed reading is anchored on
+  // what this one read. Without this, a second refresh would hand back the same events.
+  it('advances the boundary past what it read, so a second reading finds nothing', () => {
+    const before = seeded();
+    const w = openChainForWriting(rootA, { keyRoot: rootA });
+    w.append(taskCreated(env('t-4', '2026-07-21T00:00:03.000Z'), { title: 'fourth' }));
+    const first = chainArrivals({ root: rootA }, upcasters, before.frontier);
+    expect(first.suffix === true && first.events).toHaveLength(1);
+
+    const second = chainArrivals(
+      { root: rootA },
+      upcasters,
+      first.suffix === true ? first.frontier : before.frontier,
+    );
+    expect(second.suffix).toBe(true);
+    expect(second.suffix === true && second.events).toHaveLength(0);
+
+    // …and a duplicate planted at the ADVANCED boundary is caught just the same.
+    duplicateLastEntries(rootA, 1);
+    const third = chainArrivals(
+      { root: rootA },
+      upcasters,
+      first.suffix === true ? first.frontier : before.frontier,
+    );
+    expect(third.suffix === false && third.why).toBe('AN_ARRIVAL_DOES_NOT_CHAIN');
+  });
+
+  /**
+   * THE DECLARED LIMIT, asserted so it cannot drift into a belief.
+   *
+   * A break BELOW the boundary is in bytes a previous reading already accepted, and a
+   * resumed reading does not read them again — that is what makes it cost the arrivals
+   * rather than the chain. So a live session is not told, and a connection opening
+   * afterwards replays and IS told. Closing this would mean re-reading each tail whole
+   * on every refresh, which is the entire cost the incremental path exists to avoid.
+   */
+  it('does NOT see a break below the boundary, which the full reading does see', () => {
+    const before = seeded();
+    const tails = join(rootA, 'tails');
+    const tail = readdirSync(tails)[0] as string;
+    const file = join(tails, tail, '000001.jsonl');
+    const lines = readFileSync(file, 'utf-8').trimEnd().split('\n');
+    // The FIRST entry written a second time, in the middle of the tail: every byte of
+    // it is below the frontier, and the entries after it are untouched.
+    writeFileSync(
+      file,
+      `${[...lines.slice(0, 1), lines[0] as string, ...lines.slice(1)].join('\n')}\n`,
+      'utf-8',
+    );
+
+    const arrived = chainArrivals({ root: rootA }, upcasters, before.frontier);
+    // The resumed reading says the tail did not move, and the full reading of the very
+    // same bytes finds a break. THIS IS THE LIMIT, stated as the disagreement it is.
+    expect(arrived.suffix).toBe(true);
+    expect(arrived.suffix === true && arrived.events).toHaveLength(0);
+    expect(chainReplay({ root: rootA }, upcasters).linkBreaks).toHaveLength(1);
+  });
+
+  /**
+   * AND THE LIMIT NEVER BECOMES A WRONG ANSWER, which is the part that matters more.
+   *
+   * Inserting below the boundary shifts every entry after it forward, so entries a
+   * previous reading already took can end up starting past the boundary byte. Handing
+   * those back as arrivals would append events the order already holds — a projection
+   * counting one fact twice, which is worse than not being told about a break. The
+   * chaining rule is what stops it: their seqs do not continue from the frontier, so
+   * the answer is a refusal and the caller replays.
+   */
+  it('never serves an entry it already read as an arrival', () => {
+    const before = seeded();
+    const tails = join(rootA, 'tails');
+    const tail = readdirSync(tails)[0] as string;
+    const file = join(tails, tail, '000001.jsonl');
+    const lines = readFileSync(file, 'utf-8').trimEnd().split('\n');
+    // The tail's OWN first entry, written many times over just after itself: real
+    // stored lines, the way the product writes them, and enough of them that the shift
+    // is guaranteed to push the tail's last entries past the boundary byte rather than
+    // leaving them below it.
+    const shift = Array.from({ length: 8 }, () => lines[0] as string);
+    writeFileSync(
+      file,
+      `${[lines[0] as string, ...shift, ...lines.slice(1)].join('\n')}\n`,
+      'utf-8',
+    );
+
+    const arrived = chainArrivals({ root: rootA }, upcasters, before.frontier);
+    const served =
+      arrived.suffix === true ? arrived.events.map((event) => event.subject) : ['<refused>'];
+    // Whatever it answers, it does not hand back a subject the order already carries.
+    expect(served).not.toContain('t-1');
+    expect(served).not.toContain('t-2');
+    expect(served).not.toContain('t-3');
+  });
+
+  /**
+   * THE BOUNDARY IS A BYTE OFFSET, so a walk that ever measured a line in CHARACTERS
+   * would put it in the wrong place on any tail carrying text outside ASCII.
+   *
+   * The error has to be big enough to cross a whole stored line before it can be seen —
+   * a title with a few accents understates the offset by a dozen bytes and the backward
+   * walk still stops on the same line. So this writes a title of several hundred CJK
+   * characters, each of which is one UTF-16 code unit and THREE bytes: measured in
+   * characters, the boundary lands well over a thousand bytes short of where the
+   * reading actually stopped, and entries the frontier already covered come back as
+   * arrivals. Measured in bytes, only what was appended after it does.
+   */
+  it('resumes by BYTES over a tail whose entries carry multi-byte text', () => {
+    const w = openChainForWriting(rootA, { keyRoot: rootA });
+    w.append(taskCreated(env('t-1', '2026-07-21T00:00:00.000Z'), { title: '日本語'.repeat(200) }));
+    w.append(taskCreated(env('t-2', '2026-07-21T00:00:01.000Z'), { title: '漢字'.repeat(200) }));
+    const before = chainReplay({ root: rootA }, upcasters);
+    w.append(taskCreated(env('t-3', '2026-07-21T00:00:02.000Z'), { title: 'ação — ünïcodé' }));
+
+    const arrived = chainArrivals({ root: rootA }, upcasters, before.frontier);
+    expect(arrived.suffix).toBe(true);
+    // Exactly the one appended after the frontier — not the covered entries brought
+    // back by a boundary that fell short of where the reading really stopped.
+    expect(arrived.suffix === true && arrived.events.map((e) => e.subject)).toEqual(['t-3']);
+  });
+});

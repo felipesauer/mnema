@@ -95,8 +95,11 @@ export {
   readTail,
   readTailCheckpoints,
   readTailEntries,
+  readTailSince,
   readTailTip,
+  type TailBoundary,
   type TailRead,
+  type TailSince,
 } from './chain/store.js';
 export { ensureTree } from './chain/tree.js';
 export {

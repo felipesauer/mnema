@@ -56,26 +56,30 @@ describe('walking a file backwards', () => {
   it('yields the pieces a forward split would, in reverse, with their offsets', () => {
     const walked = [...linesFromEnd(file('one\ntwo\nthree\n'))];
     expect(walked).toEqual([
-      { text: '', start: 14 },
-      { text: 'three', start: 8 },
-      { text: 'two', start: 4 },
-      { text: 'one', start: 0 },
+      { text: '', start: 14, end: 14 },
+      { text: 'three', start: 8, end: 13 },
+      { text: 'two', start: 4, end: 7 },
+      { text: 'one', start: 0, end: 3 },
     ]);
+    // `end` is where the text stops, so `end - start` is the line's length in bytes and
+    // `end + 1` is the first byte of the line after it. A caller resuming from a
+    // recorded position reads that arithmetic, so it is asserted and not implied.
+    expect(walked.map((line) => line.end - line.start)).toEqual([0, 5, 3, 3]);
     expect(walked.map((line) => line.text).reverse()).toEqual('one\ntwo\nthree\n'.split('\n'));
   });
 
   it('marks an intact file with an empty first line whose offset is the file size', () => {
     // This is how a caller tells "the last append completed" from "a crash cut
     // it short" without reading anything else.
-    expect([...linesFromEnd(file('a\nb\n'))][0]).toEqual({ text: '', start: 4 });
+    expect([...linesFromEnd(file('a\nb\n'))][0]).toEqual({ text: '', start: 4, end: 4 });
   });
 
   it('yields the unterminated last line first when the file does not end in one', () => {
-    expect([...linesFromEnd(file('a\nbc'))][0]).toEqual({ text: 'bc', start: 2 });
+    expect([...linesFromEnd(file('a\nbc'))][0]).toEqual({ text: 'bc', start: 2, end: 4 });
   });
 
   it('yields a lone line with no newline at all at offset zero', () => {
-    expect([...linesFromEnd(file('solo'))]).toEqual([{ text: 'solo', start: 0 }]);
+    expect([...linesFromEnd(file('solo'))]).toEqual([{ text: 'solo', start: 0, end: 4 }]);
   });
 
   it('yields nothing for an empty file', () => {
@@ -92,6 +96,15 @@ describe('walking a file backwards', () => {
     const huge = 'x'.repeat(80 * 1024);
     expect(textsFromEnd(file(`first\n${huge}\n`))).toEqual(['', huge, 'first']);
     expect(textsFromEnd(file(`first\n${huge}\n`), 64)).toEqual(['', huge, 'first']);
+  });
+
+  it('measures a multi-byte line in BYTES, not in characters', () => {
+    // `end - start` is what a caller resuming from a recorded position adds up, and a
+    // line's byte length is not its `text.length` for anything outside ASCII: this line
+    // is 6 characters, 7 UTF-16 code units and 10 bytes, and all three differ.
+    const [, line] = [...linesFromEnd(file('café \u{1f512}\n'))];
+    expect(line?.text).toHaveLength(7);
+    expect((line?.end ?? 0) - (line?.start ?? 0)).toBe(10);
   });
 
   it('keeps a multi-byte character whole across a chunk boundary', () => {
