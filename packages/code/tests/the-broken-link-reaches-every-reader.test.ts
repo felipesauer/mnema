@@ -217,10 +217,20 @@ describe('the MCP composes no payload of its own', () => {
     expect(handRolled.map((row) => row.at)).toHaveLength(
       Object.keys(TOOLS_SERVING_NO_RECORD_CONTENT).length,
     );
+    // THE FORM'S OWN NON-VACUITY, ASKED ONCE AND OUTSIDE THE LOOP. It used to be the
+    // first line INSIDE the loop, as a `.test()` on a literal carrying `g`, and two
+    // things were wrong with it. It asked nothing about `tool` — the same question, N
+    // times — and a pattern with `g` carries `lastIndex` BETWEEN calls, so alternate
+    // calls answer `false` over input that never changed. It never moved the verdict:
+    // the `toContain` below is what catches a tool nothing registers. An assertion that
+    // can pass by accident is one that eventually does, and this one was inherited.
+    const declared = server.match(/(reads|mutates)TheRecord\('([a-z_]+)'\)/g) ?? [];
+    expect(declared.length).toBeGreaterThanOrEqual(
+      Object.keys(TOOLS_SERVING_NO_RECORD_CONTENT).length,
+    );
     // And each excused tool is a tool this server actually registers — an excuse for a
     // name nothing registers is an excuse for nothing.
     for (const tool of Object.keys(TOOLS_SERVING_NO_RECORD_CONTENT)) {
-      expect(/(reads|mutates)TheRecord\('([a-z_]+)'\)/g.test(server), tool).toBe(true);
       expect(server, tool).toContain(`TheRecord('${tool}')`);
     }
   });
