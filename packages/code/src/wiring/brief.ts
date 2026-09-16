@@ -17,9 +17,22 @@
  * verb was corrected for — and the reader who wants the whole of what governs their
  * own work has the agent's opening context, which spans every tree.
  *
- * The whole output goes to stdout and nothing else. `mnema brief > AGENTS.md` is the
- * operator's choice; the help says so, because a verb whose point is a file is a
- * verb a reader will expect to write one.
+ * The whole output goes to stdout and nothing else. The redirection is the operator's
+ * choice; the help says so, because a verb whose point is a file is a verb a reader will
+ * expect to write one.
+ *
+ * AND THE HELP NOW SAYS WHAT THE REDIRECTION DOES, which is a premise this module used to
+ * publish and had wrong. The first example on this page was `mnema brief > AGENTS.md`,
+ * offered as the destination an agent host reads on its own — true, and beside the point
+ * on any project that already has that file. Measured on one: 126 lines of the
+ * repository's own method, and the line this page taught replaces every one of them.
+ * `AGENTS.md` is a convention with tens of thousands of repositories behind it, so a
+ * destination with content in it is the ordinary case. The example now names a file
+ * nothing else claims, the page says the `>` replaces the whole of what it names, and it
+ * says what to do where the host's own file already belongs to somebody — which is a line
+ * in THEIR file, because this verb cannot merge, cannot check and cannot refuse: it never
+ * learns there was a file. `the-recipe-says-what-it-overwrites.test.ts` holds both halves,
+ * over this page and over the copy of the recipe inside the generated document.
  *
  * IT CAN BE SWITCHED OFF, which is the one thing about this verb that is not a property of
  * the record. What it prints is a CHANNEL — the file a session opens with — and every
@@ -80,9 +93,16 @@ export function registerBrief(program: Command, wiring: Wiring): Declared {
       'after',
       [
         '',
-        'It prints to stdout and writes nothing — where the file goes is your choice:',
-        '  mnema brief > AGENTS.md          the record, as the file agent hosts read',
-        '  mnema brief | diff - AGENTS.md   whether that copy still matches the record',
+        'It prints to stdout and writes nothing — the redirection is yours, and `>`',
+        'REPLACES the whole of the file it names:',
+        '  mnema brief > MNEMA.md          the record, in a file this document owns',
+        '  mnema brief | diff - MNEMA.md   whether that copy still matches the record',
+        '',
+        'Any name works: the check is the same pipe, and it reads the name you give it.',
+        '`AGENTS.md` and `CLAUDE.md` are read by an agent host on its own, and are worth',
+        'the redirection where no such file exists yet. Where one does, it is somebody’s',
+        'own method and this document would replace every word of it — a line in theirs',
+        'naming the file above reaches the same reader without losing any of it.',
         '',
         'The output holds no clock, no session and no path, so the same record always',
         'prints the same bytes and a difference is a difference in the record.',

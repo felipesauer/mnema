@@ -3585,15 +3585,22 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
     // so a reading that called the second one slow would be reading the clock, not the case.
   }, 60_000);
 
-  it('is what `mnema brief > AGENTS.md` writes, and `diff` is what finds it stale', async () => {
+  it('is what a redirection writes, and `diff` is what finds it stale', async () => {
     // The recipe, played out: redirect the document into a file, and the file matches
     // the record until the record moves. Nothing here is a flag of the verb — the
     // comparison is the shell's, and this is the assertion that the shell has
     // something exact to compare.
+    //
+    // THE NAME OF THE FILE IS ACCIDENTAL, and saying so is the point of the name chosen
+    // here. Nothing in the verb, the document or this comparison reads it: `brief` prints
+    // to stdout and never learns there was a file, and `diff` is handed the path by
+    // whoever typed it. The published recipe names `MNEMA.md` because a destination has
+    // to be shown and that one collides with nothing — not because the check depends on
+    // it. A case pinned to the published name would read as though it did.
     await run(['init'], capture().io);
     await accept('Keep the runbook in the record');
 
-    const generated = join(repo, 'AGENTS.md');
+    const generated = join(repo, 'a-file-the-operator-named.md');
     writeFileSync(generated, await output(['brief']));
     expect(await output(['brief'])).toBe(readFileSync(generated, 'utf-8'));
 

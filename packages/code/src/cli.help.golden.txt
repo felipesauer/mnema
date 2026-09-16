@@ -613,9 +613,16 @@ $ mnema brief --help
 | Options:
 |   -h, --help  display help for command
 |
-| It prints to stdout and writes nothing — where the file goes is your choice:
-|   mnema brief > AGENTS.md          the record, as the file agent hosts read
-|   mnema brief | diff - AGENTS.md   whether that copy still matches the record
+| It prints to stdout and writes nothing — the redirection is yours, and `>`
+| REPLACES the whole of the file it names:
+|   mnema brief > MNEMA.md          the record, in a file this document owns
+|   mnema brief | diff - MNEMA.md   whether that copy still matches the record
+|
+| Any name works: the check is the same pipe, and it reads the name you give it.
+| `AGENTS.md` and `CLAUDE.md` are read by an agent host on its own, and are worth
+| the redirection where no such file exists yet. Where one does, it is somebody’s
+| own method and this document would replace every word of it — a line in theirs
+| naming the file above reaches the same reader without losing any of it.
 |
 | The output holds no clock, no session and no path, so the same record always
 | prints the same bytes and a difference is a difference in the record.
