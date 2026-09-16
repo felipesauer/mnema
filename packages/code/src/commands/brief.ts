@@ -60,7 +60,7 @@
 import { type Brief, brief, channelIsOn, channelStates } from '@mnema/copilot';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { ASKS_A_PERSON_CHANNEL, DOCUMENT_CHANNEL, EDIT_PUSH_CHANNEL } from '../record-framing.js';
-import { withScopedCaches } from '../tree-sources.js';
+import { linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
 
 /** What the brief needs — injected so it is testable. */
 export interface BriefContext {
@@ -78,6 +78,13 @@ export interface BriefDone {
    * of empty it is — nobody has decided yet, not "there are no rules".
    */
   readonly brief: Brief;
+  /**
+   * The tails among those read that do not chain — empty for a sound record, which is
+   * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
+   * beside it came off a record whose proof this is the state of, and the wiring is what
+   * says so.
+   */
+  readonly linkBreaks: readonly ScopedLinkBreak[];
 }
 
 /** The read was refused — there is no project to compose a brief for. */
@@ -160,6 +167,15 @@ export function runBrief(ctx: BriefContext): BriefDone | BriefRefused | BriefSwi
     }
     return {
       ok: true as const,
+      // NOT in the document, and the stream is the whole of the reason. This verb's
+      // output is a FILE somebody commits, and a sentence about the proof being broken
+      // today is a sentence that stays in that file after the record is repaired — a
+      // fact with an expiry date inside an artefact that cannot update itself. It goes
+      // to `err`, where the person who typed the verb reads it and the redirection does
+      // not. What that leaves is the reader the plugin's handler serves, which drops
+      // stderr: that reader is an AGENT, and the door built for it is the MCP, where
+      // this same fact rides beside every answer (`record-integrity.ts`).
+      linkBreaks: linkBreaksOf(sources),
       // BOTH channels the per-edit hook pushes, named here because the vocabulary is this
       // package's. The document explains what a silence at an edit means, and there are now
       // two switches that can produce it — a document naming one of them would explain the

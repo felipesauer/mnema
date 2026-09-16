@@ -35,7 +35,7 @@ import { dirname } from 'node:path';
 import type { GoverningRules } from '@mnema/copilot';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { readGoverningRules } from '../governed-tree.js';
-import { withScopedCaches } from '../tree-sources.js';
+import { linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
 
 /** What the rules command needs — injected so it is testable. */
 export interface RulesContext {
@@ -49,6 +49,13 @@ export interface RulesContext {
 export interface RulesDone {
   readonly ok: true;
   readonly governed: GoverningRules;
+  /**
+   * The tails among those read that do not chain — empty for a sound record, which is
+   * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
+   * beside it came off a record whose proof this is the state of, and the wiring is what
+   * says so.
+   */
+  readonly linkBreaks: readonly ScopedLinkBreak[];
 }
 
 /** The read was refused before it ran. */
@@ -74,6 +81,7 @@ export function runRules(ctx: RulesContext, input: { path: string }): RulesDone 
   const root = dirname(trees.projectPublic);
   return withScopedCaches(trees, (sources) => ({
     ok: true,
+    linkBreaks: linkBreaksOf(sources),
     governed: readGoverningRules(sources, { path: input.path, root, from: ctx.cwd }),
   }));
 }

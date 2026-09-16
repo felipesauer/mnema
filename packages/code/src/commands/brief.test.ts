@@ -321,6 +321,11 @@ describe('mnema brief (what governs the work here)', () => {
     runInit({ cwd: repo, env });
     expect(runBrief({ cwd: repo, env })).toEqual({
       ok: true,
+      // EMPTY, and asserted rather than left out: a record this product wrote on its own
+      // always chains, so a read that named a broken tail here would be a read talking
+      // about a record that cannot exist. It is the vacuity half of the notice — see
+      // `record-integrity.ts`.
+      linkBreaks: [],
       brief: {
         decisions: [],
         skills: [],

@@ -38,9 +38,13 @@ export function registerSkills(program: Command, wiring: Wiring): Declared {
       ].join('\n'),
     )
     .action(async (opts: { json?: boolean }) => {
+      const { linkBreakNotice } = await import('./integrity.js');
       const { runSkills } = await import('../commands/skills.js');
       const { provenanceReport } = await import('../presentation/provenance.js');
       const result = runSkills(here());
+      // BEFORE the answer, and on the other stream — so it survives a pipe, and so
+      // `--json` stays the machine-readable thing it promises to be.
+      for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
       if (opts.json === true) {
         io.out(JSON.stringify(result.patterns, null, 2));
         return;

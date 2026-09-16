@@ -66,6 +66,7 @@ import {
   type Scope,
 } from '@mnema/core';
 import { type AnchorForms, anchorForms, NO_ANCHORS } from '../anchors.js';
+import { linkBreaksOf, type ScopedLinkBreak } from '../tree-sources.js';
 
 /** The trees a lookup reads, in a fixed order. An id lives in exactly one. */
 const SCOPES: readonly Scope[] = ['public', 'private', 'global'];
@@ -87,6 +88,13 @@ export interface ShowDone {
   readonly anchors: AnchorForms;
   /** How many runs consulted this pattern — present only for a skill. */
   readonly consultations?: number;
+  /**
+   * The tails among those read that do not chain — empty for a sound record, which is
+   * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
+   * beside it came off a record whose proof this is the state of, and the wiring is what
+   * says so.
+   */
+  readonly linkBreaks: readonly ScopedLinkBreak[];
 }
 
 /** No visible tree holds a record with this id. */
@@ -123,7 +131,11 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
     }
     if (found === null) return { ok: false, reason: 'UNKNOWN_RECORD' };
     if (found.kind !== 'memory' && found.kind !== 'skill') {
-      return { ok: true, record: found, anchors: NO_ANCHORS };
+      // OVER THE TREES THIS READ ACTUALLY OPENED, which here is fewer than all of them:
+      // this verb stops at the first tree holding the id. That is the right answer and
+      // not a shortfall — the notice is about the record the answer came off, and a tail
+      // this read never touched did not serve anything.
+      return { ok: true, record: found, anchors: NO_ANCHORS, linkBreaks: linkBreaksOf(opened) };
     }
     // The two kinds whose answer is about the whole record and not about one tree.
     for (; next < SCOPES.length; next++) open(SCOPES[next] as Scope);
@@ -131,6 +143,7 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
       ok: true,
       record: found,
       anchors: anchorForms(opened),
+      linkBreaks: linkBreaksOf(opened),
       ...(found.kind === 'skill'
         ? { consultations: consultationsByRun(opened).get(found.id) ?? 0 }
         : {}),

@@ -92,6 +92,7 @@ import { discoveryEnv } from '../env.js';
 import { movedLine } from '../moved-record.js';
 import { oneLine } from '../one-line.js';
 import { type Declared, mutatesTheRecord, readsTheRecord } from '../record-effect.js';
+import { linkBreakBlock } from '../record-integrity.js';
 import {
   type Landed,
   landedNotice,
@@ -147,6 +148,7 @@ import {
   runSkillTransition,
   runTaskTransition,
   runTimelineTool,
+  sessionLinkBreaks,
 } from './tools.js';
 
 /** The name the server announces itself as (its own identity, not the client's). */
@@ -1181,13 +1183,10 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       // fit in this read at all), and it travels as its own block so the payload
       // stays parseable on its own.
       const framing = patternsFraming(result);
-      return {
-        content: [
-          { type: 'text', text: JSON.stringify(result.skills, null, 2) },
-          ...(framing.length > 0 ? [{ type: 'text' as const, text: framing.join('\n') }] : []),
-          ...(notice.length > 0 ? [{ type: 'text' as const, text: notice.join('\n') }] : []),
-        ],
-      };
+      return served(active, result.skills, [
+        ...(framing.length > 0 ? [framing.join('\n')] : []),
+        ...(notice.length > 0 ? [notice.join('\n')] : []),
+      ]);
     },
   );
 
@@ -1254,7 +1253,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return { content: [{ type: 'text', text: JSON.stringify(result.actions, null, 2) }] };
+      return served(active, result.actions);
     },
   );
 
@@ -1388,7 +1387,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         };
       }
       // An empty index is an ANSWER ("nothing here matches"), never an error.
-      return { content: [{ type: 'text', text: JSON.stringify(result.value, null, 2) }] };
+      return served(active, result.value);
     },
   );
 
@@ -1424,7 +1423,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return { content: [{ type: 'text', text: JSON.stringify(result.value, null, 2) }] };
+      return served(active, result.value);
     },
   );
 
@@ -1475,7 +1474,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return { content: [{ type: 'text', text: JSON.stringify(result.value, null, 2) }] };
+      return served(active, result.value);
     },
   );
 
@@ -1526,7 +1525,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       }
       // An entity nothing references is an ANSWER ("nothing is tied to this"),
       // never an error — the same reason an empty history is one.
-      return { content: [{ type: 'text', text: JSON.stringify(result.value, null, 2) }] };
+      return served(active, result.value);
     },
   );
 
@@ -1568,7 +1567,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       }
       // A path nothing addresses is an ANSWER ("nothing governs this"), never an
       // error — and the three counts beside it are what say which kind of nothing.
-      return { content: [{ type: 'text', text: JSON.stringify(result.value, null, 2) }] };
+      return served(active, result.value);
     },
   );
 
@@ -1610,7 +1609,17 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       // The reply is JSON because the host parses it, and it is COMPACT because nothing
       // reads it as a document: the host's parser takes the first `{` and the bytes are
       // paid for on every edit of every session.
-      return { content: [{ type: 'text', text: JSON.stringify(result.value) }] };
+      //
+      // NOT THROUGH `served`, AND IT IS THE ONE READ ON THIS SERVER THAT IS NOT. What
+      // comes back here is a HOOK REPLY, not an answer to a caller, and the host's
+      // contract for it was measured against the real binary
+      // (`measurements/mcp-tool-channel/`): anything that is not the reply JSON is
+      // DISCARDED IN SILENCE — no error, no warning, nothing reaching the model. A
+      // notice spliced in here would therefore never be read by anybody, while being
+      // paid for on every edit of every session. It is listed in
+      // `SERVES_NO_RECORD_CONTENT` with that reason, and `governing_rules` — the same
+      // answer asked for rather than pushed — does carry it.
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result.value) }] };
     },
   );
 
@@ -1658,7 +1667,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return { content: [{ type: 'text', text: JSON.stringify(result.value, null, 2) }] };
+      return served(active, result.value);
     },
   );
 
@@ -1698,7 +1707,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       }
       // An empty report is an ANSWER ("nothing recognizable is recorded here"),
       // never an error — the same reason an empty history is one.
-      return { content: [{ type: 'text', text: JSON.stringify(result.value, null, 2) }] };
+      return served(active, result.value);
     },
   );
 
@@ -1734,7 +1743,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return { content: [{ type: 'text', text: JSON.stringify(result.value, null, 2) }] };
+      return served(active, result.value);
     },
   );
 }
@@ -1861,31 +1870,66 @@ function moved(
  * payload, before this one. Same rule, same reason: a read with something else to
  * say about the connection says it beside the answer, not inside it.
  */
+/**
+ * A tool's answer as the protocol carries it: the payload, then whatever the record's
+ * own state obliges this reply to say, then whatever the read has to add.
+ *
+ * IT IS THE ONE DOOR EVERY READ LEAVES BY, and that is what makes the obligation total
+ * rather than remembered. Fourteen tools used to compose `{ content: [...] }` by hand,
+ * which is fourteen places to forget a sentence the product owes — and the sentence it
+ * owed was this one: the record can stop chaining, `mnema verify` says so, `search` and
+ * `status` on the command line said so, and not one of the twenty-five tools did. The
+ * agent is this product's principal reader and it was the only one never told.
+ * `tests/the-broken-link-reaches-every-reader.test.ts` reads this file and reddens on a
+ * payload composed anywhere else.
+ *
+ * THE FACT RIDES AS ITS OWN BLOCK, never inside the JSON, for the reason
+ * {@link withRunState} already gives: the payload stays byte-identical to what a caller
+ * parsed before this existed, and `bootstrap`'s object is served byte for byte through
+ * two doors, so a field added here would make the two disagree. And it rides in the
+ * SAME reply rather than behind a "call `verify`": a channel that states half a fact and
+ * points at a tool for the rest has stated nothing (`record-framing.ts`), and `verify` is
+ * not a tool of this server at all.
+ *
+ * `compact` is the one thing a caller decides, because one read already decided it: the
+ * index serves many hits at once and pays for every space twice over.
+ */
+function served(
+  session: Session,
+  result: unknown,
+  also: readonly string[] = [],
+  compact = false,
+): { readonly content: { readonly type: 'text'; readonly text: string }[] } {
+  return {
+    content: [
+      {
+        type: 'text' as const,
+        text: compact ? JSON.stringify(result) : JSON.stringify(result, null, 2),
+      },
+      ...linkBreakBlock(sessionLinkBreaks(session)).map((text) => ({
+        type: 'text' as const,
+        text,
+      })),
+      ...also.map((text) => ({ type: 'text' as const, text })),
+    ],
+  };
+}
+
 function withRunState(
   session: Session,
   result: unknown,
   also: readonly string[] = [],
 ): { readonly content: { readonly type: 'text'; readonly text: string }[] } {
-  const blocks = [
-    { type: 'text' as const, text: JSON.stringify(result, null, 2) },
-    ...also.map((text) => ({ type: 'text' as const, text })),
-  ];
   // ANY run: the question this sentence answers is whether the connection has
   // written yet, and a connection that opened a run in the second project of the
   // workspace has. Asking about the session's own tree instead would tell an agent
   // that has been recording work for an hour that it has started nothing.
-  if (session.runs.size > 0) return { content: blocks };
-  return {
-    content: [
-      ...blocks,
-      {
-        type: 'text' as const,
-        text:
-          'This session has not opened a run of its own yet — one opens when it ' +
-          'first records something.',
-      },
-    ],
-  };
+  if (session.runs.size > 0) return served(session, result, also);
+  return served(session, result, [
+    ...also,
+    'This session has not opened a run of its own yet — one opens when it ' +
+      'first records something.',
+  ]);
 }
 
 /**

@@ -56,7 +56,7 @@ import {
   type SessionNumbers,
   sessionsOfProject,
 } from '../transcripts.js';
-import { caches, withScopedCaches } from '../tree-sources.js';
+import { caches, linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
 
 /** What the usage read needs — injected so it is testable. */
 export interface UsageContext {
@@ -108,6 +108,13 @@ export interface UsageDone {
   readonly store: string;
   /** How many of the host's sessions record work in this project at all. */
   readonly sessionsInStore: number;
+  /**
+   * The tails among those read that do not chain — empty for a sound record, which is
+   * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
+   * beside it came off a record whose proof this is the state of, and the wiring is what
+   * says so.
+   */
+  readonly linkBreaks: readonly ScopedLinkBreak[];
 }
 
 /** There is no project here, so there are no runs to account for. */
@@ -132,11 +139,13 @@ export function runUsage(ctx: UsageContext): UsageDone | UsageRefused {
   if (projectRoot === undefined) return { ok: false, reason: 'NO_PROJECT' };
   const asOf = (ctx.clock ?? systemClock)();
   const store = hostTranscriptRoot(ctx.env.home, ctx.processEnv ?? process.env);
-  const runs = withScopedCaches(trees, (sources) =>
-    caches(sources)
+  const read = withScopedCaches(trees, (sources) => ({
+    runs: caches(sources)
       .flatMap((cache) => cache.listRuns())
       .sort(byStartedDesc),
-  );
+    linkBreaks: linkBreaksOf(sources),
+  }));
+  const runs = read.runs;
   // The project root is the directory the work is IN; the store is walked against the
   // repository the `.mnema/` sits in, not against the `.mnema/` itself.
   const sessions =
@@ -145,6 +154,7 @@ export function runUsage(ctx: UsageContext): UsageDone | UsageRefused {
       : sessionsOfProject(store, repositoryOf(projectRoot), earliestWindowStart(runs));
   return {
     ok: true,
+    linkBreaks: read.linkBreaks,
     trees: treesSearched(trees),
     store,
     sessionsInStore: sessions.length,

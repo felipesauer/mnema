@@ -45,7 +45,7 @@ import { openTreeForWriting, switchChannel } from '@mnema/core/write';
 import { type AnchorForms, anchorForms } from '../anchors.js';
 import { SWITCHABLE_CHANNELS, type SwitchableChannel, WHAT_STOPS } from '../record-framing.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
-import { withScopedCaches } from '../tree-sources.js';
+import { linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
 
 /** What the switch commands need — injected so they are testable. */
 export interface SwitchContext {
@@ -87,6 +87,13 @@ export interface SwitchListing {
    * honest where the same value can be typed back.
    */
   readonly anchors: AnchorForms;
+  /**
+   * The tails among those read that do not chain — empty for a sound record, which is
+   * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
+   * beside it came off a record whose proof this is the state of, and the wiring is what
+   * says so.
+   */
+  readonly linkBreaks: readonly ScopedLinkBreak[];
 }
 
 /**
@@ -112,6 +119,7 @@ export function runSwitchList(ctx: SwitchContext): SwitchListing {
       })),
       trees: sources.map((source) => source.scope),
       anchors: anchorForms(sources),
+      linkBreaks: linkBreaksOf(sources),
     };
   });
 }
@@ -135,6 +143,13 @@ export interface SwitchRecorded extends Replacement, Landed {
   readonly effective: ChannelState;
   /** How the identity in {@link effective} is written on a line — see the listing's own. */
   readonly anchors: AnchorForms;
+  /**
+   * The tails among those read that do not chain — empty for a sound record, which is
+   * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
+   * beside it came off a record whose proof this is the state of, and the wiring is what
+   * says so.
+   */
+  readonly linkBreaks: readonly ScopedLinkBreak[];
 }
 
 /** The switch was refused; nothing was written. */
@@ -215,6 +230,10 @@ export function runSwitch(
   const read = withScopedCaches(trees, (sources) => ({
     effective: channelStates(sources, [recorded.channel])[0] as ChannelState,
     anchors: anchorForms(sources),
+    // Read back over the SAME sources the effective state came off: a switch this verb
+    // just wrote is only as good as the tail it landed on, and this is the one write on
+    // the surface whose answer is a read across every tree.
+    linkBreaks: linkBreaksOf(sources),
   }));
 
   return {
@@ -223,6 +242,7 @@ export function runSwitch(
     on: recorded.on,
     effective: read.effective,
     anchors: read.anchors,
+    linkBreaks: read.linkBreaks,
     scope,
     ...forwardReplacement(recorded),
   };

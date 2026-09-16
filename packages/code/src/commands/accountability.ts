@@ -21,7 +21,7 @@
 import { type Accountability, type AccountabilityFilter, accountability } from '@mnema/copilot';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { type AnchorForms, anchorForms, resolveTypedAnchor } from '../anchors.js';
-import { withScopedCaches } from '../tree-sources.js';
+import { linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
 
 /** What the accountability command needs — injected so it is testable. */
 export interface AccountabilityContext {
@@ -38,6 +38,13 @@ export interface AccountabilityDone {
   readonly account: Accountability;
   /** How each identity this record knows is written for a person. */
   readonly anchors: AnchorForms;
+  /**
+   * The tails among those read that do not chain — empty for a sound record, which is
+   * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
+   * beside it came off a record whose proof this is the state of, and the wiring is what
+   * says so.
+   */
+  readonly linkBreaks: readonly ScopedLinkBreak[];
 }
 
 /** The read was refused — no project to account for, or a `--who` that names none. */
@@ -66,6 +73,7 @@ export function runAccountability(
   }
   return withScopedCaches(trees, (sources) => {
     const anchors = anchorForms(sources);
+    const linkBreaks = linkBreaksOf(sources);
     // `--who` takes the same value this read PRINTS, so it accepts the same short
     // form. Left unresolved, a prefix would filter on a `who` that matches nothing
     // and come back as an account of zero facts — the one answer that looks like an
@@ -75,8 +83,13 @@ export function runAccountability(
       if (!who.ok) {
         return { ok: false, reason: 'REFUSED', code: who.code, message: who.message };
       }
-      return { ok: true, anchors, account: accountability(sources, { ...input, who: who.anchor }) };
+      return {
+        ok: true,
+        anchors,
+        linkBreaks,
+        account: accountability(sources, { ...input, who: who.anchor }),
+      };
     }
-    return { ok: true, anchors, account: accountability(sources, input) };
+    return { ok: true, anchors, linkBreaks, account: accountability(sources, input) };
   });
 }

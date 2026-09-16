@@ -23,12 +23,16 @@ export function registerNextActions(program: Command, wiring: Wiring): Declared 
     .argument('<task-id>', 'the task id (the value shown when it was created)')
     .option('--json', 'emit the faithful list of next actions as JSON')
     .action(async (id: string, opts: { json?: boolean }) => {
+      const { linkBreakNotice } = await import('./integrity.js');
       const { runNextActions } = await import('../commands/next-actions.js');
       const result = runNextActions(here(), { id });
       if (!result.ok) {
         reportRefusal(wiring, result, { UNKNOWN_TASK: noSuchRecord('task', id) });
         return;
       }
+      // BEFORE the answer, and on the other stream — so it survives a pipe, and so
+      // `--json` stays the machine-readable thing it promises to be.
+      for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
       if (opts.json === true) {
         io.out(JSON.stringify(result.actions, null, 2));
         return;

@@ -148,6 +148,17 @@ export interface CacheRegistry {
    * chain as it stands then.
    */
   invalidate(chainRoot: string): void;
+  /**
+   * Every cache this connection has actually opened, with the root it is over.
+   *
+   * IT OPENS NOTHING AND REFRESHES NOTHING, which is the whole reason it exists beside
+   * {@link CacheRegistry.get}. The reader is the one that says whether the record a
+   * reply came off still chains: it wants the trees this session HAS read, and asking
+   * `get` for them would turn a statement about the answer into a `readdir` per tail
+   * on every call — a cost charged to every reply for a fact that is empty on every
+   * record this product wrote.
+   */
+  opened(): readonly { readonly chainRoot: string; readonly cache: ProjectionCache }[];
   /** Closes every retained database and forgets them. Called when the session ends. */
   closeAll(): void;
 }
@@ -196,6 +207,10 @@ export function createCacheRegistry(): CacheRegistry {
       cache.rebuild();
       entries.set(chainRoot, { cache, stale: false, extent });
       return cache;
+    },
+
+    opened(): readonly { readonly chainRoot: string; readonly cache: ProjectionCache }[] {
+      return [...entries].map(([chainRoot, entry]) => ({ chainRoot, cache: entry.cache }));
     },
 
     invalidate(chainRoot: string): void {

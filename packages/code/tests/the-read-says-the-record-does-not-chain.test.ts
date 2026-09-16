@@ -23,11 +23,20 @@
  *
  * ## What the cases are asked to hold
  *
- * That the notice APPEARS over a broken record, that it appears in both named reads,
- * that it carries the tail and the position rather than a vague unease, that it does
- * NOT appear over an intact one — the vacuity guard, and the case that would catch a
- * notice printed unconditionally — and that it goes to the stream that keeps `--json`
- * machine-readable.
+ * That the notice APPEARS over a broken record, that it appears in EVERY read that
+ * serves the record rather than in the two that first said it, that it carries the tail
+ * and the position rather than a vague unease, that it does NOT appear over an intact
+ * one — the vacuity guard, and the case that would catch a notice printed
+ * unconditionally — and that it goes to the stream that keeps `--json`
+ * machine-readable and keeps the `brief`'s document a function of the record alone.
+ *
+ * ## The reads, and why they are driven by a table
+ *
+ * It used to be two of them, named in prose. The table below is the same list the
+ * command line actually has, and it is a table so that a read added to the surface is a
+ * read somebody has to put here — the structural half of that obligation is
+ * `the-broken-link-reaches-every-reader.test.ts`, which walks the SOURCE for the doors;
+ * this half proves that what the source promises is what the binary prints.
  */
 
 import { appendFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
@@ -65,6 +74,10 @@ async function invoke(...argv: string[]): Promise<{
 let sandbox: string;
 let project: string;
 let who = '';
+let task = '';
+let skill = '';
+/** The document the `brief` prints over the INTACT fixture — the byte-for-byte base. */
+let intactBrief = '';
 const cwdBefore = process.cwd();
 const envBefore = { ...process.env };
 
@@ -86,10 +99,26 @@ beforeAll(async () => {
   process.chdir(project);
   await invoke('init');
   await invoke('decision', 'The first', 'because');
+  // A task and an adopted pattern, because three of the reads take one: `next-actions`
+  // and `guard` are about a task, and `show` is about a record with a body. Every value
+  // here is one the PRODUCT produced — the ids are read back out of what it printed, so
+  // no case runs over a state no write can reach.
+  const made = await invoke('task', 'The work');
+  task = /\(([^)]+)\)/.exec(made.out.join(LF))?.[1] ?? '';
+  if (task === '') throw new Error(`fixture: no task in ${made.out.join(LF)}`);
+  const skilled = await invoke('skill', 'the-way', '--body', 'do it like this');
+  skill = /\(([^)]+)\)/.exec(skilled.out.join(LF))?.[1] ?? '';
+  if (skill === '') throw new Error(`fixture: no skill in ${skilled.out.join(LF)}`);
+  // Carried to ADOPTED through the product's own transitions, because `skill export`
+  // only writes a pattern in force — a fixture that wrote the state directly would be a
+  // fixture about a record no write can produce.
+  await invoke('skill', 'move', 'review', skill, '--note', 'read it');
+  await invoke('skill', 'move', 'adopt', skill, '--note', 'this is how');
   const account = await invoke('accountability', '--json');
   const found = /"who": "(mnid:[0-9a-z]+)"/.exec(account.out.join(LF))?.[1];
   if (found === undefined) throw new Error(`fixture: no identity in ${account.out.join(LF)}`);
   who = found;
+  intactBrief = (await invoke('brief')).out.join(LF);
 }, 60_000);
 
 afterAll(() => {
@@ -101,6 +130,40 @@ afterAll(() => {
 /** The line a read owes about a tail that stops chaining. */
 const notices = (err: readonly string[]): string[] =>
   err.filter((line) => line.startsWith('issue [T1]'));
+
+/**
+ * EVERY read of the command line that serves the record, and the argv that reaches it.
+ *
+ * The argv is a THUNK and not a value, and that is not style: `it.each` evaluates its
+ * table while the suite is being COLLECTED, before any `beforeAll` has run, so a table
+ * holding the ids directly holds empty strings — seven of these cases were green over
+ * `mnema show ""` before the thunk went in. It takes ids because three of them are
+ * about a task and one about a body, and an id nobody minted is a case about a record
+ * that cannot exist.
+ * `decision import` is here and it WRITES: it is the one read whose answer decides what
+ * gets appended — the set of files already derived is what stops a duplicate — so a
+ * broken proof under it is the worst moment on this surface to be silent about. It is
+ * driven as a PLAN (no `--write`), which reads everything and appends nothing.
+ */
+const READS: readonly (readonly [name: string, argv: () => readonly string[]])[] = [
+  ['search', () => ['search', '--kind', 'decision']],
+  ['status', () => ['status', '--actor', who]],
+  ['show', () => ['show', skill]],
+  ['timeline', () => ['timeline', task]],
+  ['refs', () => ['refs', task]],
+  ['rules', () => ['rules', 'src/index.ts']],
+  ['skills', () => ['skills']],
+  ['accountability', () => ['accountability']],
+  ['focus', () => ['focus', '--actor', who]],
+  ['resume', () => ['resume', '--actor', who]],
+  ['usage', () => ['usage']],
+  ['switch', () => ['switch']],
+  ['brief', () => ['brief']],
+  ['next-actions', () => ['next-actions', task]],
+  ['guard', () => ['guard', '--actor', who, 'start', task]],
+  ['decision import', () => ['decision', 'import', '.']],
+  ['skill export', () => ['skill', 'export', skill, '--out', '.']],
+];
 
 describe('over a record that chains, a read says nothing about the chain', () => {
   // THE VACUITY GUARD, and it runs FIRST, over the fixture before it is broken: every
@@ -123,6 +186,14 @@ describe('over a record that chains, a read says nothing about the chain', () =>
   it('and `verify` agrees the record is sound', async () => {
     const ruled = await invoke('verify');
     expect(ruled.failed).toBe(false);
+  });
+
+  // THE VACUITY GUARD FOR THE WHOLE SURFACE. Every case in the next block would pass
+  // over a notice printed unconditionally; this is what makes them mean what they say,
+  // and it is asserted per read so a red names which one started talking.
+  it.each(READS)('%s says nothing', async (_name, argv) => {
+    const ran = await invoke(...argv());
+    expect(notices(ran.err)).toStrictEqual([]);
   });
 });
 
@@ -167,6 +238,25 @@ describe('over a record that does not chain, a read says so', () => {
     const found = await invoke('search', '--kind', 'decision', '--json');
     expect(notices(found.err)).toHaveLength(1);
     expect(() => JSON.parse(found.out.join(LF))).not.toThrow();
+  });
+
+  // THE TOTALITY, and it is the whole of this delivery: it used to be two of these.
+  it.each(READS)('%s says so', async (_name, argv) => {
+    const ran = await invoke(...argv());
+    const said = notices(ran.err);
+    expect(said).toHaveLength(1);
+    expect(said[0]).toMatch(/^issue \[T1\] \S+ \S+#\d+: .+$/);
+    // And it is on `err`, which is what keeps `--json` parseable and keeps the
+    // `brief`'s document a function of the record alone.
+    expect(ran.out.join(LF)).not.toContain('issue [T1]');
+  });
+
+  it('the brief prints the same document it printed before, byte for byte', async () => {
+    // The document is redirected into a committed file and compared with `diff`. A
+    // notice inside it would be committed, and would outlive the repair it is about.
+    const printed = await invoke('brief');
+    expect(notices(printed.err)).toHaveLength(1);
+    expect(printed.out.join(LF)).toBe(intactBrief);
   });
 
   it('does not turn a read into a failure: the facts were served', async () => {

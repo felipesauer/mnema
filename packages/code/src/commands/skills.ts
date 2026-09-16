@@ -33,7 +33,7 @@
 
 import { consultationsByRun, type PatternProvenance, patternProvenance } from '@mnema/copilot';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
-import { withScopedCaches } from '../tree-sources.js';
+import { linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
 
 /** What the skills audit needs — injected so it is testable. */
 export interface SkillsContext {
@@ -55,6 +55,13 @@ export interface SkillsDone {
    * and the agent's surface serves the second and not the first.
    */
   readonly consultations: ReadonlyMap<string, number>;
+  /**
+   * The tails among those read that do not chain — empty for a sound record, which is
+   * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
+   * beside it came off a record whose proof this is the state of, and the wiring is what
+   * says so.
+   */
+  readonly linkBreaks: readonly ScopedLinkBreak[];
 }
 
 /**
@@ -66,6 +73,7 @@ export function runSkills(ctx: SkillsContext): SkillsDone {
   const trees = resolveTrees(ctx.cwd, ctx.env);
   return withScopedCaches(trees, (sources) => ({
     ok: true,
+    linkBreaks: linkBreaksOf(sources),
     patterns: patternProvenance(sources),
     consultations: consultationsByRun(sources),
   }));

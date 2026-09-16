@@ -49,6 +49,7 @@ export function registerUsage(program: Command, wiring: Wiring): Declared {
       ].join('\n'),
     )
     .action(async () => {
+      const { linkBreakNotice } = await import('./integrity.js');
       const { runUsage } = await import('../commands/usage.js');
       const { usageReport } = await import('../presentation/usage.js');
       const result = runUsage(here());
@@ -59,6 +60,9 @@ export function registerUsage(program: Command, wiring: Wiring): Declared {
         reportRefusal(wiring, result);
         return;
       }
+      // BEFORE the answer, and on the other stream — the runs below were derived from
+      // the record this is the proof-state of.
+      for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
       writeLines(io, usageReport(render, result));
     });
 

@@ -77,7 +77,7 @@ import {
   specName,
 } from '../agent-skill.js';
 import { oneLine } from '../one-line.js';
-import { withScopedCaches } from '../tree-sources.js';
+import { linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
 
 /**
  * Whether a pattern in each disposition leaves the record as a file — the ONE place
@@ -150,6 +150,13 @@ export interface SkillExportDone {
   readonly id: string;
   /** The identity in `metadata`, WHOLE — the anchor that put the pattern in force. */
   readonly adoptedBy: string;
+  /**
+   * The tails among those read that do not chain — empty for a sound record, which is
+   * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
+   * beside it came off a record whose proof this is the state of, and the wiring is what
+   * says so.
+   */
+  readonly linkBreaks: readonly ScopedLinkBreak[];
 }
 
 /** Nothing was written: the pattern, the name or the description did not qualify. */
@@ -242,6 +249,7 @@ export function runSkillExport(
 
     return {
       ok: true,
+      linkBreaks: linkBreaksOf(sources),
       name: skill.name,
       description,
       descriptionFrom: given === undefined ? ('the body' as const) : ('the caller' as const),

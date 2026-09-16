@@ -70,7 +70,7 @@ import {
   scanAdrDirectory,
 } from '@mnema/core';
 import { linkKnowledge, openTreeForWriting, recordDecision } from '@mnema/core/write';
-import { withScopedCaches } from '../tree-sources.js';
+import { linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
 
 /** What the import needs — injected so it is testable. */
 export interface DecisionImportContext {
@@ -127,6 +127,13 @@ export interface ImportDone {
   readonly scope: Scope;
   /** A gate refusal that stopped the write partway; absent when nothing stopped it. */
   readonly stopped?: { readonly path: string; readonly code: string; readonly message: string };
+  /**
+   * The tails among those read that do not chain — empty for a sound record, which is
+   * every record this product wrote on its own. See {@link linkBreaksOf}: what is served
+   * beside it came off a record whose proof this is the state of, and the wiring is what
+   * says so.
+   */
+  readonly linkBreaks: readonly ScopedLinkBreak[];
 }
 
 /** The import was refused before it read anything. */
@@ -158,7 +165,10 @@ function inside(root: string, target: string): string | undefined {
  * and re-proposing it into the public one because the public tree cannot see it
  * would duplicate exactly what this is here to prevent.
  */
-function alreadyDerived(ctx: DecisionImportContext): ReadonlyMap<string, string> {
+function alreadyDerived(ctx: DecisionImportContext): {
+  readonly byTarget: ReadonlyMap<string, string>;
+  readonly linkBreaks: readonly ScopedLinkBreak[];
+} {
   const trees = resolveTrees(ctx.cwd, ctx.env);
   return withScopedCaches(trees, (sources) => {
     const byTarget = new Map<string, string>();
@@ -167,7 +177,10 @@ function alreadyDerived(ctx: DecisionImportContext): ReadonlyMap<string, string>
         if (!byTarget.has(edge.target)) byTarget.set(edge.target, edge.subject);
       }
     }
-    return byTarget;
+    // THE SAME READ, and this verb is the one where it matters most: the set above is
+    // what stops a file being proposed twice, and an import that appends over a tail
+    // that no longer chains is a write onto a record whose proof already failed.
+    return { byTarget, linkBreaks: linkBreaksOf(sources) };
   });
 }
 
@@ -250,11 +263,13 @@ export function runDecisionImport(
   const scope = resolveScope('decision.recorded', { which: input.which }, input.scope);
   const scan = scanAdrDirectory(directory);
   const refused = scan.refused.map((refusal) => named(refusal, root));
-  const { fresh, already } = plan(scan.read, root, alreadyDerived(ctx));
+  const derived = alreadyDerived(ctx);
+  const { fresh, already } = plan(scan.read, root, derived.byTarget);
 
   if (input.write !== true) {
     return {
       ok: true,
+      linkBreaks: derived.linkBreaks,
       wrote: false,
       from,
       proposals: fresh.map(proposed),
@@ -311,6 +326,7 @@ export function runDecisionImport(
 
   return {
     ok: true,
+    linkBreaks: derived.linkBreaks,
     wrote: true,
     from,
     proposals,

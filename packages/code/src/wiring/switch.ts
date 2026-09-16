@@ -83,9 +83,13 @@ export function registerSwitch(program: Command, wiring: Wiring): Declared {
       ].join('\n'),
     )
     .action(async () => {
+      const { linkBreakNotice } = await import('./integrity.js');
       const { runSwitchList } = await import('../commands/switch.js');
       const { switchReport } = await import('../presentation/switches.js');
       const listing = runSwitchList(here());
+      // BEFORE the listing, and on the other stream: where a switch stands is derived
+      // from the record like everything else here.
+      for (const line of linkBreakNotice(listing.linkBreaks)) io.err(render(line));
       writeLines(io, switchReport(render, listing.rows, listing.trees, listing.anchors));
     });
 
@@ -122,6 +126,7 @@ function position(group: Command, wiring: Wiring, word: 'off' | 'on', descriptio
     .option('--which <agent>', WHICH_HELP, declaredAgent)
     .addHelpText('after', RECORD_CONTRACT_HELP)
     .action(async (channel: string, opts: { reason?: string; scope?: string; which?: string }) => {
+      const { linkBreakNotice } = await import('./integrity.js');
       const { runSwitch } = await import('../commands/switch.js');
       // Loaded HERE and not at the top, like every other verb of this directory: the module
       // reaches the copilot, so a static import would put that edge on the floor of every
@@ -146,6 +151,7 @@ function position(group: Command, wiring: Wiring, word: 'off' | 'on', descriptio
         reportRefusal(wiring, result, { UNKNOWN_CHANNEL: NO_SUCH_CHANNEL });
         return;
       }
+      for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
       io.out(`Switched ${result.channel} ${on ? 'on' : 'off'}`);
       reportRecorded(result, io);
       // Where it now stands, which is the switch's own answer unless another tree

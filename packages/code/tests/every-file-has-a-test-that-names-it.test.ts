@@ -201,9 +201,13 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * 2638 -> 2643 when the published recipe had to say what it overwrites: five clauses in
  * `the-recipe-says-what-it-overwrites.test.ts`, which builds the program to capture the
  * help pages as the binary writes them and composes the document beside them, so the two
- * places that teach `mnema brief >` are ruled on by one reading.
+ * places that teach `mnema brief >` are ruled on by one reading. It went 2643 -> 2658
+ * when the broken link had to reach every reader: the two halves of that proof —
+ * `the-broken-link-reaches-every-reader.test.ts` over the source and
+ * `the-agent-is-told-the-record-does-not-chain.test.ts` over a real MCP client — read
+ * the tree, spawn a transport pair and plant a break in a tail by hand.
  */
-const CLAUSES_IN_THE_TREE = 2643;
+const CLAUSES_IN_THE_TREE = 2658;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -697,7 +701,7 @@ describe('every file has a test that names it', () => {
     expect(PRODUCTION).toContain('packages/code/src/wiring/index.ts');
     expect(PRODUCTION).toContain('packages/core/src/topology/index.ts');
     expect(PRODUCTION).not.toContain('packages/core/src/index.ts');
-    expect(PRODUCTION).toHaveLength(304);
+    expect(PRODUCTION).toHaveLength(305);
     expect(TEST_TREE.length).toBeGreaterThan(250);
     // No file is in both corpora, which is what keeps a test from witnessing itself.
     const tests = new Set(TEST_TREE.map((one) => one.path));
@@ -717,7 +721,7 @@ describe('every file has a test that names it', () => {
     const found = unwitnessed();
     const byReach = (reach: Reach): number =>
       [...found.values()].filter((one) => one === reach).length;
-    expect(PRODUCTION.length - found.size).toBe(232);
+    expect(PRODUCTION.length - found.size).toBe(233);
     expect(found.size).toBe(72);
     expect(byReach('nobody imports it')).toBe(72);
     expect(byReach('imported, and no assertion observes it')).toBe(0);

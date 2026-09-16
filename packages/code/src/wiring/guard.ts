@@ -65,6 +65,7 @@ export function registerGuard(program: Command, wiring: Wiring): Declared {
           json?: boolean;
         },
       ) => {
+        const { linkBreakNotice } = await import('./integrity.js');
         const { runGuard } = await import('../commands/guard.js');
         const result = runGuard(here(), {
           id,
@@ -81,6 +82,9 @@ export function registerGuard(program: Command, wiring: Wiring): Declared {
           reportRefusal(wiring, result, { UNKNOWN_TASK: noSuchRecord('task', id) });
           return;
         }
+        // BEFORE the answer, and on the other stream — so it survives a pipe, and so
+        // `--json` stays the machine-readable thing it promises to be.
+        for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
         if (opts.json === true) {
           io.out(JSON.stringify(result.verdict, null, 2));
           return;

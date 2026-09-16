@@ -85,7 +85,7 @@ function switchedOff(off: { channel: string; by: string; at: string; travels: bo
 
 /** Registers `mnema brief` on the program. */
 export function registerBrief(program: Command, wiring: Wiring): Declared {
-  const { io } = wiring;
+  const { io, render } = wiring;
   const brief = program
     .command('brief')
     .description('print what governs the work here as markdown, for an agent to read')
@@ -124,6 +124,7 @@ export function registerBrief(program: Command, wiring: Wiring): Declared {
       ].join('\n'),
     )
     .action(async () => {
+      const { linkBreakNotice } = await import('./integrity.js');
       const { runBrief } = await import('../commands/brief.js');
       const { briefDocument } = await import('../presentation/brief.js');
       const result = runBrief(here());
@@ -135,6 +136,11 @@ export function registerBrief(program: Command, wiring: Wiring): Declared {
         );
         return;
       }
+      // ON `err`, AND THEREFORE NOT IN THE DOCUMENT. `mnema brief > AGENTS.md` writes the
+      // whole of a file and `mnema brief | diff - AGENTS.md` compares it; a notice on
+      // stdout would be committed into that file and would outlive the repair. See
+      // `commands/brief.ts` for what that leaves and which door covers it.
+      for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
       writeLines(io, briefDocument(result.brief));
     });
   return readsTheRecord(brief);

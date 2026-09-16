@@ -23,6 +23,7 @@ export function registerTimeline(program: Command, wiring: Wiring): Declared {
     .option('--json', 'emit the faithful timeline entries as JSON')
     .action(async (id: string, opts: { json?: boolean }) => {
       const { anchorText } = await import('../anchors.js');
+      const { linkBreakNotice } = await import('./integrity.js');
       const { runTimeline } = await import('../commands/timeline.js');
       // Loaded when the verb runs, not while the program is being declared: this
       // module reaches the chain for the reader that turns a move's fields into text,
@@ -33,6 +34,9 @@ export function registerTimeline(program: Command, wiring: Wiring): Declared {
         reportRefusal(wiring, result);
         return;
       }
+      // BEFORE the answer, and on the other stream — so it survives a pipe, and so
+      // `--json` stays the machine-readable thing it promises to be.
+      for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
       if (opts.json === true) {
         io.out(JSON.stringify(result.entries, null, 2));
         return;
