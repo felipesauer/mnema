@@ -64,11 +64,14 @@
  * THE ROSTER IS SWEPT, NOT LISTED. The rule is "a published TypeScript block is checked",
  * so the discriminant is a ```ts fence in a tracked file — not a README under `packages/`.
  * The comparison guard reconciles the README of each directory under `packages`, which is
- * four files of the forty-two tracked Markdown files in this workspace: it is blind to
- * `packages/chain/verifier/README.md` and `plugin/README.md`, to thirteen further READMEs
+ * four files of the forty-three tracked Markdown files in this workspace: it is blind to
+ * `packages/chain/verifier/README.md` and `plugin/README.md`, to fourteen further READMEs
  * under `measurements` and `.github`, and to twenty-three other pages besides. The case at
- * the bottom sweeps all forty-two instead, so a block published anywhere new must be
- * classified before it can be ignored.
+ * the bottom sweeps all forty-three instead, so a block published anywhere new must be
+ * classified before it can be ignored. (Those four counts were `42` and `13` until 16/09/2026,
+ * when a page added under `measurements` made them wrong; they are prose and nothing
+ * reconciles them, which is why they decayed in silence and are named here as a number that
+ * will decay again.)
  */
 
 import { execFileSync } from 'node:child_process';
@@ -370,7 +373,7 @@ describe('the check is not laxer than the repository', () => {
   });
 });
 
-describe('the roster is every block this workspace publishes', () => {
+describe('the roster is every TYPESCRIPT block this workspace publishes', () => {
   it('the compiler ran, and said so — every case above is read from its report', () => {
     // Every other case in this file reads an ABSENCE of diagnostics as a page compiling.
     // This one reads a PRESENCE, so a `tsc` that never started cannot be mistaken for one
