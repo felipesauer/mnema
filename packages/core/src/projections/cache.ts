@@ -114,27 +114,33 @@ export class ProjectionCache {
    * time to learn something the first reading had in its hands. The reads that serve
    * this cache take it from {@link linkBreaks}.
    *
-   * IT SAID {@link refresh} NEVER LEAVES IT STALE — that the incremental path refuses
-   * to call a broken run of arrivals a suffix (`AN_ARRIVAL_DOES_NOT_CHAIN`), so a break
-   * appearing after the last full replay forces one. MEASURED, THAT IS FALSE FOR THE
-   * COMMONEST SHAPE OF BREAK. Over a tail whose last entry was appended a second time —
-   * the same `seq`, the same `prev`, byte for byte what two writers appending at once
-   * leave — a fresh {@link rebuild} reports ONE break and `refresh()` on a cache opened
-   * before it reports ZERO.
+   * {@link refresh} DOES NOT LEAVE IT STALE FOR A BREAK THAT ARRIVED, and that is a
+   * repaired promise rather than an original one. The premise this said for two
+   * deliveries was that the incremental path refuses a broken run of arrivals
+   * (`AN_ARRIVAL_DOES_NOT_CHAIN`), so any break appearing after the last full replay
+   * forces one. MEASURED, THAT WAS FALSE FOR THE COMMONEST SHAPE: over a tail whose
+   * last entry had been appended a second time, a fresh {@link rebuild} reported ONE
+   * break and `refresh()` on a cache opened before it reported ZERO.
    *
-   * What the premise missed is where the refusal is asked. The arrivals of a tail are
-   * the entries ABOVE the seq the frontier reached (`aboveBoundary` in `order.ts`), and
-   * a duplicate sits AT it: nothing arrived, so there was no run of arrivals to find
-   * broken, no suffix was refused, and the fast path returned with nothing to do. The
-   * refusal catches a break in what CHAINS ON; it cannot catch one planted at or below
-   * the boundary, which the incremental walk never reads.
+   * The refusal was never the hole — WHERE THE ARRIVALS WERE READ FROM was. A reading
+   * resumed from the last `seq` asks the tail for the entries above it, and the walk
+   * that answers stops at the first entry CARRYING that seq, which the duplicate
+   * satisfies: nothing arrived, so there was no run of arrivals to find broken. The
+   * frontier now records the BYTE each tail was read to ({@link TailReach.boundary}),
+   * and past that byte the duplicate is an arrival like any other, which the refusal
+   * then rules on. The three shapes it was measured over — the last entry duplicated,
+   * the last two, the last three — all now agree with a fresh rebuild.
    *
-   * The consequence belongs to the readers: a connection holding a warm cache over a
-   * tree that was sound when it read it, and that another process then broke, is told
-   * nothing about the break for as long as it stays up — through either surface, and
-   * whether it reads or writes. A connection that opens AFTER the break replays and is
-   * told. `code/tests/the-write-says-what-it-landed-on.test.ts` holds that end to end,
-   * so this limit reddens a case rather than living only here.
+   * WHAT IS STILL OUTSIDE IT is a break BELOW the boundary: bytes a previous reading
+   * already accepted and will not read again. Rewriting the past under a live session
+   * is invisible here for as long as that session stays up, and a connection that opens
+   * afterwards replays and is told. That is a limit with a measurement, not a silence:
+   * `order.test.ts` holds both halves.
+   *
+   * AND IT REACHES ONLY THE SURFACE THAT READS. A write does not refresh anything — it
+   * marks its tree stale and answers from what the last read knew — so a connection
+   * that writes without reading after the break is told nothing until its next read.
+   * `code/tests/the-write-says-what-it-landed-on.test.ts` holds that end to end.
    */
   private breaks: readonly LinkBreak[] = [];
 

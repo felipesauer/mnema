@@ -97,7 +97,10 @@ function privateRoot(): string {
 
 /**
  * The plant: the last entry of a tail, appended again — the same `seq`, the same
- * `prev`, byte for byte what two writers appending at once used to leave.
+ * `prev` — a duplicate of the boundary entry, which is the shape a resumed reading
+ * used to be blind to. It is NOT what the two-writer race left: measured with the lock
+ * removed, that leaves the last PAIR duplicated and above a live session's frontier,
+ * where the incremental catch-up already saw it.
  *
  * It is done by hand and not raced for, for the reason the command line's half gives: a
  * tail can stop chaining from a botched merge, a hand-edited file or a restore from half

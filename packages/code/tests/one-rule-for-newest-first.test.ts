@@ -197,14 +197,16 @@ const THE_ORDERINGS: readonly Rostered[] = [
  *
  * The third vector, and the one a comparator scan cannot see: reversing an ASCENDING
  * ordering serves newest-first without any descending comparison being written. None of
- * the four turns around an ordering — they are bytes and one already-ordered tip — and
- * a fifth has to be declared here before it can exist.
+ * the five turns around an ordering — they are bytes, and two walks that read a tail
+ * BACKWARDS and put back what they took — and a sixth has to be declared here before it
+ * can exist.
  */
 const THE_REVERSALS: readonly (readonly [string, string])[] = [
   ['chain/src/chain/bitcoin.ts', 'a block hash, big-endian to little-endian'],
   ['chain/src/chain/bitcoin.ts', 'a block hash, big-endian to little-endian'],
   ['chain/src/chain/ots.ts', 'the bytes of a message'],
   ['chain/src/chain/store.ts', 'a tip already read in order'],
+  ['chain/src/chain/store.ts', 'arrivals read backwards from the end, restored to seq order'],
 ];
 
 /**

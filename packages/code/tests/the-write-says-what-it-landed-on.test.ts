@@ -93,8 +93,12 @@ function treeRoot(scope: 'private' | 'public'): string {
 }
 
 /**
- * The plant: the last entry of a tail, appended again — the same `seq`, the same `prev`,
- * byte for byte what two writers appending at once used to leave.
+ * The plant: the last entry of a tail, appended again — the same `seq`, the same `prev`.
+ *
+ * It is a duplicate of the BOUNDARY entry, which is the shape a reading resumed from a
+ * `seq` could not see at all. It is NOT what the two-writer race leaves: measured with
+ * the lock removed, that leaves the last PAIR duplicated, above a live session's
+ * frontier, where the catch-up already ruled on it.
  */
 function breakTheTail(root: string): void {
   const tails = join(root, 'tails');
@@ -327,29 +331,25 @@ describe('a session that only writes', () => {
 
 describe('a break that appears while this session is up', () => {
   /**
-   * THE SECOND MEASURED LIMIT, and it belongs to neither surface: a retained cache does
-   * not see a break that appears after its last FULL replay.
+   * WHAT THIS CASE WAS WRITTEN TO CATCH, AND IT CAUGHT IT.
    *
-   * Measured directly against `ProjectionCache` while this was being built: over a tail
-   * that gained a duplicate of its last entry — byte for byte what two writers appending
-   * at once leave, and what every case in this file plants — a fresh `rebuild()` reports
-   * ONE break and `refresh()` on the cache that was open before it reports ZERO. The
-   * cause is in `chainArrivals`: the arrivals of a tail are the entries ABOVE the seq the
-   * frontier reached, and a duplicate sits AT it, so nothing arrived, no suffix was
-   * refused, and the incremental path had nothing to be suspicious of.
+   * It used to assert the opposite of what it asserts now: that a retained cache is
+   * blind to a break appearing after its last full replay, through BOTH doors. The
+   * cause was in `@mnema/core`'s incremental reading — the frontier recorded the `seq`
+   * each tail was read to, and the walk that resumes from a seq stops at the first
+   * entry carrying it, which a duplicate of the boundary entry satisfies. Nothing
+   * arrived, so nothing was refused. The comment here said IF IT IS FIXED, THIS CASE
+   * GOES RED and names itself; the frontier now records the BYTE, and it did.
    *
-   * `cache.ts` used to state the opposite in the doc of its own `breaks` field — that
-   * `refresh` never leaves it stale because the incremental path refuses a broken run of
-   * arrivals. That premise is false for this shape of break and the comment now says so.
-   *
-   * IT IS NOT THIS DELIVERY'S TO FIX. The repair is in `@mnema/core`'s incremental
-   * reading, it changes the cost of the hot path a whole delivery was spent measuring,
-   * and it makes the READS wrong in exactly the same way — this is the half of the rule
-   * that inherited it, not the half that introduced it. What is here is the proof, in the
-   * product's own words, so that nobody mistakes the silence for coverage. IF IT IS
-   * FIXED, THIS CASE GOES RED and names itself.
+   * WHAT IS FIXED IS THE READING, and this case now holds the asymmetry that leaves.
+   * The next READ on the live connection is told, because a read refreshes the caches
+   * it composes and the duplicate is now an arrival that does not chain. The write is
+   * NOT, and that is not the same limit as `a session that only writes` below: this
+   * connection HAS a cache. A write never refreshes one — it marks the tree stale and
+   * answers from what the last read knew — so the fact reaches it one call later.
+   * Closing that is a cost decision about every write, not a reading defect.
    */
-  it('is in neither the write nor the next read, because the retained cache never replayed', async () => {
+  it('reaches the next read of the live connection, and the write one call later', async () => {
     const client = await connect();
     const seeded = await seed(client);
     // The session reads a SOUND record and warms its cache over it.
@@ -360,22 +360,27 @@ describe('a break that appears while this session is up', () => {
     breakTheTail(treeRoot('public'));
     expect(verify(treeRoot('public'), catalogUpcasters()).ok).toBe(false);
 
+    // The write that comes FIRST is silent: it refreshes nothing, so it still answers
+    // from the replay the last read left.
     const wrote = await client.callTool({
       name: 'record_observation',
       arguments: { about: seeded.task, topic: 'timing', text: 'written after the break' },
     });
     expect(blocks(wrote).join(LF)).not.toContain(LANDED);
 
-    // And the READ that follows is silent too — which is what tells the two limits
-    // apart. In `a session that only writes` the next read DOES speak, because the cache
-    // it opens replays a record that is already broken. Here the cache was opened over a
-    // sound one and is never replayed again, so neither door has the fact to carry.
+    // THE READ IS TOLD. This is the line that was inverted: it used to assert the
+    // silence, and asserting the silence is what would have gone on hiding the defect.
     const read = await client.callTool({ name: 'focus', arguments: {} });
-    expect(blocks(read).join(LF)).not.toContain(CAME_OFF);
+    expect(blocks(read).join(LF)).toContain(CAME_OFF);
 
-    // A connection that opens AFTER the break is told, by both doors — the record on
-    // disk really does carry the break, so the silence above is the cache and nothing
-    // else.
+    // …and from then on the writes of the SAME connection carry it too.
+    const after = await client.callTool({
+      name: 'create_task',
+      arguments: { title: 'after the read that was told' },
+    });
+    expect(blocks(after).join(LF)).toContain(LANDED);
+
+    // A connection that opens AFTER the break is told by both doors, as it always was.
     await client.close();
     const later = await connect();
     expect(blocks(await later.callTool({ name: 'focus', arguments: {} })).join(LF)).toContain(

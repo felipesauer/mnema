@@ -38,6 +38,12 @@ export interface StoredLine {
   readonly text: string;
   /** The offset, in bytes, of the line's first byte in the file. */
   readonly start: number;
+  /**
+   * The offset, in bytes, just past the line's last byte — the newline that ends it,
+   * where there is one. `end - start` is therefore the line's length in BYTES, which
+   * `text.length` is not for anything outside ASCII.
+   */
+  readonly end: number;
 }
 
 /**
@@ -77,14 +83,18 @@ export function* linesFromEnd(file: string, chunkBytes = CHUNK_BYTES): Generator
       while (end > 0) {
         const newline = buf.lastIndexOf(NEWLINE, end - 1);
         if (newline < 0) break;
-        yield { text: buf.toString('utf-8', newline + 1, end), start: pos + newline + 1 };
+        yield {
+          text: buf.toString('utf-8', newline + 1, end),
+          start: pos + newline + 1,
+          end: pos + end,
+        };
         end = newline;
       }
       carry = buf.subarray(0, end);
     }
     // Offset 0 reached: whatever is left is the file's first line, which has no
     // newline before it to find.
-    if (carry.length > 0) yield { text: carry.toString('utf-8'), start: 0 };
+    if (carry.length > 0) yield { text: carry.toString('utf-8'), start: 0, end: carry.length };
   } finally {
     closeSync(fd);
   }
@@ -171,6 +181,32 @@ export function* parsedFromEnd<T>(
   endsTheStream: boolean,
   parse: (line: string) => T,
 ): Generator<T> {
+  for (const found of locatedFromEnd(file, endsTheStream, parse)) yield found.value;
+}
+
+/** A parsed line of a backward walk, and where in the file it begins. */
+export interface LocatedLine<T> {
+  readonly value: T;
+  /** The offset, in bytes, of the line's first byte — {@link StoredLine.start}. */
+  readonly start: number;
+  /** The offset, in bytes, just past the line — {@link StoredLine.end}. */
+  readonly end: number;
+}
+
+/**
+ * {@link parsedFromEnd}, keeping each line's OFFSET.
+ *
+ * The two are one walk and not two readings of the same rule: `parsedFromEnd` is this
+ * with the position dropped. A caller resuming from a byte it recorded needs the
+ * offset to know when it has walked back far enough, and a caller resuming from a seq
+ * does not — but the torn-fragment tolerance, the empty-line skip and the order are
+ * the same question, and answering it twice is how the two drift.
+ */
+export function* locatedFromEnd<T>(
+  file: string,
+  endsTheStream: boolean,
+  parse: (line: string) => T,
+): Generator<LocatedLine<T>> {
   let atPhysicalEnd = true;
   // Hoisted over the walk so naming a position allocates nothing per line: it
   // reads the offset of whichever line the walk is holding when a parse fails.
@@ -185,6 +221,6 @@ export function* parsedFromEnd<T>(
     if (line.text.length === 0) continue;
     at = line.start;
     const parsed = parseStoredLine(line.text, couldBeTorn, parse, where);
-    if (parsed !== null) yield parsed;
+    if (parsed !== null) yield { value: parsed, start: line.start, end: line.end };
   }
 }
