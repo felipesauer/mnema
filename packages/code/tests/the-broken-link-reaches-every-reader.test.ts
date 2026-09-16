@@ -46,8 +46,15 @@ const SRC = join(import.meta.dirname, '..', 'src');
 /** The two ways anything in this package opens a record to read it. */
 const OPENS_A_RECORD = ['withScopedCaches(', 'ProjectionCache.open('];
 
-/** The reading every door that serves the record has to ask for. */
-const ASKS_THE_READING = 'linkBreaksOf';
+/**
+ * The reading every door that serves the record has to ask for — as a CALL, with its
+ * open parenthesis, and that is not pedantry. Read as a bare identifier this matches the
+ * IMPORT too, so a command that keeps `import { linkBreaksOf, type ScopedLinkBreak }` and
+ * answers `linkBreaks: []` stays green. Measured: that mutation left this file silent and
+ * the lint silent (the type in the same import is still used, so nothing is orphaned) and
+ * was caught by the behavioural half alone. With the parenthesis it is caught here too.
+ */
+const ASKS_THE_READING = 'linkBreaksOf(';
 
 /** Every `.ts` under `src`, as a path relative to it — tests excluded. */
 function sources(dir = SRC, prefix = ''): string[] {
