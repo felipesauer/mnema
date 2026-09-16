@@ -123,7 +123,7 @@ export interface BriefSwitchedOff {
  * whichever tree holds it — the team's, this machine's, or the personal one — and the
  * document names no tree". The second half is still true and the first half was
  * measured wrong: a title recorded `--scope private` reached a document whose recipe
- * is a redirection into `AGENTS.md` and a commit, and two chains numbering their own
+ * is a redirection into a tracked file and a commit, and two chains numbering their own
  * `ADR-<n>` put two different rules under one label. So the composition decides which
  * trees a document carries (see `brief` in @mnema/copilot), and this passes what it
  * opened.

@@ -20,7 +20,7 @@
  *
  * IT IS NOT IN THE `brief` EITHER, and that is the sharper half of the same rule. The
  * document `mnema brief` prints is committed and checked with `mnema brief | diff -
- * AGENTS.md`, so it may hold no clock, no session and no path — a count of files in a
+ * <the file>`, so it may hold no clock, no session and no path — a count of files in a
  * working tree would make that check report a difference that is not the record's. The
  * fact belongs where the gesture is: at the terminal of the person who decides what to
  * import, which is `mnema status`.

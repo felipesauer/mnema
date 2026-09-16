@@ -6,7 +6,10 @@
  * the shape the market settled on — `gh completion -s bash`, `kubectl completion bash`,
  * `docker completion`, `rustup completions` — and because the alternative is a verb that
  * edits a file it did not write. Where the script goes is the operator's choice, the way
- * `mnema brief > AGENTS.md` is.
+ * `mnema brief > MNEMA.md` is — with the difference that every destination above is a file
+ * this product NAMES, so a redirection over one replaces something that was already ours.
+ * `brief` publishes no such name, which is why its help says what the `>` does and this
+ * one does not.
  *
  * IT DOES NOT DETECT THE SHELL EITHER. The shell is an ARGUMENT with `.choices()`, so a
  * typo earns the parser's own refusal naming the three, in the product's voice. Detection

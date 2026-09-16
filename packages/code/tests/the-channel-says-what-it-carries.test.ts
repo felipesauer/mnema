@@ -269,8 +269,12 @@ describe('the framing says what the text is, never what to do about it', () => {
     // ban that swallowed it would push the framings into saying less than they can.
     expect(tellsWhatToDo('Ask `skills` again with the `id` of the one you want.')).toBeUndefined();
     expect(
-      tellsWhatToDo('Regenerate this file with `mnema brief > AGENTS.md`, and check it.'),
+      tellsWhatToDo('Regenerate this file with `mnema brief > <this file>`, and check it.'),
     ).toBeUndefined();
+    // And the sentence that came with it, which tells a reader what the SHELL does to
+    // their file rather than what to do about the record. It is the most imperative-
+    // looking line the document carries, and it is a fact about a redirection.
+    expect(tellsWhatToDo('The `>` replaces the whole of the file it names.')).toBeUndefined();
   });
 });
 
