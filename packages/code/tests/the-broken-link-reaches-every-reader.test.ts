@@ -60,8 +60,24 @@ import {
 
 const SRC = join(import.meta.dirname, '..', 'src');
 
-/** The two ways anything in this package opens a record to read it. */
-const OPENS_A_RECORD = ['withScopedCaches(', 'ProjectionCache.open('];
+/**
+ * The ways anything in this package opens a record to read it.
+ *
+ * IT GREW BY TWO AND THE REASON IS WORTH THE LINE. `withCache` and `withOpenedCaches`
+ * arrived when the open and the close were paired into one call
+ * (`the-record-is-opened-and-closed-together.test.ts`), and three of the doors this sweep
+ * covers — `commands/guard.ts`, `commands/next-actions.ts`, `pinned-run.ts` — stopped
+ * writing `ProjectionCache.open(` on the same day. Left unamended this list would have
+ * gone on passing while those three dropped out of the sweep entirely: a door is only a
+ * door here if one of these strings is in it, and a guard that quietly stops asking is
+ * worse than one that never asked.
+ */
+const OPENS_A_RECORD = [
+  'withScopedCaches(',
+  'withOpenedCaches(',
+  'withCache(',
+  'ProjectionCache.open(',
+];
 
 /**
  * The reading every door that serves the record has to ask for — as a CALL, with its

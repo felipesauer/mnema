@@ -214,8 +214,14 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * It went 2669 -> 2670 when the recipe gained a third publisher: the block `mnema init`
  * prints is owned by `wiring/init.ts`, so the guard that holds every publisher to one
  * clause imports it from there rather than transcribing it.
+ *
+ * It went 2670 -> 2684 when three guards arrived together: `tree-sources.test.ts`, which
+ * stands up a real tree in a sandbox to watch a cache refuse after it is closed;
+ * `the-record-is-opened-and-closed-together.test.ts`, which sweeps the package for the
+ * open; and `a-sticky-pattern-answers-differently-each-call.test.ts`, which sweeps every
+ * package — tests included — for a pattern carrying `g` asked a yes-or-no question.
  */
-const CLAUSES_IN_THE_TREE = 2670;
+const CLAUSES_IN_THE_TREE = 2684;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 

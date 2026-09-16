@@ -76,10 +76,20 @@ export interface CacheOptions {
    * be filled. This said "a persistent path arrives with the surfaces that need a
    * warm cache across runs"; the surface arrived and chose otherwise. The MCP
    * session holds a cache warm for the length of the session
-   * (`code/src/mcp/cache-registry.ts`) and opens it with `upcasters` alone, as do
-   * all six `ProjectionCache.open` sites in the workspace — a warm cache IN the
-   * process turned out to be what that surface needed, and a file on disk would
-   * add an invalidation nobody has to do today.
+   * (`code/src/mcp/cache-registry.ts`) and opens it with `upcasters` alone, as does
+   * every production site that opens a cache — a warm cache IN the process turned
+   * out to be what that surface needed, and a file on disk would add an
+   * invalidation nobody has to do today.
+   *
+   * THE SENTENCE ABOVE USED TO SAY "all six `ProjectionCache.open` sites in the
+   * workspace" AND THE SIX WERE PAID FOR. Three of them opened a cache and never
+   * closed it, so `code/src/tree-sources.ts` took the pairing over and `code` now
+   * opens one in two places, guarded by
+   * `code/tests/the-record-is-opened-and-closed-together.test.ts`. The count is gone
+   * rather than corrected: it was a number about another package, in a doc-comment
+   * that cannot be red when it goes stale, and it went stale the first time anything
+   * moved. What holds is the claim it was evidence FOR — no production caller sets
+   * this option — and that one is asserted where the callers live.
    *
    * WHAT IT IS FOR, then, is the property no in-memory cache can demonstrate:
    * `cache.test.ts` and `advance.test.ts` open a path, close it, open it again and

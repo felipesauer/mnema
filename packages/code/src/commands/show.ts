@@ -56,17 +56,10 @@
  * open the trees that are left, and the other three still stop.
  */
 
-import { catalogUpcasters } from '@mnema/chain';
-import { consultationsByRun, type RecordBody, readRecord, type ScopedCache } from '@mnema/copilot';
-import {
-  chainRootForScope,
-  type DiscoveryEnv,
-  ProjectionCache,
-  resolveTrees,
-  type Scope,
-} from '@mnema/core';
+import { consultationsByRun, type RecordBody, readRecord } from '@mnema/copilot';
+import { type DiscoveryEnv, resolveTrees, type Scope } from '@mnema/core';
 import { type AnchorForms, anchorForms, NO_ANCHORS } from '../anchors.js';
-import { linkBreaksOf, type ScopedLinkBreak } from '../tree-sources.js';
+import { linkBreaksOf, type ScopedLinkBreak, withOpenedCaches } from '../tree-sources.js';
 
 /** The trees a lookup reads, in a fixed order. An id lives in exactly one. */
 const SCOPES: readonly Scope[] = ['public', 'private', 'global'];
@@ -111,18 +104,7 @@ export interface ShowRefused {
  */
 export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | ShowRefused {
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  const upcasters = catalogUpcasters();
-  const opened: ScopedCache[] = [];
-  const open = (scope: Scope): ScopedCache | undefined => {
-    const root = chainRootForScope(trees, scope);
-    if (root === undefined) return undefined;
-    const cache = ProjectionCache.open(root, { upcasters });
-    cache.rebuild();
-    const source: ScopedCache = { scope, chainRoot: root, cache };
-    opened.push(source);
-    return source;
-  };
-  try {
+  return withOpenedCaches(trees, (open, opened) => {
     let found: RecordBody | null = null;
     let next = 0;
     for (; next < SCOPES.length && found === null; next++) {
@@ -148,7 +130,5 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
         ? { consultations: consultationsByRun(opened).get(found.id) ?? 0 }
         : {}),
     };
-  } finally {
-    for (const source of opened) source.cache.close();
-  }
+  });
 }
