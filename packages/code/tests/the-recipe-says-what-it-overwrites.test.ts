@@ -17,12 +17,13 @@
  * named is the text that teaches the redirection, BEFORE somebody types it. Making the
  * verb write would answer this differently and is a different product.
  *
- * ONE SENTENCE, READ IN N PLACES. The recipe is published twice — the help page a person
- * reads before typing, and {@link HOW_TO_REGENERATE} inside the generated document, read
- * by whoever finds a stale copy — and the two used to be able to drift because nothing
- * compared them. {@link SAYS_WHAT_IT_DOES} is the one reading: both publishers carry the
- * same clause, so a wording changed in one of them and not the other is red here rather
- * than a divergence nobody sees.
+ * ONE SENTENCE, READ IN N PLACES. The recipe is published three times — the help page a
+ * person reads before typing, {@link HOW_TO_REGENERATE} inside the generated document,
+ * read by whoever finds a stale copy, and the block `mnema init` prints to the person who
+ * has just founded a project — and they used to be able to drift because nothing compared
+ * them. {@link SAYS_WHAT_IT_DOES} is the one reading: every publisher carries the same
+ * clause, so a wording changed in one of them and not the others is red here rather than a
+ * divergence nobody sees.
  *
  * AND THE PUBLISHERS COME OFF THE PROGRAM. The pages are walked with `everyCommandOf`,
  * the same walk the parser's refusals and the completion tree use, so a page that copies
@@ -30,12 +31,22 @@
  * own help — is caught by carrying the recipe, not by being on a list in this file. That
  * is the N+1 this guard exists for; a list here would be the defect it was written to
  * catch.
+ *
+ * TWO PUBLISHERS ARE NOT ON A HELP PAGE, AND THEY ARE READ BY IMPORT. The generated
+ * document and `init`'s block are printed at RUN time, so the walk cannot reach them and
+ * naming them here is the only way they are read at all — which is exactly the list this
+ * file says would be the defect, so it is worth saying what keeps it honest: each is
+ * imported from the module that OWNS the text, not transcribed, so a publisher whose
+ * wording moves is compared with the others on the next run. What a list of imports cannot
+ * catch is a FOURTH publisher of this shape, printed at run time and named nowhere; that
+ * is the hole this guard has, and `init`'s block was in it until this line was written.
  */
 
 import type { Brief } from '@mnema/copilot';
 import { describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo } from '../src/cli.js';
 import { briefDocument } from '../src/presentation/brief.js';
+import { REACHES_AN_AGENT, THE_LINE_IN_THEIRS } from '../src/wiring/init.js';
 import { everyCommandOf, pathOf } from '../src/wiring/misuse.js';
 
 /** A silent port: nothing here runs a verb, it only reads what they declare. */
@@ -103,6 +114,7 @@ function everyPublishedText(): ReadonlyMap<string, string> {
     texts.set(`mnema ${page} --help`, captured);
   }
   texts.set('the generated document', briefDocument(EMPTY_BRIEF).join('\n'));
+  texts.set('the init recommendation', [...REACHES_AN_AGENT, THE_LINE_IN_THEIRS].join('\n'));
   return texts;
 }
 
@@ -116,7 +128,8 @@ describe('every place that publishes the recipe says what the redirection does',
       .map(([where]) => where);
     expect(publishers).toContain('mnema brief --help');
     expect(publishers).toContain('the generated document');
-    expect(publishers.length).toBeGreaterThanOrEqual(2);
+    expect(publishers).toContain('the init recommendation');
+    expect(publishers.length).toBeGreaterThanOrEqual(3);
   });
 
   it('names the truncation in each of them', () => {
@@ -153,5 +166,13 @@ describe('every place that publishes the recipe says what the redirection does',
     const document = everyPublishedText().get('the generated document') ?? '';
     expect(document).toContain('<this file>');
     expect(document).not.toContain('AGENTS.md');
+    // `init` offers the same destination and the same alternative, and it offers the line
+    // to put in the other file as a LITERAL rather than as a description of one — which is
+    // the half the help page cannot give, because it is read by somebody who already knows
+    // what they wanted. A recommendation the reader has to compose is one they do not make.
+    const founding = everyPublishedText().get('the init recommendation') ?? '';
+    expect(founding).toContain('mnema brief > MNEMA.md');
+    expect(founding).toContain('AGENTS.md');
+    expect(founding).toContain('MNEMA.md`.');
   });
 });

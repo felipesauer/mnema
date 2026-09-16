@@ -151,6 +151,15 @@ const TITLE = '# What governs the work here';
  * at once and citing no rule for it. Nothing measured says it moved a reader, and the
  * product's answer to "the record is not being followed" is a charge that names the
  * rule it comes from — not a sentence in a preamble.
+ *
+ * "EVERYTHING ELSE HERE TELLS THEM WHAT THE CONTENT IS" WAS TRUE WHEN IT WAS WRITTEN AND
+ * IS NOT NOW, and the sentence above is kept rather than quietly widened because the LINE
+ * it draws is the one that admitted the exception. {@link HOW_A_DECISION_ENTERS} tells a
+ * reader what to do, and what it tells them to do is about the RECORD — where a decision
+ * of theirs goes — which is a door of this product rather than an opinion about their
+ * code. "Follow them" was mnema's own voice over somebody else's work, and that is
+ * refused exactly as it was. What fell is the flat premise that this document never says
+ * what to do; what survives, and is the whole of the rule, is what it may say it ABOUT.
  */
 const WHAT_THIS_IS = recordFraming('brief-document');
 
@@ -369,6 +378,49 @@ function switchedOffAtTheGate(gate: ChannelState): string[] {
   ];
 }
 
+/**
+ * HOW A DECISION GETS IN — the one thing this document says about its reader's own next
+ * move, and the measurement that put it here.
+ *
+ * WHAT WAS MEASURED, on one project. Five sessions opened with this document and recorded
+ * ZERO decisions; the session after somebody wrote the gesture by hand into that
+ * repository's own method file recorded one the same day. The document ARRIVED in all
+ * six — what moved was not whether the record announced itself but whether anybody had
+ * been told what to do so that a call lands in it. This file named three doors for
+ * READING and none for writing, so a reader that asked nothing further knew everything
+ * about what governs here and nothing about how to join it.
+ *
+ * IT IS ABOUT THE RECORD AND NEVER ABOUT THE WORK, which is the line this whole layer is
+ * held to ({@link WHAT_THIS_IS}). It does not say how to decide, when to decide, or that
+ * anything ought to be decided: that is somebody else's code, and it is the sentence
+ * "Follow them" was removed for. It says where a decision GOES, which is a fact about
+ * this product's own door.
+ *
+ * IT IS COMPLETE WITHOUT A SECOND CALL, which is `record-framing.ts`'s criterion for text
+ * pushed at a model unasked. A reader that asks nothing further has the gesture whole —
+ * the name to call, and the state the call leaves the decision in. It is not "ask
+ * somewhere else what to do", which is the shape that criterion exists to refuse.
+ *
+ * IT NAMES THE AGENT'S DOOR, for the reason {@link DECISIONS_WAITING} names `bootstrap`
+ * and the verb's own help names `mnema status`: the reader of this file is a model, and
+ * each surface names the door its reader can open. `mnema decision import <dir>` is the
+ * other way a decision enters and it is NOT here, because it needs a directory this
+ * module cannot know and must not guess — the bytes are the contract, above.
+ *
+ * AND IT SAYS `awaiting a judgement`, which is not decoration. A decision is born
+ * `proposed` (`core/src/workflow/decision-transitions.ts` has the only transitions there
+ * are), so a reader told only that `record_decision` records one would look for it under
+ * the heading above and not find it. The words are the waiting paragraph's
+ * ({@link DECISIONS_WAITING}), so the two say one thing.
+ *
+ * ONE LINE, AND IT WAS THE WHOLE BUDGET. `brief.test.ts` pins the empty document's line
+ * count with a bound above it, and this sentence is what that slack was being held for;
+ * the note there says what is left, which is nothing.
+ */
+const HOW_A_DECISION_ENTERS = [
+  'A decision made here enters this record with `record_decision`, awaiting a judgement.',
+];
+
 /** Where the argument behind a decision is, since this file carries only the rule. */
 const WHERE_THE_RATIONALE_IS = [
   'Each was accepted, and none of them superseded. For the argument behind one, ask',
@@ -453,9 +505,9 @@ interface WaitingWords {
  *
  * IT NAMES `bootstrap` AND NOT `mnema status`, and the choice is the division this file
  * already draws rather than a preference. The doors named in the document are the ones
- * its READER can open: an agent has `read_record` and `skills` here, and `mnema show`
- * and `mnema status` are named in the verb's `--help`, where the person who typed it
- * reads. The list of what is waiting is `bootstrap`'s answer on the agent's side and
+ * its READER can open: an agent has `read_record`, `skills`, `governing_rules` and
+ * `record_decision` here, and `mnema show` and `mnema status` are named in the verb's
+ * `--help`, where the person who typed it reads. The list of what is waiting is `bootstrap`'s answer on the agent's side and
  * `mnema status`'s on the person's — the same derivation through two doors — so each
  * surface names its own and neither borrows the other's.
  *
@@ -539,6 +591,8 @@ export function briefDocument(governance: Brief): string[] {
     ...whatHasAnAddress(governance.addressed, governance.editPush),
     '',
     ...whatAsksForAPerson(governance.asking, governance.asksAPerson),
+    '',
+    ...HOW_A_DECISION_ENTERS,
     '',
     ...section(
       'Decisions in force',

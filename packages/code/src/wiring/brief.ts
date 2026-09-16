@@ -41,11 +41,19 @@
  * which is what makes the plugin's handler silent by the rule it already had. The verb is
  * still declared a READ, because switching is a different verb and this one appends nothing.
  *
- * The DOCUMENT names the agent's doors (`read_record`, `skills`, `bootstrap`) and this
- * HELP names the command line's (`mnema show <id>`, `mnema status`), which is not an
- * inconsistency but the division the product already draws: the file is read by an
- * agent, and the help by the person who typed the verb. Each is told the door it can
- * actually open.
+ * The DOCUMENT names the agent's doors (`read_record`, `skills`, `governing_rules`,
+ * `bootstrap` and `record_decision`) and this HELP names the command line's
+ * (`mnema show <id>`, `mnema status`), which is not an inconsistency but the division the
+ * product already draws: the file is read by an agent, and the help by the person who
+ * typed the verb. Each is told the door it can actually open.
+ *
+ * THAT LIST SAID THREE AND THE DOCUMENT NAMED FOUR, which is worth leaving in view rather
+ * than silently correcting: `governing_rules` had been in the file since the address
+ * paragraph was written and never reached this sentence, because a list of names in a
+ * comment is not read by anything. `record_decision` is the fifth and the only WRITE — a
+ * decision of the reader's own enters the record through it — and it is the one addition
+ * that changes what the division means: the file now names a door its reader can open to
+ * PUT something in, not only to read more.
  *
  * THAT DIVISION IS NOT WHAT THE DOCUMENT DOES IN EVERY STATE, and saying so here is the
  * honest form of it. When a channel is switched OFF the document names `mnema switch` —

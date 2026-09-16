@@ -211,8 +211,11 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * transport pair, plants a break by hand and calls every tool that records or moves —
  * so it reaches `node:fs`, `node:os`, `node:path`, `node:url`, the SDK's client and
  * in-memory transport, and the chain's own `verify` to prove the break is really there.
+ * It went 2669 -> 2670 when the recipe gained a third publisher: the block `mnema init`
+ * prints is owned by `wiring/init.ts`, so the guard that holds every publisher to one
+ * clause imports it from there rather than transcribing it.
  */
-const CLAUSES_IN_THE_TREE = 2669;
+const CLAUSES_IN_THE_TREE = 2670;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 

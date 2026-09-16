@@ -220,7 +220,7 @@ describe('the brief costs one line per rule', () => {
     // is not the slope and is not asserted as if it were.
     expect(oneEach - none).toBeGreaterThan(0);
     // And the fixed part is small enough to be worth having in a file read on every
-    // prompt: measured at 38 lines with both lists empty, against the ~200 the market
+    // prompt: measured at 42 lines with both lists empty, against the ~200 the market
     // publishes for a whole project memory. It was 21 before the document had to name
     // the scope it carries and say what its counts count, 25 before it said how many of
     // the rules have an ADDRESS, 30 before that paragraph grew the switch, and 34 before
@@ -239,18 +239,36 @@ describe('the brief costs one line per rule', () => {
     // and a blank because the pointer at `governing_rules` was not repeated: that read
     // answers for both relations, and the paragraph above already names it.
     //
-    // The bound moves with the measurement and stays above it, for the reason it always
-    // did: a declaration is the one thing this skeleton is allowed to grow for, and a
-    // bound sitting on the measured value turns the next honest sentence into a failing
-    // test instead of a decision.
-    //
     // AND THE LAST TWO SAY WHAT THE RECIPE DOES TO THE FILE IT IS REDIRECTED INTO, which
     // is the one growth here that is not a declaration about the RECORD. It is a fact
     // about the shell, and it is in the skeleton because the recipe is: the published
     // line was `mnema brief > AGENTS.md`, and on a real project that file held 126 lines
     // of the repository's own method. Two lines in a file read once against a method
     // file replaced in silence is not a trade this needed a measurement to settle.
-    expect(none).toBe(40);
+    //
+    // AND THE LAST TWO ARE THE GESTURE — how a decision of the reader's OWN gets into
+    // this record (`HOW_A_DECISION_ENTERS`). It is the only thing here that is about the
+    // reader's next move rather than about the content, and what put it in was a field
+    // measurement rather than symmetry: on one project the document arrived in five
+    // sessions and none of them recorded a decision, and the session after somebody
+    // wrote the gesture by hand into that repository's own method file recorded one the
+    // same day. The document was already arriving; what was missing was the door in.
+    //
+    // THE HEADLINE NUMBER ABOVE SAID 38 WHILE THIS LINE SAID 40, and that drift is worth
+    // naming because it is what a bound cannot catch: the delivery that took the skeleton
+    // from 38 to 40 moved the assertion and left the sentence that quotes it, so the
+    // prose under-reported the file by two lines for a release. Both are 42 now, and a
+    // number in this comment is read as a measurement, not as a memory.
+    //
+    // THE BOUND NOW SITS ON THE MEASURED VALUE, AND THAT IS THIS DELIVERY'S DEBT rather
+    // than an oversight. The rule was that the bound moves with the measurement and stays
+    // above it, so that the next honest sentence is a DECISION about what this file is
+    // worth and not a test that goes red under somebody who was not asking the question.
+    // The gesture spent the last two lines of that slack, and the bound was NOT raised
+    // with it: raising it IS the decision, and a delivery that raises its own ceiling has
+    // taken that decision with nobody looking. So the next line added here is red, and the
+    // conversation that red forces is the one this bound has always existed for.
+    expect(none).toBe(42);
     expect(none).toBeLessThanOrEqual(42);
   });
 
@@ -669,6 +687,77 @@ describe('the brief has the same skeleton whether or not anything was decided', 
     ).toLowerCase();
     for (const absent of ['task', 'in_progress', 'to do', 'next up', 'work item']) {
       expect(text, `the document mentions ${absent}`).not.toContain(absent);
+    }
+  });
+});
+
+/**
+ * The one thing this document says about its READER'S next move.
+ *
+ * WHY IT HAS CASES OF ITS OWN, and it is a finding rather than a habit. The delivery that
+ * added the gesture deleted it again and ran the suite: TWO tests went red, and both were
+ * pinning something else — the golden of the whole transcript, and the skeleton's line
+ * count. Nothing in this file named the sentence, so a reword that kept the line count
+ * would have moved a byte of the document a session opens with and been reported as a
+ * snapshot to accept. These cases are what makes that reword a question.
+ */
+describe('the brief says how a decision of the reader’s own gets in', () => {
+  const gesture = (brief: Brief) =>
+    briefDocument(brief).filter((line) => line.includes('record_decision'));
+
+  it('names the door, in the state where the reader needs it most', () => {
+    // The empty record is the document of the day somebody ran `mnema init`, and its
+    // reader has nothing above to copy the shape from. A gesture printed only beside a
+    // list of rules would reach every project except the one that has decided nothing —
+    // which is the project where a first decision has the most to gain from being in.
+    expect(printed(governance())).toContain(
+      'A decision made here enters this record with `record_decision`, awaiting a judgement.',
+    );
+  });
+
+  it('says it whatever the record holds, and on one line', () => {
+    // One line is the whole budget the skeleton's bound had, and a second one is what a
+    // sentence grows into when somebody explains it. Asserted over three states so the
+    // case cannot pass on the empty one alone.
+    for (const brief of [
+      governance(),
+      governance({ decisions: [decision(1)], skills: [pattern(1)] }),
+      governance({ decisions: [decision(1)], decisionsAwaiting: 3 }),
+    ]) {
+      expect(gesture(brief)).toHaveLength(1);
+    }
+  });
+
+  it('lands the decision in the words the waiting paragraph uses', () => {
+    // The two say one thing or they say two. A decision is born awaiting a judgement, so
+    // a reader told only that `record_decision` records one would look under the heading
+    // above and not find it; and the words are the waiting paragraph's own, so a reword
+    // of either that left the other behind is red here rather than a document that
+    // describes its own record twice, differently.
+    expect(gesture(governance())[0]).toContain('awaiting a judgement');
+    expect(printed(governance({ decisionsAwaiting: 2 }))).toContain(
+      'recorded here and awaiting a judgement',
+    );
+  });
+
+  it('is about the RECORD and says nothing about how to do the work', () => {
+    // The line `record-framing.ts` holds, and the reason "Follow them." was removed: the
+    // document may name a door of this product and may not instruct a reader about
+    // somebody else's code. The gesture names where a decision GOES; it does not say to
+    // decide, how to decide, or what to decide about — and a sentence that grew any of
+    // those would be the removed one returning under a new name.
+    // Non-vacuity FIRST, and it is a defect this case had: with the sentence deleted the
+    // filter returns nothing, the fallback is the empty string, and every absence below
+    // holds over a document that says nothing at all. Measured — the mutation that removed
+    // the gesture reddened the three cases above and left this one green.
+    const [line, ...rest] = gesture(governance());
+    expect(line, 'the document says nothing about how a decision gets in').toBeDefined();
+    expect(rest).toEqual([]);
+    for (const ordered of ['follow', 'you must', 'make sure', 'always', 'before you']) {
+      expect(
+        (line ?? '').toLowerCase(),
+        `the gesture orders the reader to ${ordered}`,
+      ).not.toContain(ordered);
     }
   });
 });
