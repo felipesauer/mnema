@@ -55,18 +55,27 @@ export function subjectLine(...parts: readonly string[]): Line {
  * under a subject, and calling it two things would be inventing a distinction the
  * output does not make.
  *
- * `depth` is 2 in exactly one place, and it earns it: the command `key request`
- * tells the person to run on the OTHER machine. Set off from the sentence that
- * introduces it, it is visibly a line to be TYPED rather than read — which is what
- * a person scanning for the thing to copy is looking for. Flattened it becomes the
- * third line of a paragraph, and the one piece of that output the reader has to
- * act on stops looking different from the prose around it.
+ * `depth` is 2 where a line is to be reproduced VERBATIM rather than read, and it
+ * earns it in both places it is used: the command `key request` tells the person to
+ * run on the OTHER machine, and the line `init` offers for the method file this
+ * product did not write. Set off from the sentence that introduces it, either is
+ * visibly a line to be TYPED rather than read — which is what a person scanning for
+ * the thing to copy is looking for. Flattened it becomes the third line of a
+ * paragraph, and the one piece of that output the reader has to act on stops looking
+ * different from the prose around it.
+ *
+ * THAT SENTENCE READ "IN EXACTLY ONE PLACE, AND IT EARNS IT", and it carried the count
+ * as the argument: *one use is the honest count of how often output has something to be
+ * typed verbatim.* The count was never the rule — the rule is the CLASS, and a second
+ * member of it arrived the day a verb had a second thing to be copied. What the old
+ * wording would have bought is a delivery flattening a literal into prose to keep a
+ * number true.
  *
  * That is not the nesting a list uses. {@link itemLine} has no depth at all: an
  * item is an item, and the one reading that used a second level to mean "this
  * belongs to the group above" says it in words now. Here the second level marks a
- * LITERAL, not a rank, and one use is the honest count of how often output has
- * something to be typed verbatim.
+ * LITERAL, not a rank, and what is at this depth is the honest inventory of what a
+ * reader is expected to copy.
  *
  * Its text is one FIELD — the same role an item's column takes — because a fact and
  * an item of one field are the same line, which is asserted rather than assumed

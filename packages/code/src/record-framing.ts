@@ -52,9 +52,18 @@
  * It forbids a channel whose fact is INCOMPLETE without the call: "some rules govern
  * this file, ask `governing_rules`" is that shape and is why the push carries the rules
  * themselves. It does not forbid naming a door — every framing here names one, and the
- * document's own paragraphs name `read_record`, `skills` and `bootstrap` after stating
- * their fact in full. The test is whether a reader that asks nothing further has been
- * told the thing the channel exists to tell it.
+ * document's own paragraphs name `read_record`, `skills`, `governing_rules`, `bootstrap`
+ * and `record_decision` after stating their fact in full. The test is whether a reader
+ * that asks nothing further has been told the thing the channel exists to tell it.
+ *
+ * `record_decision` IS THE FIRST OF THOSE THAT IS A WRITE, and it is the sharpest case
+ * this criterion has had. The document tells a reader how a decision of their own gets
+ * into the record, which is a door being named and not a fact being deferred: the
+ * sentence carries the gesture whole — the name to call, and the state the call leaves
+ * the decision in — so a reader that calls nothing has still been told the thing. What
+ * it is NOT is an instruction about their work; see `presentation/brief.ts`, where the
+ * distinction between naming this product's door and ordering somebody about their own
+ * code is the argument the whole paragraph stands on.
  *
  * IT IS RECORDED HERE RATHER THAN IN A NOTE because this is the module a channel's
  * author has to open: the two tables over {@link ModelChannel} are total, so a channel

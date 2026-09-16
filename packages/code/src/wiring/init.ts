@@ -32,6 +32,54 @@ import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
  */
 export const INIT_VERB = 'init';
 
+/**
+ * How this project's record reaches an agent — OFFERED to the person who just founded it,
+ * and written into nothing.
+ *
+ * WHY IT IS PRINTED AND NOT WRITTEN, which is the decision this block stands on rather
+ * than a shortcut it took. A block spliced into somebody's `AGENTS.md` or `CLAUDE.md`
+ * would be text this product pushes at a model unasked, which is a CHANNEL by its own
+ * criterion (`record-framing.ts`) — and every channel it pushes can be switched off with
+ * the switching recorded. Bytes already written to somebody's disk cannot go quiet when a
+ * switch does. So the recipe and the line are offered and the person decides: `git status`
+ * after `mnema init` holds one new item and it is `.mnema/`, which is this product's own
+ * (`init.test.ts` digests every file this verb touches, and `cli.writes.golden.txt` pins
+ * every line it prints).
+ *
+ * IT REPEATS `mnema brief --help` ON PURPOSE, including the half that page was corrected
+ * to carry: the `>` replaces the whole of the file it names. That clause is not decoration
+ * beside a recipe — it is the reason the recipe names `MNEMA.md` and not `AGENTS.md`,
+ * measured on a real repository whose `AGENTS.md` held 126 lines of its own method.
+ * `the-recipe-says-what-it-overwrites.test.ts` holds every publisher of the recipe to that
+ * clause, and this block is a THIRD publisher beside the help page and the generated
+ * document. It is exported so that guard reads the text; a publisher it cannot read is a
+ * publisher that drifts.
+ *
+ * ONLY ON THE FOUNDING RUN, which is {@link reportIdentity}'s rule in this same file and
+ * not a new one: a sentence repeated on every `init` becomes noise a person learns to
+ * scroll past. The other branch reports a run that founded nothing, and four lines of
+ * advice under "nothing to found" is the product talking about itself at somebody who
+ * asked it to do something and was told it already had.
+ */
+export const REACHES_AN_AGENT = [
+  'An agent host reads an `AGENTS.md` or a `CLAUDE.md` on its own, and mnema',
+  'writes neither. `mnema brief > MNEMA.md` puts what governs this project in a',
+  'file of its own — the `>` replaces the whole of the file it names — and where',
+  'you already keep one of those, keep yours and put one line in it:',
+];
+
+/**
+ * The line that goes in a file this product did not write, printed at the depth that means
+ * VERBATIM.
+ *
+ * It names `MNEMA.md` because the recipe above does, and the two are one offer: a line
+ * pointing at a file nobody made reaches a reader and tells it nothing. It is the shape
+ * `mnema brief --help` publishes — *a line in theirs naming the file above* — said as the
+ * literal to paste rather than as a description of one, which is the difference between a
+ * recommendation a person can act on and one they have to compose.
+ */
+export const THE_LINE_IN_THEIRS = 'What governs the work here is in `MNEMA.md`.';
+
 /** Registers `mnema init` on the program. */
 export function registerInit(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
@@ -49,6 +97,9 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
         io.out(onOneLine`Initialized mnema project at ${result.root}`);
         io.out(render(fact(`identity: ${result.anchor}`)));
         reportIdentity(result.identity, io, render);
+        io.out('');
+        for (const line of REACHES_AN_AGENT) io.out(render(fact(line)));
+        io.out(render(fact(THE_LINE_IN_THEIRS, 2)));
       } else {
         io.out(onOneLine`Already a mnema project at ${result.root} — nothing to found.`);
         io.out(render(fact(`identity: ${result.anchor}`)));
