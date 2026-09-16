@@ -1146,6 +1146,11 @@ function locateEntity(session: Session, id: string): EntityLocation {
  * The tails this connection has read that do not chain — empty for a sound record,
  * which is every record this product wrote on its own.
  *
+ * EVERY REPLY OF THIS SERVER ASKS IT, reads and writes alike, through the one composer
+ * (`replied` in `server.ts`). The writes were added second and they are the case the
+ * answer matters most in: an append onto a tail that already does not chain is the one
+ * where a caller walks away believing something the record cannot support.
+ *
  * IT IS ABOUT WHAT THE SESSION HAS OPENED, and that is the one difference from the
  * command line's reading of the same fact. A command is a process that opens the trees
  * of one read and exits, so there the answer and the trees are the same set. A
@@ -1160,6 +1165,15 @@ function locateEntity(session: Session, id: string): EntityLocation {
  * ({@link ProjectionCache.linkBreaks}). A root the registry holds that no tree of this
  * workspace names is skipped rather than reported scopeless: a break has to say which
  * tree it is in, and a root nothing names is one this session can no longer place.
+ *
+ * AND THAT COST IS WHAT BOUNDS IT, in two ways a caller has to know rather than
+ * discover. A connection whose FIRST call is a write has opened no cache, so it is told
+ * nothing — a write marks its tree stale and never opens it. And a cache opened over a
+ * tree that was sound, which another process then breaks, keeps answering from the
+ * replay it has: the break is at or below the frontier, so the incremental catch-up
+ * finds nothing arrived (see {@link ProjectionCache.linkBreaks}, where the measurement
+ * is). Both are held end to end by
+ * `tests/the-write-says-what-it-landed-on.test.ts`, so they redden rather than fade.
  */
 export function sessionLinkBreaks(session: Session): readonly ScopedLinkBreak[] {
   const scopeOf = new Map(workspaceTrees(session).map((tree) => [tree.chainRoot, tree.scope]));

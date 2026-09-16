@@ -25,6 +25,16 @@
  * because `bootstrap`'s object is served byte for byte through two doors and a field
  * added here would make them disagree; and that over a sound record nothing is said at
  * all, which is the guard that makes the rest mean anything.
+ *
+ * ## Its other half
+ *
+ * THE WRITES ARE NOT HERE AND ARE NOT MISSING. This file was written when the writes
+ * said nothing, which was declared as debt and closed after it:
+ * `the-write-says-what-it-landed-on.test.ts` is the same shape of proof over the ten
+ * tools that record and move, in the wording a write gets. `skills` is the one tool
+ * declared a write that is asserted HERE, because it answers through `served` — it
+ * records that a pattern was consulted and serves the catalogue, so what the caller
+ * reads is a read's reply.
  */
 
 import { appendFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';

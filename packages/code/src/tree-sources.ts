@@ -84,7 +84,9 @@ export type { ScopedLinkBreak } from './record-integrity.js';
  * signatures, checkpoints or witnesses. A read that printed "the record is sound"
  * because this came back empty would be claiming what only `verify` can.
  *
- * EVERY READ THAT SERVES THE RECORD ASKS IT, and the guard is
+ * EVERY READ THAT SERVES THE RECORD ASKS IT, and so does every WRITE of the MCP — that
+ * half arrived second, through `sessionLinkBreaks`, and the case it covers is the one
+ * the reads could not: an append onto a tail that already does not chain. The guard is
  * `tests/the-broken-link-reaches-every-reader.test.ts`: it walks the source for the two
  * ways a read opens the record — this function and a bare `ProjectionCache.open` — and
  * a file that does neither of "asks this" and "says in {@link SERVES_NO_RECORD_CONTENT}

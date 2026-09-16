@@ -114,10 +114,27 @@ export class ProjectionCache {
    * time to learn something the first reading had in its hands. The reads that serve
    * this cache take it from {@link linkBreaks}.
    *
-   * {@link refresh} never leaves it stale: the incremental path refuses to call a
-   * broken run of arrivals a suffix (`AN_ARRIVAL_DOES_NOT_CHAIN`), so a break that
-   * appears after the last full replay forces one, and a full replay always rewrites
-   * this.
+   * IT SAID {@link refresh} NEVER LEAVES IT STALE — that the incremental path refuses
+   * to call a broken run of arrivals a suffix (`AN_ARRIVAL_DOES_NOT_CHAIN`), so a break
+   * appearing after the last full replay forces one. MEASURED, THAT IS FALSE FOR THE
+   * COMMONEST SHAPE OF BREAK. Over a tail whose last entry was appended a second time —
+   * the same `seq`, the same `prev`, byte for byte what two writers appending at once
+   * leave — a fresh {@link rebuild} reports ONE break and `refresh()` on a cache opened
+   * before it reports ZERO.
+   *
+   * What the premise missed is where the refusal is asked. The arrivals of a tail are
+   * the entries ABOVE the seq the frontier reached (`aboveBoundary` in `order.ts`), and
+   * a duplicate sits AT it: nothing arrived, so there was no run of arrivals to find
+   * broken, no suffix was refused, and the fast path returned with nothing to do. The
+   * refusal catches a break in what CHAINS ON; it cannot catch one planted at or below
+   * the boundary, which the incremental walk never reads.
+   *
+   * The consequence belongs to the readers: a connection holding a warm cache over a
+   * tree that was sound when it read it, and that another process then broke, is told
+   * nothing about the break for as long as it stays up — through either surface, and
+   * whether it reads or writes. A connection that opens AFTER the break replays and is
+   * told. `code/tests/the-write-says-what-it-landed-on.test.ts` holds that end to end,
+   * so this limit reddens a case rather than living only here.
    */
   private breaks: readonly LinkBreak[] = [];
 

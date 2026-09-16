@@ -25,10 +25,26 @@
  * `withScopedCaches` did not name them, and `show` is the verb that serves a record's
  * BODY.
  *
+ * ## What it covers now, and what it covered before
+ *
+ * It was written for the READS and the MCP's writes were outside it — `recorded` and
+ * `moved` composed their own envelope, and this file's own assertion was keyed on the
+ * read's call site (`linkBreakBlock(sessionLinkBreaks(session))`), which is a guard
+ * green over the hole it existed to find. That is the shape this bench names: a rule
+ * applied at half its sites, with the guard keyed on the half that has it.
+ *
+ * So the MCP half is keyed on two things that cannot be half-true: the reading is asked
+ * in exactly ONE place and every composer reaches it, and every tool the server
+ * REGISTERS (read off `mutatesTheRecord`/`readsTheRecord`, which is what every
+ * registration is wrapped in) answers through a composer or is excused with a reason.
+ *
  * ## What it does not answer
  *
  * That the notice is CORRECT, or that it reaches the stream it should. Both belong to
- * the behavioural half. This says the obligation was not skipped.
+ * the behavioural half — `the-read-says-the-record-does-not-chain.test.ts` and
+ * `the-agent-is-told-the-record-does-not-chain.test.ts` for the reads,
+ * `the-write-says-what-it-landed-on.test.ts` for the writes. This says the obligation
+ * was not skipped.
  */
 
 import { readdirSync, readFileSync } from 'node:fs';
@@ -36,6 +52,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   linkBreakBlock,
+  linkBreakBlockOnWrite,
   linkBreakSentences,
   SERVES_NO_RECORD_CONTENT,
   TOOLS_SERVING_NO_RECORD_CONTENT,
@@ -72,6 +89,34 @@ function sources(dir = SRC, prefix = ''): string[] {
 }
 
 const text = (relative: string): string => readFileSync(join(SRC, relative), 'utf-8');
+
+const LF = '\n';
+
+/**
+ * The body of a top-level function declaration, read by matching braces.
+ *
+ * It is read from the source rather than reasoned about from the module's exports
+ * because what is being asserted is where a CALL sits — and a call is a fact about the
+ * text. Braces inside strings and comments are not discounted, which is sound here for
+ * the reason it would not be in a parser: these four functions hold none.
+ *
+ * THE BODY OPENS AT THE FIRST BRACE THAT ENDS A LINE, and that is the whole care this
+ * needs: every one of these signatures declares an object RETURN TYPE, so the first
+ * brace after the parameter list opens `{ readonly content: … }` and not the body. The
+ * first version took it and every case passed on the type — which is a guard reading the
+ * wrong text and reporting on it, the shape this bench calls an instrument that lies.
+ */
+function bodyOf(source: string, name: string): string {
+  const at = source.indexOf(`function ${name}(`);
+  if (at < 0) throw new Error(`no function ${name} in the source`);
+  const open = source.indexOf('{\n', at);
+  let depth = 0;
+  for (let i = open; i < source.length; i++) {
+    if (source[i] === '{') depth++;
+    if (source[i] === '}' && --depth === 0) return source.slice(open, i + 1);
+  }
+  throw new Error(`function ${name} does not close`);
+}
 
 describe('every read that opens the record either asks for the breaks or says why not', () => {
   // The module that DEFINES the reading is not a door, and it is excluded by reading
@@ -180,8 +225,103 @@ describe('the MCP composes no payload of its own', () => {
     }
   });
 
-  it('the composer asks the reading', () => {
-    expect(server).toContain('linkBreakBlock(sessionLinkBreaks(session))');
+  /**
+   * THE READING IS ASKED IN ONE PLACE, and every composer reaches that place.
+   *
+   * It used to assert the literal `linkBreakBlock(sessionLinkBreaks(session))`, which was
+   * true of the reads and said nothing about the writes — and the writes were exactly
+   * what was missing. Two composers built their own envelope beside `served` and neither
+   * of them asked anything, so a guard keyed on the read's own call site was green over
+   * the hole it was supposed to find.
+   *
+   * So it is keyed on the COUNT now: one call, in one function, that every composer goes
+   * through. A composer added next year that asks the reading itself reddens this as
+   * surely as one that never asks at all — the second reading is the divergence the rule
+   * exists to prevent, and the missing one is the silence.
+   */
+  it('the reading is asked in exactly one place', () => {
+    expect(server.match(/sessionLinkBreaks\(session\)/g) ?? []).toHaveLength(1);
+    // And that place is what picks between the module's two openings, so the fact a
+    // write carries and the fact a read carries are the same bytes below the clause.
+    const envelope = bodyOf(server, 'replied');
+    expect(envelope).toContain('linkBreakBlockOnWrite');
+    expect(envelope).toContain('linkBreakBlock');
+    expect(envelope).toContain('sessionLinkBreaks(session)');
+  });
+
+  it.each(['served', 'recorded', 'moved'])('%s composes through the envelope', (composer) => {
+    // A composer that built its `content` by hand is the defect this closed: it would
+    // leave the tool list right and the reply wrong.
+    expect(bodyOf(server, composer)).toContain('replied(');
+  });
+
+  /**
+   * EVERY TOOL THIS SERVER REGISTERS ANSWERS THROUGH A COMPOSER — keyed on the
+   * DECLARATION and not on a list, so a tool added next year is classified or it is red.
+   *
+   * `mutatesTheRecord` and `readsTheRecord` are what every registration is wrapped in
+   * (`every-tool-says-if-it-writes.test.ts` holds that), which makes them the
+   * discriminant: read them off the source and each one's handler must return through a
+   * composer, or the tool must be excused with its reason.
+   */
+  it('every registered tool answers through a composer', () => {
+    const COMPOSERS = ['served', 'withRunState', 'recorded', 'moved'];
+    const declared = [...server.matchAll(/(?:reads|mutates)TheRecord\('([a-z_]+)'\)/g)];
+    // The non-vacuity guard: a pattern that stopped matching would find no tools and
+    // report success.
+    expect(declared.length).toBeGreaterThanOrEqual(25);
+    for (const [index, match] of declared.entries()) {
+      const tool = match[1] as string;
+      const from = match.index as number;
+      const to = (declared[index + 1]?.index as number | undefined) ?? server.length;
+      const handler = server.slice(from, to);
+      const answers = COMPOSERS.some((composer) => handler.includes(`return ${composer}(`));
+      const excused = TOOLS_SERVING_NO_RECORD_CONTENT[tool] !== undefined;
+      // Asserted as the PAIR, so a red says which of the two it is.
+      expect({ tool, answers, excused }).toStrictEqual({
+        tool,
+        answers: !excused,
+        excused,
+      });
+    }
+  });
+});
+
+describe('the words have two openings and may not have three', () => {
+  const words = text('record-integrity.ts');
+  /** How every opening of the block ends — the clause before it is what differs. */
+  const OPENS = 'does not chain, so its proof is broken:';
+
+  it('two, and both in the module that holds the words', () => {
+    // A read's answer came OFF the record and a write's fact went ONTO it; a third
+    // wording would be a third opinion about the same bytes, which is what this module
+    // exists to prevent.
+    expect(words.split(OPENS).length - 1).toBe(2);
+  });
+
+  it('and no other module writes one', () => {
+    expect(
+      sources().filter((path) => path !== 'record-integrity.ts' && text(path).includes(OPENS)),
+    ).toStrictEqual([]);
+  });
+
+  it('the two differ only in the clause', () => {
+    const breaks = [
+      { scope: 'public' as const, tail: 'aa-01', seq: 4, detail: 'seq gap: expected 5, found 4' },
+    ];
+    const read = linkBreakBlock(breaks)[0] as string;
+    const write = linkBreakBlockOnWrite(breaks)[0] as string;
+    expect(read).not.toBe(write);
+    // Everything below the opening line is the same bytes down both roads: the issue
+    // lines and the closing sentence are about the record, and the record is the same.
+    expect(write.split(LF).slice(1)).toStrictEqual(read.split(LF).slice(1));
+    expect(write.split(LF)[0]).toContain('this landed on');
+    expect(read.split(LF)[0]).toContain('this answer came off');
+  });
+
+  it('and both are empty over a record that chains', () => {
+    // The vacuity guard for the write's form, the same one the read's already has.
+    expect(linkBreakBlockOnWrite([])).toStrictEqual([]);
   });
 });
 

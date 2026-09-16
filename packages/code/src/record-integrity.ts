@@ -1,8 +1,17 @@
 /**
- * What a READ says about the record it just served when that record does not chain —
- * one wording, and one place that holds it, for every door the product answers through.
+ * What the product says about a record that does not chain — one wording, and one place
+ * that holds it, for every door it answers through.
  *
- * ## Why a read says anything at all
+ * THIS USED TO SAY "what a READ says about the record it just served", and the
+ * restriction was real rather than loose phrasing: the reads got the rule and the MCP's
+ * writes were left composing their own reply. That is false now, and what falsified it
+ * is the case the restriction was weakest on — an append onto a tail that ALREADY does
+ * not chain, where the agent is answered `Recorded decision …`, walks away believing it
+ * put a fact into an intact record, and is the reader who will cite that id later. The
+ * command line had ruled the other way from the start (`decision import` and `switch`
+ * write and say so), so the restriction also meant one rule through two doors.
+ *
+ * ## Why a reader says anything at all
  *
  * It used to say nothing. Over a tree `mnema verify` exits 1 on — `seq gap: expected
  * 6, found 4`, which is what two sessions writing one tail at once used to leave —
@@ -48,12 +57,23 @@
  * a notice on stdout would corrupt the one output that surface promises is
  * machine-readable.
  *
- * Through the MCP, as its own text block BESIDE the payload ({@link linkBreakBlock}),
- * never inside it — the same division `withRunState` already draws for what a read says
- * about the connection. Beside and not behind a second call: a channel that states half
- * a fact and points at a tool for the rest has stated nothing (`record-framing.ts`
- * records the measurement), and `verify` is not reachable from the MCP at all, so
- * "call `verify`" would be a pointer at a door the agent does not have.
+ * Through the MCP, as its own text block BESIDE the payload or the acknowledgement
+ * ({@link linkBreakBlock} for a read, {@link linkBreakBlockOnWrite} for a write), never
+ * inside it — the same division `withRunState` already draws for what a read says about
+ * the connection. Beside and not behind a second call: a channel that states half a fact
+ * and points at a tool for the rest has stated nothing (`record-framing.ts` records the
+ * measurement), and `verify` is not reachable from the MCP at all, so "call `verify`"
+ * would be a pointer at a door the agent does not have.
+ *
+ * ## Why a write is told and not REFUSED
+ *
+ * The same ruling the read made, for a reason of its own. The record is append-only and
+ * the break is BEHIND: the new event chains from the last hash the tail held, so it is
+ * sound from there forward and nothing about it is made worse by landing. Refusing would
+ * turn a broken chain into a stopped product — and a record whose purpose is to survive
+ * the accident cannot decline to work after one. The exit code and the `isError` flag
+ * stay what they were, for the reason they do on a read: the act DID happen, and ruling
+ * on the record is a verb of its own.
  */
 
 import type { Scope } from '@mnema/core';
@@ -127,6 +147,44 @@ export function linkBreakSentences(breaks: readonly ScopedLinkBreak[]): readonly
 }
 
 /**
+ * How a READ opens the block: the answer came OFF the record.
+ *
+ * It is a constant rather than a literal in {@link linkBreakBlock} for the reason
+ * {@link STILL_ON_THE_TAIL} is one — the other opening has to be checkable against it,
+ * and "the write says something different" is only assertable against the thing it
+ * differs from.
+ */
+const CAME_OFF = 'The record this answer came off does not chain, so its proof is broken:';
+
+/**
+ * How a WRITE opens the block, and the clause is the whole difference.
+ *
+ * A read's answer came off the record; a write's fact went ONTO it, and that is the
+ * case where being told matters most — the agent is handed `Recorded decision …`,
+ * takes it for a fact in an intact record, and is the one who will cite that id later.
+ * "Came off" would be simply false there: nothing came off, something landed.
+ *
+ * WHAT IT DOES NOT CLAIM is that the break is in the tree this particular write landed
+ * in. The breaks come from {@link ScopedLinkBreak}s the session has read, which is the
+ * same honest over-report the read carries ({@link linkBreakBlock}), and each issue
+ * line NAMES its tree — so a reader whose write went to a sound private tree while the
+ * public one is broken reads which is which off the lines, one block below the
+ * `landedNotice` that says where the fact went.
+ *
+ * THERE ARE TWO OPENINGS AND THERE MAY NOT BE A THIRD. A wording for one more door
+ * would be a second opinion about the same bytes, which is the thing this module exists
+ * to prevent; `tests/the-broken-link-reaches-every-reader.test.ts` reads this file and
+ * reddens on a third.
+ */
+const LANDED_ON = 'The record this landed on does not chain, so its proof is broken:';
+
+/** The block itself, once the caller's door has said how it opens. */
+function block(opening: string, breaks: readonly ScopedLinkBreak[]): readonly string[] {
+  if (breaks.length === 0) return [];
+  return [[opening, ...issueLines(breaks), `${STILL_ON_THE_TAIL} ${TELL_SOMEBODY}`].join('\n')];
+}
+
+/**
  * The same fact as the text block an MCP read carries beside its payload — empty when
  * nothing broke, so a caller can splice it in without a branch of its own.
  *
@@ -137,14 +195,19 @@ export function linkBreakSentences(breaks: readonly ScopedLinkBreak[]): readonly
  * transcript beside the answers of every other call.
  */
 export function linkBreakBlock(breaks: readonly ScopedLinkBreak[]): readonly string[] {
-  if (breaks.length === 0) return [];
-  return [
-    [
-      'The record this answer came off does not chain, so its proof is broken:',
-      ...issueLines(breaks),
-      `${STILL_ON_THE_TAIL} ${TELL_SOMEBODY}`,
-    ].join('\n'),
-  ];
+  return block(CAME_OFF, breaks);
+}
+
+/**
+ * The same block as {@link linkBreakBlock}, for the reply to a WRITE — same issue
+ * lines, same closing sentence, and the opening of {@link LANDED_ON}.
+ *
+ * It is a door of its own rather than a flag on the read's, because the two are asked
+ * for at different moments by different composers, and a boolean at the call site
+ * would read as a mode rather than as which of two things the caller is.
+ */
+export function linkBreakBlockOnWrite(breaks: readonly ScopedLinkBreak[]): readonly string[] {
+  return block(LANDED_ON, breaks);
 }
 
 /**

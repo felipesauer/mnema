@@ -92,7 +92,7 @@ import { discoveryEnv } from '../env.js';
 import { movedLine } from '../moved-record.js';
 import { oneLine } from '../one-line.js';
 import { type Declared, mutatesTheRecord, readsTheRecord } from '../record-effect.js';
-import { linkBreakBlock } from '../record-integrity.js';
+import { linkBreakBlock, linkBreakBlockOnWrite } from '../record-integrity.js';
 import {
   type Landed,
   landedNotice,
@@ -662,7 +662,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return recorded(`Captured memory ${result.id}`, result);
+      return recorded(active, `Captured memory ${result.id}`, result);
     },
   );
 
@@ -703,7 +703,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return recorded(`Recorded observation ${result.id} about ${about}`, result);
+      return recorded(active, `Recorded observation ${result.id} about ${about}`, result);
     },
   );
 
@@ -746,7 +746,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       }
       // The labels the RECORD holds, not the ones the call asked for.
       const [landedFrom, landedTo] = result.recorded;
-      return recorded(`Recorded handoff on ${task}: ${landedFrom} → ${landedTo}`, result);
+      return recorded(active, `Recorded handoff on ${task}: ${landedFrom} → ${landedTo}`, result);
     },
   );
 
@@ -799,7 +799,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       // is nothing under it to count. The agent gets
       // the same fact the command line prints, from the same wording, because an agent
       // recording a gate for somebody is exactly who most needs to see its reach.
-      return recorded(`Linked ${subject} —${result.recorded[0]}→ ${target}`, result, {
+      return recorded(active, `Linked ${subject} —${result.recorded[0]}→ ${target}`, result, {
         after: reachNotice(result.reach),
       });
     },
@@ -838,7 +838,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return recorded(`Created task ${result.alias} (${result.id})`, result);
+      return recorded(active, `Created task ${result.alias} (${result.id})`, result);
     },
   );
 
@@ -883,7 +883,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return moved(movedLine('task', result.alias, result.id, result.to), result);
+      return moved(active, movedLine('task', result.alias, result.id, result.to), result);
     },
   );
 
@@ -938,7 +938,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return recorded(`Recorded decision ${result.adr} (${result.id})`, result);
+      return recorded(active, `Recorded decision ${result.adr} (${result.id})`, result);
     },
   );
 
@@ -984,7 +984,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return moved(movedLine('decision', result.adr, result.id, result.to), result);
+      return moved(active, movedLine('decision', result.adr, result.id, result.to), result);
     },
   );
 
@@ -1024,7 +1024,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return recorded(`Proposed skill "${result.name}" (${result.id})`, result);
+      return recorded(active, `Proposed skill "${result.name}" (${result.id})`, result);
     },
   );
 
@@ -1065,7 +1065,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
           content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
         };
       }
-      return moved(movedLine('skill', result.name, result.id, result.to), result);
+      return moved(active, movedLine('skill', result.name, result.id, result.to), result);
     },
   );
 
@@ -1782,8 +1782,14 @@ async function listRootsSafely(
  * The scope is the RESOLVED one, taken off the result rather than off the call: the
  * call regularly says nothing, and what the reply must state is where the fact
  * actually is.
+ *
+ * WHAT THE RECORD'S OWN STATE OBLIGES is not composed here: it goes through
+ * {@link replied} as a block of its own, in the write's wording. This reply used to be
+ * one block and is now one or two, and the acknowledgement is the same bytes either way
+ * — a caller reading `content[0]` reads exactly what it read before.
  */
 function recorded(
+  session: Session,
   line: string,
   result: Landed & Replacement,
   // Extra lines a particular verb owes, between the acknowledgement and the tree
@@ -1791,20 +1797,23 @@ function recorded(
   // parameter rather than a field on the result so that no other verb's reply gains a
   // slot it can never fill.
   extra: { readonly after?: readonly string[] } = {},
-): { readonly content: [{ readonly type: 'text'; readonly text: string }] } {
-  return {
-    content: [
-      {
-        type: 'text',
-        text: [
-          line,
-          ...(extra.after ?? []),
-          landedNotice(result.scope),
-          ...replacementNotice(result.replaced),
-        ].join('\n'),
-      },
+): { readonly content: { readonly type: 'text'; readonly text: string }[] } {
+  // THE ACKNOWLEDGEMENT IS ONE BLOCK AND THE RECORD'S STATE IS ANOTHER. What the verb
+  // owes about its own act — where it landed, what the content door replaced — is one
+  // sentence with the line it qualifies; whether the record still chains is about the
+  // record and not about this act, so it arrives beside it the way it does for a read.
+  return replied(
+    session,
+    [
+      [
+        line,
+        ...(extra.after ?? []),
+        landedNotice(result.scope),
+        ...replacementNotice(result.replaced),
+      ].join('\n'),
     ],
-  };
+    { wrote: true },
+  );
 }
 
 /**
@@ -1821,14 +1830,21 @@ function recorded(
  * it was born; nothing was decided here, and there is nothing the caller could do
  * with the answer. Naming a tree where no choice was made would make the sentence
  * furniture, and a sentence that appears everywhere stops being read where it matters.
+ *
+ * It says no tree and it DOES say whether the record chains, which is not the same
+ * asymmetry twice. The tree is a choice this call made and the caller could act on; the
+ * chain is a fact about the record the caller just wrote into, and a move puts an event
+ * on a tail exactly as a birth does. It goes through {@link replied}, in the write's
+ * wording, as a block of its own.
  */
 function moved(
+  session: Session,
   line: string,
   result: Replacement,
-): { readonly content: [{ readonly type: 'text'; readonly text: string }] } {
-  return {
-    content: [{ type: 'text', text: [line, ...replacementNotice(result.replaced)].join('\n') }],
-  };
+): { readonly content: { readonly type: 'text'; readonly text: string }[] } {
+  return replied(session, [[line, ...replacementNotice(result.replaced)].join('\n')], {
+    wrote: true,
+  });
 }
 
 /**
@@ -1871,7 +1887,7 @@ function moved(
  * say about the connection says it beside the answer, not inside it.
  */
 /**
- * A tool's answer as the protocol carries it: the payload, then whatever the record's
+ * A READ's answer as the protocol carries it: the payload, then whatever the record's
  * own state obliges this reply to say, then whatever the read has to add.
  *
  * IT IS THE ONE DOOR EVERY READ LEAVES BY, and that is what makes the obligation total
@@ -1882,6 +1898,12 @@ function moved(
  * agent is this product's principal reader and it was the only one never told.
  * `tests/the-broken-link-reaches-every-reader.test.ts` reads this file and reddens on a
  * payload composed anywhere else.
+ *
+ * THIS DOC USED TO CALL IT THE ONE DOOR EVERY REPLY LEAVES BY, and that was true of the
+ * reads and false of the server: {@link recorded} and {@link moved} composed their own
+ * envelope beside it and asked nothing. The reading now lives one level down, in
+ * {@link replied}, which all three go through — so "the one door" is a claim about that
+ * function, and this one is the read's half of it.
  *
  * THE FACT RIDES AS ITS OWN BLOCK, never inside the JSON, for the reason
  * {@link withRunState} already gives: the payload stays byte-identical to what a caller
@@ -1900,18 +1922,54 @@ function served(
   also: readonly string[] = [],
   compact = false,
 ): { readonly content: { readonly type: 'text'; readonly text: string }[] } {
+  return replied(session, [compact ? JSON.stringify(result) : JSON.stringify(result, null, 2)], {
+    wrote: false,
+    after: also,
+  });
+}
+
+/**
+ * THE ONE PLACE THIS SERVER ASKS WHETHER THE RECORD STILL CHAINS, and therefore the one
+ * place the obligation can be skipped — which is what makes it total rather than
+ * remembered.
+ *
+ * It exists because the rule arrived by halves. The reads got it first, through
+ * {@link served}, on the reasoning that a read is what hands somebody a record. The
+ * WRITES kept composing their own envelope ({@link recorded}, {@link moved}) and said
+ * nothing, and that left uncovered the case where the notice matters MOST: an append
+ * onto a tail that already does not chain. The agent is handed `Recorded decision …`,
+ * walks away believing it put a fact into an intact record, and is the reader who will
+ * cite that id later. The command line had already decided the other way — `decision
+ * import` and `switch` write and say so — so the product was applying one rule through
+ * two doors, which is this bench's named producer of silent divergence.
+ *
+ * `wrote` picks which of the module's two openings the block gets ({@link
+ * linkBreakBlockOnWrite}); everything under it — the issue lines, the closing sentence —
+ * is the same bytes down both roads, because it is the same fact about the same tails.
+ *
+ * `before` and `after` are what the tool itself composed, and the fact goes BETWEEN
+ * them: the payload or the acknowledgement first, because that is what was asked for;
+ * the record's own state next, because it qualifies the whole reply; and a tool's
+ * further remarks last ({@link withRunState}'s sentence about the connection), because
+ * they are about this connection rather than about the record.
+ *
+ * It does not REFUSE, and that is the same ruling the read made. Nothing is lost when a
+ * tail stops chaining, the break is behind, and the new event chains from the last hash
+ * it found — so it is sound from there forward. Refusing would turn a broken chain into
+ * a stopped product, and an append-only record exists to survive the accident rather
+ * than to decline to work after it. `record-integrity.ts` holds the argument in full.
+ */
+function replied(
+  session: Session,
+  before: readonly string[],
+  { wrote, after = [] }: { readonly wrote: boolean; readonly after?: readonly string[] },
+): { readonly content: { readonly type: 'text'; readonly text: string }[] } {
+  const fact = wrote ? linkBreakBlockOnWrite : linkBreakBlock;
   return {
-    content: [
-      {
-        type: 'text' as const,
-        text: compact ? JSON.stringify(result) : JSON.stringify(result, null, 2),
-      },
-      ...linkBreakBlock(sessionLinkBreaks(session)).map((text) => ({
-        type: 'text' as const,
-        text,
-      })),
-      ...also.map((text) => ({ type: 'text' as const, text })),
-    ],
+    content: [...before, ...fact(sessionLinkBreaks(session)), ...after].map((text) => ({
+      type: 'text' as const,
+      text,
+    })),
   };
 }
 
