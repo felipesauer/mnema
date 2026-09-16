@@ -51,11 +51,11 @@
     "@modelcontextprotocol/sdk": "^1.30.0",
     "commander": "^15.0.0",
     "ink": "^7.1.1",
-    "react": "^19.2.8",
+    "react": "^19.3.0",
     "string-width": "^8.2.2",
-    "zod": "^4.5.4"
+    "zod": "^4.6.4"
   },
   "devDependencies": {
-    "@types/react": "^19.2.18"
+    "@types/react": "^19.3.0"
   }
 }
