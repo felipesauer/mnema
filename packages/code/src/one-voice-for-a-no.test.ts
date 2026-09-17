@@ -367,6 +367,118 @@ describe('a code nobody worded still comes out through the funnel', () => {
   });
 });
 
+/**
+ * A MISTYPED SUBCOMMAND IS SWALLOWED AS A TITLE BY THREE OF THE EIGHT PARENTS, and this
+ * holds the shape rather than the repair — the repair changes what a write verb does,
+ * which is not a guard's call to make.
+ *
+ * WHAT IS MEASURED. `mnema task moveZZZ` creates a task titled `moveZZZ` and exits 0;
+ * `mnema run startZZZ` refuses. The discriminant is not care, it is the declaration: a
+ * parent that declares a positional argument gives commander something for the word to
+ * BE, so the unknown-command refusal is never reached. Measured over the tree, the
+ * correlation is total — every parent with a positional swallows, every parent without
+ * one refuses — and the exact word still routes, because commander gives a subcommand
+ * that matches exactly the precedence (`mnema task move` reaches the transition).
+ *
+ * WHY IT IS WORSE HERE THAN IN THE TOOLS THAT SUGGEST. `git help.autocorrect`,
+ * `docker`, `kubectl` and `cargo` all answer a word that names no subcommand, and they
+ * can afford to guess because in those tools the word has no other meaning — the
+ * alternative to guessing is doing nothing. Git will not even guess under ambiguity:
+ * *"if more than one command can be deduced from the entered text, nothing will be
+ * executed"*. Here the word HAS another meaning, the product acts on it, and the record
+ * is append-only, so what is left is a permanent fact that can only be corrected by a
+ * second one superseding it.
+ *
+ * WHAT A GUARD CAN HOLD is that the set does not grow in silence. A verb added next year
+ * that declares both a positional and a subcommand inherits this without anybody
+ * deciding to, and the list below is read off the PROGRAM rather than written out, so it
+ * cannot go stale in the direction that matters.
+ */
+describe('a parent that takes a title cannot refuse a mistyped subcommand', () => {
+  /** Every parent of the tree, with what it declares: subcommands, and positionals. */
+  function parents(): { path: string; subs: string[]; positionals: number }[] {
+    return everyCommandOf(declared())
+      .filter((command) => command.commands.length > 0)
+      .map((command) => {
+        const path: string[] = [];
+        for (let at: Command | null = command; at.parent !== null; at = at.parent) {
+          path.unshift(at.name());
+        }
+        return {
+          path: path.join(' '),
+          subs: command.commands.map((c) => c.name()),
+          positionals: command.registeredArguments.length,
+        };
+      })
+      .filter((parent) => parent.path !== '');
+  }
+
+  it('is exactly these three, read off the program and not off a list', () => {
+    const all = parents();
+    // The non-vacuity guard: a walk that stopped finding parents would report success.
+    expect(all.length).toBe(8);
+    expect(all.filter((p) => p.positionals > 0).map((p) => p.path)).toEqual([
+      'task',
+      'decision',
+      'skill',
+    ]);
+    // And the other five are the ones that refuse. Both halves, so neither side can go
+    // empty and still pass.
+    expect(all.filter((p) => p.positionals === 0).map((p) => p.path)).toEqual([
+      'run',
+      'key',
+      'tail',
+      'witness',
+      'switch',
+    ]);
+  });
+
+  it('swallows the mistyped word where it declares a title, and refuses where it does not', async () => {
+    const refusals: string[] = [];
+    for (const parent of parents()) {
+      const sub = parent.subs[0] as string;
+      const said = await invoke(...parent.path.split(' '), `${sub}ZZZ`);
+      const where = `mnema ${parent.path} ${sub}ZZZ`;
+      const err = said.err.join(String.fromCharCode(10));
+      if (parent.positionals === 0) {
+        expect(said.failed, where).toBe(true);
+        // The word is named back, whichever sentence it earns — that is the property.
+        expect(err, where).toContain(`${sub}ZZZ`);
+        refusals.push(
+          `${parent.path}: ${err.includes('has no command') ? 'has no command' : 'does not take'}`,
+        );
+      } else {
+        // THE DEFECT, asserted so it cannot drift into a belief. `decision` and `skill`
+        // want one more thing before they write, so what all three share is that the word
+        // was taken as CONTENT: none of them says the parent has no such command.
+        expect(err, where).not.toContain('has no command');
+      }
+    }
+
+    // AND THE FIVE THAT REFUSE DO NOT REFUSE WITH ONE SENTENCE, which was found by this
+    // walk and is a second thing, smaller than the one above. A parent that declares its
+    // own `.action()` runs, and the word is an argument it does not take; a parent that
+    // declares none knows the word had to be a subcommand and says so. Both are the
+    // product's voice and neither is wrong; they are two answers to one question, and
+    // that is the kind of thing that is decided once rather than drifted into.
+    expect(refusals).toEqual([
+      'run: has no command',
+      'key: has no command',
+      'tail: has no command',
+      'witness: does not take',
+      'switch: does not take',
+    ]);
+  }, 60_000);
+
+  it('still routes the word spelled right, which is what makes the defect about typos', async () => {
+    // commander gives an exactly-matching subcommand precedence over the positional, so
+    // `move` reaches the transition and asks for what a transition needs.
+    const said = await invoke('task', 'move');
+    expect(said.failed).toBe(true);
+    expect(said.err.join(String.fromCharCode(10))).toContain('mnema task move needs');
+  }, 60_000);
+});
+
 describe('`--help` and `--version` are not touched', () => {
   it('leave by the same door and are still the answer, on every command', async () => {
     // The inversion: they arrive as the same class of throw as a usage error. The
