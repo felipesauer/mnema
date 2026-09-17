@@ -138,8 +138,19 @@ export class ProjectionCache {
    * satisfies: nothing arrived, so there was no run of arrivals to find broken. The
    * frontier now records the BYTE each tail was read to ({@link TailReach.boundary}),
    * and past that byte the duplicate is an arrival like any other, which the refusal
-   * then rules on. The three shapes it was measured over — the last entry duplicated,
-   * the last two, the last three — all now agree with a fresh rebuild.
+   * then rules on.
+   *
+   * THAT PARAGRAPH THEN CLAIMED THE REPAIR WAS TOTAL, in the words *"the three shapes it
+   * was measured over — the last entry duplicated, the last two, the last three — all now
+   * agree with a fresh rebuild"*, AND THREE SHAPES WERE NOT THE RULE. All three are a
+   * duplicated `seq`, which is one of the three ways `linkBreakAt` says a tail stops
+   * chaining, and the refusal was asking a seq test of its own rather than that function.
+   * Measured, one rule over: with the boundary entry REPLACED by a different entry of the
+   * same seq, a fresh {@link rebuild} reported `prev-hash break` and `refresh()` on a
+   * retained cache called the same bytes a sound suffix and advanced over them. The
+   * frontier carries the boundary HASH now ({@link TailReach.lastHash}) and the refusal is
+   * `firstLinkBreakFrom`, the same function a whole-tail read asks — so the agreement is
+   * with the rule rather than with a list of shapes somebody thought of.
    *
    * WHAT IS STILL OUTSIDE IT is a break BELOW the boundary: bytes a previous reading
    * already accepted and will not read again. Rewriting the past under a live session
@@ -147,10 +158,14 @@ export class ProjectionCache {
    * afterwards replays and is told. That is a limit with a measurement, not a silence:
    * `order.test.ts` holds both halves.
    *
-   * AND IT REACHES ONLY THE SURFACE THAT READS. A write does not refresh anything — it
-   * marks its tree stale and answers from what the last read knew — so a connection
-   * that writes without reading after the break is told nothing until its next read.
-   * `code/tests/the-write-says-what-it-landed-on.test.ts` holds that end to end.
+   * AND IT REACHES ONLY THE SURFACE THAT READS — which was true of this field and is no
+   * longer true of the class. It said *"a write does not refresh anything, so a connection
+   * that writes without reading after the break is told nothing until its next read"*. The
+   * write still refreshes nothing, and that is deliberate: a catch-up per write costs what
+   * a reader pays once and grows with the record. What changed is that a write no longer
+   * has to read this field to be answered — {@link linkBreaksAsOfNow} asks the chain
+   * without advancing anything, at a price flat in the history, and
+   * `code/tests/the-write-says-what-it-landed-on.test.ts` holds the new end-to-end.
    */
   private breaks: readonly LinkBreak[] = [];
 
@@ -201,6 +216,57 @@ export class ProjectionCache {
    */
   get linkBreaks(): readonly LinkBreak[] {
     return this.breaks;
+  }
+
+  /**
+   * The same question as {@link linkBreaks}, asked of the chain AS IT IS NOW rather than
+   * as the last replay found it — and it brings nothing forward.
+   *
+   * WHY IT IS A SECOND QUESTION AND NOT A REFRESH. {@link linkBreaks} answers from the
+   * replay this cache holds, so a surface that has not read since another process appended
+   * is told what its last read knew. The obvious repair is to {@link refresh} first, and
+   * that was built and MEASURED and is the wrong price: the expensive half of a catch-up
+   * is ADVANCING the projections over the arrivals, and a door that pays it per call pays
+   * it where a reader pays it once — `+12.7 ms over a 60-entry record and +21.3 ms over a
+   * 400-entry one` for a session of five writes and a read, growing with the history
+   * (`code/src/mcp/tools.ts`, which is the door that asks this).
+   *
+   * Reading the arrivals is what carries the breaks; advancing is what costs. So this
+   * reads and does not advance: THE COST IS ONE `readdir` PER TAIL AND THE ENTRIES PAST
+   * THE BOUNDARY, and over a chain nothing appended to that is one entry per tail.
+   * Measured over one tree, two rounds, arms placed `base · this · this · base`, against a
+   * base-against-base ruler of 0.0014-0.0018 ms: **0.083 and 0.094 ms over a 60-entry
+   * record, 0.094 and 0.091 ms over a 400-entry one** with the chain standing still, and
+   * **0.095 and 0.091 ms** with five appends of another writer waiting. FLAT IN THE
+   * HISTORY, which is the property, where a whole refresh is 1.96 ms at 60 entries and
+   * 4.78 ms at 400.
+   *
+   * A COST STUDY PUT THIS AT 0.446 ms AND IT DID NOT REPRODUCE — it is five times smaller
+   * here. The number is not corrected in place because the shape of the claim survived
+   * intact and only the size moved: what that study measured, and what this asserts, is
+   * that the price does not grow with the record.
+   *
+   * WHAT IT DOES NOT ANSWER, and a caller may not read silence here as soundness:
+   *   - It is not a verdict, exactly as {@link linkBreaks} is not. Signatures,
+   *     checkpoints and witnesses are `verify`'s.
+   *   - A break BELOW this cache's frontier — bytes a previous reading already took — is
+   *     outside it, for the same reason it is outside {@link refresh}.
+   *   - Among the arrivals it names the FIRST break of the FIRST tail that has one, where
+   *     a full replay names one per tail. A chain that changed in a way no suffix
+   *     describes — a tail removed, a tail cut, a fact arriving stamped before something
+   *     already covered — is not a break at all and answers as this cache already stood.
+   *
+   * It leaves this cache exactly as it found it: the tables, the order and the frontier
+   * are untouched, so the next {@link refresh} does the same work it would have done.
+   */
+  linkBreaksAsOfNow(): readonly LinkBreak[] {
+    if (this.frontier === undefined) return this.breaks;
+    const arrived = chainArrivals(this.layout, this.upcasters, this.frontier);
+    if (arrived.suffix || arrived.why !== 'AN_ARRIVAL_DOES_NOT_CHAIN') return this.breaks;
+    // One break per tail, which is what a full reading reports: a tail this cache already
+    // knows is broken does not gain a second line for a later break on the same tail.
+    if (this.breaks.some((known) => known.tail === arrived.broke.tail)) return this.breaks;
+    return [...this.breaks, arrived.broke];
   }
 
   /**

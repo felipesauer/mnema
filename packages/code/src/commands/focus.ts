@@ -46,7 +46,13 @@
 import { type Focus, focus } from '@mnema/copilot';
 import { type Clock, type DiscoveryEnv, resolveTrees, systemClock } from '@mnema/core';
 import { type AnchorForms, anchorForms, resolveTypedAnchor } from '../anchors.js';
-import { caches, linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
+import {
+  caches,
+  linkBreaksOf,
+  type ScopedLinkBreak,
+  THE_READING_THAT_OPENED_THESE,
+  withScopedCaches,
+} from '../tree-sources.js';
 
 /** What the focus command needs — injected so it is testable. */
 export interface FocusContext {
@@ -116,7 +122,7 @@ export function runFocus(ctx: FocusContext, input: { actor: string }): FocusDone
     return {
       ok: true,
       anchors,
-      linkBreaks: linkBreaksOf(sources),
+      linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
       // No run is this command's own, and that is a fact rather than a shortcut: a
       // read opens no run, and this process is gone by the time the next one asks. So
       // every run reported comes back `thisSession: false` — which is why the human

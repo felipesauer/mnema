@@ -1,4 +1,12 @@
-import { cpSync, mkdtempSync, rmSync } from 'node:fs';
+import {
+  appendFileSync,
+  cpSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -886,6 +894,126 @@ describe('ProjectionCache — the reference index', () => {
 
     expect(cache.references('t-1')).toEqual(once);
     expect(cache.authorship()).toEqual(tally);
+  });
+});
+
+/**
+ * THE SECOND QUESTION A CACHE ANSWERS ABOUT BREAKS, and the two properties that make it
+ * worth being a second one: it sees what the held replay cannot, and it leaves the cache
+ * exactly where it found it.
+ *
+ * The first is what the MCP's write door needed — it appends without reading, so the replay
+ * it holds is as old as the connection's last read. The second is the whole price: a
+ * refresh would ADVANCE the projections over the arrivals, which is the expensive half and
+ * grows with the record, where reading them does not.
+ */
+describe('ProjectionCache — the breaks as the chain stands now', () => {
+  /** The tail's last line appended again: a duplicate of the boundary entry. */
+  function duplicateLastEntry(): void {
+    const tails = join(chainRoot, 'tails');
+    const tail = readdirSync(tails)[0] as string;
+    const file = join(tails, tail, '000001.jsonl');
+    const lines = readFileSync(file, 'utf-8').trimEnd().split('\n');
+    appendFileSync(file, `${lines[lines.length - 1] as string}\n`, 'utf-8');
+  }
+
+  it('sees a break the held replay cannot, and names it as a full reading would', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    writeTaskMovedTo(w, 't-1', 'draft', 'in-progress');
+    const cache = openCache();
+    cache.rebuild();
+    expect(cache.linkBreaks).toHaveLength(0);
+    expect(cache.linkBreaksAsOfNow()).toHaveLength(0);
+
+    duplicateLastEntry();
+
+    // The field still answers from the replay it holds — that is what it is.
+    expect(cache.linkBreaks).toHaveLength(0);
+    // The question asks the chain.
+    const now = cache.linkBreaksAsOfNow();
+    expect(now).toHaveLength(1);
+    expect(now[0]?.detail).toContain('seq gap');
+
+    // …and it is the same break a cache that opened after the plant reports.
+    const fresh = openCache();
+    fresh.rebuild();
+    expect(now).toEqual(fresh.linkBreaks);
+  });
+
+  /**
+   * IT DOES NOT ADVANCE, and this is the assertion the price rests on. A version that
+   * refreshed first would pass every line above and cost what this exists not to cost.
+   */
+  it('leaves the cache where it found it, so the next read still does the catch-up', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    writeTaskMovedTo(w, 't-1', 'draft', 'in-progress');
+    const cache = openCache();
+    cache.rebuild();
+    expect(cache.getTask('t-2')).toBeNull();
+
+    const later = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    writeTaskMovedTo(later, 't-2', 'draft', 'in-progress');
+
+    // Asking twice over a chain that grew: the projections do not move either time.
+    expect(cache.linkBreaksAsOfNow()).toHaveLength(0);
+    expect(cache.getTask('t-2')).toBeNull();
+    expect(cache.linkBreaksAsOfNow()).toHaveLength(0);
+    expect(cache.getTask('t-2')).toBeNull();
+
+    // And the catch-up the reader pays is still there to be paid, in full.
+    cache.refresh();
+    expect(cache.getTask('t-2')).not.toBeNull();
+  });
+
+  /**
+   * THE DECLARED LIMITS, asserted so they cannot drift into a belief. A chain that changed
+   * in a way no suffix describes is not a break, and this answers as the cache stood.
+   */
+  it('answers as the cache stood when a tail is gone, which is not a break', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    writeTaskMovedTo(w, 't-1', 'draft', 'in-progress');
+    const cache = openCache();
+    cache.rebuild();
+
+    const tails = join(chainRoot, 'tails');
+    rmSync(join(tails, readdirSync(tails)[0] as string), { recursive: true, force: true });
+
+    expect(cache.linkBreaksAsOfNow()).toEqual([]);
+  });
+
+  /**
+   * ONE LINE PER TAIL, which is what a full reading reports and therefore what this has to
+   * report too. A tail already known to be broken and ALSO refusing its arrivals would
+   * otherwise be named twice in one answer, and a reader counting the lines would read two
+   * broken tails where the record has one.
+   */
+  it('names an already-broken tail once, not twice, when its arrivals refuse too', () => {
+    const w = openChainForWriting(chainRoot, { keyRoot: chainRoot });
+    writeTaskMovedTo(w, 't-1', 'draft', 'in-progress');
+    const tails = join(chainRoot, 'tails');
+    const tail = readdirSync(tails)[0] as string;
+    const file = join(tails, tail, '000001.jsonl');
+    const lines = readFileSync(file, 'utf-8').trimEnd().split('\n');
+
+    // A break BELOW what the cache is about to read to: the first entry written a second
+    // time, in the middle of the tail.
+    writeFileSync(file, `${[lines[0], ...lines].join('\n')}\n`, 'utf-8');
+    const cache = openCache();
+    cache.rebuild();
+    expect(cache.linkBreaks).toHaveLength(1);
+
+    // …and now a second break, above the frontier, on the SAME tail.
+    const after = readFileSync(file, 'utf-8').trimEnd().split('\n');
+    appendFileSync(file, `${after[after.length - 1] as string}\n`, 'utf-8');
+
+    const now = cache.linkBreaksAsOfNow();
+    expect(now).toHaveLength(1);
+    expect(now).toEqual(cache.linkBreaks);
+  });
+
+  it('answers from the held replay when nothing has been read yet', () => {
+    const cache = openCache();
+    expect(cache.linkBreaksAsOfNow()).toEqual([]);
   });
 });
 

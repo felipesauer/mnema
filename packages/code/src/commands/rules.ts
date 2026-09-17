@@ -35,7 +35,12 @@ import { dirname } from 'node:path';
 import type { GoverningRules } from '@mnema/copilot';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { readGoverningRules } from '../governed-tree.js';
-import { linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
+import {
+  linkBreaksOf,
+  type ScopedLinkBreak,
+  THE_READING_THAT_OPENED_THESE,
+  withScopedCaches,
+} from '../tree-sources.js';
 
 /** What the rules command needs — injected so it is testable. */
 export interface RulesContext {
@@ -81,7 +86,7 @@ export function runRules(ctx: RulesContext, input: { path: string }): RulesDone 
   const root = dirname(trees.projectPublic);
   return withScopedCaches(trees, (sources) => ({
     ok: true,
-    linkBreaks: linkBreaksOf(sources),
+    linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
     governed: readGoverningRules(sources, { path: input.path, root, from: ctx.cwd }),
   }));
 }

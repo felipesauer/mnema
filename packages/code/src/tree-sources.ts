@@ -144,6 +144,16 @@ export type { ScopedLinkBreak } from './record-integrity.js';
  * it up from the replay that already read them ({@link ProjectionCache.linkBreaks}) —
  * so this costs a read nothing beyond the reading it already did.
  *
+ * THAT LAST CLAUSE IS TRUE OF ONE OF THE TWO ANSWERS AND `asOf` IS WHICH. It held for
+ * every caller while there was only one door where the cache was fresh by construction.
+ * The MCP's WRITE door is not: it appends without reading, so the replay behind its caches
+ * is as old as the connection's last read, and a break another process left in between
+ * reached the caller one call later. It passes `THE_CHAIN_AS_IT_STANDS_NOW` and pays
+ * 0.09 ms per tree for it ({@link ProjectionCache.linkBreaksAsOfNow}); everybody else
+ * passes {@link THE_READING_THAT_OPENED_THESE} and this costs them nothing, as it always
+ * did. The argument is not defaulted because it is the kind of thing a door added later
+ * gets wrong silently — see {@link BreaksAsOf}.
+ *
  * IT IS NOT A VERDICT AND MAY NOT BE PRINTED AS ONE. It answers one structural
  * question — does each tail run on from the entry before it — and says nothing about
  * signatures, checkpoints or witnesses. A read that printed "the record is sound"
@@ -181,9 +191,15 @@ export type { ScopedLinkBreak } from './record-integrity.js';
  * took an `io` it did not have. What the number really was is in
  * `.refactor/active/the-broken-link-reaches-every-reader/report.md`.
  */
-export function linkBreaksOf(sources: readonly ScopedCache[]): readonly ScopedLinkBreak[] {
+export function linkBreaksOf(
+  sources: readonly ScopedCache[],
+  asOf: BreaksAsOf,
+): readonly ScopedLinkBreak[] {
   return sources.flatMap((source) =>
-    source.cache.linkBreaks.map((broken) => ({
+    (asOf === THE_CHAIN_AS_IT_STANDS_NOW
+      ? source.cache.linkBreaksAsOfNow()
+      : source.cache.linkBreaks
+    ).map((broken) => ({
       scope: source.scope,
       tail: broken.tail,
       seq: broken.seq,
@@ -191,3 +207,25 @@ export function linkBreaksOf(sources: readonly ScopedCache[]): readonly ScopedLi
     })),
   );
 }
+
+/**
+ * WHEN the answer is about — the one thing the callers of {@link linkBreaksOf} differ by,
+ * and a closed union rather than a flag so that a door added later does not compile until
+ * somebody has said which of the two it is.
+ *
+ * A READ that opened its own caches is served from a replay taken moments ago in the same
+ * process, and the MCP's read door has just been through `CacheRegistry.get`, which brings
+ * the cache into agreement with the chain. For those, asking the disk again is a `readdir`
+ * per tail for a window measured in microseconds, and the reply is the same reply.
+ *
+ * The MCP's WRITE door is the one this distinction exists for. It does not go through
+ * `get` — it marks the tree stale and appends — so a cache it answers off is as old as the
+ * connection's last read, which can be minutes. `THE_CHAIN_AS_IT_STANDS_NOW` costs it
+ * 0.09 ms per tree, flat in the record ({@link ProjectionCache.linkBreaksAsOfNow}).
+ */
+export type BreaksAsOf = typeof THE_READING_THAT_OPENED_THESE | typeof THE_CHAIN_AS_IT_STANDS_NOW;
+
+/** What the replay behind these caches found — see {@link BreaksAsOf}. */
+export const THE_READING_THAT_OPENED_THESE = 'the reading that opened these';
+/** What the chain holds now, arrivals included — see {@link BreaksAsOf}. */
+export const THE_CHAIN_AS_IT_STANDS_NOW = 'the chain as it stands now';

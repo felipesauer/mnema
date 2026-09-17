@@ -27,6 +27,21 @@
  * run is dead, and two sessions provably alive at once falsify every rule that could
  * make that call.
  *
+ * AND THE READER IS NOT LEFT WITH IT, which is the half this note used to delegate
+ * without naming a delegate. A run left open is not an answer that has gone wrong: the
+ * readings report it as open AND say how long it has been so, how long since it last
+ * recorded anything, and what was written inside it — `copilot`'s `focus` sorts them
+ * newest first and prunes and ranks nothing, `code/src/wiring/focus.ts` prints one line
+ * per run with those durations on it, and `tests/mcp-session-close.test.ts` ("what an
+ * open run says about itself") holds all of it. A run somebody abandoned in July shows
+ * up under this year's, worded as what it is.
+ *
+ * SO THE CLAIM THAT WOULD JUSTIFY A SWEEPER IS FALSE AS WELL AS UNPROVABLE. It runs: a
+ * run that never closes makes the reading lie about the present. It does not lie — it
+ * says `open` and it says the age, which together are exactly the fact. What is missing
+ * from the record is not the reading's to invent: whether the process behind that run
+ * is still running is not something this record ever held.
+ *
  * THE CLOSE IS SYNCHRONOUS, start to finish. It is the last chance to write, and a
  * process that has been asked to stop does not come back from an `await` — the
  * pending continuation dies with it, and the write dies in the continuation. So this

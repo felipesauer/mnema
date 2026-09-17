@@ -123,6 +123,8 @@ import { armSessionClose, type Lifecycle } from './lifecycle.js';
 import { namedProjects } from './route.js';
 import { closeSession, openSession, refreshWorkspace, type Session } from './session.js';
 import {
+  A_READ,
+  A_WRITE,
   runAccountabilityTool,
   runAntipatternsTool,
   runBootstrap,
@@ -1965,8 +1967,17 @@ function replied(
   { wrote, after = [] }: { readonly wrote: boolean; readonly after?: readonly string[] },
 ): { readonly content: { readonly type: 'text'; readonly text: string }[] } {
   const fact = wrote ? linkBreakBlockOnWrite : linkBreakBlock;
+  // AND WHICH DOOR IS ASKING, because the two have paid for different things by the time
+  // they get here: a read came through the registry's `get` and holds caches that already
+  // agree with the chain, and a write invalidated and appended without reading. The
+  // reading is one call either way — the branch is inside it, where the cost of each door
+  // is written down (`mcp/tools.ts`, {@link WhichDoor}).
   return {
-    content: [...before, ...fact(sessionLinkBreaks(session)), ...after].map((text) => ({
+    content: [
+      ...before,
+      ...fact(sessionLinkBreaks(session, wrote ? A_WRITE : A_READ)),
+      ...after,
+    ].map((text) => ({
       type: 'text' as const,
       text,
     })),

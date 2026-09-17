@@ -29,7 +29,13 @@
 import { type Resume, resume } from '@mnema/copilot';
 import { type Clock, type DiscoveryEnv, resolveTrees, systemClock } from '@mnema/core';
 import { type AnchorForms, anchorForms, resolveTypedAnchor } from '../anchors.js';
-import { caches, linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
+import {
+  caches,
+  linkBreaksOf,
+  type ScopedLinkBreak,
+  THE_READING_THAT_OPENED_THESE,
+  withScopedCaches,
+} from '../tree-sources.js';
 
 /** What the resume command needs — injected so it is testable. */
 export interface ResumeContext {
@@ -94,7 +100,7 @@ export function runResume(
     return {
       ok: true,
       anchors,
-      linkBreaks: linkBreaksOf(sources),
+      linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
       // Empty, like `focus`: a read opens no run, so nothing here is this command's
       // own and the "prefer my own run" rule has nothing to prefer. The answer stays
       // what it was — the actor's latest run — which is the right one for a person

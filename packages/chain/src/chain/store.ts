@@ -247,7 +247,7 @@ export function readTail(
     // it — ends, as far as a resumed reading goes, at the end of the sealed one before.
     if (read.entries.length > 0) boundary = { segment: file, bytes: read.bytes };
   }
-  const linkBreak = firstLinkBreak(tailId, entries);
+  const linkBreak = firstLinkBreakFrom(tailId, entries, 0, null);
   return {
     entries,
     partialFinalLine,
@@ -256,10 +256,36 @@ export function readTail(
   };
 }
 
-/** The first entry that does not follow the one before it, asked of the shared rule. */
-function firstLinkBreak(tailId: string, entries: readonly Entry[]): LinkBreak | undefined {
-  let expectedSeq = 0;
-  let expectedPrev: string | null = null;
+/**
+ * The first entry of a run that does not follow the one before it, asked of the shared
+ * rule ({@link linkBreakAt}) and reported in the shared wording
+ * ({@link describeLinkBreak}).
+ *
+ * `from` and `after` are where the run is expected to pick up: a seq, and the hash the
+ * first of these entries has to name as its `prev`. {@link readTail} passes `0` and
+ * `null`, which is a tail read from its birth; a reading RESUMED from a boundary passes
+ * what the previous reading ended on.
+ *
+ * IT TAKES THEM RATHER THAN ASSUMING A WHOLE TAIL because the incremental reading is the
+ * caller that was getting this wrong. `@mnema/core`'s {@link chainArrivals} asked a rule
+ * of its own over the arrivals — the seq half, which is what it could ask without the
+ * boundary hash — and a `prev` that named something other than the entry before it went
+ * through as a sound suffix while a full reading of the same bytes reported the break.
+ * Two spellings of one rule is how one of them comes to be more lenient than the verdict,
+ * which is the thing `readTail`'s own note says must not happen.
+ *
+ * It costs three comparisons per entry and no hashing — the entry hash was computed when
+ * the line was parsed — which is why a read can afford it and a signature check is still
+ * `verify`'s alone.
+ */
+export function firstLinkBreakFrom(
+  tailId: string,
+  entries: readonly Entry[],
+  from: number,
+  after: string | null,
+): LinkBreak | undefined {
+  let expectedSeq = from;
+  let expectedPrev = after;
   for (const entry of entries) {
     const broke = linkBreakAt(tailId, entry, expectedSeq, expectedPrev);
     if (broke !== undefined) {

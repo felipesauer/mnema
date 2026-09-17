@@ -19,7 +19,12 @@
 import { catalogUpcasters } from '@mnema/chain';
 import { type NextAction, nextActionsForTask } from '@mnema/copilot';
 import { chainRootForScope, type DiscoveryEnv, locateEntityScope, resolveTrees } from '@mnema/core';
-import { linkBreaksOf, type ScopedLinkBreak, withCache } from '../tree-sources.js';
+import {
+  linkBreaksOf,
+  type ScopedLinkBreak,
+  THE_READING_THAT_OPENED_THESE,
+  withCache,
+} from '../tree-sources.js';
 
 /** What the next-actions command needs — injected so it is testable. */
 export interface NextActionsContext {
@@ -95,7 +100,7 @@ export function runNextActions(
       ok: true,
       id: input.id,
       actions,
-      linkBreaks: linkBreaksOf([{ scope, chainRoot: root, cache }]),
+      linkBreaks: linkBreaksOf([{ scope, chainRoot: root, cache }], THE_READING_THAT_OPENED_THESE),
     };
   });
 }

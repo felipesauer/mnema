@@ -21,7 +21,12 @@
 import { type Accountability, type AccountabilityFilter, accountability } from '@mnema/copilot';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { type AnchorForms, anchorForms, resolveTypedAnchor } from '../anchors.js';
-import { linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
+import {
+  linkBreaksOf,
+  type ScopedLinkBreak,
+  THE_READING_THAT_OPENED_THESE,
+  withScopedCaches,
+} from '../tree-sources.js';
 
 /** What the accountability command needs — injected so it is testable. */
 export interface AccountabilityContext {
@@ -73,7 +78,7 @@ export function runAccountability(
   }
   return withScopedCaches(trees, (sources) => {
     const anchors = anchorForms(sources);
-    const linkBreaks = linkBreaksOf(sources);
+    const linkBreaks = linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE);
     // `--who` takes the same value this read PRINTS, so it accepts the same short
     // form. Left unresolved, a prefix would filter on a `who` that matches nothing
     // and come back as an account of zero facts — the one answer that looks like an

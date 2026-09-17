@@ -45,7 +45,12 @@ import { openTreeForWriting, switchChannel } from '@mnema/core/write';
 import { type AnchorForms, anchorForms } from '../anchors.js';
 import { SWITCHABLE_CHANNELS, type SwitchableChannel, WHAT_STOPS } from '../record-framing.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
-import { linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
+import {
+  linkBreaksOf,
+  type ScopedLinkBreak,
+  THE_READING_THAT_OPENED_THESE,
+  withScopedCaches,
+} from '../tree-sources.js';
 
 /** What the switch commands need — injected so they are testable. */
 export interface SwitchContext {
@@ -119,7 +124,7 @@ export function runSwitchList(ctx: SwitchContext): SwitchListing {
       })),
       trees: sources.map((source) => source.scope),
       anchors: anchorForms(sources),
-      linkBreaks: linkBreaksOf(sources),
+      linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
     };
   });
 }
@@ -233,7 +238,7 @@ export function runSwitch(
     // Read back over the SAME sources the effective state came off: a switch this verb
     // just wrote is only as good as the tail it landed on, and this is the one write on
     // the surface whose answer is a read across every tree.
-    linkBreaks: linkBreaksOf(sources),
+    linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
   }));
 
   return {

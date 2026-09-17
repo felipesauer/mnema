@@ -173,6 +173,11 @@ const WRITES = (seeded: Seeded): readonly (readonly [string, Record<string, unkn
 describe('over a record that chains, no write says anything about the chain', () => {
   // THE VACUITY GUARD, and it runs first: every case in the next block would pass over a
   // sentence emitted unconditionally, and this is what makes them mean what they say.
+  //
+  // IT SAYS MORE THAN IT USED TO, for free. While the write door answered from the replay
+  // its connection's last read had left, silence here was also consistent with a door that
+  // had asked nothing; now the door asks the chain on every write, so every one of these
+  // ten is a reading that found the tails sound rather than a reading that did not happen.
   it('says nothing, in any write, and the record really is sound', async () => {
     const client = await connect();
     const seeded = await seed(client);
@@ -336,43 +341,42 @@ describe('a session that only writes', () => {
 
 describe('a break that appears while this session is up', () => {
   /**
-   * WHAT THIS CASE WAS WRITTEN TO CATCH, AND IT CAUGHT IT.
+   * WHAT THIS CASE WAS WRITTEN TO CATCH, AND IT HAS NOW CAUGHT TWO THINGS.
    *
-   * It used to assert the opposite of what it asserts now: that a retained cache is
-   * blind to a break appearing after its last full replay, through BOTH doors. The
-   * cause was in `@mnema/core`'s incremental reading — the frontier recorded the `seq`
-   * each tail was read to, and the walk that resumes from a seq stops at the first
-   * entry carrying it, which a duplicate of the boundary entry satisfies. Nothing
-   * arrived, so nothing was refused. The comment here said IF IT IS FIXED, THIS CASE
-   * GOES RED and names itself; the frontier now records the BYTE, and it did.
+   * It first asserted that a retained cache is blind to a break appearing after its last
+   * full replay, through BOTH doors. The cause was in `@mnema/core`'s incremental reading —
+   * the frontier recorded the `seq` each tail was read to, and the walk that resumes from a
+   * seq stops at the first entry carrying it, which a duplicate of the boundary entry
+   * satisfies. Nothing arrived, so nothing was refused. That comment said IF IT IS FIXED,
+   * THIS CASE GOES RED and names itself; the frontier records the BYTE now, and it did.
    *
-   * WHAT IS FIXED IS THE READING, and this case now holds the asymmetry that leaves.
-   * The next READ on the live connection is told, because a read refreshes the caches
-   * it composes and the duplicate is now an arrival that does not chain. The write is
-   * NOT, and that is not the same limit as `a session that only writes` above: this
-   * connection HAS a cache. A write never refreshes one — it marks the tree stale and
-   * answers from what the last read knew — so the fact reaches it one call later.
+   * It then asserted the asymmetry that repair left: the next READ of the live connection
+   * told, the WRITE silent until the call after. That comment carried the same promise, and
+   * it went red the same way. **BOTH DOORS TELL THE AGENT NOW, IN THE CALL THE FACT IS
+   * ABOUT**, which is the whole subject of this file.
    *
-   * THE SECOND MEASURED LIMIT, AND THE COST DECISION IT DEFERRED TO HAS NOW BEEN COSTED.
-   * A study put it at ~0.14 ms and constant, and that number is the price of a catch-up
-   * over a tail that did NOT move — the early return — not of the path a write is on. It
-   * was built and measured on the pair a session performs, alternated order, base-against-
-   * base ruler of 0.02-0.46 ms: a catch-up on the write door is ~2.5 ms over a 60-entry
-   * record and ~4.3 ms over a 400-entry one, and five writes then a read comes to +12.7 ms
-   * and +21.3 ms — because the reader pays ONE catch-up where this pays five, which is the
-   * promise at the foot of `mcp/cache-registry.ts`'s opening note broken outright. It grows
-   * with the record. So it stays open, and the number is in `mcp/tools.ts` beside the other
-   * bound, with the constant-price shape that would close it: reading the arrivals without
-   * ADVANCING the projections is 0.446 ms and identical at 60 and 400 entries, against
-   * 1.96 ms and 4.78 ms for the whole refresh.
+   * WHAT CLOSED IT IS NOT WHAT THE PRICE HAD REFUSED. Refreshing the cache on the write
+   * door was built and measured and reverted: ~2.5 ms over a 60-entry record, ~4.3 ms over
+   * a 400-entry one, +12.7 ms and +21.3 ms for five writes and a read, GROWING with the
+   * history — the reader pays one catch-up where that paid five. A cheaper variant of the
+   * same idea is not merely dear but WRONG, and it is worth the line because it looks
+   * right: catching up only on movement this connection did NOT cause, by comparing against
+   * the extent recorded when its own append landed, cannot see THIS case at all — the break
+   * is planted BEFORE the write, so the extent written down at the append already contains
+   * it and the comparison finds nothing moved.
    *
-   * A CHEAPER VARIANT WAS TRIED AND IS WRONG, which is worth the line because it looks
-   * right: catching up only on movement this connection did NOT cause — comparing against
-   * the extent recorded when its own append landed — costs two `chainExtent`s and cannot
-   * see THIS case at all. The break here is planted BEFORE the write, so the extent written
-   * down at the append already contains it and the comparison finds nothing moved.
+   * What closed it is that the expensive half of a catch-up is ADVANCING the projections,
+   * and the half that carries the breaks is READING the arrivals. The write door reads and
+   * does not advance (`ProjectionCache.linkBreaksAsOfNow`): **0.09 ms per tree, the same
+   * number at 60 entries and at 400**, against 1.96 ms and 4.78 ms for a whole refresh.
+   * Nothing this session holds moves, so the next read still catches up exactly once and
+   * the promise at the foot of `mcp/cache-registry.ts` stands.
+   *
+   * ONE LIMIT OF THIS DOOR SURVIVES AND IS ASSERTED ABOVE, not here: a connection whose
+   * FIRST call is a write has no cache to be told from, and closing that means opening,
+   * which replays.
    */
-  it('reaches the next read of the live connection, and the write one call later', async () => {
+  it('reaches the write it is about, and the read, on the live connection', async () => {
     const client = await connect();
     const seeded = await seed(client);
     // The session reads a SOUND record and warms its cache over it.
@@ -383,16 +387,22 @@ describe('a break that appears while this session is up', () => {
     breakTheTail(treeRoot('public'));
     expect(verify(treeRoot('public'), catalogUpcasters()).ok).toBe(false);
 
-    // The write that comes FIRST is silent: it refreshes nothing, so it still answers
-    // from the replay the last read left.
+    // THE WRITE THAT COMES FIRST IS TOLD, and this is the line that was inverted twice.
+    // It asserted silence, then it asserted silence with a reason; both were asserting
+    // that the agent walks away from THIS call believing the record is intact. The write
+    // door asks the chain as it stands instead of the replay it holds.
     const wrote = await client.callTool({
       name: 'record_observation',
       arguments: { about: seeded.task, topic: 'timing', text: 'written after the break' },
     });
-    expect(blocks(wrote).join(LF)).not.toContain(LANDED);
+    expect(blocks(wrote).join(LF)).toContain(LANDED);
 
-    // THE READ IS TOLD. This is the line that was inverted: it used to assert the
-    // silence, and asserting the silence is what would have gone on hiding the defect.
+    // And it is the write's own wording, not the read's — the two doors say different
+    // sentences about the same tails, which is what `linkBreakBlockOnWrite` is for.
+    expect(blocks(wrote).join(LF)).not.toContain(CAME_OFF);
+
+    // THE READ IS TOLD TOO, and asking the chain on the write left the cache exactly as it
+    // was: the read still catches up on its own, and still says the reader's sentence.
     const read = await client.callTool({ name: 'focus', arguments: {} });
     expect(blocks(read).join(LF)).toContain(CAME_OFF);
 

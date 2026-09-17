@@ -320,6 +320,68 @@ describe('chainArrivals — a break planted at the boundary', () => {
   });
 
   /**
+   * THE THIRD WAY A TAIL STOPS CHAINING, which this reading was blind to until it was
+   * measured.
+   *
+   * `linkBreakAt` rules three ways — an entry stored under a tail it does not name, a seq
+   * that does not follow, and a `prev` that names something other than the entry before
+   * it. The suffix test asked a rule written in `order.ts` that covered the first two,
+   * because the frontier carried no hash for the third to be asked against. Measured: a
+   * fresh `chainReplay` over these bytes reported `prev-hash break` and `chainArrivals`
+   * called them a sound suffix — so a live session refreshed straight past a break that
+   * the next process to open the record was told about, which is the same shape of hole
+   * the boundary repair above closed, one rule over.
+   *
+   * THE PLANT IS NOT A DUPLICATE, and that is what makes it this case. The entry at the
+   * boundary is replaced by a DIFFERENT entry carrying the same seq — a second branch of
+   * the same tail — so every seq still runs 0, 1, 2, 3, 4 and only the hashes disagree.
+   * Nothing above catches it: the seqs are contiguous, no tail is gone, no segment was
+   * cut, and every arrival is stamped later than what was covered.
+   */
+  it('refuses a suffix when an arrival names the wrong prev, as the full reading does', () => {
+    const before = seeded();
+    expect(before.linkBreaks).toHaveLength(0);
+    const tails = join(rootA, 'tails');
+    const tail = readdirSync(tails)[0] as string;
+    const file = join(tails, tail, '000001.jsonl');
+    const linesOf = (): string[] => readFileSync(file, 'utf-8').trimEnd().split('\n');
+    const base = linesOf();
+
+    // Branch one: a fourth fact, kept for its LINE alone.
+    const w1 = openChainForWriting(rootA, { keyRoot: rootA });
+    w1.append(taskCreated(env('t-4a', '2026-07-21T00:00:03.000Z'), { title: 'one branch' }));
+    const branchOne = linesOf()[3] as string;
+
+    // Branch two, from the same three facts: a different fourth, then a fifth on top of it.
+    writeFileSync(file, `${base.join('\n')}\n`, 'utf-8');
+    const w2 = openChainForWriting(rootA, { keyRoot: rootA });
+    w2.append(taskCreated(env('t-4b', '2026-07-21T00:00:03.000Z'), { title: 'other branch' }));
+    w2.append(taskCreated(env('t-5', '2026-07-21T00:00:04.000Z'), { title: 'fifth' }));
+    const branchTwo = linesOf();
+
+    // The swap: seq 3 is branch one's entry, and seq 4 still names branch two's hash.
+    branchTwo[3] = branchOne;
+    writeFileSync(file, `${branchTwo.join('\n')}\n`, 'utf-8');
+
+    // The seqs are contiguous — nothing the seq half of the rule could object to.
+    const seqs = branchTwo.map((line) => (JSON.parse(line) as { link: { seq: number } }).link.seq);
+    expect(seqs).toEqual([0, 1, 2, 3, 4]);
+
+    // The full reading of these bytes says the tail stops chaining, and where.
+    const whole = chainReplay({ root: rootA }, upcasters);
+    expect(whole.linkBreaks).toHaveLength(1);
+    expect(whole.linkBreaks[0]?.detail).toContain('prev-hash break');
+
+    // And the resumed reading agrees, in the same wording, on the same seq.
+    const arrived = chainArrivals({ root: rootA }, upcasters, before.frontier);
+    expect(arrived.suffix).toBe(false);
+    expect(arrived.suffix === false && arrived.why).toBe('AN_ARRIVAL_DOES_NOT_CHAIN');
+    expect(
+      arrived.suffix === false && arrived.why === 'AN_ARRIVAL_DOES_NOT_CHAIN' && arrived.broke,
+    ).toEqual(whole.linkBreaks[0]);
+  });
+
+  /**
    * THE DECLARED LIMIT, asserted so it cannot drift into a belief.
    *
    * A break BELOW the boundary is in bytes a previous reading already accepted, and a
