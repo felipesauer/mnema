@@ -15,10 +15,30 @@
  *
  * THIS HANDLER NEVER BLOCKS AND NEVER FAILS LOUD, AND THAT IS STILL TRUE. Every
  * outcome that is not a document is silence and exit 0 — no project here, no `mnema`
- * on the PATH, a record that will not read. A hook is not a place to diagnose: the
+ * on the PATH, a record that will not read. Asserted in
+ * `packages/code/tests/the-record-arrives-unasked.test.ts` ("says nothing at all where
+ * there is no project").
+ *
+ * THE REASON UNDER THAT USED TO BE WIDER THAN THE MEASUREMENT IT CAME FROM, and it is
+ * narrowed rather than dropped. It read: *"A hook is not a place to diagnose: the
  * session belongs to the person who opened it, and a diagnosis nobody asked for buys
- * nothing. Asserted in `packages/code/tests/the-record-arrives-unasked.test.ts`
- * ("says nothing at all where there is no project").
+ * nothing."* What it was measured against is the case above — a directory with no
+ * record in it, where the verb has nothing to say and says it on stderr with exit 1, so
+ * a handler wired straight to the verb would put a refusal into every session of every
+ * project on the machine of whoever installs this. That case is untouched and the
+ * silence is still exit-code-gated.
+ *
+ * WHAT IT NEVER COVERED IS A RECORD THAT DOES NOT CHAIN, and the three outcomes measured
+ * on the binary are what separate the two (`.refactor`'s study of who is told, §1.4):
+ * outside a project the verb exits 1 with 47 bytes of refusal on stderr; over a SOUND
+ * record it exits 0 with an empty stderr; over a record whose tails stop chaining it
+ * exits 0 and the notice is on stderr. So with exit 0 the second stream holds bytes only
+ * when there is something to say about the RECORD — and those bytes are not a diagnosis
+ * this file made up, they are the product's own, written by the same invocation, in the
+ * one place that words them (`packages/code/src/record-integrity.ts`). Dropping them was
+ * the document telling an agent what governs the work while the proof behind it had
+ * failed. Asserted in the same file ("says that the record does not chain, when it does
+ * not").
  *
  * THE REASON THAT USED TO STAND HERE IS FALSE — rewritten rather than deleted, because
  * it was read as doctrine and became one. It said: "`PreToolUse` — the one surface of
@@ -40,6 +60,14 @@
  * work is a second place that can come to disagree with the record, and the whole
  * point of the file is that it IS the record. Asserted in the same test ("hands over
  * exactly what the verb prints").
+ *
+ * AND THAT IS NOW TRUE OF BOTH STREAMS THE VERB WROTE, which is the one thing about this
+ * sentence that changed. What goes over is stdout, and under it whatever the same run put
+ * on stderr — byte for byte again, with a blank line between them and not a word of this
+ * file's. The ORDER is the product's own rule and not a choice made here: the MCP puts the
+ * answer first and the record's own state under it, because the state qualifies the whole
+ * reply (`packages/code/src/mcp/server.ts`, `replied`). A document with no second stream
+ * behind it is unchanged, byte for byte, which is every document over a sound record.
  *
  * IT IS A CHANNEL, AND THE CHANNEL IS DECLARED — {@link MODEL_CHANNEL}. This line used
  * to read "no framing", which was true of what this handler ADDS and was read as a
@@ -109,11 +137,21 @@ function whereTheSessionIs() {
   return named !== undefined && named !== '' ? named : process.cwd();
 }
 
+/** What separates the document from what the same run said about the record under it. */
+const BETWEEN_THE_STREAMS = '\n\n';
+
 /**
  * What the record has to say here, or `null` when it has nothing.
  *
  * `null` is every silent outcome collapsed into one value, so there is ONE gate above
  * and a single place to remove if this plugin ever stopped being quiet.
+ *
+ * BOTH STREAMS ARE KEPT AND THE EXIT CODE IS WHAT PICKS, which is the whole of the
+ * change and the reason it costs nothing. `stderr` used to be dropped at the spawn, on
+ * a reason addressed to the case where the verb REFUSES — and a refusal arrives with a
+ * non-zero status, which is already this function's `null`. So the stream is only ever
+ * read on the path where the verb succeeded, and on that path it is empty unless the
+ * record itself has something to say (see the note at the top of this file).
  *
  * @param {string} cwd Where to run the verb — the host's project directory, or this
  *   process's own when the host announced none.
@@ -123,13 +161,15 @@ function theDocument(cwd) {
   const ran = spawnSync(BINARY, ['brief'], {
     cwd,
     encoding: 'utf-8',
-    // stderr is dropped rather than forwarded: the refusal is addressed to a person
-    // who typed a verb, and nobody typed this one.
-    stdio: ['ignore', 'pipe', 'ignore'],
+    stdio: ['ignore', 'pipe', 'pipe'],
   });
+  // EVERY NON-ZERO OUTCOME IS STILL SILENCE, and the refusal on stderr goes with it: it
+  // is addressed to a person who typed a verb, and nobody typed this one.
   if (ran.error !== undefined || ran.status !== 0) return null;
   const document = ran.stdout ?? '';
-  return document.trim() === '' ? null : document;
+  if (document.trim() === '') return null;
+  const alsoSaid = (ran.stderr ?? '').trim();
+  return alsoSaid === '' ? document : `${document}${BETWEEN_THE_STREAMS}${alsoSaid}`;
 }
 
 function main() {
