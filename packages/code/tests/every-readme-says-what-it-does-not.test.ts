@@ -29,6 +29,12 @@
  * 13, 30 and 53 of them, so three is a floor a section that merely sells cannot reach and
  * a section written honestly cannot notice. What it does not do is read what the negatives
  * SAY — that stays a reviewer's job, and this file claims nothing more.
+ *
+ * THERE ARE FIVE SECTIONS SINCE 17/09/2026, and the fifth is the reason to say so here.
+ * This repository is public and had no root `README.md` at all, so the page a clone lands
+ * on was the one page no rule of this workspace reached. It is in {@link pagesThatProve}
+ * now, held to the same heading and the same floor; re-measured on that date the five
+ * carry 15, 30, 50, 13 and 11.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -91,14 +97,31 @@ const IN_THE_NEGATIVE: readonly string[] = [
 /** The floor: three, against 11 in the thinnest section on the day this was measured. */
 const NEGATIVES_FLOOR = 3;
 
-/** Every `packages/<name>/README.md` on disk, by package name. */
-function packageReadmes(): string[] {
-  return readdirSync(join(ROOT, 'packages'), { withFileTypes: true })
-    .filter(
-      (entry) => entry.isDirectory() && existsSync(join(ROOT, 'packages', entry.name, 'README.md')),
-    )
-    .map((entry) => entry.name)
-    .sort();
+/**
+ * Every page held to the section, by its path from the workspace root: the README of each
+ * package directory on disk, and the ROOT page.
+ *
+ * THE ROOT PAGE IS HERE BECAUSE IT WAS THE HOLE. Until 17/09/2026 this repository — which
+ * is public — had no `README.md` at all, so the page a clone lands on was the one page no
+ * rule of this workspace reached. It now makes the product's claim to a stranger in fewer
+ * words than any package page does, and fewer words is where an honest limit gets dropped,
+ * so it is held to the same heading and the same floor as the four below it.
+ *
+ * The package half is read off the DISK rather than listed, so a fifth package cannot
+ * arrive outside the rule; the root page is named, because there is exactly one of it and
+ * nothing to sweep for.
+ */
+function pagesThatProve(): string[] {
+  return [
+    'README.md',
+    ...readdirSync(join(ROOT, 'packages'), { withFileTypes: true })
+      .filter(
+        (entry) =>
+          entry.isDirectory() && existsSync(join(ROOT, 'packages', entry.name, 'README.md')),
+      )
+      .map((entry) => `packages/${entry.name}/README.md`)
+      .sort(),
+  ];
 }
 
 /** The body of a `##` section, from its heading to the next one. Empty when there is none. */
@@ -158,19 +181,29 @@ function otherWordings(corpus: readonly { file: string; text: string }[]): strin
 }
 
 describe('every package page words its honest guarantee as a proof', () => {
+  it('finds the pages it rules on — the four packages and the page a clone lands on', () => {
+    // The non-vacuity of both cases below: an empty roster satisfies each of them, and a
+    // roster that quietly lost the root page would read exactly like the tree before it
+    // had one.
+    expect(pagesThatProve()).toEqual([
+      'README.md',
+      'packages/chain/README.md',
+      'packages/code/README.md',
+      'packages/copilot/README.md',
+      'packages/core/README.md',
+    ]);
+  });
+
   it('each one carries the canonical heading, exactly once', () => {
-    const missing = packageReadmes().filter(
-      (pkg) => read(`packages/${pkg}/README.md`).split(`\n## ${HONEST_GUARANTEE}\n`).length !== 2,
+    const missing = pagesThatProve().filter(
+      (page) => read(page).split(`\n## ${HONEST_GUARANTEE}\n`).length !== 2,
     );
     expect(missing).toEqual([]);
   });
 
   it('each section says what it does NOT cover, not only what it does', () => {
-    const thin = packageReadmes()
-      .map((pkg) => ({
-        pkg,
-        found: negatives(sectionBody(read(`packages/${pkg}/README.md`), HONEST_GUARANTEE)),
-      }))
+    const thin = pagesThatProve()
+      .map((page) => ({ page, found: negatives(sectionBody(read(page), HONEST_GUARANTEE)) }))
       .filter(({ found }) => found < NEGATIVES_FLOOR);
     expect(thin).toEqual([]);
   });

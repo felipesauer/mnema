@@ -26,7 +26,8 @@
  * is allowed, adding is not.
  *
  * WHAT ASSERTS IT: `tests/the-sentence-reaches-every-door.test.ts` reads every door off
- * the disk and compares, so eight-of-nine reddens; it also bans the clauses the study
+ * the disk and compares, so nine-of-ten reddens — the tenth is the repository's own root
+ * page, which did not exist when this was written; it also bans the clauses the study
  * falsified, reconciled against a declared list of the places that mention them for a
  * reason. `cli.help.golden.txt` pins the bytes commander prints.
  */
