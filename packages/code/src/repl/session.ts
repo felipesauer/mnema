@@ -85,7 +85,7 @@ import { runVerify } from '../commands/verify.js';
 import { type CompletionWord, completionTree } from '../completion/tree.js';
 import { bannerFor } from '../presentation/banner.js';
 import { aside, fact, subjectLine } from '../presentation/detail.js';
-import type { Line } from '../presentation/line.js';
+import { type Line, SEVERITIES, type Severity } from '../presentation/line.js';
 import { occurrenceLine } from '../presentation/occurrence.js';
 import { widthOf } from '../presentation/plain.js';
 import type { Render } from '../presentation/render.js';
@@ -106,6 +106,7 @@ import { insideTheMargin } from './inset.js';
 import type { Leaving } from './leaving.js';
 import { theLibraryIsTold } from './painting.js';
 import { type Opening, openingFor, theShortestScreenFor } from './panel.js';
+import { watchingTheProof } from './proving.js';
 import { whatTheSessionShowed } from './seen.js';
 import { type Standing, standing } from './standing.js';
 
@@ -196,6 +197,55 @@ const LEVEL_MARK = '\u25c9';
  * columns of nothing between it and the end of the terminal.
  */
 const AT_THE_EDGE = 0;
+
+/**
+ * WHAT THE LEVEL IN THE CORNER IS A STATEMENT ABOUT — the record in front of the reader,
+ * or the record as this session opened over it.
+ *
+ * A CLOSED UNION AND NOT A BOOLEAN, so that a third answer — a level ruled on again
+ * mid-session, say — does not compile until somebody has written what the corner reads
+ * like in it. A flag at the call site would read as a mode rather than as which of two
+ * things is being said.
+ */
+export type WhatTheLevelCovers = 'the-whole-record' | 'the-record-as-it-opened';
+
+/**
+ * The clause the badge adds to the level, per {@link WhatTheLevelCovers} — total over the
+ * union, so a member added without words does not compile.
+ *
+ * NOTHING IS ADDED IN THE ORDINARY CASE, which is the whole reason this is a table rather
+ * than a sentence built in {@link badgeLine}: the row a reader sees over a record nobody
+ * else is writing has to be the row it always was, byte for byte, or every case that pins
+ * the corner would be pinning a new line for no reason.
+ */
+const AS_IT_COVERS: Readonly<Record<WhatTheLevelCovers, string>> = {
+  'the-whole-record': '',
+  'the-record-as-it-opened': ' as this opened',
+};
+
+/**
+ * How a row that has stopped covering the record in front of the reader reads as news.
+ *
+ * It is the rung the scale already gives an UNCHECKED stretch — `hash-chain-only` is
+ * `warn` because no signature was checked over it (`wiring/verify.ts`) — and this is the
+ * same fact about a different stretch: what arrived since the verdict was formed has been
+ * ruled on by nothing. Green there is the one reading this corner may not offer, because
+ * green is what a reader takes for "nothing to look at".
+ */
+const CAUTION: Severity = 'warn';
+
+/**
+ * The worse of two severities, by the scale's own order.
+ *
+ * `SEVERITIES` is the order — good, warn, bad — and it is read rather than retyped, so a
+ * rung inserted into it is ordered here by the same list every other reader of the scale
+ * takes. The badge needs it for one case and one only: a level that is already bad news
+ * and a record that has moved past it are still bad news, and taking the caution would be
+ * a corner talking a verdict down.
+ */
+function theWorseOf(one: Severity, other: Severity): Severity {
+  return SEVERITIES.indexOf(one) >= SEVERITIES.indexOf(other) ? one : other;
+}
 
 /**
  * How many rows the palette wants while the page is being opened: none.
@@ -462,10 +512,25 @@ export async function openSession(request: SessionRequest): Promise<void> {
   // takes about a fact it does not have, and the same one the panel's record section takes.
   // The WIDTH goes with it because the area needs both and only the composer can measure
   // one: a rendered line carries escapes a screen does not print (see `Drawn`).
-  const badge = drawn(
-    proved === undefined ? undefined : badgeLine(proved.level),
+  //
+  // BOTH ROWS THE CORNER CAN HOLD ARE COMPOSED HERE, out of the ONE verdict, and neither
+  // is read again. Which one is shown is a question asked on the record's clock
+  // ({@link theCorner}); what each one SAYS is settled now, because it is a function of a
+  // level and of nothing that moves.
+  const cornerNow = drawn(
+    proved === undefined ? undefined : badgeLine(proved.level, 'the-whole-record'),
     renderingAt(NO_SCREEN_TO_FOLD_TO),
   );
+  const cornerSinceItMoved = drawn(
+    proved === undefined ? undefined : badgeLine(proved.level, 'the-record-as-it-opened'),
+    renderingAt(NO_SCREEN_TO_FOLD_TO),
+  );
+  // THE PAGE IS BUDGETED FOR THE WIDER OF THE TWO, and that is what keeps the arrangement
+  // from moving under the caller. How tall the input area is depends on whether the badge
+  // fits on one row (`area.ts`), so a page budgeted for the shorter row could find itself
+  // one row short the moment the corner degrades — a page that re-laid itself because a
+  // record grew. One number, taken now, and the opening is a function of the size alone.
+  const badgeWidth = Math.max(cornerNow.width, cornerSinceItMoved.width);
   // What the caller can do, rendered ONCE for the same reason the badge is — and measured
   // here as well, because two things read the width: the area, which draws no hint the
   // terminal would fold, and the opening, which is budgeted against the area under it.
@@ -486,7 +551,24 @@ export async function openSession(request: SessionRequest): Promise<void> {
   // reporting from outside its own verdict. What it costs to start is a line per tail, off
   // the end of the tail (`following.ts`); what it costs after that is a question with no
   // read behind it.
-  const following = followingTheRecord((proved?.trees ?? []).map((tree) => tree.root));
+  const rootsRuledOn = (proved?.trees ?? []).map((tree) => tree.root);
+  const following = followingTheRecord(rootsRuledOn);
+  // AND WHETHER THE VERDICT ABOVE STILL COVERS THEM, watched on the same clock and over the
+  // same trees — the ones the verdict itself reported, never a second list resolved here.
+  // It reads no chain and rules on nothing: what it answers is that the record has moved
+  // past what was ruled on, which is the one thing the corner may not go on ignoring
+  // (`proving.ts`).
+  const proof = watchingTheProof(rootsRuledOn);
+  /**
+   * WHAT THE CORNER SAYS RIGHT NOW — the level as proved, or the level with what it covers
+   * said out loud once the record has moved past it.
+   *
+   * ASKED ON THE RECORD'S CLOCK AND NEVER ON A FRAME, which is the contract the console
+   * holds up its end of ({@link OpenConsole}) and the one the reads are counted against:
+   * a redraw that asked this would put a `readdir` per tail on every keystroke, and a
+   * frame reads nothing (`tests/the-name-and-the-hints.test.ts`).
+   */
+  const theCorner = (): Drawn => (proof.coversTheWholeRecord() ? cornerNow : cornerSinceItMoved);
 
   /**
    * WHAT THE PAGE OPENS WITH on a terminal of a given SIZE — and the only thing on this
@@ -562,7 +644,7 @@ export async function openSession(request: SessionRequest): Promise<void> {
     const underneath = areaFor({
       rows,
       columns,
-      badge: badge.width,
+      badge: badgeWidth,
       hint: hint.width,
       palette: NOTHING_OFFERED_YET,
       header: NOTHING_ABOVE_YET,
@@ -632,9 +714,12 @@ export async function openSession(request: SessionRequest): Promise<void> {
     // rows, so it is rendered and measured with them (`palette.ts`). Composed once, for the
     // reason the tips are — three keystrokes, and nothing about the record.
     picking: pickingTips(),
-    // Also rendered once — out of the ONE read this surface pays for. It does say
-    // something about the record, which is exactly why it may not be asked again.
-    badge,
+    // Both rows rendered once, out of the ONE read this surface pays for, and which of
+    // them is shown asked on the clock the record is asked on. It used to be a value, on
+    // the reason that it says something about the record and therefore may not be asked
+    // again — true of `verify`, which is what "asked again" meant, and false of the
+    // question this asks ({@link theCorner}, `proving.ts`).
+    badge: theCorner,
     saw: seen.saw,
     // WHAT SOMEBODY ELSE WROTE, as lines — composed where every line of this product is
     // and rendered with the session's own renderer, so an occurrence reads exactly like
@@ -963,26 +1048,52 @@ export function theSessionsOwnWords(): readonly CompletionWord[] {
  * WHAT FALSIFIED IT IS WHAT THIS PRODUCT IS FOR. The first argument holds for GREEN and
  * does not hold for RED: this is a tool for making tampering evident, so the cost of a
  * reader NOT noticing a broken record is not the cost of a constant green, and the badge is
- * the PERSISTENT ASSERTION of the proven level rather than a decoration beside one. A
- * corner that stays quiet while the record is broken is the one failure this surface may
- * not have. The second argument was answered by its own premise: where a level is ruled on
- * it is painted, and this row states a level, so not painting it made it the EXCEPTION to
- * "data is painted by severity and by nothing else" — painting REMOVES an exception instead
- * of adding one. The third survived as a fact and stopped being a reason: the words are
- * still the whole carrier, and stripping the escapes still gives this exact line back, byte
- * for byte (`tests/the-input-has-its-own-place.test.ts`).
+ * the PERSISTENT ASSERTION of the proven level rather than a decoration beside one. The
+ * second argument was answered by its own premise: where a level is ruled on it is painted,
+ * and this row states a level, so not painting it made it the EXCEPTION to "data is painted
+ * by severity and by nothing else" — painting REMOVES an exception instead of adding one.
+ * The third survived as a fact and stopped being a reason: the words are still the whole
+ * carrier, and stripping the escapes still gives this exact line back, byte for byte
+ * (`tests/the-input-has-its-own-place.test.ts`).
  *
- * THE HUE IS THE ONE FUNCTION'S, and this row has no rule of its own. `levelSeverity` is
- * the table that says how each rung of the scale reads as news, total over the chain's
- * levels by type, and it is what `verify` and the panel already paint by. A condition here
- * — paint only when it is bad news — would be a second opinion about which levels are news
- * at all, which is exactly what one table exists to prevent.
+ * THE SENTENCE THAT CLOSED THAT ARGUMENT WAS *A CORNER THAT STAYS QUIET WHILE THE RECORD IS
+ * BROKEN IS THE ONE FAILURE THIS SURFACE MAY NOT HAVE*, AND THE SURFACE HAD IT. It is
+ * rewritten rather than deleted because it says what this row is FOR and the row now holds
+ * it; what was false was the tense. The premise under it was that a level ruled on when the
+ * session opened goes on being a statement about the record, and the measurement that
+ * killed it is in a pseudo-terminal: with a duplicate of the last entry appended DURING the
+ * session — the break two writers appending at once used to leave — the body printed `seq
+ * gap: expected 8, found 7` and this corner said `fully-signed` in the same frame. True
+ * about the opening, false about every instant after it.
+ *
+ * SO THE LEVEL ARRIVES WITH WHAT IT COVERS, and {@link WhatTheLevelCovers} is a closed
+ * union rather than a flag so that a third answer does not compile until somebody has said
+ * what the corner should read like. Which of the two a session is in is asked of the CHEAP
+ * question the follower already pays for — whether the chain moved at all, one `readdir`
+ * per tail (`proving.ts`) — and never of `verify` again, which is 54 ms to 1.7 s and
+ * linear in the history.
+ *
+ * THE HUE IS THE ONE FUNCTION'S WHERE THE LEVEL STILL COVERS THE RECORD, and this row has
+ * no rule of its own about the SCALE. `levelSeverity` is the table that says how each rung
+ * reads as news, total over the chain's levels by type, and it is what `verify` and the
+ * panel already paint by. A condition here about which LEVELS are news would be a second
+ * opinion, which is exactly what one table exists to prevent.
+ *
+ * WHAT IS DECIDED HERE IS NOT ABOUT A LEVEL, and that is why it may be. A row that no
+ * longer states a level about the record in front of the reader is not good news about a
+ * proof; it is an unchecked stretch, which the scale already words as {@link CAUTION} one
+ * rung down — `hash-chain-only` is `warn` for the same reason, that NO signature was
+ * checked over it. And it is the WORSE of the two and never the better: a record ruled
+ * `broken` that then moved is still broken, and a caution painted over red would be this
+ * row talking a verdict down.
  */
-export function badgeLine(level: ProvenLevel): Line {
+export function badgeLine(level: ProvenLevel, covers: WhatTheLevelCovers): Line {
   return statement(
-    `${LEVEL_MARK} ${level}${BETWEEN_CLAUSES}${VERIFY_VERB}`,
+    `${LEVEL_MARK} ${level}${AS_IT_COVERS[covers]}${BETWEEN_CLAUSES}${VERIFY_VERB}`,
     undefined,
-    levelSeverity(level),
+    covers === 'the-whole-record'
+      ? levelSeverity(level)
+      : theWorseOf(levelSeverity(level), CAUTION),
     AT_THE_EDGE,
   );
 }

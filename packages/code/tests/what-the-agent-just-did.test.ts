@@ -368,6 +368,14 @@ describe('a session shows what another process wrote while it was open', () => {
     // NOT VACUOUS: the second reading really is of a page that has the occurrences on it.
     expect(ran.bytes.slice(0, ran.at[3])).toContain(first);
     expect(ran.bytes.slice(0, ran.at[1])).not.toContain(first);
+    // AND THE ONE THING THE READING ABOVE NO LONGER LOOKS AT, asserted here so that taking
+    // it out is a narrowing and not a hole: the corner DID change, because the record moved
+    // — which is the whole of why its text is not part of the shape. What it says while the
+    // record has moved is `the-corner-says-what-its-level-covers.test.ts`'s subject; what
+    // this needs is that it is not the same row, so the exclusion above is doing work.
+    expect(theCorner(ran.bytes.slice(0, ran.at[3]))).not.toBe(
+      theCorner(ran.bytes.slice(0, ran.at[1])),
+    );
   });
 
   it('goes on answering the caller afterwards', () => {
@@ -456,6 +464,22 @@ const LEVEL_MARK = '◉';
  * ECHO of a submitted line carries the prompt too and sits in the scrollback, and the blank
  * rows under the frame are as many as the page has not filled yet — so the reading moved
  * with how much the session had said rather than with the shape of the region.
+ *
+ * WHAT THE BADGE'S ROW CARRIES IS NOT PART OF THE SHAPE, and that arrived when the corner
+ * stopped being fixed for the session. The row is still where the region begins and it is
+ * still COUNTED — it is one row, in this position, and a reading with an occurrence among
+ * these rows has it one further down. What is on it is replaced by the mark alone, text and
+ * indent together, because the corner degrades the moment the record moves past what the
+ * opening ruled on and it is drawn at the far END of its row, so its text and the blanks in
+ * front of it move as one (`repl/proving.ts`,
+ * `the-corner-says-what-its-level-covers.test.ts`). Left carrying either, this reading would
+ * go red over the corner doing its job and say nothing at all about the subject, which is
+ * whether an occurrence landed among these rows.
+ *
+ * TWO CASES HOLD WHAT THIS STOPPED HOLDING, so the narrowing is not a hole: the case below
+ * asserts that the corner really did change here, and where the corner SITS on its row is
+ * `tests/the-input-has-its-own-place.test.ts`'s subject. A reading that quietly stopped
+ * looking at something is the shape this bench calls a guard going vacuous.
  */
 function shapeOfTheInput(bytes: string): readonly string[] {
   const rows = screenOf(bytes, COLUMNS, ROWS).rows.map((row) => row.trimEnd());
@@ -464,9 +488,17 @@ function shapeOfTheInput(bytes: string): readonly string[] {
   expect(badge, 'no row of the screen was the badge').toBeGreaterThanOrEqual(0);
   // The row being typed is inside what is measured, or the measurement is of some other
   // part of the page.
-  const shape = rows.slice(badge, last + 1);
+  const shape = rows.slice(badge, last + 1).map((row, at) => (at === 0 ? LEVEL_MARK : row));
   expect(shape.some((row) => row.startsWith(PROMPT))).toBe(true);
   return shape;
+}
+
+/** The row the badge is on, as a reader sees it — the corner, trimmed. */
+function theCorner(bytes: string): string {
+  const rows = screenOf(bytes, COLUMNS, ROWS).rows.map((row) => row.trimEnd());
+  const at = rows.findLastIndex((row) => row.includes(LEVEL_MARK));
+  expect(at, 'no row of the screen was the badge').toBeGreaterThanOrEqual(0);
+  return (rows[at] as string).trim();
 }
 
 // ---------------------------------------------------------------------------
@@ -646,15 +678,25 @@ describe('what asks the disk about the record, on this surface', () => {
       const found = DOORS.filter((door) => sourceOf('repl', file).includes(door));
       if (found.length > 0) opened[file] = found;
     }
-    expect(Object.keys(opened).sort()).toEqual(['following.ts', 'session.ts']);
+    // IT WAS TWO AND IT IS THREE, and the third is the one this list exists to make
+    // visible. `proving.ts` asks whether the record has moved past what the opening ruled
+    // on — the same `chainExtent` the follower asks, and nothing else — because the corner
+    // was stating a level about a record it had not read: measured, the body printed `seq
+    // gap` and the corner said `fully-signed` in the same frame. It is a THIRD module
+    // rather than a field of the follower because the two answer different questions, and
+    // folding them would make the feed show a duplicate as news.
+    expect(Object.keys(opened).sort()).toEqual(['following.ts', 'proving.ts', 'session.ts']);
     // The opening pays a verify and asks nothing else; the probe asks the extent and reads
-    // the tail it names — which is what makes each of them the ONE place its rule lives.
+    // the tail it names; the watch on the proof asks the extent and NOTHING else — which is
+    // what makes each of them the ONE place its rule lives, and what says the corner did
+    // not quietly gain a reader of tails.
     expect(opened['session.ts']).toEqual(['runVerify']);
     expect([...(opened['following.ts'] ?? [])].sort()).toEqual([
       'chainExtent',
       'listTails',
       'readTail',
     ]);
+    expect(opened['proving.ts']).toEqual(['chainExtent']);
     // NOT VACUOUS: the scan really read the surface, and the surface really has modules
     // that name none of the doors.
     expect(modulesIn('repl').length).toBeGreaterThan(Object.keys(opened).length);

@@ -17,13 +17,33 @@
  * sites has a seventeen-plus-first, and the only thing that finds it is a walk of the
  * source keyed on the DISCRIMINANT rather than on a list somebody maintains.
  *
- * So the discriminant here is how this package opens a record at all — `withScopedCaches`
- * and a bare `ProjectionCache.open` — and every file that does either must ask
- * `linkBreaksOf` or be in `SERVES_NO_RECORD_CONTENT` with a written reason. THREE of the
- * sites this delivery covered were found that way and by no other means: `show`, `guard`
- * and `next-actions` open their caches directly, so the handoff's own `grep` for
- * `withScopedCaches` did not name them, and `show` is the verb that serves a record's
- * BODY.
+ * So the discriminant here is how this package reaches a record at all, and every file
+ * that does must ask a reading that carries the fact or be in `SERVES_NO_RECORD_CONTENT`
+ * with a written reason. THREE of the sites the first delivery covered were found that way
+ * and by no other means: `show`, `guard` and `next-actions` open their caches directly, so
+ * the handoff's own `grep` for `withScopedCaches` did not name them, and `show` is the verb
+ * that serves a record's BODY.
+ *
+ * ## The discriminant carried the blind spot, and that is the second half of this file
+ *
+ * It was the PROJECTION CACHE and nothing else — four ways of opening one — and the whole
+ * of the console fell outside it. `packages/code/src/repl/` serves the record by every
+ * ordinary meaning of the word: the opening panel prints a verdict, the corner holds the
+ * proven level on every frame of the session, and the feed shows what another process
+ * appended while the page was up. It opens no cache to do any of it. It reaches the chain
+ * directly — `runVerify` in `session.ts`, `chainExtent` and `readTailTip` in
+ * `following.ts` — so `grep -rn "linkBreak" packages/code/src/repl/` came back with
+ * nothing, and this file was green over it.
+ *
+ * What that cost is measured: with a duplicate of the tail's last entry appended during a
+ * session, the body of the page printed `seq gap: expected 8, found 7` and the corner said
+ * `fully-signed` in the SAME FRAME
+ * (`the-corner-says-what-its-level-covers.test.ts`). A rule applied at N sites has an
+ * N-plus-first, and here the N-plus-first was a whole surface — reached by a door the
+ * sweep did not know was a door. So there is a second list ({@link READS_THE_CHAIN}), and
+ * a second reading that answers for it ({@link CARRIES_THE_FACT}): the console cannot ask
+ * for a cache's breaks, because it holds no cache, and what it asks instead is whether the
+ * record has moved past what was ruled on.
  *
  * ## What it covers now, and what it covered before
  *
@@ -89,6 +109,44 @@ const OPENS_A_RECORD = [
  */
 const ASKS_THE_READING = 'linkBreaksOf(';
 
+/**
+ * The ways anything in this package reads the CHAIN with no projection cache in between.
+ *
+ * It is a second list and not four more entries in {@link OPENS_A_RECORD} because the
+ * question each answers is different, and the two have different obligations: a door that
+ * holds a cache can be asked for that cache's breaks, and a door that holds none cannot.
+ * Keeping them apart is what lets the excuse for one be an honest sentence about the other.
+ *
+ * WHAT PUT IT HERE is that the first list was the whole universe and the console was
+ * outside it — see the note at the top of this file. The names are the chain package's own
+ * entry points, read as CALLS for the reason {@link ASKS_THE_READING} is: a bare identifier
+ * matches the import, so a file that keeps the import and calls nothing stays green.
+ */
+const READS_THE_CHAIN = [
+  'runVerify(',
+  'verifyChain(',
+  'chainExtent(',
+  'readTail(',
+  'readTailEntries(',
+  'readTailTip(',
+  'readTailSince(',
+];
+
+/**
+ * The readings that CARRY the fact — either of which discharges the obligation.
+ *
+ * There are two because the two kinds of door can answer different questions honestly, and
+ * neither is a weaker form of the other. `linkBreaksOf` says which tails do not chain, off
+ * a replay a read already paid for. `watchingTheProof` says that the record has moved past
+ * what a verdict was formed over, off one `readdir` per tail — narrower, and the only thing
+ * a surface that holds no cache can say without re-running a verifier that costs 54 ms to
+ * 1.7 s (`repl/proving.ts`).
+ *
+ * A THIRD ONE IS A CLAIM AND NOT A CONVENIENCE: it would be a third answer about the same
+ * bytes, and this file's last describe is what says two wordings is the ceiling.
+ */
+const CARRIES_THE_FACT = [ASKS_THE_READING, 'watchingTheProof('];
+
 /** Every `.ts` under `src`, as a path relative to it — tests excluded. */
 function sources(dir = SRC, prefix = ''): string[] {
   const found: string[] = [];
@@ -134,16 +192,38 @@ function bodyOf(source: string, name: string): string {
   throw new Error(`function ${name} does not close`);
 }
 
-describe('every read that opens the record either asks for the breaks or says why not', () => {
-  // The module that DEFINES the reading is not a door, and it is excluded by reading
-  // the source rather than by name: a file holding `export function linkBreaksOf` is
-  // where the rule lives, and asking it to call itself would be asking for noise.
-  const defines = (path: string): boolean =>
-    text(path).includes(`export function ${ASKS_THE_READING}`);
-  const opens = sources().filter(
-    (path) => !defines(path) && OPENS_A_RECORD.some((how) => text(path).includes(how)),
-  );
+/**
+ * The module that DEFINES a reading is not a door, and it is excluded by reading the
+ * source rather than by name: a file holding `export function linkBreaksOf` is where the
+ * rule lives, and asking it to call itself would be asking for noise. The same is true of
+ * the module that defines the other one.
+ */
+const defines = (path: string): boolean =>
+  CARRIES_THE_FACT.some((reading) => text(path).includes(`export function ${reading}`));
 
+/** Every file that opens a projection cache — the first kind of door. */
+const opens = sources().filter(
+  (path) => !defines(path) && OPENS_A_RECORD.some((how) => text(path).includes(how)),
+);
+
+/**
+ * Every file that reads the chain with no cache in between — the second kind, and the one
+ * the console is in.
+ *
+ * A file already counted as a cache door is left out: it is one door, and listing it twice
+ * would make a single excuse read as two.
+ */
+const reads = sources().filter(
+  (path) =>
+    !defines(path) &&
+    !opens.includes(path) &&
+    READS_THE_CHAIN.some((how) => text(path).includes(how)),
+);
+
+/** Both kinds together — what an excuse may be written for, and nothing else. */
+const doors = [...opens, ...reads];
+
+describe('every read that opens the record either asks for the breaks or says why not', () => {
   // THE NON-VACUITY GUARD, and it runs first. A sweep whose pattern has stopped matching
   // finds nothing and reports success — this repository has been bitten by exactly that
   // — so the count is pinned above the number of doors the delivery covered.
@@ -164,10 +244,14 @@ describe('every read that opens the record either asks for the breaks or says wh
     });
   });
 
-  it('excuses nothing that does not open a record', () => {
-    // An entry left behind when its file stopped opening a record is an excuse for a
+  it('excuses nothing that does not reach a record', () => {
+    // An entry left behind when its file stopped reaching a record is an excuse for a
     // door that no longer exists, and the next reader takes it for a classification.
-    expect(Object.keys(SERVES_NO_RECORD_CONTENT).filter((p) => !opens.includes(p))).toStrictEqual(
+    //
+    // IT IS ASKED OVER BOTH KINDS OF DOOR, which is what the second discriminant forced:
+    // asked over the cache doors alone it would call every excuse written for a chain door
+    // an excuse for nothing.
+    expect(Object.keys(SERVES_NO_RECORD_CONTENT).filter((p) => !doors.includes(p))).toStrictEqual(
       [],
     );
   });
@@ -176,6 +260,48 @@ describe('every read that opens the record either asks for the breaks or says wh
     for (const [path, why] of Object.entries(SERVES_NO_RECORD_CONTENT)) {
       expect(why.length, path).toBeGreaterThan(40);
     }
+  });
+});
+
+describe('every read that reaches the CHAIN with no cache says it too, or says why not', () => {
+  /**
+   * THE NON-VACUITY GUARD, AND IT NAMES THE SITE THAT MOTIVATED THE LIST. A count alone is
+   * the shape this bench has been bitten by — a sweep whose pattern stopped matching finds
+   * nothing and reports success — and a count alone would also survive the one mutation
+   * that matters here: taking the console back out of the universe. `repl/session.ts` is
+   * where the badge is composed and where the reading is asked, so it is named.
+   */
+  it('finds the doors at all, and the console is one of them', () => {
+    expect(reads.length).toBeGreaterThanOrEqual(4);
+    expect(reads).toContain('repl/session.ts');
+    expect(reads).toContain('repl/following.ts');
+  });
+
+  it.each(reads)('%s', (path) => {
+    const asks = CARRIES_THE_FACT.some((reading) => text(path).includes(reading));
+    const excused = SERVES_NO_RECORD_CONTENT[path];
+    // Asserted as the PAIR rather than as two conditions, so a red says which of the two
+    // it is: a file that does both is as wrong as one that does neither.
+    expect({ path, asks, excused: excused !== undefined }).toStrictEqual({
+      path,
+      asks: excused === undefined,
+      excused: excused !== undefined,
+    });
+  });
+
+  /**
+   * AND THE CONSOLE ASKS IT IN ONE PLACE, which is the half a per-file sweep cannot say.
+   *
+   * The corner is the surface's one statement about what the record proved. A second reading
+   * on the same clock — the feed composing an opinion of its own, say — would be one screen
+   * holding two answers about the same bytes, which is exactly what the excuse written for
+   * `repl/following.ts` promises does not happen.
+   */
+  it('and the console asks it in exactly one place', () => {
+    const asking = sources().filter(
+      (path) => !defines(path) && text(path).includes('watchingTheProof('),
+    );
+    expect(asking).toStrictEqual(['repl/session.ts']);
   });
 });
 

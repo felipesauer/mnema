@@ -502,6 +502,7 @@ describe('the session writes no history anywhere', () => {
       'palette.ts',
       'panel.ts',
       'pointing.ts',
+      'proving.ts',
       'region.ts',
       'scrolling.ts',
       'seen.ts',

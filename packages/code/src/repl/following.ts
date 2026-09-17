@@ -45,9 +45,19 @@
  *
  * AND IT RULES ON NOTHING. Two equal extents mean "nothing observable moved", never
  * "the chain is intact" — a rewrite that preserves a file's size moves no mark, and
- * tampering is `verify`'s subject, which recomputes hashes and checks signatures. The
- * badge in the corner says what the record proved when the session opened, and the word
+ * tampering is `verify`'s subject, which recomputes hashes and checks signatures. The word
  * that asks again is one keystroke away at the prompt.
+ *
+ * THE SENTENCE THAT USED TO CLOSE THAT PARAGRAPH WAS *THE BADGE IN THE CORNER SAYS WHAT
+ * THE RECORD PROVED WHEN THE SESSION OPENED*, and it was read as a division of labour when
+ * it was really a description of a defect. The corner did say that, for the whole session,
+ * about a record that had moved on — measured with a duplicate of the last entry appended
+ * while the page was up: the body printed `seq gap` and the corner said `fully-signed` in
+ * the same frame. The corner now says WHAT ITS LEVEL COVERS, and what tells it is the same
+ * cheap question this file asks and a reading of its own that is not this one
+ * (`repl/proving.ts`, asked once in `session.ts`). Nothing here changed, and that is the
+ * design: the filter below is what keeps a duplicate of an entry already shown from
+ * arriving a second time as news.
  */
 
 import {

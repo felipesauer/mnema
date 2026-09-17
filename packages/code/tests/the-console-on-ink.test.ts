@@ -510,7 +510,7 @@ function _isTips(row: string): boolean {
  */
 function theBadge(): string {
   const verdict = runVerify({ ...here(), requirement: DEFAULT_REQUIREMENT, global: false });
-  return verdict.ok ? renderPlain(badgeLine(verdict.record.level)) : '';
+  return verdict.ok ? renderPlain(badgeLine(verdict.record.level, 'the-whole-record')) : '';
 }
 
 /** Whether a row is the console's own badge, at whatever column the width put it. */

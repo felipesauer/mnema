@@ -474,6 +474,7 @@ describe('nothing else decides which renderer', () => {
       'palette.ts',
       'panel.ts',
       'pointing.ts',
+      'proving.ts',
       'region.ts',
       'scrolling.ts',
       'seen.ts',

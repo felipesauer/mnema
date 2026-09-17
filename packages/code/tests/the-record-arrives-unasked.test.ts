@@ -31,10 +31,12 @@
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import {
+  appendFileSync,
   chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -236,6 +238,38 @@ function cli(...args: string[]): string {
   });
 }
 
+/**
+ * The committed tail's one segment file — the bytes a plant is made in.
+ *
+ * The tail is read off the DIRECTORY rather than named here: which tail this machine
+ * writes is a function of its key, so a name written down would be a fixture about
+ * somebody else's record.
+ */
+function lastSegment(at: string): string {
+  const tails = join(at, '.mnema', 'tails');
+  const tail = readdirSync(tails)[0] as string;
+  return join(tails, tail, '000001.jsonl');
+}
+
+/**
+ * BOTH STREAMS of `mnema brief` in a project — the second one being what the handler
+ * used to drop at the spawn.
+ *
+ * It runs the verb directly rather than through the shim, because what is wanted is the
+ * streams and not the argv, and it tolerates a non-zero exit for the same reason: a
+ * caller that asked this outside a project wants the refusal, not a throw. `err` is
+ * trimmed because that is what the handler appends — the comparison has to be against
+ * the same bytes the handler would have composed.
+ */
+function brief(at: string): { readonly out: string; readonly err: string } {
+  const ran = spawnSync(process.execPath, [CLI, 'brief'], {
+    cwd: at,
+    env: hostEnv(join(sandbox, 'calls-stderr.txt')),
+    encoding: 'utf-8',
+  });
+  return { out: ran.stdout ?? '', err: (ran.stderr ?? '').trim() };
+}
+
 /** The id out of a line that names one — it is the value in the parentheses. */
 function idIn(said: string): string {
   const found = /\(([0-9a-f-]{36})\)/.exec(said);
@@ -355,6 +389,153 @@ describe('the record arrives unasked', () => {
     };
     expect(said.hookSpecificOutput?.hookEventName).toBe('SessionStart');
     expect(said.hookSpecificOutput?.additionalContext).toBe(document);
+    // AND THE SECOND STREAM WAS EMPTY, which is what makes the line above the vacuity
+    // guard for the case under it rather than a coincidence of a sound fixture. The
+    // handler appends whatever the same run put on stderr; over a record that chains
+    // there is nothing to append, and `toBe(document)` is only evidence of that if
+    // something asked.
+    expect(brief(project).err).toBe('');
+  });
+
+  it('says that the record does not chain, when it does not', () => {
+    // WHAT THE DOCUMENT USED TO DO OVER A BROKEN RECORD. The verb writes the notice on
+    // stderr and exits 0 — measured on the binary, and the three outcomes are in the
+    // handler's own doc — and the handler dropped that stream at the spawn. So the
+    // agent was handed what governs the work, in the one channel it receives without
+    // asking, with no word that the proof behind it had failed.
+    //
+    // THE PLANT IS THE PRODUCT'S OWN LAST ENTRY, APPENDED AGAIN — same seq, same prev,
+    // which is what two writers appending at once used to leave. Nothing here writes a
+    // value the product cannot produce: the bytes are bytes it wrote.
+    //
+    // THE FIXTURE IS SHARED AND IS PUT BACK, exactly as the switched-off case puts the
+    // channel back: every other case in this file reads this same project, and a tail
+    // left broken would make them measure something else.
+    const commands = declaredCommands();
+    expect(commands.length).toBe(1);
+    const file = lastSegment(project);
+    // THE BYTES TO PUT BACK AND THE TEXT TO READ ARE TWO READINGS, deliberately: turning a
+    // buffer into text in one call is the shape a guard of this suite sweeps for
+    // (`the-screen-says-what-it-was-drawn-at.test.ts`), because that is how a multi-byte
+    // glyph gets cut in half where bytes arrive in chunks. Nothing is chunked here, and the
+    // needle is textual, so the honest answer is not to write it.
+    const before = readFileSync(file);
+    const held = readFileSync(file, 'utf-8');
+    let ran: Ran;
+    let broken: { readonly out: string; readonly err: string };
+    try {
+      const lines = held.trimEnd().split('\n');
+      appendFileSync(file, `${lines[lines.length - 1] as string}\n`, 'utf-8');
+      // WHAT THE VERB ITSELF SAYS OVER THESE BYTES, on both streams — the yardstick the
+      // handler's reply is compared with below, taken over the same plant.
+      broken = brief(project);
+      // The plant really did break it: without this the case is green over a record
+      // that chains and a notice printed unconditionally.
+      expect(broken.err).toContain('issue [T1]');
+      ran = runHook(commands[0] as string, project);
+    } finally {
+      writeFileSync(file, before);
+    }
+
+    expect(ran.status).toBe(0);
+    const context = (JSON.parse(ran.out) as { hookSpecificOutput: { additionalContext: string } })
+      .hookSpecificOutput.additionalContext;
+    // THE DOCUMENT IS STILL THERE AND IS STILL FIRST. What the record says about itself
+    // qualifies the document; it does not replace it.
+    expect(context).toContain(COMMITTED_TITLE);
+    expect(context).toMatch(/issue \[T1\] public \S+#\d+: seq gap: expected \d+, found \d+/);
+    expect(context).toContain('still on the tail');
+    expect(context.indexOf(COMMITTED_TITLE)).toBeLessThan(context.indexOf('issue [T1]'));
+    // AND NOT A WORD OF THE HANDLER'S OWN — asserted as the WHOLE string and not as
+    // what is in it: the context is the verb's two streams, in that order, joined by a
+    // blank line. A preamble, a cut or a re-wording anywhere in the handler reddens
+    // here, which is what the `toContain`s above cannot say.
+    expect(context).toBe(`${broken.out}\n\n${broken.err}`);
+
+    // PUT BACK, AND IT GOES QUIET AGAIN — the non-vacuity of the silence, over the same
+    // handler and the same project, and the proof that the plant was undone.
+    const after = runHook(commands[0] as string, project);
+    const quiet = (JSON.parse(after.out) as { hookSpecificOutput: { additionalContext: string } })
+      .hookSpecificOutput.additionalContext;
+    expect(quiet).not.toContain('issue [T1]');
+    expect(quiet).toBe(cli('brief'));
+  });
+
+  it('says nothing when the verb refuses, whatever it printed first', () => {
+    // THE EXIT CODE IS THE GATE, AND NOTHING WITNESSED IT. Measured: removing
+    // `ran.status !== 0` from the handler left every case in this file green, because the
+    // two refusals the product can produce today — no project here, and the document
+    // channel switched off — both print NOTHING on stdout, and the empty-document check
+    // catches them on the way past. So the gate was guarding a state the product cannot
+    // currently reach, which is a guard with no witness.
+    //
+    // IT MATTERS MORE THAN IT DID, which is why the state is planted rather than declared.
+    // The handler used to drop the second stream at the spawn; it now hands it over when
+    // the verb SUCCEEDED. A verb that printed something and then refused would, with the
+    // gate gone, put its refusal into the session — the exact thing the muteness exists to
+    // prevent, on the machine of everybody who installed this.
+    //
+    // THE PLANT IS A `mnema` ON THE PATH, because that is what the handler runs. It is not
+    // a state the real binary can be put in, and a fixture that wrote one would be a case
+    // about a record no verb can produce; what is being asserted is the HANDLER's gate, so
+    // the thing replaced is what the handler spawns.
+    const refusing = join(sandbox, 'refusing');
+    mkdirSync(refusing, { recursive: true });
+    const shim = join(refusing, 'mnema');
+    writeFileSync(
+      shim,
+      [
+        '#!/bin/sh',
+        "printf 'a document of sorts\n'",
+        "printf 'and then a refusal\n' >&2",
+        'exit 2',
+        '',
+      ].join('\n'),
+    );
+    chmodSync(shim, 0o755);
+
+    const ran = spawnSync('sh', ['-c', declaredCommands()[0] as string], {
+      cwd: project,
+      env: {
+        ...hostEnv(join(sandbox, 'calls-refusing.txt')),
+        CLAUDE_PROJECT_DIR: project,
+        PATH: `${refusing}:${process.env.PATH ?? ''}`,
+      },
+      encoding: 'utf-8',
+    });
+    // NOTHING AT ALL: not the stdout it printed, and above all not the refusal.
+    expect(ran.stdout ?? '').toBe('');
+    expect(ran.stderr ?? '').toBe('');
+    expect(ran.status).toBe(0);
+
+    // NOT VACUOUS: the same plant with exit 0 DOES speak, so the silence above is the exit
+    // code's doing and not the shim failing to run at all.
+    writeFileSync(
+      shim,
+      [
+        '#!/bin/sh',
+        "printf 'a document of sorts\n'",
+        "printf 'and something to say\n' >&2",
+        'exit 0',
+        '',
+      ].join('\n'),
+    );
+    chmodSync(shim, 0o755);
+    const spoke = spawnSync('sh', ['-c', declaredCommands()[0] as string], {
+      cwd: project,
+      env: {
+        ...hostEnv(join(sandbox, 'calls-speaking.txt')),
+        CLAUDE_PROJECT_DIR: project,
+        PATH: `${refusing}:${process.env.PATH ?? ''}`,
+      },
+      encoding: 'utf-8',
+    });
+    const said = (
+      JSON.parse(spoke.stdout as string) as { hookSpecificOutput: { additionalContext: string } }
+    ).hookSpecificOutput.additionalContext;
+    // The document keeps the newline it printed, and the second stream arrives under it
+    // with one blank row between them — the whole composition, byte for byte.
+    expect(said).toBe('a document of sorts\n\n\nand something to say');
   });
 
   it('carries the committed record by name — not the private tree, and not the bodies', () => {

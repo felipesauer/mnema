@@ -149,13 +149,26 @@ export type { ScopedLinkBreak } from './record-integrity.js';
  * signatures, checkpoints or witnesses. A read that printed "the record is sound"
  * because this came back empty would be claiming what only `verify` can.
  *
- * EVERY READ THAT SERVES THE RECORD ASKS IT, and so does every WRITE of the MCP — that
+ * EVERY READ THAT OPENS A CACHE ASKS IT, and so does every WRITE of the MCP — that
  * half arrived second, through `sessionLinkBreaks`, and the case it covers is the one
  * the reads could not: an append onto a tail that already does not chain. The guard is
- * `tests/the-broken-link-reaches-every-reader.test.ts`: it walks the source for the two
- * ways a read opens the record — this function and a bare `ProjectionCache.open` — and
- * a file that does neither of "asks this" and "says in {@link SERVES_NO_RECORD_CONTENT}
- * why it owes nothing" is red.
+ * `tests/the-broken-link-reaches-every-reader.test.ts`: it walks the source for the ways
+ * a read opens a cache — this function and a bare `ProjectionCache.open` — and a file that
+ * does neither of "asks this" and "says in {@link SERVES_NO_RECORD_CONTENT} why it owes
+ * nothing" is red.
+ *
+ * THAT SENTENCE USED TO READ *EVERY READ THAT SERVES THE RECORD ASKS IT*, AND ITS UNIVERSE
+ * DID NOT CONTAIN THE CONSOLE. The claim was total inside the set the guard defines — how
+ * this package opens a PROJECTION CACHE — and `packages/code/src/repl/` opens none. It
+ * serves the record all the same: a verdict in its opening panel, the proven level in the
+ * corner of every frame, and what another process appended while the page was up. It
+ * reaches the chain directly instead, so it was outside the sweep without being excused,
+ * and the corner went on saying `fully-signed` in the frame whose body printed `seq gap`.
+ * The guard has a second discriminant now — the ways this package reads the chain with no
+ * cache in between — and the console answers it with the only reading a surface that holds
+ * no cache can afford: whether the record has moved past what was ruled on
+ * (`repl/proving.ts`). This function is still the answer for every door that HAS a cache,
+ * which is what the narrowed sentence above says and all it says.
  *
  * IT USED TO BE TWO READS, AND THE REASON RECORDED FOR STOPPING THERE WAS MEASURED AND
  * FALSE. This doc said making it total *"means an output port at a door that today has

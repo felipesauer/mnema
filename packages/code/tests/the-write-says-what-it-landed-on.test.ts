@@ -289,13 +289,18 @@ describe('over a record that does not chain, every write says so', () => {
 
 describe('a session that only writes', () => {
   /**
-   * THE MEASURED LIMIT OF THIS DELIVERY, asserted so that it cannot drift into a belief.
+   * THE FIRST OF TWO MEASURED LIMITS ON THIS DOOR, asserted so that it cannot drift into a
+   * belief.
    *
    * `sessionLinkBreaks` answers about the caches this connection has OPENED, and a write
    * opens none: `writeContext` calls `caches.invalidate`, which is a no-op for a root
-   * with no cache yet. So a connection whose FIRST call is a write is told nothing, and
-   * closing that would mean opening (and replaying) the written tree on every write —
-   * the exact cost `CacheRegistry.opened` exists to avoid.
+   * with no cache yet. So a connection whose FIRST call is a write is told nothing.
+   *
+   * CLOSING IT MEANS OPENING, AND OPENING REPLAYS: 6.4 ms over a 197 KB record (210
+   * entries), 38.0 ms over 1.9 MB (2 010) and 176.8 ms over 9.4 MB (6 297) — linear in the
+   * history, charged to the first write of every connection, and worst where the record is
+   * biggest. Against a public that has not appeared: of 588 real sessions swept on this
+   * machine, none opened with a write.
    *
    * It is asserted rather than left implicit for the reason the bench gives for every
    * declared limit: a limit nobody wrote down is a limit somebody later mistakes for
@@ -344,10 +349,28 @@ describe('a break that appears while this session is up', () => {
    * WHAT IS FIXED IS THE READING, and this case now holds the asymmetry that leaves.
    * The next READ on the live connection is told, because a read refreshes the caches
    * it composes and the duplicate is now an arrival that does not chain. The write is
-   * NOT, and that is not the same limit as `a session that only writes` below: this
+   * NOT, and that is not the same limit as `a session that only writes` above: this
    * connection HAS a cache. A write never refreshes one — it marks the tree stale and
    * answers from what the last read knew — so the fact reaches it one call later.
-   * Closing that is a cost decision about every write, not a reading defect.
+   *
+   * THE SECOND MEASURED LIMIT, AND THE COST DECISION IT DEFERRED TO HAS NOW BEEN COSTED.
+   * A study put it at ~0.14 ms and constant, and that number is the price of a catch-up
+   * over a tail that did NOT move — the early return — not of the path a write is on. It
+   * was built and measured on the pair a session performs, alternated order, base-against-
+   * base ruler of 0.02-0.46 ms: a catch-up on the write door is ~2.5 ms over a 60-entry
+   * record and ~4.3 ms over a 400-entry one, and five writes then a read comes to +12.7 ms
+   * and +21.3 ms — because the reader pays ONE catch-up where this pays five, which is the
+   * promise at the foot of `mcp/cache-registry.ts`'s opening note broken outright. It grows
+   * with the record. So it stays open, and the number is in `mcp/tools.ts` beside the other
+   * bound, with the constant-price shape that would close it: reading the arrivals without
+   * ADVANCING the projections is 0.446 ms and identical at 60 and 400 entries, against
+   * 1.96 ms and 4.78 ms for the whole refresh.
+   *
+   * A CHEAPER VARIANT WAS TRIED AND IS WRONG, which is worth the line because it looks
+   * right: catching up only on movement this connection did NOT cause — comparing against
+   * the extent recorded when its own append landed — costs two `chainExtent`s and cannot
+   * see THIS case at all. The break here is planted BEFORE the write, so the extent written
+   * down at the append already contains it and the comparison finds nothing moved.
    */
   it('reaches the next read of the live connection, and the write one call later', async () => {
     const client = await connect();

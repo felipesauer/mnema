@@ -443,7 +443,7 @@ describe("the console's own rows are composed to fit, so the fold leaves them", 
 
   it('leaves the badge alone at every width it would be drawn at', () => {
     for (const level of ['fully-signed', 'hash-chain-only', 'broken'] as const) {
-      const badge = badgeLine(level);
+      const badge = badgeLine(level, 'the-whole-record');
       for (const columns of ORDINARY_TERMINALS) {
         if (widthOf(badge) > columns) continue;
         expect(foldedAt(columns, renderStyled)(badge), `${columns} ${level}`).toBe(
@@ -456,7 +456,7 @@ describe("the console's own rows are composed to fit, so the fold leaves them", 
   it('read something: the chrome it walked is not empty', () => {
     // The vacuous form of the two cases above is a `continue` on every iteration.
     expect(widthOf(tips())).toBeGreaterThan(20);
-    expect(widthOf(badgeLine('fully-signed'))).toBeGreaterThan(0);
+    expect(widthOf(badgeLine('fully-signed', 'the-whole-record'))).toBeGreaterThan(0);
   });
 });
 

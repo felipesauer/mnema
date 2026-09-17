@@ -41,7 +41,7 @@ import type { ProvenLevel } from '@mnema/chain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
 import { runVerify } from '../src/commands/verify.js';
-import { SEVERITIES, type Severity } from '../src/presentation/line.js';
+import { type Line, SEVERITIES, type Severity } from '../src/presentation/line.js';
 import { renderPlain, widthOf } from '../src/presentation/plain.js';
 import { renderStyled } from '../src/presentation/styled.js';
 import { statement } from '../src/presentation/verdict.js';
@@ -175,7 +175,7 @@ afterAll(() => {
  */
 const showingEverything = {
   columns: 200,
-  badge: widthOf(badgeLine('fully-signed')),
+  badge: widthOf(badgeLine('fully-signed', 'the-whole-record')),
   hint: widthOf(tips()),
   palette: 0,
   // NOTHING ABOVE THE AREA, and the field it fills is not the field it used to. It was the
@@ -502,6 +502,15 @@ describe('the badge says what the record proved, and the verb that says the rest
     }
   }, 120_000);
 
+  /**
+   * The severity a composed row carries, read off the LINE rather than off its bytes.
+   *
+   * A hue is what a renderer makes of a severity, so asking the bytes would be asking the
+   * renderer a question about the composer. The badge is one part, which is what makes
+   * `parts[0]` the whole answer rather than a first of several.
+   */
+  const severityOf = (line: Line): Severity | undefined => line.parts[0]?.severity;
+
   it('carries the hue its level reads as, in each of the three outcomes', () => {
     // THIS CASE USED TO ASSERT THE OPPOSITE — that the badge carries no style at all —
     // and it is renamed rather than edited, because a conserto that inverts an observable
@@ -528,7 +537,7 @@ describe('the badge says what the record proved, and the verb that says the rest
     }
 
     for (const level of OUTCOMES) {
-      const painted = renderStyled(badgeLine(level));
+      const painted = renderStyled(badgeLine(level, 'the-whole-record'));
       // THE PROMISE: the badge is wrapped in the hue its own level reads as.
       for (const hue of hueOf(levelSeverity(level))) expect(painted, level).toContain(hue);
       // And in no other outcome's, so a badge that painted everything red would be red.
@@ -539,8 +548,44 @@ describe('the badge says what the record proved, and the verb that says the rest
       // AND THE WORDS ARE UNTOUCHED, which is the half of the old premise that survived as
       // a fact: strip the escapes and it is the plain badge, byte for byte. The hue never
       // carries anything the words do not already say.
-      expect(withoutSgr(painted), level).toBe(renderPlain(badgeLine(level)));
+      expect(withoutSgr(painted), level).toBe(renderPlain(badgeLine(level, 'the-whole-record')));
     }
+  });
+
+  it('and stops carrying good news once its level has stopped covering the record', () => {
+    // THE HUE OF THE OTHER FORM, AND IT IS A CASE BECAUSE A MUTATION FOUND NOTHING. Taking
+    // the caution out of `badgeLine` — leaving the degraded row painted by its level alone
+    // — left 57 cases green across the three files that read this row. A corner that says
+    // `fully-signed as this opened` in the green a reader takes for *nothing to look at* is
+    // the failure the whole delivery is named after, wearing one extra clause.
+    //
+    // THE RULE IS NOT THIS FILE'S AND IS NOT WRITTEN DOWN HERE. `levelSeverity` still says
+    // how a LEVEL reads as news; what the row adds is that a stretch nothing ruled on is not
+    // good news, which is the rung the scale already gives `hash-chain-only`. So the
+    // assertion is against the scale's own order rather than against a colour.
+    const GOOD = 'good';
+    for (const level of OUTCOMES) {
+      const covered = levelSeverity(level);
+      const moved = severityOf(badgeLine(level, 'the-record-as-it-opened'));
+      // NEVER BETTER NEWS THAN THE LEVEL ITSELF: a record ruled `broken` that then moved is
+      // still broken, and a caution painted over red would be this row talking a verdict
+      // down.
+      expect(SEVERITIES.indexOf(moved), level).toBeGreaterThanOrEqual(SEVERITIES.indexOf(covered));
+      // AND NEVER THE GREEN a reader reads as nothing to look at.
+      expect(moved, level).not.toBe(GOOD);
+      // NOT VACUOUS: over a level that still covers the record, the row is exactly what the
+      // one table says and this case is not asserting a constant.
+      expect(severityOf(badgeLine(level, 'the-whole-record')), level).toBe(covered);
+    }
+    // AND THE READING REALLY DISCRIMINATES: at least one level is painted differently by
+    // the two forms, or the loop above would pass over a badge with no second form at all.
+    expect(
+      OUTCOMES.filter(
+        (level) =>
+          severityOf(badgeLine(level, 'the-record-as-it-opened')) !==
+          severityOf(badgeLine(level, 'the-whole-record')),
+      ).length,
+    ).toBeGreaterThan(0);
   });
 
   it('carries it on the page too, at the level this record is at', async () => {
@@ -569,7 +614,7 @@ describe('the badge says what the record proved, and the verb that says the rest
     // Not vacuous: the level this fixture is at really has a hue to carry, and the row
     // still says the same words a pipe would have received.
     expect(hueOf(levelSeverity(foldedLevel())).length).toBeGreaterThan(0);
-    expect(withoutSgr(row).trim()).toBe(renderPlain(badgeLine(foldedLevel())));
+    expect(withoutSgr(row).trim()).toBe(renderPlain(badgeLine(foldedLevel(), 'the-whole-record')));
   }, 120_000);
 });
 

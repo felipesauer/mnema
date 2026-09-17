@@ -649,7 +649,7 @@ describe('the frame is composed for a size the device really answered with', () 
       renderingAt: () => renderPlain,
       tips: { text: '', width: 0 },
       picking: fact('nothing to pick'),
-      badge: { text: '', width: 0 },
+      badge: () => ({ text: '', width: 0 }),
       openingFor: (columns, rows) => {
         composed.push([columns, rows]);
         return { panel: undefined, lines: [], rows: 0, above: 0 };
