@@ -612,6 +612,114 @@ It reports **where**, never **what** — the id, the kind, the tree, the instant
 and the class. Printing the value would move the credential into your terminal
 scrollback and your CI log, so the report has no field that could hold one.
 
+### The decisions you already wrote
+
+Your project probably decided things before it had a record, and wrote them down.
+`mnema decision import` reads a directory of decision documents and **proposes** each
+one. Nothing is accepted on your behalf: every proposal is born `proposed`, whatever
+the file says its status is, and you rule on it with `decision move accept`.
+
+Run it without `--write` first. Nothing is written, and the plan tells you what the
+door made of every file:
+
+```sh
+mnema decision import docs/decisions
+#> 3 proposal(s), 1 refused — nothing written. Add --write to record them.
+```
+
+**The shape it reads is two things.** A level-1 title, and a why: either a `## Context`
+section (`## Contexto` is read too) or prose directly under the title. Everything else
+— the status, the alternatives — is read when it is there and absent when it is not.
+This is the smallest file that goes in:
+
+```md
+# Store timestamps in UTC
+
+## Context
+
+Three services send us times in three zones and the comparisons were wrong.
+```
+
+**What it will not read, and what it cannot tell.** A file with no title, or with no
+prose it can read as a why, is refused BY NAME with the reason beside it — a rule like
+`---` under the header is punctuation, not a reason, and is refused as one. But a file
+this CAN read is proposed even when it is no decision: an index page, a roadmap and a
+`DECISIONS.md` holding a hundred rows all have a title and prose under it, and no fact
+of the document separates them from a decision. That is why nothing is accepted for
+you, and why the dry run above is worth reading before you add `--write`.
+
+#### If your decisions are in one file
+
+The door takes one decision per file, and it will not learn your table — a generic
+table reader would still need you to declare which column is the title, which holds
+the why, and which section of the file is history rather than agenda. Declaring all
+that is writing the converter, in a worse language. So write the converter: it is
+about thirty lines, it runs once, and what it produces is checked by the dry run
+above.
+
+<!-- BEGIN converter -->
+```js
+// convert-decisions.mjs — one decision document per row of a markdown table.
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+// EDIT THESE THREE. Nothing can work them out for you, which is the whole reason
+// this is a script you own rather than a flag on a verb.
+const SOURCE = 'DECISIONS.md'; // the file holding the table
+const OUT = 'docs/decisions'; // where the one-per-file documents go
+const COLUMN = { title: 1, rationale: 2 }; // which column is which, counting from 0
+
+const cells = (line) =>
+  line
+    .split('|')
+    .slice(1, -1)
+    .map((cell) => cell.trim());
+const says = (text) => /[\p{L}\p{N}]/u.test(text ?? '');
+
+const rows = readFileSync(SOURCE, 'utf8')
+  .split('\n')
+  .filter((line) => line.trimStart().startsWith('|'))
+  .map(cells)
+  .filter((row) => !row.every((cell) => /^:?-+:?$/.test(cell))); // the separator row
+
+mkdirSync(OUT, { recursive: true });
+let n = 0;
+for (const row of rows.slice(1)) {
+  // The first row is the header.
+  const title = row[COLUMN.title];
+  const rationale = row[COLUMN.rationale];
+  // A row with no word in either cell is not a decision, and the import would refuse
+  // it by name anyway — better to know that here, where you can look at the row.
+  if (!says(title) || !says(rationale)) continue;
+  n += 1;
+  const slug = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 60);
+  const at = join(OUT, `${String(n).padStart(4, '0')}-${slug || 'decision'}.md`);
+  writeFileSync(at, `# ${title}\n\n## Context\n\n${rationale}\n`);
+}
+console.log(`${n} document(s) in ${OUT}, from ${rows.length - 1} row(s) of ${SOURCE}`);
+```
+<!-- END converter -->
+
+Then look at what it wrote, and let the dry run rule on it before anything is
+recorded:
+
+```sh
+node convert-decisions.mjs
+#> 111 document(s) in docs/decisions, from 118 row(s) of DECISIONS.md
+
+mnema decision import docs/decisions
+#> 111 proposal(s), 0 refused — nothing written. Add --write to record them.
+```
+
+**Read the refusals before you write.** A count of proposals with refusals beside it is
+the only check there is that your column mapping was right: a table whose `rationale`
+column is really a link column converts cleanly and proposes 111 decisions whose why is
+a URL. The dry run cannot catch that. You can, by opening two of the files it wrote.
+
 ### Handing the record to an agent that never asked for it
 
 Reading the record is something an agent has to think of doing. A markdown file at
