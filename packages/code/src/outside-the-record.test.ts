@@ -1,13 +1,17 @@
 /**
- * THE DOCUMENTS THIS CHECKOUT HOLDS THAT THE RECORD HAS NO DECISION FOR.
+ * THE TWO READINGS OF THIS CHECKOUT'S DECISION DOCUMENTS — drift, and arrival.
  *
- * The end-to-end half — that `mnema status` prints the section, and that it is absent
- * when there is nothing to say — is `tests/where-things-stand.test.ts`, beside the
- * contrast case that makes it mean something. What is here is the reading's OWN rules,
- * and each of them is a way the answer can be wrong while looking right:
+ * The end-to-end half — that `mnema status` prints each section, and that each is absent
+ * when it has nothing to say — is `tests/where-things-stand.test.ts`, beside the
+ * contrast cases that make them mean something. What is here is each reading's OWN rules,
+ * and each of them is a way the answer can be wrong while looking right.
+ *
+ * `decisionsOutsideTheRecord` — DRIFT, in a base the record already names:
  *
  *   - THE DIRECTORIES COME OUT OF THE RECORD and are never guessed. A base nobody
- *     imported from is a base this says nothing about, whatever the repository holds.
+ *     imported from is a base this reading says nothing about, whatever the repository
+ *     holds — and that is unchanged by the second reading below, which is a separate
+ *     answer under a separate heading rather than a widening of this one.
  *   - EVERY TREE IS READ. A file imported into the private tree is imported, and
  *     reporting it as outside would send somebody to import it twice.
  *   - A `derived-from` TARGET IS WHATEVER SOMEBODY TYPED. The relation is open and
@@ -29,7 +33,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runDecisionImport } from './commands/decision-import.js';
 import { runInit } from './commands/init.js';
 import { runLink } from './commands/link.js';
-import { decisionsOutsideTheRecord } from './outside-the-record.js';
+import { basesNeverImported, decisionsOutsideTheRecord } from './outside-the-record.js';
 import { withScopedCaches } from './tree-sources.js';
 
 let sandbox: string;
@@ -65,6 +69,12 @@ function adr(repo: string, path: string, title: string): void {
 function outside(repo: string, env: DiscoveryEnv) {
   const trees = resolveTrees(repo, env);
   return withScopedCaches(trees, (sources) => decisionsOutsideTheRecord(sources, repo));
+}
+
+/** The second reading, over the same trees — the shape `runStatus` takes for it. */
+function neverImported(repo: string, env: DiscoveryEnv) {
+  const trees = resolveTrees(repo, env);
+  return withScopedCaches(trees, (sources) => basesNeverImported(sources, repo));
 }
 
 describe('which decision documents this checkout holds that the record has none for', () => {
@@ -230,5 +240,123 @@ describe('which decision documents this checkout holds that the record has none 
       { directory: 'adr', outside: 1 },
       { directory: 'docs/decisions', outside: 2 },
     ]);
+  });
+});
+
+/**
+ * `basesNeverImported` — ARRIVAL, in a repository where the gesture was never made.
+ *
+ * WHAT IT IS ALLOWED TO DO, which is the one thing the reading above is not: NAME
+ * directories nobody pointed it at. Every case here is about the edge of that permission,
+ * because a reading that names directories is a reading that can name a wrong one.
+ *
+ *   - IT NAMES ONLY WHAT A PUBLISHED TOOL CREATES. A directory this project invented, or
+ *     somebody else did, is a directory this says nothing about — including THIS bench's
+ *     own `.refactor/decisions`, which is the entry a reader of the source would most
+ *     expect to find and the one that must not be there.
+ *   - IT NEVER NAMES A BASE THE RECORD READS. One directory in two sections is one fact
+ *     worded twice, and the weaker wording would be this one.
+ *   - IT COUNTS BY FILE NAME and opens nothing, which is what makes it cost a `readdirSync`
+ *     rather than an import — so a base's furniture is not counted and its contents are
+ *     not judged.
+ */
+describe('which conventional decision bases this checkout holds that the record never read', () => {
+  it('names a conventional base nobody imported, with what a person would see in it', () => {
+    const { repo, env } = setup();
+    adr(repo, 'docs/decisions/0001-utc.md', 'Use UTC everywhere');
+    adr(repo, 'docs/decisions/0002-ids.md', 'Mint ids as uuidv7');
+    expect(neverImported(repo, env)).toEqual([{ directory: 'docs/decisions', documents: 2 }]);
+    // And the drift reading stays silent about the same directory, which is the division
+    // of labour rather than a coincidence.
+    expect(outside(repo, env)).toEqual([]);
+  });
+
+  it('says nothing about a directory no published tool creates', () => {
+    const { repo, env } = setup();
+    adr(repo, 'decisions/0001-utc.md', 'Use UTC everywhere');
+    adr(repo, 'notes/adr/0001-ids.md', 'Mint ids as uuidv7');
+    adr(repo, '.plan/decisions/0001-zones.md', 'Store zones as IANA names');
+    expect(neverImported(repo, env)).toEqual([]);
+    // NOT VACUOUS: the same document under a conventional name IS named, so the silence
+    // above is about where it sits.
+    adr(repo, 'docs/adr/0001-utc.md', 'Use UTC everywhere');
+    expect(neverImported(repo, env)).toEqual([{ directory: 'docs/adr', documents: 1 }]);
+  });
+
+  it("says nothing about THIS bench's own convention, which is not the market's", () => {
+    // `.refactor/decisions` is where this repository keeps its decisions, and it holds 82
+    // of them. Shipping it as a candidate would put a fact about how this product is built
+    // into what the product says to everybody else, which is a rule of this workspace and
+    // not a matter of taste. It is asserted here because the source is the only other
+    // place it is written, and a list is exactly the thing somebody extends in passing.
+    const { repo, env } = setup();
+    adr(repo, '.refactor/decisions/0001-utc.md', 'Use UTC everywhere');
+    adr(repo, '.mnema/decisions/0001-ids.md', 'Mint ids as uuidv7');
+    expect(neverImported(repo, env)).toEqual([]);
+  });
+
+  it('names every one of the five, so none of them is a row that never matches', () => {
+    // The list is five strings in a source file and nothing else reads them. A row spelled
+    // with a leading slash, a backslash or a stray space would be a row that matches no
+    // directory ever, and every other case here would stay green.
+    const { repo, env } = setup();
+    for (const [at, title] of [
+      ['adr', 'Bare at the root'],
+      ['doc/adr', 'The adr-tools default'],
+      ['docs/adr', 'The log4brains default'],
+      ['docs/architecture/decisions', 'The spelling Nygard put about'],
+      ['docs/decisions', 'The MADR default'],
+    ] as const) {
+      adr(repo, `${at}/0001-d.md`, title);
+    }
+    expect(neverImported(repo, env)).toEqual([
+      { directory: 'adr', documents: 1 },
+      { directory: 'doc/adr', documents: 1 },
+      { directory: 'docs/adr', documents: 1 },
+      { directory: 'docs/architecture/decisions', documents: 1 },
+      { directory: 'docs/decisions', documents: 1 },
+    ]);
+  });
+
+  it('drops a base the record already reads, whatever is left in it', () => {
+    const { repo, env } = setup();
+    adr(repo, 'docs/decisions/0001-utc.md', 'Use UTC everywhere');
+    adr(repo, 'docs/adr/0001-ids.md', 'Mint ids as uuidv7');
+    runDecisionImport({ cwd: repo, env }, { from: 'docs/decisions', write: true });
+    // The imported one moves out of this reading entirely — including the documents added
+    // to it afterwards, which are the OTHER reading's subject and are reported there.
+    adr(repo, 'docs/decisions/0002-zones.md', 'Store zones as IANA names');
+    expect(neverImported(repo, env)).toEqual([{ directory: 'docs/adr', documents: 1 }]);
+    expect(outside(repo, env)).toEqual([{ directory: 'docs/decisions', outside: 1 }]);
+  });
+
+  it('counts by file name, so a base holding only its own furniture says nothing', () => {
+    const { repo, env } = setup();
+    // The names `adrFileNames` excludes: the index page and the template every tool drops
+    // beside the records. A base holding nothing else has no fact to report.
+    adr(repo, 'docs/adr/README.md', 'The decisions of this project');
+    adr(repo, 'docs/adr/template.md', 'Short title of solved problem and solution');
+    writeFileSync(join(repo, 'docs', 'adr', 'notes.txt'), 'not markdown\n');
+    expect(neverImported(repo, env)).toEqual([]);
+    // NOT VACUOUS: one real document beside them, and it is one document and not three.
+    adr(repo, 'docs/adr/0001-utc.md', 'Use UTC everywhere');
+    expect(neverImported(repo, env)).toEqual([{ directory: 'docs/adr', documents: 1 }]);
+  });
+
+  it('opens no file, so a document it could never propose is still counted', () => {
+    // The count is what a person would see on opening the directory, deliberately, and not
+    // what the import would accept. This document is refused by the reader — it states no
+    // why — and the line still names it, because a person who opens `docs/adr` sees a file
+    // there and a count that skipped it would be a count they cannot reconcile.
+    const { repo, env } = setup();
+    mkdirSync(join(repo, 'docs', 'adr'), { recursive: true });
+    writeFileSync(
+      join(repo, 'docs', 'adr', '0001-no-why.md'),
+      '# Use UTC\n\n## Consequences\n\nclocks agree\n',
+    );
+    expect(neverImported(repo, env)).toEqual([{ directory: 'docs/adr', documents: 1 }]);
+    // And `adrFileNames` is the one function both readings ask, so the two agree on what a
+    // document is: the drift reading counts the same file the same way.
+    expect(adrFileNames(join(repo, 'docs', 'adr'))).toEqual(['0001-no-why.md']);
   });
 });

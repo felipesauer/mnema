@@ -940,8 +940,10 @@ $ mnema decision import --help
 | with a note, through `decision move accept`.
 |
 | One decision per file, a level-1 title and named `##` sections — the Nygard and
-| MADR shape. A file that is not that shape is refused by name, never guessed at.
-| Nothing here calls a model.
+| MADR shape. A file this cannot read that way is refused by name. A file it CAN
+| is proposed — including one that is no decision at all: an index page or a
+| roadmap wears the same shape, and no fact of the document separates them. That
+| is why nothing is accepted on your behalf. Nothing here calls a model.
 |
 | What recording means here:
 |   Permanent — mnema is append-only and nothing deletes a fact. A public record

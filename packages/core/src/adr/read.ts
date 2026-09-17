@@ -21,9 +21,24 @@
  * frontmatter, headings in `#`. This reads ONE: **one decision per file, a level-1
  * title, and named `##` sections** — Nygard's original shape and MADR's, which is
  * what `adr-tools` and `log4brains` generate and what every published template
- * describes. A document that is not that shape is REFUSED BY NAME, never guessed
- * at: a wrong proposal costs a person's attention, which is the one thing this
- * whole slice exists to spend carefully.
+ * describes. A document this cannot read that way is REFUSED BY NAME: a wrong
+ * proposal costs a person's attention, which is the one thing this whole slice
+ * exists to spend carefully.
+ *
+ * THAT PARAGRAPH SAID *"never guessed at"* AND IT WAS FALSE, so it says what it can
+ * stand behind instead. The claim it made was about the OTHER direction: not that a
+ * file this refuses is named, which is true and tested, but that a file this accepts
+ * is a decision — which nothing here can know. Measured against a real bench
+ * directory: five INDEX pages (`ROADMAP.md`, `DECISIONS.md`, `SURFACE.md` and two
+ * more) were read as five decisions, and a markdown table holding 416 decisions
+ * entered as ONE, titled *"Registro de decisões da reconstrução"*, with its opening
+ * paragraph as the reason. An index page HAS a level-1 title and HAS prose under it;
+ * there is no fact of the document that separates it from a decision, and refusing by
+ * FILE NAME is what `NOT_A_DECISION` in `scan.ts` already does for the names a
+ * tool generates — it cannot cover names a project invents. So the limit is stated
+ * rather than closed, and the product's answer to it is structural and not a guess:
+ * an imported decision is born `proposed` and a PERSON rules on it. Nothing here is
+ * accepted on anybody's behalf.
  *
  * THE SECTION LABELS ARE READ IN TWO LANGUAGES, and that is a measurement and not
  * a preference. Of the 227 real decision documents this project has to hand, 223
@@ -149,6 +164,45 @@ export const RETIRED_STATUSES: readonly string[] = [
 ];
 
 /**
+ * Whether a run of text STATES something — whether one character of it is a letter or
+ * a digit in any script.
+ *
+ * WHAT IT IS FOR, AND THE MEASUREMENT THAT PUT IT HERE. Every field this module reads is
+ * a field somebody has to READ: the title names the decision in a citation, the rationale
+ * is the why the record exists to hold, the status is reported back in the word its author
+ * wrote. Asking only whether such a field is a non-empty STRING answers a question about
+ * storage, not about language — and the corpus says the difference is not hypothetical.
+ * Pointed at this project's own 82 decision documents, the reader accepted 53 of them and
+ * gave 48 the rationale `"---"`: the markdown rule under a document's header block, read as
+ * its reason. The guard against a missing rationale was proved against ABSENCE and blind to
+ * PUNCTUATION, and three characters walked past it.
+ *
+ * IT IS A FACT OF THE LANGUAGE AND NOT A LIST OF TODAY'S OFFENDERS. A table of strings that
+ * do not count — `---`, `***`, `___`, a lone `*`, a `|` — is a table that is wrong the first
+ * time somebody's template writes a rule some other way, and is a table nobody remembers to
+ * extend. `\p{L}` and `\p{N}` say the thing itself: a reason with no word in it is not a
+ * reason in any language, and one word in any script is enough. Markdown's own furniture —
+ * rules, emphasis, pipes, quotes, bullets — carries no letter and no digit by construction,
+ * so it falls out rather than being listed.
+ *
+ * WHERE IT IS ASKED is every place this module used to decide a field was THERE by comparing
+ * it with the empty string: the title, the frontmatter's values, a `##` section's body (which
+ * is how the context, the alternatives and the status section all arrive), the lead, and the
+ * two remaining places a status can be written. Six call sites, ONE function — six spellings
+ * of "is this empty" is the shape that produces a reader which refuses `---` in one field and
+ * takes it in another. `read.test.ts` ("nothing a document writes as punctuation is read as a
+ * field") holds one case per field plus a structural case that fails when a new point asks the
+ * old question: no comparison against the empty string survives in this module.
+ *
+ * WHAT IT DOES NOT DO, said out loud: it does not judge whether the words are a GOOD reason.
+ * `n/a` has two letters and is proposed, and that is right — a person rules on a proposal,
+ * and this reader has no business ruling on prose. It rules only that there is prose.
+ */
+function statesSomething(text: string): boolean {
+  return /[\p{L}\p{N}]/u.test(text);
+}
+
+/**
  * Lowercases, strips accents and drops everything that is not a letter, a digit or
  * a single separating space — so `**Contexto**`, `Contexto e Problema` and
  * `CONTEXT AND PROBLEM STATEMENT` all reduce to a key the tables above hold.
@@ -211,7 +265,7 @@ function frontmatter(text: string): ReadonlyMap<string, string> {
     const match = /^([A-Za-z][\w-]*)\s*:\s*(.*)$/.exec(line);
     if (match === null) continue;
     const value = (match[2] as string).trim().replace(/^["']|["']$/g, '');
-    if (value !== '') pairs.set(normalizeLabel(match[1] as string), value);
+    if (statesSomething(value)) pairs.set(normalizeLabel(match[1] as string), value);
   }
   return pairs;
 }
@@ -289,7 +343,7 @@ function split(text: string): { readonly lead: string; readonly sections: readon
 /** The body of the first section whose label is in `labels`, or undefined. */
 function sectionBody(sections: readonly Section[], labels: readonly string[]): string | undefined {
   const found = sections.find((section) => labels.includes(section.label));
-  return found !== undefined && found.body !== '' ? found.body : undefined;
+  return found !== undefined && statesSomething(found.body) ? found.body : undefined;
 }
 
 /**
@@ -301,21 +355,36 @@ function sectionBody(sections: readonly Section[], labels: readonly string[]): s
  * line in the header block (`- **Status:** aceito`, and the inline `·`-separated
  * form). The first one found wins; a document that contradicts itself across two
  * of them is a document whose author has a problem this reader cannot solve.
+ *
+ * THE THIRD READING REQUIRES THE COLON, and that is a correction the corpus made. It
+ * read the word in bold with the colon OPTIONAL on both sides, so any occurrence of
+ * `**status**` or `**estado**` anywhere before the first `##` became the document's
+ * status — including in a sentence. Measured, case and control differing only by the
+ * asterisks: *"O **estado** rejeitado do banco antigo nos custou duas migrações"*
+ * yielded `status: "rejeitado do banco antigo…"`, which {@link adrIsInForce} reads as
+ * retired, so the whole document was dropped as `RETIRED` — a policy refusal, reported
+ * to a person as *"the document says it is no longer in force"* about a document that
+ * says nothing of the kind. Without the asterisks the same sentence proposed the
+ * decision. **A LABEL ENDS IN A COLON; emphasis does not**, and the two spellings this
+ * accepts (`**Status:**` and `**Status**:`) are exactly the two {@link isMetadataLine}
+ * already calls a metadata line, so the two readings of "this line carries a label"
+ * agree by construction. `read.test.ts` ("a bold word in prose is not a status label")
+ * holds the case and its control.
  */
 function statusOf(text: string, sections: readonly Section[]): string | undefined {
   const front = frontmatter(text).get('status');
   if (front !== undefined) return front;
   const section = sectionBody(sections, STATUS_LABELS);
   if (section !== undefined) {
-    const firstLine = section.split('\n').find((line) => line.trim() !== '');
+    const firstLine = section.split('\n').find((line) => statesSomething(line));
     if (firstLine !== undefined) return firstLine.replace(/[*_`]/g, '').trim();
   }
   for (const line of withoutFrontmatter(text).split('\n')) {
     if (/^##\s+/.test(line)) break;
-    const match = /\*\*\s*(status|estado)\s*:?\s*\*\*\s*:?\s*([^·|]+)/i.exec(line);
+    const match = /\*\*\s*(?:status|estado)\s*(?::\s*\*\*|\*\*\s*:)\s*([^·|]+)/i.exec(line);
     if (match !== null) {
-      const value = (match[2] as string).replace(/[*_`]/g, '').trim();
-      if (value !== '') return value;
+      const value = (match[1] as string).replace(/[*_`]/g, '').trim();
+      if (statesSomething(value)) return value;
     }
   }
   return undefined;
@@ -363,9 +432,10 @@ export function readAdr(text: string): AdrRead | AdrRefused {
   const rawTitle = heading !== null ? (heading[1] as string) : frontmatter(text).get('title');
   if (rawTitle === undefined) return { ok: false, code: 'NO_TITLE' };
   const title = stripAdrNumbering(rawTitle.replace(/\*/g, '').trim());
-  if (title === '') return { ok: false, code: 'NO_TITLE' };
+  if (!statesSomething(title)) return { ok: false, code: 'NO_TITLE' };
 
-  const rationale = sectionBody(sections, CONTEXT_LABELS) ?? (lead !== '' ? lead : undefined);
+  const rationale =
+    sectionBody(sections, CONTEXT_LABELS) ?? (statesSomething(lead) ? lead : undefined);
   if (rationale === undefined) return { ok: false, code: 'NO_RATIONALE' };
 
   const alternatives = sectionBody(sections, ALTERNATIVE_LABELS);

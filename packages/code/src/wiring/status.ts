@@ -53,10 +53,11 @@ export function registerStatus(program: Command, wiring: Wiring): Declared {
           render,
           result.status,
           anchorText(result.anchors, result.status.resume.actor),
-          // The one fact on this screen that is not the derivation's: it is read from
-          // the disk and is deliberately not in `--json`, which serves the opening
-          // context byte for byte and nothing else (`commands/status.ts`).
+          // The two facts on this screen that are not the derivation's: both are read
+          // from the disk and neither is in `--json`, which serves the opening context
+          // byte for byte and nothing else (`commands/status.ts`).
           result.outside,
+          result.neverImported,
         ),
       );
     });

@@ -448,12 +448,18 @@ describe('mnema status — the opening read, over a record that reaches every ce
     expect(JSON.stringify(served)).not.toContain('docs/decisions');
   }, 30_000);
 
-  it('says nothing about bases the record never named — it guesses no directory', async () => {
-    // `scanAdrDirectory`'s own rule kept: the caller names the base and the product
-    // never picks one. The directories this reading reports come out of the RECORD —
-    // the `derived-from` edge every imported decision carries — so a repository full of
-    // decision documents that were never imported is a repository this says nothing
-    // about. Silence is the right answer, not a special case.
+  it('reports a base the record never named as ARRIVAL, under its own heading', async () => {
+    // THIS CASE ASSERTED THE OPPOSITE AND WAS NAMED FOR IT: *"says nothing about bases the
+    // record never named — it guesses no directory"*. What it really held was that
+    // `Not in the record:` stays silent, which is still true, so it would have gone on
+    // passing over the whole of the section below — green, and blind, for the one change
+    // that made its own title false. It is rewritten to hold BOTH halves.
+    //
+    // The doctrine it cited is unchanged where it was written: `decisionsOutsideTheRecord`
+    // still names no directory of its own, and the drift section below is still silent
+    // about a base nobody imported. What is new is a second reading that DOES name
+    // directories — five a published ADR tool creates — and it proposes nothing: it
+    // counts file names and prints the verb. The argument is in `outside-the-record.ts`.
     const initiated = await mnema('init');
     const identity = initiated.find((line) => line.trim().startsWith('identity:')) as string;
     const anchor = identity.trim().slice('identity:'.length).trim();
@@ -462,16 +468,69 @@ describe('mnema status — the opening read, over a record that reaches every ce
     writeFileSync(join(base, '0001-utc.md'), adr('Use UTC everywhere', 'the zone drifts'));
     writeFileSync(join(base, '0002-ids.md'), adr('Mint ids as uuidv7', 'they sort'));
 
-    expect((await mnema('status', '--actor', anchor)).join('\n')).not.toContain(
-      'Not in the record:',
-    );
-    // NOT VACUOUS: the same two files DO get reported once the record names the base,
-    // so the silence above is about the record having never been pointed at it.
+    const never = (await mnema('status', '--actor', anchor)).join('\n');
+    // The drift section stays silent: its directories come out of the record, and the
+    // record names none.
+    expect(never).not.toContain('Not in the record:');
+    // And the arrival section speaks, with the count and the verb that reaches it.
+    expect(never).toContain('Never imported:');
+    expect(never).toContain('docs/decisions (2) — mnema decision import docs/decisions');
+
+    // ONCE THE GESTURE IS MADE THE TWO SWAP, and neither reports the directory twice:
+    // arrival is over, drift begins.
     await mnema('decision', 'import', 'docs/decisions', '--write');
     writeFileSync(join(base, '0003-retries.md'), adr('Retry three times', 'the budget is three'));
-    expect((await mnema('status', '--actor', anchor)).join('\n')).toContain(
-      'docs/decisions (1) — mnema decision import docs/decisions',
+    const after = (await mnema('status', '--actor', anchor)).join('\n');
+    expect(after).not.toContain('Never imported:');
+    expect(after).toContain('docs/decisions (1) — mnema decision import docs/decisions');
+  }, 30_000);
+
+  it('says nothing at all where no conventional base exists — the other half', async () => {
+    // The half a section that only ever speaks would pass without. A repository with no
+    // decision documents anywhere gets neither heading, and `No decisions in force` is the
+    // whole honest answer.
+    const initiated = await mnema('init');
+    const identity = initiated.find((line) => line.trim().startsWith('identity:')) as string;
+    const anchor = identity.trim().slice('identity:'.length).trim();
+    // A markdown file that is NOT under a conventional base: nothing is walked to find it.
+    mkdirSync(join(repo, 'notes'), { recursive: true });
+    writeFileSync(join(repo, 'notes', '0001-utc.md'), adr('Use UTC everywhere', 'the zone drifts'));
+    writeFileSync(join(repo, 'README.md'), '# the project\n\nprose\n');
+
+    const quiet = (await mnema('status', '--actor', anchor)).join('\n');
+    expect(quiet).not.toContain('Never imported:');
+    expect(quiet).not.toContain('Not in the record:');
+    expect(quiet).toContain('No decisions in force.');
+    // NOT VACUOUS: the same two documents under a conventional name ARE reported, so the
+    // silence above is about where they sit and not about the reading being off.
+    mkdirSync(join(repo, 'docs', 'adr'), { recursive: true });
+    writeFileSync(
+      join(repo, 'docs', 'adr', '0001-utc.md'),
+      adr('Use UTC everywhere', 'the zone drifts'),
     );
+    expect((await mnema('status', '--actor', anchor)).join('\n')).toContain(
+      'docs/adr (1) — mnema decision import docs/adr',
+    );
+  }, 30_000);
+
+  it('never names a base the record already reads, so one directory is never two lines', async () => {
+    // The two readings share ONE walk of the `derived-from` relation for this reason. A
+    // base the record names at all is the drift section's subject whatever its count —
+    // including when every document of it is already in, and the drift section therefore
+    // prints nothing. Silence from BOTH is the right answer there, and a second walk is how
+    // the arrival section would come to re-announce a directory somebody already imported.
+    const initiated = await mnema('init');
+    const identity = initiated.find((line) => line.trim().startsWith('identity:')) as string;
+    const anchor = identity.trim().slice('identity:'.length).trim();
+    const base = join(repo, 'docs', 'decisions');
+    mkdirSync(base, { recursive: true });
+    writeFileSync(join(base, '0001-utc.md'), adr('Use UTC everywhere', 'the zone drifts'));
+    await mnema('decision', 'import', 'docs/decisions', '--write');
+
+    const settled = (await mnema('status', '--actor', anchor)).join('\n');
+    expect(settled).not.toContain('Never imported:');
+    expect(settled).not.toContain('Not in the record:');
+    expect(settled).not.toContain('docs/decisions (');
   }, 30_000);
 
   it('refuses outside a project rather than answering about nothing', async () => {

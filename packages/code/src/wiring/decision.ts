@@ -215,8 +215,10 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
         'the file states is reported, never applied. Accepting one is a person’s move,\n' +
         'with a note, through `decision move accept`.\n\n' +
         'One decision per file, a level-1 title and named `##` sections — the Nygard and\n' +
-        'MADR shape. A file that is not that shape is refused by name, never guessed at.\n' +
-        'Nothing here calls a model.',
+        'MADR shape. A file this cannot read that way is refused by name. A file it CAN\n' +
+        'is proposed — including one that is no decision at all: an index page or a\n' +
+        'roadmap wears the same shape, and no fact of the document separates them. That\n' +
+        'is why nothing is accepted on your behalf. Nothing here calls a model.',
     )
     .addHelpText('after', RECORD_CONTRACT_HELP);
   decisionImport.action(
