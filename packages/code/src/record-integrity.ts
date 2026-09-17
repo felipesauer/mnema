@@ -216,12 +216,22 @@ export function linkBreakBlockOnWrite(breaks: readonly ScopedLinkBreak[]): reado
  *
  * It is a table and not an absence for the reason `record-framing.ts`'s
  * `UNFRAMED_CHANNELS` is one: the guard
- * (`tests/the-broken-link-reaches-every-reader.test.ts`) walks the source for the two
- * ways this package opens a record — `withScopedCaches` and a bare
- * `ProjectionCache.open` — and a file that neither asks {@link linkBreakSentences}'s
- * source (`linkBreaksOf`) nor appears here is red. So a read added next year is
- * classified or it does not pass, and the classification is written down rather than
- * re-derived from the silence.
+ * (`tests/the-broken-link-reaches-every-reader.test.ts`) walks the source for the ways
+ * this package reaches a record at all, and a file that neither asks a reading that
+ * carries the fact nor appears here is red. So a read added next year is classified or it
+ * does not pass, and the classification is written down rather than re-derived from the
+ * silence.
+ *
+ * THE UNIVERSE THAT SWEEP DEFINES USED TO BE THE PROJECTION CACHE ALONE — four ways of
+ * opening one — AND THAT IS WHERE THE CONSOLE FELL OUT OF IT. The REPL serves the record:
+ * it prints a verdict in its opening panel, holds the proven level in the corner of every
+ * frame, and shows what another process appended while it was up. It opens no cache to do
+ * any of it — it reaches the chain through `runVerify`, `chainExtent` and `readTailTip` —
+ * so it was outside the guard's reach without being in this table with a reason, and the
+ * corner went on saying `fully-signed` in the same frame whose body printed `seq gap`. The
+ * sweep has a second discriminant now: the ways this package reads the CHAIN with no cache
+ * in between. What was really wrong was not the missing entry; it was that the
+ * discriminant carried the blind spot.
  *
  * THE KEY IS THE PATH UNDER `packages/code/src/`, because that is what the guard has to
  * read, and a name would have to be matched back to a file by a second rule.
@@ -238,6 +248,18 @@ export const SERVES_NO_RECORD_CONTENT: { readonly [path: string]: string } = {
   'mcp/cache-registry.ts':
     'it opens the caches a connection keeps warm and serves nobody; the reads that ask ' +
     'it for one are what carry the fact (`sessionLinkBreaks`)',
+  'commands/verify.ts':
+    'it IS the verdict this notice is a shortening of — it enumerates every issue a tail ' +
+    'holds, T1 included, and asking it for the notice would be the verb quoting itself',
+  'wiring/verify.ts':
+    'it words and prints what `commands/verify.ts` ruled and reads no record of its own; ' +
+    'a notice here would be the verdict carrying a summary of a line already in it',
+  'repl/following.ts':
+    'it reports what somebody ELSE appended since the session opened and rules on nothing ' +
+    '— two equal extents mean nothing observable moved, never that the chain is intact. ' +
+    'What the console says about the PROOF is the badge in its corner, which asks ' +
+    '`watchingTheProof` in one place (`repl/session.ts`); a second answer composed on this ' +
+    'clock would be the same surface holding two opinions about the same bytes',
 };
 
 /**

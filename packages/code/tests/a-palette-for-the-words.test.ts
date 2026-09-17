@@ -995,7 +995,7 @@ describe('the pick is a word, and the ends of the list hold', () => {
  * at the new number and this case still asks the right question.
  */
 const HINT_IS = widthOf(tips());
-const BADGE_IS = widthOf(badgeLine('fully-signed'));
+const BADGE_IS = widthOf(badgeLine('fully-signed', 'the-whole-record'));
 
 describe('a row of the area the terminal would fold is not drawn at all', () => {
   // A PAGE WITH NOTHING ON IT: these cases are about WIDTH, and the flow is the other

@@ -414,11 +414,17 @@ describe('the record arrives unasked', () => {
     const commands = declaredCommands();
     expect(commands.length).toBe(1);
     const file = lastSegment(project);
+    // THE BYTES TO PUT BACK AND THE TEXT TO READ ARE TWO READINGS, deliberately: turning a
+    // buffer into text in one call is the shape a guard of this suite sweeps for
+    // (`the-screen-says-what-it-was-drawn-at.test.ts`), because that is how a multi-byte
+    // glyph gets cut in half where bytes arrive in chunks. Nothing is chunked here, and the
+    // needle is textual, so the honest answer is not to write it.
     const before = readFileSync(file);
+    const held = readFileSync(file, 'utf-8');
     let ran: Ran;
     let broken: { readonly out: string; readonly err: string };
     try {
-      const lines = before.toString('utf-8').trimEnd().split('\n');
+      const lines = held.trimEnd().split('\n');
       appendFileSync(file, `${lines[lines.length - 1] as string}\n`, 'utf-8');
       // WHAT THE VERB ITSELF SAYS OVER THESE BYTES, on both streams — the yardstick the
       // handler's reply is compared with below, taken over the same plant.

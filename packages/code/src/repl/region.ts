@@ -254,6 +254,21 @@ export interface Showing {
   /** Which page this is. */
   readonly draws: 'console';
   /**
+   * WHAT THE RECORD PROVED, as the one row for the corner above the input — already
+   * rendered, and empty when there is no record to name a level of.
+   *
+   * IT IS HERE RATHER THAN A PROP OF {@link Region}, and it arrived here late. The row was
+   * fixed for the session on the premise that nothing inside one could change it, and
+   * another process appending to the record does: the corner then states a level ruled on
+   * over bytes that are no longer the record. It is watched now, so the frame that says the
+   * record moved is the frame the corner says it on.
+   *
+   * WHAT IT IS NOT is a second reading. The words are composed once when the session opens,
+   * both forms of them, and which is held is decided on the record's own clock — never on a
+   * frame, and never by another `verify` (`console.ts`, `repl/proving.ts`).
+   */
+  readonly badge: string;
+  /**
    * THE TOP REGION: the arrangement the page opens with, or nothing when this terminal has no
    * room for one.
    *
@@ -367,10 +382,20 @@ export interface Watched {
  * at the foot — the badge in the corner, the row being typed between two rules, and what to do
  * next.
  *
- * THE TIPS AND THE BADGE ARE PROPS AND EVERYTHING ELSE IS WATCHED, and the line between them
- * is what each one is a function of: those two were resolved once when the session opened and
- * nothing that happens inside a session changes either, so putting them in the value rebuilt
- * on every keystroke would have said they might.
+ * THE TIPS ARE A PROP AND EVERYTHING ELSE IS WATCHED, and the line between them is what each
+ * one is a function of: the tips were resolved once when the session opened and nothing that
+ * happens inside a session changes them, so putting them in the value rebuilt on every
+ * keystroke would have said they might.
+ *
+ * THIS SENTENCE USED TO NAME THE BADGE BESIDE THEM, and what falsified it is a measurement
+ * rather than a preference. It read *"THE TIPS AND THE BADGE ARE PROPS … nothing that happens
+ * inside a session changes either"*, and something does: another process appending to the
+ * record. With a duplicate of the last entry appended while a session was open, the corner
+ * went on saying `fully-signed` in the same frame whose body printed `seq gap: expected 8,
+ * found 7`. The row is in {@link Showing} now, rebuilt with everything else whenever anything
+ * moves — and what decides which of its two forms it holds is asked on the record's own clock
+ * and never on a frame (`console.ts`, `proving.ts`), so the half of the old sentence with
+ * teeth is untouched: nothing here re-reads the record.
  *
  * THE OPENING USED TO BE A PROP TOO, then it joined the watched value, and now it is watched
  * for a different reason than the one it joined for. It joined because a caller who narrowed
@@ -389,11 +414,9 @@ export interface Watched {
 export function Region({
   watched,
   tips,
-  badge,
 }: {
   readonly watched: Watched;
   readonly tips: string;
-  readonly badge: string;
 }): ReactNode {
   const shown = useSyncExternalStore(watched.watch, watched.now, watched.now);
   const { setCursorPosition } = useCursor();
@@ -452,7 +475,7 @@ export function Region({
     // THE ONE BRANCH ON THIS SURFACE THAT IS NOT ABOUT A FORM. Every other choice here is
     // which arrangement there is room for; this is whether there is a page at all
     // (`floor.ts`, {@link Floored}).
-    ...(shown.draws === 'floor' ? rows(shown.said) : theThreeRegions(shown, tips, badge)),
+    ...(shown.draws === 'floor' ? rows(shown.said) : theThreeRegions(shown, tips)),
   );
 }
 
@@ -463,7 +486,7 @@ export function Region({
  * It is a function of the value rather than the body of {@link Region} because the frame has two
  * shapes now, and the shape a window under the floor gets is not this one with parts left out.
  */
-function theThreeRegions(shown: Showing, tips: string, badge: string): readonly ReactNode[] {
+function theThreeRegions(shown: Showing, tips: string): readonly ReactNode[] {
   return [
     ...(shown.panel === undefined ? [] : theTop(shown.panel)),
     node(Middle, { window: shown.window }),
@@ -472,7 +495,7 @@ function theThreeRegions(shown: Showing, tips: string, badge: string): readonly 
       palette: shown.palette,
       area: shown.area,
       tips,
-      badge,
+      badge: shown.badge,
     }),
   ];
 }

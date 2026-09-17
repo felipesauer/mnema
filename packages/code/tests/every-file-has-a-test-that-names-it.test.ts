@@ -225,8 +225,16 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * arrived: five clauses, of which two are the ones that make it a guard rather than a
  * reading of text — `commander`, for the declarations a flag is looked up in, and
  * `../src/cli.js`, for the program those declarations hang on.
+ *
+ * It went 2689 -> 2703 when the corner of the console stopped claiming a level about a
+ * record it had not read: fourteen clauses in
+ * `the-corner-says-what-its-level-covers.test.ts`, which stands a real session up in a
+ * pseudo-terminal, plants a break in a tail from another process while the page is up, and
+ * asks the watch on the proof directly as well — so it reaches `node:child_process`,
+ * `node:fs`, `node:os`, `node:path`, the pty and screen harnesses, and the two product
+ * modules that compose and decide the row (`repl/session.ts`, `repl/proving.ts`).
  */
-const CLAUSES_IN_THE_TREE = 2689;
+const CLAUSES_IN_THE_TREE = 2703;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -720,7 +728,7 @@ describe('every file has a test that names it', () => {
     expect(PRODUCTION).toContain('packages/code/src/wiring/index.ts');
     expect(PRODUCTION).toContain('packages/core/src/topology/index.ts');
     expect(PRODUCTION).not.toContain('packages/core/src/index.ts');
-    expect(PRODUCTION).toHaveLength(305);
+    expect(PRODUCTION).toHaveLength(306);
     expect(TEST_TREE.length).toBeGreaterThan(250);
     // No file is in both corpora, which is what keeps a test from witnessing itself.
     const tests = new Set(TEST_TREE.map((one) => one.path));
@@ -740,7 +748,7 @@ describe('every file has a test that names it', () => {
     const found = unwitnessed();
     const byReach = (reach: Reach): number =>
       [...found.values()].filter((one) => one === reach).length;
-    expect(PRODUCTION.length - found.size).toBe(233);
+    expect(PRODUCTION.length - found.size).toBe(234);
     expect(found.size).toBe(72);
     expect(byReach('nobody imports it')).toBe(72);
     expect(byReach('imported, and no assertion observes it')).toBe(0);

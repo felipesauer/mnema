@@ -270,18 +270,26 @@ export interface ConsoleRequest {
    * WHAT THE RECORD PROVED, as one row for the corner above the input — already rendered,
    * and empty when there is no record to name a level of.
    *
-   * A VALUE AND NOT A FUNCTION, unlike the opening beside it, and the difference is what
-   * each one depends on: the opening is recomposed for a SIZE, and this says the same
-   * words at every size there is. It was paid for with the one read this surface declares
-   * (`session.ts`) and it is held here for the length of the session, so the row redrawn
-   * on every keystroke costs a string and nothing else.
+   * A FUNCTION AND NOT A VALUE, AND IT USED TO BE THE OTHER WAY ROUND. The doc here said
+   * *"A VALUE AND NOT A FUNCTION, unlike the opening beside it"*, on the ground that the
+   * opening is recomposed for a SIZE and this says the same words at every size there is.
+   * That half is still true and is not why it moved: it is a function of TIME rather than
+   * of size, and the reason is measured. A duplicate of the last entry appended while the
+   * session was open left this corner saying `fully-signed` in the same frame whose body
+   * printed `seq gap: expected 8, found 7`.
    *
-   * IT MAY NOT BE RE-READ EITHER, and for a sharper reason than the panel's: this row is
-   * on the screen for the whole session, so a level that changed under the caller halfway
-   * through would be the corner of the console disagreeing with the panel at the top of it.
-   * Counted with the rest (`tests/the-name-and-the-hints.test.ts`).
+   * AND THE SENTENCE UNDER IT WAS *IT MAY NOT BE RE-READ EITHER*, which was right about
+   * what it meant and wrong about what it said. What may not happen is another `verify` —
+   * 54 ms to 1.7 s, linear in the history, on a clock. What this asks is whether the chain
+   * moved at all: one `readdir` per tail and one `stat`, latched off once it has answered
+   * (`session.ts`, `proving.ts`).
+   *
+   * SO THE CONTRACT IS WHEN IT MAY BE ASKED, and it is this file that holds it up: on the
+   * clock the record is asked on ({@link HOW_OFTEN_THE_RECORD_IS_ASKED}) and never on a
+   * frame. A frame reads nothing, and that is counted rather than promised
+   * (`tests/the-name-and-the-hints.test.ts`).
    */
-  readonly badge: Drawn;
+  readonly badge: () => Drawn;
   /**
    * WHAT THE PAGE OPENS WITH, on a terminal of a given SIZE — the arrangement and the lines
    * that go with it, already composed and already measured.
@@ -390,7 +398,11 @@ export interface OpenConsole {
  * one path onto the page and not a special one for the first three rows.
  */
 export function openConsole(request: ConsoleRequest): OpenConsole {
-  const { stdin, stdout, prompt, renderingAt, tips, badge, picking } = request;
+  const { stdin, stdout, prompt, renderingAt, tips, picking } = request;
+  // THE ROW IN THE CORNER AS IT STANDS, asked once here and then only on the record's own
+  // clock ({@link askTheCorner}). Everything that draws reads this and never the question
+  // behind it, which is what makes "a frame reads nothing" a property of this file.
+  let badge: Drawn = request.badge();
   const { openingFor, saw, happened, complete, answer, leaving } = request;
 
   /**
@@ -798,6 +810,11 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
       // WHICH OF THE TWO PAGES THIS IS. The other one is the frame a window under the floor gets,
       // and the layout branches on this rather than on a field being empty (`region.ts`).
       draws: 'console',
+      // WHAT THE RECORD PROVED, AS THE CORNER STANDS ON THIS FRAME. It is in the value the
+      // layout reads rather than a prop of the frame because it is no longer fixed for the
+      // session: the corner degrades when the record moves past what was ruled on, and a
+      // prop would be drawn once and never again ({@link Region}).
+      badge: badge.text,
       panel: drawn ? opening.panel : undefined,
       window,
       // BOTH MEASUREMENTS OF THE SCREEN, out of the one reading taken at the top of this frame.
@@ -963,6 +980,28 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
       if (left) return;
       for (const line of occurrences) land(line);
     });
+  }
+
+  /**
+   * WHAT THE CORNER SAYS NOW, asked on the record's own clock and nowhere else.
+   *
+   * IT IS COMPARED AND NOT ASSIGNED. The answer is the same bytes on all but one tick of a
+   * session, so rebuilding the frame for it would be a redraw ten times a second for a row
+   * that did not change — and the one tick it does change is the whole point, so it cannot
+   * simply not be asked. The question behind it opens nothing and latches off once it has
+   * answered (`proving.ts`).
+   *
+   * IT DOES NOT GO ON THE QUEUE, unlike the occurrences above, and the difference is which
+   * region each lands in. An occurrence is a LINE on the roll, and a line arriving between
+   * two lines of an answer would read as part of it; this is a fixed row of the input area,
+   * redrawn in place with every other thing on the frame, so there is no answer for it to
+   * land in the middle of.
+   */
+  function askTheCorner(): void {
+    const now = request.badge();
+    if (now.text === badge.text) return;
+    badge = now;
+    moved();
   }
 
   /**
@@ -1219,8 +1258,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * a different frame from the one mounted: the props are the two things resolved once when the
    * session opened, and everything that moves is read through {@link Watched}.
    */
-  const theFrame = (): ReactElement =>
-    createElement(Region, { watched, tips: tips.text, badge: badge.text });
+  const theFrame = (): ReactElement => createElement(Region, { watched, tips: tips.text });
 
   const app = render(theFrame(), {
     stdin,
@@ -1252,7 +1290,10 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   });
 
   // AND THE PAGE FOLLOWS THE RECORD.
-  const watching = setInterval(landWhatHappened, HOW_OFTEN_THE_RECORD_IS_ASKED);
+  const watching = setInterval(() => {
+    landWhatHappened();
+    askTheCorner();
+  }, HOW_OFTEN_THE_RECORD_IS_ASKED);
   // Watching is no reason for the process to stay up: with everything else that holds it
   // open gone, the session is over and there is nobody left to tell.
   watching.unref();

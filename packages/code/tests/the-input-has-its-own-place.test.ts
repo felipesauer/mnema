@@ -175,7 +175,7 @@ afterAll(() => {
  */
 const showingEverything = {
   columns: 200,
-  badge: widthOf(badgeLine('fully-signed')),
+  badge: widthOf(badgeLine('fully-signed', 'the-whole-record')),
   hint: widthOf(tips()),
   palette: 0,
   // NOTHING ABOVE THE AREA, and the field it fills is not the field it used to. It was the
@@ -528,7 +528,7 @@ describe('the badge says what the record proved, and the verb that says the rest
     }
 
     for (const level of OUTCOMES) {
-      const painted = renderStyled(badgeLine(level));
+      const painted = renderStyled(badgeLine(level, 'the-whole-record'));
       // THE PROMISE: the badge is wrapped in the hue its own level reads as.
       for (const hue of hueOf(levelSeverity(level))) expect(painted, level).toContain(hue);
       // And in no other outcome's, so a badge that painted everything red would be red.
@@ -539,7 +539,7 @@ describe('the badge says what the record proved, and the verb that says the rest
       // AND THE WORDS ARE UNTOUCHED, which is the half of the old premise that survived as
       // a fact: strip the escapes and it is the plain badge, byte for byte. The hue never
       // carries anything the words do not already say.
-      expect(withoutSgr(painted), level).toBe(renderPlain(badgeLine(level)));
+      expect(withoutSgr(painted), level).toBe(renderPlain(badgeLine(level, 'the-whole-record')));
     }
   });
 
@@ -569,7 +569,7 @@ describe('the badge says what the record proved, and the verb that says the rest
     // Not vacuous: the level this fixture is at really has a hue to carry, and the row
     // still says the same words a pipe would have received.
     expect(hueOf(levelSeverity(foldedLevel())).length).toBeGreaterThan(0);
-    expect(withoutSgr(row).trim()).toBe(renderPlain(badgeLine(foldedLevel())));
+    expect(withoutSgr(row).trim()).toBe(renderPlain(badgeLine(foldedLevel(), 'the-whole-record')));
   }, 120_000);
 });
 
