@@ -1167,12 +1167,39 @@ function locateEntity(session: Session, id: string): EntityLocation {
  * tree it is in, and a root nothing names is one this session can no longer place.
  *
  * AND THAT COST IS WHAT BOUNDS IT, in a way a caller has to know rather than discover.
- * A connection whose FIRST call is a write has opened no cache, so it is told nothing —
- * a write marks its tree stale and never opens it. More than that: a write never
- * REFRESHES one either, so a connection that has read before is told what its last read
- * knew, and a break that appeared since reaches it on its next read rather than on this
- * write. `tests/the-write-says-what-it-landed-on.test.ts` holds both, so they redden
- * rather than fade.
+ * There are TWO bounds, both on the write door, and each one is a price that was measured
+ * rather than an oversight. `tests/the-write-says-what-it-landed-on.test.ts` holds both, so
+ * they redden rather than fade.
+ *
+ * FIRST: a connection whose FIRST call is a write has opened no cache, so it is told
+ * nothing — a write marks its tree stale and never opens one. Closing it means OPENING, and
+ * opening replays the chain: **6.4 ms over a 197 KB record (210 entries), 38.0 ms over
+ * 1.9 MB (2 010) and 176.8 ms over 9.4 MB (6 297)** — linear in the history, charged to the
+ * first write of every connection, and worst exactly where the record is biggest, which is
+ * the team's. Against a public that has not appeared: of **588** real sessions swept on
+ * this machine, **none** opened with a write.
+ *
+ * SECOND: a write never REFRESHES one either, so a connection that HAS read is told what
+ * its last read knew, and a break that appeared since reaches it on its next read rather
+ * than on this write. That one was costed at ~0.14 ms and constant, and building it
+ * falsified the costing: the number is the price of a catch-up over a tail that did NOT
+ * move — the early return — and not of the path a write is on. **Measured on the pair a
+ * session performs, alternated order, base-against-base ruler of 0.02-0.46 ms: a catch-up
+ * on the write door costs ~2.5 ms over a 60-entry record and ~4.3 ms over a 400-entry one,
+ * and five writes then a read comes to +12.7 ms and +21.3 ms respectively** — because the
+ * reader pays one catch-up where this pays five, which is the promise at the foot of
+ * `mcp/cache-registry.ts`'s opening note broken outright. It grows with the record, so it
+ * is the same shape as the bound above and not the cheap one it was taken for.
+ *
+ * WHAT WOULD CLOSE THE SECOND ONE CHEAPLY IS MEASURED AND NOT BUILT, said here so the next
+ * reader starts from the number. The expensive half of a catch-up is ADVANCING the
+ * projections (`core`, `advance`, which folds the whole order); READING the arrivals — which
+ * is what carries the link breaks — is **0.446 ms, and identical at 60 and at 400 entries**
+ * against 1.96 ms and 4.78 ms for the whole refresh. So a cache asked for the breaks over
+ * what has arrived since its frontier, WITHOUT advancing, would close this at a constant
+ * price. It is not built: it is a new question for `ProjectionCache` to answer and a second
+ * thing a cache can say about breaks, which is a decision about that class rather than about
+ * this door.
  *
  * A SECOND BOUND USED TO BE HERE AND IS GONE. It said a cache opened over a sound tree
  * that another process then broke keeps answering from the replay it has, because the
