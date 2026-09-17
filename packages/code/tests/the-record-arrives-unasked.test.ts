@@ -461,6 +461,83 @@ describe('the record arrives unasked', () => {
     expect(quiet).toBe(cli('brief'));
   });
 
+  it('says nothing when the verb refuses, whatever it printed first', () => {
+    // THE EXIT CODE IS THE GATE, AND NOTHING WITNESSED IT. Measured: removing
+    // `ran.status !== 0` from the handler left every case in this file green, because the
+    // two refusals the product can produce today — no project here, and the document
+    // channel switched off — both print NOTHING on stdout, and the empty-document check
+    // catches them on the way past. So the gate was guarding a state the product cannot
+    // currently reach, which is a guard with no witness.
+    //
+    // IT MATTERS MORE THAN IT DID, which is why the state is planted rather than declared.
+    // The handler used to drop the second stream at the spawn; it now hands it over when
+    // the verb SUCCEEDED. A verb that printed something and then refused would, with the
+    // gate gone, put its refusal into the session — the exact thing the muteness exists to
+    // prevent, on the machine of everybody who installed this.
+    //
+    // THE PLANT IS A `mnema` ON THE PATH, because that is what the handler runs. It is not
+    // a state the real binary can be put in, and a fixture that wrote one would be a case
+    // about a record no verb can produce; what is being asserted is the HANDLER's gate, so
+    // the thing replaced is what the handler spawns.
+    const refusing = join(sandbox, 'refusing');
+    mkdirSync(refusing, { recursive: true });
+    const shim = join(refusing, 'mnema');
+    writeFileSync(
+      shim,
+      [
+        '#!/bin/sh',
+        "printf 'a document of sorts\n'",
+        "printf 'and then a refusal\n' >&2",
+        'exit 2',
+        '',
+      ].join('\n'),
+    );
+    chmodSync(shim, 0o755);
+
+    const ran = spawnSync('sh', ['-c', declaredCommands()[0] as string], {
+      cwd: project,
+      env: {
+        ...hostEnv(join(sandbox, 'calls-refusing.txt')),
+        CLAUDE_PROJECT_DIR: project,
+        PATH: `${refusing}:${process.env.PATH ?? ''}`,
+      },
+      encoding: 'utf-8',
+    });
+    // NOTHING AT ALL: not the stdout it printed, and above all not the refusal.
+    expect(ran.stdout ?? '').toBe('');
+    expect(ran.stderr ?? '').toBe('');
+    expect(ran.status).toBe(0);
+
+    // NOT VACUOUS: the same plant with exit 0 DOES speak, so the silence above is the exit
+    // code's doing and not the shim failing to run at all.
+    writeFileSync(
+      shim,
+      [
+        '#!/bin/sh',
+        "printf 'a document of sorts\n'",
+        "printf 'and something to say\n' >&2",
+        'exit 0',
+        '',
+      ].join('\n'),
+    );
+    chmodSync(shim, 0o755);
+    const spoke = spawnSync('sh', ['-c', declaredCommands()[0] as string], {
+      cwd: project,
+      env: {
+        ...hostEnv(join(sandbox, 'calls-speaking.txt')),
+        CLAUDE_PROJECT_DIR: project,
+        PATH: `${refusing}:${process.env.PATH ?? ''}`,
+      },
+      encoding: 'utf-8',
+    });
+    const said = (
+      JSON.parse(spoke.stdout as string) as { hookSpecificOutput: { additionalContext: string } }
+    ).hookSpecificOutput.additionalContext;
+    // The document keeps the newline it printed, and the second stream arrives under it
+    // with one blank row between them — the whole composition, byte for byte.
+    expect(said).toBe('a document of sorts\n\n\nand something to say');
+  });
+
   it('carries the committed record by name — not the private tree, and not the bodies', () => {
     // The two absences the plugin's README states out loud, asserted where the README
     // states them: about what reaches the SESSION, not about what the verb composes.
