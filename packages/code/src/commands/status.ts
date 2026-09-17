@@ -58,7 +58,13 @@ import {
   decisionsOutsideTheRecord,
   type UnimportedBase,
 } from '../outside-the-record.js';
-import { caches, linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
+import {
+  caches,
+  linkBreaksOf,
+  type ScopedLinkBreak,
+  THE_READING_THAT_OPENED_THESE,
+  withScopedCaches,
+} from '../tree-sources.js';
 
 /** What the status command needs — injected so it is testable. */
 export interface StatusContext {
@@ -147,7 +153,7 @@ export function runStatus(
     return {
       ok: true,
       anchors,
-      linkBreaks: linkBreaksOf(sources),
+      linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
       // Read from the DISK, unlike everything else here, and read over every tree: a
       // file imported into the private tree on an earlier run is imported, and
       // reporting it as outside would send a person to import it twice.

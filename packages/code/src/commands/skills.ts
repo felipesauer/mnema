@@ -33,7 +33,12 @@
 
 import { consultationsByRun, type PatternProvenance, patternProvenance } from '@mnema/copilot';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
-import { linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
+import {
+  linkBreaksOf,
+  type ScopedLinkBreak,
+  THE_READING_THAT_OPENED_THESE,
+  withScopedCaches,
+} from '../tree-sources.js';
 
 /** What the skills audit needs — injected so it is testable. */
 export interface SkillsContext {
@@ -73,7 +78,7 @@ export function runSkills(ctx: SkillsContext): SkillsDone {
   const trees = resolveTrees(ctx.cwd, ctx.env);
   return withScopedCaches(trees, (sources) => ({
     ok: true,
-    linkBreaks: linkBreaksOf(sources),
+    linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
     patterns: patternProvenance(sources),
     consultations: consultationsByRun(sources),
   }));

@@ -56,7 +56,13 @@ import {
   type SessionNumbers,
   sessionsOfProject,
 } from '../transcripts.js';
-import { caches, linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
+import {
+  caches,
+  linkBreaksOf,
+  type ScopedLinkBreak,
+  THE_READING_THAT_OPENED_THESE,
+  withScopedCaches,
+} from '../tree-sources.js';
 
 /** What the usage read needs — injected so it is testable. */
 export interface UsageContext {
@@ -143,7 +149,7 @@ export function runUsage(ctx: UsageContext): UsageDone | UsageRefused {
     runs: caches(sources)
       .flatMap((cache) => cache.listRuns())
       .sort(byStartedDesc),
-    linkBreaks: linkBreaksOf(sources),
+    linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
   }));
   const runs = read.runs;
   // The project root is the directory the work is IN; the store is walked against the

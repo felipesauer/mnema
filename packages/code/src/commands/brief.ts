@@ -60,7 +60,12 @@
 import { type Brief, brief, channelIsOn, channelStates } from '@mnema/copilot';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { ASKS_A_PERSON_CHANNEL, DOCUMENT_CHANNEL, EDIT_PUSH_CHANNEL } from '../record-framing.js';
-import { linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
+import {
+  linkBreaksOf,
+  type ScopedLinkBreak,
+  THE_READING_THAT_OPENED_THESE,
+  withScopedCaches,
+} from '../tree-sources.js';
 
 /** What the brief needs — injected so it is testable. */
 export interface BriefContext {
@@ -175,7 +180,7 @@ export function runBrief(ctx: BriefContext): BriefDone | BriefRefused | BriefSwi
       // not. What that leaves is the reader the plugin's handler serves, which drops
       // stderr: that reader is an AGENT, and the door built for it is the MCP, where
       // this same fact rides beside every answer (`record-integrity.ts`).
-      linkBreaks: linkBreaksOf(sources),
+      linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
       // BOTH channels the per-edit hook pushes, named here because the vocabulary is this
       // package's. The document explains what a silence at an edit means, and there are now
       // two switches that can produce it — a document naming one of them would explain the

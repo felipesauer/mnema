@@ -77,7 +77,12 @@ import {
   specName,
 } from '../agent-skill.js';
 import { oneLine } from '../one-line.js';
-import { linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
+import {
+  linkBreaksOf,
+  type ScopedLinkBreak,
+  THE_READING_THAT_OPENED_THESE,
+  withScopedCaches,
+} from '../tree-sources.js';
 
 /**
  * Whether a pattern in each disposition leaves the record as a file — the ONE place
@@ -249,7 +254,7 @@ export function runSkillExport(
 
     return {
       ok: true,
-      linkBreaks: linkBreaksOf(sources),
+      linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
       name: skill.name,
       description,
       descriptionFrom: given === undefined ? ('the body' as const) : ('the caller' as const),

@@ -59,7 +59,12 @@
 import { consultationsByRun, type RecordBody, readRecord } from '@mnema/copilot';
 import { type DiscoveryEnv, resolveTrees, type Scope } from '@mnema/core';
 import { type AnchorForms, anchorForms, NO_ANCHORS } from '../anchors.js';
-import { linkBreaksOf, type ScopedLinkBreak, withOpenedCaches } from '../tree-sources.js';
+import {
+  linkBreaksOf,
+  type ScopedLinkBreak,
+  THE_READING_THAT_OPENED_THESE,
+  withOpenedCaches,
+} from '../tree-sources.js';
 
 /** The trees a lookup reads, in a fixed order. An id lives in exactly one. */
 const SCOPES: readonly Scope[] = ['public', 'private', 'global'];
@@ -117,7 +122,12 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
       // this verb stops at the first tree holding the id. That is the right answer and
       // not a shortfall — the notice is about the record the answer came off, and a tail
       // this read never touched did not serve anything.
-      return { ok: true, record: found, anchors: NO_ANCHORS, linkBreaks: linkBreaksOf(opened) };
+      return {
+        ok: true,
+        record: found,
+        anchors: NO_ANCHORS,
+        linkBreaks: linkBreaksOf(opened, THE_READING_THAT_OPENED_THESE),
+      };
     }
     // The two kinds whose answer is about the whole record and not about one tree.
     for (; next < SCOPES.length; next++) open(SCOPES[next] as Scope);
@@ -125,7 +135,7 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
       ok: true,
       record: found,
       anchors: anchorForms(opened),
-      linkBreaks: linkBreaksOf(opened),
+      linkBreaks: linkBreaksOf(opened, THE_READING_THAT_OPENED_THESE),
       ...(found.kind === 'skill'
         ? { consultations: consultationsByRun(opened).get(found.id) ?? 0 }
         : {}),

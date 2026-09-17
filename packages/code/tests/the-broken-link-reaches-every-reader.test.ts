@@ -390,15 +390,26 @@ describe('the MCP composes no payload of its own', () => {
    * through. A composer added next year that asks the reading itself reddens this as
    * surely as one that never asks at all — the second reading is the divergence the rule
    * exists to prevent, and the missing one is the silence.
+   *
+   * THE PATTERN CARRIES A COMMA NOW, and that is not cosmetic. The reading takes which
+   * door is asking, because the two doors read the fact from different moments — the write
+   * from the chain as it stands, the read from the replay `CacheRegistry.get` just brought
+   * forward. A call site that dropped the argument would not compile; one that passed the
+   * wrong arm would compile and go quiet, which is why the two names are asserted below.
    */
   it('the reading is asked in exactly one place', () => {
-    expect(server.match(/sessionLinkBreaks\(session\)/g) ?? []).toHaveLength(1);
+    expect(server.match(/sessionLinkBreaks\(session,/g) ?? []).toHaveLength(1);
     // And that place is what picks between the module's two openings, so the fact a
     // write carries and the fact a read carries are the same bytes below the clause.
     const envelope = bodyOf(server, 'replied');
     expect(envelope).toContain('linkBreakBlockOnWrite');
     expect(envelope).toContain('linkBreakBlock');
-    expect(envelope).toContain('sessionLinkBreaks(session)');
+    expect(envelope).toContain('sessionLinkBreaks(session,');
+    // AND IT PICKS THE SECOND THING TOO, which arrived with the write door's own answer:
+    // the two differ by WHEN the fact is read from, and the one call site is where that is
+    // decided. A composer that reached for one arm by hand would be a second decision.
+    expect(envelope).toContain('A_WRITE');
+    expect(envelope).toContain('A_READ');
   });
 
   it.each(['served', 'recorded', 'moved'])('%s composes through the envelope', (composer) => {

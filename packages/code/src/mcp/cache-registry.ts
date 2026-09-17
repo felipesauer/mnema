@@ -103,6 +103,15 @@
  * not change; what changed is that it now applies to an append by ANY process, which
  * is where the expensive error was actually coming from — and that the cheap side of
  * the asymmetry got cheaper, which widens the margin rather than narrowing it.
+ *
+ * THAT PROMISE HAS A GUARD NOW, and it did not when a delivery broke it. The write door
+ * of the MCP owes the caller the state of the record it landed on, and the first attempt
+ * at paying that debt refreshed the cache on every write — five catch-ups where the reader
+ * pays one, measured at +12.7 ms over a 60-entry record and +21.3 ms over a 400-entry one,
+ * and what caught it was the measurement rather than a red. What the write door asks now
+ * is `ProjectionCache.linkBreaksAsOfNow`, which reads the arrivals and advances nothing,
+ * and `core`'s `cache.test.ts` ("leaves the cache where it found it, so the next read
+ * still does the catch-up") is where a second attempt reddens.
  */
 
 import {

@@ -87,6 +87,7 @@ export {
   weakerLevel,
 } from './chain/level.js';
 export {
+  firstLinkBreakFrom,
   holdsRecord,
   type LinkBreak,
   listPublicKeyFingerprints,

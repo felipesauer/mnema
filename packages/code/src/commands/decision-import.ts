@@ -70,7 +70,12 @@ import {
   scanAdrDirectory,
 } from '@mnema/core';
 import { linkKnowledge, openTreeForWriting, recordDecision } from '@mnema/core/write';
-import { linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
+import {
+  linkBreaksOf,
+  type ScopedLinkBreak,
+  THE_READING_THAT_OPENED_THESE,
+  withScopedCaches,
+} from '../tree-sources.js';
 
 /** What the import needs — injected so it is testable. */
 export interface DecisionImportContext {
@@ -180,7 +185,7 @@ function alreadyDerived(ctx: DecisionImportContext): {
     // THE SAME READ, and this verb is the one where it matters most: the set above is
     // what stops a file being proposed twice, and an import that appends over a tail
     // that no longer chains is a write onto a record whose proof already failed.
-    return { byTarget, linkBreaks: linkBreaksOf(sources) };
+    return { byTarget, linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE) };
   });
 }
 

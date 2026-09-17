@@ -25,7 +25,12 @@
 import { type TimelineEntry, timeline } from '@mnema/copilot';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { type AnchorForms, anchorForms } from '../anchors.js';
-import { linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
+import {
+  linkBreaksOf,
+  type ScopedLinkBreak,
+  THE_READING_THAT_OPENED_THESE,
+  withScopedCaches,
+} from '../tree-sources.js';
 
 /** What the timeline command needs — injected so it is testable. */
 export interface TimelineContext {
@@ -79,7 +84,7 @@ export function runTimeline(
   }
   return withScopedCaches(trees, (sources) => ({
     ok: true,
-    linkBreaks: linkBreaksOf(sources),
+    linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
     id: input.id,
     entries: timeline(sources, input.id),
     anchors: anchorForms(sources),

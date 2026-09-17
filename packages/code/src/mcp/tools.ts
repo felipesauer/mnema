@@ -151,7 +151,11 @@ import {
 } from '../record-framing.js';
 import type { ScopedLinkBreak } from '../record-integrity.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
-import { linkBreaksOf } from '../tree-sources.js';
+import {
+  linkBreaksOf,
+  THE_CHAIN_AS_IT_STANDS_NOW,
+  THE_READING_THAT_OPENED_THESE,
+} from '../tree-sources.js';
 import { type HookEvent, type HookReply, hookReply } from './hook-reply.js';
 import {
   type EntityLocation,
@@ -1160,11 +1164,16 @@ function locateEntity(session: Session, id: string): EntityLocation {
  * the alternative, threading a source list out of fourteen adapters, would put the
  * rule in fourteen places to make the set smaller than the truth.
  *
- * IT COSTS THE REPLY NOTHING. {@link CacheRegistry.opened} neither opens a cache nor
- * refreshes one, and each cache carries its breaks up from the replay it already did
- * ({@link ProjectionCache.linkBreaks}). A root the registry holds that no tree of this
- * workspace names is skipped rather than reported scopeless: a break has to say which
- * tree it is in, and a root nothing names is one this session can no longer place.
+ * IT COSTS A READ NOTHING AND A WRITE 0.09 ms PER TREE. {@link CacheRegistry.opened}
+ * neither opens a cache nor refreshes one, and on the READ door each cache carries its
+ * breaks up from the replay `get` just brought forward ({@link ProjectionCache.linkBreaks}).
+ * The WRITE door has not been near that path, so it asks the chain as it stands
+ * ({@link ProjectionCache.linkBreaksAsOfNow}) — one `readdir` per tail and the entries past
+ * the boundary, flat in the record. Which door is which is {@link WhichDoor}.
+ *
+ * A root the registry holds that no tree of this workspace names is skipped rather than
+ * reported scopeless: a break has to say which tree it is in, and a root nothing names is
+ * one this session can no longer place.
  *
  * AND THAT COST IS WHAT BOUNDS IT, in a way a caller has to know rather than discover.
  * There are TWO bounds, both on the write door, and each one is a price that was measured
@@ -1179,29 +1188,35 @@ function locateEntity(session: Session, id: string): EntityLocation {
  * the team's. Against a public that has not appeared: of **588** real sessions swept on
  * this machine, **none** opened with a write.
  *
- * SECOND: a write never REFRESHES one either, so a connection that HAS read is told what
- * its last read knew, and a break that appeared since reaches it on its next read rather
- * than on this write. That one was costed at ~0.14 ms and constant, and building it
- * falsified the costing: the number is the price of a catch-up over a tail that did NOT
- * move — the early return — and not of the path a write is on. **Measured on the pair a
- * session performs, alternated order, base-against-base ruler of 0.02-0.46 ms: a catch-up
- * on the write door costs ~2.5 ms over a 60-entry record and ~4.3 ms over a 400-entry one,
- * and five writes then a read comes to +12.7 ms and +21.3 ms respectively** — because the
- * reader pays one catch-up where this pays five, which is the promise at the foot of
- * `mcp/cache-registry.ts`'s opening note broken outright. It grows with the record, so it
- * is the same shape as the bound above and not the cheap one it was taken for.
+ * A SECOND BOUND STOOD BESIDE IT AND IS CLOSED. It read: *"a write never REFRESHES one
+ * either, so a connection that HAS read is told what its last read knew, and a break that
+ * appeared since reaches it on its next read rather than on this write."* True, and the
+ * call it deferred the fact to is the one where the fact matters most: an agent answered
+ * `Recorded decision …` is the reader who will cite that id later.
  *
- * WHAT WOULD CLOSE THE SECOND ONE CHEAPLY IS MEASURED AND NOT BUILT, said here so the next
- * reader starts from the number. The expensive half of a catch-up is ADVANCING the
- * projections (`core`, `advance`, which folds the whole order); READING the arrivals — which
- * is what carries the link breaks — is **0.446 ms, and identical at 60 and at 400 entries**
- * against 1.96 ms and 4.78 ms for the whole refresh. So a cache asked for the breaks over
- * what has arrived since its frontier, WITHOUT advancing, would close this at a constant
- * price. It is not built: it is a new question for `ProjectionCache` to answer and a second
- * thing a cache can say about breaks, which is a decision about that class rather than about
- * this door.
+ * WHAT CLOSED IT IS NOT WHAT WAS TRIED FIRST, and the difference is the whole price.
+ * Refreshing the cache on the write door was built, measured and reverted: a catch-up is
+ * ~2.5 ms over a 60-entry record and ~4.3 ms over a 400-entry one, five writes then a read
+ * comes to +12.7 ms and +21.3 ms, and it GROWS with the history — the reader pays one
+ * catch-up where that paid five, breaking the promise at the foot of
+ * `mcp/cache-registry.ts`'s opening note outright. A cheaper variant of the same idea was
+ * tried too and is worse than dear, it is WRONG: catching up only on movement this
+ * connection did not cause, by comparing extents, cannot see a break planted BEFORE the
+ * write at all, because the extent written down at the append already contains it.
  *
- * A SECOND BOUND USED TO BE HERE AND IS GONE. It said a cache opened over a sound tree
+ * The expensive half of a catch-up is ADVANCING the projections; READING the arrivals is
+ * what carries the breaks. So the write door reads and does not advance
+ * ({@link ProjectionCache.linkBreaksAsOfNow}) — **0.09 ms per tree, and the same number at
+ * 60 entries and at 400**, against 1.96 ms and 4.78 ms for a whole refresh. Nothing this
+ * session has open moves, so the next read still catches up exactly once and the promise
+ * in `cache-registry.ts` stands.
+ *
+ * WHAT THE WRITE DOOR STILL DOES NOT SEE is what that reading does not reach: a break
+ * BELOW the frontier of a cache this session holds — bytes an earlier read already took —
+ * and, among the arrivals, the second broken tail, because the reading stops at the first.
+ * Both are {@link ProjectionCache.linkBreaksAsOfNow}'s limits and are stated there.
+ *
+ * A THIRD BOUND USED TO BE HERE AND IS GONE. It said a cache opened over a sound tree
  * that another process then broke keeps answering from the replay it has, because the
  * break is at or below the frontier and the catch-up finds nothing arrived. That was
  * true while the frontier recorded the `seq` it reached; it records the BYTE now, so
@@ -1209,7 +1224,7 @@ function locateEntity(session: Session, id: string): EntityLocation {
  * ({@link ProjectionCache.linkBreaks}). What survives of it is narrower: a break below
  * the boundary — the bytes a previous reading already took — is still outside.
  */
-export function sessionLinkBreaks(session: Session): readonly ScopedLinkBreak[] {
+export function sessionLinkBreaks(session: Session, door: WhichDoor): readonly ScopedLinkBreak[] {
   const scopeOf = new Map(workspaceTrees(session).map((tree) => [tree.chainRoot, tree.scope]));
   const placed: ScopedCache[] = [];
   for (const open of session.caches.opened()) {
@@ -1217,8 +1232,33 @@ export function sessionLinkBreaks(session: Session): readonly ScopedLinkBreak[] 
     if (scope === undefined) continue;
     placed.push({ scope, chainRoot: open.chainRoot, cache: open.cache });
   }
-  return linkBreaksOf(placed);
+  return linkBreaksOf(
+    placed,
+    door === A_WRITE ? THE_CHAIN_AS_IT_STANDS_NOW : THE_READING_THAT_OPENED_THESE,
+  );
 }
+
+/**
+ * WHICH DOOR IS ASKING — and it decides one thing: whether the fact is read off the replay
+ * these caches hold or off the chain as it stands now.
+ *
+ * A CLOSED UNION AND NOT A BOOLEAN, so a third door does not compile until somebody has
+ * said what it costs. A flag at the call site would read as a mode rather than as which of
+ * two things the caller is, which is the same argument `linkBreakBlockOnWrite` is a door of
+ * its own for (`record-integrity.ts`).
+ *
+ * A READ has just been through {@link CacheRegistry.get}, which brought its caches into
+ * agreement with the chain, so what they hold and what the chain holds are the same bytes
+ * and asking again would be a `readdir` per tail for a window of microseconds. A WRITE has
+ * not been near the registry's reading path — it invalidates and appends — so the replay it
+ * would answer off is as old as this connection's last read.
+ */
+export type WhichDoor = typeof A_READ | typeof A_WRITE;
+
+/** Served out of what this session has open — see {@link WhichDoor}. */
+export const A_READ = 'a read';
+/** Serving one fact beside an acknowledgement — see {@link WhichDoor}. */
+export const A_WRITE = 'a write';
 
 /** Every tree of the workspace with its warm projection cache attached. */
 function workspaceCaches(session: Session): ScopedCache[] {

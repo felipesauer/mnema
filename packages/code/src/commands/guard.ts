@@ -47,7 +47,12 @@ import { catalogUpcasters, type TransitionFields } from '@mnema/chain';
 import { type GateResult, guard } from '@mnema/copilot';
 import { chainRootForScope, type DiscoveryEnv, locateEntityScope, resolveTrees } from '@mnema/core';
 import { resolveAnchorInRecord } from '../anchors.js';
-import { linkBreaksOf, type ScopedLinkBreak, withCache } from '../tree-sources.js';
+import {
+  linkBreaksOf,
+  type ScopedLinkBreak,
+  THE_READING_THAT_OPENED_THESE,
+  withCache,
+} from '../tree-sources.js';
 
 /** What the guard command needs — injected so it is testable. */
 export interface GuardContext {
@@ -149,7 +154,11 @@ export function runGuard(
     // OVER THE ONE TREE THE TASK LIVES IN — the tree whose state this verdict was
     // simulated against. A dry-run read off a tail that no longer chains is a verdict
     // about a state whose provenance cannot be proved.
-    return { ok: true, verdict, linkBreaks: linkBreaksOf([{ scope, chainRoot: root, cache }]) };
+    return {
+      ok: true,
+      verdict,
+      linkBreaks: linkBreaksOf([{ scope, chainRoot: root, cache }], THE_READING_THAT_OPENED_THESE),
+    };
   });
 }
 

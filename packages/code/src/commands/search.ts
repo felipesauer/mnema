@@ -31,7 +31,12 @@ import {
   resolveTrees,
   type Scope,
 } from '@mnema/core';
-import { linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
+import {
+  linkBreaksOf,
+  type ScopedLinkBreak,
+  THE_READING_THAT_OPENED_THESE,
+  withScopedCaches,
+} from '../tree-sources.js';
 
 /** What the search command needs — injected so it is testable. */
 export interface SearchContext {
@@ -83,6 +88,6 @@ export function runSearch(ctx: SearchContext, input: RecordQuery = {}): SearchDo
   return withScopedCaches(trees, (sources) => ({
     ok: true,
     result: searchRecords(sources, input),
-    linkBreaks: linkBreaksOf(sources),
+    linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
   }));
 }
