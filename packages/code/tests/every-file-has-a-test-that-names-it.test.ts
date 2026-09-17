@@ -233,8 +233,13 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * asks the watch on the proof directly as well — so it reaches `node:child_process`,
  * `node:fs`, `node:os`, `node:path`, the pty and screen harnesses, and the two product
  * modules that compose and decide the row (`repl/session.ts`, `repl/proving.ts`).
+ *
+ * It went 2703 -> 2704 when `mnema status` began naming conventional decision bases the
+ * record has never read: ONE clause, in `outside-the-record.test.ts`, which already
+ * reached every module that reading needs and now also asks `adrFileNames` directly — to
+ * hold the arrival count against the same function the drift count is made of.
  */
-const CLAUSES_IN_THE_TREE = 2703;
+const CLAUSES_IN_THE_TREE = 2704;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 

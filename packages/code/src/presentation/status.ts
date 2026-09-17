@@ -66,7 +66,7 @@
 
 import type { AwaitingJudgement, Bootstrap } from '@mnema/copilot';
 import { oneLine } from '../one-line.js';
-import type { DecisionsOutside } from '../outside-the-record.js';
+import type { DecisionsOutside, UnimportedBase } from '../outside-the-record.js';
 import { fact } from './detail.js';
 import { asId, column, itemLine } from './items.js';
 import type { Render } from './render.js';
@@ -86,18 +86,24 @@ const KIND_WIDTH = widthOfText('decision');
  * The lines `mnema status` prints: the actor's session, then the four lists, then the
  * two sections about what this reading did NOT cover.
  *
- * `outside` is the second argument that is not `bootstrap`'s, and it is last for the
- * reason {@link unreadLines} is: the four lists are the answer, and what the answer does
- * not reach belongs under it rather than above it. It is REQUIRED and has no default —
- * an optional parameter would let a second surface print this screen with the section
- * silently missing, which is the shape of omission this whole reading exists not to
- * have.
+ * `outside` and `neverImported` are the two arguments that are not `bootstrap`'s, and they
+ * are last for the reason {@link unreadLines} is: the four lists are the answer, and what
+ * the answer does not reach belongs under it rather than above it. BOTH are REQUIRED and
+ * neither has a default — an optional parameter would let a second surface print this
+ * screen with a section silently missing, which is the shape of omission this whole
+ * reading exists not to have.
+ *
+ * THEY ARE IN THAT ORDER because drift is news about a base the reader already chose, and
+ * arrival is news about one they have not. A reader who has imported before reads the
+ * first and never needs the second; a reader who has not sees only the second, and it is
+ * the last thing on their screen.
  */
 export function statusReport(
   render: Render,
   status: Bootstrap,
   actor: string,
   outside: readonly DecisionsOutside[],
+  neverImported: readonly UnimportedBase[],
 ): string[] {
   return [
     `${actor} — where things stand.`,
@@ -112,6 +118,44 @@ export function statusReport(
     ...awaitingLines(render, status),
     ...unreadLines(status),
     ...outsideLines(outside),
+    ...neverImportedLines(neverImported),
+  ];
+}
+
+/**
+ * The conventional decision bases this checkout holds that the record has never read — the
+ * third section that is ABSENT when it has nothing to say.
+ *
+ * WHY IT IS A SECTION OF ITS OWN and not more rows under {@link outsideLines}. That section
+ * reports DRIFT: documents added to a base whose other documents the reader already chose
+ * to import, so its line means *"there is more of what you already wanted"*. This one
+ * reports ARRIVAL: a directory nobody has ever pointed the verb at, so its line means
+ * *"there is a thing here you may not know this product can read"*. One heading over both
+ * would make the reader work out which of the two each row was, from a count.
+ *
+ * MEASURED, and it is why the section exists: a real project holding 416 decisions, none of
+ * them imported, ran `mnema status` and was answered `No decisions in force` — true about
+ * the record and useless to the person reading it, whose decisions were on the disk under
+ * their cursor. The sentence that resolves it was already written on `decision import
+ * --help`; what was missing was a path to it from where the person already was.
+ *
+ * IT SPEAKS ONLY OF DIRECTORIES A PUBLISHED TOOL CREATES (`CONVENTIONAL_BASES`), and never
+ * of a directory it found by walking. The whole argument, and the doctrine it is measured
+ * against, is in `outside-the-record.ts`.
+ *
+ * THE SHAPE IS THE ONE ABOVE — a name, its count, and the command that reaches it — taken
+ * rather than invented, for that section's reason: two readings spelling one fact two ways
+ * is the thing the shared shape exists to prevent.
+ */
+function neverImportedLines(neverImported: readonly UnimportedBase[]): string[] {
+  if (neverImported.length === 0) return [];
+  return [
+    '',
+    'Never imported:',
+    ...neverImported.map(
+      (base) =>
+        `  ${oneLine(base.directory)} (${base.documents}) — mnema decision import ${oneLine(base.directory)}`,
+    ),
   ];
 }
 

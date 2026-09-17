@@ -52,7 +52,12 @@ import { dirname } from 'node:path';
 import { type Bootstrap, bootstrap } from '@mnema/copilot';
 import { type Clock, type DiscoveryEnv, resolveTrees, systemClock } from '@mnema/core';
 import { type AnchorForms, anchorForms, resolveTypedAnchor } from '../anchors.js';
-import { type DecisionsOutside, decisionsOutsideTheRecord } from '../outside-the-record.js';
+import {
+  basesNeverImported,
+  type DecisionsOutside,
+  decisionsOutsideTheRecord,
+  type UnimportedBase,
+} from '../outside-the-record.js';
 import { caches, linkBreaksOf, type ScopedLinkBreak, withScopedCaches } from '../tree-sources.js';
 
 /** What the status command needs — injected so it is testable. */
@@ -90,6 +95,20 @@ export interface StatusDone {
    * switched branch. See `outside-the-record.ts` for why this reading exists at all.
    */
   readonly outside: readonly DecisionsOutside[];
+  /**
+   * The conventional decision bases of this checkout the record has never read a decision
+   * out of — empty for a project with none, and for one that has imported from them.
+   *
+   * IT IS THE OTHER HALF OF {@link StatusDone.outside} AND NOT A WIDER VERSION OF IT. That
+   * field is about drift in a base the record already names; this one is about a
+   * repository where the gesture has never been made, which that field cannot reach
+   * because its directories come out of edges that do not exist yet. Measured, and it is
+   * why the field exists: a real project holding 416 decisions, none imported, was
+   * answered with `No decisions in force` and silence. It is outside
+   * {@link StatusDone.status} for that field's reason exactly — a count of files belongs
+   * to one checkout, and `--json` still serves the derivation and only the derivation.
+   */
+  readonly neverImported: readonly UnimportedBase[];
 }
 
 /** There was no project here, or the actor named no identity in it. */
@@ -133,6 +152,9 @@ export function runStatus(
       // file imported into the private tree on an earlier run is imported, and
       // reporting it as outside would send a person to import it twice.
       outside: decisionsOutsideTheRecord(sources, dirname(trees.projectPublic as string)),
+      // Read from the disk too, and DISJOINT from the line above by construction: a base
+      // the record names at all is the other reading's subject and is skipped here.
+      neverImported: basesNeverImported(sources, dirname(trees.projectPublic as string)),
       // No run is this command's own: a read opens none, and the process is gone by the
       // time the next one asks. So the "prefer my own run" rule has nothing to prefer
       // and the answer stays the actor's latest — which is the right one for a person

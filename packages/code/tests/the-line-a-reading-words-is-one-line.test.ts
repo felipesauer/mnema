@@ -948,6 +948,18 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the same path again, as the argument the verb takes — collapsed a second time because it is a second site of the same value, which is the rule this layer applies per FIELD',
   },
+  'status.ts «  {} ({}) — mnema decision import {}» base.documents #1': {
+    verdict: 'minted',
+    why: 'how many decision documents a conventional base holds — a count this reading made over the file names, under the ARRIVAL heading rather than the drift one',
+  },
+  'status.ts «  {} ({}) — mnema decision import {}» oneLine(base.directory) #3': {
+    verdict: 'collapsed',
+    why: 'one of the five conventional directories, a literal of this package — collapsed anyway, because the field is the same field and a rule that held for the value read from the record and not for the value read from a list would be two rules',
+  },
+  'status.ts «  {} ({}) — mnema decision import {}» oneLine(base.directory) #4': {
+    verdict: 'collapsed',
+    why: 'the same path again, as the argument the verb takes — the fourth site of one field, for the third site’s reason',
+  },
   'status.ts «{} of {}» shown #1': { verdict: 'minted', why: 'how many a list shows — a count' },
   'status.ts «{} of {}» total #1': { verdict: 'minted', why: 'how many there are — a count' },
   'status.ts «{}» total #1': {
@@ -1386,7 +1398,7 @@ describe('every value this layer puts on a line is classified', () => {
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
     expect(FOUND.builders.length).toBeGreaterThan(10);
-    expect(FOUND.sites.length).toBe(223);
+    expect(FOUND.sites.length).toBe(226);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1407,10 +1419,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(57);
-    expect(count('minted')).toBe(127);
+    expect(count('collapsed')).toBe(59);
+    expect(count('minted')).toBe(128);
     expect(count('composed')).toBe(39);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(57);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(59);
   });
 
   it('every reason says where the value comes from', () => {

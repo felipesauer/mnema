@@ -25,13 +25,37 @@
  * fact belongs where the gesture is: at the terminal of the person who decides what to
  * import, which is `mnema status`.
  *
- * NOTHING HERE GUESSES WHICH DIRECTORY. `scanAdrDirectory`'s own rule is that the
- * caller names the base and the product never picks one, and this keeps it: the
- * directories come out of the RECORD. Every decision the import wrote carries a
- * `derived-from` edge to the file it came from, so a base this project has imported
- * from is a base the record itself names. A project that has never imported has no such
- * edge, and this answers nothing at all — which is the right answer rather than a
- * special case, and is the same shape as the reading that says what it did not look at.
+ * THE FIRST READING NAMES NO DIRECTORY OF ITS OWN. `scanAdrDirectory`'s rule is that the
+ * caller names the base and the product never picks one, and {@link
+ * decisionsOutsideTheRecord} keeps it: its directories come out of the RECORD. Every
+ * decision the import wrote carries a `derived-from` edge to the file it came from, so a
+ * base this project has imported from is a base the record itself names.
+ *
+ * AND THAT PARAGRAPH ENDED *"a project that has never imported ... answers nothing at all
+ * — which is the right answer rather than a special case"*. It is quoted rather than
+ * deleted because {@link basesNeverImported} makes it false, and what falsified it is a
+ * measurement: a real project holding 416 decisions, none of them imported, is answered by
+ * `mnema status` with `No decisions in force` and silence. Silence is the right answer
+ * about a directory nobody named; it is the wrong answer about whether this product has
+ * anything to say to somebody standing in a repository full of decisions. The reading that
+ * said nothing was not wrong — it was the only reading there was.
+ *
+ * SO THE SECOND READING DOES NAME DIRECTORIES, AND THE DOCTRINE IT LOOKS LIKE IT BREAKS IS
+ * ABOUT SOMETHING ELSE. `scan.ts` forbids guessing a directory because a walk pointed at a
+ * repository root *"would read every markdown file in it — a README, a changelog, an issue
+ * template — and propose whatever happened to have a heading and a paragraph"*. That reason
+ * is about PROPOSING, and its whole cost is a permanent entry in an append-only record that
+ * nobody chose. {@link basesNeverImported} proposes nothing and opens nothing: it lists file
+ * NAMES in {@link CONVENTIONAL_BASES} and reports a count beside the verb that would read
+ * them. A wrong guess costs one false line in a `status` that a person reads and ignores.
+ * Those are risks of different orders, and the doctrine was written about the other one —
+ * which is why it stands unchanged over the import and is stated here as the limit of this
+ * reading rather than inherited by it.
+ *
+ * IT COUNTS WHAT THE RECORD HAS NO EDGE INTO, NEVER WHAT IS MISSING FROM A BASE IT KNOWS.
+ * A base the record names at all is {@link decisionsOutsideTheRecord}'s subject, and this
+ * skips it entirely — a directory reported by both would be one fact worded two ways, and
+ * the second wording would be the weaker one.
  */
 
 import { join } from 'node:path';
@@ -84,24 +108,122 @@ export function decisionsOutsideTheRecord(
   sources: readonly ScopedCache[],
   root: string,
 ): DecisionsOutside[] {
+  const imported = importedTargets(sources);
+  const found: DecisionsOutside[] = [];
+  for (const directory of [...basesOf(imported)].sort()) {
+    const names = adrFileNames(join(root, ...directory.split('/')));
+    const outside = names.filter((name) => !imported.has(inBase(directory, name))).length;
+    if (outside > 0) found.push({ directory, outside });
+  }
+  return found;
+}
+
+/**
+ * The `derived-from` targets inside this project, over every tree the caller can see —
+ * the record's own account of which files it has read a decision out of.
+ *
+ * IT IS ONE READING FOR BOTH ANSWERS below. The two differ in what they do with it — one
+ * asks which documents of a named base are missing, the other asks which bases are named
+ * at all — and a second walk of the same relation is how they would come to disagree
+ * about whether a base counts as known, so that one directory ended up in both sections.
+ */
+function importedTargets(sources: readonly ScopedCache[]): ReadonlySet<string> {
   const imported = new Set<string>();
   for (const source of sources) {
     for (const edge of source.cache.linksByRelation(DERIVED_FROM_RELATION)) {
       if (insideRoot(edge.target)) imported.add(edge.target);
     }
   }
+  return imported;
+}
 
+/** The directories those targets sit in — `.` for a file imported from the root. */
+function basesOf(targets: ReadonlySet<string>): ReadonlySet<string> {
   const bases = new Set<string>();
-  for (const target of imported) {
+  for (const target of targets) {
     const cut = target.lastIndexOf('/');
     bases.add(cut < 0 ? '.' : target.slice(0, cut));
   }
+  return bases;
+}
 
-  const found: DecisionsOutside[] = [];
-  for (const directory of [...bases].sort()) {
-    const names = adrFileNames(join(root, ...directory.split('/')));
-    const outside = names.filter((name) => !imported.has(inBase(directory, name))).length;
-    if (outside > 0) found.push({ directory, outside });
+/**
+ * The directories a published ADR tool puts a decision base at, POSIX-spelled and relative
+ * to the project root.
+ *
+ * WHERE EACH ONE COMES FROM, because a list with no provenance is a list that grows by
+ * opinion: `doc/adr` is `adr-tools`' default, `docs/adr` is `log4brains`', `docs/decisions`
+ * is MADR's, `docs/architecture/decisions` is the spelling Nygard's article put in
+ * circulation, and `adr` at the root is what a project that wants it short writes. Every
+ * entry is a directory some tool CREATES if you let it, which is the only test for
+ * membership here — a directory this or any other project happens to use is not one.
+ *
+ * THIS BENCH'S OWN `.refactor/decisions` IS DELIBERATELY NOT IN IT, and the reason is the
+ * rule rather than modesty: it is this repository's convention and no market's, so shipping
+ * it would put a fact about how this product is built into what the product says to
+ * everybody else. A project that keeps decisions somewhere unconventional is a project this
+ * reading says nothing about, and that is the honest silence — `decision import <dir>`
+ * takes any directory, and `--help` names it.
+ *
+ * THE LIST IS SHORT ON PURPOSE, because each entry costs a `readdirSync` on every
+ * `mnema status`. Measured on 17/09/2026, medians of 200 rounds in alternated order with a
+ * base-vs-base control that tied (0.174 against 0.173 ms): the five together cost
+ * **0.175 ms** over a checkout whose `docs/decisions` holds 260 documents, and **0.045 ms**
+ * over one where none of the five exists. The same `mnema status` costs **171 ms**, so the
+ * whole reading is **0.10%** of the answer it rides on. A sixth entry is not free — it is
+ * cheap, which is a different thing, and the number is what a later list is argued against.
+ */
+const CONVENTIONAL_BASES: readonly string[] = [
+  'adr',
+  'doc/adr',
+  'docs/adr',
+  'docs/architecture/decisions',
+  'docs/decisions',
+];
+
+/** A conventional decision base this checkout holds, that the record has never read. */
+export interface UnimportedBase {
+  /** The directory, POSIX-spelled and relative to the project root — what a reader types back. */
+  readonly directory: string;
+  /**
+   * How many decision documents it holds, by FILE NAME alone (`adrFileNames`).
+   *
+   * It is not how many would be proposed, and the difference is the same one
+   * {@link DecisionsOutside.outside} carries: a document may still be refused as retired,
+   * over the field limit, or holding something shaped like a credential. This counts what
+   * a person would see on opening the directory, which is the number that makes the line
+   * recognizable to them. The verb that decides is named beside it.
+   *
+   * Never zero on an entry that is reported: a conventional path that does not exist, or
+   * that holds no decision document, is a path this says nothing about.
+   */
+  readonly documents: number;
+}
+
+/**
+ * The conventional decision bases this checkout holds that the record has never read a
+ * decision out of — in {@link CONVENTIONAL_BASES} order, and only those with documents in
+ * them.
+ *
+ * WHY IT IS A SEPARATE ANSWER FROM {@link decisionsOutsideTheRecord} rather than a wider
+ * one. That reading is about DRIFT: a base the record already knows, and the documents
+ * added to it since. This one is about ARRIVAL: a repository where the gesture has never
+ * been made at all, which is the case that reading is structurally unable to reach, because
+ * its directories come out of edges that do not exist yet. A base the record names is
+ * skipped here whatever its count, so the two never report one directory twice.
+ *
+ * `root` is the project root, the same one the other reading takes.
+ */
+export function basesNeverImported(
+  sources: readonly ScopedCache[],
+  root: string,
+): UnimportedBase[] {
+  const known = basesOf(importedTargets(sources));
+  const found: UnimportedBase[] = [];
+  for (const directory of CONVENTIONAL_BASES) {
+    if (known.has(directory)) continue;
+    const documents = adrFileNames(join(root, ...directory.split('/'))).length;
+    if (documents > 0) found.push({ directory, documents });
   }
   return found;
 }
