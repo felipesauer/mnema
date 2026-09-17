@@ -1,10 +1,13 @@
 /**
- * THE SENTENCE REACHES EVERY DOOR — and eight-of-nine is what this file exists to redden.
+ * THE SENTENCE REACHES EVERY DOOR — and nine-of-ten is what this file exists to redden.
  *
  * The promise this product makes lived in NINE places at once and nothing held them
  * together: the npm manifest of the published package, the `--help` of the binary, the
  * golden that pins that help, a second manifest, the opening of four READMEs, and a
- * doc-comment. Measured before this guard existed, the golden covered TWO of them and
+ * doc-comment. It is TEN since 17/09/2026, when this repository — public, and until then
+ * without a root page at all — grew the one a clone lands on, which is the door a stranger
+ * opens before any of the others. That line said eight-of-nine until the tenth arrived.
+ * Measured before this guard existed, the golden covered TWO of them and
  * nothing at all looked at a `package.json`. So the claim on the npm page and the claim in
  * the README could drift apart in silence — and had: the manifest sold *"a tamper-evident,
  * local-first audit chain… that records every action behind workflow gates in a
@@ -15,7 +18,7 @@
  *
  *   1. THE DOORS SAY IT. Each door below is read off the disk and must carry
  *      {@link PRODUCT_PROMISE} word for word. This is the half that catches a sentence
- *      changed in eight places and left in the ninth, which is the failure that has
+ *      changed in nine places and left in the tenth, which is the failure that has
  *      actually happened here.
  *   2. NOTHING SAYS THE OLD ONE. Every tracked text file is swept for the clauses the
  *      study falsified, each with the measurement that killed it written beside it. This
@@ -110,6 +113,18 @@ describe('the sentence reaches every door', () => {
 
   it("the published package's README carries BOTH lines, above anything else", () => {
     const head = flat(opening(read('packages/code/README.md')));
+    expect(head).toContain(flat(PRODUCT_PROMISE));
+    expect(head).toContain(flat(PRODUCT_PROMISE_CAVEAT));
+  });
+
+  it('the page a clone lands on carries BOTH lines, above anything else', () => {
+    // THE TENTH DOOR, AND THE FIRST ONE ANYBODY OPENS. This repository is public and had
+    // no root page at all until 17/09/2026: a clone saw twelve configuration files, a
+    // licence and a security policy, and nothing that said what this is. The page that
+    // fixed that makes the product's claim to a stranger in fewer words than any other
+    // door, which is exactly the shape a sentence drifts in — so it is read here rather
+    // than trusted to stay quoted.
+    const head = flat(opening(read('README.md')));
     expect(head).toContain(flat(PRODUCT_PROMISE));
     expect(head).toContain(flat(PRODUCT_PROMISE_CAVEAT));
   });
