@@ -22,6 +22,8 @@
  * without spawning a process or writing to the real streams.
  */
 
+import { realpathSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import { IdentityUnavailableError } from '@mnema/core';
 import { Command, CommanderError, Option } from 'commander';
 import type { Render } from './presentation/render.js';
@@ -341,8 +343,50 @@ export async function start(argv: readonly string[], entry: Entry): Promise<void
   await run(chosen, entry.io);
 }
 
+/**
+ * Whether this module is the file the process was told to run.
+ *
+ * WHAT THIS REPLACED, AND WHAT IT COST. The comparison here used to be
+ * ``import.meta.url === `file://${process.argv[1]}` `` — a concatenation, against a URL.
+ * It agreed with itself only when the path was spelled the same on both sides, and there
+ * are two ordinary ways for it not to be. Both were measured on the built binary, and both
+ * were SILENT: no output, no stderr, exit 0.
+ *
+ *   - THE SYMLINK. Node resolves a symlink before it names the module, so `import.meta.url`
+ *     is the real file while `process.argv[1]` is the link that was typed. Every
+ *     `npm i -g`, `pnpm add -g` and `npx` runs the binary through `node_modules/.bin/mnema`,
+ *     which IS a symlink — so the published install was the one invocation that could not
+ *     speak, and three pages said otherwise.
+ *   - THE PATH THAT NEEDS ESCAPING. `import.meta.url` percent-encodes; concatenating
+ *     `file://` does not. A space or a non-ASCII character in any parent directory —
+ *     `/home/João/`, `C:\Program Files\` — was enough, with no symlink anywhere.
+ *
+ * So both sides are brought to one spelling: the path is followed to what is actually on
+ * disk, and turned into a URL by the function that does the escaping.
+ *
+ * WHY THE FAILURE IS SWALLOWED. `realpathSync` THROWS when the path is not there, and a
+ * throw at module scope is worse than a mute binary: over twenty test files import this
+ * module for {@link buildProgram}, and they do it counting on this block to stay quiet. The
+ * answer for a path with nothing behind it is the honest one anyway — a file that is not on
+ * disk is not the file this module is — so it is `false`, not an exception. Same shape as
+ * `identityOf` in `commands/verify.ts`, and the same reason.
+ *
+ * Proved by `tests/the-binary-a-page-promises-is-the-one-that-speaks.test.ts`, which runs
+ * the BUILT binary through a symlink and from a directory whose name carries a space and an
+ * accent — the two spellings the old comparison lost — and asserts it stays quiet under
+ * import.
+ */
+function invokedAsTheBinary(moduleUrl: string, argv1: string | undefined): boolean {
+  if (argv1 === undefined) return false;
+  try {
+    return moduleUrl === pathToFileURL(realpathSync.native(argv1)).href;
+  } catch {
+    return false;
+  }
+}
+
 // Auto-run when invoked as the binary (not when imported by a test).
-if (process.argv[1] !== undefined && import.meta.url === `file://${process.argv[1]}`) {
+if (invokedAsTheBinary(import.meta.url, process.argv[1])) {
   exitQuietlyOnClosedPipe();
   void start(process.argv.slice(2), {
     io: processIo,

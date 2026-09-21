@@ -79,12 +79,18 @@ table, claim by claim.
 
 ## Install
 
+**`@mnema/code` is not on npm yet**, so the command below does not resolve
+today. It is written here as what the install will be, not as something to run:
+
 ```sh
+npm i -g @mnema/code
+# or, if your global binaries live under pnpm:
 pnpm add -g @mnema/code
 ```
 
-This installs the `mnema` binary. Requires Node ≥ 22.12.0; the package is
-ESM-only.
+It puts the `mnema` binary on your `PATH`. Requires Node ≥ 22.12.0; the package
+is ESM-only. Until it is published, the way to run it is from a clone — see
+[Building it from source](#building-it-from-source) at the bottom of the page.
 
 For the Claude Code plugin — the opening context and the per-edit rules — add
 this repository as a marketplace and install from it:
@@ -141,10 +147,17 @@ it checks:
 
 ```sh
 git clone https://github.com/felipesauer/mnema
-python3 mnema/packages/chain/verifier/mnema_verify.py record path/to/a/repo/.mnema
+python3 mnema/packages/chain/verifier/mnema_verify.py record /path/to/a/repo/.mnema
 #> checks: 11 ok, 0 FAIL, 0 UNCHECKED, 4 note
 #> VERDICT: VERIFIED
 ```
+
+The last argument is a path you supply: the `.mnema/` directory of the repository
+you are checking, which any repository that has run `mnema init` carries at its
+root. The clone gives you the verifier, not a record to point it at — so running
+that second line with the placeholder still in it prints
+`THE VERIFIER BROKE: there is no record at …` and exits 3, which is the verifier
+being right about a path with nothing behind it rather than about your record.
 
 Python 3.9 or later, no third-party packages, nothing to install: Ed25519 is
 RFC 8032 by hand, checked against the RFC's own vectors. It reproduces the
@@ -185,6 +198,11 @@ pnpm build
 pnpm lint
 pnpm test
 ```
+
+`pnpm build` leaves the binary at `packages/code/dist/cli.js`, and that file is
+the whole command line: run it as `node packages/code/dist/cli.js --version`, or
+symlink it onto your `PATH` under the name `mnema`, which is the shape a
+published install takes.
 
 ## License
 

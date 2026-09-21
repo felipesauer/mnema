@@ -44,9 +44,10 @@ offline — the projection is deterministic, but the merge policy is a separate 
 
 ## Install
 
-```sh
-pnpm add @mnema/core
-```
+**This package is internal and is not published**, so there is no `pnpm add` for
+it: it is a workspace dependency of `@mnema/code`, which is the one meant to be
+installed. Read on to know what it holds and what it proves; to use it, take
+`@mnema/code`.
 
 Requires Node ≥ 22.12.0. ESM-only. Depends on `@mnema/chain` and `better-sqlite3`.
 

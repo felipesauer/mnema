@@ -347,7 +347,7 @@ export function resolve(program: Command, words: readonly string[]): Resolution 
  */
 export const NOT_CHECKED: Readonly<Record<string, string>> = {
   ANOTHER_PROGRAM:
-    'A command whose head is not `mnema`. The pages publish `pnpm add -g @mnema/code`, `claude plugin install mnema@mnema`, `cd`, `export`, `unset`, `source`, `diff` and `less`. Whether those verbs and flags exist is a fact about somebody else’s program, and the only way to ask is to run it.',
+    'A command whose head is not `mnema`. The pages publish `npm i -g @mnema/code` and `pnpm add -g @mnema/code` — both, because the install a reader reaches for depends on the client they already have — plus `claude plugin install mnema@mnema`, `cd`, `export`, `unset`, `source`, `diff` and `less`. Whether those verbs and flags exist is a fact about somebody else’s program, and the only way to ask is to run it.',
   A_VALUE_IS_NOT_A_NAME:
     'The value of a positional argument or of a flag — `"$TASK"`, `mnid:c0fc3c71…`, `./skills`, `~/work/api`, a record body. They are ids that do not exist until somebody writes them, paths on somebody else’s disk, and prose. Nothing declarative can know them; a guard that tried would be asserting its own fixtures.',
   A_GATE_DECIDES_THE_MOVE:

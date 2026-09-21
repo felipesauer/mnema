@@ -72,9 +72,13 @@ that was measured against the real binary instead, and the capture is
 
 ## Install
 
-The plugin runs the `mnema` binary, so install that first:
+The plugin runs the `mnema` binary, so that has to be on your `PATH` first.
+**`@mnema/code` is not on npm yet**, so the command below does not resolve today
+— it is what the install will be:
 
 ```sh
+npm i -g @mnema/code
+# or, if your global binaries live under pnpm:
 pnpm add -g @mnema/code
 ```
 
