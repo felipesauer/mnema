@@ -77,6 +77,8 @@ The plugin runs the `mnema` binary, so that has to be on your `PATH` first.
 — it is what the install will be:
 
 ```sh
+npm i -g @mnema/code
+# or, if your global binaries live under pnpm:
 pnpm add -g @mnema/code
 ```
 

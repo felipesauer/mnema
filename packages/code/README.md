@@ -150,6 +150,8 @@ anybody for anything, so a checkpoint cannot fail because a calendar was down.
 It is written here as what the install will be, not as something to run:
 
 ```sh
+npm i -g @mnema/code
+# or, if your global binaries live under pnpm:
 pnpm add -g @mnema/code
 ```
 

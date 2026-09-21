@@ -1,9 +1,9 @@
 /**
  * THE BINARY A PAGE PROMISES IS THE ONE THAT SPEAKS — invoked the way it is installed.
  *
- * WHAT WAS UNCHECKED, AND WHAT IT COST. Three pages published `npm i -g @mnema/code` under
- * the sentence "This installs the `mnema` binary", and the binary that command installs
- * printed NOTHING: no output, no stderr, exit 0. The entry block in `src/cli.ts` compared
+ * WHAT WAS UNCHECKED, AND WHAT IT COST. Three pages published a global install under the
+ * sentence "This installs the `mnema` binary", and the binary that install creates printed
+ * NOTHING: no output, no stderr, exit 0. The entry block in `src/cli.ts` compared
  * `import.meta.url` against a concatenated `file://${process.argv[1]}`, and that comparison
  * agrees with itself only when the path is spelled identically on both sides. Two ordinary
  * invocations spell it differently, and both were measured on the built binary:
