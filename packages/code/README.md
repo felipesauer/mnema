@@ -146,11 +146,15 @@ anybody for anything, so a checkpoint cannot fail because a calendar was down.
 
 ## Install
 
+**This package is not on npm yet**, so the command below does not resolve today.
+It is written here as what the install will be, not as something to run:
+
 ```sh
 pnpm add -g @mnema/code
 ```
 
-This installs the `mnema` binary. Requires Node ≥ 22.12.0; the package is ESM-only.
+It puts the `mnema` binary on your `PATH`. Requires Node ≥ 22.12.0; the package is
+ESM-only.
 
 ## Usage
 

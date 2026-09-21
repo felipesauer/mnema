@@ -127,9 +127,10 @@ layer makes no proof of its own; being clear about that is the point.
 
 ## Install
 
-```sh
-pnpm add @mnema/copilot
-```
+**This package is internal and is not published**, so there is no `pnpm add` for
+it: it is a workspace dependency of `@mnema/code`, which is the one meant to be
+installed. Read on to know what it holds and what it proves; to use it, take
+`@mnema/code`.
 
 Requires Node ≥ 22.12.0. The package is ESM-only.
 
