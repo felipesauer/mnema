@@ -348,6 +348,23 @@ const EAGER_EXTERNAL: Readonly<Record<string, string>> = {
   'wiring/options.ts commander':
     'the shared options are commander’s own `Option` objects, which is what makes one ' +
     'declaration serve every verb that takes them.',
+  'cli.ts node:fs':
+    '`realpathSync`, to follow `process.argv[1]` to what is on disk before asking whether ' +
+    'it is this module. The entry cannot defer it: the question is answered at module ' +
+    'scope, because the answer is WHETHER to run. Concatenating `file://` instead — which ' +
+    'is what stood here until the binary was measured through the symlink every global ' +
+    'install creates — cost nothing on the floor and cost the whole program: no output, no ' +
+    'stderr, exit 0. Measured at 40 alternated pairs of `--version` against the same entry ' +
+    'without it: 174 ms against 172 ms of median, inside a spread of 49 to 76 ms. Both are ' +
+    'builtins the loader has already brought in — `process.moduleLoadList` names `fs` and ' +
+    '`url` among the 123 modules standing before a line of this package runs.',
+  'cli.ts node:url':
+    '`pathToFileURL`, the other half of the same comparison and the half a hand-rolled ' +
+    'one gets wrong: `import.meta.url` percent-encodes and string concatenation does not, ' +
+    'so a space or an accent in any parent directory was enough to mute the binary with ' +
+    'no symlink anywhere. The escaping is a table this product does not keep, which is the ' +
+    'same argument `presentation/width.ts` makes for `string-width`. Same measurement as ' +
+    '`node:fs` above; the two arrived together.',
   'env.ts node:os':
     '`homedir()`, for the discovery environment every verb is handed. A builtin, and ' +
     'the one the entry cannot defer: the environment is resolved before a verb runs.',

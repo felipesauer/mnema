@@ -245,8 +245,15 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * what it wrote to the import — so it reaches `node:child_process`, `node:fs`, `node:os`,
  * `node:path`, the published-examples harness and the two commands it drives
  * (`commands/decision-import.ts`, `commands/init.ts`).
+ *
+ * It went 2713 -> 2720 when the entry began to be invoked the way it is INSTALLED: seven
+ * clauses in `the-binary-a-page-promises-is-the-one-that-speaks.test.ts`, which runs the
+ * built binary through a symlink and from a directory whose name carries a space and an
+ * accent — the two spellings under which it printed nothing at all — so it reaches
+ * `node:child_process`, `node:fs`, `node:os`, `node:path`, `node:url` and the entry's own
+ * `version.ts`, which is the one line it asserts on.
  */
-const CLAUSES_IN_THE_TREE = 2713;
+const CLAUSES_IN_THE_TREE = 2720;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
