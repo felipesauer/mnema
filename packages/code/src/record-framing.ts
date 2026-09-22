@@ -112,6 +112,13 @@ export type ServedSubject =
  * pattern's body, which is the reasoning `served-patterns.ts` states and this module
  * inherits rather than re-decides.
  *
+ * AND THE SERVER'S OWN `instructions` ARE NOT IN IT EITHER, though they reach a model
+ * unasked in every session the server is connected to. They carry no record text — they
+ * are this product describing its own doors, the class of a tool description — and they
+ * are sent in the handshake, before the session knows which project it serves, so there is
+ * no record they could carry and no switch they could read. Disconnecting the server is
+ * what turns them off. The reasoning is `mcp/instructions.ts`'s, in full.
+ *
  * THE DAY THE LAST SENTENCE PREDICTED HAS COME, and `edit-rules-push` is it. That
  * sentence read: "a hook that PUSHES any of those same answers into a prompt is a
  * different channel from the tool that answers when asked, and it belongs in this union
