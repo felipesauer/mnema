@@ -94,9 +94,9 @@ export const DEFAULT_MAX_SEGMENT_BYTES = 4 * 1024 * 1024;
  * THE NAME USED TO BE `DEFAULT_MAX_UNSIGNED_EVENTS`, and the premise that rename
  * falsifies is written down here because it cost a whole reading of this file. That
  * name says "sign every 64 events", so the product's actual cadence — one signature
- * per act of writing, whatever its size — read as a mechanism that never fires, and
- * the bench recorded it as DEAD CODE (`.refactor/RECONSTRUCTION.md`, and the A2
- * ledger in `ARCHITECTURE.md`, both said "inert"). It is not dead: it fires whenever
+ * per act of writing, whatever its size — read as a mechanism that never fires, and it
+ * was written down as DEAD CODE, "inert", in two separate places. It is not dead: it
+ * fires whenever
  * ONE act writes more than this many events, and the product has such an act —
  * `mnema decision import --write` puts two events on the tail per ADR through a
  * single writer and signs once at the end, so a directory of 33 ADRs crosses it. That

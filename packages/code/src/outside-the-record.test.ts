@@ -253,7 +253,9 @@ describe('which decision documents this checkout holds that the record has none 
  *   - IT NAMES ONLY WHAT A PUBLISHED TOOL CREATES. A directory this project invented, or
  *     somebody else did, is a directory this says nothing about — including THIS bench's
  *     own `.refactor/decisions`, which is the entry a reader of the source would most
- *     expect to find and the one that must not be there.
+ *     expect to find and the one that must not be there. THE FIXTURE BELOW SPELLS IT OUT
+ *     AND THE SOURCE NO LONGER DOES, which is deliberate: this file does not ship, the
+ *     module does, so the name lives on the side that stays in the repository.
  *   - IT NEVER NAMES A BASE THE RECORD READS. One directory in two sections is one fact
  *     worded twice, and the weaker wording would be this one.
  *   - IT COUNTS BY FILE NAME and opens nothing, which is what makes it cost a `readdirSync`
@@ -287,8 +289,14 @@ describe('which conventional decision bases this checkout holds that the record 
     // `.refactor/decisions` is where this repository keeps its decisions, and it holds 82
     // of them. Shipping it as a candidate would put a fact about how this product is built
     // into what the product says to everybody else, which is a rule of this workspace and
-    // not a matter of taste. It is asserted here because the source is the only other
-    // place it is written, and a list is exactly the thing somebody extends in passing.
+    // not a matter of taste.
+    //
+    // THIS USED TO SAY IT WAS ASSERTED HERE "because the source is the only other place it
+    // is written", AND THAT PREMISE IS GONE: the module's own doc named the directory, and
+    // that doc ships inside the published package — so the module was doing, in the text a
+    // stranger installs, the very thing it declines to do in the list. The module states
+    // the RULE now and names no directory, which leaves this file as the only place the
+    // name is written, and a list is exactly the thing somebody extends in passing.
     const { repo, env } = setup();
     adr(repo, '.refactor/decisions/0001-utc.md', 'Use UTC everywhere');
     adr(repo, '.mnema/decisions/0001-ids.md', 'Mint ids as uuidv7');

@@ -259,8 +259,15 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * it reaches `node:child_process`, `node:fs`, `node:os`, `node:path`, the published-examples
  * harness and the two commands that make the record (`commands/decision.ts`,
  * `commands/init.ts`).
+ *
+ * It went 2728 -> 2733 when the guard over what a published file may cite arrived: five
+ * clauses in `what-ships-cites-only-what-ships.test.ts`, which asks git for every tracked
+ * file under a package's `src` or under `plugin/` and reads each one — so it reaches
+ * `node:child_process`, `node:fs`, `node:path` and `node:url`, and `vitest` for the fifth.
+ * It imports no production module at all, deliberately: its subject is the TEXT of the
+ * workspace's files rather than anything they export.
  */
-const CLAUSES_IN_THE_TREE = 2728;
+const CLAUSES_IN_THE_TREE = 2733;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 

@@ -1086,9 +1086,12 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       // deleted, moved to where the reader who needs them is (this comment and
       // {@link OPEN_RUN_CONTRACT}'s doc), because the model reads the description and
       // the maintainer reads the source. What went sideways rather than up went to a
-      // tool THIS TEXT NAMES, which is the rule the bench measured — the agent calls
-      // what is named: `read_record` now says what an ADR-<n> label is, and `search`
-      // says its own ordering and that `kind` is the catalog's own word.
+      // tool THIS TEXT NAMES, and the rule under that is measured rather than assumed:
+      // an agent holding this server with nothing naming a tool called none —
+      // `mcp_asked` false in 20 of 20 and then in 40 of 40 instrumented cells
+      // (`measurements/p1/`). So the agent calls what is NAMED: `read_record` now says
+      // what an ADR-<n> label is, and `search` says its own ordering and that `kind` is
+      // the catalog's own word.
       description:
         "The opening context for this session's actor: where they left off, the LIVE work, " +
         'the patterns, the DECISIONS IN FORCE — settled here and not replaced — and what ' +

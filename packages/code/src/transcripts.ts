@@ -5,7 +5,8 @@
  * assistant message on it carries `message.usage` — the four token counts and the id
  * of the model that produced them. That is the only reason this file exists: the
  * number a person is accountable for is obtainable, and it is obtainable WITHOUT the
- * record growing a field for it (see `RECONSTRUCTION.md`, *Custo/tokens*). The chain
+ * record growing a field for it — `commands/usage.ts` states that decision and what it
+ * turns on, which is that these transcripts expire. The chain
  * gets nothing; the surface crosses and shows.
  *
  * IT READS `usage`, `model` AND AN INSTANT. It never reads, copies, summarises or
@@ -28,9 +29,10 @@
  *   1. It is lossy. `/` and `.` and `-` all become `-`, so a sibling project
  *      `…/mnema-study` flattens to a name that is a prefix-plus-dash of `…/mnema`'s.
  *      A read keyed on the name would attribute another project's sessions.
- *   2. It is not where the work necessarily is. A session launched in `<repo>/.refactor`
- *      gets its OWN directory, and a session launched in `<repo>` holds subagent
- *      transcripts whose `cwd` is `<repo>/.refactor`. Both are work in this project.
+ *   2. It is not where the work necessarily is. A session launched in a SUBDIRECTORY of
+ *      a project gets its OWN directory, and a session launched at `<repo>` holds
+ *      subagent transcripts whose `cwd` is that subdirectory. Both are work in the one
+ *      project.
  *   3. The two transcripts that broke the rule record a `cwd` the session MOVED to
  *      (`/var/www/plantae-utilities` → `/var/www/plantae-infra`), so the flattened name
  *      is a fact about where a process started and the `cwd` is a fact about where it

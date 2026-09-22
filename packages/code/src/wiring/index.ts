@@ -91,7 +91,7 @@
  * THIS machine, and neither half of that is in a clone. It is here because the number is
  * real and somebody has to account for it, and it is declared a READ for the strict
  * reason the others are — it appends nothing, and the record deliberately has no field
- * for a cost (`RECONSTRUCTION.md`, *Custo/tokens*: the host's transcripts expire, so a
+ * for a cost (`commands/usage.ts` states it: the host's transcripts expire, so a
  * recorded cost would be a signed claim whose only witness deletes itself). Tokens and a
  * model id, never dollars; one host session in a run's window is attributed and NAMED,
  * more than one is named and refused, none is a WORD and never a zero. It ends by saying

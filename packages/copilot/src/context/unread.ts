@@ -47,8 +47,7 @@
  *
  * It does not put a memory or an observation IN the opening context. Whether the
  * knowledge kinds get a list of their own, and whether they get one list or two, is
- * an open decision with a study of its own
- * (`.refactor/decisions/estudo-dois-kinds-de-conhecimento.md`). A count is not that
+ * UNDECIDED, and this read settles it neither way: it counts, and a count is not that
  * list: it names a kind and a number, never a body, and it is the same economy the
  * rest of this read already runs on — NAMES, never bodies, and here not even names.
  *

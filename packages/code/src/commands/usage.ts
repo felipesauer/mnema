@@ -2,8 +2,8 @@
  * `mnema usage` — what each run of this project cost, read from the host and never
  * from the record.
  *
- * THE RECORD DOES NOT HOLD THIS NUMBER AND WILL NOT. The decision is written in
- * `RECONSTRUCTION.md` (*Custo/tokens*) and it turns on a measured property of where
+ * THE RECORD DOES NOT HOLD THIS NUMBER AND WILL NOT, and this file is where that
+ * decision is stated. It turns on a measured property of where
  * the number lives: the host's transcripts EXPIRE (`cleanupPeriodDays` has a mandatory
  * retention and `0` is rejected), so a cost recorded in the chain would be a signed
  * claim whose only witness deletes itself in weeks — indistinguishable, by then, from
