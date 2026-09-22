@@ -2,10 +2,12 @@
  * What this server says about itself when a client connects — the `instructions` of the
  * MCP handshake, which the server had never sent.
  *
- * WHY THIS TEXT, AND WHY HERE. The host this product ships a plugin for folds a server's
- * `instructions` into the system prompt of every session the server is connected to, under
- * the server's name, and it DEFERS the tools: "only tool names and server instructions load
- * at session start" (code.claude.com/docs/en/mcp, *Scale with MCP tool search*). So before
+ * WHY THIS TEXT, AND WHY HERE. The host this product ships a plugin for hands a server's
+ * `instructions` to every session the server is connected to, under the server's name,
+ * before the session's first turn — in the system section of an interactive session, and as a
+ * reminder at the head of the first message of a headless one — and it DEFERS the tools:
+ * "only tool names and server instructions load at session start"
+ * (code.claude.com/docs/en/mcp, *Scale with MCP tool search*). So before
  * an agent decides to reach for a tool of this server, the only words of this server it has
  * read are the twenty-five names and this. Measured in the field, the names alone were not
  * enough: 6 of 9,448 tool calls over twelve days went to this server, the three that wrote

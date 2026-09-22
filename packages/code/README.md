@@ -926,7 +926,8 @@ Point an agent host at the `mcp` subcommand; it speaks JSON-RPC over stdio. **If
 installed the Claude Code plugin, it already does this** — the plugin declares this same
 server, and registering it here as well offers every tool twice, under
 `mcp__mnema__*` and `mcp__plugin_mnema_mnema__*`, fifty names for twenty-five tools to an
-agent that chooses by name. One of the two is enough.
+agent that chooses by name, and hands the session the server's instructions twice. One of
+the two is enough.
 
 ```json
 {
