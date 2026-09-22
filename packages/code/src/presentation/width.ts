@@ -260,7 +260,7 @@ export function widestOf(texts: readonly string[]): number {
 /**
  * The text with blanks after it until it is `width` columns wide — and never cut.
  *
- * A3: THE WRITING CALLS THE FUNCTION THE READING CALLS. It used to be `padEnd`, which pads to
+ * THE WRITING CALLS THE FUNCTION THE READING CALLS. It used to be `padEnd`, which pads to
  * a count of code UNITS — so a value two columns wide per glyph was padded as though it were
  * one, and the column after it started somewhere else on every row that held one. The pad is
  * the width the reading measures, less the width the reading measures, so the two cannot come

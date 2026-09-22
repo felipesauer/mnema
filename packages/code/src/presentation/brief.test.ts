@@ -23,7 +23,7 @@ import { briefDocument } from './brief.js';
  *
  * The push is ON by default because that is the composition's own answer for a record
  * nobody switched: the state carries no attribution at all, and the cases that need it
- * OFF say so with the switch that decided it (A13 — nothing here writes a value the
+ * OFF say so with the switch that decided it (nothing here writes a value the
  * product could not produce).
  */
 function governance(over: Partial<Brief> = {}): Brief {
@@ -93,7 +93,7 @@ function pattern(n: number, name = `Pattern number ${n}`) {
  * The same rule, with the provenance the record asserts for it — as many sources as asked
  * for.
  *
- * A13: every target here is a value a `derived-from` link really takes. The relation holds
+ * Every target here is a value a `derived-from` link really takes. The relation holds
  * whatever the writer typed, a path or an id, and neither is validated on the way in.
  */
 function derivedFrom(rule: { readonly id: string }, sources: number) {

@@ -770,7 +770,7 @@ describe('the answer a caller asked for is on the page, at the shortest window t
       rowsOfTheListOn(asked, THE_DRAWING.length),
       'the answer is not on the page',
     ).toBeGreaterThan(SHOWS_OF_THE_ANSWER);
-    // AND WHAT IT SPENDS IS THE DRAWING'S OWN HEIGHT AND THE SEAM, which is the elo between the
+    // AND WHAT IT SPENDS IS THE DRAWING'S OWN HEIGHT AND THE SEAM, which is the link between the
     // arithmetic this file's table is over and the console a caller really opens: the shape
     // composed above costs what the product's own opening costs at this size. IT WAS THE
     // DRAWING'S HEIGHT ALONE, and the two rows that joined it are the rule closing the region and

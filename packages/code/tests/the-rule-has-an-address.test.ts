@@ -261,7 +261,7 @@ describe('the reading answers, and charges nothing', () => {
     expect(reading.rules.map((one) => one.address)).toEqual(['src/collate', 'src']);
     expect(reading.rules.map((one) => one.rule)).toEqual([narrow, wide]);
     expect(reading.rules.every((one) => one.assertedIn === 'public')).toBe(true);
-    // G1's requirement of a charge: the id of the rule that caused it. It is here.
+    // What a charge requires: the id of the rule that caused it. It is here.
     const shown = await page('src/collate/fold.ts');
     expect(shown).toContain(narrow);
     expect(shown).toContain('how collation works');

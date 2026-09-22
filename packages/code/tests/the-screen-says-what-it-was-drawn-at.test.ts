@@ -406,7 +406,7 @@ describe('the device says its size in one piece, or the instrument says it does 
 });
 
 // ---------------------------------------------------------------------------
-// A1: everything that hands a program a terminal of a chosen size
+// Everything that hands a program a terminal of a chosen size
 // ---------------------------------------------------------------------------
 
 /** Every `.ts` file this surface is tested by, recursively. */
@@ -457,7 +457,7 @@ function withoutComments(source: string): string {
 
 describe('everything that gives a session a terminal of a chosen size checks that it got one', () => {
   it('is these three drivers, and a fourth would be accused', () => {
-    // A1, AND THE ACHADO IS THE COUNT. The instrument's own header says it is ONE file
+    // THE FINDING IS THE COUNT. The instrument's own header says it is ONE file
     // because it is one instrument — and there were FOUR programs that hand a session a
     // terminal, each with its own runner and its own `stty`. Found by the discriminant rather
     // than by a list, which is exactly why the number was four and not the one the header
@@ -517,9 +517,9 @@ describe('everything that gives a session a terminal of a chosen size checks tha
   });
 
   it('and everything that reads bytes off a stream decodes them through the one collector', () => {
-    // A1 AGAIN, BY ITS OWN DISCRIMINANT. The delivery that named this defect said the sites
+    // AGAIN BY ITS OWN DISCRIMINANT. The delivery that named this defect said the sites
     // were "the four drivers"; the discriminant says FIVE, because the fake terminal takes
-    // bytes in chunks without spawning anything. The site the list did not have is the achado
+    // bytes in chunks without spawning anything. The site the list did not have is the finding
     // — and it is the one that could not corrupt a character today, which is exactly the kind
     // this bench has been wrong about before.
     // ONE PLACE SUBSCRIBES TO CHUNKS, and it is the collector. Five files did before this —
@@ -581,7 +581,7 @@ describe('everything that gives a session a terminal of a chosen size checks tha
   });
 
   it('and every screen there is comes out of the one function that checks its width', () => {
-    // A3, SAID AS A PROPERTY OF THE SOURCES. The width guard is inside {@link screenOf}
+    // ONE RULE AT ONE SITE, SAID AS A PROPERTY OF THE SOURCES. The width guard is inside {@link screenOf}
     // rather than at the three dozen places that call it, so a case written tomorrow cannot
     // be a site that forgot — and this is what would go red if a second way of building a
     // screen appeared beside it.

@@ -122,9 +122,9 @@ function originFacts(render: Render, body: RecordBody): string[] {
  * under the subject line and ABOVE the body, which is the one blank line each arm
  * emits.
  *
- * It is positional rather than pushed inside the five arms, and that is the choice A1
- * asks about: pushing it per kind would be one rule at five sites, and the fifth is the
- * one that would be forgotten. The invariant it leans on is stated in this file's own
+ * It is positional rather than pushed inside the five arms, and that is a choice about
+ * where one rule lives: pushing it per kind would be one rule at five sites, and the
+ * fifth is the one that would be forgotten. The invariant it leans on is stated in this file's own
  * doc — a body is separated from the facts by exactly one empty line — and a kind that
  * prints no body (a task) has no empty line, so the facts go last, which is still above
  * nothing. `the-origin-travels-beside-the-label.test.ts` drives both shapes.

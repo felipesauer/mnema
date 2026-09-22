@@ -241,7 +241,7 @@ describe('one rule for both lists: the classification decides, and nothing else'
   });
 
   it('walks the workflow to reach them — no fixture writes a move the machine lacks', () => {
-    // A13, on the table above: every step of every path is a row of `TRANSITIONS`, so
+    // On the table above: every step of every path is a row of `TRANSITIONS`, so
     // the record under the case is one the product can actually produce. The bench's
     // writer does not gate, which is exactly why this is asserted rather than assumed.
     for (const [state, path] of Object.entries(REACHED_BY)) {

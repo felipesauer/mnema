@@ -164,7 +164,7 @@ describe('which of the three attestations dates it, and what that still depends 
     // THE PAIR, and neither half is worth much alone. A mutation that rewrote §8's rule
     // — from "the earliest confirmed block among them, which is the one of lowest
     // height" to "the confirmed block a walk of the proof reaches first" — reddened
-    // NOTHING: measured, as row M9.4 of this delivery's battery. The document could say
+    // NOTHING: measured by mutation. The document could say
     // one thing and the code do another, which is precisely the state this whole
     // delivery found and fixed, and nothing would have noticed the next time.
     //

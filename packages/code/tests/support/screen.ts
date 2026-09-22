@@ -129,7 +129,7 @@ export function everyWidthDrawnOn(rows: readonly string[]): readonly number[] {
  * WHAT SAYS A RESIZE HAPPENED: the console DREW at that width, since the step began.
  *
  * THE STEP USED TO WAIT FOR A FRAME, AND A FRAME NAMES NOTHING ABOUT A SIZE. That is the
- * amarra this bench already carries — a step waits for what it CAUSED — applied to the one event
+ * rule this suite already carries — a step waits for what it CAUSED — applied to the one event
  * it had not been applied to. Under load the frames of the step before can still be arriving, so
  * *a frame arrived since this step began* is answered by somebody else's frame; the step then
  * ends, the next size is set, and the size in between is never drawn at all. Measured on a loaded
@@ -595,7 +595,7 @@ export function theGapOn(screen: Screen, prompt: string): number {
  * frame it caused ended before the page had placed anything — and the case then read a screen
  * with the line still in the input area, which is a red that says *36 is not less than 10* and
  * mentions nothing about a race. Measured: red in about half of the whole-suite runs under load,
- * green eighteen times out of eighteen on its own. It is the amarra this bench already carries —
+ * green eighteen times out of eighteen on its own. It is the rule this suite already carries —
  * a step waits for what it CAUSED — and the cause here is the landing rather than the frame.
  *
  * SO THE STEP AND THE ASSERTION ASK THIS ONE FUNCTION. Two readings of *where the line is* is how
@@ -726,7 +726,7 @@ export function screenOf(bytes: string, columns: number, rows: number): Screen {
   const readable = (list: readonly string[]): string =>
     list.map((line) => line.replace(/ +$/, '')).join('\n');
   // THE ONE PLACE THE SIZE IS CHECKED, and it is here rather than at the three dozen call
-  // sites for the reason the A3 amarra is about: a rule read in two places is a rule that
+  // sites because a rule read in two places is a rule that
   // comes apart, and a case added tomorrow would be a site that forgot. Everything that
   // reads a screen of this surface reads it from here.
   theWidthIsTheOneItWasDrawnAt(lines, columns);

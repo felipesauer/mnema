@@ -108,7 +108,7 @@ const RUN = '\u2500';
  *
  * Spelled here as the escape rather than the word, because what these cases read is a
  * stream: the two spellings of the one accent are held together on the bytes of a frame by
- * `the-page-shows-its-seams.test.ts`, and this reads the end of that elo the library
+ * `the-page-shows-its-seams.test.ts`, and this reads the end of that link the library
  * writes.
  */
 const ACCENT = '\u001b[35m';
@@ -144,7 +144,7 @@ const before = { cwd: process.cwd(), env: { ...process.env } };
 const quiet: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
 
 beforeAll(async () => {
-  // A6: a sandbox of this run's own. Nothing here writes into the working tree.
+  // A sandbox of this run's own. Nothing here writes into the working tree.
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-colour-'));
   project = join(sandbox, 'project');
   mkdirSync(project, { recursive: true });
@@ -320,7 +320,7 @@ describe('a caller who asked for colour gets it on the chrome too, not only on t
     expect(rules.length, 'the page drew no edge at all').toBeGreaterThan(0);
     expect(rules[0], 'the chrome is unpainted where the caller asked for colour').toContain(ACCENT);
     // AND THE DECISION IS WHAT SAID SO: after a session that paints, the channel carries the
-    // product's answer. It is the elo between the page above and the module below.
+    // product's answer. It is the link between the page above and the module below.
     expect(process.env[WHAT_THE_LIBRARY_READS]).toBe(PAINTS);
   }, 120_000);
 });
@@ -369,7 +369,7 @@ describe('the answer is measured off the renderer, so the two cannot disagree', 
 });
 
 // ---------------------------------------------------------------------------
-// A1: the sites, found by the discriminant
+// The sites, found by the discriminant
 // ---------------------------------------------------------------------------
 
 /** One module of this surface: where it lives, its bytes, and its bytes as code. */
@@ -427,7 +427,7 @@ function importsOf(module: Module): readonly Imported[] {
 /** The layout library, by the name a module has to write to load it. */
 const THE_LIBRARY = 'ink';
 
-describe('A1: what loads the library, and what tells it', () => {
+describe('what loads the library, and what tells it', () => {
   /**
    * EVERY MODULE THAT LOADS THE LAYOUT LIBRARY — the ones that name it, plus everything
    * that loads one of THOSE when its own file is loaded.
@@ -478,7 +478,7 @@ describe('A1: what loads the library, and what tells it', () => {
     // import that loads it — and a STATIC import of any of it from anywhere would run
     // before every line of every function, this one included.
     //
-    // IT NAMED ONE DOOR AND THERE ARE TWO, which is the amarra rather than a correction: a
+    // IT NAMED ONE DOOR AND THERE ARE TWO, which is a principle rather than a correction: a
     // rule that holds in N places with a guard that names one is exactly the class this
     // bench has paid for eight times. What is asserted is the SET, found by what each module
     // imports — so a third door added tomorrow is named here the day it is written.

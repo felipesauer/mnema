@@ -209,7 +209,7 @@ describe('mnema decision supersede', () => {
   });
 });
 
-describe('mnema decision move — the transition follows the entity (coherence, S2)', () => {
+describe('mnema decision move — the transition follows the entity (coherence)', () => {
   it('moves a decision born in PUBLIC in the PUBLIC tree, leaving PRIVATE empty', () => {
     const { repo, env, id } = projectWithDecision();
     const moved = runDecisionTransition(

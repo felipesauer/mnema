@@ -95,7 +95,7 @@ export const PUBLISHED_EXAMPLES: readonly PublishedExample[] = [
       '',
     ],
     whyElided:
-      'Running these two literals would create a chain and mint a signing key inside the working tree — the case points both at a sandbox it makes and removes (A6).',
+      'Running these two literals would create a chain and mint a signing key inside the working tree — the case points both at a sandbox it makes and removes.',
     pagePreamble: [],
     whyPreamble:
       'The page declares everything it uses: the two roots it elides from the CASE are on the page, as literals, so the block stands alone as a unit.',

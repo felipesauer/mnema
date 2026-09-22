@@ -242,7 +242,7 @@ describe('the six probes, as the verdict answers them now', () => {
     expect(said.issues.join('\n')).toContain('checkpoint failed');
   });
 
-  it('E2 — a truncation deep enough that NO checkpoint verifies: still FAILED, exit 1', async () => {
+  it('a truncation deep enough that NO checkpoint verifies: still FAILED, exit 1', async () => {
     // The discriminating one. In E the earlier checkpoints still verify, so a
     // derivation that asked "was any signature checked?" BEFORE "is anything
     // broken?" would still answer `broken` there and look correct. Cut the tail back

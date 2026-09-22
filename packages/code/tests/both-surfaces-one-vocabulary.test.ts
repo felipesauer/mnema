@@ -420,7 +420,8 @@ describe('one gloss, two doors', () => {
 describe('the shared vocabulary publishes nothing plumbed to nowhere', () => {
   it('has a door taking every set it exports', async () => {
     const { fields } = await advertised();
-    // A2 over the module BOTH surfaces read. A vocabulary declared, glossed and exported
+    // A public value has a caller, asked of the module BOTH surfaces read. A vocabulary
+    // declared, glossed and exported
     // with nothing taking it is the shape several defects of this series had: the code
     // under the gap is right, nothing feeds it, and every test passes because ABSENCE is
     // what there is to see. `every-public-value-has-a-caller.test.ts` walks the packages'

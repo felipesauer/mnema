@@ -161,7 +161,7 @@ describe('mnema skill move', () => {
   });
 });
 
-describe('mnema skill move — the transition follows the entity (coherence, S2)', () => {
+describe('mnema skill move — the transition follows the entity (coherence)', () => {
   it('moves a skill born in PUBLIC in the PUBLIC tree, leaving PRIVATE empty', () => {
     const { repo, env, id } = projectWithSkill();
     const moved = runSkillTransition(

@@ -169,7 +169,8 @@ describe('governance — four numbers, always', () => {
   });
 
   it('tells an address that has gone stale from one that never existed', () => {
-    // The half of G5 this reading owes: a rule whose file was moved or deleted stops
+    // Silence is never an answer, and this is the half of that this reading owes: a rule
+    // whose file was moved or deleted stops
     // governing SILENTLY, and the count is what makes the silence sayable.
     const b = bench();
     birthDecision(b, 'living', 'about the part that is still here');

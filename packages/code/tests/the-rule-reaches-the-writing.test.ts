@@ -198,7 +198,7 @@ describe('a rule with an address reaches the file about to be written', () => {
     );
     // Then WHY it arrived: the path, as the record compares it.
     expect(lines[1]).toBe('Addressed at src/collate/fold.ts:');
-    // Then the rule, with the id a charge would cite. G1 lives on this line.
+    // Then the rule, with the id a charge would cite. The id lives on this line.
     expect(lines[2]).toBe(`“collate with the ICU root locale” — governs src/collate · ${rule}`);
     expect(lines).toHaveLength(3);
   });

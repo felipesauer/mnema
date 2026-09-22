@@ -284,8 +284,14 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * SDK's client and both transports — and the rest in the guards that learned a second
  * `SessionStart` handler and a second verb that frames its output (`codeOnly` for the scan
  * that keeps the plugin's spawn in one module, `recallDocument` for the framing check).
+ *
+ * It went 2785 -> 2790 when the guard over the labels a file may lean on arrived: five
+ * clauses in `a-label-a-stranger-can-look-up.test.ts`, which asks git for every tracked file,
+ * tests included, and reads each one — `node:child_process`, `node:fs`, `node:path`,
+ * `node:url`, and `vitest` for the fifth. Like its sibling it imports no production module:
+ * its subject is the text of the workspace's files.
  */
-const CLAUSES_IN_THE_TREE = 2785;
+const CLAUSES_IN_THE_TREE = 2790;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -1019,7 +1025,7 @@ describe('the scanner tells an assertion from an import', () => {
   });
 
   it('follows a specifier BEFORE deciding the clause was erased, in the HELPER walk too', () => {
-    // The same order, at the other of the two walks — A1: the rule is at two points, so it
+    // The same order, at the other of the two walks: the rule is at two points, so it
     // is asserted at two points. Measured before this case: swapping the pair in the helper
     // walk alone left every case green, including the one above, because no case handed the
     // helper walk an erased clause.

@@ -589,7 +589,7 @@ describe('the badge says what the record proved, and the verb that says the rest
   });
 
   it('carries it on the page too, at the level this record is at', async () => {
-    // THE ELO. The case above is about a line; this is about the row a caller looks at,
+    // THE LINK. The case above is about a line; this is about the row a caller looks at,
     // painted by the renderer a terminal gets, over the level THIS record folded to.
     const terminal = fakeTerminal({ columns: 120, rows: THE_FLOOR.rows });
     const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
@@ -665,7 +665,7 @@ describe('the hint is short enough to be one row, and promises nothing that is n
     // does not exist — the list IS the answer that word used to print.
     const said = renderPlain(tips());
     for (const word of SESSION_WORDS) expect(said, `the hint names ${word}`).not.toContain(word);
-    // THE ELO, so the absence above is a move and not a loss: every word the session answers
+    // THE LINK, so the absence above is a move and not a loss: every word the session answers
     // to is in the vocabulary the prefix opens, with something to say about it.
     const words = theSessionsOwnWords();
     expect(words.map((entry) => entry.word).sort()).toEqual([...SESSION_WORDS].sort());
@@ -1013,7 +1013,7 @@ describe('every terminal a caller can open gets the whole area', () => {
 });
 
 // ---------------------------------------------------------------------------
-// A1: the verb the badge names, spelled once
+// The verb the badge names, spelled once
 // ---------------------------------------------------------------------------
 
 /** Every `.ts` source of the product, recursively, tests excluded. */
@@ -1039,7 +1039,7 @@ function literalsOf(code: string): string[] {
 
 describe('the verb the badge tells a caller to run is spelled in one module', () => {
   it('is named once in the product, and it is where it is registered', () => {
-    // A1, BY THE DISCRIMINANT: a literal that IS the verb's name. The badge sends a caller
+    // BY THE DISCRIMINANT: a literal that IS the verb's name. The badge sends a caller
     // to a verb, so the word it prints has to be the word commander routes — typed twice,
     // the day this verb is renamed is the day the corner of the console starts naming
     // something that does not exist.
@@ -1054,8 +1054,8 @@ describe('the verb the badge tells a caller to run is spelled in one module', ()
     expect(literalsOf(`program.command('${VERIFY_VERB}')`)).toHaveLength(1);
   });
 
-  it('reaches the row a caller reads, which is the other half of the elo', async () => {
-    // THE ELO, asked of the bytes rather than of the module that holds the constant: the
+  it('reaches the row a caller reads, which is the other half of the link', async () => {
+    // THE LINK, asked of the bytes rather than of the module that holds the constant: the
     // word on the badge is the one the registration was made with.
     expect(rowHolding(await openedAt(120), MARK)).toContain(VERIFY_VERB);
   }, 120_000);

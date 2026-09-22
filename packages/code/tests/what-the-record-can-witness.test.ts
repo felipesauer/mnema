@@ -23,7 +23,7 @@
  * sequence the study said no rule could tell apart from skipping the reading. The rule of
  * the run tells it apart, and the page comes back with nothing pointed at that pattern.
  *
- * A13: NOTHING HERE WRITES A `skill.consulted` BY HAND. Every one of them comes out of
+ * NOTHING HERE WRITES A `skill.consulted` BY HAND. Every one of them comes out of
  * `runSkillsTool`, the only thing in the product that writes one, and every move comes out
  * of the MCP tool or the CLI verb that moves a pattern. A fixture that appended the event
  * itself would leave this suite green over a shape the product does not produce — and the

@@ -22,8 +22,8 @@
  * THE STALE GROUP IS NAMED, NOT ONLY COUNTED. A count of dead addresses goes down by
  * making the count go down; a list of them goes down by looking at what it names.
  * The group is printed whenever it is non-empty, whatever was asked about, because
- * a rule that has stopped governing is news to whoever asked — that is the half of
- * G5 this reading owes.
+ * a rule that has stopped governing is news to whoever asked — silence is never an
+ * answer, and this is the half of that this reading owes.
  *
  * EVERY VALUE ON A ROW CAME OUT OF THE RECORD, so every one of them is collapsed to
  * one line: the address a caller typed into `--rel governs`, the title of the rule,

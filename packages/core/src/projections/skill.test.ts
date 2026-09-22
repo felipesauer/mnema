@@ -148,7 +148,7 @@ describe('projectSkills — provenance: who proposed the pattern and who adopted
 });
 
 describe('projectSkills — state is the literal `to`, never re-derived from a workflow', () => {
-  it('replays a state this build has never seen (the E3 lesson)', () => {
+  it('replays a state this build has never seen', () => {
     // A future workflow might add a state the fold does not know; the projection
     // must still report the literal `to`, because state is read from the fact,
     // not judged against today's table.

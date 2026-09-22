@@ -82,7 +82,7 @@ const verbs = buildProgram(quiet).verbs;
  * THE DOORS THE PRODUCT COMPOSES, in each state a directory can be in — asked of the module
  * that composes them rather than retyped.
  *
- * It is the elo between what this file reads off a screen and what the surface decided: a
+ * It is the link between what this file reads off a screen and what the surface decided: a
  * delivery that rewords a door moves these cases with it, and one that retyped the words here
  * would go on asserting the old ones against a page that had changed.
  */
@@ -101,7 +101,7 @@ let environment: NodeJS.ProcessEnv;
 const before = { cwd: process.cwd(), env: { ...process.env } };
 
 beforeAll(async () => {
-  // A6: a sandbox of this run's own. Nothing here writes into the working tree.
+  // A sandbox of this run's own. Nothing here writes into the working tree.
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-bare-'));
   project = join(sandbox, 'project');
   nowhere = join(sandbox, 'nowhere');
@@ -474,7 +474,7 @@ describe('`mnema repl` opens the session directly, with no question in front of 
 });
 
 // ---------------------------------------------------------------------------
-// A1: the sites, found by the discriminant
+// The sites, found by the discriminant
 // ---------------------------------------------------------------------------
 
 /** What deciding on the BARE NAME looks like: a comparison of what was typed against nothing. */
@@ -483,7 +483,7 @@ const RULES_ON_THE_BARE_NAME = /argv\.length\s*(?:===|>|<|!==|>=|<=)\s*0/;
 /** What asking whether there is a project here looks like, in code. */
 const ASKS_FOR_A_PROJECT = /projectPublic\s*(?:===|!==)\s*undefined|standing\(\)/;
 
-describe('A1: every site that rules on the bare name, and every one that asks for a project', () => {
+describe('every site that rules on the bare name, and every one that asks for a project', () => {
   /** Every module of this surface, with its prose blanked. */
   const modules = (): readonly { readonly where: string; readonly code: string }[] =>
     sourceFiles(SRC).map((file) => ({

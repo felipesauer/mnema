@@ -43,10 +43,10 @@ type ATransition = Extract<CatalogEvent, { readonly payload: { readonly action: 
  * The kinds that carry a move's proof — the totality guard for {@link proofFields}.
  *
  * A mapped type over every transition kind, so a FOURTH state machine added to the
- * catalog does not compile until it says whether its moves carry proof. That is the
- * shape A1 asks for when the domain is a closed union, and it is here in `src` rather
- * than in a test because the build excludes tests: a type error declared in a
- * `.test.ts` leaves both the build and the suite green.
+ * catalog does not compile until it says whether its moves carry proof. That is
+ * totality in the type, the shape to prefer when the domain is a closed union, and it
+ * is here in `src` rather than in a test because the build excludes tests: a type
+ * error declared in a `.test.ts` leaves both the build and the suite green.
  */
 const KINDS_WITH_PROOF: { readonly [K in ATransition['kind']]: true } = {
   'task.transitioned': true,

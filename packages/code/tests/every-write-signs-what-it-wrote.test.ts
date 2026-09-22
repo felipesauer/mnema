@@ -880,7 +880,7 @@ describe('every write path leaves the record fully signed', () => {
 
 describe('the ceiling the writer holds on its own', () => {
   it('fires on a real act too big to wait for, with nobody calling checkpoint', () => {
-    // THE ELO, and the case that took `DEFAULT_MAX_UNSIGNED_EVENTS` off the list of
+    // THE LINK, and the case that took `DEFAULT_MAX_UNSIGNED_EVENTS` off the list of
     // inert exports. `mnema decision import --write` puts TWO events on the tail per
     // ADR — the decision and the link that records where it came from — through a
     // single writer, and signs once at the end. So a directory of 33 ADRs crosses 64

@@ -491,7 +491,7 @@ describe('a re-read runs BETWEEN calls and never inside one', () => {
   });
 
   it('reaches the cascade from exactly two places, and both are the same function', () => {
-    // A3: a rule with two readings is a rule that diverges. `resolveContext` answers
+    // A rule with two readings is a rule that diverges. `resolveContext` answers
     // "where is this session", and it is now asked twice — when the session opens and
     // when the client says the workspace changed. Both go through the ONE function, so
     // a rung added to the cascade (or the one rung that REFUSES) cannot apply at the

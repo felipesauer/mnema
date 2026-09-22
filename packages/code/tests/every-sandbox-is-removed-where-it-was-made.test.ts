@@ -12,7 +12,8 @@
  * CHAIN root, several levels inside the sandbox. They emptied the sandbox and left the sandbox.
  * So the defect was not missing cleanup; it was cleanup aimed at what the helper EXPOSED rather
  * than at what the helper CREATED, in a place that was not the place that created it. The fix
- * is A6 read strictly — whoever creates destroys, in the same function — and this case is the
+ * is the sandbox rule read strictly — whoever creates destroys, in the same function — and
+ * this case is the
  * cheapest thing that would have gone red on it.
  *
  * THE DISCRIMINANT IS "CREATES IN `tmpdir()`", NOT "CALLS `mkdtemp`". This distinction is the

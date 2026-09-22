@@ -322,7 +322,7 @@ describe('the hole the ban declares is closed with a duration, not with a scan',
 
 describe('one mechanism, and both halves are the same call', () => {
   it('re-runs the reds and re-times the slow cases through the one runner', () => {
-    // A3, held by construction rather than by a scan: `decide` reaches for nothing of its own,
+    // One rule, held by construction rather than by a scan: `decide` reaches for nothing of its own,
     // so a second idea of what "alone" means cannot be written without changing this signature.
     // `broke.json` carries three reds and six cases over the budget in the suite.
     const { alone, asked } = alwaysAnswers({ ran: true, failed: true, duration: 100 });
@@ -551,7 +551,7 @@ describe('the instrument is wired to the thing that starts the suite', () => {
   };
 
   it('rides the script the suite is started from, and that script names a file that exists', () => {
-    // A2. Four defects of this series were an option plumbed to the end with nothing feeding it,
+    // Four defects of this series were an option plumbed to the end with nothing feeding it,
     // so what is asserted is that the reporter is REACHED — a rename of the file below leaves
     // the manifest pointing at nothing and vitest saying so only at run time.
     const reporter = '.github/why-it-went-red/ledger.mjs';

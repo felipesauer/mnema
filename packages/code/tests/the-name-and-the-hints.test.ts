@@ -645,7 +645,7 @@ describe('the name is drawn, and how much of it depends on the terminal', () => 
 
 describe('the width the banner is chosen at is the terminal’s own', () => {
   it('draws the whole name at the floor and at a wide terminal, which is what the floor IS', async () => {
-    // THE ELO. The forms above are a function of a number; this is the number coming off
+    // THE LINK. The forms above are a function of a number; this is the number coming off
     // the device the session was handed, which is the half a pure case cannot see.
     //
     // IT ASSERTED THAT THE TWO DIFFER, and the floor moving is what falsified it. The case read
@@ -656,7 +656,7 @@ describe('the width the banner is chosen at is the terminal’s own', () => {
     // (`repl/floor.ts`), so the two pages are the same drawing BY CONSTRUCTION, and a case that
     // went on asserting a difference would be asserting against the definition.
     //
-    // WHAT IS LEFT IS THE ELO ITSELF, and it is the half that was always this case's: the
+    // WHAT IS LEFT IS THE LINK ITSELF, and it is the half that was always this case's: the
     // drawing on the page is one of THIS MODULE'S forms, found by asking which of them is there
     // rather than by naming one, and it is the biggest — which is only true if the size the
     // device reported reached the module at all.
@@ -729,7 +729,7 @@ describe('the drawing stays in the scrollback and the tips stay on the screen', 
     // property the line was holding survives whole — the row is an AFFORDANCE rather than a
     // sentence about nothing — and what carries it is the key rather than the word.
     expect(said.includes(PREFIX)).toBe(true);
-    // THE ELO, so the affordance is one that answers: every word the session has begins
+    // THE LINK, so the affordance is one that answers: every word the session has begins
     // with that key, and there is at least one.
     expect(SESSION_WORDS.length).toBeGreaterThan(0);
     for (const word of SESSION_WORDS) expect(word.startsWith(PREFIX), word).toBe(true);

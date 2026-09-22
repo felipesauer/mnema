@@ -3,7 +3,7 @@
  * at a document the repository does not publish.
  *
  * WHERE THIS COMES FROM. Seven doc-comments in non-test `src` cited this project's local
- * workbench — `.refactor/active/<delivery>/report.md`, `RECONSTRUCTION.md`, the A2 ledger
+ * workbench — `.refactor/active/<delivery>/report.md`, `RECONSTRUCTION.md`, a ledger
  * in `ARCHITECTURE.md`, a study under `.refactor/decisions/`. That directory is
  * `.gitignore`d, so `git ls-files` returns none of those files and nobody outside this
  * machine has one. And the citations SHIPPED: `tsconfig.base.json` sets no
@@ -61,18 +61,17 @@ const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 /**
  * WHAT A PUBLISHED FILE MAY NOT NAME, each with why it is here rather than as a bare list.
  *
- * `bancada` is the Portuguese word this project's own process documents use for the
- * workbench, and it matches NOTHING in the repository today — every comment here is in
- * English. It is in the list because the cost of a spelling that never fires is nothing and
- * the cost of the one that does is an install carrying internal process. Its emptiness is
- * not taken on faith: the case below plants each spelling and asserts it is found, so no
- * row here is decorative.
+ * These are DOCUMENTS — a directory and two files a reader would have to open. A WORD whose
+ * definition only the workbench holds is a citation too, and it is the sibling guard's:
+ * `a-label-a-stranger-can-look-up.test.ts` sweeps every tracked file, tests included, for
+ * the workbench's numbered rules and its Portuguese vocabulary. The workbench's own name
+ * for itself used to be a row here and moved there, because that guard reads tests and
+ * this one deliberately does not, so the word is refused in one place over the larger reach.
  */
 const NOT_PUBLISHED: readonly { readonly spelling: string; readonly why: string }[] = [
   { spelling: '.refactor', why: 'the local workbench directory; `.gitignore`d' },
   { spelling: 'RECONSTRUCTION.md', why: 'a workbench document; `git ls-files` has no such file' },
   { spelling: 'ARCHITECTURE.md', why: 'a workbench document; `git ls-files` has no such file' },
-  { spelling: 'bancada', why: 'the workbench, spelled the way the process documents spell it' },
 ];
 
 /** A test file, in any of the extensions this workspace writes them in. */
@@ -158,7 +157,7 @@ describe('what this repository publishes cites only what this repository publish
 
   /**
    * EVERY SPELLING FIRES. A row that matches nothing is a row that has quietly stopped
-   * being a rule, and `bancada` matches nothing in the corpus today — which is the
+   * being a rule, and every row here matches nothing in the corpus today — which is the
    * difference between "absent" and "not looked for".
    */
   it('finds each spelling it forbids, so no row of the list is decorative', () => {

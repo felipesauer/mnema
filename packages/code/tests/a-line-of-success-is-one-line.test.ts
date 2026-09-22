@@ -839,7 +839,7 @@ describe('WHAT_IS_NOT_CLOSED', () => {
     // — which was wrong twice. `status.ts` already imports the rule of the line, and it
     // is loaded inside the action, so the floor was never the question; and the fix was
     // never `status`'s to make. The collapse belongs in `lastRunPhrase`, where the phrase
-    // is WORDED, so both readings come through it (A3).
+    // is WORDED, so both readings come through it.
     //
     // AND THE RECONCILIATION COULD NOT HAVE GONE RED. It asserted `status.ts` does not
     // hold the TAG — and the right fix does not put the tag there, so the day the debt

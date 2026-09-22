@@ -15,7 +15,7 @@
  * sentence inside `message.content` and the case asserts it is nowhere in the output,
  * which is the only form of that assertion that can fail for a reason.
  *
- * THE LIMIT IS ON THE PAGE (A4). The report claims the counts are not the record's, are
+ * THE LIMIT IS ON THE PAGE. The report claims the counts are not the record's, are
  * not covered by `verify`, and were produced without writing anything. A doc-comment
  * asserting that is a comment; this is the half that holds it to being true — the last
  * claim by the digest below, the first two by being read off the output a person gets.
@@ -105,7 +105,7 @@ function digest(dir: string): string {
  * One host session's transcript, in the host's own shape, with a sentence hidden in the
  * content of the message the counts come from.
  *
- * The fields are the measured ones (A13): a fixture carrying an invented name would
+ * The fields are the measured ones: a fixture carrying an invented name would
  * leave the suite green over a format Claude Code does not write.
  */
 function writeTranscript(session: string, at: Date, lastWritten: Date): void {
@@ -240,7 +240,7 @@ describe('mnema usage', () => {
   });
 
   it('says on the page that the number is not the record’s', async () => {
-    // A4: the doc-comments of `usage.ts` and `presentation/usage.ts` claim the report
+    // The doc-comments of `usage.ts` and `presentation/usage.ts` claim the report
     // qualifies itself. This is what holds them to it, in the words a reader would
     // recognize rather than by comparing to a constant.
     await aRunWithATranscript();

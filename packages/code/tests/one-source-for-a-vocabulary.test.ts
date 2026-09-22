@@ -318,7 +318,8 @@ describe('a declaration lists the set it takes', () => {
   });
 
   it('has a declaration for every set it publishes — none plumbed to nowhere', () => {
-    // A2, over this module's own exports. A vocabulary declared, glossed and exported
+    // A public value has a caller, asked of this module's own exports. A vocabulary
+    // declared, glossed and exported
     // with no declaration taking it is the shape four defects of this series had: the
     // code under the gap is right, nothing feeds it, and every test passes because
     // ABSENCE is what there is to see. `every-public-value-has-a-caller.test.ts` walks

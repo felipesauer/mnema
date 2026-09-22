@@ -110,7 +110,7 @@ describe('the verifier the root page publishes', () => {
   let sandbox: string;
 
   beforeEach(() => {
-    // A6: its own directory, destroyed after. Nothing is written to the working tree.
+    // Its own directory, destroyed after. Nothing is written to the working tree.
     sandbox = mkdtempSync(join(tmpdir(), 'mnema-published-verifier-'));
   });
 

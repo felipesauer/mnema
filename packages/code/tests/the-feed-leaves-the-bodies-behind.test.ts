@@ -226,7 +226,7 @@ describe('mnema export — the feed leaves the bodies behind', () => {
   });
 
   it('answers ONE window with two readings that agree — the feed and the count', async () => {
-    // A3, held rather than declared. `accountability` counts the window in SQL over the
+    // ONE RULE, HELD RATHER THAN DECLARED. `accountability` counts the window in SQL over the
     // reference index; the feed selects it in memory over the event stream. A condition
     // added to one and not the other is red HERE, on the record both read.
     const { anchor } = await aRecordFullOfBodies();

@@ -1310,7 +1310,7 @@ describe('a slash and a letter open the list on the screen, and typing narrows i
 
 describe('a Tab shows the verbs with the description the declaration gives them', () => {
   it('says about each verb exactly what `--help` says about it', async () => {
-    // THE ELO, END TO END. The description on the screen is compared to the bytes the
+    // THE LINK, END TO END. The description on the screen is compared to the bytes the
     // BUILT BINARY prints for `--help`, so nothing here is a sentence somebody retyped —
     // and a verb reworded in its declaration moves both sides at once.
     //
@@ -1359,7 +1359,7 @@ describe('a Tab shows the verbs with the description the declaration gives them'
     expect(checked, 'no row of the list was compared at all').toBe(listed.length);
 
     // AND EVERY VERB THERE IS SAYS IT, which is the half a ceiling took off the screen: the
-    // list and the shell read one value (`src/completion/tree.ts`), so this is the elo for the
+    // list and the shell read one value (`src/completion/tree.ts`), so this is the link for the
     // whole vocabulary rather than for the four that fitted.
     let verbs = 0;
     for (const offer of offers) {
@@ -2042,7 +2042,7 @@ describe('opening the palette never makes the frame outgrow the screen', () => {
 });
 
 // ---------------------------------------------------------------------------
-// A1: the mark that says there is more, spelled in one module
+// The mark that says there is more, spelled in one module
 // ---------------------------------------------------------------------------
 
 /** Every `.ts` source of the product, recursively, tests excluded. */
@@ -2083,7 +2083,7 @@ function cutsALine(source: string): boolean {
 
 describe('the mark that says a line was cut is written in one place', () => {
   it('is in the module that composes the row, and in no other source', () => {
-    // A1, BY THE DISCRIMINANT. A cut is a declared exception to this surface's rule about
+    // BY THE DISCRIMINANT. A cut is a declared exception to this surface's rule about
     // never shortening a line, so a second module that could write one is a second place
     // the exception would have to be argued — and the argument holds for an affordance and
     // does not hold for a line of the record.
@@ -2142,7 +2142,7 @@ function named(text: string): string {
 
 describe('the mark that says which row is picked is written in one place', () => {
   it('is in the module that composes the row, and in no other source', () => {
-    // A1, BY THE DISCRIMINANT AND NOT BY THIS FILE'S LIST. A second module that drew the mark
+    // BY THE DISCRIMINANT AND NOT BY THIS FILE'S LIST. A second module that drew the mark
     // would be a second answer to *which row is picked* — the question already has exactly one
     // (`repl/palette.ts`, `thePicked`), and a drawing that decided it again could disagree with
     // the key that fills the row.
@@ -2184,7 +2184,7 @@ function handlesTheOffers(source: string): boolean {
 
 describe('what order the offers come out in is decided in one place', () => {
   it('is the module that answers what can be typed, and no other source', () => {
-    // A1, BY THE DISCRIMINANT AND NOT BY A LIST. The order between the two vocabularies is a
+    // BY THE DISCRIMINANT AND NOT BY A LIST. The order between the two vocabularies is a
     // decision now (`repl/complete.ts`, `theOrder`) rather than whatever a string comparison
     // gives, so a second module that ordered offers would be a second answer to *which four
     // words a caller sees* — and the two would disagree the day either was edited.

@@ -26,7 +26,7 @@
  *     session would have filled the flag in still refuses. The argument for the flag is
  *     about an INVOCATION having no session, and it is untouched by a session having one.
  *
- * THE FIFTH IS THE RULE'S OWN REACH (A1). Which verbs require an identity is read off the
+ * THE FIFTH IS THE RULE'S OWN REACH. Which verbs require an identity is read off the
  * registered program rather than listed here — by the tail every anchor-taking flag's help
  * carries, which is a discriminant the filling code does not share — and the two
  * enumerations are asserted EQUAL: everything that requires one is served, and nothing

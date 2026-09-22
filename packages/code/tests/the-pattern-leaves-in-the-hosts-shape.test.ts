@@ -4,7 +4,7 @@
  *
  * FIVE THINGS HERE ARE THE FIVE A READER OF THE OUTPUT CANNOT CHECK.
  *
- * THE TWO OPTIONS REACH THE WORK (A2). `--out` is asserted by the file being under the
+ * THE TWO OPTIONS REACH THE WORK. `--out` is asserted by the file being under the
  * directory it named and nowhere else, and `--description` by its text being the field
  * in the file — which is what "the flag reaches" means for a verb whose whole product is
  * a file (the mould is `mcp-flag-reaches-the-server.test.ts`). Four defects of this

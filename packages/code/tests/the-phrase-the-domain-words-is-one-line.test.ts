@@ -16,7 +16,7 @@
  * to decide whether to believe the record. `one-line.ts` is therefore in `@mnema/chain`,
  * published as its own subpath so reaching it is not reaching the proof engine, and
  * `core` and `code` re-export it. There is ONE place the rule of the line comes from and
- * it is under everything (A3).
+ * it is under everything.
  *
  * THE CLASS IS WHAT THESE PACKAGES RETURN, NEVER WHAT THEY THROW. A finding and a
  * refusal are one per line under a count; an exception is not — the line it eventually
@@ -1238,7 +1238,7 @@ describe('the rule has one door and it is below both packages', () => {
   });
 
   it('is re-exported by both packages and written out by neither', () => {
-    // A3. `core` and `code` each keep the address their own modules import, and each of
+    // `core` and `code` each keep the address their own modules import, and each of
     // them is one line of plumbing to the package below. A copy would be a second rule.
     for (const at of ['../../core/src/one-line.ts', '../src/one-line.ts']) {
       const source = readFileSync(fileURLToPath(new URL(at, import.meta.url)), 'utf-8');

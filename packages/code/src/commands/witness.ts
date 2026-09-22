@@ -158,7 +158,7 @@ interface HeldChain {
  * The checkpoints a tail has STORED, in the file's own order — what the reading and the
  * act that completes an attestation are both given.
  *
- * ONE FUNCTION BECAUSE IT IS ONE LIST (A3). `mnema witness` and `mnema witness upgrade`
+ * ONE FUNCTION BECAUSE IT IS ONE LIST. `mnema witness` and `mnema witness upgrade`
  * are the two verbs a person alternates between — read where the witness stands, then go
  * back for what has not confirmed — and a listing that showed a request the act did not
  * walk to would be the same contradiction this delivery removes, one list over.

@@ -245,7 +245,7 @@ describe('mnema tail list', () => {
   });
 
   it('is the verb `tail prune` sends a reader to for the id it takes', async () => {
-    // A4: the help asserts where the id is read, and this is what holds the sentence
+    // The help asserts where the id is read, and this is what holds the sentence
     // to being true. It USED TO name `verify`, which prints a count and no id — a
     // doc-comment for a behaviour nothing in the product had.
     const help = await mnema('tail', 'prune', '--help');

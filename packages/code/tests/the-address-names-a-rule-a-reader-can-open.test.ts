@@ -216,7 +216,7 @@ describe('an address names a rule a reader can open, or it is not a rule that go
   });
 
   it('leaves the derivation one function, asked by every reading', () => {
-    // A1: the rule is applied at one site and the readings ask it. This drives the
+    // The rule is applied at one site and the readings ask it. This drives the
     // copilot's own entry points directly, so a fifth surface added tomorrow gets the
     // same answer without a line of its own — and a surface that grew a walk of its own
     // would answer differently here than the reading above.

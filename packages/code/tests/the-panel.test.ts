@@ -494,7 +494,7 @@ function titleRow(page: string): string {
  * A RULE IS WHAT IS LEFT that is drawn and not written (`region.ts`, `rule`), and reading the
  * pair there makes the case STRONGER rather than weaker: what is asserted below is that the
  * panel's chrome is wrapped in the very escapes the input area's rule is wrapped in, which is
- * `one accent` as an elo instead of as two readings.
+ * `one accent` as a link instead of as two readings.
  */
 function theAccent(page: string): readonly [string, string] {
   const row = withoutLayout(page)
@@ -697,7 +697,7 @@ describe('what the panel says about a tree is a prefix of what verify says', () 
   }, 120_000);
 
   it('puts those very lines on the page', async () => {
-    // THE ELO. The invariant above is about a function; this is about what a reader sees,
+    // THE LINK. The invariant above is about a function; this is about what a reader sees,
     // because a panel that composed its record section any other way would satisfy it and
     // still print something else.
     const page = stripped(withoutLayout(await openedAt(200)));
@@ -1017,7 +1017,7 @@ describe('the form comes out of the content, and the narrowest still says the es
     // corner, and nothing is drawn to an edge. The field is gone, so the assertion is gone with
     // it rather than rewritten against something else.
     //
-    // WHAT REPLACES IT IS THE OTHER DIRECTION OF THE SAME ELO: the arithmetic composes the same
+    // WHAT REPLACES IT IS THE OTHER DIRECTION OF THE SAME LINK: the arithmetic composes the same
     // groups the drawing places, so what it hands over is every line and no width at all.
     expect(Object.keys(made(100)).sort()).toEqual(['form', 'mark', 'record', 'standing', 'title']);
   });

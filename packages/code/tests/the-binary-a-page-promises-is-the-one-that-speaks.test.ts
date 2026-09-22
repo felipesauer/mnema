@@ -101,7 +101,7 @@ describe('the binary a page promises is the one that speaks', () => {
   let sandbox: string;
 
   beforeEach(() => {
-    // A6: this measurement creates its own directory and destroys it. Nothing is written to
+    // This measurement creates its own directory and destroys it. Nothing is written to
     // the working tree, and no other job writes here.
     sandbox = mkdtempSync(join(tmpdir(), 'mnema-speaks-'));
   });

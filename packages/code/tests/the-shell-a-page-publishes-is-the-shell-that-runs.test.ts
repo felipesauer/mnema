@@ -351,7 +351,7 @@ export const NOT_CHECKED: Readonly<Record<string, string>> = {
   A_VALUE_IS_NOT_A_NAME:
     'The value of a positional argument or of a flag — `"$TASK"`, `mnid:c0fc3c71…`, `./skills`, `~/work/api`, a record body. They are ids that do not exist until somebody writes them, paths on somebody else’s disk, and prose. Nothing declarative can know them; a guard that tried would be asserting its own fixtures.',
   A_GATE_DECIDES_THE_MOVE:
-    '`submit` in `mnema task move submit` is that command’s declared `<action>`, not a subcommand, so a misspelling of it is not visible here. Which moves exist is the gate’s answer over one record’s state, not the program’s declaration — asking it means founding a record, which is a different piece of work with a sandbox of its own (A6).',
+    '`submit` in `mnema task move submit` is that command’s declared `<action>`, not a subcommand, so a misspelling of it is not visible here. Which moves exist is the gate’s answer over one record’s state, not the program’s declaration — asking it means founding a record, which is a different piece of work with a sandbox of its own.',
   A_TITLE_SWALLOWS_A_MISSPELLING:
     'A subcommand misspelt under a parent that ALSO declares a positional argument. `mnema task moveZZZ` is a legal invocation \u2014 it creates a task titled "moveZZZ" \u2014 so no reading of the declarations can call it wrong. Measured on 16/09/2026: of the eight commands with subcommands, three are in this state (`task <title>`, `decision <title> [rationale]`, `skill <name>`); the other five (`run`, `key`, `tail`, `witness`, `switch`) and the program itself declare no argument, and under those a misspelt verb IS accused.',
   THE_SHELL_IS_NOT_OURS:

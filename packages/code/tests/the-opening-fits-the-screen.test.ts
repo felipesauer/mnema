@@ -710,7 +710,7 @@ describe('a session has opened when its frame is finished, not when its prompt i
       ),
       `${WAITS_FOR_NOTHING_THE_CALLER_CAUSED} started waiting for something, so it needs the rule`,
     ).not.toContain('until(() =>');
-    // AND THE OTHER TWO BOTH USE THE ONE RULE. This is the A3 half: one function that says what
+    // AND THE OTHER TWO BOTH USE THE ONE RULE. This is the one-rule half: one function that says what
     // the question means, and every driver that waits asks it.
     for (const { name, source } of waiting) {
       expect(codeOnly(source), `${name}: waits without the rule`).toContain('arrivedSince(');
@@ -940,7 +940,7 @@ async function openedAt(
  * replaces "it got smaller" is the one the file is named after and the one a reader can
  * check — the opening FITS, whole, with the input area under it.
  *
- * AND THE COUNT MOVED IN BOTH DIRECTIONS AT ONCE, which is the achado of the delivery that
+ * AND THE COUNT MOVED IN BOTH DIRECTIONS AT ONCE, which is the finding of the delivery that
  * changed the drawing. The new art is SMALLER on both measurements — nine rows by fifty
  * columns against eleven by seventy — and *smaller art costs fewer rows* is nonetheless false:
  *
@@ -1229,7 +1229,7 @@ describe('the drawing gives way so the page fits, rather than the page being cut
   }, 300_000);
 
   it('draws the biggest form on a terminal with the room for it, and not on one without', async () => {
-    // THE ELO FOR THE BIGGEST FORM, and the answer to the question an earlier delivery's
+    // THE LINK FOR THE BIGGEST FORM, and the answer to the question an earlier delivery's
     // mechanism failed: does this one ever fire on a screen a person has? Both halves in one
     // case, at ONE width, so the only thing that moved between them is the height.
     //
@@ -1405,7 +1405,7 @@ describe('the word the box named is still there, behind the key that lists the w
 });
 
 // ---------------------------------------------------------------------------
-// A1: everything that chooses an arrangement by the size of the terminal
+// Everything that chooses an arrangement by the size of the terminal
 // ---------------------------------------------------------------------------
 
 /** Every `.ts` source of the product, recursively, tests excluded. */
@@ -1451,11 +1451,11 @@ const THE_COMPARISON = new RegExp(`${AN_OPERATOR}(?:columns|rows)\\b`);
 
 describe('everything that chooses a shape by the size of the terminal is one of five', () => {
   it('is these five modules, and a sixth would be accused', () => {
-    // A1, BY THE DISCRIMINANT AND NOT BY A LIST FROM A HANDOFF. The rule this delivery
+    // BY THE DISCRIMINANT AND NOT BY A LIST FROM A HANDOFF. The rule this delivery
     // extends — *a form gives way at its own measurement, never at a number somebody chose*
     // — is applied in more than one place, so the places are FOUND rather than recalled.
     //
-    // THE FOURTH IS THE ACHADO. The design of this delivery counted three: the name by
+    // THE FOURTH IS THE FINDING. The design of this delivery counted three: the name by
     // width, the panel by width, the input area by height. The palette is the fourth, and
     // it rules the same way — a row the terminal would fold is not drawn, and the threshold
     // is the row's own width.
@@ -1469,7 +1469,7 @@ describe('everything that chooses a shape by the size of the terminal is one of 
     //   - `repl/palette.ts`         — `a-palette-for-the-words.test.ts`, over a grid of
     //                                  every room and every width.
     //
-    // AND THE FIFTH IS THE ACHADO OF THE DELIVERY AFTER THIS ONE, found by this scan
+    // AND THE FIFTH IS THE FINDING OF THE DELIVERY AFTER THIS ONE, found by this scan
     // rather than by anybody's list: `presentation/folded.ts`, the renderer that folds a
     // line to the terminal. It rules twice and both thresholds are the same rule again —
     // a row gives way when it is wider than the screen, and the hanging INDENT gives way

@@ -55,7 +55,7 @@ describe('knowledge.linked — end to end, the four publics (cross-tree)', () =>
 
   const layout = (root: string): ChainLayout => ({ root });
 
-  it('P2 — the PERSON resolves a cross-tree link from both directions over the union', () => {
+  it('the PERSON resolves a cross-tree link from both directions over the union', () => {
     // A public task-like memory (a stand-in target) lives in the public tree; a
     // private note links to it. The link is written in the PRIVATE tree, whose
     // writer never sees the public target.
@@ -102,7 +102,7 @@ describe('knowledge.linked — end to end, the four publics (cross-tree)', () =>
     ).toBe(false);
   });
 
-  it('P3 — the TEAM (public tree only) never sees the private link', () => {
+  it('the TEAM (public tree only) never sees the private link', () => {
     const pub = ctxFor('public');
     const target = captureMemory(pub.ctx, { content: 'public target' });
     pub.ctx.writer.checkpoint();
@@ -117,7 +117,7 @@ describe('knowledge.linked — end to end, the four publics (cross-tree)', () =>
     expect(teamLinks).toHaveLength(0);
   });
 
-  it('P4 — the CLONE of the linking tree reconstructs the edge and verifies', () => {
+  it('the CLONE of the linking tree reconstructs the edge and verifies', () => {
     const prv = ctxFor('private');
     const source = captureMemory(prv.ctx, { content: 'a note the clone recovers' });
     // Link to a target that will NOT be in the clone — the cross-tree case.

@@ -537,7 +537,7 @@ describe('a caller who asked for no colour gets the row they always got', () => 
 });
 
 // ---------------------------------------------------------------------------
-// A1: the sites, found by the discriminant
+// The sites, found by the discriminant
 // ---------------------------------------------------------------------------
 
 /** Every module of this surface that ships, with its comments and strings blanked. */
@@ -548,7 +548,7 @@ function sources(): readonly { readonly where: string; readonly code: string }[]
   }));
 }
 
-describe('A1: everything that puts the row being typed together, and everything that counts a column over it', () => {
+describe('everything that puts the row being typed together, and everything that counts a column over it', () => {
   it('composes the row in one shape and counts the column in one place', () => {
     // THE DISCRIMINANT FOR THE COMPOSITION is the function that makes the line, never a list of
     // files: anything that puts a prompt in front of what was typed asks for one of these.

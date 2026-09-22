@@ -38,7 +38,7 @@ import {
 
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 
-/** A temp directory of this case's own, so nothing here reads or writes the machine's (A6). */
+/** A temp directory of this case's own, so nothing here reads or writes the machine's. */
 let sandbox: string;
 
 beforeEach(() => {
