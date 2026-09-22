@@ -72,15 +72,17 @@ that was measured against the real binary instead, and the capture is
 
 ## Install
 
-The plugin runs the `mnema` binary, so that has to be on your `PATH` first.
-**`@mnema/code` is not on npm yet**, so the command below does not resolve today
-— it is what the install will be:
+The plugin runs the `mnema` binary, so that has to be on your `PATH` first:
 
 ```sh
 npm i -g @mnema/code
 # or, if your global binaries live under pnpm:
 pnpm add -g @mnema/code
 ```
+
+Whether that resolves is a fact about the registry rather than about this page — this
+line used to assert *"not on npm yet"*, which stops being true the day the release goes
+out. `npm view @mnema/code version` is the one command that answers it.
 
 Then add this repository as a marketplace and install from it:
 

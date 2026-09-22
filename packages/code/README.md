@@ -146,9 +146,6 @@ anybody for anything, so a checkpoint cannot fail because a calendar was down.
 
 ## Install
 
-**This package is not on npm yet**, so the command below does not resolve today.
-It is written here as what the install will be, not as something to run:
-
 ```sh
 npm i -g @mnema/code
 # or, if your global binaries live under pnpm:
@@ -156,7 +153,15 @@ pnpm add -g @mnema/code
 ```
 
 It puts the `mnema` binary on your `PATH`. Requires Node ≥ 22.12.0; the package is
-ESM-only.
+ESM-only. It brings `@mnema/chain`, `@mnema/core` and `@mnema/copilot` with it — they
+are released alongside it because a dependency that is not on the registry is an
+install that fails.
+
+**Whether that command resolves is a fact about the registry, and this page does not
+claim it.** It used to say *"this package is not on npm yet"*: true when it was written,
+false the day the release goes out, and a page that instead announced the release would
+have been wrong until the moment somebody pushed it. So it asks rather than asserts —
+`npm view @mnema/code version`, where a 404 means the release has not been pushed.
 
 ## Usage
 

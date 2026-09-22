@@ -16,16 +16,20 @@
  * `mnema --version` pays for is measured and guarded
  * (`tests/the-floor-is-the-declaration.test.ts`).
  *
- * THIS PARAGRAPH USED TO END "that the two agree is asserted instead, over the manifest
- * itself, in `tests/the-page-follows-the-terminal.test.ts`", AND BOTH HALVES OF THAT WERE
- * FALSE. No file of that name exists in any package of this workspace, and no case anywhere
- * compares this string to the manifest's — the nearest,
- * `tests/the-record-arrives-unasked.test.ts`, asserts only that `manifest.version` is SHAPED
- * like a version. What does pin this value is `cli.help.golden.txt`, which holds the bytes
- * commander prints for `--version`, so a bump here reddens the golden and nothing at all says
- * the manifest disagreed. That the two agree is an INTENTION of this module, not a promise it
- * can point a test at.
+ * THAT THE MANIFEST AGREES IS NOW A PROMISE, AND IT WAS NOT WHEN THIS FILE WAS WRITTEN.
+ * This paragraph said the agreement was "an INTENTION of this module, not a promise it can
+ * point a test at" — true when the workspace published one package, and no longer true.
+ * `tests/the-version-is-one-number.test.ts` reads every tracked `package.json` and
+ * `plugin.json` off the disk together with this constant and requires one number across all
+ * of them; the list is git's rather than typed, so a package added tomorrow is held to it
+ * without anybody remembering. `cli.help.golden.txt` still pins the bytes commander prints
+ * for `--version`, and it is the ONE site where the number is written as a literal — which is
+ * what makes a bump here a deliberate two-line change rather than a drift.
+ *
+ * WHAT FALSIFIED THE OLD PARAGRAPH was four packages going to the registry at once: a
+ * constant that disagreed with the manifest used to mean one wrong line in `--version`, and
+ * now it means the npm page and the binary state different versions of the same release.
  */
 
 /** The version this build of the product reports, wherever it is asked. */
-export const VERSION = '0.0.0';
+export const VERSION = '0.1.0';

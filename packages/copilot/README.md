@@ -127,12 +127,25 @@ layer makes no proof of its own; being clear about that is the point.
 
 ## Install
 
-**This package is internal and is not published**, so there is no `pnpm add` for
-it: it is a workspace dependency of `@mnema/code`, which is the one meant to be
-installed. Read on to know what it holds and what it proves; to use it, take
-`@mnema/code`.
+```sh
+npm i @mnema/copilot
+```
+
+**It is released because `@mnema/code` depends on it, not because you should install
+it.** This section used to say it was internal and never published; what falsified that
+is that a dependency which is not on the registry is an install that fails, measured —
+`npm i -g` of the built tarball stopped at `E404` before the binary was ever reached.
+
+**What is released is not an API.** The exports here are the surface this product needed
+and nothing else; they move when the product moves. If you want the tool, take
+`@mnema/code`. If you want the part that is meant to stand on its own — the proof engine,
+with the format and an independent verifier in the tarball — take `@mnema/chain`. Read on
+to know what this one holds and what it proves.
 
 Requires Node ≥ 22.12.0. The package is ESM-only.
+
+Whether the command above resolves is a fact about the registry rather than about this
+page: `npm view @mnema/copilot version` answers it in one line.
 
 ## Usage
 

@@ -27,6 +27,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo, run } from './cli.js';
 import { renderPlain } from './presentation/plain.js';
 import { renderStyled } from './presentation/styled.js';
+import { VERSION } from './version.js';
 import { everyCommandOf, misuseReport, speakUsageErrors, WORDED } from './wiring/misuse.js';
 import { BLANK_WHICH_MESSAGE } from './wiring/options.js';
 
@@ -506,7 +507,12 @@ describe('`--help` and `--version` are not touched', () => {
     expect(help.failed).toBe(false);
     expect(help.out.join('')).not.toContain('\u001b');
     expect(version.failed).toBe(false);
-    expect(version.out).toEqual(['0.0.0']);
+    // The number is NOT typed here. It is one string with one owner (`version.ts`), and a
+    // literal in this file would be a second place to bump — `cli.help.golden.txt` is the
+    // one site that pins the bytes, and `the-version-is-one-number.test.ts` holds the rest
+    // to it. What this case is for is that `--version` reaches stdout plain under
+    // `--color=always`, which a constant says as well as a literal does.
+    expect(version.out).toEqual([VERSION]);
   });
 
   it('and the help shown INSTEAD of an error is still the help', async () => {

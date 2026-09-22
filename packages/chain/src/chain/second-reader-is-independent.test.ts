@@ -155,10 +155,17 @@ describe('the verifier tree is what this guard thinks it is', () => {
     expect(strays.map((path) => relative(REPO, path))).toEqual([]);
   });
 
-  it('is carried by the repository, which is the only channel it travels by', () => {
-    // The same hazard `format-doc.test.ts` names for the vectors: this tree ignores whole
-    // directories by name, and a verifier a `.gitignore` swallowed would publish nothing
-    // while every other case here stayed green. Git is asked directly.
+  it('is carried by the repository, which is one of the two channels it travels by', () => {
+    // THIS CASE SAID "the only channel", AND IT IS NOT ONE ANY MORE: `@mnema/chain` is
+    // released with `verifier/` inside its `files`, so an installed copy carries the
+    // second reader too. The hazard this case exists for is untouched, and it is the same
+    // one `format-doc.test.ts` names for the vectors: this tree ignores whole directories
+    // by name, and a verifier a `.gitignore` swallowed would publish nothing while every
+    // other case here stayed green. It is not the tarball that would catch it — measured
+    // on 22/09/2026, npm looks for an ignore file BESIDE the manifest and does not walk up
+    // to the workspace root, so a file the root `.gitignore` swallowed is absent from every
+    // clone and present in a tarball packed on the machine that has it, which is worse than
+    // either alone. Git is asked directly.
     const tracked = new Set(
       execFileSync('git', ['ls-files', '--', relative(REPO, VERIFIER_DIR)], {
         cwd: REPO,

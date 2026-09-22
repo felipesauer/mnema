@@ -18,8 +18,11 @@
  *     `event-schema.json` (the declarations), and a module resolves each of them by
  *     path. Two names for one file is two names that can come to differ, so the
  *     document is checked against each module's own constant, and each file is
- *     checked to be one the repository actually carries — the only channel they
- *     travel by (see the document's last section).
+ *     checked to be one the repository actually carries. That used to read "the only
+ *     channel they travel by"; since `@mnema/chain` is released with both artifacts
+ *     inside its `files`, there are two, and the tarball half is held by
+ *     `packages/code/tests/what-a-package-publishes-is-what-its-page-promises.test.ts`
+ *     (see the document's last section).
  *
  * WHAT IS DELIBERATELY NOT HELD HERE: whether each claim is TRUE. That is the
  * cited test's job, and a guard that tried to do it here would be a second
@@ -126,12 +129,17 @@ describe('FORMAT.md points at the artifact the code resolves', () => {
     expect(existsSync(fileURLToPath(file))).toBe(true);
   });
 
-  it.each(ARTIFACTS)('$what is a file the repository carries, its only channel', ({ file }) => {
-    // The artifact reaches a stranger by being IN the repository — it is in no npm
-    // tarball, and `FORMAT.md` says so. A path that a `.gitignore` swallowed would
-    // publish nothing while every other case here stayed green, and this tree
-    // ignores whole directories by name (`dist/`, `scripts/`, `.refactor/`), so
-    // the hazard is real rather than theoretical. `git` is asked directly.
+  it.each(ARTIFACTS)('$what is a file the repository carries', ({ file }) => {
+    // THIS CASE WAS TITLED "its only channel", AND IT HAD STOPPED BEING ONE. The prose
+    // here read "it is in no npm tarball, and `FORMAT.md` says so"; `@mnema/chain` is
+    // released now and its `files` carries both artifacts, so the tarball is a second
+    // address and `FORMAT.md` says THAT. What this case holds is unchanged and still
+    // needed: a path that a `.gitignore` swallowed would publish nothing while every
+    // other case here stayed green, and this tree ignores whole directories by name
+    // (`dist/`, `scripts/`, `.refactor/`), so the hazard is real rather than
+    // theoretical. `git` is asked directly. The tarball half is somebody else's case —
+    // `packages/code/tests/what-a-package-publishes-is-what-its-page-promises.test.ts`
+    // packs the package and runs the verifier out of it.
     const relative = fileURLToPath(file).slice(REPO.length);
     const tracked = execFileSync('git', ['ls-files', '--', relative], {
       cwd: REPO,

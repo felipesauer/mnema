@@ -410,13 +410,28 @@ describe('every manifest points home at the same place', () => {
         return typeof parsed.homepage === 'string' ? [{ file, homepage: parsed.homepage }] : [];
       });
 
-  it('finds the manifests that name one, and there are three', () => {
+  it('finds the manifests that name one, and there are six', () => {
     // The non-vacuity of the case below: a reader that parsed nothing would leave it true.
+    //
+    // IT WAS THREE, AND THE GUARD IS WHAT SAID SO. The comment above this describe block
+    // predicted exactly this — "a list typed here is a list that stays at three while a
+    // fourth manifest is added with a home of its own" — and it came true three at once when
+    // `@mnema/chain`, `@mnema/core` and `@mnema/copilot` stopped being private. A package on
+    // the registry whose page has no link home is the first thing a reader cannot click, so
+    // the three took a `homepage` when they took a `publishConfig`, and this is the case that
+    // made somebody look.
     expect(
       homes()
         .map(({ file }) => file)
         .sort(),
-    ).toEqual(['package.json', 'packages/code/package.json', 'plugin/.claude-plugin/plugin.json']);
+    ).toEqual([
+      'package.json',
+      'packages/chain/package.json',
+      'packages/code/package.json',
+      'packages/copilot/package.json',
+      'packages/core/package.json',
+      'plugin/.claude-plugin/plugin.json',
+    ]);
   });
 
   it('all of them name the repository this is, which is a destination that exists', () => {
