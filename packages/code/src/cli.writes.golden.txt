@@ -5,11 +5,12 @@ $ mnema init
 |   backup key: created and enrolled — private half at <backup-key-path>
 |   Move that file off this machine: a backup left on this disk is lost with it.
 |
-|   An agent host reads an `AGENTS.md` or a `CLAUDE.md` on its own, and mnema
-|   writes neither. `mnema brief > MNEMA.md` puts what governs this project in a
-|   file of its own — the `>` replaces the whole of the file it names — and where
-|   you already keep one of those, keep yours and put one line in it:
-|     What governs the work here is in `MNEMA.md`.
+|   mnema writes no file of yours. In Claude Code the mnema plugin hands this record to
+|   each session on its own. Without it, `mnema brief > MNEMA.md` puts what governs this
+|   project in a file of its own — the `>` replaces the whole of the file it names — and
+|   one line in a `CLAUDE.md` brings that file in (an `AGENTS.md` is read there only
+|   where no `CLAUDE.md` exists):
+|     @MNEMA.md
 $ mnema init
 | Already a mnema project at <sandbox>/project/.mnema — nothing to found.
 |   identity: <anchor>
@@ -337,8 +338,9 @@ $ mnema init
 |   identity: <anchor>
 |   backup key: enrolled in this project
 |
-|   An agent host reads an `AGENTS.md` or a `CLAUDE.md` on its own, and mnema
-|   writes neither. `mnema brief > MNEMA.md` puts what governs this project in a
-|   file of its own — the `>` replaces the whole of the file it names — and where
-|   you already keep one of those, keep yours and put one line in it:
-|     What governs the work here is in `MNEMA.md`.
+|   mnema writes no file of yours. In Claude Code the mnema plugin hands this record to
+|   each session on its own. Without it, `mnema brief > MNEMA.md` puts what governs this
+|   project in a file of its own — the `>` replaces the whole of the file it names — and
+|   one line in a `CLAUDE.md` brings that file in (an `AGENTS.md` is read there only
+|   where no `CLAUDE.md` exists):
+|     @MNEMA.md

@@ -155,8 +155,10 @@ describe('every place that publishes the recipe says what the redirection does',
     // The other half of the fix, and it is what the truncation warning is FOR. Saying
     // that `>` replaces a file leaves a reader who has an `AGENTS.md` with nowhere to
     // go; the help answers that in the same place, with a name that collides with no
-    // convention, and says what it costs — an agent host reads `AGENTS.md` on its own
-    // and does not read this one.
+    // convention, and says what it costs — the host reads the file it reads, and this
+    // one only when that file imports it. (This sentence said "an agent host reads
+    // `AGENTS.md` on its own", and the host the plugin is for reads one only where no
+    // `CLAUDE.md` exists.)
     const help = everyPublishedText().get('mnema brief --help') ?? '';
     expect(help).toContain('mnema brief > MNEMA.md');
     expect(help).toContain('AGENTS.md');
@@ -170,9 +172,12 @@ describe('every place that publishes the recipe says what the redirection does',
     // to put in the other file as a LITERAL rather than as a description of one — which is
     // the half the help page cannot give, because it is read by somebody who already knows
     // what they wanted. A recommendation the reader has to compose is one they do not make.
+    // THE LITERAL IS AN IMPORT NOW, `@MNEMA.md`, where it was a sentence naming the file:
+    // the host reads a sentence's file only if the agent opens it, and expands an import.
     const founding = everyPublishedText().get('the init recommendation') ?? '';
     expect(founding).toContain('mnema brief > MNEMA.md');
     expect(founding).toContain('AGENTS.md');
-    expect(founding).toContain('MNEMA.md`.');
+    expect(founding).toContain('\n@MNEMA.md');
+    expect(founding).not.toContain('What governs the work here is in');
   });
 });
