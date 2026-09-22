@@ -146,12 +146,12 @@ describe('the number is spelled out in exactly one place', () => {
       .map((line) => line.trim());
 
   it('no test of this workspace types the number as a literal', () => {
-    // WHAT THIS ENDS, AND IT IS A13. Four test files carried `0.0.0`: one assertion on the
-    // CLI's own output, which would at least have gone red on a bump, and THREE FIXTURES —
-    // a session title and two screen measurements — which would not. A fixture holding
-    // `mnema 0.0.0` after the product says `0.1.0` is a green suite over a title the product
-    // cannot produce, and no other case in this suite would have said so. They read the
-    // constant now, and this is what stops the fifth from appearing.
+    // WHAT THIS ENDS: A FIXTURE HOLDING A VALUE THE PRODUCT CANNOT PRODUCE. Four test files
+    // carried `0.0.0`: one assertion on the CLI's own output, which would at least have gone
+    // red on a bump, and THREE FIXTURES — a session title and two screen measurements — which
+    // would not. A fixture holding `mnema 0.0.0` after the product says `0.1.0` is a green
+    // suite over a title the product cannot produce, and no other case in this suite would
+    // have said so. They read the constant now, and this is what stops the fifth appearing.
     const typed = TRACKED.filter(
       (where) => where.startsWith('packages/') && where.endsWith('.test.ts'),
     ).flatMap((where) =>

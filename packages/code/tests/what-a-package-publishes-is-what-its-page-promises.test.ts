@@ -93,7 +93,10 @@ const ALL: readonly Manifest[] = MANIFESTS.map(readManifest);
 /** The ones that would go to a registry: everything not held back by `private`. */
 const PUBLISHABLE: readonly Manifest[] = ALL.filter((m) => m.private !== true);
 
-/** One sandbox of its own for the tarballs (A6), destroyed when the file is done. */
+/**
+ * One sandbox of its own for the tarballs, destroyed when the file is done — never the work
+ * tree, and never a directory another worker writes to.
+ */
 const SANDBOX = mkdtempSync(join(tmpdir(), 'mnema-tarballs-'));
 afterAll(() => rmSync(SANDBOX, { recursive: true, force: true }));
 
@@ -339,7 +342,7 @@ describe('the second reader runs out of what the package publishes', () => {
  * THE MUTATIONS THAT LIGHT IT. Applied to the packed LIST rather than to the manifests: a
  * guard whose non-vacuity proof rewrites four `package.json` files is a guard that can leave
  * them rewritten, and this workspace has already lost work to a restore that reverted more
- * than it took (A14).
+ * than it took.
  */
 describe('the guard is not vacuous', () => {
   const missingArtifacts = (files: readonly string[]): readonly string[] =>
