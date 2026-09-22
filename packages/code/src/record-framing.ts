@@ -92,18 +92,30 @@ export type ServedSubject =
   /** Pattern bodies — the recipes themselves, served on request. */
   | 'patterns'
   /** The rules that govern the work: decisions by title, patterns by name. */
-  | 'rules';
+  | 'rules'
+  /** The notes recorded here — memories and observations — each by the line it is known by. */
+  | 'notes';
 
 /**
  * Every point that puts text out of the record where a MODEL reads it.
  *
  * It is a closed union so that the two tables below can be total over it, and the
  * members are CHANNELS rather than tools: `skills-answer` is the reply of one tool,
- * `brief-document` is a file that reaches a session through the plugin's
- * `SessionStart` handler and through whatever `mnema brief > AGENTS.md` wrote, and
- * `exported-skill` is a file written into somebody else's directory in somebody
+ * `brief-document` is a document that reaches a session through the plugin's
+ * `SessionStart` handler and through whatever file somebody redirected it into,
+ * `recall-document` is the notes a second `SessionStart` handler hands the same session,
+ * and `exported-skill` is a file written into somebody else's directory in somebody
  * else's format. What they have in common is the destination, and the destination is
  * the whole criterion.
+ *
+ * "WHATEVER `mnema brief > AGENTS.md` WROTE" WAS THE SECOND ROUTE THIS SENTENCE NAMED,
+ * and it named a file the host it was written for does not read in the ordinary case.
+ * Claude Code reads an `AGENTS.md` only from 2.1.277, and by default only where no
+ * `CLAUDE.md` exists in the working directory or above it (code.claude.com/docs/en/memory,
+ * *AGENTS.md*) — measured on this machine, 0 of 299 sessions loaded one, in two projects
+ * that keep both files. A redirected file reaches a session when it is the file the host
+ * reads, or when that file imports it; which one that is belongs to the host and to the
+ * person, and the sentence no longer answers it for them.
  *
  * WHAT IS DELIBERATELY NOT IN IT: the reads an agent asks for and gets facts back
  * from — `read_record`, `search`, `bootstrap`, `governing_rules`, the five `audit_*`.
@@ -131,6 +143,7 @@ export type ServedSubject =
 export type ModelChannel =
   | 'skills-answer'
   | 'brief-document'
+  | 'recall-document'
   | 'exported-skill'
   | 'edit-rules-push'
   | 'edit-asks-a-person';
@@ -139,6 +152,7 @@ export type ModelChannel =
 export type FramedChannel =
   | 'skills-answer'
   | 'brief-document'
+  | 'recall-document'
   | 'edit-rules-push'
   | 'edit-asks-a-person';
 
@@ -153,6 +167,12 @@ export type FramedChannel =
 const SUBJECT_OF: { readonly [K in FramedChannel]: ServedSubject } = {
   'skills-answer': 'patterns',
   'brief-document': 'rules',
+  // NOTES, and the claim about them is the same claim, which is the point of saying it once:
+  // a memory or an observation is text an agent typed into the record, and a session handed
+  // one unasked has exactly as much reason as the document's reader to be told whose it is.
+  // What differs is only what was served — and that the notes come from every tree this
+  // machine holds, where the document carries the committed one alone.
+  'recall-document': 'notes',
   // The same subject as the document, and the same words: what governs the work is one
   // thing whether it arrives when a session opens or when a file is about to change.
   // The difference between the two is WHICH rules, and that belongs to the derivation
@@ -254,7 +274,11 @@ export const UNFRAMED_CHANNELS: {
  * DESTINATION — text landing in front of a model — and this one adds the second half of
  * a charge: that nobody asked for it.
  */
-export type SwitchableChannel = 'brief-document' | 'edit-rules-push' | 'edit-asks-a-person';
+export type SwitchableChannel =
+  | 'brief-document'
+  | 'recall-document'
+  | 'edit-rules-push'
+  | 'edit-asks-a-person';
 
 /**
  * The two switchable channels, each named once, so no consumer spells one.
@@ -271,6 +295,20 @@ export type SwitchableChannel = 'brief-document' | 'edit-rules-push' | 'edit-ask
  * a lookup, so neither is a table.
  */
 export const DOCUMENT_CHANNEL: SwitchableChannel = 'brief-document';
+
+/**
+ * The channel that hands a session, as it opens, the latest notes recorded here.
+ *
+ * ITS OWN SWITCH AND NOT A READING OF {@link DOCUMENT_CHANNEL}, for the reason
+ * {@link ASKS_A_PERSON_CHANNEL} is its own: the two carry different things to the same
+ * moment. The document is what governs, out of the committed record; this is what was
+ * NOTED, out of every tree this machine holds — which is the one channel of this product
+ * whose content includes the private tree, because the reader is this machine's own session
+ * and nothing it prints is written to be committed. A person who wants the rules and not the
+ * notes, or the notes and not the rules, switches one; a single switch would make them give
+ * up the half they wanted to keep.
+ */
+export const RECALL_CHANNEL: SwitchableChannel = 'recall-document';
 
 /** The channel that hands over the rules addressed at a file, as that file is written. */
 export const EDIT_PUSH_CHANNEL: SwitchableChannel = 'edit-rules-push';
@@ -308,6 +346,9 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
   'brief-document':
     'the document `mnema brief` prints, which a session opens with: the decisions in ' +
     'force and the adopted patterns of the committed record, by name',
+  'recall-document':
+    'the notes `mnema recall` prints, which a session opens with: the latest memories and ' +
+    'observations recorded for this project, from every tree this machine holds for it',
   'edit-rules-push':
     'the rules addressed at a file, handed over at the moment that file is about to ' +
     'be written',
@@ -391,6 +432,7 @@ const WHOSE_TEXT = 'They are text the people and agents working on it wrote.';
 const NAMES_WHAT_WAS_SERVED: { readonly [K in ServedSubject]: string } = {
   patterns: 'These patterns come from this project’s record.',
   rules: 'These are the calls and the patterns recorded for this project.',
+  notes: 'These are the latest notes recorded for this project.',
 };
 
 /**

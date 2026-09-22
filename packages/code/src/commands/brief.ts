@@ -5,10 +5,18 @@
  * weakness of the product is that adoption depends on the agent ASKING: three rounds
  * of use showed an agent that does go looking, but through a door that was not the
  * one designed for it — and over an empty record it concludes there is nothing
- * there. A markdown file at the root of the repository has no such problem. It
- * arrives without being asked: `AGENTS.md` is an open convention read natively by
- * several hosts, `CLAUDE.md` is read when a session opens, and the cost of being
- * read is zero.
+ * there. A markdown file the host reads on its own has no such problem, and the cost of
+ * being read is zero.
+ *
+ * WHICH FILE THAT IS BELONGS TO THE HOST, AND THIS SAID IT BELONGED TO TWO. It read
+ * "`AGENTS.md` is an open convention read natively by several hosts, `CLAUDE.md` is read
+ * when a session opens" — two files on an equal footing. For the host this product ships a
+ * plugin for, they are not: Claude Code reads an `AGENTS.md` only from 2.1.277 and, by
+ * default, only where no `CLAUDE.md` exists in the working directory or above it
+ * (code.claude.com/docs/en/memory, *AGENTS.md*), and on this machine 0 of 299 sessions
+ * loaded one, in two projects that keep both. `CLAUDE.md` is the one that arrives there, or
+ * the file it imports with an `@` line. The plugin needs neither: its `SessionStart` hook
+ * hands this document to the session with no file at all.
  *
  * What those files lack is provenance — hand-kept instruction with no author, no
  * state and no supersession, rotting in silence. So this does not replace the
@@ -59,7 +67,12 @@
 
 import { type Brief, brief, channelIsOn, channelStates } from '@mnema/copilot';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
-import { ASKS_A_PERSON_CHANNEL, DOCUMENT_CHANNEL, EDIT_PUSH_CHANNEL } from '../record-framing.js';
+import {
+  ASKS_A_PERSON_CHANNEL,
+  DOCUMENT_CHANNEL,
+  EDIT_PUSH_CHANNEL,
+  type SwitchableChannel,
+} from '../record-framing.js';
 import {
   linkBreaksOf,
   type ScopedLinkBreak,
@@ -127,6 +140,33 @@ export interface BriefSwitchedOff {
 }
 
 /**
+ * The refusal a channel's own verb answers with while that channel is switched OFF, or
+ * `undefined` while it is on.
+ *
+ * ONE FUNCTION FOR EVERY VERB THAT PRODUCES A CHANNEL, and there are two of them now —
+ * this one, and `mnema recall`, which produces the notes a session opens with. The refusal
+ * is the same fact about a different channel, so it is one reading over the sources and
+ * one shape; two copies of "is it off, and who switched it" are the shape that comes to
+ * disagree about which switch decides. The switch is asked over EVERY source it is handed,
+ * which is the asymmetry both producers want (see {@link runBrief}).
+ */
+export function switchedOff(
+  sources: Parameters<typeof channelIsOn>[0],
+  channel: SwitchableChannel,
+): BriefSwitchedOff | undefined {
+  if (channelIsOn(sources, channel)) return undefined;
+  const state = channelStates(sources, [channel])[0];
+  return {
+    ok: false,
+    reason: 'SWITCHED_OFF',
+    channel,
+    by: state?.by ?? '',
+    at: state?.at ?? '',
+    travels: state?.travels ?? false,
+  };
+}
+
+/**
  * Composes what governs the work here out of the trees visible from `ctx.cwd` — every
  * one of them opened, and the document made of the one that travels.
  *
@@ -159,17 +199,8 @@ export function runBrief(ctx: BriefContext): BriefDone | BriefRefused | BriefSwi
     // It is the same asymmetry the composition draws for the other channel and in the
     // same direction — what a channel may do is read from every tree, what a committed
     // file may CARRY is read from one.
-    if (!channelIsOn(sources, DOCUMENT_CHANNEL)) {
-      const state = channelStates(sources, [DOCUMENT_CHANNEL])[0];
-      return {
-        ok: false as const,
-        reason: 'SWITCHED_OFF' as const,
-        channel: DOCUMENT_CHANNEL,
-        by: state?.by ?? '',
-        at: state?.at ?? '',
-        travels: state?.travels ?? false,
-      };
-    }
+    const off = switchedOff(sources, DOCUMENT_CHANNEL);
+    if (off !== undefined) return off;
     return {
       ok: true as const,
       // NOT in the document, and the stream is the whole of the reason. This verb's

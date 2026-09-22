@@ -38,6 +38,7 @@ $ mnema
 !   skills [options]                        show where each pattern came from (who proposed it, who adopted it)
 !   usage                                   what each run cost, read from this machine's Claude Code transcripts
 !   brief                                   print what governs the work here as markdown, for an agent to read
+!   recall                                  print the latest notes recorded here as markdown, for an agent to read
 !   key                                     manage this machine's signing keys
 !   tail                                    authorize a cut in the record's own tails
 !   witness [options]                       ask an outside witness to date this record, and read where that stands
@@ -89,6 +90,7 @@ $ mnema --help
 |   skills [options]                        show where each pattern came from (who proposed it, who adopted it)
 |   usage                                   what each run cost, read from this machine's Claude Code transcripts
 |   brief                                   print what governs the work here as markdown, for an agent to read
+|   recall                                  print the latest notes recorded here as markdown, for an agent to read
 |   key                                     manage this machine's signing keys
 |   tail                                    authorize a cut in the record's own tails
 |   witness [options]                       ask an outside witness to date this record, and read where that stands
@@ -619,10 +621,12 @@ $ mnema brief --help
 |   mnema brief | diff - MNEMA.md   whether that copy still matches the record
 |
 | Any name works: the check is the same pipe, and it reads the name you give it.
-| `AGENTS.md` and `CLAUDE.md` are read by an agent host on its own, and are worth
-| the redirection where no such file exists yet. Where one does, it is somebody’s
-| own method and this document would replace every word of it — a line in theirs
-| naming the file above reaches the same reader without losing any of it.
+| Claude Code reads a `CLAUDE.md` at every session, and an `AGENTS.md` only from
+| 2.1.277 and only where no `CLAUDE.md` exists. Where one of those exists it is
+| somebody’s own method and this document would replace every word of it — the
+| line `@MNEMA.md` in a `CLAUDE.md` brings the file above in with it, where a
+| sentence naming the file is read only if the agent chooses to open it.
+| The mnema plugin hands this document to a Claude Code session with no file at all.
 |
 | The output holds no clock, no session and no path, so the same record always
 | prints the same bytes and a difference is a difference in the record.
@@ -641,6 +645,29 @@ $ mnema brief --help
 | It can be switched off (`mnema switch off brief-document`), and then this verb
 | refuses instead of printing an empty file — a session that opens with nothing is
 | what switching it off asks for, and a truncated AGENTS.md is not.
+
+### mnema recall --help
+$ mnema recall --help
+| Usage: mnema recall [options]
+|
+| print the latest notes recorded here as markdown, for an agent to read
+|
+| Options:
+|   -h, --help  display help for command
+|
+| It prints to stdout and writes nothing. It is what a session opens with beside the
+| document `mnema brief` prints: the memories and the observations recorded for this
+| project, newest first, one line each — out of EVERY tree this machine holds for it,
+| the committed one, this machine’s own and your personal one.
+| So it is NOT a file to commit: `mnema brief` carries the committed record and is
+| written to be redirected into one; this carries what was kept on this machine too.
+|
+| Each line is the one the record already knows a note by — an observation’s topic,
+| the start of a memory — with the id `mnema show <id>` reads whole. The newest of
+| each kind, cut where `mnema search` cuts, and it says how many there are in all
+| when there are more.
+| It prints NOTHING when nothing is recorded, so a session opens with nothing added.
+| It can be switched off (`mnema switch off recall-document`), and then it refuses.
 
 ### mnema key --help
 $ mnema key --help
@@ -1212,8 +1239,8 @@ $ mnema switch off --help
 | stop a channel handing the record to a model unasked
 |
 | Arguments:
-|   channel          the channel to switch (brief-document, edit-rules-push,
-|                    edit-asks-a-person)
+|   channel          the channel to switch (brief-document, recall-document,
+|                    edit-rules-push, edit-asks-a-person)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)
@@ -1244,8 +1271,8 @@ $ mnema switch on --help
 | let a channel hand the record to a model again
 |
 | Arguments:
-|   channel          the channel to switch (brief-document, edit-rules-push,
-|                    edit-asks-a-person)
+|   channel          the channel to switch (brief-document, recall-document,
+|                    edit-rules-push, edit-asks-a-person)
 |
 | Options:
 |   --reason <text>  why (recorded in the fact; never required)

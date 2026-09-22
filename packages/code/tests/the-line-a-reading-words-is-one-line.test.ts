@@ -567,6 +567,53 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     why: 'the agent that adopted it, or this surface’s word for a person',
   },
 
+  // --- recall.ts: the notes a session opens with ------------------------------------
+  'recall.ts «## {} ({})» heading #1': {
+    verdict: 'minted',
+    why: 'the name of one of the two sections, a constant this module hands in',
+  },
+  'recall.ts «## {} ({})» search.hits.length #1': {
+    verdict: 'minted',
+    why: 'how many notes are printed under the heading — the count the lines are counted by',
+  },
+  'recall.ts «{} are recorded here, and these are the {} newest; \\`search\\` with» search.total #1':
+    {
+      verdict: 'minted',
+      why: 'how many of this kind the index holds in all — its own total, a count',
+    },
+  'recall.ts «{} are recorded here, and these are the {} newest; \\`search\\` with» printed #1': {
+    verdict: 'minted',
+    why: 'how many of them are printed — the length of the list under the sentence',
+  },
+  'recall.ts «\\`kind\\` \\`{}\\` serves the rest.» kind #1': {
+    verdict: 'minted',
+    why: 'one of the two kinds this text lists, a word of the catalog handed in by the caller',
+  },
+  'recall.ts «- {} · \\`{}\\`» WITHHELD #1': {
+    verdict: 'minted',
+    why: 'the stand-in for a note whose line holds a credential — a constant of this module, and nothing from the record',
+  },
+  'recall.ts «- {} · \\`{}\\`» oneLine(hit.id) #1': {
+    verdict: 'collapsed',
+    why: 'the id of the withheld note — minted by the product, and a record can be appended to by anything holding a key',
+  },
+  'recall.ts «- {} · \\`{}\\`» oneLine(hit.title) #1': {
+    verdict: 'collapsed',
+    why: 'the start of a memory — text an agent or a person typed, on the one line that stands for it',
+  },
+  'recall.ts «- {} · \\`{}\\`» oneLine(hit.id) #2': {
+    verdict: 'collapsed',
+    why: 'the memory’s id, beside text somebody typed — collapsed for the reason the document collapses its ids',
+  },
+  'recall.ts «- **{}** · \\`{}\\`» oneLine(hit.title) #1': {
+    verdict: 'collapsed',
+    why: 'an observation’s topic — a name whoever recorded it chose, in the weight of one',
+  },
+  'recall.ts «- **{}** · \\`{}\\`» oneLine(hit.id) #1': {
+    verdict: 'collapsed',
+    why: 'the observation’s id, collapsed for the reason every field on a bullet is',
+  },
+
   // --- record.ts: one whole record -----------------------------------------------
   'record.ts «{} {}» body.kind #1': {
     verdict: 'minted',
@@ -1392,13 +1439,15 @@ describe('every value this layer puts on a line is classified', () => {
     // says where each of the channels mnema pushes unasked stands, and the value on its
     // line a person typed is the REASON somebody gave for switching one off. A module added
     // to this layer is counted here the day it is written, which is what this number is for.
-    expect(FOUND.composers.length + FOUND.machinery.length).toBe(28);
-    expect(FOUND.composers.length).toBe(16);
+    // The twenty-ninth is `recall.ts`, a COMPOSER: the notes a session opens with, whose
+    // values are the start of a memory and an observation's topic, both typed by somebody.
+    expect(FOUND.composers.length + FOUND.machinery.length).toBe(29);
+    expect(FOUND.composers.length).toBe(17);
     expect(FOUND.machinery).toContain('items.ts');
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
     expect(FOUND.builders.length).toBeGreaterThan(10);
-    expect(FOUND.sites.length).toBe(226);
+    expect(FOUND.sites.length).toBe(237);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1419,10 +1468,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(59);
-    expect(count('minted')).toBe(128);
+    expect(count('collapsed')).toBe(64);
+    expect(count('minted')).toBe(134);
     expect(count('composed')).toBe(39);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(59);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(64);
   });
 
   it('every reason says where the value comes from', () => {

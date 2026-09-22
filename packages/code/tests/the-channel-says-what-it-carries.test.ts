@@ -36,6 +36,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { briefDocument } from '../src/presentation/brief.js';
+import { recallDocument } from '../src/presentation/recall.js';
 import {
   DECLARES_MODEL_CHANNEL,
   FRAMED_CHANNELS,
@@ -229,6 +230,26 @@ describe('one declaration, and one place that decides it', () => {
       asksAPerson: { channel: 'edit-asks-a-person', on: true },
     });
     for (const line of recordFraming('brief-document')) expect(document).toContain(line);
+
+    // And the notes, which carry the same claim under the subject they served.
+    const noted = { hits: [], total: 0 };
+    const recalled = recallDocument({
+      memories: {
+        hits: [
+          {
+            id: 'mem-1',
+            kind: 'memory',
+            scope: 'private',
+            at: '2026-09-22T00:00:00.000Z',
+            title: 'the build reads a stale dist',
+            derived: true,
+          },
+        ],
+        total: 1,
+      },
+      observations: noted,
+    });
+    for (const line of recordFraming('recall-document')) expect(recalled).toContain(line);
   });
 
   it('says why, for every channel that carries no declaration', () => {
@@ -341,7 +362,15 @@ describe('every handler that pushes declares the channel it carries', () => {
     }
     // And at least one handler WAS asked. Without this the case is green on a plugin
     // whose handlers all stopped writing, which is the shape a broken enumeration has.
-    expect(named).toEqual(['session-start.mjs:brief-document']);
+    // TWO now, one per text a session opens with; the module they share (`hand-over.mjs`)
+    // answers with text and writes nothing out, so it is walked and not asked — which is
+    // what keeps the rule that decides silence in ONE file without giving that file a
+    // channel it does not carry.
+    expect(named).toEqual([
+      'session-recall.mjs:recall-document',
+      'session-start.mjs:brief-document',
+    ]);
+    expect(handlers()).toContain('hand-over.mjs');
   });
 
   it('rules on every hook the plugin declares, whatever its TYPE', () => {
@@ -383,6 +412,7 @@ describe('every handler that pushes declares the channel it carries', () => {
     }
     expect(ruled).toEqual([
       'SessionStart:command:session-start.mjs',
+      'SessionStart:command:session-recall.mjs',
       'PreToolUse:mcp_tool:rules_before_an_edit:edit-rules-push+edit-asks-a-person',
     ]);
   });
@@ -425,16 +455,21 @@ describe('every handler that pushes declares the channel it carries', () => {
 });
 
 describe('what goes to a PERSON does not speak as if to a model', () => {
-  it('prints the declaration under exactly one verb of the command line', () => {
+  it('prints the declaration under the verbs whose output a model reads, and no other', () => {
     // The other half of the rule, and the half nobody looks for: the framing belongs to
-    // a channel a MODEL reads, and `mnema brief` is the only read whose output is
-    // written for one. A terminal answer that started declaring itself would be this
-    // surface talking past the person who typed the verb.
+    // a channel a MODEL reads, and a terminal answer that started declaring itself would
+    // be this surface talking past the person who typed the verb. It was ONE verb, `mnema
+    // brief`; `mnema recall` is the second, and for the same reason — its whole output is
+    // the text a session opens with — so the list is the two producers of what a session is
+    // handed, and a third verb that began declaring itself is red here by its name.
     const blocks = printedByVerb();
     expect(blocks.length).toBeGreaterThan(20);
     const declaring = blocks.filter((block) => block.output.includes(THE_CLAIM));
     expect(declaring.length).toBeGreaterThan(0);
-    expect([...new Set(declaring.map((block) => block.command))]).toEqual(['mnema brief']);
+    expect([...new Set(declaring.map((block) => block.command))]).toEqual([
+      'mnema brief',
+      'mnema recall',
+    ]);
   });
 
   it('keeps the declaration out of every module that writes to a terminal', () => {

@@ -253,6 +253,7 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   skills: { argv: () => ['skills'] },
   usage: { argv: () => ['usage'] },
   brief: { argv: () => ['brief'] },
+  recall: { argv: () => ['recall'] },
   verify: { argv: () => ['verify'] },
   repl: CANNOT_BE_EXERCISED,
   completion: { argv: () => ['completion', 'bash'] },
@@ -509,7 +510,7 @@ describe('every verb says if it writes', () => {
     expect(Object.keys(INVOCATION).sort()).toEqual([...EFFECT_BY_VERB.keys()].sort());
   });
 
-  it('counts fourteen writes and twenty reads over the whole surface', () => {
+  it('counts fourteen writes and twenty-one reads over the whole surface', () => {
     // The count in the report, asserted rather than trusted, and the total against the
     // list: a verb that stopped being registered would otherwise leave both halves
     // looking healthy.
@@ -547,6 +548,7 @@ describe('every verb says if it writes', () => {
       'skills',
       'usage',
       'brief',
+      'recall',
       'verify',
       'repl',
       'completion',
