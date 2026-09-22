@@ -1,8 +1,8 @@
 {
   "name": "mnema-workspace",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
-  "description": "Workspace for the mnema packages. The published product is @mnema/code; @mnema/chain and @mnema/core are internal.",
+  "description": "Workspace for the mnema packages. @mnema/code is the one to install; @mnema/chain, @mnema/core and @mnema/copilot are what it is built from, and each is released in its own right so the proof engine stays separable.",
   "author": "Felipe Sauer (https://github.com/felipesauer)",
   "license": "MIT",
   "type": "module",

@@ -99,7 +99,7 @@ $ mnema --help
 |   completion <shell>                      print the tab-completion script for a shell
 |   help [command]                          display help for command
 $ mnema --version
-| 0.0.0
+| 0.1.0
 
 ### mnema init --help
 $ mnema init --help

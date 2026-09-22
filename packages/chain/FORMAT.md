@@ -681,10 +681,26 @@ Stated plainly, because a published format invites all three readings:
 ## The delivery channel, and what it is not
 
 The vectors travel with **this repository**, and so does the second implementation.
-They are not in any npm tarball: `@mnema/chain` is an internal package that is never
-published, and the one package that is published (`@mnema/code`) ships its compiled
-`dist/` only. So the address of both artifacts is a path in the repository, and both
-are checked to still be there by a guard rather than assumed: this document's pointer
-by `packages/chain/src/format-doc.test.ts`, and the verifier's presence — including
-that no `.gitignore` has swallowed it — by
-`packages/chain/src/chain/second-reader-is-independent.test.ts`.
+
+**THIS SECTION SAID THEY TRAVELLED BY NO OTHER CHANNEL, and that is no longer true.** It
+read: *"They are not in any npm tarball: `@mnema/chain` is an internal package that is
+never published"*. What falsified it is that `@mnema/chain` is now released in its own
+right, and that its `files` was decided rather than defaulted — `dist/`, this document,
+both artifacts and `verifier/` — precisely so that the tarball is a second address for
+everything this section is about. A reader who installs the package and never clones has
+the document, the vectors, the declarations and a verifier that runs against them.
+
+So there are two channels and both are guarded, because an address nobody checks is an
+address that quietly stops resolving:
+
+- **In the repository.** This document's pointer to each artifact, by
+  `packages/chain/src/format-doc.test.ts`; the verifier's presence, including that no
+  `.gitignore` has swallowed it, by
+  `packages/chain/src/chain/second-reader-is-independent.test.ts`.
+- **In the tarball.** That all four travel, and that the verifier RUNS out of an extracted
+  copy with nothing of this workspace beside it, by
+  `packages/code/tests/what-a-package-publishes-is-what-its-page-promises.test.ts`.
+
+What has not changed is the sentence underneath the old one: `@mnema/code` still ships its
+compiled `dist/` only, so the address of both artifacts, for a reader who took the tool
+rather than the engine, is still a path in the repository.

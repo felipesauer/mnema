@@ -127,12 +127,37 @@ witnesses do different halves of that, and neither does the other's:
 
 ## Install
 
-**This package is internal and is not published**, so there is no `pnpm add` for
-it: it is a workspace dependency of `@mnema/code`, which is the one meant to be
-installed. Read on to know what it holds and what it proves; to use it, take
-`@mnema/code`.
+```sh
+npm i @mnema/chain
+```
 
-Requires Node ≥ 22.12.0. The package is ESM-only.
+**This package is released on its own, and that is the point of it.** This section
+used to say it was internal and never published, and the channel it named — the
+repository, and only the repository — was the one way to reach what makes its promise
+checkable. That promise is that the code you have to trust for tamper-evidence is
+auditable on its own, and a tarball of compiled JavaScript would have been the promise
+without the means. So what travels with it was chosen rather than defaulted:
+
+| | |
+|---|---|
+| `FORMAT.md` | the bytes specified in prose, for a reader who did not write this code |
+| `canonical-vectors.json` · `event-schema.json` | the two published artifacts a reader reproduces |
+| `verifier/` | the second implementation — Python, standard library only, importing nothing of this product |
+
+`python3 verifier/mnema_verify.py vectors` runs from an installed copy with nothing else
+beside it, and that is asserted rather than assumed: the guard packs this package,
+extracts the tarball into an empty directory and runs it there
+(`packages/code/tests/what-a-package-publishes-is-what-its-page-promises.test.ts`).
+
+**What is released is not an API.** The exports here are the surface this product needed,
+never one designed for somebody else, and they move when it moves. If you want the tool
+rather than the engine, take `@mnema/code`; this page is for knowing what the engine
+holds and what it proves.
+
+Requires Node ≥ 22.12.0. The package is ESM-only, and it has no runtime dependencies.
+
+Whether the command above resolves is a fact about the registry rather than about this
+page: `npm view @mnema/chain version` answers it in one line.
 
 ## Usage
 

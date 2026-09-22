@@ -79,9 +79,6 @@ table, claim by claim.
 
 ## Install
 
-**`@mnema/code` is not on npm yet**, so the command below does not resolve
-today. It is written here as what the install will be, not as something to run:
-
 ```sh
 npm i -g @mnema/code
 # or, if your global binaries live under pnpm:
@@ -89,7 +86,20 @@ pnpm add -g @mnema/code
 ```
 
 It puts the `mnema` binary on your `PATH`. Requires Node ≥ 22.12.0; the package
-is ESM-only. Until it is published, the way to run it is from a clone — see
+is ESM-only.
+
+**Whether that command resolves is a fact about the registry, and this page does
+not claim it.** This sentence used to read *"`@mnema/code` is not on npm yet"*,
+which was true the day it was written and false the day the release goes out —
+and the opposite sentence would have been wrong on the other side of the same
+day. A page cannot know what somebody else's server answers, so it asks instead:
+
+```sh
+npm view @mnema/code version
+```
+
+A 404 there means the release has not been pushed, and until it is, the way to
+run it is from a clone — see
 [Building it from source](#building-it-from-source) at the bottom of the page.
 
 For the Claude Code plugin — the opening context and the per-edit rules — add
@@ -175,15 +185,22 @@ code — and not in the social one, being the same author and the same repositor
 | | |
 |---|---|
 | [`packages/code`](packages/code/) | **`@mnema/code` — the package you install.** The command line and the MCP server. It holds no domain logic: it resolves where you are, calls one function below, and prints what came back, which is what makes the two surfaces behave identically. |
-| [`packages/chain`](packages/chain/) | The proof engine: the typed event catalog, canonicalization, the per-tail hash chain, Ed25519 checkpoints, and the verifier. **Zero runtime dependencies** — the code you have to trust for tamper-evidence is auditable on its own. Internal. |
-| [`packages/core`](packages/core/) | The work domain: the gate over the shape of a change, the projections read back out of the chain, identity, and the queries. Internal. |
-| [`packages/copilot`](packages/copilot/) | Read-only derivations that turn the proven record into the context an agent is handed. Internal. |
+| [`packages/chain`](packages/chain/) | The proof engine: the typed event catalog, canonicalization, the per-tail hash chain, Ed25519 checkpoints, and the verifier. **Zero runtime dependencies** — the code you have to trust for tamper-evidence is auditable on its own, and it is released on its own so that it can be. Its tarball carries `FORMAT.md`, the published vectors and the independent verifier. |
+| [`packages/core`](packages/core/) | The work domain: the gate over the shape of a change, the projections read back out of the chain, identity, and the queries. Released because `@mnema/code` depends on it. |
+| [`packages/copilot`](packages/copilot/) | Read-only derivations that turn the proven record into the context an agent is handed. Released because `@mnema/code` depends on it. |
 | [`plugin/`](plugin/) | The Claude Code plugin: two hooks and the MCP server declaration, in one installation. |
 | [`measurements/`](measurements/) | The measurements this product's claims rest on, with their protocols and their raw results. |
 
-Only `@mnema/code` is meant to be installed; `@mnema/chain`, `@mnema/core` and
-`@mnema/copilot` are internal packages of this workspace. Each of the four has a
-README of its own, each with its own
+**All four are released, and only one of them is meant to be installed.** This
+paragraph used to say the other three were internal packages that were never
+published, and what falsified it is that `@mnema/code` declares them as
+dependencies: a package on the registry whose dependencies are not on it is a
+package that does not install. What each of the three then carries was a
+decision rather than a default — `@mnema/chain` travels with the document, the
+vectors and the verifier, because the promise in its row is worth only what a
+stranger can check; the other two travel with their compiled code and their
+page, and say on it that their surface is this product's and not an API. Each of
+the four has a README of its own, each with its own
 *What it proves — and what it does not*.
 
 ## Building it from source

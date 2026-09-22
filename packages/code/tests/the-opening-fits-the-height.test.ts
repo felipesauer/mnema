@@ -41,6 +41,7 @@ import { renderPlain } from '../src/presentation/plain.js';
 import { THE_FLOOR } from '../src/repl/floor.js';
 import { THE_INSET } from '../src/repl/inset.js';
 import { type Opening, openingFor, type PanelForm, panelFor } from '../src/repl/panel.js';
+import { VERSION } from '../src/version.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { ESC } from './support/console.js';
 import {
@@ -258,7 +259,7 @@ function rowOf(screen: Screen, what: string): number {
 const THE_DRAWING = bannerFor({ columns: 200, rows: 200, needs: () => 0 });
 const OF_THE_PRODUCTS_SHAPE = {
   render: renderPlain,
-  title: subjectLine('mnema  ·  v0.0.0  ·  a session over this project'),
+  title: subjectLine(`mnema  ·  v${VERSION}  ·  a session over this project`),
   mark: THE_DRAWING,
   standing: [fact('/home/somebody/a-project · mnid:00000000')],
   record: [

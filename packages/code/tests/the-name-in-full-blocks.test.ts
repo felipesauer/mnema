@@ -49,6 +49,7 @@ import { areaFor } from '../src/repl/area.js';
 import { THE_FLOOR, theFloorFor } from '../src/repl/floor.js';
 import { insideTheMargin } from '../src/repl/inset.js';
 import { openingFor, theShortestScreenFor } from '../src/repl/panel.js';
+import { VERSION } from '../src/version.js';
 
 // ---------------------------------------------------------------------------
 // The art
@@ -212,7 +213,7 @@ describe('the floor follows the drawing, because it is worked out from it', () =
  * page's own seam and compared with this floor.
  */
 const A_PAGE = {
-  title: subjectLine('mnema 0.0.0 - a session over this project'),
+  title: subjectLine(`mnema ${VERSION} - a session over this project`),
   standing: [aside('~/projects/a-project - signed as somebody')] as readonly Line[],
   record: [
     subjectLine('The record'),

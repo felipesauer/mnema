@@ -1,7 +1,6 @@
 {
   "name": "@mnema/chain",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "description": "The mnema proof engine: typed event catalog, per-tail hash chain, Ed25519 checkpoints, and verification. Zero runtime dependencies.",
   "author": "Felipe Sauer (https://github.com/felipesauer)",
   "license": "MIT",
@@ -17,5 +16,29 @@
     }
   },
   "types": "./dist/index.d.ts",
-  "main": "./dist/index.js"
+  "main": "./dist/index.js",
+  "files": [
+    "dist/",
+    "!dist/.tsbuildinfo",
+    "verifier/",
+    "!verifier/**/__pycache__",
+    "FORMAT.md",
+    "canonical-vectors.json",
+    "event-schema.json"
+  ],
+  "homepage": "https://github.com/felipesauer/mnema",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/felipesauer/mnema.git"
+  },
+  "bugs": {
+    "url": "https://github.com/felipesauer/mnema/issues"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
 }

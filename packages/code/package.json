@@ -1,6 +1,6 @@
 {
   "name": "@mnema/code",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "A signed, append-only record of the decisions behind AI-agent work — the decision, the reasoning, and who wrote it down, in the repository where the work happens.",
   "keywords": [
     "mcp",
@@ -27,7 +27,8 @@
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
   "files": [
-    "dist/"
+    "dist/",
+    "!dist/.tsbuildinfo"
   ],
   "homepage": "https://github.com/felipesauer/mnema",
   "repository": {

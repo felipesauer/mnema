@@ -37,10 +37,19 @@
  *
  * WHAT IT DOES NOT CHECK. Windows spellings (`C:\Program Files\`) — the escaping half is
  * exercised by a space and an accent on this platform, and the drive-letter form is not
- * reachable from here. Nor does it install from a registry: the `workspace:*` dependencies
- * of the three internal packages still stop `npm i -g` before the binary is ever reached,
- * which is a separate, measured gap and is why the pages that publish that command now say
- * the package is not published yet.
+ * reachable from here. Nor does it install from a registry.
+ *
+ * THAT LAST SENTENCE USED TO CARRY A SECOND CLAUSE, AND THE CLAUSE IS DEAD. It read: "the
+ * `workspace:*` dependencies of the three internal packages still stop `npm i -g` before
+ * the binary is ever reached … which is why the pages that publish that command now say the
+ * package is not published yet." Both halves are gone. The three are not internal any more —
+ * they are released beside `@mnema/code`, which is what makes `workspace:*` resolve, since
+ * the packer rewrites each one to the concrete version of a package that is on the registry.
+ * And the pages no longer say the package is not published: they publish the command and
+ * name the one line that answers whether it resolves, because a page cannot know what
+ * somebody else's server says today. What still stands is the reason this file exists: the
+ * binary is invoked here the way an install invokes it, through a symlink and from an
+ * escaped path, and the registry is the one step it does not take.
  */
 
 import { execFileSync } from 'node:child_process';

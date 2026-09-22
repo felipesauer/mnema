@@ -266,8 +266,18 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * `node:child_process`, `node:fs`, `node:path` and `node:url`, and `vitest` for the fifth.
  * It imports no production module at all, deliberately: its subject is the TEXT of the
  * workspace's files rather than anything they export.
+ *
+ * It went 2733 -> 2749 when the four packages became publishable: sixteen clauses across two
+ * guards, both of which read the workspace from outside rather than importing much of it.
+ * `the-version-is-one-number.test.ts` reconciles every tracked manifest, the plugin's
+ * included, with the constant the program answers `--version` with — `node:child_process`,
+ * `node:fs`, `node:path`, `node:url`, and `version.ts`, the one production module it asserts
+ * on. `what-a-package-publishes-is-what-its-page-promises.test.ts` packs all four packages
+ * with `pnpm`, reads each tarball with `tar`, then extracts the chain's and runs the Python
+ * verifier out of it — the same four built-ins plus `node:os` for its sandbox, and no
+ * production module at all: its subject is the tarball, not anything this workspace exports.
  */
-const CLAUSES_IN_THE_TREE = 2733;
+const CLAUSES_IN_THE_TREE = 2749;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 

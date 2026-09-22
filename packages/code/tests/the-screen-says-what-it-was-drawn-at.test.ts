@@ -43,6 +43,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { VERSION } from '../src/version.js';
 import { type Arriving, decodedWhole } from './support/arriving.js';
 import { sizedTo, theDeviceWasTheSizeAskedFor } from './support/pty.js';
 import { everyWidthDrawnOn, screenOf } from './support/screen.js';
@@ -89,7 +90,7 @@ const RUN = '\u2500';
  */
 function aPageDrawn(columns: number): string {
   const rule = RUN.repeat(columns);
-  return ['MNEMA', 'mnema \u00b7 v0.0.0 \u00b7 a session', rule, 'mnema>', rule].join('\r\n');
+  return ['MNEMA', `mnema \u00b7 v${VERSION} \u00b7 a session`, rule, 'mnema>', rule].join('\r\n');
 }
 
 /**
