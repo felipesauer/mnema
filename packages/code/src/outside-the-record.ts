@@ -158,10 +158,13 @@ function basesOf(targets: ReadonlySet<string>): ReadonlySet<string> {
  * entry is a directory some tool CREATES if you let it, which is the only test for
  * membership here — a directory this or any other project happens to use is not one.
  *
- * THIS BENCH'S OWN `.refactor/decisions` IS DELIBERATELY NOT IN IT, and the reason is the
- * rule rather than modesty: it is this repository's convention and no market's, so shipping
- * it would put a fact about how this product is built into what the product says to
- * everybody else. A project that keeps decisions somewhere unconventional is a project this
+ * A DIRECTORY A PROJECT INVENTED FOR ITSELF IS DELIBERATELY NOT IN IT, and the reason is
+ * the rule rather than modesty: a convention with a single repository behind it is no
+ * market's, so shipping it would put a fact about how one project is built into what this
+ * product says to everybody else. THIS repository keeps its own decisions in exactly such
+ * a directory, and it is held against this list by `outside-the-record.test.ts` — the
+ * entry a reader of the source would most expect to find, and the one that must not be
+ * there. A project that keeps decisions somewhere unconventional is a project this
  * reading says nothing about, and that is the honest silence — `decision import <dir>`
  * takes any directory, and `--help` names it.
  *

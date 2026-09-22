@@ -29,8 +29,8 @@
  * silence is still exit-code-gated.
  *
  * WHAT IT NEVER COVERED IS A RECORD THAT DOES NOT CHAIN, and the three outcomes measured
- * on the binary are what separate the two (`.refactor`'s study of who is told, §1.4):
- * outside a project the verb exits 1 with 47 bytes of refusal on stderr; over a SOUND
+ * on the built binary are what separate the two: outside a project the verb exits 1 with
+ * 47 bytes of refusal on stderr; over a SOUND
  * record it exits 0 with an empty stderr; over a record whose tails stop chaining it
  * exits 0 and the notice is on stderr. So with exit 0 the second stream holds bytes only
  * when there is something to say about the RECORD — and those bytes are not a diagnosis

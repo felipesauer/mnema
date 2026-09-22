@@ -188,8 +188,7 @@ export type { ScopedLinkBreak } from './record-integrity.js';
  * said it did it by returning ONE MORE FIELD, and the wiring — which has an `io`
  * already — prints it. Counted against the source when the debt was paid: fourteen of
  * the seventeen reads return an object a field could be added to, and not one call site
- * took an `io` it did not have. What the number really was is in
- * `.refactor/active/the-broken-link-reaches-every-reader/report.md`.
+ * took an `io` it did not have.
  */
 export function linkBreaksOf(
   sources: readonly ScopedCache[],

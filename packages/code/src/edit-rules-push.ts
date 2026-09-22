@@ -37,8 +37,9 @@
  * WHAT FALSIFIED THE THREE-FIELD FORM AS A RULE. Nothing on the line could be OPENED. The
  * `ADR-<n>` this channel does not even print is a counter of the chain — measured on a
  * real project, 241 of 247 labels name a different file from the one the decision came
- * out of — and the id opens through `read_record` alone, which four measurements of this
- * bench say the agent does not call. So the channel that arrives unasked was the only one
+ * out of — and the id opens through `read_record` alone, which two instrumented captures
+ * say the agent does not call: `mcp_asked` false in 20 of 20 and then in 40 of 40 cells
+ * (`measurements/p1/`). So the channel that arrives unasked was the only one
  * giving its reader no path they could follow without asking for something. The
  * `derived-from` edge was already in the record and already served by the three reads
  * somebody ASKS for (`presentation/record.ts`); the thin form was thin in the field that
