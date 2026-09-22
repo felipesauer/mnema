@@ -52,7 +52,7 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 /** The workspace root — this file is `packages/code/tests/…`. */
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
@@ -284,10 +284,24 @@ describe('the proof engine carries what makes it checkable', () => {
  * `node_modules`, no `src/`, no repository.
  */
 describe('the second reader runs out of what the package publishes', () => {
-  const into = join(SANDBOX, 'extracted');
-  mkdirSync(into, { recursive: true });
-  execFileSync('tar', ['-xzf', TARBALLS.get('@mnema/chain') ?? '', '-C', into]);
-  const unpacked = join(into, 'package');
+  const unpacked = join(SANDBOX, 'extracted', 'package');
+
+  beforeAll(() => {
+    // NOT AT MODULE SCOPE, AND THE REASON IS A MEASURED ONE. This ran at collection, with
+    // `TARBALLS.get('@mnema/chain') ?? ''` for the path — and a mutation that put
+    // `private: true` back on the chain took it out of the packed set, so `tar` was handed
+    // an empty path, threw during collection, and the whole FILE reported "no tests". The
+    // defect was caught, loudly, but by a stack trace instead of by the case whose name says
+    // what went wrong. A fallback that turns "the package is missing" into "tar got an empty
+    // string" is a fallback that hides which of the two happened.
+    const tarball = TARBALLS.get('@mnema/chain');
+    if (tarball === undefined) {
+      throw new Error('@mnema/chain was not packed — it is `private` again, or it is gone');
+    }
+    const into = join(SANDBOX, 'extracted');
+    mkdirSync(into, { recursive: true });
+    execFileSync('tar', ['-xzf', tarball, '-C', into]);
+  }, 60_000);
 
   it('extracted the package, and nothing of this workspace came with it', () => {
     // NON-VACUITY: a sandbox that failed to extract would leave the case below running the
