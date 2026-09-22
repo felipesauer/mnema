@@ -9,12 +9,11 @@
  *
  * AND THE FIFTEEN CALLERS ALL CLEANED UP, which is the part worth writing down. Every test file
  * using that helper had an `afterEach` doing `rmSync(bench.root, …)` — and `bench.root` is the
- * CHAIN root, several levels inside the sandbox. They emptied the sandbox and left the sandbox.
- * So the defect was not missing cleanup; it was cleanup aimed at what the helper EXPOSED rather
- * than at what the helper CREATED, in a place that was not the place that created it. The fix
- * is the sandbox rule read strictly — whoever creates destroys, in the same function — and
- * this case is the
- * cheapest thing that would have gone red on it.
+ * CHAIN root, several levels inside the sandbox. They emptied the sandbox and left the sandbox. So
+ * the defect was not missing cleanup; it was cleanup aimed at what the helper EXPOSED rather than
+ * at what the helper CREATED, in a place that was not the place that created it. The fix is the
+ * sandbox rule read strictly — whoever creates destroys, in the same function — and this case is
+ * the cheapest thing that would have gone red on it.
  *
  * THE DISCRIMINANT IS "CREATES IN `tmpdir()`", NOT "CALLS `mkdtemp`". This distinction is the
  * whole instrument, and getting it wrong was the first thing that happened when the sweep was

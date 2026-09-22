@@ -322,9 +322,9 @@ describe('the hole the ban declares is closed with a duration, not with a scan',
 
 describe('one mechanism, and both halves are the same call', () => {
   it('re-runs the reds and re-times the slow cases through the one runner', () => {
-    // One rule, held by construction rather than by a scan: `decide` reaches for nothing of its own,
-    // so a second idea of what "alone" means cannot be written without changing this signature.
-    // `broke.json` carries three reds and six cases over the budget in the suite.
+    // One rule, held by construction rather than by a scan: `decide` reaches for nothing of its
+    // own, so a second idea of what "alone" means cannot be written without changing this
+    // signature. `broke.json` carries three reds and six cases over the budget in the suite.
     const { alone, asked } = alwaysAnswers({ ran: true, failed: true, duration: 100 });
     const result = decide({ ledger: capture('broke'), alone });
     expect(result.reds).toHaveLength(3);

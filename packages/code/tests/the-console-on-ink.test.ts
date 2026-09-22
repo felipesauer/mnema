@@ -1101,9 +1101,9 @@ describe('no component composes a line; it only positions one the renderer produ
   });
 
   it('puts a byte on the caller’s device in ONE place, and hands the layout the door', () => {
-    // THE DOOR IS THE ONE PLACE, AS A PROPERTY OF THE SOURCE. A door in a pipe is worth exactly what
-    // the pipe is worth: a second writer on the raw device would be a second mouth with nothing
-    // in front of it, and the erase would go out through it while every case about the door
+    // THE DOOR IS THE ONE PLACE, AS A PROPERTY OF THE SOURCE. A door in a pipe is worth exactly
+    // what the pipe is worth: a second writer on the raw device would be a second mouth with
+    // nothing in front of it, and the erase would go out through it while every case about the door
     // stayed green. So the raw device is written to ONCE in the whole session — inside the door —
     // and everything else writes through {@link THE_DOOR}, which ends at that one statement.
     //

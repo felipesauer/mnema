@@ -710,8 +710,8 @@ describe('a session has opened when its frame is finished, not when its prompt i
       ),
       `${WAITS_FOR_NOTHING_THE_CALLER_CAUSED} started waiting for something, so it needs the rule`,
     ).not.toContain('until(() =>');
-    // AND THE OTHER TWO BOTH USE THE ONE RULE. This is the one-rule half: one function that says what
-    // the question means, and every driver that waits asks it.
+    // AND THE OTHER TWO BOTH USE THE ONE RULE. This is the one-rule half: one function that says
+    // what the question means, and every driver that waits asks it.
     for (const { name, source } of waiting) {
       expect(codeOnly(source), `${name}: waits without the rule`).toContain('arrivedSince(');
     }

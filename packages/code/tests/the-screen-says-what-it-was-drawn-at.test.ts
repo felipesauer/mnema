@@ -581,10 +581,10 @@ describe('everything that gives a session a terminal of a chosen size checks tha
   });
 
   it('and every screen there is comes out of the one function that checks its width', () => {
-    // ONE RULE AT ONE SITE, SAID AS A PROPERTY OF THE SOURCES. The width guard is inside {@link screenOf}
-    // rather than at the three dozen places that call it, so a case written tomorrow cannot
-    // be a site that forgot — and this is what would go red if a second way of building a
-    // screen appeared beside it.
+    // ONE RULE AT ONE SITE, SAID AS A PROPERTY OF THE SOURCES. The width guard is inside
+    // {@link screenOf} rather than at the three dozen places that call it, so a case written
+    // tomorrow cannot be a site that forgot — and this is what would go red if a second way of
+    // building a screen appeared beside it.
     const replaying = testsUnder(TESTS).filter((file) =>
       readFileSync(file, 'utf-8').includes('screenOf('),
     );

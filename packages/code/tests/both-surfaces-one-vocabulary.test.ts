@@ -420,13 +420,12 @@ describe('one gloss, two doors', () => {
 describe('the shared vocabulary publishes nothing plumbed to nowhere', () => {
   it('has a door taking every set it exports', async () => {
     const { fields } = await advertised();
-    // A public value has a caller, asked of the module BOTH surfaces read. A vocabulary
-    // declared, glossed and exported
-    // with nothing taking it is the shape several defects of this series had: the code
-    // under the gap is right, nothing feeds it, and every test passes because ABSENCE is
-    // what there is to see. `every-public-value-has-a-caller.test.ts` walks the packages'
-    // ENTRY POINTS and cannot see an export of a module inside one — which is what this
-    // is, and it is the second slice in a row where that had to be closed by hand.
+    // A public value has a caller, asked of the module BOTH surfaces read. A vocabulary declared,
+    // glossed and exported with nothing taking it is the shape several defects of this series had:
+    // the code under the gap is right, nothing feeds it, and every test passes because ABSENCE is
+    // what there is to see. `every-public-value-has-a-caller.test.ts` walks the packages' ENTRY
+    // POINTS and cannot see an export of a module inside one — which is what this is, and it is the
+    // second slice in a row where that had to be closed by hand.
     //
     // "Taken" means one of the two doors reaches it: a CLI declaration registered through
     // the commander channel (by IDENTITY — the very array), or a set the MCP advertises in
