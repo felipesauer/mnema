@@ -3,52 +3,64 @@
  *
  * WHERE THIS COMES FROM. Three of this workspace's four packages were `private: true` with no
  * `files` field at all, which meant nothing had ever decided what they would carry. Measured
- * on 22/09/2026 with `npm pack --dry-run`, the moment `private` came off, `@mnema/chain`
- * would have shipped 281 files: seventeen `__pycache__/*.pyc` bytecode caches, forty-one
- * `.test.ts` files, and a `tsconfig.json` whose `extends` points two directories above the
- * package and therefore resolves to nothing. The root `.gitignore` names `__pycache__/` and
- * `dist/`, and npm read NEITHER of them — it looks for an ignore file beside the manifest and
- * does not walk up to the workspace root. So "publish whatever is not ignored" was never the
- * rule in force; there was no rule in force.
+ * on 22/09/2026, the moment `private` came off, `@mnema/chain` would have shipped 281 files:
+ * seventeen `__pycache__/*.pyc` bytecode caches, forty-one `.test.ts` files, and a
+ * `tsconfig.json` whose `extends` points two directories above the package and therefore
+ * resolves to nothing. The root `.gitignore` names `__pycache__/` and `dist/`, and the packer
+ * read NEITHER of them — it looks for an ignore file beside the manifest and does not walk up
+ * to the workspace root. So "publish whatever is not ignored" was never the rule in force;
+ * there was no rule in force.
  *
  * THE DECISION THIS GUARD HOLDS, and it is the one the delivery had to make. `@mnema/chain`
  * is the package that is AUDITED, not merely used: the root page sells it as *"the code you
  * have to trust for tamper-evidence is auditable on its own"*, and what makes that checkable
  * is not the TypeScript — it is `FORMAT.md`, the two published artifacts, and the independent
  * Python verifier written from the document. Copying `files: ["dist/"]` from `@mnema/code`
- * would have shipped the engine with none of them, which is the #635 defect exactly: a page
- * promising what the artifact does not carry. So the chain tarball carries them, and the case
- * below RUNS the verifier out of an extracted tarball — with nothing else beside it — because
- * a list of filenames proves the files are present and not that they are enough.
+ * would have shipped the engine with none of them, which is a page promising what the
+ * artifact does not carry. So the chain tarball carries them, and the case below RUNS the
+ * verifier out of an extracted tarball — with nothing else beside it — because a list of
+ * filenames proves the files are present and not that they are enough.
  *
  * `@mnema/core` and `@mnema/copilot` carry `dist/` and no more. They are published because
  * `@mnema/code` depends on them and a `workspace:*` that does not resolve is an install that
  * fails, not because anybody should read them. Their pages say so.
+ *
+ * THE INSTRUMENT IS `pnpm pack` AND THEN `tar`, AND BOTH HALVES OF THAT WERE MEASURED.
+ *
+ *   - `pnpm` AND NOT `npm`, because npm is not the packer that will publish this. `npm pack`
+ *     leaves `workspace:*` raw in the manifest and the install dies with
+ *     `EUNSUPPORTEDPROTOCOL`; `pnpm pack` rewrites each one to the concrete version. A guard
+ *     that measured `npm pack` would be measuring an artifact nobody can install.
+ *   - `tar` AND NOT THE PACKER'S OWN `--json`, because the report is not the tarball.
+ *     Measured on `@mnema/copilot`: `pnpm pack --json` listed 107 files and the tarball held
+ *     108. The extra one is `LICENSE`, which pnpm copies from the workspace root — so the one
+ *     file that makes `"license": "MIT"` more than a word in a manifest is exactly the file
+ *     neither report mentions. A guard reading the report would have sworn it was absent.
  *
  * WHAT IT DOES NOT CHECK. Whether a publish would be ACCEPTED: that needs the registry, an
  * account and a scope that does not exist yet, and this delivery deliberately publishes
  * nothing. Nor the sourcemaps: every package ships `dist/**.js.map` and `dist/**.d.ts.map`
  * whose `sources` name `../src/*.ts` with no `sourcesContent`, so they resolve to nothing in
  * an installed tree — 72 of them in `@mnema/chain` alone. That is declared debt rather than a
- * silence here; it degrades a debugger, it breaks no promise a page makes, and fixing it is
- * a choice between shipping `src/` and dropping the maps that `@mnema/code` made before this
+ * silence here; it degrades a debugger, it breaks no promise a page makes, and fixing it is a
+ * choice between shipping `src/` and dropping the maps that `@mnema/code` made before this
  * delivery existed.
  */
 
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 
 /** The workspace root — this file is `packages/code/tests/…`. */
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 
 /**
  * EVERY PACKAGE OF THE WORKSPACE, ASKED OF GIT. `pnpm-workspace.yaml` says `packages/*`, and
- * a list typed here would stay at four while a fifth arrived carrying whatever npm's defaults
- * decide — which is precisely the state this file was written to end.
+ * a list typed here would stay at four while a fifth arrived carrying whatever the packer's
+ * defaults decide — which is precisely the state this file was written to end.
  */
 const MANIFESTS: readonly string[] = execFileSync(
   'git',
@@ -63,11 +75,12 @@ interface Manifest {
   readonly dir: string;
   readonly name: string;
   readonly private?: boolean;
+  readonly license?: string;
   readonly files?: readonly string[];
   readonly publishConfig?: { readonly access?: string };
 }
 
-const read = (where: string): Manifest => {
+const readManifest = (where: string): Manifest => {
   const parsed = JSON.parse(readFileSync(join(ROOT, where), 'utf-8')) as Omit<
     Manifest,
     'where' | 'dir'
@@ -75,38 +88,39 @@ const read = (where: string): Manifest => {
   return { ...parsed, where, dir: join(ROOT, where, '..') };
 };
 
-const ALL: readonly Manifest[] = MANIFESTS.map(read);
+const ALL: readonly Manifest[] = MANIFESTS.map(readManifest);
 
 /** The ones that would go to a registry: everything not held back by `private`. */
 const PUBLISHABLE: readonly Manifest[] = ALL.filter((m) => m.private !== true);
 
-/**
- * WHAT NPM WOULD PUT IN EACH TARBALL, asked of npm — in ONE invocation for all four.
- *
- * `--dry-run` writes nothing and reaches no registry; it applies npm's own packing rule to
- * each directory. Re-deriving that rule here — `files` as an allowlist, the always-included
- * manifest and README, the ignore files npm does and does not read — would be a second
- * implementation of the one thing this guard exists to observe, and the second implementation
- * is what would be wrong.
- *
- * ONE SPAWN AND NOT FOUR, and the reason is measured rather than tidy. Four separate
- * invocations cost ~0.95 s each and this file was the heaviest thing added to a suite whose
- * 322 files already run against a 5 s per-case timeout: on this machine the base flakes 1–2
- * cases a run on contention alone, and four spawns here doubled it. `npm pack` takes several
- * specs at once — 2.4 s for all four, most of it npm's own start-up paid once.
- */
-const REPORTS = JSON.parse(
-  execFileSync('npm', ['pack', '--dry-run', '--json', ...PUBLISHABLE.map((m) => m.dir)], {
-    cwd: ROOT,
+/** One sandbox of its own for the tarballs (A6), destroyed when the file is done. */
+const SANDBOX = mkdtempSync(join(tmpdir(), 'mnema-tarballs-'));
+afterAll(() => rmSync(SANDBOX, { recursive: true, force: true }));
+
+/** Packs one package for real and returns where the tarball landed. */
+function pack(dir: string): string {
+  const said = execFileSync('pnpm', ['pack', '--json', '--pack-destination', SANDBOX], {
+    cwd: dir,
     encoding: 'utf-8',
     maxBuffer: 64 * 1024 * 1024,
     stdio: ['ignore', 'pipe', 'ignore'],
-  }),
-) as { name: string; files: { path: string }[] }[];
+  });
+  return (JSON.parse(said) as { filename: string }).filename;
+}
 
-/** Keyed by the name npm read out of each manifest, never by the order they were asked in. */
+/** What is really inside a tarball, read off the archive. */
+const contentsOf = (tarball: string): readonly string[] =>
+  execFileSync('tar', ['-tzf', tarball], { encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024 })
+    .split('\n')
+    .filter((line) => line !== '' && !line.endsWith('/'))
+    .map((line) => line.replace(/^package\//, ''));
+
+const TARBALLS: ReadonlyMap<string, string> = new Map(
+  PUBLISHABLE.map((m) => [m.name, pack(m.dir)]),
+);
+
 const PACKED: ReadonlyMap<string, readonly string[]> = new Map(
-  REPORTS.map((report) => [report.name, report.files.map((file) => file.path)]),
+  [...TARBALLS].map(([name, tarball]) => [name, contentsOf(tarball)]),
 );
 
 const carried = (name: string): readonly string[] => PACKED.get(name) ?? [];
@@ -126,8 +140,8 @@ describe('the workspace knows which packages it publishes', () => {
   });
 
   it('carries no `private` in a manifest that travels', () => {
-    // THE FIELD TRAVELS INSIDE THE TARBALL. It is not a flag npm consults and leaves behind:
-    // the manifest is packed verbatim, so a `private: true` left in place is published and
+    // THE FIELD TRAVELS INSIDE THE TARBALL. It is not a flag the packer consults and leaves
+    // behind: the manifest is packed, so a `private: true` left in place is published and
     // then refused. Asserted as an absence of the key, not as `!== true`, because `false`
     // would be a second way of saying the same thing and a reader would have to know which.
     const held = PUBLISHABLE.filter((m) => 'private' in m).map((m) => m.where);
@@ -144,13 +158,31 @@ describe('the workspace knows which packages it publishes', () => {
     expect(quiet).toEqual([]);
   });
 
-  it('decides what it carries, rather than letting npm decide', () => {
-    // A package with no `files` publishes whatever npm's defaults leave behind, and this
-    // workspace measured what that is: bytecode caches, test files, and a `tsconfig.json`
-    // that extends a path outside the tarball. The point is not which list — it is that
-    // there is one.
+  it('decides what it carries, rather than letting the packer decide', () => {
+    // A package with no `files` publishes whatever the packer's defaults leave behind, and
+    // this workspace measured what that is: bytecode caches, test files, and a
+    // `tsconfig.json` that extends a path outside the tarball. The point is not which list —
+    // it is that there is one.
     const undecided = PUBLISHABLE.filter((m) => !Array.isArray(m.files) || m.files.length === 0);
     expect(undecided.map((m) => m.where)).toEqual([]);
+  });
+
+  it('the manifest that travels declares the concrete version of every sibling it needs', () => {
+    // THE REASON THE PACKER HAD TO BE `pnpm`. `workspace:*` is a workspace protocol and a
+    // registry client refuses it outright — measured: `npm pack` leaves it raw and
+    // `npm i -g` of that tarball dies with `EUNSUPPORTEDPROTOCOL` before the binary is ever
+    // reached. What is asserted is its absence from the PACKED manifest, never from the one
+    // on disk, where `workspace:*` is correct and has to stay.
+    const raw: string[] = [];
+    for (const [name, tarball] of TARBALLS) {
+      const manifest = JSON.parse(
+        execFileSync('tar', ['-xzOf', tarball, 'package/package.json'], { encoding: 'utf-8' }),
+      ) as { dependencies?: Record<string, string> };
+      for (const [dep, range] of Object.entries(manifest.dependencies ?? {})) {
+        if (range.startsWith('workspace:')) raw.push(`${name} needs ${dep}@${range}`);
+      }
+    }
+    expect(raw).toEqual([]);
   });
 });
 
@@ -179,9 +211,20 @@ describe('nothing travels that is a fact about this machine', () => {
     expect(stray).toEqual([]);
   });
 
+  it('ships no incremental-build cache', () => {
+    // `dist/.tsbuildinfo` is what `tsc -b` writes to know what it can skip next time, and
+    // `files: ["dist/"]` carried it into all four tarballs — `@mnema/code` included, which
+    // had had that `files` field since before this delivery. It is nobody's business but
+    // this machine's, and an adopter who deleted it would notice nothing.
+    const stray = [...PACKED].flatMap(([name, files]) =>
+      files.filter((path) => path.endsWith('.tsbuildinfo')).map((path) => `${name}: ${path}`),
+    );
+    expect(stray).toEqual([]);
+  });
+
   it('ships the built code in every one of them', () => {
-    // NON-VACUITY, and it is not decorative: `packs` returns an empty list for a package
-    // whose `dist/` has not been built, and an empty list satisfies all three cases above.
+    // NON-VACUITY, and it is not decorative: an unbuilt package packs no `dist/` at all, and
+    // an empty list satisfies every case above.
     const empty = [...PACKED]
       .filter(([, files]) => !files.some((path) => path.startsWith('dist/')))
       .map(([name]) => name);
@@ -189,10 +232,22 @@ describe('nothing travels that is a fact about this machine', () => {
   });
 });
 
-/**
- * WHAT THE PROOF ENGINE HAS TO CARRY FOR ITS PAGE TO BE TRUE — the artifacts by name, read
- * off the manifest modules that resolve them rather than typed here twice.
- */
+describe('every package carries the licence its manifest claims', () => {
+  it('declares one, and ships the text of it', () => {
+    // `"license": "MIT"` in a manifest is a word; the file is the grant. It travels because
+    // pnpm copies the workspace root's `LICENSE` into each package — which npm does not do,
+    // and which neither packer's `--json` report mentions. This case is the only thing in
+    // this workspace that would notice if that stopped happening.
+    const undeclared = PUBLISHABLE.filter((m) => m.license !== 'MIT').map((m) => m.where);
+    expect(undeclared).toEqual([]);
+    const missing = [...PACKED]
+      .filter(([, files]) => !files.includes('LICENSE'))
+      .map(([name]) => name);
+    expect(missing).toEqual([]);
+  });
+});
+
+/** What the proof engine has to carry for its page to be true. */
 const AUDIT_ARTIFACTS = ['FORMAT.md', 'canonical-vectors.json', 'event-schema.json'] as const;
 
 describe('the proof engine carries what makes it checkable', () => {
@@ -205,7 +260,8 @@ describe('the proof engine carries what makes it checkable', () => {
 
   it('carries the second reader, all of it, and only its source', () => {
     // Against git rather than against a count: the verifier is twenty files today and the
-    // number is not the promise — that every module the package tracks is in the tarball is.
+    // number is not the promise — that every module the repository tracks is in the tarball
+    // is.
     const tracked = execFileSync('git', ['ls-files', '--', 'packages/chain/verifier'], {
       cwd: ROOT,
       encoding: 'utf-8',
@@ -224,35 +280,21 @@ describe('the proof engine carries what makes it checkable', () => {
  *
  * The verifier resolves the vectors as `<its own directory>/../canonical-vectors.json`, so
  * what is being asked here is not only "are the files there" but "does the layout survive
- * packing". Extracted into a sandbox of its own (A6) with nothing of this workspace beside
- * it: no `node_modules`, no `src/`, no repository.
+ * packing". Extracted into the same sandbox with nothing of this workspace beside it: no
+ * `node_modules`, no `src/`, no repository.
  */
 describe('the second reader runs out of what the package publishes', () => {
-  let sandbox: string;
-  let unpacked: string;
-
-  beforeAll(() => {
-    sandbox = mkdtempSync(join(tmpdir(), 'mnema-chain-tarball-'));
-    const said = execFileSync('npm', ['pack', '--json', '--pack-destination', sandbox], {
-      cwd: join(ROOT, 'packages/chain'),
-      encoding: 'utf-8',
-      maxBuffer: 32 * 1024 * 1024,
-      stdio: ['ignore', 'pipe', 'ignore'],
-    });
-    const [made] = JSON.parse(said) as [{ filename: string }];
-    execFileSync('tar', ['-xzf', join(sandbox, made?.filename ?? ''), '-C', sandbox]);
-    unpacked = join(sandbox, 'package');
-  }, 120_000);
-
-  afterAll(() => {
-    if (sandbox !== undefined) rmSync(sandbox, { recursive: true, force: true });
-  });
+  const into = join(SANDBOX, 'extracted');
+  mkdirSync(into, { recursive: true });
+  execFileSync('tar', ['-xzf', TARBALLS.get('@mnema/chain') ?? '', '-C', into]);
+  const unpacked = join(into, 'package');
 
   it('extracted the package, and nothing of this workspace came with it', () => {
     // NON-VACUITY: a sandbox that failed to extract would leave the case below running the
     // repository's own verifier through a path that happened to resolve.
     expect(readdirSync(unpacked).sort()).toEqual([
       'FORMAT.md',
+      'LICENSE',
       'README.md',
       'canonical-vectors.json',
       'dist',
@@ -266,7 +308,7 @@ describe('the second reader runs out of what the package publishes', () => {
     const ran = execFileSync(
       'python3',
       [join(unpacked, 'verifier', 'mnema_verify.py'), 'vectors'],
-      { encoding: 'utf-8', cwd: sandbox },
+      { encoding: 'utf-8', cwd: SANDBOX },
     );
     // The verdict and the failure count, not the whole transcript: the counts of `ok` and
     // `note` move when a kind is added, and a golden here would be a second copy of
@@ -288,12 +330,12 @@ describe('the second reader runs out of what the package publishes', () => {
 describe('the guard is not vacuous', () => {
   const missingArtifacts = (files: readonly string[]): readonly string[] =>
     AUDIT_ARTIFACTS.filter((file) => !files.includes(file));
-  const pycache = (files: readonly string[]): readonly string[] =>
-    files.filter((path) => path.includes('__pycache__'));
+  const machineFacts = (files: readonly string[]): readonly string[] =>
+    files.filter((path) => path.includes('__pycache__') || path.endsWith('.tsbuildinfo'));
 
   it('the tarball it is measured against is clean, or the mutations below prove nothing', () => {
     expect(missingArtifacts(carried('@mnema/chain'))).toEqual([]);
-    expect(pycache(carried('@mnema/chain'))).toEqual([]);
+    expect(machineFacts(carried('@mnema/chain'))).toEqual([]);
   });
 
   it('reddens on the `files: ["dist/"]` that would have been copied from @mnema/code', () => {
@@ -304,17 +346,27 @@ describe('the guard is not vacuous', () => {
   });
 
   it('reddens when the second reader is dropped from what travels', () => {
+    const present = carried('@mnema/chain').filter((path) => path.startsWith('verifier/'));
     const without = carried('@mnema/chain').filter((path) => !path.startsWith('verifier/'));
-    const tracked = carried('@mnema/chain').filter((path) => path.startsWith('verifier/'));
-    expect(tracked.length).toBeGreaterThan(15);
-    expect(tracked.filter((path) => !without.includes(path))).toHaveLength(tracked.length);
+    expect(present.length).toBeGreaterThan(15);
+    expect(present.filter((path) => !without.includes(path))).toHaveLength(present.length);
   });
 
-  it('reddens on a bytecode cache, which is what `!verifier/**/__pycache__` keeps out', () => {
+  it('reddens on a bytecode cache and on a build cache, which the negations keep out', () => {
     const asIfUnfiltered = [
       ...carried('@mnema/chain'),
       'verifier/mnemaverify/__pycache__/framed.cpython-312.pyc',
+      'dist/.tsbuildinfo',
     ];
-    expect(pycache(asIfUnfiltered)).toHaveLength(1);
+    expect(machineFacts(asIfUnfiltered)).toEqual([
+      'verifier/mnemaverify/__pycache__/framed.cpython-312.pyc',
+      'dist/.tsbuildinfo',
+    ]);
+  });
+
+  it('reddens when the licence text stops travelling', () => {
+    const without = carried('@mnema/chain').filter((path) => path !== 'LICENSE');
+    expect(without.includes('LICENSE')).toBe(false);
+    expect(carried('@mnema/chain').includes('LICENSE')).toBe(true);
   });
 });

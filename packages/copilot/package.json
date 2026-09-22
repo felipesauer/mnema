@@ -14,7 +14,8 @@
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
   "files": [
-    "dist/"
+    "dist/",
+    "!dist/.tsbuildinfo"
   ],
   "homepage": "https://github.com/felipesauer/mnema",
   "repository": {
