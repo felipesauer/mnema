@@ -81,27 +81,32 @@ const ALL: readonly Manifest[] = MANIFESTS.map(read);
 const PUBLISHABLE: readonly Manifest[] = ALL.filter((m) => m.private !== true);
 
 /**
- * WHAT NPM WOULD PUT IN THE TARBALL, asked of npm.
+ * WHAT NPM WOULD PUT IN EACH TARBALL, asked of npm — in ONE invocation for all four.
  *
- * `--dry-run` writes nothing and reaches no registry; it applies npm's own packing rule to the
- * directory. Re-deriving that rule here — `files` as an allowlist, the always-included
+ * `--dry-run` writes nothing and reaches no registry; it applies npm's own packing rule to
+ * each directory. Re-deriving that rule here — `files` as an allowlist, the always-included
  * manifest and README, the ignore files npm does and does not read — would be a second
  * implementation of the one thing this guard exists to observe, and the second implementation
  * is what would be wrong.
+ *
+ * ONE SPAWN AND NOT FOUR, and the reason is measured rather than tidy. Four separate
+ * invocations cost ~0.95 s each and this file was the heaviest thing added to a suite whose
+ * 322 files already run against a 5 s per-case timeout: on this machine the base flakes 1–2
+ * cases a run on contention alone, and four spawns here doubled it. `npm pack` takes several
+ * specs at once — 2.4 s for all four, most of it npm's own start-up paid once.
  */
-function packs(dir: string): readonly string[] {
-  const said = execFileSync('npm', ['pack', '--dry-run', '--json'], {
-    cwd: dir,
+const REPORTS = JSON.parse(
+  execFileSync('npm', ['pack', '--dry-run', '--json', ...PUBLISHABLE.map((m) => m.dir)], {
+    cwd: ROOT,
     encoding: 'utf-8',
-    maxBuffer: 32 * 1024 * 1024,
+    maxBuffer: 64 * 1024 * 1024,
     stdio: ['ignore', 'pipe', 'ignore'],
-  });
-  const [report] = JSON.parse(said) as [{ files: { path: string }[] }];
-  return (report?.files ?? []).map((file) => file.path);
-}
+  }),
+) as { name: string; files: { path: string }[] }[];
 
+/** Keyed by the name npm read out of each manifest, never by the order they were asked in. */
 const PACKED: ReadonlyMap<string, readonly string[]> = new Map(
-  PUBLISHABLE.map((m) => [m.name, packs(m.dir)]),
+  REPORTS.map((report) => [report.name, report.files.map((file) => file.path)]),
 );
 
 const carried = (name: string): readonly string[] => PACKED.get(name) ?? [];
