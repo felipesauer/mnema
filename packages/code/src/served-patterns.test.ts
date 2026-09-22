@@ -35,17 +35,21 @@ const bodies = (skills: readonly ServedSkill[]): SkillCatalogue => ({
 });
 
 describe('patternsFraming — what the surface says about a pattern it serves', () => {
-  it('declares that the content is the record’s, not an instruction from mnema', () => {
+  it('declares whose text the content is — the record’s, written by the people on it', () => {
     const framing = patternsFraming(bodies([skill('Small PRs', 'agent-A')])).join('\n');
     expect(framing).toContain('this project’s record');
-    expect(framing).toContain('not instructions from mnema');
+    expect(framing).toContain('the people and agents working on it wrote');
+    // And not what it is NOT. The sentence used to end "…wrote, not instructions from
+    // mnema", which is the idiom that marks text a model must not act on — and a pattern's
+    // body is the one thing this product serves to be worked by.
+    expect(framing).not.toContain('not instructions');
   });
 
   it('names the agent that adopted each pattern, one line each', () => {
     expect(
       patternsFraming(bodies([skill('Small PRs', 'agent-A'), skill('Commit style', 'agent-B')])),
     ).toEqual([
-      expect.stringContaining('not instructions from mnema'),
+      expect.stringContaining('the people and agents working on it wrote'),
       '  “Small PRs” — adopted by agent-A',
       '  “Commit style” — adopted by agent-B',
     ]);
@@ -162,7 +166,7 @@ describe('patternsFraming — what the surface says about a pattern it serves', 
     expect(framed[2]).toContain('it is not how the work is done here');
     // The declaration above it no longer claims the patterns were ADOPTED, which is
     // the claim that would have been false about this one.
-    expect(framed[0]).toContain('not instructions from mnema');
+    expect(framed[0]).toContain('the people and agents working on it wrote');
     expect(framed[0]).not.toContain('adopted');
   });
 
@@ -217,8 +221,11 @@ describe('patternsFraming — what it says when only the NAMES fit', () => {
   it('carries no body and no provenance — nothing was served to frame', () => {
     const text = patternsFraming(names).join('\n');
     // The declaration belongs to text that ARRIVED; over names it would be framing
-    // an instruction nobody was handed.
-    expect(text).not.toContain('not instructions from mnema');
+    // an instruction nobody was handed. This asked for the declaration's NEGATION
+    // ("not instructions from mnema") until the negation left the declaration — at which
+    // point it would have held over a reply that declared itself, green and blind. It asks
+    // for the half that stayed, which the cases above prove the declaration still says.
+    expect(text).not.toContain('the people and agents working on it wrote');
     expect(text).not.toContain('adopted by');
   });
 
@@ -232,7 +239,10 @@ describe('patternsFraming — what it says when only the NAMES fit', () => {
 describe('SERVED_PATTERN_CONTRACT — the declaration a caller reads first', () => {
   it('states what a pattern is, and that mnema does not vet it', () => {
     expect(SERVED_PATTERN_CONTRACT).toContain('WHAT A PATTERN IS');
-    expect(SERVED_PATTERN_CONTRACT).toContain('not an instruction from mnema');
+    expect(SERVED_PATTERN_CONTRACT).toContain(
+      'the people and agents working on this project wrote',
+    );
+    expect(SERVED_PATTERN_CONTRACT).not.toContain('not an instruction');
     expect(SERVED_PATTERN_CONTRACT).toContain('does not vet');
     // And that an act with no agent behind it is said as a person, in the same
     // words the reply uses.

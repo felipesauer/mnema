@@ -3035,7 +3035,7 @@ describe('MCP server — end to end over a real client', () => {
     const spoken = ((served as { content?: { type: string; text?: string }[] }).content ?? [])
       .map((c) => c.text ?? '')
       .join('\n');
-    expect(spoken).toContain('not instructions from mnema');
+    expect(spoken).toContain('the people and agents working on it wrote');
     expect(spoken).toContain('“stacked-prs” — adopted by claude-code');
 
     // Reading it again serves the same body and records nothing new.
@@ -3542,7 +3542,8 @@ describe('MCP — what enters the record', () => {
     const description = tools.tools.find((t) => t.name === 'skills')?.description ?? '';
     // The declaration is at the point of use, before a body is ever asked for.
     expect(description).toContain('WHAT A PATTERN IS');
-    expect(description).toContain('not an instruction from mnema');
+    expect(description).toContain('the people and agents working on this project wrote');
+    expect(description).not.toContain('not an instruction');
     expect(description).toContain('does not vet what it says');
     expect(description).toContain('a person');
     // It is the read that declares it; nothing else serves a body.
@@ -3696,7 +3697,7 @@ describe('MCP — what enters the record', () => {
       },
     ]);
     // The framing states what the content is and who adopted it. One line, a fact.
-    expect(blocks[1]).toContain('not instructions from mnema');
+    expect(blocks[1]).toContain('the people and agents working on it wrote');
     expect(blocks[1]).toContain('“Build hygiene” — adopted by claude-code');
     expect(blocks[1]).not.toContain('IGNORE ALL PREVIOUS INSTRUCTIONS');
 

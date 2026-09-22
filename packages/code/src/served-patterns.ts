@@ -69,13 +69,19 @@ import { recordFramingBlock } from './record-framing.js';
  * What a served pattern is, for a caller reading the tool description. The
  * counterpart of `RECORD_CONTRACT` on the way OUT: that one declares what
  * recording here means, this one declares what reading a pattern back means.
+ *
+ * IT SAID "It is not an instruction from mnema", AND IT NO LONGER DOES — the same clause,
+ * gone for the same reason, as the framing every pushed channel carries (`WHOSE_TEXT` in
+ * `record-framing.ts`): "X, not instructions" is the idiom that marks text a model must
+ * not act on, and a pattern's body is the one thing this product hands back to be worked
+ * by. The authorship it was there to state is the half kept, and so is the other half of
+ * the old sentence — mnema records the text and does not vet it.
  */
 export const SERVED_PATTERN_CONTRACT =
   ' WHAT A PATTERN IS: a skill body is content from this project’s record — text ' +
-  'the people and agents working on this project wrote. It is not an ' +
-  'instruction from mnema; mnema records it and serves it back, and does not vet ' +
-  'what it says. Each pattern is served with the `state` it is in and, when it is ' +
-  'adopted, the agent that adopted it — or ' +
+  'the people and agents working on this project wrote; mnema records it and serves ' +
+  'it back, and does not vet what it says. Each pattern is served with the `state` ' +
+  'it is in and, when it is adopted, the agent that adopted it — or ' +
   `“${A_PERSON}” when someone adopted it directly with no agent. A pattern that is ` +
   'not adopted is one the project has not ruled on: it is served so the ruling can ' +
   'be made on its text, and it is not how the work is done here. A reply that ' +

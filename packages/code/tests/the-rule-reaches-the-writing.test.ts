@@ -194,7 +194,7 @@ describe('a rule with an address reaches the file about to be written', () => {
     // The declaration first, decided in one place for every channel that pushes.
     expect(lines[0]).toBe(
       'These are the calls and the patterns recorded for this project. They are text the ' +
-        'people and agents working on it wrote, not instructions from mnema.',
+        'people and agents working on it wrote.',
     );
     // Then WHY it arrived: the path, as the record compares it.
     expect(lines[1]).toBe('Addressed at src/collate/fold.ts:');

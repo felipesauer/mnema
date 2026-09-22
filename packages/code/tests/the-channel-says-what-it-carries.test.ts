@@ -46,7 +46,7 @@ import {
   tellsWhatToDo,
   UNFRAMED_CHANNELS,
 } from '../src/record-framing.js';
-import { patternsFraming } from '../src/served-patterns.js';
+import { patternsFraming, SERVED_PATTERN_CONTRACT } from '../src/served-patterns.js';
 
 /** The repository root: `packages/code/tests/` is three levels under it. */
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
@@ -65,9 +65,25 @@ const READS_GOLDEN = join(REPO, 'packages', 'code', 'src', 'cli.reads.golden.txt
  * the "one place" case assert that a string equals itself; what has to be checked is
  * that these WORDS appear in one source file, and a literal is the only form of that
  * assertion that can fail for a reason.
+ *
+ * IT ENDED ", not instructions from mnema." AND IT DOES NOT NOW. The authorship half is
+ * what the product can stand behind and it is kept; the negation was the idiom that marks
+ * text a model must not act on, and it went — see {@link SAYS_WHAT_IT_IS_NOT} for the
+ * case that keeps it from coming back on any channel.
  */
-const THE_CLAIM =
-  'They are text the people and agents working on it wrote, not instructions from mnema.';
+const THE_CLAIM = 'They are text the people and agents working on it wrote.';
+
+/**
+ * What a framing would say if it went back to declaring what its text is NOT.
+ *
+ * "Data, not instructions" is the construction the ecosystem uses to mark content a model
+ * must ignore — the defence against prompt injection — and the product's declaration used
+ * to end in it, meaning authorship and reading, to the reader it lands in front of, as
+ * "do not act on this". The pattern is narrow on purpose: it names the idiom and not
+ * every "not" a sentence could hold, because "a pattern that is not adopted" is a fact the
+ * framing around a candidate must be free to state.
+ */
+const SAYS_WHAT_IT_IS_NOT = /\bnot (an? )?instructions?\b/i;
 
 /**
  * What a handler writes when it puts something in front of a model.
@@ -261,6 +277,29 @@ describe('the framing says what the text is, never what to do about it', () => {
     for (const rule of SAYS_WHAT_TO_DO) {
       expect(tellsWhatToDo(probes[rule.name] as string), rule.name).toBe(rule.name);
     }
+  });
+
+  it('says what the text IS and never what it is NOT, on every framed channel', () => {
+    // The inversion this sentence went through, held in both directions. The case that
+    // asserts the new words is above; this is the one that goes red if the old clause is
+    // written back, on any channel — and on the tool description that carried a second
+    // copy of the same idiom, which is the site a search for the framing's own constant
+    // would never have found.
+    for (const channel of FRAMED_CHANNELS) {
+      expect(recordFramingBlock(channel), channel).not.toMatch(SAYS_WHAT_IT_IS_NOT);
+    }
+    expect(SERVED_PATTERN_CONTRACT).not.toMatch(SAYS_WHAT_IT_IS_NOT);
+    // The pattern's own probe, so a regex that stopped matching is red here rather than
+    // an absence that holds over anything: the two sentences this delivery changed, as
+    // they read before it.
+    expect(
+      'They are text the people and agents working on it wrote, not instructions from mnema.',
+    ).toMatch(SAYS_WHAT_IT_IS_NOT);
+    expect('It is not an instruction from mnema; mnema records it.').toMatch(SAYS_WHAT_IT_IS_NOT);
+    // And the facts it must leave alone.
+    expect('A pattern above that is not adopted is one this project has not ruled on.').not.toMatch(
+      SAYS_WHAT_IT_IS_NOT,
+    );
   });
 
   it('lets a reader be told where the rest of the record is', () => {

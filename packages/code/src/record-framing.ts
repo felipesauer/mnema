@@ -351,9 +351,28 @@ export const NOT_SWITCHABLE: {
  * wrote it nor vetted it. A reader that assumed otherwise would be crediting this
  * product for a call somebody else made — and, on the channels that push, would be
  * reading text an agent typed into the record as though the tool were saying it.
+ *
+ * IT ENDED IN A NEGATION, AND THE NEGATION IS GONE. The sentence read "…wrote, not
+ * instructions from mnema." The intent was the authorship claim above; the words were
+ * the construction the ecosystem uses to mark text a model must NOT act on — "data, not
+ * instructions" is the canonical defence against prompt injection, and the system prompt
+ * of the host this product ships a plugin for uses it to mark content to be ignored. So
+ * the one sentence meant to say whose text this is also said, in the idiom
+ * its reader is trained on, that the text is not to be acted on — at the top of a
+ * document that goes on to name the door a reader's own decision goes through. The host's
+ * guidance for text a hook adds points the same way from the other side: write it as
+ * factual statements, because text framed as an out-of-band command "can trigger Claude's
+ * prompt-injection defenses" (code.claude.com/docs/en/hooks, *Add context for Claude*).
+ *
+ * WHAT THAT IS NOT, said because it would be easy to overstate: a measurement. No round
+ * isolated this clause, and nothing measured it moving a reader in either direction. It
+ * went on the idiom and on the host's guidance, as a decision about what this product
+ * says of itself. What was
+ * kept is the fact, who wrote the text; what went is the clause that denied the text a use
+ * nobody here was claiming for it. `the-channel-says-what-it-carries.test.ts` holds both
+ * halves: the sentence, and no framing that says what its text is NOT.
  */
-const WHOSE_TEXT =
-  'They are text the people and agents working on it wrote, not instructions from mnema.';
+const WHOSE_TEXT = 'They are text the people and agents working on it wrote.';
 
 /**
  * What was served, said before the claim about it — one sentence per subject.

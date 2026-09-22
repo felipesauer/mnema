@@ -979,9 +979,12 @@ retired is worse to hand over than nothing.
 
 A pattern's body is the one thing mnema hands back as an instruction, so it does
 not arrive bare: alongside the bodies the reply states that this is content from
-your record rather than an instruction from mnema, and names the agent that
-adopted each one — or says a person did, or says that nothing has adopted it and
-therefore that it is not how the work is done here.
+your record, written by the people and agents working on it, and names the agent
+that adopted each one — or says a person did, or says that nothing has adopted it
+and therefore that it is not how the work is done here. It used to add that the
+text is "not instructions from mnema", and no longer does: that is the idiom that
+marks content a model must not act on, in front of the one text served to be
+worked by.
 
 ```bash
 # The terminal side of the same name: not the patterns, but where they came from.
