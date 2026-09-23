@@ -148,7 +148,7 @@ describe('resolveTrees — the home directory is never a project’s root', () =
   });
 
   it('knows the home through a symlink — the walk climbs resolved paths, `HOME` may not be one', () => {
-    const real = join(sandbox, 'disk', 'felipe');
+    const real = join(sandbox, 'disk', 'someone');
     mkdirSync(join(real, '.mnema', 'tails'), { recursive: true });
     mkdirSync(join(real, 'work'), { recursive: true });
     const link = join(sandbox, 'home-link');
@@ -158,13 +158,21 @@ describe('resolveTrees — the home directory is never a project’s root', () =
 
   it('reads a relative or empty home as no home at all — it names no directory', () => {
     // Same reading the XDG variable gets. A relative home resolved against the working
-    // directory would make whatever directory the process stands in "the home".
+    // directory would make whatever directory the process stands in "the home" — so the
+    // case stands IN the project: there, an empty or `.` home read that way is the project
+    // itself, and its `.mnema/` would be passed over as a home's.
     const repo = join(sandbox, 'repo');
     mkdirSync(join(repo, '.mnema'), { recursive: true });
-    for (const h of ['', 'relative/home', '.']) {
-      expect(resolveTrees(repo, { home: h }).projectPublic, `home=${JSON.stringify(h)}`).toBe(
-        join(repo, '.mnema'),
-      );
+    const before = process.cwd();
+    process.chdir(repo);
+    try {
+      for (const h of ['', 'relative/home', '.']) {
+        expect(resolveTrees(repo, { home: h }).projectPublic, `home=${JSON.stringify(h)}`).toBe(
+          join(repo, '.mnema'),
+        );
+      }
+    } finally {
+      process.chdir(before);
     }
   });
 });
