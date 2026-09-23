@@ -378,5 +378,8 @@ describe('the leak, through the binary a host spawns', () => {
     // And the first project's do — the absence above is about where it went, not about
     // a note that went nowhere.
     expect(mnemaIn(first, 'recall')).toContain(mark);
-  });
+    // Five processes of the built binary — two founders, the server, two readers. Alone
+    // this takes about a second and a half; under the whole suite, in a mutation battery,
+    // it went past the five-second default with its assertions intact.
+  }, 60_000);
 });

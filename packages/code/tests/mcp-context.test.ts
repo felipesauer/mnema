@@ -166,6 +166,22 @@ describe('resolveContext — the working directory, for a client that declared n
     expect(resolveContext({ cwd: pkg, env }).project).toBe(mono);
   });
 
+  it('is never read off the PROCESS — a client that listed no roots stays global inside a project', () => {
+    // The type keeps a working directory off the input of a client that declared `roots`,
+    // and that is not all of it: the resolver could still reach for this process's own
+    // directory. So this runs from INSIDE a project, where a resolver that did would land.
+    const project = makeProject('where-the-process-is');
+    const before = process.cwd();
+    process.chdir(project);
+    try {
+      const ctx = resolveContext({ roots: [], env });
+      expect(ctx.inProject).toBe(false);
+      expect(ctx.rung).toBe('global');
+    } finally {
+      process.chdir(before);
+    }
+  });
+
   it('lands on GLOBAL when no project is at or above it — and never refuses', () => {
     const plain = join(sandbox, 'plain');
     mkdirSync(plain, { recursive: true });
