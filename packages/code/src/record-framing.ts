@@ -39,17 +39,35 @@
  * draws for the record contract.
  *
  * WHAT A PUSHED CHANNEL MUST CARRY, AND IT IS THE ONE RULE HERE THAT IS NOT ABOUT
- * WORDING. No essential reading may depend on a SECOND call. A channel in this union
- * lands in front of a model that did not ask for it, and the measurement that settles
- * how such a reader behaves is four rounds of use over a record of 247 real decisions:
- * the agent does not make the follow-up call. It went looking through a door that was
- * not the one designed for it, and over what reached it — 6,278 bytes of opening
- * context, 4.4% of it rule content — it concluded there was nothing there. So a channel
- * that states half a fact and points at a tool for the rest has stated nothing, and the
- * pointer is not the repair.
+ * WORDING. No essential reading may live only behind a door its reader has a way around —
+ * and in front of a reader that did not ask for the text, every door is one: whether it
+ * goes further, and by which door, is its choice and never the channel's, so the one path
+ * every reader of a channel in this union takes is the channel itself. A channel that
+ * states half a fact and points at a tool for the rest has stated nothing, and the pointer
+ * is not the repair.
+ *
+ * THE RULE READ "NO ESSENTIAL READING MAY DEPEND ON A SECOND CALL", AND THE REASON GIVEN
+ * FOR IT HAS FALLEN. The reason was four rounds of use over a record of 247 real
+ * decisions, read as "the agent does not make the follow-up call" — with the one reader in
+ * them that went looking, "through a door that was not the one designed for it", said to
+ * have "concluded there was nothing there". The agent does make the call. The one round
+ * that was instrumented counted the arm that held the server with nothing pushed, so no id
+ * was in front of it; beside it in `measurements/p1/results/` are the cells whose session
+ * opened with the document, and 86 of those 321 went after what it named — 62 through
+ * `read_record`, 24 through the `mnema` command in their own shell, none through both. The
+ * other three rounds counted calls to this product, and the reader that went looking did
+ * find something through its door: it ran `cat` on the file of a decision the record held
+ * and nothing pushed had carried, and cited it in the two decisions it wrote. Once the
+ * origin travelled beside the label, the reader of the opening document on that project ran
+ * `cat` on the file it cited six minutes after it arrived, in a session that had made, by
+ * 22/09/2026, 2,863 tool calls — none to this product, nine in ten through the shell. The
+ * pointer is followed, through a door the reader picks — so a fact behind one door reaches
+ * only the readers that pick that one. That is the reason the rule stands on now, and it
+ * is why the origin travels beside the label on these channels (`provenance.ts`): what
+ * they point at for a second read is something the reader's own door can open.
  *
  * WHAT THAT DOES AND DOES NOT FORBID, because the distinction is the whole of using it.
- * It forbids a channel whose fact is INCOMPLETE without the call: "some rules govern
+ * It forbids a channel whose fact is INCOMPLETE without a further call: "some rules govern
  * this file, ask `governing_rules`" is that shape and is why the push carries the rules
  * themselves. It does not forbid naming a door — every framing here names one, and the
  * document's own paragraphs name `read_record`, `skills`, `governing_rules`, `bootstrap`

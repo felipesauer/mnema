@@ -15,8 +15,12 @@
  * three are doors a reader chose to open. These channels arrive unasked — the committed
  * document a session opens with, the rules pushed as a file is about to be written, and
  * the charge that STOPS a write — and until now each of them handed its reader a name, an
- * address and a uuid, with `read_record` the only way to reach the argument. Four
- * measurements of this bench say that tool is not called.
+ * address and a uuid, with this product the only way to reach the argument. This paragraph
+ * used to end "Four measurements of this bench say that tool is not called", about
+ * `read_record`, and they do not: the cells that opened with a uuid called it 62 times.
+ * What the measurement does support is the door — on a real project the reader followed
+ * the opening document's citation with `cat` and made none of its calls to this product
+ * (`packages/code/src/record-framing.ts` records both).
  *
  * WHAT IS ASSERTED, AND WHY EACH:
  *   - THE PATH OPENS. Every case below reads the printed path off the channel's own bytes
@@ -280,10 +284,10 @@ describe('a rule that arrives unasked carries a path that opens', () => {
       `“The gateway is idempotent” — governs src/collate · ${rules.get(GATEWAY) ?? ''} · ${DERIVED_FROM} docs/adr/${GATEWAY}`,
     );
     // THIS CHANNEL PRINTS NO LABEL AT ALL, so before this the uuid was the whole of what a
-    // reader could follow, through the one tool the measurements say is not called. The
-    // only `ADR-` on the line is inside the FILE NAME, and it is the source's own number —
-    // 008, not the 1 the record froze. A case asserting the absence of the string would
-    // now be asserting the absence of the fix.
+    // reader could follow, and it opens through this product alone — the door the reader
+    // in the field does not take. The only `ADR-` on the line is inside the FILE NAME, and
+    // it is the source's own number — 008, not the 1 the record froze. A case asserting the
+    // absence of the string would now be asserting the absence of the fix.
     expect(collate).not.toContain('ADR-1 ');
     expect(collate).toContain('ADR-008');
     expect(opened(provenancesIn(collate)[0] as string)).toContain(GATEWAY_BODY);
