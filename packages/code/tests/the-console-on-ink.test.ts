@@ -765,7 +765,7 @@ describe('the same verbs, the same lines, another place', () => {
   });
 
   it('hooks every way out on the port it was handed, and takes them off on the way back', async () => {
-    // THE ELO, and the reason it is asserted here rather than left to the pty. Taking the
+    // THE LINK, and the reason it is asserted here rather than left to the pty. Taking the
     // hooks away does NOT turn the pty cases red: the layout library registers a teardown
     // of its own on the same exit and the same signals, three levels down from a package
     // chosen for its boxes. So the pty can say the promise is kept and cannot say by
@@ -1101,9 +1101,9 @@ describe('no component composes a line; it only positions one the renderer produ
   });
 
   it('puts a byte on the caller’s device in ONE place, and hands the layout the door', () => {
-    // A2 AND A3 TOGETHER, AS A PROPERTY OF THE SOURCE. A door in a pipe is worth exactly what
-    // the pipe is worth: a second writer on the raw device would be a second mouth with nothing
-    // in front of it, and the erase would go out through it while every case about the door
+    // THE DOOR IS THE ONE PLACE, AS A PROPERTY OF THE SOURCE. A door in a pipe is worth exactly
+    // what the pipe is worth: a second writer on the raw device would be a second mouth with
+    // nothing in front of it, and the erase would go out through it while every case about the door
     // stayed green. So the raw device is written to ONCE in the whole session — inside the door —
     // and everything else writes through {@link THE_DOOR}, which ends at that one statement.
     //

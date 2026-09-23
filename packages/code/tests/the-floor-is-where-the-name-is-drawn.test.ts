@@ -122,7 +122,7 @@ let environment: NodeJS.ProcessEnv;
 const before = { cwd: process.cwd(), env: { ...process.env } };
 
 beforeAll(async () => {
-  // A6: a sandbox of this run's own. Nothing here writes into the working tree.
+  // A sandbox of this run's own. Nothing here writes into the working tree.
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-floor-drawn-'));
   project = join(sandbox, 'project');
   mkdirSync(project, { recursive: true });
@@ -251,7 +251,7 @@ describe('the floor is the height the whole name is drawn at', () => {
   }, 240_000);
 
   it('is three times what the arrangement costs on that page, which is the rule that chose it', async () => {
-    // THE ELO BETWEEN THE NUMBER AND THE RULE THAT PRODUCED IT, and it is the case that catches
+    // THE LINK BETWEEN THE NUMBER AND THE RULE THAT PRODUCED IT, and it is the case that catches
     // the floor drifting away from the drawing without anybody noticing. What refuses a drawing
     // is the SHARE a fixed region may hold — one part in three (`src/repl/panel.ts`,
     // `theShortestScreenFor`) — and the floor is the height at which the whole name stops being
@@ -510,7 +510,7 @@ describe('the margin before the bar grew, and it eats nothing', () => {
 });
 
 // ---------------------------------------------------------------------------
-// A1 — the sites, by the discriminant
+// The sites, by the discriminant
 // ---------------------------------------------------------------------------
 
 /** Every production source of this package, with comments and string literals blanked. */

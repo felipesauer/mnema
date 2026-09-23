@@ -255,7 +255,7 @@ describe('the return visit', () => {
   });
 
   it('asks the block source it was GIVEN, and the public one when it was given none', async () => {
-    // The elo for `mnema witness upgrade --blocks`. Until this case existed the option
+    // The link for `mnema witness upgrade --blocks`. Until this case existed the option
     // reached `blockSource` and nothing anywhere asserted that the value was honoured —
     // its sibling on the same act was a flag whose value was read by nobody at all, and
     // the two were indistinguishable from outside.

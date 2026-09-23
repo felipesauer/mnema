@@ -22,7 +22,7 @@
  *     renderers, and in the golden. The scan therefore covers the tests and the goldens
  *     too, and the discriminant is the SPELLING rather than the symbol — there is no
  *     symbol to grep for at a site that typed the word.
- *   - THE HELP AND THE GATE SAY THE SAME LIST. The elo, over the real `--help` of the
+ *   - THE HELP AND THE GATE SAY THE SAME LIST. The link, over the real `--help` of the
  *     real program and the real disposition: every word the session answers to is listed
  *     with something said about it, and every word the help lists is a word the gate
  *     answers to. Neither half is compared to a list written in this file.
@@ -185,7 +185,7 @@ describe('the spelling these words used to have is gone', () => {
 });
 
 // ---------------------------------------------------------------------------
-// The elo: the help lists what the gate answers to
+// The link: the help lists what the gate answers to
 // ---------------------------------------------------------------------------
 
 /** What `mnema repl --help` really printed, line by line. */
@@ -226,7 +226,7 @@ describe('the verb’s help lists the words the gate answers to, and says what e
   }, 60_000);
 
   it('and the gate really answers to each of them', () => {
-    // The other end of the elo. A help that listed a word nothing answered to would
+    // The other end of the link. A help that listed a word nothing answered to would
     // satisfy the case above; this is what says the list is the session's own.
     for (const word of SESSION_WORDS) {
       expect(dispositionOf(word, VERBS, REPL_VERB).does, word).not.toBe('refuse');

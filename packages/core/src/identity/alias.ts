@@ -18,7 +18,7 @@
  * the vocabulary can spell is a kind something spells. It is false, and it was
  * falsified by asking production: `deriveAlias` is called at four sites and all
  * four pass `'task'`, so the two other arms were a public option nothing fed —
- * the shape amarra A2 exists to kill, standing here in silence because the guard
+ * an option with no production caller, standing here in silence because the guard
  * for it reads whole exported VALUES and an arm of one is not a value. The arms
  * are gone; the guard now reads arms too, and `every-public-value-has-a-caller`
  * carries the case that fails if one is put back.

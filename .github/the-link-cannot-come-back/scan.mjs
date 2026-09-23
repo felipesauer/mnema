@@ -160,7 +160,7 @@ export const NO_PULL_REQUEST =
   'no pull request was handed to this scan, so the half of the rule that reads the description examined nothing — run it on a `pull_request` event, or pass --commits-only to say out loud that only the commits were read';
 
 /**
- * EVERY FOOTER IN ONE TEXT — THE SINGLE READING OF THE RULE (A3).
+ * EVERY FOOTER IN ONE TEXT — THE SINGLE READING OF THE RULE.
  *
  * Both surfaces come through here and nothing else decides what a footer is. Two readings of one
  * rule is the shape that lets the commit half and the body half drift apart, which is precisely

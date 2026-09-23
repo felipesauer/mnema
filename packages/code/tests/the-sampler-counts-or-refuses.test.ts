@@ -69,7 +69,7 @@ const CAPTURE = {
 
 const sandboxes: string[] = [];
 
-/** A sandbox this file makes and this file removes (A6). */
+/** A sandbox this file makes and this file removes. */
 function sandbox(): string {
   const made = mkdtempSync(join(tmpdir(), 'mnema-sampler-'));
   sandboxes.push(made);

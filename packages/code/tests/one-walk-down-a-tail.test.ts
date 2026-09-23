@@ -7,7 +7,7 @@
  * the product contradict itself about one disk in one minute — `verify` reporting that
  * an attestation had been requested and had not confirmed, and the verb whose whole
  * job is to finish such a request reporting that nothing had been asked, and skipping.
- * That is A3 exactly: two readings of one rule, drifting in silence.
+ * That is exactly two readings of one rule, drifting in silence.
  *
  * SO THE RULE HAS ONE SITE, and this reads the source to say so. A behaviour test
  * cannot: two implementations that happen to agree today pass every case, and the day
@@ -16,7 +16,7 @@
  * walk down them stops — is derived in exactly one place, and that both callers reach
  * it through that place.
  *
- * IT IS ALSO THE ELO (A2): `witnessWalk` crosses the package line, and a public export
+ * IT IS ALSO THE LINK: `witnessWalk` crosses the package line, and a public export
  * with no production caller is the shape four defects of this series took. The last
  * case names the caller.
  */
@@ -94,7 +94,7 @@ describe('both callers walk the tail through that one function', () => {
   });
 
   it('crosses the package line with a caller on the other side', () => {
-    // A2. The export exists because `@mnema/code` calls it; without that it is a
+    // The export exists because `@mnema/code` calls it; without that it is a
     // contract with nobody on the far end.
     expect(source('packages/chain/src/index.ts')).toContain('witnessWalk,');
     expect(source(ACTS)).toContain('witnessWalk,');

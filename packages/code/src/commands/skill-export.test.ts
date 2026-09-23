@@ -14,7 +14,7 @@
  * the order or which move needs a `note` and which a `reason`. That is what makes the
  * walk survive a workflow change instead of failing as a fixture.
  *
- * Every case writes into a `--out` inside its own `mkdtemp` sandbox (A6) and counts the
+ * Every case writes into a `--out` inside its own `mkdtemp` sandbox and counts the
  * files under it, because "it refused" and "it refused and wrote anyway" are the two
  * halves of a refusal and only the second one costs anybody anything.
  */

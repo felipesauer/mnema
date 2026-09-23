@@ -12,7 +12,7 @@
  *
  * NO OPTIONS AT ALL, in this slice. Not `--json`: the verb exists for a person
  * accounting for what work cost, the agent surface has no tool for it and will not get
- * one, and an option with no caller is the defect A2 names. Not `--which` either, and
+ * one, and a public option with no production caller is a defect. Not `--which` either, and
  * that one is worth stating: every write carries it so an agent can name itself, and
  * this writes nothing — there is no executor to record, because there is no record.
  *

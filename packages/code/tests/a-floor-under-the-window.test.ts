@@ -105,7 +105,7 @@ const PAINTED = new RegExp(`${ESC}\\[[0-9;]*m`, 'g');
 /**
  * WHAT THE FLOOR SCREEN SAYS AT A SIZE — asked of the module that composes it, never retyped.
  *
- * It is the elo between the arithmetic and the page: every assertion below about what a reader
+ * It is the link between the arithmetic and the page: every assertion below about what a reader
  * sees is made against these rows, so a delivery that rewords the screen moves the cases with it
  * and one that stops drawing it goes red.
  */
@@ -380,7 +380,7 @@ describe('a window under the floor gets the screen, and the window at it gets th
       // whole frame, so there is nothing else on it to find it by.
       const screen = screenOf(ran.bytes.slice(0, ran.at[0] as number), columns, rows);
       expect(screen.alternate, 'the session did not take the screen').toBe(true);
-      // EVERY ROW THE MODULE COMPOSED IS ON THE PAGE, which is the elo between the two.
+      // EVERY ROW THE MODULE COMPOSED IS ON THE PAGE, which is the link between the two.
       for (const row of floorRowsAt(columns, rows)) {
         expect(screen.text, `a row of the floor screen is missing: ${row}`).toContain(row.trim());
       }
@@ -634,7 +634,7 @@ const RESIZES_THE_WINDOW = /(?:\u001b|\\u001b|\\x1b|\\033|\$\{ESC\})\s*\[\s*8\s*
 
 describe('the floor is asked in one place, and every site that rules on room is named', () => {
   it('names the module that answers the floor and the one that asks it, and nothing else', () => {
-    // A3: THE FLOOR IS ONE FUNCTION WITH ONE SITE. A second comparison of a size against the
+    // THE FLOOR IS ONE FUNCTION WITH ONE SITE. A second comparison of a size against the
     // floor would be a second floor, and the two would disagree the first time one of them moved.
     const naming = sourceFiles(SRC)
       .filter((file) => ASKS_THE_FLOOR.test(codeOnly(readFileSync(file, 'utf-8'))))
@@ -652,7 +652,7 @@ describe('the floor is asked in one place, and every site that rules on room is 
     expect(sourceFiles(SRC).length).toBeGreaterThan(50);
   });
 
-  it('A1: enumerates every site that decides whether there is room to draw', () => {
+  it('enumerates every site that decides whether there is room to draw', () => {
     // THE SITES ARE FOUND BY THE DISCRIMINANT and then named, with what each of them rules on.
     // The list this delivery was handed had five — the floor, the console's last-resort guard,
     // the area, the panel and the drawing of the name — and the scan finds more. The extras are

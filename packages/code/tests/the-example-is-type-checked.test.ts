@@ -29,7 +29,7 @@
  * `exports` map, to the declarations it publishes. A mapping written here instead would
  * make THIS file decide what `@mnema/core/write` means; the package decides. The cost is a
  * dependency on `dist` being current: a stale build makes this guard lie in both directions,
- * which is why amarra A7 runs `pnpm build` before the suite, and why a case below refuses to
+ * which is why `pnpm build` runs before the suite, and why a case below refuses to
  * run over a `.d.ts` that is not on disk.
  *
  * THE STRICTNESS IS THE REPOSITORY'S, NOT A SECOND OPINION. The sandbox `tsconfig.json`
@@ -384,7 +384,7 @@ describe('the roster is every TYPESCRIPT block this workspace publishes', () => 
   it('the declarations each page is checked against are on disk', () => {
     // A missing `dist` makes every case above pass over a module that cannot be resolved,
     // or fail with a message about resolution that reads like a defect in a page. Named
-    // here instead: this guard depends on `pnpm build` having run (A7).
+    // here instead: this guard depends on `pnpm build` having run.
     const missing = PUBLISHED_EXAMPLES.filter((example) => {
       const manifest = JSON.parse(read(`packages/${example.pkg}/package.json`)) as {
         types?: string;

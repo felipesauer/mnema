@@ -975,7 +975,7 @@ describe('the second reader refuses a forged payload field, which it used to acc
   });
 
   it('no longer names the per-kind rebuild among what it does not cover', () => {
-    // A5/A10: the observable that this case used to assert is GONE, and asserting its
+    // The observable that this case used to assert is GONE, and asserting its
     // absence is what keeps the removal honest. A `NOT COVERED` entry left standing over a
     // check that now runs is the worst of both — it understates the reader and it trains a
     // future reader of the output to discount the list.

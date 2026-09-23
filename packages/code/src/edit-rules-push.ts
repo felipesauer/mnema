@@ -21,7 +21,7 @@
  * appended to the conversation and stays there — so a per-edit push spends its bytes
  * once and then carries them for the rest of the session.
  *
- * The id is on the line because a charge cites the id. That is G1 of the axis rather
+ * The id is on the line because a charge cites the id. That is a requirement rather
  * than a nicety: the grade this module ships informs and never refuses, and the grade
  * that refuses has to name the rule it came from — a text pushed without the id would
  * leave the later charge with nothing to cite.
@@ -199,7 +199,7 @@ export function ourWordsIn(at: RulesAtPath): readonly string[] {
  * and it is what this field changes. An id opens through `read_record` and nothing else;
  * a provenance opens with what the reader is already holding — a file read. So the field
  * a reader ACTS on is the last one, which is where this line has always put it, and the
- * id stays on the line because a charge cites the id (G1) and because a target may name
+ * id stays on the line because a charge cites the id and because a target may name
  * an id too.
  *
  * ONE FIELD PER SOURCE, the word repeated rather than the targets joined by a comma: a

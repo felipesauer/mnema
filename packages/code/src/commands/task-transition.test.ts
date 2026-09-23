@@ -123,7 +123,7 @@ describe('mnema task move', () => {
   });
 });
 
-describe('mnema task move — the transition follows the entity (coherence, S2)', () => {
+describe('mnema task move — the transition follows the entity (coherence)', () => {
   it('moves a task born in PUBLIC in the PUBLIC tree, leaving PRIVATE empty', () => {
     // The CLI create is born public; the move must follow it there. The private
     // tree must never receive the transition (that would split the history).

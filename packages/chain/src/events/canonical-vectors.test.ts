@@ -1,5 +1,5 @@
 /**
- * The canonicalization vectors, and the elo between the code and the file a
+ * The canonicalization vectors, and the link between the code and the file a
  * stranger downloads.
  *
  * THE PREMISE THIS FILE USED TO STATE, AND WHAT FALSIFIED IT. It said the
@@ -113,7 +113,7 @@ describe('canonicalization golden vectors — the byte format must not drift sil
     it(`${name} hashes to the digest the published file declares`, () => {
       const row = published.get(name);
       if (row === undefined) throw new Error(`no row named "${name}" in the published artifact`);
-      // THE ELO, IN BOTH DIRECTIONS: the digest the file declares against the
+      // THE LINK, IN BOTH DIRECTIONS: the digest the file declares against the
       // digest the code computes. A digest edited only in the file reddens here,
       // and so does a change to canonicalization that moves the bytes.
       expect(digest(bytesOf(event))).toBe(row.sha256);

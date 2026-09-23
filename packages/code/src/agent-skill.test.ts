@@ -64,7 +64,7 @@ describe('a name of the skills specification', () => {
 
   it('refuses a name that is only whitespace, which the record does accept', () => {
     // `requireString` on the event asks for length alone, so a name of two spaces is a
-    // value the product can produce (A13). It is not a name of the specification.
+    // value the product can produce. It is not a name of the specification.
     expect(specName('  ').ok).toBe(false);
   });
 });

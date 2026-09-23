@@ -2565,7 +2565,7 @@ describe('MCP server — end to end over a real client', () => {
   });
 
   it('resume tells an agent WHAT was written in its run, over the real transport', async () => {
-    // The elo, asserted where it can actually break: the field is on the projection and
+    // The link, asserted where it can actually break: the field is on the projection and
     // the tool hands back a serialized object, so a case that called the derivation
     // directly would stay green with nothing reaching the wire. This one reads the TEXT
     // the server sent and parses that.
@@ -3609,7 +3609,7 @@ describe('MCP — what enters the record', () => {
   });
 
   it('serves `unread` over the wire when the record holds what no list is about', async () => {
-    // THE ELO, in the shape `mcp-flag-reaches-the-server.test.ts` uses: not that the
+    // THE LINK, in the shape `mcp-flag-reaches-the-server.test.ts` uses: not that the
     // derivation is right (that is `copilot`'s), but that the field the description
     // above promises actually ARRIVES in the payload an agent parses — and that it is
     // absent when there is nothing to declare, which is what keeps five empty lists

@@ -324,7 +324,7 @@ describe('the flag reaches the bytes', () => {
   });
 
   it('folds to the width the PROCESS reports, and to nothing when it reports none', async () => {
-    // A2, THE LINK: the width is read at the entry and spent on the renderer every verb is
+    // THE LINK: the width is read at the entry and spent on the renderer every verb is
     // handed, and this is the case that says it ARRIVES rather than that it is plumbed. The
     // structural scan that counts who asks a stream how big it is would stay green on an
     // entry that read the number and dropped it — a mechanism wired to the end and never

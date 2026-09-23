@@ -57,7 +57,7 @@ const PERSON = {};
 /** A capture an agent made. */
 const AGENT = { which: 'agent-x' };
 
-describe('resolveScope — the L4 cascade, now by KIND', () => {
+describe('resolveScope — the scope cascade, now by KIND', () => {
   it('routes each kind by the kind, whoever wrote it', () => {
     for (const kind of BY_KIND) {
       expect(resolveScope(kind, PERSON)).toBe(EXPECTED[kind]);

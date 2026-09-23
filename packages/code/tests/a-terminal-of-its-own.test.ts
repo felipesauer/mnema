@@ -526,7 +526,7 @@ describe('the session writes no history anywhere', () => {
 
 describe('the loop is wired to the gate and to the tree', () => {
   it('completes a verb on Tab, runs it, and leaves on the word that leaves', async () => {
-    // The elo, end to end and without a device to hand: the completer the console was
+    // The link, end to end and without a device to hand: the completer the console was
     // given is the one built from the command tree, the line it completes is the line
     // the gate then runs, and the answer lands on the page. Each step waits for the one
     // before it, so nothing here is a sleep whose length is a guess.

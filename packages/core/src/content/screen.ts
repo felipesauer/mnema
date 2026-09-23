@@ -172,7 +172,7 @@ type Screenable = string | readonly string[] | undefined;
  * THE KEYS ARE A CLOSED UNION, not strings. Every key must be one the field
  * classification answers for ({@link ScreenedKey}), so handing this door a field
  * nobody classified is a compile error rather than a field silently treated as a
- * body. That is the elo between the two: the classification decides name-or-body, and
+ * body. That is the link between the two: the classification decides name-or-body, and
  * the type is what stops a caller from asking under a key it never classified. The
  * transition proof meets it at the leaf — `fields.reason` is classified, `reason` is
  * handed in — and a subject is handed in AS `subject`, whatever the operation's own

@@ -318,12 +318,11 @@ describe('a declaration lists the set it takes', () => {
   });
 
   it('has a declaration for every set it publishes — none plumbed to nowhere', () => {
-    // A2, over this module's own exports. A vocabulary declared, glossed and exported
-    // with no declaration taking it is the shape four defects of this series had: the
-    // code under the gap is right, nothing feeds it, and every test passes because
-    // ABSENCE is what there is to see. `every-public-value-has-a-caller.test.ts` walks
-    // the packages' ENTRY POINTS and cannot see an export of a module inside one, which
-    // is what this is.
+    // A public value has a caller, asked of this module's own exports. A vocabulary declared,
+    // glossed and exported with no declaration taking it is the shape four defects of this series
+    // had: the code under the gap is right, nothing feeds it, and every test passes because ABSENCE
+    // is what there is to see. `every-public-value-has-a-caller.test.ts` walks the packages' ENTRY
+    // POINTS and cannot see an export of a module inside one, which is what this is.
     const taken = DECLARED_SETS.map((declaration) => declaration.values);
     const published = Object.entries(vocabulary).filter(
       (entry): entry is [string, readonly string[]] =>

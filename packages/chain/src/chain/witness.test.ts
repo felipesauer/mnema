@@ -887,7 +887,7 @@ describe("where a tail's status comes from", () => {
   };
 
   it('is one derivation, and a reading built past it does not go unnoticed', () => {
-    // A3. The rule — the head's own status, else the request in flight, else the plain
+    // The rule — the head's own status, else the request in flight, else the plain
     // absence — was written twice in the first draft of this delivery, once per world,
     // and two readings of one rule is the shape that drifts in silence. It is one
     // closure now, and this is what fails when a world added later words its own.

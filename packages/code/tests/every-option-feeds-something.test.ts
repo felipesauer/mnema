@@ -64,7 +64,7 @@
  *     without naming it, so a chain that re-spreads all the way down and reads the key
  *     under a THIRD name is not followed past the first hop.
  *   - IT SAYS NOTHING ABOUT WHAT THE VALUE DOES. Read is read: an option whose value is
- *     read into a variable nobody uses afterwards passes here. The per-case elo tests
+ *     read into a variable nobody uses afterwards passes here. The per-case link tests
  *     are what assert the effect (`mcp-flag-reaches-the-server`, `the-witness-flags-reach-the-act`).
  *   - IT IS NOT THE MCP SURFACE. The tools take an input object each, not options, and
  *     they are the second surface with the same rule.

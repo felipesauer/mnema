@@ -4,8 +4,8 @@
  *
  * IT EXISTS BECAUSE A MUTATION FOUND NOTHING. `checkpointToWitness` decides the digest
  * an attestation is FILED UNDER, and `verify` looks for one under the checkpoint IT
- * PROVED — two functions, one question, which is the shape A3 exists to keep from
- * drifting. Bent so that the act files under a digest that is not this checkpoint's,
+ * PROVED — two functions, one question, and one rule read in two places is the shape
+ * that drifts. Bent so that the act files under a digest that is not this checkpoint's,
  * the whole suite stayed green: every case about the witness drove the reading
  * directly, and the act had no case at all. The mutation is red now, and the reason it
  * is red is the first test below — the act's own file, read back by the verifier.
@@ -184,7 +184,7 @@ const promises = (): Response => new Response(CALENDAR_ANSWER, { status: 200 });
 
 describe('asking an outside witness to date the record', () => {
   it('files the attestation where the VERIFIER looks for it', () => {
-    // THE ELO, and the reason this file exists. The act picks the checkpoint; the
+    // THE LINK, and the reason this file exists. The act picks the checkpoint; the
     // verifier picks the checkpoint it proved; nothing else in the suite makes the two
     // meet. If they disagree, the file lands at a path nothing reads and the verdict
     // says `not covered` while the person is told they were stamped.
@@ -317,7 +317,7 @@ describe('going back for what has not confirmed', () => {
     // asked for at 00:52 and served complete at 12:49, and ONE `mnema memory` is enough
     // to put the head somewhere else — which is exactly what this case drives below.
     //
-    // Built by the product (A13): stamp, write, stamp, write. Nothing is placed by hand.
+    // Built by the product: stamp, write, stamp, write. Nothing is placed by hand.
     const ctx = setup();
     const asked = network(() => promises());
     await runWitnessStamp(ctx, { calendars: [CALENDAR], fetch: asked.fetch });
@@ -787,7 +787,7 @@ describe('the reading beside the two acts', () => {
   });
 
   it('says a request is still in flight after the record was written to — the delivery’s case', () => {
-    // THE WHOLE WORLD, BUILT BY THE PRODUCT (A13): stamp, then write, then read. The
+    // THE WHOLE WORLD, BUILT BY THE PRODUCT: stamp, then write, then read. The
     // proof under the older checkpoint is the one `runWitnessStamp` wrote from a
     // calendar's own answer, and the checkpoint above it is the one `runMemory` sealed
     // — nothing here puts a byte on the disk by hand.

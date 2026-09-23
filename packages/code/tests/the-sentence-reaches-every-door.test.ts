@@ -269,7 +269,7 @@ describe('no door still says the retired sentence', () => {
  *
  * MEASURED: this case did not exist when the rest of this file did, and the mutation that
  * found the hole is the one that put `workflow gates` back into `packages/core/package.json`
- * — it reddened NOTHING. A guard whose reversion is green is a sitio with no guard.
+ * — it reddened NOTHING. A guard whose reversion is green is a site with no guard.
  */
 describe('no manifest sells the gate as more than it is', () => {
   /** Every tracked `package.json` and `plugin.json` that carries a description. */

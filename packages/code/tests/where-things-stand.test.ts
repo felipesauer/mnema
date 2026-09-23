@@ -757,7 +757,7 @@ describe('one derivation, and the doors that serve it', () => {
 
 describe('the console offers it, and does not run it on opening', () => {
   it('is one of the reads a read-only session dispatches', async () => {
-    // The elo with the console is the gate's, not a list: `status` declared itself a
+    // The link with the console is the gate's, not a list: `status` declared itself a
     // read, so the session offers it by construction. Asserted against the REGISTERED
     // program, which is what the session decides from.
     const c = capture();

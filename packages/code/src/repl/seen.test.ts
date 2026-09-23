@@ -3,7 +3,7 @@
  *
  * The mechanism, on input this file owns. Every row below is bytes copied out of a real
  * `search` and a real `show` over a real project rather than a shape invented here, which
- * is what keeps the gloss from being asserted against a table nobody prints; the elo over
+ * is what keeps the gloss from being asserted against a table nobody prints; the link over
  * the whole surface — the ids of a record, read off a screen and completed back into the
  * row being typed — is `tests/the-record-you-can-see.test.ts`, on a pseudo-terminal.
  *

@@ -224,7 +224,7 @@ describe('the reply asks for a person, and only when the record does', () => {
       'A rule of this project’s record asks that a person look at src/billing/invoice.ts ' +
         'before it is written.',
     );
-    // Then the rule: what it says, the address that asked, and the id. G1 lives on this
+    // Then the rule: what it says, the address that asked, and the id. The id lives on this
     // line — a charge that could not name the fact that caused it would not be a charge.
     expect(lines[2]).toBe(
       `“Nobody touches billing alone” — asks for a person at src/billing · ${rule}`,
@@ -500,7 +500,7 @@ describe('the asking is a FACT, and the service is one too', () => {
 
 describe('one derivation answers both relations', () => {
   it('routes both in-force readings through one body', () => {
-    // A3, held by the SOURCE. The address comparison, the disk probe and the ordering are
+    // Held by the SOURCE. The address comparison, the disk probe and the ordering are
     // one idea in this product: two copies would let the gate come to mean something the
     // informing text does not, and the person the difference trapped would have no reading
     // that agreed with what happened to them. So both entry points are one-liners over

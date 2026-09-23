@@ -591,7 +591,7 @@ export interface WalkedWitness {
  * reaches coverage.
  *
  * IT IS ONE TRAVERSAL FOR THE READING AND FOR THE ACT, and that is the whole reason it
- * is a function (A3). The reading walks down from the head and answers with the newest
+ * is a function. The reading walks down from the head and answers with the newest
  * confirmed attestation; the act walks down from the head and completes what has not
  * confirmed. Written twice, the two drifted, and the drift was visible in the product:
  * the reading walked the tail while `mnema witness upgrade` asked only
@@ -714,7 +714,7 @@ export function witnessOfTail(
   // not to the last event — where the dating says everything the head's own would.
   let finding: UnattestedReading | null = null;
   let promise: UnattestedReading | null = null;
-  // ONE RULE FOR THE STATUS, at one site because it is one rule (A3): the head's own,
+  // ONE RULE FOR THE STATUS, at one site because it is one rule: the head's own,
   // unless the head had nothing to say, in which case the request in flight speaks, and
   // the plain absence when there is neither. Every value it can return is one
   // {@link WITNESS_COVERS} counts for nothing, so the choice moves no level and no exit
@@ -795,7 +795,7 @@ type TailFacts =
  * reaches. (Measured on the first draft of this delivery: split in two, with the second
  * half taking a parameter named `detail` so the walk would follow it, the scanner read
  * the PARAMETER as a prose field and reported the same two values twice. An instrument
- * that accuses is the other half of A5 and this is what it looks like.)
+ * fails by accusing as surely as by missing, and this is what accusing looks like.)
  */
 function tailDetail(finding: UnattestedReading | null, facts: TailFacts): string {
   const said: string[] = [];

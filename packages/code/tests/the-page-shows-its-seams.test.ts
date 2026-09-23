@@ -126,7 +126,7 @@ const before = { cwd: process.cwd(), env: { ...process.env } };
 const quiet: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
 
 beforeAll(async () => {
-  // A6: a sandbox of this run's own. Nothing here writes into the working tree.
+  // A sandbox of this run's own. Nothing here writes into the working tree.
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-seams-'));
   project = join(sandbox, 'project');
   mkdirSync(project, { recursive: true });
@@ -342,7 +342,7 @@ describe('the line a caller sent is told from the answer to it', () => {
     expect(echo, 'the caller’s line is nowhere on the page').toBeDefined();
     const answer = rows.find((row) => stripped(row).includes(THE_ANSWER)) as string;
     expect(answer, 'the answer to it is nowhere on the page').toBeDefined();
-    // THE PROMPT IS WRAPPED IN THE VERY PAIR A RULE CARRIES, which is the elo between the two
+    // THE PROMPT IS WRAPPED IN THE VERY PAIR A RULE CARRIES, which is the link between the two
     // alphabets one accent is now spelled in: the layout says a word to its library and the
     // renderer writes an escape (`repl/region.ts`, `presentation/styled.ts`).
     const rule = rowsOf(page).find(isRule) as string;
@@ -540,7 +540,7 @@ describe('the margin takes columns of the page and never a character of a line',
 });
 
 // ---------------------------------------------------------------------------
-// A1: the sites, found by the discriminant
+// The sites, found by the discriminant
 // ---------------------------------------------------------------------------
 
 /** Every module of this surface that ships, with its comments and strings blanked. */
@@ -551,7 +551,7 @@ function sources(): readonly { readonly where: string; readonly code: string }[]
   }));
 }
 
-describe('A1: every site that echoes, every site that draws an edge, every site that lists a tree', () => {
+describe('every site that echoes, every site that draws an edge, every site that lists a tree', () => {
   it('puts the prompt in front of what was typed in ONE shape, in both places it happens', () => {
     // THE DISCRIMINANT IS THE COMPOSITION, never a list of files: anything that puts the prompt
     // and the caller's words together. THE ECHO USED TO BE THREE OF THEM — `land(prompt + line)`

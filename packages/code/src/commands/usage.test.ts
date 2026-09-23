@@ -13,7 +13,7 @@
  * reproducible, and a test that depended on it would be a test that passes on one
  * machine.
  *
- * THE LINES ARE THE HOST'S OWN SHAPE (A13). The fields are the ones measured in a real
+ * THE LINES ARE THE HOST'S OWN SHAPE. The fields are the ones measured in a real
  * transcript — `type`, `cwd`, `sessionId`, `timestamp`, and `message.{id,model,usage}`
  * with the four `*_tokens` names — because a fixture with an invented field would leave
  * this suite green over a format the host does not write.
@@ -371,7 +371,7 @@ describe('mnema usage', () => {
   });
 
   it('looks where `CLAUDE_CONFIG_DIR` says, when the host was moved', () => {
-    // A2: the environment variable is a public input, and this is the link — it does
+    // The environment variable is a public input, and this is the link — it does
     // not assert what the reading does with the store, only that it reaches the one the
     // host was told to use. Without it, a machine that moved its configuration would
     // report `no transcript` for every run, which looks exactly like an honest answer.

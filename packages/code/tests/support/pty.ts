@@ -616,7 +616,7 @@ async function settles(bytes: () => string): Promise<void> {
  * the pause does not ask the question again, so under load a write that stalls mid-frame for
  * longer than the pause ends the step at a point the question would have REFUSED. Measured:
  * a screen replayed from that point had the input area's two rules missing, red in the whole
- * suite and green on its own — the shape of defect the A3 amarra is about.
+ * suite and green on its own.
  *
  * SO THE ANSWER AND THE LENGTH COME OUT OF THE SAME STRING. The question is asked again once
  * the stream is quiet, and while it says no this goes on waiting; when it says yes, the

@@ -58,7 +58,7 @@ describe('memory.captured — end to end, the four publics', () => {
 
   const layout = (root: string): ChainLayout => ({ root });
 
-  it('P2 — the PERSON sees the union of all three trees, attributed to who', () => {
+  it('the PERSON sees the union of all three trees, attributed to who', () => {
     const pub = captureInto('public', 'a public note');
     const prv = captureInto('private', 'a private note');
     const glb = captureInto('global', 'a global note');
@@ -77,7 +77,7 @@ describe('memory.captured — end to end, the four publics', () => {
     expect(authors.size).toBe(1);
   });
 
-  it('P3 — the TEAM (public tree only) never sees the private or global memory', () => {
+  it('the TEAM (public tree only) never sees the private or global memory', () => {
     const pub = captureInto('public', 'team-visible');
     const prv = captureInto('private', 'machine-only');
     const glb = captureInto('global', 'personal');
@@ -88,7 +88,7 @@ describe('memory.captured — end to end, the four publics', () => {
     expect(teamView.has(glb.id)).toBe(false);
   });
 
-  it('P4 — the CLONE reconstructs the memory from events alone, and verifies', () => {
+  it('the CLONE reconstructs the memory from events alone, and verifies', () => {
     const pub = captureInto('public', 'a fact the team pulls');
 
     // A clone is a copy of the public tree's directory: the events and the
@@ -111,7 +111,7 @@ describe('memory.captured — end to end, the four publics', () => {
     }
   });
 
-  it('P4 — the clone has NO private key, proving recovery needs only the public material', () => {
+  it('the clone has NO private key, proving recovery needs only the public material', () => {
     const pub = captureInto('public', 'recoverable');
     const clone = mkdtempSync(join(tmpdir(), 'mnema-clone-nokey-'));
     try {

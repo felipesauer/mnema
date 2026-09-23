@@ -605,7 +605,7 @@ describe('what it offers is what the session showed, and never the record', () =
   }, 240_000);
 
   it('and finishes that same record once the session HAS named it', async () => {
-    // A1, FROM THE OUTSIDE: everything a reader sees comes through ONE door, and this is
+    // FROM THE OUTSIDE: everything a reader sees comes through ONE door, and this is
     // the case that would go red if a second one appeared. The record above is refused
     // until a read NAMES it, and the read that names it here is a different verb writing
     // a different shape of line — so a `show` whose output reached the page past the

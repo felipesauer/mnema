@@ -33,7 +33,7 @@
  * with a phrase of its own, `THE_CANARY`, which is imported here rather than quoted.
  *
  * THE RULE IS EXERCISED AGAINST REAL GIT, NOT ONLY AGAINST THE SEAM. `commitsIn` shells out, so
- * the cases that matter build a repository under a temp directory of their own (A6) and commit
+ * the cases that matter build a repository under a temp directory of their own and commit
  * into it. A seam that is never checked against git is a second definition of what a commit is,
  * and this guard's whole failure mode is two definitions of one rule.
  */
@@ -59,7 +59,7 @@ import {
 
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 
-/** A temp directory of this file's own, so nothing here writes the working tree (A6). */
+/** A temp directory of this file's own, so nothing here writes the working tree. */
 let sandbox: string;
 
 beforeEach(() => {

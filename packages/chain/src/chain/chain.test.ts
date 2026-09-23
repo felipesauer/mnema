@@ -153,7 +153,7 @@ describe('chain — write then verify (happy path, T1/T2/T4)', () => {
   });
 
   it('reads the witness off the DISK and lets it reach the verdict', () => {
-    // THE ELO. A status that never travels from the file to the sentence is a layer
+    // THE LINK. A status that never travels from the file to the sentence is a layer
     // that exists in a unit test and nowhere else, and four defects of this series
     // were exactly that. So: a real chain, a real checkpoint, an attestation filed
     // under that checkpoint's own digest, and the verdict asked what it now says.

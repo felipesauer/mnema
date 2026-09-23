@@ -173,7 +173,7 @@ describe('every gap in the registry says which kind of hole it is', () => {
   });
 
   it('REFUSES a catalogue that has not answered, at import — five ways', () => {
-    // A5: the audit is a structural guard, so here is what lights it. Each mutation is a
+    // The audit is a structural guard, so here is what lights it. Each mutation is a
     // Gap built in memory and handed to `audit()`; the registry on disk is never touched,
     // because a guard whose non-vacuity proof edits the tree can leave the tree edited.
     const cases: readonly (readonly [string, string])[] = [
@@ -206,7 +206,7 @@ describe('every gap in the registry says which kind of hole it is', () => {
   });
 
   it('runs that audit at IMPORT, so a bad registry stops the program instead of shortening it', () => {
-    // A5, and the mutation that earns the module-level `audit()` call rather than the
+    // The mutation that earns the module-level `audit()` call rather than the
     // function alone: without it a registry that answered nothing would still IMPORT, and
     // `record` would print a block one row short with no sign that anything was wrong — the
     // exact failure this whole delivery is about, one level up.
@@ -303,16 +303,16 @@ describe('the block a verdict prints is the registry, read in both directions', 
   });
 
   it('prints the same rows the registry renders, from the same function', () => {
-    // A3: one derivation. If these two ever differ, a second reading of the same fact has
+    // One derivation. If these two ever differ, a second reading of the same fact has
     // appeared somewhere between the registry and the walker.
     const there = reading(copyOf('witnessed-record'));
     expect([...there.notCovered]).toEqual([...catalogue().scope]);
   });
 
   it('honours --json on `gaps`, which is where the flag used to be dropped', () => {
-    // A2: an option that arrives and feeds nothing. `--json` is a global flag and the `gaps`
+    // An option that arrives and feeds nothing. `--json` is a global flag and the `gaps`
     // branch returned before anything read it, so a caller that asked for an object got
-    // prose. The elo, asserted: the flag CHANGES what comes out.
+    // prose. The link, asserted: the flag CHANGES what comes out.
     const asJson = python([VERIFIER, '--json', 'gaps']);
     const asProse = python([VERIFIER, 'gaps']);
     expect(asJson.status).toBe(0);

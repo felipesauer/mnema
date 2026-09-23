@@ -42,10 +42,10 @@
  * refusal-code unions and `code:` literals of this workspace's non-test source); and a
  * round scored the arm carrying the record at 0/8 on the two tasks that discriminate —
  * what the arm carrying NO record scored — against 8/8 for an arm that injected the
- * same knowledge unasked. The foundation now says mnema governs the work with proof,
- * under six ties (G1-G6). None of that is in this file, and none of it changes a byte
- * of it: the event set lives in `hooks.json`, and what every declared command runs is
- * held by the case "runs only verbs that read, and names each one".
+ * same knowledge unasked. The foundation now says mnema governs the work with proof.
+ * None of that is in this file, and none of it changes a byte of it: the event set lives
+ * in `hooks.json`, and what every declared command runs is held by the case "runs only
+ * verbs that read, and names each one".
  *
  * IT DECIDES NOTHING ABOUT WHAT THE AGENT READS. The document goes over BYTE FOR
  * BYTE — no preamble of THIS FILE's, no cut — and so does whatever the same run said about

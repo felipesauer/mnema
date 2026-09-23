@@ -23,7 +23,7 @@
 // consumers name that package directly — this package's own fold
 // (`projections/proof.ts`) and the command line's presentation layer, neither of which
 // is banned from the specifier. A re-export nobody imported would be a public value
-// with no caller, which is the shape amarra A2 exists to kill.
+// with no production caller, which is a defect however harmless it looks.
 export {
   ADDRESS_RELATIONS,
   ASKS_FOR_A_PERSON_RELATION,

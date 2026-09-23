@@ -6,7 +6,7 @@
  * asked without a device. What needs one is whether a key moves the mark and whether
  * choosing runs the line, and that is `tests/the-bare-name-asks.test.ts`.
  *
- * THE ELO THIS FILE HOLDS is the one a rename would break in silence: what a door says it
+ * THE LINK THIS FILE HOLDS is the one a rename would break in silence: what a door says it
  * does is the VERB'S OWN sentence, read off the declaration commander routes with. A door
  * pointing at a word this program no longer registers comes back with an empty column, which
  * is exactly what nobody would notice on a screen.
@@ -53,7 +53,7 @@ describe('the doors are a function of the directory', () => {
   });
 
   it('says what each door does in the words of the verb that declares it', () => {
-    // THE ELO. A verb renamed, or one whose description changed, moves this case — and a
+    // THE LINK. A verb renamed, or one whose description changed, moves this case — and a
     // door that carried its own copy of the sentence would go on advertising the old one.
     expect(inAProject[0]?.description).toBe(declares(REPL_VERB));
     expect(outsideOne[0]?.description).toBe(declares(INIT_VERB));

@@ -124,7 +124,7 @@ const AND_IT_REFUSES = 'shell.';
  * every terminal there is, whatever the locale. So the number below is a fact about the
  * characters rather than an observation about a device, which is why it is written down.
  *
- * IT IS A VALUE A CALLER PRODUCES WITH THE PRODUCT'S OWN VERB (A13) — `mnema task <title>` — so
+ * IT IS A VALUE A CALLER PRODUCES WITH THE PRODUCT'S OWN VERB — `mnema task <title>` — so
  * the row it lands on is a row of an ordinary report and not a fixture nobody could have made.
  *
  * AND ITS LENGTH IS CHOSEN SO THAT THE OLD COUNT LET IT THROUGH. Measured on the built binary:
@@ -193,7 +193,7 @@ async function shell(...argv: string[]): Promise<void> {
 }
 
 beforeAll(async () => {
-  // A6: a sandbox of this run's own. Nothing here writes into the working tree.
+  // A sandbox of this run's own. Nothing here writes into the working tree.
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-width-'));
   project = join(sandbox, 'project');
   mkdirSync(project, { recursive: true });
@@ -426,7 +426,7 @@ describe('the fold follows the window the caller is looking at', () => {
     // so it still folds there, which is the only property the number ever had to have.
     const narrow = 80;
     const wide = 200;
-    // A13: the page has already PRINTED and already been resized when it is measured. A page
+    // The page has already PRINTED and already been resized when it is measured. A page
     // that has just opened is the one instant at which this defect does not exist, which is how
     // it survived twenty deliveries.
     const ran = await inPty({
@@ -741,7 +741,7 @@ describe('the colour is one answer per invocation and the width is not', () => {
   });
 
   it('asked for no width at all, answers for the terminal this invocation is on', () => {
-    // THE ELO between the two doors: the renderer every verb is handed is this rule asked with
+    // THE LINK between the two doors: the renderer every verb is handed is this rule asked with
     // nothing, so a verb that prints and exits folds to the width the entry read and nothing
     // else. It is what keeps `chosen-once.test.ts` — the pipe, the file, the CI log and the
     // recorded transcript — saying what it has always said.
@@ -891,7 +891,7 @@ const THE_LIBRARY = 'string-width';
  * `text.length` on a variable that holds a string. Without types there is nothing to tell it
  * from `items.length` on an array, and half this surface counts arrays. The three sites of that
  * shape that existed — the widest word of the session's list, of the bare name's doors and of
- * the help — ask `widestOf` now, and what stands between them and a relapse is the elo below
+ * the help — ask `widestOf` now, and what stands between them and a relapse is the link below
  * (every module of the surface that measures anything imports the authority) rather than this
  * pattern.
  */
@@ -973,7 +973,7 @@ describe('one authority over how wide text is, and nothing on the surface counts
   });
 
   it('names every module that measures anything, and each of them asks the authority', () => {
-    // THE ELO, AND THE HALF THAT SURVIVES A SHAPE THIS FILE CANNOT SEE. A module that counted a
+    // THE LINK, AND THE HALF THAT SURVIVES A SHAPE THIS FILE CANNOT SEE. A module that counted a
     // width with a bare `text.length` would pass the case above; what it cannot do is measure
     // without importing something, so the SET is asserted. A new module that starts measuring is
     // named here the day it is written, and one that stops is a fossil and red.

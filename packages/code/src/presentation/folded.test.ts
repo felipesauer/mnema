@@ -425,7 +425,7 @@ describe('the promise as a function: strip the escapes and you have what a scree
 });
 
 describe("the console's own rows are composed to fit, so the fold leaves them", () => {
-  // A1: the lines this surface turns into bytes are not all reports. The session hands the
+  // The lines this surface turns into bytes are not all reports. The session hands the
   // same renderer its chrome — the tips under the input, the badge in the corner, the rows
   // of the palette — and every one of those is composed to fit or dropped by the module
   // that composes it. So the fold is the identity on all of them, and this is where that

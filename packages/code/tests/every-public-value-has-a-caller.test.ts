@@ -657,8 +657,8 @@ const THE_KIND_IT_PASSES = /^deriveAlias\(\s*'([^']*)'/;
  * IT TAKES A SOURCE RATHER THAN WALKING THE TREE, and that is not tidiness. Asked over
  * production only, the blanking step is redundant TODAY: no production comment happens
  * to spell a call with a literal kind, so replacing `codeOnly(source)` with `source`
- * changes nothing and leaves the guard at ZERO — measured, as row M2.2 of this
- * delivery's battery. A step whose removal reddens nothing is a step nothing proves. So
+ * changes nothing and leaves the guard at ZERO — measured by mutation. A step whose
+ * removal reddens nothing is a step nothing proves. So
  * the reader is a function over text, and the case below drives it on prose it owns; the
  * same mutation now reddens that case instead of passing in silence.
  */

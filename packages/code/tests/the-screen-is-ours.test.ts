@@ -1104,7 +1104,7 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
         // ended, the end of the input was typed, and the session left WITHOUT EVER DRAWING AT
         // EIGHTY — measured under load: *no frame in this stream was drawn 80 columns wide, so
         // there is no settled page to read at that size*, which was true and was the case's own
-        // doing. It is the amarra this bench already carries — a step waits for what it CAUSED —
+        // doing. It is the rule this suite already carries — a step waits for what it CAUSED —
         // at the last resize step that had not been given it (`support/screen.ts`, {@link drewAt}).
         {
           resize: { columns: THE_FLOOR.columns, rows: THE_FLOOR.rows },

@@ -144,8 +144,8 @@ const A_THIRD = 3;
  * THE SHORTEST SCREEN AN ARRANGEMENT OF THIS MANY ROWS MAY BE DRAWN ON — the share, read from
  * the other end.
  *
- * IT IS EXPORTED BECAUSE THE CHOICE OF THE DRAWING NEEDS IT, and that is the A3 shape rather
- * than a convenience. The name gives way when the page it is on stops working
+ * IT IS EXPORTED BECAUSE THE CHOICE OF THE DRAWING NEEDS IT, and that is one rule at one
+ * site rather than a convenience. The name gives way when the page it is on stops working
  * (`presentation/banner.ts`), and what "stops working" means is now partly this rule: a drawing
  * so tall that the arrangement around it would bust its share is a drawing that costs the
  * ARRANGEMENT, which is the one thing the opening exists to keep. The composer asks that

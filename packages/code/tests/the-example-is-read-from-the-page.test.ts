@@ -65,7 +65,7 @@
  *
  * WHAT IS ELIDED, AND WHY IT CANNOT GROW IN SILENCE. Two packages name directories on the
  * page (`.mnema/chain` and a key root); a case that ran those literals would found an
- * identity and write events inside this repository, which amarra A6 forbids. So each
+ * identity and write events inside this repository, which no case here may do. So each
  * entry declares the ELIDED PREFIX as the exact lines it stands for, and a case below
  * holds the page against it: an elision whose lines are no longer on the page is accused
  * as loudly as a page line nobody declared. A prefix given as a count rather than as text

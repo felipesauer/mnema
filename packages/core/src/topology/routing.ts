@@ -2,7 +2,7 @@
  * Routing a write to the right tree.
  *
  * A capture lands in one of three trees. The mechanism here is "given a scope,
- * open THAT tree's chain"; the policy is the L4 cascade that decides the scope
+ * open THAT tree's chain"; the policy is the cascade that decides the scope
  * when the caller does not state one:
  *
  *   1. DEFAULT by KIND — what the fact IS decides who it is for. A declaration
