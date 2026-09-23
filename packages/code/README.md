@@ -948,11 +948,15 @@ server knows which project it serves, and they stay under the 2,048 characters t
 keeps of them (`tests/the-agent-is-told-what-it-has.test.ts`,
 `tests/every-description-reaches-the-model.test.ts`).
 
-The server does **not** read the project off its working directory — a host
-spawns it with an arbitrary cwd. It discovers the project in a fixed cascade:
-`--project`, then the client's workspace roots, and finally the global tree when
-neither names a project. It never guesses a project at some cwd and never creates
-one; only `mnema init` does that.
+The server discovers the project in a fixed cascade: `--project`, then the
+client's workspace roots, then — only for a client that declares no workspace roots
+at all — the project the host's working directory is in, and finally the global tree
+when none of them names a project. A client that declares roots and lists none (a
+window with no folder open) is taken at its word: it lands on the global tree, and the
+working directory is never read for it. The line the server logs when a session opens
+says which of these it landed by, and the server never creates a project; only
+`mnema init` does that (`tests/mcp-context.test.ts`,
+`tests/a-client-that-names-no-workspace.test.ts`).
 
 The cascade runs again when the client says its workspace changed
 (`roots/list_changed`), so a folder opened mid-session becomes a project the
@@ -965,8 +969,9 @@ nothing and one that never happened would otherwise look the same.
 `--project` is how you make certain which record a session serves:
 `"args": ["mcp", "--project", "/home/you/work/api"]`. Without it the project is
 whichever workspace folder the host happens to announce first that has a
-`.mnema/` — which can be a repository you were not thinking about, answering
-about a record you never meant to ask. The path must be **absolute** (this
+`.mnema/` — or, for a host that announces none, whichever project the directory it
+started the server in belongs to — which can be a repository you were not thinking
+about, answering about a record you never meant to ask. The path must be **absolute** (this
 server's cwd is the host's, not your shell's) and it must be a project; a value
 that is neither is refused rather than passed over, because a server told which
 project to serve must not serve another instead.

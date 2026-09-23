@@ -2037,8 +2037,12 @@ export type GoverningRulesToolResult = IntelligenceResult<GoverningRules>;
  * preference.
  *
  * A RELATIVE PATH IS RESOLVED AGAINST THE PROJECT ROOT, not against a working
- * directory: a server is spawned with an arbitrary cwd by its host, so it has none to
- * mean. Read-only: the session's warm caches, the copilot's pure derivation, and one
+ * directory: a server's working directory is its host's choice, not the directory an
+ * agent wrote a path from. (It used to say the host spawns the server "with an
+ * arbitrary cwd"; the one host measured without workspace roots starts it at the
+ * workspace root, and the cascade now finds the project from it for such a client —
+ * which still does not make it where an agent's `src/...` is relative to.) Read-only:
+ * the session's warm caches, the copilot's pure derivation, and one
  * `existsSync` per address. With no project it refuses `NO_PROJECT`.
  */
 export function runGoverningRulesTool(

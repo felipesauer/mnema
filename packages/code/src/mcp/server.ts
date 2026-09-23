@@ -121,6 +121,7 @@ import {
   windowDeclaration,
   windowGloss,
 } from '../vocabulary.js';
+import type { ClientWorkspace } from './context.js';
 import { SERVER_INSTRUCTIONS } from './instructions.js';
 import { armSessionClose, type Lifecycle } from './lifecycle.js';
 import { namedProjects } from './route.js';
@@ -344,6 +345,18 @@ export interface McpServerOptions {
    * {@link resolveContext}). Absent, the project comes from the cascade.
    */
   readonly configProject?: string | undefined;
+  /**
+   * The directory the host started this server in — what the cascade walks up from for
+   * a client that declares no `roots` capability, and for no other (see
+   * {@link ClientWorkspace}). `mnema mcp` passes its own working directory.
+   *
+   * REQUIRED, with no default, and the default is what it replaces. Defaulting to this
+   * process's directory would hand a server built anywhere but the command line — a test
+   * with a sandboxed environment, most of all — a directory under a real home, where a
+   * walk-up finds whatever `.mnema/` is there. A caller has to say which directory, and a
+   * connection whose client declares `roots` never reads it.
+   */
+  readonly cwd: string;
   /** Where to write diagnostics (never stdout — that carries the protocol). */
   readonly log?: (line: string) => void;
 }
@@ -367,7 +380,7 @@ export interface McpServerOptions {
  * comment with a type annotation — and `every-tool-says-if-it-writes.test.ts` is what
  * asks it, against the tools the protocol actually lists.
  */
-export function buildMcpServer(options: McpServerOptions = {}): {
+export function buildMcpServer(options: McpServerOptions): {
   readonly server: McpServer;
   readonly connect: () => Promise<void>;
   readonly armClose: (lifecycle?: Lifecycle) => () => void;
@@ -403,18 +416,18 @@ export function buildMcpServer(options: McpServerOptions = {}): {
   /**
    * Opens the session if it is not open yet, from what the handshake exposed:
    * the client's name (the `which`, defaulted when the client announced no usable
-   * one — see {@link connectingAgent}) and its workspace roots (for the project
-   * cascade). Idempotent under concurrency — the first caller starts the open;
-   * every caller awaits the one result.
+   * one — see {@link connectingAgent}) and what it said about its workspace (for the
+   * project cascade — see {@link clientWorkspace}). Idempotent under concurrency — the
+   * first caller starts the open; every caller awaits the one result.
    */
   const ensureSession = (): Promise<Session> => {
     if (sessionPromise !== undefined) return sessionPromise;
     sessionPromise = (async () => {
       const clientName = connectingAgent(server.server.getClientVersion()?.name);
-      const roots = await listRootsSafely(server, log);
+      const workspace = await clientWorkspace(server, options.cwd, log);
       const opened = openSession({
+        ...workspace,
         clientName,
-        roots,
         env,
         log,
         ...(options.configProject !== undefined ? { configProject: options.configProject } : {}),
@@ -449,11 +462,19 @@ export function buildMcpServer(options: McpServerOptions = {}): {
       // could only state a default that does not exist — and the run line that follows
       // each first write already names the tree it opened in.
       //
+      // And BY WHICH RUNG, in the parenthesis after the project. The same project can
+      // now arrive by two roads that rest on different things — what the client said
+      // (its roots) and where the host happened to start this process (the working
+      // directory, taken only when the client said nothing) — and a line that printed
+      // the name alone would make a landing the server inferred read exactly like one
+      // the client asked for.
+      //
       // Collapsed to one line: the log is read one event per line, and a path
       // holding a newline would otherwise write a second event nothing happened in.
       log(
         oneLine(
           `session opened: project=${opened.project ?? '(none — the global tree)'} ` +
+            `(${landingOf(opened)}) ` +
             `workspaceProjects=${opened.workspaceProjects.length} ` +
             `who=${opened.who} ` +
             'runs=(none — the first write to a tree opens that tree’s run)',
@@ -508,7 +529,9 @@ export function buildMcpServer(options: McpServerOptions = {}): {
           `workspace re-read #${active.refreshes}: ${changed.gained.length} new root(s), ` +
             `${changed.learned.length} new project(s), ` +
             `${active.workspaceProjects.length} known` +
-            (changed.landedOn === undefined ? '' : `, now operating on ${changed.landedOn}`),
+            (changed.landedOn === undefined
+              ? ''
+              : `, now operating on ${changed.landedOn} (${landingOf(active)})`),
         ),
       );
     } catch (error) {
@@ -1763,21 +1786,85 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
 }
 
 /**
- * Lists the client's workspace roots, returning an empty list on any failure —
- * a client without the `roots` capability makes `listRoots` reject, which is not
- * an error here but the signal to fall back to the global tree.
+ * What the client said about its workspace — the ONE place a connection's
+ * {@link ClientWorkspace} variant is decided, at the handshake.
+ *
+ * The capability decides, and nothing else does. A client that declared `roots` gets the
+ * list it answers with, EMPTY INCLUDED: a window with no folder has said it holds no
+ * folder, and the cascade treats that as the workspace it is. Only a client that declared
+ * NO `roots` capability gets the working directory, because it is the only client for
+ * which the working directory is the one statement about a workspace there is. Deciding
+ * by the list's emptiness instead is the trap: it would hand the cwd to the first kind of
+ * client as well, and serve it the project at the cwd right after it said there is none.
+ *
+ * A client that declared `roots` and then failed to answer is still the first kind. Its
+ * declaration is a statement that its workspace is what `roots/list` says, and a failed
+ * call does not make the working directory a better answer — it makes the list empty, as
+ * it always has, and says so in the log.
+ */
+async function clientWorkspace(
+  server: McpServer,
+  cwd: string,
+  log: (line: string) => void,
+): Promise<ClientWorkspace> {
+  if (!declaresRoots(server)) return { cwd };
+  return { roots: await listRootsSafely(server, log) };
+}
+
+/** Whether the connected client declared the `roots` capability in its `initialize`. */
+function declaresRoots(server: McpServer): boolean {
+  return server.server.getClientCapabilities()?.roots !== undefined;
+}
+
+/**
+ * Lists the client's workspace roots, returning an empty list on any failure.
+ *
+ * THIS USED TO SAY that a client without the `roots` capability makes `listRoots` reject,
+ * *"which is not an error here but the signal to fall back to the global tree"*. That
+ * signal is no longer read off this list: a client without the capability is never asked
+ * (asking one rejects), and what it gets instead is decided by
+ * {@link clientWorkspace}, where the capability is read. The re-read on
+ * `roots/list_changed` still calls this directly, and for such a client it answers an
+ * empty list without asking — its session re-reads its working directory instead
+ * (`refreshWorkspace`).
  */
 async function listRootsSafely(
   server: McpServer,
   log: (line: string) => void,
 ): Promise<readonly string[]> {
-  if (server.server.getClientCapabilities()?.roots === undefined) return [];
+  if (!declaresRoots(server)) return [];
   try {
     const result = await server.server.listRoots();
     return result.roots.map((root) => root.uri);
   } catch (error) {
     log(`roots/list unavailable: ${messageOf(error)}`);
     return [];
+  }
+}
+
+/**
+ * Where a session's landing came from — the parenthesis the log prints after the project,
+ * one phrase per {@link Rung}.
+ *
+ * TOTAL OVER THE RUNG, and a rung added to the cascade does not compile until it has a
+ * phrase here: a landing the log cannot name is the silence this exists against. The two
+ * phrases that involve the working directory print it, because it is the evidence the
+ * rung used and the one input a reader of the host's log cannot see anywhere else.
+ */
+function landingOf(session: Session): string {
+  const cwd = session.cwd === undefined ? '' : oneLine(session.cwd);
+  switch (session.rung) {
+    case 'configured':
+      return 'named by --project';
+    case 'roots':
+      return "from the client's workspace roots";
+    case 'cwd':
+      return `from this server's working directory, ${cwd}: the client declared no workspace roots`;
+    case 'global':
+      return session.cwd === undefined
+        ? "no project among the client's workspace roots"
+        : 'the client declared no workspace roots, and no project is at or above ' +
+            `this server's working directory, ${cwd}`;
   }
 }
 
@@ -2037,8 +2124,19 @@ function withRunState(
 function whereThisSessionIs(session: Session): string {
   // One line, like the log line and the refusals: a directory name may hold a
   // newline, and a sentence the agent reads as one statement must not become two.
+  //
+  // A project taken from the WORKING DIRECTORY says so here as well as in the log, and
+  // this is the reader that needs it more. It is the one landing the client did not ask
+  // for — the server inferred it from where the host started the process — and whether
+  // anybody reads that host's log is the host's business; the agent reads this.
   const where =
-    session.project === undefined ? 'the machine-global tree' : oneLine(session.project);
+    session.project === undefined
+      ? 'the machine-global tree'
+      : oneLine(session.project) +
+        (session.rung === 'cwd'
+          ? ', taken from the directory the host started this server in, because the ' +
+            'client declared no workspace roots'
+          : '');
   const projects = session.workspaceProjects;
   // "knows of", because that is exactly what this is: the projects this session
   // could name. It does not claim they are all the workspace holds — a project the

@@ -798,7 +798,8 @@ $ mnema mcp --help
 |
 | Options:
 |   --project <dir>  the project to serve — an ABSOLUTE path; omitted, the project
-|                    comes from the host workspace roots
+|                    comes from the host workspace roots, or from the working
+|                    directory when the host declares none
 |   -h, --help       display help for command
 
 ### mnema repl --help

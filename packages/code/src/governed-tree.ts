@@ -58,8 +58,16 @@ export interface GovernedRead {
    *
    * The command line has a working directory and a person types a path against it,
    * so `mnema rules src/cli.ts` run inside `packages/code` means that package's
-   * file. An MCP server is spawned with an arbitrary cwd by its host, so it has no
-   * such directory to mean, and it resolves against the project root instead.
+   * file. An MCP server's working directory is the host's choice rather than the
+   * directory an agent's path was written from, so it resolves against the project
+   * root instead.
+   *
+   * THIS USED TO SAY the host spawns the server "with an arbitrary cwd". Measured on
+   * the one host that declares no workspace roots, it is the workspace root, and the
+   * server now reads it — to find the PROJECT, for such a client and no other
+   * (`mcp/context.ts`). That makes it evidence of where the host is working; it does
+   * not make it the directory a relative path in a tool call was meant from, which is
+   * the only question this field answers.
    */
   readonly from: string;
 }
