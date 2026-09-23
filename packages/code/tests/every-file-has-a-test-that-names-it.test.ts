@@ -297,8 +297,17 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * reaches `node:child_process`, `node:fs`, `node:os`, `node:path`, `node:url`, the chain and
  * the core, the SDK's client, in-memory transport and types, `vitest`, the server module,
  * and the two support modules that collect a stream and poll what it collected.
+ *
+ * It went 2804 -> 2826 when the home directory stopped being taken for a project: fourteen
+ * clauses in `the-home-is-not-a-project.test.ts`, which runs the built binary in a sandbox
+ * home and drives the server through the SDK's client — `node:child_process`,
+ * `node:crypto`, `node:fs`, `node:os`, `node:path`, `node:url`, the chain, the core and
+ * its write door, the SDK's client, in-memory transport and types, `vitest` and the server
+ * module — and eight in `not-a-project.test.ts`, the witness of the module that words it:
+ * `node:fs`, `node:os`, `node:path`, the chain, the core and its write door, `vitest`, and
+ * the module itself.
  */
-const CLAUSES_IN_THE_TREE = 2804;
+const CLAUSES_IN_THE_TREE = 2826;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -792,7 +801,7 @@ describe('every file has a test that names it', () => {
     expect(PRODUCTION).toContain('packages/code/src/wiring/index.ts');
     expect(PRODUCTION).toContain('packages/core/src/topology/index.ts');
     expect(PRODUCTION).not.toContain('packages/core/src/index.ts');
-    expect(PRODUCTION).toHaveLength(310);
+    expect(PRODUCTION).toHaveLength(311);
     expect(TEST_TREE.length).toBeGreaterThan(250);
     // No file is in both corpora, which is what keeps a test from witnessing itself.
     const tests = new Set(TEST_TREE.map((one) => one.path));
@@ -812,7 +821,7 @@ describe('every file has a test that names it', () => {
     const found = unwitnessed();
     const byReach = (reach: Reach): number =>
       [...found.values()].filter((one) => one === reach).length;
-    expect(PRODUCTION.length - found.size).toBe(238);
+    expect(PRODUCTION.length - found.size).toBe(239);
     expect(found.size).toBe(72);
     expect(byReach('nobody imports it')).toBe(72);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
