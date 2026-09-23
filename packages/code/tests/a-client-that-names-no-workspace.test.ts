@@ -204,6 +204,36 @@ describe('a client with no `roots` capability is served the project it works in'
   });
 });
 
+describe('the machine’s own data directory, reached from a workspace nobody initialized', () => {
+  it('is made WITH its key root by a session that only reads, and is never served as a project', async () => {
+    // With `$XDG_DATA_HOME` unset the global tree lives in `~/.mnema`, and a directory
+    // called `.mnema` is what a walk-up looks for — so every uninitialized workspace
+    // under home would resolve to home, a "project" whose committed tree is this
+    // machine's data. The rung refuses a `.mnema/` that holds a key root, and this is the
+    // premise that refusal stands on, asked of the product rather than assumed: the first
+    // session to touch the global tree makes the key root beside it, even one that
+    // writes nothing.
+    const home = join(sandbox, 'home');
+    env = { home };
+    const first = makePlainDir('home/code/first');
+    const second = makePlainDir('home/code/second');
+
+    const one = await connect(first);
+    await one.callTool({ name: 'bootstrap' });
+    await one.close();
+    expect(existsSync(join(home, PROJECT_DIR, 'global'))).toBe(true);
+    expect(existsSync(join(home, PROJECT_DIR, 'identity'))).toBe(true);
+
+    logged = [];
+    const two = await connect(second);
+    const said = whereItIs(await two.callTool({ name: 'bootstrap' }));
+    expect(said).toContain('operating on the machine-global tree');
+    expect(openedLine()).toContain('project=(none — the global tree)');
+    expect(openedLine()).not.toContain(`project=${home} `);
+    await two.close();
+  });
+});
+
 describe('a client that declared `roots` is served what it listed — empty included', () => {
   it('does NOT take the working directory when it listed no roots — the window with no folder', async () => {
     // THE TRAP. This client and the one above both used to reach the cascade as an empty

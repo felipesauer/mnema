@@ -303,12 +303,19 @@ export function resolveContext(input: ContextInput): ResolvedContext {
  * `roots` whose workspace was never initialized would have taken this rung straight into
  * it, and been told its writes were committed with a repository.
  *
- * Two readings, because the directory can be this environment's or another's. It is
- * this environment's when it is the parent of the key root the environment resolves.
- * It is ANOTHER environment's when it holds a key root of its own — a directory named
- * like this environment's key root, which no project tree contains: that is the shape
- * `~/.mnema` keeps after `$XDG_DATA_HOME` is set, and the shape a run with a sandboxed
- * environment finds when its working directory sits under a real home.
+ * ONE READING: the directory holds a key root — a directory named like this
+ * environment's key root, which no project tree contains. It answers for this
+ * environment's data directory and for ANOTHER environment's alike: `~/.mnema` keeps its
+ * key root after `$XDG_DATA_HOME` is set, and a run with a sandboxed environment finds
+ * the real one when its working directory sits under a real home.
+ *
+ * THERE WERE TWO, and the second — "it is the parent of the key root this environment
+ * resolves" — was a second statement of the same fact: removing it left every case
+ * green. Every path the product has that makes the data directory makes the key root in
+ * it (`mnema init`, a write, and a session that only reads — the last pinned in
+ * `a-client-that-names-no-workspace.test.ts`), so a data directory without one is not a
+ * state the product produces, and the reading that could only fire there is gone rather
+ * than kept as a guard nothing can light.
  *
  * APPLIED BY RUNG 3 ALONE. The other walk-ups — rung 2's roots, rung 1's configured
  * path, and every command-line verb — still take that directory for a project, and
@@ -320,7 +327,6 @@ export function resolveContext(input: ContextInput): ResolvedContext {
 function isAMachinesDataDir(trees: ResolvedTrees): boolean {
   const found = trees.projectPublic;
   if (found === undefined) return false;
-  if (resolve(found) === resolve(dirname(trees.keyRoot))) return true;
   return isDirectory(join(found, basename(trees.keyRoot)));
 }
 
