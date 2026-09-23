@@ -25,7 +25,9 @@
  * answered with.
  */
 
-import { readFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { PassThrough } from 'node:stream';
 import { describe, expect, it, vi } from 'vitest';
 import { buildProgram } from '../cli.js';
@@ -33,7 +35,9 @@ import { type Keystroke, keystrokesOf } from '../repl/editing.js';
 import type { Leaving } from '../repl/leaving.js';
 import { PICK } from '../repl/palette.js';
 import { standing } from '../repl/standing.js';
+import { INIT_VERB } from '../wiring/init.js';
 import type { CliIo } from '../wiring/io.js';
+import { REPL_VERB } from '../wiring/repl.js';
 import { theChoice } from './asked.js';
 import { type Door, theDoors } from './doors.js';
 import type { Screen, ScreenRequest } from './screen.js';
@@ -249,6 +253,41 @@ describe('the keystroke the product installed is the one this file presses', () 
     const [fromTheProduct] = keystrokesOf(press(`${ESC}x`));
     expect(fromTheProduct).toBeDefined();
     expect(Object.keys(press('x')).sort()).toEqual(Object.keys(fromTheProduct ?? {}).sort());
+  });
+});
+
+describe('what the first door is, asked where the question is asked', () => {
+  it('is the console in the home — where `init` refuses — and `init` in a folder under it', async () => {
+    // THE LINK FROM THE DIRECTORY TO THE DOOR. `doors.test.ts` holds what the doors are for
+    // each state it is HANDED; this holds that the state reaching them is the directory's —
+    // `standing()`, read by the product at the moment it asks. Return on the first door
+    // used to found a project in the home, the tree every folder under it then belonged to.
+    const sandbox = mkdtempSync(join(tmpdir(), 'mnema-asked-home-'));
+    const home = join(sandbox, 'home');
+    const folder = join(home, 'work');
+    mkdirSync(folder, { recursive: true });
+    const before = { cwd: process.cwd(), home: process.env.HOME, xdg: process.env.XDG_DATA_HOME };
+    process.env.HOME = home;
+    process.env.XDG_DATA_HOME = join(sandbox, 'data');
+    try {
+      process.chdir(home);
+      const inTheHome = await asking();
+      inTheHome.press(RETURN);
+      expect(await inTheHome.answered()).toEqual([REPL_VERB]);
+
+      // Non-vacuity: the same question one folder down, where a project can be founded.
+      process.chdir(folder);
+      const underIt = await asking();
+      underIt.press(RETURN);
+      expect(await underIt.answered()).toEqual([INIT_VERB]);
+    } finally {
+      process.chdir(before.cwd);
+      if (before.home === undefined) delete process.env.HOME;
+      else process.env.HOME = before.home;
+      if (before.xdg === undefined) delete process.env.XDG_DATA_HOME;
+      else process.env.XDG_DATA_HOME = before.xdg;
+      rmSync(sandbox, { recursive: true, force: true });
+    }
   });
 });
 

@@ -197,6 +197,12 @@ export function discover(cwd: string, env: DiscoveryEnv): Discovery {
  * passed over and the walk goes on, because it holds no project and whatever lies above it
  * is still the nearest one.
  *
+ * It is ONE reading, and it was two when it lived in the server's working-directory rung:
+ * the second — "it is the parent of the key root this environment resolves" — was a second
+ * statement of the same fact, and removing it left every case green, so it was dropped
+ * rather than kept as a guard nothing can light. That rung's own guard is gone now; this is
+ * where the reading lives, for every rung and every verb.
+ *
  * WHAT NEITHER READING REACHES, declared rather than guessed at: a project-shaped
  * `.mnema/` in the home of someone OTHER than the environment asking — a sandboxed run
  * under a real home whose `~/.mnema` a stray `init` made — looks like any project from

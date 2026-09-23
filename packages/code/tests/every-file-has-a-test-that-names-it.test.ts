@@ -305,9 +305,11 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * its write door, the SDK's client, in-memory transport and types, `vitest` and the server
  * module — and eight in `not-a-project.test.ts`, the witness of the module that words it:
  * `node:fs`, `node:os`, `node:path`, the chain, the core and its write door, `vitest`, and
- * the module itself.
+ * the module itself. Then 2826 -> 2830, in the same delivery, when a mutation of `standing()`
+ * lit nothing and `asked.test.ts` began asking the question from inside a sandbox home:
+ * `node:os` and `node:path` for the sandbox, and the two verb names it expects back.
  */
-const CLAUSES_IN_THE_TREE = 2826;
+const CLAUSES_IN_THE_TREE = 2830;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
