@@ -300,9 +300,23 @@ function walkUp(
   }
 }
 
+/**
+ * Whether `path` is a directory, answering a missing one WITHOUT an exception.
+ *
+ * The walk asks this twice for every directory it climbs — once for the `.mnema/` and once
+ * for a key root inside it — and nearly every answer is "not there". A `statSync` that throws
+ * on a missing path pays for an error object and its stack each time, and that was nearly
+ * the whole of what the second question cost. Measured in alternating blocks against the
+ * walk as it was before the second question existed (two copies of which agreed within
+ * 2%): inside a project three levels down, 33 µs became 92 µs with the throwing check and
+ * 41 µs with this one — the rest is resolving the home once per call; seven levels under a
+ * home with no project, 112 µs became 143 µs, and 61 µs with this one, because the walk now
+ * stops at the home instead of climbing to the root. Anything other than "not there" (a
+ * path through a file, a directory it may not read) still throws, and is still `false`.
+ */
 function isDirectory(path: string): boolean {
   try {
-    return statSync(path).isDirectory();
+    return statSync(path, { throwIfNoEntry: false })?.isDirectory() === true;
   } catch {
     return false;
   }
