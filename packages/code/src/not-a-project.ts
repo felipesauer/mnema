@@ -5,10 +5,10 @@
  * The walk that finds a project passes over two kinds of `.mnema/`: the home directory's,
  * and any machine's data directory (`whyNoProjectRootAt`, `@mnema/core`). Passing one over
  * is right, and it is also a change a person can be caught by. A home's `.mnema/` can hold
- * events written there before the walk learned to pass it — this machine had one, with a
- * task in it, created from a folder under the home — and a walk that went by in silence
- * would make those events vanish from every answer that used to carry them, with nothing
- * anywhere saying where they went.
+ * events written there before the walk learned to pass it — a machine this was built on had
+ * one, with a task in it, created from a folder under the home — and a walk that went by in
+ * silence would make those events vanish from every answer that used to carry them, with
+ * nothing anywhere saying where they went.
  *
  * SO IT SAYS: that the tree is there, where, why it is not a project, and how many events
  * it holds. It does not say what to do with them. Importing them into the project they

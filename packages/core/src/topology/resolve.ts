@@ -97,9 +97,9 @@ export interface PassedOverTree {
  *
  * The second half exists because passing over a tree is not the same as its not being
  * there. A `.mnema/` in a home can hold events written there before the walk learned to
- * pass it by — this machine had one, with a task in it — and a walk that went past it in
- * silence would make those events vanish from every answer without a word. Nothing here
- * reads them; the list says where they are, so a surface can tell the person.
+ * pass it by — a machine this was built on had one, with a task in it — and a walk that
+ * went past it in silence would make those events vanish from every answer without a word.
+ * Nothing here reads them; the list says where they are, so a surface can tell the person.
  */
 export interface Discovery {
   /** The trees the working directory resolves to — {@link resolveTrees}'s whole answer. */
