@@ -2,7 +2,9 @@
  * The mnema MCP server: a thin transport over the session and the tool adapters.
  *
  * The SDK does the protocol — the handshake, the tool dispatch, the JSON-RPC
- * envelope; this file only wires. It builds the server, registers the tools
+ * envelope; this file only wires. It builds the server — announcing, in the handshake, the
+ * `instructions` a client reads before it has chosen any tool ({@link ./instructions.js})
+ * — registers the tools
  * (each delegating to a pure adapter in {@link ./tools.js}), opens a session
  * once the handshake has run (so `clientInfo` and the client's roots are
  * available), and closes that session's run when the connection ends. There is
@@ -119,6 +121,7 @@ import {
   windowDeclaration,
   windowGloss,
 } from '../vocabulary.js';
+import { SERVER_INSTRUCTIONS } from './instructions.js';
 import { armSessionClose, type Lifecycle } from './lifecycle.js';
 import { namedProjects } from './route.js';
 import { closeSession, openSession, refreshWorkspace, type Session } from './session.js';
@@ -373,7 +376,13 @@ export function buildMcpServer(options: McpServerOptions = {}): {
   const env = options.env ?? discoveryEnv();
   const log = options.log ?? ((line) => process.stderr.write(`${line}\n`));
 
-  const server = new McpServer({ name: SERVER_NAME, version: VERSION });
+  // The instructions go in the handshake, which is the one place a server can say what its
+  // tools are for before any of them is chosen — see `instructions.ts` for why that is the
+  // place this product had never used, and what the text may and may not claim.
+  const server = new McpServer(
+    { name: SERVER_NAME, version: VERSION },
+    { instructions: SERVER_INSTRUCTIONS },
+  );
 
   // The one piece of per-connection state: the session. It is OPENED once — where
   // it reads is re-resolved on notice, see the roots handler below — and the

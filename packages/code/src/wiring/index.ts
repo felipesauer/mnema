@@ -161,11 +161,13 @@
  * rather than discovered, because a CLI has no host to announce a workspace and a verb
  * that walked the disk would be guessing which projects the auditor meant.
  *
- * And `brief`, which is a family of one and reads unlike all of them: every verb
- * above answers whoever ran it, and this one composes a FILE for a reader that never
- * asked. `mnema brief > AGENTS.md` puts the decisions in force and the adopted
- * patterns where an agent host reads them on its own, so the record reaches an agent
- * that did not think to look for it. It is also the read that deliberately does NOT
+ * And `brief`, which reads unlike all of them: every verb above answers whoever ran it,
+ * and this one composes a document for a reader that never asked — the session that
+ * opens, through the plugin, or through a file the host reads. This sentence used to say
+ * that `mnema brief > AGENTS.md` put the record "where an agent host reads it on its
+ * own", and the host the plugin is for reads an `AGENTS.md` only from 2.1.277 and only
+ * where no `CLAUDE.md` exists; which file reaches a session is the host's to decide, and
+ * the verb's help now says so. It is also the read that deliberately does NOT
  * fold the union: the file is written to be committed, so it carries the public
  * tree alone — what a clone gets — and the document says so, because a governance
  * document that quietly omits a rule is read as the whole of what governs. It is the
@@ -177,6 +179,13 @@
  * STABLE for an unchanged record, which is what lets that `diff` mean "the copy is
  * stale" and nothing else. It writes nothing, like every read here; the redirection
  * belongs to whoever operates it.
+ *
+ * `recall` IS THE SECOND OF THAT KIND, and it is the mirror of `brief` in the one respect
+ * that makes both necessary. It composes the NOTES a session opens with — the latest
+ * memories and observations — and it reads EVERY tree, because an agent's note lands in the
+ * tree that does not travel, which is exactly the tree `brief` may not carry. So one of the
+ * two is a committed document and never machine-local, and the other is machine-local and
+ * never a file; neither can be a flag of the other without breaking the half it is for.
  *
  * And the LAST THREE read no record at all, because they are not about one: they are the
  * three DOORS onto everything above them. `mcp` serves this surface to an agent host;
@@ -222,6 +231,7 @@ import { registerMcp } from './mcp.js';
 import { registerMemory } from './memory.js';
 import { registerNextActions } from './next-actions.js';
 import { registerObserve } from './observe.js';
+import { registerRecall } from './recall.js';
 import { registerReferences } from './refs.js';
 import { registerRepl } from './repl.js';
 import { registerResume } from './resume.js';
@@ -269,6 +279,7 @@ export const VERBS: readonly Verb[] = [
   registerSkills,
   registerUsage,
   registerBrief,
+  registerRecall,
   registerKey,
   registerTail,
   registerWitness,

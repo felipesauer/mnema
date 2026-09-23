@@ -13,11 +13,13 @@
  * muteness lives here, in the plugin, and the verb stays exactly as it is: a command a
  * person typed is a command that owes that person an answer, including a refusal.
  *
- * THIS HANDLER NEVER BLOCKS AND NEVER FAILS LOUD, AND THAT IS STILL TRUE. Every
- * outcome that is not a document is silence and exit 0 — no project here, no `mnema`
- * on the PATH, a record that will not read. Asserted in
- * `packages/code/tests/the-record-arrives-unasked.test.ts` ("says nothing at all where
- * there is no project").
+ * THIS HANDLER NEVER BLOCKS AND NEVER FAILS LOUD, AND THAT IS STILL TRUE — and the rule
+ * that makes it so is no longer written here. It lives in `hand-over.mjs`, beside the spawn,
+ * because a second handler now hands a session what a verb prints (`session-recall.mjs`,
+ * the notes) and two copies of one rule are the shape that drifts. Every outcome that is not
+ * a document is silence and exit 0 — no project here, no `mnema` on the PATH, a record that
+ * will not read — and asserted in `packages/code/tests/the-record-arrives-unasked.test.ts`
+ * ("says nothing at all where there is no project").
  *
  * THE REASON UNDER THAT USED TO BE WIDER THAN THE MEASUREMENT IT CAME FROM, and it is
  * narrowed rather than dropped. It read: *"A hook is not a place to diagnose: the
@@ -26,19 +28,9 @@
  * record in it, where the verb has nothing to say and says it on stderr with exit 1, so
  * a handler wired straight to the verb would put a refusal into every session of every
  * project on the machine of whoever installs this. That case is untouched and the
- * silence is still exit-code-gated.
- *
- * WHAT IT NEVER COVERED IS A RECORD THAT DOES NOT CHAIN, and the three outcomes measured
- * on the built binary are what separate the two: outside a project the verb exits 1 with
- * 47 bytes of refusal on stderr; over a SOUND
- * record it exits 0 with an empty stderr; over a record whose tails stop chaining it
- * exits 0 and the notice is on stderr. So with exit 0 the second stream holds bytes only
- * when there is something to say about the RECORD — and those bytes are not a diagnosis
- * this file made up, they are the product's own, written by the same invocation, in the
- * one place that words them (`packages/code/src/record-integrity.ts`). Dropping them was
- * the document telling an agent what governs the work while the proof behind it had
- * failed. Asserted in the same file ("says that the record does not chain, when it does
- * not").
+ * silence is still exit-code-gated. What it never covered is a record that does not
+ * chain, and what the same run says about that goes over under the document — see
+ * `hand-over.mjs` for the three outcomes that separate the two, measured on the binary.
  *
  * THE REASON THAT USED TO STAND HERE IS FALSE — rewritten rather than deleted, because
  * it was read as doctrine and became one. It said: "`PreToolUse` — the one surface of
@@ -52,22 +44,13 @@
  * what the arm carrying NO record scored — against 8/8 for an arm that injected the
  * same knowledge unasked. The foundation now says mnema governs the work with proof,
  * under six ties (G1-G6). None of that is in this file, and none of it changes a byte
- * of it: the event set lives in `hooks.json` and it names ONE event, which is what the
- * case "runs `mnema brief`, and nothing else" holds.
+ * of it: the event set lives in `hooks.json`, and what every declared command runs is
+ * held by the case "runs only verbs that read, and names each one".
  *
  * IT DECIDES NOTHING ABOUT WHAT THE AGENT READS. The document goes over BYTE FOR
- * BYTE — no preamble of THIS FILE's, no cut. A second place deciding what governs the
- * work is a second place that can come to disagree with the record, and the whole
- * point of the file is that it IS the record. Asserted in the same test ("hands over
- * exactly what the verb prints").
- *
- * AND THAT IS NOW TRUE OF BOTH STREAMS THE VERB WROTE, which is the one thing about this
- * sentence that changed. What goes over is stdout, and under it whatever the same run put
- * on stderr — byte for byte again, with a blank line between them and not a word of this
- * file's. The ORDER is the product's own rule and not a choice made here: the MCP puts the
- * answer first and the record's own state under it, because the state qualifies the whole
- * reply (`packages/code/src/mcp/server.ts`, `replied`). A document with no second stream
- * behind it is unchanged, byte for byte, which is every document over a sound record.
+ * BYTE — no preamble of THIS FILE's, no cut — and so does whatever the same run said about
+ * the record on its second stream. Asserted in the same test ("hands over exactly what the
+ * verb prints"); the rule is `hand-over.mjs`'s, and this file is one call to it.
  *
  * IT IS A CHANNEL, AND THE CHANNEL IS DECLARED — {@link MODEL_CHANNEL}. This line used
  * to read "no framing", which was true of what this handler ADDS and was read as a
@@ -82,8 +65,8 @@
  * will be a rule matched to a prompt or to a path, and it must not arrive bare.
  *
  * IT IS SWITCHABLE, AND THAT COST THIS FILE NOTHING — which is the whole reason the note is
- * here rather than in a branch. The document is one of the two places this product puts the
- * record in front of a model unasked, and both can be switched off with the switching
+ * here rather than in a branch. The document is one of the places this product puts the
+ * record in front of a model unasked, and each of them can be switched off with the switching
  * recorded (`mnema switch`). Off, the verb refuses on stderr and exits non-zero — and every
  * non-zero outcome here was already silence, by the rule above. So a session whose document
  * was switched off opens with nothing added, and not one byte of this handler decides that.
@@ -96,8 +79,6 @@
  * NAMES, not bodies. The argument behind a decision and the text of a pattern come
  * from the agent asking, through the MCP server this same plugin declares.
  */
-
-import { spawnSync } from 'node:child_process';
 
 /** The event this handler answers, echoed back so the host can route the reply. */
 const HOOK_EVENT = 'SessionStart';
@@ -115,74 +96,12 @@ const HOOK_EVENT = 'SessionStart';
  */
 export const MODEL_CHANNEL = 'brief-document';
 
-/**
- * The command line to run.
- *
- * The `.cmd` on Windows is npm's own shim name, and it is INTENTION rather than an
- * assertion: nothing here has been run on Windows. If the guess is wrong the spawn
- * fails, and a failed spawn is silence — the plugin does nothing instead of doing
- * something wrong.
- */
-const BINARY = process.platform === 'win32' ? 'mnema.cmd' : 'mnema';
-
-/**
- * Where the session is, from the host's own environment.
- *
- * `CLAUDE_PROJECT_DIR` is the project root the host announces to every command hook.
- * Nothing is read from stdin: this handler needs no input, and a reader waiting on a
- * pipe the host may not close is a session that opens late for no gain.
- */
-function whereTheSessionIs() {
-  const named = process.env.CLAUDE_PROJECT_DIR;
-  return named !== undefined && named !== '' ? named : process.cwd();
-}
-
-/** What separates the document from what the same run said about the record under it. */
-const BETWEEN_THE_STREAMS = '\n\n';
-
-/**
- * What the record has to say here, or `null` when it has nothing.
- *
- * `null` is every silent outcome collapsed into one value, so there is ONE gate above
- * and a single place to remove if this plugin ever stopped being quiet.
- *
- * BOTH STREAMS ARE KEPT AND THE EXIT CODE IS WHAT PICKS, which is the whole of the
- * change and the reason it costs nothing. `stderr` used to be dropped at the spawn, on
- * a reason addressed to the case where the verb REFUSES — and a refusal arrives with a
- * non-zero status, which is already this function's `null`. So the stream is only ever
- * read on the path where the verb succeeded, and on that path it is empty unless the
- * record itself has something to say (see the note at the top of this file).
- *
- * @param {string} cwd Where to run the verb — the host's project directory, or this
- *   process's own when the host announced none.
- * @returns {string | null}
- */
-function theDocument(cwd) {
-  const ran = spawnSync(BINARY, ['brief'], {
-    cwd,
-    encoding: 'utf-8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  // EVERY NON-ZERO OUTCOME IS STILL SILENCE, and the refusal on stderr goes with it: it
-  // is addressed to a person who typed a verb, and nobody typed this one.
-  if (ran.error !== undefined || ran.status !== 0) return null;
-  const document = ran.stdout ?? '';
-  if (document.trim() === '') return null;
-  const alsoSaid = (ran.stderr ?? '').trim();
-  return alsoSaid === '' ? document : `${document}${BETWEEN_THE_STREAMS}${alsoSaid}`;
-}
-
-function main() {
-  const document = theDocument(whereTheSessionIs());
-  if (document === null) return;
-  const reply = {
-    hookSpecificOutput: { hookEventName: HOOK_EVENT, additionalContext: document },
-  };
-  process.stdout.write(`${JSON.stringify(reply)}\n`);
-}
-
 try {
-  main();
+  // Imported INSIDE the guard, so that even a plugin directory missing its sibling module
+  // is a session opened with nothing added rather than a hook error in front of a person.
+  const { reply, whatTheVerbSays, whereTheSessionIs } = await import('./hand-over.mjs');
+  const document = whatTheVerbSays('brief', whereTheSessionIs());
+  if (document !== null) process.stdout.write(reply(HOOK_EVENT, document));
 } catch {
   // Silence, deliberately and with nothing to add: the one thing this handler must
   // never do is make somebody else's session worse than it would have been without

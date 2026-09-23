@@ -2,9 +2,11 @@
  * brief: everything that governs the work here, in one answer.
  *
  * Every other read in this layer is asked for. This one exists to be served
- * WITHOUT being asked: what it composes is meant to reach an agent through a file
- * the host reads on its own — `AGENTS.md`, `CLAUDE.md` — so the record arrives
- * whether or not the agent thought to look for it. The measured weakness it
+ * WITHOUT being asked: what it composes reaches an agent as a session opens — through
+ * the plugin, or through a file the host reads — so the record arrives whether or not
+ * the agent thought to look for it. (This named `AGENTS.md` and `CLAUDE.md` as files
+ * "the host reads on its own"; the host the plugin is for reads an `AGENTS.md` only
+ * where no `CLAUDE.md` exists, and which file reaches a session is the host's to say.) The measured weakness it
  * answers is that adoption depended on the agent going looking, and a record it
  * never opened is indistinguishable from an empty one.
  *

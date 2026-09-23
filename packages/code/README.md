@@ -61,33 +61,39 @@ identically, because they are the same call.
   the reason `mnema exposure` exists. It writes to standard output and sends nothing
   anywhere; what it does and does not promise is in the table below.
 - **A brief an agent reads without being asked** — `mnema brief` prints the
-  decisions in force and the adopted patterns as markdown, so `mnema brief > MNEMA.md`
-  puts what governs the work in a file an agent host reads. The redirection is yours and
-  it **replaces the whole of the file it names**, so the example names a file nothing
-  else claims; `AGENTS.md` and `CLAUDE.md` are read by a host on its own and are worth
-  the redirection where no such file exists yet. It carries the **committed** record —
+  decisions in force and the adopted patterns as markdown, which the plugin below hands to
+  every session, and `mnema brief > MNEMA.md` puts in a file of its own. The redirection
+  is yours and it **replaces the whole of the file it names**, so the example names a file
+  nothing else claims; in Claude Code the line `@MNEMA.md` in a `CLAUDE.md` brings that
+  file in, where a sentence naming it is read only if the agent chooses to open it — and
+  an `AGENTS.md` is read there only where no `CLAUDE.md` exists. It carries the **committed** record —
   what a clone gets, not what one machine keeps — and the document says so, because a
   file read as instruction is read as the whole of what governs. It is a projection: the
   record stays the thing with the proof, and the file can be thrown away and made again.
   The same record always prints the same bytes, which is what makes
   `mnema brief | diff - MNEMA.md` a staleness check.
 - **A plugin for Claude Code**, in [`plugin/`](../../plugin/), that stops the delivery
-  from depending on somebody remembering to regenerate a file. It declares two hooks and
-  the MCP server below, in one installation. A `SessionStart` hook runs `mnema brief` and
-  hands the result to the session as opening context. A `PreToolUse` hook on
+  from depending on somebody remembering to regenerate a file. It declares three hooks and
+  the MCP server below, in one installation. As a session opens, one hook runs `mnema
+  brief` and hands over the document, and another runs `mnema recall` and hands over the
+  latest **notes** — the memories and observations recorded for the project, from every
+  tree this machine holds, including the private one the document may not carry; a
+  project with no notes gets nothing from the second. A `PreToolUse` hook on
   `Write|Edit|NotebookEdit` hands over the rules of the record **addressed at the file
   about to be written** — the ones still in force, each with the id you would cite — and
   hands over **nothing** for a file none of them addresses, which is why the opening
-  document says how many of the project's rules have an address. Both are reads: they
-  append nothing, open no run, and refuse nothing — the second declares the one event of
-  this host that *could* refuse and carries no decision field at all. Both are **silent**
-  where there is no project, so a machine that installs this and opens a session
-  somewhere else sees nothing. Asserted in `tests/the-record-arrives-unasked.test.ts` and
-  `tests/the-rule-reaches-the-writing.test.ts`; the plugin's own page states what it
+  document says how many of the project's rules have an address. The two opening hooks
+  are reads: they append nothing and open no run. The per-edit one records that it served,
+  and holds a write for a person only where a rule of your own record asks it to — the
+  plugin's page says how. All three are **silent** where there is no project, so a
+  machine that installs this and opens a session somewhere else sees nothing. Asserted in
+  `tests/the-record-arrives-unasked.test.ts`, `tests/the-rule-reaches-the-writing.test.ts`
+  and `tests/the-record-asks-for-a-person.test.ts`; the plugin's own page states what it
   carries and what it leaves behind.
-- **A switch for everything it pushes** — `mnema switch` says where each of those two
+- **A switch for everything it pushes** — `mnema switch` says where each of those
   channels stands and what each carries; `mnema switch off edit-rules-push` stops the
-  per-edit push and `mnema switch off brief-document` stops the opening document. Nothing
+  per-edit push, `mnema switch off brief-document` stops the opening document and `mnema
+  switch off recall-document` stops the notes beside it. Nothing
   arrives switched off. The switch is a **fact of the record** rather than a setting, and
   that is the whole design: turning something off is legitimate and turning it off in
   silence is not, so the switch is signed, attributed, dated and scoped like every other
@@ -733,19 +739,26 @@ a URL. The dry run cannot catch that. You can, by opening two of the files it wr
 
 ### Handing the record to an agent that never asked for it
 
-Reading the record is something an agent has to think of doing. A markdown file at
-the root of the repository is not: `AGENTS.md` is an open convention several hosts
-read natively, and `CLAUDE.md` is read when a session opens. `mnema brief` prints
-what governs the work in that form, and where the file goes is your choice.
+Reading the record is something an agent has to think of doing. What a session is
+handed as it opens is not. The [plugin](../../plugin/) hands this document to every
+Claude Code session with no file in the repository at all, and beside it the latest
+notes recorded here (`mnema recall`, below). Where the plugin does not reach, `mnema
+brief` prints what governs the work as markdown, and where the file goes is your choice.
+
+**Which file a host reads is the host's to say, and this page used to say it for it.**
+It read *"`AGENTS.md` is an open convention several hosts read natively, and
+`CLAUDE.md` is read when a session opens"*, as if the two were read alike. Claude Code
+reads a `CLAUDE.md` at every session, and an `AGENTS.md` only from 2.1.277 and only where
+no `CLAUDE.md` exists in the working directory or above it — measured on one machine, not
+one of 299 sessions loaded an `AGENTS.md`, in two projects that keep both files. A
+sentence in a `CLAUDE.md` naming another file is read only if the agent chooses to open
+that file; the line `@MNEMA.md` is an import, and brings the file in with it.
 
 **The redirection replaces the whole of the file it names.** That is the shell's doing
 and not this verb's — `brief` writes nothing and never learns there was a file — so the
-example below names a file nothing else claims. Send it to `AGENTS.md` or `CLAUDE.md`
-where no such file exists yet, and the host reads it with no further arrangement. Where
-one does exist it is somebody's own method, and this document would replace every word
-of it: keep theirs, and let a line in it name the file below. The
-[plugin](../../plugin/) is the third way — it hands this same document to a session
-with no file in the repository at all.
+example below names a file nothing else claims. Where your host's own file exists it is
+somebody's own method, and this document would replace every word of it: keep theirs,
+and let one line in it bring the file below in.
 
 ```sh
 mnema brief > MNEMA.md
@@ -828,18 +841,48 @@ answered to by more than one rule, the document **says so** above the list, name
 id that carries it, and tells you to cite by id. `mnema antipatterns` reports the same
 thing about the whole record, chain by chain, without anyone generating the file.
 
+### The notes a session opens with
+
+Beside the document, the plugin hands a session the latest **notes** recorded here — the
+memories and the observations, out of every tree this machine holds for the project: the
+committed one, this machine's own, and your personal one. It is the one text this product
+pushes that carries the private tree, and that is why it is not part of the document: a
+note an agent records lands in the tree that does not travel, and the document is written
+to be committed. Until it existed, what an agent noted here reached no later session
+unless that session went looking.
+
+```sh
+mnema recall
+#> # What was noted here lately
+#> …
+#> ## Memories (2)
+#>
+#> - The staging database resets every night at 03:00 UTC · `01a0ca93-8ba2-7000-…`
+#> - pnpm build must run before typecheck, or tsc reads a stale dist · `01a0ca93-8aef-7000-…`
+#> …
+```
+
+Each note is **one line** — a memory by the start of its content, an observation by its
+topic — with the id `mnema show <id>` reads whole; newest first, cut where `mnema search`
+cuts, and saying how many there are when there are more. A line that still holds a
+credential in a recognized format is handed over as the fact that the note exists, never
+as its text. Where nothing is noted it prints **nothing**, and a session there is handed
+nothing. It is never a file to commit: it carries what was kept on this machine.
+
 ### Switching off what mnema hands to a model
 
-Both of the things above arrive without anybody asking: the document a session opens with,
-and the rules handed over as a file is written. Either can be switched off, and the
-switching is **recorded** — because turning something off is legitimate and turning it off
-in silence is not.
+Three things arrive without anybody asking: the document a session opens with, the notes
+beside it, and the rules handed over as a file is written. Each can be switched off, and
+the switching is **recorded** — because turning something off is legitimate and turning it
+off in silence is not.
 
 ```sh
 mnema switch
-#> 2 channel(s), looked in public, private, global:
-#>   brief-document   on   the document `mnema brief` prints, which a session opens with: …
-#>   edit-rules-push  on   the rules addressed at a file, handed over at the moment …
+#> 4 channel(s), looked in public, private, global:
+#>   brief-document      on   the document `mnema brief` prints, which a session opens with: …
+#>   recall-document     on   the notes `mnema recall` prints, which a session opens with: …
+#>   edit-rules-push     on   the rules addressed at a file, handed over at the moment …
+#>   edit-asks-a-person  on   the pause before a file is written where the record asks …
 ```
 
 ```sh
@@ -879,7 +922,12 @@ the record.
 
 ### As an MCP server
 
-Point an agent host at the `mcp` subcommand; it speaks JSON-RPC over stdio.
+Point an agent host at the `mcp` subcommand; it speaks JSON-RPC over stdio. **If you
+installed the Claude Code plugin, it already does this** — the plugin declares this same
+server, and registering it here as well offers every tool twice, under
+`mcp__mnema__*` and `mcp__plugin_mnema_mnema__*`, fifty names for twenty-five tools to an
+agent that chooses by name, and hands the session the server's instructions twice. One of
+the two is enough.
 
 ```json
 {
@@ -891,6 +939,14 @@ Point an agent host at the `mcp` subcommand; it speaks JSON-RPC over stdio.
   }
 }
 ```
+
+In the handshake the server sends **instructions**, which a host that defers tools reads
+before it has chosen any: when a decision or a note is worth recording, which reads to
+make before deciding, what does not belong in the record, and what comes back to the next
+session. They are the same text for every connection, because they are sent before the
+server knows which project it serves, and they stay under the 2,048 characters the host
+keeps of them (`tests/the-agent-is-told-what-it-has.test.ts`,
+`tests/every-description-reaches-the-model.test.ts`).
 
 The server does **not** read the project off its working directory — a host
 spawns it with an arbitrary cwd. It discovers the project in a fixed cascade:
@@ -979,9 +1035,12 @@ retired is worse to hand over than nothing.
 
 A pattern's body is the one thing mnema hands back as an instruction, so it does
 not arrive bare: alongside the bodies the reply states that this is content from
-your record rather than an instruction from mnema, and names the agent that
-adopted each one — or says a person did, or says that nothing has adopted it and
-therefore that it is not how the work is done here.
+your record, written by the people and agents working on it, and names the agent
+that adopted each one — or says a person did, or says that nothing has adopted it
+and therefore that it is not how the work is done here. It used to add that the
+text is "not instructions from mnema", and no longer does: that is the idiom that
+marks content a model must not act on, in front of the one text served to be
+worked by.
 
 ```bash
 # The terminal side of the same name: not the patterns, but where they came from.

@@ -36,6 +36,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { briefDocument } from '../src/presentation/brief.js';
+import { recallDocument } from '../src/presentation/recall.js';
 import {
   DECLARES_MODEL_CHANNEL,
   FRAMED_CHANNELS,
@@ -46,7 +47,7 @@ import {
   tellsWhatToDo,
   UNFRAMED_CHANNELS,
 } from '../src/record-framing.js';
-import { patternsFraming } from '../src/served-patterns.js';
+import { patternsFraming, SERVED_PATTERN_CONTRACT } from '../src/served-patterns.js';
 
 /** The repository root: `packages/code/tests/` is three levels under it. */
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
@@ -65,9 +66,25 @@ const READS_GOLDEN = join(REPO, 'packages', 'code', 'src', 'cli.reads.golden.txt
  * the "one place" case assert that a string equals itself; what has to be checked is
  * that these WORDS appear in one source file, and a literal is the only form of that
  * assertion that can fail for a reason.
+ *
+ * IT ENDED ", not instructions from mnema." AND IT DOES NOT NOW. The authorship half is
+ * what the product can stand behind and it is kept; the negation was the idiom that marks
+ * text a model must not act on, and it went — see {@link SAYS_WHAT_IT_IS_NOT} for the
+ * case that keeps it from coming back on any channel.
  */
-const THE_CLAIM =
-  'They are text the people and agents working on it wrote, not instructions from mnema.';
+const THE_CLAIM = 'They are text the people and agents working on it wrote.';
+
+/**
+ * What a framing would say if it went back to declaring what its text is NOT.
+ *
+ * "Data, not instructions" is the construction the ecosystem uses to mark content a model
+ * must ignore — the defence against prompt injection — and the product's declaration used
+ * to end in it, meaning authorship and reading, to the reader it lands in front of, as
+ * "do not act on this". The pattern is narrow on purpose: it names the idiom and not
+ * every "not" a sentence could hold, because "a pattern that is not adopted" is a fact the
+ * framing around a candidate must be free to state.
+ */
+const SAYS_WHAT_IT_IS_NOT = /\bnot (an? )?instructions?\b/i;
 
 /**
  * What a handler writes when it puts something in front of a model.
@@ -213,6 +230,26 @@ describe('one declaration, and one place that decides it', () => {
       asksAPerson: { channel: 'edit-asks-a-person', on: true },
     });
     for (const line of recordFraming('brief-document')) expect(document).toContain(line);
+
+    // And the notes, which carry the same claim under the subject they served.
+    const noted = { hits: [], total: 0 };
+    const recalled = recallDocument({
+      memories: {
+        hits: [
+          {
+            id: 'mem-1',
+            kind: 'memory',
+            scope: 'private',
+            at: '2026-09-22T00:00:00.000Z',
+            title: 'the build reads a stale dist',
+            derived: true,
+          },
+        ],
+        total: 1,
+      },
+      observations: noted,
+    });
+    for (const line of recordFraming('recall-document')) expect(recalled).toContain(line);
   });
 
   it('says why, for every channel that carries no declaration', () => {
@@ -263,6 +300,29 @@ describe('the framing says what the text is, never what to do about it', () => {
     }
   });
 
+  it('says what the text IS and never what it is NOT, on every framed channel', () => {
+    // The inversion this sentence went through, held in both directions. The case that
+    // asserts the new words is above; this is the one that goes red if the old clause is
+    // written back, on any channel — and on the tool description that carried a second
+    // copy of the same idiom, which is the site a search for the framing's own constant
+    // would never have found.
+    for (const channel of FRAMED_CHANNELS) {
+      expect(recordFramingBlock(channel), channel).not.toMatch(SAYS_WHAT_IT_IS_NOT);
+    }
+    expect(SERVED_PATTERN_CONTRACT).not.toMatch(SAYS_WHAT_IT_IS_NOT);
+    // The pattern's own probe, so a regex that stopped matching is red here rather than
+    // an absence that holds over anything: the two sentences this delivery changed, as
+    // they read before it.
+    expect(
+      'They are text the people and agents working on it wrote, not instructions from mnema.',
+    ).toMatch(SAYS_WHAT_IT_IS_NOT);
+    expect('It is not an instruction from mnema; mnema records it.').toMatch(SAYS_WHAT_IT_IS_NOT);
+    // And the facts it must leave alone.
+    expect('A pattern above that is not adopted is one this project has not ruled on.').not.toMatch(
+      SAYS_WHAT_IT_IS_NOT,
+    );
+  });
+
   it('lets a reader be told where the rest of the record is', () => {
     // The line this guard must NOT cross. "Ask `skills` for the id" is navigation of
     // this product's own doors; it is not an opinion about somebody else's code, and a
@@ -302,7 +362,15 @@ describe('every handler that pushes declares the channel it carries', () => {
     }
     // And at least one handler WAS asked. Without this the case is green on a plugin
     // whose handlers all stopped writing, which is the shape a broken enumeration has.
-    expect(named).toEqual(['session-start.mjs:brief-document']);
+    // TWO now, one per text a session opens with; the module they share (`hand-over.mjs`)
+    // answers with text and writes nothing out, so it is walked and not asked — which is
+    // what keeps the rule that decides silence in ONE file without giving that file a
+    // channel it does not carry.
+    expect(named).toEqual([
+      'session-recall.mjs:recall-document',
+      'session-start.mjs:brief-document',
+    ]);
+    expect(handlers()).toContain('hand-over.mjs');
   });
 
   it('rules on every hook the plugin declares, whatever its TYPE', () => {
@@ -344,6 +412,7 @@ describe('every handler that pushes declares the channel it carries', () => {
     }
     expect(ruled).toEqual([
       'SessionStart:command:session-start.mjs',
+      'SessionStart:command:session-recall.mjs',
       'PreToolUse:mcp_tool:rules_before_an_edit:edit-rules-push+edit-asks-a-person',
     ]);
   });
@@ -386,16 +455,21 @@ describe('every handler that pushes declares the channel it carries', () => {
 });
 
 describe('what goes to a PERSON does not speak as if to a model', () => {
-  it('prints the declaration under exactly one verb of the command line', () => {
+  it('prints the declaration under the verbs whose output a model reads, and no other', () => {
     // The other half of the rule, and the half nobody looks for: the framing belongs to
-    // a channel a MODEL reads, and `mnema brief` is the only read whose output is
-    // written for one. A terminal answer that started declaring itself would be this
-    // surface talking past the person who typed the verb.
+    // a channel a MODEL reads, and a terminal answer that started declaring itself would
+    // be this surface talking past the person who typed the verb. It was ONE verb, `mnema
+    // brief`; `mnema recall` is the second, and for the same reason — its whole output is
+    // the text a session opens with — so the list is the two producers of what a session is
+    // handed, and a third verb that began declaring itself is red here by its name.
     const blocks = printedByVerb();
     expect(blocks.length).toBeGreaterThan(20);
     const declaring = blocks.filter((block) => block.output.includes(THE_CLAIM));
     expect(declaring.length).toBeGreaterThan(0);
-    expect([...new Set(declaring.map((block) => block.command))]).toEqual(['mnema brief']);
+    expect([...new Set(declaring.map((block) => block.command))]).toEqual([
+      'mnema brief',
+      'mnema recall',
+    ]);
   });
 
   it('keeps the declaration out of every module that writes to a terminal', () => {

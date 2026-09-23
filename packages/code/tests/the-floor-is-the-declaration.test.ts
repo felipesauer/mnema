@@ -468,6 +468,11 @@ const FLOOR_MODULES: readonly string[] = [
   'wiring/next-actions.ts',
   'wiring/no-such-record.ts',
   'wiring/observe.ts',
+  // The verb that prints the notes a session opens with. It is on the floor for the
+  // reason every verb's wiring is — commander has to hold its declaration to print a line
+  // of help — and it reaches its command and its presentation only inside the action, so
+  // what it adds here is one file of declarations and no adapter.
+  'wiring/recall.ts',
   'wiring/on-one-line.ts',
   'wiring/options.ts',
   'wiring/refs.ts',

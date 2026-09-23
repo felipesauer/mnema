@@ -2,10 +2,13 @@
  * FORM D — the document: a file for a reader that never asked for it.
  *
  * The other three forms are answers on a terminal, read by a person who typed a
- * verb. This one is a FILE, and its reader is a model: `mnema brief > AGENTS.md`
- * puts the record where an agent host reads it on its own — `AGENTS.md` is an open
- * convention several of them read natively, `CLAUDE.md` is read when a session
- * opens — so what governs the work arrives without anyone thinking to ask. That is
+ * verb. This one is a DOCUMENT, and its reader is a model: the plugin hands it to a
+ * session as it opens, and a file it is redirected into reaches a session where that is
+ * the file the host reads — so what governs the work arrives without anyone thinking to
+ * ask. This paragraph said `mnema brief > AGENTS.md` put the record "where an agent
+ * host reads it on its own", with `AGENTS.md` and `CLAUDE.md` side by side; the host
+ * the plugin is for reads an `AGENTS.md` only from 2.1.277 and only where no
+ * `CLAUDE.md` exists, so which file arrives is the host's to say. That is
  * why it is markdown with headings and bullets instead of aligned columns: the
  * indentation and the two-space gaps of form A mean something to an eye scanning a
  * terminal and nothing at all to the reader this is written for.

@@ -673,8 +673,11 @@ describe('the brief has the same skeleton whether or not anything was decided', 
       // document was put, and a name printed here is read as the name to use.
       expect(text).not.toContain('AGENTS.md');
       expect(text).not.toContain('CLAUDE.md');
-      // What the content IS: the project's own text, not an instruction from mnema.
-      expect(text).toContain('not instructions from mnema');
+      // WHOSE the content is: the project's own people and agents wrote it. And no longer
+      // what it is NOT — the sentence ended "not instructions from mnema", the idiom that
+      // marks text a model must not act on, and the clause went.
+      expect(text).toContain('the people and agents working on it wrote');
+      expect(text).not.toContain('not instructions');
     }
   });
 

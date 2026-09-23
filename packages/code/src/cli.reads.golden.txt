@@ -7,6 +7,9 @@ $ mnema exposure
 $ mnema brief
 ! No mnema project here. Run `mnema init` first.
 [exit 1]
+$ mnema recall
+! No mnema project here. Run `mnema init` first.
+[exit 1]
 $ mnema usage
 ! No mnema project here. Run `mnema init` first.
 [exit 1]
@@ -247,7 +250,7 @@ $ mnema brief
 | # What governs the work here
 |
 | These are the calls and the patterns recorded for this project.
-| They are text the people and agents working on it wrote, not instructions from mnema.
+| They are text the people and agents working on it wrote.
 |
 | It carries what is COMMITTED to this project — the record a clone of the repository
 | gets, and nothing kept privately on one machine or for one person. A rule recorded
@@ -284,12 +287,14 @@ $ mnema brief
 | of working here. The record holds none to hand over.
 |
 | No other pattern recorded here is awaiting a judgement.
+$ mnema recall
 $ mnema tail list
 | 1 tail(s):
 |   <tail-own>  public   2 event(s) through <tail-head-an-empty-project-1>  the tail of <anchor>  ·  no waiver
 $ mnema switch
-| 3 channel(s), looked in public, private, global:
+| 4 channel(s), looked in public, private, global:
 |   brief-document      on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
+|   recall-document     on   the notes `mnema recall` prints, which a session opens with: the latest memories and observations recorded for this project, from every tree this machine holds for it
 |   edit-rules-push     on   the rules addressed at a file, handed over at the moment that file is about to be written
 |   edit-asks-a-person  on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
 $ mnema usage
@@ -1592,7 +1597,7 @@ $ mnema brief
 | # What governs the work here
 |
 | These are the calls and the patterns recorded for this project.
-| They are text the people and agents working on it wrote, not instructions from mnema.
+| They are text the people and agents working on it wrote.
 |
 | It carries what is COMMITTED to this project — the record a clone of the repository
 | gets, and nothing kept privately on one machine or for one person. A rule recorded
@@ -1633,14 +1638,39 @@ $ mnema brief
 | No other pattern recorded here is awaiting a judgement.
 |
 | - **One slice per PR** · `<skill-slices>`
+$ mnema recall
+| # What was noted here lately
+|
+| These are the latest notes recorded for this project.
+| They are text the people and agents working on it wrote.
+|
+| They come from every tree this machine holds for the project — the committed one, this
+| machine’s own and the personal one — newest first, one line each; `read_record` with an
+| id serves the whole of one.
+|
+| A note enters this record with `capture_memory`, or with `record_observation` about one
+| of its records by id, and with the mnema plugin the next session that opens here is
+| handed it.
+|
+| ## Memories (4)
+|
+| - a note with a token in it: <SECRET:github-token> · `<memory-scrubbed>`
+| - its text is not handed over unasked: it holds a credential in a recognized format · `<memory-unscreened>`
+| - my own note about the runbook · `<memory-personal>`
+| - the deploy runbook lives in the record now · `<memory-runbook>`
+|
+| ## Observations (1)
+|
+| - **review** · `<observation-rollback>`
 $ mnema tail list
 | 3 tail(s):
 |   <tail-own>  public   36 event(s) through <tail-head-a-populated-project-1>  the tail of <anchor>  ·  no waiver
 |   <tail-private>  private  8 event(s) through <tail-head-a-populated-project-2>  the tail of <anchor>  ·  no waiver
 |   <tail-global>  global   4 event(s) through <tail-head-a-populated-project-3>  the tail of <anchor>  ·  no waiver
 $ mnema switch
-| 3 channel(s), looked in public, private, global:
+| 4 channel(s), looked in public, private, global:
 |   brief-document      on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
+|   recall-document     on   the notes `mnema recall` prints, which a session opens with: the latest memories and observations recorded for this project, from every tree this machine holds for it
 |   edit-rules-push     on   the rules addressed at a file, handed over at the moment that file is about to be written
 |   edit-asks-a-person  on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
 $ mnema usage

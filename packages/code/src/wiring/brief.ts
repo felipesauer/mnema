@@ -2,7 +2,7 @@
  * The `mnema brief` wiring: what it declares, and what it prints.
  *
  * `mnema brief` — the decisions in force and the adopted patterns of the COMMITTED
- * record, as the markdown file an agent host reads on its own. It takes NO options at
+ * record, as the markdown document a session opens with. It takes NO options at
  * all, which makes it the only read here with none, and every one it does not take was
  * decided rather than skipped: no `--actor` (the answer is the project's, not an
  * asker's), no `--check` (a pipe into `diff` answers that, and does not have to guess
@@ -33,6 +33,16 @@
  * in THEIR file, because this verb cannot merge, cannot check and cannot refuse: it never
  * learns there was a file. `the-recipe-says-what-it-overwrites.test.ts` holds both halves,
  * over this page and over the copy of the recipe inside the generated document.
+ *
+ * THAT LINE WAS A SENTENCE, AND THE PAGE SAID IT "REACHES THE SAME READER". For the host
+ * this product ships a plugin for, a sentence naming a file reaches the reader only if the
+ * agent decides to open that file; what brings the file in is an import, `@MNEMA.md`
+ * (code.claude.com/docs/en/memory — a `CLAUDE.md` "that tells Claude in words" to read
+ * another file is seen "only if it decides to open the file"). And the page said that
+ * `AGENTS.md` and `CLAUDE.md` are both read by a host on its own, when that host reads an
+ * `AGENTS.md` only from 2.1.277 and only where no `CLAUDE.md` exists — 0 of 299 sessions
+ * on this machine, in two projects that keep both. Both sentences now say which host and
+ * under what condition, and the page names the one route that needs no file: the plugin.
  *
  * IT CAN BE SWITCHED OFF, which is the one thing about this verb that is not a property of
  * the record. What it prints is a CHANNEL — the file a session opens with — and every
@@ -80,8 +90,18 @@ import { type Declared, readsTheRecord, type Wiring } from './verb.js';
  * a project and is exactly what the plugin's `SessionStart` handler treats as silence. So
  * one sentence serves both readers: the session of whoever switched it off opens with
  * nothing added, and the person at the terminal is told why.
+ *
+ * EXPORTED, because a second verb now produces a channel a session opens with
+ * (`mnema recall`) and refuses the same way for the same reason. The sentence names the
+ * channel it is handed, so one wording serves both; a second copy would be the second
+ * account of one switch.
  */
-function switchedOff(off: { channel: string; by: string; at: string; travels: boolean }): string {
+export function switchedOff(off: {
+  channel: string;
+  by: string;
+  at: string;
+  travels: boolean;
+}): string {
   return (
     `The ${off.channel} channel is switched off, so there is no document: ` +
     `${off.by} switched it off at ${off.at}` +
@@ -107,10 +127,12 @@ export function registerBrief(program: Command, wiring: Wiring): Declared {
         '  mnema brief | diff - MNEMA.md   whether that copy still matches the record',
         '',
         'Any name works: the check is the same pipe, and it reads the name you give it.',
-        '`AGENTS.md` and `CLAUDE.md` are read by an agent host on its own, and are worth',
-        'the redirection where no such file exists yet. Where one does, it is somebody’s',
-        'own method and this document would replace every word of it — a line in theirs',
-        'naming the file above reaches the same reader without losing any of it.',
+        'Claude Code reads a `CLAUDE.md` at every session, and an `AGENTS.md` only from',
+        '2.1.277 and only where no `CLAUDE.md` exists. Where one of those exists it is',
+        'somebody’s own method and this document would replace every word of it — the',
+        'line `@MNEMA.md` in a `CLAUDE.md` brings the file above in with it, where a',
+        'sentence naming the file is read only if the agent chooses to open it.',
+        'The mnema plugin hands this document to a Claude Code session with no file at all.',
         '',
         'The output holds no clock, no session and no path, so the same record always',
         'prints the same bytes and a difference is a difference in the record.',

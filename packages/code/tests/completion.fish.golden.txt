@@ -12,7 +12,7 @@
 function __mnema_commands --description 'the subcommands one level of the tree offers'
     switch "$argv[1]"
         case ''
-            echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs rules skills usage brief key tail witness switch verify mcp repl completion help'
+            echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs rules skills usage brief recall key tail witness switch verify mcp repl completion help'
         case 'task'
             echo 'move'
         case 'decision'
@@ -88,6 +88,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'rules' -d 'show which recorded rules
 complete -c mnema -f -n '__mnema_at ""' -a 'skills' -d 'show where each pattern came from (who proposed it, who adopted it)'
 complete -c mnema -f -n '__mnema_at ""' -a 'usage' -d 'what each run cost, read from this machine\'s Claude Code transcripts'
 complete -c mnema -f -n '__mnema_at ""' -a 'brief' -d 'print what governs the work here as markdown, for an agent to read'
+complete -c mnema -f -n '__mnema_at ""' -a 'recall' -d 'print the latest notes recorded here as markdown, for an agent to read'
 complete -c mnema -f -n '__mnema_at ""' -a 'key' -d 'manage this machine\'s signing keys'
 complete -c mnema -f -n '__mnema_at ""' -a 'tail' -d 'authorize a cut in the record\'s own tails'
 complete -c mnema -f -n '__mnema_at ""' -a 'witness' -d 'ask an outside witness to date this record, and read where that stands'
@@ -373,6 +374,11 @@ complete -c mnema -f -n '__mnema_at "brief"' -s h -l help
 complete -c mnema -f -n '__mnema_at "brief"' -s V -l version
 complete -c mnema -f -n '__mnema_at "brief"' -l color -x -a 'auto always never'
 
+# mnema recall
+complete -c mnema -f -n '__mnema_at "recall"' -s h -l help
+complete -c mnema -f -n '__mnema_at "recall"' -s V -l version
+complete -c mnema -f -n '__mnema_at "recall"' -l color -x -a 'auto always never'
+
 # mnema key
 complete -c mnema -f -n '__mnema_at "key"' -a 'restore' -d 'restore this machine\'s identity from a copy of a key\'s private half'
 complete -c mnema -f -n '__mnema_at "key"' -a 'request' -d 'ask to bring this machine into an identity (run this on the joining machine)'
@@ -465,7 +471,7 @@ complete -c mnema -f -n '__mnema_at "switch off"' -l which -r
 complete -c mnema -f -n '__mnema_at "switch off"' -s h -l help
 complete -c mnema -f -n '__mnema_at "switch off"' -s V -l version
 complete -c mnema -f -n '__mnema_at "switch off"' -l color -x -a 'auto always never'
-complete -c mnema -f -n '__mnema_at "switch off"' -a 'brief-document edit-rules-push edit-asks-a-person'
+complete -c mnema -f -n '__mnema_at "switch off"' -a 'brief-document recall-document edit-rules-push edit-asks-a-person'
 
 # mnema switch on
 complete -c mnema -f -n '__mnema_at "switch on"' -l reason -r
@@ -474,7 +480,7 @@ complete -c mnema -f -n '__mnema_at "switch on"' -l which -r
 complete -c mnema -f -n '__mnema_at "switch on"' -s h -l help
 complete -c mnema -f -n '__mnema_at "switch on"' -s V -l version
 complete -c mnema -f -n '__mnema_at "switch on"' -l color -x -a 'auto always never'
-complete -c mnema -f -n '__mnema_at "switch on"' -a 'brief-document edit-rules-push edit-asks-a-person'
+complete -c mnema -f -n '__mnema_at "switch on"' -a 'brief-document recall-document edit-rules-push edit-asks-a-person'
 
 # mnema verify
 complete -c mnema -f -n '__mnema_at "verify"' -l global

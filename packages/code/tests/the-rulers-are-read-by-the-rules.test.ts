@@ -156,6 +156,8 @@ describe('the same globs reach every instrument this repository ships or runs', 
       '.github/what-the-suite-left-behind/sweep.mjs',
       '.github/why-it-went-red/ledger.mjs',
       '.github/why-it-went-red/verdict.mjs',
+      'plugin/hooks/hand-over.mjs',
+      'plugin/hooks/session-recall.mjs',
       'plugin/hooks/session-start.mjs',
     ]);
   });

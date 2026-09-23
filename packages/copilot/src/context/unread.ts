@@ -51,6 +51,14 @@
  * list: it names a kind and a number, never a body, and it is the same economy the
  * rest of this read already runs on — NAMES, never bodies, and here not even names.
  *
+ * "UNDECIDED" IS NO LONGER TRUE OF THE OPENING A SESSION IS HANDED, and it is still true
+ * of this read. The text the plugin pushes as a session opens now carries the knowledge
+ * kinds — two lists, one per kind, each the index's own newest-first listing, cut where
+ * the index cuts (`code/src/presentation/recall.ts`) — because a note an agent records
+ * reached no later session otherwise. That answer was given for the PUSHED opening, whose
+ * reader did not ask; this read is the one an agent asks for, and whether it grows a list
+ * as well is the question that stays open here.
+ *
  * ## What it costs, measured
  *
  * **0.142 ms, which is 35% of the whole opening read** (0.402 ms) over the record that

@@ -102,13 +102,16 @@ A 404 there means the release has not been pushed, and until it is, the way to
 run it is from a clone — see
 [Building it from source](#building-it-from-source) at the bottom of the page.
 
-For the Claude Code plugin — the opening context and the per-edit rules — add
-this repository as a marketplace and install from it:
+For the Claude Code plugin — the opening context, the notes beside it and the per-edit
+rules — add this repository as a marketplace and install from it:
 
 ```sh
 claude plugin marketplace add felipesauer/mnema
 claude plugin install mnema@mnema
 ```
+
+The plugin connects the MCP server too, so registering the server yourself as well is
+redundant: a session would be offered every tool twice, under two prefixes.
 
 ## Your first record
 

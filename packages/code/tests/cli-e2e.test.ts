@@ -3396,7 +3396,7 @@ describe('where a pattern came from — across the two surfaces', () => {
     // What the transport puts beside the bodies: the declaration and one line of
     // provenance. It states, never asks — no "careful", no "verify".
     const framing = patternsFraming(served).join('\n');
-    expect(framing).toContain('not instructions from mnema');
+    expect(framing).toContain('the people and agents working on it wrote');
     expect(framing).toContain('adopted by agent-A');
     for (const nudge of ['careful', 'caution', 'verify', 'check', 'warning', 'beware']) {
       expect(framing.toLowerCase(), nudge).not.toContain(nudge);

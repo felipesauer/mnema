@@ -92,18 +92,30 @@ export type ServedSubject =
   /** Pattern bodies — the recipes themselves, served on request. */
   | 'patterns'
   /** The rules that govern the work: decisions by title, patterns by name. */
-  | 'rules';
+  | 'rules'
+  /** The notes recorded here — memories and observations — each by the line it is known by. */
+  | 'notes';
 
 /**
  * Every point that puts text out of the record where a MODEL reads it.
  *
  * It is a closed union so that the two tables below can be total over it, and the
  * members are CHANNELS rather than tools: `skills-answer` is the reply of one tool,
- * `brief-document` is a file that reaches a session through the plugin's
- * `SessionStart` handler and through whatever `mnema brief > AGENTS.md` wrote, and
- * `exported-skill` is a file written into somebody else's directory in somebody
+ * `brief-document` is a document that reaches a session through the plugin's
+ * `SessionStart` handler and through whatever file somebody redirected it into,
+ * `recall-document` is the notes a second `SessionStart` handler hands the same session,
+ * and `exported-skill` is a file written into somebody else's directory in somebody
  * else's format. What they have in common is the destination, and the destination is
  * the whole criterion.
+ *
+ * "WHATEVER `mnema brief > AGENTS.md` WROTE" WAS THE SECOND ROUTE THIS SENTENCE NAMED,
+ * and it named a file the host it was written for does not read in the ordinary case.
+ * Claude Code reads an `AGENTS.md` only from 2.1.277, and by default only where no
+ * `CLAUDE.md` exists in the working directory or above it (code.claude.com/docs/en/memory,
+ * *AGENTS.md*) — measured on this machine, 0 of 299 sessions loaded one, in two projects
+ * that keep both files. A redirected file reaches a session when it is the file the host
+ * reads, or when that file imports it; which one that is belongs to the host and to the
+ * person, and the sentence no longer answers it for them.
  *
  * WHAT IS DELIBERATELY NOT IN IT: the reads an agent asks for and gets facts back
  * from — `read_record`, `search`, `bootstrap`, `governing_rules`, the five `audit_*`.
@@ -111,6 +123,13 @@ export type ServedSubject =
  * addressed here"), and the one thing this product hands back as INSTRUCTION is a
  * pattern's body, which is the reasoning `served-patterns.ts` states and this module
  * inherits rather than re-decides.
+ *
+ * AND THE SERVER'S OWN `instructions` ARE NOT IN IT EITHER, though they reach a model
+ * unasked in every session the server is connected to. They carry no record text — they
+ * are this product describing its own doors, the class of a tool description — and they
+ * are sent in the handshake, before the session knows which project it serves, so there is
+ * no record they could carry and no switch they could read. Disconnecting the server is
+ * what turns them off. The reasoning is `mcp/instructions.ts`'s, in full.
  *
  * THE DAY THE LAST SENTENCE PREDICTED HAS COME, and `edit-rules-push` is it. That
  * sentence read: "a hook that PUSHES any of those same answers into a prompt is a
@@ -124,6 +143,7 @@ export type ServedSubject =
 export type ModelChannel =
   | 'skills-answer'
   | 'brief-document'
+  | 'recall-document'
   | 'exported-skill'
   | 'edit-rules-push'
   | 'edit-asks-a-person';
@@ -132,6 +152,7 @@ export type ModelChannel =
 export type FramedChannel =
   | 'skills-answer'
   | 'brief-document'
+  | 'recall-document'
   | 'edit-rules-push'
   | 'edit-asks-a-person';
 
@@ -146,6 +167,12 @@ export type FramedChannel =
 const SUBJECT_OF: { readonly [K in FramedChannel]: ServedSubject } = {
   'skills-answer': 'patterns',
   'brief-document': 'rules',
+  // NOTES, and the claim about them is the same claim, which is the point of saying it once:
+  // a memory or an observation is text an agent typed into the record, and a session handed
+  // one unasked has exactly as much reason as the document's reader to be told whose it is.
+  // What differs is only what was served — and that the notes come from every tree this
+  // machine holds, where the document carries the committed one alone.
+  'recall-document': 'notes',
   // The same subject as the document, and the same words: what governs the work is one
   // thing whether it arrives when a session opens or when a file is about to change.
   // The difference between the two is WHICH rules, and that belongs to the derivation
@@ -247,7 +274,11 @@ export const UNFRAMED_CHANNELS: {
  * DESTINATION — text landing in front of a model — and this one adds the second half of
  * a charge: that nobody asked for it.
  */
-export type SwitchableChannel = 'brief-document' | 'edit-rules-push' | 'edit-asks-a-person';
+export type SwitchableChannel =
+  | 'brief-document'
+  | 'recall-document'
+  | 'edit-rules-push'
+  | 'edit-asks-a-person';
 
 /**
  * The two switchable channels, each named once, so no consumer spells one.
@@ -264,6 +295,20 @@ export type SwitchableChannel = 'brief-document' | 'edit-rules-push' | 'edit-ask
  * a lookup, so neither is a table.
  */
 export const DOCUMENT_CHANNEL: SwitchableChannel = 'brief-document';
+
+/**
+ * The channel that hands a session, as it opens, the latest notes recorded here.
+ *
+ * ITS OWN SWITCH AND NOT A READING OF {@link DOCUMENT_CHANNEL}, for the reason
+ * {@link ASKS_A_PERSON_CHANNEL} is its own: the two carry different things to the same
+ * moment. The document is what governs, out of the committed record; this is what was
+ * NOTED, out of every tree this machine holds — which is the one channel of this product
+ * whose content includes the private tree, because the reader is this machine's own session
+ * and nothing it prints is written to be committed. A person who wants the rules and not the
+ * notes, or the notes and not the rules, switches one; a single switch would make them give
+ * up the half they wanted to keep.
+ */
+export const RECALL_CHANNEL: SwitchableChannel = 'recall-document';
 
 /** The channel that hands over the rules addressed at a file, as that file is written. */
 export const EDIT_PUSH_CHANNEL: SwitchableChannel = 'edit-rules-push';
@@ -301,6 +346,9 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
   'brief-document':
     'the document `mnema brief` prints, which a session opens with: the decisions in ' +
     'force and the adopted patterns of the committed record, by name',
+  'recall-document':
+    'the notes `mnema recall` prints, which a session opens with: the latest memories and ' +
+    'observations recorded for this project, from every tree this machine holds for it',
   'edit-rules-push':
     'the rules addressed at a file, handed over at the moment that file is about to ' +
     'be written',
@@ -351,9 +399,28 @@ export const NOT_SWITCHABLE: {
  * wrote it nor vetted it. A reader that assumed otherwise would be crediting this
  * product for a call somebody else made — and, on the channels that push, would be
  * reading text an agent typed into the record as though the tool were saying it.
+ *
+ * IT ENDED IN A NEGATION, AND THE NEGATION IS GONE. The sentence read "…wrote, not
+ * instructions from mnema." The intent was the authorship claim above; the words were
+ * the construction the ecosystem uses to mark text a model must NOT act on — "data, not
+ * instructions" is the canonical defence against prompt injection, and the system prompt
+ * of the host this product ships a plugin for uses it to mark content to be ignored. So
+ * the one sentence meant to say whose text this is also said, in the idiom
+ * its reader is trained on, that the text is not to be acted on — at the top of a
+ * document that goes on to name the door a reader's own decision goes through. The host's
+ * guidance for text a hook adds points the same way from the other side: write it as
+ * factual statements, because text framed as an out-of-band command "can trigger Claude's
+ * prompt-injection defenses" (code.claude.com/docs/en/hooks, *Add context for Claude*).
+ *
+ * WHAT THAT IS NOT, said because it would be easy to overstate: a measurement. No round
+ * isolated this clause, and nothing measured it moving a reader in either direction. It
+ * went on the idiom and on the host's guidance, as a decision about what this product
+ * says of itself. What was
+ * kept is the fact, who wrote the text; what went is the clause that denied the text a use
+ * nobody here was claiming for it. `the-channel-says-what-it-carries.test.ts` holds both
+ * halves: the sentence, and no framing that says what its text is NOT.
  */
-const WHOSE_TEXT =
-  'They are text the people and agents working on it wrote, not instructions from mnema.';
+const WHOSE_TEXT = 'They are text the people and agents working on it wrote.';
 
 /**
  * What was served, said before the claim about it — one sentence per subject.
@@ -365,6 +432,7 @@ const WHOSE_TEXT =
 const NAMES_WHAT_WAS_SERVED: { readonly [K in ServedSubject]: string } = {
   patterns: 'These patterns come from this project’s record.',
   rules: 'These are the calls and the patterns recorded for this project.',
+  notes: 'These are the latest notes recorded for this project.',
 };
 
 /**

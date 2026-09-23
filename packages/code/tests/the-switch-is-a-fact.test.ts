@@ -59,6 +59,7 @@ import {
   DOCUMENT_CHANNEL,
   EDIT_PUSH_CHANNEL,
   NOT_SWITCHABLE,
+  RECALL_CHANNEL,
   SWITCHABLE_CHANNELS,
   WHAT_STOPS,
 } from '../src/record-framing.js';
@@ -330,6 +331,18 @@ const HONOURED: Readonly<
     },
     speaks: async () => {
       const said = await mnema('brief');
+      return !said.failed && said.out.length > 0;
+    },
+  },
+  [RECALL_CHANNEL]: {
+    // The notes: a verb whose whole output is what a session is handed, like the document —
+    // and silent over a record with no notes, so the note set up here is what lets the case
+    // see it speak before it is switched off.
+    setUp: async () => {
+      await did('memory', 'The staging database resets every night at 03:00');
+    },
+    speaks: async () => {
+      const said = await mnema('recall');
       return !said.failed && said.out.length > 0;
     },
   },

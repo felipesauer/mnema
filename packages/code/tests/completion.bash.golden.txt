@@ -10,7 +10,7 @@
 
 _mnema_commands() {
   case "$1" in
-    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs rules skills usage brief key tail witness switch verify mcp repl completion help' ;;
+    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs rules skills usage brief recall key tail witness switch verify mcp repl completion help' ;;
     'task') echo 'move' ;;
     'decision') echo 'move supersede import' ;;
     'skill') echo 'move export' ;;
@@ -60,6 +60,7 @@ _mnema_flags() {
     'skills') echo '--json -h --help -V --version --color' ;;
     'usage') echo '-h --help -V --version --color' ;;
     'brief') echo '-h --help -V --version --color' ;;
+    'recall') echo '-h --help -V --version --color' ;;
     'key') echo '-h --help -V --version --color' ;;
     'key restore') echo '-h --help -V --version --color' ;;
     'key request') echo '--anchor --key -h --help -V --version --color' ;;
@@ -139,6 +140,7 @@ _mnema_values() {
     'skills:--color') echo 'auto always never' ;;
     'usage:--color') echo 'auto always never' ;;
     'brief:--color') echo 'auto always never' ;;
+    'recall:--color') echo 'auto always never' ;;
     'key:--color') echo 'auto always never' ;;
     'key restore:--color') echo 'auto always never' ;;
     'key request:--color') echo 'auto always never' ;;
@@ -153,10 +155,10 @@ _mnema_values() {
     'switch:--color') echo 'auto always never' ;;
     'switch off:--scope') echo 'public private global' ;;
     'switch off:--color') echo 'auto always never' ;;
-    'switch off:') echo 'brief-document edit-rules-push edit-asks-a-person' ;;
+    'switch off:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person' ;;
     'switch on:--scope') echo 'public private global' ;;
     'switch on:--color') echo 'auto always never' ;;
-    'switch on:') echo 'brief-document edit-rules-push edit-asks-a-person' ;;
+    'switch on:') echo 'brief-document recall-document edit-rules-push edit-asks-a-person' ;;
     'verify:--require') echo 'chained signed witnessed' ;;
     'verify:--color') echo 'auto always never' ;;
     'mcp:--color') echo 'auto always never' ;;

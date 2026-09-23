@@ -36,6 +36,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { SERVER_INSTRUCTIONS } from '../src/mcp/instructions.js';
 import { buildMcpServer } from '../src/mcp/server.js';
 
 /**
@@ -159,6 +160,18 @@ describe('every description reaches the model', () => {
         { name: 'cut', description: `${atTheEdge}x` },
       ]),
     ).toEqual([`cut: ${THE_HOSTS_CEILING + 1} (over by 1)`]);
+  });
+
+  it('sends instructions the host would not cut', () => {
+    // The server's `instructions` meet the same ceiling, and for this field it was measured
+    // on the text itself rather than inferred from the descriptions: a session's transcript
+    // records what the host folded in (`mcp_instructions_delta`), and a server there that
+    // sent more arrived as exactly 2,048 characters followed by `… [truncated]` — host
+    // 2.1.280, on 22/09/2026. The host's own documentation says the same of both fields
+    // ("truncates tool descriptions and server instructions at 2KB each"), which is why the
+    // constant is shared rather than stated twice. What a cut takes is the end, and the end
+    // of this text is the sentence about what comes back.
+    expect(cutByTheHost([{ name: 'instructions', description: SERVER_INSTRUCTIONS }])).toEqual([]);
   });
 
   it('the tools `bootstrap` points at carry what left it', async () => {

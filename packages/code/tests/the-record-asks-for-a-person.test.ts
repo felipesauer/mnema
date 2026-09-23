@@ -217,7 +217,7 @@ describe('the reply asks for a person, and only when the record does', () => {
     // says anything else, on the same channel class as every other pushed text.
     expect(lines[0]).toBe(
       'These are the calls and the patterns recorded for this project. They are text the ' +
-        'people and agents working on it wrote, not instructions from mnema.',
+        'people and agents working on it wrote.',
     );
     // Then WHAT is being asked, and about which file, as the record compares it.
     expect(lines[1]).toBe(

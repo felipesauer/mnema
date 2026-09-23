@@ -5,11 +5,12 @@ $ mnema init
 |   backup key: created and enrolled — private half at <backup-key-path>
 |   Move that file off this machine: a backup left on this disk is lost with it.
 |
-|   An agent host reads an `AGENTS.md` or a `CLAUDE.md` on its own, and mnema
-|   writes neither. `mnema brief > MNEMA.md` puts what governs this project in a
-|   file of its own — the `>` replaces the whole of the file it names — and where
-|   you already keep one of those, keep yours and put one line in it:
-|     What governs the work here is in `MNEMA.md`.
+|   mnema writes no file of yours. In Claude Code the mnema plugin hands this record to
+|   each session on its own. Without it, `mnema brief > MNEMA.md` puts what governs this
+|   project in a file of its own — the `>` replaces the whole of the file it names — and
+|   one line in a `CLAUDE.md` brings that file in (an `AGENTS.md` is read there only
+|   where no `CLAUDE.md` exists):
+|     @MNEMA.md
 $ mnema init
 | Already a mnema project at <sandbox>/project/.mnema — nothing to found.
 |   identity: <anchor>
@@ -234,8 +235,9 @@ $ mnema tail prune <backup-key-fingerprint> --reason 'the key that never wrote a
 
 ### switching what the product pushes
 $ mnema switch
-| 3 channel(s), looked in public, private, global:
+| 4 channel(s), looked in public, private, global:
 |   brief-document      on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
+|   recall-document     on   the notes `mnema recall` prints, which a session opens with: the latest memories and observations recorded for this project, from every tree this machine holds for it
 |   edit-rules-push     on   the rules addressed at a file, handed over at the moment that file is about to be written
 |   edit-asks-a-person  on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
 $ mnema switch off edit-rules-push --reason 'noisy while porting'
@@ -244,8 +246,9 @@ $ mnema switch off edit-rules-push --reason 'noisy while porting'
 |   edit-rules-push is now OFF: nothing of it reaches a model. The switch that decides it was made by <anchor-short> at <at:01>.
 |   Nothing was removed and nothing else stopped: the record still holds what it held, and every read and tool still answers whoever asks. What stops is this product putting it in front of a model unasked.
 $ mnema switch
-| 3 channel(s), looked in public, private, global:
+| 4 channel(s), looked in public, private, global:
 |   brief-document      on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
+|   recall-document     on   the notes `mnema recall` prints, which a session opens with: the latest memories and observations recorded for this project, from every tree this machine holds for it
 |   edit-rules-push     off  the rules addressed at a file, handed over at the moment that file is about to be written  ·  switched off by <anchor-short>  <at:01>  — noisy while porting
 |   edit-asks-a-person  on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
 $ mnema switch on edit-rules-push
@@ -335,8 +338,9 @@ $ mnema init
 |   identity: <anchor>
 |   backup key: enrolled in this project
 |
-|   An agent host reads an `AGENTS.md` or a `CLAUDE.md` on its own, and mnema
-|   writes neither. `mnema brief > MNEMA.md` puts what governs this project in a
-|   file of its own — the `>` replaces the whole of the file it names — and where
-|   you already keep one of those, keep yours and put one line in it:
-|     What governs the work here is in `MNEMA.md`.
+|   mnema writes no file of yours. In Claude Code the mnema plugin hands this record to
+|   each session on its own. Without it, `mnema brief > MNEMA.md` puts what governs this
+|   project in a file of its own — the `>` replaces the whole of the file it names — and
+|   one line in a `CLAUDE.md` brings that file in (an `AGENTS.md` is read there only
+|   where no `CLAUDE.md` exists):
+|     @MNEMA.md

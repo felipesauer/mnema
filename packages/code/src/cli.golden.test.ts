@@ -426,6 +426,10 @@ async function readEverything(label: string, ids: Record<string, string>): Promi
   // its bytes are pinned for a person to read as a document — over an empty record and
   // over a full one, which are the two things it has to say honestly.
   await mnema('reads', 'brief');
+  // And the text a session is handed beside it — the notes, out of every tree. Over the
+  // empty record it prints NOTHING, and the transcript pinning that absence is the point:
+  // a session in a project with no notes is handed no text at all.
+  await mnema('reads', 'recall');
   // The tails the record holds here, with the id `tail prune` takes — the read that
   // exists because nothing else in the product ever printed one.
   //
@@ -488,6 +492,7 @@ beforeAll(async () => {
   await mnema('reads', 'search');
   await mnema('reads', 'exposure');
   await mnema('reads', 'brief');
+  await mnema('reads', 'recall');
   await mnema('reads', 'usage');
   await mnema('reads', 'verify');
 

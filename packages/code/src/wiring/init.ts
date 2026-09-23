@@ -60,12 +60,22 @@ export const INIT_VERB = 'init';
  * scroll past. The other branch reports a run that founded nothing, and four lines of
  * advice under "nothing to found" is the product talking about itself at somebody who
  * asked it to do something and was told it already had.
+ *
+ * ITS FIRST LINE WAS "An agent host reads an `AGENTS.md` or a `CLAUDE.md` on its own",
+ * and for the host this product ships a plugin for that is two claims and one of them is
+ * false in the ordinary case: Claude Code reads an `AGENTS.md` only from 2.1.277, and by
+ * default only where no `CLAUDE.md` exists (code.claude.com/docs/en/memory) — 0 of 299
+ * sessions on one machine loaded one, in two projects that keep both files. And it never
+ * named the route that needs no file at all, which is the plugin: its `SessionStart`
+ * handlers hand the document and the notes to every session. So the block now says the
+ * plugin first, and the file only for a session the plugin does not reach.
  */
 export const REACHES_AN_AGENT = [
-  'An agent host reads an `AGENTS.md` or a `CLAUDE.md` on its own, and mnema',
-  'writes neither. `mnema brief > MNEMA.md` puts what governs this project in a',
-  'file of its own — the `>` replaces the whole of the file it names — and where',
-  'you already keep one of those, keep yours and put one line in it:',
+  'mnema writes no file of yours. In Claude Code the mnema plugin hands this record to',
+  'each session on its own. Without it, `mnema brief > MNEMA.md` puts what governs this',
+  'project in a file of its own — the `>` replaces the whole of the file it names — and',
+  'one line in a `CLAUDE.md` brings that file in (an `AGENTS.md` is read there only',
+  'where no `CLAUDE.md` exists):',
 ];
 
 /**
@@ -74,11 +84,18 @@ export const REACHES_AN_AGENT = [
  *
  * It names `MNEMA.md` because the recipe above does, and the two are one offer: a line
  * pointing at a file nobody made reaches a reader and tells it nothing. It is the shape
- * `mnema brief --help` publishes — *a line in theirs naming the file above* — said as the
+ * `mnema brief --help` publishes — the line `@MNEMA.md` in a `CLAUDE.md` — said as the
  * literal to paste rather than as a description of one, which is the difference between a
  * recommendation a person can act on and one they have to compose.
+ *
+ * IT WAS A SENTENCE — "What governs the work here is in `MNEMA.md`." — and a sentence is
+ * the form the host reads only if the agent decides to open the file it names: a
+ * `CLAUDE.md` "that tells Claude in words" to read another file is seen "only if it decides
+ * to open the file" (code.claude.com/docs/en/memory). An `@` line is an import, expanded
+ * into the session with the file that holds it. It is the one route here that reaches the
+ * reader whether or not the reader goes looking, which is what this block offers at all.
  */
-export const THE_LINE_IN_THEIRS = 'What governs the work here is in `MNEMA.md`.';
+export const THE_LINE_IN_THEIRS = '@MNEMA.md';
 
 /** Registers `mnema init` on the program. */
 export function registerInit(program: Command, wiring: Wiring): Declared {

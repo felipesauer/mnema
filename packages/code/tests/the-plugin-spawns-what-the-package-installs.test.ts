@@ -3,7 +3,8 @@
  * creates it, at every place that has to spell it.
  *
  * WHERE THIS COMES FROM. The plugin reaches the product through the PATH and through
- * nothing else: `session-start.mjs` spawns a bare `mnema`, and `plugin.json` tells the
+ * nothing else: the handlers spawn a bare `mnema` — through the one module they share,
+ * `hand-over.mjs`, which is the only file of the plugin that spawns — and `plugin.json` tells the
  * host to start an MCP server by running a bare `mnema mcp`. Neither of those strings is
  * an import, so no module graph follows them, and the failure they produce is silent by
  * the handler's own design — "a failed spawn is silence", which is right for a hook and
@@ -31,10 +32,12 @@
  *
  * WHAT IT DOES NOT COVER, said out loud rather than left to be discovered:
  *
- *   - the hook's constant is read from SOURCE TEXT, never imported, because importing
- *     that module runs the handler — `main()` is called at its top level. The extractor
- *     below refuses rather than returns nothing if the line ever changes shape, so a
- *     reformat is a red with a reason instead of a case that quietly asserts nothing;
+ *   - the hook's constant is read from SOURCE TEXT, never imported. It used to live in
+ *     the handler, where importing runs the hook; it lives in the module the two handlers
+ *     share now, and reading the text is kept because it is the one form that asserts
+ *     what the FILE says. The extractor below refuses rather than returns nothing if the
+ *     line ever changes shape, so a reformat is a red with a reason instead of a case
+ *     that quietly asserts nothing;
  *   - it says nothing about whether `mnema` is on the PATH of any particular machine.
  *     That is the installer's business, and the handler is silent about it on purpose;
  *   - `.cmd` on Windows is npm's shim name and is INTENTION rather than measurement —
@@ -43,12 +46,13 @@
  *     is right for that platform.
  */
 
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { buildProgram } from '../src/cli.js';
+import { codeOnly } from './support/reading-source.js';
 
 /** The repository root: `packages/code/tests/` is three levels under it. */
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
@@ -56,8 +60,13 @@ const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 /** The manifest whose `bin` key npm turns into the executable. */
 const INSTALLS = join(REPO, 'packages', 'code', 'package.json');
 
-/** The handler the host spawns as a session opens. */
-const HOOK = join(REPO, 'plugin', 'hooks', 'session-start.mjs');
+/**
+ * The one module of the plugin that spawns the binary — both `SessionStart` handlers hand
+ * a session what a verb prints through it.
+ */
+const HOOK = join(REPO, 'plugin', 'hooks', 'hand-over.mjs');
+/** Every file the plugin's hooks are made of. */
+const HOOKS_DIR = join(REPO, 'plugin', 'hooks');
 
 /** The manifest that tells the host how to start the MCP server. */
 const MANIFEST = join(REPO, 'plugin', '.claude-plugin', 'plugin.json');
@@ -92,7 +101,7 @@ export function whatTheHookSpawns(source: string): { win32: string; otherwise: s
     source,
   );
   if (written === null) {
-    throw new Error('session-start.mjs no longer declares BINARY in the shape this reads');
+    throw new Error('hand-over.mjs no longer declares BINARY in the shape this reads');
   }
   return { win32: written[1] as string, otherwise: written[2] as string };
 }
@@ -128,6 +137,29 @@ describe('every place that spells the executable spells the one the package inst
     // npm's own shim name on Windows is the bin key with `.cmd` after it. What is held is
     // that the Windows spelling stays DERIVED from the same name, never that it is right.
     expect(spawns.win32).toBe(`${installed}.cmd`);
+  });
+
+  it('spawns from ONE module, so the name is spelled in one place', () => {
+    // Two handlers run a verb as a session opens, and the rule that decides what reaches
+    // the session is written once (`hand-over.mjs`). A handler that grew a spawn of its
+    // own would be a second spelling of the executable this file exists to keep single —
+    // and a second copy of the silence rule beside it — so every other file of the plugin
+    // is asked, and none may spawn.
+    const others = readdirSync(HOOKS_DIR).filter(
+      (name) => name.endsWith('.mjs') && join(HOOKS_DIR, name) !== HOOK,
+    );
+    expect(others.length).toBeGreaterThan(1);
+    // CODE ONLY, and a first version of this scan is why: over raw text it accused a
+    // handler whose doc comment says the rule "lives in `hand-over.mjs`, beside the spawn".
+    // A spawn is a call, so what is read is the code with every comment and literal blanked.
+    const spawning = others.filter((name) =>
+      /\bspawn(Sync)?\b|\bexec(File)?(Sync)?\b/.test(
+        codeOnly(readFileSync(join(HOOKS_DIR, name), 'utf-8')),
+      ),
+    );
+    expect(spawning).toEqual([]);
+    // And the module that does spawn is where the name is: the case above reads it there.
+    expect(codeOnly(readFileSync(HOOK, 'utf-8'))).toMatch(/\bspawnSync\(/);
   });
 
   it('starts the MCP server by running it', () => {
