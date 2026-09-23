@@ -429,7 +429,12 @@ describe('refreshWorkspace — the rule itself', () => {
     // and be quietly dropped afterwards.
     const configured = makeProject('configured');
     const other = makeProject('other');
-    const session = openSession({ clientName: 'claude-code', configProject: configured, env });
+    const session = openSession({
+      clientName: 'claude-code',
+      configProject: configured,
+      roots: [],
+      env,
+    });
     expect(session.project).toBe(configured);
 
     refreshWorkspace(session, [pathToFileURL(other).href]);
@@ -438,6 +443,53 @@ describe('refreshWorkspace — the rule itself', () => {
     expect(session.workspaceProjects.map((project) => project.dir).sort()).toEqual(
       [configured, other].sort(),
     );
+  });
+
+  it('runs the SAME cascade for a client with no roots, so a working-directory landing stays', () => {
+    // The re-read's second input, carried for the reason the configured path is. A
+    // session that landed by the working directory has no roots to resolve over, and a
+    // re-read that rebuilt its input from the roots alone would find no project and put
+    // the session on the global tree in silence — the one move a re-read never makes.
+    const project = makeProject('here');
+    const session = openSession({ clientName: 'Cursor', cwd: project, env });
+    expect(session.project).toBe(project);
+    expect(session.rung).toBe('cwd');
+
+    // Asked with nothing, the way the server asks a client that has no `roots` capability.
+    refreshWorkspace(session, []);
+
+    expect(session.inProject).toBe(true);
+    expect(session.project).toBe(project);
+    expect(session.rung).toBe('cwd');
+    expect(session.trees.projectPublic).toBe(join(project, PROJECT_DIR));
+
+    // And a list handed in its name is not taken as roots it announced: such a client is
+    // never asked, so nothing that arrives here is a workspace it said it has.
+    const elsewhere = makeProject('elsewhere');
+    expect(refreshWorkspace(session, [pathToFileURL(elsewhere).href])).toEqual({
+      gained: [],
+      learned: [],
+    });
+    expect(session.roots).toEqual([]);
+    expect(session.project).toBe(project);
+  });
+
+  it('LANDS by the working directory once somebody founds a project there', () => {
+    // The re-probe `refreshWorkspace` documents — `mnema init` in a directory already in
+    // hand turns it into a project — for the one input a client with no roots has.
+    const plain = makePlainDir('plain');
+    const session = openSession({ clientName: 'Cursor', cwd: plain, env });
+    expect(session.inProject).toBe(false);
+    expect(session.rung).toBe('global');
+
+    ensureTree({ root: join(plain, PROJECT_DIR) });
+    expect(refreshWorkspace(session, [])).toEqual({
+      gained: [],
+      learned: [plain],
+      landedOn: plain,
+    });
+    expect(session.rung).toBe('cwd');
+    expect(session.project).toBe(plain);
   });
 });
 

@@ -3150,7 +3150,7 @@ describe('MCP server — end to end over a real client', () => {
   });
 
   it('a knowledge tool refuses an absent scope as a tool error over the transport', async () => {
-    // A client with no roots is served on the global tree — asking for public
+    // A client that LISTED no roots is served on the global tree — asking for public
     // names a tree that does not exist, refused as a tool error, not a crash.
     const { server } = buildMcpServer({ env, log: () => {} });
     const client = await connectClient(server, []);
@@ -3163,7 +3163,12 @@ describe('MCP server — end to end over a real client', () => {
     await client.close();
   });
 
-  it('a client with no roots is served on the global tree', async () => {
+  it('a client that LISTED no roots is served on the global tree', async () => {
+    // THIS WAS "a client with no roots is served on the global tree", and the client here
+    // declares `roots` and lists none — the window with no folder, which still lands on
+    // the global tree. A client with no `roots` capability at all is served the project
+    // at the working directory now (`a-client-that-names-no-workspace.test.ts`), so the
+    // old name described two clients and was true of one.
     const { server } = buildMcpServer({ env, log: () => {} });
     const client = await connectClient(server, []);
 

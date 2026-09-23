@@ -1,10 +1,18 @@
 /**
  * The MCP project cascade: how the server picks which tree to work on.
  *
- * `resolveContext` is pure — it takes already-listed roots and the environment
- * and returns the tree. These tests drive the three rungs of the cascade over a
- * sandbox: an explicit config path, the client's roots, and the global
- * fallback, plus the guard that a stray project above home never leaks in.
+ * `resolveContext` is pure — it takes what the client said about its workspace and
+ * the environment, and returns the tree. These tests drive the four rungs of the
+ * cascade over a sandbox: an explicit config path, the client's roots, the server's
+ * working directory for a client that declared no roots, and the global fallback —
+ * plus the guard that the machine's own data directory is not taken for a project.
+ *
+ * EVERY CALL SAYS WHICH KIND OF CLIENT IT MODELS, `roots` or `cwd`, and that is the
+ * shape the working-directory rung forced rather than tidiness. Two tests here used
+ * to call the resolver with neither and were named for "no roots at all"; the input
+ * could not say whether that meant a window with no folder or a client with no
+ * `roots` capability, and after the rung existed the two answer differently. A call
+ * with neither now fails outright instead of answering one of them in silence.
  *
  * The rungs are asserted SEPARATELY from the rung that refuses, and the split is the
  * shape of the rule rather than housekeeping: the cascade is what runs when nobody
@@ -12,7 +20,7 @@
  * explicitly configured project')` is about having been told.
  */
 
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -64,7 +72,7 @@ describe('resolveContext — the project cascade', () => {
     expect(ctx.trees.projectPublic).toBe(join(project, PROJECT_DIR));
   });
 
-  it('rung 3: no config and no project among the roots falls back to GLOBAL', () => {
+  it('rung 4: no config and no project among the roots falls back to GLOBAL', () => {
     const plain = join(sandbox, 'plain');
     mkdirSync(plain, { recursive: true });
     const ctx = resolveContext({ roots: [pathToFileURL(plain).href], env });
@@ -73,11 +81,31 @@ describe('resolveContext — the project cascade', () => {
     expect(ctx.trees.global).toContain('global');
   });
 
-  it('rung 3: no roots at all falls back to GLOBAL (never refuses)', () => {
-    const ctx = resolveContext({ env });
+  it('rung 4: a client that DECLARED roots and listed none lands on GLOBAL — a window with no folder', () => {
+    // THIS WAS "rung 3: no roots at all falls back to GLOBAL", called with no roots and
+    // no working directory, and it stood for two clients that now answer differently.
+    // This is the one that still lands on the global tree: a client that declared the
+    // capability and listed nothing has SAID its workspace holds no folder. The other —
+    // a client with no `roots` capability — is the working-directory rung below.
+    const ctx = resolveContext({ roots: [], env });
     expect(ctx.inProject).toBe(false);
+    expect(ctx.rung).toBe('global');
     expect(ctx.trees.projectPublic).toBeUndefined();
     expect(ctx.trees.global).toBeDefined();
+  });
+
+  it('rung 4 carries NO project even when a walk-up from home would find one', () => {
+    // The fallback resolves the global tree from home, and the walk-up that resolution
+    // runs can find a `.mnema/` there — with `$XDG_DATA_HOME` unset, home's own `.mnema`
+    // is the machine's data directory. The project scopes it would bring are dropped:
+    // a fallback that kept them would adopt a project nobody pointed at.
+    mkdirSync(join(env.home, PROJECT_DIR), { recursive: true });
+    const plain = join(sandbox, 'plain');
+    mkdirSync(plain, { recursive: true });
+    const ctx = resolveContext({ roots: [pathToFileURL(plain).href], env });
+    expect(ctx.inProject).toBe(false);
+    expect(ctx.trees.projectPublic).toBeUndefined();
+    expect(ctx.trees.projectPrivate).toBeUndefined();
   });
 
   it('a non-file root URI is skipped, not resolved', () => {
@@ -88,6 +116,152 @@ describe('resolveContext — the project cascade', () => {
     });
     // The http root is skipped; the file root behind it still resolves.
     expect(ctx.inProject).toBe(true);
+  });
+
+  it('says which rung it landed by — configured, roots, working directory, or none', () => {
+    // The field the log line is printed from. Asserted per rung, because a cascade that
+    // reported one rung for every landing would still land correctly and would make a
+    // project inferred from a working directory read exactly like one a client named.
+    const project = makeProject('p');
+    const plain = join(sandbox, 'plain');
+    mkdirSync(plain, { recursive: true });
+    expect(resolveContext({ configProject: project, roots: [], env }).rung).toBe('configured');
+    expect(resolveContext({ roots: [pathToFileURL(project).href], env }).rung).toBe('roots');
+    expect(resolveContext({ cwd: project, env }).rung).toBe('cwd');
+    expect(resolveContext({ cwd: plain, env }).rung).toBe('global');
+    expect(resolveContext({ roots: [], env }).rung).toBe('global');
+  });
+});
+
+/**
+ * Rung 3: the server's working directory, for a client that declared no `roots`.
+ *
+ * The rung exists because a client measured in the field declares no `roots` capability
+ * and starts the server in the workspace root, and the cascade used to send every
+ * session of it to the machine-global tree — where a note taken in one project came
+ * back in the opening of every other. The cases below are the rung's two halves: it
+ * finds the project the way the roots rung does, and it never becomes a way to create
+ * one or to adopt something that is not one.
+ *
+ * WHAT IS NOT HERE: the case the rung must NOT fire for — a client that declared `roots`
+ * and listed none. That case cannot be written against this function: the working
+ * directory exists only on the input for a client that declared nothing
+ * (`ClientWorkspace`), so it is asserted where the capability is read, through a real
+ * client (`a-client-that-names-no-workspace.test.ts`).
+ */
+describe('resolveContext — the working directory, for a client that declared no roots', () => {
+  it('serves the project the working directory is in', () => {
+    const project = makeProject('ws');
+    const ctx = resolveContext({ cwd: project, env });
+    expect(ctx.inProject).toBe(true);
+    expect(ctx.project).toBe(project);
+    expect(ctx.trees.projectPublic).toBe(join(project, PROJECT_DIR));
+  });
+
+  it('walks UP from it, as the roots rung does from a root', () => {
+    // A host started in a package of a monorepo is working in the monorepo.
+    const mono = makeProject('mono');
+    const pkg = join(mono, 'packages', 'one');
+    mkdirSync(pkg, { recursive: true });
+    expect(resolveContext({ cwd: pkg, env }).project).toBe(mono);
+  });
+
+  it('is never read off the PROCESS — a client that listed no roots stays global inside a project', () => {
+    // The type keeps a working directory off the input of a client that declared `roots`,
+    // and that is not all of it: the resolver could still reach for this process's own
+    // directory. So this runs from INSIDE a project, where a resolver that did would land.
+    const project = makeProject('where-the-process-is');
+    const before = process.cwd();
+    process.chdir(project);
+    try {
+      const ctx = resolveContext({ roots: [], env });
+      expect(ctx.inProject).toBe(false);
+      expect(ctx.rung).toBe('global');
+    } finally {
+      process.chdir(before);
+    }
+  });
+
+  it('lands on GLOBAL when no project is at or above it — and never refuses', () => {
+    const plain = join(sandbox, 'plain');
+    mkdirSync(plain, { recursive: true });
+    const ctx = resolveContext({ cwd: plain, env });
+    expect(ctx.inProject).toBe(false);
+    expect(ctx.rung).toBe('global');
+    expect(ctx.trees.projectPublic).toBeUndefined();
+  });
+
+  it('never CREATES a `.mnema/` — it uses one that is there, and only that', () => {
+    // `mnema init` is the only verb that founds a project. A rung that made one at the
+    // working directory would found a project in whatever directory a host happens to
+    // start a process in.
+    const plain = join(sandbox, 'plain');
+    mkdirSync(plain, { recursive: true });
+    const before = readdirSync(plain);
+    resolveContext({ cwd: plain, env });
+    expect(existsSync(join(plain, PROJECT_DIR))).toBe(false);
+    expect(readdirSync(plain)).toEqual(before);
+  });
+
+  it('does not take THIS machine’s data directory for a project', () => {
+    // With `$XDG_DATA_HOME` unset the global tree and the key root live in `~/.mnema`,
+    // and a directory called `.mnema` is exactly what the walk-up looks for: a workspace
+    // under home that was never initialized would resolve to home, a "project" whose
+    // committed tree is this machine's private data. The key root is made the way the
+    // first `mnema init` on a machine makes it.
+    const home = join(sandbox, 'machine-home');
+    const unsetXdg: DiscoveryEnv = { home };
+    const keyRoot = join(home, PROJECT_DIR, 'identity');
+    mkdirSync(join(keyRoot, 'keys'), { recursive: true });
+    const workspace = join(home, 'code', 'never-initialized');
+    mkdirSync(workspace, { recursive: true });
+
+    const ctx = resolveContext({ cwd: workspace, env: unsetXdg });
+    expect(ctx.inProject).toBe(false);
+    expect(ctx.rung).toBe('global');
+    expect(ctx).not.toHaveProperty('project');
+  });
+
+  it('does not take ANOTHER environment’s data directory for one either', () => {
+    // `~/.mnema` keeps its key root after `$XDG_DATA_HOME` is set, and a sandboxed
+    // environment under a real home finds the real one: the directory is not this
+    // environment's data directory, and it is still no project's tree.
+    const home = join(sandbox, 'machine-home');
+    mkdirSync(join(home, PROJECT_DIR, 'identity', 'keys'), { recursive: true });
+    const workspace = join(home, 'code', 'never-initialized');
+    mkdirSync(workspace, { recursive: true });
+    const elsewhere: DiscoveryEnv = { home, xdgDataHome: join(sandbox, 'data') };
+
+    expect(resolveContext({ cwd: workspace, env: elsewhere }).inProject).toBe(false);
+  });
+
+  it('still serves a real project under such a home — the guard refuses the directory, not the home', () => {
+    // Non-vacuity for the two above: a home holding a data directory can hold projects,
+    // and a guard that refused every walk-up under it would pass both cases by
+    // serving nothing.
+    const home = join(sandbox, 'machine-home');
+    mkdirSync(join(home, PROJECT_DIR, 'identity', 'keys'), { recursive: true });
+    const app = join(home, 'code', 'app');
+    mkdirSync(app, { recursive: true });
+    ensureTree({ root: join(app, PROJECT_DIR) });
+
+    expect(resolveContext({ cwd: app, env: { home } }).project).toBe(app);
+  });
+
+  it('is NOT applied by the roots rung — which still takes that directory for a project', () => {
+    // A DEFECT, DECLARED AND PINNED, not a behaviour anybody wants. The guard above is
+    // rung 3's alone (`isAMachinesDataDir`): rung 2 and the command line walk up into the
+    // machine's data directory as they always did, and closing that changes what a
+    // client that DOES declare `roots` is served. This case is here so that the day it
+    // is closed, the comment that says it is not is seen to be wrong.
+    const home = join(sandbox, 'machine-home');
+    mkdirSync(join(home, PROJECT_DIR, 'identity', 'keys'), { recursive: true });
+    const workspace = join(home, 'code', 'never-initialized');
+    mkdirSync(workspace, { recursive: true });
+
+    const ctx = resolveContext({ roots: [pathToFileURL(workspace).href], env: { home } });
+    expect(ctx.project).toBe(home);
+    expect(ctx.rung).toBe('roots');
   });
 });
 
@@ -119,7 +293,7 @@ describe('resolveContext — an explicitly configured project', () => {
     // happened, so the sentence has to carry the fix as well as the fault.
     const plain = join(sandbox, 'plain');
     mkdirSync(plain, { recursive: true });
-    expect(() => resolveContext({ configProject: plain, env })).toThrow(
+    expect(() => resolveContext({ configProject: plain, roots: [], env })).toThrow(
       '`mnema init` has been run in, or drop the flag',
     );
   });
@@ -129,10 +303,10 @@ describe('resolveContext — an explicitly configured project', () => {
     // runner's, and in production is whatever the host spawned the server with. The
     // refusal does not depend on what is there: a relative path that resolves by
     // accident is the case this exists to stop.
-    expect(() => resolveContext({ configProject: '.', env })).toThrow(
+    expect(() => resolveContext({ configProject: '.', roots: [], env })).toThrow(
       '"." is not an absolute path',
     );
-    expect(() => resolveContext({ configProject: 'repo', env })).toThrow(
+    expect(() => resolveContext({ configProject: 'repo', roots: [], env })).toThrow(
       'working directory is whatever the host spawned it with',
     );
   });
@@ -144,7 +318,7 @@ describe('resolveContext — an explicitly configured project', () => {
     const mono = makeProject('mono');
     const pkg = join(mono, 'packages', 'one');
     mkdirSync(pkg, { recursive: true });
-    const ctx = resolveContext({ configProject: pkg, env });
+    const ctx = resolveContext({ configProject: pkg, roots: [], env });
     expect(ctx.inProject).toBe(true);
     expect(ctx.project).toBe(mono);
     expect(ctx.trees.projectPublic).toBe(join(mono, PROJECT_DIR));
@@ -159,7 +333,7 @@ describe('resolveContext — an explicitly configured project', () => {
     for (const configured of [forged, 'rel\nRefused (UNKNOWN_TASK): nope']) {
       const thrown = (() => {
         try {
-          resolveContext({ configProject: configured, env });
+          resolveContext({ configProject: configured, roots: [], env });
         } catch (error) {
           return (error as Error).message;
         }
@@ -179,7 +353,7 @@ describe('resolveContext — an explicitly configured project', () => {
     const mono = makeProject('mono');
     mkdirSync(join(mono, 'packages'), { recursive: true });
     for (const spelling of [`${mono}/`, `${mono}/.`, `${mono}/packages/..`]) {
-      expect(resolveContext({ configProject: spelling, env }).project).toBe(mono);
+      expect(resolveContext({ configProject: spelling, roots: [], env }).project).toBe(mono);
     }
   });
 });
@@ -328,7 +502,17 @@ describe('resolveContext — which projects the workspace holds', () => {
     expect(dirsOf(ctx)).toEqual([]);
   });
 
-  it('is empty with no roots at all', () => {
-    expect(resolveContext({ env }).workspaceProjects).toEqual([]);
+  it('is empty when the client listed no roots', () => {
+    // THIS WAS "is empty with no roots at all", and like the rung-4 case above it stood
+    // for two clients. A client that listed none knows of no project; a client with no
+    // `roots` capability knows of the one its working directory resolves to (below).
+    expect(resolveContext({ roots: [], env }).workspaceProjects).toEqual([]);
+  });
+
+  it('names the project the working directory resolved to, for a client that declared no roots', () => {
+    // No root announced it — there are none — and it is still where the session writes,
+    // which is the rule `landedInProject` applies to a configured path as well.
+    const project = makeProject('here');
+    expect(dirsOf(resolveContext({ cwd: project, env }))).toEqual([project]);
   });
 });

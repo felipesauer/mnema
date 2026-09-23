@@ -152,6 +152,30 @@ That records a fact in your project's record — who switched it, when, and why 
 why — and the next session's opening document says the push is off instead of implying it
 had nothing to say. `mnema switch on edit-rules-push` puts it back.
 
+## In VS Code and Cursor
+
+The plugin is written in Claude Code's format, and two other hosts read that format.
+What each one runs of it:
+
+| | Claude Code | VS Code's agent | Cursor's command-line agent |
+|---|---|---|---|
+| **The MCP server** | connected, in the project the session has open | connected, in the project the window has open | connected once you approve it, in the project of the directory Cursor starts it in — Cursor announces no workspace folders, so that directory is what the server goes by |
+| **What the server says its tools are for** | reaches the session | reaches the model in the families whose prompt carries a server's instructions; in the ones whose prompt does not — the Codex models among them — the opening below is what arrives | sent to Cursor with the rest of the context |
+| **The opening — the document and the notes** | handed to every session | handed to every session, whatever model it runs | both hooks run, and their text is sent to Cursor with the rest of the context |
+| **The rules before each edit** | handed over, and recorded as served | not run: it is an `mcp_tool` hook, a type Claude Code runs and the other two do not | not run, for the same reason |
+
+**How each loads it.** VS Code's agent loads it from a folder listed in its
+`chat.pluginLocations` setting, which is the route these rows were measured on. Cursor's
+command-line agent loads it on its own from the Claude Code installation on the same
+machine, with Cursor's import of third-party plugins on, which is how it ships.
+
+**Where the table stops.** It was measured with VS Code 1.137 and its Copilot Chat 0.65,
+and with Cursor's command-line agent 2026.09.18 — not Cursor's editor. On Cursor's side it
+stops at what the client sends: what Cursor's servers assemble from that for a model is
+theirs, and was not observed. That the server there goes by the directory Cursor starts
+it in is this product's rule and is held by a case of its own
+([`a-client-that-names-no-workspace.test.ts`](../packages/code/tests/a-client-that-names-no-workspace.test.ts)).
+
 ## Layout
 
 ```

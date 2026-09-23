@@ -304,7 +304,7 @@ describe('a session locates an entity exactly where a fresh process would', () =
     if (!created.ok) throw new Error('setup: create refused');
     closeSession(inProject);
 
-    const outside = openSession({ clientName: 'claude-code', env });
+    const outside = openSession({ clientName: 'claude-code', roots: [], env });
     expect(outside.inProject).toBe(false);
     expect(viaSession(outside, created.id)).toBeUndefined();
     expect(viaReplay(outside, created.id)).toBeUndefined();

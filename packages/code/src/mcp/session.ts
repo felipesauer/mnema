@@ -67,14 +67,23 @@ import {
 } from '@mnema/core/write';
 import { oneLine } from '../one-line.js';
 import { type CacheRegistry, createCacheRegistry } from './cache-registry.js';
-import { resolveContext, type WorkspaceProject } from './context.js';
+import {
+  type ClientWorkspace,
+  type ContextInput,
+  type Rung,
+  resolveContext,
+  type WorkspaceProject,
+} from './context.js';
 
-/** What the server hands the session opener from the handshake. */
-export interface OpenSessionInput {
+/**
+ * What the server hands the session opener from the handshake: who connected, and what
+ * the client said about its workspace — the roots it listed, or, for a client that
+ * declared no `roots` capability, the directory the host started the server in (see
+ * {@link ClientWorkspace}).
+ */
+export type OpenSessionInput = ClientWorkspace & {
   /** The connecting client's name (`clientInfo.name`) — the session's `which`. */
   readonly clientName: string;
-  /** The client's workspace roots as `file://` URIs, if it exposed any. */
-  readonly roots?: readonly string[] | undefined;
   /** An explicit project directory the server was configured with, if any. */
   readonly configProject?: string | undefined;
   /** The discovery environment (XDG/home). */
@@ -85,7 +94,7 @@ export interface OpenSessionInput {
    * directly) needs none.
    */
   readonly log?: ((line: string) => void) | undefined;
-}
+};
 
 /**
  * A run this connection opened, and the tree it lives in.
@@ -168,6 +177,11 @@ export interface Session {
   /** Whether the session landed in a project (vs the global tree) — see {@link Session.trees}. */
   inProject: boolean;
   /**
+   * The rung of the cascade the landing came from (see {@link Rung}) — moved, with the
+   * trees, by {@link refreshWorkspace} and by nothing else.
+   */
+  rung: Rung;
+  /**
    * The project directory the cascade landed on, absent outside a project — the
    * answer to "where is this session writing", carried so the surface can say it
    * (see {@link ResolvedContext.project}).
@@ -227,6 +241,19 @@ export interface Session {
    * handshake and be silently dropped afterwards.
    */
   readonly configProject?: string;
+  /**
+   * The directory the host started the server in — present exactly when the client
+   * declared no `roots` capability, and carried for the reason {@link Session.configProject}
+   * is: so a re-read runs the SAME cascade the handshake ran.
+   *
+   * Without it a re-read of a session that landed by the working directory would resolve
+   * over an empty root list and nothing else, find no project, and move the session onto
+   * the global tree in silence — the landing walking away from the project its writes
+   * were going to, which is the one move {@link refreshWorkspace} exists never to make.
+   * A client with no `roots` capability is never asked for roots, so this session's
+   * {@link Session.roots} stays empty and this is the whole of what it re-reads.
+   */
+  readonly cwd?: string;
   /**
    * How many times the client has told this session its workspace changed — counting
    * the times nothing came of it.
@@ -379,11 +406,13 @@ export interface Session {
  * touched: the trees resolve first, and reading the anchor is what opens a writer.
  */
 export function openSession(input: OpenSessionInput): Session {
-  const { trees, inProject, project, workspaceProjects } = resolveContext({
-    env: input.env,
-    ...(input.configProject !== undefined ? { configProject: input.configProject } : {}),
-    ...(input.roots !== undefined ? { roots: input.roots } : {}),
-  });
+  const { trees, inProject, project, rung, workspaceProjects } = resolveContext(
+    cascadeInput(
+      input.env,
+      input.configProject,
+      input.cwd !== undefined ? { cwd: input.cwd } : { roots: input.roots },
+    ),
+  );
 
   // WHERE THE ANCHOR IS READ FROM, and nothing else. This is not a write default —
   // there is none on a session any more (see {@link WriteTarget}); it is the one tree
@@ -411,14 +440,16 @@ export function openSession(input: OpenSessionInput): Session {
   return {
     trees,
     inProject,
+    rung,
     ...(project !== undefined ? { project } : {}),
     workspaceProjects,
     // A COPY, and in the order the client announced them. The array belongs to the
     // caller, and this one is the base every later union is built on: a re-read that
     // resolved over a list somebody else could have changed would resolve over a
-    // workspace nobody announced.
+    // workspace nobody announced. Empty for a client that declared no `roots`.
     roots: [...(input.roots ?? [])],
     ...(input.configProject !== undefined ? { configProject: input.configProject } : {}),
+    ...(input.cwd !== undefined ? { cwd: input.cwd } : {}),
     // Zero, and it is REPORTED as zero — see {@link Session.refreshes}.
     refreshes: 0,
     which: input.clientName,
@@ -519,13 +550,20 @@ export function refreshWorkspace(session: Session, roots: readonly string[]): Wo
   // the evidence that the server heard the client at all.
   session.refreshes += 1;
 
-  const gained = roots.filter((root) => !session.roots.includes(root));
+  // A session whose client declared no `roots` capability re-reads the one signal it
+  // opened with — the working directory — and has no list to grow: such a client is
+  // never asked for roots, so anything handed here in its name is not a workspace it
+  // announced.
+  const gained =
+    session.cwd !== undefined ? [] : roots.filter((root) => !session.roots.includes(root));
   const union = gained.length === 0 ? session.roots : [...session.roots, ...gained];
-  const resolved = resolveContext({
-    env: session.env,
-    ...(session.configProject !== undefined ? { configProject: session.configProject } : {}),
-    roots: union,
-  });
+  const resolved = resolveContext(
+    cascadeInput(
+      session.env,
+      session.configProject,
+      session.cwd !== undefined ? { cwd: session.cwd } : { roots: union },
+    ),
+  );
 
   const known = new Set(session.workspaceProjects.map((project) => project.dir));
   const learned = resolved.workspaceProjects
@@ -543,6 +581,7 @@ export function refreshWorkspace(session: Session, roots: readonly string[]): Wo
   session.roots = union;
   session.trees = resolved.trees;
   session.inProject = resolved.inProject;
+  session.rung = resolved.rung;
   if (resolved.project !== undefined) session.project = resolved.project;
   session.workspaceProjects = resolved.workspaceProjects;
   session.who = who;
@@ -552,6 +591,24 @@ export function refreshWorkspace(session: Session, roots: readonly string[]): Wo
     learned,
     ...(landed && resolved.project !== undefined ? { landedOn: resolved.project } : {}),
   };
+}
+
+/**
+ * The cascade's input, built from what a connection said at the handshake — ONE builder
+ * for {@link openSession} and for every {@link refreshWorkspace}, so the two cannot come
+ * to run different cascades.
+ *
+ * It is the reason {@link Session.configProject} and {@link Session.cwd} are carried at
+ * all: a re-read that rebuilt its input from less than the handshake had would be a
+ * second reading of where the session is, and the first place the two disagreed would
+ * be a session moved out of its project by a notification that changed nothing.
+ */
+function cascadeInput(
+  env: DiscoveryEnv,
+  configProject: string | undefined,
+  workspace: ClientWorkspace,
+): ContextInput {
+  return { ...workspace, env, ...(configProject !== undefined ? { configProject } : {}) };
 }
 
 /** What a write needs from its session: where to append, and what to pin it to. */

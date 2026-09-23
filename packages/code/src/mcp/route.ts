@@ -172,9 +172,13 @@ type Picked =
  * accepted, and refused when it fits more than one project.
  *
  * A path counts as a path only when it is ABSOLUTE, and that is not fussiness. This
- * server's working directory is whatever the host spawned it with and has nothing to
- * do with the projects — the module this list comes from exists because of that. So
- * resolving a relative argument against the process's cwd would sometimes produce a
+ * server's working directory is whatever the host spawned it with. It used to be
+ * described here as having "nothing to do with the projects"; for a client that
+ * declares no workspace roots it is now what the cascade finds the session's own
+ * project from (`context.ts`, rung 3) — and that is exactly why it cannot also decide
+ * what a caller's relative name means. It is one directory, chosen by the host, and a
+ * workspace holds several projects. So resolving a relative argument against the
+ * process's cwd would sometimes produce a
  * real project's path by accident, and the accident is precisely the case the bare
  * name refuses: a workspace with two `api` directories where `api` resolved against
  * one parent silently picks that one. A relative path therefore falls through to the

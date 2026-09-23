@@ -1,22 +1,45 @@
 /**
  * Resolving the tree a stdio MCP server operates on.
  *
- * A CLI command has an obvious working directory; a server does not — the host
- * spawns it with an arbitrary cwd, so the project cannot be read off `cwd` the
- * way `mnema init` reads it. The project is discovered from the client instead,
- * in a fixed cascade from most explicit to fallback:
+ * THIS PARAGRAPH USED TO SAY A SERVER HAS NO WORKING DIRECTORY WORTH READING: *"A CLI
+ * command has an obvious working directory; a server does not — the host spawns it with
+ * an arbitrary cwd, so the project cannot be read off `cwd` the way `mnema init` reads
+ * it."* That was a premise about hosts, and no host had been measured against it. On
+ * Cursor's command-line agent it is false: the server's working directory is the root of
+ * the workspace on both routes that start it — the project's `.cursor/mcp.json` and the
+ * Claude Code plugin that agent loads — and it stays the workspace root when the agent
+ * itself is launched from another directory. The same client declares no `roots`
+ * capability, so the cascade below had nothing else to go on, and every session it opened
+ * landed on the machine-global tree: a note an agent took in one project came back in the
+ * opening of every project on the machine, and a decision recorded there never reached
+ * the project's own record.
+ *
+ * So the project comes from the client when the client says where its workspace is, and
+ * from the directory the host started the server in only when the client says NOTHING
+ * about a workspace — in a fixed cascade from most explicit to fallback:
  *
  *   1. an explicit project path (`mnema mcp --project`), if the operator named one.
  *      It is the one rung that can REFUSE rather than fall through to the next —
  *      see {@link configuredProject};
  *   2. the client's workspace `roots` — the first root that resolves to a
  *      project (has a `.mnema/`), walked up from that root's directory;
- *   3. GLOBAL — with no configured path and no project among the roots, the
- *      server does NOT guess a project at some cwd (only `mnema init` may create
- *      a `.mnema/`). It operates on the global tree. This is not a limbo; the
- *      global tree is legitimate cross-project knowledge. It never refuses.
+ *   3. the server's WORKING DIRECTORY, walked up the same way — for a client that
+ *      declared no `roots` capability, and for no other (see {@link ClientWorkspace}). A
+ *      client that declared it and listed nothing — a window with no folder open — has
+ *      SAID its workspace holds no folder, and serving whatever project sits at the cwd
+ *      there would be the answer about a project nobody named that rung 1 exists to
+ *      refuse. And a `.mnema/` that is this machine's own data directory is not taken for
+ *      a project (see {@link isAMachinesDataDir});
+ *   4. GLOBAL — with no project found by any rung above. It operates on the global tree.
+ *      This is not a limbo; the global tree is legitimate cross-project knowledge. It
+ *      never refuses.
  *
- * Rungs 2 and 3 never refuse and rung 1 does, and the asymmetry is the whole of
+ * No rung creates a `.mnema/` — only `mnema init` may. Rung 3 uses one that is already
+ * there, and says so: the rung a session landed by is part of what this module returns
+ * ({@link Rung}), so the server's log line can tell a project taken from the working
+ * directory from one taken from the roots.
+ *
+ * Rungs 2, 3 and 4 never refuse and rung 1 does, and the asymmetry is the whole of
  * what an operator can rely on here. An unmatched CASCADE is a legitimate global
  * session: nobody said which project, so landing outside one is an answer. An
  * operator NAMING a project that does not exist is not — it is a statement about
@@ -38,14 +61,16 @@
  * the others, which is the only way work done in a second project can be recorded
  * in that project instead of in whichever one the cascade happened to pick.
  *
- * This module is pure: it takes the already-listed roots (the server does the
- * protocol call) and returns which trees to work on. WHICH of them a write lands in is
- * not decided here; that is the core's routing rule ({@link resolveScope}), applied at
- * the write, where the KIND is known. This decides only which PROJECT — never
- * public/private.
+ * This module is pure: it takes what the client said about its workspace (the server
+ * reads the capability and makes the protocol call) and returns which trees to work on;
+ * the filesystem it touches is read, by the walk-up, and never written. WHICH of them a
+ * write lands in is not decided here; that is the core's routing rule
+ * ({@link resolveScope}), applied at the write, where the KIND is known. This decides
+ * only which PROJECT — never public/private.
  */
 
-import { dirname, isAbsolute, resolve } from 'node:path';
+import { statSync } from 'node:fs';
+import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type DiscoveryEnv, type ResolvedTrees, resolveTrees } from '@mnema/core';
 import { oneLine } from '../one-line.js';
@@ -73,8 +98,47 @@ export interface WorkspaceProject {
   readonly trees: ResolvedTrees;
 }
 
+/**
+ * What the client said about its workspace — TWO different statements, which used to
+ * reach this module as one empty list.
+ *
+ * A client that DECLARED the `roots` capability answers `roots/list`, and its answer is
+ * the workspace, EMPTY INCLUDED: a window with no folder open has said it holds no folder.
+ * A client that declared NO `roots` capability has said nothing about a workspace at all,
+ * and the one signal left is the directory the host started this server in. The field
+ * that carried the roots used to be documented as *"Empty when the client declares no
+ * `roots` capability or opened no workspace"* — both arrived as `[]`, and a cascade handed
+ * `[]` can only treat them alike. That is why the fix for the second could not be "an
+ * empty list falls back to the cwd": it would have fired for the first as well, and served
+ * the project at the cwd to a client that had just said there is none.
+ *
+ * So the difference is carried in the SHAPE. The working directory exists only in the
+ * variant for a client that declared nothing, and a root list only in the other; a value
+ * holding both does not compile. A cascade that consulted the cwd for a client that
+ * declared `roots` would need a cwd this type does not give it — the trap cannot be
+ * written below this line, only at the one place that decides which variant a connection
+ * gets, where the capability is read (`clientWorkspace`, `server.ts`), and a test drives a
+ * client through that place for each variant.
+ */
+export type ClientWorkspace =
+  | {
+      /** The workspace roots the client listed, as `file://` URIs — empty when it listed none. */
+      readonly roots: readonly string[];
+      readonly cwd?: never;
+    }
+  | {
+      /**
+       * The directory the host started this server in, for a client that declared no
+       * `roots` capability — the only statement about a workspace such a client makes,
+       * and made by the host rather than by the client. Measured on the one client known
+       * to take this path, it is the root of the workspace.
+       */
+      readonly cwd: string;
+      readonly roots?: never;
+    };
+
 /** What the server hands the resolver — the raw discovery inputs. */
-export interface ContextInput {
+export type ContextInput = ClientWorkspace & {
   /**
    * An explicit project directory the server was configured with, if any — what
    * `mnema mcp --project` carries. The strongest signal: the operator named the
@@ -85,14 +149,23 @@ export interface ContextInput {
    * is refused rather than passed over.
    */
   readonly configProject?: string | undefined;
-  /**
-   * The client's workspace roots as `file://` URIs (from `roots/list`). Empty
-   * when the client declares no `roots` capability or opened no workspace.
-   */
-  readonly roots?: readonly string[] | undefined;
   /** The discovery environment (XDG/home), for the global tree and identity. */
   readonly env: DiscoveryEnv;
-}
+};
+
+/**
+ * The rung of the cascade a session landed by: the operator's `--project`, the client's
+ * roots, the server's working directory, or none of them (the global tree).
+ *
+ * It is RETURNED rather than left for a reader to infer, and the reason is the rung that
+ * made it necessary. Before it, a project in the log could only have come from a
+ * configured path or from the roots, and the line did not need to say which. With a rung
+ * that reads the working directory, the same project name can arrive by two roads that
+ * differ in what they rest on — what the client said, and where the host happened to
+ * start a process — and a reader who cannot tell them apart cannot tell a landing the
+ * client asked for from one the server inferred.
+ */
+export type Rung = 'configured' | 'roots' | 'cwd' | 'global';
 
 /** The tree the session works on, and whether it landed in a project. */
 export interface ResolvedContext {
@@ -117,6 +190,8 @@ export interface ResolvedContext {
    * answer and says it out loud rather than leaving the reader to re-derive it.
    */
   readonly project?: string;
+  /** Which rung of the cascade produced this answer — see {@link Rung}. */
+  readonly rung: Rung;
   /**
    * The DISTINCT projects this session knows the workspace holds — the one above
    * among them, always.
@@ -154,7 +229,8 @@ interface ProbedRoot {
 /**
  * Resolves the tree the session operates on, following the cascade above. It
  * probes the explicit path first, then each root in order, taking the first
- * that resolves to a project; failing all, it falls back to the global tree
+ * that resolves to a project; for a client that announced no roots at all, the
+ * server's working directory; failing all, it falls back to the global tree
  * resolved from the environment (the same `ResolvedTrees` shape, with the
  * project scopes simply absent).
  *
@@ -168,9 +244,10 @@ export function resolveContext(input: ContextInput): ResolvedContext {
   // first root that resolves, so a session that only ran the cascade cannot say how
   // many projects the workspace holds — it stopped counting at one. That is the one
   // thing the cascade's answer can never tell a reader, and it is cheap: a probe is
-  // a walk-up over already-listed paths, and the roots a host announces are few.
+  // a walk-up over already-listed paths, and the roots a host announces are few. A
+  // client that declared no `roots` has none to probe.
   const probed: ProbedRoot[] = [];
-  for (const root of input.roots ?? []) {
+  for (const root of input.cwd === undefined ? input.roots : []) {
     const dir = rootToPath(root);
     if (dir === undefined) continue;
     probed.push({ dir, trees: resolveTrees(dir, input.env) });
@@ -178,25 +255,87 @@ export function resolveContext(input: ContextInput): ResolvedContext {
 
   // 1. An explicit project path wins — or refuses. It never falls through.
   if (input.configProject !== undefined) {
-    return landedInProject(configuredProject(input.configProject, input.env), probed);
+    return landedInProject(configuredProject(input.configProject, input.env), probed, 'configured');
   }
 
   // 2. The first workspace root that resolves to a project.
   for (const { trees } of probed) {
-    if (trees.projectPublic !== undefined) return landedInProject(trees, probed);
+    if (trees.projectPublic !== undefined) return landedInProject(trees, probed, 'roots');
   }
 
-  // 3. Fallback: the GLOBAL tree, deliberately with NO project. `resolveTrees`
+  // 3. The working directory — which exists on the input only for a client that
+  // declared no `roots` (see {@link ClientWorkspace}), so no test of the list's
+  // emptiness belongs here: a client that listed nothing never reaches this line with
+  // a directory to walk from.
+  if (input.cwd !== undefined) {
+    const trees = resolveTrees(resolve(input.cwd), input.env);
+    if (trees.projectPublic !== undefined && !isAMachinesDataDir(trees)) {
+      return landedInProject(trees, probed, 'cwd');
+    }
+  }
+
+  // 4. Fallback: the GLOBAL tree, deliberately with NO project. `resolveTrees`
   // always returns `global` + `keyRoot` regardless of where it resolves from,
   // so we take exactly those two and drop any project scopes a walk-up might
   // have found — the server must never adopt a project the client did not point
-  // at (a stray `.mnema/` above home would otherwise leak in).
+  // at. The `.mnema/` a walk-up from home most often finds is not even a project:
+  // with `$XDG_DATA_HOME` unset it is this machine's own data directory
+  // ({@link isAMachinesDataDir}).
   const { global, keyRoot } = resolveTrees(input.env.home, input.env);
   return {
     trees: { global, keyRoot },
     inProject: false,
+    rung: 'global',
     workspaceProjects: announcedProjects(probed),
   };
+}
+
+/**
+ * Whether the `.mnema/` a walk-up stopped at is a machine's DATA directory — where the
+ * global tree and the key root live — rather than a project's tree.
+ *
+ * The two can share a name, and on most machines they do. With `$XDG_DATA_HOME` unset
+ * the data directory is `~/.mnema` (`resolveTrees`), and a walk-up from any directory
+ * under home that is no project stops there, because a directory called `.mnema` is
+ * exactly what it looks for: the home directory resolves as a project whose committed
+ * tree is this machine's private data. The directory exists as soon as anything on the
+ * machine has a key — the first `mnema init` anywhere creates one — so a client without
+ * `roots` whose workspace was never initialized would have taken this rung straight into
+ * it, and been told its writes were committed with a repository.
+ *
+ * ONE READING: the directory holds a key root — a directory named like this
+ * environment's key root, which no project tree contains. It answers for this
+ * environment's data directory and for ANOTHER environment's alike: `~/.mnema` keeps its
+ * key root after `$XDG_DATA_HOME` is set, and a run with a sandboxed environment finds
+ * the real one when its working directory sits under a real home.
+ *
+ * THERE WERE TWO, and the second — "it is the parent of the key root this environment
+ * resolves" — was a second statement of the same fact: removing it left every case
+ * green. Every path the product has that makes the data directory makes the key root in
+ * it (`mnema init`, a write, and a session that only reads — the last pinned in
+ * `a-client-that-names-no-workspace.test.ts`), so a data directory without one is not a
+ * state the product produces, and the reading that could only fire there is gone rather
+ * than kept as a guard nothing can light.
+ *
+ * APPLIED BY RUNG 3 ALONE. The other walk-ups — rung 2's roots, rung 1's configured
+ * path, and every command-line verb — still take that directory for a project, and
+ * `mcp-context.test.ts` pins that for rung 2 so the day it changes is seen. It is a
+ * defect those rungs already had and this one would have inherited; closing it for them
+ * changes what a client that DOES declare `roots` is served, which this rung was not
+ * written to change.
+ */
+function isAMachinesDataDir(trees: ResolvedTrees): boolean {
+  const found = trees.projectPublic;
+  if (found === undefined) return false;
+  return isDirectory(join(found, basename(trees.keyRoot)));
+}
+
+function isDirectory(path: string): boolean {
+  try {
+    return statSync(path).isDirectory();
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -211,8 +350,16 @@ export function resolveContext(input: ContextInput): ResolvedContext {
  * value is written. A configured path is written ONCE, into a file, and read by a
  * process nobody watches start — so `./repo` would resolve against a directory the
  * person who wrote it never saw, and would land somewhere different the day the host
- * changed how it spawns. This whole module exists because a server has no cwd worth
- * trusting, and honouring a relative path here would bring that back.
+ * changed how it spawns.
+ *
+ * THIS PARAGRAPH ENDED "This whole module exists because a server has no cwd worth
+ * trusting, and honouring a relative path here would bring that back" — and rung 3 now
+ * trusts the cwd, so the reason has to stand on what is still true. Rung 3 reads the
+ * working directory as EVIDENCE of where the host is working, and only when the client
+ * offered no other; it is a fallback, it can be wrong, and it never refuses. This rung is
+ * the operator's statement, the one that refuses, and a refusal means something only if
+ * the value it judges means one thing — a path whose meaning depends on how a host
+ * happens to start a process means as many things as there are hosts.
  *
  * Refusing is also the only honest option: a relative path CAN resolve to a real
  * project by accident, and the accident is silent. `resolve` is then applied to what
@@ -280,20 +427,25 @@ function configuredProject(configured: string, env: DiscoveryEnv): ResolvedTrees
  * that was pointed at: a subdirectory of a project resolves to the project, and
  * reporting the input would name a directory that owns nothing.
  */
-function landedInProject(trees: ResolvedTrees, probed: readonly ProbedRoot[]): ResolvedContext {
+function landedInProject(
+  trees: ResolvedTrees,
+  probed: readonly ProbedRoot[],
+  rung: Exclude<Rung, 'global'>,
+): ResolvedContext {
   const project = projectDirOf(trees);
   const workspaceProjects = announcedProjects(probed);
   // The project this session landed on belongs in the list even when no root
   // announced it as its own — which is the common shape, not the corner: the
   // walk-up regularly arrives at a project ABOVE every root (a folder opened
-  // inside a repository), and a configured path need not be among the roots at
-  // all. Including it is what stops the list contradicting the name beside it,
+  // inside a repository), a configured path need not be among the roots at all,
+  // and a working directory never is. Including it is what stops the list
+  // contradicting the name beside it,
   // and it is not an exception to the root rule: this directory holds the
   // `.mnema/` the session is writing to.
   if (!workspaceProjects.some((known) => known.dir === project)) {
     workspaceProjects.push({ dir: project, trees });
   }
-  return { trees, inProject: true, project, workspaceProjects };
+  return { trees, inProject: true, project, rung, workspaceProjects };
 }
 
 /**

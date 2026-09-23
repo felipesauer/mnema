@@ -74,3 +74,22 @@ describe('mnema mcp --project — the flag reaches the server', () => {
     expect(await mnema('mcp')).not.toHaveProperty('configProject');
   });
 });
+
+describe('mnema mcp — the working directory reaches the server', () => {
+  // `McpServerOptions.cwd` is the directory a client that declares no workspace roots is
+  // served the project of, and it has no default on purpose: a server built without it
+  // has nothing to walk up from. That makes this link the whole of the fix for such a
+  // client — the cascade honours a directory only if the one production caller hands it
+  // one, and the class this file exists for is an option plumbed to the end and fed by
+  // nobody.
+  it('passes the directory the process runs in', async () => {
+    expect(await mnema('mcp')).toMatchObject({ cwd: process.cwd() });
+  });
+
+  it('passes it beside a configured project, too — the flag decides, the directory waits', async () => {
+    expect(await mnema('mcp', '--project', '/srv/pilot')).toMatchObject({
+      cwd: process.cwd(),
+      configProject: '/srv/pilot',
+    });
+  });
+});

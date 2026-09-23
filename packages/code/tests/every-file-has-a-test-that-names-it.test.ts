@@ -290,8 +290,15 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * tests included, and reads each one — `node:child_process`, `node:fs`, `node:path`,
  * `node:url`, and `vitest` for the fifth. Like its sibling it imports no production module:
  * its subject is the text of the workspace's files.
+ *
+ * It went 2790 -> 2804 when a client that names no workspace began to be served the project
+ * it works in: fourteen clauses in `a-client-that-names-no-workspace.test.ts`, which drives
+ * the server through the SDK's own client and the built binary over its own pipes — so it
+ * reaches `node:child_process`, `node:fs`, `node:os`, `node:path`, `node:url`, the chain and
+ * the core, the SDK's client, in-memory transport and types, `vitest`, the server module,
+ * and the two support modules that collect a stream and poll what it collected.
  */
-const CLAUSES_IN_THE_TREE = 2790;
+const CLAUSES_IN_THE_TREE = 2804;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 

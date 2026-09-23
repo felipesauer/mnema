@@ -1,9 +1,13 @@
 /**
  * `mnema mcp --project <dir>`: the project the server serves, said out loud.
  *
- * A CLI verb has a working directory and that is the answer. A server does not —
- * the host spawns it with an arbitrary cwd — so the project came entirely from the
- * workspace folders the host announced. The first real use of the surface found what
+ * A CLI verb has a working directory and that is the answer. A server's is the host's
+ * choice, so the project came entirely from the workspace folders the host announced.
+ * (This said the host spawns it "with an arbitrary cwd", and that no longer describes
+ * the cascade: a client that announces NO folders is now served the project at the
+ * working directory — `a-client-that-names-no-workspace.test.ts`. What follows is about
+ * the clients that do announce them, which is where the originating case happened.)
+ * The first real use of the surface found what
  * that costs: an agent that went to the record on its own was answered out of a
  * project it had never mentioned (a stray `.mnema/` above home, first among the
  * roots), and the emptiness of that record read as "nothing was decided here". The
