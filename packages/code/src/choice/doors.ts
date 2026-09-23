@@ -19,6 +19,13 @@
  * and the second door — the catalogue — is the same in both: it is the answer this
  * invocation used to give, kept, one keystroke away.
  *
+ * EXCEPT WHERE NO PROJECT CAN BE STARTED, and the home directory is the one that made it an
+ * exception. `init` outside a project used to be offered everywhere, the home included, and
+ * Return on the page it opened founded a project in the home — the tree every folder under
+ * it then belonged to. `init` now refuses there (`whyNoProjectRootAt`, `@mnema/core`), and a
+ * first door that is always refused is not a door; so where a project cannot be founded the
+ * first door is the console, over the tree that IS there — the machine-global one.
+ *
  * WHAT EACH DOOR SAYS IT DOES IS THE VERB'S OWN SENTENCE, read off the declaration
  * commander routes with ({@link whatItDeclares}). A door that carried its own copy of that
  * sentence would be a second description of one verb, and the day the verb's changed the
@@ -121,15 +128,24 @@ export interface Door {
 }
 
 /**
- * THE DOORS, given what this program declared and whether there is a project here.
+ * THE DOORS, given what this program declared, whether there is a project here, and whether
+ * one can be founded here.
  *
  * Two, always: the one that depends on the directory, and the catalogue. A third would be a
  * menu rather than a question, and the catalogue is where everything else already is.
+ *
+ * `foundable` defaults to true because every directory but a few can hold a project; the
+ * one caller that reads the directory passes what `standing()` answers.
  */
-export function theDoors(verbs: readonly Declared[], inProject: boolean): readonly Door[] {
-  const first = inProject
-    ? { word: OPEN_THE_CONSOLE, verb: REPL_VERB }
-    : { word: ESTABLISH_A_PROJECT, verb: INIT_VERB };
+export function theDoors(
+  verbs: readonly Declared[],
+  inProject: boolean,
+  foundable = true,
+): readonly Door[] {
+  const first =
+    inProject || !foundable
+      ? { word: OPEN_THE_CONSOLE, verb: REPL_VERB }
+      : { word: ESTABLISH_A_PROJECT, verb: INIT_VERB };
   return [
     {
       word: first.word,

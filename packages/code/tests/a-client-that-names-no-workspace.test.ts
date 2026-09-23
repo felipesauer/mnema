@@ -209,10 +209,12 @@ describe('the machine’s own data directory, reached from a workspace nobody in
     // With `$XDG_DATA_HOME` unset the global tree lives in `~/.mnema`, and a directory
     // called `.mnema` is what a walk-up looks for — so every uninitialized workspace
     // under home would resolve to home, a "project" whose committed tree is this
-    // machine's data. The rung refuses a `.mnema/` that holds a key root, and this is the
-    // premise that refusal stands on, asked of the product rather than assumed: the first
-    // session to touch the global tree makes the key root beside it, even one that
-    // writes nothing.
+    // machine's data. THIS SAID "the rung refuses a `.mnema/` that holds a key root"; the
+    // refusal is now the core walk's, for every rung and verb, and the home itself is never
+    // a project's root whatever its `.mnema/` holds. What this case asks of the product
+    // still matters, for the reading that reaches ANOTHER environment's data directory —
+    // the key root inside it: the first session to touch the global tree makes the key
+    // root beside it, even one that writes nothing.
     const home = join(sandbox, 'home');
     env = { home };
     const first = makePlainDir('home/code/first');

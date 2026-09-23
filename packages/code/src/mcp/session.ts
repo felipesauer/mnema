@@ -57,7 +57,13 @@
  */
 
 import { catalogUpcasters } from '@mnema/chain';
-import { chainRootForScope, type DiscoveryEnv, type ResolvedTrees, type Scope } from '@mnema/core';
+import {
+  chainRootForScope,
+  type DiscoveryEnv,
+  type PassedOverTree,
+  type ResolvedTrees,
+  type Scope,
+} from '@mnema/core';
 import {
   authorizingAnchor,
   endRun,
@@ -221,6 +227,15 @@ export interface Session {
    * write that names something is refused rather than routed at a guess.
    */
   workspaceProjects: readonly WriteTarget[];
+  /**
+   * Every `.mnema/` the cascade's walks passed over when this session OPENED — a home's,
+   * a machine's data directory (see {@link ResolvedContext.passedOver}).
+   *
+   * Read once, by the log line the server writes when the session opens, and it stays the
+   * opening's: a re-read ({@link refreshWorkspace}) moves where the session writes and not
+   * what was said about how it got there.
+   */
+  readonly passedOver: readonly PassedOverTree[];
   /**
    * The workspace roots this connection has been told about, as `file://` URIs, in
    * the order they were first announced.
@@ -406,7 +421,7 @@ export interface Session {
  * touched: the trees resolve first, and reading the anchor is what opens a writer.
  */
 export function openSession(input: OpenSessionInput): Session {
-  const { trees, inProject, project, rung, workspaceProjects } = resolveContext(
+  const { trees, inProject, project, rung, workspaceProjects, passedOver } = resolveContext(
     cascadeInput(
       input.env,
       input.configProject,
@@ -443,6 +458,7 @@ export function openSession(input: OpenSessionInput): Session {
     rung,
     ...(project !== undefined ? { project } : {}),
     workspaceProjects,
+    passedOver,
     // A COPY, and in the order the client announced them. The array belongs to the
     // caller, and this one is the base every later union is built on: a re-read that
     // resolved over a list somebody else could have changed would resolve over a

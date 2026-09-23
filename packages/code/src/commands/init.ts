@@ -19,12 +19,32 @@
  * It holds no domain logic — establishing an identity (its anchor, its cold backup
  * key, its whole key roster) is the core's; init only decides WHERE (this cwd) and
  * refuses a double-init.
+ *
+ * AND IT REFUSES WHERE THE WALK WILL NEVER FIND A PROJECT — the home directory, and a
+ * directory whose `.mnema/` is a machine's data directory — by asking the walk's own rule
+ * (`whyNoProjectRootAt`, `@mnema/core`) before anything is made. It used to found a tree
+ * anywhere it was run, and the home was where that went wrong: measured in a sandbox
+ * home, `mnema init` there with no `$XDG_DATA_HOME` put the project tree in the same
+ * directory as the private key, and every folder under the home became that project. The
+ * bare name offered it as its first door outside a project, the home included. Asked
+ * AFTER the walk learned to pass those directories over, a founding there would go wrong
+ * in two ways the lines below cannot see: in the home it makes the tree and then resolves
+ * no project from it — a half-made `.mnema/` and a refusal about something else; at a data
+ * directory it finds a `.mnema/` already there and answers "Already a mnema project",
+ * about a directory that is none, with the anchor of whatever project lies above it.
  */
 
 import { statSync } from 'node:fs';
 import { join } from 'node:path';
 import { catalogUpcasters, ensureTree } from '@mnema/chain';
-import { chainRootForScope, type DiscoveryEnv, PROJECT_DIR, resolveTrees } from '@mnema/core';
+import {
+  chainRootForScope,
+  type DiscoveryEnv,
+  type NoProjectRoot,
+  PROJECT_DIR,
+  resolveTrees,
+  whyNoProjectRootAt,
+} from '@mnema/core';
 import {
   authorizingAnchor,
   type EstablishedIdentity,
@@ -56,6 +76,14 @@ export interface InitResult {
   readonly identity?: EstablishedIdentity;
 }
 
+/** A project could not be established here: the directory can be no project's root. */
+export interface InitRefused {
+  /** Why — the core's rule, the same one the walk-up passes such a directory by. */
+  readonly refused: NoProjectRoot;
+  /** The `.mnema/` a founding would have made. Nothing was made. */
+  readonly root: string;
+}
+
 /**
  * Establishes a project at `cwd`. If a `.mnema/` already exists at this exact
  * directory, init does NOT re-found — running it twice is a mistake, not a fresh
@@ -68,9 +96,18 @@ export interface InitResult {
  * That is not a claim about calls — `init.test.ts` digests every file of the project
  * tree and of the app data directory before and after, and requires both maps to be
  * unchanged.
+ *
+ * Nor does a REFUSED one: in a directory that can be no project's root it answers
+ * {@link InitRefused} before any directory is made, and `init.test.ts` holds that the
+ * same way — every file under the home, digested before and after.
  */
-export function runInit(ctx: InitContext): InitResult {
+export function runInit(ctx: InitContext): InitResult | InitRefused {
   const root = join(ctx.cwd, PROJECT_DIR);
+  // FIRST, before a directory is made: the walk's own rule. Asked of the same function
+  // the walk-up asks, so init cannot found a project the walk would pass over — see the
+  // header for what each of the two would have done.
+  const refused = whyNoProjectRootAt(ctx.cwd, ctx.env);
+  if (refused !== undefined) return { refused, root };
   const alreadyHere = isDirectory(root);
 
   // Create the tree at the EXACT cwd (its own `.gitignore` comes with it) unless

@@ -52,6 +52,16 @@ describe('the doors are a function of the directory', () => {
     expect(inAProject[0]).not.toEqual(outsideOne[0]);
   });
 
+  it('offers the console, not `init`, where no project can be founded — the home directory', () => {
+    // `init` refuses in the home (`whyNoProjectRootAt`, `@mnema/core`), and Return on this
+    // page used to found a project there: the tree every folder under the home then belonged
+    // to. A first door that is always refused is not a door, so there it is the console.
+    const inTheHome = theDoors(verbs, false, false);
+    expect(inTheHome.map((door) => door.argv)).toEqual([[REPL_VERB], ['--help']]);
+    // Non-vacuity: the same directory state with a project foundable still offers `init`.
+    expect(theDoors(verbs, false, true)[0]?.argv).toEqual([INIT_VERB]);
+  });
+
   it('says what each door does in the words of the verb that declares it', () => {
     // THE LINK. A verb renamed, or one whose description changed, moves this case — and a
     // door that carried its own copy of the sentence would go on advertising the old one.

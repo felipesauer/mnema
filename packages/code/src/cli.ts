@@ -26,6 +26,7 @@ import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { IdentityUnavailableError } from '@mnema/core';
 import { Command, CommanderError, Option } from 'commander';
+import { fact } from './presentation/detail.js';
 import type { Render } from './presentation/render.js';
 import { PRODUCT_PROMISE } from './promise.js';
 import { VERSION } from './version.js';
@@ -37,8 +38,10 @@ import {
   rendererAtEachWidth,
   rendererFor,
 } from './wiring/color.js';
+import { here } from './wiring/context.js';
 import { registerVerbs } from './wiring/index.js';
 import { type CliIo, processIo } from './wiring/io.js';
+import { MCP_VERB } from './wiring/mcp.js';
 import { speakUsageErrors } from './wiring/misuse.js';
 import { refusalLine, refusalSentence } from './wiring/report.js';
 import { pinnedRunResolver } from './wiring/run-pin.js';
@@ -221,7 +224,50 @@ export async function run(
   io: CliIo = processIo,
   render?: Render,
 ): Promise<void> {
-  await parseWith(buildProgram(io, argv, render), argv);
+  const built = buildProgram(io, argv, render);
+  sayWhatTheWalkPassesOver(built);
+  await parseWith(built, argv);
+}
+
+/**
+ * Before a verb's answer, on stderr: every `.mnema/` the walk from here passed over that
+ * still holds events — a home's, a machine's data directory with a project's tails in it.
+ * The sentences are `not-a-project.ts`'s; this only decides WHEN.
+ *
+ * ONCE PER INVOCATION, which is why it hangs on the program {@link run} parses and not in
+ * {@link buildProgram}: the console builds a program for every line typed into it, and a
+ * notice repeated under every answer of a session is a notice nobody reads by the third.
+ * The console's own invocation says it once, before the page opens.
+ *
+ * BEFORE THE ACTION, SO BEFORE ANY ANSWER, and only for an action: `--help` and
+ * `--version` reach no action and say nothing, and neither does a line commander refuses.
+ * `mnema mcp` is passed by — the server says the same sentences per session, in its own
+ * log, about the walks each session climbed, and the directory this process started in is
+ * the walk of one kind of client only (`wiring/mcp.ts`).
+ *
+ * It can never be the reason a verb did not answer: a throw here is swallowed, because the
+ * line is about a tree nobody asked about, and silence is what the product said before.
+ */
+function sayWhatTheWalkPassesOver({ program, io, render }: BuiltProgram): void {
+  program.hook('preAction', async (_program, action) => {
+    if (topLevelVerbOf(action) === MCP_VERB) return;
+    try {
+      // Loaded here, not at the top: it reads chains, and `mnema --version` must not know
+      // it exists (`tests/the-floor-is-the-declaration.test.ts`).
+      const { passedOverFrom } = await import('./not-a-project.js');
+      const { cwd, env } = here();
+      for (const sentence of passedOverFrom(cwd, env)) io.err(render(fact(sentence, 0)));
+    } catch {
+      // See above: a notice that cannot be composed is a notice not given.
+    }
+  });
+}
+
+/** The name of the verb a (possibly nested) command belongs to — `task` for `task move`. */
+function topLevelVerbOf(command: Command): string {
+  let verb = command;
+  while (verb.parent !== null && verb.parent.parent !== null) verb = verb.parent;
+  return verb.name();
 }
 
 /**
