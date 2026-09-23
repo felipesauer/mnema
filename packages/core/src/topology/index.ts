@@ -30,7 +30,18 @@ export {
   tailsHeld,
   treesSearched,
 } from './locate.js';
-export { type DiscoveryEnv, PROJECT_DIR, type ResolvedTrees, resolveTrees } from './resolve.js';
+export {
+  type Discovery,
+  type DiscoveryEnv,
+  discover,
+  type NoProjectRoot,
+  type PassedOverTree,
+  PRIVATE_DIR,
+  PROJECT_DIR,
+  type ResolvedTrees,
+  resolveTrees,
+  whyNoProjectRootAt,
+} from './resolve.js';
 export {
   chainRootForScope,
   type OpenTreeOptions,

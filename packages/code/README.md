@@ -1183,8 +1183,11 @@ key really signed.
 `<data>` follows XDG (`$XDG_DATA_HOME/mnema`, falling back to `~/.mnema`). The
 project root is found by walking up from the working directory until a `.mnema/`
 appears, the way git finds `.git` — so every command works from a subdirectory.
-Only the committed tree is meant to be shared; the private key never leaves the
-key root.
+The walk never takes your home directory for a project, and stops there: without
+`$XDG_DATA_HOME`, `~/.mnema` is where the key lives, and a project in the home would
+own every folder under it. `mnema init` refuses to found one there, and a `.mnema/`
+that holds a key root is never taken for a project anywhere. Only the committed tree
+is meant to be shared; the private key never leaves the key root.
 
 ## What lives here
 

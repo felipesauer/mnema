@@ -17,11 +17,21 @@ import type { Command } from 'commander';
 import { here } from './context.js';
 import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
+/**
+ * The name this verb is registered under, in one place.
+ *
+ * Read rather than retyped by the entry, which says what a walk passed over before every
+ * verb's answer and NOT before this one's: the server says it per session, in its own log,
+ * about the walks that session climbed (`mcp/server.ts`) — and the working directory this
+ * process was started in is the walk of one kind of client only.
+ */
+export const MCP_VERB = 'mcp';
+
 /** Registers `mnema mcp` on the program. */
 export function registerMcp(program: Command, wiring: Wiring): Declared {
   const { io } = wiring;
   const mcp = program
-    .command('mcp')
+    .command(MCP_VERB)
     .description('run the mnema MCP server over stdio (for an agent host)')
     // The one verb that takes a project instead of reading it off `cwd`, and the
     // only one that needs to: every other verb is typed by a person standing in a

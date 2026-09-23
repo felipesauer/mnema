@@ -20,6 +20,7 @@ import type { Render } from '../presentation/render.js';
 import { here } from './context.js';
 import type { CliIo } from './io.js';
 import { onOneLine } from './on-one-line.js';
+import { reportRefusal } from './report.js';
 import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
 /**
@@ -31,6 +32,14 @@ import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
  * routes.
  */
 export const INIT_VERB = 'init';
+
+/**
+ * The code of the one refusal this verb has: the working directory can be no project's
+ * root — the home directory, or one whose `.mnema/` is a machine's data directory
+ * (`whyNoProjectRootAt`, `@mnema/core`). The sentence after it says which, and where to
+ * run the verb instead.
+ */
+export const NOT_A_PROJECT_ROOT = 'NOT_A_PROJECT_ROOT';
 
 /**
  * How this project's record reaches an agent — OFFERED to the person who just founded it,
@@ -106,6 +115,16 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
     .action(async () => {
       const { runInit } = await import('../commands/init.js');
       const result = runInit(here());
+      if ('refused' in result) {
+        // Worded where both surfaces word why a directory is no project's root. Loaded
+        // here, with the adapter: it reads chains, and the floor must not.
+        const { WHY_NO_PROJECT_ROOT } = await import('../not-a-project.js');
+        reportRefusal(wiring, {
+          reason: NOT_A_PROJECT_ROOT,
+          message: onOneLine`no project can be founded at ${result.root}: ${WHY_NO_PROJECT_ROOT[result.refused]}. Run \`mnema init\` in the project’s own directory; a note that belongs to no project already goes to the machine-global tree, which needs none.`,
+        });
+        return;
+      }
       // The ROOT is a directory this run discovered from the cwd, and a directory name
       // is the value this whole class was first measured on: a checkout, an archive or
       // a dependency can carry a newline in one and nobody typed it. The anchor beside

@@ -230,3 +230,66 @@ describe('mnema init', () => {
     expect(orderedEvents({ root: second.root }, catalogUpcasters()).length).toBe(before);
   });
 });
+
+/**
+ * Where no project can be founded — the walk's own rule, asked before anything is made.
+ *
+ * Each refusal is held the way a second init is: by what is on disk afterwards, not by
+ * which functions ran. The data-directory case is the one that needed asking FIRST rather
+ * than being a tidiness: the walk passes that `.mnema/` over, so without the question init
+ * would find it already there and answer "Already a mnema project" about a directory that
+ * is none — with the anchor of the project above it.
+ */
+describe('mnema init — where no project can be founded', () => {
+  it('refuses in the home directory, and makes nothing there', () => {
+    const home = join(sandbox, 'home');
+    mkdirSync(join(home, 'work'), { recursive: true });
+    const env: DiscoveryEnv = { home, xdgDataHome: join(sandbox, 'data') };
+    const before = filesUnder(home);
+
+    const result = runInit({ cwd: home, env });
+
+    expect(result).toEqual({ refused: 'home', root: join(home, '.mnema') });
+    expect(existsSync(join(home, '.mnema'))).toBe(false);
+    expect(filesUnder(home)).toEqual(before);
+    // The key root is untouched too: a refusal founds no identity anywhere.
+    expect(existsSync(join(sandbox, 'data'))).toBe(false);
+  });
+
+  it('refuses there with no `$XDG_DATA_HOME` — where the home’s `.mnema/` would be the key’s directory', () => {
+    // The case that put the private key in the project tree: the data directory IS
+    // `~/.mnema`, so a project founded in the home shares one directory with the key.
+    const home = join(sandbox, 'home');
+    mkdirSync(home, { recursive: true });
+
+    const result = runInit({ cwd: home, env: { home } });
+
+    expect(result).toEqual({ refused: 'home', root: join(home, '.mnema') });
+    expect(existsSync(join(home, '.mnema'))).toBe(false);
+  });
+
+  it('refuses at another environment’s data directory — and writes nothing into the project above it', () => {
+    const { repo, env } = setup();
+    const founded = runInit({ cwd: repo, env });
+    if (!('created' in founded)) throw new Error('setup: the project did not found');
+    const theirs = join(repo, 'their-home');
+    mkdirSync(join(theirs, '.mnema', 'identity', 'keys'), { recursive: true });
+    const projectBefore = contentsUnder(join(repo, '.mnema'));
+    const eventsBefore = orderedEvents({ root: founded.root }, catalogUpcasters()).length;
+
+    const result = runInit({ cwd: theirs, env });
+
+    expect(result).toEqual({ refused: 'data-directory', root: join(theirs, '.mnema') });
+    expect(contentsUnder(join(repo, '.mnema'))).toEqual(projectBefore);
+    expect(orderedEvents({ root: founded.root }, catalogUpcasters()).length).toBe(eventsBefore);
+    expect(filesUnder(join(theirs, '.mnema'))).toEqual([]);
+  });
+
+  it('still founds under the home — a folder in it is not the home', () => {
+    const home = join(sandbox, 'home');
+    const app = join(home, 'code', 'app');
+    mkdirSync(app, { recursive: true });
+    const result = runInit({ cwd: app, env: { home, xdgDataHome: join(sandbox, 'data') } });
+    expect(result).toMatchObject({ created: true, root: join(app, '.mnema') });
+  });
+});

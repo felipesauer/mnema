@@ -5,7 +5,8 @@
  * the environment, and returns the tree. These tests drive the four rungs of the
  * cascade over a sandbox: an explicit config path, the client's roots, the server's
  * working directory for a client that declared no roots, and the global fallback —
- * plus the guard that the machine's own data directory is not taken for a project.
+ * plus what the walk every rung climbs passes over: the home directory's `.mnema/` and a
+ * machine's data directory, for EVERY rung (the rule is the core's, `whyNoProjectRootAt`).
  *
  * EVERY CALL SAYS WHICH KIND OF CLIENT IT MODELS, `roots` or `cwd`, and that is the
  * shape the working-directory rung forced rather than tidiness. Two tests here used
@@ -94,11 +95,12 @@ describe('resolveContext — the project cascade', () => {
     expect(ctx.trees.global).toBeDefined();
   });
 
-  it('rung 4 carries NO project even when a walk-up from home would find one', () => {
-    // The fallback resolves the global tree from home, and the walk-up that resolution
-    // runs can find a `.mnema/` there — with `$XDG_DATA_HOME` unset, home's own `.mnema`
-    // is the machine's data directory. The project scopes it would bring are dropped:
-    // a fallback that kept them would adopt a project nobody pointed at.
+  it('rung 4 carries NO project even when home holds a `.mnema/`', () => {
+    // The fallback resolves the global tree from home. THIS CASE USED TO SAY that walk-up
+    // "would find one" — home's own `.mnema`, which with `$XDG_DATA_HOME` unset is the
+    // machine's data directory — and that its project scopes were dropped here. The walk
+    // no longer takes the home's `.mnema/` at all (`whyNoProjectRootAt`, `@mnema/core`);
+    // the assertion stands, over a premise that is now the core's.
     mkdirSync(join(env.home, PROJECT_DIR), { recursive: true });
     const plain = join(sandbox, 'plain');
     mkdirSync(plain, { recursive: true });
@@ -235,10 +237,11 @@ describe('resolveContext — the working directory, for a client that declared n
     expect(resolveContext({ cwd: workspace, env: elsewhere }).inProject).toBe(false);
   });
 
-  it('still serves a real project under such a home — the guard refuses the directory, not the home', () => {
+  it('still serves a real project under such a home — the home is refused as a root, not the folders in it', () => {
     // Non-vacuity for the two above: a home holding a data directory can hold projects,
-    // and a guard that refused every walk-up under it would pass both cases by
-    // serving nothing.
+    // and a rule that refused every walk-up under it would pass both cases by serving
+    // nothing. (It was named for "the guard refuses the directory, not the home"; the home
+    // itself is now refused as a root too, and what this case holds is unchanged.)
     const home = join(sandbox, 'machine-home');
     mkdirSync(join(home, PROJECT_DIR, 'identity', 'keys'), { recursive: true });
     const app = join(home, 'code', 'app');
@@ -248,20 +251,58 @@ describe('resolveContext — the working directory, for a client that declared n
     expect(resolveContext({ cwd: app, env: { home } }).project).toBe(app);
   });
 
-  it('is NOT applied by the roots rung — which still takes that directory for a project', () => {
-    // A DEFECT, DECLARED AND PINNED, not a behaviour anybody wants. The guard above is
-    // rung 3's alone (`isAMachinesDataDir`): rung 2 and the command line walk up into the
-    // machine's data directory as they always did, and closing that changes what a
-    // client that DOES declare `roots` is served. This case is here so that the day it
-    // is closed, the comment that says it is not is seen to be wrong.
+  it('the ROOTS rung does not take it either — the walk every rung climbs passes it by', () => {
+    // THIS CASE WAS "is NOT applied by the roots rung — which still takes that directory
+    // for a project", and it pinned a DEFECT: the guard lived in rung 3 alone, so a client
+    // that declared `roots` and listed a folder under the home that nobody initialized was
+    // served the home as its project, and told its writes were committed with a
+    // repository. It was pinned so that the day it closed would be seen; it closed here,
+    // by moving the rule into the core's walk, and the case is renamed with the answer so
+    // nothing that leaned on the old one can go on passing under the old name.
     const home = join(sandbox, 'machine-home');
     mkdirSync(join(home, PROJECT_DIR, 'identity', 'keys'), { recursive: true });
     const workspace = join(home, 'code', 'never-initialized');
     mkdirSync(workspace, { recursive: true });
 
     const ctx = resolveContext({ roots: [pathToFileURL(workspace).href], env: { home } });
-    expect(ctx.project).toBe(home);
-    expect(ctx.rung).toBe('roots');
+    expect(ctx.inProject).toBe(false);
+    expect(ctx.rung).toBe('global');
+    expect(ctx).not.toHaveProperty('project');
+  });
+
+  it('nor ANOTHER environment’s data directory — which only the key-root reading reaches', () => {
+    // The home rule reaches the data directory of the environment asking; this one is
+    // somebody else's — a sandboxed `HOME` whose root sits under a real home, `sudo` — so
+    // only the key root inside it says what it is. Asked through the roots rung, because
+    // the rule used to be the working-directory rung's alone.
+    const theirs = join(sandbox, 'their-home');
+    mkdirSync(join(theirs, PROJECT_DIR, 'identity', 'keys'), { recursive: true });
+    const workspace = join(theirs, 'code', 'never-initialized');
+    mkdirSync(workspace, { recursive: true });
+
+    const ctx = resolveContext({ roots: [pathToFileURL(workspace).href], env });
+    expect(ctx.inProject).toBe(false);
+    expect(ctx.rung).toBe('global');
+    expect(ctx.passedOver).toEqual([{ tree: join(theirs, PROJECT_DIR), why: 'data-directory' }]);
+  });
+
+  it('reports what the walks passed over once, however many roots climbed past it', () => {
+    // Two folders under one home both climb past its `.mnema/`. The list is what the
+    // server's log is written from, and a tree named twice would read as two.
+    const home = join(sandbox, 'machine-home');
+    mkdirSync(join(home, PROJECT_DIR, 'tails'), { recursive: true });
+    const one = join(home, 'a');
+    const two = join(home, 'b');
+    mkdirSync(one, { recursive: true });
+    mkdirSync(two, { recursive: true });
+    const roots = [pathToFileURL(one).href, pathToFileURL(two).href];
+
+    const ctx = resolveContext({ roots, env: { home, xdgDataHome: join(sandbox, 'data') } });
+    expect(ctx.passedOver).toEqual([{ tree: join(home, PROJECT_DIR), why: 'home' }]);
+    // And nothing at all where the walks met no such tree.
+    expect(
+      resolveContext({ roots: [pathToFileURL(makeProject('p')).href], env }).passedOver,
+    ).toEqual([]);
   });
 });
 
@@ -286,6 +327,28 @@ describe('resolveContext — an explicitly configured project', () => {
     // And the root it could have fallen through to is real: the refusal is a
     // decision, not the absence of an alternative.
     expect(resolveContext({ roots: [pathToFileURL(project).href], env }).project).toBe(project);
+  });
+
+  it('names the `.mnema/` it passed over instead of saying there is none — `--project ~`', () => {
+    // The refusal used to say "no `.mnema/` is there or in any directory above it", and on
+    // a machine whose home holds one that sentence became false the day the walk learned
+    // to pass it by: the server would have denied a directory it had just looked at.
+    const home = join(sandbox, 'machine-home');
+    mkdirSync(join(home, PROJECT_DIR, 'tails'), { recursive: true });
+    const thrown = (() => {
+      try {
+        resolveContext({ configProject: home, roots: [], env: { home } });
+        return '';
+      } catch (error) {
+        return (error as Error).message;
+      }
+    })();
+    expect(thrown).toContain(`"${home}" is not a project`);
+    expect(thrown).toContain(
+      `the \`.mnema/\` the walk reached, ${join(home, PROJECT_DIR)}, is passed over`,
+    );
+    expect(thrown).toContain('the home directory is never a project’s root');
+    expect(thrown).not.toContain('no `.mnema/` is there');
   });
 
   it('says what to do about a path that is no project — init it, or drop the flag', () => {

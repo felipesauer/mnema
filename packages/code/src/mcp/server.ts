@@ -92,6 +92,7 @@ import { RootsListChangedNotificationSchema } from '@modelcontextprotocol/sdk/ty
 import { z } from 'zod';
 import { discoveryEnv } from '../env.js';
 import { movedLine } from '../moved-record.js';
+import { passedOverSentences } from '../not-a-project.js';
 import { oneLine } from '../one-line.js';
 import { type Declared, mutatesTheRecord, readsTheRecord } from '../record-effect.js';
 import { linkBreakBlock, linkBreakBlockOnWrite } from '../record-integrity.js';
@@ -480,6 +481,12 @@ export function buildMcpServer(options: McpServerOptions): {
             'runs=(none — the first write to a tree opens that tree’s run)',
         ),
       );
+      // And what the walks PASSED OVER that still holds events — a home's `.mnema/`, a
+      // machine's data directory with a project's tails in it (`not-a-project.ts`). The
+      // line above says where the session landed; these say what it did not land on, for
+      // the person who will otherwise never learn those events stopped being read. One
+      // line each, after the landing, and none at all in the ordinary case.
+      for (const sentence of passedOverSentences(opened.passedOver)) log(sentence);
       return opened;
     })();
     return sessionPromise;

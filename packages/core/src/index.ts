@@ -187,12 +187,17 @@ export {
 export {
   type BirthProbe,
   chainRootForScope,
+  type Discovery,
   type DiscoveryEnv,
+  discover,
   type HeldTail,
   locateEntityScope,
   locateEntityScopeWith,
   locateTailScope,
+  type NoProjectRoot,
   type Origin,
+  type PassedOverTree,
+  PRIVATE_DIR,
   PROJECT_DIR,
   type ResolvedTrees,
   type RoutedKind,
@@ -203,6 +208,7 @@ export {
   TreeUnavailableError,
   tailsHeld,
   treesSearched,
+  whyNoProjectRootAt,
 } from './topology/index.js';
 export {
   type Clock,

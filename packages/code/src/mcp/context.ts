@@ -28,11 +28,20 @@
  *      client that declared it and listed nothing — a window with no folder open — has
  *      SAID its workspace holds no folder, and serving whatever project sits at the cwd
  *      there would be the answer about a project nobody named that rung 1 exists to
- *      refuse. And a `.mnema/` that is this machine's own data directory is not taken for
- *      a project (see {@link isAMachinesDataDir});
+ *      refuse;
  *   4. GLOBAL — with no project found by any rung above. It operates on the global tree.
  *      This is not a limbo; the global tree is legitimate cross-project knowledge. It
  *      never refuses.
+ *
+ * "Walked up" is the core's walk for every rung, and it passes over two kinds of `.mnema/`
+ * — the home directory's, and any machine's data directory — so no rung serves either as a
+ * project (`whyNoProjectRootAt`, `@mnema/core`). THAT USED TO BE RUNG 3'S ALONE: a guard
+ * here refused the data directory for the working-directory rung only, and its comment said
+ * rungs 1 and 2 and every command-line verb still took that directory for a project, because
+ * closing it for them would change what a client that DOES declare `roots` is served. That
+ * change was then chosen on purpose — a client whose root is a folder under the home that
+ * nobody initialized was being served the home as its project — and the guard moved to the
+ * one walk every rung and every verb climbs, where it applies to all of them at once.
  *
  * No rung creates a `.mnema/` — only `mnema init` may. Rung 3 uses one that is already
  * there, and says so: the rung a session landed by is part of what this module returns
@@ -69,10 +78,16 @@
  * only which PROJECT — never public/private.
  */
 
-import { statSync } from 'node:fs';
-import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
+import { dirname, isAbsolute, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { type DiscoveryEnv, type ResolvedTrees, resolveTrees } from '@mnema/core';
+import {
+  type DiscoveryEnv,
+  discover,
+  type PassedOverTree,
+  type ResolvedTrees,
+  resolveTrees,
+} from '@mnema/core';
+import { WHY_NO_PROJECT_ROOT } from '../not-a-project.js';
 import { oneLine } from '../one-line.js';
 
 /**
@@ -216,6 +231,17 @@ export interface ResolvedContext {
    * every reader of it either matches a name against the whole thing or prints it.
    */
   readonly workspaceProjects: readonly WorkspaceProject[];
+  /**
+   * Every `.mnema/` a walk of this cascade reached and would not take for a project — the
+   * home directory's, a machine's data directory — once each, nearest first per walk.
+   *
+   * It changes nothing about where the session lands; the walk already passed them by.
+   * It is carried so the server can SAY so: a home's `.mnema/` can hold events recorded
+   * there before the walk learned to pass it, and a session that went past them in silence
+   * would make them vanish from every answer without a word. Whether they hold anything is
+   * the server's question to ask, at the log — this module reads no chain.
+   */
+  readonly passedOver: readonly PassedOverTree[];
 }
 
 /** One announced root, paired with what the topology rule resolves it to. */
@@ -247,20 +273,28 @@ export function resolveContext(input: ContextInput): ResolvedContext {
   // a walk-up over already-listed paths, and the roots a host announces are few. A
   // client that declared no `roots` has none to probe.
   const probed: ProbedRoot[] = [];
+  // What every walk this cascade climbs passed over — the roots', and the working
+  // directory's below. Collected, never acted on: see {@link ResolvedContext.passedOver}.
+  const passedOver: PassedOverTree[] = [];
   for (const root of input.cwd === undefined ? input.roots : []) {
     const dir = rootToPath(root);
     if (dir === undefined) continue;
-    probed.push({ dir, trees: resolveTrees(dir, input.env) });
+    const walked = discover(dir, input.env);
+    probed.push({ dir, trees: walked.trees });
+    passedOver.push(...walked.passedOver);
   }
 
   // 1. An explicit project path wins — or refuses. It never falls through.
   if (input.configProject !== undefined) {
-    return landedInProject(configuredProject(input.configProject, input.env), probed, 'configured');
+    const configured = configuredProject(input.configProject, input.env);
+    return landedInProject(configured, probed, 'configured', passedOver);
   }
 
   // 2. The first workspace root that resolves to a project.
   for (const { trees } of probed) {
-    if (trees.projectPublic !== undefined) return landedInProject(trees, probed, 'roots');
+    if (trees.projectPublic !== undefined) {
+      return landedInProject(trees, probed, 'roots', passedOver);
+    }
   }
 
   // 3. The working directory — which exists on the input only for a client that
@@ -268,9 +302,10 @@ export function resolveContext(input: ContextInput): ResolvedContext {
   // emptiness belongs here: a client that listed nothing never reaches this line with
   // a directory to walk from.
   if (input.cwd !== undefined) {
-    const trees = resolveTrees(resolve(input.cwd), input.env);
-    if (trees.projectPublic !== undefined && !isAMachinesDataDir(trees)) {
-      return landedInProject(trees, probed, 'cwd');
+    const walked = discover(resolve(input.cwd), input.env);
+    passedOver.push(...walked.passedOver);
+    if (walked.trees.projectPublic !== undefined) {
+      return landedInProject(walked.trees, probed, 'cwd', passedOver);
     }
   }
 
@@ -278,64 +313,16 @@ export function resolveContext(input: ContextInput): ResolvedContext {
   // always returns `global` + `keyRoot` regardless of where it resolves from,
   // so we take exactly those two and drop any project scopes a walk-up might
   // have found — the server must never adopt a project the client did not point
-  // at. The `.mnema/` a walk-up from home most often finds is not even a project:
-  // with `$XDG_DATA_HOME` unset it is this machine's own data directory
-  // ({@link isAMachinesDataDir}).
+  // at. From the home itself the walk finds none: the home directory is never a
+  // project's root (`whyNoProjectRootAt`, `@mnema/core`).
   const { global, keyRoot } = resolveTrees(input.env.home, input.env);
   return {
     trees: { global, keyRoot },
     inProject: false,
     rung: 'global',
     workspaceProjects: announcedProjects(probed),
+    passedOver: distinctTrees(passedOver),
   };
-}
-
-/**
- * Whether the `.mnema/` a walk-up stopped at is a machine's DATA directory — where the
- * global tree and the key root live — rather than a project's tree.
- *
- * The two can share a name, and on most machines they do. With `$XDG_DATA_HOME` unset
- * the data directory is `~/.mnema` (`resolveTrees`), and a walk-up from any directory
- * under home that is no project stops there, because a directory called `.mnema` is
- * exactly what it looks for: the home directory resolves as a project whose committed
- * tree is this machine's private data. The directory exists as soon as anything on the
- * machine has a key — the first `mnema init` anywhere creates one — so a client without
- * `roots` whose workspace was never initialized would have taken this rung straight into
- * it, and been told its writes were committed with a repository.
- *
- * ONE READING: the directory holds a key root — a directory named like this
- * environment's key root, which no project tree contains. It answers for this
- * environment's data directory and for ANOTHER environment's alike: `~/.mnema` keeps its
- * key root after `$XDG_DATA_HOME` is set, and a run with a sandboxed environment finds
- * the real one when its working directory sits under a real home.
- *
- * THERE WERE TWO, and the second — "it is the parent of the key root this environment
- * resolves" — was a second statement of the same fact: removing it left every case
- * green. Every path the product has that makes the data directory makes the key root in
- * it (`mnema init`, a write, and a session that only reads — the last pinned in
- * `a-client-that-names-no-workspace.test.ts`), so a data directory without one is not a
- * state the product produces, and the reading that could only fire there is gone rather
- * than kept as a guard nothing can light.
- *
- * APPLIED BY RUNG 3 ALONE. The other walk-ups — rung 2's roots, rung 1's configured
- * path, and every command-line verb — still take that directory for a project, and
- * `mcp-context.test.ts` pins that for rung 2 so the day it changes is seen. It is a
- * defect those rungs already had and this one would have inherited; closing it for them
- * changes what a client that DOES declare `roots` is served, which this rung was not
- * written to change.
- */
-function isAMachinesDataDir(trees: ResolvedTrees): boolean {
-  const found = trees.projectPublic;
-  if (found === undefined) return false;
-  return isDirectory(join(found, basename(trees.keyRoot)));
-}
-
-function isDirectory(path: string): boolean {
-  try {
-    return statSync(path).isDirectory();
-  } catch {
-    return false;
-  }
 }
 
 /**
@@ -404,19 +391,33 @@ function configuredProject(configured: string, env: DiscoveryEnv): ResolvedTrees
       ),
     );
   }
-  const trees = resolveTrees(resolve(configured), env);
-  if (trees.projectPublic === undefined) {
+  const walked = discover(resolve(configured), env);
+  if (walked.trees.projectPublic === undefined) {
     throw new Error(
       oneLine(
-        `the configured project "${configured}" is not a project: no \`.mnema/\` is ` +
-          'there or in any directory above it. This server was told which project to ' +
+        `the configured project "${configured}" is not a project: ` +
+          `${whyNothingWasFound(walked.passedOver)}. This server was told which project to ` +
           'serve and will not serve another instead — point `mnema mcp --project` at a ' +
           'directory `mnema init` has been run in, or drop the flag to take the project ' +
           "from the host's workspace roots.",
       ),
     );
   }
-  return trees;
+  return walked.trees;
+}
+
+/**
+ * Why a configured path resolved to no project, stated as what the walk MET.
+ *
+ * The sentence used to be "no `.mnema/` is there or in any directory above it", and it
+ * became false the day the walk learned to pass a `.mnema/` by: `--project ~` on a machine
+ * whose home holds one would have been told there was none, by a server that had just
+ * looked at it. So a walk that passed one over names it and says why it is no project.
+ */
+function whyNothingWasFound(passedOver: readonly PassedOverTree[]): string {
+  const nearest = passedOver[0];
+  if (nearest === undefined) return 'no `.mnema/` is there or in any directory above it';
+  return `the \`.mnema/\` the walk reached, ${nearest.tree}, is passed over — ${WHY_NO_PROJECT_ROOT[nearest.why]}`;
 }
 
 /**
@@ -431,6 +432,7 @@ function landedInProject(
   trees: ResolvedTrees,
   probed: readonly ProbedRoot[],
   rung: Exclude<Rung, 'global'>,
+  passedOver: readonly PassedOverTree[],
 ): ResolvedContext {
   const project = projectDirOf(trees);
   const workspaceProjects = announcedProjects(probed);
@@ -445,7 +447,27 @@ function landedInProject(
   if (!workspaceProjects.some((known) => known.dir === project)) {
     workspaceProjects.push({ dir: project, trees });
   }
-  return { trees, inProject: true, project, rung, workspaceProjects };
+  return {
+    trees,
+    inProject: true,
+    project,
+    rung,
+    workspaceProjects,
+    passedOver: distinctTrees(passedOver),
+  };
+}
+
+/**
+ * The passed-over trees once each, in the order they were first met. Two roots under one
+ * home both climb past the home's `.mnema/`, and a list that named it twice would read as
+ * two trees.
+ */
+function distinctTrees(passedOver: readonly PassedOverTree[]): PassedOverTree[] {
+  const distinct: PassedOverTree[] = [];
+  for (const passed of passedOver) {
+    if (!distinct.some(({ tree }) => tree === passed.tree)) distinct.push(passed);
+  }
+  return distinct;
 }
 
 /**

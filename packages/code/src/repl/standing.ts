@@ -37,6 +37,7 @@ import {
   resolveTrees,
   type Scope,
   shortenAnchors,
+  whyNoProjectRootAt,
 } from '@mnema/core';
 import { here } from '../wiring/context.js';
 
@@ -54,6 +55,17 @@ export interface Standing {
    * filled line the line the caller would have written by copying the screen.
    */
   readonly identity: string | undefined;
+  /**
+   * Whether a project can be FOUNDED in this directory — the core's rule
+   * (`whyNoProjectRootAt`), the one `mnema init` refuses by and the walk-up passes a
+   * directory over by. False in the home directory, and in one whose `.mnema/` is a
+   * machine's data directory.
+   *
+   * Carried because the bare name offers `init` as its first door outside a project, and
+   * a door whose every choice is refused is not a door (`choice/doors.ts`). One stat and
+   * one path resolution, no record opened — the same kind of answer as the two above.
+   */
+  readonly foundable: boolean;
 }
 
 /**
@@ -86,6 +98,7 @@ export function standing(): Standing {
   return {
     project: trees.projectPublic === undefined ? undefined : dirname(trees.projectPublic),
     identity: identityIn(trees, inProject ? ASKED : ['global']),
+    foundable: whyNoProjectRootAt(cwd, env) === undefined,
   };
 }
 

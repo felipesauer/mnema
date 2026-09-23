@@ -86,7 +86,8 @@ export async function theChoice(request: ChoiceRequest): Promise<readonly string
   // WHETHER THERE IS A PROJECT HERE, asked of the one function that answers where a surface
   // of this product is standing. A second reading — looking for the directory, say — would be
   // a second idea of what a project IS, and this surface already has one.
-  const doors = theDoors(built.verbs, standing().project !== undefined);
+  const where = standing();
+  const doors = theDoors(built.verbs, where.project !== undefined, where.foundable);
   const name = built.program.name();
   // THE FIRST DOOR IS PICKED BEFORE A KEY IS PRESSED, which is the one place this list
   // differs from the console's and it is a difference in what a Return MEANS. There, Return
