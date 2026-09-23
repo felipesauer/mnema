@@ -89,7 +89,10 @@ identically, because they are the same call.
   machine that installs this and opens a session somewhere else sees nothing. Asserted in
   `tests/the-record-arrives-unasked.test.ts`, `tests/the-rule-reaches-the-writing.test.ts`
   and `tests/the-record-asks-for-a-person.test.ts`; the plugin's own page states what it
-  carries and what it leaves behind.
+  carries and what it leaves behind. VS Code's agent and Cursor's command-line agent read
+  the same plugin: the two opening hooks run in both, and the per-edit one is Claude Code's
+  — the [plugin's page](../../plugin/README.md#in-vs-code-and-cursor) has the table, host
+  by host.
 - **A switch for everything it pushes** — `mnema switch` says where each of those
   channels stands and what each carries; `mnema switch off edit-rules-push` stops the
   per-edit push, `mnema switch off brief-document` stops the opening document and `mnema
@@ -950,12 +953,12 @@ keeps of them (`tests/the-agent-is-told-what-it-has.test.ts`,
 
 The server discovers the project in a fixed cascade: `--project`, then the
 client's workspace roots, then — only for a client that declares no workspace roots
-at all — the project the host's working directory is in, and finally the global tree
-when none of them names a project. A client that declares roots and lists none (a
-window with no folder open) is taken at its word: it lands on the global tree, and the
-working directory is never read for it. The line the server logs when a session opens
-says which of these it landed by, and the server never creates a project; only
-`mnema init` does that (`tests/mcp-context.test.ts`,
+at all, as Cursor's command-line agent does — the project the host's working directory
+is in, and finally the global tree when none of them names a project. A client that
+declares roots and lists none (a window with no folder open) is taken at its word: it
+lands on the global tree, and the working directory is never read for it. The line the
+server logs when a session opens says which of these it landed by, and the server never
+creates a project; only `mnema init` does that (`tests/mcp-context.test.ts`,
 `tests/a-client-that-names-no-workspace.test.ts`).
 
 The cascade runs again when the client says its workspace changed

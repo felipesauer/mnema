@@ -42,6 +42,11 @@ on, and [What lives where](#what-lives-where) says which is which.
   opens, and hands the rules addressed at a file just before that file is
   written. Both are reads; both can be switched off, and switching one off is
   itself a signed fact rather than a setting.
+- **The same record in VS Code and Cursor** — their agents connect to the same MCP
+  server and load the same plugin. The fullest experience is Claude Code's, where the
+  rules also arrive before each edit; in VS Code a session opens with the record's
+  context whatever model it runs, and in Cursor's command-line agent the plugin's
+  opening hooks hand their text to Cursor, which assembles what its model reads.
 - **A proof a stranger can check** — `mnema verify` needs no private key and no
   network, and the format is specified well enough that a reader written from the
   specification alone reaches the same verdict.
@@ -112,6 +117,12 @@ claude plugin install mnema@mnema
 
 The plugin connects the MCP server too, so registering the server yourself as well is
 redundant: a session would be offered every tool twice, under two prefixes.
+
+**In VS Code and Cursor**, the server is the same `mnema mcp`, and the plugin is the same
+one. VS Code's agent reads the Claude Code plugin format, and Cursor's command-line agent
+picks up a plugin installed in Claude Code on the same machine; the per-host details — what
+each one runs, and the one hook that is Claude Code's alone — are in the
+[plugin's page](plugin/README.md#in-vs-code-and-cursor).
 
 ## Your first record
 
