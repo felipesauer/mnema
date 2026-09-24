@@ -28,6 +28,13 @@
  * Both answers come off the program's own declarations, so a verb renamed in `src` and left
  * standing on a page goes red here on the next run rather than on somebody's terminal.
  *
+ * WHETHER A LINE IS WHOLE IS NOT ASKED HERE, and it was the question that mattered: a block
+ * on `packages/code/README.md` closed a session with `mnema run end --outcome …`, every verb
+ * and every flag in it real, and the verb requires `--which <agent>`. That question — every
+ * argument and option the verb requires, nothing it does not take — is
+ * `the-command-handed-over-runs-as-handed.test.ts`'s, over these same blocks, over the pages'
+ * prose, and over the sentences the product prints.
+ *
  * THE DISCRIMINANT IS THE LINE, NOT THE FENCE LABEL. A guard keyed on ```sh would let a
  * page out by labelling its block `console`, `shell`, `bash` or nothing at all — and the
  * measurement says the risk is not hypothetical: of the 24 fenced blocks on
@@ -53,81 +60,32 @@
  * reddens it.
  *
  * ONE THING THIS READING SEES AND DOES NOT RULE ON, named because a number is better than a
- * shrug. Measured on 16/09/2026 against `36457c1b`: 147 inline code spans in tracked Markdown
- * open with `mnema`, outside any fence. Read as commands, five would be accused, and four of
- * those are prose a fence would never have held — `mnema ≈ base`, `mnema answers over MCP`.
- * The fifth is real: `measurements/p1/round-3/arms.md:136` publishes
+ * shrug — and the reason it gave for not ruling was wrong. Measured on 16/09/2026: 147 inline
+ * code spans in tracked Markdown open with `mnema`, outside any fence. Read as commands, five
+ * would be accused, and four of those are prose a fence would never have held — `mnema ≈ base`,
+ * `mnema answers over MCP`. The fifth is real: `measurements/p1/round-3/arms.md:136` publishes
  * `mnema switch --off edit-rules-push`, and the program has no `--off`; the act is
  * `mnema switch off`. That page is a frozen round's protocol, not product documentation, and
- * fixing published content is not this delivery — it is declared here and in the report.
+ * it stays as it was measured. The premise for leaving spans out altogether was that a reader
+ * copies a block and a span is only a reference inside a sentence. A span handed a person the
+ * way out of an ambiguous key — `mnema key revoke <fingerprint>`, to be run — and it could not
+ * run, because the verb requires `--reason`. Spans are read now, by the guard named above.
  */
 
-import { execFileSync } from 'node:child_process';
 import type { Command, Option } from 'commander';
 import { describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo } from '../src/cli.js';
-import { ROOT, read } from './support/published-examples.js';
-import { invocationsIn } from './support/reading-a-shell-line.js';
+import { read } from './support/published-examples.js';
+import {
+  commandsOn,
+  invocationsIn,
+  type PublishedCommand,
+  publishedCommands,
+  trackedPages,
+} from './support/reading-a-shell-line.js';
 
 /** A silent port: nothing here runs a verb, it only reads what they declare. */
 const silent: CliIo = { out: () => {}, err: () => {}, fail: () => {} };
-
-// ---------------------------------------------------------------------------
-// Sweeping the pages — the part that decides WHERE it was published
-// ---------------------------------------------------------------------------
-
-/** A command line a page publishes, with where it was found. */
-export interface PublishedCommand {
-  /** The page, relative to the workspace root. */
-  readonly page: string;
-  /** The line number on that page, one-based, so a failure is clickable. */
-  readonly at: number;
-  /** The fence language the block declared, or `<none>`. Carried to be REPORTED, never to filter. */
-  readonly fence: string;
-  /** The words after `mnema`. */
-  readonly words: readonly string[];
-  /** The published line itself, for the message a failure prints. */
-  readonly source: string;
-}
-
-/**
- * Every `mnema …` line inside a fenced block of a tracked Markdown page.
- *
- * The fence is opened by a line starting with three backticks and closed by a line that is
- * three backticks and nothing else, which is CommonMark's rule for the closer and is what
- * keeps an info string on the opener from being read as a close.
- */
-export function commandsOn(page: string, markdown: string): readonly PublishedCommand[] {
-  const found: PublishedCommand[] = [];
-  let fence: string | null = null;
-  let at = 0;
-  for (const source of markdown.split('\n')) {
-    at += 1;
-    if (fence === null) {
-      if (source.startsWith('```')) fence = source.slice(3).trim() || '<none>';
-      continue;
-    }
-    if (source.trimEnd() === '```') {
-      fence = null;
-      continue;
-    }
-    for (const words of invocationsIn(source)) found.push({ page, at, fence, words, source });
-  }
-  return found;
-}
-
-/** The same reading over the pages on disk. One function, so the corpus below cannot drift. */
-export function publishedCommands(pages: readonly string[]): readonly PublishedCommand[] {
-  return pages.flatMap((page) => commandsOn(page, read(page)));
-}
-
-/** Every Markdown page this repository publishes — the reach, and never a list. */
-function trackedPages(): readonly string[] {
-  return execFileSync('git', ['ls-files', '-z', '*.md'], { cwd: ROOT, encoding: 'utf8' })
-    .split('\0')
-    .filter(Boolean)
-    .sort();
-}
 
 // ---------------------------------------------------------------------------
 // Resolving an invocation against the program the binary builds
@@ -244,7 +202,7 @@ export const NOT_CHECKED: Readonly<Record<string, string>> = {
   THE_OUTPUT_IS_A_SECOND_RULE:
     'The `#>` lines that show what a command prints. They are comments to the shell and they are dropped here. Whether the product really says those words is a different rule, and `cli.golden.test.ts` holds the bytes of every `--help` page against a committed transcript.',
   PROSE_IS_NOT_A_BLOCK:
-    'Inline code spans outside any fence. Measured on 16/09/2026 against `36457c1b`: 147 of them open with `mnema`, and read as commands five would be accused — four of which are prose (`mnema ≈ base`, `mnema answers over MCP`). A reader copies a block; a span is a reference inside a sentence, and the reading that tells the two apart is the fence.',
+    'Inline code spans outside any fence are not read HERE. This entry used to say why not — "a reader copies a block; a span is a reference inside a sentence, and the reading that tells the two apart is the fence" — and that was false: a sentence on `packages/code/README.md`, and the refusal it describes, handed a person `mnema key revoke <fingerprint>` to run, and it could not run, because the verb requires `--reason`. Spans are read by `the-command-handed-over-runs-as-handed.test.ts`, with every sentence the product prints, and ruled on whole; this file keeps to its blocks.',
 };
 
 /**

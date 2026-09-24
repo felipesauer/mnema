@@ -335,9 +335,15 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * And 2919 -> 2921 when the way out began to be run as it is written: the reading of a shell
  * line moved into `support/reading-a-shell-line.ts`, and its two readers import it — the guard
  * it came out of, and the case that copies the refusal's command and hands the binary the words
- * a shell would.
+ * a shell would. And 2921 -> 2931 when every command the product hands over began to be parsed
+ * whole: nine clauses in `the-command-handed-over-runs-as-handed.test.ts`, which asks git for
+ * the pages and the sources that speak and reads them — `node:child_process`, `node:fs`,
+ * `node:path`, `commander` for the mirror it parses with, `vitest`, `../src/cli.js` for the
+ * program the mirror is made from, and the three support modules — and two in the shell reading
+ * itself, which took the page sweep over with its `git ls-files` and its workspace root; the
+ * guard that used to hold that sweep lost its `node:child_process`.
  */
-const CLAUSES_IN_THE_TREE = 2921;
+const CLAUSES_IN_THE_TREE = 2931;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
