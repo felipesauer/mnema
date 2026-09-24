@@ -10,7 +10,7 @@
  *
  * WHAT IT DOES, per test process (every test file runs in a process of its own):
  *
- *   1. `HOME` becomes a directory made here, under the machine's temp, and removed after the file.
+ *   1. `HOME` becomes a path of its own under the machine's temp, removed after the file.
  *      `MNEMA_HOME` is REMOVED rather than pointed there: the variable wins over `HOME` — that is
  *      what it is for — so a value set here would outrank the `HOME` of every child a case starts
  *      in a sandbox of its own, and the two machines a case starts as two homes would share one
@@ -41,7 +41,8 @@
  * type-checks it with the product's own options, which no test file ever is.
  */
 
-import { mkdtempSync, realpathSync, rmSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import { realpathSync, rmSync } from 'node:fs';
 import { createRequire, syncBuiltinESMExports } from 'node:module';
 import { tmpdir, userInfo } from 'node:os';
 import { isAbsolute, join, resolve, sep } from 'node:path';
@@ -67,8 +68,19 @@ try {
 /** The value of the variable this suite was started with — somebody's real key root, if set. */
 const STARTED_WITH = process.env[THE_VARIABLE];
 
-/** This process's home, for the one file it runs. */
-export const HOME_OF_ITS_OWN = mkdtempSync(join(tmpdir(), 'mnema-home-'));
+/**
+ * This process's home, for the one file it runs — a path no other process can have, and NOT
+ * created here: it comes into being the first time something writes under it (the product makes
+ * `~/.mnema` with a recursive `mkdir`), and it goes when the file is done.
+ *
+ * Not created, because a file in which no case runs never reaches its `afterAll` — every case
+ * skipped, or a `-t` that selects nothing, as the re-run in `.github/why-it-went-red/` does on
+ * purpose — and its worker is stopped without passing through `process.on('exit')` either. A home
+ * made up front was left behind by exactly those files: one empty `mnema-home-*` in the machine's
+ * temp per run of the suite, measured before this changed. A home nothing wrote to is nothing to
+ * leave behind.
+ */
+export const HOME_OF_ITS_OWN = join(tmpdir(), `mnema-home-${process.pid}-${randomUUID()}`);
 process.env.HOME = HOME_OF_ITS_OWN;
 delete process.env[THE_VARIABLE];
 

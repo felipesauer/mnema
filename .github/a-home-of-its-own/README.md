@@ -10,7 +10,8 @@ workstation it is somebody's real record.
 
 `setup.mjs` is a `setupFiles` entry of `vitest.config.ts`. Per test process it:
 
-- points `HOME` at a directory under the machine's temp, removed after the file;
+- points `HOME` at a path of its own under the machine's temp, which exists only once something
+  writes under it and is removed after the file;
 - **removes** `MNEMA_HOME`, so the value of whoever runs the suite reaches no case;
 - stands in front of the seven ways `node:child_process` starts a process, and a child that would
   resolve the machine's home — a `HOME` that is missing, empty, relative or the machine's own, or a
