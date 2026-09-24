@@ -423,7 +423,7 @@ export MNEMA_RUN=019fa572-32c2-7780-b1a7-0fe895a1c7ef
 # Every fact written from here on names that session.
 mnema task "Regenerate the fixtures" --which release-bot
 
-mnema run end --outcome "fixtures regenerated"
+mnema run end --which release-bot --outcome "fixtures regenerated"
 unset MNEMA_RUN
 ```
 
@@ -440,7 +440,7 @@ out, so its run stays open, and nothing here closes a run it did not open: no ru
 tell an abandoned session from a live one that is idle, and two sessions running at
 once make every such rule wrong. So `focus` reports what can be known — how long each
 open run has been open, and how long since anything was recorded in it — and
-`mnema run end <id>` is how you close one yourself.
+`mnema run end <id> --which <agent>` is how you close one yourself.
 
 Working the CLI yourself needs no run: the identity that signs each fact already
 carries the authority a run exists to delegate.

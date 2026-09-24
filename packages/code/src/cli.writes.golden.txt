@@ -23,7 +23,7 @@ $ mnema run start --which agent-alpha --goal 'set the record up'
 | export MNEMA_RUN=<run-first>
 |
 |   Run that in this shell: every fact written after it is pinned to this
-|   session. `mnema run end` closes it.
+|   session. `mnema run end --which <agent>` closes it.
 
 ### the births
 $ mnema task 'Write the deploy runbook'
@@ -159,7 +159,7 @@ $ mnema run start --which agent-beta --goal 'read the record back'
 | export MNEMA_RUN=<run-second>
 |
 |   Run that in this shell: every fact written after it is pinned to this
-|   session. `mnema run end` closes it.
+|   session. `mnema run end --which <agent>` closes it.
 
 ### refusals
 $ mnema task 'A task with a bad scope' --scope elsewhere

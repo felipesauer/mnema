@@ -263,8 +263,8 @@ const DECISION_VERDICTS = andListed(actionsRequiring('decision', 'note'));
  * And it says what none of this proves. An open run is not evidence of a live
  * session: nothing in the record says a process is running, so a run left behind by
  * a session that was killed is indistinguishable from one an agent is idle inside.
- * The reads report; the person or the agent decides, and `mnema run end <id>` is how
- * a decision gets recorded.
+ * The reads report; the person or the agent decides, and `mnema run end <id> --which <agent>`
+ * is how a decision gets recorded — whole, because the verb refuses a close that names no agent.
  *
  * WHY IT IS SHORTER THAN THE RULES IT CARRIES. The host truncates a tool description
  * at 2048 characters and appends `… [truncated]`, and nothing warns. This text is
@@ -287,7 +287,7 @@ const OPEN_RUN_CONTRACT =
   '`{kind, count}` per kind recorded in it, commonest first, never absent, EMPTY ' +
   'meaning nothing was recorded; the run’s own start and end are not counted, and ' +
   '`audit_timeline` serves the facts. An open run is no proof of a live session; ' +
-  '`mnema run end <id>` closes one.';
+  '`mnema run end <id> --which <agent>` closes one.';
 
 /**
  * The agent a connection is recorded as when the client's own name is no name.
