@@ -8,21 +8,24 @@
  *   - PROJECT-PUBLIC  `<repo>/.mnema/`          committed; the team sees it.
  *   - PROJECT-PRIVATE `<repo>/.mnema/private/`  gitignored; only this machine,
  *                                               only this project.
- *   - GLOBAL-PRIVATE  `<data>/mnema/global/`    only this machine, ACROSS all
+ *   - GLOBAL-PRIVATE  `<data>/global/`          only this machine, ACROSS all
  *                                               projects (personal knowledge).
  *
- * and the KEY ROOT `<data>/mnema/identity/` — where the private key lives once,
- * referenced by all three trees (never copied into any chain).
+ * and the KEY ROOT `<data>/identity/` — where the private key lives once, referenced by
+ * all three trees (never copied into any chain). `<data>` is `~/.mnema`, or the directory
+ * `$MNEMA_HOME` names ({@link appDataDir}).
  *
  * Discovery mirrors two consecrated tools, not the alpha: the PROJECT root is
  * found by walking up directories until a `.mnema/` appears (as git finds
- * `.git`), so it works from any subdirectory; the GLOBAL/identity root follows
- * XDG (`$XDG_DATA_HOME/mnema`, falling back to `~/.mnema`). The project trees are
- * OPTIONAL — run outside a repo and only the global tree resolves.
+ * `.git`), so it works from any subdirectory; the GLOBAL/identity root lives in the
+ * home, as `gpg`'s and `ssh`'s do. It used to follow XDG, and {@link appDataDir} says what
+ * that cost. The project trees are OPTIONAL — run outside a repo and only the global tree
+ * resolves.
  *
  * THE WALK USED TO TAKE THE FIRST `.mnema/` IT MET, and the two halves of the paragraph
- * above are what made that wrong: the fallback data directory is `~/.mnema`, named
- * exactly what the walk looks for. Measured on the built binary before this changed:
+ * above are what made that wrong: the data directory is `~/.mnema` (it was the fallback
+ * then), named exactly what the walk looks for. Measured on the built binary before this
+ * changed:
  * after the first `mnema init` anywhere on a machine with no `$XDG_DATA_HOME`, a note
  * taken in `~/Downloads` was answered "Landed in the public tree — committed with the
  * repository" and written into the machine's data directory, and every folder under the
@@ -32,8 +35,8 @@
  * anything, and by whatever offers to found a project.
  *
  * This is pure resolution: it computes paths, it does NOT create directories or
- * read chains. `env` and `home` are injected so the rule is testable without
- * touching the real environment.
+ * read chains. `env` is injected so the rule is testable without touching the real
+ * environment.
  */
 
 import { realpathSync, statSync } from 'node:fs';
@@ -43,7 +46,7 @@ import { dirname, isAbsolute, join, resolve } from 'node:path';
 export const PROJECT_DIR = '.mnema';
 /** The subdirectory of the public project tree that holds the private tree. */
 export const PRIVATE_DIR = 'private';
-/** The application directory under the XDG data home (or `~`). */
+/** The application's name — dotted, it is the data directory under the home: `~/.mnema`. */
 export const APP_DIR = 'mnema';
 /** The global chain's directory under the app directory. */
 export const GLOBAL_DIR = 'global';
@@ -52,10 +55,23 @@ export const IDENTITY_DIR = 'identity';
 
 /** The environment inputs discovery reads — injected so the rule is testable. */
 export interface DiscoveryEnv {
-  /** `$XDG_DATA_HOME`, if set. When absent, the home fallback is used. */
-  readonly xdgDataHome?: string | undefined;
-  /** The user's home directory, for the `~/.mnema` fallback. */
+  /**
+   * `$HOME`, as the environment gives it. The walk stops at it ({@link whyNoProjectRootAt}),
+   * and the data directory lives in it: `~/.mnema`.
+   */
   readonly home: string;
+  /**
+   * `$MNEMA_HOME`, if set: the data directory ITSELF, in place of `~/.mnema` — the key root
+   * and the global tree then live directly under it. Empty is the same as unset; relative is
+   * refused ({@link appDataDir}).
+   */
+  readonly mnemaHome?: string | undefined;
+  /**
+   * The home the account names in the password database, read where the process is — the one
+   * `os.homedir()` answers when `$HOME` is missing or empty. The data directory goes under it
+   * when {@link home} names no directory (empty, or relative).
+   */
+  readonly accountHome?: string | undefined;
 }
 
 /**
@@ -115,9 +131,9 @@ export interface Discovery {
  * `.mnema/` DIRECTORY and can be a project's root ({@link whyNoProjectRootAt}); if
  * none exists up to the filesystem root — or up to the home directory, where the walk
  * stops — there is no project and only the global tree and key root are returned.
- * The global tree and key root come from the app data directory:
- * `$XDG_DATA_HOME/mnema` when the variable is a non-empty ABSOLUTE path, otherwise
- * `~/.mnema`.
+ * The global tree and key root come from the app data directory ({@link appDataDir}):
+ * `$MNEMA_HOME` when it is set, otherwise `~/.mnema` — and never a path relative to the
+ * working directory, so it throws rather than answer one.
  */
 export function resolveTrees(cwd: string, env: DiscoveryEnv): ResolvedTrees {
   return discover(cwd, env).trees;
@@ -162,19 +178,24 @@ export function discover(cwd: string, env: DiscoveryEnv): Discovery {
  * stops there. Three things were measured on the built binary before this rule existed,
  * each in a sandbox home:
  *
- *   - With `$XDG_DATA_HOME` unset, `~/.mnema` IS this machine's data directory. A
+ *   - `~/.mnema` IS this machine's data directory — it was whenever `$XDG_DATA_HOME` was
+ *     unset, when this was measured, and it is always now, unless `$MNEMA_HOME` moves it. A
  *     project founded in the home shares that one directory with the private key and
  *     the global tree, and a project tree's `.gitignore` covers its own `keys/` — not
  *     `identity/`. In a home kept under git, as dotfiles often are, `git add .mnema`
  *     staged the machine's private key and the backup key.
- *   - With it set, the home tree still took every folder under the home that is no
+ *   - With the data directory elsewhere, the home tree still took every folder under the
+ *     home that is no
  *     project of its own: a note about unrelated work, taken in `~/work/unrelated`, was
  *     answered "committed with the repository", and `git add .mnema` staged it.
- *   - And whether `~/.mnema` is the data directory depends on WHICH PROCESS ASKS: a
- *     terminal inside a snap-packaged editor carries a `$XDG_DATA_HOME` of its own, and
- *     a process started with no environment carries none. A rule keyed on what the
- *     directory HOLDS would give two answers about one directory; one keyed on where it
- *     IS gives one.
+ *   - And whether `~/.mnema` is the data directory can depend on WHICH PROCESS ASKS. This
+ *     bullet used to say that "a terminal inside a snap-packaged editor carries a
+ *     `$XDG_DATA_HOME` of its own". It was the editor's extension host that carried it, not
+ *     its terminal; the editor stopped setting it in its 1.139; and the data directory no
+ *     longer follows that variable at all. The argument stands on what is left: one shell
+ *     with `$MNEMA_HOME` set and another without it see two data directories, so a rule
+ *     keyed on what the directory HOLDS would give two answers about one directory, and one
+ *     keyed on where it IS gives one.
  *
  * Nothing above the home is taken either, because anything above it contains it — a
  * project found there would take the home and everything in it, which is the same fault
@@ -184,7 +205,8 @@ export function discover(cwd: string, env: DiscoveryEnv): Discovery {
  * The home is `env.home` — the environment's, which is what every other tool the person
  * runs takes for their home — spelled as written and as the filesystem resolves it, so a
  * home reached through a symlink is still the home. A relative or empty one is no home
- * at all, and names nothing: the rule reads the XDG variable the same way.
+ * at all, and names nothing here — and the data directory then goes under the account's
+ * home instead ({@link appDataDir}), never under the working directory.
  *
  * ## `data-directory` — a `.mnema/` that holds a key root is a machine's data directory
  *
@@ -192,7 +214,7 @@ export function discover(cwd: string, env: DiscoveryEnv): Discovery {
  * the product has that makes one makes the key root in it, a session that only reads
  * included — pinned in `a-client-that-names-no-workspace.test.ts`). This is what reaches
  * the data directory of ANOTHER environment, which the home rule cannot: `~/.mnema` keeps
- * its key root after `$XDG_DATA_HOME` is set, a run with a sandboxed `HOME` whose working
+ * its key root after `$MNEMA_HOME` moves the data directory, a run with a sandboxed `HOME` whose working
  * directory sits under a real one finds the real one, and `sudo` finds its user's. It is
  * passed over and the walk goes on, because it holds no project and whatever lies above it
  * is still the nearest one.
@@ -207,37 +229,69 @@ export function discover(cwd: string, env: DiscoveryEnv): Discovery {
  * `.mnema/` in the home of someone OTHER than the environment asking — a sandboxed run
  * under a real home whose `~/.mnema` a stray `init` made — looks like any project from
  * where that run stands. Nothing in it says otherwise, and the only reading that could is
- * the real home, which this pure function does not consult.
+ * the real home, which this pure function does not consult. It lasts until that real home
+ * writes once: its data directory is `~/.mnema` too, so the first write there puts a key
+ * root inside the stray tree, and from then on the reading above reaches it.
  */
 export function whyNoProjectRootAt(dir: string, env: DiscoveryEnv): NoProjectRoot | undefined {
   return noProjectRootAt(dir, homeSpellings(env));
 }
 
 /**
- * The application data directory: `$XDG_DATA_HOME/mnema` when the variable is a
- * non-empty absolute path, else `~/.mnema`. A relative or empty `XDG_DATA_HOME`
- * is treated as unset — the XDG spec requires an absolute path, and honoring a
- * relative one would anchor a machine-global tree to a working directory.
+ * The application data directory — where the key root and the global tree live. THE RULE, in
+ * the one place it lives:
  *
- * It is the ONE place that rule lives, and it has exactly one caller:
- * {@link discover}, which derives the global tree and the key root from it.
- * That is why it is module-private. It USED TO be exported, on the premise that
- * *"anything else that must live in the same app data directory — the project
- * index (a discovery cache) among them"* would resolve by the same rule instead of
- * a second copy. The project index was the only such thing, it was removed for
- * having no reader, and no second consumer ever appeared — so the export was a
- * public name with nothing outside this file behind it.
+ *   1. `$MNEMA_HOME`, when it is set and not empty — the directory itself. A RELATIVE value is
+ *      refused, with a throw: the market resolves a relative home against the working directory
+ *      (`GNUPGHOME`, `CARGO_HOME`), which for a key root is one identity per folder, and ignoring
+ *      it would found, in silence, a key the person asked to keep somewhere else. Neither answer
+ *      can be taken back, so the resolution stops and says so.
+ *   2. otherwise `~/.mnema`, under `$HOME` when that is an absolute path;
+ *   3. otherwise under the account's home from the password database — what `os.homedir()`
+ *      answers for an empty `$HOME` — and when there is none of those either, a throw.
  *
- * The rule stays a named function rather than being inlined into
- * {@link discover}: the two paths that must agree (`global` and `keyRoot`) are
- * derived from one call, so there is still only one place to change.
+ * IT USED TO FOLLOW `$XDG_DATA_HOME`: `$XDG_DATA_HOME/mnema` when the variable was an absolute
+ * path, else `~/.mnema`. That made WHICH KEY SIGNS A FACT depend on which process started the
+ * writer. The variable is set on a person's behalf by whatever launches the process — a
+ * snap-packaged editor pointed it inside its own revision folder for every process its
+ * extension host started, and Flatpak points it inside each app's sandbox — and a key root that
+ * followed it gave one person a second identity, founded in silence the first time the other
+ * launcher's process wrote into a record. The product split a person on its own as well: the
+ * fallback was `~/.mnema`, not the XDG default, so a shell with `$XDG_DATA_HOME` at its standard
+ * value and a cron job without it were two authors, measured in a sandbox with no packager at
+ * all. `gpg` and `ssh` keep their keys under the home for the same reason, and this product's own
+ * variable is the one way to move it. `the-key-lives-in-one-place.test.ts` runs both launchers
+ * against the built binary and counts one author.
+ *
+ * AND THE EMPTY `$HOME` USED TO NAME THE WORKING DIRECTORY: the rule joined whatever `$HOME` held,
+ * and `join('', '.mnema')` is `.mnema` — so a process started with an empty `$HOME` kept a key in
+ * every folder it ran from, measured on the built binary as two keys minted in two sibling
+ * folders. Rule 3 is what closes that.
+ *
+ * It stays a named function, with one caller, because the two paths that must agree — `global`
+ * and `keyRoot` — are derived from one call ({@link discover}). It is module-private for the
+ * reason the project index taught: an export with nothing outside this file behind it is a
+ * public name for nobody.
  */
 function appDataDir(env: DiscoveryEnv): string {
-  const xdg = env.xdgDataHome;
-  if (xdg !== undefined && xdg.length > 0 && isAbsolute(xdg)) {
-    return join(xdg, APP_DIR);
+  const relocated = env.mnemaHome;
+  if (relocated !== undefined && relocated.length > 0) {
+    if (!isAbsolute(relocated)) {
+      throw new Error(
+        `MNEMA_HOME is ${JSON.stringify(relocated)}, a relative path: the key root would move with ` +
+          'the working directory, so nothing is read or written until it names an absolute directory.',
+      );
+    }
+    return resolve(relocated);
   }
-  return join(env.home, `.${APP_DIR}`);
+  if (isAbsolute(env.home)) return join(env.home, `.${APP_DIR}`);
+  if (env.accountHome !== undefined && isAbsolute(env.accountHome)) {
+    return join(env.accountHome, `.${APP_DIR}`);
+  }
+  throw new Error(
+    'There is no home to keep the key root in: HOME is empty or relative, and the account names ' +
+      'no home either. Set MNEMA_HOME to an absolute directory.',
+  );
 }
 
 /**

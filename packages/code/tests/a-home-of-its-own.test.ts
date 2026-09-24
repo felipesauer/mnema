@@ -26,6 +26,7 @@ import {
   THE_VARIABLE,
   takeCaught,
 } from '../../../.github/a-home-of-its-own/setup.mjs';
+import { codeOnly } from './support/reading-source.js';
 
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 const THIS_FILE = 'a-home-of-its-own.test.ts';
@@ -168,14 +169,19 @@ describe('what it cannot stand in front of, counted', () => {
   });
 
   it('no test reads the account’s home by hand — the one in-process way past the guard', () => {
+    // A CALL, read over the code alone: a sentence that names `userInfo()` — the floor's own
+    // declaration of what `env.ts` imports does — reads nothing, and matching it would be the
+    // mention taken for the act.
     const readers = testSources()
       .filter((file) => !file.endsWith(THIS_FILE))
-      .filter((file) => /\buserInfo\s*\(/.test(readFileSync(file, 'utf-8')))
+      .filter((file) => /\buserInfo\s*\(/.test(codeOnly(readFileSync(file, 'utf-8'))))
       .map((file) => relative(ROOT, file));
     expect(readers).toEqual([]);
   });
 
   it('no test starts a process with an environment built from nothing — the grandchild it cannot see', () => {
+    // Read raw, and on purpose: the thing looked for IS text inside a string — a shell command
+    // handed to a process — which a code-only reading would blank.
     const builders = testSources()
       .filter((file) => !file.endsWith(THIS_FILE))
       .filter((file) =>

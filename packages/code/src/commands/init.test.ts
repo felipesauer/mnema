@@ -11,7 +11,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { catalogUpcasters, verify } from '@mnema/chain';
-import { type DiscoveryEnv, orderedEvents } from '@mnema/core';
+import { type DiscoveryEnv, orderedEvents, PROJECT_DIR } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runInit } from './init.js';
 
@@ -84,14 +84,14 @@ describe('mnema init', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
 
-    expect(existsSync(join(sandbox, 'data', 'mnema', 'projects.json'))).toBe(false);
+    expect(existsSync(join(sandbox, 'home', '.mnema', 'projects.json'))).toBe(false);
 
     // And the whole enumeration, so the NEXT dead write is caught as well: the only
     // thing init may leave outside the project is the key root's material, which is
     // read on every write (it is this machine's identity).
-    const outside = filesUnder(join(sandbox, 'data'));
+    const outside = filesUnder(join(sandbox, 'home', '.mnema'));
     expect(outside.length).toBeGreaterThan(0);
-    expect(outside.filter((path) => !path.startsWith('mnema/identity/'))).toEqual([]);
+    expect(outside.filter((path) => !path.startsWith('identity/'))).toEqual([]);
   });
 
   it('is born verifiable: verify is ok and fully signed right after init', () => {
@@ -133,8 +133,11 @@ describe('mnema init', () => {
 
     expect(existsSync(privateKeyPath)).toBe(true);
     expect(privateKeyPath.startsWith(repo)).toBe(false);
-    expect(privateKeyPath.includes('.mnema')).toBe(false);
-    const keyRoot = join(sandbox, 'data', 'mnema', 'identity');
+    // This line used to read `includes('.mnema')` — the NAME standing in for "a project's
+    // tree", which held only while the data directory came from `$XDG_DATA_HOME`. The data
+    // directory is `~/.mnema` now, so the name says nothing; what is asked is the place.
+    expect(privateKeyPath.startsWith(join(repo, PROJECT_DIR))).toBe(false);
+    const keyRoot = join(sandbox, 'home', '.mnema', 'identity');
     expect(privateKeyPath.startsWith(join(keyRoot, 'backup'))).toBe(true);
     // Exactly one private key in the key root's keys/ — the machine's own.
     expect(readdirSync(join(keyRoot, 'keys')).filter((n) => n.endsWith('.key'))).toHaveLength(1);

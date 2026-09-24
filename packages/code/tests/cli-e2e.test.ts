@@ -152,7 +152,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     // It used to end with "the project is in the machine index" here. The index had
     // no production reader and is gone; what the loop needs from init is the tree,
     // asserted on the line above, and the events the next steps read from it.
-    expect(existsSync(join(sandbox, 'data', 'mnema', 'projects.json'))).toBe(false);
+    expect(existsSync(join(sandbox, 'home', '.mnema', 'projects.json'))).toBe(false);
 
     // 2. task adds an event through the gate.
     const t = capture();
@@ -382,7 +382,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     expect(backupLine).toContain('created and enrolled — private half at');
     const privateKeyPath = backupLine.slice(backupLine.indexOf('at ') + 3);
     expect(existsSync(privateKeyPath)).toBe(true);
-    expect(privateKeyPath.startsWith(join(sandbox, 'data'))).toBe(true);
+    expect(privateKeyPath.startsWith(join(sandbox, 'home', '.mnema', 'identity'))).toBe(true);
     expect(privateKeyPath.startsWith(repo)).toBe(false);
     expect(first.out.join('\n')).toContain('Move that file off this machine');
 
@@ -437,7 +437,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
 
     // A second key registered at the key root, the way another machine's would
     // be: its public half plus its own signature consenting to this anchor.
-    const keyRoot = join(sandbox, 'data', 'mnema', 'identity');
+    const keyRoot = join(sandbox, 'home', '.mnema', 'identity');
     const joining = generateKeyPair();
     writeFileSync(
       join(keyRoot, 'keys', `${joining.fingerprint}.pub`),
@@ -1709,7 +1709,7 @@ describe('mnema CLI — the identity a read prints is the identity a flag takes'
 describe('mnema CLI — key restore, end to end', () => {
   /** The key root of the sandboxed machine. */
   function keyRoot(): string {
-    return join(sandbox, 'data', 'mnema', 'identity');
+    return join(sandbox, 'home', '.mnema', 'identity');
   }
 
   /** The tree of the current repo. */
@@ -1847,12 +1847,11 @@ describe('mnema CLI — key restore, end to end', () => {
 describe('mnema CLI — a second machine joins one identity, end to end', () => {
   /** Points the next commands at one machine's key root. Two roots, two machines. */
   function asMachine(name: string): void {
-    process.env.XDG_DATA_HOME = join(sandbox, name, 'data');
     process.env.HOME = join(sandbox, name, 'home');
   }
 
   function keyRootOf(name: string): string {
-    return join(sandbox, name, 'data', 'mnema', 'identity');
+    return join(sandbox, name, 'home', '.mnema', 'identity');
   }
 
   function publicTree(): string {
@@ -2078,12 +2077,11 @@ describe('mnema CLI — a second machine joins one identity, end to end', () => 
  */
 describe('mnema CLI — asking with the cold copy while the wrong key is installed', () => {
   function asMachine(name: string): void {
-    process.env.XDG_DATA_HOME = join(sandbox, name, 'data');
     process.env.HOME = join(sandbox, name, 'home');
   }
 
   function keyRootOf(name: string): string {
-    return join(sandbox, name, 'data', 'mnema', 'identity');
+    return join(sandbox, name, 'home', '.mnema', 'identity');
   }
 
   function privateKeysOf(name: string): string[] {

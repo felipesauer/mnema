@@ -57,7 +57,7 @@
  * THAT file — what reaches it today and what that reaches instead — so it can be drained
  * one row at a time. It can only shrink.
  *
- * AND IT CANNOT DISSOLVE ITSELF. The ledger's keys are 72 path strings. Under a rule that
+ * AND IT CANNOT DISSOLVE ITSELF. The ledger's keys are 71 path strings. Under a rule that
  * read path literals, listing a file as debt would witness it and every entry would go
  * stale the moment it was written. Naming requires an IMPORT here, so a table of strings
  * names nothing — asserted below rather than assumed.
@@ -311,8 +311,15 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * Then 2830 -> 2837 when every test process was given a home of its own: seven clauses in
  * `a-home-of-its-own.test.ts`, the case that proves the guard — `node:child_process`,
  * `node:fs`, `node:path`, `node:url`, `node:util`, `vitest`, and the setup module itself.
+ * Then 2837 -> 2849 when the key root stopped following `$XDG_DATA_HOME`: eight clauses in
+ * `the-key-lives-in-one-place.test.ts`, which drives the built binary and the server it
+ * spawns — `node:child_process`, `node:fs`, `node:os`, `node:path`, `node:url`, the SDK's
+ * client and its stdio transport, and `vitest` — and four in `env.test.ts`, the first test of
+ * `discoveryEnv` itself: `node:os`, `node:path`, `vitest`, and the module. And 2849 -> 2850 in
+ * the same delivery, when the guard's count of hand-read homes learned to read code and not
+ * prose: `support/reading-source.js` in `a-home-of-its-own.test.ts`.
  */
-const CLAUSES_IN_THE_TREE = 2837;
+const CLAUSES_IN_THE_TREE = 2850;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -455,10 +462,10 @@ const LED_NOWHERE: Readonly<Record<string, string>> = {
  *
  * THE SHAPE OF WHAT IS LEFT, so the next slice can pick its ground: thirty-two modules
  * under `wiring/`, which are commander declarations composed into `cli.ts` and driven by
- * `cli-e2e`; twelve under `presentation/`, which render lines nothing reads back; four
+ * `cli-e2e`; eleven under `presentation/`, which render lines nothing reads back; four
  * projection stores in `core`, reached only as `ProjectionCache` method bodies; four under
- * `completion/`; four under `commands/`; and three barrels, which export and declare
- * nothing. The remaining sixteen are scattered, and the largest thing they share is the
+ * `completion/`; two under `commands/`; and three barrels, which export and declare
+ * nothing. The remaining fifteen are scattered, and the largest thing they share is the
  * erasure in point 4 above.
  *
  * AND THAT PARAGRAPH SAID *counted off the rows below, not estimated*, WHICH WAS NOT TRUE.
@@ -513,10 +520,6 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   'packages/code/src/completion/zsh.ts': {
     reached: 'nobody imports it',
     why: "The zsh rendering, the only one carrying `_describe` descriptions; nothing imports `zshScript`, and with zsh absent its output is merely handed to bash's parser.",
-  },
-  'packages/code/src/env.ts': {
-    reached: 'nobody imports it',
-    why: "The one place the surface turns process.env into a DiscoveryEnv; the only test naming it asserts it sits on the CLI's eager-import floor, not what it returns for HOME or XDG.",
   },
   'packages/code/src/mcp/hook-reply.ts': {
     reached: 'nobody imports it',
@@ -780,7 +783,7 @@ const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
   completion: 4,
   commands: 2,
   barrels: 3,
-  scattered: 16,
+  scattered: 15,
 };
 
 /** Which group of the shape above a debt row belongs to. One reading, so nothing falls in two. */
@@ -828,9 +831,9 @@ describe('every file has a test that names it', () => {
     const found = unwitnessed();
     const byReach = (reach: Reach): number =>
       [...found.values()].filter((one) => one === reach).length;
-    expect(PRODUCTION.length - found.size).toBe(239);
-    expect(found.size).toBe(72);
-    expect(byReach('nobody imports it')).toBe(72);
+    expect(PRODUCTION.length - found.size).toBe(240);
+    expect(found.size).toBe(71);
+    expect(byReach('nobody imports it')).toBe(71);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -852,7 +855,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(72);
+    expect(reasons).toHaveLength(71);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.
@@ -885,7 +888,7 @@ describe('every file has a test that names it', () => {
   });
 
   it('cannot be dissolved by the ledger that describes it', () => {
-    // The keys below are 72 paths. Naming requires an IMPORT, so listing a file here
+    // The keys below are 71 paths. Naming requires an IMPORT, so listing a file here
     // cannot witness it — and this file, which mentions every one of them, imports no
     // product file at all.
     const self = TEST_TREE.find((one) =>
