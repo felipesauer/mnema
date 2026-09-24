@@ -27,22 +27,61 @@ function foundedBeside(n: number): FoundedBeside {
   };
 }
 
+/**
+ * What every sentence asks of whoever follows it, in every tree: the enrollment is made INSIDE each
+ * project it is meant for, BY a machine already in that identity, and the record is committed and
+ * shared there and pulled here BEFORE this key's first write — the three things the old words
+ * ("then `mnema key enroll` wherever its key is") left out, and without which following them saved
+ * no project (`tests/a-write-says-what-it-founded.test.ts` follows them in the binary).
+ */
+const WHAT_FOLLOWING_IT_TAKES = [
+  'where this key has not written yet',
+  'hand the line it prints to a machine already in that identity',
+  'which runs `mnema key enroll <the line>` inside each of those projects',
+  'and commits and shares the record, and pull it here before this key writes there.',
+];
+
 describe('foundingSentence — one sentence, both surfaces', () => {
   it('names the identity founded and the one beside it, and hands over the command to copy', () => {
     const founded = foundedBeside(1);
     const short = shortenAnchors([founded.anchor, ...founded.besides]);
     const said = foundingSentence(founded, 'public');
     expect(said).toContain(
-      `in the public tree, ${short.get(founded.anchor)}, beside 1 already there`,
+      `This key founded an identity of its own in the public tree, ${short.get(founded.anchor)}, ` +
+        'beside 1 already there',
     );
     expect(said).toContain(`(${short.get(founded.besides[0] as string)})`);
-    expect(said).toContain('Someone new to this record reads exactly this and has nothing to do.');
-    expect(said).toContain('If that identity is you — on another machine, or under another key —');
-    expect(said).toContain('this tree counts you twice from now on');
     expect(said).toContain(
-      `\`mnema key request --anchor ${short.get(founded.besides[0] as string)}\` here`,
+      'If you are new to this record, this is how everyone after the first arrives, and there is ' +
+        'nothing to do.',
+    );
+    expect(said).toContain('If that identity is you — on another machine, or under another key —');
+    expect(said).toContain('this tree counts you twice from now on;');
+    expect(said).toContain(
+      'the public trees of your other projects can still count you once where this key has not ' +
+        'written yet',
+    );
+    expect(said).toContain(
+      `run \`mnema key request --anchor ${short.get(founded.besides[0] as string)}\` here`,
     );
     expect(said).not.toContain('\n');
+  });
+
+  it('says, in every tree, where the enrollment goes, who makes it, and when this key reads it', () => {
+    for (const scope of ['public', 'private', 'global'] as const) {
+      const said = foundingSentence(foundedBeside(1), scope);
+      for (const part of WHAT_FOLLOWING_IT_TAKES) expect(said, scope).toContain(part);
+      expect(said, scope).not.toContain('wherever its key is');
+      expect(said, scope).not.toContain('\n');
+    }
+  });
+
+  it('keeps the enrollment out of the project that split — the one place it would make worse', () => {
+    const said = foundingSentence(foundedBeside(1), 'public');
+    expect(said).toContain(
+      'Not in this project: here the enrollment joins nothing, and every fresh clone of it would ' +
+        'then refuse this key’s writes.',
+    );
   });
 
   it('gives the trees kept on one machine their own words — no other machine wrote there', () => {
@@ -52,8 +91,31 @@ describe('foundingSentence — one sentence, both surfaces', () => {
       expect(said, scope).toContain('kept on this machine alone');
       expect(said, scope).toContain('— under another key —');
       expect(said, scope).not.toContain('on another machine');
-      expect(said, scope).not.toContain('Someone new');
+      expect(said, scope).not.toContain('If you are new');
+      // What no enrollment can reach, said as such: the old words promised "your other projects"
+      // there, and a tree kept on one machine cannot be enrolled into at all.
+      expect(said, scope).toContain(
+        'and so will every other tree this machine keeps to itself that the other key wrote in, ' +
+          'once this key writes there — no enrollment reaches a tree kept on one machine;',
+      );
+      expect(said, scope).not.toContain('your other projects');
+      // The machine that can vouch may be this very one, under the key it wrote with before.
+      expect(said, scope).toContain(
+        'a machine already in that identity (this one, if it still holds the key that identity ' +
+          'wrote with here)',
+      );
+      // Its enrollment goes to a PUBLIC tree, which this key may not have written — so nothing
+      // keeps it out of this project, and the words do not.
+      expect(said, scope).not.toContain('Not in this project');
     }
+    // A private founding happened inside a project, whose own public tree can still be spared; a
+    // global one did not.
+    expect(foundingSentence(foundedBeside(1), 'private')).toContain(
+      'the public trees of your projects, this one’s included, can still count you once',
+    );
+    expect(foundingSentence(foundedBeside(1), 'global')).toContain(
+      'the public trees of your projects can still count you once',
+    );
   });
 
   it('names three of many, counts the rest, and points where they are all named', () => {

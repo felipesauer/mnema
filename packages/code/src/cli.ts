@@ -211,8 +211,12 @@ export function buildProgram(
  *
  * ON EVERY PROGRAM THIS FILE BUILDS, and not once per invocation the way the walk's notice is
  * ({@link sayWhatTheWalkPassesOver}): the console builds a program for every line typed into it,
- * and a write typed there founds as surely as one run from a shell. It cannot repeat — a founding
- * happens once per key per tree — so hanging it per line costs a reader nothing.
+ * and a write typed there founds as surely as one run from a shell. It cannot repeat within one
+ * installation — the key's anchor is settled in a tree once, at its first write there — so hanging
+ * it per line costs a reader nothing. This said "a founding happens once per key per tree", which
+ * is true of the founding and not of the sentence: a fresh clone of the record, or a key restored
+ * into one, is a new installation of the same key, and it is said there again, true of the key
+ * (`a-new-identity.ts`, measured).
  *
  * THE QUESTION IS ASKED OF THE DISK, BEFORE AND AFTER, and not of the verb: a key's first write
  * into a tree is the one that settles its anchor there, so a verb that left a new anchor behind is

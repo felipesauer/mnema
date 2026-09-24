@@ -18,6 +18,34 @@
  * day the next one appears. And it is said once per identity per tree, at the moment it happened;
  * the record keeps the founding, and `mnema accountability` names it whenever somebody asks.
  *
+ * WHAT TO DO WAS ONE CLAUSE, AND FOLLOWED TO THE LETTER IT SAVED NOTHING. It read "then
+ * `mnema key enroll` wherever its key is", which says who vouches and not where the vouch lands —
+ * and it lands in the committed tree of the project the command is run in, and nowhere else
+ * (`commands/key-enroll.ts`): whether a key adopts an identity is asked of the record of the tree
+ * it writes to, at its first write there. Measured on the built binary: the machine already in the
+ * identity enrolled the key where it stood, in the project that had just split, and the key's
+ * first write in the next project founded again — two authors there as well. So the words now say
+ * where (inside each of the other projects), by whom (a machine already in that identity), and in
+ * what order (the record committed and shared there, then pulled here before this key's first
+ * write) — and `tests/a-write-says-what-it-founded.test.ts` follows them to the letter across two
+ * projects, beside the enrollment made where the old words led.
+ *
+ * AND WHERE NOT: nowhere this key has already written, this project first. There the enrollment
+ * joins nothing — the installation that founded goes on speaking for the identity it founded — and
+ * the record then proves the key a member of two identities, which a fresh clone refuses to write
+ * as rather than choose (`AMBIGUOUS_MEMBERSHIP`); measured, and asserted in the same file. The
+ * trees kept on one machine have words of their own ({@link BY_TREE}): no enrollment reaches them,
+ * so what they can still spare is the public trees of the person's projects.
+ *
+ * THE FIRST WORDS NAME THE KEY, NOT THE WRITE. They were "This founded a new identity", and writes
+ * that founded nothing earned them too: a fresh clone of a record in which this key had founded
+ * beside others, and a `mnema key restore` of that key into one, each settle the key's anchor by
+ * ADOPTING the founding the record already holds — no `identity.founded` is appended, measured two
+ * before and two after — while what is detected is only that the key's anchor appeared and that
+ * the record shows the key founded beside others ({@link foundingsSince}). That is one fact about
+ * the key, true in all three, so the sentence says it of the key. Telling a second installation
+ * from the first would take a reading of the record before every write, and this makes none.
+ *
  * The command line writes each sentence on stderr after the verb's answer; the server puts it in
  * the reply of the call whose write founded, and in the hook's `additionalContext` when that write
  * was the hook's. Both ask this module.
@@ -37,32 +65,90 @@ import { oneLine } from './one-line.js';
 /** How many of the identities already there a sentence names before it counts the rest. */
 const NAMED = 3;
 
+/** What the sentence says that depends on the tree the founding happened in. */
+interface TreeWords {
+  /** Who the new identity can be, read off where the tree is kept. */
+  readonly who: string;
+  /** How the same person comes to be written here under a second identity. */
+  readonly how: string;
+  /** What else goes on counting the person twice, past this tree — empty when nothing does. */
+  readonly beyond: string;
+  /** The trees an enrollment can still spare. */
+  readonly spared: string;
+  /** Who the request is handed to: whoever can vouch for this key. */
+  readonly vouching: string;
+  /** Where the enrollment must not go, and why — empty when nothing the words name leads there. */
+  readonly notHere: string;
+}
+
 /**
- * What a founding beside others can have been, by the tree it happened in — a record over the
- * closed set of scopes, so a tree the core adds does not compile here until it has words.
+ * What a founding beside others can have been, and what is still in reach, by the tree it
+ * happened in — a record over the closed set of scopes, so a tree the core adds does not compile
+ * here until it has words.
  *
- * The public tree travels, so a founding there may be a person new to the record. The private and
- * global trees are kept on one machine, so the identity already there was written from this
- * machine too.
+ * THE PUBLIC TREE travels, so a founding there may be a person new to the record. The words keep
+ * the enrollment out of this project by name, because it is the tree this key founded in and the
+ * one a reader is likeliest to want mended; every other project this key has written in is kept
+ * out by "where this key has not written yet", for the same reason.
+ *
+ * THE PRIVATE AND GLOBAL TREES are kept on one machine, so the identity already there was written
+ * from this machine too, under a key it no longer signs with. No enrollment reaches a tree kept on
+ * one machine — `key enroll` writes the public tree of a project and nothing else — so every other
+ * such tree the old key wrote in counts the person twice as soon as this key writes there, and the
+ * old words, "your other projects can still count you once", promised what no command can do. What
+ * an enrollment can spare is the public trees of the person's projects; after a private founding
+ * that includes this project's own, which this key may not have written yet. And the machine that
+ * can vouch may be this one: the identity was written from here, so if the key it was written with
+ * is still on the disk, a `key enroll` signed with it is a member's vouch.
  */
-const WHAT_IT_CAN_HAVE_BEEN: Readonly<
-  Record<Scope, { readonly who: string; readonly how: string }>
-> = {
+const BY_TREE: Readonly<Record<Scope, TreeWords>> = {
   public: {
-    who: 'Someone new to this record reads exactly this and has nothing to do.',
+    who:
+      'If you are new to this record, this is how everyone after the first arrives, and there ' +
+      'is nothing to do.',
     how: 'on another machine, or under another key',
+    beyond: '',
+    spared: 'the public trees of your other projects',
+    vouching: 'a machine already in that identity',
+    notHere:
+      'Not in this project: here the enrollment joins nothing, and every fresh clone of it would ' +
+      'then refuse this key’s writes.',
   },
   private: {
     who: 'This tree is kept on this machine alone, so that identity was written from here too.',
     how: 'under another key',
+    beyond:
+      ', and so will every other tree this machine keeps to itself that the other key wrote in, ' +
+      'once this key writes there — no enrollment reaches a tree kept on one machine',
+    spared: 'the public trees of your projects, this one’s included,',
+    vouching:
+      'a machine already in that identity (this one, if it still holds the key that identity ' +
+      'wrote with here)',
+    notHere: '',
   },
   global: {
     who: 'This tree is kept on this machine alone, so that identity was written from here too.',
     how: 'under another key',
+    beyond:
+      ', and so will every other tree this machine keeps to itself that the other key wrote in, ' +
+      'once this key writes there — no enrollment reaches a tree kept on one machine',
+    spared: 'the public trees of your projects',
+    vouching:
+      'a machine already in that identity (this one, if it still holds the key that identity ' +
+      'wrote with here)',
+    notHere: '',
   },
 };
 
-/** The sentence for one identity a write founded beside others, in the tree of `scope`. */
+/**
+ * The sentence for one identity a key founded beside others, in the tree of `scope`.
+ *
+ * Every command in it is written to be run where the sentence says, in the order it says them,
+ * and nothing else is asked of the reader: the request here, where the short anchor resolves;
+ * the enrollment on the machine that can vouch, inside each project it is meant for, because that
+ * is the record it lands in; and the pull here, because this key adopts an identity only by
+ * reading the vouch in the record of the tree it writes to, at its first write there.
+ */
 export function foundingSentence(founded: FoundedBeside, scope: Scope): string {
   const short = shortenAnchors([founded.anchor, ...founded.besides]);
   const named = (anchor: string): string => short.get(anchor) ?? anchor;
@@ -76,14 +162,16 @@ export function foundingSentence(founded: FoundedBeside, scope: Scope): string {
   // With one identity beside it, the command is the one to copy: `key request` resolves a short
   // anchor against the record it is run in, and "here" is that record.
   const target = one ? named(founded.besides[0] as string) : '<that identity>';
-  const { who, how } = WHAT_IT_CAN_HAVE_BEEN[scope];
+  const tree = BY_TREE[scope];
   return oneLine(
-    `This founded a new identity in the ${scope} tree, ${named(founded.anchor)}, beside ` +
-      `${founded.besides.length} already there (${which}). ${who} ` +
-      `If ${one ? 'that identity' : 'one of them'} is you — ${how} — this tree counts you ` +
-      'twice from now on, and your other projects can still count you ' +
-      'once: before this key writes in them, enroll it into that identity with ' +
-      `\`mnema key request --anchor ${target}\` here, then \`mnema key enroll\` wherever its key is.`,
+    `This key founded an identity of its own in the ${scope} tree, ${named(founded.anchor)}, ` +
+      `beside ${founded.besides.length} already there (${which}). ${tree.who} ` +
+      `If ${one ? 'that identity' : 'one of them'} is you — ${tree.how} — this tree counts you ` +
+      `twice from now on${tree.beyond}; ${tree.spared} can still count you once where this key ` +
+      `has not written yet: run \`mnema key request --anchor ${target}\` here, hand the line it ` +
+      `prints to ${tree.vouching}, which runs \`mnema key enroll <the line>\` inside each of ` +
+      'those projects and commits and shares the record, and pull it here before this key ' +
+      `writes there.${tree.notHere === '' ? '' : ` ${tree.notHere}`}`,
   );
 }
 
@@ -123,8 +211,15 @@ export function anchorsBefore(trees: readonly WatchedTree[]): AnchorsBefore {
 
 /**
  * The sentences owed after a write: one for every key that settled its anchor in a tree during it
- * AND founded an identity there beside others — a key that ADOPTED an identity on the record
- * settles its anchor too, and is owed nothing.
+ * AND is shown by that tree's record to have founded an identity there beside others.
+ *
+ * This said "a key that ADOPTED an identity on the record settles its anchor too, and is owed
+ * nothing", and that holds for a key another member vouched for — the handshake the page
+ * describes — but not for a key adopting a founding of ITS OWN, which is what a fresh clone of the
+ * record, or a `mnema key restore` into one, does: the anchor appears, the record shows the key's
+ * founding beside others, and the sentence is owed again although nothing was appended. Measured;
+ * the case that pins it is in `tests/a-write-says-what-it-founded.test.ts`, and the words are
+ * written about the key so that they are true there too.
  *
  * The record is read only for a tree where an anchor appeared, which is a key's first write into
  * it: once per tree per key, for the life of the installation.
