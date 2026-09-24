@@ -322,9 +322,12 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * `founded-beside.test.ts`, which drives the core's own writers over one tree, eight in
  * `a-new-identity.test.ts`, the witness of the module that words it, and thirteen in
  * `a-write-says-what-it-founded.test.ts`, which runs the built binary, the server through the
- * SDK's client, and the hook's tool.
+ * SDK's client, and the hook's tool. And 2883 -> 2891 when the key root began to ignore itself
+ * in git: eight in `keystore.test.ts`, which asks `git check-ignore` about what the key writers
+ * produce — `node:child_process`, `node:fs`, `node:os`, `node:path`, `vitest`, and the three
+ * modules of the key root it drives.
  */
-const CLAUSES_IN_THE_TREE = 2883;
+const CLAUSES_IN_THE_TREE = 2891;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 

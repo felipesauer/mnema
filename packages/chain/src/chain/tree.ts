@@ -17,8 +17,10 @@
  * This is for PROJECT trees only. The global tree and the key root are not committed
  * with any project, so they need no `.gitignore` OF THIS KIND. This used to say they
  * "live outside any repo (under the XDG data home)"; they live in the home now
- * (`~/.mnema`), and a home kept under git is a repo. Ensuring the global tree is just
- * creating the directory, which the writer already does on open.
+ * (`~/.mnema`), and a home kept under git is a repo — which is why the key root carries a
+ * `.gitignore` of its own, written before the first private byte (`ensureKeyRootIgnored`,
+ * `keystore.ts`). Ensuring the global tree is just creating the directory, which the writer
+ * already does on open.
  */
 
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';

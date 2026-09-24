@@ -136,6 +136,22 @@ describe('$MNEMA_HOME reaches both surfaces', () => {
   }, 60_000);
 });
 
+describe('a home kept under git', () => {
+  it('never stages the key — and still stages the global tree, which is the person’s to version', () => {
+    // Dotfiles: the home IS a repository. The key root carries a `.gitignore` of its own, so
+    // `git add` in the home takes everything the person wrote except the private half.
+    expect(spawnSync('git', ['init', '-q'], { cwd: home }).status).toBe(0);
+    expect(mnema(repo, { HOME: home }, 'memory', 'a note', '--scope', 'global').status).toBe(0);
+    expect(spawnSync('git', ['add', '-A'], { cwd: home }).status).toBe(0);
+    const staged = spawnSync('git', ['diff', '--cached', '--name-only'], {
+      cwd: home,
+      encoding: 'utf-8',
+    }).stdout.split('\n');
+    expect(staged.some((path) => path.startsWith('.mnema/global/'))).toBe(true);
+    expect(staged.filter((path) => path.startsWith('.mnema/identity/'))).toEqual([]);
+  }, 60_000);
+});
+
 describe('the two readings of $MNEMA_HOME a person can get wrong', () => {
   it('reads it empty as unset — the key root is the home’s', () => {
     const ran = mnema(repo, { HOME: home, MNEMA_HOME: '' }, 'memory', 'x', '--scope', 'global');

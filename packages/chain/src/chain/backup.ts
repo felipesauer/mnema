@@ -51,6 +51,7 @@ import {
   sign,
   verify as verifySignature,
 } from './keys.js';
+import { ensureKeyRootIgnored } from './keystore.js';
 import {
   backupDir,
   backupPrivateKeyPath,
@@ -204,6 +205,7 @@ export function ensureBackupKey(keyRoot: ChainLayout, anchor: string): BackupKey
 
   const keyPair = generateKeyPair();
   const privatePath = backupPrivateKeyPath(keyRoot, keyPair.fingerprint);
+  ensureKeyRootIgnored(keyRoot);
   mkdirSync(backupDir(keyRoot), { recursive: true, mode: 0o700 });
   writeFileSync(privatePath, privateKeyToPem(keyPair.privateKey), {
     encoding: 'utf-8',

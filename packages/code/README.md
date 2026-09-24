@@ -1191,7 +1191,8 @@ The walk never takes your home directory for a project, and stops there: `~/.mne
 where the key lives, and a project in the home would own every folder under it.
 `mnema init` refuses to found one there, and a `.mnema/` that holds a key root is never
 taken for a project anywhere. Only the committed tree is meant to be shared; the private
-key never leaves the key root.
+key never leaves the key root, which carries a `.gitignore` of its own — a home kept under
+git never stages it, while the global tree beside it stays yours to version or not.
 
 **Why not `$XDG_DATA_HOME`?** Because the key is who you are, and `$XDG_DATA_HOME` is set
 on your behalf by whatever launched the process. A snap-packaged editor used to point it
