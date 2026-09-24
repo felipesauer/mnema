@@ -2091,6 +2091,12 @@ function replied(
     content: [
       ...before,
       ...fact(sessionLinkBreaks(session, wrote ? A_WRITE : A_READ)),
+      // WHAT THIS CONNECTION'S WRITES FOUNDED since the last reply — asked here for the reason
+      // the record's state is: this is the one place every reply of this server passes, so a
+      // tool added later says it without remembering to. Empty unless a first write into a tree
+      // founded an identity beside others, which happens once per key per tree
+      // (`a-new-identity.ts`).
+      ...session.founding.take(),
       ...after,
     ].map((text) => ({
       type: 'text' as const,

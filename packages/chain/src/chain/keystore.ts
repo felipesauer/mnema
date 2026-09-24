@@ -37,6 +37,7 @@ import {
   publicKeyToPem,
 } from './keys.js';
 import {
+  ANCHOR_SUFFIX,
   anchorPath,
   type ChainLayout,
   installationIdPath,
@@ -198,6 +199,24 @@ export function readAnchor(layout: ChainLayout, fingerprint: string): string | n
   if (!existsSync(path)) return null;
   const value = readFileSync(path, 'utf-8').trim();
   return value.length > 0 ? value : null;
+}
+
+/**
+ * Every key that has an anchor recorded in this tree, by fingerprint — which installations of
+ * this machine have settled, locally, whom they speak for here. Empty for a tree with none, or no
+ * tree at all.
+ *
+ * A write that settles an anchor where there was none is a key's first write into the tree —
+ * the only moment it can found an identity — so a surface that lists these before and after a
+ * write knows whether that moment passed, without asking the write.
+ */
+export function listAnchoredFingerprints(layout: ChainLayout): string[] {
+  const dir = keysDir(layout);
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((name) => name.endsWith(ANCHOR_SUFFIX))
+    .map((name) => name.slice(0, -ANCHOR_SUFFIX.length))
+    .sort();
 }
 
 /**

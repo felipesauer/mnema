@@ -317,9 +317,14 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * client and its stdio transport, and `vitest` — and four in `env.test.ts`, the first test of
  * `discoveryEnv` itself: `node:os`, `node:path`, `vitest`, and the module. And 2849 -> 2850 in
  * the same delivery, when the guard's count of hand-read homes learned to read code and not
- * prose: `support/reading-source.js` in `a-home-of-its-own.test.ts`.
+ * prose: `support/reading-source.js` in `a-home-of-its-own.test.ts`. Then 2850 -> 2883 when a
+ * write that founds an identity beside others began to say so: twelve clauses in
+ * `founded-beside.test.ts`, which drives the core's own writers over one tree, eight in
+ * `a-new-identity.test.ts`, the witness of the module that words it, and thirteen in
+ * `a-write-says-what-it-founded.test.ts`, which runs the built binary, the server through the
+ * SDK's client, and the hook's tool.
  */
-const CLAUSES_IN_THE_TREE = 2850;
+const CLAUSES_IN_THE_TREE = 2883;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -811,7 +816,7 @@ describe('every file has a test that names it', () => {
     expect(PRODUCTION).toContain('packages/code/src/wiring/index.ts');
     expect(PRODUCTION).toContain('packages/core/src/topology/index.ts');
     expect(PRODUCTION).not.toContain('packages/core/src/index.ts');
-    expect(PRODUCTION).toHaveLength(311);
+    expect(PRODUCTION).toHaveLength(313);
     expect(TEST_TREE.length).toBeGreaterThan(250);
     // No file is in both corpora, which is what keeps a test from witnessing itself.
     const tests = new Set(TEST_TREE.map((one) => one.path));
@@ -831,7 +836,7 @@ describe('every file has a test that names it', () => {
     const found = unwitnessed();
     const byReach = (reach: Reach): number =>
       [...found.values()].filter((one) => one === reach).length;
-    expect(PRODUCTION.length - found.size).toBe(240);
+    expect(PRODUCTION.length - found.size).toBe(242);
     expect(found.size).toBe(71);
     expect(byReach('nobody imports it')).toBe(71);
     expect(byReach('imported, and no assertion observes it')).toBe(0);

@@ -68,6 +68,7 @@ export {
 } from './chain/keys.js';
 export {
   committedPublicKey,
+  listAnchoredFingerprints,
   listPrivateKeyFingerprints,
   loadOrCreateInstallationId,
   loadOrCreateKeyPair,

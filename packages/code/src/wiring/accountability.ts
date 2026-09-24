@@ -61,11 +61,27 @@ export function registerAccountability(program: Command, wiring: Wiring): Declar
         }
         // Human summary — one level. The total and one line per author with their
         // count; the per-kind and per-agent breakdown stays in --json.
+        //
+        // AND, BESIDE AN AUTHOR WHOSE IDENTITY WAS FOUNDED WHERE OTHERS ALREADY WERE, where and
+        // when: the count says there are two authors, and this says which one arrived second —
+        // somebody new, or the same person under another key, which only the reader can tell.
         const { total, byWho } = result.account;
         io.out(`${total} fact(s) · ${byWho.length} author(s)`);
         for (const account of byWho) {
+          const founded = result.foundedBeside
+            .filter(({ founding }) => founding.anchor === account.who)
+            .map(
+              ({ scope, founding }) =>
+                `founded beside ${founding.besides.length} other(s) in the ${scope} tree, ${founding.at}`,
+            );
           io.out(
-            render(itemLine([anchorText(result.anchors, account.who), String(account.total)])),
+            render(
+              itemLine([
+                anchorText(result.anchors, account.who),
+                String(account.total),
+                ...founded,
+              ]),
+            ),
           );
         }
       },

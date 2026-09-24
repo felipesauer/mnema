@@ -64,6 +64,13 @@ export {
   secretPlaceholder,
 } from './content/secrets.js';
 export { openDatabase, type SqliteDatabase } from './db/sqlite.js';
+// An identity founded where others already were — the one reading every surface asks, at the
+// moment of a write and when the record is audited afterwards.
+export {
+  type FoundedBeside,
+  foundedBesideBy,
+  identitiesFoundedBeside,
+} from './identity/founded-beside.js';
 export {
   ALIAS_PREFIXES,
   type AliasKind,
