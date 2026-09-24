@@ -199,7 +199,7 @@ beforeEach(async () => {
   process.env.XDG_DATA_HOME = join(sandbox, 'data');
   process.env.HOME = join(sandbox, 'home');
   delete process.env.MNEMA_RUN;
-  env = { home: join(sandbox, 'home'), xdgDataHome: join(sandbox, 'data') };
+  env = { home: join(sandbox, 'home') };
   process.chdir(repo);
   await did('init');
 });

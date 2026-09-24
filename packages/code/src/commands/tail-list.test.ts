@@ -41,7 +41,7 @@ afterEach(() => {
 function setup(): { repo: string; env: DiscoveryEnv } {
   const repo = join(sandbox, 'repo');
   mkdirSync(repo, { recursive: true });
-  const env = { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') };
+  const env = { home: join(sandbox, 'home') };
   runInit({ cwd: repo, env });
   return { repo, env };
 }
@@ -207,7 +207,7 @@ describe('mnema tail list', () => {
     mkdirSync(nowhere, { recursive: true });
     const outside = runTailList({
       cwd: nowhere,
-      env: { xdgDataHome: join(sandbox, 'empty-data'), home: join(sandbox, 'empty-home') },
+      env: { home: join(sandbox, 'empty-home') },
     });
     expect(outside.tails).toEqual([]);
     expect(outside.trees).toEqual(['global']);

@@ -29,7 +29,7 @@ afterEach(() => {
 function setup(): { repo: string; env: DiscoveryEnv } {
   const repo = join(sandbox, 'repo');
   mkdirSync(repo, { recursive: true });
-  return { repo, env: { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') } };
+  return { repo, env: { home: join(sandbox, 'home') } };
 }
 
 /** Every file under a directory, by path relative to it, sorted. Absent ⇒ empty. */
@@ -247,7 +247,7 @@ describe('mnema init — where no project can be founded', () => {
   it('refuses in the home directory, and makes nothing there', () => {
     const home = join(sandbox, 'home');
     mkdirSync(join(home, 'work'), { recursive: true });
-    const env: DiscoveryEnv = { home, xdgDataHome: join(sandbox, 'data') };
+    const env: DiscoveryEnv = { home };
     const before = filesUnder(home);
 
     const result = runInit({ cwd: home, env });
@@ -292,7 +292,7 @@ describe('mnema init — where no project can be founded', () => {
     const home = join(sandbox, 'home');
     const app = join(home, 'code', 'app');
     mkdirSync(app, { recursive: true });
-    const result = runInit({ cwd: app, env: { home, xdgDataHome: join(sandbox, 'data') } });
+    const result = runInit({ cwd: app, env: { home } });
     expect(result).toMatchObject({ created: true, root: join(app, '.mnema') });
   });
 });

@@ -62,7 +62,7 @@ beforeEach(() => {
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-no-workspace-'));
   const home = join(sandbox, 'home');
   mkdirSync(home, { recursive: true });
-  env = { home, xdgDataHome: join(sandbox, 'data') };
+  env = { home };
   logged = [];
 });
 
@@ -309,7 +309,6 @@ async function overTheBinary(
     env: {
       PATH: process.env.PATH ?? '',
       HOME: env.home,
-      XDG_DATA_HOME: env.xdgDataHome ?? '',
     },
   });
   const out = decodedWhole();
@@ -350,7 +349,7 @@ function mnemaIn(cwd: string, ...argv: string[]): string {
   const run = spawnSync(process.execPath, [CLI, ...argv], {
     cwd,
     encoding: 'utf-8',
-    env: { PATH: process.env.PATH ?? '', HOME: env.home, XDG_DATA_HOME: env.xdgDataHome ?? '' },
+    env: { PATH: process.env.PATH ?? '', HOME: env.home },
   });
   expect(run.status, run.stderr).toBe(0);
   return run.stdout;

@@ -67,7 +67,6 @@ import {
 let sandbox: string;
 let env: DiscoveryEnv;
 let originalCwd: string;
-let originalXdg: string | undefined;
 let originalHome: string | undefined;
 
 const upcasters = catalogUpcasters();
@@ -178,20 +177,16 @@ beforeEach(() => {
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-move-across-'));
   const home = join(sandbox, 'home');
   mkdirSync(home, { recursive: true });
-  env = { home, xdgDataHome: join(sandbox, 'data') };
+  env = { home };
   // The CLI reads the REAL process environment; the session takes an injected one.
   // Both must describe the same machine, or the witness would be reading another.
   originalCwd = process.cwd();
-  originalXdg = process.env.XDG_DATA_HOME;
   originalHome = process.env.HOME;
-  process.env.XDG_DATA_HOME = env.xdgDataHome as string;
   process.env.HOME = home;
 });
 
 afterEach(() => {
   process.chdir(originalCwd);
-  if (originalXdg === undefined) delete process.env.XDG_DATA_HOME;
-  else process.env.XDG_DATA_HOME = originalXdg;
   if (originalHome === undefined) delete process.env.HOME;
   else process.env.HOME = originalHome;
   rmSync(sandbox, { recursive: true, force: true });

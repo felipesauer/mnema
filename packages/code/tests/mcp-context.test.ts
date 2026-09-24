@@ -46,7 +46,7 @@ beforeEach(() => {
   // home is a plain, project-free directory so the global fallback is clean.
   const home = join(sandbox, 'home');
   mkdirSync(home, { recursive: true });
-  env = { home, xdgDataHome: join(sandbox, 'data') };
+  env = { home };
 });
 
 afterEach(() => {
@@ -232,7 +232,7 @@ describe('resolveContext — the working directory, for a client that declared n
     mkdirSync(join(home, PROJECT_DIR, 'identity', 'keys'), { recursive: true });
     const workspace = join(home, 'code', 'never-initialized');
     mkdirSync(workspace, { recursive: true });
-    const elsewhere: DiscoveryEnv = { home, xdgDataHome: join(sandbox, 'data') };
+    const elsewhere: DiscoveryEnv = { home };
 
     expect(resolveContext({ cwd: workspace, env: elsewhere }).inProject).toBe(false);
   });
@@ -297,7 +297,7 @@ describe('resolveContext — the working directory, for a client that declared n
     mkdirSync(two, { recursive: true });
     const roots = [pathToFileURL(one).href, pathToFileURL(two).href];
 
-    const ctx = resolveContext({ roots, env: { home, xdgDataHome: join(sandbox, 'data') } });
+    const ctx = resolveContext({ roots, env: { home } });
     expect(ctx.passedOver).toEqual([{ tree: join(home, PROJECT_DIR), why: 'home' }]);
     // And nothing at all where the walks met no such tree.
     expect(

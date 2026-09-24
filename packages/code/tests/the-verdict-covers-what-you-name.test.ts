@@ -98,8 +98,8 @@ async function mnema(...argv: readonly string[]): Promise<Said> {
 }
 
 /** The discovery environment every project in the sandbox resolves against. */
-function env(): { xdgDataHome: string; home: string } {
-  return { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') };
+function env(): { home: string } {
+  return { home: join(sandbox, 'home') };
 }
 
 /** The trees of one project of the sandbox. */

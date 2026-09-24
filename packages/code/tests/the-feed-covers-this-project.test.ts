@@ -59,7 +59,7 @@ let projectB: string;
 
 beforeEach(() => {
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-feed-covers-'));
-  env = { home: join(sandbox, 'home'), xdgDataHome: join(sandbox, 'xdg') };
+  env = { home: join(sandbox, 'home') };
   mkdirSync(env.home, { recursive: true });
   projectA = join(sandbox, 'a');
   projectB = join(sandbox, 'b');

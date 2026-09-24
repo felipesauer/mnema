@@ -48,7 +48,7 @@ const upcasters = catalogUpcasters();
 
 beforeEach(() => {
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-mcp-unreadable-'));
-  env = { home: join(sandbox, 'home'), xdgDataHome: join(sandbox, 'home', '.local', 'share') };
+  env = { home: join(sandbox, 'home') };
   project = join(sandbox, 'a-project');
   mkdirSync(project, { recursive: true });
   ensureTree({ root: join(project, PROJECT_DIR) });

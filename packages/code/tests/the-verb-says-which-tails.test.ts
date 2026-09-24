@@ -92,7 +92,6 @@ function digest(dir: string): string {
 /** The project's committed tree. */
 function publicRoot(): string {
   return resolveTrees(repo, {
-    xdgDataHome: join(sandbox, 'data'),
     home: join(sandbox, 'home'),
   }).projectPublic as string;
 }

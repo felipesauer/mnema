@@ -59,7 +59,7 @@ let repo: string;
 
 beforeEach(() => {
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-origin-'));
-  env = { home: join(sandbox, 'home'), xdgDataHome: join(sandbox, 'xdg') };
+  env = { home: join(sandbox, 'home') };
   mkdirSync(env.home, { recursive: true });
   repo = join(sandbox, 'repo');
   mkdirSync(join(repo, 'docs', 'adr'), { recursive: true });

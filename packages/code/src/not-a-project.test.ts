@@ -31,7 +31,7 @@ beforeEach(() => {
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-not-a-project-'));
   home = join(sandbox, 'home');
   mkdirSync(home, { recursive: true });
-  env = { home, xdgDataHome: join(sandbox, 'data') };
+  env = { home };
 });
 
 afterEach(() => {

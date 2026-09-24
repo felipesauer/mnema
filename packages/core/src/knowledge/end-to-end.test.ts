@@ -34,7 +34,6 @@ describe('memory.captured — end to end, the four publics', () => {
     sandbox = mkdtempSync(join(tmpdir(), 'mnema-mem-e2e-'));
     mkdirSync(join(sandbox, 'repo', '.mnema'), { recursive: true });
     trees = resolveTrees(join(sandbox, 'repo'), {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     });
   });

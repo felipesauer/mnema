@@ -124,8 +124,8 @@ async function verifyLines(...args: readonly string[]): Promise<string[]> {
 }
 
 /** The discovery environment the sandbox resolves trees in. */
-function env(): { xdgDataHome: string; home: string } {
-  return { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') };
+function env(): { home: string } {
+  return { home: join(sandbox, 'home') };
 }
 
 /** Every tree the command reported on — a verdict, or the note that a tree holds nothing. */

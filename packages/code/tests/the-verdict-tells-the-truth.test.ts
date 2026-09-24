@@ -76,7 +76,6 @@ async function verify(...args: readonly string[]): Promise<Said> {
 /** The public tree of the project in the sandbox. */
 function chainRoot(): string {
   return resolveTrees(repo, {
-    xdgDataHome: join(sandbox, 'data'),
     home: join(sandbox, 'home'),
   }).projectPublic as string;
 }

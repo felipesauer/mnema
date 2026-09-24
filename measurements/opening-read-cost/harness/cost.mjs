@@ -58,7 +58,6 @@ process.on('exit', () => rmSync(sandbox, { recursive: true, force: true }));
 
 mkdirSync(join(sandbox, 'repo', '.mnema'), { recursive: true });
 const trees = resolveTrees(join(sandbox, 'repo'), {
-  xdgDataHome: join(sandbox, 'data'),
   home: join(sandbox, 'home'),
 });
 const writer = openTreeForWriting(trees, 'public');
@@ -248,7 +247,6 @@ function growARecord(scale) {
   const dir = mkdtempSync(join(tmpdir(), 'mnema-unread-scale-'));
   mkdirSync(join(dir, 'repo', '.mnema'), { recursive: true });
   const grownTrees = resolveTrees(join(dir, 'repo'), {
-    xdgDataHome: join(dir, 'data'),
     home: join(dir, 'home'),
   });
   const w = openTreeForWriting(grownTrees, 'public');

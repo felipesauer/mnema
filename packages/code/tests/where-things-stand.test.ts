@@ -54,7 +54,6 @@ let sandbox: string;
 let repo: string;
 let env: DiscoveryEnv;
 let originalCwd: string;
-let originalXdg: string | undefined;
 let originalHome: string | undefined;
 
 /** Captures the CLI's output and whether it signalled failure. */
@@ -224,11 +223,9 @@ beforeEach(() => {
   repo = join(sandbox, 'repo');
   mkdirSync(repo, { recursive: true });
   mkdirSync(join(sandbox, 'home'), { recursive: true });
-  env = { home: join(sandbox, 'home'), xdgDataHome: join(sandbox, 'data') };
+  env = { home: join(sandbox, 'home') };
   originalCwd = process.cwd();
-  originalXdg = process.env.XDG_DATA_HOME;
   originalHome = process.env.HOME;
-  process.env.XDG_DATA_HOME = env.xdgDataHome as string;
   process.env.HOME = env.home;
   delete process.env.MNEMA_RUN;
   process.chdir(repo);
@@ -237,8 +234,6 @@ beforeEach(() => {
 afterEach(() => {
   delete process.env.MNEMA_RUN;
   process.chdir(originalCwd);
-  if (originalXdg === undefined) delete process.env.XDG_DATA_HOME;
-  else process.env.XDG_DATA_HOME = originalXdg;
   if (originalHome === undefined) delete process.env.HOME;
   else process.env.HOME = originalHome;
   rmSync(sandbox, { recursive: true, force: true });

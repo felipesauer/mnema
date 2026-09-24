@@ -44,7 +44,7 @@ afterEach(() => {
 function setup(): { repo: string; env: DiscoveryEnv } {
   const repo = join(sandbox, 'repo');
   mkdirSync(repo, { recursive: true });
-  const env = { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') };
+  const env = { home: join(sandbox, 'home') };
   runInit({ cwd: repo, env });
   return { repo, env };
 }
@@ -416,7 +416,7 @@ describe('mnema usage', () => {
     mkdirSync(nowhere, { recursive: true });
     const refused = runUsage({
       cwd: nowhere,
-      env: { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') },
+      env: { home: join(sandbox, 'home') },
       processEnv: {},
     });
     expect(refused).toEqual({ ok: false, reason: 'NO_PROJECT' });

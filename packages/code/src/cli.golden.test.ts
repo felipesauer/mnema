@@ -315,7 +315,6 @@ function assertNothingVolatile(text: string): void {
 function appendUnscreenedMemory(anchor: string): string {
   const trees = resolveTrees(repo, {
     home: join(sandbox, 'home'),
-    xdgDataHome: join(sandbox, 'data'),
   });
   const writer = openTreeForWriting(trees, 'public');
   // A fixed v7-shaped id: the subject is text, and one that does not change is
@@ -821,7 +820,6 @@ beforeAll(async () => {
   // half-substituted rather than as volatile).
   const beside = resolveTrees(repo, {
     home: join(sandbox, 'home'),
-    xdgDataHome: join(sandbox, 'data'),
   });
   name(listTails({ root: beside.projectPrivate as string })[0] as string, 'tail-private');
   name(listTails({ root: beside.global })[0] as string, 'tail-global');

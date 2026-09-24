@@ -35,7 +35,7 @@ function setup(documents: Readonly<Record<string, string>> = {}): {
   for (const [name, text] of Object.entries(documents)) {
     writeFileSync(join(adr, name), text, 'utf8');
   }
-  const env = { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') };
+  const env = { home: join(sandbox, 'home') };
   runInit({ cwd: repo, env });
   return { repo, env };
 }
@@ -211,10 +211,7 @@ describe('mnema decision import', () => {
     const bare = join(sandbox, 'bare');
     mkdirSync(bare, { recursive: true });
     expect(
-      runDecisionImport(
-        { cwd: bare, env: { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') } },
-        { from: '.' },
-      ),
+      runDecisionImport({ cwd: bare, env: { home: join(sandbox, 'home') } }, { from: '.' }),
     ).toEqual({ ok: false, reason: 'NO_PROJECT' });
   });
 

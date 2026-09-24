@@ -42,7 +42,7 @@ interface Machine {
 }
 
 function machine(name: string): Machine {
-  const env = { xdgDataHome: join(sandbox, name, 'data'), home: join(sandbox, name, 'home') };
+  const env = { home: join(sandbox, name, 'home') };
   return { env, keyRoot: join(sandbox, name, 'home', '.mnema', 'identity') };
 }
 

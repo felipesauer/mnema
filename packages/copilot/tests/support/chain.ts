@@ -73,7 +73,6 @@ export function makeBench(): Bench {
   });
   mkdirSync(join(sandbox, 'repo', '.mnema'), { recursive: true });
   const trees = resolveTrees(join(sandbox, 'repo'), {
-    xdgDataHome: join(sandbox, 'data'),
     home: join(sandbox, 'home'),
   });
   const writer = openTreeForWriting(trees, 'public');

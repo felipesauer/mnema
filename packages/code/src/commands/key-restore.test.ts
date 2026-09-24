@@ -40,7 +40,7 @@ afterEach(() => {
 function setup(): { repo: string; env: DiscoveryEnv; keyRoot: string } {
   const repo = join(sandbox, 'repo');
   mkdirSync(repo, { recursive: true });
-  const env = { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') };
+  const env = { home: join(sandbox, 'home') };
   return { repo, env, keyRoot: join(sandbox, 'home', '.mnema', 'identity') };
 }
 

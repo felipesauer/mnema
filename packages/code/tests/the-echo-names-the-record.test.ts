@@ -396,7 +396,7 @@ describe('a display the record does not hold', () => {
     const decisionId = idAfter(decision, 'Recorded decision ');
     const skillId = idAfter(skill, 'Proposed skill ');
     const root = chainRootForScope(
-      resolveTrees(repo, { home: join(sandbox, 'home'), xdgDataHome: join(sandbox, 'data') }),
+      resolveTrees(repo, { home: join(sandbox, 'home') }),
       'public',
     ) as string;
 
