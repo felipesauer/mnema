@@ -13,7 +13,12 @@ import { join, relative } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ensureBackupKey } from './backup.js';
 import { deriveAnchor, generateKeyPair } from './keys.js';
-import { ensureKeyRootIgnored, loadOrCreateKeyPair } from './keystore.js';
+import {
+  ensureKeyRootIgnored,
+  listAnchoredFingerprints,
+  loadOrCreateKeyPair,
+  writeAnchor,
+} from './keystore.js';
 
 let home: string;
 /** A key root inside a home that is itself a repository — the dotfiles case. */
@@ -80,5 +85,20 @@ describe('the key root ignores itself in git', () => {
     // repository is live, and `check-ignore` says no when the answer is no.
     writeFileSync(join(home, 'a-dotfile'), 'x');
     expect(notIgnored(['a-dotfile'])).toEqual(['a-dotfile']);
+  });
+});
+
+describe('listAnchoredFingerprints — which keys have settled whom they speak for in a tree', () => {
+  it('lists the keys with a local anchor, sorted, and nothing else in keys/', () => {
+    const tree = { root: join(home, 'tree') };
+    const [one, two] = [generateKeyPair().fingerprint, generateKeyPair().fingerprint];
+    writeAnchor(tree, two, deriveAnchor(two));
+    writeAnchor(tree, one, deriveAnchor(one));
+    writeFileSync(join(tree.root, 'keys', `${one}.pub`), 'not an anchor');
+    expect(listAnchoredFingerprints(tree)).toEqual([one, two].sort());
+  });
+
+  it('is empty for a tree with no keys directory — or no tree at all', () => {
+    expect(listAnchoredFingerprints({ root: join(home, 'nothing-here') })).toEqual([]);
   });
 });
