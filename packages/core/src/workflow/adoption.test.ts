@@ -41,7 +41,7 @@ import {
   verify,
 } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { IdentityUnavailableError } from '../identity/membership.js';
+import { IdentityUnavailableError, membershipIn } from '../identity/membership.js';
 import { captureMemory } from '../knowledge/operations.js';
 import { orderedEvents } from '../projections/order.js';
 import type { Clock } from './clock.js';
@@ -404,5 +404,54 @@ describe('the same decision with or without a writer — the one a caller takes 
     };
     expect(refusalOf(() => asked(k.keyRoot))).toBe('AMBIGUOUS_MEMBERSHIP');
     expect(refusalOf(() => decideAnchor(open(k.keyRoot).ctx))).toBe('AMBIGUOUS_MEMBERSHIP');
+  });
+});
+
+describe('the way out, with three identities — the words for more than two', () => {
+  /** A key root holding a key that has never opened a writer over the tree. */
+  function joiner(prefix: string): { keyRoot: string; fingerprint: string } {
+    const keyRoot = tmp(prefix);
+    return { keyRoot, fingerprint: signerAt(tree, { keyRoot }).signerFingerprint };
+  }
+
+  /** The refusal the record gives for the key, whole. */
+  function refusalFor(k: { keyRoot: string; fingerprint: string }): string {
+    const refused = membershipIn({ tree, upcasters }, publicHalfOf(k));
+    expect(refused).toMatchObject({ ok: false, code: 'AMBIGUOUS_MEMBERSHIP' });
+    return (refused as { message: string }).message;
+  }
+
+  it('enrolled into three, having founded none: the others let it go, each by a member of its own', () => {
+    const founders = ['x', 'y', 'w'].map((name) => machine(`mnema-three-${name}-`));
+    const anchors = founders.map((m) => ensureFounded(m.ctx));
+    const k = joiner('mnema-three-k-');
+    materializePublicKey({ root: tree }, publicHalfOf(k));
+    founders.forEach((m, i) => {
+      enrollKey(m.ctx, { newFp: k.fingerprint, reverseSig: consentOf(k, anchors[i] as string) });
+    });
+
+    const said = refusalFor(k);
+    expect(said).toContain('It speaks for one of them again once the others let it go');
+    expect(said).toContain(
+      'a machine whose writes here speak for each identity that should not have it runs',
+    );
+    expect(said).toContain(`\`mnema key revoke ${k.fingerprint}\``);
+  });
+
+  it('founded one and enrolled into two: it goes back to the one it founded once both others let go', () => {
+    const founders = ['x', 'y'].map((name) => machine(`mnema-three-${name}-`));
+    const anchors = founders.map((m) => ensureFounded(m.ctx));
+    // This key WRITES first, so it founds an identity of its own — whose only key it is.
+    const k = machine('mnema-three-k-');
+    const own = ensureFounded(k.ctx);
+    founders.forEach((m, i) => {
+      enrollKey(m.ctx, { newFp: k.fingerprint, reverseSig: consentOf(k, anchors[i] as string) });
+    });
+
+    const said = refusalFor(k);
+    expect(said).toContain(`It can only go back to speaking for ${own}, whose only key it is`);
+    expect(said).toContain(
+      `once ${anchors[0]} and ${anchors[1]} let it go: a machine whose writes here speak for each runs`,
+    );
   });
 });

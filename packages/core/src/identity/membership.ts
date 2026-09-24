@@ -190,14 +190,24 @@ export function membershipIn(
  *   - a key that is the only key of BOTH: no revocation separates them, and nothing says one does.
  *
  * So which identities can let it go is ASKED of the record here, by the roster the revocation
- * itself checks, and the sentence says exactly that — never a way out the record would refuse.
+ * itself checks and by both of its refusals — a key that roster does not count (`UNKNOWN_KEY`),
+ * and an identity's last key (`LAST_KEY`) — and the sentence says exactly that: never a way out
+ * the record would refuse. The first refusal is not one a record the product wrote can reach
+ * here, since a vouch commits the key's public half before it is appended; a tree that LOST that
+ * half can, and then the reason the sentence gives ("the only key") is not the reason, while the
+ * conclusion — no revocation separates them — is. `restore.test.ts` holds that tree.
+ *
  * The key's own installation in a fresh clone cannot run the revocation: it has no identity to
  * act as until this is settled. It costs a roster per identity named, on a refusal only.
  */
 function ambiguityOf(query: MembershipQuery, key: PublicHalf, anchors: readonly string[]): string {
   const opening = `this key belongs to more than one identity in that record (${oneLine(anchors.join(', '))}) — which one it should speak for here is not a choice to make on its behalf`;
-  // An identity whose only key this is cannot retire it: the revocation refuses the last key.
-  const keeps = anchors.filter((anchor) => rosterOf(query, anchor).size <= 1);
+  // An identity can retire this key only where its roster counts the key and holds another: the
+  // revocation refuses a key it does not count, and the last one.
+  const keeps = anchors.filter((anchor) => {
+    const roster = rosterOf(query, anchor);
+    return !roster.has(key.fingerprint) || roster.size <= 1;
+  });
   if (keeps.length > 1) {
     return `${opening}, and no revocation here separates them: this key is the only key ${oneLine(keeps.join(' and '))} have, and an identity's last key cannot be retired`;
   }

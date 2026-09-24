@@ -26,6 +26,7 @@ import {
   enrollmentMessage,
   generateKeyPair,
   listPrivateKeyFingerprints,
+  materializePublicKey,
   openChainForWriting,
   sign,
   verify,
@@ -350,11 +351,16 @@ describe('restoreKey — refusals, each writing nothing', () => {
     // enroll the SAME key, each with that key's genuine consent. Which identity
     // the key should speak for here is the person's call, not a coin flip made on
     // their behalf, so the restore refuses and names both.
+    //
+    // AND SAYS THE WAY OUT, which is a third place the refusal reaches. The public half is
+    // committed first, as every vouch the product makes commits it: this fixture enrolled
+    // without it, a tree no write path produces, and over it the way out cannot be read.
     const shared = generateKeyPair();
     const consent = (anchor: string): string =>
       Buffer.from(
         sign(enrollmentMessage(anchor, shared.fingerprint), shared.privateKey) as Uint8Array,
       ).toString('hex');
+    materializePublicKey({ root: tree }, shared);
 
     const one = machine(tree, keyRoot);
     enrollKey(one.ctx, { newFp: shared.fingerprint, reverseSig: consent(one.writer.anchor) });
@@ -375,5 +381,56 @@ describe('restoreKey — refusals, each writing nothing', () => {
     expect(refused).toMatchObject({ ok: false, code: 'AMBIGUOUS_MEMBERSHIP' });
     expect((refused as { message: string }).message).toContain(one.writer.anchor);
     expect((refused as { message: string }).message).toContain(two.writer.anchor);
+    expect((refused as { message: string }).message).toContain(
+      'It speaks for one of them again once the other lets it go',
+    );
+    expect((refused as { message: string }).message).toContain(
+      `\`mnema key revoke ${shared.fingerprint}\` inside this project, and commits`,
+    );
+  });
+
+  it('promises no way out over a tree that lost the key’s public half', () => {
+    // DAMAGED ON PURPOSE: both vouches are in the record and the key's committed half is not —
+    // which no write path produces and `verify` rejects. The consent still proves the key a
+    // member of both (the restore holds the key itself), and no revocation can take it out of
+    // either: the roster the revocation checks does not count a key whose half is missing, so it
+    // refuses (`UNKNOWN_KEY`). One of the two identities holds a second key, which is what would
+    // make a refusal that read only the size of the roster promise that one a way out.
+    const shared = generateKeyPair();
+    const second = generateKeyPair();
+    const consent = (key: typeof shared, anchor: string): string =>
+      Buffer.from(
+        sign(enrollmentMessage(anchor, key.fingerprint), key.privateKey) as Uint8Array,
+      ).toString('hex');
+
+    const one = machine(tree, keyRoot);
+    materializePublicKey({ root: tree }, second);
+    enrollKey(one.ctx, {
+      newFp: second.fingerprint,
+      reverseSig: consent(second, one.writer.anchor),
+    });
+    enrollKey(one.ctx, {
+      newFp: shared.fingerprint,
+      reverseSig: consent(shared, one.writer.anchor),
+    });
+    const two = machine(tree, tmp('mnema-restore-keyroot-b-'));
+    enrollKey(two.ctx, {
+      newFp: shared.fingerprint,
+      reverseSig: consent(shared, two.writer.anchor),
+    });
+
+    const sharedFile = join(vault, 'shared.key');
+    writeFileSync(sharedFile, shared.privateKey.export({ type: 'pkcs8', format: 'pem' }));
+    const refused = restoreKey({
+      privateKeyPath: sharedFile,
+      keyRoot: tmp('mnema-restore-keyroot-empty-'),
+      tree,
+      upcasters,
+    });
+
+    expect(refused).toMatchObject({ ok: false, code: 'AMBIGUOUS_MEMBERSHIP' });
+    const said = (refused as { message: string }).message;
+    expect(said).toContain('no revocation here separates them');
+    expect(said).not.toContain('mnema key revoke');
   });
 });
