@@ -75,7 +75,7 @@ import { recordTrees, type ScopedTree } from '../intelligence-source.js';
 export interface VerifyContext {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
-  /** The discovery environment (XDG/home). */
+  /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
   readonly env: DiscoveryEnv;
   /**
    * The minimum proven level this invocation accepts. Declared by the caller and
@@ -227,7 +227,7 @@ function coverProject(
 export interface WorkspaceContext {
   /** Where relative paths are resolved from — this invocation's directory. */
   readonly cwd: string;
-  /** The discovery environment (XDG/home). */
+  /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
   readonly env: DiscoveryEnv;
   /** The minimum this invocation accepts, held over the aggregate of the whole set. */
   readonly requirement: LevelRequirement;

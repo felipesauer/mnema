@@ -25,7 +25,7 @@
  * list did not have: `cli.ts` names the program to commander, which is the name printed
  * on every usage line the product publishes. A `bin` renamed without it tells every
  * reader of `--help` to type a command that does not exist. The word `mnema` appears in
- * a dozen other places in this workspace — the XDG directory, the MCP server's advertised
+ * a dozen other places in this workspace — the data directory, the MCP server's advertised
  * name, the REPL prompt, the export producer — and NONE of them is this rule: they are
  * other things that happen to share a word, and grepping the word rather than the rule
  * would have swept them in.

@@ -92,7 +92,7 @@ export type OpenSessionInput = ClientWorkspace & {
   readonly clientName: string;
   /** An explicit project directory the server was configured with, if any. */
   readonly configProject?: string | undefined;
-  /** The discovery environment (XDG/home). */
+  /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
   readonly env: DiscoveryEnv;
   /**
    * Where to write diagnostics, if the caller has somewhere to write them.

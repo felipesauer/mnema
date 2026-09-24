@@ -5,8 +5,8 @@
 // fixture already broke once by inheriting `"type": "module"` from the product's
 // own `package.json`, so a cell that ran inside this repository would be
 // measuring a context the product contaminates. And the mnema arm FOUNDS AN
-// IDENTITY: `mnema init` writes keys under `XDG_DATA_HOME` and a tree under
-// `.mnema/`. A cell that shared either with the next one would not be an
+// IDENTITY: `mnema init` writes keys under `HOME` (`~/.mnema`; it followed
+// `XDG_DATA_HOME` when this harness was written) and a tree under `.mnema/`. A cell that shared either with the next one would not be an
 // independent observation.
 
 import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
@@ -23,7 +23,8 @@ export function sandboxRoot() {
  * A fresh cell sandbox.
  *
  * The layout is fixed because the isolation list reads off it: `home` is HOME,
- * `xdg` is XDG_DATA_HOME (mnema's identity), `memory` is the host's
+ * `xdg` is XDG_DATA_HOME (kept inside the cell for every tool that reads it; mnema's
+ * identity lives under `home` since its key root stopped following it), `memory` is the host's
  * `autoMemoryDirectory`, `repo` is the working copy, `cell` holds the per-cell
  * configuration and the raw output.
  */

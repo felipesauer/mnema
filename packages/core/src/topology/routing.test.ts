@@ -170,7 +170,7 @@ describe('openTreeForWriting — routing a write to the right tree', () => {
 
   beforeEach(() => {
     sandbox = mkdtempSync(join(tmpdir(), 'mnema-route-'));
-    // A project at sandbox/repo, XDG global under sandbox/data.
+    // A project at sandbox/repo, and the global tree under the sandbox home's `.mnema/`.
     mkdirSync(join(sandbox, 'repo', '.mnema'), { recursive: true });
     trees = resolveTrees(join(sandbox, 'repo'), {
       home: join(sandbox, 'home'),

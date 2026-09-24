@@ -97,8 +97,8 @@ describe('resolveContext — the project cascade', () => {
 
   it('rung 4 carries NO project even when home holds a `.mnema/`', () => {
     // The fallback resolves the global tree from home. THIS CASE USED TO SAY that walk-up
-    // "would find one" — home's own `.mnema`, which with `$XDG_DATA_HOME` unset is the
-    // machine's data directory — and that its project scopes were dropped here. The walk
+    // "would find one" — home's own `.mnema`, which is the machine's data directory
+    // (it was only with `$XDG_DATA_HOME` unset, then; it always is now) — and that its project scopes were dropped here. The walk
     // no longer takes the home's `.mnema/` at all (`whyNoProjectRootAt`, `@mnema/core`);
     // the assertion stands, over a premise that is now the core's.
     mkdirSync(join(env.home, PROJECT_DIR), { recursive: true });
@@ -206,7 +206,7 @@ describe('resolveContext — the working directory, for a client that declared n
   });
 
   it('does not take THIS machine’s data directory for a project', () => {
-    // With `$XDG_DATA_HOME` unset the global tree and the key root live in `~/.mnema`,
+    // The global tree and the key root live in `~/.mnema`,
     // and a directory called `.mnema` is exactly what the walk-up looks for: a workspace
     // under home that was never initialized would resolve to home, a "project" whose
     // committed tree is this machine's private data. The key root is made the way the
@@ -225,7 +225,7 @@ describe('resolveContext — the working directory, for a client that declared n
   });
 
   it('does not take ANOTHER environment’s data directory for one either', () => {
-    // `~/.mnema` keeps its key root after `$XDG_DATA_HOME` is set, and a sandboxed
+    // `~/.mnema` keeps its key root after `$MNEMA_HOME` moves the data directory, and a sandboxed
     // environment under a real home finds the real one: the directory is not this
     // environment's data directory, and it is still no project's tree.
     const home = join(sandbox, 'machine-home');

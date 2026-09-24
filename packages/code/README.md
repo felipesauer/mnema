@@ -1176,18 +1176,30 @@ key really signed.
 <repo>/.mnema/              the project record — commit this, the team shares it
   tails/<id>/witness/       external attestations over this tail's checkpoints (T3)
   private/                  gitignored: this machine, this project only
-<data>/mnema/global/        this machine, across every project
-<data>/mnema/identity/      the signing key — referenced, never copied into a chain
+~/.mnema/global/            this machine, across every project
+~/.mnema/identity/          the signing key — referenced, never copied into a chain
 ```
 
-`<data>` follows XDG (`$XDG_DATA_HOME/mnema`, falling back to `~/.mnema`). The
-project root is found by walking up from the working directory until a `.mnema/`
+`~/.mnema` is this machine's data directory, whatever `$XDG_DATA_HOME` says.
+`MNEMA_HOME` moves it: set to an absolute path, the key root and the global tree live
+directly under that directory; set to a relative one, every command refuses rather than
+keep a key under whatever directory it was run from.
+
+The project root is found by walking up from the working directory until a `.mnema/`
 appears, the way git finds `.git` — so every command works from a subdirectory.
-The walk never takes your home directory for a project, and stops there: without
-`$XDG_DATA_HOME`, `~/.mnema` is where the key lives, and a project in the home would
-own every folder under it. `mnema init` refuses to found one there, and a `.mnema/`
-that holds a key root is never taken for a project anywhere. Only the committed tree
-is meant to be shared; the private key never leaves the key root.
+The walk never takes your home directory for a project, and stops there: `~/.mnema` is
+where the key lives, and a project in the home would own every folder under it.
+`mnema init` refuses to found one there, and a `.mnema/` that holds a key root is never
+taken for a project anywhere. Only the committed tree is meant to be shared; the private
+key never leaves the key root.
+
+**Why not `$XDG_DATA_HOME`?** Because the key is who you are, and `$XDG_DATA_HOME` is set
+on your behalf by whatever launched the process. A snap-packaged editor used to point it
+inside its own revision folder for the processes it started, and Flatpak points it inside
+each app's sandbox; a key root that followed it made one person two identities, depending
+on which program started the writer, silently and for good in every record it touched.
+`gpg` and `ssh` keep their keys under the home for the same reason. The one variable that
+moves the key is this product's own, `MNEMA_HOME`, and nothing sets it for you.
 
 ## What lives here
 

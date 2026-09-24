@@ -2,8 +2,9 @@
  * The home directory is not a project, and a machine's data directory is no project's tree —
  * through the binary a person runs and the server a host starts.
  *
- * WHAT WAS WRONG. With `$XDG_DATA_HOME` unset the data directory is `~/.mnema`, and a
- * directory called `.mnema` is exactly what the project walk looks for. Measured on the
+ * WHAT WAS WRONG. The data directory is `~/.mnema` — it was whenever `$XDG_DATA_HOME` was
+ * unset, when this was measured, and it always is now — and a directory called `.mnema` is
+ * exactly what the project walk looks for. Measured on the
  * built binary before this: after the first `mnema init` anywhere, `mnema memory` in a plain
  * folder under the home answered "Landed in the public tree — committed with the repository"
  * and wrote into `~/.mnema/tails/`, and `mnema recall` there spoke of "notes recorded for
@@ -13,10 +14,11 @@
  *
  * WHAT IS ASSERTED, each beside the case that would pass if the rule refused too much:
  *
- *   - the defect itself, with no `$XDG_DATA_HOME`: a verb from a folder under the home is
+ *   - the defect itself: a verb from a folder under the home is
  *     not told it landed in a project, and nothing is written into the home's `.mnema/tails`;
  *   - a home tree written before this, by the product's own writer, is passed over and
- *     NAMED — where, why, how many events — and not a byte of it changes, whatever runs;
+ *     NAMED — where, why, how many events — and not a byte of what it holds changes, whatever
+ *     runs: with the data directory kept elsewhere, and where it is the data directory itself;
  *   - outside a project the command line still answers over the machine-global tree, and
  *     a data directory holding nothing but its key and its global tree draws no line at all;
  *   - another environment's data directory, which only the key root in it says is one;
@@ -145,7 +147,7 @@ function filesIn(root: string): Map<string, string> {
   return files;
 }
 
-describe('the defect, through the binary, with no `$XDG_DATA_HOME`', () => {
+describe('the defect, through the binary', () => {
   it('does not tell a verb in a folder under the home that it landed in a project', () => {
     const app = dir('home', 'code', 'app');
     const plain = dir('home', 'Downloads', 'x');
@@ -280,7 +282,7 @@ describe('a home tree written before this — passed over, named, and left as it
   }, 60_000);
 
   it('draws no line for a data directory that holds only its key and its global tree', () => {
-    // The ordinary machine with no `$XDG_DATA_HOME`: `~/.mnema` is passed over on every walk
+    // The ordinary machine: `~/.mnema` is passed over on every walk
     // from under the home, and a line about it on every command would be a line about nothing.
     const plain = dir('home', 'work', 'x');
     expect(mnema({ cwd: plain, home }, 'memory', 'into global', '--scope', 'global').status).toBe(

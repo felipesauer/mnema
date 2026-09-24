@@ -5,7 +5,7 @@
  * The count is asserted against events the product's own writer stored, and read back by
  * the reading `mnema tail list` counts with, so "N event(s)" here means what it means
  * there. The silence is asserted beside the line: a sentence owed for every data directory
- * would be a line on every command of every machine without `$XDG_DATA_HOME`.
+ * would be a line on every command of every machine.
  */
 
 import { appendFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';

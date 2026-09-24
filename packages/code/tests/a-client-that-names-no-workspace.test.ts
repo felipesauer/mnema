@@ -206,7 +206,7 @@ describe('a client with no `roots` capability is served the project it works in'
 
 describe('the machine’s own data directory, reached from a workspace nobody initialized', () => {
   it('is made WITH its key root by a session that only reads, and is never served as a project', async () => {
-    // With `$XDG_DATA_HOME` unset the global tree lives in `~/.mnema`, and a directory
+    // The global tree lives in `~/.mnema`, and a directory
     // called `.mnema` is what a walk-up looks for — so every uninitialized workspace
     // under home would resolve to home, a "project" whose committed tree is this
     // machine's data. THIS SAID "the rung refuses a `.mnema/` that holds a key root"; the

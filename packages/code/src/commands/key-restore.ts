@@ -30,7 +30,7 @@ import { type RestoredMembership, restoreKey } from '@mnema/core/write';
 export interface KeyRestoreContext {
   /** The working directory: the project it resolves, and what a relative path is relative to. */
   readonly cwd: string;
-  /** The discovery environment (XDG/home), for the key root and the tree paths. */
+  /** The discovery environment (`$HOME`, `$MNEMA_HOME`), for the key root and the tree paths. */
   readonly env: DiscoveryEnv;
 }
 

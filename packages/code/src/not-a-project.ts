@@ -93,7 +93,7 @@ export function heldIn(tree: string): HeldThere {
  * The sentence for one passed-over tree, or `undefined` when it holds nothing to lose.
  *
  * A data directory holding only its key root and its global tree is the ordinary case on
- * every machine without `$XDG_DATA_HOME`, and it is passed over on every walk from under
+ * every machine — `~/.mnema` — and it is passed over on every walk from under
  * the home: saying so there would be a line on every command, about nothing. So the line
  * is owed only where there are TAILS — events written as a project's, which no answer
  * reads any more.

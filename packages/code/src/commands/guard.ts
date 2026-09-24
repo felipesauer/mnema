@@ -58,7 +58,7 @@ import {
 export interface GuardContext {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
-  /** The discovery environment (XDG/home). */
+  /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
   readonly env: DiscoveryEnv;
 }
 

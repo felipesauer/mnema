@@ -68,7 +68,7 @@ import {
 export interface UsageContext {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
-  /** The discovery environment (XDG/home) — the home is where the host's store is. */
+  /** The discovery environment (`$HOME`, `$MNEMA_HOME`) — the home is where the host's store is. */
   readonly env: DiscoveryEnv;
   /** The process environment, for the host's own `CLAUDE_CONFIG_DIR` override. */
   readonly processEnv?: NodeJS.ProcessEnv;
