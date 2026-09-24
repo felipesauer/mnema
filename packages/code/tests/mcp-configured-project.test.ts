@@ -186,7 +186,7 @@ describe('mnema mcp --project — the project the server serves', () => {
     // fires while the trees are being resolved, before the anchor is read, which is
     // the first thing that opens a writer.
     expect(eventsIn(stray)).toBe(0);
-    expect(existsSync(join(sandbox, 'data', 'mnema'))).toBe(false);
+    expect(existsSync(join(sandbox, 'home', '.mnema'))).toBe(false);
     // The operator's own channel says it too — the host's log, where a session that
     // never opened is otherwise indistinguishable from one that opened quietly.
     expect(logged.join('\n')).toContain('could not open session at initialize');

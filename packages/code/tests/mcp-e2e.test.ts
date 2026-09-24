@@ -13,7 +13,7 @@
  */
 
 import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -3180,7 +3180,9 @@ describe('MCP server — end to end over a real client', () => {
 
     // No project tree was created anywhere under the workspace — the capture
     // went to the global tree.
-    const globalRoot = join(sandbox, 'data', 'mnema', 'global');
+    const globalRoot = join(sandbox, 'home', '.mnema', 'global');
+    // Present before it is verified: a verdict over a tree that is not there reads `ok` too.
+    expect(existsSync(globalRoot)).toBe(true);
     const verdict = verify(globalRoot, catalogUpcasters());
     expect(verdict.ok).toBe(true);
 

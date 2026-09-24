@@ -3641,7 +3641,7 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
     // been refused — the machines could not see each other.
     //
     // The fixture is the merge itself: a second working copy, on its own machine (its
-    // own XDG data, so its own key), and its committed tail landing in this one. That is
+    // own home, so its own key), and its committed tail landing in this one. That is
     // the only way one chain holds two `ADR-1`s — a second decision on ONE machine is
     // `ADR-2`, so a hand-made pair would be a record the product cannot produce.
     await run(['init'], capture().io);
@@ -3649,8 +3649,7 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
 
     const clone = join(sandbox, 'clone');
     mkdirSync(clone, { recursive: true });
-    const mine = { xdg: process.env.XDG_DATA_HOME, home: process.env.HOME };
-    process.env.XDG_DATA_HOME = join(sandbox, 'clone-data');
+    const mine = { home: process.env.HOME };
     process.env.HOME = join(sandbox, 'clone-home');
     process.chdir(clone);
     let yours: string;
@@ -3658,7 +3657,6 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
       await run(['init'], capture().io);
       yours = await accept('Round the tax per line, then sum');
     } finally {
-      process.env.XDG_DATA_HOME = mine.xdg;
       process.env.HOME = mine.home;
       process.chdir(repo);
     }

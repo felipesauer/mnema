@@ -199,7 +199,7 @@ describe('mnema init', () => {
     const first = runInit({ cwd: repo, env });
     const before = orderedEvents({ root: first.root }, catalogUpcasters()).length;
     const treeBefore = contentsUnder(first.root);
-    const outsideBefore = contentsUnder(join(sandbox, 'data'));
+    const outsideBefore = contentsUnder(join(sandbox, 'home', '.mnema'));
 
     const second = runInit({ cwd: repo, env });
 
@@ -212,7 +212,8 @@ describe('mnema init', () => {
     expect(orderedEvents({ root: second.root }, catalogUpcasters()).length).toBe(before);
     // Nothing moved on disk, inside the project or outside it.
     expect(contentsUnder(first.root)).toEqual(treeBefore);
-    expect(contentsUnder(join(sandbox, 'data'))).toEqual(outsideBefore);
+    expect(Object.keys(outsideBefore).length).toBeGreaterThan(0);
+    expect(contentsUnder(join(sandbox, 'home', '.mnema'))).toEqual(outsideBefore);
   });
 
   it('does not re-found when the app data directory itself was lost', () => {
@@ -225,7 +226,9 @@ describe('mnema init', () => {
     const { repo, env } = setup();
     const first = runInit({ cwd: repo, env });
     const before = orderedEvents({ root: first.root }, catalogUpcasters()).length;
-    rmSync(join(sandbox, 'data'), { recursive: true, force: true });
+    // The home's `.mnema/` IS the app data directory — it used to be `$XDG_DATA_HOME/mnema`,
+    // and a case that went on removing that path would have lost nothing at all.
+    rmSync(join(sandbox, 'home', '.mnema'), { recursive: true, force: true });
 
     const second = runInit({ cwd: repo, env });
     expect(second.created).toBe(false);
@@ -255,11 +258,12 @@ describe('mnema init — where no project can be founded', () => {
     expect(result).toEqual({ refused: 'home', root: join(home, '.mnema') });
     expect(existsSync(join(home, '.mnema'))).toBe(false);
     expect(filesUnder(home)).toEqual(before);
-    // The key root is untouched too: a refusal founds no identity anywhere.
-    expect(existsSync(join(sandbox, 'data'))).toBe(false);
+    // The key root is untouched too: a refusal founds no identity anywhere — and the key
+    // root is the home's own `.mnema/identity`, the directory the line above says was not made.
+    expect(existsSync(join(home, '.mnema', 'identity'))).toBe(false);
   });
 
-  it('refuses there with no `$XDG_DATA_HOME` — where the home’s `.mnema/` would be the key’s directory', () => {
+  it('refuses there — where the home’s `.mnema/` would be the key’s directory', () => {
     // The case that put the private key in the project tree: the data directory IS
     // `~/.mnema`, so a project founded in the home shares one directory with the key.
     const home = join(sandbox, 'home');
