@@ -46,7 +46,8 @@ on, and [What lives where](#what-lives-where) says which is which.
   server and load the same plugin. The fullest experience is Claude Code's, where the
   rules also arrive before each edit; in VS Code a session opens with the record's
   context whatever model it runs, and in Cursor's command-line agent the plugin's
-  opening hooks hand their text to Cursor, which assembles what its model reads.
+  opening hooks hand their text to Cursor and it reaches the model — measured on
+  Cursor's free plan, with the `Auto` model.
 - **A proof a stranger can check** — `mnema verify` needs no private key and no
   network, and the format is specified well enough that a reader written from the
   specification alone reaches the same verdict.

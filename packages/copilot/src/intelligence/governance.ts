@@ -608,10 +608,14 @@ export interface PushedRule {
    * ordinary case for a rule decided here rather than imported.
    *
    * WHY A PUSHED LINE CARRIES IT. Everything else on the line is a handle into this
-   * product: the id opens with `read_record`, and the measurements behind the informing
-   * channel say that tool is not called. A provenance is the one fact on the line that
-   * opens with the tools the reader is ALREADY holding — `cat`, a file read — so it is
-   * what makes an unasked text followable without asking for anything.
+   * product: the id opens with `read_record`. That tool IS called — this sentence used to
+   * say the measurements behind the informing channel show it is not, and the cells that
+   * opened with an id called it 62 times — but by a reader for whom this product is the
+   * door; on a real project the reader followed the opening document's citation with
+   * `cat` and made none of its calls here (`code/src/record-framing.ts` records both). A
+   * provenance is the one fact on the line that opens with the tools the reader is ALREADY
+   * holding — `cat`, a file read — so it is what makes an unasked text followable without
+   * asking for anything.
    *
    * IT IS A TARGET AND NOT A PATH, and nothing here checks that it resolves: the
    * relation takes an id as readily as a file name, and the reads that serve this fact
