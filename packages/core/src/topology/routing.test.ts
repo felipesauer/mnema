@@ -10,10 +10,12 @@ import { createTask, type WriteContext } from '../workflow/operations.js';
 import { type ResolvedTrees, resolveTrees } from './resolve.js';
 import {
   chainRootForScope,
+  deferredWrite,
   openTreeForWriting,
   type RoutedKind,
   resolveScope,
   type Scope,
+  signerFor,
   TreeUnavailableError,
   UNROUTED_KINDS,
 } from './routing.js';
@@ -287,5 +289,57 @@ describe('openTreeForWriting — .gitignore protects private/ before any public 
     // With the guard, the ignore rule for the subtree exists.
     const ignore = join(trees.projectPublic as string, '.gitignore');
     expect(existsSync(ignore)).toBe(true);
+  });
+});
+
+describe('signerFor and deferredWrite — deciding before a writer exists', () => {
+  let sandbox: string;
+  let trees: ResolvedTrees;
+
+  beforeEach(() => {
+    sandbox = mkdtempSync(join(tmpdir(), 'mnema-route-deferred-'));
+    mkdirSync(join(sandbox, 'repo', '.mnema'), { recursive: true });
+    trees = resolveTrees(join(sandbox, 'repo'), { home: join(sandbox, 'home') });
+  });
+
+  afterEach(() => {
+    rmSync(sandbox, { recursive: true, force: true });
+  });
+
+  it('signerFor reads who would sign in a tree without touching it, and refuses a tree that is not there', () => {
+    const publicTree = trees.projectPublic as string;
+    const before = readdirSync(publicTree);
+    const signer = signerFor(trees, 'public');
+    expect(readdirSync(publicTree)).toEqual(before);
+    expect(signer.hasAnchor).toBe(false);
+    expect(signer.signerFingerprint).toBe(openTreeForWriting(trees, 'public').signerFingerprint);
+
+    const noProject = resolveTrees(join(sandbox, 'elsewhere'), { home: join(sandbox, 'home') });
+    expect(() => signerFor(noProject, 'public')).toThrow(TreeUnavailableError);
+  });
+
+  it('deferredWrite opens its writer once and only when asked, and signs through that one', () => {
+    const publicTree = trees.projectPublic as string;
+    const deferred = deferredWrite(trees, 'public');
+    // Holding it, and signing with nothing opened, touch nothing.
+    deferred.checkpoint();
+    expect(existsSync(join(publicTree, 'tails'))).toBe(false);
+    expect(deferred.layout.root).toBe(publicTree);
+    expect(deferred.signer.signerFingerprint).toBe(signerFor(trees, 'public').signerFingerprint);
+
+    const writer = deferred.open();
+    expect(deferred.open()).toBe(writer);
+    const captured = captureMemory(
+      { writer, layout: deferred.layout, upcasters: deferred.upcasters },
+      { content: 'written through the writer it opened' },
+    );
+    expect(captured.ok).toBe(true);
+    // The memory and the founding under it wait above the last checkpoint until it signs.
+    deferred.checkpoint();
+    expect(orderedEvents({ root: publicTree }, upcasters).map((event) => event.kind)).toEqual([
+      'identity.founded',
+      'memory.captured',
+    ]);
+    expect(writer.checkpoint()).toBeNull();
   });
 });

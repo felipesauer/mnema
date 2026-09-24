@@ -21,11 +21,11 @@ import {
 } from '../events/build.js';
 import { canonicalStringify } from '../events/canonical.js';
 import { catalogUpcasters } from '../events/registry.js';
-import { openChainForWriting, verify } from './chain.js';
+import { openChainForWriting, signerAt, verify } from './chain.js';
 import { checkpointHash, serializeCheckpoint, signCheckpoint } from './checkpoint.js';
 import { entryHash, writtenAsBuilt, writtenAsStored } from './hash.js';
 import { deriveAnchor, generateKeyPair, publicKeyToPem } from './keys.js';
-import { loadOrCreateKeyPair } from './keystore.js';
+import { listPrivateKeyFingerprints, loadOrCreateKeyPair } from './keystore.js';
 import { checkpointsPath, publicKeyPath, segmentPath, tailProofPath } from './layout.js';
 import { serializeOtsProof } from './ots.js';
 import { holdsRecord, listTails, orderedSegments, readTailEntries } from './store.js';
@@ -1358,3 +1358,42 @@ function copyKeyOnly(fromRoot: string, intoRoot: string): void {
     }
   }
 }
+
+describe('signerAt — who would sign, read without opening the chain', () => {
+  it('touches nothing in the chain, and mints a key at the key root only where there is none', () => {
+    const chainRoot = join(root, 'chain');
+    const keyRoot = join(root, 'identity');
+    mkdirSync(chainRoot, { recursive: true });
+
+    const signer = signerAt(chainRoot, { keyRoot });
+    // No public half, no installation id, no tail: the chain is exactly as it was.
+    expect(readdirSync(chainRoot)).toEqual([]);
+    // A signer is somebody, so a machine with no key gets one — at the key root, once.
+    expect(listPrivateKeyFingerprints({ root: keyRoot })).toEqual([signer.signerFingerprint]);
+    expect(signer.anchor).toBe(deriveAnchor(signer.signerFingerprint));
+    expect(signer.hasAnchor).toBe(false);
+    expect(signerAt(chainRoot, { keyRoot }).signerFingerprint).toBe(signer.signerFingerprint);
+    expect(listPrivateKeyFingerprints({ root: keyRoot })).toHaveLength(1);
+  });
+
+  it('says what the writer says about who is writing, before and after an anchor is recorded', () => {
+    const chainRoot = join(root, 'chain');
+    const keyRoot = join(root, 'identity');
+    const writer = openChainForWriting(chainRoot, { keyRoot });
+    const signer = signerAt(chainRoot, { keyRoot });
+    const seen = (one: { signerFingerprint: string; anchor: string; hasAnchor: boolean }) => [
+      one.signerFingerprint,
+      one.anchor,
+      one.hasAnchor,
+    ];
+    expect(seen(signer)).toEqual(seen(writer));
+
+    // An installation that adopted another identity records THAT anchor, and both read the
+    // record the moment it is written — neither holds a copy of it.
+    const adopted = deriveAnchor(generateKeyPair().fingerprint);
+    writer.recordAnchor(adopted);
+    expect(seen(signer)).toEqual(seen(writer));
+    expect(signer.anchor).toBe(adopted);
+    expect(signer.hasAnchor).toBe(true);
+  });
+});
