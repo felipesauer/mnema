@@ -308,8 +308,11 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * the module itself. Then 2826 -> 2830, in the same delivery, when a mutation of `standing()`
  * lit nothing and `asked.test.ts` began asking the question from inside a sandbox home:
  * `node:os` and `node:path` for the sandbox, and the two verb names it expects back.
+ * Then 2830 -> 2837 when every test process was given a home of its own: seven clauses in
+ * `a-home-of-its-own.test.ts`, the case that proves the guard — `node:child_process`,
+ * `node:fs`, `node:path`, `node:url`, `node:util`, `vitest`, and the setup module itself.
  */
-const CLAUSES_IN_THE_TREE = 2830;
+const CLAUSES_IN_THE_TREE = 2837;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -409,6 +412,8 @@ export function reconcileFollowed(
  * gives.
  */
 const LED_NOWHERE: Readonly<Record<string, string>> = {
+  'packages/code/tests/a-home-of-its-own.test.ts -> ../../../.github/a-home-of-its-own/setup.mjs':
+    'The setup file every test process runs under, which gives each one a HOME of its own and stands in front of every process a test starts. The case importing it reads what the guard caught, so the specifier is the proof of the guard and not a dependency the scanner could follow.',
   'packages/code/tests/the-red-says-why-it-went-red.test.ts -> ../../../.github/why-it-went-red/ledger.mjs':
     'The vitest reporter that writes the ledger a red run is explained from. It is plain ESM under .github/, outside the packages/ walk either corpus makes, and this resolver only ever names a .ts — so the specifier is right and unfollowable at once.',
   'packages/code/tests/the-red-says-why-it-went-red.test.ts -> ../../../.github/why-it-went-red/verdict.mjs':
@@ -866,8 +871,8 @@ describe('every file has a test that names it', () => {
     });
     // Non-vacuity in both parts: the walk really did follow specifiers, and the list
     // really does hold rows — a scanner returning nothing would satisfy the line above.
-    expect(unresolved.length).toBe(9);
-    expect(Object.keys(LED_NOWHERE)).toHaveLength(9);
+    expect(unresolved.length).toBe(10);
+    expect(Object.keys(LED_NOWHERE)).toHaveLength(10);
     // And each row says what THAT module is, by the ledger's rule, at the ledger's floor.
     const why = Object.values(LED_NOWHERE);
     expect(new Set(why).size).toBe(why.length);
