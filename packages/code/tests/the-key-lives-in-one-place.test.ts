@@ -13,10 +13,12 @@
  *
  *   - the property itself: one person, two launchers that disagree about `$XDG_DATA_HOME`, one
  *     author in the record;
- *   - that `$MNEMA_HOME` — the one variable that moves the key — REACHES both doors that read the
- *     environment, the command line and the server (the mould of
- *     `mcp-flag-reaches-the-server.test.ts`: what is asserted is that the value arrives; what the
- *     rule does with it is `resolve.test.ts`);
+ *   - that `$MNEMA_HOME` — the one variable that moves the key — REACHES both surfaces: the
+ *     command line and the server a host spawns. The environment is read in one place (`here()`)
+ *     and the server is handed what it read, so each case below is the proof for its surface —
+ *     a mutation that stops `mnema mcp` handing the variable on reddens the second alone. It is
+ *     the mould of `mcp-flag-reaches-the-server.test.ts`: what is asserted is that the value
+ *     arrives; what the rule does with it is `resolve.test.ts`;
  *   - and the two readings of that variable a person can get wrong: empty is unset, relative is
  *     refused and nothing is written.
  */
@@ -93,7 +95,7 @@ describe('one person, two launchers, one author', () => {
   }, 60_000);
 });
 
-describe('$MNEMA_HOME reaches both doors that read the environment', () => {
+describe('$MNEMA_HOME reaches both surfaces', () => {
   it('the command line keeps the key root and the global tree in it, and nothing under the home', () => {
     const relocated = join(sandbox, 'elsewhere', 'mnema');
     const ran = mnema(
