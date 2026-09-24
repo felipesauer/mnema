@@ -197,6 +197,14 @@ export function membershipIn(
  * half can, and then the reason the sentence gives ("the only key") is not the reason, while the
  * conclusion — no revocation separates them — is. `restore.test.ts` holds that tree.
  *
+ * THE COMMAND IS HANDED OVER WHOLE, and the first version of this sentence did not hand it: it
+ * stopped at the fingerprint, while `key revoke` requires `--reason`, so a person who copied the
+ * words got the parser's refusal (`mnema key revoke needs --reason <text>`, exit 1) instead of
+ * the way out. The case that followed the words had added the flag itself before running them,
+ * which is how it stayed green. The words now carry `--reason "<why>"` — a marker for what the
+ * person writes, quoted because what they write is a sentence — and
+ * `the-refusal-names-the-way-out.test.ts` runs them as written: the marker filled, nothing added.
+ *
  * The key's own installation in a fresh clone cannot run the revocation: it has no identity to
  * act as until this is settled. It costs a roster per identity named, on a refusal only.
  */
@@ -211,7 +219,7 @@ function ambiguityOf(query: MembershipQuery, key: PublicHalf, anchors: readonly 
   if (keeps.length > 1) {
     return `${opening}, and no revocation here separates them: this key is the only key ${oneLine(keeps.join(' and '))} have, and an identity's last key cannot be retired`;
   }
-  const revoke = `\`mnema key revoke ${key.fingerprint}\` inside this project, and commits`;
+  const revoke = `\`mnema key revoke ${key.fingerprint} --reason "<why>"\` inside this project, and commits`;
   const [kept] = keeps;
   if (kept === undefined) {
     return `${opening}. It speaks for one of them again once the ${anchors.length === 2 ? 'other lets' : 'others let'} it go: a machine whose writes here speak for ${anchors.length === 2 ? 'the identity' : 'each identity'} that should not have it runs ${revoke} — the key then speaks for the identity left`;

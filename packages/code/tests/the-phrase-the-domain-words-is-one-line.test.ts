@@ -886,7 +886,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the anchors whose only key this is, read out of stored events on the terms the opening’s are',
     },
-  '@mnema/core identity/membership.ts «\\`mnema key revoke {}\\` inside this project, and commits» key.fingerprint #1':
+  '@mnema/core identity/membership.ts «\\`mnema key revoke {} --reason "<why>"\\` inside this project, and commits» key.fingerprint #1':
     {
       verdict: 'minted',
       why: 'the fingerprint of the key being decided about, computed by hashing the key material it names',

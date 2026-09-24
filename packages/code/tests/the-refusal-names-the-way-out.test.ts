@@ -13,10 +13,19 @@
  *
  *   - the refusal says which identity can let the key go and for whom it speaks afterwards, with the
  *     command, whole — and when nothing can, it says that and names no command;
- *   - the command, copied out of the refusal and run where it says, is accepted, and a fresh clone
- *     then writes — as the identity the refusal said, read from the stored events;
+ *   - the command, copied out of the refusal WHOLE and run where it says — its marker filled, and
+ *     nothing added — is accepted, and a fresh clone then writes, as the identity the refusal said,
+ *     read from the stored events;
  *   - the identity the refusal says cannot let it go is refused when it tries;
  *   - and the agent is told the same words, from the same sentence.
+ *
+ * THIS FILE USED TO FINISH THE COMMAND ITSELF. The refusal named `mnema key revoke <fingerprint>`,
+ * the verb requires `--reason`, and both cases that ran the words appended `'--reason', '…'` before
+ * running them: they followed the words and completed what the words did not say. Run on the
+ * binary, the words copied as they stood were refused by the parser — `mnema key revoke needs
+ * --reason <text>`, exit 1 — while every case here was green. The words now carry
+ * `--reason "<why>"`, and {@link commandIn} takes everything between the backticks, fills the
+ * marker and adds nothing, so words that lose the flag fail below on the parser's own refusal.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -31,6 +40,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildMcpServer } from '../src/mcp/server.js';
+import { argvOf } from './support/reading-a-shell-line.js';
 
 /** The built binary — what a person runs. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
@@ -148,9 +158,24 @@ function refusalIn(stderr: string): string {
   return (line as string).slice(REFUSED.length);
 }
 
-/** The command a refusal names, copied out of its backticks — or undefined when it names none. */
+/** What a person writes where the refusal puts a marker: why the key is being let go. */
+const WRITTEN_FOR_THE_MARKER = 'this identity should not have that key';
+
+/**
+ * The command a refusal names, copied out of its backticks WHOLE — or undefined when it names none.
+ *
+ * Everything between the two backticks is taken, and the one thing changed in it is a MARKER
+ * (`<why>`), replaced by what a person would write there BEFORE the line is read, the way the
+ * person types it. Then the line is read as a shell reads it (`argvOf`), so a quoted marker is one
+ * word and an unquoted one would fall apart into several, exactly as it would for them. Nothing is
+ * added: an option the words do not carry is an option the run does not get.
+ */
 function commandIn(sentence: string): string[] | undefined {
-  return /`(mnema key revoke [0-9a-f]{64})`/.exec(sentence)?.[1]?.split(' ').slice(1);
+  const named = /`(mnema key revoke [^`]*)`/.exec(sentence)?.[1];
+  if (named === undefined) return undefined;
+  const [program, ...words] = argvOf(named.replace(/<[^<>]*>/g, WRITTEN_FOR_THE_MARKER));
+  expect(program).toBe('mnema');
+  return words;
 }
 
 describe('a key enrolled into two identities, having founded neither', () => {
@@ -173,17 +198,21 @@ describe('a key enrolled into two identities, having founded neither', () => {
     expect(refused.status).toBe(1);
     const said = refusalIn(refused.stderr);
     expect(said).toContain('It speaks for one of them again once the other lets it go');
-    expect(said).toContain(`\`mnema key revoke ${fp}\` inside this project, and commits`);
+    expect(said).toContain('` inside this project, and commits');
     expect(said).toContain('the key then speaks for the identity left');
+    // The command names THIS key; what else it carries is asked of the binary, by running it.
+    const command = commandIn(said);
+    expect(command, said).toBeDefined();
+    expect((command as string[]).slice(0, 3)).toEqual(['key', 'revoke', fp]);
     // The key's own fresh installation cannot be the one: it is nobody here until this is settled.
     expect(
       mnema(freshClone(p, 'itself'), d, 'key', 'revoke', fp, '--reason', 'choosing').stderr,
     ).toContain('Refused (AMBIGUOUS_MEMBERSHIP)');
 
-    // Done to the letter, by a machine whose writes speak for X, the identity that lets it go.
-    const command = commandIn(said);
-    expect(command).toBeDefined();
-    expect(mnema(p, a, ...(command as string[]), '--reason', 'X lets it go').status).toBe(0);
+    // Done to the letter, by a machine whose writes speak for X, the identity that lets it go: the
+    // words as the refusal wrote them, the marker filled and nothing added.
+    const letGo = mnema(p, a, ...(command as string[]));
+    expect(letGo.status, letGo.stderr).toBe(0);
     commit(p);
     const after = freshClone(p, 'after');
     expect(mnema(after, d, 'memory', 'written after X let go').status).toBe(0);
@@ -208,14 +237,19 @@ describe('a key that founded an identity by writing, and was enrolled into anoth
     expect(said).toContain(
       `once ${theirs} lets it go: a machine whose writes here speak for it runs`,
     );
-    expect(said).toContain(`\`mnema key revoke ${fp}\` inside this project, and commits`);
+    expect(said).toContain('` inside this project, and commits');
+    const command = commandIn(said);
+    expect(command, said).toBeDefined();
+    expect((command as string[]).slice(0, 3)).toEqual(['key', 'revoke', fp]);
 
     // The identity it founded is the one that cannot, as the refusal says.
     expect(
       mnema(p, b, 'key', 'revoke', fp, '--reason', 'leave the one I founded').stderr,
     ).toContain('Refused (LAST_KEY)');
-    // The other one can, and the key goes back to the identity it founded.
-    expect(mnema(p, a, ...(commandIn(said) as string[]), '--reason', 'not ours').status).toBe(0);
+    // The other one can, with the words as the refusal wrote them, and the key goes back to the
+    // identity it founded.
+    const letGo = mnema(p, a, ...(command as string[]));
+    expect(letGo.status, letGo.stderr).toBe(0);
     commit(p);
     const after = freshClone(p, 'after');
     expect(mnema(after, b, 'memory', 'written after A let go').status).toBe(0);

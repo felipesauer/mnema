@@ -332,8 +332,12 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * `the-refusal-names-the-way-out.test.ts`, which follows the refusal's own command through git
  * clones and asks the agent for the same words, three in the copilot's `accountability.test.ts`
  * for the second key its foundings need, and one in `founded-beside.test.ts` for the cache.
+ * And 2919 -> 2921 when the way out began to be run as it is written: the reading of a shell
+ * line moved into `support/reading-a-shell-line.ts`, and its two readers import it — the guard
+ * it came out of, and the case that copies the refusal's command and hands the binary the words
+ * a shell would.
  */
-const CLAUSES_IN_THE_TREE = 2919;
+const CLAUSES_IN_THE_TREE = 2921;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 

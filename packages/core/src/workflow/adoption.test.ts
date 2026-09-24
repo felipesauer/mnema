@@ -435,7 +435,7 @@ describe('the way out, with three identities — the words for more than two', (
     expect(said).toContain(
       'a machine whose writes here speak for each identity that should not have it runs',
     );
-    expect(said).toContain(`\`mnema key revoke ${k.fingerprint}\``);
+    expect(said).toContain(`\`mnema key revoke ${k.fingerprint} --reason "<why>"\``);
   });
 
   it('founded one and enrolled into two: it goes back to the one it founded once both others let go', () => {

@@ -385,7 +385,7 @@ describe('restoreKey — refusals, each writing nothing', () => {
       'It speaks for one of them again once the other lets it go',
     );
     expect((refused as { message: string }).message).toContain(
-      `\`mnema key revoke ${shared.fingerprint}\` inside this project, and commits`,
+      `\`mnema key revoke ${shared.fingerprint} --reason "<why>"\` inside this project, and commits`,
     );
   });
 
