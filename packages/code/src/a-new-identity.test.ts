@@ -76,7 +76,10 @@ describe('foundingSentence — one sentence, both surfaces', () => {
     }
   });
 
-  it('keeps the enrollment out of the project that split — the one place it would make worse', () => {
+  it('keeps the enrollment out of the project that split, by name — where it would make it worse', () => {
+    // By name because it is the project a reader would want mended. It is not the only place an
+    // enrollment makes worse: every project this key has written in is, and the words keep those
+    // out with "where this key has not written yet" (the case above).
     const said = foundingSentence(foundedBeside(1), 'public');
     expect(said).toContain(
       'Not in this project: here the enrollment joins nothing, and every fresh clone of it would ' +
