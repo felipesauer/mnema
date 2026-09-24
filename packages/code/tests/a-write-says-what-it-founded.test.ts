@@ -19,7 +19,8 @@
  *   - the server says it in the reply of the call whose write founded;
  *   - the hook — the path nobody asked for — says it in the one field of its reply the host hands
  *     the agent;
- *   - and `accountability` names, beside the author, where and when that identity was founded.
+ *   - and `accountability` names, beside the author, where and when that identity was founded —
+ *     in the line and in `--json`, from one reading.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -210,5 +211,33 @@ describe('accountability names it, whenever somebody asks', () => {
     const marked = lines.filter((line) => line.includes('founded beside'));
     expect(marked).toHaveLength(1);
     expect(marked[0]).toContain('founded beside 1 other(s) in the public tree');
+  }, 60_000);
+
+  it('and in --json, from the same reading: the tree, the instant, and who was already there', () => {
+    expect(mnema(homeA, 'init').status).toBe(0);
+    expect(mnema(homeB, 'memory', 'second').status).toBe(0);
+    const account = JSON.parse(mnema(homeA, 'accountability', '--json').stdout) as {
+      byWho: {
+        who: string;
+        foundedBeside: { scope: string; at: string; besides: string[] }[];
+      }[];
+    };
+    expect(account.byWho).toHaveLength(2);
+    const [second] = account.byWho.filter((one) => one.foundedBeside.length > 0);
+    const [first] = account.byWho.filter((one) => one.foundedBeside.length === 0);
+    // Present for both, and empty for the one that founded first: "none" is said, not left out.
+    expect(first?.foundedBeside).toEqual([]);
+    expect(second?.foundedBeside).toEqual([
+      { scope: 'public', at: expect.stringMatching(/^\d{4}-\d\d-\d\dT/), besides: [first?.who] },
+    ]);
+
+    // The line says the same thing beside the same author.
+    const mark = second?.foundedBeside[0];
+    const line = mnema(homeA, 'accountability')
+      .stdout.split('\n')
+      .find((one) => one.includes('founded beside'));
+    expect(line).toContain(`founded beside 1 other(s) in the public tree, ${mark?.at}`);
+    const shortForm = line?.trim().split(/\s+/)[0] as string;
+    expect(second?.who.startsWith(shortForm), `${shortForm} is not ${second?.who}`).toBe(true);
   }, 60_000);
 });

@@ -65,9 +65,32 @@ export interface AccountabilityDone {
    * as surely as one person who arrived under a second key; the account says which identity,
    * where and when, and the person reading it knows which of the two it was. It is the same
    * reading the write says at the moment it founds (`a-new-identity.ts`), asked of the whole
-   * record.
+   * record. Both forms of the account print it beside its author through
+   * {@link foundedBesideOf}.
    */
   readonly foundedBeside: readonly { readonly scope: Scope; readonly founding: FoundedBeside }[];
+}
+
+/** One founding beside others, as the account reports it beside the identity it founded. */
+export interface FoundedBesideMark {
+  /** The tree it happened in. */
+  readonly scope: Scope;
+  /** When, as the founding carries it. */
+  readonly at: string;
+  /** The identities already founded there, in the order the record has them. */
+  readonly besides: readonly string[];
+}
+
+/**
+ * The foundings beside others of the identity `who` — what BOTH forms of the account print beside
+ * that author: the line of the human summary, and the author's entry in `--json`. One selection of
+ * one reading ({@link AccountabilityDone.foundedBeside}), so the two cannot come to disagree about
+ * who arrived second. `--json` carried none of it until this existed, and only the line knew.
+ */
+export function foundedBesideOf(done: AccountabilityDone, who: string): FoundedBesideMark[] {
+  return done.foundedBeside
+    .filter(({ founding }) => founding.anchor === who)
+    .map(({ scope, founding }) => ({ scope, at: founding.at, besides: founding.besides }));
 }
 
 /** The read was refused — no project to account for, or a `--who` that names none. */
