@@ -2303,6 +2303,17 @@ const PRE_TOOL_USE: HookEvent = 'PreToolUse';
  * agent unable to ask about the others at all — a write already says which project it
  * belongs to ({@link routeWrite}), and the auditing of it would have stayed blind.
  *
+ * AND BESIDE EACH AUTHOR, WHERE ITS IDENTITY WAS FOUNDED AMONG OTHERS (`foundedBeside`), the
+ * mark the command line's account prints. This read had none of it, for one reason the command
+ * line did not have: reading it off the disk was a second replay per tree on every call, into a
+ * session that keeps its caches warm precisely not to replay. It is read off the order those
+ * caches already hold (`ProjectionCache.foundedBeside`), inside the copilot's one fold — so the
+ * agent, the summary line and `--json` are served by one selection. What it adds to a warm call,
+ * measured with the arms alternated: over 602 events nothing the base-against-base ruler can
+ * see (±0.007 ms against a ruler of 0.006–0.04 ms, on a 0.35 ms call); over 6,002 events
+ * +0.07–0.11 ms on a 1.95 ms call, against a ruler of 0.10 ms — and the walk alone, which is
+ * the whole of the added work, is 16–19 µs there.
+ *
  * Read-only: the session's warm caches and the copilot's pure
  * `accountabilityByProject`. With no project it refuses `NO_PROJECT`.
  */

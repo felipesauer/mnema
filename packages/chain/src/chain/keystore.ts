@@ -26,6 +26,7 @@ import { randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 import {
+  deriveAnchor,
   fingerprintOf,
   generateKeyPair,
   type KeyObject,
@@ -201,6 +202,44 @@ export function readAnchor(layout: ChainLayout, fingerprint: string): string | n
   if (!existsSync(path)) return null;
   const value = readFileSync(path, 'utf-8').trim();
   return value.length > 0 ? value : null;
+}
+
+/**
+ * Who signs in one chain as an installation of a key: the key's fingerprint, and the anchor
+ * that installation serves there. It is everything a decision about identity reads, and
+ * nothing that writes.
+ */
+export interface ChainSigner {
+  /** The full fingerprint of the key that signs. */
+  readonly signerFingerprint: string;
+  /**
+   * The anchor this installation authorizes as: the one it recorded, or, until it records
+   * one, the anchor its key derives, which is the one it would found.
+   */
+  readonly anchor: string;
+  /** Whether an anchor is recorded for this key in this chain yet. */
+  readonly hasAnchor: boolean;
+}
+
+/**
+ * The installation of `fingerprint` in the chain at `layout`, as a {@link ChainSigner} — read
+ * from local material each time it is asked, never cached, so it answers what the disk holds.
+ *
+ * THE ONE READING of which anchor an installation serves. The writer's own `anchor` and
+ * `hasAnchor` are this, and so is the signer a caller asks for without opening anything
+ * (`signerAt`): a decision taken before a writer exists and the write that follows it read the
+ * same rule, so the two cannot come to disagree about who is writing.
+ */
+export function signerOf(layout: ChainLayout, fingerprint: string): ChainSigner {
+  return {
+    signerFingerprint: fingerprint,
+    get anchor(): string {
+      return readAnchor(layout, fingerprint) ?? deriveAnchor(fingerprint);
+    },
+    get hasAnchor(): boolean {
+      return readAnchor(layout, fingerprint) !== null;
+    },
+  };
 }
 
 /**

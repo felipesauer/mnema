@@ -184,7 +184,9 @@ describe('mnema mcp --project — the project the server serves', () => {
     expect(allText(answer)).toContain('will not serve another instead');
     // The root that WOULD have won is untouched, and so is the machine: the refusal
     // fires while the trees are being resolved, before the anchor is read, which is
-    // the first thing that opens a writer.
+    // the first thing that reaches for a key — and mints one where there is none, so
+    // an absent `~/.mnema` is the evidence. (It said "opens a writer", which it did
+    // until asking stopped opening one; the mint is what it still does.)
     expect(eventsIn(stray)).toBe(0);
     expect(existsSync(join(sandbox, 'home', '.mnema'))).toBe(false);
     // The operator's own channel says it too — the host's log, where a session that

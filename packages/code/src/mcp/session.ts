@@ -68,6 +68,7 @@ import {
   authorizingAnchor,
   endRun,
   openTreeForWriting,
+  signerFor,
   startRun,
   type WriteContext,
 } from '@mnema/core/write';
@@ -427,7 +428,16 @@ export interface Session {
  * ({@link configuredProject}) — the server was told what to serve and will not serve
  * something else. Or the anchor is unanswerable (the record proves this key belongs
  * to two identities, or to one that retired it). The first fires BEFORE anything is
- * touched: the trees resolve first, and reading the anchor is what opens a writer.
+ * touched: the trees resolve first.
+ *
+ * "EXACTLY AS IT FOUND IT" WAS FALSE UNTIL THE ANCHOR STOPPED BEING READ OFF A WRITER.
+ * It was decided through {@link writeContext}, which opens one, and opening one touches
+ * the tree before anything is appended. Measured over the binary, a connection whose one
+ * call was `audit_accountability` gave the PRIVATE tree this key's public half, an
+ * installation id and a tail with its proof — on the first connection of every key, the
+ * key that founded the project included. Nothing was appended, and the claim was about
+ * files. The anchor is asked of the signer now ({@link anchorIn}), which opens nothing;
+ * `a-refusal-leaves-nothing.test.ts` digests the tree around a connection that reads.
  */
 export function openSession(input: OpenSessionInput): Session {
   const { trees, inProject, project, rung, workspaceProjects, passedOver } = resolveContext(
@@ -459,7 +469,7 @@ export function openSession(input: OpenSessionInput): Session {
   // is the whole point — it used to be taken after the run had been appended
   // precisely because founding had settled it, and there is no run to take it after
   // any more. It appends nothing.
-  const who = authorizingAnchor(writeContext(trees, anchorTree, caches));
+  const who = anchorIn(trees, anchorTree);
 
   return {
     trees,
@@ -600,9 +610,7 @@ export function refreshWorkspace(session: Session, roots: readonly string[]): Wo
   // refuse (a key the record proves belongs to two identities), and a session left
   // holding a project's trees with the global tree's `who` would attribute that
   // project's work to an answer another tree gave.
-  const who = landed
-    ? authorizingAnchor(writeContext(resolved.trees, 'private', session.caches))
-    : session.who;
+  const who = landed ? anchorIn(resolved.trees, 'private') : session.who;
 
   session.roots = union;
   session.trees = resolved.trees;
@@ -859,6 +867,22 @@ export function closeSession(session: Session): SessionClose {
     session.caches.closeAll();
   }
   return { closed, leftOpen };
+}
+
+/**
+ * The anchor this machine authorizes as in one of the session's trees — DECIDED, as a write
+ * decides it (a key another machine enrolled serves the identity it joined), and asked of the
+ * SIGNER rather than of a writer, so asking touches nothing.
+ *
+ * It throws what {@link authorizingAnchor} throws: a key the record proves belongs to two
+ * identities, or one the record retired, has no honest anchor, and the session does not open.
+ */
+function anchorIn(trees: ResolvedTrees, scope: Scope): string {
+  return authorizingAnchor({
+    writer: signerFor(trees, scope),
+    layout: { root: chainRootForScope(trees, scope) as string },
+    upcasters: catalogUpcasters(),
+  });
 }
 
 /**

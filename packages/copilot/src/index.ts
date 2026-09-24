@@ -141,6 +141,7 @@ export {
   type AccountabilityFilter,
   accountability,
   accountabilityByProject,
+  type FoundedBesideMark,
   type KindCount,
   type ProjectAccount,
   type WhichCount,

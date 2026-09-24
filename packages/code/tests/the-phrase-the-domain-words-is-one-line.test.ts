@@ -871,10 +871,75 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'a path a caller typed — nothing has opened it, which is what the refusal says',
     },
-  "@mnema/core identity/membership.ts «this key belongs to more than one identity in that record ({}) — » oneLine(anchors.join(', ')) #1":
+  "@mnema/core identity/membership.ts «this key belongs to more than one identity in that record ({}) — which one it should speak for here is not a choice to make on its behalf» oneLine(anchors.join(', ')) #1":
     {
       verdict: 'collapsed',
       why: 'the anchors the record proves this key joined, read back out of stored events',
+    },
+  "@mnema/core identity/membership.ts «{}, and no revocation here separates them: this key is the only key {} have, and an identity's last key cannot be retired» opening #1":
+    {
+      verdict: 'composed',
+      why: 'the refusal’s opening, worded by this same function from the anchors above — a site of its own',
+    },
+  "@mnema/core identity/membership.ts «{}, and no revocation here separates them: this key is the only key {} have, and an identity's last key cannot be retired» oneLine(keeps.join(' and ')) #1":
+    {
+      verdict: 'collapsed',
+      why: 'the anchors whose only key this is, read out of stored events on the terms the opening’s are',
+    },
+  '@mnema/core identity/membership.ts «\\`mnema key revoke {}\\` inside this project, and commits» key.fingerprint #1':
+    {
+      verdict: 'minted',
+      why: 'the fingerprint of the key being decided about, computed by hashing the key material it names',
+    },
+  "@mnema/core identity/membership.ts «{}. It can only go back to speaking for {}, whose only key it is — an identity's last key cannot be retired — once {} {} it go: a machine whose writes here speak for {} runs {}» opening #1":
+    {
+      verdict: 'composed',
+      why: 'the same opening, said before the one identity that keeps the key',
+    },
+  "@mnema/core identity/membership.ts «{}. It can only go back to speaking for {}, whose only key it is — an identity's last key cannot be retired — once {} {} it go: a machine whose writes here speak for {} runs {}» oneLine(kept) #1":
+    {
+      verdict: 'collapsed',
+      why: 'the one anchor whose only key this is, out of stored events',
+    },
+  "@mnema/core identity/membership.ts «{}. It can only go back to speaking for {}, whose only key it is — an identity's last key cannot be retired — once {} {} it go: a machine whose writes here speak for {} runs {}» oneLine(letsGo.join(' and ')) #1":
+    {
+      verdict: 'collapsed',
+      why: 'the anchors that can retire the key, out of stored events',
+    },
+  "@mnema/core identity/membership.ts «{}. It can only go back to speaking for {}, whose only key it is — an identity's last key cannot be retired — once {} {} it go: a machine whose writes here speak for {} runs {}» letsGo.length === 1 ? 'lets' : 'let' #1":
+    {
+      verdict: 'minted',
+      why: 'a verb chosen between two constants of this module by a count',
+    },
+  "@mnema/core identity/membership.ts «{}. It can only go back to speaking for {}, whose only key it is — an identity's last key cannot be retired — once {} {} it go: a machine whose writes here speak for {} runs {}» letsGo.length === 1 ? 'it' : 'each' #1":
+    {
+      verdict: 'minted',
+      why: 'a pronoun chosen between two constants of this module by the same count',
+    },
+  "@mnema/core identity/membership.ts «{}. It can only go back to speaking for {}, whose only key it is — an identity's last key cannot be retired — once {} {} it go: a machine whose writes here speak for {} runs {}» revoke #1":
+    {
+      verdict: 'composed',
+      why: 'the command this function composed from the fingerprint above — a site of its own',
+    },
+  '@mnema/core identity/membership.ts «{}. It speaks for one of them again once the {} it go: a machine whose writes here speak for {} that should not have it runs {} — the key then speaks for the identity left» opening #1':
+    {
+      verdict: 'composed',
+      why: 'the same opening, said before the way out either identity can take',
+    },
+  "@mnema/core identity/membership.ts «{}. It speaks for one of them again once the {} it go: a machine whose writes here speak for {} that should not have it runs {} — the key then speaks for the identity left» anchors.length === 2 ? 'other lets' : 'others let' #1":
+    {
+      verdict: 'minted',
+      why: 'words chosen between two constants of this module by how many identities hold the key',
+    },
+  "@mnema/core identity/membership.ts «{}. It speaks for one of them again once the {} it go: a machine whose writes here speak for {} that should not have it runs {} — the key then speaks for the identity left» anchors.length === 2 ? 'the identity' : 'each identity' #1":
+    {
+      verdict: 'minted',
+      why: 'words chosen between two constants of this module by the same count',
+    },
+  '@mnema/core identity/membership.ts «{}. It speaks for one of them again once the {} it go: a machine whose writes here speak for {} that should not have it runs {} — the key then speaks for the identity left» revoke #1':
+    {
+      verdict: 'composed',
+      why: 'the same composed command, in the way out either identity can take',
     },
   '@mnema/core identity/membership.ts «this key was revoked from {} — a retired key that writes again » oneLine(retiredFrom) #1':
     {
@@ -1114,9 +1179,9 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
     // sites, twelve in `core` and eleven in `chain` — because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(98);
+    expect(SITES.length).toBe(111);
     expect(FOUND[0]?.sites.length).toBe(47);
-    expect(FOUND[1]?.sites.length).toBe(51);
+    expect(FOUND[1]?.sites.length).toBe(64);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
 
@@ -1129,7 +1194,7 @@ describe('every value the domain puts in a sentence is classified', () => {
     expect(FOUND[1]?.sinks).toEqual(['err']);
     expect(FOUND[0]?.producers).toContain('keyWithoutTailDetail');
     expect(FOUND[0]?.producers).toContain('coverageClause');
-    expect(FOUND[1]?.producers).toEqual(['faultReason']);
+    expect(FOUND[1]?.producers).toEqual(['ambiguityOf', 'faultReason']);
   });
 
   it('seeds on every field it says it does', () => {
@@ -1163,11 +1228,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(64);
-    expect(count('minted')).toBe(26);
-    expect(count('composed')).toBe(8);
+    expect(count('collapsed')).toBe(67);
+    expect(count('minted')).toBe(31);
+    expect(count('composed')).toBe(13);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      64,
+      67,
     );
   });
 

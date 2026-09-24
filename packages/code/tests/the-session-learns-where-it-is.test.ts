@@ -48,9 +48,39 @@ import { type DiscoveryEnv, orderedEvents, PROJECT_DIR, resolveTrees } from '@mn
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildMcpServer } from '../src/mcp/server.js';
 import { openSession, refreshWorkspace } from '../src/mcp/session.js';
+
+/**
+ * WHICH TREE THE SESSION ASKED ITS ANCHOR OF, observed where it is asked.
+ *
+ * It used to be read off a side effect: the anchor was decided through a WRITER opened over
+ * the tree, and opening one materializes the tree, so the tree's EXISTENCE said it had been
+ * asked. That side effect was a defect — a connection that only reads gave the private tree
+ * a public half, an installation and a tail — and it is gone: asking opens nothing now, so a
+ * tree nobody asked and a tree that was asked look the same on the disk. The question is
+ * counted at `signerFor`, which the session asks and nothing here stubs: the real function
+ * answers every call.
+ */
+const asked = vi.hoisted(() => ({ roots: [] as (string | undefined)[] }));
+vi.mock('@mnema/core/write', async (importActual) => {
+  const actual = await importActual<typeof import('@mnema/core/write')>();
+  return {
+    ...actual,
+    signerFor: (...args: Parameters<typeof actual.signerFor>) => {
+      const [trees, scope] = args;
+      asked.roots.push(
+        scope === 'private'
+          ? trees.projectPrivate
+          : scope === 'public'
+            ? trees.projectPublic
+            : trees.global,
+      );
+      return actual.signerFor(...args);
+    },
+  };
+});
 
 let sandbox: string;
 let env: DiscoveryEnv;
@@ -370,26 +400,33 @@ describe('refreshWorkspace — the rule itself', () => {
     // fresh sandbox both trees answer with the same machine key, so an equality on
     // `who` is satisfied by a session that never re-read at all. It is vacuous, and it
     // was found that way — the mutation that drops the re-read left every other case in
-    // this file green. Opening the private tree to ask is what materializes it, so its
-    // EXISTENCE is the evidence, and a re-read that skipped the question leaves the
-    // directory absent.
+    // this file green.
+    //
+    // THE EVIDENCE USED TO BE THE PRIVATE TREE'S EXISTENCE, because asking opened a
+    // writer over it and that materialized it. Asking opens nothing any more (see
+    // {@link asked}), so the tree stays absent either way and the question is counted
+    // where it is asked.
     const plain = makePlainDir('plain');
     const late = makeProject('late');
     const priv = resolveTrees(late, env).projectPrivate as string;
 
+    asked.roots = [];
     const session = openSession({
       clientName: 'claude-code',
       roots: [pathToFileURL(plain).href],
       env,
     });
-    // Not vacuous: the tree is absent while the session is on the global one, so the
-    // assertion below is about this re-read rather than about the fixture.
-    expect(existsSync(priv)).toBe(false);
+    // Not vacuous: on the global tree the session asked the global tree, and nothing of
+    // the project — so the assertion below is about this re-read rather than the fixture.
+    expect(asked.roots).toEqual([resolveTrees(plain, env).global]);
     expect(session.who).toMatch(/^mnid:/);
 
+    asked.roots = [];
     refreshWorkspace(session, [pathToFileURL(late).href]);
 
-    expect(existsSync(priv)).toBe(true);
+    expect(asked.roots).toEqual([priv]);
+    // And asking left the tree it asked exactly as it was: absent.
+    expect(existsSync(priv)).toBe(false);
     // And the session says who it is out of that tree — the same answer a session
     // opened there from the start gives, which is what "as if the root had arrived at
     // the handshake" means.
@@ -405,21 +442,25 @@ describe('refreshWorkspace — the rule itself', () => {
   it('does NOT ask again when the landing did not move', () => {
     // The other side, and it is what keeps the case above from being "re-read the
     // anchor on every notification": a session already in a project has its answer, and
-    // asking again would open a writer over a tree per notification for nothing.
+    // asking again would replay a record per notification for nothing.
+    //
+    // THIS WAS ASSERTED BY `beta`'S PRIVATE TREE STAYING ABSENT, and that went blind the
+    // moment asking stopped opening a writer: the tree is absent whether it was asked or
+    // not. It is asserted where the question is asked (see {@link asked}).
     const alpha = makeProject('alpha');
     const beta = makeProject('beta');
-    const betaPriv = resolveTrees(beta, env).projectPrivate as string;
     const session = openSession({
       clientName: 'claude-code',
       roots: [pathToFileURL(alpha).href],
       env,
     });
 
+    asked.roots = [];
     refreshWorkspace(session, [pathToFileURL(beta).href]);
 
-    // `beta` is in the list and can be written to — and nothing has been opened in it.
+    // `beta` is in the list and can be written to — and nothing was asked of any tree.
     expect(session.workspaceProjects.map((project) => project.dir)).toContain(beta);
-    expect(existsSync(betaPriv)).toBe(false);
+    expect(asked.roots).toEqual([]);
   });
 
   it('runs the SAME cascade, so a configured project still wins', () => {

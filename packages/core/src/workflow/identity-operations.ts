@@ -26,6 +26,8 @@
 import {
   type BackupKey,
   type CatalogEvent,
+  type ChainLayout,
+  type ChainSigner,
   committedPublicKey,
   ensureBackupKey,
   identityFounded,
@@ -34,6 +36,7 @@ import {
   listRegistrations,
   materializePublicKey,
   type RegistrationFault,
+  type UpcasterRegistry,
 } from '@mnema/chain';
 import {
   type ScreenedWrite,
@@ -47,6 +50,21 @@ import { orderedEvents } from '../projections/order.js';
 import { appendEvent, type UnreadableEventErr } from './append.js';
 import { systemClock } from './clock.js';
 import type { WriteContext } from './operations.js';
+
+/**
+ * What deciding an anchor reads: the key that would sign, and the tree it would sign in.
+ *
+ * A {@link WriteContext} is one — its writer is the key that WILL sign. So is a context whose
+ * `writer` is the {@link ChainSigner} read without opening anything (`signerFor`), which is how a
+ * question about who is writing, or a refusal decided before any write, gets the same answer the
+ * write would get without opening a writer to ask.
+ */
+export interface AnchorContext {
+  /** The key that would sign here: an open writer, or the signer read without opening one. */
+  readonly writer: ChainSigner;
+  readonly layout: ChainLayout;
+  readonly upcasters: UpcasterRegistry;
+}
 
 /** An identity fact was appended. */
 export interface IdentityOk extends ScreenedWrite {
@@ -77,14 +95,20 @@ export interface IdentityOk extends ScreenedWrite {
  * whose record this is on the person's behalf; writing under a retired key would
  * leave the whole tree failing verification.
  */
-export function decideAnchor(ctx: WriteContext): AnchorDecision {
+export function decideAnchor(ctx: AnchorContext): AnchorDecision {
   if (ctx.writer.hasAnchor) return { anchor: ctx.writer.anchor, source: 'recorded' };
 
-  // The key's own public half as the TREE carries it — materialized when this
-  // writer opened, or by the member that enrolled it. Reading it from the record
-  // rather than the key root keeps the decision to material an anonymous clone
+  // The key's own public half as the TREE carries it — materialized when a writer
+  // for this key opened here, or by the member that enrolled it. Reading it from the
+  // record rather than the key root keeps the decision to material an anonymous clone
   // could check, and binds the consent signature to the key it names. A tree that
   // carries no public half for this key is a tree that never admitted it.
+  //
+  // THIS USED TO SAY "materialized when this writer opened", because every caller had
+  // opened one. A caller that decides BEFORE opening (`signerFor`) finds no half for a
+  // key new to the tree, and the answer is the one the half it would have materialized
+  // gives: a key the record never admitted is no member, and falls through to the
+  // anchor it would found. `adoption.test.ts` asks both ways and holds them equal.
   const key = committedPublicKey(ctx.layout, ctx.writer.signerFingerprint);
   if (key !== null) {
     const proven = membershipIn({ tree: ctx.layout.root, upcasters: ctx.upcasters }, key);
@@ -119,7 +143,7 @@ export function decideAnchor(ctx: WriteContext): AnchorDecision {
  * anchor answers immediately, and the record is only consulted while no anchor is
  * recorded yet.
  */
-export function authorizingAnchor(ctx: WriteContext): string {
+export function authorizingAnchor(ctx: AnchorContext): string {
   return decideAnchor(ctx).anchor;
 }
 

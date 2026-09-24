@@ -44,11 +44,14 @@ export {
 } from './resolve.js';
 export {
   chainRootForScope,
+  type DeferredWrite,
+  deferredWrite,
   type OpenTreeOptions,
   type Origin,
   openTreeForWriting,
   type RoutedKind,
   resolveScope,
   type Scope,
+  signerFor,
   TreeUnavailableError,
 } from './routing.js';

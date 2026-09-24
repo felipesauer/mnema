@@ -36,8 +36,16 @@
  */
 
 import type { EventKind } from '@mnema/chain';
-import { type ChainWriter, ensureTree, openChainForWriting } from '@mnema/chain';
+import {
+  type ChainSigner,
+  type ChainWriter,
+  catalogUpcasters,
+  ensureTree,
+  openChainForWriting,
+  signerAt,
+} from '@mnema/chain';
 import { canonicalIdentity } from '../identity/who.js';
+import type { DeferredWriteContext } from '../workflow/operations.js';
 import type { ResolvedTrees } from './resolve.js';
 
 /** The three trees a write can be routed to. */
@@ -269,4 +277,60 @@ export function openTreeForWriting(
     ensureTree({ root: trees.projectPublic as string });
   }
   return openChainForWriting(chainRoot, { keyRoot: trees.keyRoot, ...options });
+}
+
+/**
+ * Who would sign in a scope's tree — this machine's key, and the anchor it serves there — read
+ * WITHOUT opening the tree for writing.
+ *
+ * {@link openTreeForWriting} touches the tree before anything is appended: the public tree's
+ * `.gitignore`, the key's public half, an installation id, the tail's directory and its proof.
+ * A caller whose answer may write nothing — the anchor a machine will write as, or a refusal the
+ * record decides — asks this instead, and a tree it only asked about stays byte for byte as it
+ * was. Like opening, it can mint the key at the key root on first use: a signer is somebody.
+ *
+ * Throws {@link TreeUnavailableError} for a scope whose tree is not present, as opening does.
+ */
+export function signerFor(trees: ResolvedTrees, scope: Scope): ChainSigner {
+  const chainRoot = chainRootForScope(trees, scope);
+  if (chainRoot === undefined) {
+    throw new TreeUnavailableError(`no ${scope} tree in this context`);
+  }
+  return signerAt(chainRoot, { keyRoot: trees.keyRoot });
+}
+
+/**
+ * A deferred write as its caller holds it: the context an operation decides and writes through,
+ * and the one thing left for the caller once the operation returns — signing what it wrote.
+ */
+export interface DeferredWrite extends DeferredWriteContext {
+  /**
+   * Signs what was written through the writer {@link DeferredWriteContext.open} gave, and does
+   * nothing when it was never opened — a refusal, or a vouch for a key already a member.
+   */
+  checkpoint(): void;
+}
+
+/**
+ * A write to a scope's tree that opens its writer only when the operation decides to write — the
+ * signer and the opener of the SAME tree and key, so a caller cannot pair one with another.
+ * The operations that take it (`enrollFromRequest`, `revokeMember`) decide with the signer and
+ * call the opener after their last refusal; the writer is opened once however often it is asked
+ * for, and {@link DeferredWrite.checkpoint} signs through that same one.
+ */
+export function deferredWrite(trees: ResolvedTrees, scope: Scope): DeferredWrite {
+  const signer = signerFor(trees, scope);
+  let opened: ChainWriter | undefined;
+  return {
+    signer,
+    layout: { root: chainRootForScope(trees, scope) as string },
+    upcasters: catalogUpcasters(),
+    open: () => {
+      opened ??= openTreeForWriting(trees, scope);
+      return opened;
+    },
+    checkpoint: () => {
+      opened?.checkpoint();
+    },
+  };
 }

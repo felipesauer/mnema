@@ -8,12 +8,17 @@
  *
  * WHY THE VERB ASKS AT ALL IS A GOOD ARGUMENT AND IT IS UNTOUCHED. The record carries no
  * notion of a "current actor" — a `who` is only ever stamped on past events — and the
- * only way to derive this machine's `who` from nothing is to open a WRITER, which founds
- * a tree and mints a key on a machine that has none. That is a write door, an invocation
- * of this CLI has no session to read an identity from, and so the flag is required (see
- * `commands/focus.ts`, where the argument is written out in full). None of that changes
- * here: the declaration is the same declaration, and `mnema status` at a shell refuses
- * exactly as it did.
+ * only way to derive this machine's `who` from nothing is to ask the key root for this
+ * machine's key, which mints one on a machine that has none. That is a write door, an
+ * invocation of this CLI has no session to read an identity from, and so the flag is
+ * required (see `commands/focus.ts`, where the argument is written out in full). None of
+ * that changes here: the declaration is the same declaration, and `mnema status` at a
+ * shell refuses exactly as it did.
+ *
+ * THAT SENTENCE SAID THE WAY WAS "to open a WRITER, which founds a tree", and it was the
+ * way the product took until it was measured to leave a tail in a tree it only asked
+ * about. A writer founds nothing by opening; it gives the tree the key's public half and
+ * a tail. Asking now opens none (`signerFor`), and what stays true is the mint.
  *
  * WHAT CHANGES IS THAT A SESSION IS NOT AN INVOCATION. The console resolved this
  * identity when it opened, from LOCAL MATERIAL and without opening a writer — the key

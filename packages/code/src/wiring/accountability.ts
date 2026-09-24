@@ -6,7 +6,8 @@
  * flags only narrow. The human summary is one level (total, and one line per
  * who with their count); the nested byKind/byWhich is in --json. Beside each
  * author, both forms carry where and when its identity was founded beside
- * others, from one selection (`foundedBesideOf`).
+ * others — the account's own `foundedBeside`, the field the agent's account
+ * carries too, from the one selection in the copilot's fold.
  */
 
 import type { Command } from 'commander';
@@ -43,9 +44,7 @@ export function registerAccountability(program: Command, wiring: Wiring): Declar
       }) => {
         const { anchorText } = await import('../anchors.js');
         const { linkBreakNotice } = await import('./integrity.js');
-        const { foundedBesideOf, runAccountability } = await import(
-          '../commands/accountability.js'
-        );
+        const { runAccountability } = await import('../commands/accountability.js');
         const result = runAccountability(here(), {
           ...(opts.from !== undefined ? { from: opts.from } : {}),
           ...(opts.to !== undefined ? { to: opts.to } : {}),
@@ -60,23 +59,12 @@ export function registerAccountability(program: Command, wiring: Wiring): Declar
         // `--json` stays the machine-readable thing it promises to be.
         for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
         if (opts.json === true) {
-          // The account, and in each author's entry the foundings the line below prints beside
-          // that author: every one in a tree where other identities were already founded, with
-          // the tree, the instant, and the identities that were there. Always present, empty
-          // for an author who founded first, so a reader can tell "none" from "not reported".
-          io.out(
-            JSON.stringify(
-              {
-                ...result.account,
-                byWho: result.account.byWho.map((account) => ({
-                  ...account,
-                  foundedBeside: foundedBesideOf(result, account.who),
-                })),
-              },
-              null,
-              2,
-            ),
-          );
+          // The account as it is, and in each author's entry the foundings the line below
+          // prints beside that author: every one in a tree where other identities were already
+          // founded, with the tree, the instant, and the identities that were there. Always
+          // present, empty for an author who founded first, so a reader can tell "none" from
+          // "not reported".
+          io.out(JSON.stringify(result.account, null, 2));
           return;
         }
         // Human summary — one level. The total and one line per author with their
@@ -88,7 +76,7 @@ export function registerAccountability(program: Command, wiring: Wiring): Declar
         const { total, byWho } = result.account;
         io.out(`${total} fact(s) · ${byWho.length} author(s)`);
         for (const account of byWho) {
-          const founded = foundedBesideOf(result, account.who).map(
+          const founded = account.foundedBeside.map(
             ({ scope, at, besides }) =>
               `founded beside ${besides.length} other(s) in the ${scope} tree, ${at}`,
           );

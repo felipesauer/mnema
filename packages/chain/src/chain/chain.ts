@@ -14,9 +14,11 @@
 import { catalogUpcasters } from '../events/registry.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import {
+  type ChainSigner,
   loadOrCreateInstallationId,
   loadOrCreateKeyPair,
   materializePublicKey,
+  signerOf,
 } from './keystore.js';
 import type { ChainLayout } from './layout.js';
 import { type VerifyResult, verifyChain } from './verify.js';
@@ -47,6 +49,25 @@ export function openChainForWriting(chainRoot: string, options: OpenOptions): Ch
   const installationId = loadOrCreateInstallationId(chainLayout, keyPair.fingerprint);
   const upcasters = options.upcasters ?? catalogUpcasters();
   return new ChainWriter(chainLayout, keyPair, installationId, upcasters, options);
+}
+
+/**
+ * Who would sign in the chain at `chainRoot` with the key at `options.keyRoot` — read WITHOUT
+ * opening the chain for writing, so nothing inside the chain is touched.
+ *
+ * Opening a writer is not free even when nothing is appended: it materializes the key's public
+ * half into the chain, mints the installation id and gives the tail its directory and its proof
+ * of ownership. A caller whose answer may turn out to write nothing — a refusal decided from the
+ * record, or a question about who is writing — asks this first, and opens a writer only once it
+ * knows it will write.
+ *
+ * The KEY ROOT is the one thing it can change, exactly as opening does: a machine with no key
+ * yet gets one minted there, because a signer needs a key to be anybody at all. That is the
+ * person's directory, never the chain's.
+ */
+export function signerAt(chainRoot: string, options: { readonly keyRoot: string }): ChainSigner {
+  const keyPair = loadOrCreateKeyPair({ root: options.keyRoot });
+  return signerOf({ root: chainRoot }, keyPair.fingerprint);
 }
 
 /** Verifies the whole chain rooted at `root`. */

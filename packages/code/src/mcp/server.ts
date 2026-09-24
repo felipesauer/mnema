@@ -1688,7 +1688,11 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         '(who), or a single executing agent (which). The answer is ONE ACCOUNT PER ' +
         'PROJECT (plus the machine-global tree, which belongs to none) — each with ' +
         'its own total and per-author breakdown (counts by kind and by executing ' +
-        'agent). There is deliberately no combined total: a count belongs to a ' +
+        'agent) and, beside each author, `foundedBeside`: every tree of that record ' +
+        'where the identity was founded after others already were, with when and ' +
+        'which identities were there — somebody new to the record, or one person ' +
+        'under a second key; empty when it founded first or was vouched for. ' +
+        'There is deliberately no combined total: a count belongs to a ' +
         'record, and adding several projects up answers "how much have I written ' +
         'anywhere" under the name of "how much is in this record". Add them yourself ' +
         'if that is your question. A project with nothing to report is listed at ' +

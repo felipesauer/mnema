@@ -213,8 +213,16 @@ describe('the machine’s own data directory, reached from a workspace nobody in
     // refusal is now the core walk's, for every rung and verb, and the home itself is never
     // a project's root whatever its `.mnema/` holds. What this case asks of the product
     // still matters, for the reading that reaches ANOTHER environment's data directory —
-    // the key root inside it: the first session to touch the global tree makes the key
-    // root beside it, even one that writes nothing.
+    // the key root inside it: the first session makes the key root, even one that writes
+    // nothing, because deciding who it is needs a key.
+    //
+    // IT ALSO MADE THE GLOBAL TREE, and this case asserted that it did. The anchor was
+    // decided through a writer opened over the global tree, and opening one gives a tree a
+    // public half, an installation and a tail — a connection that only read left them.
+    // It is decided by the signer now, which opens nothing, so the global tree is NOT made
+    // by a session that reads. The data directory still is, by its key root, which is all
+    // the second half of this case needs: a `.mnema/` in the home for the walk to be
+    // tempted by.
     const home = join(sandbox, 'home');
     env = { home };
     const first = makePlainDir('home/code/first');
@@ -223,8 +231,8 @@ describe('the machine’s own data directory, reached from a workspace nobody in
     const one = await connect(first);
     await one.callTool({ name: 'bootstrap' });
     await one.close();
-    expect(existsSync(join(home, PROJECT_DIR, 'global'))).toBe(true);
     expect(existsSync(join(home, PROJECT_DIR, 'identity'))).toBe(true);
+    expect(existsSync(join(home, PROJECT_DIR, 'global'))).toBe(false);
 
     logged = [];
     const two = await connect(second);

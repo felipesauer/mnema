@@ -19,6 +19,14 @@
  * runs first because it needs no context — not the task, not the identity — so an
  * oversize refusal touches nothing at all.
  *
+ * THE OPERATION touches nothing, and that sentence was read as more than it says. The
+ * caller that opened a writer to call it already touched the tree: for a key that never
+ * wrote there, the key's public half, an installation id and a tail with its proof.
+ * Measured on the binary, every command-line verb refused by this door or by the gate
+ * left those four behind. The operations that decide before a writer exists take a
+ * {@link DeferredWriteContext}; these do not, because their doors are inside them on
+ * purpose, and `code/tests/a-refusal-leaves-nothing.test.ts` names which is which.
+ *
  * And the event itself goes through one more door on its way out ({@link
  * appendEvent}): would a READ accept it? The catalog's shape rules used to live
  * only in the parser, which runs on the way in from disk, so a write that built an
@@ -41,6 +49,7 @@
 import {
   type CatalogEvent,
   type ChainLayout,
+  type ChainSigner,
   type ChainWriter,
   type Entry,
   type TransitionFields,
@@ -72,6 +81,52 @@ export interface WriteContext {
   readonly upcasters: UpcasterRegistry;
   /** The clock that stamps `at`; defaults to the wall clock. */
   readonly clock?: Clock;
+}
+
+/**
+ * A write whose writer is not open yet, and opens only once the operation has decided to write.
+ *
+ * OPENING A WRITER TOUCHES THE TREE EVEN WHEN NOTHING IS APPENDED: it materializes this key's
+ * public half, mints the installation id, and gives the tail its directory and its proof of
+ * ownership. For a key that never wrote in the tree, an operation that opened first and refused
+ * second left all four behind — measured on `key enroll`, a refused vouch left the tree with an
+ * untracked `.pub` and an empty tail. An operation handed THIS decides with {@link signer}, asks
+ * {@link open} after its last refusal, and a refusal leaves the tree as it found it.
+ */
+export interface DeferredWriteContext {
+  /** The key that would sign here, and the anchor it serves — read without opening anything. */
+  readonly signer: ChainSigner;
+  readonly layout: ChainLayout;
+  readonly upcasters: UpcasterRegistry;
+  /** The clock that stamps `at`; defaults to the wall clock. */
+  readonly clock?: Clock;
+  /** Opens the writer for the same tree and key. Called once, when the operation will write. */
+  readonly open: () => ChainWriter;
+}
+
+/**
+ * What an operation that decides before it writes accepts: a writer the caller already opened,
+ * or a {@link DeferredWriteContext} it opens itself once it has decided.
+ */
+export type DecideThenWrite = WriteContext | DeferredWriteContext;
+
+/** The key that would sign, whichever form the context came in. */
+export function signerOfContext(ctx: DecideThenWrite): ChainSigner {
+  return 'writer' in ctx ? ctx.writer : ctx.signer;
+}
+
+/**
+ * The context to write through — the caller's own writer, or the deferred one opened NOW. Call it
+ * after the last refusal the operation can give, never before.
+ */
+export function openedContext(ctx: DecideThenWrite): WriteContext {
+  if ('writer' in ctx) return ctx;
+  return {
+    writer: ctx.open(),
+    layout: ctx.layout,
+    upcasters: ctx.upcasters,
+    ...(ctx.clock !== undefined ? { clock: ctx.clock } : {}),
+  };
 }
 
 /** A write refused before touching the chain. */

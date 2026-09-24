@@ -513,10 +513,12 @@ describe('every write refuses what no read could accept', () => {
     authorizingAnchor: 'reads which anchor this installation serves; appends nothing',
     decideAnchor: 'settles the same question without writing',
     decodeKeyRequest: 'parses a request line',
+    deferredWrite: 'pairs a signer with a writer it has not opened; the write is the operation’s',
     encodeKeyRequest: 'serializes one',
     openTreeForWriting: 'opens a writer; the write is the caller’s',
     requestEnrollment: 'produces a request and may mint a key, but appends no event',
     restoreKey: 'installs key material and records an anchor; appends no event',
+    signerFor: 'reads who would sign in a tree and may mint a key, but opens no writer',
   };
 
   const NO_EMPTY_REACHES_A_FIELD: Readonly<Record<string, string>> = {

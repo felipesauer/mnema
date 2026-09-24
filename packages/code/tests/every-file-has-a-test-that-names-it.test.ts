@@ -325,9 +325,15 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * SDK's client, and the hook's tool. And 2883 -> 2891 when the key root began to ignore itself
  * in git: eight in `keystore.test.ts`, which asks `git check-ignore` about what the key writers
  * produce — `node:child_process`, `node:fs`, `node:os`, `node:path`, `vitest`, and the three
- * modules of the key root it drives.
+ * modules of the key root it drives. And 2891 -> 2919 when an answer that writes nothing
+ * stopped opening a writer, and the account the agent reads began to carry the founding mark:
+ * twelve clauses in `a-refusal-leaves-nothing.test.ts`, which digests the tree around the built
+ * binary and a server reached through the SDK's client, twelve in
+ * `the-refusal-names-the-way-out.test.ts`, which follows the refusal's own command through git
+ * clones and asks the agent for the same words, three in the copilot's `accountability.test.ts`
+ * for the second key its foundings need, and one in `founded-beside.test.ts` for the cache.
  */
-const CLAUSES_IN_THE_TREE = 2891;
+const CLAUSES_IN_THE_TREE = 2919;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 

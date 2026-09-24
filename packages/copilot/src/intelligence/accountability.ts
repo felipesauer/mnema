@@ -41,9 +41,20 @@
  * It reads only the envelope — `who`, `which`, `kind`, `at` — never a payload, so
  * it is blind to WHAT each fact was beyond its kind, which is right: authorship
  * is an envelope property.
+ *
+ * ## And, beside an author, where its identity was founded among others
+ *
+ * A count says there are two authors; it cannot say which one ARRIVED second — somebody
+ * new to the record, or one person under a second key, which only the reader can tell.
+ * So each author carries the foundings of its identity in a tree where others were
+ * already founded ({@link WhoAccount.foundedBeside}): the tree, the instant, and who was
+ * there. It comes from the caches like the counts do (`ProjectionCache.foundedBeside`,
+ * the core's own reading asked of the order a cache already holds), through ONE
+ * selection in the one fold — so the command line's summary, its `--json` and the
+ * agent's decomposed account cannot come to disagree about who arrived second.
  */
 
-import type { AuthorshipFilter, AuthorshipTally } from '@mnema/core';
+import type { AuthorshipFilter, AuthorshipTally, FoundedBeside, Scope } from '@mnema/core';
 import type { ScopedCache } from '../sources.js';
 import type { EventKind } from './events.js';
 
@@ -68,6 +79,25 @@ export interface WhoAccount {
    * name for a stable shape.
    */
   readonly byWhich: readonly WhichCount[];
+  /**
+   * Every founding of this identity, in the trees this account reads, that came after other
+   * identities were already founded there — somebody new to the record, or one person who
+   * arrived under a second key; the reader knows which. ALWAYS PRESENT, and empty for an
+   * identity that founded first or joined by being vouched for, so "none" is said rather
+   * than left out. Not narrowed by the window or the filters: they choose which facts are
+   * counted, and a founding is where the author came from, whatever was counted since.
+   */
+  readonly foundedBeside: readonly FoundedBesideMark[];
+}
+
+/** One founding beside others, as the account reports it beside the identity it founded. */
+export interface FoundedBesideMark {
+  /** The tree it happened in. */
+  readonly scope: Scope;
+  /** When, as the founding carries it. */
+  readonly at: string;
+  /** The identities already founded there, in the order the record has them. */
+  readonly besides: readonly string[];
 }
 
 /** A count of facts of one kind. */
@@ -227,7 +257,33 @@ function fold(
       accumulate(perWho, cell);
     }
   }
-  return { total, byWho: [...perWho.values()].map(finishWho).sort(byTotalThenWho) };
+  const foundings = sources.flatMap((source) =>
+    source.cache.foundedBeside().map((founding) => ({ scope: source.scope, founding })),
+  );
+  return {
+    total,
+    byWho: [...perWho.values()]
+      .map((acc) => finishWho(acc, foundedBesideOf(foundings, acc.who)))
+      .sort(byTotalThenWho),
+  };
+}
+
+/**
+ * The foundings beside others of the identity `who`, out of every tree the fold reads — the
+ * ONE selection behind {@link WhoAccount.foundedBeside}.
+ *
+ * It lived in the command line (`commands/accountability.ts`), where it served the summary
+ * line and `--json` from one reading, and the agent's account — a third reading of the same
+ * account — had none of it. Here, inside the fold every account is made by, a reading that
+ * shows an author cannot show it without this.
+ */
+function foundedBesideOf(
+  foundings: readonly { readonly scope: Scope; readonly founding: FoundedBeside }[],
+  who: string,
+): FoundedBesideMark[] {
+  return foundings
+    .filter(({ founding }) => founding.anchor === who)
+    .map(({ scope, founding }) => ({ scope, at: founding.at, besides: founding.besides }));
 }
 
 /** Keeps the projectless record after the projects, leaving their order untouched. */
@@ -262,14 +318,14 @@ function accumulate(perWho: Map<string, WhoAccumulator>, cell: AuthorshipTally):
 }
 
 /** Finishes an accumulator into an immutable, stably-ordered account. */
-function finishWho(acc: WhoAccumulator): WhoAccount {
+function finishWho(acc: WhoAccumulator, foundedBeside: readonly FoundedBesideMark[]): WhoAccount {
   const byKind = [...acc.byKind.entries()]
     .map(([kind, count]) => ({ kind, count }))
     .sort((a, b) => (a.kind < b.kind ? -1 : a.kind > b.kind ? 1 : 0));
   const byWhich = [...acc.byWhich.entries()]
     .map(([which, count]) => ({ which, count }))
     .sort(byCountThenWhich);
-  return { who: acc.who, total: acc.total, byKind, byWhich };
+  return { who: acc.who, total: acc.total, byKind, byWhich, foundedBeside };
 }
 
 /** Accounts by count descending, then by `who` ascending — stable, not a verdict. */

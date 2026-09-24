@@ -24,7 +24,9 @@
  *   - the hook — the path nobody asked for — says it in the one field of its reply the host hands
  *     the agent;
  *   - and `accountability` names, beside the author, where and when that identity was founded —
- *     in the line and in `--json`, from one reading.
+ *     in the line and in `--json`, from one reading;
+ *   - and so does the account the AGENT reads, `audit_accountability`, which carried none of it:
+ *     the same marks beside the same authors, from the same selection.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -504,5 +506,49 @@ describe('accountability names it, whenever somebody asks', () => {
     expect(line).toContain(`founded beside 1 other(s) in the public tree, ${mark?.at}`);
     const shortForm = line?.trim().split(/\s+/)[0] as string;
     expect(second?.who.startsWith(shortForm), `${shortForm} is not ${second?.who}`).toBe(true);
+  }, 60_000);
+
+  it('and in the account the agent reads, the same marks beside the same authors', async () => {
+    // The third reading of the account. It is decomposed by record, so the entry to read is the
+    // project's; the command line folds the machine-global tree in too, and neither home here has
+    // written there, so the two accounts name the same authors and must carry the same marks.
+    expect(mnema(homeA, 'init').status).toBe(0);
+    expect(mnema(homeB, 'memory', 'second').status).toBe(0);
+    type Mark = { scope: string; at: string; besides: string[] };
+    type Author = { who: string; foundedBeside: Mark[] };
+
+    const { server } = buildMcpServer({ cwd: sandbox, env: { home: auditor }, log: () => {} });
+    const client = new Client(
+      { name: 'claude-code', version: '1.0.0' },
+      { capabilities: { roots: {} } },
+    );
+    client.setRequestHandler(ListRootsRequestSchema, () => ({
+      roots: [{ uri: pathToFileURL(repo).href }],
+    }));
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    await Promise.all([client.connect(clientTransport), server.connect(serverTransport)]);
+    const reply = (await client.callTool({ name: 'audit_accountability', arguments: {} })) as {
+      isError?: boolean;
+      content: { text: string }[];
+    };
+    await client.close();
+    expect(reply.isError).not.toBe(true);
+    const served = JSON.parse(reply.content[0]?.text as string) as {
+      byProject: { project?: string; byWho: Author[] }[];
+    };
+    const agents = served.byProject.find((entry) => entry.project === repo)?.byWho ?? [];
+
+    const printed = (
+      JSON.parse(mnema(auditor, 'accountability', '--json').stdout) as { byWho: Author[] }
+    ).byWho;
+    const marks = (authors: Author[]) =>
+      authors
+        .map(({ who, foundedBeside }) => ({ who, foundedBeside }))
+        .sort((a, b) => a.who.localeCompare(b.who));
+
+    // One author founded beside the other — and the agent is told so, not only the person.
+    expect(agents.filter((one) => one.foundedBeside.length > 0)).toHaveLength(1);
+    expect(agents.filter((one) => one.foundedBeside.length === 0)).toHaveLength(1);
+    expect(marks(agents)).toEqual(marks(printed));
   }, 60_000);
 });

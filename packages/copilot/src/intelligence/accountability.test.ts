@@ -1,5 +1,8 @@
 import { rmSync } from 'node:fs';
-import type { ProjectionCache, Scope } from '@mnema/core';
+import { dirname, join } from 'node:path';
+import { identityFounded, memoryCaptured } from '@mnema/chain';
+import { type ProjectionCache, resolveTrees, type Scope } from '@mnema/core';
+import { openTreeForWriting } from '@mnema/core/write';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   type Bench,
@@ -133,6 +136,7 @@ describe('accountability — who authorized what, which agent executed', () => {
         total: 2,
         byKind: [{ kind: 'run.started', count: 2 }],
         byWhich: [{ which: 'claude', count: 2 }],
+        foundedBeside: [],
       },
     ]);
   });
@@ -227,5 +231,80 @@ function aliceRan(count: number) {
     total: count,
     byKind: [{ kind: 'run.started', count }],
     byWhich: [{ which: 'claude', count }],
+    foundedBeside: [],
   };
 }
+
+/**
+ * A key of its own, under `home`, founding its identity in the bench's tree — the event
+ * `ensureFounded` appends, signed by that key, for the anchor that key derives — and then
+ * writing one fact as that identity. Returns the anchor.
+ */
+function arrives(b: Bench, home: string): string {
+  const writer = openTreeForWriting(resolveTrees(dirname(b.root), { home }), 'public');
+  const anchor = writer.anchor;
+  const signerFp = writer.signerFingerprint;
+  writer.append(
+    identityFounded(
+      { at: b.now(), who: anchor, signerFp, subject: anchor },
+      { foundingFp: signerFp },
+    ),
+  );
+  writer.append(
+    memoryCaptured(
+      { at: b.now(), who: anchor, signerFp, subject: `m-${anchor.slice(-6)}` },
+      { content: 'a fact of its own' },
+    ),
+  );
+  writer.checkpoint();
+  return anchor;
+}
+
+describe('beside an author, where its identity was founded among others', () => {
+  it('names the tree, the instant, and who was already there — and says "none" for the first', () => {
+    const b = bench();
+    const first = arrives(b, join(dirname(b.root), 'home-first'));
+    const second = arrives(b, join(dirname(b.root), 'home-second'));
+
+    const byWho = new Map(accountability([tree(b, 'public')]).byWho.map((one) => [one.who, one]));
+    expect(byWho.get(first)?.foundedBeside).toEqual([]);
+    expect(byWho.get(second)?.foundedBeside).toEqual([
+      { scope: 'public', at: '2026-01-01T00:00:02.000Z', besides: [first] },
+    ]);
+  });
+
+  it('is not narrowed by the window: a founding is where the author came from', () => {
+    const b = bench();
+    const first = arrives(b, join(dirname(b.root), 'home-first'));
+    const second = arrives(b, join(dirname(b.root), 'home-second'));
+    // Only the second identity's own fact, at :03, is inside this window; its founding at :02 is not.
+    const acc = accountability([tree(b, 'public')], { from: '2026-01-01T00:00:03.000Z' });
+    expect(acc.byWho.map((one) => one.who)).toEqual([second]);
+    expect(acc.byWho[0]?.foundedBeside).toEqual([
+      { scope: 'public', at: '2026-01-01T00:00:02.000Z', besides: [first] },
+    ]);
+  });
+
+  it('comes from each record’s own trees when the workspace is decomposed', () => {
+    // The founding beside another is in the machine-global tree; the project's record holds
+    // the same second identity writing, and no founding beside anybody. The mark goes with the
+    // tree it happened in: the global entry carries it, the project's does not.
+    const global = bench();
+    const project = bench();
+    const first = arrives(global, join(dirname(global.root), 'home-first'));
+    const secondHome = join(dirname(global.root), 'home-second');
+    const second = arrives(global, secondHome);
+    const inProject = arrives(project, secondHome);
+    expect(inProject).toBe(second);
+
+    const account = accountabilityByProject([
+      tree(project, 'public', '/w/project'),
+      tree(global, 'global'),
+    ]);
+    const [inTheProject, inTheGlobal] = account.byProject;
+    expect(inTheProject?.byWho.find((one) => one.who === second)?.foundedBeside).toEqual([]);
+    expect(inTheGlobal?.byWho.find((one) => one.who === second)?.foundedBeside).toEqual([
+      { scope: 'global', at: '2026-01-01T00:00:02.000Z', besides: [first] },
+    ]);
+  });
+});

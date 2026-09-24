@@ -13,12 +13,14 @@
  * nothing anyone else can tell.
  *
  * A thin adapter. Which keys the identity has, whether this one is among them, and
- * whether it is the last — the core's judgement, worded by the core.
+ * whether it is the last — the core's judgement, worded by the core. It hands the core a
+ * DEFERRED write rather than an open writer: opening one touches the tree even when nothing
+ * is appended, so the core decides first and opens it only to write, and a refused
+ * revocation leaves the tree as it found it.
  */
 
-import { catalogUpcasters } from '@mnema/chain';
-import { chainRootForScope, type DiscoveryEnv, resolveTrees } from '@mnema/core';
-import { openTreeForWriting, revokeMember } from '@mnema/core/write';
+import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { deferredWrite, revokeMember } from '@mnema/core/write';
 import { forwardReplacement, type Replacement } from '../recorded-content.js';
 
 /** What the revocation needs — injected so it is testable. */
@@ -68,22 +70,15 @@ export function runKeyRevoke(
     return { ok: false, reason: 'NO_PROJECT' };
   }
 
-  const writer = openTreeForWriting(trees, 'public');
-  const revoked = revokeMember(
-    {
-      writer,
-      layout: { root: chainRootForScope(trees, 'public') as string },
-      upcasters: catalogUpcasters(),
-    },
-    { fingerprint: input.fingerprint, reason: input.reason },
-  );
+  const write = deferredWrite(trees, 'public');
+  const revoked = revokeMember(write, { fingerprint: input.fingerprint, reason: input.reason });
   if (!revoked.ok) {
     return { ok: false, reason: 'REFUSED', code: revoked.code, message: revoked.message };
   }
 
-  // The revocation signs its own checkpoint (the verifier only honors a covered
-  // one), so this covers whatever else the run appended and is otherwise a no-op.
-  writer.checkpoint();
+  // The revocation signs its own checkpoint (the verifier only honors a covered one), so
+  // this covers whatever else the run appended and is otherwise a no-op.
+  write.checkpoint();
 
   return {
     ok: true,
