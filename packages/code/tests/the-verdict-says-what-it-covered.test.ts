@@ -80,7 +80,6 @@ function lineFor(said: Said, scope: 'public' | 'private' | 'global'): string | u
 /** The trees the project resolves to from the sandbox. */
 function trees(): { publicRoot: string; privateRoot: string; globalRoot: string } {
   const resolved = resolveTrees(repo, {
-    xdgDataHome: join(sandbox, 'data'),
     home: join(sandbox, 'home'),
   });
   return {

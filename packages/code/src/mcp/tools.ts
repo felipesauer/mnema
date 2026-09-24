@@ -2167,10 +2167,6 @@ export function runRulesBeforeAnEditTool(
   // explain: the tool still answers `ok` with whatever text it had, so the edit goes
   // through and nobody's afternoon is spent on a refusal that was never recorded. What says
   // the gate was live is `channel.served`, and its absence from a run is the evidence.
-  const said = {
-    ...(context !== undefined ? { context } : {}),
-    ...(charged.ok && ask !== undefined ? { ask } : {}),
-  };
   // SERVICE IS RECORDED FOR WHAT ACTUALLY SPOKE, per channel, once per run — never for a
   // channel that was switched off and never for one that had nothing to say. A fact saying
   // a channel served on a call where it said nothing would be the fact reading backwards.
@@ -2178,6 +2174,20 @@ export function runRulesBeforeAnEditTool(
     ...(context !== undefined ? [EDIT_PUSH_CHANNEL] : []),
     ...(charged.ok && ask !== undefined ? [ASKS_A_PERSON_CHANNEL] : []),
   ]);
+  // WHAT THOSE WRITES FOUNDED rides in the text the host hands the agent — the one field of a
+  // hook reply that reaches the model; prose beside it would be dropped. It can only be owed on
+  // a call that already speaks, because the facts above are written only for a channel that
+  // said something, and it is the first write of a connection into a tree that can found. So
+  // this path, which nobody asked for and nobody reads the output of, is not silent about it.
+  const founded = session.founding.take();
+  const told =
+    founded.length === 0
+      ? context
+      : [...(context !== undefined ? [context] : []), ...founded].join('\n\n');
+  const said = {
+    ...(told !== undefined ? { context: told } : {}),
+    ...(charged.ok && ask !== undefined ? { ask } : {}),
+  };
   return { ok: true, value: hookReply(PRE_TOOL_USE, said) };
 }
 

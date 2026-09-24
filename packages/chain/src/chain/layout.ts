@@ -234,8 +234,11 @@ export function installationIdPath(layout: ChainLayout, fingerprint: string): st
  * an anchor and founds its own on first use.
  */
 export function anchorPath(layout: ChainLayout, fingerprint: string): string {
-  return join(keysDir(layout), `${fingerprint}.anchor`);
+  return join(keysDir(layout), `${fingerprint}${ANCHOR_SUFFIX}`);
 }
+
+/** The ending of a local anchor file's name — spelled once, for the path and for the listing. */
+export const ANCHOR_SUFFIX = '.anchor';
 
 /**
  * Path to the chain's OWN `.gitignore` — the one the chain writes and owns, at

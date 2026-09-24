@@ -96,14 +96,14 @@ afterEach(() => {
 });
 
 /** A project, with the table at the root and the script beside it, as the page describes. */
-function setup(): { repo: string; env: { home: string; xdgData?: string } } {
+function setup(): { repo: string; env: { home: string } } {
   const repo = join(sandbox, 'repo');
   mkdirSync(repo, { recursive: true });
   writeFileSync(join(repo, 'DECISIONS.md'), TABLE);
   writeFileSync(join(repo, 'convert-decisions.mjs'), publishedConverter());
   const home = join(sandbox, 'home');
   mkdirSync(home, { recursive: true });
-  const env = { home, xdgData: join(home, '.local', 'share') };
+  const env = { home };
   runInit({ cwd: repo, env });
   return { repo, env };
 }

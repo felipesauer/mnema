@@ -89,7 +89,7 @@ function recordedText(root: string | undefined): string[] {
 }
 
 function treesOf() {
-  return resolveTrees(repo, { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') });
+  return resolveTrees(repo, { home: join(sandbox, 'home') });
 }
 
 /**

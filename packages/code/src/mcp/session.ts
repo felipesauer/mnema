@@ -71,6 +71,7 @@ import {
   startRun,
   type WriteContext,
 } from '@mnema/core/write';
+import { FoundingWatch } from '../a-new-identity.js';
 import { oneLine } from '../one-line.js';
 import { type CacheRegistry, createCacheRegistry } from './cache-registry.js';
 import {
@@ -92,7 +93,7 @@ export type OpenSessionInput = ClientWorkspace & {
   readonly clientName: string;
   /** An explicit project directory the server was configured with, if any. */
   readonly configProject?: string | undefined;
-  /** The discovery environment (XDG/home). */
+  /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
   readonly env: DiscoveryEnv;
   /**
    * Where to write diagnostics, if the caller has somewhere to write them.
@@ -357,6 +358,14 @@ export interface Session {
    */
   readonly caches: CacheRegistry;
   /**
+   * What this connection's writes founded, owed to the next reply. A session writes into a tree
+   * for the first time through {@link ensureRun} — the run opens before anything else is
+   * appended there — and that is the one write that can found an identity; the watch is armed
+   * there and emptied where a reply is composed (`replied` in `server.ts`, and the hook's reply
+   * in `tools.ts`). See `a-new-identity.ts` for what is said.
+   */
+  readonly founding: FoundingWatch;
+  /**
    * The skills already recorded as consulted, per RUN — the ids, not the facts,
    * grouped by the chain root of the run they were recorded against. A consultation
    * is recorded ONCE per (run, skill): reading a pattern three times in one run is
@@ -478,6 +487,7 @@ export function openSession(input: OpenSessionInput): Session {
     env: input.env,
     log: input.log ?? (() => {}),
     caches,
+    founding: new FoundingWatch(),
     consulted: new Map<string, Set<string>>(),
     served: new Map<string, Set<string>>(),
   };
@@ -734,6 +744,10 @@ function ensureRun(session: Session, trees: ResolvedTrees, scope: Scope): string
   const open = session.runs.get(root);
   if (open !== undefined) return open.id;
 
+  // THE WATCH IS ARMED HERE, before the first thing this connection appends to the tree: the
+  // run's own opening is that first thing, and a key with no anchor in the tree founds on its
+  // way in. What the tree's anchors were a moment before is what the next reply compares with.
+  session.founding.opened(root, scope);
   const ctx = writeContext(trees, scope, session.caches);
   const started = startRun(ctx, { agent: session.which });
   if (!started.ok) {

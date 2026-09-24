@@ -120,7 +120,7 @@ beforeEach(() => {
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-refusal-scope-'));
   const home = join(sandbox, 'home');
   mkdirSync(home, { recursive: true });
-  env = { home, xdgDataHome: join(sandbox, 'data') };
+  env = { home };
 });
 
 afterEach(() => {

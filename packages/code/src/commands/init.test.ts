@@ -11,7 +11,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { catalogUpcasters, verify } from '@mnema/chain';
-import { type DiscoveryEnv, orderedEvents } from '@mnema/core';
+import { type DiscoveryEnv, orderedEvents, PROJECT_DIR } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runInit } from './init.js';
 
@@ -29,7 +29,7 @@ afterEach(() => {
 function setup(): { repo: string; env: DiscoveryEnv } {
   const repo = join(sandbox, 'repo');
   mkdirSync(repo, { recursive: true });
-  return { repo, env: { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') } };
+  return { repo, env: { home: join(sandbox, 'home') } };
 }
 
 /** Every file under a directory, by path relative to it, sorted. Absent ⇒ empty. */
@@ -84,14 +84,14 @@ describe('mnema init', () => {
     const { repo, env } = setup();
     runInit({ cwd: repo, env });
 
-    expect(existsSync(join(sandbox, 'data', 'mnema', 'projects.json'))).toBe(false);
+    expect(existsSync(join(sandbox, 'home', '.mnema', 'projects.json'))).toBe(false);
 
     // And the whole enumeration, so the NEXT dead write is caught as well: the only
     // thing init may leave outside the project is the key root's material, which is
     // read on every write (it is this machine's identity).
-    const outside = filesUnder(join(sandbox, 'data'));
+    const outside = filesUnder(join(sandbox, 'home', '.mnema'));
     expect(outside.length).toBeGreaterThan(0);
-    expect(outside.filter((path) => !path.startsWith('mnema/identity/'))).toEqual([]);
+    expect(outside.filter((path) => !path.startsWith('identity/'))).toEqual([]);
   });
 
   it('is born verifiable: verify is ok and fully signed right after init', () => {
@@ -133,8 +133,11 @@ describe('mnema init', () => {
 
     expect(existsSync(privateKeyPath)).toBe(true);
     expect(privateKeyPath.startsWith(repo)).toBe(false);
-    expect(privateKeyPath.includes('.mnema')).toBe(false);
-    const keyRoot = join(sandbox, 'data', 'mnema', 'identity');
+    // This line used to read `includes('.mnema')` — the NAME standing in for "a project's
+    // tree", which held only while the data directory came from `$XDG_DATA_HOME`. The data
+    // directory is `~/.mnema` now, so the name says nothing; what is asked is the place.
+    expect(privateKeyPath.startsWith(join(repo, PROJECT_DIR))).toBe(false);
+    const keyRoot = join(sandbox, 'home', '.mnema', 'identity');
     expect(privateKeyPath.startsWith(join(keyRoot, 'backup'))).toBe(true);
     // Exactly one private key in the key root's keys/ — the machine's own.
     expect(readdirSync(join(keyRoot, 'keys')).filter((n) => n.endsWith('.key'))).toHaveLength(1);
@@ -196,7 +199,7 @@ describe('mnema init', () => {
     const first = runInit({ cwd: repo, env });
     const before = orderedEvents({ root: first.root }, catalogUpcasters()).length;
     const treeBefore = contentsUnder(first.root);
-    const outsideBefore = contentsUnder(join(sandbox, 'data'));
+    const outsideBefore = contentsUnder(join(sandbox, 'home', '.mnema'));
 
     const second = runInit({ cwd: repo, env });
 
@@ -209,7 +212,8 @@ describe('mnema init', () => {
     expect(orderedEvents({ root: second.root }, catalogUpcasters()).length).toBe(before);
     // Nothing moved on disk, inside the project or outside it.
     expect(contentsUnder(first.root)).toEqual(treeBefore);
-    expect(contentsUnder(join(sandbox, 'data'))).toEqual(outsideBefore);
+    expect(Object.keys(outsideBefore).length).toBeGreaterThan(0);
+    expect(contentsUnder(join(sandbox, 'home', '.mnema'))).toEqual(outsideBefore);
   });
 
   it('does not re-found when the app data directory itself was lost', () => {
@@ -222,7 +226,9 @@ describe('mnema init', () => {
     const { repo, env } = setup();
     const first = runInit({ cwd: repo, env });
     const before = orderedEvents({ root: first.root }, catalogUpcasters()).length;
-    rmSync(join(sandbox, 'data'), { recursive: true, force: true });
+    // The home's `.mnema/` IS the app data directory — it used to be `$XDG_DATA_HOME/mnema`,
+    // and a case that went on removing that path would have lost nothing at all.
+    rmSync(join(sandbox, 'home', '.mnema'), { recursive: true, force: true });
 
     const second = runInit({ cwd: repo, env });
     expect(second.created).toBe(false);
@@ -244,7 +250,7 @@ describe('mnema init — where no project can be founded', () => {
   it('refuses in the home directory, and makes nothing there', () => {
     const home = join(sandbox, 'home');
     mkdirSync(join(home, 'work'), { recursive: true });
-    const env: DiscoveryEnv = { home, xdgDataHome: join(sandbox, 'data') };
+    const env: DiscoveryEnv = { home };
     const before = filesUnder(home);
 
     const result = runInit({ cwd: home, env });
@@ -252,11 +258,12 @@ describe('mnema init — where no project can be founded', () => {
     expect(result).toEqual({ refused: 'home', root: join(home, '.mnema') });
     expect(existsSync(join(home, '.mnema'))).toBe(false);
     expect(filesUnder(home)).toEqual(before);
-    // The key root is untouched too: a refusal founds no identity anywhere.
-    expect(existsSync(join(sandbox, 'data'))).toBe(false);
+    // The key root is untouched too: a refusal founds no identity anywhere — and the key
+    // root is the home's own `.mnema/identity`, the directory the line above says was not made.
+    expect(existsSync(join(home, '.mnema', 'identity'))).toBe(false);
   });
 
-  it('refuses there with no `$XDG_DATA_HOME` — where the home’s `.mnema/` would be the key’s directory', () => {
+  it('refuses there — where the home’s `.mnema/` would be the key’s directory', () => {
     // The case that put the private key in the project tree: the data directory IS
     // `~/.mnema`, so a project founded in the home shares one directory with the key.
     const home = join(sandbox, 'home');
@@ -289,7 +296,7 @@ describe('mnema init — where no project can be founded', () => {
     const home = join(sandbox, 'home');
     const app = join(home, 'code', 'app');
     mkdirSync(app, { recursive: true });
-    const result = runInit({ cwd: app, env: { home, xdgDataHome: join(sandbox, 'data') } });
+    const result = runInit({ cwd: app, env: { home } });
     expect(result).toMatchObject({ created: true, root: join(app, '.mnema') });
   });
 });

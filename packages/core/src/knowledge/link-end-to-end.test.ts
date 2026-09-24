@@ -38,7 +38,6 @@ describe('knowledge.linked — end to end, the four publics (cross-tree)', () =>
     sandbox = mkdtempSync(join(tmpdir(), 'mnema-link-e2e-'));
     mkdirSync(join(sandbox, 'repo', '.mnema'), { recursive: true });
     trees = resolveTrees(join(sandbox, 'repo'), {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     });
   });

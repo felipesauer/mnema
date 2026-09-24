@@ -74,7 +74,6 @@ async function mnema(...argv: readonly string[]): Promise<Said> {
 /** The one tail's only segment file, and the checkpoints beside it. */
 function storedFiles(): { segment: string; checkpoints: string } {
   const root = resolveTrees(repo, {
-    xdgDataHome: join(sandbox, 'data'),
     home: join(sandbox, 'home'),
   }).projectPublic as string;
   const tail = listTails({ root })[0] as string;

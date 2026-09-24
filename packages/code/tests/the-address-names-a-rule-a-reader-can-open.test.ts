@@ -118,7 +118,7 @@ function pushedIn(project: string, path: string): readonly { id: string }[] {
 
 beforeEach(() => {
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-address-opens-'));
-  env = { home: join(sandbox, 'home'), xdgDataHome: join(sandbox, 'xdg') };
+  env = { home: join(sandbox, 'home') };
   mkdirSync(env.home, { recursive: true });
   repo = join(sandbox, 'repo');
   mkdirSync(join(repo, 'src'), { recursive: true });

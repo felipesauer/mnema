@@ -200,7 +200,60 @@ export function buildProgram(
   // was just registered, so a verb added to the list above arrives covered.
   speakUsageErrors(program, { io, render: resolved }, typed);
 
+  sayWhatAWriteFounded(program, io, resolved);
+
   return { program, render: resolved, io, verbs };
+}
+
+/**
+ * After a verb's answer, on stderr: every identity its write founded in a tree where others were
+ * already founded. The sentence is `a-new-identity.ts`'s; this only decides WHEN.
+ *
+ * ON EVERY PROGRAM THIS FILE BUILDS, and not once per invocation the way the walk's notice is
+ * ({@link sayWhatTheWalkPassesOver}): the console builds a program for every line typed into it,
+ * and a write typed there founds as surely as one run from a shell. It cannot repeat within one
+ * installation — the key's anchor is settled in a tree once, at its first write there — so hanging
+ * it per line costs a reader nothing. This said "a founding happens once per key per tree", which
+ * is true of the founding and not of the sentence: a fresh clone of the record, or a key restored
+ * into one, is a new installation of the same key, and it is said there again, true of the key
+ * (`a-new-identity.ts`, measured).
+ *
+ * THE QUESTION IS ASKED OF THE DISK, BEFORE AND AFTER, and not of the verb: a key's first write
+ * into a tree is the one that settles its anchor there, so a verb that left a new anchor behind is
+ * a verb that could have founded, and the record then says whether it did — beside whom. Every
+ * verb is covered by construction, including one added tomorrow, and none has to report it.
+ *
+ * `mnema mcp` is passed by: the server says it in the reply of the call that founded. And it can
+ * never be the reason an answer did not arrive — a throw here is swallowed, because a notice that
+ * cannot be composed is a notice not given, which is what the product said before.
+ */
+function sayWhatAWriteFounded(program: Command, io: CliIo, render: Render): void {
+  let before: import('./a-new-identity.js').AnchorsBefore | undefined;
+  program.hook('preAction', async (_program, action) => {
+    before = undefined;
+    if (topLevelVerbOf(action) === MCP_VERB) return;
+    try {
+      // Loaded here, not at the top: it reads chains, and `mnema --version` must not know it
+      // exists (`tests/the-floor-is-the-declaration.test.ts`).
+      const { anchorsBefore, treesOf } = await import('./a-new-identity.js');
+      const { resolveTrees } = await import('@mnema/core');
+      const { cwd, env } = here();
+      before = anchorsBefore(treesOf(resolveTrees(cwd, env)));
+    } catch {
+      // Nothing to compare with afterwards: no notice, and the verb answers as it always did.
+    }
+  });
+  program.hook('postAction', async () => {
+    const was = before;
+    before = undefined;
+    if (was === undefined) return;
+    try {
+      const { foundingsSince } = await import('./a-new-identity.js');
+      for (const sentence of foundingsSince(was)) io.err(render(fact(sentence, 0)));
+    } catch {
+      // See above.
+    }
+  });
 }
 
 /**

@@ -61,7 +61,7 @@ let repo: string;
 
 beforeEach(() => {
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-moves-'));
-  env = { home: join(sandbox, 'home'), xdgDataHome: join(sandbox, 'xdg') };
+  env = { home: join(sandbox, 'home') };
   mkdirSync(env.home, { recursive: true });
   repo = join(sandbox, 'repo');
   mkdirSync(repo, { recursive: true });

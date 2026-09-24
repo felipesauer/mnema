@@ -2,8 +2,9 @@
  * The home directory is not a project, and a machine's data directory is no project's tree —
  * through the binary a person runs and the server a host starts.
  *
- * WHAT WAS WRONG. With `$XDG_DATA_HOME` unset the data directory is `~/.mnema`, and a
- * directory called `.mnema` is exactly what the project walk looks for. Measured on the
+ * WHAT WAS WRONG. The data directory is `~/.mnema` — it was whenever `$XDG_DATA_HOME` was
+ * unset, when this was measured, and it always is now — and a directory called `.mnema` is
+ * exactly what the project walk looks for. Measured on the
  * built binary before this: after the first `mnema init` anywhere, `mnema memory` in a plain
  * folder under the home answered "Landed in the public tree — committed with the repository"
  * and wrote into `~/.mnema/tails/`, and `mnema recall` there spoke of "notes recorded for
@@ -13,10 +14,11 @@
  *
  * WHAT IS ASSERTED, each beside the case that would pass if the rule refused too much:
  *
- *   - the defect itself, with no `$XDG_DATA_HOME`: a verb from a folder under the home is
+ *   - the defect itself: a verb from a folder under the home is
  *     not told it landed in a project, and nothing is written into the home's `.mnema/tails`;
  *   - a home tree written before this, by the product's own writer, is passed over and
- *     NAMED — where, why, how many events — and not a byte of it changes, whatever runs;
+ *     NAMED — where, why, how many events — and not a byte of what it holds changes, whatever
+ *     runs: with the data directory kept elsewhere, and where it is the data directory itself;
  *   - outside a project the command line still answers over the machine-global tree, and
  *     a data directory holding nothing but its key and its global tree draws no line at all;
  *   - another environment's data directory, which only the key root in it says is one;
@@ -29,7 +31,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { catalogUpcasters } from '@mnema/chain';
 import { chainRootForScope, type DiscoveryEnv, PROJECT_DIR, type ResolvedTrees } from '@mnema/core';
@@ -65,15 +67,16 @@ function dir(...parts: string[]): string {
 }
 
 /**
- * `mnema <argv>` in `cwd`, with this environment and nothing else. `xdg` absent means the
- * variable is absent, which is the case the fallback makes.
+ * `mnema <argv>` in `cwd`, with this environment and nothing else. `relocated` is
+ * `$MNEMA_HOME`, the one way to keep the data directory out of `~/.mnema`; absent, the data
+ * directory is the home's `.mnema/` — which is the ordinary case.
  */
 function mnema(
-  at: { cwd: string; home: string; xdg?: string },
+  at: { cwd: string; home: string; relocated?: string },
   ...argv: string[]
 ): { status: number | null; stdout: string; stderr: string } {
   const env: NodeJS.ProcessEnv = { PATH: process.env.PATH ?? '', HOME: at.home };
-  if (at.xdg !== undefined) env.XDG_DATA_HOME = at.xdg;
+  if (at.relocated !== undefined) env.MNEMA_HOME = at.relocated;
   const ran = spawnSync(process.execPath, [CLI, ...argv], { cwd: at.cwd, encoding: 'utf-8', env });
   return { status: ran.status, stdout: ran.stdout, stderr: ran.stderr };
 }
@@ -126,7 +129,25 @@ function digestOf(root: string): string {
   return hash.digest('hex');
 }
 
-describe('the defect, through the binary, with no `$XDG_DATA_HOME`', () => {
+/** Every file under `root`, by its path relative to `root`, with a digest of its bytes. */
+function filesIn(root: string): Map<string, string> {
+  const files = new Map<string, string>();
+  const walk = (at: string): void => {
+    for (const entry of readdirSync(at, { withFileTypes: true })) {
+      const full = join(at, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else
+        files.set(
+          relative(root, full),
+          createHash('sha256').update(readFileSync(full)).digest('hex'),
+        );
+    }
+  };
+  walk(root);
+  return files;
+}
+
+describe('the defect, through the binary', () => {
   it('does not tell a verb in a folder under the home that it landed in a project', () => {
     const app = dir('home', 'code', 'app');
     const plain = dir('home', 'Downloads', 'x');
@@ -169,7 +190,7 @@ describe('a home tree written before this — passed over, named, and left as it
     writtenAsTheOldWalkDid(join(data, 'mnema'), 'a second one');
     const plain = dir('home', 'work', 'unrelated');
 
-    const ran = mnema({ cwd: plain, home, xdg: data }, 'skills');
+    const ran = mnema({ cwd: plain, home, relocated: join(data, 'mnema') }, 'skills');
 
     expect(ran.status).toBe(0);
     const said = ran.stderr.split('\n').filter((line) => line !== '');
@@ -185,7 +206,9 @@ describe('a home tree written before this — passed over, named, and left as it
     writtenAsTheOldWalkDid(join(data, 'mnema'), 'a note that landed in the home tree');
     const plain = dir('home', 'work', 'unrelated');
     const app = dir('home', 'code', 'app');
-    const at = { home, xdg: data };
+    // The data directory kept elsewhere, as the old walk's machine had it: then nothing of the
+    // home tree changes at all, not even beside it.
+    const at = { home, relocated: join(data, 'mnema') };
     const before = digestOf(join(home, PROJECT_DIR));
 
     mnema({ ...at, cwd: plain }, 'memory', 'a note', '--scope', 'global');
@@ -201,11 +224,45 @@ describe('a home tree written before this — passed over, named, and left as it
     expect(digestOf(join(home, PROJECT_DIR))).toBe(before);
   }, 60_000);
 
+  it('and where that tree IS the data directory — the ordinary case — what it held keeps every byte, and only the data directory’s own appears beside it', () => {
+    // No `$MNEMA_HOME`: the data directory is `~/.mnema`, which on a machine the old walk
+    // wrote to is this very tree. The first write puts the key root and the global tree in
+    // it. Nothing the tree held is rewritten, nothing is written into it AS A PROJECT'S, and
+    // the line that names it counts the same events after as before.
+    const data = join(sandbox, 'data');
+    writtenAsTheOldWalkDid(join(data, 'mnema'), 'a note that landed in the home tree');
+    const plain = dir('home', 'work', 'unrelated');
+    const app = dir('home', 'code', 'app');
+    const tree = join(home, PROJECT_DIR);
+    const before = filesIn(tree);
+    const named = (): string => mnema({ cwd: plain, home }, 'skills').stderr;
+    const saidBefore = named();
+
+    mnema({ cwd: plain, home }, 'memory', 'a note', '--scope', 'global');
+    mnema({ cwd: plain, home }, 'memory', 'a note meant for a project');
+    mnema({ cwd: plain, home }, 'task', 'a task created in the wrong place');
+    mnema({ cwd: plain, home }, 'recall');
+    mnema({ cwd: plain, home }, 'verify');
+    mnema({ cwd: home, home }, 'init');
+    mnema({ cwd: app, home }, 'init');
+    mnema({ cwd: app, home }, 'memory', 'inside the app');
+
+    const after = filesIn(tree);
+    for (const [path, digest] of before) expect(after.get(path), path).toBe(digest);
+    const added = [...after.keys()].filter((path) => !before.has(path));
+    // Non-vacuity: the data directory did land here — it is the case.
+    expect(added.some((path) => path.startsWith('identity/'))).toBe(true);
+    expect(added.some((path) => path.startsWith('global/'))).toBe(true);
+    expect(added.filter((path) => !/^(identity|global)\//.test(path))).toEqual([]);
+    expect(named()).toBe(saidBefore);
+    expect(saidBefore).toContain('It holds 2 event(s) in 1 tail(s)');
+  }, 60_000);
+
   it('still answers over the machine-global tree outside a project — the tree it passed is not a refusal', () => {
     const data = join(sandbox, 'data');
     writtenAsTheOldWalkDid(join(data, 'mnema'), 'a note that landed in the home tree');
     const plain = dir('home', 'work', 'unrelated');
-    const at = { cwd: plain, home, xdg: data };
+    const at = { cwd: plain, home, relocated: join(data, 'mnema') };
 
     const empty = mnema(at, 'skills');
     expect(empty.status).toBe(0);
@@ -225,7 +282,7 @@ describe('a home tree written before this — passed over, named, and left as it
   }, 60_000);
 
   it('draws no line for a data directory that holds only its key and its global tree', () => {
-    // The ordinary machine with no `$XDG_DATA_HOME`: `~/.mnema` is passed over on every walk
+    // The ordinary machine: `~/.mnema` is passed over on every walk
     // from under the home, and a line about it on every command would be a line about nothing.
     const plain = dir('home', 'work', 'x');
     expect(mnema({ cwd: plain, home }, 'memory', 'into global', '--scope', 'global').status).toBe(
@@ -251,7 +308,7 @@ describe('another environment’s data directory', () => {
     expect(existsSync(join(realHome, PROJECT_DIR, 'identity'))).toBe(true);
     const before = digestOf(join(realHome, PROJECT_DIR));
 
-    const elsewhere = { cwd: folder, home: dir('other-home'), xdg: join(sandbox, 'other-data') };
+    const elsewhere = { cwd: folder, home: dir('other-home') };
     const ran = mnema(elsewhere, 'memory', 'from a run whose home is elsewhere');
 
     expect(ran.stdout).not.toContain('committed with the repository');
@@ -263,7 +320,7 @@ describe('another environment’s data directory', () => {
 describe('`mnema init` in the home', () => {
   it('refuses, says why and where to run it instead, and makes nothing', () => {
     const data = join(sandbox, 'data');
-    const ran = mnema({ cwd: home, home, xdg: data }, 'init');
+    const ran = mnema({ cwd: home, home, relocated: data }, 'init');
 
     expect(ran.status).toBe(1);
     expect(ran.stderr).toContain('Refused (NOT_A_PROJECT_ROOT)');
@@ -300,7 +357,7 @@ describe('the server says it too, in its log', () => {
     writtenAsTheOldWalkDid(join(data, 'mnema'), 'a note that landed in the home tree');
     const one = dir('home', 'a');
     const two = dir('home', 'b');
-    const env: DiscoveryEnv = { home, xdgDataHome: data };
+    const env: DiscoveryEnv = { home, mnemaHome: join(data, 'mnema') };
 
     const { client, logged } = await connected(
       [pathToFileURL(one).href, pathToFileURL(two).href],

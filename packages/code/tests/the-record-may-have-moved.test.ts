@@ -79,7 +79,6 @@ function processEnv(discovery: DiscoveryEnv): NodeJS.ProcessEnv {
   return {
     ...inherited,
     HOME: discovery.home,
-    ...(discovery.xdgDataHome !== undefined ? { XDG_DATA_HOME: discovery.xdgDataHome } : {}),
   };
 }
 
@@ -100,7 +99,6 @@ function writeFromAnotherProcess(scope: Scope, content: string, maxSegmentBytes?
     const { catalogUpcasters } = await import('@mnema/chain');
     const trees = resolveTrees(${JSON.stringify(project)}, {
       home: process.env.HOME,
-      xdgDataHome: process.env.XDG_DATA_HOME,
     });
     const writer = openTreeForWriting(trees, ${JSON.stringify(scope)}, ${options});
     const done = captureMemory(
@@ -120,7 +118,6 @@ function writeFromAnotherProcess(scope: Scope, content: string, maxSegmentBytes?
 function cliFromAnotherMachine(...args: string[]): string {
   const elsewhere: DiscoveryEnv = {
     home: join(sandbox, 'other-home'),
-    xdgDataHome: join(sandbox, 'other-data'),
   };
   mkdirSync(elsewhere.home, { recursive: true });
   return execFileSync(process.execPath, [CLI, ...args], {
@@ -190,7 +187,7 @@ beforeEach(() => {
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-moved-'));
   const home = join(sandbox, 'home');
   mkdirSync(home, { recursive: true });
-  env = { home, xdgDataHome: join(sandbox, 'data') };
+  env = { home };
   project = join(sandbox, 'proj');
   mkdirSync(project, { recursive: true });
   ensureTree({ root: join(project, PROJECT_DIR) });

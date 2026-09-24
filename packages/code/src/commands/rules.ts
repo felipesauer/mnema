@@ -46,7 +46,7 @@ import {
 export interface RulesContext {
   /** The working directory: the project is resolved from it, and so is a relative path. */
   readonly cwd: string;
-  /** The discovery environment (XDG/home). */
+  /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
   readonly env: DiscoveryEnv;
 }
 

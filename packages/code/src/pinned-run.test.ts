@@ -21,7 +21,7 @@ afterEach(() => {
 function setup(): { repo: string; env: DiscoveryEnv } {
   const repo = join(sandbox, 'repo');
   mkdirSync(repo, { recursive: true });
-  return { repo, env: { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') } };
+  return { repo, env: { home: join(sandbox, 'home') } };
 }
 
 /** Inits and opens a run, returning the project and the run's id. */
@@ -45,9 +45,13 @@ function countingEnv(env: DiscoveryEnv): { env: DiscoveryEnv; reads: () => numbe
         reads += 1;
         return env.home;
       },
-      get xdgDataHome() {
+      get mnemaHome() {
         reads += 1;
-        return env.xdgDataHome;
+        return env.mnemaHome;
+      },
+      get accountHome() {
+        reads += 1;
+        return env.accountHome;
       },
     },
     reads: () => reads,

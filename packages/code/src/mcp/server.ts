@@ -90,7 +90,6 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import type { ZodRawShapeCompat } from '@modelcontextprotocol/sdk/server/zod-compat.js';
 import { RootsListChangedNotificationSchema } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { discoveryEnv } from '../env.js';
 import { movedLine } from '../moved-record.js';
 import { passedOverSentences } from '../not-a-project.js';
 import { oneLine } from '../one-line.js';
@@ -335,8 +334,18 @@ function connectingAgent(announced: string | undefined): string {
 
 /** What the server needs from its host, injected so it is testable. */
 export interface McpServerOptions {
-  /** The discovery environment; defaults to the real process environment. */
-  readonly env?: DiscoveryEnv;
+  /**
+   * The discovery environment — REQUIRED, and read by the caller.
+   *
+   * It defaulted to the real process environment, read here a second time, and nothing in
+   * production ever took the default: the one caller, `mnema mcp` (`wiring/mcp.ts`), hands over
+   * the environment it read at the entry. A second reading of where the key lives that no path
+   * exercises is the shape that comes to disagree in silence — measured when the key root
+   * stopped following `$XDG_DATA_HOME`: a mutation that made this default drop `$MNEMA_HOME` left
+   * every case green. So there is no default, as there is none for `cwd`, and the compiler asks
+   * every caller for it.
+   */
+  readonly env: DiscoveryEnv;
   /**
    * An explicit project directory to operate on, overriding the client's roots —
    * what `mnema mcp --project` carries.
@@ -387,7 +396,7 @@ export function buildMcpServer(options: McpServerOptions): {
   readonly armClose: (lifecycle?: Lifecycle) => () => void;
   readonly tools: readonly DeclaredTool[];
 } {
-  const env = options.env ?? discoveryEnv();
+  const env = options.env;
   const log = options.log ?? ((line) => process.stderr.write(`${line}\n`));
 
   // The instructions go in the handshake, which is the one place a server can say what its
@@ -2082,6 +2091,13 @@ function replied(
     content: [
       ...before,
       ...fact(sessionLinkBreaks(session, wrote ? A_WRITE : A_READ)),
+      // WHAT THIS CONNECTION'S WRITES FOUNDED since the last reply — asked here for the reason
+      // the record's state is: this is the one place every reply of this server passes, so a
+      // tool added later says it without remembering to. Empty unless a key's first write into a
+      // tree settled it in an identity the record shows it founded there beside others — once per
+      // key per tree for an installation, and again for a fresh clone of the record, which is a
+      // new one (`a-new-identity.ts`).
+      ...session.founding.take(),
       ...after,
     ].map((text) => ({
       type: 'text' as const,

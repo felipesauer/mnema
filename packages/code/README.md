@@ -128,7 +128,7 @@ verbatim. The surfaces never upgrade a verdict into a stronger claim.
 | **A cut can be told from a tampering** | When it was authorized in advance, and for a WHOLE tail. A `tail.pruned` written while the tail is still there records which tail, how many events it held and the head it held them through — all three checked against the disk before the fact is signed — and `verify` then reports that account instead of listing the three reasons a key might have no tail. Cutting PART of a tail is not covered and stays loud: removing one line from a 402-event tail produces 102 findings. A waiver is not permission (anyone who can write can sign one, and it names who did), it is not a cure (a tail that is present and broken keeps every issue it had), and it does not remove anything — once the record is pushed, the events are in every clone and on the remote. `mnema tail prune` is what writes one, on the CLI alone; the cut itself stays yours to make. |
 | **Gates protect the record** | They protect its *shape*, not its contents. A gate refuses an illegal transition; it is not access control. Anyone who can run the CLI writes as this machine's identity. |
 | **A lost key can be restored** | Only from the backup key `mnema init` makes, and only where the record proves that key a member: the **committed project tree**. `mnema key restore` is that path — local, offline, no service to ask, because anything able to hand your identity back could forge it. The private and global trees are born knowing one key, so a lost key cannot be replaced in them; they are uncommitted, so the disk that takes the key takes them anyway. |
-| **Your machines are one author** | True for machines the record proves belong to one identity — which is what enrolling a second machine records. A machine nobody vouched for writes as a *different* identity, honestly and permanently; that is not a bug to fix later, it is what an unvouched key means. When the record proves a key belongs to **two** identities, no command picks one for you: the write is refused until you say which. |
+| **Your machines are one author** | True for machines the record proves belong to one identity — which is what enrolling a second machine records. A machine nobody vouched for writes as a *different* identity, honestly and permanently; that is not a bug to fix later, it is what an unvouched key means — and the write that founds it says so, once, naming the identities already there, while the public trees of your other projects can still be spared: by an enrollment made inside each of them, from a machine already in that identity, and pulled before the new key writes there — never in the project that split, where it joins nothing. `mnema accountability` names it afterwards, in `--json` too. When the record proves a key belongs to **two** identities, no command picks one for you: the write is refused until you say which. |
 | **What a run cost** | Not proven at all, and `mnema usage` says so on its own last line. The record holds no cost — deliberately: the number lives in Claude Code's transcripts, which the host deletes on a retention it decides, so a cost recorded in the chain would be a signed figure whose only witness is gone in weeks. So the verb crosses the two readings when you ask, reports **tokens and a model id — never dollars, and never a price table**, and names the host session it read so you can check the same file. Which session belongs to which run is that command's **inference from two clocks**, not a fact the record states: one session in a run's window is attributed, more than one is named and *not* attributed, and none says `no transcript` rather than `0`. |
 | **An exported skill is what the record proves** | The BODY is, byte for byte — `mnema skill export` writes the recorded text verbatim, and nothing summarizes, reformats or improves it. The `description` beside it is **not** signed and is not in the record: the skills specification requires one, the chain has no field for it, so it is derived at export time by a stated rule (the first sentence of the body, cut to 1024 characters) or given with `--description`. **No model produces it.** Only an **adopted** pattern leaves — a proposal dropped into a host's skills directory is read as how the work is done here, and a deprecated one wears a live one's face — and there is no `--force`. The `metadata` carries the record id and the whole identity that adopted it, so a third party with the repository can check the line with `mnema show` and `mnema verify`. Nothing comes back the other way: **there is no import**, because a `SKILL.md` from elsewhere would enter as a body signed by us asserting a provenance we do not have. |
 | **An exported audit feed is the record** | It is a **projection** of it, and it is not the proof. `mnema export` emits one OCSF Entity Management event per line for a SIEM, and it carries the **envelope only** — when, which operation, who authorized it, which agent executed it, in which session, over which entity, signed by which key. **No payload of any kind leaves**: not a memory's text, not a decision's rationale, not an observation's body. The reason is the row below — the record holds credentials mnema does not recognize, and a feed carrying bodies would push them off this machine into somebody's search index, permanently. A line that is **altered in transit is not detectable by the SIEM**: the signature in the record covers mnema's own canonical bytes, not this projection, so nothing here is an attestation and OCSF's `record_integrity` profile is deliberately **not** used. What each line does carry is enough to find the fact back in the record — the subject, the original instant, and the tree — so the answer to *is this line real* is a question you ask `mnema show` and `mnema verify`, never the index. Nothing in mnema ever reads a feed back, and the verb **sends nothing anywhere**: it writes to standard output and whoever forwards it decides the rest. |
@@ -1176,18 +1176,31 @@ key really signed.
 <repo>/.mnema/              the project record — commit this, the team shares it
   tails/<id>/witness/       external attestations over this tail's checkpoints (T3)
   private/                  gitignored: this machine, this project only
-<data>/mnema/global/        this machine, across every project
-<data>/mnema/identity/      the signing key — referenced, never copied into a chain
+~/.mnema/global/            this machine, across every project
+~/.mnema/identity/          the signing key — referenced, never copied into a chain
 ```
 
-`<data>` follows XDG (`$XDG_DATA_HOME/mnema`, falling back to `~/.mnema`). The
-project root is found by walking up from the working directory until a `.mnema/`
+`~/.mnema` is this machine's data directory, whatever `$XDG_DATA_HOME` says.
+`MNEMA_HOME` moves it: set to an absolute path, the key root and the global tree live
+directly under that directory; set to a relative one, every command refuses rather than
+keep a key under whatever directory it was run from.
+
+The project root is found by walking up from the working directory until a `.mnema/`
 appears, the way git finds `.git` — so every command works from a subdirectory.
-The walk never takes your home directory for a project, and stops there: without
-`$XDG_DATA_HOME`, `~/.mnema` is where the key lives, and a project in the home would
-own every folder under it. `mnema init` refuses to found one there, and a `.mnema/`
-that holds a key root is never taken for a project anywhere. Only the committed tree
-is meant to be shared; the private key never leaves the key root.
+The walk never takes your home directory for a project, and stops there: `~/.mnema` is
+where the key lives, and a project in the home would own every folder under it.
+`mnema init` refuses to found one there, and a `.mnema/` that holds a key root is never
+taken for a project anywhere. Only the committed tree is meant to be shared; the private
+key never leaves the key root, which carries a `.gitignore` of its own — a home kept under
+git never stages it, while the global tree beside it stays yours to version or not.
+
+**Why not `$XDG_DATA_HOME`?** Because the key is who you are, and `$XDG_DATA_HOME` is set
+on your behalf by whatever launched the process. A snap-packaged editor used to point it
+inside its own revision folder for the processes it started, and Flatpak points it inside
+each app's sandbox; a key root that followed it made one person two identities, depending
+on which program started the writer, silently and for good in every record it touched.
+`gpg` and `ssh` keep their keys under the home for the same reason. The one variable that
+moves the key is this product's own, `MNEMA_HOME`, and nothing sets it for you.
 
 ## What lives here
 

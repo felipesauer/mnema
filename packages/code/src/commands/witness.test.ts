@@ -63,7 +63,7 @@ afterEach(() => {
 function setup(): { cwd: string; env: DiscoveryEnv; global: boolean } {
   const repo = join(sandbox, 'repo');
   mkdirSync(repo, { recursive: true });
-  const env: DiscoveryEnv = { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') };
+  const env: DiscoveryEnv = { home: join(sandbox, 'home') };
   const here = { cwd: repo, env };
   runInit(here);
   runMemory(here, { content: 'a fact worth keeping' });

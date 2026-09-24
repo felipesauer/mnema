@@ -35,7 +35,7 @@ function setup(name = 'repo'): { repo: string; env: DiscoveryEnv } {
   mkdirSync(repo, { recursive: true });
   return {
     repo,
-    env: { xdgDataHome: join(sandbox, `${name}-data`), home: join(sandbox, `${name}-home`) },
+    env: { home: join(sandbox, `${name}-home`) },
   };
 }
 

@@ -124,7 +124,7 @@ describe('the verifier the root page publishes', () => {
     const home = join(sandbox, 'home');
     mkdirSync(repo, { recursive: true });
     mkdirSync(home, { recursive: true });
-    const ctx = { cwd: repo, env: { home, xdgData: join(home, '.local', 'share') } };
+    const ctx = { cwd: repo, env: { home } };
     runInit(ctx);
     const said = runDecision(ctx, {
       title: 'Use SQLite for the projection cache',

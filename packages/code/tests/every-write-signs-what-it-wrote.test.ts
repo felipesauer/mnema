@@ -411,7 +411,7 @@ let env: DiscoveryEnv;
 
 beforeEach(() => {
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-signs-'));
-  env = { home: join(sandbox, 'home'), xdgDataHome: join(sandbox, 'home', '.local', 'share') };
+  env = { home: join(sandbox, 'home') };
 });
 
 afterEach(() => {
@@ -420,7 +420,7 @@ afterEach(() => {
 
 /** A second machine's identity, sharing the sandbox but not the key root. */
 function otherMachine(name: string): DiscoveryEnv {
-  return { home: join(sandbox, name), xdgDataHome: join(sandbox, name, '.local', 'share') };
+  return { home: join(sandbox, name) };
 }
 
 /**

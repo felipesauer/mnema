@@ -36,7 +36,7 @@ import { runLinkKnowledge } from '../src/mcp/tools.js';
 
 let sandbox: string;
 let repo: string;
-let env: { home: string; xdgDataHome: string };
+let env: { home: string };
 let originalCwd: string;
 let originalXdg: string | undefined;
 let originalHome: string | undefined;
@@ -113,7 +113,7 @@ beforeEach(async () => {
   process.env.XDG_DATA_HOME = join(sandbox, 'data');
   process.env.HOME = join(sandbox, 'home');
   delete process.env.MNEMA_RUN;
-  env = { home: join(sandbox, 'home'), xdgDataHome: join(sandbox, 'data') };
+  env = { home: join(sandbox, 'home') };
   process.chdir(repo);
   const initiated = await mnema('init');
   expect(initiated.failed, initiated.err.join(' / ')).toBe(false);

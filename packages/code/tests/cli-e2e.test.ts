@@ -152,7 +152,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     // It used to end with "the project is in the machine index" here. The index had
     // no production reader and is gone; what the loop needs from init is the tree,
     // asserted on the line above, and the events the next steps read from it.
-    expect(existsSync(join(sandbox, 'data', 'mnema', 'projects.json'))).toBe(false);
+    expect(existsSync(join(sandbox, 'home', '.mnema', 'projects.json'))).toBe(false);
 
     // 2. task adds an event through the gate.
     const t = capture();
@@ -162,7 +162,6 @@ describe('mnema CLI — init → task → verify, end to end', () => {
 
     // The event really landed: founding + birth pair + the task's checkpoints.
     const root = resolveTrees(repo, {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     }).projectPublic as string;
     const events = orderedEvents({ root }, catalogUpcasters());
@@ -204,7 +203,6 @@ describe('mnema CLI — init → task → verify, end to end', () => {
 
     // The chain that recorded the whole journey still verifies, fully signed.
     const root = resolveTrees(repo, {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     }).projectPublic as string;
     const v = capture();
@@ -227,7 +225,6 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     await run(['task', 'move', 'start', id], capture().io);
 
     const trees = resolveTrees(repo, {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     });
     const publicForTask = orderedEvents(
@@ -258,7 +255,6 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
 
     const trees = resolveTrees(repo, {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     });
     // The task is in PRIVATE, not in the team's public tree.
@@ -287,7 +283,6 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
 
     const trees = resolveTrees(orphan, {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     });
     const globalForTask = orderedEvents({ root: trees.global }, catalogUpcasters()).filter(
@@ -314,7 +309,6 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     expect(c.err.join('\n')).toContain('Invalid --scope "team"');
     // Nothing was born: no task event in any tree.
     const trees = resolveTrees(repo, {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     });
     const publicEvents = existsSync(trees.projectPublic as string)
@@ -382,7 +376,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     expect(backupLine).toContain('created and enrolled — private half at');
     const privateKeyPath = backupLine.slice(backupLine.indexOf('at ') + 3);
     expect(existsSync(privateKeyPath)).toBe(true);
-    expect(privateKeyPath.startsWith(join(sandbox, 'data'))).toBe(true);
+    expect(privateKeyPath.startsWith(join(sandbox, 'home', '.mnema', 'identity'))).toBe(true);
     expect(privateKeyPath.startsWith(repo)).toBe(false);
     expect(first.out.join('\n')).toContain('Move that file off this machine');
 
@@ -409,7 +403,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     expect(second.out.join('\n')).toContain('backup key: enrolled in this project');
     expect(second.out.join('\n')).not.toContain('created and enrolled');
 
-    const env = { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') };
+    const env = { home: join(sandbox, 'home') };
     const firstRoot = resolveTrees(repo, env).projectPublic as string;
     const secondRoot = resolveTrees(other, env).projectPublic as string;
 
@@ -437,7 +431,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
 
     // A second key registered at the key root, the way another machine's would
     // be: its public half plus its own signature consenting to this anchor.
-    const keyRoot = join(sandbox, 'data', 'mnema', 'identity');
+    const keyRoot = join(sandbox, 'home', '.mnema', 'identity');
     const joining = generateKeyPair();
     writeFileSync(
       join(keyRoot, 'keys', `${joining.fingerprint}.pub`),
@@ -463,7 +457,6 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     expect(said).toContain(`key ${joining.fingerprint} enrolled in this project`);
 
     const root = resolveTrees(other, {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     }).projectPublic as string;
     const enrolled = orderedEvents({ root }, catalogUpcasters()).filter(
@@ -583,7 +576,6 @@ describe('mnema CLI — a record no read could open, end to end', () => {
     }
     // And the proof still closes over the tree, fully signed.
     const root = resolveTrees(repo, {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     }).projectPublic as string;
     expect(verify(root).ok).toBe(true);
@@ -632,7 +624,6 @@ describe('mnema CLI — decision, end to end', () => {
     );
 
     const root = resolveTrees(repo, {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     }).projectPublic as string;
     expect(
@@ -690,7 +681,6 @@ describe('mnema CLI — decision, end to end', () => {
     expect(s.out.join('\n')).toBe(`Decision ADR-1 (${oldId}) → superseded`);
 
     const root = resolveTrees(repo, {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     }).projectPublic as string;
     const d = projectDecisions(orderedEvents({ root }, catalogUpcasters())).get(oldId);
@@ -749,7 +739,6 @@ describe('mnema CLI — decision, end to end', () => {
     const id = idOf(c.out.join('\n'));
 
     const trees = resolveTrees(repo, {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     });
     const privateForDecision = orderedEvents(
@@ -796,7 +785,6 @@ describe('mnema CLI — skill, end to end', () => {
     expect(c.out.join('\n')).not.toContain('replaced before recording');
 
     const root = resolveTrees(repo, {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     }).projectPublic as string;
     // The RECORD is what has to carry it — the printed line is a copy, and the copy
@@ -819,7 +807,6 @@ describe('mnema CLI — skill, end to end', () => {
     expect(c.out.join('\n')).not.toContain('replaced before recording');
 
     const root = resolveTrees(repo, {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     }).projectPublic as string;
     const captured = orderedEvents({ root }, catalogUpcasters()).filter(
@@ -853,7 +840,6 @@ describe('mnema CLI — skill, end to end', () => {
     // about a write that happened anyway, so the chain is read back and the absence of
     // the EVENT is what this asserts, not the absence of the value.
     const root = resolveTrees(repo, {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     }).projectPublic as string;
     const events = orderedEvents({ root }, catalogUpcasters());
@@ -879,7 +865,6 @@ describe('mnema CLI — skill, end to end', () => {
     expect(c.out.join('\n')).toContain('<SECRET:anthropic-key>');
 
     const root = resolveTrees(repo, {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     }).projectPublic as string;
     const captured = orderedEvents({ root }, catalogUpcasters()).filter(
@@ -901,7 +886,6 @@ describe('mnema CLI — skill, end to end', () => {
     );
 
     const root = resolveTrees(repo, {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     }).projectPublic as string;
     expect(
@@ -918,7 +902,6 @@ describe('mnema CLI — skill, end to end', () => {
     expect(c.failed()).toBe(true);
     // Nothing was born: no skill event in the public tree.
     const trees = resolveTrees(repo, {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     });
     const publicEvents = existsSync(trees.projectPublic as string)
@@ -949,7 +932,6 @@ describe('mnema CLI — skill, end to end', () => {
     expect(deprecate.out.join('\n')).toMatch(/→ deprecated$/);
 
     const root = resolveTrees(repo, {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     }).projectPublic as string;
     expect(verify(root).ok).toBe(true);
@@ -1010,7 +992,6 @@ describe('mnema CLI — skill, end to end', () => {
     const id = idOf(c.out.join('\n'));
 
     const trees = resolveTrees(repo, {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     });
     const privateForSkill = orderedEvents(
@@ -1037,7 +1018,7 @@ describe('mnema CLI — skill, end to end', () => {
 
 describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end', () => {
   function treesOf() {
-    return resolveTrees(repo, { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') });
+    return resolveTrees(repo, { home: join(sandbox, 'home') });
   }
 
   it('memory captures a fact, prints its id, lands in public, and verifies', async () => {
@@ -1289,7 +1270,6 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
     expect(c.failed()).toBe(false);
     const id = (c.out.join('\n').match(/([0-9a-f-]{36})/) as RegExpMatchArray)[1] as string;
     const trees = resolveTrees(orphan, {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     });
     expect(
@@ -1709,13 +1689,12 @@ describe('mnema CLI — the identity a read prints is the identity a flag takes'
 describe('mnema CLI — key restore, end to end', () => {
   /** The key root of the sandboxed machine. */
   function keyRoot(): string {
-    return join(sandbox, 'data', 'mnema', 'identity');
+    return join(sandbox, 'home', '.mnema', 'identity');
   }
 
   /** The tree of the current repo. */
   function publicTree(): string {
     return resolveTrees(repo, {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     }).projectPublic as string;
   }
@@ -1847,12 +1826,11 @@ describe('mnema CLI — key restore, end to end', () => {
 describe('mnema CLI — a second machine joins one identity, end to end', () => {
   /** Points the next commands at one machine's key root. Two roots, two machines. */
   function asMachine(name: string): void {
-    process.env.XDG_DATA_HOME = join(sandbox, name, 'data');
     process.env.HOME = join(sandbox, name, 'home');
   }
 
   function keyRootOf(name: string): string {
-    return join(sandbox, name, 'data', 'mnema', 'identity');
+    return join(sandbox, name, 'home', '.mnema', 'identity');
   }
 
   function publicTree(): string {
@@ -2078,12 +2056,11 @@ describe('mnema CLI — a second machine joins one identity, end to end', () => 
  */
 describe('mnema CLI — asking with the cold copy while the wrong key is installed', () => {
   function asMachine(name: string): void {
-    process.env.XDG_DATA_HOME = join(sandbox, name, 'data');
     process.env.HOME = join(sandbox, name, 'home');
   }
 
   function keyRootOf(name: string): string {
-    return join(sandbox, name, 'data', 'mnema', 'identity');
+    return join(sandbox, name, 'home', '.mnema', 'identity');
   }
 
   function privateKeysOf(name: string): string[] {
@@ -2254,7 +2231,7 @@ describe('mnema CLI — run (the session), end to end', () => {
   }
 
   function treesOf() {
-    return resolveTrees(repo, { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') });
+    return resolveTrees(repo, { home: join(sandbox, 'home') });
   }
 
   /** Every event of a tree, or [] when that tree was never written. */
@@ -2704,7 +2681,7 @@ describe('mnema CLI — run (the session), end to end', () => {
     const session = openSession({
       clientName: 'mcp-agent',
       roots: [pathToFileURL(repo).href],
-      env: { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') },
+      env: { home: join(sandbox, 'home') },
     });
     const made = runCreateSkill(session, { name: 'Seal it', body: 'Close what you opened.' });
     if (!made.ok) throw new Error(`setup: the MCP write refused (${made.code})`);
@@ -2744,7 +2721,7 @@ describe('mnema CLI — run (the session), end to end', () => {
  */
 describe('mnema CLI — a --which that names nobody', () => {
   function treesOf() {
-    return resolveTrees(repo, { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') });
+    return resolveTrees(repo, { home: join(sandbox, 'home') });
   }
 
   /** Every event of a tree, or [] when that tree was never written. */
@@ -2946,7 +2923,7 @@ describe('mnema CLI — a --which that names nobody', () => {
 
 describe('mnema CLI — what enters the record', () => {
   function treesOf() {
-    return resolveTrees(repo, { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') });
+    return resolveTrees(repo, { home: join(sandbox, 'home') });
   }
 
   /** Every string anywhere in every payload of a tree — the generic sweep. */
@@ -3265,7 +3242,6 @@ describe('mnema CLI — skills, the provenance audit', () => {
 
     expect(digestOf(join(repo, '.mnema'))).toBe(before);
     const trees = resolveTrees(repo, {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     });
     for (const root of [trees.projectPublic, trees.projectPrivate]) {
@@ -3357,7 +3333,7 @@ describe('where a pattern came from — across the two surfaces', () => {
     return openSession({
       clientName: agent,
       roots: [pathToFileURL(repo).href],
-      env: { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') },
+      env: { home: join(sandbox, 'home') },
     });
   }
 
@@ -3415,7 +3391,6 @@ describe('where a pattern came from — across the two surfaces', () => {
     // TRAVELS — a pattern an agent proposed is still a declaration about the project —
     // on a chain that still verifies.
     const trees = resolveTrees(repo, {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     });
     const publicRoot = trees.projectPublic as string;
@@ -3666,7 +3641,7 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
     // been refused — the machines could not see each other.
     //
     // The fixture is the merge itself: a second working copy, on its own machine (its
-    // own XDG data, so its own key), and its committed tail landing in this one. That is
+    // own home, so its own key), and its committed tail landing in this one. That is
     // the only way one chain holds two `ADR-1`s — a second decision on ONE machine is
     // `ADR-2`, so a hand-made pair would be a record the product cannot produce.
     await run(['init'], capture().io);
@@ -3674,8 +3649,7 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
 
     const clone = join(sandbox, 'clone');
     mkdirSync(clone, { recursive: true });
-    const mine = { xdg: process.env.XDG_DATA_HOME, home: process.env.HOME };
-    process.env.XDG_DATA_HOME = join(sandbox, 'clone-data');
+    const mine = { home: process.env.HOME };
     process.env.HOME = join(sandbox, 'clone-home');
     process.chdir(clone);
     let yours: string;
@@ -3683,7 +3657,6 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
       await run(['init'], capture().io);
       yours = await accept('Round the tax per line, then sum');
     } finally {
-      process.env.XDG_DATA_HOME = mine.xdg;
       process.env.HOME = mine.home;
       process.chdir(repo);
     }

@@ -73,7 +73,7 @@ const SCOPES: readonly Scope[] = ['public', 'private', 'global'];
 export interface ShowContext {
   /** The working directory to resolve the trees from. */
   readonly cwd: string;
-  /** The discovery environment (XDG/home). */
+  /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
   readonly env: DiscoveryEnv;
 }
 

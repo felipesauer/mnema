@@ -85,8 +85,9 @@ export function mcpServerDeclaration({ sandbox, mnemaBin }) {
   return {
     command: process.execPath,
     args: [mcpWrapperPath(), mcpLogPath(sandbox), '--', ...served],
-    // The record server needs no credentials — only the cell's HOME and
-    // XDG_DATA_HOME, so the identity it signs with is the cell's own. The
+    // The record server needs no credentials — only the cell's HOME (and its
+    // XDG_DATA_HOME, isolated like every other variable), so the identity it signs
+    // with is the cell's own. The
     // wrapper hands its own environment straight down.
     env: sandboxEnv(sandbox),
   }

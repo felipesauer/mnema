@@ -151,6 +151,7 @@ describe('the same globs reach every instrument this repository ships or runs', 
     // The two cases above compare two sets, and two empty sets are equal. This is what
     // stops them from passing over a repository whose instruments went missing.
     expect(theInstruments()).toEqual([
+      '.github/a-home-of-its-own/setup.mjs',
       '.github/flake-sampler/summarize.mjs',
       '.github/the-link-cannot-come-back/scan.mjs',
       '.github/what-the-suite-left-behind/sweep.mjs',

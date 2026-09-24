@@ -376,7 +376,6 @@ describe('session — routable through the three-tree topology', () => {
     sandbox = mkdtempSync(join(tmpdir(), 'mnema-run-topo-'));
     mkdirSync(join(sandbox, 'repo', '.mnema'), { recursive: true });
     trees = resolveTrees(join(sandbox, 'repo'), {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     });
   });

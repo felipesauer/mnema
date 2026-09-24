@@ -37,8 +37,10 @@ import {
   publicKeyToPem,
 } from './keys.js';
 import {
+  ANCHOR_SUFFIX,
   anchorPath,
   type ChainLayout,
+  gitignorePath,
   installationIdPath,
   keysDir,
   privateKeyPath,
@@ -101,6 +103,7 @@ function findLocalKeyPair(layout: ChainLayout): KeyPair | null {
  * person where their key now lives.
  */
 export function persistKeyPair(layout: ChainLayout, keyPair: KeyPair): string {
+  ensureKeyRootIgnored(layout);
   mkdirSync(keysDir(layout), { recursive: true });
   writeFileSync(publicKeyPath(layout, keyPair.fingerprint), publicKeyToPem(keyPair.publicKey), {
     encoding: 'utf-8',
@@ -198,6 +201,60 @@ export function readAnchor(layout: ChainLayout, fingerprint: string): string | n
   if (!existsSync(path)) return null;
   const value = readFileSync(path, 'utf-8').trim();
   return value.length > 0 ? value : null;
+}
+
+/**
+ * The key root's own `.gitignore`: everything in it, always.
+ */
+const KEY_ROOT_GITIGNORE = [
+  "# Managed by mnema — this machine's private keys live here, and nothing in this directory",
+  '# is ever committed: not the key, not its cold backup, not a registration.',
+  '*',
+  '',
+].join('\n');
+
+/**
+ * Makes a key root ignore itself in git, unless it already carries a `.gitignore` of its own —
+ * called by the two functions that write private key material ({@link persistKeyPair} and
+ * `ensureBackupKey`), so it is there before the first private byte is.
+ *
+ * WHY THE KEY ROOT, AND WHY NOW. The key root lives in the home — `~/.mnema/identity`, or under
+ * wherever `MNEMA_HOME` puts it — and a home kept under git, as dotfiles often are, is a
+ * repository in which `git add .mnema` staged the private key and its backup. The tools that
+ * write a directory into somebody's tree say so the same way (pytest's cache, ruff's, mypy's,
+ * Python's `venv`: a `.gitignore` holding `*` in the directory they create); the ones that hold
+ * keys write none, which is this product's reason to. It goes in the key root and not in the data
+ * directory above it: the private half is what must never travel, while the global tree is the
+ * person's to version or not — and only here does it hold wherever the key root sits, including a
+ * data directory that already carries a `.gitignore` written for something else, like a project
+ * tree's, which covers `keys/*.key` and not `identity/keys/*.key`.
+ *
+ * One that exists is left as it is, as a project tree's is (`ensureTree`): a person who edited it
+ * keeps the edit.
+ */
+export function ensureKeyRootIgnored(keyRoot: ChainLayout): void {
+  mkdirSync(keyRoot.root, { recursive: true });
+  const path = gitignorePath(keyRoot);
+  if (existsSync(path)) return;
+  writeFileSync(path, KEY_ROOT_GITIGNORE, 'utf-8');
+}
+
+/**
+ * Every key that has an anchor recorded in this tree, by fingerprint — which installations of
+ * this machine have settled, locally, whom they speak for here. Empty for a tree with none, or no
+ * tree at all.
+ *
+ * A write that settles an anchor where there was none is a key's first write into the tree —
+ * the only moment it can found an identity — so a surface that lists these before and after a
+ * write knows whether that moment passed, without asking the write.
+ */
+export function listAnchoredFingerprints(layout: ChainLayout): string[] {
+  const dir = keysDir(layout);
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((name) => name.endsWith(ANCHOR_SUFFIX))
+    .map((name) => name.slice(0, -ANCHOR_SUFFIX.length))
+    .sort();
 }
 
 /**

@@ -36,7 +36,7 @@ import { resolveAnchorInRecord } from '../anchors.js';
 export interface KeyRequestContext {
   /** The working directory: what a relative `--key` path is relative to. */
   readonly cwd: string;
-  /** The discovery environment (XDG/home), for the key root. */
+  /** The discovery environment (`$HOME`, `$MNEMA_HOME`), for the key root. */
   readonly env: DiscoveryEnv;
 }
 

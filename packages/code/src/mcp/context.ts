@@ -164,7 +164,7 @@ export type ContextInput = ClientWorkspace & {
    * is refused rather than passed over.
    */
   readonly configProject?: string | undefined;
-  /** The discovery environment (XDG/home), for the global tree and identity. */
+  /** The discovery environment (`$HOME`, `$MNEMA_HOME`), for the global tree and identity. */
   readonly env: DiscoveryEnv;
 };
 

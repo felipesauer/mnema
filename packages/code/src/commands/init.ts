@@ -24,8 +24,8 @@
  * directory whose `.mnema/` is a machine's data directory — by asking the walk's own rule
  * (`whyNoProjectRootAt`, `@mnema/core`) before anything is made. It used to found a tree
  * anywhere it was run, and the home was where that went wrong: measured in a sandbox
- * home, `mnema init` there with no `$XDG_DATA_HOME` put the project tree in the same
- * directory as the private key, and every folder under the home became that project. The
+ * home, `mnema init` there put the project tree in the same directory as the private key
+ * (`~/.mnema` is the data directory — it was then with no `$XDG_DATA_HOME`, and always is now), and every folder under the home became that project. The
  * bare name offered it as its first door outside a project, the home included. Asked
  * AFTER the walk learned to pass those directories over, a founding there would go wrong
  * in two ways the lines below cannot see: in the home it makes the tree and then resolves
@@ -56,7 +56,7 @@ import {
 export interface InitContext {
   /** The directory to establish the project in (the CLI passes `process.cwd()`). */
   readonly cwd: string;
-  /** The discovery environment (XDG/home), for the global tree and the key root. */
+  /** The discovery environment (`$HOME`, `$MNEMA_HOME`), for the global tree and the key root. */
   readonly env: DiscoveryEnv;
 }
 

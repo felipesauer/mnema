@@ -25,7 +25,7 @@ import { forwardReplacement, type Replacement } from '../recorded-content.js';
 export interface KeyRevokeContext {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
-  /** The discovery environment (XDG/home), for the key root and the tree paths. */
+  /** The discovery environment (`$HOME`, `$MNEMA_HOME`), for the key root and the tree paths. */
   readonly env: DiscoveryEnv;
 }
 

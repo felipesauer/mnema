@@ -31,7 +31,7 @@ beforeEach(() => {
   mkdirSync(repo, { recursive: true });
   // Both halves of the discovery environment inside the sandbox: the personal tree is
   // one of the three this reads, and it must be this sandbox's and not the machine's.
-  env = { xdgDataHome: join(sandbox, 'data'), home: join(sandbox, 'home') };
+  env = { home: join(sandbox, 'home') };
 });
 
 afterEach(() => {

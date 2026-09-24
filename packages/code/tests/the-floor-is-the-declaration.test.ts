@@ -366,7 +366,7 @@ const EAGER_EXTERNAL: Readonly<Record<string, string>> = {
     'same argument `presentation/width.ts` makes for `string-width`. Same measurement as ' +
     '`node:fs` above; the two arrived together.',
   'env.ts node:os':
-    '`homedir()`, for the discovery environment every verb is handed. A builtin, and ' +
+    '`homedir()` and `userInfo()`, for the discovery environment every verb is handed. A builtin, and ' +
     'the one the entry cannot defer: the environment is resolved before a verb runs.',
   'presentation/width.ts string-width':
     'a line is as wide as the COLUMNS it takes, and the authority on that is a table ' +

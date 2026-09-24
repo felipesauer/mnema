@@ -22,27 +22,74 @@ function home(): string {
 }
 
 describe('resolveTrees — global tree and key root', () => {
-  it('uses $XDG_DATA_HOME/mnema when it is a non-empty absolute path', () => {
-    const xdg = join(sandbox, 'xdg');
-    const env: DiscoveryEnv = { xdgDataHome: xdg, home: home() };
-    const trees = resolveTrees(sandbox, env);
-    expect(trees.global).toBe(join(xdg, 'mnema', 'global'));
-    expect(trees.keyRoot).toBe(join(xdg, 'mnema', 'identity'));
-  });
-
-  it('falls back to ~/.mnema when $XDG_DATA_HOME is unset', () => {
+  it('keeps them in ~/.mnema, under HOME', () => {
     const h = home();
     const trees = resolveTrees(sandbox, { home: h });
     expect(trees.global).toBe(join(h, '.mnema', 'global'));
     expect(trees.keyRoot).toBe(join(h, '.mnema', 'identity'));
   });
 
-  it('treats an empty or relative $XDG_DATA_HOME as unset (spec requires absolute)', () => {
-    const h = home();
-    for (const xdgDataHome of ['', 'relative/data']) {
-      const trees = resolveTrees(sandbox, { xdgDataHome, home: h });
-      expect(trees.global).toBe(join(h, '.mnema', 'global'));
+  it('keeps them in $MNEMA_HOME itself when it is set — the directory, not a parent of one', () => {
+    const relocated = join(sandbox, 'elsewhere', 'keys');
+    const trees = resolveTrees(sandbox, { home: home(), mnemaHome: relocated });
+    expect(trees.global).toBe(join(relocated, 'global'));
+    expect(trees.keyRoot).toBe(join(relocated, 'identity'));
+  });
+
+  it('spells $MNEMA_HOME one way, whatever trailing or dotted segments it was written with', () => {
+    const relocated = join(sandbox, 'elsewhere');
+    for (const written of [`${relocated}/`, join(relocated, 'x', '..'), `${relocated}/./`]) {
+      expect(resolveTrees(sandbox, { home: home(), mnemaHome: written }).keyRoot).toBe(
+        join(relocated, 'identity'),
+      );
     }
+  });
+
+  it('reads an empty $MNEMA_HOME as unset — the shell’s way of clearing a variable', () => {
+    const h = home();
+    expect(resolveTrees(sandbox, { home: h, mnemaHome: '' }).keyRoot).toBe(
+      join(h, '.mnema', 'identity'),
+    );
+  });
+
+  it('refuses a relative $MNEMA_HOME, rather than keep a key under the working directory', () => {
+    // Resolving it against the working directory, as `GNUPGHOME` and `CARGO_HOME` are, would
+    // give one identity per folder; ignoring it would found, in silence, a key in `~/.mnema`
+    // the person asked to keep elsewhere. Both are values nothing can take back.
+    for (const written of ['keys', './keys', '../keys']) {
+      expect(() => resolveTrees(sandbox, { home: home(), mnemaHome: written })).toThrow(
+        /MNEMA_HOME is .*a relative path/,
+      );
+    }
+  });
+
+  it('keeps them under the account’s home when HOME names no directory — never under the working directory', () => {
+    // The case that was measured: an empty `HOME` used to give `join('', '.mnema')`, which is
+    // `.mnema`, relative — one key minted in every folder the process ran from.
+    const account = join(sandbox, 'account');
+    for (const h of ['', 'relative/home', '.']) {
+      const trees = resolveTrees(sandbox, { home: h, accountHome: account });
+      expect(trees.keyRoot, `HOME=${JSON.stringify(h)}`).toBe(join(account, '.mnema', 'identity'));
+    }
+  });
+
+  it('prefers HOME to the account’s home whenever HOME is an absolute path', () => {
+    const h = home();
+    const trees = resolveTrees(sandbox, { home: h, accountHome: join(sandbox, 'account') });
+    expect(trees.keyRoot).toBe(join(h, '.mnema', 'identity'));
+  });
+
+  it('refuses when there is no home at all — no absolute HOME, no account home, no MNEMA_HOME', () => {
+    for (const accountHome of [undefined, '', 'relative/account']) {
+      expect(() => resolveTrees(sandbox, { home: '', accountHome })).toThrow(
+        /no home to keep the key root in/,
+      );
+    }
+    // And the variable is the way out, which is what the refusal says.
+    const relocated = join(sandbox, 'relocated');
+    expect(resolveTrees(sandbox, { home: '', mnemaHome: relocated }).keyRoot).toBe(
+      join(relocated, 'identity'),
+    );
   });
 });
 
@@ -106,15 +153,17 @@ describe('resolveTrees — the home directory is never a project’s root', () =
     const folder = join(h, 'Downloads', 'x');
     mkdirSync(folder, { recursive: true });
     for (const cwd of [h, folder]) {
-      const trees = resolveTrees(cwd, { home: h, xdgDataHome: join(sandbox, 'data') });
+      // The data directory elsewhere, so the home's `.mnema/` stays the shape a walk from before
+      // left it in — a project's tails and no key root.
+      const trees = resolveTrees(cwd, { home: h, mnemaHome: join(sandbox, 'data') });
       expect(trees.projectPublic, `from ${cwd}`).toBeUndefined();
       expect(trees.projectPrivate, `from ${cwd}`).toBeUndefined();
     }
   });
 
-  it('does not take this machine’s data directory either — `~/.mnema` with no `$XDG_DATA_HOME`', () => {
-    // The case the fallback makes: the data directory IS `~/.mnema`, named exactly what the
-    // walk looks for, and it holds the key root.
+  it('does not take this machine’s data directory either — `~/.mnema`, which holds the key root', () => {
+    // The case the data directory makes: it IS `~/.mnema`, named exactly what the walk looks
+    // for, and it holds the key root.
     const h = home();
     mkdirSync(join(h, '.mnema', 'identity', 'keys'), { recursive: true });
     mkdirSync(join(h, '.mnema', 'global'), { recursive: true });
@@ -157,17 +206,19 @@ describe('resolveTrees — the home directory is never a project’s root', () =
   });
 
   it('reads a relative or empty home as no home at all — it names no directory', () => {
-    // Same reading the XDG variable gets. A relative home resolved against the working
-    // directory would make whatever directory the process stands in "the home" — so the
-    // case stands IN the project: there, an empty or `.` home read that way is the project
-    // itself, and its `.mnema/` would be passed over as a home's.
+    // A relative home resolved against the working directory would make whatever directory
+    // the process stands in "the home" — so the case stands IN the project: there, an empty or
+    // `.` home read that way is the project itself, and its `.mnema/` would be passed over as a
+    // home's. The data directory reads such a home the same way, as no home, and goes under the
+    // account's instead — which is why the case hands it one.
     const repo = join(sandbox, 'repo');
     mkdirSync(join(repo, '.mnema'), { recursive: true });
     const before = process.cwd();
     process.chdir(repo);
     try {
       for (const h of ['', 'relative/home', '.']) {
-        expect(resolveTrees(repo, { home: h }).projectPublic, `home=${JSON.stringify(h)}`).toBe(
+        const env = { home: h, accountHome: join(sandbox, 'account') };
+        expect(resolveTrees(repo, env).projectPublic, `home=${JSON.stringify(h)}`).toBe(
           join(repo, '.mnema'),
         );
       }
@@ -180,7 +231,7 @@ describe('resolveTrees — the home directory is never a project’s root', () =
 describe('resolveTrees — a machine’s data directory is never a project’s tree', () => {
   it('passes over a `.mnema/` holding a key root that is NOT this home’s — and walks on', () => {
     // Another environment's data directory: a sandboxed `HOME` standing under a real one,
-    // `sudo`, a data directory left from before `$XDG_DATA_HOME` was set. It holds no
+    // `sudo`, a data directory left from before `$MNEMA_HOME` was set. It holds no
     // project, so whatever lies above it is still the nearest project.
     const project = join(sandbox, 'proj');
     mkdirSync(join(project, '.mnema'), { recursive: true });
@@ -227,7 +278,7 @@ describe('discover — what the walk passed over, from the same walk', () => {
     const repo = join(h, 'repo');
     mkdirSync(join(repo, '.mnema'), { recursive: true });
     for (const cwd of [h, repo, join(sandbox)]) {
-      const env: DiscoveryEnv = { home: h, xdgDataHome: join(sandbox, 'data') };
+      const env: DiscoveryEnv = { home: h, mnemaHome: join(sandbox, 'data') };
       expect(discover(cwd, env).trees, `from ${cwd}`).toEqual(resolveTrees(cwd, env));
     }
   });

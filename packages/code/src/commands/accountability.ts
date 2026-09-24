@@ -18,8 +18,17 @@
  * intelligence reads give.
  */
 
+import { catalogUpcasters } from '@mnema/chain';
 import { type Accountability, type AccountabilityFilter, accountability } from '@mnema/copilot';
-import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import {
+  type DiscoveryEnv,
+  type FoundedBeside,
+  identitiesFoundedBeside,
+  orderedEvents,
+  resolveTrees,
+  type Scope,
+} from '@mnema/core';
+import { treesOf } from '../a-new-identity.js';
 import { type AnchorForms, anchorForms, resolveTypedAnchor } from '../anchors.js';
 import {
   linkBreaksOf,
@@ -32,7 +41,7 @@ import {
 export interface AccountabilityContext {
   /** The working directory to resolve the project from. */
   readonly cwd: string;
-  /** The discovery environment (XDG/home). */
+  /** The discovery environment (`$HOME`, `$MNEMA_HOME`). */
   readonly env: DiscoveryEnv;
 }
 
@@ -50,6 +59,38 @@ export interface AccountabilityDone {
    * says so.
    */
   readonly linkBreaks: readonly ScopedLinkBreak[];
+  /**
+   * Every identity founded, in one of the trees read, after other identities were already
+   * founded there — with the tree it happened in. A person new to a team's record reads here
+   * as surely as one person who arrived under a second key; the account says which identity,
+   * where and when, and the person reading it knows which of the two it was. It is the same
+   * reading the write says at the moment it founds (`a-new-identity.ts`), asked of the whole
+   * record. Both forms of the account print it beside its author through
+   * {@link foundedBesideOf}.
+   */
+  readonly foundedBeside: readonly { readonly scope: Scope; readonly founding: FoundedBeside }[];
+}
+
+/** One founding beside others, as the account reports it beside the identity it founded. */
+export interface FoundedBesideMark {
+  /** The tree it happened in. */
+  readonly scope: Scope;
+  /** When, as the founding carries it. */
+  readonly at: string;
+  /** The identities already founded there, in the order the record has them. */
+  readonly besides: readonly string[];
+}
+
+/**
+ * The foundings beside others of the identity `who` — what BOTH forms of the account print beside
+ * that author: the line of the human summary, and the author's entry in `--json`. One selection of
+ * one reading ({@link AccountabilityDone.foundedBeside}), so the two cannot come to disagree about
+ * who arrived second. `--json` carried none of it until this existed, and only the line knew.
+ */
+export function foundedBesideOf(done: AccountabilityDone, who: string): FoundedBesideMark[] {
+  return done.foundedBeside
+    .filter(({ founding }) => founding.anchor === who)
+    .map(({ scope, founding }) => ({ scope, at: founding.at, besides: founding.besides }));
 }
 
 /** The read was refused — no project to account for, or a `--who` that names none. */
@@ -76,6 +117,12 @@ export function runAccountability(
   if (trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
+  const foundedBeside = treesOf(trees).flatMap(({ root, scope }) =>
+    identitiesFoundedBeside(orderedEvents({ root }, catalogUpcasters())).map((founding) => ({
+      scope,
+      founding,
+    })),
+  );
   return withScopedCaches(trees, (sources) => {
     const anchors = anchorForms(sources);
     const linkBreaks = linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE);
@@ -92,9 +139,16 @@ export function runAccountability(
         ok: true,
         anchors,
         linkBreaks,
+        foundedBeside,
         account: accountability(sources, { ...input, who: who.anchor }),
       };
     }
-    return { ok: true, anchors, linkBreaks, account: accountability(sources, input) };
+    return {
+      ok: true,
+      anchors,
+      linkBreaks,
+      foundedBeside,
+      account: accountability(sources, input),
+    };
   });
 }

@@ -267,7 +267,6 @@ describe('captureMemory — routing across the three trees (PoC)', () => {
     sandbox = mkdtempSync(join(tmpdir(), 'mnema-capture-route-'));
     mkdirSync(join(sandbox, 'repo', '.mnema'), { recursive: true });
     trees = resolveTrees(join(sandbox, 'repo'), {
-      xdgDataHome: join(sandbox, 'data'),
       home: join(sandbox, 'home'),
     });
   });

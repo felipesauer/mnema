@@ -315,7 +315,6 @@ function assertNothingVolatile(text: string): void {
 function appendUnscreenedMemory(anchor: string): string {
   const trees = resolveTrees(repo, {
     home: join(sandbox, 'home'),
-    xdgDataHome: join(sandbox, 'data'),
   });
   const writer = openTreeForWriting(trees, 'public');
   // A fixed v7-shaped id: the subject is text, and one that does not change is
@@ -368,6 +367,9 @@ async function readEverything(label: string, ids: Record<string, string>): Promi
   await mnema('reads', 'timeline', ids.task ?? 'no-such-id');
   await mnema('reads', 'timeline', ids.task ?? 'no-such-id', '--json');
   await mnema('reads', 'accountability');
+  // Every author's entry carries `foundedBeside`, the foundings the line above prints beside it:
+  // `[]` here, because the one author of this fixture founded first. It is pinned empty rather
+  // than left out, so the day it went missing from the JSON the diff would say so.
   await mnema('reads', 'accountability', '--json');
   // The other half of the promise: the value the line above PRINTS, typed back into
   // the flag that filters by it. A short form the reads emit and the flags refuse
@@ -821,7 +823,6 @@ beforeAll(async () => {
   // half-substituted rather than as volatile).
   const beside = resolveTrees(repo, {
     home: join(sandbox, 'home'),
-    xdgDataHome: join(sandbox, 'data'),
   });
   name(listTails({ root: beside.projectPrivate as string })[0] as string, 'tail-private');
   name(listTails({ root: beside.global })[0] as string, 'tail-global');

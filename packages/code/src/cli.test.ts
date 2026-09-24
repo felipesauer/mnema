@@ -61,7 +61,7 @@ describe('the CLI loads the MCP server only for the verb that serves it', () => 
     // time to run time. Building registers every tool without a transport.
     const { buildMcpServer } = await import('./mcp/server.js');
     const built = buildMcpServer({
-      env: { xdgDataHome: `${srcDir}__absent__`, home: `${srcDir}__absent__` },
+      env: { home: `${srcDir}__absent__` },
       log: () => {},
     });
     expect(built.server).toBeDefined();

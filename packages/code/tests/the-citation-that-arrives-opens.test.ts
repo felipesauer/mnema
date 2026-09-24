@@ -233,7 +233,7 @@ beforeEach(async () => {
   process.env.XDG_DATA_HOME = join(sandbox, 'data');
   process.env.HOME = join(sandbox, 'home');
   delete process.env.MNEMA_RUN;
-  env = { home: join(sandbox, 'home'), xdgDataHome: join(sandbox, 'data') };
+  env = { home: join(sandbox, 'home') };
   process.chdir(repo);
   const initiated = await mnema('init');
   expect(initiated.failed, initiated.err.join(' / ')).toBe(false);

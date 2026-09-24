@@ -128,7 +128,7 @@ function kindsIn(root: string): string[] {
 
 beforeEach(() => {
   sandbox = mkdtempSync(join(tmpdir(), 'mnema-learns-'));
-  env = { home: sandbox, xdgDataHome: join(sandbox, 'xdg') };
+  env = { home: sandbox };
   logged = [];
 });
 

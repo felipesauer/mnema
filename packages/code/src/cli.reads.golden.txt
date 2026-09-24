@@ -134,7 +134,8 @@ $ mnema accountability --json
 |           "which": null,
 |           "count": 2
 |         }
-|       ]
+|       ],
+|       "foundedBeside": []
 |     }
 |   ]
 | }
@@ -1156,7 +1157,8 @@ $ mnema accountability --json
 |           "which": "agent-beta",
 |           "count": 1
 |         }
-|       ]
+|       ],
+|       "foundedBeside": []
 |     }
 |   ]
 | }
