@@ -105,7 +105,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import { oneLine } from '../one-line.js';
 import { type Checkpoint, checkpointHash, verifyCheckpoint } from './checkpoint.js';
-import { resolveIdentityWith } from './enrollment.js';
+import { resolveIdentity } from './enrollment.js';
 import { describeLinkBreak, type Entry, linkBreakAt } from './entry.js';
 import { entryHash } from './hash.js';
 import { type ChainLayout, tailFingerprint, tailProofPath } from './layout.js';
@@ -412,7 +412,8 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
   // machine authorizes events on another), it is resolved once over the merged
   // order, and each issue is attributed back to the tail and seq of the event
   // that failed.
-  for (const identityIssue of resolveIdentityWith(keys, entriesByTail, checkpointedByTail).issues) {
+  for (const identityIssue of resolveIdentity(layout, entriesByTail, checkpointedByTail, keys)
+    .issues) {
     (issuesByTail.get(identityIssue.tail) ?? []).push({
       tail: identityIssue.tail,
       layer: 'T2/T4',

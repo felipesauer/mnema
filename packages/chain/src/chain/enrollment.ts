@@ -115,28 +115,19 @@ interface TailCursor {
  * `key.revoked` (removes a key that judges other events), and an addition that
  * would RESTORE a key already revoked under coverage (`addKeyGated`). A first
  * enrollment — restoring nothing covered — is not gated. See the module doc.
+ *
+ * `keys` is who reads those committed keys, and the verifier hands in its own: the key
+ * that proves an enrolment is the key the checkpoints of that machine's tail are checked
+ * against, and with a reader of its own this fold opened that file a second time for every
+ * `key.enrolled` naming it. Handed the verifier's, it opens nothing the verification has
+ * already read — `verify-costs-what-the-record-holds.test.ts` counts one read per key
+ * across both. Left out, the fold reads each key itself, once.
  */
 export function resolveIdentity(
   layout: ChainLayout,
   entriesByTail: ReadonlyMap<string, readonly Entry[]>,
   checkpointedThroughByTail: ReadonlyMap<string, number>,
-): IdentityResolution {
-  return resolveIdentityWith(committedKeys(layout), entriesByTail, checkpointedThroughByTail);
-}
-
-/**
- * {@link resolveIdentity}, over committed keys the caller already holds a reader for.
- *
- * It is how the verifier asks, and the reason is one read per key: the key that proves an
- * enrolment is the key the checkpoints of that machine's tail are checked against, and
- * with a reader of its own this fold opened that file a second time for every
- * `key.enrolled` naming it. Handed the verifier's reader, it opens nothing the
- * verification has already read (`store.ts`, {@link committedKeys}).
- */
-export function resolveIdentityWith(
-  keys: CommittedKeys,
-  entriesByTail: ReadonlyMap<string, readonly Entry[]>,
-  checkpointedThroughByTail: ReadonlyMap<string, number>,
+  keys: CommittedKeys = committedKeys(layout),
 ): IdentityResolution {
   const order = totalOrder(entriesByTail);
   const isCheckpointed = (tail: string, seq: number): boolean =>
