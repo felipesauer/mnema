@@ -137,22 +137,27 @@ describe('what it refuses, in words rather than by throwing', () => {
     expect(refused.code).toBe('UNKNOWN_TAIL');
   });
 
-  it('refuses the empty tail a read-only session leaves behind', () => {
+  it('refuses an empty tail — the one an older writer left behind at open', () => {
     // The state that must never be waivable: a tail directory with an ownership
-    // proof and no event, which is what opening a write context to READ the anchor
-    // leaves. There is nothing to account for, and a waiver over it would put
-    // "pruned under authorization" on the most innocent shape there is.
+    // proof and no event. There is nothing to account for, and a waiver over it would
+    // put "pruned under authorization" on the most innocent shape there is. THIS CASE
+    // CALLED IT "the empty tail a read-only session leaves behind", because opening a
+    // write context to read the anchor left exactly that; a writer publishes nothing
+    // before its first append now, but records committed by an older writer still hold
+    // such tails, so the shape is planted here as that writer wrote it: the tail's
+    // directory and its proof, the proof being the same bytes a tail born today carries
+    // (an Ed25519 signature over the tail id). It is taken off a tail born elsewhere.
     const ctx = contextIn(root);
-    const reader = openChainForWriting(elsewhere, { keyRoot: elsewhere });
-    mkdirSync(join(root, 'tails', reader.tail), { recursive: true });
-    for (const file of readdirSync(join(elsewhere, 'tails', reader.tail))) {
-      writeFileSync(
-        join(root, 'tails', reader.tail, file),
-        readFileSync(join(elsewhere, 'tails', reader.tail, file), 'utf-8'),
-      );
-    }
+    const born = contextIn(elsewhere);
+    expect(createTask(born, { title: 'what gives the tail elsewhere its birth' }).ok).toBe(true);
+    const tail = born.writer.tail;
+    mkdirSync(join(root, 'tails', tail), { recursive: true });
+    writeFileSync(
+      join(root, 'tails', tail, 'tailproof.json'),
+      readFileSync(join(elsewhere, 'tails', tail, 'tailproof.json'), 'utf-8'),
+    );
 
-    const refused = authorizeTailPrune(ctx, { tail: reader.tail, reason: 'nothing there' });
+    const refused = authorizeTailPrune(ctx, { tail, reason: 'nothing there' });
     expect(refused.ok).toBe(false);
     if (refused.ok) return;
     expect(refused.code).toBe('UNKNOWN_TAIL');
