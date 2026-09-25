@@ -358,7 +358,8 @@ It completes **verbs, subcommands and option names** — including an option a p
 declares, which the parser accepts under it (`mnema task move --which`) — and a **value
 only where the declaration enumerates one**. That last one now covers every closed set the
 domain owns: the ten workflow actions of `task move` and `guard`, the two of `decision
-move`, the four of `skill move`, the three scopes of every `--scope`, the levels of
+move`, the four of `skill move`, the three scopes of every `--scope` (two on `decision
+import`, which leaves out the machine-global tree), the levels of
 `verify --require`, the kinds of `search --kind`, the directions of `refs --direction`.
 
 It does **not** complete an **id**, and that is a decision rather than a gap: an id is in

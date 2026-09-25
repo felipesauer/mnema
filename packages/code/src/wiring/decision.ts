@@ -188,10 +188,11 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
   // `mnema import` would promise to import anything and deliver one kind.
   //
   // It declares its OWN `--scope` and `--which`, unlike the moves, because it is a
-  // BIRTH — the same per-action override the group's default action takes. The
-  // group's own copies are refused rather than inherited: `mnema decision --scope
-  // private import docs/adr` puts the flag before the verb it belongs to, and
-  // silently honouring it would teach two spellings of one option.
+  // BIRTH — the per-action override the group's default action takes, over one tree
+  // fewer (the last paragraph). The group's own copies are refused rather than
+  // inherited: `mnema decision --scope private import docs/adr` puts the flag before the
+  // verb it belongs to, and silently honouring it would teach two spellings of one
+  // option.
   //
   // DECLARING THEM WAS NOT ENOUGH TO RECEIVE THEM, and for as long as this verb
   // existed it received neither. The group declares the same two flags, and commander
@@ -202,6 +203,11 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
   // is where the flag was WRITTEN (`written-before.ts`); the value is read where
   // commander put it, on the group. `the-flags-reach-the-import.test.ts` runs both
   // places on the binary and reads the agent and the tree back off the record.
+  //
+  // THIS SAID THE OVERRIDE WAS "THE SAME" AS THE GROUP'S, and it stopped being true the
+  // day the flag arrived: `--scope` could then name the machine-global tree, where the
+  // path a proposal records is read by every project on the machine. `IMPORT_SCOPES`
+  // carries what that did; the import offers and accepts the other two trees.
   const decisionImport = decision
     .command('import')
     .description('propose the decisions already written in this repository’s decision files')

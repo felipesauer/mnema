@@ -163,7 +163,7 @@ const SCOPE_GLOSS: Readonly<Record<Scope, string>> = {
 export const SCOPES = Object.keys(SCOPE_GLOSS) as readonly Scope[];
 
 /**
- * `scopes` with their glosses, as one phrase: `public (team-visible) or private (…)`.
+ * `scopes` with their glosses, as one phrase: `public (team-visible), or private (…)`.
  *
  * The gloss of each member is {@link SCOPE_GLOSS}'s whatever the set, so a verb that offers
  * fewer trees than the others still says what each of them is in the same words.
