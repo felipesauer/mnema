@@ -164,7 +164,14 @@ interface Answer {
     readonly path?: string;
     readonly target?: string;
   };
+  /** How long the call took, on the fine clock — for what must come well inside the budget. */
   readonly ms: number;
+  /**
+   * How long the call took on the clock the budget is kept by (`Date.now()`) — for what must wait
+   * the budget out. The fine clock cannot say that: the deadline is a whole millisecond read at
+   * the start, so the wait it bounds can end up to a millisecond short of it on any finer clock.
+   */
+  readonly wallMs: number;
   /** Reads of the id's place. */
   readonly reads: number;
   /** Exclusive creates at the id's place. */
@@ -207,6 +214,7 @@ syncBuiltinESMExports();
 import(built).then(
   ({ loadOrCreateInstallationId }) => {
     const started = performance.now();
+    const wallStarted = Date.now();
     let answer;
     try {
       answer = { returned: loadOrCreateInstallationId({ root }, fingerprint) };
@@ -214,7 +222,9 @@ import(built).then(
       const { name, code, message, path: at, target } = error;
       answer = { refused: { name, code, message, path: at, target } };
     }
-    parentPort.postMessage({ ...answer, ms: performance.now() - started, reads, creates });
+    const ms = performance.now() - started;
+    const wallMs = Date.now() - wallStarted;
+    parentPort.postMessage({ ...answer, ms, wallMs, reads, creates });
   },
   (error) => parentPort.postMessage({ unloadable: String(error) }),
 );
@@ -346,7 +356,8 @@ describe('where the read finds no id and the create finds the name taken, it set
     expect(words).toContain(path);
     expect(words).toContain('refuses the write');
     expect(words).not.toMatch(/stayed empty|symbolic link|nothing was/i);
-    expect(answer.ms).toBeGreaterThanOrEqual(INSTALLATION_ID_WAIT_MS);
+    // Waited the budget out, read on the clock the budget is kept by.
+    expect(answer.wallMs).toBeGreaterThanOrEqual(INSTALLATION_ID_WAIT_MS);
     // It looked again, and slept between looks: one create per poll at most, where a loop that
     // goes straight back creates tens of thousands of times in the same budget.
     expect(answer.creates).toBeGreaterThan(1);
