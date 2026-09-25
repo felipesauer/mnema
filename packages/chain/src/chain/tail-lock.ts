@@ -61,6 +61,8 @@ import {
 } from 'node:fs';
 import { dirname } from 'node:path';
 
+import { sleepSync } from './sleep.js';
+
 /**
  * How long a writer waits for a busy tail before it refuses.
  *
@@ -148,12 +150,6 @@ export function withTailLock<T>(path: string, act: () => T, options: TailLockOpt
   }
 }
 
-/** A synchronous sleep. Everything on the writing path is synchronous; this has to be too. */
-const PARKED = new Int32Array(new SharedArrayBuffer(4));
-function sleepSync(ms: number): void {
-  Atomics.wait(PARKED, 0, 0, ms);
-}
-
 function acquire(path: string, waitMs: number, staleMs: number): number {
   const deadline = Date.now() + waitMs;
   let heldBy: number | undefined;
@@ -167,8 +163,11 @@ function acquire(path: string, waitMs: number, staleMs: number): number {
     } catch (error) {
       const code = (error as NodeJS.ErrnoException).code;
       if (code === 'ENOENT') {
-        // The tail directory is not there yet — a writer makes it in its
-        // constructor, so this is a caller locking a tail nothing has opened.
+        // The tree's `locks/` directory is not there yet, and the first lock the
+        // tree ever takes makes it. (This said "the tail directory … a writer makes
+        // it in its constructor", from when the lock lived beside the segments; it
+        // moved to `locks/` — see `tailLockPath` — and a writer's constructor now
+        // makes nothing at all, see `ChainWriter.ensureBorn`.)
         mkdirSync(dirname(path), { recursive: true });
         continue;
       }

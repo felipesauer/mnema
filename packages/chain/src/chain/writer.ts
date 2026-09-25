@@ -38,11 +38,16 @@
  * first fact.
  *
  * State (head hash, next seq, current segment, and the events no checkpoint
- * covers yet) is recovered from the END of the tail on construction, so a fresh
- * process continues an existing tail correctly without re-reading its history. It is
- * recovered AGAIN, under the lock, whenever the tail's files turn out to have moved
- * since this writer last looked — which is what makes the held state safe to keep
- * between appends instead of being re-read on every one. See {@link ChainWriter.mark}.
+ * covers yet) is recovered from the END of the tail by the writer's first act, under
+ * the lock, so a fresh process continues an existing tail correctly without re-reading
+ * its history. (This said "on construction", which stopped being true when recovery
+ * moved under the lock — see the constructor.) It is recovered AGAIN, under the lock,
+ * whenever the tail's files turn out to have moved since this writer last looked —
+ * which is what makes the held state safe to keep between appends instead of being
+ * re-read on every one. See {@link ChainWriter.mark}.
+ *
+ * A writer that is opened and never appends leaves nothing a clone receives: the tail
+ * is BORN at the first append ({@link ChainWriter.ensureBorn}), not when it is opened.
  */
 
 import {
@@ -67,7 +72,7 @@ import {
 import { type Entry, sealEntry, serializeEntry } from './entry.js';
 import type { WrittenEvent } from './hash.js';
 import type { KeyPair } from './keys.js';
-import { signerOf, writeAnchor } from './keystore.js';
+import { materializePublicKey, signerOf, writeAnchor } from './keystore.js';
 import {
   type ChainLayout,
   checkpointsPath,
@@ -189,6 +194,12 @@ export class ChainWriter {
    */
   private mark: TailMark = { segmentBytes: -2, nextSegment: false, checkpointBytes: -2 };
 
+  /**
+   * Whether this writer has already made sure its tail is born — see {@link ensureBorn}.
+   * Per writer, so the three checks run once per writer rather than once per append.
+   */
+  private born = false;
+
   private readonly maxSegmentBytes: number;
   private readonly maxUnsignedEvents: number;
 
@@ -204,26 +215,53 @@ export class ChainWriter {
     this.maxSegmentBytes = options.maxSegmentBytes ?? DEFAULT_MAX_SEGMENT_BYTES;
     this.maxUnsignedEvents = options.maxUnsignedEvents ?? DEFAULT_MAX_UNSIGNED_EVENTS;
     this.tailId = `${keyPair.fingerprint}-${installationId}`;
-    mkdirSync(tailDir(layout, this.tailId), { recursive: true });
-    // THE TAIL IS BORN HERE AND RECOVERED LATER, and the split is the answer to two
-    // things at once.
+    // NOTHING IS WRITTEN HERE. Both the recovery and the birth happen in the first act,
+    // under the tail's lock.
     //
     // Recovery cannot happen here, because it TRUNCATES a torn trailing fragment, and
-    // cutting a file another process is appending to is the very hazard this delivery
-    // closed. So it moved under the lock, into the first act — the starting {@link
-    // mark} is a value no real tail can produce, so that act always recovers.
+    // cutting a file another process is appending to is the hazard the tail lock
+    // closed. So it runs under the lock, in the first act — the starting {@link mark}
+    // is a value no real tail can produce, so that act always recovers.
     //
-    // Birth cannot move WITH it, because taking the lock in a constructor makes
-    // `openChainForWriting` block on another process's append, and a caller that only
-    // wants to read `tail` or `anchor` off a writer would then wait out a budget meant
-    // for writing. So the directory and the ownership proof are written here, unlocked.
+    // THIS COMMENT SAID BIRTH COULD NOT MOVE WITH IT: "taking the lock in a constructor
+    // makes `openChainForWriting` block on another process's append, … so the directory
+    // and the ownership proof are written here, unlocked." The reason holds against the
+    // constructor and never held against the first APPEND, which already runs under the
+    // lock. What moved birth there is a measurement. The surfaces open a writer before an
+    // operation's own door speaks — an oversize field, a name holding a credential, a
+    // move the gate refuses — so a key new to the tree that was refused left the tail's
+    // directory and its proof behind (with the key's public half, see
+    // `openChainForWriting`), untracked, published by the next `git add -A`, and that
+    // tail with no event in it changed every `verify` of the record after it. Born in
+    // {@link ensureBorn}, a writer that appends nothing leaves nothing a clone receives.
     //
-    // THAT LEAVES ONE UNGUARDED RACE, and it is benign by construction rather than by
-    // hope: two fresh processes can both find the proof absent and both write it. The
-    // bytes are a signature over the tail id with the same key, and Ed25519 is
-    // deterministic — so the two writes are byte-for-byte identical, and whichever
-    // lands second leaves the file holding exactly what the first one put there.
+    // AND THE ONE UNGUARDED RACE THIS COMMENT EXCUSED IS GONE. Two fresh processes could
+    // both find the proof absent and both write it — benign only because the bytes are an
+    // Ed25519 signature over the tail id, which is deterministic. Two processes of one
+    // installation share the tail, hence the lock, so under it the second finds the proof
+    // the first wrote.
+  }
+
+  /**
+   * Gives this tail what a clone needs in order to verify it — the key's public half in the
+   * chain, the tail's directory, and its proof of ownership — once, from inside the first act
+   * that appends: after that act's own refusals ({@link refuseUnreadable},
+   * {@link refuseUnprovenWaiver}) and before its first byte.
+   *
+   * It is the ONE PLACE a tail is born, and the two append doors are the only callers, which
+   * is what makes "a writer that appends nothing publishes nothing" a property of this class
+   * rather than of every operation that opens one. Why here and not at open is the
+   * constructor's comment.
+   *
+   * Idempotent, like each of the three: a tail another process already gave birth to — or one
+   * this installation has been writing for years — is left exactly as it is.
+   */
+  private ensureBorn(): void {
+    if (this.born) return;
+    materializePublicKey(this.layout, this.keyPair);
+    mkdirSync(tailDir(this.layout, this.tailId), { recursive: true });
     this.ensureTailProof();
+    this.born = true;
   }
 
   /**
@@ -426,6 +464,7 @@ export class ChainWriter {
   private appendLocked(event: CatalogEvent): Entry {
     refuseUnreadable(event);
     this.refuseUnprovenWaiver(event);
+    this.ensureBorn();
     if (this.segmentBytes >= this.maxSegmentBytes) {
       this.segment += 1;
       this.segmentBytes = 0;
@@ -484,6 +523,7 @@ export class ChainWriter {
       refuseUnreadable(event);
       this.refuseUnprovenWaiver(event);
     }
+    this.ensureBorn();
     if (this.segmentBytes >= this.maxSegmentBytes) {
       this.segment += 1;
       this.segmentBytes = 0;

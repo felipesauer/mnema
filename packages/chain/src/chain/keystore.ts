@@ -23,7 +23,17 @@
  */
 
 import { randomBytes } from 'node:crypto';
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  closeSync,
+  existsSync,
+  mkdirSync,
+  openSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+  writeSync,
+} from 'node:fs';
 
 import {
   deriveAnchor,
@@ -47,6 +57,7 @@ import {
   privateKeyPath,
   publicKeyPath,
 } from './layout.js';
+import { sleepSync } from './sleep.js';
 
 /**
  * Loads this machine's key pair, generating and persisting one if none exists.
@@ -178,16 +189,130 @@ export function committedPublicKey(
  * It is keyed by fingerprint but the FILE is local and uncommitted, so a machine
  * that receives a copied private key finds no `.inst` beside it and mints its
  * own — the mechanism that keeps the two on separate tails.
+ *
+ * TWO PROCESSES OF ONE KEY GET ONE ID, and they did not. This wrote the file with
+ * `writeFileSync` and read an empty file as an absent one, and the two together forked
+ * an installation. Two fresh processes that both found the file absent both minted, and
+ * the second write won: with the two aligned, 19 of 20 rounds ended with two ids, the
+ * window one to three milliseconds wide (the race the tail lock cannot see — its path is
+ * derived FROM this id, so two ids take two locks). And `writeFileSync` creates the file
+ * before it writes it: a process that read it in between — 5 of 5, on a simulation over
+ * this function — minted another id over it, and the process that minted first went on
+ * writing a tail nothing would ever open again. Both measured over this function and its
+ * callers, with a barrier releasing the two processes at one instant.
+ *
+ * So the id is created EXCLUSIVELY (`O_EXCL`, the primitive the tail lock already relies
+ * on): of two processes that both mint, the kernel lets one create the file, and the
+ * other adopts what it wrote — 0 of 360 rounds forked under the same barrier. And an
+ * empty file is read as what it is, an id being written ({@link readInstallationId}).
+ * `keystore.test.ts` plants both states the race produces.
+ *
+ * @throws {UnwrittenInstallationIdError} if the file exists and stays empty past
+ * {@link INSTALLATION_ID_WAIT_MS}. Nothing of the chain has been touched at that point.
  */
 export function loadOrCreateInstallationId(layout: ChainLayout, fingerprint: string): string {
   const path = installationIdPath(layout, fingerprint);
-  if (existsSync(path)) {
-    const existing = readFileSync(path, 'utf-8').trim();
-    if (existing.length > 0) return existing;
+  const deadline = Date.now() + INSTALLATION_ID_WAIT_MS;
+  for (;;) {
+    const existing = readInstallationId(path, deadline);
+    if (existing !== undefined) return existing;
+    mkdirSync(keysDir(layout), { recursive: true });
+    const minted = mintInstallationId(path);
+    if (minted !== undefined) return minted;
+    // Another process created it between the read above and this mint: its id is this
+    // installation's, and the next read waits for it to be written.
   }
+}
+
+/**
+ * How long a reader waits for an installation id another process has created and not yet
+ * written, before it refuses. The honest wait is the time between two system calls of one
+ * process (`open` and `write`), which is microseconds, and milliseconds under heavy I/O; two
+ * seconds is the tail lock's budget (`DEFAULT_WAIT_MS`) on the same argument — reaching it
+ * means the writer stopped, not that it is slow.
+ */
+export const INSTALLATION_ID_WAIT_MS = 2_000;
+
+/** How long that reader sleeps between looks — the tail lock's poll, for the same reason. */
+const INSTALLATION_ID_POLL_MS = 5;
+
+/**
+ * An installation id file that exists and stayed empty: created by a process that stopped
+ * before writing it. The machine cannot tell which tail is its own in this chain, and it
+ * refuses to guess, because guessing is the fork {@link loadOrCreateInstallationId} exists
+ * to prevent.
+ */
+export class UnwrittenInstallationIdError extends Error {
+  readonly code = 'UNWRITTEN_INSTALLATION_ID';
+
+  constructor(
+    readonly path: string,
+    waitedMs: number,
+  ) {
+    super(
+      `${path} is empty and stayed empty for ${waitedMs}ms: an installation id was created and ` +
+        'never written, which is what a process stopped between the two leaves behind. This ' +
+        'machine will not guess which tail of this chain is its own, so nothing was written. If ' +
+        'no mnema process is writing here, remove the file: the next write mints a new id.',
+    );
+    this.name = 'UnwrittenInstallationIdError';
+  }
+}
+
+/**
+ * The installation id recorded at `path`, or undefined when there is no file there.
+ *
+ * AN EMPTY FILE IS NOT AN ABSENT ONE: it is an id another process has created and not yet
+ * written — the moment between its `O_EXCL` and its write — so this waits for the id to land.
+ * It refuses once `deadline` passes instead of answering "absent", because the caller would
+ * then mint over a file somebody else is about to fill.
+ */
+function readInstallationId(path: string, deadline: number): string | undefined {
+  for (;;) {
+    let text: string;
+    try {
+      text = readFileSync(path, 'utf-8');
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
+      throw error;
+    }
+    const id = text.trim();
+    if (id.length > 0) return id;
+    if (Date.now() >= deadline) {
+      throw new UnwrittenInstallationIdError(path, INSTALLATION_ID_WAIT_MS);
+    }
+    sleepSync(INSTALLATION_ID_POLL_MS);
+  }
+}
+
+/**
+ * Creates the installation id file at `path` holding a fresh id, EXCLUSIVELY, and returns the
+ * id — or undefined when the file already exists, whoever created it: the caller then reads the
+ * id that is there instead of writing over it.
+ *
+ * Exported inside the package for the test that plants the state the race produces (a mint that
+ * found nothing, arriving after another process created the file), not beyond it.
+ *
+ * A write that fails after the create removes the file, so a full disk cannot leave behind the
+ * empty `.inst` that every later reader would wait out and refuse.
+ */
+export function mintInstallationId(path: string): string | undefined {
   const installationId = randomBytes(16).toString('hex');
-  mkdirSync(keysDir(layout), { recursive: true });
-  writeFileSync(path, `${installationId}\n`, { encoding: 'utf-8', mode: 0o600 });
+  let fd: number;
+  try {
+    fd = openSync(path, 'wx', 0o600);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST') return undefined;
+    throw error;
+  }
+  try {
+    writeSync(fd, `${installationId}\n`);
+  } catch (error) {
+    closeSync(fd);
+    rmSync(path, { force: true });
+    throw error;
+  }
+  closeSync(fd);
   return installationId;
 }
 

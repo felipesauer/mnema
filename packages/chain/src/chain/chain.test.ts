@@ -267,10 +267,14 @@ describe('chain — appendAll writes a batch atomically', () => {
     expect(verify(root).ok).toBe(true);
   });
 
-  it('an empty batch writes nothing', () => {
+  it('an empty batch writes nothing — not even the tail it would have been born into', () => {
     const w = openChain(root, { maxUnsignedEvents: 100 });
     expect(w.appendAll([])).toEqual([]);
-    expect(readTailEntries({ root }, tailIdOf(root), catalogUpcasters())).toHaveLength(0);
+    // The tail is asked of the WRITER. This read it off `tails/`, which held the tail from
+    // the moment the writer opened; a tail is born at its first append now, so an empty
+    // batch leaves no directory to read, and that absence is the second half of the case.
+    expect(readTailEntries({ root }, w.tail, catalogUpcasters())).toHaveLength(0);
+    expect(listTails({ root })).toEqual([]);
   });
 
   it('writes the whole batch in ONE segment file (no straddle)', () => {
