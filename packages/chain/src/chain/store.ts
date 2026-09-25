@@ -71,7 +71,10 @@ export interface CommittedKey {
   readonly fingerprint: () => string;
 }
 
-/** The committed key a fingerprint names — `null` when no file carries that name, or the file holds no key. */
+/**
+ * The committed key a fingerprint names — `null` when no file carries that name, or the file
+ * holds no key.
+ */
 export type CommittedKeys = (fingerprint: string) => CommittedKey | null;
 
 /**

@@ -4,30 +4,34 @@
  * THE SHAPE THIS EXISTS TO KEEP OUT. The verifier took each checkpoint's range with a
  * `filter` over every entry of the tail, and this product signs once per act, so the
  * checkpoints grow with the events: the verb that proves a record touched each entry once
- * per checkpoint, and cost the square of the history — 2 s at 10 thousand events, 8 to 9 s
- * at 31.6 thousand, 78 to 114 s at 100 thousand, measured over records the product's own
+ * per checkpoint, and cost the square of the history — 1.9 s at 10 thousand events, 8.0 to
+ * 8.4 s at 31.6 thousand, 77 s at 100 thousand, measured over records the product's own
  * writer wrote. It read the committed key off the disk once per checkpoint, too. Three
  * comments in the console said the verb was linear; none of them had a test.
  *
  * SO THIS COUNTS, BECAUSE A CLOCK CANNOT BE A GUARD. A time is a property of the machine it
  * ran on and of whatever else ran beside it; a count of what the verifier touched is a
- * property of the verifier. Two counts are taken here:
+ * property of the verifier. What is counted:
  *
- *   - every read the verifier makes of an ENTRY — an index into a tail's entries, or a
- *     field of one — over the same record at two sizes, four times apart. Linear work
- *     grows about four times; the old shape grew about fourteen. The bound between them
- *     is loose on purpose: it has to hold whatever linear pass is added later, and to fail
- *     for any pass that is repeated per checkpoint, over a copy of the entries or not.
- *   - every read of a committed KEY off the disk: once per key per verification, whatever
- *     number of checkpoints, tails and enrolments name it.
+ *   - every read the verifier makes of an ENTRY or a CHECKPOINT — an index into what a
+ *     tail's files held, or a field of one — over the same record at two sizes, four times
+ *     apart. Linear work grows about four times; the old shape grew about fourteen. The
+ *     bound between them is loose on purpose: it has to hold whatever linear pass is added
+ *     later, and to fail for any pass repeated per checkpoint — over the entries, over the
+ *     checkpoints themselves, over a copy of either.
+ *   - every read of a committed KEY off the disk, and every derivation of a key's
+ *     fingerprint: once per key per verification, whatever number of checkpoints, tails and
+ *     enrolments name it. The derivation is an export and a hash, and it was paid once per
+ *     checkpoint for a value that cannot change.
  *
  * The record is the product's own writer's, signed once per act: two machines, two tails,
  * the second machine's key enrolled into the first one's identity — so the one key is
  * asked for by all three checks that need a key (its checkpoints, its tail's ownership
  * proof, and the enrolment that brought it in).
  *
- * THE INSTRUMENT SAYS WHEN IT BROKE. Both counters sit on a path the verifier may stop
- * using — the entries are counted where `readTail` hands them over, the keys where
+ * THE INSTRUMENT SAYS WHEN IT BROKE. Every counter sits on a path the verifier may stop
+ * using — the entries and checkpoints are counted where `readTail` and
+ * `readTailCheckpoints` hand them over, the keys where
  * `readFileSync` opens them — and a count of zero from a counter nobody reaches would read
  * as the cheapest verifier there ever was. So each count is first held to a floor it
  * cannot be under if it saw anything at all, and says `RULER BROKEN` when it is.
@@ -56,12 +60,17 @@ import type { ChainWriter } from './writer.js';
  * false, so writing the record costs the count nothing.
  */
 const counted = vi.hoisted(() => {
-  const state = { on: false, entryReads: 0, keyReads: new Map<string, number>() };
-  const tick = () => {
-    if (state.on) state.entryReads += 1;
+  const state = {
+    on: false,
+    reads: 0,
+    keyReads: new Map<string, number>(),
+    derivations: 0,
   };
-  /** Each entry, and the array holding them, behind a proxy that counts every read. */
-  const entries = <T extends object>(held: readonly T[]): T[] =>
+  const tick = () => {
+    if (state.on) state.reads += 1;
+  };
+  /** Each item, and the array holding them, behind a proxy that counts every read. */
+  const items = <T extends object>(held: readonly T[]): T[] =>
     new Proxy(
       held.map(
         (entry) =>
@@ -79,7 +88,7 @@ const counted = vi.hoisted(() => {
         },
       },
     );
-  return { state, entries };
+  return { state, items };
 });
 
 vi.mock('./store.js', async (importActual) => {
@@ -88,7 +97,20 @@ vi.mock('./store.js', async (importActual) => {
     ...actual,
     readTail: (...args: Parameters<typeof actual.readTail>) => {
       const read = actual.readTail(...args);
-      return { ...read, entries: counted.entries(read.entries) };
+      return { ...read, entries: counted.items(read.entries) };
+    },
+    readTailCheckpoints: (...args: Parameters<typeof actual.readTailCheckpoints>) =>
+      counted.items(actual.readTailCheckpoints(...args)),
+  };
+});
+
+vi.mock('./keys.js', async (importActual) => {
+  const actual = await importActual<typeof import('./keys.js')>();
+  return {
+    ...actual,
+    fingerprintOf: (...args: Parameters<typeof actual.fingerprintOf>) => {
+      if (counted.state.on) counted.state.derivations += 1;
+      return actual.fingerprintOf(...args);
     },
   };
 });
@@ -174,15 +196,17 @@ function twoMachines(acts: number): { root: string; events: number; keys: readon
 
 /** One verification of `root`, with both counters on, and what it read. */
 function countedVerification(root: string) {
-  counted.state.entryReads = 0;
+  counted.state.reads = 0;
   counted.state.keyReads.clear();
+  counted.state.derivations = 0;
   counted.state.on = true;
   const result = verify(root);
   counted.state.on = false;
   return {
     result,
-    entryReads: counted.state.entryReads,
+    reads: counted.state.reads,
     keyReads: new Map(counted.state.keyReads),
+    derivations: counted.state.derivations,
   };
 }
 
@@ -198,15 +222,15 @@ describe('what a verification costs', () => {
     expect(atLarge.result.level).toBe('fully-signed');
     // Every entry is read at least once by the hash chain alone.
     expect(
-      atSmall.entryReads >= small.events ? 'counted' : 'RULER BROKEN: fewer reads than entries',
+      atSmall.reads >= small.events ? 'counted' : 'RULER BROKEN: fewer reads than entries',
     ).toBe('counted');
-    const growth = atLarge.entryReads / atSmall.entryReads;
+    const growth = atLarge.reads / atSmall.reads;
     const sizes = large.events / small.events;
     expect({
       growth: Math.round(growth * 100) / 100,
       perEvent: [
-        Math.round(atSmall.entryReads / small.events),
-        Math.round(atLarge.entryReads / large.events),
+        Math.round(atSmall.reads / small.events),
+        Math.round(atLarge.reads / large.events),
       ],
       linear: growth < 2 * sizes,
     }).toMatchObject({ linear: true });
@@ -214,7 +238,7 @@ describe('what a verification costs', () => {
 
   it('reads each committed key off the disk once, however many checks name it', () => {
     const record = twoMachines(40);
-    const { result, keyReads } = countedVerification(record.root);
+    const { result, keyReads, derivations } = countedVerification(record.root);
     expect(result.level).toBe('fully-signed');
     // The second key is the one all three checks ask for: its own checkpoints, its tail's
     // ownership proof, and the enrolment that brought it in.
@@ -226,6 +250,8 @@ describe('what a verification costs', () => {
     expect(Object.fromEntries(keyReads)).toEqual(
       Object.fromEntries(record.keys.map((path) => [path, 1])),
     );
+    // And what each key's fingerprint is, derived once for every check that compares it.
+    expect(derivations).toBe(record.keys.length);
   });
 
   it('reads them again on the next verification, which holds a reader of its own', () => {

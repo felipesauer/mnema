@@ -59,6 +59,17 @@
  * in it, and the level says `unreadable` (see level.ts and `readOrIssue`). Nothing
  * about what is refused changed; the exception was replaced by an address.
  *
+ * WHAT IT COSTS IS ONE PASS OVER THE RECORD, and until this was written it was not: each
+ * checkpoint's range was a `filter` over the whole tail, and this product signs once per
+ * act, so the checkpoints grow with the events and the verdict cost the square of the
+ * history — 1.9 s over ten thousand events and 77 s over a hundred thousand, a slope of
+ * 1.96 between the two largest of the five sizes measured. Now each tail is read once, each
+ * range is found without walking it (range.ts), each committed key is read and
+ * fingerprinted once (store.ts), and the rest is the work the proof is made of: an entry
+ * hash and a content root per event, a signature per checkpoint — 1.2 s over ten thousand
+ * events and 12 s over a hundred thousand, a slope of 0.98 across the five. The shape is
+ * counted, not timed, in `verify-costs-what-the-record-holds.test.ts`.
+ *
  * The window of events above the last checkpoint is a declared residual:
  * covered by T1 but not yet by a signature.
  *

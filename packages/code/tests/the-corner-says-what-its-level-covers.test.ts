@@ -31,9 +31,10 @@
  * beside it already pays for — whether the chain MOVED — so a sound append degrades it
  * exactly as a planted duplicate does, and the second run below asserts precisely that
  * rather than leaving it to be discovered. Ruling again is `verify`, which the row names
- * and which costs 54 ms over a small record and 1.7 s over a nine-megabyte one; a console
- * that re-ruled on a clock would be a replay loop. What the corner stops doing is
- * asserting a level about a record it has not read.
+ * and which costs 54 ms over a small record and 1.7 s over a nine-megabyte one (measured
+ * while the verifier still walked the tail once per checkpoint; `repl/proving.ts` has what
+ * it costs since); a console that re-ruled on a clock would be a replay loop. What the
+ * corner stops doing is asserting a level about a record it has not read.
  */
 
 import { execFileSync } from 'node:child_process';
