@@ -252,7 +252,7 @@ export class UnwrittenInstallationIdError extends Error {
     super(
       `${path} is empty and stayed empty for ${waitedMs}ms: an installation id was created and ` +
         'never written, which is what a process stopped between the two leaves behind. This ' +
-        'machine will not guess which tail of this chain is its own, so nothing was written. If ' +
+        'machine will not guess which tail of this chain is its own, so it refuses the write. If ' +
         'no mnema process is writing here, remove the file: the next write mints a new id.',
     );
     this.name = 'UnwrittenInstallationIdError';
