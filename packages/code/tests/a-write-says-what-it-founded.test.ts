@@ -317,7 +317,8 @@ describe('what the sentence says to do, done to the letter, spares the other pro
     expect(founded(nextWrite.stderr)).toHaveLength(1);
     expect(authors(next.b)).toBe('2 author(s)');
 
-    // The one that split joins nothing: the installation that founded speaks as it did.
+    // An enrollment alone joins nothing in the one that split: the installation that founded
+    // speaks as it did.
     pull(split.b);
     expect(mnemaIn(split.b, homeB, 'memory', 'again, where it founded').status).toBe(0);
     expect(authors(split.b)).toBe('2 author(s)');

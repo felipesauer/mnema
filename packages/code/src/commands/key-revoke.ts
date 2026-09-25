@@ -19,6 +19,7 @@
  * revocation leaves the tree as it found it.
  */
 
+import { privateKeyPath } from '@mnema/chain';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { deferredWrite, revokeMember } from '@mnema/core/write';
 import { forwardReplacement, type Replacement } from '../recorded-content.js';
@@ -43,6 +44,13 @@ export interface KeyRevoked extends Replacement {
   readonly remaining: number;
   /** The project tree that recorded it. */
   readonly root: string;
+  /**
+   * When the retired key is this machine's own, the file its private half is kept in — the one
+   * `mnema key restore` takes to point this checkout at the identity the key is still in.
+   */
+  readonly keyFile?: string;
+  /** When the retired key is this machine's own, the one identity the record still proves it in. */
+  readonly stillMemberOf?: string;
 }
 
 /** The revocation was refused; nothing was written. */
@@ -87,6 +95,10 @@ export function runKeyRevoke(
     self: revoked.self,
     remaining: revoked.remaining,
     root: trees.projectPublic,
+    ...(revoked.self
+      ? { keyFile: privateKeyPath({ root: trees.keyRoot }, revoked.fingerprint) }
+      : {}),
+    ...(revoked.stillMemberOf !== undefined ? { stillMemberOf: revoked.stillMemberOf } : {}),
     ...forwardReplacement(revoked),
   };
 }

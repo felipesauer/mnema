@@ -183,6 +183,10 @@ export function publicKeyPath(layout: ChainLayout, fingerprint: string): string 
   return join(keysDir(layout), `${fingerprint}.pub`);
 }
 
+/**
+ * Where a key root keeps the private half of `fingerprint` — the file a machine signs with, and
+ * the one a surface names when it tells a person which file `mnema key restore` takes.
+ */
 export function privateKeyPath(layout: ChainLayout, fingerprint: string): string {
   return join(keysDir(layout), `${fingerprint}.key`);
 }

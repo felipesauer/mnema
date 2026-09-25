@@ -23,13 +23,13 @@
  * as it found it (`code/tests/a-refusal-leaves-nothing.test.ts`).
  */
 
-import { materializePublicKey } from '@mnema/chain';
+import { committedPublicKey, materializePublicKey } from '@mnema/chain';
 import { type ScreenedWrite, screenContent, screened } from '../content/screen.js';
 import { oneLine } from '../one-line.js';
 import { decideAnchor, enrollKey, revokeKey } from '../workflow/identity-operations.js';
 import { type DecideThenWrite, openedContext, signerOfContext } from '../workflow/operations.js';
 import { decodeKeyRequest } from './handshake.js';
-import { provesConsent, rosterOf } from './membership.js';
+import { membershipIn, provesConsent, rosterOf } from './membership.js';
 
 /** What enrolling a requested key needs. */
 export interface EnrollRequestInput {
@@ -167,6 +167,13 @@ export interface RevokeMemberOk extends ScreenedWrite {
   readonly self: boolean;
   /** How many keys the identity has left. */
   readonly remaining: number;
+  /**
+   * When the retired key is this machine's own: the one identity the record still proves it a
+   * member of here, read after the revocation by the reading a `key restore` of that key asks —
+   * absent when the record proves it a member of none, or of more than one, where a restore here
+   * points this checkout nowhere.
+   */
+  readonly stillMemberOf?: string;
 }
 
 /** Why a key was not retired. */
@@ -260,12 +267,32 @@ export function revokeMember(
     reason: text.fields.reason,
   });
   if (!revoked.ok) return revoked;
+  const self = input.fingerprint === signer.signerFingerprint;
   return {
     ok: true,
     fingerprint: input.fingerprint,
     anchor,
-    self: input.fingerprint === signer.signerFingerprint,
+    self,
     remaining: roster.size - 1,
+    ...(self ? stillProvenIn(ctx, input.fingerprint) : {}),
     ...screened(text.replaced),
   };
+}
+
+/**
+ * The one identity the record at `ctx` still proves `fingerprint` a member of, read right after
+ * its revocation.
+ *
+ * The checkout that retired its own key goes on recording the identity it left — nothing
+ * rereads a recorded anchor — so anything it writes next is signed by a retired key and fails
+ * verification for good. Where the record still proves the key in one other identity, `mnema
+ * key restore` points the checkout there; this asks the question that restore asks
+ * ({@link membershipIn}, over the key's committed half), so the surface never offers a restore
+ * the record would refuse.
+ */
+function stillProvenIn(ctx: DecideThenWrite, fingerprint: string): { stillMemberOf?: string } {
+  const key = committedPublicKey(ctx.layout, fingerprint);
+  if (key === null) return {};
+  const proven = membershipIn({ tree: ctx.layout.root, upcasters: ctx.upcasters }, key);
+  return proven.ok ? { stillMemberOf: proven.anchor } : {};
 }

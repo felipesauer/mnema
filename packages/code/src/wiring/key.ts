@@ -158,10 +158,37 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
         io.out(`Revoked key ${result.fingerprint}`);
         reportReplacement(result, io);
         io.out(render(fact(`from ${result.anchor} — ${result.remaining} key(s) left`)));
-        if (result.self) {
-          // The person just retired the key this machine signs with. Nothing stops
-          // it from writing again, and anything it writes now fails verification —
-          // so say it plainly, at the only moment it can still be acted on.
+        if (result.self && result.stillMemberOf !== undefined && result.keyFile !== undefined) {
+          // The person just retired the key this machine signs with, and this checkout goes
+          // on recording the identity it left: anything it writes as that identity now fails
+          // verification, for good. THIS USED TO SAY "it must not write to this project again",
+          // and where the record still proves the key in one other identity that is false: a
+          // restore points the checkout there, and it writes as that one — the way out of an
+          // identity whose only key this was, which the refusal of a fresh clone hands over
+          // step by step and `the-refusal-names-the-way-out.test.ts` follows to the letter. The
+          // file is printed because that refusal says this line is where it is found.
+          io.out(
+            render(
+              fact(
+                "That is THIS machine's key: this checkout still records the identity it left, " +
+                  'and anything it writes as that identity fails verification.',
+              ),
+            ),
+          );
+          io.out(
+            render(
+              fact(
+                `The record proves the key a member of ${result.stillMemberOf}: ` +
+                  '`mnema key restore "<the key file>"` here makes this checkout write as it.',
+              ),
+            ),
+          );
+          io.out(render(fact(onOneLine`this machine keeps the key file at ${result.keyFile}`)));
+        } else if (result.self) {
+          // The record proves the key in no other identity here, or in more than one, and a
+          // restore points this checkout at neither: nothing stops it from writing again, and
+          // anything it writes now fails verification — so say it plainly, at the only moment
+          // it can still be acted on.
           io.out(
             render(fact("That is THIS machine's key: it must not write to this project again.")),
           );

@@ -375,13 +375,21 @@ export const NOT_CHECKED: Readonly<Record<string, string>> = {
  * that starts being handed over moves a number here until somebody has looked at it, and a reading
  * that quietly stopped reading empties a row — which is how a sweep that broke is told apart from a
  * product that stopped handing commands over.
+ *
+ * THE WAY OUT OF AN IDENTITY WHOSE ONLY KEY IT IS moved two rows, each command looked at, and run
+ * to the letter by `the-refusal-names-the-way-out.test.ts`: in the source, the refusal of a key in
+ * two identities hands over the three steps of that way out that were never handed over — `key
+ * enroll <the line>` in the checkout the key founded from, the `key request --anchor` that prints
+ * that line where the other key lives, and `key restore "<the key file>"` there — and the
+ * revocation of a machine's own key hands over the same restore, with the file it takes (23 → 27
+ * lines); on the page, the row that says so names the enrollment and the restore (21 → 23).
  */
 export const HANDED_OVER: Readonly<
   Record<Handed['from'], Readonly<Record<Reading['kind'], number>>>
 > = {
-  span: { line: 21, name: 62, flag: 1, unwritten: 0 },
+  span: { line: 23, name: 62, flag: 1, unwritten: 0 },
   block: { line: 33, name: 20, flag: 0, unwritten: 0 },
-  source: { line: 23, name: 41, flag: 3, unwritten: 3 },
+  source: { line: 27, name: 41, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

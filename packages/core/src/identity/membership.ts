@@ -61,7 +61,10 @@ export type MembershipRefusalCode =
   | 'REVOKED_KEY'
   /**
    * The record proves membership in more than one identity — which one is the person's call, and
-   * the record takes it only as a revocation by the identity that should not have the key.
+   * the record takes it only as a revocation by the identity that should not have the key. This
+   * said "only as a revocation", and where the key is that identity's last, the revocation is
+   * refused until another key has joined it: then the record takes it as an enrollment followed by
+   * the revocation, from a checkout that writes as that identity (`ambiguityOf`).
    */
   | 'AMBIGUOUS_MEMBERSHIP';
 
@@ -146,7 +149,7 @@ export function membershipIn(
     return {
       ok: false,
       code: 'AMBIGUOUS_MEMBERSHIP',
-      message: ambiguityOf(query, key, anchors),
+      message: ambiguityOf(query, key, member),
     };
   }
   const anchor = anchors[0];
@@ -173,59 +176,140 @@ export function membershipIn(
 }
 
 /**
- * The refusal of a key the record proves in more than one identity — and the way out of it
- * that exists, which is a revocation, or the words that say there is none.
+ * The refusal of a key the record proves in more than one identity — and the ways out of it the
+ * record names, or the words that say it names none.
  *
  * IT USED TO STOP AT THE REFUSAL, and the page beside it promised the write was refused "until
- * you say which" — with no command that says which. Measured on the binary, in the three shapes
- * a record reaches this in, the one way out is for an identity that should not have the key to
- * RETIRE it (`mnema key revoke`, from a machine that writes here as that identity, committed),
- * after which a fresh clone writes again, as the identity left:
+ * you say which" — with no command that says which. Measured on the binary, a key leaves an
+ * identity in one of two ways, and the record says which one each identity allows:
  *
- *   - a key enrolled into two identities, having founded neither: either one can let it go, and
- *     the key speaks for the other;
- *   - a key that FOUNDED an identity by writing and was then enrolled into another: the one it
- *     founded cannot let it go — it is that identity's only key, and an identity's last key is
- *     refused (`LAST_KEY`) — so only the other can, and the key goes back to the one it founded;
- *   - a key that is the only key of BOTH: no revocation separates them, and nothing says one does.
+ *   - an identity that holds another key RETIRES it (`mnema key revoke`, from a machine that
+ *     writes here as that identity, committed and shared) — so a key enrolled into two
+ *     identities, having founded neither, speaks for either once the other lets it go;
+ *   - an identity whose ONLY key it is cannot retire it (`LAST_KEY`), so another key joins it
+ *     first — and an installation that writes as such an identity is necessarily one of THIS
+ *     key's: the checkout it founded the identity from, or one it wrote as it from. There, with
+ *     the record pulled, another key is enrolled, this one retired, and `mnema key restore` points
+ *     the checkout at the identity the key is left in, before anything writes as the one it left.
  *
- * So which identities can let it go is ASKED of the record here, by the roster the revocation
- * itself checks and by both of its refusals — a key that roster does not count (`UNKNOWN_KEY`),
- * and an identity's last key (`LAST_KEY`) — and the sentence says exactly that: never a way out
- * the record would refuse. The first refusal is not one a record the product wrote can reach
- * here, since a vouch commits the key's public half before it is appended; a tree that LOST that
- * half can, and then the reason the sentence gives ("the only key") is not the reason, while the
- * conclusion — no revocation separates them — is. `restore.test.ts` holds that tree.
+ * THIS SAID THE SECOND WAY DID NOT EXIST, twice. A key that founded an identity by writing and
+ * was enrolled into another "can only go back to speaking for" the one it founded, and a key that
+ * is the only key of both had "no revocation here" that separates them. The study that simulated
+ * both shapes on the binary, with git clones (`the-key-two-identities-cannot-let-go`), took the
+ * key out of the identity it founded both times, through the checkout that founded it: its
+ * anchor is local, so it goes on writing as that identity, and it is the door. The first
+ * rendering of that way out left the pull out, and a checkout that had not pulled the other
+ * enrollment refused the restore (`REVOKED_KEY`). The words pull first now, and
+ * `the-refusal-names-the-way-out.test.ts` follows them to the letter from a checkout that had
+ * not pulled.
+ *
+ * WHAT IS SAID IS WHAT THE RECORD NAMES, NEVER WHAT IS IMPOSSIBLE. Whether a checkout still
+ * writes as an identity is local and cannot be read here — the refusal is only ever given where
+ * no anchor is recorded — so the record is asked what it CAN answer: which identities count the
+ * key, as their only one or beside another (the roster the revocation checks, and both of its
+ * refusals); which one the key founded; and as which the key has written, since a checkout of it
+ * that writes as an identity leaves the key's signature under that identity. Where the key has
+ * written as neither, the sentence says the record names no checkout that could separate them —
+ * not that none exists: a commit in which the key stood alone in one of them, checked out and
+ * restored, still makes one, and that is not taught.
  *
  * THE COMMAND IS HANDED OVER WHOLE, and the first version of this sentence did not hand it: it
  * stopped at the fingerprint, while `key revoke` requires `--reason`, so a person who copied the
  * words got the parser's refusal (`mnema key revoke needs --reason <text>`, exit 1) instead of
- * the way out. The case that followed the words had added the flag itself before running them,
- * which is how it stayed green. The words now carry `--reason "<why>"` — a marker for what the
- * person writes, quoted because what they write is a sentence — and
- * `the-refusal-names-the-way-out.test.ts` runs them as written: the marker filled, nothing added.
+ * the way out. The words carry `--reason "<why>"` — a marker for what the person writes, quoted
+ * because what they write is a sentence — and every other marker says where its value comes
+ * from: `<the line>` is what the other key's request prints, and `"<the key file>"` is what the
+ * revocation prints when it retires the key a machine signs with, on that machine
+ * (`wiring/key.ts`) — quoted too, because a path can hold a space. Nothing here can print it:
+ * which directory holds a machine's key is read where a writer opens (`openChainForWriting`) and
+ * nowhere else.
  *
- * The key's own installation in a fresh clone cannot run the revocation: it has no identity to
- * act as until this is settled. It costs a roster per identity named, on a refusal only.
+ * A record the product wrote cannot hold a key a roster does not count, since a vouch commits
+ * the key's public half before it is appended; a tree that LOST that half can, and there the
+ * reason is said as what it is — `restore.test.ts` holds that tree. With three identities or
+ * more, leaving one whose only key this is still leaves the key in two, where no restore
+ * chooses, so no recipe is given there: the rule is, and it is not measured.
+ *
+ * The key's own installation in a fresh clone cannot run any of it: it has no identity to act as
+ * until this is settled. It costs a roster per identity named, and one replay for what the key
+ * has written, on a refusal only.
  */
-function ambiguityOf(query: MembershipQuery, key: PublicHalf, anchors: readonly string[]): string {
+function ambiguityOf(
+  query: MembershipQuery,
+  key: PublicHalf,
+  member: ReadonlyMap<string, Membership>,
+): string {
+  const anchors = [...member.keys()];
   const opening = `this key belongs to more than one identity in that record (${oneLine(anchors.join(', '))}) — which one it should speak for here is not a choice to make on its behalf`;
   // An identity can retire this key only where its roster counts the key and holds another: the
   // revocation refuses a key it does not count, and the last one.
-  const keeps = anchors.filter((anchor) => {
-    const roster = rosterOf(query, anchor);
-    return !roster.has(key.fingerprint) || roster.size <= 1;
-  });
-  if (keeps.length > 1) {
-    return `${opening}, and no revocation here separates them: this key is the only key ${oneLine(keeps.join(' and '))} have, and an identity's last key cannot be retired`;
+  const rosters = new Map(anchors.map((anchor) => [anchor, rosterOf(query, anchor)] as const));
+  const counts = (anchor: string): boolean => rosters.get(anchor)?.has(key.fingerprint) === true;
+  const keeps = anchors.filter(
+    (anchor) => !counts(anchor) || (rosters.get(anchor)?.size ?? 0) <= 1,
+  );
+  const revoke = `\`mnema key revoke ${key.fingerprint} --reason "<why>"\``;
+  if (keeps.length === 0) {
+    return `${opening}. It speaks for one of them again once the ${anchors.length === 2 ? 'other lets' : 'others let'} it go: a machine whose writes here speak for ${anchors.length === 2 ? 'the identity' : 'each identity'} that should not have it runs ${revoke} inside this project, and commits and shares the record — the key then speaks for the identity left`;
   }
-  const revoke = `\`mnema key revoke ${key.fingerprint} --reason "<why>"\` inside this project, and commits`;
+
+  // An identity whose only key this is has no installation writing as it but this key's own, so
+  // what the record can name is where this key has written.
+  const wroteAs = new Set<string>();
+  for (const event of orderedEvents({ root: query.tree }, query.upcasters)) {
+    if (event.signerFp === key.fingerprint) wroteAs.add(event.who);
+  }
+  const how = (anchor: string): string =>
+    member.get(anchor) === 'founded'
+      ? 'the identity it founded here'
+      : 'an identity it has written here as';
+  // The way out of `left` through the checkout that writes as it, when that leaves the key in
+  // `rest` alone — the one shape where a restore there points the checkout somewhere.
+  const through = (left: string, rest: string): string =>
+    `in ${member.get(left) === 'founded' ? 'the checkout it founded' : 'a checkout it wrote here as'} ${oneLine(left)} from — which, if it is still there, goes on writing as ${oneLine(left)} — pull the record, enroll the other key with \`mnema key enroll <the line>\` (the line \`mnema key request --anchor ${oneLine(left)}\` prints where that key lives), retire this one with ${revoke} — which, run there, prints where that machine keeps the key file — run \`mnema key restore "<the key file>"\` there before anything else writes, then commit and share the record: a fresh clone then writes as ${oneLine(rest)}`;
+
   const [kept] = keeps;
-  if (kept === undefined) {
-    return `${opening}. It speaks for one of them again once the ${anchors.length === 2 ? 'other lets' : 'others let'} it go: a machine whose writes here speak for ${anchors.length === 2 ? 'the identity' : 'each identity'} that should not have it runs ${revoke} — the key then speaks for the identity left`;
+  if (keeps.length === 1 && kept !== undefined) {
+    const letsGo = anchors.filter((anchor) => anchor !== kept);
+    const first = `${opening}. It speaks for ${oneLine(kept)} again once ${oneLine(letsGo.join(' and '))} ${letsGo.length === 1 ? 'lets' : 'let'} it go: a machine whose writes here speak for ${letsGo.length === 1 ? oneLine(letsGo.join(' and ')) : 'each of them'} runs ${revoke} inside this project, and commits and shares the record`;
+    const [other] = letsGo;
+    if (letsGo.length !== 1 || other === undefined || !counts(kept) || !wroteAs.has(kept)) {
+      return first;
+    }
+    return `${first}. Or it can leave ${oneLine(kept)} instead — ${how(kept)}, whose only key it is, so another key joins it first: ${through(kept, other)}`;
   }
-  const letsGo = anchors.filter((anchor) => anchor !== kept);
-  return `${opening}. It can only go back to speaking for ${oneLine(kept)}, whose only key it is — an identity's last key cannot be retired — once ${oneLine(letsGo.join(' and '))} ${letsGo.length === 1 ? 'lets' : 'let'} it go: a machine whose writes here speak for ${letsGo.length === 1 ? 'it' : 'each'} runs ${revoke}`;
+
+  const last = keeps.filter(counts);
+  const uncounted = keeps.filter((anchor) => !counts(anchor));
+  const doors = last.filter((anchor) => wroteAs.has(anchor));
+  const shut = last.filter((anchor) => !wroteAs.has(anchor));
+  const said: string[] = [];
+  if (last.length > 0) {
+    said.push(
+      `It is the only key ${oneLine(last.join(' and '))} ${last.length === 1 ? 'has' : 'have'}, and an identity's last key cannot be retired, so it leaves ${last.length === 1 ? 'that identity' : 'one of them'} only once another key has joined that one`,
+    );
+  }
+  if (uncounted.length > 0) {
+    said.push(
+      `The record does not count this key among the keys of ${oneLine(uncounted.join(' and '))}, so no revocation there takes it out`,
+    );
+  }
+  for (const left of anchors.length === 2 ? doors : []) {
+    const rest = anchors.find((anchor) => anchor !== left) as string;
+    said.push(`It can leave ${oneLine(left)}, ${how(left)}: ${through(left, rest)}`);
+  }
+  if (doors.length === 0 && shut.length > 1) {
+    said.push(
+      `This key has not written here as ${shut.length === 2 ? 'either' : 'any of them'}, so the record names no checkout that could separate them`,
+    );
+  } else {
+    for (const closed of shut) {
+      said.push(
+        `The record names no checkout that could take it out of ${oneLine(closed)}: this key has not written here as ${oneLine(closed)}`,
+      );
+    }
+  }
+  return `${opening}. ${said.join('. ')}`;
 }
 
 /**

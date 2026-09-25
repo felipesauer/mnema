@@ -30,28 +30,33 @@
  * write) — and `tests/a-write-says-what-it-founded.test.ts` follows them to the letter across two
  * projects, beside the enrollment made where the old words led.
  *
- * AND WHERE NOT: nowhere this key has already written, this project first. There the enrollment
- * joins nothing — the installation that founded goes on speaking for the identity it founded — and
- * the record then proves the key a member of two identities, which a fresh clone refuses to write
- * as rather than choose (`AMBIGUOUS_MEMBERSHIP`); measured, and asserted in the same file. The
- * trees kept on one machine have words of their own ({@link BY_TREE}): no enrollment reaches them,
- * so what they can still spare is the public trees of the person's projects.
+ * AND WHERE NOT: nowhere this key has already written, this project first. There an enrollment
+ * ALONE joins nothing — the installation that founded goes on speaking for the identity it
+ * founded — and the record then proves the key a member of two identities, which a fresh clone
+ * refuses to write as rather than choose (`AMBIGUOUS_MEMBERSHIP`); measured, and asserted in the
+ * same file. THE WORDS SAID "the enrollment joins nothing", and that holds only while the key is
+ * the one it founded's only key: with another key brought into that identity first, the key
+ * leaves it from the checkout that founded it and joins the other — the way out that refusal
+ * hands over, followed to the letter in `the-refusal-names-the-way-out.test.ts`. The trees kept on
+ * one machine have words of their own ({@link BY_TREE}): no enrollment reaches them, so what they
+ * can still spare is the public trees of the person's projects.
  *
  * THE FIRST WORDS NAME THE KEY, NOT THE WRITE. They were "This founded a new identity", and writes
  * that founded nothing earned them too: a fresh clone of a record in which this key had founded
  * beside others, and a `mnema key restore` of that key into one, each settle the key's anchor by
  * ADOPTING the founding the record already holds — no `identity.founded` is appended, measured two
- * before and two after — while what is detected is only that the key's anchor appeared and that
- * the record shows the key founded beside others ({@link foundingsSince}). That is one fact about
- * the key, true in all three, so the sentence says it of the key. Telling a second installation
- * from the first would take a reading of the record before every write, and this makes none.
+ * before and two after — while what is detected is that the key's anchor appeared, that the record
+ * shows the key founded beside others, and that the anchor it settled IS the one it founded
+ * ({@link foundingsSince}). That is one fact about the key, true in all three, so the sentence says
+ * it of the key. Telling a second installation from the first would take a reading of the record
+ * before every write, and this makes none.
  *
  * The command line writes each sentence on stderr after the verb's answer; the server puts it in
  * the reply of the call whose write founded, and in the hook's `additionalContext` when that write
  * was the hook's. Both ask this module.
  */
 
-import { catalogUpcasters, listAnchoredFingerprints } from '@mnema/chain';
+import { catalogUpcasters, listAnchoredFingerprints, readAnchor } from '@mnema/chain';
 import {
   chainRootForScope,
   type FoundedBeside,
@@ -111,8 +116,9 @@ const BY_TREE: Readonly<Record<Scope, TreeWords>> = {
     spared: 'the public trees of your other projects',
     vouching: 'a machine already in that identity',
     notHere:
-      'Not in this project: here the enrollment joins nothing, and every fresh clone of it would ' +
-      'then refuse this key’s writes.',
+      'Not in this project by an enrollment alone: here it joins nothing until another key takes ' +
+      'this one’s place in the identity it just founded, and every fresh clone of it would refuse ' +
+      'this key’s writes meanwhile.',
   },
   private: {
     who: 'This tree is kept on this machine alone, so that identity was written from here too.',
@@ -210,8 +216,8 @@ export function anchorsBefore(trees: readonly WatchedTree[]): AnchorsBefore {
 }
 
 /**
- * The sentences owed after a write: one for every key that settled its anchor in a tree during it
- * AND is shown by that tree's record to have founded an identity there beside others.
+ * The sentences owed after a write: one for every key that settled its anchor in a tree during it,
+ * IN the identity that tree's record shows it founded there beside others.
  *
  * This said "a key that ADOPTED an identity on the record settles its anchor too, and is owed
  * nothing", and that holds for a key another member vouched for — the handshake the page
@@ -220,6 +226,14 @@ export function anchorsBefore(trees: readonly WatchedTree[]): AnchorsBefore {
  * founding beside others, and the sentence is owed again although nothing was appended. Measured;
  * the case that pins it is in `tests/a-write-says-what-it-founded.test.ts`, and the words are
  * written about the key so that they are true there too.
+ *
+ * AND IT ASKED ONLY WHETHER THE KEY HAD FOUNDED, which is not whom it speaks for. A key that left
+ * the identity it founded — another key brought in, this one retired, the way out a refusal of
+ * two identities hands over — adopts the other one in every fresh clone after, and the record
+ * still holds its founding: measured on the binary, that clone, speaking for the other identity,
+ * was told "This key founded an identity of its own", with the advice to enroll. The sentence is
+ * owed where the anchor the key settled IS the identity it founded, and
+ * `tests/the-refusal-names-the-way-out.test.ts` asks the clone after the way out.
  *
  * The record is read only for a tree where an anchor appeared, which is a key's first write into
  * it: once per tree per key, for the life of the installation.
@@ -231,7 +245,9 @@ export function foundingsSince(before: AnchorsBefore): string[] {
     for (const fingerprint of anchoredIn(root)) {
       if (anchored.has(fingerprint)) continue;
       const founded = foundedBesideBy(root, fingerprint, upcasters);
-      if (founded !== undefined) sentences.push(foundingSentence(founded, scope));
+      if (founded === undefined) continue;
+      if (readAnchor({ root }, fingerprint) !== founded.anchor) continue;
+      sentences.push(foundingSentence(founded, scope));
     }
   }
   return sentences;

@@ -58,7 +58,12 @@ export function identitiesFoundedBeside(events: Iterable<CatalogEvent>): Founded
 /**
  * Whether the key `fingerprint` founded its identity in the tree at `root` beside others — the
  * question a surface asks right after a write settled that key's anchor there. Undefined when it
- * did not found there (it adopted an identity already on the record), or founded first.
+ * founded nothing there, or founded first.
+ *
+ * This said "(it adopted an identity already on the record)" of the undefined answer, and a key
+ * can do both: one that left the identity it founded here adopts the other one, and this still
+ * returns its founding. It answers what the key founded, never whom it speaks for — the surface
+ * that owes a sentence for it asks the anchor too (`foundingsSince`, `@mnema/code`).
  */
 export function foundedBesideBy(
   root: string,

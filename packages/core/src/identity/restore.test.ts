@@ -385,11 +385,11 @@ describe('restoreKey — refusals, each writing nothing', () => {
       'It speaks for one of them again once the other lets it go',
     );
     expect((refused as { message: string }).message).toContain(
-      `\`mnema key revoke ${shared.fingerprint} --reason "<why>"\` inside this project, and commits`,
+      `\`mnema key revoke ${shared.fingerprint} --reason "<why>"\` inside this project, and commits and shares the record`,
     );
   });
 
-  it('promises no way out over a tree that lost the key’s public half', () => {
+  it('says why no revocation takes it out, over a tree that lost the key’s public half', () => {
     // DAMAGED ON PURPOSE: both vouches are in the record and the key's committed half is not —
     // which no write path produces and `verify` rejects. The consent still proves the key a
     // member of both (the restore holds the key itself), and no revocation can take it out of
@@ -430,7 +430,12 @@ describe('restoreKey — refusals, each writing nothing', () => {
 
     expect(refused).toMatchObject({ ok: false, code: 'AMBIGUOUS_MEMBERSHIP' });
     const said = (refused as { message: string }).message;
-    expect(said).toContain('no revocation here separates them');
-    expect(said).not.toContain('mnema key revoke');
+    // The reason is the one the revocation would give (`UNKNOWN_KEY`): it used to say "the only
+    // key", which is not true of the identity that holds a second one.
+    expect(said).toContain(
+      `The record does not count this key among the keys of ${one.writer.anchor} and ${two.writer.anchor}, so no revocation there takes it out`,
+    );
+    expect(said).not.toContain('only key');
+    expect(said).not.toContain('mnema key');
   });
 });

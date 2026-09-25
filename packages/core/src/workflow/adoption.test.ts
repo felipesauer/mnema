@@ -438,7 +438,7 @@ describe('the way out, with three identities — the words for more than two', (
     expect(said).toContain(`\`mnema key revoke ${k.fingerprint} --reason "<why>"\``);
   });
 
-  it('founded one and enrolled into two: it goes back to the one it founded once both others let go', () => {
+  it('founded one and enrolled into two: it speaks for the one it founded once both others let go', () => {
     const founders = ['x', 'y'].map((name) => machine(`mnema-three-${name}-`));
     const anchors = founders.map((m) => ensureFounded(m.ctx));
     // This key WRITES first, so it founds an identity of its own — whose only key it is.
@@ -449,9 +449,12 @@ describe('the way out, with three identities — the words for more than two', (
     });
 
     const said = refusalFor(k);
-    expect(said).toContain(`It can only go back to speaking for ${own}, whose only key it is`);
     expect(said).toContain(
-      `once ${anchors[0]} and ${anchors[1]} let it go: a machine whose writes here speak for each runs`,
+      `It speaks for ${own} again once ${anchors[0]} and ${anchors[1]} let it go: a machine whose writes here speak for each of them runs`,
     );
+    // Leaving the one it founded would still leave the key in two identities, where no restore
+    // chooses: with three, that way out is not handed over.
+    expect(said).not.toContain('Or it can leave');
+    expect(said).not.toContain('mnema key restore');
   });
 });
