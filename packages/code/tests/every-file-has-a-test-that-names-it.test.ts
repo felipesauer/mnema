@@ -348,9 +348,20 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * `node:url` and `vitest` — and nine in `a-flag-declared-twice.test.ts`, which drives the real
  * program with the import's action swapped — `node:fs`, `node:os`, `node:path`, `commander`,
  * `vitest`, `../src/cli.js`, `../src/wiring/misuse.js`, the module it witnesses, and
- * `support/reading-source.js`.
+ * `support/reading-source.js`. And 2947 -> 2979 when verification stopped walking a tail once
+ * per checkpoint: five clauses in `range.test.ts`, which holds the new route to a range to the
+ * filter it replaced — `vitest`, the event builders, `./entry.js`, `./keys.js` and the module
+ * it witnesses; eight in `the-verdict-over-a-broken-tail.test.ts`, which edits the lines of a
+ * record the product's writer wrote — `node:fs`, `node:os`, `node:path`, `vitest`, the event
+ * builders, `./chain.js`, `./layout.js` and `./store.js`; ten in
+ * `verify-costs-what-the-record-holds.test.ts`, which counts what a verification reads —
+ * `node:fs`, `node:os`, `node:path`, `vitest`, the event builders, `./chain.js`, `./keys.js`,
+ * `./keystore.js`, `./layout.js` and the writer's type; and nine in
+ * `witness-stamp-judges-each-tree-once.test.ts` — `node:fs`, `node:os`, `node:path`,
+ * `@mnema/chain`, `@mnema/core`, `vitest`, `./init.js`, `./memory.js` and the module it
+ * witnesses.
  */
-const CLAUSES_IN_THE_TREE = 2947;
+const CLAUSES_IN_THE_TREE = 2979;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -842,7 +853,7 @@ describe('every file has a test that names it', () => {
     expect(PRODUCTION).toContain('packages/code/src/wiring/index.ts');
     expect(PRODUCTION).toContain('packages/core/src/topology/index.ts');
     expect(PRODUCTION).not.toContain('packages/core/src/index.ts');
-    expect(PRODUCTION).toHaveLength(314);
+    expect(PRODUCTION).toHaveLength(315);
     expect(TEST_TREE.length).toBeGreaterThan(250);
     // No file is in both corpora, which is what keeps a test from witnessing itself.
     const tests = new Set(TEST_TREE.map((one) => one.path));
@@ -862,7 +873,7 @@ describe('every file has a test that names it', () => {
     const found = unwitnessed();
     const byReach = (reach: Reach): number =>
       [...found.values()].filter((one) => one === reach).length;
-    expect(PRODUCTION.length - found.size).toBe(243);
+    expect(PRODUCTION.length - found.size).toBe(244);
     expect(found.size).toBe(71);
     expect(byReach('nobody imports it')).toBe(71);
     expect(byReach('imported, and no assertion observes it')).toBe(0);

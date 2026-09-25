@@ -59,6 +59,17 @@
  * in it, and the level says `unreadable` (see level.ts and `readOrIssue`). Nothing
  * about what is refused changed; the exception was replaced by an address.
  *
+ * WHAT IT COSTS IS ONE PASS OVER THE RECORD, and until this was written it was not: each
+ * checkpoint's range was a `filter` over the whole tail, and this product signs once per
+ * act, so the checkpoints grow with the events and the verdict cost the square of the
+ * history — 1.9 s over ten thousand events and 77 s over a hundred thousand, a slope of
+ * 1.96 between the two largest of the five sizes measured. Now each tail is read once, each
+ * range is found without walking it (range.ts), each committed key is read and
+ * fingerprinted once (store.ts), and the rest is the work the proof is made of: an entry
+ * hash and a content root per event, a signature per checkpoint — 1.2 s over ten thousand
+ * events and 12 s over a hundred thousand, a slope of 0.98 across the five. The shape is
+ * counted, not timed, in `verify-costs-what-the-record-holds.test.ts`.
+ *
  * The window of events above the last checkpoint is a declared residual:
  * covered by T1 but not yet by a signature.
  *
@@ -97,8 +108,7 @@ import { type Checkpoint, checkpointHash, verifyCheckpoint } from './checkpoint.
 import { resolveIdentity } from './enrollment.js';
 import { describeLinkBreak, type Entry, linkBreakAt } from './entry.js';
 import { entryHash } from './hash.js';
-import { fingerprintOf, type KeyObject, publicKeyFromPem } from './keys.js';
-import { type ChainLayout, publicKeyPath, tailFingerprint, tailProofPath } from './layout.js';
+import { type ChainLayout, tailFingerprint, tailProofPath } from './layout.js';
 import {
   levelHeadline,
   type ProvenFacts,
@@ -107,7 +117,15 @@ import {
   type WitnessStatus,
 } from './level.js';
 import { UnreadableLineError } from './lines.js';
-import { listPublicKeyFingerprints, listTails, readTail, readTailCheckpoints } from './store.js';
+import { entriesBetween } from './range.js';
+import {
+  type CommittedKeys,
+  committedKeys,
+  listPublicKeyFingerprints,
+  listTails,
+  readTail,
+  readTailCheckpoints,
+} from './store.js';
 import { parseTailProof, verifyTailProof } from './tailproof.js';
 import { type TailWaiver, tailWaiversIn, waiversForKey } from './waiver.js';
 import {
@@ -314,6 +332,11 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
   // fingerprint to match, so it is still rejected. (A pre-suffix tail named by a
   // bare fingerprint matches the whole name, so it is accepted unchanged.)
   const committedFingerprints = new Set(listPublicKeyFingerprints(layout));
+  // One reader of the committed keys for the whole verification: every checkpoint, every
+  // ownership proof and every enrolment that names a key asks it, and the disk is read
+  // once per key (store.ts). It is made HERE, per call, so no verdict reads a key an
+  // earlier verdict read.
+  const keys = committedKeys(layout);
   const entriesByTail = new Map<string, readonly Entry[]>();
   const issuesByTail = new Map<string, TailIssue[]>();
   const checkpointedByTail = new Map<string, number>();
@@ -372,10 +395,10 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
       // locally chosen: require the key to have signed THIS tail id at birth, so
       // a keyless party cannot fabricate a sibling tail under a real fingerprint
       // and have its residual events counted. See tailproof.ts.
-      verifyTailOwnership(layout, tail, issues);
+      verifyTailOwnership(layout, keys, tail, issues);
     }
     verifyHashChain(tail, entries, issues);
-    const coverage = verifyCheckpoints(layout, tail, entries, checkpoints, issues);
+    const coverage = verifyCheckpoints(keys, tail, entries, checkpoints, issues);
     checkpointedByTail.set(tail, coverage.covered);
     provenTails.set(tail, { checkpoints: coverage.proven, events: entries.length });
     uncheckpointed += entries.length - (coverage.covered + 1);
@@ -389,7 +412,8 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
   // machine authorizes events on another), it is resolved once over the merged
   // order, and each issue is attributed back to the tail and seq of the event
   // that failed.
-  for (const identityIssue of resolveIdentity(layout, entriesByTail, checkpointedByTail).issues) {
+  for (const identityIssue of resolveIdentity(layout, entriesByTail, checkpointedByTail, keys)
+    .issues) {
     (issuesByTail.get(identityIssue.tail) ?? []).push({
       tail: identityIssue.tail,
       layer: 'T2/T4',
@@ -672,7 +696,7 @@ interface CheckpointCoverage {
 }
 
 function verifyCheckpoints(
-  layout: ChainLayout,
+  keys: CommittedKeys,
   tail: string,
   entries: readonly Entry[],
   stored: readonly Checkpoint[],
@@ -682,6 +706,10 @@ function verifyCheckpoints(
   const proven: ProvenCheckpoint[] = [];
   let covered = -1;
   let expectedPrev: string | null = null;
+  // Asked once per checkpoint, answered without walking the tail (range.ts). It used to BE
+  // the walk — `entries.filter` over every entry of the tail, for every checkpoint — and
+  // with a checkpoint per act that is the square of the history.
+  const between = entriesBetween(entries);
 
   for (const checkpoint of checkpoints) {
     if (checkpoint.tail !== tail) {
@@ -714,11 +742,9 @@ function verifyCheckpoints(
       // keep going: report each gap, but do not advance coverage over the hole
       continue;
     }
-    const range = entries.filter(
-      (e) => e.link.seq >= checkpoint.fromSeq && e.link.seq <= checkpoint.toSeq,
-    );
-    const publicKey = loadPublicKey(layout, checkpoint.signerFp);
-    if (publicKey === null) {
+    const range = between(checkpoint.fromSeq, checkpoint.toSeq);
+    const committed = keys(checkpoint.signerFp);
+    if (committed === null) {
       issues.push({
         tail,
         layer: 'T2/T4',
@@ -733,7 +759,7 @@ function verifyCheckpoints(
     // this, swapping the committed .pub for the forger's key would let a forged
     // signature verify — the exact gap the signed-message binding alone leaves
     // open, since verification uses whatever key the file now holds.
-    if (fingerprintOf(publicKey) !== checkpoint.signerFp) {
+    if (committed.fingerprint() !== checkpoint.signerFp) {
       issues.push({
         tail,
         layer: 'T2/T4',
@@ -748,7 +774,7 @@ function verifyCheckpoints(
       // the lifted reading would turn the first version bump into a signature
       // failure on every chain written before it.
       events: range.map((e) => e.written),
-      publicKey,
+      publicKey: committed.key,
     });
     if (!verdict.ok) {
       issues.push({
@@ -814,16 +840,6 @@ export function canonicalIdentityForm(value: string): string {
   return value.normalize('NFC').trim();
 }
 
-function loadPublicKey(layout: ChainLayout, fingerprint: string): KeyObject | null {
-  const path = publicKeyPath(layout, fingerprint);
-  if (!existsSync(path)) return null;
-  try {
-    return publicKeyFromPem(readFileSync(path, 'utf-8'));
-  } catch {
-    return null;
-  }
-}
-
 /**
  * Requires a tail (whose fingerprint prefix is committed) to carry a valid proof
  * that its key signed this exact tail id. A missing, malformed, or wrong-signed
@@ -831,7 +847,12 @@ function loadPublicKey(layout: ChainLayout, fingerprint: string): KeyObject | nu
  * fingerprint — the residual-window duplication a keyless party could otherwise
  * mount. A legitimate installation wrote this at birth over its own id.
  */
-function verifyTailOwnership(layout: ChainLayout, tail: string, issues: TailIssue[]): void {
+function verifyTailOwnership(
+  layout: ChainLayout,
+  keys: CommittedKeys,
+  tail: string,
+  issues: TailIssue[],
+): void {
   const push = (detail: string) => issues.push({ tail, layer: 'T2/T4', seq: 0, detail });
   const path = tailProofPath(layout, tail);
   if (!existsSync(path)) {
@@ -847,12 +868,12 @@ function verifyTailOwnership(layout: ChainLayout, tail: string, issues: TailIssu
     );
     return;
   }
-  const publicKey = loadPublicKey(layout, tailFingerprint(tail));
-  if (publicKey === null) {
+  const committed = keys(tailFingerprint(tail));
+  if (committed === null) {
     push(`tail ${oneLine(tail)} ownership proof cannot be checked: no committed public key`);
     return;
   }
-  const verdict = verifyTailProof({ proof, tail, publicKey });
+  const verdict = verifyTailProof({ proof, tail, publicKey: committed.key });
   if (!verdict.ok) {
     push(`tail ${oneLine(tail)} ownership proof is invalid (${verdict.reason})`);
   }
