@@ -2894,10 +2894,14 @@ describe('mnema CLI — a --which that names nobody', () => {
         'accountability',
         'export',
         'decision',
-        // The import declares its OWN `--which` rather than reading the group's,
-        // because it is a BIRTH: it names the agent on every fact it appends. The
-        // moves are absent from this list for the mirror reason — they read the
-        // group's.
+        // The import declares its OWN `--which` because it is a BIRTH: it names the
+        // agent on every fact it appends, and it refuses the group's spelling before
+        // the verb. This said it declared it "rather than reading the group's", and it
+        // never read anything else: the group declares the same flag and commander
+        // gives the group the value wherever it is written, so the import's own copy
+        // is never set. It reads the group's value now, and keeps its own declaration
+        // to tell where the flag was written (`wiring/written-before.ts`). The moves
+        // are absent from this list because they declare nothing and read the group's.
         'decision import',
         'guard',
         'memory',

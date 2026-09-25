@@ -108,6 +108,13 @@ export function declaredAgent(value: string): string {
  * declaration would be silently dropped — the exact fiction `--which` exists to
  * close. So the reminder is help text, not a second declaration.
  *
+ * Three subcommands did declare their group's flag a second time, and this is what
+ * happened to each. `decision import`'s `--which` and `--scope` were refused in the
+ * very place its help documents them, until it began reading the value off the group
+ * and asking `written-before.ts` where the flag was written. The two `witness` acts'
+ * `--global` is the silent drop described above, recorded as a finding rather than
+ * repaired (`a-flag-declared-twice.test.ts`).
+ *
  * It is worded for a MOVE, not copied from {@link WHICH_HELP}: the birth clause
  * there ("defaults to the private tree") is about where a new entity lands, and a
  * move lands wherever the entity already lives. Repeating it here would state a

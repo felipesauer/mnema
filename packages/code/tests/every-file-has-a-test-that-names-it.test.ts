@@ -341,9 +341,16 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * `node:path`, `commander` for the mirror it parses with, `vitest`, `../src/cli.js` for the
  * program the mirror is made from, and the three support modules — and two in the shell reading
  * itself, which took the page sweep over with its `git ls-files` and its workspace root; the
- * guard that used to hold that sweep lost its `node:child_process`.
+ * guard that used to hold that sweep lost its `node:child_process`. And 2931 -> 2947 when a
+ * subcommand's own flag began to be read where it was written: seven clauses in
+ * `the-flags-reach-the-import.test.ts`, which digests the tree around the built binary and reads
+ * the feed back — `node:child_process`, `node:crypto`, `node:fs`, `node:os`, `node:path`,
+ * `node:url` and `vitest` — and nine in `a-flag-declared-twice.test.ts`, which drives the real
+ * program with the import's action swapped — `node:fs`, `node:os`, `node:path`, `commander`,
+ * `vitest`, `../src/cli.js`, `../src/wiring/misuse.js`, the module it witnesses, and
+ * `support/reading-source.js`.
  */
-const CLAUSES_IN_THE_TREE = 2931;
+const CLAUSES_IN_THE_TREE = 2947;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -623,7 +630,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   },
   'packages/code/src/wiring/decision.ts': {
     reached: 'nobody imports it',
-    why: 'The decision group, three subcommands and two private printers; cli-e2e reads its lines to prove the decision workflow, and the import plan survives only as committed golden bytes.',
+    why: 'The decision group, three subcommands and two private printers; cli-e2e reads its lines to prove the decision workflow, the import plan survives as committed golden bytes, and the import flags are driven on the binary.',
   },
   'packages/code/src/wiring/export.ts': {
     reached: 'nobody imports it',
@@ -735,7 +742,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   },
   'packages/code/src/wiring/witness.ts': {
     reached: 'nobody imports it',
-    why: 'Declares the `witness` group and prints its outcomes; the one suite driving it proves --calendar and --global reach commands/witness.ts, and no golden ever invokes the verb.',
+    why: 'Declares the `witness` group and prints its outcomes; the one suite driving it proves --calendar reaches `stamp` and --global the bare reading, while on both acts --global binds to the group and reaches nothing, and no golden ever invokes the verb.',
   },
   'packages/copilot/src/intelligence/events.ts': {
     reached: 'nobody imports it',
@@ -835,7 +842,7 @@ describe('every file has a test that names it', () => {
     expect(PRODUCTION).toContain('packages/code/src/wiring/index.ts');
     expect(PRODUCTION).toContain('packages/core/src/topology/index.ts');
     expect(PRODUCTION).not.toContain('packages/core/src/index.ts');
-    expect(PRODUCTION).toHaveLength(313);
+    expect(PRODUCTION).toHaveLength(314);
     expect(TEST_TREE.length).toBeGreaterThan(250);
     // No file is in both corpora, which is what keeps a test from witnessing itself.
     const tests = new Set(TEST_TREE.map((one) => one.path));
@@ -855,7 +862,7 @@ describe('every file has a test that names it', () => {
     const found = unwitnessed();
     const byReach = (reach: Reach): number =>
       [...found.values()].filter((one) => one === reach).length;
-    expect(PRODUCTION.length - found.size).toBe(242);
+    expect(PRODUCTION.length - found.size).toBe(243);
     expect(found.size).toBe(71);
     expect(byReach('nobody imports it')).toBe(71);
     expect(byReach('imported, and no assertion observes it')).toBe(0);

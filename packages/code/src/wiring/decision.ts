@@ -191,6 +191,16 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
   // group's own copies are refused rather than inherited: `mnema decision --scope
   // private import docs/adr` puts the flag before the verb it belongs to, and
   // silently honouring it would teach two spellings of one option.
+  //
+  // DECLARING THEM WAS NOT ENOUGH TO RECEIVE THEM, and for as long as this verb
+  // existed it received neither. The group declares the same two flags, and commander
+  // hands a group every flag it knows wherever the flag is written, so `--which ci`
+  // after `import` landed on `decision`. The check below asked whether the GROUP held a
+  // value, and therefore refused the flag in the place this help documents as well as
+  // in the place it meant to refuse — no test ran the documented one. What decides now
+  // is where the flag was WRITTEN (`written-before.ts`); the value is read where
+  // commander put it, on the group. `the-flags-reach-the-import.test.ts` runs both
+  // places on the binary and reads the agent and the tree back off the record.
   const decisionImport = decision
     .command('import')
     .description('propose the decisions already written in this repository’s decision files')
@@ -221,55 +231,49 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
         'is why nothing is accepted on your behalf. Nothing here calls a model.',
     )
     .addHelpText('after', RECORD_CONTRACT_HELP);
-  decisionImport.action(
-    async (dir: string, opts: { write?: boolean; scope?: string; which?: string }) => {
-      const { linkBreakNotice } = await import('./integrity.js');
-      const { runDecisionImport } = await import('../commands/decision-import.js');
-      const parentOpts = (decisionImport.parent?.opts() ?? {}) as {
-        scope?: string;
-        which?: string;
-      };
-      const leaked =
-        parentOpts.scope !== undefined
-          ? '--scope'
-          : parentOpts.which !== undefined
-            ? '--which'
-            : undefined;
-      if (leaked !== undefined) {
-        reportUsage(
-          wiring,
-          `\`decision import\` takes its own ${leaked}: put it after \`import\`, not before.`,
-        );
-        return;
-      }
-      const scope = parseScope(opts.scope, wiring);
-      if (scope === INVALID) return;
-      const run = pinnedRun();
-      if (run === PIN_REFUSED) {
-        io.fail();
-        return;
-      }
-      const result = runDecisionImport(here(), {
-        from: dir,
-        ...(opts.write === true ? { write: true } : {}),
-        ...(scope !== undefined ? { scope } : {}),
-        ...(opts.which !== undefined ? { which: opts.which } : {}),
-        ...(run !== undefined ? { run } : {}),
-      });
-      if (result.ok) {
-        // BEFORE the plan, and on the other stream. An import is the one place a read
-        // of the record decides what gets WRITTEN to it — the set of files already
-        // derived is what stops a duplicate — so a broken proof under it is the worst
-        // moment on this surface to be silent about.
-        for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
-        writeLines(io, importLines(result));
-        return;
-      }
-      reportRefusal(wiring, result, {
-        OUTSIDE_PROJECT: `"${dir}" is not inside this project. The provenance a proposal records has to be citable by every clone, so the directory has to be one.`,
-      });
-    },
-  );
+  decisionImport.action(async (dir: string, opts: { write?: boolean }) => {
+    const { linkBreakNotice } = await import('./integrity.js');
+    const { runDecisionImport } = await import('../commands/decision-import.js');
+    const { ownFlagsWrittenBefore } = await import('./written-before.js');
+    const [leaked] = ownFlagsWrittenBefore(decisionImport);
+    if (leaked !== undefined) {
+      reportUsage(
+        wiring,
+        `\`decision import\` takes its own ${leaked}: put it after \`import\`, not before.`,
+      );
+      return;
+    }
+    // Written after `import`, both flags still land on the GROUP, which declares the same
+    // two — so that is where their values are read. This command's own declarations are
+    // what its `--help` lists and what `ownFlagsWrittenBefore` knows to look for.
+    const given = (decisionImport.parent?.opts() ?? {}) as { scope?: string; which?: string };
+    const scope = parseScope(given.scope, wiring);
+    if (scope === INVALID) return;
+    const run = pinnedRun();
+    if (run === PIN_REFUSED) {
+      io.fail();
+      return;
+    }
+    const result = runDecisionImport(here(), {
+      from: dir,
+      ...(opts.write === true ? { write: true } : {}),
+      ...(scope !== undefined ? { scope } : {}),
+      ...(given.which !== undefined ? { which: given.which } : {}),
+      ...(run !== undefined ? { run } : {}),
+    });
+    if (result.ok) {
+      // BEFORE the plan, and on the other stream. An import is the one place a read
+      // of the record decides what gets WRITTEN to it — the set of files already
+      // derived is what stops a duplicate — so a broken proof under it is the worst
+      // moment on this surface to be silent about.
+      for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
+      writeLines(io, importLines(result));
+      return;
+    }
+    reportRefusal(wiring, result, {
+      OUTSIDE_PROJECT: `"${dir}" is not inside this project. The provenance a proposal records has to be citable by every clone, so the directory has to be one.`,
+    });
+  });
 
   return mutatesTheRecord(decision);
 }

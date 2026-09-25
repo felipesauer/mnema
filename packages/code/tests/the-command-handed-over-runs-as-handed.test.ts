@@ -471,7 +471,12 @@ describe('the readings know what they read', () => {
     const using = speakingSources()
       .filter((file) => file.endsWith('.ts'))
       .filter((file) => setters.test(codeOnly(readFileSync(join(ROOT, file), 'utf8'))));
-    expect(using).toEqual([]);
+    // ONE FILE, AND IT IS NOT A VERB. `written-before.ts` turns positional options on for a
+    // throwaway command it builds to ask where a flag was WRITTEN, and it never registers that
+    // command anywhere, so the program this mirror copies parses exactly as before. The file
+    // holds that one function and nothing else, which is what keeps this exemption from
+    // covering a real verb's setting: one written anywhere else is still red here.
+    expect(using).toEqual(['packages/code/src/wiring/written-before.ts']);
   });
 });
 
