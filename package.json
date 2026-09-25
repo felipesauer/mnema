@@ -38,8 +38,8 @@
     "the-link-cannot-come-back": "node .github/the-link-cannot-come-back/scan.mjs"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.13",
-    "@types/node": "^26.1.0",
+    "@biomejs/biome": "^2.5.14",
+    "@types/node": "^26.6.2",
     "@vitest/coverage-v8": "^4.1.11",
     "typescript": "^7.0.2",
     "vitest": "^4.1.11"
