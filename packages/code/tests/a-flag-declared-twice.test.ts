@@ -28,8 +28,8 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { Command } from 'commander';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { Command, CommanderError } from 'commander';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { buildProgram, type CliIo } from '../src/cli.js';
 import { everyCommandOf, pathOf } from '../src/wiring/misuse.js';
 import { ownFlagsWrittenBefore } from '../src/wiring/written-before.js';
@@ -116,8 +116,8 @@ describe('where a flag was written is what commander read before the verb', () =
     // subcommand reads through this function, and `--global` is the one that would.
     const answer = async (argv: string[]): Promise<readonly string[]> => {
       const root = new Command('tool').exitOverride();
-      const group = root.command('group').option('--global');
-      const act = group.command('act').option('--global');
+      const group = root.command('group').option('--global').option('-q');
+      const act = group.command('act').option('--global').option('-q');
       let found: readonly string[] = [];
       act.action(() => {
         found = ownFlagsWrittenBefore(act);
@@ -127,6 +127,33 @@ describe('where a flag was written is what commander read before the verb', () =
     };
     expect(await answer(['group', '--global', 'act'])).toEqual(['--global']);
     expect(await answer(['group', 'act', '--global'])).toEqual([]);
+    // A flag with no long spelling is named as it was declared.
+    expect(await answer(['group', '-q', 'act', '--global'])).toEqual(['-q']);
+  });
+
+  it('never prints and never ends the process, even over a line no group could have read', () => {
+    // Unreachable through a real parse — a group's flag with nothing after it stops the line
+    // before any subcommand runs — so the line is handed over by hand, the way commander keeps it.
+    const root = new Command('tool');
+    const group = root.command('group').option('--opt <value>');
+    const act = group.command('act').option('--opt <value>');
+    root.args = ['group', '--opt'];
+    const written = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    try {
+      expect(() => ownFlagsWrittenBefore(act)).toThrow(CommanderError);
+      expect(written).not.toHaveBeenCalled();
+    } finally {
+      written.mockRestore();
+    }
+  });
+
+  it('answers nothing for the program, or for a verb whose only group is the program', () => {
+    // Above a verb there is no group line to read, only the program's whole argv. No verb
+    // declares a flag the program does — the table below holds every pair, the program's
+    // included — so this nothing is true today, and it is the limit the module states.
+    const { program } = buildProgram(silent);
+    expect(ownFlagsWrittenBefore(program)).toEqual([]);
+    expect(ownFlagsWrittenBefore(childNamed(program, 'decision'))).toEqual([]);
   });
 });
 

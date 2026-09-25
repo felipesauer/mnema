@@ -42,14 +42,21 @@ import { Command, Option } from 'commander';
  * The flags `sub` declares for itself that were written before its name, in the order `sub`
  * declares them: `['--scope']` for `mnema decision --scope private import docs/adr`, and nothing
  * for the same flag written after `import`. A flag only the group declares is not `sub`'s, and is
- * not reported.
+ * not reported. A flag is named by its long spelling, or as declared when it has none.
+ *
+ * A verb of the program itself is answered with nothing, and so is the program: there is no group
+ * line to read above a verb, only the program's whole argv. That nothing is true today because no
+ * verb declares a flag the program declares — `a-flag-declared-twice.test.ts` enumerates every
+ * pair, the program's included, and holds both answers.
  */
 export function ownFlagsWrittenBefore(sub: Command): readonly string[] {
   const group = sub.parent;
   const line = group?.parent?.args;
   if (group === null || line === undefined) return [];
+  // It may never speak or end the process: it runs inside somebody's command. A line no group
+  // could have read throws here, silently, and the surface's own last resort reports it.
   const probe = new Command().enablePositionalOptions().helpCommand(false).exitOverride();
-  probe.configureOutput({ writeOut: () => {}, writeErr: () => {}, outputError: () => {} });
+  probe.configureOutput({ outputError: () => {} });
   for (const option of group.options) probe.addOption(new Option(option.flags));
   for (const command of group.commands) probe.command(command.name());
   // The first word the parent kept is the group's own name; what follows is what the group read.
