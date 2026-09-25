@@ -76,6 +76,7 @@ import {
   THE_READING_THAT_OPENED_THESE,
   withScopedCaches,
 } from '../tree-sources.js';
+import { IMPORT_SCOPES } from '../vocabulary.js';
 
 /** What the import needs — injected so it is testable. */
 export interface DecisionImportContext {
@@ -151,7 +152,14 @@ export type ImportRefused =
    * none of them — so a directory outside the project is refused rather than
    * recorded as a path nobody else can open.
    */
-  | { readonly ok: false; readonly reason: 'OUTSIDE_PROJECT'; readonly from: string };
+  | { readonly ok: false; readonly reason: 'OUTSIDE_PROJECT'; readonly from: string }
+  /**
+   * The proposals would be born in the machine-global tree. Each one records the file it came
+   * from as a path inside THIS project, and the global tree is read in every project, where
+   * that path names another project's file — so the import writes only into the trees of the
+   * project it read ({@link IMPORT_SCOPES} carries what was measured).
+   */
+  | { readonly ok: false; readonly reason: 'GLOBAL_TREE' };
 
 /** The project-relative POSIX path of `target`, or undefined when it is outside `root`. */
 function inside(root: string, target: string): string | undefined {
@@ -266,6 +274,7 @@ export function runDecisionImport(
   if (from === undefined) return { ok: false, reason: 'OUTSIDE_PROJECT', from: input.from };
 
   const scope = resolveScope('decision.recorded', { which: input.which }, input.scope);
+  if (!IMPORT_SCOPES.includes(scope)) return { ok: false, reason: 'GLOBAL_TREE' };
   const scan = scanAdrDirectory(directory);
   const refused = scan.refused.map((refusal) => named(refusal, root));
   const derived = alreadyDerived(ctx);

@@ -158,7 +158,7 @@ complete -c mnema -f -n '__mnema_at "decision supersede"' -l color -x -a 'auto a
 
 # mnema decision import
 complete -c mnema -f -n '__mnema_at "decision import"' -l write
-complete -c mnema -f -n '__mnema_at "decision import"' -l scope -x -a 'public private global'
+complete -c mnema -f -n '__mnema_at "decision import"' -l scope -x -a 'public private'
 complete -c mnema -f -n '__mnema_at "decision import"' -l which -r
 complete -c mnema -f -n '__mnema_at "decision import"' -s h -l help
 complete -c mnema -f -n '__mnema_at "decision import"' -l alternatives -r

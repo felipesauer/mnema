@@ -163,14 +163,48 @@ const SCOPE_GLOSS: Readonly<Record<Scope, string>> = {
 export const SCOPES = Object.keys(SCOPE_GLOSS) as readonly Scope[];
 
 /**
+ * `scopes` with their glosses, as one phrase: `public (team-visible), or private (…)`.
+ *
+ * The gloss of each member is {@link SCOPE_GLOSS}'s whatever the set, so a verb that offers
+ * fewer trees than the others still says what each of them is in the same words.
+ */
+export function scopeChoices(scopes: readonly Scope[]): string {
+  return glossedChoice(scopes, SCOPE_GLOSS);
+}
+
+/**
  * The three scopes with their glosses, as ONE phrase — computed once, at load.
  *
- * A constant and not a function because it takes no argument and both surfaces want the
- * identical bytes: the CLI's seven `--scope` declarations and the MCP's four tool
- * descriptions interpolate THIS, so "the two doors gloss a scope the same way" is true by
- * construction rather than by two people wording it alike.
+ * A constant and not a call at each site because both surfaces want the identical bytes:
+ * the CLI's `--scope` declarations and the MCP's four tool descriptions interpolate THIS,
+ * so "the two doors gloss a scope the same way" is true by construction rather than by two
+ * people wording it alike.
  */
-export const SCOPE_CHOICES = glossedChoice(SCOPES, SCOPE_GLOSS);
+export const SCOPE_CHOICES = scopeChoices(SCOPES);
+
+/**
+ * The trees `decision import` writes its proposals into: every scope but the machine-global
+ * one.
+ *
+ * A PROPOSAL CARRIES A PATH INSIDE THE PROJECT — the file it was read from — and that path is
+ * also how a second run knows the file is already imported. The global tree belongs to no
+ * project and is read in every one, so a proposal written there hands its path to every
+ * project on the machine, where the same path names that project's own file. Measured on the
+ * binary on the day the import's `--scope` first reached it: a decision imported into the
+ * global tree from one project made another project's different file, at the same path, read
+ * as "already in the record, unchanged", and nothing of it was proposed, with `--write` or
+ * without. So the import refuses that tree before it reads a file
+ * (`the-flags-reach-the-import.test.ts`), and its `--scope` offers the other two.
+ *
+ * The exclusion is TYPED, so a scope renamed in the core breaks here rather than quietly
+ * letting the import write where it must not.
+ */
+const IMPORT_REFUSES: readonly Scope[] = ['global'];
+
+/** The scopes `decision import` accepts, in the order every reading prints. */
+export const IMPORT_SCOPES: readonly Scope[] = SCOPES.filter(
+  (scope) => !IMPORT_REFUSES.includes(scope),
+);
 
 // ---------------------------------------------------------------------------
 // The window — one sentence, and the noun that says which axis

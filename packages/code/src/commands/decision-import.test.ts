@@ -207,6 +207,26 @@ describe('mnema decision import', () => {
     expect(publicTree(repo, env).decisions.size).toBe(0);
   });
 
+  it('refuses the machine-global tree before it reads a file, planned or written', () => {
+    // A proposal records the file it came from as a path inside this project, and the global
+    // tree is read in every project, where that path names another project's file. The plan
+    // is refused too: over that tree it would read the other projects' provenance as this
+    // one's, and report their files as already imported.
+    const { repo, env } = setup(TWO);
+    for (const write of [false, true]) {
+      expect(
+        runDecisionImport({ cwd: repo, env }, { from: 'docs/adr', write, scope: 'global' }),
+      ).toEqual({ ok: false, reason: 'GLOBAL_TREE' });
+    }
+    expect(publicTree(repo, env).decisions.size).toBe(0);
+    // The project's own two trees still take the same import: the refusal is the global one's.
+    const privately = runDecisionImport(
+      { cwd: repo, env },
+      { from: 'docs/adr', write: true, scope: 'private' },
+    );
+    expect(privately.ok && [privately.scope, privately.proposals.length]).toEqual(['private', 2]);
+  });
+
   it('refuses outside a project at all', () => {
     const bare = join(sandbox, 'bare');
     mkdirSync(bare, { recursive: true });

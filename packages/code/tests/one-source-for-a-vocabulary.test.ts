@@ -233,6 +233,13 @@ describe('a declaration lists the set it takes', () => {
     for (const verb of ['task', 'decision', 'skill', 'memory', 'observe', 'handoff', 'link']) {
       expect(setAt(`${verb} --scope`).values, verb).toBe(SCOPES);
     }
+    // The one birth that takes fewer: `decision import` offers every scope but the
+    // machine-global one, because a proposal carries a path inside the project and every
+    // project reads that tree (`IMPORT_SCOPES` has what was measured). Asserted as the
+    // exclusion, like the move above, so a fourth scope arrives here by itself.
+    expect(setAt('decision import --scope').values).toEqual(
+      SCOPES.filter((scope) => scope !== 'global'),
+    );
     expect(setAt('search --scope').values).toBe(SCOPES);
     expect([...SCOPES]).toEqual(['public', 'private', 'global']);
   });

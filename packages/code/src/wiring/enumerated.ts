@@ -31,13 +31,14 @@
  * the enumeration IS the validation, which is why the set had to leave this file.
  */
 
-import { DECISION_ACTIONS, type DecisionAction } from '@mnema/core';
+import { DECISION_ACTIONS, type DecisionAction, type Scope } from '@mnema/core';
 import { Argument, Option } from 'commander';
-import { listed, SCOPE_CHOICES, SCOPES } from '../vocabulary.js';
+import { listed, SCOPES, scopeChoices } from '../vocabulary.js';
 
 export {
   actionsRequiring,
   glossedList,
+  IMPORT_SCOPES,
   LEVEL_REQUIREMENTS,
   listed,
   SCOPES,
@@ -119,22 +120,25 @@ export function enumeratedOption(
 // ---------------------------------------------------------------------------
 
 /**
- * The `--scope` help for a BIRTH, one wording on all seven verbs that take one.
+ * The `--scope` help for a BIRTH, one wording on every verb that takes one.
  *
  * `what` is the noun ("task", "observation"); `tail` is the sentence about where an
  * omitted flag lands, which is the verb's own and differs — the kind decides the tree,
  * so each verb states its own default rather than one wording claiming a rule that is
  * false on five of them.
  *
- * The glossed list is {@link SCOPE_CHOICES}, the same constant the MCP's four tool
- * descriptions interpolate: one phrase, so the two doors cannot tell a reader different
- * things about what a private tree is.
+ * `scopes` is the set the verb offers, and for every verb but one it is all of them:
+ * `decision import` offers {@link IMPORT_SCOPES}, which says why. The glossed list is
+ * generated from the same set it declares, so a verb cannot offer one set and gloss
+ * another; for the full set it is the very bytes of `SCOPE_CHOICES`, the constant the
+ * MCP's four tool descriptions interpolate, so the two doors cannot tell a reader
+ * different things about what a private tree is.
  */
-export function scopeOption(what: string, tail: string): Option {
+export function scopeOption(what: string, tail: string, scopes: readonly Scope[] = SCOPES): Option {
   return enumeratedOption(
     '--scope <scope>',
-    `where the ${what} is born: ${SCOPE_CHOICES}. ${tail}`,
-    SCOPES,
+    `where the ${what} is born: ${scopeChoices(scopes)}. ${tail}`,
+    scopes,
   );
 }
 

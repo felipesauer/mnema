@@ -108,6 +108,13 @@ export function declaredAgent(value: string): string {
  * declaration would be silently dropped — the exact fiction `--which` exists to
  * close. So the reminder is help text, not a second declaration.
  *
+ * Three subcommands did declare their group's flag a second time, and this is what
+ * happened to each. `decision import`'s `--which` and `--scope` were refused in the
+ * very place its help documents them, until it began reading the value off the group
+ * and asking `written-before.ts` where the flag was written. The two `witness` acts'
+ * `--global` is the silent drop described above, recorded as a finding rather than
+ * repaired (`a-flag-declared-twice.test.ts`).
+ *
  * It is worded for a MOVE, not copied from {@link WHICH_HELP}: the birth clause
  * there ("defaults to the private tree") is about where a new entity lands, and a
  * move lands wherever the entity already lives. Repeating it here would state a
@@ -151,10 +158,14 @@ export const INVALID = Symbol('invalid-scope');
  * the same funnel every other no goes through, and returns the {@link INVALID}
  * sentinel so the action returns without a task being born.
  *
- * The set it reads is {@link SCOPES} — the same value the seven `--scope` declarations
- * list in their help and the completion offers. This message is the reason the set is
- * declared rather than validated by commander: a scope is refused HERE, in the
- * product's voice, naming the value it refused.
+ * The set it reads is {@link SCOPES}, the value the `--scope` declarations list in their
+ * help and the completion offers — all of them but one. This said "the seven `--scope`
+ * declarations" until `decision import`'s began listing `IMPORT_SCOPES`, which leaves the
+ * machine-global tree out. That one still passes through here with the whole set, on
+ * purpose: `global` IS a scope, so it gets past this check and is refused by the import in
+ * the import's own words, which say why that tree cannot hold a proposal. This message is
+ * the reason the set is declared rather than validated by commander: a scope is refused
+ * HERE, in the product's voice, naming the value it refused.
  */
 export function parseScope(
   value: string | undefined,

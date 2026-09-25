@@ -190,8 +190,9 @@ const PROJECT_ARG = z
  * The `scope` argument a WRITE carries: which of the three trees the fact lands in.
  *
  * ONE schema for all eight, and the set is the DOMAIN's — `SCOPES`, the same value the
- * CLI's seven `--scope` declarations list, its Tab offers and its refusal words itself
- * from. It used to be `z.enum(['public', 'private', 'global'])` typed out at each of the
+ * CLI's `--scope` declarations list, its Tab offers and its refusal words itself from. All
+ * of them but `decision import`'s, a verb with no tool here, which leaves the machine-global
+ * tree out (`IMPORT_SCOPES`); this said "the seven declarations" until then. It used to be `z.enum(['public', 'private', 'global'])` typed out at each of the
  * eight, and that is a different kind of duplication from a help string repeated: a
  * `z.enum` is what the tool ACCEPTS. A fourth tree added to the domain would have reached
  * the CLI everywhere and left this surface refusing a word its own product takes — in the
