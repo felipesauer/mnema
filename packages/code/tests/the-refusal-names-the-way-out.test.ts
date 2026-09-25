@@ -352,6 +352,16 @@ describe('a key enrolled into two identities, having founded neither', () => {
   it('the refusal says either can let it go, and the one that does, sharing it, leaves the key to the other', () => {
     const { a, d, remote, founding, y, fp } = twoVouches();
     const said = refusedIn(remote, d, 'first');
+    // The key's own fresh installation cannot be the one: it is nobody here until this is settled.
+    expect(
+      mnema(checkout(remote, 'itself'), d, 'key', 'revoke', fp, '--reason', 'choosing').stderr,
+    ).toContain('Refused (AMBIGUOUS_MEMBERSHIP)');
+
+    // Done to the letter FIRST, by the machine whose writes speak for X, the identity that lets it
+    // go — so words that lose a step fail here, on what the binary does, before any wording below.
+    letGo(said, { checkout: founding, home: a });
+    expect(writeAs(checkout(remote, 'after'), d, 'written after X let go').who).toBe(y);
+
     expect(said).toContain('It speaks for one of them again once the other lets it go');
     expect(said).toContain('inside this project, and commits and shares the record');
     expect(said).toContain('the key then speaks for the identity left');
@@ -361,14 +371,6 @@ describe('a key enrolled into two identities, having founded neither', () => {
       'revoke',
       fp,
     ]);
-    // The key's own fresh installation cannot be the one: it is nobody here until this is settled.
-    expect(
-      mnema(checkout(remote, 'itself'), d, 'key', 'revoke', fp, '--reason', 'choosing').stderr,
-    ).toContain('Refused (AMBIGUOUS_MEMBERSHIP)');
-
-    // Done to the letter, by the machine whose writes speak for X, the identity that lets it go.
-    letGo(said, { checkout: founding, home: a });
-    expect(writeAs(checkout(remote, 'after'), d, 'written after X let go').who).toBe(y);
   }, 90_000);
 });
 
