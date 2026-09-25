@@ -250,7 +250,9 @@ export class ChainWriter {
    *
    * It is the ONE PLACE a tail is born, and the two append doors are the only callers, which
    * is what makes "a writer that appends nothing publishes nothing" a property of this class
-   * rather than of every operation that opens one. Why here and not at open is the
+   * rather than of every operation that opens one — `writer.test.ts`, *a tail is born at its
+   * first append, not when its writer opens*, asks it of both doors, of the writer's own
+   * refusals and of a checkpoint with nothing to sign. Why here and not at open is the
    * constructor's comment.
    *
    * Idempotent, like each of the three: a tail another process already gave birth to — or one

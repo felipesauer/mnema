@@ -282,7 +282,9 @@ function refuseNamedSecret(field: string, found: readonly SecretClass[]): NameHo
  * signed events on the tail, measured over stdio, beside a reply that said nothing was
  * recorded. What the door knows is that THE FACT did not land, and that is true down both
  * roads, so it says that, in the words `append.ts` already used for the refusal a reader
- * could not open.
+ * could not open. The two roads are asked by `code/tests/a-write-says-what-it-founded.test.ts`
+ * (the server, beside the founding on the disk) and `code/tests/a-refusal-leaves-nothing.test.ts`
+ * (the command line).
  */
 function refuseIfOversize(field: string, bytes: number): ContentTooLargeErr | undefined {
   if (bytes <= FIELD_BYTE_LIMIT) return undefined;

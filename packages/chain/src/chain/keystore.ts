@@ -203,9 +203,11 @@ export function committedPublicKey(
  *
  * So the id is created EXCLUSIVELY (`O_EXCL`, the primitive the tail lock already relies
  * on): of two processes that both mint, the kernel lets one create the file, and the
- * other adopts what it wrote — 0 of 360 rounds forked under the same barrier. And an
- * empty file is read as what it is, an id being written ({@link readInstallationId}).
- * `keystore.test.ts` plants both states the race produces.
+ * other adopts what it wrote — under the same barrier, through `openChainForWriting`, 0
+ * of 80 rounds released 0 to 3 ms apart forked, where the old code forked in 19 of 20 at
+ * 0 ms. And an empty file is read as what it is, an id being written
+ * ({@link readInstallationId}). `installation-id.test.ts` plants both states the race
+ * produces.
  *
  * @throws {UnwrittenInstallationIdError} if the file exists and stays empty past
  * {@link INSTALLATION_ID_WAIT_MS}. Nothing of the chain has been touched at that point.

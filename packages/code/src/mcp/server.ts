@@ -2078,9 +2078,11 @@ type RefusalReply = {
  *
  * AN ERROR A TOOL THROWS reaches neither door: the SDK answers it with the message alone. A
  * founding that came before the throw — the run opened, and then the operation's own append
- * met a tail another process held — is not lost, because nothing emptied the watch: it rides
- * on the connection's next reply, and only a connection that closes right after never hears
- * it. That is declared rather than closed.
+ * met a tail another process held — is not emptied by it: only a composer takes from the
+ * watch, so the connection's next reply carries the sentence, and a connection that closes
+ * right after never hears it. That is read from the code, not asserted by a case — there is
+ * no deterministic way to make the operation's append fail after the run's own succeeded —
+ * and it is declared rather than closed.
  */
 function refused(
   session: Session,
