@@ -1,7 +1,7 @@
 /**
  * Reading a chain from disk: enumerate tails, read a tail's entries in seq order
  * across its segments — the whole history, or just the end of it — and read its
- * checkpoints.
+ * checkpoints and its committed keys.
  *
  * Reading is pure I/O plus parsing; it does no verification. The verifier
  * layers the T1/T2/T4 checks on top of what this returns.
@@ -12,11 +12,13 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import { type Checkpoint, parseCheckpoint } from './checkpoint.js';
 import { describeLinkBreak, type Entry, linkBreakAt, parseEntry } from './entry.js';
+import { fingerprintOf, type KeyObject, publicKeyFromPem } from './keys.js';
 import {
   type ChainLayout,
   checkpointsPath,
   isSegmentFile,
   keysDir,
+  publicKeyPath,
   segmentNumberOf,
   tailDir,
   tailsDir,
@@ -47,6 +49,71 @@ export function listPublicKeyFingerprints(layout: ChainLayout): string[] {
     .filter((name) => name.endsWith('.pub'))
     .map((name) => name.slice(0, -'.pub'.length))
     .sort();
+}
+
+/**
+ * A committed public key as a verification holds it: the key the file under a fingerprint's
+ * name holds, and the fingerprint THAT key has.
+ *
+ * THE TWO ARE NOT THE SAME CLAIM, and nothing here decides between them. A file named by
+ * one fingerprint can be overwritten with another key, so every caller compares
+ * {@link fingerprint} with the name it asked for — and what a mismatch MEANS is the
+ * caller's to say: a swapped key under a checkpoint, an enrolment that proves nothing.
+ */
+export interface CommittedKey {
+  readonly key: KeyObject;
+  /**
+   * The SHA-256 of the key's DER `spki` — derived the first time a caller asks, from the
+   * point in the verification where it used to be derived on every call, and remembered.
+   * It was the second cost per checkpoint after the read itself: one export and one hash of
+   * the same key, once per checkpoint, for a value that cannot change.
+   */
+  readonly fingerprint: () => string;
+}
+
+/** The committed key a fingerprint names — `null` when no file carries that name, or the file holds no key. */
+export type CommittedKeys = (fingerprint: string) => CommittedKey | null;
+
+/**
+ * The committed public keys, each read off the disk AT MOST ONCE for as long as the reader
+ * is held — one reader per pass over the record.
+ *
+ * IT EXISTS BECAUSE THE VERIFIER READ ONE KEY ONCE PER CHECKPOINT. Three of its checks need
+ * a committed key — a checkpoint's signature, a tail's ownership proof, an enrolment's
+ * proof of possession — and each opened the file and parsed the PEM for itself, so a record
+ * that one machine signed once per act had that one key read and parsed as many times as
+ * it had checkpoints. The three ask this now, and one verification reads each key once,
+ * however many checkpoints, tails and enrolments name it (counted in
+ * `verify-costs-what-the-record-holds.test.ts`).
+ *
+ * ONE READER PER PASS, NEVER ONE FOR A SESSION. A key held is a key a later write cannot
+ * change under whoever holds it, which is right for one verdict formed over one reading of
+ * the disk and wrong for anything that outlives it.
+ */
+export function committedKeys(layout: ChainLayout): CommittedKeys {
+  const read = new Map<string, CommittedKey | null>();
+  return (fingerprint) => {
+    let key = read.get(fingerprint);
+    if (key === undefined) {
+      key = committedKey(layout, fingerprint);
+      read.set(fingerprint, key);
+    }
+    return key;
+  };
+}
+
+/** One read of one committed key off the disk — see {@link committedKeys}. */
+function committedKey(layout: ChainLayout, fingerprint: string): CommittedKey | null {
+  const path = publicKeyPath(layout, fingerprint);
+  if (!existsSync(path)) return null;
+  let key: KeyObject;
+  try {
+    key = publicKeyFromPem(readFileSync(path, 'utf-8'));
+  } catch {
+    return null;
+  }
+  let derived: string | undefined;
+  return { key, fingerprint: () => (derived ??= fingerprintOf(key)) };
 }
 
 /**
