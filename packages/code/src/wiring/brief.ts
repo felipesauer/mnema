@@ -106,8 +106,8 @@ export function switchedOff(off: {
     `The ${off.channel} channel is switched off, so there is no document: ` +
     `${off.by} switched it off at ${off.at}` +
     `${off.travels ? '' : ', on this machine only'}. ` +
-    'Run `mnema switch` to see where every switch stands, or `mnema switch on ' +
-    `${off.channel}\` to have this document again.`
+    'Run `mnema switch` to see where every switch stands, or ' +
+    `\`mnema switch on ${off.channel}\` to have this document again.`
   );
 }
 

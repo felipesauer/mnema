@@ -59,7 +59,10 @@ export type MembershipRefusalCode =
   | 'NOT_A_MEMBER'
   /** The record proves the key belonged to an identity and was retired from it. */
   | 'REVOKED_KEY'
-  /** The record proves membership in more than one identity — which one is the person's call. */
+  /**
+   * The record proves membership in more than one identity — which one is the person's call, and
+   * the record takes it only as a revocation by the identity that should not have the key.
+   */
   | 'AMBIGUOUS_MEMBERSHIP';
 
 /** The record proves this key belongs to exactly one identity. */
@@ -143,9 +146,7 @@ export function membershipIn(
     return {
       ok: false,
       code: 'AMBIGUOUS_MEMBERSHIP',
-      message:
-        `this key belongs to more than one identity in that record (${oneLine(anchors.join(', '))}) — ` +
-        'which one it should speak for here is not a choice to make on its behalf',
+      message: ambiguityOf(query, key, anchors),
     };
   }
   const anchor = anchors[0];
@@ -169,6 +170,62 @@ export function membershipIn(
     };
   }
   return { ok: true, anchor, membership: member.get(anchor) as Membership };
+}
+
+/**
+ * The refusal of a key the record proves in more than one identity — and the way out of it
+ * that exists, which is a revocation, or the words that say there is none.
+ *
+ * IT USED TO STOP AT THE REFUSAL, and the page beside it promised the write was refused "until
+ * you say which" — with no command that says which. Measured on the binary, in the three shapes
+ * a record reaches this in, the one way out is for an identity that should not have the key to
+ * RETIRE it (`mnema key revoke`, from a machine that writes here as that identity, committed),
+ * after which a fresh clone writes again, as the identity left:
+ *
+ *   - a key enrolled into two identities, having founded neither: either one can let it go, and
+ *     the key speaks for the other;
+ *   - a key that FOUNDED an identity by writing and was then enrolled into another: the one it
+ *     founded cannot let it go — it is that identity's only key, and an identity's last key is
+ *     refused (`LAST_KEY`) — so only the other can, and the key goes back to the one it founded;
+ *   - a key that is the only key of BOTH: no revocation separates them, and nothing says one does.
+ *
+ * So which identities can let it go is ASKED of the record here, by the roster the revocation
+ * itself checks and by both of its refusals — a key that roster does not count (`UNKNOWN_KEY`),
+ * and an identity's last key (`LAST_KEY`) — and the sentence says exactly that: never a way out
+ * the record would refuse. The first refusal is not one a record the product wrote can reach
+ * here, since a vouch commits the key's public half before it is appended; a tree that LOST that
+ * half can, and then the reason the sentence gives ("the only key") is not the reason, while the
+ * conclusion — no revocation separates them — is. `restore.test.ts` holds that tree.
+ *
+ * THE COMMAND IS HANDED OVER WHOLE, and the first version of this sentence did not hand it: it
+ * stopped at the fingerprint, while `key revoke` requires `--reason`, so a person who copied the
+ * words got the parser's refusal (`mnema key revoke needs --reason <text>`, exit 1) instead of
+ * the way out. The case that followed the words had added the flag itself before running them,
+ * which is how it stayed green. The words now carry `--reason "<why>"` — a marker for what the
+ * person writes, quoted because what they write is a sentence — and
+ * `the-refusal-names-the-way-out.test.ts` runs them as written: the marker filled, nothing added.
+ *
+ * The key's own installation in a fresh clone cannot run the revocation: it has no identity to
+ * act as until this is settled. It costs a roster per identity named, on a refusal only.
+ */
+function ambiguityOf(query: MembershipQuery, key: PublicHalf, anchors: readonly string[]): string {
+  const opening = `this key belongs to more than one identity in that record (${oneLine(anchors.join(', '))}) — which one it should speak for here is not a choice to make on its behalf`;
+  // An identity can retire this key only where its roster counts the key and holds another: the
+  // revocation refuses a key it does not count, and the last one.
+  const keeps = anchors.filter((anchor) => {
+    const roster = rosterOf(query, anchor);
+    return !roster.has(key.fingerprint) || roster.size <= 1;
+  });
+  if (keeps.length > 1) {
+    return `${opening}, and no revocation here separates them: this key is the only key ${oneLine(keeps.join(' and '))} have, and an identity's last key cannot be retired`;
+  }
+  const revoke = `\`mnema key revoke ${key.fingerprint} --reason "<why>"\` inside this project, and commits`;
+  const [kept] = keeps;
+  if (kept === undefined) {
+    return `${opening}. It speaks for one of them again once the ${anchors.length === 2 ? 'other lets' : 'others let'} it go: a machine whose writes here speak for ${anchors.length === 2 ? 'the identity' : 'each identity'} that should not have it runs ${revoke} — the key then speaks for the identity left`;
+  }
+  const letsGo = anchors.filter((anchor) => anchor !== kept);
+  return `${opening}. It can only go back to speaking for ${oneLine(kept)}, whose only key it is — an identity's last key cannot be retired — once ${oneLine(letsGo.join(' and '))} ${letsGo.length === 1 ? 'lets' : 'let'} it go: a machine whose writes here speak for ${letsGo.length === 1 ? 'it' : 'each'} runs ${revoke}`;
 }
 
 /**

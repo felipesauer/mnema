@@ -11,6 +11,14 @@
  *
  * Nothing here decides anything about the product. It hands a caller the text and
  * the paths; what counts as a violation belongs to the guard that asks.
+ *
+ * THE WALK HAS TWO READINGS NOW, and they are one walk on purpose. {@link codeOnly} keeps
+ * the code; {@link literalsOnly} keeps the other half — what the string and template
+ * literals say — for the guard that reads the commands the product hands a person
+ * (`the-command-handed-over-runs-as-handed.test.ts`). A second lexer written for that guard
+ * would be a second answer to where a literal begins. Measured when the second reading
+ * arrived: over the 719 tracked scripts, `codeOnly` returns the same bytes it returned
+ * before, file for file.
  */
 
 import { readdirSync } from 'node:fs';
@@ -62,7 +70,49 @@ const A_REGEX_CAN_FOLLOW_THESE_WORDS =
  * /x/` is not a division.
  */
 export function codeOnly(source: string): string {
+  return scan(source).code;
+}
+
+/**
+ * Where a string or template literal opens or closes, in {@link literalsOnly}'s reading. A
+ * control character, because no source file here holds one, so it can never be text.
+ */
+export const LITERAL_EDGE = '\u0000';
+
+/** Where a template interpolates a value, in {@link literalsOnly}'s reading. */
+export const INTERPOLATED = '\u0001';
+
+/**
+ * The source with ONLY the text of its string and template literals kept — the other half of
+ * {@link codeOnly}, read by the same walk, so the two can never disagree about where a literal
+ * begins. Code, comments and regex literals are blanked; newlines are kept everywhere, so a
+ * line number counted here is the line number of the source.
+ *
+ * What a literal SAYS is what is kept, which is not always what is typed: an escape keeps the
+ * character it stands for where that is punctuation a sentence can carry (`` \` `` is a
+ * backtick, `\\` a backslash, a quote a quote) and is a space otherwise (`\n`, `\t`, `\u…`),
+ * and a line continuation keeps its newline. Each literal is fenced by {@link LITERAL_EDGE} on
+ * both sides, so a reader can tell text that runs on from text that stopped at a `'` and started
+ * again after a `+`; and a template's `${…}` is one {@link INTERPOLATED}, because what the
+ * program puts there is a value the source does not have.
+ */
+export function literalsOnly(source: string): string {
+  return scan(source).literals;
+}
+
+/** What an escape keeps in {@link literalsOnly}: the character, where it is one a sentence holds. */
+function unescaped(next: string | undefined): string {
+  if (next === '\n') return '\n';
+  return next !== undefined && '`\'"\\$'.includes(next) ? ` ${next}` : '  ';
+}
+
+/**
+ * The one walk both readings are made of. Every step pushes to BOTH projections: `kept` is
+ * {@link codeOnly}'s and is exactly what it always was; `text` is {@link literalsOnly}'s.
+ */
+function scan(source: string): { code: string; literals: string } {
   const kept: string[] = [];
+  const text: string[] = [];
   const stack: { mode: Mode; braces: number }[] = [{ mode: 'code', braces: 0 }];
   let i = 0;
   let inClass = false;
@@ -81,15 +131,18 @@ export function codeOnly(source: string): string {
       if (char === '/' && next === '/') {
         stack.push({ mode: 'line', braces: 0 });
         kept.push('  ');
+        text.push('  ');
         i += 2;
       } else if (char === '/' && next === '*') {
         stack.push({ mode: 'block', braces: 0 });
         kept.push('  ');
+        text.push('  ');
         i += 2;
       } else if (char === '/' && opensARegex()) {
         stack.push({ mode: 'regex', braces: 0 });
         inClass = false;
         kept.push(' ');
+        text.push(' ');
         i += 1;
       } else if (char === "'" || char === '"' || char === '`') {
         stack.push({
@@ -97,18 +150,22 @@ export function codeOnly(source: string): string {
           braces: 0,
         });
         kept.push(' ');
+        text.push(LITERAL_EDGE);
         i += 1;
       } else if (char === '{') {
         frame.braces += 1;
         kept.push(char);
+        text.push(' ');
         i += 1;
       } else if (char === '}' && frame.braces === 0 && stack.length > 1) {
         stack.pop();
         kept.push(' ');
+        text.push(' ');
         i += 1;
       } else {
         if (char === '}') frame.braces -= 1;
         kept.push(char);
+        text.push(char === '\n' ? '\n' : ' ');
         i += 1;
       }
       continue;
@@ -117,7 +174,11 @@ export function codeOnly(source: string): string {
       if (char === '\n') {
         stack.pop();
         kept.push('\n');
-      } else kept.push(' ');
+        text.push('\n');
+      } else {
+        kept.push(' ');
+        text.push(' ');
+      }
       i += 1;
       continue;
     }
@@ -125,9 +186,11 @@ export function codeOnly(source: string): string {
       if (char === '*' && next === '/') {
         stack.pop();
         kept.push('  ');
+        text.push('  ');
         i += 2;
       } else {
         kept.push(char === '\n' ? '\n' : ' ');
+        text.push(char === '\n' ? '\n' : ' ');
         i += 1;
       }
       continue;
@@ -136,6 +199,7 @@ export function codeOnly(source: string): string {
     // a `\'` never reads as the closing quote and a `\/` never ends the pattern.
     if (char === '\\') {
       kept.push('  ');
+      text.push(frame.mode === 'regex' ? '  ' : unescaped(next));
       i += 2;
       continue;
     }
@@ -153,6 +217,7 @@ export function codeOnly(source: string): string {
       if (char === '\n') {
         stack.pop();
         kept.push('\n');
+        text.push('\n');
         i += 1;
         continue;
       }
@@ -161,16 +226,19 @@ export function codeOnly(source: string): string {
       else if (char === '/' && !inClass) {
         stack.pop();
         kept.push(' ');
+        text.push(' ');
         i += 1;
         continue;
       }
       kept.push(' ');
+      text.push(' ');
       i += 1;
       continue;
     }
     if (frame.mode === 'template' && char === '$' && next === '{') {
       stack.push({ mode: 'code', braces: 0 });
       kept.push('  ');
+      text.push(`${INTERPOLATED} `);
       i += 2;
       continue;
     }
@@ -181,8 +249,12 @@ export function codeOnly(source: string): string {
     if (closes) {
       stack.pop();
       kept.push(' ');
-    } else kept.push(char === '\n' ? '\n' : ' ');
+      text.push(LITERAL_EDGE);
+    } else {
+      kept.push(char === '\n' ? '\n' : ' ');
+      text.push(char);
+    }
     i += 1;
   }
-  return kept.join('');
+  return { code: kept.join(''), literals: text.join('') };
 }

@@ -325,9 +325,25 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * SDK's client, and the hook's tool. And 2883 -> 2891 when the key root began to ignore itself
  * in git: eight in `keystore.test.ts`, which asks `git check-ignore` about what the key writers
  * produce — `node:child_process`, `node:fs`, `node:os`, `node:path`, `vitest`, and the three
- * modules of the key root it drives.
+ * modules of the key root it drives. And 2891 -> 2919 when an answer that writes nothing
+ * stopped opening a writer, and the account the agent reads began to carry the founding mark:
+ * twelve clauses in `a-refusal-leaves-nothing.test.ts`, which digests the tree around the built
+ * binary and a server reached through the SDK's client, twelve in
+ * `the-refusal-names-the-way-out.test.ts`, which follows the refusal's own command through git
+ * clones and asks the agent for the same words, three in the copilot's `accountability.test.ts`
+ * for the second key its foundings need, and one in `founded-beside.test.ts` for the cache.
+ * And 2919 -> 2921 when the way out began to be run as it is written: the reading of a shell
+ * line moved into `support/reading-a-shell-line.ts`, and its two readers import it — the guard
+ * it came out of, and the case that copies the refusal's command and hands the binary the words
+ * a shell would. And 2921 -> 2931 when every command the product hands over began to be parsed
+ * whole: nine clauses in `the-command-handed-over-runs-as-handed.test.ts`, which asks git for
+ * the pages and the sources that speak and reads them — `node:child_process`, `node:fs`,
+ * `node:path`, `commander` for the mirror it parses with, `vitest`, `../src/cli.js` for the
+ * program the mirror is made from, and the three support modules — and two in the shell reading
+ * itself, which took the page sweep over with its `git ls-files` and its workspace root; the
+ * guard that used to hold that sweep lost its `node:child_process`.
  */
-const CLAUSES_IN_THE_TREE = 2891;
+const CLAUSES_IN_THE_TREE = 2931;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 

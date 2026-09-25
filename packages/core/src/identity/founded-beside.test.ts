@@ -17,6 +17,7 @@ import {
 } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { captureMemory } from '../knowledge/operations.js';
+import { ProjectionCache } from '../projections/cache.js';
 import { orderedEvents } from '../projections/order.js';
 import type { Clock } from '../workflow/clock.js';
 import { enrollKey, ensureFounded } from '../workflow/identity-operations.js';
@@ -135,5 +136,31 @@ describe('foundedBesideBy — the question a surface asks right after a write', 
     expect(foundedBesideBy(tree, b.fingerprint, upcasters)?.anchor).toBe(ensureFounded(b.ctx));
     // The first founding was beside nothing.
     expect(foundedBesideBy(tree, a.fingerprint, upcasters)).toBeUndefined();
+  });
+});
+
+describe('ProjectionCache.foundedBeside — the same reading, off the order a cache holds', () => {
+  it('equals the reading off the chain, after a rebuild and after a refresh that brought one forward', () => {
+    const a = machine();
+    writes(a, 'first');
+    const cache = ProjectionCache.open(tree, { upcasters });
+    try {
+      cache.rebuild();
+      expect(cache.foundedBeside()).toEqual([]);
+
+      // A second identity founds AFTER the cache was built: the order it answers from is the one
+      // `refresh` brings forward, not a fresh replay.
+      const b = machine();
+      writes(b, 'a key nobody vouched for');
+      cache.refresh();
+      const offTheChain = identitiesFoundedBeside(orderedEvents({ root: tree }, upcasters));
+      expect(offTheChain).toHaveLength(1);
+      expect(cache.foundedBeside()).toEqual(offTheChain);
+
+      cache.rebuild();
+      expect(cache.foundedBeside()).toEqual(offTheChain);
+    } finally {
+      cache.close();
+    }
   });
 });

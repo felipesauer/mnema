@@ -79,18 +79,23 @@ export {
   recordObservation,
 } from './knowledge/operations.js';
 // Opening the correct tree's chain for writing (scope RESOLUTION stays on the
-// read surface; only opening a writer is a write).
-export { type OpenTreeOptions, openTreeForWriting } from './topology/index.js';
+// read surface; only opening a writer is a write). The signer of a tree and the
+// deferred write beside it are here for the reason the handshake is: reading who
+// would sign can MINT this machine's key on first use, so it is on the writing side
+// even though it opens nothing in the tree.
+export {
+  type DeferredWrite,
+  deferredWrite,
+  type OpenTreeOptions,
+  openTreeForWriting,
+  signerFor,
+} from './topology/index.js';
 // The refusal an event the READER would not accept earns. Like the screen, only
 // the refusal type crosses the line: the check lives inside every write, and a
 // caller able to run it separately would be a caller able to skip it.
 export type { UnreadableEventErr } from './workflow/append.js';
-// Identity write operations — founding an anchor, establishing it WHOLE into a
-// tree (the ≥2-keys policy), and enrolling or revoking keys. `ensureFounded` is
-// the founding every write goes through; the `foundIdentity` wrapper around it is
-// not here, because no surface ever founded on its own — `init` establishes, and
-// every other write founds on its way in.
 export {
+  type AnchorContext,
   type AnchorDecision,
   authorizingAnchor,
   type DeclinedKey,
@@ -183,3 +188,12 @@ export {
   type WriteContext,
   type WriteError,
 } from './workflow/index.js';
+// Identity write operations — founding an anchor, establishing it WHOLE into a
+// tree (the ≥2-keys policy), and enrolling or revoking keys. `ensureFounded` is
+// the founding every write goes through; the `foundIdentity` wrapper around it is
+// not here, because no surface ever founded on its own — `init` establishes, and
+// every other write founds on its way in.
+export type {
+  DecideThenWrite,
+  DeferredWriteContext,
+} from './workflow/operations.js';

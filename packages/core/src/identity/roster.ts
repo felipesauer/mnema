@@ -11,13 +11,23 @@
  *
  * Every refusal below has the same shape of reason: it is cheaper than the state
  * it prevents. That is the whole argument for putting them ahead of the write.
+ *
+ * AHEAD OF THE WRITER TOO, and that is a second promise rather than the same one. They
+ * used to run after the caller had OPENED the tree's writer, which appends nothing and
+ * still touches the tree: for a key that never wrote there it materializes the key's
+ * public half, mints an installation id and gives the tail a directory and a proof.
+ * Measured on the binary, a refused `key enroll` left the tree with an untracked `.pub`
+ * and an empty tail, and a refused `key revoke` the same. Both operations take a
+ * {@link DecideThenWrite} now: handed a deferred context, they decide with the signer
+ * and open the writer after their last refusal, so a refusal leaves the tree exactly
+ * as it found it (`code/tests/a-refusal-leaves-nothing.test.ts`).
  */
 
 import { materializePublicKey } from '@mnema/chain';
-import type { ScreenedWrite } from '../content/screen.js';
+import { type ScreenedWrite, screenContent, screened } from '../content/screen.js';
 import { oneLine } from '../one-line.js';
 import { decideAnchor, enrollKey, revokeKey } from '../workflow/identity-operations.js';
-import type { WriteContext } from '../workflow/operations.js';
+import { type DecideThenWrite, openedContext, signerOfContext } from '../workflow/operations.js';
 import { decodeKeyRequest } from './handshake.js';
 import { provesConsent, rosterOf } from './membership.js';
 
@@ -78,7 +88,7 @@ export interface EnrollRequestErr {
  * from the disk it must be proven against.
  */
 export function enrollFromRequest(
-  ctx: WriteContext,
+  ctx: DecideThenWrite,
   input: EnrollRequestInput,
 ): EnrollRequestOk | EnrollRequestErr {
   const request = decodeKeyRequest(input.request);
@@ -92,9 +102,11 @@ export function enrollFromRequest(
     };
   }
 
-  // WHO this machine is here, decided without writing: an anchor already recorded,
-  // one the record proves it joined, or the anchor it is about to found.
-  const decided = decideAnchor(ctx);
+  // WHO this machine is here, decided without writing — and without a writer: an
+  // anchor already recorded, one the record proves it joined, or the anchor it is
+  // about to found.
+  const signer = signerOfContext(ctx);
+  const decided = decideAnchor({ writer: signer, layout: ctx.layout, upcasters: ctx.upcasters });
   const anchor = decided.anchor;
   const fingerprint = request.key.fingerprint;
 
@@ -113,7 +125,7 @@ export function enrollFromRequest(
   // empty one, and this machine is about to become its only member — which is why
   // an unfounded tree may still vouch.
   const roster = rosterOf({ tree: ctx.layout.root, upcasters: ctx.upcasters }, anchor);
-  if (decided.source !== 'unfounded' && !roster.has(ctx.writer.signerFingerprint)) {
+  if (decided.source !== 'unfounded' && !roster.has(signer.signerFingerprint)) {
     return {
       ok: false,
       code: 'CANNOT_VOUCH',
@@ -126,11 +138,13 @@ export function enrollFromRequest(
     return { ok: true, fingerprint, anchor, alreadyMember: true };
   }
 
-  materializePublicKey(ctx.layout, request.key);
+  // Every refusal the record can give is behind this line, so only now is the tree touched.
+  const write = openedContext(ctx);
+  materializePublicKey(write.layout, request.key);
   // The vouch's own refusal is forwarded rather than asserted away: it is the one
   // refusal here that is about the MATERIAL rather than the roster, and it comes
   // back with nothing appended, so the caller can hear it and act.
-  const joined = enrollKey(ctx, { newFp: fingerprint, reverseSig: request.reverseSig });
+  const joined = enrollKey(write, { newFp: fingerprint, reverseSig: request.reverseSig });
   if (!joined.ok) return joined;
   return { ok: true, fingerprint, anchor, alreadyMember: false };
 }
@@ -194,14 +208,15 @@ export interface RevokeMemberErr {
  * key once the record proves the new one a member.
  */
 export function revokeMember(
-  ctx: WriteContext,
+  ctx: DecideThenWrite,
   input: RevokeMemberInput,
 ): RevokeMemberOk | RevokeMemberErr {
-  const decided = decideAnchor(ctx);
+  const signer = signerOfContext(ctx);
+  const decided = decideAnchor({ writer: signer, layout: ctx.layout, upcasters: ctx.upcasters });
   const anchor = decided.anchor;
   const roster = rosterOf({ tree: ctx.layout.root, upcasters: ctx.upcasters }, anchor);
 
-  if (decided.source !== 'unfounded' && !roster.has(ctx.writer.signerFingerprint)) {
+  if (decided.source !== 'unfounded' && !roster.has(signer.signerFingerprint)) {
     return {
       ok: false,
       code: 'CANNOT_VOUCH',
@@ -230,18 +245,27 @@ export function revokeMember(
     };
   }
 
-  // The reason is free text, so the mechanism screens it at the append. Forward
-  // its refusal rather than asserting success: this is the one refusal here that
-  // is about the CONTENT rather than the roster, and it is still free (nothing has
-  // been appended by the time it comes back).
-  const revoked = revokeKey(ctx, { revokedFp: input.fingerprint, reason: input.reason });
+  // The reason is free text, and it is screened HERE, before the writer opens: an
+  // oversize reason is a refusal like the three above, and it must leave the tree as
+  // they do. The mechanism screens it again at the append, which is its own door and
+  // stays one; over text this already cleaned it finds nothing, so what was replaced
+  // is reported from this screening.
+  const text = screenContent({ reason: input.reason });
+  if (!text.ok) return text;
+
+  // Forward the append's refusal rather than asserting success: a reason no read would
+  // accept is the one refusal left, and it comes back with nothing appended.
+  const revoked = revokeKey(openedContext(ctx), {
+    revokedFp: input.fingerprint,
+    reason: text.fields.reason,
+  });
   if (!revoked.ok) return revoked;
   return {
     ok: true,
     fingerprint: input.fingerprint,
     anchor,
-    self: input.fingerprint === ctx.writer.signerFingerprint,
+    self: input.fingerprint === signer.signerFingerprint,
     remaining: roster.size - 1,
-    ...(revoked.replaced !== undefined ? { replaced: revoked.replaced } : {}),
+    ...screened(text.replaced),
   };
 }

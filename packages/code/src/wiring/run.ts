@@ -87,7 +87,7 @@ export function registerRun(program: Command, wiring: Wiring): Declared {
       io.out(`export ${RUN_ENV}=${result.id}`);
       io.out('');
       io.out(render(fact('Run that in this shell: every fact written after it is pinned to this')));
-      io.out(render(fact('session. `mnema run end` closes it.')));
+      io.out(render(fact('session. `mnema run end --which <agent>` closes it.')));
     });
 
   // `mnema run end [<id>] --which <agent> [--outcome <text>]`. The id is OPTIONAL

@@ -66,8 +66,8 @@ import {
 } from './checkpoint.js';
 import { type Entry, sealEntry, serializeEntry } from './entry.js';
 import type { WrittenEvent } from './hash.js';
-import { deriveAnchor, type KeyPair } from './keys.js';
-import { readAnchor, writeAnchor } from './keystore.js';
+import type { KeyPair } from './keys.js';
+import { signerOf, writeAnchor } from './keystore.js';
 import {
   type ChainLayout,
   checkpointsPath,
@@ -327,9 +327,7 @@ export class ChainWriter {
    * string.
    */
   get anchor(): string {
-    return (
-      readAnchor(this.layout, this.keyPair.fingerprint) ?? deriveAnchor(this.keyPair.fingerprint)
-    );
+    return signerOf(this.layout, this.keyPair.fingerprint).anchor;
   }
 
   /**
@@ -396,7 +394,7 @@ export class ChainWriter {
    * check be made without re-reading the tail.
    */
   get hasAnchor(): boolean {
-    return readAnchor(this.layout, this.keyPair.fingerprint) !== null;
+    return signerOf(this.layout, this.keyPair.fingerprint).hasAnchor;
   }
 
   /**

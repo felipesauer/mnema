@@ -14,8 +14,16 @@
  * below, not asserted in prose.
  */
 
-import { createPrivateKey, createPublicKey } from 'node:crypto';
-import { existsSync, mkdtempSync, readFileSync, rmSync, unlinkSync } from 'node:fs';
+import { createHash, createPrivateKey, createPublicKey } from 'node:crypto';
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  unlinkSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -29,10 +37,11 @@ import {
   openChainForWriting,
   type PublicHalf,
   sign,
+  signerAt,
   verify,
 } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { IdentityUnavailableError } from '../identity/membership.js';
+import { IdentityUnavailableError, membershipIn } from '../identity/membership.js';
 import { captureMemory } from '../knowledge/operations.js';
 import { orderedEvents } from '../projections/order.js';
 import type { Clock } from './clock.js';
@@ -91,7 +100,7 @@ function open(keyRoot: string): Machine {
 }
 
 /** The request material a joining machine produces: its consent to join `anchor`. */
-function consentOf(m: Machine, anchor: string): string {
+function consentOf(m: Pick<Machine, 'keyRoot' | 'fingerprint'>, anchor: string): string {
   const privateKey = createPrivateKey(
     readFileSync(join(m.keyRoot, 'keys', `${m.fingerprint}.key`), 'utf-8'),
   );
@@ -99,7 +108,7 @@ function consentOf(m: Machine, anchor: string): string {
 }
 
 /** A machine's public half, read from its key root — the material a vouch commits. */
-function publicHalfOf(m: Machine): PublicHalf {
+function publicHalfOf(m: Pick<Machine, 'keyRoot' | 'fingerprint'>): PublicHalf {
   return {
     publicKey: createPublicKey(
       readFileSync(join(m.keyRoot, 'keys', `${m.fingerprint}.pub`), 'utf-8'),
@@ -317,5 +326,132 @@ describe('adoption — an identity it cannot decide is an identity it does not w
     // consented to join.
     expect(decideAnchor(b.ctx).source).toBe('unfounded');
     expect(ensureFounded(b.ctx)).toBe(deriveAnchor(b.fingerprint));
+  });
+});
+
+describe('the same decision with or without a writer — the one a caller takes before opening one', () => {
+  /** Every directory and file under the tree, each file with its digest. */
+  function listing(dir: string): string[] {
+    const out: string[] = [];
+    const walk = (at: string): void => {
+      for (const name of readdirSync(at).sort()) {
+        const path = join(at, name);
+        if (statSync(path).isDirectory()) {
+          out.push(`D ${path}`);
+          walk(path);
+        } else {
+          out.push(`F ${createHash('sha256').update(readFileSync(path)).digest('hex')} ${path}`);
+        }
+      }
+    };
+    walk(dir);
+    return out;
+  }
+
+  /** The decision for the key at `keyRoot`, asked of the signer — no writer is opened. */
+  function asked(keyRoot: string): ReturnType<typeof decideAnchor> {
+    return decideAnchor({ writer: signerAt(tree, { keyRoot }), layout: { root: tree }, upcasters });
+  }
+
+  /** A key root holding a key that has never opened a writer over the tree. */
+  function unopened(prefix: string): { keyRoot: string; fingerprint: string } {
+    const keyRoot = tmp(prefix);
+    return { keyRoot, fingerprint: signerAt(tree, { keyRoot }).signerFingerprint };
+  }
+
+  it('for a key new to the tree: the anchor it would found — and the tree untouched by asking', () => {
+    ensureFounded(machine('mnema-same-a-').ctx);
+    const b = unopened('mnema-same-b-');
+    const before = listing(tree);
+
+    const without = asked(b.keyRoot);
+    // No public half, no installation id, no tail: the asking left the tree as it was.
+    expect(listing(tree)).toEqual(before);
+    expect(without).toEqual({ anchor: deriveAnchor(b.fingerprint), source: 'unfounded' });
+    // And a writer, which DOES materialize the half, reaches the same answer.
+    expect(decideAnchor(open(b.keyRoot).ctx)).toEqual(without);
+  });
+
+  it('for a key another machine enrolled: the identity it joined, both ways', () => {
+    const a = machine('mnema-same-a-');
+    const anchor = ensureFounded(a.ctx);
+    const b = unopened('mnema-same-b-');
+    materializePublicKey({ root: tree }, publicHalfOf(b));
+    enrollKey(a.ctx, { newFp: b.fingerprint, reverseSig: consentOf(b, anchor) });
+
+    const without = asked(b.keyRoot);
+    expect(without).toEqual({ anchor, source: 'adopted', membership: 'enrolled' });
+    expect(decideAnchor(open(b.keyRoot).ctx)).toEqual(without);
+  });
+
+  it('for a key the record proves in two identities: both refuse, and neither picks', () => {
+    const a = machine('mnema-same-a-');
+    const anchorA = ensureFounded(a.ctx);
+    const c = machine('mnema-same-c-');
+    const anchorC = ensureFounded(c.ctx);
+    const k = unopened('mnema-same-k-');
+    materializePublicKey({ root: tree }, publicHalfOf(k));
+    enrollKey(a.ctx, { newFp: k.fingerprint, reverseSig: consentOf(k, anchorA) });
+    enrollKey(c.ctx, { newFp: k.fingerprint, reverseSig: consentOf(k, anchorC) });
+
+    const refusalOf = (decide: () => unknown): string | undefined => {
+      try {
+        decide();
+      } catch (error) {
+        return (error as IdentityUnavailableError).code;
+      }
+      return undefined;
+    };
+    expect(refusalOf(() => asked(k.keyRoot))).toBe('AMBIGUOUS_MEMBERSHIP');
+    expect(refusalOf(() => decideAnchor(open(k.keyRoot).ctx))).toBe('AMBIGUOUS_MEMBERSHIP');
+  });
+});
+
+describe('the way out, with three identities — the words for more than two', () => {
+  /** A key root holding a key that has never opened a writer over the tree. */
+  function joiner(prefix: string): { keyRoot: string; fingerprint: string } {
+    const keyRoot = tmp(prefix);
+    return { keyRoot, fingerprint: signerAt(tree, { keyRoot }).signerFingerprint };
+  }
+
+  /** The refusal the record gives for the key, whole. */
+  function refusalFor(k: { keyRoot: string; fingerprint: string }): string {
+    const refused = membershipIn({ tree, upcasters }, publicHalfOf(k));
+    expect(refused).toMatchObject({ ok: false, code: 'AMBIGUOUS_MEMBERSHIP' });
+    return (refused as { message: string }).message;
+  }
+
+  it('enrolled into three, having founded none: the others let it go, each by a member of its own', () => {
+    const founders = ['x', 'y', 'w'].map((name) => machine(`mnema-three-${name}-`));
+    const anchors = founders.map((m) => ensureFounded(m.ctx));
+    const k = joiner('mnema-three-k-');
+    materializePublicKey({ root: tree }, publicHalfOf(k));
+    founders.forEach((m, i) => {
+      enrollKey(m.ctx, { newFp: k.fingerprint, reverseSig: consentOf(k, anchors[i] as string) });
+    });
+
+    const said = refusalFor(k);
+    expect(said).toContain('It speaks for one of them again once the others let it go');
+    expect(said).toContain(
+      'a machine whose writes here speak for each identity that should not have it runs',
+    );
+    expect(said).toContain(`\`mnema key revoke ${k.fingerprint} --reason "<why>"\``);
+  });
+
+  it('founded one and enrolled into two: it goes back to the one it founded once both others let go', () => {
+    const founders = ['x', 'y'].map((name) => machine(`mnema-three-${name}-`));
+    const anchors = founders.map((m) => ensureFounded(m.ctx));
+    // This key WRITES first, so it founds an identity of its own — whose only key it is.
+    const k = machine('mnema-three-k-');
+    const own = ensureFounded(k.ctx);
+    founders.forEach((m, i) => {
+      enrollKey(m.ctx, { newFp: k.fingerprint, reverseSig: consentOf(k, anchors[i] as string) });
+    });
+
+    const said = refusalFor(k);
+    expect(said).toContain(`It can only go back to speaking for ${own}, whose only key it is`);
+    expect(said).toContain(
+      `once ${anchors[0]} and ${anchors[1]} let it go: a machine whose writes here speak for each runs`,
+    );
   });
 });

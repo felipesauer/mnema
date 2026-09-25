@@ -50,6 +50,7 @@ import {
   type EstablishedIdentity,
   establishIdentity,
   openTreeForWriting,
+  signerFor,
 } from '@mnema/core/write';
 
 /** What init needs from its environment — injected so it is testable. */
@@ -97,6 +98,16 @@ export interface InitRefused {
  * tree and of the app data directory before and after, and requires both maps to be
  * unchanged.
  *
+ * THAT SENTENCE WAS TRUE ONLY FOR THE KEY THAT HAD FOUNDED THE TREE, which is the one
+ * key `init.test.ts` ran it with. The anchor was read off a WRITER opened for the
+ * purpose, and opening one touches the tree before anything is appended: for any other
+ * key it materializes that key's public half, mints an installation id and gives its
+ * tail a directory and a proof. Measured on the binary, `mnema init` run by a second
+ * machine in a cloned project answered "nothing to found" and left four new entries
+ * under `.mnema/`, two of them untracked in git. The anchor is read from the SIGNER now
+ * (`signerFor`), which opens nothing, and the writer is opened only on the path that
+ * founds — `a-refusal-leaves-nothing.test.ts` runs it with the other key.
+ *
  * Nor does a REFUSED one: in a directory that can be no project's root it answers
  * {@link InitRefused} before any directory is made, and `init.test.ts` holds that the
  * same way — every file under the home, digested before and after.
@@ -111,29 +122,30 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
   const alreadyHere = isDirectory(root);
 
   // Create the tree at the EXACT cwd (its own `.gitignore` comes with it) unless
-  // one is already here — a second init must not re-found. Either way, opening
-  // the public writer surfaces the anchor (opening appends nothing).
+  // one is already here — a second init must not re-found.
   if (!alreadyHere) ensureTree({ root });
 
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  const writer = openTreeForWriting(trees, 'public');
 
   if (alreadyHere) {
     // The anchor this machine WILL write as here — not the one its key derives.
     // On a machine another has enrolled, those differ until its first write in
     // this tree: reading the derived one would report an identity that the very
     // next write corrects, and this is the command a person runs to check that
-    // joining worked.
+    // joining worked. Asked of the SIGNER, which opens nothing: a writer opened to
+    // ask would leave this key's public half and an empty tail behind.
     return {
       created: false,
       root,
       anchor: authorizingAnchor({
-        writer,
+        writer: signerFor(trees, 'public'),
         layout: { root: chainRootForScope(trees, 'public') as string },
         upcasters: catalogUpcasters(),
       }),
     };
   }
+
+  const writer = openTreeForWriting(trees, 'public');
 
   const identity = establishIdentity(
     {

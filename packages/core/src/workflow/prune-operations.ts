@@ -103,7 +103,9 @@ export interface PruneInput {
  * for size: this record costs 884 B per event.
  *
  * The reason is screened FIRST, before the tail is even read: it is the one check
- * that needs no context at all, so an oversize refusal touches nothing.
+ * that needs no context at all, so an oversize refusal touches nothing — nothing THIS
+ * does. The writer its caller opened to reach it has already given a key new to the
+ * tree its public half and a tail; `workflow/operations.ts` says where that is measured.
  */
 export function authorizeTailPrune(ctx: WriteContext, input: PruneInput): PruneOk | PruneError {
   const content = screenContent({ reason: input.reason, run: input.run });

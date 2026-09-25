@@ -284,6 +284,23 @@ export function runDecisionImport(
     };
   }
 
+  // NOTHING NEW TO RECORD OPENS NO WRITER. Every file already derived, or refused by name:
+  // the plan is complete and nothing will be appended, and opening one anyway touches the
+  // tree — for a key that never wrote here, its public half, an installation id and an empty
+  // tail, which a run that recorded 0 decisions used to leave behind (measured on the binary).
+  if (fresh.length === 0) {
+    return {
+      ok: true,
+      linkBreaks: derived.linkBreaks,
+      wrote: true,
+      from,
+      proposals: [],
+      already,
+      refused,
+      scope,
+    };
+  }
+
   const writer = openTreeForWriting(trees, scope);
   const context = {
     writer,

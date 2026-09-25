@@ -11,15 +11,20 @@
  * checks the vouch against. The private and global trees are local to one machine,
  * so a second machine could never see an enrollment recorded there.
  *
- * A thin adapter: resolve the project, open the tree's writer, call ONE core
- * operation, report what came back. Whether the request proves consent, whether
- * this machine may vouch, whether the key is already a member — all of it is the
- * core's judgement and reaches the person as the core worded it.
+ * A thin adapter: resolve the project, hand ONE core operation a deferred write of the
+ * tree, report what came back. Whether the request proves consent, whether this machine
+ * may vouch, whether the key is already a member — all of it is the core's judgement and
+ * reaches the person as the core worded it.
+ *
+ * DEFERRED, and not an open writer, because opening one touches the tree before anything
+ * is appended. Measured on the binary, a refused enrollment used to leave the project with
+ * an untracked `keys/<fp>.pub` and an empty tail of the key that asked — which is the key
+ * a person following the words of a split has at hand. The core decides first and opens
+ * the writer only to write, so a refusal leaves the tree as it found it.
  */
 
-import { catalogUpcasters } from '@mnema/chain';
-import { chainRootForScope, type DiscoveryEnv, resolveTrees } from '@mnema/core';
-import { enrollFromRequest, openTreeForWriting } from '@mnema/core/write';
+import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import { deferredWrite, enrollFromRequest } from '@mnema/core/write';
 
 /** What the enrollment needs — injected so it is testable. */
 export interface KeyEnrollContext {
@@ -68,22 +73,16 @@ export function runKeyEnroll(
     return { ok: false, reason: 'NO_PROJECT' };
   }
 
-  const writer = openTreeForWriting(trees, 'public');
-  const enrolled = enrollFromRequest(
-    {
-      writer,
-      layout: { root: chainRootForScope(trees, 'public') as string },
-      upcasters: catalogUpcasters(),
-    },
-    { request: input.request },
-  );
+  const write = deferredWrite(trees, 'public');
+  const enrolled = enrollFromRequest(write, { request: input.request });
   if (!enrolled.ok) {
     return { ok: false, reason: 'REFUSED', code: enrolled.code, message: enrolled.message };
   }
 
-  // The enrollment signs its own checkpoint, so this only covers the founding a
-  // first-ever write may have appended alongside it — and is a no-op otherwise.
-  writer.checkpoint();
+  // The enrollment signs its own checkpoint, so this only covers the founding a first-ever
+  // write may have appended alongside it — and is a no-op otherwise, including when the
+  // writer was never opened (a key the record already proved a member).
+  write.checkpoint();
 
   return {
     ok: true,

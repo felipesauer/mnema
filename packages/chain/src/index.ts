@@ -20,7 +20,7 @@ export {
   type RegistrationFault,
   readRegistration,
 } from './chain/backup.js';
-export { type OpenOptions, openChainForWriting, verify } from './chain/chain.js';
+export { type OpenOptions, openChainForWriting, signerAt, verify } from './chain/chain.js';
 export {
   type Checkpoint,
   CheckpointParseError,
@@ -67,6 +67,7 @@ export {
   verify as verifySignature,
 } from './chain/keys.js';
 export {
+  type ChainSigner,
   committedPublicKey,
   listAnchoredFingerprints,
   listPrivateKeyFingerprints,
