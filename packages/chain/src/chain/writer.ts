@@ -581,7 +581,7 @@ export class ChainWriter {
     });
     if (reason === undefined) return;
     throw new EventParseError(
-      `refusing to seal a waiver the record does not bear out: ${reason}. Nothing was appended.`,
+      `refusing to seal a waiver the record does not bear out: ${reason}. This write was not appended.`,
     );
   }
 
@@ -685,7 +685,7 @@ function refuseUnreadable(event: CatalogEvent): void {
   const reason = unreadableReason(event);
   if (reason === undefined) return;
   throw new EventParseError(
-    `refusing to seal an event no reader could accept: ${reason}. Nothing was appended.`,
+    `refusing to seal an event no reader could accept: ${reason}. This write was not appended.`,
   );
 }
 

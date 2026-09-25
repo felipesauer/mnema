@@ -284,7 +284,8 @@ export function openTreeForWriting(
  * WITHOUT opening the tree for writing.
  *
  * {@link openTreeForWriting} touches the tree before anything is appended: the public tree's
- * `.gitignore`, the key's public half, an installation id, the tail's directory and its proof.
+ * `.gitignore` and an installation id. (It touched more — the key's public half, the tail's
+ * directory and its proof — until those moved to the writer's first append.)
  * A caller whose answer may write nothing — the anchor a machine will write as, or a refusal the
  * record decides — asks this instead, and a tree it only asked about stays byte for byte as it
  * was. Like opening, it can mint the key at the key root on first use: a signer is somebody.

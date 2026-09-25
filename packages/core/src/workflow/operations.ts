@@ -20,12 +20,15 @@
  * oversize refusal touches nothing at all.
  *
  * THE OPERATION touches nothing, and that sentence was read as more than it says. The
- * caller that opened a writer to call it already touched the tree: for a key that never
- * wrote there, the key's public half, an installation id and a tail with its proof.
- * Measured on the binary, every command-line verb refused by this door or by the gate
- * left those four behind. The operations that decide before a writer exists take a
- * {@link DeferredWriteContext}; these do not, because their doors are inside them on
- * purpose, and `code/tests/a-refusal-leaves-nothing.test.ts` names which is which.
+ * caller that opened a writer to call it has already touched the tree: for a key that
+ * never wrote there, an installation id. IT WAS FOUR ENTRIES — the key's public half, the
+ * id, and a tail with its proof — and, measured on the binary, every command-line verb
+ * refused by this door or by the gate left the four behind. The three a clone receives are
+ * born at the writer's first append now (`ChainWriter.ensureBorn`, `@mnema/chain`), so such
+ * a refusal leaves the id alone, which the tree's `.gitignore` keeps out. The operations
+ * that decide before a writer exists take a {@link DeferredWriteContext} and leave not even
+ * that; these do not, because their doors are inside them on purpose, and
+ * `code/tests/a-refusal-leaves-nothing.test.ts` names which is which.
  *
  * And the event itself goes through one more door on its way out ({@link
  * appendEvent}): would a READ accept it? The catalog's shape rules used to live
@@ -86,12 +89,14 @@ export interface WriteContext {
 /**
  * A write whose writer is not open yet, and opens only once the operation has decided to write.
  *
- * OPENING A WRITER TOUCHES THE TREE EVEN WHEN NOTHING IS APPENDED: it materializes this key's
- * public half, mints the installation id, and gives the tail its directory and its proof of
- * ownership. For a key that never wrote in the tree, an operation that opened first and refused
- * second left all four behind — measured on `key enroll`, a refused vouch left the tree with an
- * untracked `.pub` and an empty tail. An operation handed THIS decides with {@link signer}, asks
- * {@link open} after its last refusal, and a refusal leaves the tree as it found it.
+ * OPENING A WRITER TOUCHES THE TREE EVEN WHEN NOTHING IS APPENDED: it mints this key's
+ * installation id. It did more — materialized the key's public half and gave the tail its
+ * directory and its proof of ownership — and for a key that never wrote in the tree, an
+ * operation that opened first and refused second left all four behind: measured on `key
+ * enroll`, a refused vouch left the tree with an untracked `.pub` and an empty tail. Those
+ * three are born at the writer's first append now; the id is still a file. An operation handed
+ * THIS decides with {@link signer}, asks {@link open} after its last refusal, and a refusal
+ * leaves the tree byte for byte as it found it.
  */
 export interface DeferredWriteContext {
   /** The key that would sign here, and the anchor it serves — read without opening anything. */

@@ -115,9 +115,12 @@ export class TailBusyError extends Error {
     waitedMs: number,
   ) {
     const holder = heldBy === undefined ? 'another process' : `process ${heldBy}`;
+    // THIS WRITE, not "nothing": this said "nothing was appended", which is true of the act
+    // the lock refused and not of the call around it — through the agent's server, the call
+    // that meets a busy tail may already have opened its session's run on the way in.
     super(
       `this machine's tail is being written by ${holder} and did not come free in ${waitedMs}ms. ` +
-        'Two sessions writing the same project at once share one tail; nothing was appended. ' +
+        'Two sessions writing the same project at once share one tail; this write was not appended. ' +
         `Lock: ${tailLock}`,
     );
     this.name = 'TailBusyError';

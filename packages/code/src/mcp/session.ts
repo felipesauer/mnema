@@ -362,8 +362,10 @@ export interface Session {
    * What this connection's writes founded, owed to the next reply. A session writes into a tree
    * for the first time through {@link ensureRun} — the run opens before anything else is
    * appended there — and that is the one write that can found an identity; the watch is armed
-   * there and emptied where a reply is composed (`replied` in `server.ts`, and the hook's reply
-   * in `tools.ts`). See `a-new-identity.ts` for what is said.
+   * there and emptied where a reply is composed (`replied` and `refused` in `server.ts`, and the
+   * hook's reply in `tools.ts`). A refusal is one of those replies: the run opens before the
+   * operation decides, so a refused first write founds too, and its refusal says so. See
+   * `a-new-identity.ts` for what is said.
    */
   readonly founding: FoundingWatch;
   /**

@@ -708,10 +708,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       if (!result.ok) {
         // The override named a tree absent here — surface it as a tool error so
         // the agent sees the capture did not happen, not a silent no-op.
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
-        };
+        return refused(active, result);
       }
       return recorded(active, `Captured memory ${result.id}`, result);
     },
@@ -749,10 +746,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         ...(project !== undefined ? { project } : {}),
       });
       if (!result.ok) {
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
-        };
+        return refused(active, result);
       }
       return recorded(active, `Recorded observation ${result.id} about ${about}`, result);
     },
@@ -790,10 +784,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         ...(project !== undefined ? { project } : {}),
       });
       if (!result.ok) {
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
-        };
+        return refused(active, result);
       }
       // The labels the RECORD holds, not the ones the call asked for.
       const [landedFrom, landedTo] = result.recorded;
@@ -839,10 +830,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         ...(project !== undefined ? { project } : {}),
       });
       if (!result.ok) {
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
-        };
+        return refused(active, result);
       }
       // The relation the RECORD holds, not the one the call asked for — plus, on the
       // two relations that carry an ADDRESS, what that address covers. Not every path
@@ -884,10 +872,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         ...(project !== undefined ? { project } : {}),
       });
       if (!result.ok) {
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
-        };
+        return refused(active, result);
       }
       return recorded(active, `Created task ${result.alias} (${result.id})`, result);
     },
@@ -929,10 +914,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         // The gate refused — surface it as a tool error so the agent sees the
         // move did not happen, with the gate's own reason. Not a crash: a
         // refusal is a legitimate answer, returned as data.
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
-        };
+        return refused(active, result);
       }
       return moved(active, movedLine('task', result.alias, result.id, result.to), result);
     },
@@ -984,10 +966,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         ...(project !== undefined ? { project } : {}),
       });
       if (!result.ok) {
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
-        };
+        return refused(active, result);
       }
       return recorded(active, `Recorded decision ${result.adr} (${result.id})`, result);
     },
@@ -1030,10 +1009,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         ...(reason !== undefined ? { reason } : {}),
       });
       if (!result.ok) {
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
-        };
+        return refused(active, result);
       }
       return moved(active, movedLine('decision', result.adr, result.id, result.to), result);
     },
@@ -1070,10 +1046,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         ...(project !== undefined ? { project } : {}),
       });
       if (!result.ok) {
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
-        };
+        return refused(active, result);
       }
       return recorded(active, `Proposed skill "${result.name}" (${result.id})`, result);
     },
@@ -1111,10 +1084,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         ...(reason !== undefined ? { reason } : {}),
       });
       if (!result.ok) {
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
-        };
+        return refused(active, result);
       }
       return moved(active, movedLine('skill', result.name, result.id, result.to), result);
     },
@@ -1219,10 +1189,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         // No such skill, a pattern the project closed, or the consultation could not
         // be recorded — surface it so the agent never mistakes a refusal for "there
         // are no patterns here".
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
-        };
+        return refused(active, result);
       }
       // Serving a BODY records a consultation, so this read is also a write — and the
       // one report a write must never swallow is what it replaced. The agent name
@@ -1302,10 +1269,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         // No tree of the workspace holds the task, or two records do — surface it as
         // a tool error so the agent sees there is no ONE such task, not an empty
         // (misleadable) list.
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
-        };
+        return refused(active, result);
       }
       return served(active, result.actions);
     },
@@ -1354,10 +1318,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         // No tree of the workspace holds the task, or two records do — surface it as
         // a tool error so the agent
         // sees there is no such task, not a misleadable empty verdict.
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
-        };
+        return refused(active, result);
       }
       // A REFUSED verdict is NOT a tool error — the dry-run succeeded and its
       // answer is "the move would be refused, here is why". Return the verdict
@@ -1435,10 +1396,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         ...(limit !== undefined ? { limit } : {}),
       });
       if (!result.ok) {
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
-        };
+        return refused(active, result);
       }
       // An empty index is an ANSWER ("nothing here matches"), never an error.
       return served(active, result.value);
@@ -1472,10 +1430,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       const active = await ensureSession();
       const result = runReadRecordTool(active, { id });
       if (!result.ok) {
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
-        };
+        return refused(active, result);
       }
       return served(active, result.value);
     },
@@ -1523,10 +1478,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       const active = await ensureSession();
       const result = runTimelineTool(active, { id });
       if (!result.ok) {
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
-        };
+        return refused(active, result);
       }
       return served(active, result.value);
     },
@@ -1572,10 +1524,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         ...(depth !== undefined ? { depth } : {}),
       });
       if (!result.ok) {
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
-        };
+        return refused(active, result);
       }
       // An entity nothing references is an ANSWER ("nothing is tied to this"),
       // never an error — the same reason an empty history is one.
@@ -1614,10 +1563,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       const active = await ensureSession();
       const result = runGoverningRulesTool(active, { path });
       if (!result.ok) {
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
-        };
+        return refused(active, result);
       }
       // A path nothing addresses is an ANSWER ("nothing governs this"), never an
       // error — and the three counts beside it are what say which kind of nothing.
@@ -1655,10 +1601,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       const active = await ensureSession();
       const result = runRulesBeforeAnEditTool(active, { path });
       if (!result.ok) {
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
-        };
+        return refused(active, result);
       }
       // The reply is JSON because the host parses it, and it is COMPACT because nothing
       // reads it as a document: the host's parser takes the first `{` and the bytes are
@@ -1720,10 +1663,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         ...(which !== undefined ? { which } : {}),
       });
       if (!result.ok) {
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
-        };
+        return refused(active, result);
       }
       return served(active, result.value);
     },
@@ -1758,10 +1698,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       const active = await ensureSession();
       const result = runExposureTool(active);
       if (!result.ok) {
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
-        };
+        return refused(active, result);
       }
       // An empty report is an ANSWER ("nothing recognizable is recorded here"),
       // never an error — the same reason an empty history is one.
@@ -1796,10 +1733,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       const active = await ensureSession();
       const result = runAntipatternsTool(active);
       if (!result.ok) {
-        return {
-          isError: true,
-          content: [{ type: 'text', text: `Refused (${result.code}): ${result.message}` }],
-        };
+        return refused(active, result);
       }
       return served(active, result.value);
     },
@@ -2096,18 +2030,67 @@ function replied(
     content: [
       ...before,
       ...fact(sessionLinkBreaks(session, wrote ? A_WRITE : A_READ)),
-      // WHAT THIS CONNECTION'S WRITES FOUNDED since the last reply — asked here for the reason
-      // the record's state is: this is the one place every reply of this server passes, so a
-      // tool added later says it without remembering to. Empty unless a key's first write into a
-      // tree settled it in an identity the record shows it founded there beside others — once per
-      // key per tree for an installation, and again for a fresh clone of the record, which is a
-      // new one (`a-new-identity.ts`).
+      // WHAT THIS CONNECTION'S WRITES FOUNDED since the last reply — asked here and in
+      // {@link refused}, which between them are every answer a tool composes, so a tool added
+      // later says it without remembering to. (This said "the one place every reply of this
+      // server passes", and a refusal did not pass here: see {@link refused}.) Empty unless a
+      // key's first write into a tree settled it in an identity the record shows it founded
+      // there beside others — once per key per tree for an installation, and again for a fresh
+      // clone of the record, which is a new one (`a-new-identity.ts`).
       ...session.founding.take(),
       ...after,
     ].map((text) => ({
       type: 'text' as const,
       text,
     })),
+  };
+}
+
+/**
+ * A tool's answer when it refuses — the protocol's error flag, and the text blocks. A type
+ * alias and not an interface: the SDK's result type carries an index signature, which an
+ * object type satisfies and an interface does not.
+ */
+type RefusalReply = {
+  readonly isError: true;
+  readonly content: { readonly type: 'text'; readonly text: string }[];
+};
+
+/**
+ * A REFUSAL's answer as the protocol carries it: the line every tool has always answered a
+ * refusal with — `Refused (CODE): message` — and then what this connection's writes founded
+ * since the last reply.
+ *
+ * IT IS THE ONE DOOR EVERY REFUSAL LEAVES BY, for the reason {@link replied} is the door
+ * every other answer leaves by. Twenty-two tools composed `{ isError: true, content: [...] }`
+ * by hand, and none of them asked what the session owed. A write opens its run BEFORE the
+ * operation decides (`ensureRun`, by design), so a key whose first write into a tree is
+ * refused founds its identity there on the way in — and the sentence that says so, which is
+ * owed once, at the write (`a-new-identity.ts`), waited for the next reply. Measured over
+ * stdio on the built binary: a connection whose one call was a refused `capture_memory`
+ * founded, opened and closed a run, and was never told. The refusal carries it now, and
+ * `tests/the-broken-link-reaches-every-reader.test.ts` holds that no refusal is composed
+ * anywhere else.
+ *
+ * It does NOT carry the record's link state, which is its one difference from
+ * {@link replied}, and that is the behaviour refusals always had rather than a ruling made
+ * here: a refusal hands over no record to read and lands nothing of the fact it refused.
+ *
+ * AN ERROR A TOOL THROWS reaches neither door: the SDK answers it with the message alone. A
+ * founding that came before the throw — the run opened, and then the operation's own append
+ * met a tail another process held — is not lost, because nothing emptied the watch: it rides
+ * on the connection's next reply, and only a connection that closes right after never hears
+ * it. That is declared rather than closed.
+ */
+function refused(
+  session: Session,
+  refusal: { readonly code: string; readonly message: string },
+): RefusalReply {
+  return {
+    isError: true,
+    content: [`Refused (${refusal.code}): ${refusal.message}`, ...session.founding.take()].map(
+      (text) => ({ type: 'text' as const, text }),
+    ),
   };
 }
 
@@ -2121,10 +2104,13 @@ function withRunState(
   // workspace has. Asking about the session's own tree instead would tell an agent
   // that has been recording work for an hour that it has started nothing.
   if (session.runs.size > 0) return served(session, result, also);
+  // "When it first WRITES", and a refused write is one. This said "when it first records
+  // something", which a first write the operation refuses falsifies: the run opens before the
+  // operation decides (`ensureRun`), so it opens on that call and nothing of the fact lands.
   return served(session, result, [
     ...also,
     'This session has not opened a run of its own yet — one opens when it ' +
-      'first records something.',
+      'first writes, a write that is then refused included.',
   ]);
 }
 

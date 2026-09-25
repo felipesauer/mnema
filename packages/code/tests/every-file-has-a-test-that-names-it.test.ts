@@ -348,9 +348,16 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * `node:url` and `vitest` — and nine in `a-flag-declared-twice.test.ts`, which drives the real
  * program with the import's action swapped — `node:fs`, `node:os`, `node:path`, `commander`,
  * `vitest`, `../src/cli.js`, `../src/wiring/misuse.js`, the module it witnesses, and
- * `support/reading-source.js`.
+ * `support/reading-source.js`. And 2947 -> 2962 when a tail began to be born at its first append
+ * and the installation id to be minted exclusively: ten clauses in `installation-id.test.ts`, which
+ * plants the two states the race leaves — `node:crypto`, `node:events`, `node:fs`, `node:os`,
+ * `node:path`, `node:worker_threads`, `vitest`, `./keys.js`, `./keystore.js` and `./layout.js` —
+ * two in `sleep.test.ts` for the wait they share with the tail lock, two in `waiver.test.ts` for the
+ * empty tail an older writer left, now planted rather than opened (`./keystore.js`,
+ * `./tailproof.js`), and one in `the-broken-link-reaches-every-reader.test.ts`, which reads the
+ * refusals as code (`support/reading-source.js`).
  */
-const CLAUSES_IN_THE_TREE = 2947;
+const CLAUSES_IN_THE_TREE = 2962;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -842,7 +849,7 @@ describe('every file has a test that names it', () => {
     expect(PRODUCTION).toContain('packages/code/src/wiring/index.ts');
     expect(PRODUCTION).toContain('packages/core/src/topology/index.ts');
     expect(PRODUCTION).not.toContain('packages/core/src/index.ts');
-    expect(PRODUCTION).toHaveLength(314);
+    expect(PRODUCTION).toHaveLength(315);
     expect(TEST_TREE.length).toBeGreaterThan(250);
     // No file is in both corpora, which is what keeps a test from witnessing itself.
     const tests = new Set(TEST_TREE.map((one) => one.path));
@@ -862,7 +869,7 @@ describe('every file has a test that names it', () => {
     const found = unwitnessed();
     const byReach = (reach: Reach): number =>
       [...found.values()].filter((one) => one === reach).length;
-    expect(PRODUCTION.length - found.size).toBe(243);
+    expect(PRODUCTION.length - found.size).toBe(244);
     expect(found.size).toBe(71);
     expect(byReach('nobody imports it')).toBe(71);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
