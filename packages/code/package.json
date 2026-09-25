@@ -54,7 +54,7 @@
     "ink": "^7.1.1",
     "react": "^19.3.0",
     "string-width": "^8.2.2",
-    "zod": "^4.6.4"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/react": "^19.3.0"
