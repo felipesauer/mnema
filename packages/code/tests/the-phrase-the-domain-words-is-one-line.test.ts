@@ -876,71 +876,166 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'collapsed',
       why: 'the anchors the record proves this key joined, read back out of stored events',
     },
-  "@mnema/core identity/membership.ts «{}, and no revocation here separates them: this key is the only key {} have, and an identity's last key cannot be retired» opening #1":
-    {
-      verdict: 'composed',
-      why: 'the refusal’s opening, worded by this same function from the anchors above — a site of its own',
-    },
-  "@mnema/core identity/membership.ts «{}, and no revocation here separates them: this key is the only key {} have, and an identity's last key cannot be retired» oneLine(keeps.join(' and ')) #1":
-    {
-      verdict: 'collapsed',
-      why: 'the anchors whose only key this is, read out of stored events on the terms the opening’s are',
-    },
-  '@mnema/core identity/membership.ts «\\`mnema key revoke {} --reason "<why>"\\` inside this project, and commits» key.fingerprint #1':
-    {
-      verdict: 'minted',
-      why: 'the fingerprint of the key being decided about, computed by hashing the key material it names',
-    },
-  "@mnema/core identity/membership.ts «{}. It can only go back to speaking for {}, whose only key it is — an identity's last key cannot be retired — once {} {} it go: a machine whose writes here speak for {} runs {}» opening #1":
-    {
-      verdict: 'composed',
-      why: 'the same opening, said before the one identity that keeps the key',
-    },
-  "@mnema/core identity/membership.ts «{}. It can only go back to speaking for {}, whose only key it is — an identity's last key cannot be retired — once {} {} it go: a machine whose writes here speak for {} runs {}» oneLine(kept) #1":
-    {
-      verdict: 'collapsed',
-      why: 'the one anchor whose only key this is, out of stored events',
-    },
-  "@mnema/core identity/membership.ts «{}. It can only go back to speaking for {}, whose only key it is — an identity's last key cannot be retired — once {} {} it go: a machine whose writes here speak for {} runs {}» oneLine(letsGo.join(' and ')) #1":
-    {
-      verdict: 'collapsed',
-      why: 'the anchors that can retire the key, out of stored events',
-    },
-  "@mnema/core identity/membership.ts «{}. It can only go back to speaking for {}, whose only key it is — an identity's last key cannot be retired — once {} {} it go: a machine whose writes here speak for {} runs {}» letsGo.length === 1 ? 'lets' : 'let' #1":
+  '@mnema/core identity/membership.ts «It can leave {}, {}: {}» how(left) #1': {
+    verdict: 'minted',
+    why: 'how the record proves the key in that identity, as one of two phrases this module holds',
+  },
+  '@mnema/core identity/membership.ts «It can leave {}, {}: {}» oneLine(left) #1': {
+    verdict: 'collapsed',
+    why: 'the identity whose only key this is and that the key has written as, out of stored events',
+  },
+  '@mnema/core identity/membership.ts «It can leave {}, {}: {}» through(left, rest) #1': {
+    verdict: 'composed',
+    why: 'the way out this same function worded from the anchors above — a site of its own',
+  },
+  "@mnema/core identity/membership.ts «It is the only key {} {}, and an identity's last key cannot be retired, so it leaves {} only once another key has joined that one» last.length === 1 ? 'has' : 'have' #1":
     {
       verdict: 'minted',
       why: 'a verb chosen between two constants of this module by a count',
     },
-  "@mnema/core identity/membership.ts «{}. It can only go back to speaking for {}, whose only key it is — an identity's last key cannot be retired — once {} {} it go: a machine whose writes here speak for {} runs {}» letsGo.length === 1 ? 'it' : 'each' #1":
-    {
-      verdict: 'minted',
-      why: 'a pronoun chosen between two constants of this module by the same count',
-    },
-  "@mnema/core identity/membership.ts «{}. It can only go back to speaking for {}, whose only key it is — an identity's last key cannot be retired — once {} {} it go: a machine whose writes here speak for {} runs {}» revoke #1":
-    {
-      verdict: 'composed',
-      why: 'the command this function composed from the fingerprint above — a site of its own',
-    },
-  '@mnema/core identity/membership.ts «{}. It speaks for one of them again once the {} it go: a machine whose writes here speak for {} that should not have it runs {} — the key then speaks for the identity left» opening #1':
-    {
-      verdict: 'composed',
-      why: 'the same opening, said before the way out either identity can take',
-    },
-  "@mnema/core identity/membership.ts «{}. It speaks for one of them again once the {} it go: a machine whose writes here speak for {} that should not have it runs {} — the key then speaks for the identity left» anchors.length === 2 ? 'other lets' : 'others let' #1":
-    {
-      verdict: 'minted',
-      why: 'words chosen between two constants of this module by how many identities hold the key',
-    },
-  "@mnema/core identity/membership.ts «{}. It speaks for one of them again once the {} it go: a machine whose writes here speak for {} that should not have it runs {} — the key then speaks for the identity left» anchors.length === 2 ? 'the identity' : 'each identity' #1":
+  "@mnema/core identity/membership.ts «It is the only key {} {}, and an identity's last key cannot be retired, so it leaves {} only once another key has joined that one» last.length === 1 ? 'that identity' : 'one of them' #1":
     {
       verdict: 'minted',
       why: 'words chosen between two constants of this module by the same count',
     },
-  '@mnema/core identity/membership.ts «{}. It speaks for one of them again once the {} it go: a machine whose writes here speak for {} that should not have it runs {} — the key then speaks for the identity left» revoke #1':
+  "@mnema/core identity/membership.ts «It is the only key {} {}, and an identity's last key cannot be retired, so it leaves {} only once another key has joined that one» oneLine(last.join(' and ')) #1":
+    {
+      verdict: 'collapsed',
+      why: 'the anchors whose roster counts this key as their only one, out of stored events',
+    },
+  "@mnema/core identity/membership.ts «The record does not count this key among the keys of {}, so no revocation there takes it out» oneLine(uncounted.join(' and ')) #1":
+    {
+      verdict: 'collapsed',
+      why: 'the anchors whose roster does not count this key, out of stored events and the tree’s committed halves',
+    },
+  '@mnema/core identity/membership.ts «The record names no checkout that could take it out of {}: this key has not written here as {}» oneLine(closed) #1':
+    {
+      verdict: 'collapsed',
+      why: 'an anchor whose only key this is and that the key never wrote as, out of stored events',
+    },
+  '@mnema/core identity/membership.ts «The record names no checkout that could take it out of {}: this key has not written here as {}» oneLine(closed) #2':
+    {
+      verdict: 'collapsed',
+      why: 'an anchor whose only key this is and that the key never wrote as, out of stored events',
+    },
+  "@mnema/core identity/membership.ts «This key has not written here as {}, so the record names no checkout that could separate them» shut.length === 2 ? 'either' : 'any of them' #1":
+    {
+      verdict: 'minted',
+      why: 'words chosen between two constants of this module by how many identities the key never wrote as',
+    },
+  '@mnema/core identity/membership.ts «\\`mnema key revoke {} --reason "<why>"\\`» key.fingerprint #1':
+    {
+      verdict: 'minted',
+      why: 'the fingerprint of the key being decided about, computed by hashing the key material it names',
+    },
+  "@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore \"<the key file>\"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» member.get(left) === 'founded' ? 'the checkout it founded' : 'a checkout it wrote here as' #1":
+    {
+      verdict: 'minted',
+      why: 'a phrase chosen between two constants of this module by how the record proves the key there',
+    },
+  '@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(left) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the identity the way out leaves, out of stored events — named three times in the recipe',
+    },
+  '@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(left) #2':
+    {
+      verdict: 'collapsed',
+      why: 'the identity the way out leaves, out of stored events — named three times in the recipe',
+    },
+  '@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(left) #3':
+    {
+      verdict: 'collapsed',
+      why: 'the identity the way out leaves, out of stored events — named three times in the recipe',
+    },
+  '@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(rest) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the one identity the key is left in, out of stored events',
+    },
+  '@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» revoke #1':
+    {
+      verdict: 'composed',
+      why: 'the revocation this function composed from the fingerprint — a site of its own',
+    },
+  "@mnema/core identity/membership.ts «{}. It speaks for one of them again once the {} it go: a machine whose writes here speak for {} that should not have it runs {} inside this project, and commits and shares the record — the key then speaks for the identity left» anchors.length === 2 ? 'other lets' : 'others let' #1":
+    {
+      verdict: 'minted',
+      why: 'words chosen between two constants of this module by how many identities hold the key',
+    },
+  "@mnema/core identity/membership.ts «{}. It speaks for one of them again once the {} it go: a machine whose writes here speak for {} that should not have it runs {} inside this project, and commits and shares the record — the key then speaks for the identity left» anchors.length === 2 ? 'the identity' : 'each identity' #1":
+    {
+      verdict: 'minted',
+      why: 'words chosen between two constants of this module by the same count',
+    },
+  '@mnema/core identity/membership.ts «{}. It speaks for one of them again once the {} it go: a machine whose writes here speak for {} that should not have it runs {} inside this project, and commits and shares the record — the key then speaks for the identity left» opening #1':
+    {
+      verdict: 'composed',
+      why: 'the refusal’s opening, worded by this same function — said before the way out either identity can take',
+    },
+  '@mnema/core identity/membership.ts «{}. It speaks for one of them again once the {} it go: a machine whose writes here speak for {} that should not have it runs {} inside this project, and commits and shares the record — the key then speaks for the identity left» revoke #1':
     {
       verdict: 'composed',
       why: 'the same composed command, in the way out either identity can take',
     },
+  "@mnema/core identity/membership.ts «{}. It speaks for {} again once {} {} it go: a machine whose writes here speak for {} runs {} inside this project, and commits and shares the record» letsGo.length === 1 ? 'lets' : 'let' #1":
+    {
+      verdict: 'minted',
+      why: 'a verb chosen between two constants of this module by a count',
+    },
+  "@mnema/core identity/membership.ts «{}. It speaks for {} again once {} {} it go: a machine whose writes here speak for {} runs {} inside this project, and commits and shares the record» letsGo.length === 1 ? oneLine(letsGo.join(' and ')) : 'each of them' #1":
+    {
+      verdict: 'collapsed',
+      why: 'the one anchor that can retire the key, out of stored events — or a constant when there are more',
+    },
+  '@mnema/core identity/membership.ts «{}. It speaks for {} again once {} {} it go: a machine whose writes here speak for {} runs {} inside this project, and commits and shares the record» oneLine(kept) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the one anchor that keeps the key, out of stored events',
+    },
+  "@mnema/core identity/membership.ts «{}. It speaks for {} again once {} {} it go: a machine whose writes here speak for {} runs {} inside this project, and commits and shares the record» oneLine(letsGo.join(' and ')) #1":
+    {
+      verdict: 'collapsed',
+      why: 'the anchors that can retire the key, out of stored events',
+    },
+  '@mnema/core identity/membership.ts «{}. It speaks for {} again once {} {} it go: a machine whose writes here speak for {} runs {} inside this project, and commits and shares the record» opening #1':
+    {
+      verdict: 'composed',
+      why: 'the same opening, said before the one identity that keeps the key',
+    },
+  '@mnema/core identity/membership.ts «{}. It speaks for {} again once {} {} it go: a machine whose writes here speak for {} runs {} inside this project, and commits and shares the record» revoke #1':
+    {
+      verdict: 'composed',
+      why: 'the command this function composed from the fingerprint — a site of its own',
+    },
+  '@mnema/core identity/membership.ts «{}. Or it can leave {} instead — {}, whose only key it is, so another key joins it first: {}» first #1':
+    {
+      verdict: 'composed',
+      why: 'the first way out, worded by this same function just above — a site of its own',
+    },
+  '@mnema/core identity/membership.ts «{}. Or it can leave {} instead — {}, whose only key it is, so another key joins it first: {}» how(kept) #1':
+    {
+      verdict: 'minted',
+      why: 'how the record proves the key in that identity, as one of two phrases this module holds',
+    },
+  '@mnema/core identity/membership.ts «{}. Or it can leave {} instead — {}, whose only key it is, so another key joins it first: {}» oneLine(kept) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the one anchor that keeps the key, out of stored events',
+    },
+  '@mnema/core identity/membership.ts «{}. Or it can leave {} instead — {}, whose only key it is, so another key joins it first: {}» through(kept, other) #1':
+    {
+      verdict: 'composed',
+      why: 'the way out this same function worded from the anchors above — a site of its own',
+    },
+  '@mnema/core identity/membership.ts «{}. {}» opening #1': {
+    verdict: 'composed',
+    why: 'the same opening, said before what the record names for two identities that keep the key',
+  },
+  "@mnema/core identity/membership.ts «{}. {}» said.join('. ') #1": {
+    verdict: 'composed',
+    why: 'the sentences this same function worded from the record just above, each a site of its own',
+  },
   '@mnema/core identity/membership.ts «this key was revoked from {} — a retired key that writes again » oneLine(retiredFrom) #1':
     {
       verdict: 'collapsed',
@@ -1179,9 +1274,9 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
     // sites, twelve in `core` and eleven in `chain` — because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(111);
+    expect(SITES.length).toBe(131);
     expect(FOUND[0]?.sites.length).toBe(47);
-    expect(FOUND[1]?.sites.length).toBe(64);
+    expect(FOUND[1]?.sites.length).toBe(84);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
 
@@ -1228,11 +1323,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(67);
-    expect(count('minted')).toBe(31);
-    expect(count('composed')).toBe(13);
+    expect(count('collapsed')).toBe(77);
+    expect(count('minted')).toBe(36);
+    expect(count('composed')).toBe(18);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      67,
+      77,
     );
   });
 

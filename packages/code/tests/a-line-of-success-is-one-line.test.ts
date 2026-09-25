@@ -327,6 +327,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the anchor the key was retired from, and a count of the roster',
   },
+  'key.ts «The record proves the key a member of {}: » #1': {
+    verdict: 'minted',
+    why: 'the one anchor the record still proves the retired key in, read after the revocation',
+  },
   'memory.ts «Captured memory {}» #1': {
     verdict: 'minted',
     why: 'a uuid this write minted, and the only value on the line',
@@ -438,6 +442,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   'key.ts «recorded in {}» #1': {
     verdict: 'collapsed',
     why: 'the project root, discovered from the cwd — the same value `init` prints',
+  },
+  'key.ts «this machine keeps the key file at {}» #1': {
+    verdict: 'collapsed',
+    why: 'a path built under this machine’s key root: the file the retired key is kept in',
   },
   'link.ts «Linked {} —{}→ {}» #1': {
     verdict: 'collapsed',
@@ -603,7 +611,7 @@ describe('every line this wiring words is classified', () => {
     // 28 of these, and a walk that regressed to a line-wise pattern would land near it.
     expect(FOUND.files).toBeGreaterThan(35);
     expect(FOUND.calls).toBeGreaterThan(80);
-    expect(FOUND.sites.length).toBe(68);
+    expect(FOUND.sites.length).toBe(70);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -623,9 +631,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(32);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(36);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(32);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(33);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(37);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(33);
   });
 
   it('every reason says where the value comes from', () => {
@@ -765,6 +773,8 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'key.ts «private half installed at {}» #1': 'needs a PEM to restore from',
   'key.ts «Your copy at {} was read, not moved — keep it where it is.» #1': 'the same restore',
   'key.ts «recorded in {}» #1': 'needs a request from a second machine',
+  'key.ts «this machine keeps the key file at {}» #1':
+    'needs a key root whose path holds a newline, and a key of two identities',
   'next-actions.ts «Task {} is terminal — no legal moves.» #1': 'the id must match a task',
   'next-actions.ts «Task {} — {} legal move(s):» #1': 'the id must match a task',
   'resume.ts «{} {}» #1': 'read back from a run this suite opens through `run start`',
@@ -789,7 +799,7 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
 };
 
 describe('every closed site is either driven or named', () => {
-  it('covers all thirty-one, once each', () => {
+  it('covers all thirty-three, once each', () => {
     const closed = Object.entries(CLASSIFIED)
       .filter(([, said]) => said.verdict === 'collapsed')
       .map(([key]) => key)

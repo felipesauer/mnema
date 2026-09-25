@@ -82,8 +82,9 @@ describe('foundingSentence — one sentence, both surfaces', () => {
     // out with "where this key has not written yet" (the case above).
     const said = foundingSentence(foundedBeside(1), 'public');
     expect(said).toContain(
-      'Not in this project: here the enrollment joins nothing, and every fresh clone of it would ' +
-        'then refuse this key’s writes.',
+      'Not in this project by an enrollment alone: here it joins nothing until another key takes ' +
+        'this one’s place in the identity it just founded, and every fresh clone of it would refuse ' +
+        'this key’s writes meanwhile.',
     );
   });
 
