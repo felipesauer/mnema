@@ -170,7 +170,7 @@ _mnema_values() {
     'decision move:') echo 'accept reject' ;;
     'decision supersede:--scope') echo 'public private global' ;;
     'decision supersede:--color') echo 'auto always never' ;;
-    'decision import:--scope') echo 'public private global' ;;
+    'decision import:--scope') echo 'public private' ;;
     'decision import:--color') echo 'auto always never' ;;
     'skill:--scope') echo 'public private global' ;;
     'skill:--color') echo 'auto always never' ;;

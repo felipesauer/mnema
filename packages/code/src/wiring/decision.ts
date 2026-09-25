@@ -23,6 +23,7 @@ import {
   actionsRequiring,
   DECISION_MOVE_ACTIONS,
   enumeratedArgument,
+  IMPORT_SCOPES,
   listed,
   scopeOption,
 } from './enumerated.js';
@@ -215,7 +216,10 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     .addOption(
       scopeOption(
         'decision',
-        'Omitted, an imported decision lands in the public tree, like any other.',
+        'Omitted, an imported decision lands in the public tree, like any other. The ' +
+          'global tree is not offered: a proposal records a path inside this project, and ' +
+          'every project reads the global tree.',
+        IMPORT_SCOPES,
       ),
     )
     .option('--which <agent>', WHICH_HELP, declaredAgent)
@@ -272,6 +276,8 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     }
     reportRefusal(wiring, result, {
       OUTSIDE_PROJECT: `"${dir}" is not inside this project. The provenance a proposal records has to be citable by every clone, so the directory has to be one.`,
+      GLOBAL_TREE:
+        '`decision import` does not write to the global tree: a proposal records the file it came from as a path inside this project, and every project reads the global tree, where that path names a file of its own. Leave --scope out, or use --scope private.',
     });
   });
 

@@ -14,6 +14,12 @@
  * what; the tree is the one those facts land in, read from the same feed. Written before
  * `import`, each is still refused by name, and the record is left byte for byte as it was.
  *
+ * AND ONE TREE IS NOT OFFERED. Reaching the import, `--scope` could name the machine-global tree,
+ * and a proposal written there hands its project-relative path to every project on the machine:
+ * one project's import made another's different file at the same path read as "already in the
+ * record, unchanged". So `global` is refused by name, planned or written, before a file is read,
+ * and neither the project's record nor anything under the HOME moves.
+ *
  * WHAT IS NOT: where a flag was written is decided by `wiring/written-before.ts`, and the
  * spellings that decision has to survive (a value that is a subcommand's name, a flag the group
  * alone declares, the program's own flags in between) are cases in `a-flag-declared-twice.test.ts`,
@@ -116,13 +122,17 @@ function aboutThese(ids: readonly string[]): FeedLine[] {
   return feed().filter((line) => ids.includes(line.about));
 }
 
-/** Every directory and file under `.mnema/`, each file with its digest. */
-function tree(): string[] {
+/**
+ * Every directory and file the binary could have written — the project's `.mnema/`, and the
+ * whole HOME it runs with, where this machine's global tree and its key live — each file with
+ * its digest.
+ */
+function onDisk(): string[] {
   const out: string[] = [];
   const walk = (dir: string): void => {
     for (const name of readdirSync(dir).sort()) {
       const path = join(dir, name);
-      const shown = path.slice(repo.length + 1);
+      const shown = path.slice(sandbox.length + 1);
       if (statSync(path).isDirectory()) {
         out.push(`D ${shown}`);
         walk(path);
@@ -132,6 +142,7 @@ function tree(): string[] {
     }
   };
   walk(join(repo, '.mnema'));
+  walk(home);
   return out;
 }
 
@@ -179,7 +190,7 @@ describe('written after `import`', () => {
   });
 
   it('without --write they change nothing: the plan is printed and nothing is recorded', () => {
-    const before = tree();
+    const before = onDisk();
     const planned = mnema(
       'decision',
       'import',
@@ -191,7 +202,7 @@ describe('written after `import`', () => {
     );
     expect(planned.status, planned.stderr).toBe(0);
     expect(planned.stdout).toContain('Nothing was written.');
-    expect(tree()).toEqual(before);
+    expect(onDisk()).toEqual(before);
   });
 });
 
@@ -213,14 +224,34 @@ describe('written before `import`', () => {
 
   for (const [line, flag] of LINES) {
     it(`${line.join(' ')} — refused, naming ${flag}, and nothing is written`, () => {
-      const before = tree();
+      const before = onDisk();
       const refused = mnema(...line);
       expect(refused.status).toBe(1);
       expect(refused.stderr).toContain(
         `\`decision import\` takes its own ${flag}: put it after \`import\`, not before.`,
       );
       expect(refused.stdout).toBe('');
-      expect(tree()).toEqual(before);
+      expect(onDisk()).toEqual(before);
     });
   }
+});
+
+describe('the machine-global tree', () => {
+  it('is refused by name, planned or written, and nothing is written anywhere', () => {
+    // A proposal records a path inside this project, and every project reads the global tree:
+    // written there, one project's import made another's different file at the same path read
+    // as already imported. Refused before a file is read, so the digest covers the HOME too.
+    const before = onDisk();
+    for (const line of [
+      ['decision', 'import', 'docs/adr', '--scope', 'global'],
+      ['decision', 'import', 'docs/adr', '--write', '--scope=global', '--which', 'ci-importer'],
+    ]) {
+      const refused = mnema(...line);
+      expect(refused.status, line.join(' ')).toBe(1);
+      expect(refused.stderr).toContain('`decision import` does not write to the global tree:');
+      expect(refused.stderr).toContain('Leave --scope out, or use --scope private.');
+      expect(refused.stdout).toBe('');
+    }
+    expect(onDisk()).toEqual(before);
+  });
 });
