@@ -15,6 +15,12 @@
  * the flag is the whole reason. The completion script the binary writes offers none of them there,
  * and still offers the group's `--which` on a move, which reads it.
  *
+ * AND THE ONE A MOVE DOES READ ARRIVES. `--which` is the group's flag the moves take, written after
+ * the move or before it, and it is the agent on the transition the record keeps — read back through
+ * `mnema export`, the product's own feed of who executed what. Nothing held that until this file: a
+ * mutation that made `task move` stop taking it lit only the tables of what each subcommand reads,
+ * and no case that runs a move.
+ *
  * WHAT IS NOT: which flags each subcommand reads, over every pair the program holds, is
  * `every-group-flag-is-read-or-refused.test.ts`, in process and without a project.
  */
@@ -97,6 +103,28 @@ function everything(): string {
   return found.join('\n');
 }
 
+/** The transitions `mnema export --which <agent>` says that agent executed, by what they moved. */
+function movedBy(agent: string): string[] {
+  const exported = mnema('export', '--which', agent);
+  expect(exported.status, exported.said).toBe(0);
+  return exported.said
+    .split('\n')
+    .filter((line) => line.startsWith('{'))
+    .map(
+      (line) =>
+        JSON.parse(line) as {
+          metadata: { event_code: string };
+          entity: { uid: string };
+          actor: { app_name?: string };
+        },
+    )
+    .filter((fact) => fact.metadata.event_code.endsWith('.transitioned'))
+    .map((fact) => {
+      expect(fact.actor.app_name).toBe(agent);
+      return fact.entity.uid;
+    });
+}
+
 /** Runs a line that must be refused with this sentence, and asserts it left everything as it was. */
 function refused(argv: readonly string[], sentence: string): void {
   const was = everything();
@@ -175,6 +203,23 @@ describe('the completion the binary writes', () => {
     // The group itself still offers its own, which is where each of them is read.
     expect(offered('decision')).toContain('--alternatives');
     expect(offered('witness')).toContain('--json');
+  });
+});
+
+describe('the group’s --which, which a move does read', () => {
+  it('is the agent on the transition, written after the move', () => {
+    const task = idOf(mnema('task', 'Ship it'));
+    expect(mnema('task', 'move', 'submit', task, '--which', 'agent-after').status).toBe(0);
+    expect(movedBy('agent-after')).toEqual([task]);
+  });
+
+  it('is the agent on the transition, written before the move', () => {
+    const decided = idOf(mnema('decision', 'Use a queue', 'back-pressure'));
+    expect(
+      mnema('decision', '--which', 'agent-before', 'move', 'accept', decided, '--note', 'ok')
+        .status,
+    ).toBe(0);
+    expect(movedBy('agent-before')).toEqual([decided]);
   });
 });
 
