@@ -36,7 +36,7 @@ export function commandRows(tree: CompletionTree): readonly CompletionRow[] {
   return rows;
 }
 
-/** Every level, and every flag spelling the parser accepts there, keyed by path. */
+/** Every level, and every flag spelling it reads — its own, its group's it takes, the program's. */
 export function flagRows(tree: CompletionTree): readonly CompletionRow[] {
   const rows: CompletionRow[] = [];
   for (const node of tree.nodes) {

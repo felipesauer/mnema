@@ -92,6 +92,7 @@ import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo, run } from '../src/cli.js';
 import { renderPlain } from '../src/presentation/plain.js';
+import { optionsTakenFromTheGroup } from '../src/wiring/from-the-group.js';
 import { registerVerbs } from '../src/wiring/index.js';
 import type { PinnedRun } from '../src/wiring/run-pin.js';
 import type { Declared, RecordEffect } from '../src/wiring/verb.js';
@@ -418,16 +419,31 @@ async function fixture(name: string): Promise<Fixture> {
 }
 
 /**
- * Whether a verb's own declaration offers `--json`, read off the command commander holds.
+ * Whether the command a row's line reaches reads `--json`, off the command commander holds.
  *
  * Asked rather than listed: a verb that gains the flag is exercised in both its forms
  * without an edit here, and one that loses it stops being asked for a form it has not
  * got. {@link EXERCISED_IN_BOTH_FORMS} is what keeps the question from quietly finding
  * none.
+ *
+ * IT ASKED THE VERB, and the verb is not always what a row runs. `witness` declares
+ * `--json` for its reading and its row runs `witness upgrade`, so the second form was
+ * `witness upgrade --json`: the group took the flag, the act dropped it, and the "JSON
+ * form" was the prose one again, run twice. The act refuses the flag now — a group's flag
+ * reaches a subcommand only when it reads it (`wiring/from-the-group.ts`) — and so the
+ * question is asked of the command the line reaches, its own flags and the ones it takes.
  */
-function offersJson(verb: string): boolean {
-  const command = DECLARED.find((one) => one.act.name() === verb)?.act;
-  return command?.options.some((option) => option.long === '--json') === true;
+function offersJson(argv: readonly string[]): boolean {
+  let command = DECLARED.find((one) => one.act.name() === argv[0])?.act;
+  for (const word of argv.slice(1)) {
+    const sub = command?.commands.find((child) => child.name() === word);
+    if (sub === undefined) break;
+    command = sub;
+  }
+  if (command === undefined) return false;
+  return [...command.options, ...optionsTakenFromTheGroup(command)].some(
+    (option) => option.long === '--json',
+  );
 }
 
 /**
@@ -440,8 +456,13 @@ function offersJson(verb: string): boolean {
  * IT WENT 14 -> 16 when `verify` and `witness` gained `--json`. They were the only two
  * reads of this product that refused it, and they are the PROOF layer — so the delivery
  * that gave them one is visible here as a count, which is what this number is for.
+ *
+ * AND IT CAME BACK TO 15, because the `witness` half of that was never true here. This
+ * file runs `witness upgrade`, whose `--json` was the group's and was dropped, so what was
+ * counted as its second form was its first one again ({@link offersJson}). The reading's
+ * JSON is `mnema witness --json`, and the row does not run the reading.
  */
-const EXERCISED_IN_BOTH_FORMS = 16;
+const EXERCISED_IN_BOTH_FORMS = 15;
 
 /** Exercises every verb the table names, each in its own project, and measures the record. */
 async function exerciseEverything(): Promise<Exercised[]> {
@@ -461,7 +482,7 @@ async function exerciseEverything(): Promise<Exercised[]> {
     }
     // Every form the verb has, not just the shortest one: the human summary and the
     // `--json` object are different code, and only one of them was being run.
-    const lines = offersJson(verb)
+    const lines = offersJson(invocation.argv(project))
       ? [invocation.argv(project), [...invocation.argv(project), '--json']]
       : [invocation.argv(project)];
     const started = held(sandbox);

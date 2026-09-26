@@ -383,13 +383,18 @@ export const NOT_CHECKED: Readonly<Record<string, string>> = {
  * that line where the other key lives, and `key restore "<the key file>"` there — and the
  * revocation of a machine's own key hands over the same restore, with the file it takes (23 → 27
  * lines); on the page, the row that says so names the enrollment and the restore (21 → 23).
+ *
+ * A SUBCOMMAND THAT REFUSES ITS GROUP'S FLAG SAYS WHERE THE FLAG IS READ, and that moved two rows
+ * of the source, each looked at: the two `witness` acts refuse `--json` by handing over `mnema
+ * witness --json`, the reading that has it (27 → 28 lines), and the two moves of a decision refuse
+ * `--alternatives` by naming `mnema decision`, the verb that records it (41 → 42 names).
  */
 export const HANDED_OVER: Readonly<
   Record<Handed['from'], Readonly<Record<Reading['kind'], number>>>
 > = {
   span: { line: 23, name: 62, flag: 1, unwritten: 0 },
   block: { line: 33, name: 20, flag: 0, unwritten: 0 },
-  source: { line: 27, name: 41, flag: 3, unwritten: 3 },
+  source: { line: 28, name: 42, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

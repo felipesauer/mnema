@@ -355,8 +355,8 @@ mnema completion fish > ~/.config/fish/completions/mnema.fish  # every fish
 ```
 
 It completes **verbs, subcommands and option names** — including an option a parent group
-declares, which the parser accepts under it (`mnema task move --which`) — and a **value
-only where the declaration enumerates one**. That last one now covers every closed set the
+declares, where the subcommand reads it (`mnema task move --which`); one it does not read is
+refused there, and not offered — and a **value only where the declaration enumerates one**. That last one now covers every closed set the
 domain owns: the ten workflow actions of `task move` and `guard`, the two of `decision
 move`, the four of `skill move`, the three scopes of every `--scope` (two on `decision
 import`, which leaves out the machine-global tree), the levels of

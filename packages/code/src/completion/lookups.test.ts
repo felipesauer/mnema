@@ -31,6 +31,7 @@ import { Command, Option } from 'commander';
 import { describe, expect, it } from 'vitest';
 import { buildProgram } from '../cli.js';
 import { enumeratedArgument, enumeratedOption } from '../wiring/enumerated.js';
+import { takesFromItsGroup } from '../wiring/from-the-group.js';
 import type { CliIo } from '../wiring/io.js';
 import { commandRows, flagRows, spellingsOf, valueRows } from './lookups.js';
 import { type CompletionTree, completionTree } from './tree.js';
@@ -141,13 +142,44 @@ describe('commandRows and flagRows — a row per level, keyed by the path alone'
 
   it('answers a level with every flag in scope there, its own and its ancestors’', () => {
     const flags = asMap(flagRows(tree())).get('stage')?.split(' ') ?? [];
-    // Its own, then the program's — an option travels down because the parser accepts it
-    // there, and a menu that hid it would leave an absence unreadable.
+    // Its own, then the program's — the program's flags travel to every level, because the
+    // program reads them for every verb, and a menu that hid one would leave an absence
+    // unreadable.
     expect(flags).toContain('--plain');
     expect(flags).toContain('-k');
     expect(flags).toContain('--kind');
     expect(flags).toContain('-c');
     expect(flags).toContain('--color');
+  });
+
+  it('answers a subcommand with its group’s flags only where it takes them', () => {
+    // A group's flags are accepted by the parser on every subcommand, and a subcommand that
+    // does not read one refuses it (`wiring/from-the-group.ts`) — so the menu offers the
+    // ones it reads, and the program's, and nothing else of the group's.
+    expect(asMap(flagRows(tree())).get('stage move')?.split(' ')).toEqual([
+      '-h',
+      '--help',
+      '-c',
+      '--color',
+    ]);
+    const program = new Command('tool');
+    program.addOption(new Option('-c, --color <when>', 'when').choices(['auto', 'never']));
+    const stage = program.command('stage');
+    stage.option('--plain', 'no colour');
+    stage.addOption(enumeratedOption('-k, --kind <kind>', 'which kind (a, b)', ['a', 'b']));
+    takesFromItsGroup(stage.command('move'), { takes: ['--kind'] });
+    const taking = completionTree(program);
+    expect(asMap(flagRows(taking)).get('stage move')?.split(' ')).toEqual([
+      '-h',
+      '--help',
+      '-k',
+      '--kind',
+      '-c',
+      '--color',
+    ]);
+    // And the values of a flag it takes come with it.
+    expect(asMap(valueRows(taking)).get('stage move:--kind')).toBe('a b');
+    expect(asMap(valueRows(tree())).has('stage move:--kind')).toBe(false);
   });
 });
 

@@ -112,8 +112,10 @@ export function declaredAgent(value: string): string {
  * happened to each. `decision import`'s `--which` and `--scope` were refused in the
  * very place its help documents them, until it began reading the value off the group
  * and asking `written-before.ts` where the flag was written. The two `witness` acts'
- * `--global` is the silent drop described above, recorded as a finding rather than
- * repaired (`a-flag-declared-twice.test.ts`).
+ * `--global` was the silent drop described above, recorded as a finding until the acts
+ * began reading it the same way. That reading is `from-the-group.ts` now, where every
+ * subcommand declares which of its group's flags it reads — `--which`, for the four
+ * moves this reminder is printed under — and refuses the rest.
  *
  * It is worded for a MOVE, not copied from {@link WHICH_HELP}: the birth clause
  * there ("defaults to the private tree") is about where a new entity lands, and a
