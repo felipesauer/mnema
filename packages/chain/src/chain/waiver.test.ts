@@ -27,8 +27,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { identityFounded, tailPruned, taskCreated } from '../events/build.js';
 import { catalogUpcasters } from '../events/registry.js';
 import { openChainForWriting, verify } from './chain.js';
-import { segmentPath, tailFingerprint } from './layout.js';
+import { loadOrCreateKeyPair } from './keystore.js';
+import { segmentPath, tailDir, tailFingerprint, tailProofPath } from './layout.js';
 import { readTailEntries } from './store.js';
+import { serializeTailProof, signTailProof } from './tailproof.js';
 import { tailStanding } from './waiver.js';
 import type { ChainWriter } from './writer.js';
 
@@ -401,12 +403,21 @@ describe('what a waiver does not touch', () => {
     expect(result.issues.length).toBeGreaterThan(1);
   });
 
-  it('cannot be written about the empty tail a read-only session leaves', () => {
-    // The state that must never be read as a cut: opening a write context to READ
-    // the anchor mints the tail directory and its ownership proof, and writes no
-    // event. A tail with a proof and zero events is the ordinary residue of a
-    // session that only read — not the signature of a removal.
+  it('cannot be written about an empty tail — the residue an older writer left at open', () => {
+    // The state that must never be read as a cut: a tail with its ownership proof and
+    // zero events. THIS CASE CALLED IT "the empty tail a read-only session leaves",
+    // because opening a write context minted the tail directory and its proof. Opening
+    // mints neither any more — a tail is born at its first append — but the tails an
+    // older writer left that way are already in records, committed, and a crash between
+    // a tail's birth and its first line still leaves one. So the rule is asked of that
+    // shape, planted here as the older writer wrote it: the directory and the proof.
     const reader = openChainForWriting(root, { keyRoot: root });
+    const keyPair = loadOrCreateKeyPair({ root });
+    mkdirSync(tailDir({ root }, reader.tail), { recursive: true });
+    writeFileSync(
+      tailProofPath({ root }, reader.tail),
+      `${serializeTailProof(signTailProof(reader.tail, keyPair))}\n`,
+    );
     expect(readTailEntries({ root }, reader.tail, upcasters)).toEqual([]);
     // There is nothing on disk to base a claim on, so no waiver can name it.
     expect(tailStanding({ root }, reader.tail, upcasters)).toBeUndefined();

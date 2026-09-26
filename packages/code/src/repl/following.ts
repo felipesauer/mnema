@@ -171,9 +171,11 @@ export function followingTheRecord(roots: readonly string[]): Following {
 /**
  * The seq of the last entry of a tail, or {@link NOTHING_ACCOUNTED} when it holds none.
  *
- * A tail directory with no entry in it is a real state — the writer creates it, and its
- * proof of ownership, before the first append lands — and it is the same answer a tail
- * nobody has seen before gets: everything it ever holds is new.
+ * A tail directory with no entry in it is a real state — older writers created it, and its
+ * proof of ownership, when they opened, and records committed then still carry them; a
+ * writer born today does it inside its first append, so only a crash between the two leaves
+ * one (this said "the writer creates it … before the first append lands") — and it is the
+ * same answer a tail nobody has seen before gets: everything it ever holds is new.
  */
 function lastAccounted(
   layout: ChainLayout,

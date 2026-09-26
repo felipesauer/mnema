@@ -100,11 +100,12 @@ describe('enrollFromRequest — a key joins by a member vouching for it', () => 
     const a = machine('mnema-roster-a-');
     const anchor = ensureFounded(a.ctx);
     const b = machine('mnema-roster-b-');
-    // B has never written here, so nothing of B is in the tree yet — except the
-    // public half its writer materialized on open. Remove it, so the enrollment is
-    // what puts the proof material in the tree, as it must for a machine that has
-    // only ever run `key request`.
-    unlinkSync(join(tree, 'keys', `${b.fingerprint}.pub`));
+    // B has never written here, so nothing of B is in the tree — its public half
+    // included. This case used to REMOVE that half, because B's writer materialized it
+    // on open; a writer publishes nothing before its first append now, so the state it
+    // planted is the one opening leaves, and the enrollment is what puts the proof
+    // material in the tree, as it must for a machine that has only ever run `key request`.
+    expect(existsSync(join(tree, 'keys', `${b.fingerprint}.pub`))).toBe(false);
 
     const enrolled = enrollFromRequest(a.ctx, { request: requestOf(b, anchor) });
 

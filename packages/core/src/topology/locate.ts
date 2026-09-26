@@ -252,8 +252,10 @@ export interface HeldTail {
  * carries (`tailWaiversIn`, which the census asks with the same function).
  *
  * AN EMPTY TAIL IS NOT HELD, for the reason `tailStanding` gives: a directory with
- * an ownership proof and no event is the ordinary residue of a session that only
- * read, and there is nothing in it to account for. So it is absent from the listing
+ * an ownership proof and no event holds nothing to account for — the residue older
+ * writers left when they opened, which records committed then still carry. (This
+ * called it "the ordinary residue of a session that only read", which it stopped being
+ * when opening a writer stopped giving a tail its directory.) So it is absent from the listing
  * and unlocatable by the verb that authorizes a cut, which is the same answer twice
  * rather than two answers.
  *

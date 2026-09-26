@@ -77,6 +77,7 @@ import {
   SERVES_NO_RECORD_CONTENT,
   TOOLS_SERVING_NO_RECORD_CONTENT,
 } from '../src/record-integrity.js';
+import { codeOnly } from './support/reading-source.js';
 
 const SRC = join(import.meta.dirname, '..', 'src');
 
@@ -410,6 +411,60 @@ describe('the MCP composes no payload of its own', () => {
     // decided. A composer that reached for one arm by hand would be a second decision.
     expect(envelope).toContain('A_WRITE');
     expect(envelope).toContain('A_READ');
+  });
+
+  /**
+   * EVERY REFUSAL LEAVES BY ONE DOOR TOO, and that door says what the session founded.
+   *
+   * Refusals were the one kind of answer this file let through: twenty-two tools composed
+   * them by hand, and the first case above excused them by their text. That excuse was sound
+   * for the record's link state, which a refusal never carried, and it was the hole for the
+   * founding. A session opens its run in a tree before the operation decides, so a key whose
+   * first write there is refused founds its identity on the way in — and a hand-built refusal
+   * asked the session nothing, so the sentence owed at that write waited for a reply that a
+   * connection closing right after never sent.
+   *
+   * Read as CODE (`codeOnly`), because the composer's own doc quotes the shape it replaced,
+   * and a comment is not a refusal. The handlers are read inside `registerTools`, so the last
+   * one's slice does not run on into the composers below it.
+   */
+  it('every refusal answers through the one door, and the door says what was founded', () => {
+    const door = codeOnly(bodyOf(server, 'refused'));
+    expect(door).toContain('isError: true');
+    expect(door).toContain('session.founding.take()');
+
+    // `registerTools` is bounded on the CODE, where the braces its descriptions hold inside
+    // strings are blank — `codeOnly` keeps every offset, so the bounds hold for the raw text,
+    // which is where the declarations' names are (a name is a string literal).
+    const code = codeOnly(server);
+    const start = code.indexOf('function registerTools(');
+    const body = bodyOf(code.slice(start), 'registerTools');
+    const end = code.indexOf(body, start) + body.length;
+    const registration = server.slice(start, end);
+    const declared = [...registration.matchAll(/(?:reads|mutates)TheRecord\('([a-z_]+)'\)/g)];
+    // The non-vacuity guard, as the case above has it.
+    expect(declared.length).toBeGreaterThanOrEqual(25);
+    let refusing = 0;
+    for (const [index, match] of declared.entries()) {
+      const tool = match[1] as string;
+      const from = start + (match.index as number);
+      const to =
+        start + ((declared[index + 1]?.index as number | undefined) ?? registration.length);
+      const handler = code.slice(from, to);
+      // No tool sets the protocol's error flag itself: a refusal it composed would ask the
+      // session nothing. Asserted as the pair, so a red names the tool.
+      expect({ tool, setsTheErrorFlag: handler.includes('isError') }).toStrictEqual({
+        tool,
+        setsTheErrorFlag: false,
+      });
+      if (handler.includes('return refused(')) refusing += 1;
+    }
+    // And the door is reached — by every tool that refuses today, which is most of them.
+    expect(refusing).toBeGreaterThanOrEqual(22);
+    // The founding is taken by the two doors and by nothing else in this module: a third
+    // taker would empty the watch where no reply carries it.
+    expect(codeOnly(server).match(/founding\.take\(\)/g) ?? []).toHaveLength(2);
+    expect(codeOnly(bodyOf(server, 'replied'))).toContain('session.founding.take()');
   });
 
   it.each(['served', 'recorded', 'moved'])('%s composes through the envelope', (composer) => {

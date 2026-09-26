@@ -17,10 +17,11 @@
  * reaches the person as the core worded it.
  *
  * DEFERRED, and not an open writer, because opening one touches the tree before anything
- * is appended. Measured on the binary, a refused enrollment used to leave the project with
- * an untracked `keys/<fp>.pub` and an empty tail of the key that asked — which is the key
- * a person following the words of a split has at hand. The core decides first and opens
- * the writer only to write, so a refusal leaves the tree as it found it.
+ * is appended — an installation id, today. Measured on the binary, a refused enrollment
+ * used to leave the project with an untracked `keys/<fp>.pub` and an empty tail of the key
+ * that asked — which is the key a person following the words of a split has at hand; those
+ * two are born at a writer's first append now, and the id is still a file. The core decides
+ * first and opens the writer only to write, so a refusal leaves the tree as it found it.
  */
 
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';

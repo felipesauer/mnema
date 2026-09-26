@@ -46,7 +46,7 @@
  * credential replaced is a DIFFERENT ENTITY wearing the same id: `<SECRET:slack-token>`
  * is not the skill somebody created, every reading that keys on the name now misses,
  * and on an append-only log the name is gone for good. So a credential in a name is
- * REFUSED before anything is appended, and the person — who, unlike the author of an
+ * REFUSED before the fact is appended, and the person — who, unlike the author of an
  * imported document, is right here — is told the class and the field and can write it
  * again under a name.
  *
@@ -79,7 +79,11 @@ import { type SecretClass, scrubSecrets } from './secrets.js';
  */
 export const FIELD_BYTE_LIMIT = 65_536;
 
-/** A write refused because one field was over the limit; nothing was appended. */
+/**
+ * A write refused because one field was over the limit; the fact was not appended.
+ *
+ * THE FACT, AND NOT "NOTHING": see {@link refuseIfOversize} for the words, and why they changed.
+ */
 export interface ContentTooLargeErr {
   readonly ok: false;
   readonly code: 'CONTENT_TOO_LARGE';
@@ -88,7 +92,7 @@ export interface ContentTooLargeErr {
 
 /**
  * A write refused because a field the record is ADDRESSED by carried something shaped
- * like a credential; nothing was appended.
+ * like a credential; the fact was not appended.
  *
  * It is a refusal and not a scrub because the two are not interchangeable in a name —
  * see the module comment. The class and the field are in the MESSAGE and nowhere else:
@@ -262,12 +266,26 @@ function refuseNamedSecret(field: string, found: readonly SecretClass[]): NameHo
     code: 'NAME_HOLDS_A_SECRET',
     message:
       `"${field}" reads as ${classes}, and it is a name the record is addressed by — ` +
-      'so replacing it would record a different entity, not a redacted one. Nothing was ' +
-      'recorded. Name it something else; if the value itself matters, rotate it.',
+      'so replacing it would record a different entity, not a redacted one. The fact was ' +
+      'not recorded. Name it something else; if the value itself matters, rotate it.',
   };
 }
 
-/** The refusal a field over the limit earns, or undefined when it fits. */
+/**
+ * The refusal a field over the limit earns, or undefined when it fits.
+ *
+ * ITS WORDS, AND THOSE OF {@link refuseNamedSecret}, SAID "Nothing was recorded", and that is
+ * a claim about the whole act where this door can only speak for the fact. It was true from
+ * the command line; through the agent's server it was false on the one call that matters
+ * most. A session opens its run in a tree before the operation decides, so a key's first
+ * write there — refused here — had already founded its identity and started the run: three
+ * signed events on the tail, measured over stdio, beside a reply that said nothing was
+ * recorded. What the door knows is that THE FACT did not land, and that is true down both
+ * roads, so it says that, in the words `append.ts` already used for the refusal a reader
+ * could not open. The two roads are asked by `code/tests/a-write-says-what-it-founded.test.ts`
+ * (the server, beside the founding on the disk) and `code/tests/a-refusal-leaves-nothing.test.ts`
+ * (the command line).
+ */
 function refuseIfOversize(field: string, bytes: number): ContentTooLargeErr | undefined {
   if (bytes <= FIELD_BYTE_LIMIT) return undefined;
   return {
@@ -275,7 +293,7 @@ function refuseIfOversize(field: string, bytes: number): ContentTooLargeErr | un
     code: 'CONTENT_TOO_LARGE',
     message:
       `"${field}" is ${bytes} bytes; a single field holds at most ${FIELD_BYTE_LIMIT}. ` +
-      'Nothing was recorded — split it across several records, or record where it lives.',
+      'The fact was not recorded — split it across several records, or record where it lives.',
   };
 }
 
