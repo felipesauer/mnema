@@ -110,6 +110,25 @@ describe('fromTheGroup', () => {
     );
   });
 
+  it('names a flag with no long spelling as it was declared', async () => {
+    const root = new Command('tool').exitOverride();
+    const group = root
+      .command('group')
+      .option('-q')
+      .action(() => undefined);
+    const act = group.command('act');
+    const to = listening();
+    let given: unknown;
+    act.action(async () => {
+      given = await fromTheGroup(act, to);
+    });
+    await root.parseAsync(['group', 'act', '-q'], { from: 'user' });
+    expect(given).toBe(REFUSED);
+    expect(to.said.join('\n')).toContain(
+      '`group act` takes no -q: it is an option of `group` itself',
+    );
+  });
+
   it('leaves the program’s own flags to the program', async () => {
     expect((await answer(['--loud', 'group', 'act'])).given).toEqual({ shared: undefined });
     expect((await answer(['group', 'act', '--loud'])).given).toEqual({ shared: undefined });
