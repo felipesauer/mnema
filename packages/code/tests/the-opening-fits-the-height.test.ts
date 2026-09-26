@@ -667,14 +667,20 @@ describe('the answer a caller asked for is on the page, at the shortest window t
       // many are awaiting a judgement, and one read reaches past the top again.
       //
       // WHY IT IS THE SMALLEST COUNT THAT WORKS, and this is the half worth writing down.
-      // Asking twice at this size draws NOTHING: measured on a real pty, the second read
-      // put zero bytes on the wire in five seconds and the answer appeared only in the
-      // transcript on the way out. It is not this delivery's: on the record before it, with
-      // a document four rows shorter, the THIRD read did exactly the same — so a console
-      // that stops drawing once the roll has taken enough answers is a defect of its own,
-      // declared in this delivery's report, and what changed here is the margin. This case
-      // is about the walk back, so it asks for the least it needs and stays clear of it.
-      // AND THE SECOND ASK WAITS FOR THE OPENING TO HAVE GONE, which is the one wait that
+      // IT SAID *asking twice at this size draws NOTHING*, and read the silence as a console
+      // that stops drawing once the roll has taken enough answers — a defect of its own. The
+      // measurement was true and the reading was not. The second answer is the same document
+      // and it is taller than the window here, so the page after it is the page the first one
+      // left, byte for byte, and the layout writes nothing for a frame identical to the one on
+      // the screen (`support/pty.ts`, {@link aFrameSince}). The answer did land: in what the
+      // session hands back, the line it was asked on follows the end of the first one
+      // (`a-read-asked-again-draws-what-changed.test.ts`). A document four rows shorter did the
+      // same at the THIRD read — the second still changed the page, because the rows above its
+      // line were the opening's and not an answer's. So a second read here is a step that
+      // rightly changes nothing on the page, and a step waiting for a frame it caused waits for
+      // ever, which is what turned this case red when the document grew. It asks for the least
+      // it needs.
+      // AND THE ASK WAITS FOR THE OPENING TO HAVE GONE, which is the one wait that
       // means what this case is about. A step that waited for *a frame* ended wherever the
       // stream was quiet — measured in whole-suite runs, twice: the page it left behind still
       // had the drawing and the sentence under it on the screen, so the walk had nothing to
