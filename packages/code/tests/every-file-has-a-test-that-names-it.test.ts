@@ -355,9 +355,13 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * two in `sleep.test.ts` for the wait they share with the tail lock, two in `waiver.test.ts` for the
  * empty tail an older writer left, now planted rather than opened (`./keystore.js`,
  * `./tailproof.js`), and one in `the-broken-link-reaches-every-reader.test.ts`, which reads the
- * refusals as code (`support/reading-source.js`).
+ * refusals as code (`support/reading-source.js`). And 2962 -> 2974 when a key's anchor began to be
+ * recorded only after its founding: twelve clauses in `the-anchor-follows-the-founding.test.ts`,
+ * which plants each way a first write can fail between the two — `node:crypto`, `node:fs`,
+ * `node:module`, `node:os`, `node:path`, the chain, `vitest`, `../knowledge/operations.js`,
+ * `../projections/order.js`, `./clock.js`, `./identity-operations.js` and `./operations.js`.
  */
-const CLAUSES_IN_THE_TREE = 2962;
+const CLAUSES_IN_THE_TREE = 2974;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
