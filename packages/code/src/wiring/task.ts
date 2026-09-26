@@ -14,7 +14,8 @@
  * line, so the move reads it off the parent (see {@link
  * WHICH_ON_SUBCOMMAND_HELP}). Unlike `--scope`, which the move rejects, `--which`
  * is honored on a move — the agent that executed a transition is exactly what the
- * record should name.
+ * record should name. Which of the two is which is declared once, beside the move,
+ * and read by the move, its refusal and the completion (`from-the-group.ts`).
  */
 
 import type { Command } from 'commander';
@@ -27,6 +28,7 @@ import {
   scopeOption,
   TASK_ACTIONS,
 } from './enumerated.js';
+import { fromTheGroup, REFUSED, takesFromItsGroup } from './from-the-group.js';
 import { noSuchRecord } from './no-such-record.js';
 import {
   declaredAgent,
@@ -35,7 +37,7 @@ import {
   WHICH_HELP,
   WHICH_ON_SUBCOMMAND_HELP,
 } from './options.js';
-import { reportRecorded, reportRefusal, reportReplacement, reportUsage } from './report.js';
+import { reportRecorded, reportRefusal, reportReplacement } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
 import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
 
@@ -83,8 +85,8 @@ export function registerTask(program: Command, wiring: Wiring): Declared {
   // was born in, never a scope the caller picks — routing it elsewhere would
   // split the task's history across the public/private boundary. Because `move`
   // sits under `task`, commander lets `task`'s `--scope` be parsed here too, so
-  // the move REJECTS it explicitly (read off the parent's opts) rather than
-  // silently ignoring it.
+  // the move REJECTS it explicitly rather than silently ignoring it — and so every
+  // flag of the group it does not read (`from-the-group.ts`).
   const move = task
     .command('move')
     .description('move a task through the workflow (follows the task; takes no --scope)')
@@ -101,28 +103,26 @@ export function registerTask(program: Command, wiring: Wiring): Declared {
     )
     .addHelpText('after', WHICH_ON_SUBCOMMAND_HELP)
     .addHelpText('after', RECORD_CONTRACT_HELP);
+  takesFromItsGroup(move, {
+    takes: ['--which'],
+    refuses: { '--scope': 'a move follows the task to the tree it was born in.' },
+  });
   move.action(
     async (
       action: string,
       id: string,
       opts: { reason?: string; note?: string; feedback?: string },
     ) => {
-      const { runTaskTransition } = await import('../commands/task-transition.js');
-      const { movedLine } = await import('../moved-record.js');
       // Both `--scope` and `--which` on a move are parsed into `task`'s options
       // (the parent), because that is where they are declared. Their verdicts
       // differ: a `--scope` means the caller tried to scope a move, which the model
       // forbids — the move follows the entity's home tree, not a chosen scope — so
       // it is rejected; a `--which` is the agent that executed the move, which the
       // record should name, so it is forwarded.
-      const parentOpts = (move.parent?.opts() ?? {}) as { scope?: string; which?: string };
-      if (parentOpts.scope !== undefined) {
-        reportUsage(
-          wiring,
-          '`task move` takes no --scope: a move follows the task to the tree it was born in.',
-        );
-        return;
-      }
+      const given = await fromTheGroup<{ which?: string }>(move, wiring);
+      if (given === REFUSED) return;
+      const { runTaskTransition } = await import('../commands/task-transition.js');
+      const { movedLine } = await import('../moved-record.js');
       const run = pinnedRun();
       if (run === PIN_REFUSED) {
         io.fail();
@@ -136,7 +136,7 @@ export function registerTask(program: Command, wiring: Wiring): Declared {
           ...(opts.note !== undefined ? { note: opts.note } : {}),
           ...(opts.feedback !== undefined ? { feedback: opts.feedback } : {}),
         },
-        ...(parentOpts.which !== undefined ? { which: parentOpts.which } : {}),
+        ...(given.which !== undefined ? { which: given.which } : {}),
         ...(run !== undefined ? { run } : {}),
       });
       if (result.ok) {

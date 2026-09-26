@@ -348,9 +348,22 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * `node:url` and `vitest` — and nine in `a-flag-declared-twice.test.ts`, which drives the real
  * program with the import's action swapped — `node:fs`, `node:os`, `node:path`, `commander`,
  * `vitest`, `../src/cli.js`, `../src/wiring/misuse.js`, the module it witnesses, and
- * `support/reading-source.js`.
+ * `support/reading-source.js`. And 2947 -> 2972 when every flag of a group began to be read by
+ * the subcommand it reaches or refused there: nine clauses in
+ * `every-group-flag-is-read-or-refused.test.ts`, which runs every pair in process — `node:fs`,
+ * `node:os`, `node:path`, `commander`, `vitest`, `../src/cli.js`, the completion tree,
+ * `../src/wiring/misuse.js`, and the support table of what each subcommand reads — seven each in
+ * `the-witness-acts-cover-the-tree-asked-for.test.ts` and
+ * `a-refused-group-flag-leaves-the-record.test.ts`, which digest the tree around the built binary
+ * — `node:child_process`, `node:crypto`, `node:fs`, `node:os`, `node:path`, `node:url` and
+ * `vitest` — one in `every-verb-says-if-it-writes.test.ts` for the module that says which group
+ * flags a subcommand takes, and one in `the-shell-knows-the-verbs.test.ts` for the support table.
+ * Then 2972 -> 2978 in the same delivery: five clauses in `from-the-group.test.ts`, the witness
+ * of that module over programs of its own — `commander`, `vitest`, the plain renderer, the module
+ * itself, and `report.js` for the reporter's type — and one in `completion/lookups.test.ts`, which
+ * declares a flag a subcommand takes to see the menu follow it.
  */
-const CLAUSES_IN_THE_TREE = 2947;
+const CLAUSES_IN_THE_TREE = 2978;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -742,7 +755,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   },
   'packages/code/src/wiring/witness.ts': {
     reached: 'nobody imports it',
-    why: 'Declares the `witness` group and prints its outcomes; the one suite driving it proves --calendar reaches `stamp` and --global the bare reading, while on both acts --global binds to the group and reaches nothing, and no golden ever invokes the verb.',
+    why: 'Declares the `witness` group and prints its outcomes; one suite proves --calendar reaches `stamp` and --global the bare reading, another runs both acts over the global tail on the binary — each reads --global off the group now, where it used to reach nothing — and no golden ever invokes the verb.',
   },
   'packages/copilot/src/intelligence/events.ts': {
     reached: 'nobody imports it',
@@ -842,7 +855,7 @@ describe('every file has a test that names it', () => {
     expect(PRODUCTION).toContain('packages/code/src/wiring/index.ts');
     expect(PRODUCTION).toContain('packages/core/src/topology/index.ts');
     expect(PRODUCTION).not.toContain('packages/core/src/index.ts');
-    expect(PRODUCTION).toHaveLength(314);
+    expect(PRODUCTION).toHaveLength(315);
     expect(TEST_TREE.length).toBeGreaterThan(250);
     // No file is in both corpora, which is what keeps a test from witnessing itself.
     const tests = new Set(TEST_TREE.map((one) => one.path));
@@ -862,7 +875,7 @@ describe('every file has a test that names it', () => {
     const found = unwitnessed();
     const byReach = (reach: Reach): number =>
       [...found.values()].filter((one) => one === reach).length;
-    expect(PRODUCTION.length - found.size).toBe(243);
+    expect(PRODUCTION.length - found.size).toBe(244);
     expect(found.size).toBe(71);
     expect(byReach('nobody imports it')).toBe(71);
     expect(byReach('imported, and no assertion observes it')).toBe(0);

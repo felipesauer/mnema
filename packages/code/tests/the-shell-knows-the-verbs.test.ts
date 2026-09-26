@@ -53,6 +53,7 @@ import { REFERENCE_DIRECTIONS } from '../src/reference-directions.js';
 import { SHELLS, type Shell } from '../src/wiring/completion.js';
 import { SCOPES } from '../src/wiring/enumerated.js';
 import { everyCommandOf } from '../src/wiring/misuse.js';
+import { WHAT_A_SUBCOMMAND_READS } from './support/what-a-subcommand-reads.js';
 
 /** A silent port: everything here reads declarations and writes nothing. */
 const silent: CliIo = { out: () => {}, err: () => {}, fail: () => {} };
@@ -93,17 +94,28 @@ const PATHS: readonly string[] = everyCommandOf(declared).map((command) =>
 );
 
 /**
- * Every flag spelling the parser accepts at a command, derived independently.
+ * Every flag spelling a command reads, derived independently.
  *
  * From `.options` and the parent chain — NOT from the generator's own reading of the
  * help's `visibleOptions` — plus `-h`/`--help`, which every command answers to and no
  * command declares. A test that asked the production code what it should have produced
  * would assert nothing at all.
+ *
+ * IT WAS EVERY FLAG THE PARSER ACCEPTS, and the parser accepts a group's every flag on
+ * each of its subcommands. What a subcommand did with the ones it does not read was drop
+ * them, and it refuses them now, so the menu offers a group's flag only where it is read.
+ * Which those are is not asked of the product's declaration either: it is
+ * {@link WHAT_A_SUBCOMMAND_READS}, which `every-group-flag-is-read-or-refused.test.ts`
+ * holds to what the program answers. A flag of the program is read for every verb, and
+ * travels to every level.
  */
 function accepted(command: Command): readonly string[] {
   const names = new Set<string>(['-h', '--help']);
+  const reads = WHAT_A_SUBCOMMAND_READS[pathOf(command).join(' ')] ?? [];
   for (let at: Command | null = command; at !== null; at = at.parent) {
+    const aGroup = at !== command && at.parent !== null;
     for (const option of at.options) {
+      if (aGroup && !reads.includes(option.long ?? option.flags)) continue;
       if (option.short !== undefined) names.add(option.short);
       if (option.long !== undefined) names.add(option.long);
     }
@@ -267,11 +279,11 @@ describe('the script knows every verb the program declares', () => {
     }
   });
 
-  it('offers every option name the parser accepts there, in all three shells', () => {
-    // Including an option a PARENT group declares: `mnema task move --which` is accepted
+  it('offers every option name the command reads there, in all three shells', () => {
+    // Including an option a PARENT group declares: `mnema task move --which` is read
     // (task.ts says so in prose, because `move`'s own help does not list it), so a
     // completion that offered only the level's own options would be narrower than the
-    // parser.
+    // verb.
     let checked = 0;
     for (const shell of SHELLS) {
       for (const command of everyCommandOf(declared)) {
@@ -284,6 +296,9 @@ describe('the script knows every verb the program declares', () => {
     }
     expect(checked).toBeGreaterThan(300);
     expect(offered('bash', 'task move')).toContain('--which');
+    // And not wider: the group's flag the move refuses is not offered where it is refused.
+    expect(offered('bash', 'task move')).not.toContain('--scope');
+    expect(offered('bash', 'decision move')).not.toContain('--alternatives');
   });
 
   it('and this program declares no HIDDEN option, which is what makes the case above right', () => {

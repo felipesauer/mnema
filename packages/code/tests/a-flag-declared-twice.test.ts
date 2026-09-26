@@ -8,7 +8,8 @@
  * and that is all it does. `wiring/options.ts` already said this about the moves, and it is why
  * they take `--which` from their group instead of declaring it. Three subcommands declared their
  * group's flag anyway and read their own copy: `decision import` its `--scope` and `--which`, and
- * the two `witness` acts their `--global`.
+ * the two `witness` acts their `--global`. All three read the group's value now, through
+ * `wiring/from-the-group.ts`, and refuse the flag written before their name.
  *
  * Two things are asserted here.
  *
@@ -21,8 +22,8 @@
  *
  * EVERY PAIR THE TREE HOLDS, each with how its subcommand reads the flag, enumerated from the
  * program itself: a subcommand that starts declaring its group's flag is red here until somebody
- * says which of the two it is. There are four today, and two of them are a FINDING, recorded
- * rather than repaired (see {@link DECLARED_TWICE}).
+ * says which of the two it is. There are four today, and all four are read where they were
+ * written. Two of them were a FINDING until they were repaired (see {@link DECLARED_TWICE}).
  */
 
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -112,8 +113,11 @@ describe('where a flag was written is what commander read before the verb', () =
   }
 
   it('holds for a flag that takes no value, the shape `witness` declares twice', async () => {
-    // Built here rather than borrowed: no group of the product declares a bare flag its
-    // subcommand reads through this function, and `--global` is the one that would.
+    // Built here rather than borrowed, and it said why: no group of the product declared a bare
+    // flag its subcommand read through this function, and `--global` was the one that would. It
+    // is one now — the two `witness` acts read it this way, and
+    // `the-witness-acts-cover-the-tree-asked-for.test.ts` runs them on the binary. The case stays
+    // for what the product does not have: the short spelling, and a flag named by it.
     const answer = async (argv: string[]): Promise<readonly string[]> => {
       const root = new Command('tool').exitOverride();
       const group = root.command('group').option('--global').option('-q');
@@ -163,25 +167,34 @@ type Reading = 'where it was written' | 'its own copy, which the group takes';
 /**
  * Every flag a subcommand declares that an ancestor declares too, and how the subcommand reads it.
  *
- * THE TWO `witness` ROWS ARE A FINDING, NOT A DESIGN. Each act reads its own `opts.global`, which
- * commander never sets, because `witness` declares `--global` too and takes it. Measured on the
- * binary, outside a project and with one tail in the machine-global tree: `mnema witness --global`
- * lists that tail, and `mnema witness stamp --global` answers `there is no tail here to witness`,
- * while `mnema witness upgrade --global` says `No tail holds events in any tree here — looked in
- * .` — two sentences that are false for the tree that was asked for. It is recorded here and in
- * `outside-a-project-the-surface-says-so.test.ts`, and not repaired: making the flag reach the
- * acts changes which tails the one verb that speaks to a public calendar sends out, and whether
- * the spelling before the act is honoured or refused, as `decision import` refuses it, is a
- * choice this does not make. The row turns red on the day an act reads it where it was written.
+ * THE TWO `witness` ROWS WERE A FINDING, NOT A DESIGN, and this said so while they read `its own
+ * copy, which the group takes`. Each act read its own `opts.global`, which commander never sets,
+ * because `witness` declares `--global` too and takes it. Measured on the binary, outside a project
+ * and with one tail in the machine-global tree: `mnema witness --global` listed that tail, `mnema
+ * witness stamp --global` answered `there is no tail here to witness`, and `mnema witness upgrade
+ * --global` said `No tail holds events in any tree here — looked in .` — two sentences false for
+ * the tree that was asked for. It was recorded here and not repaired, because making the flag
+ * reach the acts changes which tails the one verb that speaks to a public calendar sends out, and
+ * whether the spelling before the act is honoured or refused was not this file's to decide.
+ *
+ * It was decided: the flag is honoured after the act and refused before it, as `decision import`
+ * refuses it, and both rows turned when the acts began reading it where it was written.
  */
 const DECLARED_TWICE: Readonly<Record<string, Reading>> = {
   'decision import --scope': 'where it was written',
   'decision import --which': 'where it was written',
-  'witness stamp --global': 'its own copy, which the group takes',
-  'witness upgrade --global': 'its own copy, which the group takes',
+  'witness stamp --global': 'where it was written',
+  'witness upgrade --global': 'where it was written',
 };
 
-/** Every such flag in the program, read off the tree and off each action's own source. */
+/**
+ * Every such flag in the program, read off the tree and off each action's own source.
+ *
+ * A subcommand reads one where it was written when its action asks `fromTheGroup` — the one reader
+ * that puts the question to `ownFlagsWrittenBefore` and then reads the value off the group. It
+ * asked `ownFlagsWrittenBefore` in its own source, once; the question moved into that reader when
+ * a second verb needed it.
+ */
 function declaredTwice(): Record<string, Reading> {
   const handlers = new Map<Command, string>();
   const real = Command.prototype.action;
@@ -199,7 +212,9 @@ function declaredTwice(): Record<string, Reading> {
   }
   const found: Record<string, Reading> = {};
   for (const command of everyCommandOf(program)) {
-    const reads = codeOnly(handlers.get(command) ?? '').includes('ownFlagsWrittenBefore(');
+    // `(0, __vi_import_n__.fromTheGroup)(…)` is what the test runner makes of an imported binding,
+    // so the call is matched with the parenthesis that closes that rewrite as well as without it.
+    const reads = /\bfromTheGroup\)?\s*\(/.test(codeOnly(handlers.get(command) ?? ''));
     for (let above = command.parent; above !== null; above = above.parent) {
       for (const own of command.options) {
         const shared = above.options.some(

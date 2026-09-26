@@ -29,6 +29,9 @@
  * not a repair of this one. `the-command-handed-over-runs-as-handed.test.ts` holds the program to
  * that, and names this file as the one place the setting appears.
  *
+ * It is asked by `from-the-group.ts`, for every subcommand that declares a flag its group declares
+ * too — `decision import`'s two, and the two `witness` acts' `--global`.
+ *
  * It reads the line the group received as its parent kept it (`Command.args`): the program's own
  * flags are already out of it, so a `--color` written anywhere is not taken for the group's. On a
  * line that reached the subcommand, everything between the group's name and the subcommand's is
