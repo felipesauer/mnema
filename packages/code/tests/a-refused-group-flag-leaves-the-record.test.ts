@@ -12,7 +12,8 @@
  * WHAT IS ASSERTED. Each of those lines, and its sibling on the other subcommands, is refused with
  * the sentence that says where the flag is read — and the record, the HOME and the project's own
  * files are left byte for byte as they were. And the same line without the flag goes through, so
- * the flag is the whole reason.
+ * the flag is the whole reason. The completion script the binary writes offers none of them there,
+ * and still offers the group's `--which` on a move, which reads it.
  *
  * WHAT IS NOT: which flags each subcommand reads, over every pair the program holds, is
  * `every-group-flag-is-read-or-refused.test.ts`, in process and without a project.
@@ -144,6 +145,36 @@ describe('the skill group’s --body', () => {
       '`skill move` takes no --body: a skill’s body is recorded when it is proposed, and a move ' +
         'changes only its state.',
     );
+  });
+});
+
+describe('the completion the binary writes', () => {
+  it('offers none of them where they are refused, and the group’s --which where it is read', () => {
+    const { status, said } = mnema('completion', 'bash');
+    expect(status).toBe(0);
+    // The flags' own table: the one before it keys the subcommands by the same paths.
+    const table = said.slice(said.indexOf('_mnema_flags()'), said.indexOf('_mnema_values()'));
+    expect(table.length).toBeGreaterThan(0);
+    /** The flags the script offers after one path, as its `case` arm writes them. */
+    const offered = (path: string): string[] =>
+      new RegExp(`'${path}'\\) echo '([^']*)'`).exec(table)?.[1]?.split(' ') ?? [];
+    for (const [path, refused] of [
+      ['decision move', ['--alternatives', '--scope']],
+      ['decision supersede', ['--alternatives', '--scope']],
+      ['decision import', ['--alternatives']],
+      ['skill move', ['--body', '--scope']],
+      ['witness stamp', ['--json']],
+      ['witness upgrade', ['--json']],
+    ] as const) {
+      const words = offered(path);
+      expect(words.length, path).toBeGreaterThan(0);
+      for (const flag of refused) expect(words, `${path} ${flag}`).not.toContain(flag);
+    }
+    expect(offered('decision move')).toContain('--which');
+    expect(offered('witness stamp')).toContain('--global');
+    // The group itself still offers its own, which is where each of them is read.
+    expect(offered('decision')).toContain('--alternatives');
+    expect(offered('witness')).toContain('--json');
   });
 });
 
