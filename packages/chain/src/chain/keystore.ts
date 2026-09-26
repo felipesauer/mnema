@@ -424,8 +424,9 @@ export function mintInstallationId(path: string): string | undefined {
 /**
  * Reads the anchor this key serves, or null when none is recorded yet. Local
  * and uncommitted, like the installation id: it says WHICH anchor this
- * installation authorizes as. A machine with no recorded anchor founds its own
- * on first use.
+ * installation authorizes as. A machine with no recorded anchor asks the record
+ * at its next write, and founds its own only when the record proves the key a
+ * member of nothing — {@link anchorPath} says what this used to claim.
  */
 export function readAnchor(layout: ChainLayout, fingerprint: string): string | null {
   const path = anchorPath(layout, fingerprint);

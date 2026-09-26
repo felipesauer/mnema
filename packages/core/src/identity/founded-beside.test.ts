@@ -14,6 +14,7 @@ import {
   materializePublicKey,
   openChainForWriting,
   sign,
+  verify,
 } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { captureMemory } from '../knowledge/operations.js';
@@ -124,6 +125,62 @@ describe('identitiesFoundedBeside — read off the record', () => {
     writes(b, 'the laptop, joined');
     expect(identitiesFoundedBeside(orderedEvents({ root: tree }, upcasters))).toEqual([]);
     expect(foundedBesideBy(tree, b.fingerprint, upcasters)).toBeUndefined();
+  });
+
+  it('counts an anchor founded twice once, at its first founding — what two sessions of one installation leave', () => {
+    const a = machine();
+    writes(a, 'first');
+    const anchorA = ensureFounded(a.ctx);
+    // Two sessions of B's one installation: one key root, one tree, so one tail.
+    const keyRoot = tmp('mnema-founded-beside-key-');
+    const session = (): { fingerprint: string; ctx: WriteContext } => {
+      const writer = openChainForWriting(tree, { keyRoot });
+      return {
+        fingerprint: writer.signerFingerprint,
+        ctx: { writer, layout: { root: tree }, upcasters, clock },
+      };
+    };
+    const one = session();
+    const two = session();
+    // They write together, so each decides before the other has written anything: the whole of
+    // the second one's first write runs at the first write the first one makes after deciding —
+    // its founding, or its anchor wherever the anchor goes first. Which one comes first is the
+    // order `ensureFounded` keeps, and this reading owes the same answer under either.
+    let raced = false;
+    const firstWrites = new Set(['append', 'recordAnchor']);
+    const racing = new Proxy(one.ctx.writer, {
+      get(target, prop, receiver) {
+        const value = Reflect.get(target, prop, receiver) as unknown;
+        if (typeof value !== 'function') return value;
+        if (typeof prop === 'string' && firstWrites.has(prop)) {
+          return (...args: unknown[]) => {
+            if (!raced) {
+              raced = true;
+              writes(two, 'session two');
+            }
+            return (value as (...given: unknown[]) => unknown).apply(target, args);
+          };
+        }
+        return value.bind(target);
+      },
+    });
+    writes({ ctx: { ...one.ctx, writer: racing } }, 'session one');
+
+    const events = orderedEvents({ root: tree }, upcasters);
+    const ofB = events.filter(
+      (e) => e.kind === 'identity.founded' && e.payload.foundingFp === one.fingerprint,
+    );
+    // Non-vacuity: the record really holds the anchor twice, by the key it derives from.
+    expect(raced).toBe(true);
+    expect(ofB).toHaveLength(2);
+    expect(new Set(ofB.map((e) => e.subject)).size).toBe(1);
+
+    expect(identitiesFoundedBeside(events)).toEqual([
+      { anchor: ofB[0]?.subject, foundingFp: one.fingerprint, at: ofB[0]?.at, besides: [anchorA] },
+    ]);
+    // And the record takes the second founding as the copy it is.
+    for (const m of [a, one, two]) m.ctx.writer.checkpoint();
+    expect(verify(tree, upcasters)).toMatchObject({ ok: true, fullySigned: true });
   });
 });
 
