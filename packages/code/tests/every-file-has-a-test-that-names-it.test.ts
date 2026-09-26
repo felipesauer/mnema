@@ -348,9 +348,13 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * `node:url` and `vitest` — and nine in `a-flag-declared-twice.test.ts`, which drives the real
  * program with the import's action swapped — `node:fs`, `node:os`, `node:path`, `commander`,
  * `vitest`, `../src/cli.js`, `../src/wiring/misuse.js`, the module it witnesses, and
- * `support/reading-source.js`.
+ * `support/reading-source.js`. And 2947 -> 2957 when a read asked again was pinned to draw what
+ * changed: ten clauses in `a-read-asked-again-draws-what-changed.test.ts`, which drives the
+ * built binary on a pseudo-terminal and replays its pages — `node:fs`, `node:os`, `node:path`,
+ * `node:url`, `vitest`, `../src/cli.js`, `../src/repl/floor.js`, `../src/wiring/repl.js`,
+ * `support/pty.js` and `support/screen.js`.
  */
-const CLAUSES_IN_THE_TREE = 2947;
+const CLAUSES_IN_THE_TREE = 2957;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
