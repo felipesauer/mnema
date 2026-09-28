@@ -348,22 +348,51 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * `node:url` and `vitest` — and nine in `a-flag-declared-twice.test.ts`, which drives the real
  * program with the import's action swapped — `node:fs`, `node:os`, `node:path`, `commander`,
  * `vitest`, `../src/cli.js`, `../src/wiring/misuse.js`, the module it witnesses, and
- * `support/reading-source.js`. And 2947 -> 2972 when every flag of a group began to be read by
- * the subcommand it reaches or refused there: nine clauses in
- * `every-group-flag-is-read-or-refused.test.ts`, which runs every pair in process — `node:fs`,
- * `node:os`, `node:path`, `commander`, `vitest`, `../src/cli.js`, the completion tree,
- * `../src/wiring/misuse.js`, and the support table of what each subcommand reads — seven each in
- * `the-witness-acts-cover-the-tree-asked-for.test.ts` and
+ * `support/reading-source.js`. And 2947 -> 2979 when verification stopped walking a tail once
+ * per checkpoint: five clauses in `range.test.ts`, which holds the new route to a range to the
+ * filter it replaced — `vitest`, the event builders, `./entry.js`, `./keys.js` and the module
+ * it witnesses; eight in `the-verdict-over-a-broken-tail.test.ts`, which edits the lines of a
+ * record the product's writer wrote — `node:fs`, `node:os`, `node:path`, `vitest`, the event
+ * builders, `./chain.js`, `./layout.js` and `./store.js`; ten in
+ * `verify-costs-what-the-record-holds.test.ts`, which counts what a verification reads —
+ * `node:fs`, `node:os`, `node:path`, `vitest`, the event builders, `./chain.js`, `./keys.js`,
+ * `./keystore.js`, `./layout.js` and the writer's type; and nine in
+ * `witness-stamp-judges-each-tree-once.test.ts` — `node:fs`, `node:os`, `node:path`,
+ * `@mnema/chain`, `@mnema/core`, `vitest`, `./init.js`, `./memory.js` and the module it
+ * witnesses.
+ * The next two were written from the same 2947, on a branch merged after that one. And
+ * 2947 -> 2962 when a tail began to be born at its first append and the installation id to be
+ * minted exclusively: ten clauses in `installation-id.test.ts`, which plants the two states the
+ * race leaves — `node:crypto`, `node:events`, `node:fs`, `node:os`, `node:path`,
+ * `node:worker_threads`, `vitest`, `./keys.js`, `./keystore.js` and `./layout.js` — two in
+ * `sleep.test.ts` for the wait they share with the tail lock, two in `waiver.test.ts` for the
+ * empty tail an older writer left, now planted rather than opened (`./keystore.js`,
+ * `./tailproof.js`), and one in `the-broken-link-reaches-every-reader.test.ts`, which reads the
+ * refusals as code (`support/reading-source.js`). And 2962 -> 2974 when a key's anchor began to
+ * be recorded only after its founding: twelve clauses in
+ * `the-anchor-follows-the-founding.test.ts`, which plants each way a first write can fail between
+ * the two — `node:crypto`, `node:fs`, `node:module`, `node:os`, `node:path`, the chain, `vitest`,
+ * `../knowledge/operations.js`, `../projections/order.js`, `./clock.js`,
+ * `./identity-operations.js` and `./operations.js`. The two branches met at 3006, read off this
+ * guard: 2979 and those twenty-seven, since no clause came in on both sides.
+ * The next two were written from the same 2947, on a third branch merged after those two. And
+ * 2947 -> 2972 when every flag of a group began to be read by the subcommand it reaches or
+ * refused there: nine clauses in `every-group-flag-is-read-or-refused.test.ts`, which runs every
+ * pair in process — `node:fs`, `node:os`, `node:path`, `commander`, `vitest`, `../src/cli.js`,
+ * the completion tree, `../src/wiring/misuse.js`, and the support table of what each subcommand
+ * reads — seven each in `the-witness-acts-cover-the-tree-asked-for.test.ts` and
  * `a-refused-group-flag-leaves-the-record.test.ts`, which digest the tree around the built binary
  * — `node:child_process`, `node:crypto`, `node:fs`, `node:os`, `node:path`, `node:url` and
  * `vitest` — one in `every-verb-says-if-it-writes.test.ts` for the module that says which group
  * flags a subcommand takes, and one in `the-shell-knows-the-verbs.test.ts` for the support table.
  * Then 2972 -> 2978 in the same delivery: five clauses in `from-the-group.test.ts`, the witness
  * of that module over programs of its own — `commander`, `vitest`, the plain renderer, the module
- * itself, and `report.js` for the reporter's type — and one in `completion/lookups.test.ts`, which
- * declares a flag a subcommand takes to see the menu follow it.
+ * itself, and `report.js` for the reporter's type — and one in `completion/lookups.test.ts`,
+ * which declares a flag a subcommand takes to see the menu follow it. The three branches met at
+ * 3037, read off this guard: 3006 and those thirty-one, since no clause came in on more than one
+ * of them.
  */
-const CLAUSES_IN_THE_TREE = 2978;
+const CLAUSES_IN_THE_TREE = 3037;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -855,7 +884,7 @@ describe('every file has a test that names it', () => {
     expect(PRODUCTION).toContain('packages/code/src/wiring/index.ts');
     expect(PRODUCTION).toContain('packages/core/src/topology/index.ts');
     expect(PRODUCTION).not.toContain('packages/core/src/index.ts');
-    expect(PRODUCTION).toHaveLength(315);
+    expect(PRODUCTION).toHaveLength(317);
     expect(TEST_TREE.length).toBeGreaterThan(250);
     // No file is in both corpora, which is what keeps a test from witnessing itself.
     const tests = new Set(TEST_TREE.map((one) => one.path));
@@ -875,7 +904,7 @@ describe('every file has a test that names it', () => {
     const found = unwitnessed();
     const byReach = (reach: Reach): number =>
       [...found.values()].filter((one) => one === reach).length;
-    expect(PRODUCTION.length - found.size).toBe(244);
+    expect(PRODUCTION.length - found.size).toBe(246);
     expect(found.size).toBe(71);
     expect(byReach('nobody imports it')).toBe(71);
     expect(byReach('imported, and no assertion observes it')).toBe(0);

@@ -19,6 +19,7 @@
 
 import {
   appendFileSync,
+  mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
@@ -42,7 +43,7 @@ import {
 } from './checkpoint.js';
 import type { Entry } from './entry.js';
 import { loadOrCreateKeyPair } from './keystore.js';
-import { type ChainLayout, checkpointsPath, segmentPath } from './layout.js';
+import { type ChainLayout, checkpointsPath, segmentPath, tailDir } from './layout.js';
 import {
   lastTailCheckpoint,
   orderedSegments,
@@ -144,8 +145,14 @@ function tipAgreesWithTheWholeTail(minSeq: number): Entry[] {
 
 describe('reading the tip of a tail', () => {
   it('reads nothing from a tail that has no segment yet', () => {
-    openChain(); // creates the tail directory and its proof, but no entry
-    expect(readTailTip(layout(), tailIdOf(), upcasters, -1)).toEqual([]);
+    // Opened and never appended to. This said the open "creates the tail directory and its
+    // proof, but no entry" — the tail is born at its first append now, so there is no
+    // directory either, and the tail is asked of the writer rather than read off `tails/`.
+    const w = openChain();
+    expect(readTailTip(layout(), w.tail, upcasters, -1)).toEqual([]);
+    // And the shape an older writer left at open — the directory, no segment — reads the same.
+    mkdirSync(tailDir(layout(), w.tail), { recursive: true });
+    expect(readTailTip(layout(), w.tail, upcasters, -1)).toEqual([]);
   });
 
   it('reads only the last segment when every event is already checkpointed', () => {
@@ -234,15 +241,17 @@ describe('reading the last checkpoint of a tail', () => {
    * file answered — that is the behaviour it replaces, and the writer's coverage
    * and its checkpoint chain both hang off it.
    */
-  function agreesWithTheWholeFile(): Checkpoint | undefined {
-    const last = lastTailCheckpoint(layout(), tailIdOf());
-    expect(last).toEqual(readTailCheckpoints(layout(), tailIdOf()).at(-1));
+  function agreesWithTheWholeFile(tail: string = tailIdOf()): Checkpoint | undefined {
+    const last = lastTailCheckpoint(layout(), tail);
+    expect(last).toEqual(readTailCheckpoints(layout(), tail).at(-1));
     return last;
   }
 
   it('finds nothing when the tail has never checkpointed', () => {
-    openChain(); // the tail directory and its proof exist; the file does not
-    expect(agreesWithTheWholeFile()).toBeUndefined();
+    // Opened, never appended: no checkpoints file — and, since a tail is born at its first
+    // append, no directory to read the tail's name off, so the writer names it.
+    const w = openChain();
+    expect(agreesWithTheWholeFile(w.tail)).toBeUndefined();
   });
 
   it('finds nothing in an empty checkpoints file', () => {
@@ -619,5 +628,87 @@ describe('the writer refuses what no reader could accept', () => {
     const cp = forceCheckpoint(w);
     expect([cp.fromSeq, cp.toSeq]).toEqual([0, 1]);
     expect(verify(root).ok).toBe(true);
+  });
+});
+
+describe('a tail is born at its first append, not when its writer opens', () => {
+  /**
+   * What a clone of this chain would receive is FILES — git carries no directory of its
+   * own — so "nothing a clone receives" is asked of the files under the chain root.
+   */
+  function filesUnder(dir: string, base = dir): string[] {
+    const out: string[] = [];
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) out.push(...filesUnder(path, base));
+      else out.push(path.slice(base.length + 1));
+    }
+    return out.sort();
+  }
+
+  /**
+   * A writer whose key lives OUTSIDE the chain, as the product's does, so every file the
+   * chain holds is one that opening or appending put there — the keyRoot == chainRoot
+   * shorthand the rest of this file uses would put the key's own files in the count.
+   */
+  function openApart(): ChainWriter {
+    const keyRoot = mkdtempSync(join(tmpdir(), 'mnema-writer-keyroot-'));
+    keyRoots.push(keyRoot);
+    return openChainForWriting(root, { keyRoot });
+  }
+  const keyRoots: string[] = [];
+  afterEach(() => {
+    for (const dir of keyRoots.splice(0)) rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('leaves only the installation id in a chain its writer opened and never wrote to', () => {
+    const w = openApart();
+    // The id is the one thing opening writes — local, and ignored by the tree's own
+    // `.gitignore` (`tree.test.ts` holds that). No public key, no tail, no proof.
+    expect(filesUnder(root)).toEqual([`keys/${w.signerFingerprint}.inst`]);
+  });
+
+  it('gives the tail its public key, its directory and its proof at the first append', () => {
+    const w = openApart();
+    found(w);
+    expect(filesUnder(root)).toEqual(
+      [
+        `keys/${w.signerFingerprint}.inst`,
+        `keys/${w.signerFingerprint}.pub`,
+        `tails/${w.tail}/000001.jsonl`,
+        `tails/${w.tail}/tailproof.json`,
+      ].sort(),
+    );
+    // Born whole: the record an anonymous verifier reads is complete from the first line.
+    w.checkpoint();
+    expect(verify(root).ok).toBe(true);
+  });
+
+  it('is born by the batch door too, once for the whole batch', () => {
+    const w = openApart();
+    w.appendAll([
+      identityFounded(env(w, w.anchor), { foundingFp: w.signerFingerprint }),
+      memoryCaptured(env(w, 'm-1'), { content: 'a real memory' }),
+    ]);
+    expect(filesUnder(root)).toContain(`keys/${w.signerFingerprint}.pub`);
+    expect(filesUnder(root)).toContain(`tails/${w.tail}/tailproof.json`);
+  });
+
+  it('is not born by an append the writer itself refuses, through either door', () => {
+    const w = openApart();
+    expect(() => w.append(taskCreated(env(w, 't-1'), { title: '' }))).toThrow(EventParseError);
+    expect(() =>
+      w.appendAll([
+        identityFounded(env(w, w.anchor), { foundingFp: w.signerFingerprint }),
+        taskCreated(env(w, 't-1'), { title: '' }),
+      ]),
+    ).toThrow(EventParseError);
+    expect(filesUnder(root)).toEqual([`keys/${w.signerFingerprint}.inst`]);
+  });
+
+  it('is not born by a checkpoint that has nothing to sign', () => {
+    const w = openApart();
+    expect(w.checkpoint()).toBeNull();
+    expect(filesUnder(root)).toEqual([`keys/${w.signerFingerprint}.inst`]);
   });
 });

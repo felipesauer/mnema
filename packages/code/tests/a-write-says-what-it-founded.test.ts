@@ -438,6 +438,32 @@ describe('the server says it where the agent reads', () => {
     await client.close();
   });
 
+  it('in the refusal of a first write, which founded on its way in — and the refusal says only the fact did not land', async () => {
+    // The run opens before the operation decides (`ensureRun`), so a key's first write into a
+    // tree founds there even when the operation then refuses. The refusal used to be composed
+    // by hand and asked the session nothing: the sentence waited for a next reply, and a
+    // connection that closed right after never heard it. And the refusal said "Nothing was
+    // recorded" with the founding and the run's start on the tail.
+    expect(mnema(homeA, 'init').status).toBe(0);
+    expect(foundingsIn(repo)).toBe(1);
+    const client = await connected(homeB);
+    const reply = await client.callTool({
+      name: 'capture_memory',
+      arguments: { content: 'x'.repeat(70_000), scope: 'public' },
+    });
+    await client.close();
+
+    expect((reply as { isError?: boolean }).isError).toBe(true);
+    const said = blocks(reply);
+    expect(said[0]).toMatch(/^Refused \(CONTENT_TOO_LARGE\): /);
+    // What was written is read off the disk, not off the reply: B's founding is there.
+    expect(foundingsIn(repo)).toBe(2);
+    expect(said.filter((block) => block.includes(FOUNDED))).toHaveLength(1);
+    // And the words are true beside it: the fact did not land, which is all the door knows.
+    expect(said[0]).toContain('The fact was not recorded');
+    expect(said.join('\n')).not.toMatch(/nothing was recorded/i);
+  });
+
   it('in the hook’s additionalContext — the path nobody asked for, whose prose the host drops', async () => {
     // A rule in force at a path, so the hook speaks and writes; the first key's session writes
     // there before the second one's does.

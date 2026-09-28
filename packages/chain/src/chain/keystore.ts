@@ -23,7 +23,18 @@
  */
 
 import { randomBytes } from 'node:crypto';
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  closeSync,
+  existsSync,
+  mkdirSync,
+  openSync,
+  readdirSync,
+  readFileSync,
+  readlinkSync,
+  rmSync,
+  writeFileSync,
+  writeSync,
+} from 'node:fs';
 
 import {
   deriveAnchor,
@@ -47,6 +58,7 @@ import {
   privateKeyPath,
   publicKeyPath,
 } from './layout.js';
+import { sleepSync } from './sleep.js';
 
 /**
  * Loads this machine's key pair, generating and persisting one if none exists.
@@ -178,24 +190,243 @@ export function committedPublicKey(
  * It is keyed by fingerprint but the FILE is local and uncommitted, so a machine
  * that receives a copied private key finds no `.inst` beside it and mints its
  * own — the mechanism that keeps the two on separate tails.
+ *
+ * TWO PROCESSES OF ONE KEY GET ONE ID, and they did not. This wrote the file with
+ * `writeFileSync` and read an empty file as an absent one, and the two together forked
+ * an installation. Two fresh processes that both found the file absent both minted, and
+ * the second write won: with the two aligned, 19 of 20 rounds ended with two ids, the
+ * window one to three milliseconds wide (the race the tail lock cannot see — its path is
+ * derived FROM this id, so two ids take two locks). And `writeFileSync` creates the file
+ * before it writes it: a process that read it in between — 5 of 5, on a simulation over
+ * this function — minted another id over it, and the process that minted first went on
+ * writing a tail nothing would ever open again. Both measured over this function and its
+ * callers, with a barrier releasing the two processes at one instant.
+ *
+ * So the id is created EXCLUSIVELY (`O_EXCL`, the primitive the tail lock already relies
+ * on): of two processes that both mint, the kernel lets one create the file, and the
+ * other adopts what it wrote — under the same barrier, through `openChainForWriting`, 0
+ * of 80 rounds released 0 to 3 ms apart forked, where the old code forked in 19 of 20 at
+ * 0 ms. And an empty file is read as what it is, an id being written
+ * ({@link readInstallationId}). `installation-id.test.ts` plants both states the race
+ * produces.
+ *
+ * AND A LINK TO NOTHING IN THE ID'S PLACE MADE THIS GO ROUND FOREVER. The read follows a
+ * symbolic link and, finding nothing at its end, answers that there is no id; the exclusive
+ * create does not follow one — that is what `O_EXCL` does — and finds the name taken. Nothing
+ * ever writes at the end of a link to nothing, so the two answers came back every time: measured
+ * on the binary, a write of that key in that tree was stopped by a ten-second timeout, a core at
+ * 100%, having said nothing. A create that finds the name taken now asks what took it
+ * ({@link linkToNothingAt}), and a link to nothing is refused at once, with where it points
+ * ({@link DanglingInstallationIdError}). The link is left as it was: following it would put this
+ * chain's id outside the chain, and the exclusive create is what keeps one id per key in it.
+ * Whatever else keeps answering the two differently is looked at again every
+ * {@link INSTALLATION_ID_POLL_MS} until the same budget runs out, and refused
+ * ({@link UnsettledInstallationIdError}) — so that no state of the path holds a write here.
+ * `installation-id.test.ts` plants the link in both of its shapes, the race the create meets, and
+ * the name that never settles, each in a thread the case can stop.
+ *
+ * @throws {UnwrittenInstallationIdError} if the file exists and stays empty past
+ * {@link INSTALLATION_ID_WAIT_MS}. Nothing of the chain has been touched at that point.
+ * @throws {DanglingInstallationIdError} at once, if the id's place holds a symbolic link to
+ * nothing. The link and the chain are left as they were.
+ * @throws {UnsettledInstallationIdError} if, past {@link INSTALLATION_ID_WAIT_MS}, no read has
+ * found an id there and every create has found the name taken.
  */
 export function loadOrCreateInstallationId(layout: ChainLayout, fingerprint: string): string {
   const path = installationIdPath(layout, fingerprint);
-  if (existsSync(path)) {
-    const existing = readFileSync(path, 'utf-8').trim();
-    if (existing.length > 0) return existing;
+  const deadline = Date.now() + INSTALLATION_ID_WAIT_MS;
+  for (;;) {
+    const existing = readInstallationId(path, deadline);
+    if (existing !== undefined) return existing;
+    mkdirSync(keysDir(layout), { recursive: true });
+    const minted = mintInstallationId(path);
+    if (minted !== undefined) return minted;
+    // The read found no id and the create found the name taken. THIS SAID "another process
+    // created it between the read above and this mint: its id is this installation's, and the
+    // next read waits for it to be written", and went straight back to the read. A link to
+    // nothing falsified it — no process, and nothing to wait for — and the loop came back here
+    // forever. That link is refused by name; the race the sentence meant is still here, and the
+    // next read settles it (*a create that finds the file the read missed adopts the id in it*);
+    // and anything that settles neither way is refused once the budget runs out.
+    const target = linkToNothingAt(path);
+    if (target !== undefined) throw new DanglingInstallationIdError(path, target);
+    if (Date.now() >= deadline) {
+      throw new UnsettledInstallationIdError(path, INSTALLATION_ID_WAIT_MS);
+    }
+    sleepSync(INSTALLATION_ID_POLL_MS);
   }
+}
+
+/**
+ * How long a reader waits for an installation id another process has created and not yet
+ * written, before it refuses — and how long a create that keeps finding the name taken, where
+ * no read finds an id, keeps looking. The honest wait is the time between two system calls of
+ * one process (`open` and `write`), which is microseconds, and milliseconds under heavy I/O; two
+ * seconds is the tail lock's budget (`DEFAULT_WAIT_MS`) on the same argument — reaching it
+ * means the writer stopped, not that it is slow.
+ */
+export const INSTALLATION_ID_WAIT_MS = 2_000;
+
+/**
+ * How long that reader, and that create, sleep between looks — the tail lock's poll, for the
+ * same reason. Exported inside the package for the case that counts the looks, not beyond it.
+ */
+export const INSTALLATION_ID_POLL_MS = 5;
+
+/**
+ * An installation id file that exists and stayed empty: created by a process that stopped
+ * before writing it. The machine cannot tell which tail is its own in this chain, and it
+ * refuses to guess, because guessing is the fork {@link loadOrCreateInstallationId} exists
+ * to prevent.
+ */
+export class UnwrittenInstallationIdError extends Error {
+  readonly code = 'UNWRITTEN_INSTALLATION_ID';
+
+  constructor(
+    readonly path: string,
+    waitedMs: number,
+  ) {
+    super(
+      `${path} is empty and stayed empty for ${waitedMs}ms: an installation id was created and ` +
+        'never written, which is what a process stopped between the two leaves behind. This ' +
+        'machine will not guess which tail of this chain is its own, so it refuses the write. If ' +
+        'no mnema process is writing here, remove the file: the next write mints a new id.',
+    );
+    this.name = 'UnwrittenInstallationIdError';
+  }
+}
+
+/**
+ * A symbolic link to nothing where an installation id belongs. The read follows it and finds no
+ * file; the exclusive create finds the link and does not follow it; and no write ever fills the
+ * place it points to. There is nobody to wait for, so the refusal comes at once, and it says
+ * where the link points, which is what a person needs to see before removing it.
+ */
+export class DanglingInstallationIdError extends Error {
+  readonly code = 'DANGLING_INSTALLATION_ID';
+
+  constructor(
+    readonly path: string,
+    readonly target: string,
+  ) {
+    super(
+      `${path} is a symbolic link to ${target}, and nothing is at the end of it. An ` +
+        'installation id is created exclusively, and an exclusive create does not follow a link, ' +
+        'so no write will ever fill this one: this machine refuses the write rather than wait ' +
+        'for it. Remove the link, and the next write mints a new id.',
+    );
+    this.name = 'DanglingInstallationIdError';
+  }
+}
+
+/**
+ * An installation id's place that did not settle within the budget: every read found no id there
+ * and every create found the name taken. Something kept creating and removing it, or the
+ * filesystem answers the two questions differently — neither is a state this machine resolves by
+ * guessing, for the reason {@link UnwrittenInstallationIdError} gives.
+ */
+export class UnsettledInstallationIdError extends Error {
+  readonly code = 'UNSETTLED_INSTALLATION_ID';
+
+  constructor(
+    readonly path: string,
+    waitedMs: number,
+  ) {
+    super(
+      `${path} did not settle in ${waitedMs}ms: every read found no installation id there, and ` +
+        'every create found the name already taken. Something kept creating and removing it, or ' +
+        'this filesystem answers the two differently. This machine will not guess which tail of ' +
+        'this chain is its own, so it refuses the write. Look at what is at that path before ' +
+        'writing again.',
+    );
+    this.name = 'UnsettledInstallationIdError';
+  }
+}
+
+/**
+ * Where the symbolic link at `path` points, when it is one and nothing is there; undefined for
+ * anything else — no entry at all, a file, a link that leads somewhere.
+ *
+ * It is asked only by a create that found the name taken after the read found no id, which is
+ * the pair a link to nothing answers every time and a race answers once. A link that has come to
+ * lead somewhere is not one: the next read follows it. Exported inside the package for the case
+ * that asks it about each of those, not beyond it.
+ */
+export function linkToNothingAt(path: string): string | undefined {
+  let target: string;
+  try {
+    target = readlinkSync(path);
+  } catch {
+    return undefined; // not a link, or gone since the create found it: the next look decides
+  }
+  return existsSync(path) ? undefined : target;
+}
+
+/**
+ * The installation id recorded at `path`, or undefined when no file is reached there — which a
+ * symbolic link to nothing answers too, and {@link loadOrCreateInstallationId} tells apart when
+ * its create finds the name taken.
+ *
+ * AN EMPTY FILE IS NOT AN ABSENT ONE: it is an id another process has created and not yet
+ * written — the moment between its `O_EXCL` and its write — so this waits for the id to land.
+ * It refuses once `deadline` passes instead of answering "absent", because the caller would
+ * then mint over a file somebody else is about to fill.
+ */
+function readInstallationId(path: string, deadline: number): string | undefined {
+  for (;;) {
+    let text: string;
+    try {
+      text = readFileSync(path, 'utf-8');
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
+      throw error;
+    }
+    const id = text.trim();
+    if (id.length > 0) return id;
+    if (Date.now() >= deadline) {
+      throw new UnwrittenInstallationIdError(path, INSTALLATION_ID_WAIT_MS);
+    }
+    sleepSync(INSTALLATION_ID_POLL_MS);
+  }
+}
+
+/**
+ * Creates the installation id file at `path` holding a fresh id, EXCLUSIVELY, and returns the
+ * id — or undefined when the file already exists, whoever created it: the caller then reads the
+ * id that is there instead of writing over it.
+ *
+ * Exported inside the package for the test that plants the state the race produces (a mint that
+ * found nothing, arriving after another process created the file), not beyond it.
+ *
+ * A write that fails after the create removes the file, so a full disk cannot leave behind the
+ * empty `.inst` that every later reader would wait out and refuse.
+ */
+export function mintInstallationId(path: string): string | undefined {
   const installationId = randomBytes(16).toString('hex');
-  mkdirSync(keysDir(layout), { recursive: true });
-  writeFileSync(path, `${installationId}\n`, { encoding: 'utf-8', mode: 0o600 });
+  let fd: number;
+  try {
+    fd = openSync(path, 'wx', 0o600);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST') return undefined;
+    throw error;
+  }
+  try {
+    writeSync(fd, `${installationId}\n`);
+  } catch (error) {
+    closeSync(fd);
+    rmSync(path, { force: true });
+    throw error;
+  }
+  closeSync(fd);
   return installationId;
 }
 
 /**
  * Reads the anchor this key serves, or null when none is recorded yet. Local
  * and uncommitted, like the installation id: it says WHICH anchor this
- * installation authorizes as. A machine with no recorded anchor founds its own
- * on first use.
+ * installation authorizes as. A machine with no recorded anchor asks the record
+ * at its next write, and founds its own only when the record proves the key a
+ * member of nothing — {@link anchorPath} says what this used to claim.
  */
 export function readAnchor(layout: ChainLayout, fingerprint: string): string | null {
   const path = anchorPath(layout, fingerprint);

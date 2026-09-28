@@ -73,9 +73,10 @@ describe('every way a chain moves changes it', () => {
   });
 
   it('a tail directory appearing before its first event', () => {
-    // The writer makes the directory (and its proof of ownership) before the
-    // first append lands, so the empty tail is a real state — and the append
-    // that follows still has to move the mark.
+    // An older writer made the directory (and its proof of ownership) when it
+    // opened, and records committed then still hold such tails — so the empty
+    // tail is a real state, and the append that follows still has to move the
+    // mark. (A writer born today makes both inside its first append.)
     const before = chainExtent(layout);
     mkdirSync(tailDir(layout, 'tail-a'), { recursive: true });
     const empty = chainExtent(layout);

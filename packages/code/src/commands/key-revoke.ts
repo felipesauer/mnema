@@ -15,8 +15,9 @@
  * A thin adapter. Which keys the identity has, whether this one is among them, and
  * whether it is the last — the core's judgement, worded by the core. It hands the core a
  * DEFERRED write rather than an open writer: opening one touches the tree even when nothing
- * is appended, so the core decides first and opens it only to write, and a refused
- * revocation leaves the tree as it found it.
+ * is appended — an installation id, and until a tail came to be born at its first append,
+ * the key's public half and an empty tail as well — so the core decides first and opens it
+ * only to write, and a refused revocation leaves the tree as it found it.
  */
 
 import { privateKeyPath } from '@mnema/chain';

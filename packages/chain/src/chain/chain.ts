@@ -17,7 +17,6 @@ import {
   type ChainSigner,
   loadOrCreateInstallationId,
   loadOrCreateKeyPair,
-  materializePublicKey,
   signerOf,
 } from './keystore.js';
 import type { ChainLayout } from './layout.js';
@@ -38,14 +37,30 @@ export interface OpenOptions extends WriterOptions {
 /**
  * Opens the chain at `chainRoot` for this machine to write to, signing with the
  * key at `options.keyRoot`. Loads (or, on first use, mints) the person's pair
- * from the key root, materializes its public half into the chain so the chain is
- * anonymously verifiable, and mints a per-chain installation id. The writer only
- * ever touches the chain root; the key root is read here and nowhere else.
+ * from the key root, and reads (or, on first use, mints) the per-chain
+ * installation id. The writer only ever touches the chain root; the key root is
+ * read here and nowhere else.
+ *
+ * NOTHING A CLONE RECEIVES IS WRITTEN HERE. This used to materialize the key's
+ * public half "so the chain is anonymously verifiable", and the writer's
+ * constructor gave the tail its directory and its proof of ownership — true of a
+ * chain once something is appended, and a residue for one whose writer opened
+ * and appended nothing. The surfaces open a writer before an operation's own door
+ * speaks (an oversize field, a name holding a credential, a move the gate
+ * refuses), so a key new to the tree that was refused left the `.pub` and a tail
+ * holding only its proof, both untracked and both published by the next
+ * `git add -A`. Measured on the binary, that empty tail put a tail more in every
+ * `verify` of the record after it, and turned its T3 clause into "no checkpoint of
+ * this tail passed its signature check" whenever it sorted first. So the half that
+ * travels is born at the writer's first append, under the tail's lock
+ * (`ChainWriter.ensureBorn`); the installation id, which the tree's `.gitignore`
+ * keeps out, is the one thing opening writes into the chain (`writer.test.ts`, *leaves
+ * only the installation id in a chain its writer opened and never wrote to*, and the
+ * thirteen refused verbs of `code/tests/a-refusal-leaves-nothing.test.ts`).
  */
 export function openChainForWriting(chainRoot: string, options: OpenOptions): ChainWriter {
   const chainLayout: ChainLayout = { root: chainRoot };
   const keyPair = loadOrCreateKeyPair({ root: options.keyRoot });
-  materializePublicKey(chainLayout, keyPair);
   const installationId = loadOrCreateInstallationId(chainLayout, keyPair.fingerprint);
   const upcasters = options.upcasters ?? catalogUpcasters();
   return new ChainWriter(chainLayout, keyPair, installationId, upcasters, options);
@@ -55,11 +70,13 @@ export function openChainForWriting(chainRoot: string, options: OpenOptions): Ch
  * Who would sign in the chain at `chainRoot` with the key at `options.keyRoot` — read WITHOUT
  * opening the chain for writing, so nothing inside the chain is touched.
  *
- * Opening a writer is not free even when nothing is appended: it materializes the key's public
- * half into the chain, mints the installation id and gives the tail its directory and its proof
- * of ownership. A caller whose answer may turn out to write nothing — a refusal decided from the
- * record, or a question about who is writing — asks this first, and opens a writer only once it
- * knows it will write.
+ * Opening a writer is not free even when nothing is appended: it mints the key's installation id
+ * in the chain. It USED TO do more — materialize the key's public half and give the tail its
+ * directory and its proof of ownership — and those three moved to the first append (see
+ * {@link openChainForWriting}), so what opening leaves now is one local file that git ignores.
+ * A file all the same: a caller whose answer may turn out to write nothing — a refusal decided
+ * from the record, or a question about who is writing — asks this first, opens a writer only
+ * once it knows it will write, and leaves the tree byte for byte as it found it.
  *
  * The KEY ROOT is the one thing it can change, exactly as opening does: a machine with no key
  * yet gets one minted there, because a signer needs a key to be anybody at all. That is the

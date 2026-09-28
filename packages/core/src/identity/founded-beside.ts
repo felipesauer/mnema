@@ -32,8 +32,15 @@ export interface FoundedBeside {
  * Every identity founded beside others, in record order.
  *
  * The first founding of a tree is beside nothing and is not returned; each later one is, with
- * every identity founded before it. An anchor founded twice — which no write path produces, since
- * `ensureFounded` founds only where no anchor is recorded — counts once, at its first founding.
+ * every identity founded before it. An anchor founded twice counts once, at its first founding.
+ *
+ * THIS SAID NO WRITE PATH PRODUCES ONE, "since `ensureFounded` founds only where no anchor is
+ * recorded", and that holds for one process at a time. Two sessions of one installation making
+ * their first write together each find no anchor recorded, and each founds — measured with two
+ * processes started together, with the anchor recorded before the founding and after it, and
+ * produced by the product's own writers in `founded-beside.test.ts`, *counts an anchor founded
+ * twice once*. The second founding is by the key the anchor derives from: the same identity
+ * arriving twice, not a second one, which is why it counts once here.
  */
 export function identitiesFoundedBeside(events: Iterable<CatalogEvent>): FoundedBeside[] {
   const founded: string[] = [];

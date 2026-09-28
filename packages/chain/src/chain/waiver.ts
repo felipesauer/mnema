@@ -63,10 +63,12 @@ export interface TailStanding {
  * the tail is absent, or it holds no entry at all.
  *
  * AN EMPTY TAIL ANSWERS UNDEFINED, and that is a decision rather than a fallout of
- * the shape. A tail directory with a `tailproof.json` and zero events is the NORMAL
- * residue of a session that only READ: the writer mints its proof in its
- * constructor, and opening a write context to read the anchor is enough to leave
- * one behind. There is nothing to account for in cutting it — no event was lost —
+ * the shape. A tail directory with a `tailproof.json` and zero events holds nothing:
+ * older writers minted the proof in their constructor, so a session that only read
+ * left one behind, and records committed then still carry them; a writer born today
+ * makes the proof inside its first append, and only a crash between that birth and
+ * the line leaves one. (This called it the NORMAL residue of a read, which it no longer
+ * is.) There is nothing to account for in cutting it — no event was lost —
  * and a waiver over it would put "pruned under authorization" on the census note of
  * the most innocent state there is.
  */

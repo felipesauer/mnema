@@ -280,7 +280,9 @@ export interface ConsoleRequest {
    *
    * AND THE SENTENCE UNDER IT WAS *IT MAY NOT BE RE-READ EITHER*, which was right about
    * what it meant and wrong about what it said. What may not happen is another `verify` —
-   * 54 ms to 1.7 s, linear in the history, on a clock. What this asks is whether the chain
+   * 54 ms to 1.7 s, on a clock. (It said *linear in the history* here too, which the
+   * verifier was not until it stopped walking the whole tail once per checkpoint —
+   * `proving.ts` has the measurement.) What this asks is whether the chain
    * moved at all: one `readdir` per tail and one `stat`, latched off once it has answered
    * (`session.ts`, `proving.ts`).
    *
