@@ -390,14 +390,25 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * itself, and `report.js` for the reporter's type — and one in `completion/lookups.test.ts`,
  * which declares a flag a subcommand takes to see the menu follow it. The three branches met at
  * 3037, read off this guard: 3006 and those thirty-one, since no clause came in on more than one
- * of them. Then 3037 -> 3084 where a checkout its key left is refused: thirteen clauses in
- * `the-checkout-a-key-left.test.ts` and fourteen in `mcp-write-reads-the-roster-it-holds.test.ts`,
- * which drive the built binary and the MCP server over git clones and a session's caches,
- * nineteen in the core's `a-stale-anchor-writes-nothing.test.ts` — one module per write the
- * surface exports, and what they need — and one in `gated-transition.test.ts`, for the founding
- * its stand-in writer rests on now.
+ * of them.
+ * The next one was written from the same 2947, on a fourth branch merged after those three. And
+ * 2947 -> 2957 when a read asked again was pinned to draw what changed: ten clauses in
+ * `a-read-asked-again-draws-what-changed.test.ts`, which drives the built binary on a
+ * pseudo-terminal and replays its pages — `node:fs`, `node:os`, `node:path`, `node:url`,
+ * `vitest`, `../src/cli.js`, `../src/repl/floor.js`, `../src/wiring/repl.js`, `support/pty.js`
+ * and `support/screen.js`. The four branches met at 3047, read off this guard: 3037 and those
+ * ten, since no clause came in on more than one of them.
+ * The next one was written from 3037, where the first three met, on a fifth branch merged after
+ * the fourth. Then 3037 -> 3084 where a checkout its key left is refused: thirteen clauses in
+ * `the-checkout-a-key-left.test.ts` and fourteen in
+ * `mcp-write-reads-the-roster-it-holds.test.ts`, which drive the built binary and the MCP server
+ * over git clones and a session's caches, nineteen in the core's
+ * `a-stale-anchor-writes-nothing.test.ts` — one module per write the surface exports, and what
+ * they need — and one in `gated-transition.test.ts`, for the founding its stand-in writer rests
+ * on now. The five branches met at 3094, read off this guard: 3047 and those forty-seven, since
+ * no clause came in on more than one of them.
  */
-const CLAUSES_IN_THE_TREE = 3084;
+const CLAUSES_IN_THE_TREE = 3094;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
