@@ -24,7 +24,7 @@
 
 import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { IdentityUnavailableError } from '@mnema/core';
+import { IdentityUnavailableError, resolveTrees } from '@mnema/core';
 import { Command, CommanderError, Option } from 'commander';
 import { fact } from './presentation/detail.js';
 import type { Render } from './presentation/render.js';
@@ -43,7 +43,7 @@ import { registerVerbs } from './wiring/index.js';
 import { type CliIo, processIo } from './wiring/io.js';
 import { MCP_VERB } from './wiring/mcp.js';
 import { speakUsageErrors } from './wiring/misuse.js';
-import { refusalLine, refusalSentence } from './wiring/report.js';
+import { refusalSentence, reportIdentityRefusal } from './wiring/report.js';
 import { pinnedRunResolver } from './wiring/run-pin.js';
 import type { Declared } from './wiring/verb.js';
 
@@ -355,8 +355,17 @@ export async function parseWith(built: BuiltProgram, argv: readonly string[]): P
     // that already turns a throw into an honest failure, and it reads exactly like
     // any other refusal.
     if (error instanceof IdentityUnavailableError) {
-      io.err(render(refusalLine(error.code, error.message)));
-      io.fail();
+      // Where the way out is a restore of this machine's key file, the file is said here: the
+      // key root is this side's to resolve, and the words were written below it. The path
+      // helper is imported on this path only, so the floor every other command starts on does
+      // not grow an edge for a refusal (`the-floor-is-the-declaration.test.ts`).
+      let keyFile: string | undefined;
+      if (error.restores !== undefined) {
+        const { privateKeyPath } = await import('@mnema/chain');
+        const { keyRoot } = resolveTrees(here().cwd, here().env);
+        keyFile = privateKeyPath({ root: keyRoot }, error.restores);
+      }
+      reportIdentityRefusal({ io, render }, error, keyFile);
       return;
     }
     // Any other throw — e.g. a read whose replay meets a stored line no parser

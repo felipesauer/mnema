@@ -390,9 +390,14 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * itself, and `report.js` for the reporter's type — and one in `completion/lookups.test.ts`,
  * which declares a flag a subcommand takes to see the menu follow it. The three branches met at
  * 3037, read off this guard: 3006 and those thirty-one, since no clause came in on more than one
- * of them.
+ * of them. Then 3037 -> 3084 where a checkout its key left is refused: thirteen clauses in
+ * `the-checkout-a-key-left.test.ts` and fourteen in `mcp-write-reads-the-roster-it-holds.test.ts`,
+ * which drive the built binary and the MCP server over git clones and a session's caches,
+ * nineteen in the core's `a-stale-anchor-writes-nothing.test.ts` — one module per write the
+ * surface exports, and what they need — and one in `gated-transition.test.ts`, for the founding
+ * its stand-in writer rests on now.
  */
-const CLAUSES_IN_THE_TREE = 3037;
+const CLAUSES_IN_THE_TREE = 3084;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 

@@ -388,13 +388,23 @@ export const NOT_CHECKED: Readonly<Record<string, string>> = {
  * of the source, each looked at: the two `witness` acts refuse `--json` by handing over `mnema
  * witness --json`, the reading that has it (27 → 28 lines), and the two moves of a decision refuse
  * `--alternatives` by naming `mnema decision`, the verb that records it (41 → 42 names).
+ *
+ * A CHECKOUT THE KEY LEFT IS REFUSED, AND TOLD THE RESTORE, and the way out learned the copy this
+ * machine keeps: four lines of the source and one of the page, each looked at and run to the
+ * letter by `the-refusal-names-the-way-out.test.ts` and `the-checkout-a-key-left.test.ts`. The
+ * refusal of a write from a checkout whose recorded identity no longer counts its key hands over
+ * `key restore "<the key file>"` where the record proves the key in one other identity, and where
+ * it proves it in none, on the condition a pull meets; the revocation of this machine's own key
+ * hands over the same restore on that condition where it used to warn; and the way out hands over
+ * `key request --anchor … --key "<its file>"` for a copy of a key this machine keeps (28 → 32
+ * lines); on the page, the row that says so names that request (23 → 24).
  */
 export const HANDED_OVER: Readonly<
   Record<Handed['from'], Readonly<Record<Reading['kind'], number>>>
 > = {
-  span: { line: 23, name: 62, flag: 1, unwritten: 0 },
+  span: { line: 24, name: 62, flag: 1, unwritten: 0 },
   block: { line: 33, name: 20, flag: 0, unwritten: 0 },
-  source: { line: 28, name: 42, flag: 3, unwritten: 3 },
+  source: { line: 32, name: 42, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------
