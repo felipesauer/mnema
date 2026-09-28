@@ -21,6 +21,7 @@ import {
 import { ensureSchema } from '../db/schema.js';
 import { IN_MEMORY, openDatabase, type SqliteDatabase } from '../db/sqlite.js';
 import { type FoundedBeside, identitiesFoundedBeside } from '../identity/founded-beside.js';
+import { rosterIn, rosterOf } from '../identity/membership.js';
 import type { ChannelSwitchProjection } from './channel.js';
 import { getChannelSwitch, listChannelSwitches } from './channel-store.js';
 import { type AdrCollision, adrCollisions, type DecisionProjection } from './decision.js';
@@ -268,6 +269,34 @@ export class ProjectionCache {
     // knows is broken does not gain a second line for a later break on the same tail.
     if (this.breaks.some((known) => known.tail === arrived.broke.tail)) return this.breaks;
     return [...this.breaks, arrived.broke];
+  }
+
+  /**
+   * The keys the record counts for `anchor` in this tree AS THE CHAIN IS NOW — the answer a
+   * replay gives, and it brings nothing forward.
+   *
+   * It is the question every write asks before it appends (`ensureFounded`, in the write
+   * operations): does the identity this checkout recorded still count its key? A replay answers it
+   * at a price linear in the record, and a session asks it on every write, so the session asks
+   * HERE: the order this cache retained is the order a replay would read, and what arrived since is
+   * read the way {@link linkBreaksAsOfNow} reads it — one `readdir` per tail and the entries past
+   * each boundary — and folded behind it by the roster's own fold (`rosterIn`, the one
+   * `rosterOf` runs over a replay). The arrivals are taken only as a SUFFIX, which is the merge's
+   * own comparison: where they are not one (a tail gone or cut, a fact stamped before something
+   * already covered, a link that does not follow), the order in hand is no longer a prefix of the
+   * record's, and this replays the record whole — without rebuilding the cache, which it leaves
+   * exactly as it found it.
+   *
+   * NOT the tables. Reading a projection would be reading what the last catch-up knew, and a
+   * write gated on that is the stale cache this module is careful never to be; nothing here is
+   * read from the database.
+   */
+  rosterAsOfNow(anchor: string): Set<string> {
+    const tree = this.layout.root;
+    if (this.frontier === undefined) return rosterOf({ tree, upcasters: this.upcasters }, anchor);
+    const arrived = chainArrivals(this.layout, this.upcasters, this.frontier);
+    if (!arrived.suffix) return rosterOf({ tree, upcasters: this.upcasters }, anchor);
+    return rosterIn([...this.order, ...arrived.events], tree, anchor);
   }
 
   /**

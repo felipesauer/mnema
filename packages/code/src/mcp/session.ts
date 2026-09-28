@@ -910,6 +910,14 @@ function anchorIn(trees: ResolvedTrees, scope: Scope): string {
  * behind from the moment the intent exists. Marking a tree that then fails to
  * open costs one replay; marking it after a write that already landed would
  * cost correctness.
+ *
+ * AND IT IS WHERE A WRITE LEARNS WHOSE KEYS THE RECORD COUNTS, from the same registry. Every
+ * append first asks whether the identity this checkout recorded still counts its key (the
+ * core's `ensureFounded`), and asked of a replay that is linear in the record — on every write
+ * an agent makes. The context hands the core the session's cheaper reading instead: the order the
+ * tree's cache retained plus what arrived since, which is the chain as it is now and not the
+ * tables (`CacheRegistry.rosterAsOfNow`). A tree this connection never read has no cache, and
+ * the core replays it. `mcp-write-reads-the-roster-it-holds.test.ts` holds that it reaches.
  */
 export function writeContext(
   trees: ResolvedTrees,
@@ -924,5 +932,6 @@ export function writeContext(
     writer: openTreeForWriting(trees, scope),
     layout: { root: root as string },
     upcasters: catalogUpcasters(),
+    roster: (anchor) => caches.rosterAsOfNow(root as string, anchor),
   };
 }

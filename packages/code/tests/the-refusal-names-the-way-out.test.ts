@@ -249,8 +249,12 @@ interface Places {
   readonly checkouts: Readonly<Record<string, string>>;
   /** The home of the key that leaves, which is the key the refusal is about. */
   readonly leaving: string;
-  /** The home of the key that joins in its place — "where that key lives". */
-  readonly joining: string;
+  /**
+   * The key that joins in its place: the home it lives in — "where that key lives" — or a COPY of
+   * a key the leaving machine keeps, by its file, which the words ask for with `--key` "on this
+   * machine".
+   */
+  readonly joining: string | { readonly copy: string };
 }
 
 /**
@@ -278,11 +282,19 @@ function leave(
   if (clause.includes('pull the record')) pull(there);
 
   const commands = commandsIn(clause);
-  const request = commands.find((one) => one.startsWith('mnema key request '));
-  expect(request, clause).toBeDefined();
-  expect(clause).toContain(`\`${request}\` prints where that key lives`);
-  // Where that key lives: its own home, outside every project.
-  const asked = mnema(sandbox, at.joining, ...argvFor(request as string, {}));
+  // Two requests, and the words say which is which: the other key's own, where it lives, and one
+  // for a copy this machine keeps, named with `--key`, on this machine.
+  const requests = commands.filter((one) => one.startsWith('mnema key request '));
+  const [elsewhere, here] = requests;
+  expect(elsewhere, clause).toBeDefined();
+  expect(clause).toContain(`\`${elsewhere}\` prints where that key lives`);
+  expect(here, clause).toContain(' --key ');
+  expect(clause).toContain(`\`${here}\` on this machine`);
+  // Where that key lives: its own home, outside every project — or this machine, for its copy.
+  const asked =
+    typeof at.joining === 'string'
+      ? mnema(sandbox, at.joining, ...argvFor(elsewhere as string, {}))
+      : mnema(sandbox, at.leaving, ...argvFor(here as string, { '<its file>': at.joining.copy }));
   expect(asked.status, asked.stderr).toBe(0);
   const line = asked.stdout.split('\n').find((one) => one.startsWith('mnema-key-request:'));
   expect(line, asked.stdout).toBeDefined();
@@ -292,7 +304,7 @@ function leave(
     '<why>': WRITTEN_FOR_THE_MARKER,
   };
   let revoked = '';
-  for (const command of commands.filter((one) => one !== request)) {
+  for (const command of commands.filter((one) => !requests.includes(one))) {
     const ran = mnema(there, at.leaving, ...argvFor(command, fills));
     expect(ran.status, `${command}: ${ran.stderr}${ran.stdout}`).toBe(0);
     if (command.startsWith('mnema key revoke ')) {
@@ -442,32 +454,34 @@ describe('a key that founded an identity by writing, and was enrolled into anoth
   }, 120_000);
 });
 
+/**
+ * The shape a migration reaches: C (the old laptop) founds Y by writing; B (the new one) writes
+ * and founds its own; C vouches for B into Y and then retires itself. The checkout B founded from
+ * last pulled BEFORE the vouch — a checkout left alone — which is what makes the words' pull a
+ * step the way out cannot skip.
+ */
+function theOnlyKeyOfBothIdentities() {
+  const [o, c, b, n] = [home('o'), home('c'), home('b the laptop'), home('n')];
+  const { remote } = team(o);
+  const atC = checkout(remote, 'c');
+  writeAs(atC, c, 'C founds Y');
+  share(atC);
+  const y = anchorIn(atC, keyOf(c));
+  const atB = checkout(remote, 'b');
+  writeAs(atB, b, 'B founds its own');
+  share(atB);
+  const fp = keyOf(b);
+  const founded = anchorIn(atB, fp);
+  pull(atC);
+  expect(mnema(atC, c, 'key', 'enroll', requestFrom(b, y)).status).toBe(0);
+  share(atC);
+  expect(mnema(atC, c, 'key', 'revoke', keyOf(c), '--reason', 'C leaves Y').status).toBe(0);
+  share(atC);
+  return { b, n, remote, atB, fp, y, founded };
+}
+
 describe('a key that is the only key of both identities', () => {
-  /**
-   * The shape a migration reaches: C (the old laptop) founds Y by writing; B (the new one) writes
-   * and founds its own; C vouches for B into Y and then retires itself. The checkout B founded from
-   * last pulled BEFORE the vouch — a checkout left alone — which is what makes the words' pull a
-   * step the way out cannot skip.
-   */
-  function theOnlyKeyOfBoth() {
-    const [o, c, b, n] = [home('o'), home('c'), home('b the laptop'), home('n')];
-    const { remote } = team(o);
-    const atC = checkout(remote, 'c');
-    writeAs(atC, c, 'C founds Y');
-    share(atC);
-    const y = anchorIn(atC, keyOf(c));
-    const atB = checkout(remote, 'b');
-    writeAs(atB, b, 'B founds its own');
-    share(atB);
-    const fp = keyOf(b);
-    const founded = anchorIn(atB, fp);
-    pull(atC);
-    expect(mnema(atC, c, 'key', 'enroll', requestFrom(b, y)).status).toBe(0);
-    share(atC);
-    expect(mnema(atC, c, 'key', 'revoke', keyOf(c), '--reason', 'C leaves Y').status).toBe(0);
-    share(atC);
-    return { b, n, remote, atB, fp, y, founded };
-  }
+  const theOnlyKeyOfBoth = theOnlyKeyOfBothIdentities;
 
   it('the refusal names the way out of the one it founded, and no checkout for the other', () => {
     const { b, remote, y, founded } = theOnlyKeyOfBoth();
@@ -497,7 +511,7 @@ describe('a key that is the only key of both identities', () => {
     expect(out.leftIn).toBe(y);
     // The revocation of this machine's own key said what the record leaves it, and where the file is.
     expect(out.revoked).toContain(
-      "That is THIS machine's key: this checkout still records the identity it left, and anything it writes as that identity fails verification.",
+      "That is THIS machine's key: this checkout still records the identity it left, so what it writes here is refused until it records another.",
     );
     expect(out.revoked).toContain(`The record proves the key a member of ${y}:`);
     expect(out.revoked).toContain(
@@ -511,6 +525,47 @@ describe('a key that is the only key of both identities', () => {
     share(atB);
     expect(verifiedIn(remote, 'verified')).toBe(0);
   }, 120_000);
+});
+
+describe('a key that is the only key of both identities — the other key being a copy this machine keeps', () => {
+  /** The same migration, with a backup of the laptop's own identity kept on the laptop. */
+  function withABackup() {
+    const shape = theOnlyKeyOfBothIdentities();
+    // `init` in another project made the backup key of the identity this key founds, on this
+    // machine, and says where its private half is.
+    const other = join(sandbox, 'another project');
+    mkdirSync(other, { recursive: true });
+    const made = mnema(other, shape.b, 'init');
+    expect(made.status, made.stderr).toBe(0);
+    const copy = /private half at (.+)$/m.exec(made.stdout)?.[1];
+    expect(copy, made.stdout).toBeDefined();
+    return { ...shape, copy: copy as string };
+  }
+
+  it('asked for on this machine WITHOUT --key, the request is this key’s own: the enrollment records nothing, and the revocation is refused', () => {
+    // The premise the words' `--key` rests on, measured on the binary before they named it.
+    const { b, atB, fp, founded } = withABackup();
+    pull(atB);
+    const enrolled = mnema(atB, b, 'key', 'enroll', requestFrom(b, founded));
+    expect(enrolled.stdout).toContain(`Key ${fp} is already in ${founded} — nothing recorded.`);
+    const revoked = mnema(atB, b, 'key', 'revoke', fp, '--reason', 'leave the one I founded');
+    expect(revoked.stderr).toContain('Refused (LAST_KEY)');
+  }, 120_000);
+
+  it('done to the letter with that copy, asked for with --key: the key speaks for the other, and verifies', () => {
+    const { b, remote, atB, founded, y, copy } = withABackup();
+    const said = refusedIn(remote, b, 'first');
+    const out = leave(said, founded, {
+      checkouts: { 'the checkout it founded': atB },
+      leaving: b,
+      joining: { copy },
+    });
+    expect(out.leftIn).toBe(y);
+    expect(writeAs(checkout(remote, 'after'), b, 'a fresh clone after the way out').who).toBe(y);
+    expect(writeAs(atB, b, 'the founding checkout, restored').who).toBe(y);
+    share(atB);
+    expect(verifiedIn(remote, 'verified')).toBe(0);
+  }, 150_000);
 });
 
 describe('a key that is the only key of two identities, and wrote as both', () => {
@@ -601,29 +656,66 @@ describe('a key that is the only key of two identities it never wrote as', () =>
 });
 
 describe('the revocation of this machine’s own key says what the record leaves it', () => {
-  it('where the record proves the key in no other identity: it must not write here again, and no restore is offered', () => {
+  /** What the revocation of `fp`, run in `at` as the key under `homeDir`, printed. */
+  function retire(at: string, homeDir: string, fp: string): string {
+    const revoked = mnema(at, homeDir, 'key', 'revoke', fp, '--reason', 'this laptop retires');
+    expect(revoked.status, revoked.stderr).toBe(0);
+    return revoked.stdout;
+  }
+
+  it('where the record proves the key in no other identity: its writes here are refused, and the restore is said only on the condition a pull meets', () => {
+    // THIS CASE WAS "it must not write here again, and no restore is offered". Its premise held
+    // while nothing read a recorded anchor again: the words were a warning, and the write they
+    // warned against exited 0. The write is refused now, and the words say so; and since what the
+    // revocation reads is the copy of the record this checkout holds, they name the restore on
+    // the one condition under which it would work — the case below is where that condition is met.
     const a = home('a');
     const { founding } = team(a);
     // `init` enrolled a backup key beside this one, so this machine's key is not the last.
-    const revoked = mnema(
-      founding,
-      a,
-      'key',
-      'revoke',
-      keyOf(a),
-      '--reason',
-      'this laptop retires',
+    const words = retire(founding, a, keyOf(a));
+    expect(words).toContain(
+      "That is THIS machine's key: this checkout still records the identity it left, so what it writes here is refused until it records another.",
     );
-    expect(revoked.status, revoked.stderr).toBe(0);
-    expect(revoked.stdout).toContain(
-      "That is THIS machine's key: it must not write to this project again.",
+    expect(words).toContain(
+      'The record this checkout holds proves the key a member of no single other identity: if the record, once pulled, proves it a member of one, `mnema key restore "<the key file>"` here makes this checkout write as it.',
     );
-    expect(revoked.stdout).toContain(
-      'Bring another key in first if this machine is to keep working here.',
+    expect(words).toContain(
+      `this machine keeps the key file at ${join(a, '.mnema', 'identity', 'keys', `${keyOf(a)}.key`)}`,
     );
-    expect(revoked.stdout).not.toContain('mnema key restore');
-    expect(revoked.stdout).not.toContain('keeps the key file');
+    expect(words).not.toContain('must not write to this project again');
+    // And what it says is what happens: the next write from this checkout is refused.
+    const wrote = mnema(founding, a, 'memory', 'written after the key left');
+    expect(wrote.status).toBe(1);
+    expect(wrote.stderr).toContain('Refused (STALE_ANCHOR)');
   }, 60_000);
+
+  it('where the checkout had not pulled, followed to the letter: the pull, the restore — and it writes as the other identity, and verifies', () => {
+    // THE CHECKOUT LEFT ALONE. The laptop's checkout last pulled before the old laptop vouched for
+    // it into Y, and it lets its key go from there: another key takes this one's place in the
+    // identity it founded, and the revocation reads a record that does not yet show Y. This said
+    // "it must not write to this project again" here — false, measured on the binary: a pull and
+    // the restore make it write as Y.
+    const { b, n, remote, atB, fp, y } = theOnlyKeyOfBothIdentities();
+    const founded = anchorIn(atB, fp);
+    expect(mnema(atB, b, 'key', 'enroll', requestFrom(n, founded)).status).toBe(0);
+    const words = retire(atB, b, fp);
+    expect(words).not.toContain('must not write to this project again');
+
+    // To the letter: the pull where the words put it, the restore copied out of them with the file
+    // they name, and the commit and the share where they say them.
+    if (words.includes('once pulled')) pull(atB);
+    const [restore] = commandsIn(words).filter((one) => one.startsWith('mnema key restore '));
+    expect(restore, words).toBeDefined();
+    const file = /this machine keeps the key file at (.+)$/m.exec(words)?.[1];
+    expect(file, words).toBeDefined();
+    const ran = mnema(atB, b, ...argvFor(restore as string, { '<the key file>': file as string }));
+    expect(ran.status, `${ran.stdout}${ran.stderr}`).toBe(0);
+    if (words.includes('Commit and share the record')) share(atB);
+
+    expect(writeAs(atB, b, 'the checkout left alone, restored').who).toBe(y);
+    share(atB);
+    expect(verifiedIn(remote, 'verified')).toBe(0);
+  }, 120_000);
 });
 
 describe('the agent is told the same words', () => {

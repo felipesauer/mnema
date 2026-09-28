@@ -136,6 +136,13 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
     // joining worked. Asked of the SIGNER, which opens nothing: a writer opened to
     // ask would leave this key's installation id behind (and, before a tail was born at
     // its first append, its public half and an empty tail too).
+    //
+    // WHAT IT DOES NOT ASK: whether the identity a checkout RECORDED still counts its key.
+    // A write asks that before it appends, and refuses where the record retired the key
+    // from it (the core's `ensureFounded`); this reports the recorded identity all the
+    // same, so in a checkout the key has left, "the anchor it will write as" is the one
+    // its next write is refused as. Saying so here would change what `init` prints and
+    // exits with, which is not this answer's to decide.
     return {
       created: false,
       root,

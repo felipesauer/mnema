@@ -28,11 +28,14 @@
  */
 
 import {
+  anchorPath,
+  type CatalogEvent,
   type ChainLayout,
   committedPublicKey,
   deriveAnchor,
   enrollmentMessage,
   type PublicHalf,
+  publicKeyPath,
   type UpcasterRegistry,
   verifySignature,
 } from '@mnema/chain';
@@ -68,6 +71,19 @@ export type MembershipRefusalCode =
    */
   | 'AMBIGUOUS_MEMBERSHIP';
 
+/**
+ * Why a machine does not write as an identity in a tree: the three answers the record gives about
+ * a KEY ({@link MembershipRefusalCode}), and the one it gives about a CHECKOUT.
+ */
+export type IdentityRefusalCode =
+  | MembershipRefusalCode
+  /**
+   * This checkout recorded the identity it writes as, and the record does not count its key among
+   * that identity's keys — it was retired from it, or it never was one of them
+   * ({@link staleAnchorRefusal}).
+   */
+  | 'STALE_ANCHOR';
+
 /** The record proves this key belongs to exactly one identity. */
 export interface MembershipProven {
   readonly ok: true;
@@ -97,8 +113,15 @@ export interface MembershipRefused {
 export class IdentityUnavailableError extends Error {
   override readonly name = 'IdentityUnavailableError';
   constructor(
-    readonly code: MembershipRefusalCode,
+    readonly code: IdentityRefusalCode,
     message: string,
+    /**
+     * The fingerprint of this machine's key, where the way out the message names is `mnema key
+     * restore "<the key file>"` — so the surface can say where that file is. Only a surface can:
+     * the key root is read where a writer opens and nowhere else (`openChainForWriting`), and
+     * the message is written below it.
+     */
+    readonly restores?: string,
   ) {
     super(message);
   }
@@ -122,7 +145,7 @@ export function membershipIn(
   /** Anchors that retired this key and did not take it back. */
   const retired = new Set<string>();
 
-  for (const fact of enrollmentFacts(query)) {
+  for (const fact of enrollmentFactsOf(orderedEvents({ root: query.tree }, query.upcasters))) {
     if (fact.fingerprint !== key.fingerprint) continue;
     switch (fact.kind) {
       case 'founded':
@@ -224,6 +247,13 @@ export function membershipIn(
  * which directory holds a machine's key is read where a writer opens (`openChainForWriting`) and
  * nowhere else.
  *
+ * WHERE THE OTHER KEY LIVES WAS SAID FOR ONE PLACE, another machine. The other key can be a copy
+ * this machine keeps — the backup key an `init` made is one, and its path is what that `init`
+ * printed — and a person who asked for it here without `--key` asked for THIS key instead:
+ * measured on the binary, the enrollment answered *already in <identity> — nothing recorded* and
+ * the revocation refused `LAST_KEY`. The words name `--key "<its file>"` for that copy now, and the
+ * way out done with the backup is followed to the letter in `the-refusal-names-the-way-out.test.ts`.
+ *
  * A record the product wrote cannot hold a key a roster does not count, since a vouch commits
  * the key's public half before it is appended; a tree that LOST that half can, and there the
  * reason is said as what it is — `restore.test.ts` holds that tree. With three identities or
@@ -266,7 +296,7 @@ function ambiguityOf(
   // The way out of `left` through the checkout that writes as it, when that leaves the key in
   // `rest` alone — the one shape where a restore there points the checkout somewhere.
   const through = (left: string, rest: string): string =>
-    `in ${member.get(left) === 'founded' ? 'the checkout it founded' : 'a checkout it wrote here as'} ${oneLine(left)} from — which, if it is still there, goes on writing as ${oneLine(left)} — pull the record, enroll the other key with \`mnema key enroll <the line>\` (the line \`mnema key request --anchor ${oneLine(left)}\` prints where that key lives), retire this one with ${revoke} — which, run there, prints where that machine keeps the key file — run \`mnema key restore "<the key file>"\` there before anything else writes, then commit and share the record: a fresh clone then writes as ${oneLine(rest)}`;
+    `in ${member.get(left) === 'founded' ? 'the checkout it founded' : 'a checkout it wrote here as'} ${oneLine(left)} from — which, if it is still there, goes on writing as ${oneLine(left)} — pull the record, enroll the other key with \`mnema key enroll <the line>\` (the line \`mnema key request --anchor ${oneLine(left)}\` prints where that key lives — or, for a copy of a key this machine keeps, as the backup key an \`init\` made is, \`mnema key request --anchor ${oneLine(left)} --key "<its file>"\` on this machine), retire this one with ${revoke} — which, run there, prints where that machine keeps the key file — run \`mnema key restore "<the key file>"\` there before anything else writes, then commit and share the record: a fresh clone then writes as ${oneLine(rest)}`;
 
   const [kept] = keeps;
   if (keeps.length === 1 && kept !== undefined) {
@@ -313,6 +343,96 @@ function ambiguityOf(
 }
 
 /**
+ * The refusal of a write from a checkout whose recorded identity does not count its key — and the
+ * way out the record names, or the words that say what is true instead.
+ *
+ * THE TRAP IT CLOSES. A checkout records, locally, the identity it writes as, and nothing read
+ * that record again: a key that LEFT the identity — retired from its roster by this checkout's
+ * own `mnema key revoke`, or by another member and pulled in — went on signing as it, every write
+ * exited 0, and `verify` failed on the whole record from then on, for good (*"event signer <K> is
+ * not a key enrolled for <I>"*). Measured on the binary with git clones in both shapes, and in the
+ * second one with no warning anywhere. The write is refused now, before anything is appended
+ * (`ensureFounded`, which asks before every append whether the recorded identity still counts
+ * the key).
+ *
+ * IT IS A REFUSAL, NEVER A REDIRECTION. The anchor is not decided again from the record here, and
+ * that is load-bearing: the checkout that founded an identity is the door out of it (the way out
+ * {@link ambiguityOf} names runs there), and a checkout that re-decided its anchor by the record
+ * mid-way would find the key in two identities, refuse AMBIGUOUS, and close the one door there
+ * is. So the words say which command points the checkout elsewhere, and the person runs it.
+ *
+ * What the record lets it say:
+ *   - the key is a member of ONE other identity: `mnema key restore` of this machine's key file
+ *     makes the checkout write as it — the restore the way out already ends with, and the file is
+ *     printed by the surface, which alone knows the key root ({@link IdentityUnavailableError});
+ *   - of NONE: nothing it signs would verify, and the record read is the copy this checkout
+ *     holds — a pull may bring the enrollment into the other identity that the restore needs, so
+ *     the words say that too, as the revocation of this machine's own key does;
+ *   - of MORE THAN ONE: the ambiguity, in the words a fresh clone is given;
+ *   - of nothing, EVER — no founding by this key and no enrollment of it: the anchor was recorded
+ *     ahead of a founding that never landed, which the code before the anchor followed the
+ *     founding left behind, so there is no identity to leave, and the way out is deleting the
+ *     file: the next write decides again, from the record, as a first write does;
+ *   - and where the tree carries no public half for the key, an enrollment of it cannot be
+ *     proven, so a record that names the key is said to lack the half — never answered with the
+ *     deletion, after which the next write would found a second identity.
+ *
+ * `a-stale-anchor-writes-nothing.test.ts` asks each case of the core; the binary's are in
+ * `code/tests/the-checkout-a-key-left.test.ts`, followed to the letter. It costs a replay per
+ * question it can answer, and it is only ever asked on a refusal.
+ */
+export function staleAnchorRefusal(
+  query: MembershipQuery,
+  fingerprint: string,
+  anchor: string,
+): IdentityUnavailableError {
+  const layout: ChainLayout = { root: query.tree };
+  // Each sentence is written out whole rather than assembled from shared pieces, so the words a
+  // person is shown are the words a search of this file finds.
+  const stale = (message: string, restores?: string): IdentityUnavailableError =>
+    restores === undefined
+      ? new IdentityUnavailableError('STALE_ANCHOR', message)
+      : new IdentityUnavailableError('STALE_ANCHOR', message, restores);
+
+  const half = committedPublicKey(layout, fingerprint);
+  // No half, no enrollment of this key can be proven — but a founding needs none, and the record
+  // may still NAME the key. Only a record that names it nowhere is the anchor recorded ahead of a
+  // founding; one that names it lost the half.
+  const named =
+    half === null &&
+    [...enrollmentFactsOf(orderedEvents(layout, query.upcasters))].some(
+      (fact) => fact.fingerprint === fingerprint,
+    );
+  if (named) {
+    return stale(
+      `this checkout records ${oneLine(anchor)} as the identity it writes as, and the record does not count this key among that identity's keys: this tree does not carry the key's public half (${oneLine(publicKeyPath(layout, fingerprint))}), without which the record cannot prove which identity the key belongs to — it is committed beside the enrollment that brought the key in`,
+    );
+  }
+  const proven = half === null ? undefined : membershipIn(query, half);
+  if (proven?.ok === true) {
+    return stale(
+      `this checkout records ${oneLine(anchor)} as the identity it writes as, and the record does not count this key among that identity's keys — a write signed with it there would leave the whole record failing verification, so none is made. The record proves the key a member of ${oneLine(proven.anchor)}: \`mnema key restore "<the key file>"\` here makes this checkout write as it`,
+      fingerprint,
+    );
+  }
+  if (proven?.code === 'REVOKED_KEY') {
+    return stale(
+      `this checkout records ${oneLine(anchor)} as the identity it writes as, and the record does not count this key among that identity's keys, nor among the keys of any other identity here: it was retired — a write signed with it there would leave the whole record failing verification, so none is made. If the record, once pulled, proves it a member of another identity, \`mnema key restore "<the key file>"\` here makes this checkout write as it`,
+      fingerprint,
+    );
+  }
+  if (proven?.code === 'AMBIGUOUS_MEMBERSHIP') {
+    return stale(
+      `this checkout records ${oneLine(anchor)} as the identity it writes as, and the record does not count this key among that identity's keys; ${proven.message}`,
+    );
+  }
+  // NOT_A_MEMBER, or no half and nothing that names the key: nothing in the record ever held it.
+  return stale(
+    `this checkout records ${oneLine(anchor)} as the identity it writes as, and nothing in the record founded an identity with this key or enrolled it into one — there is no identity for it to leave: delete ${oneLine(anchorPath(layout, fingerprint))}, and the next write here decides again, from the record, as a first write does`,
+  );
+}
+
+/**
  * The keys currently valid for one anchor in this record — the identity's roster,
  * folded the way the verifier folds it.
  *
@@ -324,9 +444,28 @@ function ambiguityOf(
  * that cannot actually sign.
  */
 export function rosterOf(query: MembershipQuery, anchor: string): Set<string> {
+  return rosterIn(orderedEvents({ root: query.tree }, query.upcasters), query.tree, anchor);
+}
+
+/**
+ * {@link rosterOf} over events a caller already holds, in the record's order — THE SAME FOLD,
+ * so a roster read off a session's retained replay and one read off a fresh replay cannot come
+ * to disagree about a key. `tree` is where the public half an enrollment names is read, as it is
+ * for a replay.
+ *
+ * It exists for the one reading that runs before every write: whether the identity a checkout
+ * recorded still counts its key ({@link staleAnchorRefusal}). A replay is linear in the record,
+ * and a session that already holds the record in order pays only for what arrived since
+ * (`ProjectionCache.rosterAsOfNow`).
+ */
+export function rosterIn(
+  events: Iterable<CatalogEvent>,
+  tree: string,
+  anchor: string,
+): Set<string> {
   const valid = new Set<string>();
-  const layout: ChainLayout = { root: query.tree };
-  for (const fact of enrollmentFacts(query)) {
+  const layout: ChainLayout = { root: tree };
+  for (const fact of enrollmentFactsOf(events)) {
     if (fact.anchor !== anchor) continue;
     switch (fact.kind) {
       case 'founded':
@@ -369,8 +508,8 @@ type EnrollmentFact =
  * here is the consent signature — that depends on which key the caller can prove,
  * so each caller applies it.
  */
-function* enrollmentFacts(query: MembershipQuery): Generator<EnrollmentFact> {
-  for (const event of orderedEvents({ root: query.tree }, query.upcasters)) {
+function* enrollmentFactsOf(events: Iterable<CatalogEvent>): Generator<EnrollmentFact> {
+  for (const event of events) {
     const anchor = event.subject;
     if (event.who !== anchor) continue;
     switch (event.kind) {

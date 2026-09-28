@@ -152,6 +152,18 @@ export interface CacheRegistry {
    */
   get(chainRoot: string): ProjectionCache;
   /**
+   * The keys the record counts for `anchor` under a chain root, as the chain is NOW — read off
+   * the cache this connection holds for that root, and undefined where it holds none.
+   *
+   * It is what a write of this session asks before it appends (the write context's `roster`):
+   * whether the identity this checkout recorded still counts its key. Held, the cache answers
+   * with the order it retained plus what arrived since, and moves nothing — so the next reader
+   * still does its own catch-up, and a write pays for arrivals rather than for the record
+   * (`ProjectionCache.rosterAsOfNow`). Not held — a connection whose first call writes — it
+   * answers nothing, and the write replays the tree, which is cheaper than opening a cache to ask.
+   */
+  rosterAsOfNow(chainRoot: string, anchor: string): ReadonlySet<string> | undefined;
+  /**
    * Marks the cache for a chain root stale. A root with no cache yet is a no-op:
    * there is nothing to be wrong, and the cache it eventually opens replays the
    * chain as it stands then.
@@ -220,6 +232,10 @@ export function createCacheRegistry(): CacheRegistry {
 
     opened(): readonly { readonly chainRoot: string; readonly cache: ProjectionCache }[] {
       return [...entries].map(([chainRoot, entry]) => ({ chainRoot, cache: entry.cache }));
+    },
+
+    rosterAsOfNow(chainRoot: string, anchor: string): ReadonlySet<string> | undefined {
+      return entries.get(chainRoot)?.cache.rosterAsOfNow(anchor);
     },
 
     invalidate(chainRoot: string): void {

@@ -158,43 +158,45 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
         io.out(`Revoked key ${result.fingerprint}`);
         reportReplacement(result, io);
         io.out(render(fact(`from ${result.anchor} — ${result.remaining} key(s) left`)));
-        if (result.self && result.stillMemberOf !== undefined && result.keyFile !== undefined) {
-          // The person just retired the key this machine signs with, and this checkout goes
-          // on recording the identity it left: anything it writes as that identity now fails
-          // verification, for good. THIS USED TO SAY "it must not write to this project again",
-          // and where the record still proves the key in one other identity that is false: a
-          // restore points the checkout there, and it writes as that one — the way out of an
-          // identity whose only key this was, which the refusal of a fresh clone hands over
-          // step by step and `the-refusal-names-the-way-out.test.ts` follows to the letter. The
-          // file is printed because that refusal says this line is where it is found.
+        if (result.self && result.keyFile !== undefined) {
+          // The person just retired the key this machine signs with, and this checkout goes on
+          // recording the identity it left. THIS SAID "anything it writes as that identity fails
+          // verification", and it was true while nothing read a recorded anchor again: the write
+          // exited 0 and left the whole record failing `verify` for good. Every write asks now
+          // whether the identity a checkout recorded still counts its key, and refuses when it
+          // does not (the core's `ensureFounded`), so the sentence says the refusal.
           io.out(
             render(
               fact(
                 "That is THIS machine's key: this checkout still records the identity it left, " +
-                  'and anything it writes as that identity fails verification.',
+                  'so what it writes here is refused until it records another.',
               ),
             ),
           );
+          // Where the record still proves the key in one other identity, a restore points the
+          // checkout there — the way out of an identity whose only key this was, which the
+          // refusal of a fresh clone hands over and `the-refusal-names-the-way-out.test.ts`
+          // follows to the letter.
+          //
+          // Where it proves none, or more than one, THIS SAID "it must not write to this project
+          // again" and "Bring another key in first", and the record it read is the copy this
+          // checkout holds: a checkout that had not pulled the other identity's enrollment of the
+          // key was told there was nothing, while a pull and the same restore made it write as
+          // that identity — measured on the binary, and followed to the letter in
+          // `the-checkout-a-key-left.test.ts`. So it says the pull, and the file either way.
           io.out(
             render(
               fact(
-                `The record proves the key a member of ${result.stillMemberOf}: ` +
-                  '`mnema key restore "<the key file>"` here makes this checkout write as it.',
+                result.stillMemberOf !== undefined
+                  ? `The record proves the key a member of ${result.stillMemberOf}: ` +
+                      '`mnema key restore "<the key file>"` here makes this checkout write as it.'
+                  : 'The record this checkout holds proves the key a member of no single other ' +
+                      'identity: if the record, once pulled, proves it a member of one, ' +
+                      '`mnema key restore "<the key file>"` here makes this checkout write as it.',
               ),
             ),
           );
           io.out(render(fact(onOneLine`this machine keeps the key file at ${result.keyFile}`)));
-        } else if (result.self) {
-          // The record proves the key in no other identity here, or in more than one, and a
-          // restore points this checkout at neither: nothing stops it from writing again, and
-          // anything it writes now fails verification — so say it plainly, at the only moment
-          // it can still be acted on.
-          io.out(
-            render(fact("That is THIS machine's key: it must not write to this project again.")),
-          );
-          io.out(
-            render(fact('Bring another key in first if this machine is to keep working here.')),
-          );
         }
         io.out(
           render(

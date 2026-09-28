@@ -75,11 +75,13 @@
  * server side never fires it.
  */
 
+import { privateKeyPath } from '@mnema/chain';
 import { REFERENCE_DEFAULT_DEPTH, REFERENCE_MAX_DEPTH } from '@mnema/copilot';
 import {
   canonicalIdentity,
   DECISION_ACTIONS,
   type DiscoveryEnv,
+  IdentityUnavailableError,
   type ProofField,
   SEARCH_DEFAULT_LIMIT,
   SEARCH_KINDS,
@@ -563,7 +565,7 @@ export function buildMcpServer(options: McpServerOptions): {
   // are collected as they are registered — never listed beside the registrations, which
   // is the list that goes stale the one time it matters.
   const declaredTools: DeclaredTool[] = [];
-  registerTools(declaringInto(server, declaredTools), ensureSession);
+  registerTools(declaringInto(server, declaredTools, ensureSession), ensureSession);
 
   /**
    * Ends the connection's session: every run it opened, then its caches.
@@ -663,11 +665,49 @@ type ToolRegistrar = <Input extends ZodRawShapeCompat | undefined = undefined>(
  * them, and where the first production reader (the read-only session) arrived afterwards.
  * What reads these now is the guard, and a reviewer.
  */
-function declaringInto(server: McpServer, declared: DeclaredTool[]): ToolRegistrar {
+function declaringInto(
+  server: McpServer,
+  declared: DeclaredTool[],
+  ensureSession: () => Promise<Session>,
+): ToolRegistrar {
   return (what, config, handle) => {
     declared.push(what);
-    server.registerTool(what.act, config, handle);
+    server.registerTool(what.act, config, answeringIdentityRefusals(handle, ensureSession));
   };
+}
+
+/**
+ * `handle`, with the refusal thrown below every write answered through {@link refused} — the door
+ * every other refusal leaves by — instead of by the SDK.
+ *
+ * A key the record gives no honest identity THROWS rather than returns (`IdentityUnavailableError`,
+ * from the core), because the decision sits below every write and there is no honest way on. The
+ * tools never caught it, so the SDK answered with the bare message: no `Refused (CODE)`, and none
+ * of what the session owed. The one that most needs its code is the checkout whose recorded
+ * identity no longer counts its key (`STALE_ANCHOR`), whose way out is a restore of this machine's
+ * key file — so the reply says where that file is, which the session can and the core cannot
+ * (the key root is read where a writer opens). Only that class is caught: any other throw is the
+ * SDK's to answer, as before, and a session that could not open at all has nothing to answer
+ * from, so its throw goes out as it came. `the-checkout-a-key-left.test.ts` asks it over stdio.
+ */
+function answeringIdentityRefusals<Input extends ZodRawShapeCompat | undefined>(
+  handle: ToolCallback<Input>,
+  ensureSession: () => Promise<Session>,
+): ToolCallback<Input> {
+  const called = handle as (...args: unknown[]) => unknown;
+  return (async (...args: unknown[]) => {
+    try {
+      return await called(...args);
+    } catch (error) {
+      if (!(error instanceof IdentityUnavailableError)) throw error;
+      const session = await ensureSession();
+      const keyFile =
+        error.restores === undefined
+          ? ''
+          : ` — this machine keeps the key file at ${oneLine(privateKeyPath({ root: session.trees.keyRoot }, error.restores))}`;
+      return refused(session, { code: error.code, message: `${error.message}${keyFile}` });
+    }
+  }) as ToolCallback<Input>;
 }
 
 /**
