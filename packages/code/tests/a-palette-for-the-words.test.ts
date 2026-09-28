@@ -586,6 +586,7 @@ describe('the list shows four offers, and the room a terminal has can only make 
         columns: NOTHING_IS_CUT,
         badge: BADGE_IS,
         hint: HINT_IS,
+        unmoved: 0,
         palette: paletteRowsFor(offers),
         header: NOTHING_ABOVE_YET,
       }).palette;
@@ -606,6 +607,7 @@ describe('the list shows four offers, and the room a terminal has can only make 
         columns: NOTHING_IS_CUT,
         badge: BADGE_IS,
         hint: HINT_IS,
+        unmoved: 0,
         palette: MORE_THAN_ANY_SCREEN,
         header: NOTHING_ABOVE_YET,
       }).palette;
@@ -788,6 +790,7 @@ describe('the verbs come first, and the words of the session come after them', (
           columns: NOTHING_IS_CUT,
           badge: BADGE_IS,
           hint: HINT_IS,
+          unmoved: 0,
           palette: paletteRowsFor(offers),
           header: NOTHING_ABOVE_YET,
         }).palette;
@@ -1000,7 +1003,7 @@ const BADGE_IS = widthOf(badgeLine('fully-signed', 'the-whole-record'));
 describe('a row of the area the terminal would fold is not drawn at all', () => {
   // A PAGE WITH NOTHING ON IT: these cases are about WIDTH, and the flow is the other
   // measurement the area takes (`repl/area.ts`, `AreaRequest.flow`).
-  const tall = { rows: 40, palette: 0, header: NOTHING_ABOVE_YET };
+  const tall = { rows: 40, unmoved: 0, palette: 0, header: NOTHING_ABOVE_YET };
 
   it('draws the hint at its own width and not one column under it', () => {
     const at = (columns: number) => areaFor({ ...tall, columns, badge: BADGE_IS, hint: HINT_IS });
@@ -1045,6 +1048,7 @@ describe('the palette gets what is left over on a page with nothing on it, and n
         columns,
         badge: BADGE_IS,
         hint: HINT_IS,
+        unmoved: 0,
         palette: wanted,
         header: NOTHING_ABOVE_YET,
       }).palette;
@@ -1069,6 +1073,7 @@ describe('the palette gets what is left over on a page with nothing on it, and n
         columns,
         badge: BADGE_IS,
         hint: HINT_IS,
+        unmoved: 0,
         palette: wanted,
         header: NOTHING_ABOVE_YET,
       });
@@ -1081,7 +1086,14 @@ describe('the palette gets what is left over on a page with nothing on it, and n
     // both it is the badge and the rules that go — the same call the single row of
     // candidates already forced, made explicit now the list can be long.
     const columns = 100;
-    const at = { rows: 7, columns, badge: BADGE_IS, hint: HINT_IS, header: NOTHING_ABOVE_YET };
+    const at = {
+      rows: 7,
+      columns,
+      badge: BADGE_IS,
+      hint: HINT_IS,
+      unmoved: 0,
+      header: NOTHING_ABOVE_YET,
+    };
     const shut = areaFor({ ...at, palette: 0 });
     const open = areaFor({ ...at, palette: 20 });
     expect(shut.form).toBe('full');

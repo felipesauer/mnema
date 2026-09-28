@@ -407,8 +407,15 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * they need — and one in `gated-transition.test.ts`, for the founding its stand-in writer rests
  * on now. The five branches met at 3094, read off this guard: 3047 and those forty-seven, since
  * no clause came in on more than one of them.
+ * Then 3094 -> 3099 when a read asked again was made to be seen: five clauses in
+ * `a-read-asked-again-draws-what-changed.test.ts`, which now waits for the row that says an
+ * answer left the page as it was and reads its words off the product — `../src/repl/session.js`
+ * for the line and `../src/presentation/plain.js` to render it as the page shows it — and opens
+ * one console in process, so an answer can be over before the next key is pressed:
+ * `../src/repl/console.js`, `../src/presentation/detail.js` for the row under its list, and
+ * `support/console.js` for the terminal it is opened on.
  */
-const CLAUSES_IN_THE_TREE = 3094;
+const CLAUSES_IN_THE_TREE = 3099;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 

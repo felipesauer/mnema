@@ -60,6 +60,14 @@
  * same rule the forms already are, turned on the other axis: the hint and the badge each
  * have an "absent" form already, and this is what chooses it.
  *
+ * AND THERE IS A ROW THAT COMES AND GOES WITH AN ANSWER, which is the palette's shape of row
+ * turned on the roll rather than on a keystroke. An answer as tall as the window leaves the page
+ * exactly as it was when its end is the end the page already showed — the same document asked
+ * twice — and a page that does not move is an answer nobody saw land. So the area says so, on a
+ * row of its own at the top, directly under the window it is about; the row exists only while it
+ * is true and it takes its row out of the middle region, exactly as the list does. Every ordinary
+ * frame, the opening included, is the area it always was ({@link AreaRequest.unmoved}).
+ *
  * NOTHING HERE DRAWS AND NOTHING HERE COMPOSES. It receives what there is to show as
  * numbers — how wide each thing is, how many rows the palette wants, how many rows the region
  * above it takes — and answers with which arrangement there is room for, what is in it, and
@@ -110,6 +118,21 @@ export interface AreaRequest {
   readonly badge: number;
   /** How wide the hint is, in columns, and zero when the console offers none. */
   readonly hint: number;
+  /**
+   * HOW WIDE THE ROW SAYING THE LAST ANSWER LEFT THE PAGE AS IT WAS IS, in columns — and zero
+   * whenever there is nothing of the kind to say, which is every ordinary frame.
+   *
+   * ZERO IS WHAT THE OPENING IS BUDGETED WITH (`session.ts`), and that is the whole of why the
+   * row costs the arrangement nothing: the page is chosen against the area as it stands on a frame
+   * with no such row, and the row, while it stands, comes out of the middle region rather than out
+   * of anything the page was budgeted for — the list of words is budgeted the same way. What makes
+   * it non-zero is the console's to say, once per answer (`console.ts`,
+   * `theLastAnswerMovedNothing`).
+   *
+   * A WIDTH RATHER THAN A YES, for the reason the badge gives: whether it is drawn on one row of
+   * this terminal is this file's to rule on, and the caller answers what it knows.
+   */
+  readonly unmoved: number;
   /** How many rows the palette would like. Zero when it is not open. */
   readonly palette: number;
   /**
@@ -153,6 +176,8 @@ export interface Area {
   readonly height: number;
   /** Whether the hint is drawn under it all. */
   readonly hint: boolean;
+  /** Whether the row saying the last answer left the page as it was is drawn, over it all. */
+  readonly unmoved: boolean;
   /** How many rows the palette gets — what it wanted, or what was left over. */
   readonly palette: number;
 }
@@ -181,12 +206,25 @@ const HINT = 1;
  */
 const ABOVE_THE_PALETTE = 1;
 
-/** What the area is drawing, once the two widths have been ruled on. */
+/**
+ * THE ROW SAYING THE LAST ANSWER LEFT THE PAGE AS IT WAS — at the top of the area, directly under
+ * the window it is about, and over the palette when both are there.
+ *
+ * IT IS COUNTED HERE AND DRAWN IN `region.ts`, for the reason the blank row over the palette is:
+ * a row the layout draws and this file does not count is a frame one row taller than the screen
+ * it is drawn on — and the row a frame like that loses is the foot of the window, which is the
+ * newest line of the answer the row is about.
+ */
+const UNMOVED = 1;
+
+/** What the area is drawing, once the widths have been ruled on. */
 interface Drawing {
   /** Whether the badge fits on one row, and there is one. */
   readonly badge: boolean;
   /** Whether the hint does. */
   readonly hint: boolean;
+  /** Whether the row saying the last answer left the page as it was does, and there is one. */
+  readonly unmoved: boolean;
   /** How many rows the palette gets. */
   readonly palette: number;
 }
@@ -203,9 +241,21 @@ function paletteRows(drawing: Drawing): number {
   return drawing.palette === 0 ? 0 : ABOVE_THE_PALETTE + drawing.palette;
 }
 
+/**
+ * How many rows sit over what the form itself draws — the row saying the last answer left the
+ * page as it was, and the palette with its blank row — and none when neither is there.
+ *
+ * ONE FUNCTION, READ BY BOTH ARITHMETICS below, for the reason {@link paletteRows} is one: the
+ * height of the area and the depth of the caret are the same sum read from two ends, and a row
+ * over the palette counted in one and not the other is a caret one row off the line it is on.
+ */
+function overTheForm(drawing: Drawing): number {
+  return (drawing.unmoved ? UNMOVED : 0) + paletteRows(drawing);
+}
+
 /** How tall each form is, given what there is to draw around the row being typed. */
 function heightOf(form: AreaForm, drawing: Drawing): number {
-  const extras = paletteRows(drawing) + (drawing.hint ? HINT : 0);
+  const extras = overTheForm(drawing) + (drawing.hint ? HINT : 0);
   switch (form) {
     case 'full':
       return BADGE + RULE + TYPED + RULE + extras;
@@ -220,11 +270,11 @@ function heightOf(form: AreaForm, drawing: Drawing): number {
 function aboveIn(form: AreaForm, drawing: Drawing): number {
   switch (form) {
     case 'full':
-      return paletteRows(drawing) + BADGE + RULE;
+      return overTheForm(drawing) + BADGE + RULE;
     case 'ruled':
-      return paletteRows(drawing) + RULE;
+      return overTheForm(drawing) + RULE;
     case 'bare':
-      return paletteRows(drawing);
+      return overTheForm(drawing);
   }
 }
 
@@ -300,16 +350,22 @@ function roomForThePalette(request: AreaRequest, floor: number): number {
  * The area for a terminal of a given size: the form, what is in it, where the caret goes,
  * and how tall the whole of it is.
  *
- * Pure, and asked again on every frame. It reads five numbers, so a caller that held the
- * answer would be holding a stale one the moment a Tab offered a word, the window moved or a
- * different drawing was chosen above it.
+ * Pure, and asked again on every frame. It reads seven numbers, so a caller that held the
+ * answer would be holding a stale one the moment a Tab offered a word, the window moved, an
+ * answer landed or a different drawing was chosen above it.
  */
 export function areaFor(request: AreaRequest): Area {
   const hint = onOneRow(request.hint, request.columns);
-  const floor = TYPED + (hint ? HINT : 0);
+  const unmoved = onOneRow(request.unmoved, request.columns);
+  // THE ROW SAYING THE LAST ANSWER LEFT THE PAGE AS IT WAS IS PART OF WHAT THE LIST MAY NOT TAKE,
+  // with the row being typed and the hint. The list grows into whatever is left and the forms give
+  // way to make room for it, down to the bare one — and the bare form still draws this row, so a
+  // list that had counted it as room would make even the floor one row taller than the screen.
+  const floor = TYPED + (hint ? HINT : 0) + (unmoved ? UNMOVED : 0);
   const drawing: Drawing = {
     badge: onOneRow(request.badge, request.columns),
     hint,
+    unmoved,
     palette: roomForThePalette(request, floor),
   };
   const form = formFor(request, drawing);
@@ -318,6 +374,7 @@ export function areaFor(request: AreaRequest): Area {
     above: aboveIn(form, drawing),
     height: heightOf(form, drawing),
     hint,
+    unmoved,
     palette: drawing.palette,
   };
 }
