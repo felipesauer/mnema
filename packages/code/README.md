@@ -177,10 +177,16 @@ have been wrong until the moment somebody pushed it. So it asks rather than asse
 ### From the terminal
 
 ```sh
+# A … marks where this page shortened what a command prints: a path, a 64-hex id, the
+# rest of a line, or — alone on a line — lines it left out.
+
 # Found a project. This creates the record and this machine's identity.
 mnema init
 #> Initialized mnema project at /path/to/repo/.mnema
-#>   identity: mnid:c0fc3c713f09a43384ac08f7d91fca43…   (64 hex, abbreviated here)
+#>   identity: mnid:c0fc3c713f09a43384ac08f7d91fca43…
+#>   backup key: created and enrolled — private half at …/identity/backup/….key
+#>   Move that file off this machine: a backup left on this disk is lost with it.
+#> …
 
 ME=mnid:c0fc3c713f09a43384ac08f7d91fca43…   # the identity printed above
 
@@ -216,6 +222,7 @@ mnema guard reopen "$TASK" --actor "$ME"
 # verdict per tree of the project, under the tree's name.
 mnema verify
 #> public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; …
+#>   census [backup-key] public …: the backup key this machine registered for mnid:c0fc3c71… — …
 #> private: no record here — nothing has been written to this tree on this machine, …
 
 # Auditing several projects? Name them, and get ONE verdict over all of them.
