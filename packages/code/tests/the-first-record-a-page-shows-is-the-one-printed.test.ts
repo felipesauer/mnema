@@ -156,7 +156,7 @@ let repo: string;
 let home: string;
 
 beforeEach(() => {
-  sandbox = realpathSync(mkdtempSync(join(tmpdir(), 'mnema-first-record-')));
+  sandbox = mkdtempSync(join(tmpdir(), 'mnema-first-record-'));
   repo = join(sandbox, 'your-repository');
   home = join(sandbox, 'home');
   mkdirSync(repo, { recursive: true });
@@ -180,10 +180,12 @@ describe('the first record the root page shows', () => {
       const where = `${PAGE}:${at} ${argv.join(' ')}`;
       expect(ran.status, `${where} failed: ${ran.stderr}`).toBe(0);
       expect(ran.stderr, `${where} printed on the stream the page does not show`).toBe('');
+      // The repository by both of its spellings: the one it was made at, and the one a
+      // resolved path would print, which differ wherever the temp directory is a link.
       const printed = ran.stdout
         .replace(/\n$/, '')
         .split('\n')
-        .map((line) => asShape(line, repo));
+        .map((line) => asShape(asShape(line, realpathSync(repo)), repo));
       const expected = shown.map((line) => asShape(line, '/path/to/repo'));
       expect(
         accountsFor(expected, printed),
