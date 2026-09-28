@@ -33,6 +33,16 @@
  * whoever added the option. The discriminant is in {@link verdictOf}: the action's own
  * source either names the value or it does not, and those are opposite facts.
  *
+ * AND IT WAS BLIND TO A VALUE THE GROUP TAKES, which is the second amendment. `witness
+ * stamp` and `witness upgrade` each declared `--global` and named `opts.global`, so both
+ * were cleared as read by "the action itself" — and the value never arrived: `witness`
+ * declares `--global` too, and commander hands a flag to the ancestor that declares it,
+ * wherever it is written, because this program does not turn positional options on. The
+ * act's own copy is never filled, and naming it is a read of nothing. So an option an
+ * ancestor also declares is accused when its action names its OWN options parameter's copy
+ * of it ({@link readsItsOwnCopy}); read off the group, where commander put it
+ * (`wiring/from-the-group.ts`), it is traced like any other.
+ *
  * WHY NEITHER GREP FINDS IT, which is the whole design of what follows:
  *
  *   - THE NAME CHANGES ON THE WAY. `opts.calendar` leaves as `calendars`, `opts.which`
@@ -70,6 +80,10 @@
  *     they are the second surface with the same rule.
  *   - A COMMAND WITH NO ACTION OF ITS OWN CANNOT BE TRACED, and there are two such
  *     options ({@link NOT_TRACEABLE}).
+ *   - A FLAG ONLY THE GROUP DECLARES IS CLEARED BY THE GROUP'S ACTION, which reads it — and
+ *     on a line that names a subcommand, that action does not run. Whether each subcommand
+ *     reads the flag or refuses it is not a question about source: every such pair is run
+ *     by `every-group-flag-is-read-or-refused.test.ts`.
  *   - AN ACTION THAT HANDS ITS OPTIONS OBJECT AWAY WHOLE is traced under the attribute's
  *     own name ({@link handsTheWholeObjectAway}), and the options object is taken to be
  *     the LAST parameter the handler declares. No handler on this surface has that shape
@@ -412,6 +426,11 @@ interface Declared {
   readonly attribute: string;
   /** The action that receives it, or undefined when the command declares none. */
   readonly action: string | undefined;
+  /**
+   * The ancestor that declares the same flag, e.g. `mnema witness` — the one commander hands
+   * the value to — or undefined when no ancestor does.
+   */
+  readonly takenBy: string | undefined;
 }
 
 /** Every option the program declares, with the action beside it. */
@@ -442,12 +461,33 @@ function declaredOptions(): Declared[] {
         flags: option.flags,
         attribute: option.attributeName(),
         action: handler === undefined ? undefined : handler.toString(),
+        takenBy: ancestorDeclaring(command, path, option),
       });
     }
     for (const sub of command.commands) walk(sub, [...path, sub.name()]);
   };
   walk(program, ['mnema']);
   return found;
+}
+
+/** The nearest ancestor of `command` declaring a flag `option` shares a spelling with. */
+function ancestorDeclaring(
+  command: Command,
+  path: readonly string[],
+  option: Command['options'][number],
+): string | undefined {
+  const spellings = [option.long, option.short].filter((one) => one !== undefined);
+  let depth = path.length - 1;
+  for (let at = command.parent; at !== null; at = at.parent) {
+    const shares = at.options.some(
+      (theirs) =>
+        (theirs.long !== undefined && spellings.includes(theirs.long)) ||
+        (theirs.short !== undefined && spellings.includes(theirs.short)),
+    );
+    if (shares) return path.slice(0, depth).join(' ');
+    depth -= 1;
+  }
+  return undefined;
 }
 
 const OPTIONS = declaredOptions();
@@ -493,11 +533,30 @@ export function verdictOf(option: string, actionSource: string, attribute: strin
   return { option, destinations, read };
 }
 
+/**
+ * Whether an action names its OWN options parameter's copy of an attribute — `opts.global`.
+ *
+ * For an option an ancestor also declares, that copy is never filled: the ancestor receives
+ * the value wherever it is written. So this is the discriminant of the second amendment, and
+ * it reads the options parameter the way {@link handsTheWholeObjectAway} does, as the last one
+ * the handler declares.
+ */
+export function readsItsOwnCopy(actionSource: string, attribute: string): boolean {
+  const code = codeOnly(actionSource);
+  const options = signature(code).names.at(-1);
+  if (options === undefined) return false;
+  return new RegExp(`(?<![\\w$.])${options}\\s*\\.\\s*${attribute}\\b`).test(code);
+}
+
 /** Where each option's value is read, or an empty `read` when it is read nowhere. */
 function verdicts(): Verdict[] {
   return OPTIONS.map((declared) => {
     const option = `${declared.where} ${declared.flags}`;
     if (declared.action === undefined) return { option, destinations: [], read: [] };
+    // Its own copy, which `takenBy` receives instead: a read of a value that never arrives.
+    if (declared.takenBy !== undefined && readsItsOwnCopy(declared.action, declared.attribute)) {
+      return { option, destinations: [], read: [] };
+    }
     return verdictOf(option, declared.action, declared.attribute);
   });
 }
@@ -711,6 +770,44 @@ describe('every option the CLI declares feeds something', () => {
     // And the return visit does read the one option it kept, so the empty answer above
     // is about `calendars` and not about a path this cannot see into.
     expect(readSites(back, 'blockSource').length).toBeGreaterThan(0);
+  });
+
+  it('accuses a read of the copy a group takes, and clears the read of the group’s value', () => {
+    // The shape the two `witness` acts had, on strings this file owns: the act declares the
+    // flag its group declares, names its own options parameter's copy, and gets nothing.
+    expect(
+      readsItsOwnCopy('async (opts) => { run(ctx, { global: opts.global }); }', 'global'),
+    ).toBe(true);
+    // Read off the group instead — the one reader that knows where commander put it.
+    expect(
+      readsItsOwnCopy(
+        'async (opts) => { const given = await fromTheGroup(act, w); run(ctx, { global: given.global }); }',
+        'global',
+      ),
+    ).toBe(false);
+    // A value of the same name on another object is not the options parameter's.
+    expect(readsItsOwnCopy('async (opts) => { run(ctx, { g: myopts.global }); }', 'global')).toBe(
+      false,
+    );
+    // And the product: each act's --global is one its group takes, and each reads it off the
+    // group now, so the pair is cleared by a trace rather than excused.
+    for (const act of ['mnema witness stamp', 'mnema witness upgrade']) {
+      const declared = OPTIONS.find((one) => one.where === act && one.flags === '--global');
+      expect(declared?.takenBy, act).toBe('mnema witness');
+      expect(readsItsOwnCopy(declared?.action ?? '', 'global'), act).toBe(false);
+      expect(verdictOf(act, declared?.action ?? '', 'global').read.length, act).toBeGreaterThan(0);
+    }
+    // The four the tree holds, and no more: an option declared twice anywhere else is new.
+    expect(
+      OPTIONS.filter((one) => one.takenBy !== undefined)
+        .map((one) => `${one.where} ${one.flags}`)
+        .sort(),
+    ).toEqual([
+      'mnema decision import --scope <scope>',
+      'mnema decision import --which <agent>',
+      'mnema witness stamp --global',
+      'mnema witness upgrade --global',
+    ]);
   });
 
   it('tolerates a declared option and still accuses an undeclared one', () => {

@@ -121,12 +121,15 @@ const ANSWERS_ANYWAY: Readonly<Record<string, string>> = {
  * THE TREE LIST IS EMPTY, and that is recorded rather than repaired. Outside a project the
  * only tree that resolves is this machine's global one, which every witness path leaves out
  * unless asked, so the sentence names nothing and reads `looked in .` — a list with no
- * items and a full stop. Asking is not available on the acts either: `--global` is declared
- * on the group AND on each act, and `mnema witness upgrade --global` binds it to the GROUP,
- * whose value no act reads. That is commander's documented arithmetic — a parent stops
- * consuming its own options at a subcommand only under `enablePositionalOptions()`, which
- * this program does not set — so the flag on `stamp` and on `upgrade` feeds nothing. What a
- * verb prints, and which command a flag binds to, are not a coverage slice's to change.
+ * items and a full stop. This said asking was not available on the acts either: `--global`
+ * is declared on the group AND on each act, `mnema witness upgrade --global` bound it to the
+ * GROUP, whose value no act read, and so the flag on `stamp` and on `upgrade` fed nothing —
+ * commander's documented arithmetic, since a parent stops consuming its own options at a
+ * subcommand only under `enablePositionalOptions()`, which this program does not set. The
+ * arithmetic is unchanged and the acts now read the value where it lands, off the group
+ * (`wiring/from-the-group.ts`): asked, `upgrade` outside a project goes back for the global
+ * tail, which `the-witness-acts-cover-the-tree-asked-for.test.ts` runs on the binary. Not
+ * asked, it still says this sentence, and the empty list is still what it says.
  */
 const NO_TAIL_HOLDS_EVENTS = 'No tail holds events in any tree here — looked in .';
 

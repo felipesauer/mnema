@@ -40,6 +40,7 @@ import {
   SKILL_ACTIONS,
   scopeOption,
 } from './enumerated.js';
+import { fromTheGroup, REFUSED, takesFromItsGroup } from './from-the-group.js';
 import { writeLines } from './io.js';
 import { noSuchRecord } from './no-such-record.js';
 import { onOneLine } from './on-one-line.js';
@@ -150,9 +151,9 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
 
   // `skill move <action> <id>` — the generic move, the sibling of `task move`.
   // The action is an argument; the surface knows no transition table. It takes
-  // NO `--scope` (a move follows the entity), and rejects one that leaks in from
-  // the `skill` group's option — routing a move elsewhere would split the skill's
-  // history across the public/private boundary.
+  // the group's `--which` and NO `--scope` (a move follows the entity), and refuses
+  // every flag of the group it does not read (`from-the-group.ts`) — routing a move
+  // elsewhere would split the skill's history across the public/private boundary.
   const skillMove = skill
     .command('move')
     .description('move a skill through the workflow (follows the skill; takes no --scope)')
@@ -168,17 +169,19 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
     )
     .addHelpText('after', WHICH_ON_SUBCOMMAND_HELP)
     .addHelpText('after', RECORD_CONTRACT_HELP);
+  takesFromItsGroup(skillMove, {
+    takes: ['--which'],
+    refuses: {
+      '--scope': 'a move follows the skill to the tree it was born in.',
+      '--body':
+        'a skill’s body is recorded when it is proposed, and a move changes only its state.',
+    },
+  });
   skillMove.action(async (action: string, id: string, opts: { note?: string; reason?: string }) => {
+    const given = await fromTheGroup<{ which?: string }>(skillMove, wiring);
+    if (given === REFUSED) return;
     const { runSkillTransition } = await import('../commands/skill-transition.js');
     const { movedLine } = await import('../moved-record.js');
-    const parentOpts = (skillMove.parent?.opts() ?? {}) as { scope?: string; which?: string };
-    if (parentOpts.scope !== undefined) {
-      reportUsage(
-        wiring,
-        '`skill move` takes no --scope: a move follows the skill to the tree it was born in.',
-      );
-      return;
-    }
     const run = pinnedRun();
     if (run === PIN_REFUSED) {
       io.fail();
@@ -191,7 +194,7 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
         ...(opts.note !== undefined ? { note: opts.note } : {}),
         ...(opts.reason !== undefined ? { reason: opts.reason } : {}),
       },
-      ...(parentOpts.which !== undefined ? { which: parentOpts.which } : {}),
+      ...(given.which !== undefined ? { which: given.which } : {}),
       ...(run !== undefined ? { run } : {}),
     });
     if (result.ok) {
@@ -216,32 +219,25 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
       'what the host chooses this skill by; omitted, it is derived from the body',
     )
     .addHelpText('after', SKILL_EXPORT_HELP);
+  // The group's three options mean nothing on an export — nothing is born, nothing
+  // moves, and nothing is recorded for an agent to be credited with — so one that
+  // reaches here is refused rather than accepted and ignored. A `--which` taken in
+  // silence would let a caller believe the export was attributed to their agent.
+  const nothingIsRecorded =
+    'it writes out a pattern the record already holds — nothing is born, nothing moves and ' +
+    'nothing is recorded.';
+  takesFromItsGroup(skillExport, {
+    refuses: {
+      '--body': nothingIsRecorded,
+      '--scope': nothingIsRecorded,
+      '--which': nothingIsRecorded,
+    },
+  });
   skillExport.action(async (id: string, opts: { out: string; description?: string }) => {
+    if ((await fromTheGroup(skillExport, wiring)) === REFUSED) return;
     const { linkBreakNotice } = await import('./integrity.js');
     const { runSkillExport } = await import('../commands/skill-export.js');
     const { exportReport } = await import('../presentation/exported.js');
-    // The group's three options mean nothing on an export — nothing is born, nothing
-    // moves, and nothing is recorded for an agent to be credited with — so one that
-    // reaches here is refused rather than accepted and ignored. A `--which` taken in
-    // silence would let a caller believe the export was attributed to their agent.
-    const parentOpts = (skillExport.parent?.opts() ?? {}) as {
-      body?: string;
-      scope?: string;
-      which?: string;
-    };
-    for (const [flag, value] of [
-      ['--body', parentOpts.body],
-      ['--scope', parentOpts.scope],
-      ['--which', parentOpts.which],
-    ] as const) {
-      if (value === undefined) continue;
-      reportUsage(
-        wiring,
-        `\`skill export\` takes no ${flag}: it writes out a pattern the record already ` +
-          'holds — nothing is born, nothing moves and nothing is recorded.',
-      );
-      return;
-    }
     const result = runSkillExport(here(), {
       id,
       out: opts.out,
