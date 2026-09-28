@@ -304,14 +304,36 @@ export async function runWitnessStamp(
       message: 'there is no tail here to witness — nothing has been recorded in these trees',
     };
   }
+  // WHAT EACH TAIL WOULD STAMP IS READ BEFORE ANY TREE IS JUDGED, and the order is the
+  // guarantee. The records are append-only, so a checkpoint read before a verification is
+  // still there when it runs, and a tree that verifies fully signed proved every checkpoint
+  // it holds — this one included. Judged first and read after, the checkpoint could be one
+  // written in between, which no verdict here looked at.
+  const stamping = chains.map((chain) => ({
+    chain,
+    checkpoint: checkpointToWitness(chain.layout, chain.tail),
+  }));
+  // ONE VERDICT PER TREE, NOT ONE PER TAIL. The level is the tree's, and every tail of a
+  // tree was asked the same whole verification of it: T of them, T times over the record,
+  // for one answer. The witness files this act writes move no level a stamp is decided by
+  // (a proof only ever speaks to T3), so the verdict formed before the first stamp is the
+  // one each later tail of that tree would have got.
+  const upcasters = catalogUpcasters();
+  const verdicts = new Map<string, ProvenLevel>();
+  const levelOf = (root: string): ProvenLevel => {
+    const known = verdicts.get(root);
+    if (known !== undefined) return known;
+    const level = verify(root, upcasters).level;
+    verdicts.set(root, level);
+    return level;
+  };
   const outcomes: WitnessOutcome[] = [];
-  for (const chain of chains) {
-    const checkpoint = checkpointToWitness(chain.layout, chain.tail);
+  for (const { chain, checkpoint } of stamping) {
     if (checkpoint === null) {
       outcomes.push(skipped(chain, 'the tail has no checkpoint to witness'));
       continue;
     }
-    const level = verify(chain.layout.root, catalogUpcasters()).level;
+    const level = levelOf(chain.layout.root);
     if (!meetsRequirement(level, 'signed')) {
       outcomes.push(
         skipped(

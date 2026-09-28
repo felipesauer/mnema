@@ -15,12 +15,24 @@
  * frame, said `fully-signed`. The surface disagreed with itself on one screen.
  *
  * WHAT IT MAY NOT DO IS RULE AGAIN, and that is the whole shape of it. Re-running
- * `verify` costs 54 ms over a small record and 1.7 s over a nine-megabyte one — linear in
- * the history — so a console that re-ruled on a clock would be a replay loop. What is
- * asked here is the CHEAP question the follower beside it already asks ten times a second
+ * `verify` costs 54 ms over a small record and 1.7 s over a nine-megabyte one, so a
+ * console that re-ruled on a clock would be a replay loop. What is asked here is the
+ * CHEAP question the follower beside it already asks ten times a second
  * ({@link chainExtent}: one `readdir` per tail and one `stat` on that tail's last
  * segment, ~38 µs, and its cost is in the number of TAILS rather than of events). It opens
  * nothing and parses nothing.
+ *
+ * THAT SENTENCE ALSO SAID *LINEAR IN THE HISTORY*, AND IT WAS FALSE WHEN IT WAS WRITTEN.
+ * The verifier took each checkpoint's range with a filter over every entry of the tail, and
+ * this product signs once per act, so it cost the square of the history. The measurement
+ * the two numbers come from already bent: 354 ms over 2,010 entries, and from there to
+ * 1.7 s over 6,297 is a slope of 1.37, not 1. Past thirty thousand events the square was
+ * most of the bill — 62 to 95 s over a hundred thousand, on the shipped binary. The range
+ * is found without the walk now (`chain/range.ts`), each key is read once, and the shape is
+ * counted rather than claimed (`chain/verify-costs-what-the-record-holds.test.ts`). The
+ * argument above never rested on the slope, and it stands: a verification is still a pass
+ * over every event — about 1.0 s over 6,297 events and 13 s over a hundred thousand, on the
+ * same binary — and that is what a clock must not pay.
  *
  * SO WHAT IT ANSWERS IS NARROW, AND THE NARROWNESS IS THE HONESTY. An extent that moved
  * means the record is no longer the one that was ruled on — it does NOT mean the record

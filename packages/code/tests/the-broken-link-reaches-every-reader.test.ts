@@ -140,7 +140,8 @@ const READS_THE_CHAIN = [
  * a replay a read already paid for. `watchingTheProof` says that the record has moved past
  * what a verdict was formed over, off one `readdir` per tail — narrower, and the only thing
  * a surface that holds no cache can say without re-running a verifier that costs 54 ms to
- * 1.7 s (`repl/proving.ts`).
+ * 1.7 s — measured while it still walked the tail once per checkpoint, and a pass over
+ * every event since it stopped (`repl/proving.ts` has both).
  *
  * A THIRD ONE IS A CLAIM AND NOT A CONVENIENCE: it would be a third answer about the same
  * bytes, and this file's last describe is what says two wordings is the ceiling.
