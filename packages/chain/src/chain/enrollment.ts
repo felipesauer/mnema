@@ -75,18 +75,13 @@
  * or an event's mere absence from `issues`.
  */
 
-import { existsSync, readFileSync } from 'node:fs';
 import { enrollmentMessage } from '../events/build.js';
 import type { CatalogEvent } from '../events/catalog.js';
 import { oneLine } from '../one-line.js';
 import type { Entry } from './entry.js';
-import {
-  deriveAnchor,
-  fingerprintOf,
-  publicKeyFromPem,
-  verify as verifySignature,
-} from './keys.js';
-import { type ChainLayout, publicKeyPath } from './layout.js';
+import { deriveAnchor, verify as verifySignature } from './keys.js';
+import type { ChainLayout } from './layout.js';
+import { type CommittedKeys, committedKeys } from './store.js';
 
 /** A problem found while resolving identity by enrollment. */
 export interface IdentityIssue {
@@ -120,11 +115,19 @@ interface TailCursor {
  * `key.revoked` (removes a key that judges other events), and an addition that
  * would RESTORE a key already revoked under coverage (`addKeyGated`). A first
  * enrollment — restoring nothing covered — is not gated. See the module doc.
+ *
+ * `keys` is who reads those committed keys, and the verifier hands in its own: the key
+ * that proves an enrolment is the key the checkpoints of that machine's tail are checked
+ * against, and with a reader of its own this fold opened that file a second time for every
+ * `key.enrolled` naming it. Handed the verifier's, it opens nothing the verification has
+ * already read — `verify-costs-what-the-record-holds.test.ts` counts one read per key
+ * across both. Left out, the fold reads each key itself, once.
  */
 export function resolveIdentity(
   layout: ChainLayout,
   entriesByTail: ReadonlyMap<string, readonly Entry[]>,
   checkpointedThroughByTail: ReadonlyMap<string, number>,
+  keys: CommittedKeys = committedKeys(layout),
 ): IdentityResolution {
   const order = totalOrder(entriesByTail);
   const isCheckpointed = (tail: string, seq: number): boolean =>
@@ -219,7 +222,7 @@ export function resolveIdentity(
           });
           break;
         }
-        if (!reverseSignatureOk(layout, anchor, newFp, reverseSig)) {
+        if (!reverseSignatureOk(keys, anchor, newFp, reverseSig)) {
           issues.push({
             tail,
             seq,
@@ -333,20 +336,14 @@ function eventAt(entry: Entry): string {
  * whatever the file now holds.
  */
 function reverseSignatureOk(
-  layout: ChainLayout,
+  keys: CommittedKeys,
   anchor: string,
   newFp: string,
   reverseSig: string,
 ): boolean {
-  const path = publicKeyPath(layout, newFp);
-  if (!existsSync(path)) return false;
-  let publicKey: ReturnType<typeof publicKeyFromPem>;
-  try {
-    publicKey = publicKeyFromPem(readFileSync(path, 'utf-8'));
-  } catch {
-    return false;
-  }
-  if (fingerprintOf(publicKey) !== newFp) return false;
+  const committed = keys(newFp);
+  if (committed === null) return false;
+  if (committed.fingerprint() !== newFp) return false;
   let signature: Buffer;
   try {
     signature = Buffer.from(reverseSig, 'hex');
@@ -354,7 +351,7 @@ function reverseSignatureOk(
     return false;
   }
   try {
-    return verifySignature(enrollmentMessage(anchor, newFp), signature, publicKey);
+    return verifySignature(enrollmentMessage(anchor, newFp), signature, committed.key);
   } catch {
     return false;
   }
