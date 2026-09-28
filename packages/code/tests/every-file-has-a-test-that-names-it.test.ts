@@ -391,8 +391,15 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * which declares a flag a subcommand takes to see the menu follow it. The three branches met at
  * 3037, read off this guard: 3006 and those thirty-one, since no clause came in on more than one
  * of them.
+ * The next one was written from the same 2947, on a fourth branch merged after those three. And
+ * 2947 -> 2957 when a read asked again was pinned to draw what changed: ten clauses in
+ * `a-read-asked-again-draws-what-changed.test.ts`, which drives the built binary on a
+ * pseudo-terminal and replays its pages — `node:fs`, `node:os`, `node:path`, `node:url`,
+ * `vitest`, `../src/cli.js`, `../src/repl/floor.js`, `../src/wiring/repl.js`, `support/pty.js`
+ * and `support/screen.js`. The four branches met at 3047, read off this guard: 3037 and those
+ * ten, since no clause came in on more than one of them.
  */
-const CLAUSES_IN_THE_TREE = 3037;
+const CLAUSES_IN_THE_TREE = 3047;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
