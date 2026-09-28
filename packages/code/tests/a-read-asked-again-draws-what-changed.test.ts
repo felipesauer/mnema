@@ -60,6 +60,7 @@ import { renderPlain, widthOf } from '../src/presentation/plain.js';
 import { openConsole } from '../src/repl/console.js';
 import { THE_FLOOR } from '../src/repl/floor.js';
 import { alreadyOnThePage } from '../src/repl/session.js';
+import { CLEAR } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { ENDS_THE_INPUT, fakeTerminal, hooksNothing, until } from './support/console.js';
 import {
@@ -464,6 +465,34 @@ describe('a read asked again is seen, on the page or on a row saying the page di
     );
     expect(other.text, 'a row said the page did not move, on a page that moved').not.toContain(
       THE_ROW,
+    );
+  }, 240_000);
+
+  it('says so when a clear leaves a page that holds only the opening as it was', async () => {
+    // THE OTHER ANSWER THAT LEAVES THE PAGE AS IT WAS, AND THE ONE NOBODY ASKS TWICE FOR: a clear on a
+    // page that holds nothing but the opening. The page a clear leaves is the opening, which is what
+    // was already there — so the words that clear typed would otherwise draw nothing but the row being
+    // typed emptying. It is an answer like any other, and the row says so. The first clear of a session
+    // is one of these: a page that has just opened holds only the opening.
+    const { columns, rows } = THE_FLOOR;
+    const ran = await drive(columns, rows, [
+      opensAConsole(PROMPT),
+      {
+        types: `${CLEAR}\r`,
+        until: aPageHolding(columns, rows, THE_ROW),
+        what: 'cleared a page that held only the opening',
+      },
+      leavesTheSession,
+    ]);
+    const opened = theSettledScreen(asFarAs(ran, 0), columns, rows);
+    const cleared = theSettledScreen(asFarAs(ran, 1), columns, rows);
+    expect(opened.text, 'the page opened with the row on it').not.toContain(THE_ROW);
+    expect(timesOn(cleared, THE_ROW), 'the clear raised no row').toBe(1);
+    // AND THE ROLL IS THE OPENING'S, WHOLE: the window had rows to spare under it, so the row at the
+    // foot took one of those and not a line of what the session says.
+    expect(rowsOfTheRoll(cleared), 'the clear left another roll').toEqual(rowsOfTheRoll(opened));
+    expect(cleared.text, 'the clear left its own line on the roll').not.toContain(
+      `${PROMPT} ${CLEAR}`,
     );
   }, 240_000);
 
