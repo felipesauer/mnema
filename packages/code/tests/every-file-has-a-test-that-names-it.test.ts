@@ -398,8 +398,14 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * `vitest`, `../src/cli.js`, `../src/repl/floor.js`, `../src/wiring/repl.js`, `support/pty.js`
  * and `support/screen.js`. The four branches met at 3047, read off this guard: 3037 and those
  * ten, since no clause came in on more than one of them.
+ * 3047 -> 3074 when the tools' hints were held to their calls, the census learnt to say a
+ * backup, and the pages' links and first record were held: twelve clauses in
+ * `the-census-says-what-a-backup-is.test.ts` (`chain`), eight in
+ * `the-first-record-a-page-shows-is-the-one-printed.test.ts`, six in
+ * `every-link-a-page-carries-lands.test.ts`, and `node:net` in
+ * `every-tool-says-if-it-writes.test.ts`, read off this guard.
  */
-const CLAUSES_IN_THE_TREE = 3047;
+const CLAUSES_IN_THE_TREE = 3074;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
