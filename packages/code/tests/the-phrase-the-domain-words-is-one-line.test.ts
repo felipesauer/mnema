@@ -814,6 +814,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the identity a stored waiver names as its authorizer',
   },
+  '@mnema/chain chain/verify.ts «the backup key this machine registered for {} — a backup signs nothing » oneLine(anchor) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the identity a registration file at this machine’s key root names — a string nothing signs',
+    },
   "@mnema/chain chain/verify.ts «committed public key has no tail on disk, and the record names the cut: {}» accounts.join('; ') #1":
     {
       verdict: 'composed',
@@ -1247,8 +1252,10 @@ const NOT_A_SENTENCE: Readonly<Record<string, string>> = {
   '@mnema/chain chain/verify.ts «{} committed key(s) without a tail (see census — informational, not a break)» count':
     'a clause of the verdict sentence, worded through a table of wordings per kind of note ' +
     'that this walk does not enter. It interpolates a COUNT and nothing else.',
+  '@mnema/chain chain/verify.ts «{} backup key(s), which sign nothing until restored (see census — informational, not a break)» count':
+    'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{} tail(s) ending in a dropped partial line (see census — informational, not a break)» count':
-    'the other clause of that same table, and a count on the same terms',
+    'another clause of that same table, and a count on the same terms',
   '@mnema/chain chain/verify.ts «{}/» layout.root':
     'the prefix `withinChain` STRIPS — what makes the locus a path inside the chain rather ' +
     'than wherever this clone sits. It is never printed.',
@@ -1274,8 +1281,8 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
     // sites, twelve in `core` and eleven in `chain` — because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(131);
-    expect(FOUND[0]?.sites.length).toBe(47);
+    expect(SITES.length).toBe(132);
+    expect(FOUND[0]?.sites.length).toBe(48);
     expect(FOUND[1]?.sites.length).toBe(84);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
@@ -1323,11 +1330,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(77);
+    expect(count('collapsed')).toBe(78);
     expect(count('minted')).toBe(36);
     expect(count('composed')).toBe(18);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      77,
+      78,
     );
   });
 

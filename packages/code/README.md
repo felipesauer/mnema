@@ -271,6 +271,11 @@ signature was checked` over the record it cannot vouch for.
 **And what neither value answers, said plainly.** A removed tail is reported but is
 not a break: `verify` crosses the committed keys against the tails on disk and prints
 `N committed key(s) without a tail (see census — informational, not a break)`, exit 0.
+One key is said otherwise, and only on the machine that made it: the backup `mnema init`
+creates never signs until it is restored, so on that machine it reads `N backup key(s),
+which sign nothing until restored` — and its line still says that a backup restored and
+used would have left a tail that is not there. The record does not say which key is a
+backup, so on any other machine the same key reads as a committed key without a tail.
 A tail removed *together with its key* is not reported at all — that record reads
 `0 tail(s); no events yet`, indistinguishable from a fresh one, and only a history
 outside this record (a git log, an external witness) can testify to what was taken

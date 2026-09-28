@@ -93,6 +93,13 @@ export interface IdentityIssue {
 /** The result of folding enrollment across the whole chain. */
 export interface IdentityResolution {
   readonly issues: readonly IdentityIssue[];
+  /**
+   * The keys valid for each anchor once the whole chain is folded — what the record proves a
+   * member of an identity now, founded or enrolled and not revoked under coverage. The census
+   * asks it before calling a key a backup: a registration says what a key was made FOR, and
+   * only the record says whether the identity took it in.
+   */
+  readonly members: ReadonlyMap<string, ReadonlySet<string>>;
 }
 
 /** One tail's entries in proven (`seq`) order, plus a read cursor. */
@@ -275,7 +282,7 @@ export function resolveIdentity(
     }
   }
 
-  return { issues };
+  return { issues, members: validKeys };
 }
 
 /**

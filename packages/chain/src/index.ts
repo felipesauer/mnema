@@ -106,6 +106,7 @@ export {
 } from './chain/store.js';
 export { ensureTree } from './chain/tree.js';
 export {
+  type BackupKeyNote,
   type CensusNote,
   canonicalIdentityForm,
   type KeyWithoutTailNote,
@@ -114,6 +115,7 @@ export {
   type TailResult,
   type VerdictClause,
   type VerdictClauseOf,
+  type VerifyOptions,
   type VerifyResult,
   verifyChain,
   type WitnessStatus,
