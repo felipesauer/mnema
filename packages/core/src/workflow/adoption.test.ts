@@ -33,6 +33,7 @@ import {
   deriveAnchor,
   enrollmentMessage,
   generateKeyPair,
+  identityFounded,
   materializePublicKey,
   openChainForWriting,
   type PublicHalf,
@@ -172,9 +173,22 @@ describe('adoption — a key the record proves a member writes as THAT identity'
       reverseSig: consentOf(b, anchor),
     });
 
-    // Record the wrong anchor by hand — exactly the state the old code produced.
-    b.writer.recordAnchor(deriveAnchor(b.fingerprint));
-    captureMemory(b.ctx, { content: 'written by a machine that founded its own' });
+    // Found B's own anchor by hand and record it — exactly what the code before adoption did
+    // for an enrolled key: it never asked the record, so it founded the anchor its key derives.
+    // THIS RECORDED THE ANCHOR ALONE, with no founding behind it — a state no code ever wrote for
+    // an enrolled key, since the old code founded, and one every write refuses now
+    // (`STALE_ANCHOR`, `a-stale-anchor-writes-nothing.test.ts`): that is how this case went red.
+    const derived = deriveAnchor(b.fingerprint);
+    b.writer.append(
+      identityFounded(
+        { at: clock(), who: derived, signerFp: b.fingerprint, subject: derived },
+        { foundingFp: b.fingerprint },
+      ),
+    );
+    b.writer.recordAnchor(derived);
+    expect(captureMemory(b.ctx, { content: 'written by a machine that founded its own' }).ok).toBe(
+      true,
+    );
 
     const events = orderedEvents({ root: tree }, upcasters);
     expect(events.find((e) => e.kind === 'memory.captured')?.who).toBe(deriveAnchor(b.fingerprint));

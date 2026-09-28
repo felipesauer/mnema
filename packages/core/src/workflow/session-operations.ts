@@ -201,7 +201,9 @@ export function startRun(ctx: WriteContext, input: StartRunInput): StartRunOk | 
   const id = mintId();
 
   // Found this installation's anchor before the fact, so the session's signer is
-  // a key valid for its anchor at verify. A no-op once founded.
+  // a key valid for its anchor at verify.
+  // Once founded it appends nothing, and refuses an anchor that no longer counts
+  // this key (see `ensureFounded`).
   ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
   const appended = appendEvent(
@@ -294,7 +296,9 @@ export function endRun(ctx: WriteContext, input: EndRunInput): EndRunOk | EndRun
   const which = agent.which;
 
   // Found this installation's anchor before the fact, so the close is signed by
-  // a key valid for its anchor at verify. A no-op once founded.
+  // a key valid for its anchor at verify.
+  // Once founded it appends nothing, and refuses an anchor that no longer counts
+  // this key (see `ensureFounded`).
   ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
   const appended = appendEvent(

@@ -5,7 +5,9 @@
  * The third roster verb, and the one that answers a key going missing or leaking:
  * events the key signed while it was a member stay valid (a revocation is
  * prospective — past work does not become unattributable because a key was rotated
- * out), and anything it signs from here on fails verification.
+ * out), and anything it signs from here on fails verification — which is why a checkout of this
+ * machine that recorded the identity refuses to sign as it with that key from then on (the
+ * core's `ensureFounded`), and why the revocation of this machine's own key says so.
  *
  * Scope is the project's PUBLIC tree, and only it, for the reason an enrollment is:
  * the retirement has to be where the other machines and an anonymous verifier read

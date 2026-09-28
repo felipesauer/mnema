@@ -84,6 +84,18 @@ export interface WriteContext {
   readonly upcasters: UpcasterRegistry;
   /** The clock that stamps `at`; defaults to the wall clock. */
   readonly clock?: Clock;
+  /**
+   * The keys this tree's record counts for an anchor, read from what the caller already holds —
+   * undefined where it holds nothing to read them from. Asked before every append, whether the
+   * identity this checkout recorded still counts its key (`ensureFounded`); absent, or undefined,
+   * the record is replayed for it, which is what a command line — holding nothing — pays.
+   *
+   * It is a READING OF THE CHAIN AS IT IS NOW, never of a projection's tables: the one caller
+   * that sets it (the MCP session, `writeContext`) answers from the order its cache retained plus
+   * what arrived since, with the fold a replay runs (`ProjectionCache.rosterAsOfNow`). A stale
+   * answer here would let a retired key write, which is the one thing it exists to stop.
+   */
+  readonly roster?: (anchor: string) => ReadonlySet<string> | undefined;
 }
 
 /**
@@ -258,7 +270,9 @@ export function transitionTask(
   if (!verdict.ok) return verdict;
 
   // Found this installation's anchor before its first fact, so the transition's
-  // signer is a key valid for its anchor at verify. A no-op once founded.
+  // signer is a key valid for its anchor at verify.
+  // Once founded it appends nothing, and refuses an anchor that no longer counts
+  // this key (see `ensureFounded`).
   ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
   const event = taskTransitioned(
@@ -320,7 +334,9 @@ export function createTask(ctx: WriteContext, input: CreateInput): CreateOk | Wr
   const id = mintId();
 
   // Found this installation's anchor before the birth pair, so both events'
-  // signer is a key valid for its anchor at verify. A no-op once founded.
+  // signer is a key valid for its anchor at verify.
+  // Once founded it appends nothing, and refuses an anchor that no longer counts
+  // this key (see `ensureFounded`).
   ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
   const birth = taskBirth(

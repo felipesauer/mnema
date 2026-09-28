@@ -186,7 +186,9 @@ export function recordDecision(
   const adr = `ADR-${decisions.size + 1}`;
 
   // Found this installation's anchor before the birth pair, so both events'
-  // signer is a key valid for its anchor at verify. A no-op once founded.
+  // signer is a key valid for its anchor at verify.
+  // Once founded it appends nothing, and refuses an anchor that no longer counts
+  // this key (see `ensureFounded`).
   ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
   const birth = decisionBirth(
@@ -326,7 +328,9 @@ function transition(
   }
 
   // Found this installation's anchor before its first fact, so the transition's
-  // signer is a key valid for its anchor at verify. A no-op once founded.
+  // signer is a key valid for its anchor at verify.
+  // Once founded it appends nothing, and refuses an anchor that no longer counts
+  // this key (see `ensureFounded`).
   ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
   const event = decisionTransitioned(

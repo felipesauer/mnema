@@ -114,12 +114,19 @@ describe('a refusal is worded in exactly one place', () => {
       const source = sourceOf(file);
       expect(source, file).toMatch(/render\(\s*refusalLine\(|render\(line\)/);
     }
-    // The third lives at the entry, outside `wiring/`: the throw for a machine whose
-    // record names no single identity. It is a refusal like any other and it is
-    // rendered like any other.
+    // The third is reached from the entry, outside `wiring/`: the throw for a machine whose
+    // record names no identity it may write as. It is a refusal like any other and it is
+    // rendered like any other — by the funnel's own door for it, which the entry hands the
+    // throw to (`reportIdentityRefusal`), because that door is also the one that says where the
+    // key file is when the way out is a restore of it. THIS ASSERTED the entry rendered the line
+    // itself; it hands it over now, and renders nothing of its own.
     const entry = readFileSync(join(HERE, 'cli.ts'), 'utf-8');
-    expect(entry).toContain('render(refusalLine(');
+    expect(entry).toContain('reportIdentityRefusal(');
+    expect(entry).not.toContain('refusalLine(');
     expect(entry).not.toContain(WORDS_A_REFUSAL);
+    expect(sourceOf('report.ts')).toMatch(
+      /export function reportIdentityRefusal[\s\S]*?to\.render\(refusalLine\(/,
+    );
   });
 
   it('and no verb hands the shared wording to a stream itself', () => {

@@ -284,12 +284,15 @@ export function revokeMember(
  * The one identity the record at `ctx` still proves `fingerprint` a member of, read right after
  * its revocation.
  *
- * The checkout that retired its own key goes on recording the identity it left — nothing
- * rereads a recorded anchor — so anything it writes next is signed by a retired key and fails
- * verification for good. Where the record still proves the key in one other identity, `mnema
- * key restore` points the checkout there; this asks the question that restore asks
- * ({@link membershipIn}, over the key's committed half), so the surface never offers a restore
- * the record would refuse.
+ * The checkout that retired its own key goes on recording the identity it left. THIS SAID
+ * "nothing rereads a recorded anchor — so anything it writes next is signed by a retired key and
+ * fails verification for good", which was the trap: every write now asks whether the recorded
+ * identity still counts the key, and refuses (`ensureFounded`). Where the record still proves
+ * the key in one other identity, `mnema key restore` points the checkout there; this asks the
+ * question that restore asks ({@link membershipIn}, over the key's committed half), so the
+ * surface never offers a restore the record would refuse — and where it proves none, the surface
+ * says the restore on the condition a pull meets, since what this reads is the copy of the record
+ * this checkout holds.
  */
 function stillProvenIn(ctx: DecideThenWrite, fingerprint: string): { stillMemberOf?: string } {
   const key = committedPublicKey(ctx.layout, fingerprint);

@@ -43,6 +43,7 @@
  * `every-refusal-is-red.test.ts` names and bounds.
  */
 
+import { fact } from '../presentation/detail.js';
 import type { Line } from '../presentation/line.js';
 import type { Render } from '../presentation/render.js';
 import { statement } from '../presentation/verdict.js';
@@ -53,6 +54,7 @@ import {
   replacementNotice,
 } from '../recorded-content.js';
 import { type CliIo, writeLines } from './io.js';
+import { onOneLine } from './on-one-line.js';
 
 /**
  * The two things saying a refusal needs: where it goes, and how a line becomes bytes.
@@ -142,6 +144,32 @@ export function reportRefusal(
       ? refusalLine(refusal.code ?? refusal.reason, refusal.message ?? '')
       : refusalSentence(wording);
   to.io.err(to.render(line));
+  to.io.fail();
+}
+
+/**
+ * Says the no a write gets where the record names no identity this machine may write as — the
+ * refusal thrown below every write (`IdentityUnavailableError`), which the entry's catch hands
+ * here — and records the non-zero exit.
+ *
+ * It is a refusal like any other and reads like one: the code in the label, the message after it.
+ * What only this side can add is WHERE THE KEY FILE IS. A checkout whose recorded identity no
+ * longer counts its key is told that `mnema key restore "<the key file>"` points it where the
+ * record proves the key a member, and the file that marker means lives under this machine's key
+ * root, which the core never reads outside opening a writer. So `keyFile` is the path the entry
+ * built from the key root it resolves, and it is printed on its own line, in the words
+ * `mnema key revoke` prints for the same file (`wiring/key.ts`), so a person who follows the
+ * refusal finds it the way the revocation already taught them to.
+ */
+export function reportIdentityRefusal(
+  to: Reporter,
+  refusal: { readonly code: string; readonly message: string },
+  keyFile?: string,
+): void {
+  to.io.err(to.render(refusalLine(refusal.code, refusal.message)));
+  if (keyFile !== undefined) {
+    to.io.err(to.render(fact(onOneLine`this machine keeps the key file at ${keyFile}`)));
+  }
   to.io.fail();
 }
 
