@@ -23,6 +23,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { orderedEvents } from '../../src/projections/order.js';
 import { projectTasks } from '../../src/projections/task.js';
+import { ensureFounded } from '../../src/workflow/identity-operations.js';
 import { createTask, transitionTask, type WriteContext } from '../../src/workflow/operations.js';
 
 let root: string;
@@ -125,10 +126,18 @@ describe('createTask', () => {
     // not carry a created-but-stateless task, which would burn the id forever.
     // A writer whose batch append throws stands in for a disk/IO failure — it
     // still exposes an anchor so identity derivation happens before the write.
+    //
+    // FOUNDED FIRST, by the real writer. The stand-in used to claim a recorded anchor over a
+    // tree with no founding in it — a state no write produces, and one every write refuses now,
+    // because it asks whether the recorded identity counts the key before it appends
+    // (`a-stale-anchor-writes-nothing.test.ts`). So the founding is real, the stand-in's anchor
+    // is the one the record counts, and what fails is the birth's own append.
+    ensureFounded(ctx());
+    const founded = eventCount();
     const boom = {
       anchor: writer.anchor,
       signerFingerprint: writer.signerFingerprint,
-      hasAnchor: true, // already founded, so ensureFounded is a no-op here
+      hasAnchor: true, // founded above, and the record counts the key
       appendAll() {
         throw new Error('disk full');
       },
@@ -138,8 +147,8 @@ describe('createTask', () => {
     } as unknown as ChainWriter;
     const brokenCtx: WriteContext = { writer: boom, layout, upcasters, clock };
     expect(() => createTask(brokenCtx, { title: 't' })).toThrow('disk full');
-    // Nothing reached the real tail: no half-birth to re-read.
-    expect(eventCount()).toBe(0);
+    // Nothing reached the real tail beyond the founding: no half-birth to re-read.
+    expect(eventCount()).toBe(founded);
   });
 });
 

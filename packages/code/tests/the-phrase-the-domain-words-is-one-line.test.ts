@@ -928,36 +928,6 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'minted',
       why: 'the fingerprint of the key being decided about, computed by hashing the key material it names',
     },
-  "@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore \"<the key file>\"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» member.get(left) === 'founded' ? 'the checkout it founded' : 'a checkout it wrote here as' #1":
-    {
-      verdict: 'minted',
-      why: 'a phrase chosen between two constants of this module by how the record proves the key there',
-    },
-  '@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(left) #1':
-    {
-      verdict: 'collapsed',
-      why: 'the identity the way out leaves, out of stored events — named three times in the recipe',
-    },
-  '@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(left) #2':
-    {
-      verdict: 'collapsed',
-      why: 'the identity the way out leaves, out of stored events — named three times in the recipe',
-    },
-  '@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(left) #3':
-    {
-      verdict: 'collapsed',
-      why: 'the identity the way out leaves, out of stored events — named three times in the recipe',
-    },
-  '@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(rest) #1':
-    {
-      verdict: 'collapsed',
-      why: 'the one identity the key is left in, out of stored events',
-    },
-  '@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» revoke #1':
-    {
-      verdict: 'composed',
-      why: 'the revocation this function composed from the fingerprint — a site of its own',
-    },
   "@mnema/core identity/membership.ts «{}. It speaks for one of them again once the {} it go: a machine whose writes here speak for {} that should not have it runs {} inside this project, and commits and shares the record — the key then speaks for the identity left» anchors.length === 2 ? 'other lets' : 'others let' #1":
     {
       verdict: 'minted',
@@ -1036,6 +1006,86 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'composed',
     why: 'the sentences this same function worded from the record just above, each a site of its own',
   },
+  "@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives — or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key \"<its file>\"\\` on this machine), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore \"<the key file>\"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» member.get(left) === 'founded' ? 'the checkout it founded' : 'a checkout it wrote here as' #1":
+    {
+      verdict: 'minted',
+      why: 'a phrase chosen between two constants of this module by how the record proves the key there',
+    },
+  '@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives — or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key "<its file>"\\` on this machine), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(left) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the identity the way out leaves, out of stored events — named four times in the recipe',
+    },
+  '@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives — or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key "<its file>"\\` on this machine), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(left) #2':
+    {
+      verdict: 'collapsed',
+      why: 'the identity the way out leaves, out of stored events — named four times in the recipe',
+    },
+  '@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives — or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key "<its file>"\\` on this machine), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(left) #3':
+    {
+      verdict: 'collapsed',
+      why: 'the identity the way out leaves, out of stored events — named four times in the recipe',
+    },
+  '@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives — or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key "<its file>"\\` on this machine), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(left) #4':
+    {
+      verdict: 'collapsed',
+      why: 'the identity the way out leaves, out of stored events — named four times in the recipe',
+    },
+  '@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives — or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key "<its file>"\\` on this machine), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» oneLine(rest) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the one identity the key is left in, out of stored events',
+    },
+  '@mnema/core identity/membership.ts «in {} {} from — which, if it is still there, goes on writing as {} — pull the record, enroll the other key with \\`mnema key enroll <the line>\\` (the line \\`mnema key request --anchor {}\\` prints where that key lives — or, for a copy of a key this machine keeps, as the backup key an \\`init\\` made is, \\`mnema key request --anchor {} --key "<its file>"\\` on this machine), retire this one with {} — which, run there, prints where that machine keeps the key file — run \\`mnema key restore "<the key file>"\\` there before anything else writes, then commit and share the record: a fresh clone then writes as {}» revoke #1':
+    {
+      verdict: 'composed',
+      why: 'the revocation this function composed from the fingerprint — a site of its own',
+    },
+  '@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and nothing in the record founded an identity with this key or enrolled it into one — there is no identity for it to leave: delete {}, and the next write here decides again, from the record, as a first write does» oneLine(anchor) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the identity this checkout recorded, read from its local anchor file',
+    },
+  '@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and nothing in the record founded an identity with this key or enrolled it into one — there is no identity for it to leave: delete {}, and the next write here decides again, from the record, as a first write does» oneLine(anchorPath(layout, fingerprint)) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the path of that anchor file, under the tree this checkout holds',
+    },
+  '@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and the record does not count this key among that identity\'s keys — a write signed with it there would leave the whole record failing verification, so none is made. The record proves the key a member of {}: \\`mnema key restore "<the key file>"\\` here makes this checkout write as it» oneLine(anchor) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the identity this checkout recorded, read from its local anchor file',
+    },
+  '@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and the record does not count this key among that identity\'s keys — a write signed with it there would leave the whole record failing verification, so none is made. The record proves the key a member of {}: \\`mnema key restore "<the key file>"\\` here makes this checkout write as it» oneLine(proven.anchor) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the one identity the record proves the key in, out of stored events',
+    },
+  '@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and the record does not count this key among that identity\'s keys, nor among the keys of any other identity here: it was retired — a write signed with it there would leave the whole record failing verification, so none is made. If the record, once pulled, proves it a member of another identity, \\`mnema key restore "<the key file>"\\` here makes this checkout write as it» oneLine(anchor) #1':
+    {
+      verdict: 'collapsed',
+      why: 'the identity this checkout recorded, read from its local anchor file',
+    },
+  "@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and the record does not count this key among that identity's keys: this tree does not carry the key's public half ({}), without which the record cannot prove which identity the key belongs to — it is committed beside the enrollment that brought the key in» oneLine(anchor) #1":
+    {
+      verdict: 'collapsed',
+      why: 'the identity this checkout recorded, read from its local anchor file',
+    },
+  "@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and the record does not count this key among that identity's keys: this tree does not carry the key's public half ({}), without which the record cannot prove which identity the key belongs to — it is committed beside the enrollment that brought the key in» oneLine(publicKeyPath(layout, fingerprint)) #1":
+    {
+      verdict: 'collapsed',
+      why: 'the path the key’s public half would have, under the same tree',
+    },
+  "@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and the record does not count this key among that identity's keys; {}» oneLine(anchor) #1":
+    {
+      verdict: 'collapsed',
+      why: 'the identity this checkout recorded, read from its local anchor file',
+    },
+  "@mnema/core identity/membership.ts «this checkout records {} as the identity it writes as, and the record does not count this key among that identity's keys; {}» proven.message #1":
+    {
+      verdict: 'composed',
+      why: 'the ambiguity `ambiguityOf` words for the same key — a site of its own',
+    },
   '@mnema/core identity/membership.ts «this key was revoked from {} — a retired key that writes again » oneLine(retiredFrom) #1':
     {
       verdict: 'collapsed',
@@ -1274,9 +1324,9 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
     // sites, twelve in `core` and eleven in `chain` — because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(131);
+    expect(SITES.length).toBe(141);
     expect(FOUND[0]?.sites.length).toBe(47);
-    expect(FOUND[1]?.sites.length).toBe(84);
+    expect(FOUND[1]?.sites.length).toBe(94);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
 
@@ -1284,9 +1334,12 @@ describe('every value the domain puts in a sentence is classified', () => {
     // The three shapes the walk has to see through, each named by what it found. Without
     // the SINK it misses six sentences, four of them in `verifyTailOwnership` — which
     // holds the one measured forgery in the whole verifier. Without the PRODUCER it
-    // misses the census note's own account of a cut.
+    // misses the census note's own account of a cut. The second sink of the core is the
+    // refusal of a checkout whose recorded identity no longer counts its key
+    // (`staleAnchorRefusal`): its five sentences go through it, and without it they would
+    // be templates this walk never read as sentences at all.
     expect(FOUND[0]?.sinks).toEqual(['push']);
-    expect(FOUND[1]?.sinks).toEqual(['err']);
+    expect(FOUND[1]?.sinks).toEqual(['err', 'stale']);
     expect(FOUND[0]?.producers).toContain('keyWithoutTailDetail');
     expect(FOUND[0]?.producers).toContain('coverageClause');
     expect(FOUND[1]?.producers).toEqual(['ambiguityOf', 'faultReason']);
@@ -1323,11 +1376,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(77);
+    expect(count('collapsed')).toBe(86);
     expect(count('minted')).toBe(36);
-    expect(count('composed')).toBe(18);
+    expect(count('composed')).toBe(19);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      77,
+      86,
     );
   });
 

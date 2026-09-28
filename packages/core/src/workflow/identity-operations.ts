@@ -44,7 +44,13 @@ import {
   screenContent,
   screened,
 } from '../content/screen.js';
-import { IdentityUnavailableError, type Membership, membershipIn } from '../identity/membership.js';
+import {
+  IdentityUnavailableError,
+  type Membership,
+  membershipIn,
+  rosterOf,
+  staleAnchorRefusal,
+} from '../identity/membership.js';
 import { oneLine } from '../one-line.js';
 import { orderedEvents } from '../projections/order.js';
 import { appendEvent, type UnreadableEventErr } from './append.js';
@@ -105,6 +111,13 @@ export interface IdentityOk extends ScreenedWrite {
  * {@link IdentityUnavailableError} instead of picking one. Choosing would decide
  * whose record this is on the person's behalf; writing under a retired key would
  * leave the whole tree failing verification.
+ *
+ * A RECORDED anchor is not asked that here, and is never decided again from the
+ * record: that file is what makes the checkout that founded an identity the door out
+ * of it, and re-deciding it mid-way out would find the key in two identities and shut
+ * the door. Whether it still stands — whether its roster counts the key — is asked by
+ * the write, before it appends ({@link ensureFounded}), which refuses and says what
+ * re-points the checkout; this, which reads, answers as the file says.
  */
 export function decideAnchor(ctx: AnchorContext): AnchorDecision {
   if (ctx.writer.hasAnchor) return { anchor: ctx.writer.anchor, source: 'recorded' };
@@ -171,8 +184,23 @@ export type AnchorDecision =
  * Makes sure this installation serves an anchor in this tree before its first
  * fact: appends the `identity.founded` when the anchor is its OWN to found, and
  * records which anchor it serves once the fact that settles it is on the record.
- * A no-op once an anchor is recorded, so it is safe to call before every write —
- * which holds only because an anchor is never recorded ahead of its fact.
+ * Once an anchor is recorded it appends nothing, and it REFUSES a recorded anchor
+ * whose roster in this record no longer counts the key — so it is called before
+ * every write, and it is the one place a write asks.
+ *
+ * THIS SAID "A no-op once an anchor is recorded", and the premise under it was that
+ * a recorded anchor stays true. It does not: a key LEAVES an identity — the way out
+ * of a key two identities hold ends with this checkout's own `mnema key revoke`, and
+ * another member can retire the key from its own checkout — and the checkout that
+ * recorded the identity went on signing as it, with a key the record no longer
+ * counted there. Every such write exited 0 and left `verify` failing on the whole
+ * record for good (*"event signer <K> is not a key enrolled for <I>"*), measured on
+ * the binary in both shapes, and in the second with no warning anywhere. The recorded
+ * anchor is asked now — never decided again: the refusal names the command that
+ * points the checkout elsewhere ({@link staleAnchorRefusal}), because re-deciding it
+ * here would shut the door the way out runs through
+ * (`a-stale-anchor-writes-nothing.test.ts`, every write of the surface;
+ * `code/tests/the-checkout-a-key-left.test.ts`, the binary).
  *
  * THAT WAS THE PREMISE, AND THE ORDER HERE BROKE IT. This said "records which
  * anchor it is, and appends the `identity.founded`", and did it in that order: the
@@ -211,16 +239,27 @@ export type AnchorDecision =
  * a founding for its own anchor is exactly the second identity this avoids. A key
  * the record knows nothing about founds its own, as a first installation does.
  *
- * The record is read ONLY on the path where no anchor is recorded yet. Every
- * gated write calls this, so consulting the chain unconditionally would put a
- * full replay on the hot path; behind that check the cost is paid once per tree,
- * and from then on the recorded anchor answers. That is why the read lives inside
- * the branch and not before it.
+ * WHAT EACH WRITE READS. Deciding an anchor reads the record only on the path where
+ * none is recorded yet, once per tree. THIS SAID the record was read on that path
+ * ONLY, "and from then on the recorded anchor answers" — which is the premise the
+ * trap above lived in. Every write reads the recorded anchor's ROSTER now, and that
+ * is the cost this adds to the hot path: a replay of the tree where the caller holds
+ * nothing (a command line, ~5.6 µs per event), or, where a session already holds the
+ * record in order, what arrived since it read (`WriteContext.roster`, served by the
+ * MCP session's retained replay). The numbers, measured with the order alternated
+ * and a same-commit control, are in `a-stale-anchor-writes-nothing.test.ts`'s header.
  *
  * Returns the anchor this installation serves either way.
  */
 export function ensureFounded(ctx: WriteContext): string {
-  if (ctx.writer.hasAnchor) return ctx.writer.anchor;
+  if (ctx.writer.hasAnchor) {
+    const anchor = ctx.writer.anchor;
+    const fingerprint = ctx.writer.signerFingerprint;
+    const query = { tree: ctx.layout.root, upcasters: ctx.upcasters };
+    const counted = ctx.roster?.(anchor) ?? rosterOf(query, anchor);
+    if (!counted.has(fingerprint)) throw staleAnchorRefusal(query, fingerprint, anchor);
+    return anchor;
+  }
 
   const decided = decideAnchor(ctx);
   // An adopted identity is already on the record, vouched for by a member: there

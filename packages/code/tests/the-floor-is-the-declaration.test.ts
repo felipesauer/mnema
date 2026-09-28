@@ -271,7 +271,9 @@ const EAGER_DOMAIN: Readonly<Record<string, string>> = {
     '`presentation/runs.ts` — are on this floor, and a curative at their call sites is ' +
     'exactly what two earlier slices paid and this one removed.',
   'cli.ts @mnema/core':
-    'the last-resort catch recognizes the domain’s own refusal by its class. NOT a ' +
+    'the last-resort catch recognizes the domain’s own refusal by its class, and resolves ' +
+    'the key root where that refusal’s way out is a restore of this machine’s key file ' +
+    '(the path helper itself is imported inside the catch, from `@mnema/chain`). NOT a ' +
     'declaration: it could be loaded inside the catch, which is free today because ' +
     'the declarations below already hold core open, and would cost a domain load on ' +
     'an unrelated throw the day they do not.',

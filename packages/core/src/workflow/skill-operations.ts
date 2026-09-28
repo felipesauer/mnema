@@ -148,7 +148,9 @@ export function createSkill(
   const id = mintId();
 
   // Found this installation's anchor before the birth pair, so both events'
-  // signer is a key valid for its anchor at verify. A no-op once founded.
+  // signer is a key valid for its anchor at verify.
+  // Once founded it appends nothing, and refuses an anchor that no longer counts
+  // this key (see `ensureFounded`).
   ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
   const birth = skillBirth(
@@ -240,7 +242,9 @@ export function recordConsultation(
   const skill = canonicalId(named.fields.subject) ?? named.fields.subject;
 
   // Found this installation's anchor before the fact, so its signer is a key
-  // valid for its anchor at verify. A no-op once founded.
+  // valid for its anchor at verify.
+  // Once founded it appends nothing, and refuses an anchor that no longer counts
+  // this key (see `ensureFounded`).
   ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
   const appended = appendEvent(
@@ -350,7 +354,9 @@ function transition(
   if (!verdict.ok) return verdict;
 
   // Found this installation's anchor before the transition, so its signer is a
-  // key valid for its anchor at verify. A no-op once founded.
+  // key valid for its anchor at verify.
+  // Once founded it appends nothing, and refuses an anchor that no longer counts
+  // this key (see `ensureFounded`).
   ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
   const event = skillTransitioned(

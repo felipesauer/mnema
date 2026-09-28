@@ -78,7 +78,14 @@ export {
   readAnchor,
   writeAnchor,
 } from './chain/keystore.js';
-export { type ChainLayout, gitignorePath, privateKeyPath, tailDir } from './chain/layout.js';
+export {
+  anchorPath,
+  type ChainLayout,
+  gitignorePath,
+  privateKeyPath,
+  publicKeyPath,
+  tailDir,
+} from './chain/layout.js';
 export {
   LEVEL_REQUIREMENTS,
   type LevelRequirement,

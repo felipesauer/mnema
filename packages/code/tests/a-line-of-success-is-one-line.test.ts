@@ -339,6 +339,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the transition table’s own words — an action, a state, the proof it requires',
   },
+  'report.ts «this machine keeps the key file at {}» #1': {
+    verdict: 'collapsed',
+    why: 'a path built under this machine’s key root: the file a refusal’s restore takes',
+  },
   'resume.ts «{} has no runs.» #1': {
     verdict: 'minted',
     why: 'an anchor: `--actor` is resolved to one before the read runs',
@@ -611,7 +615,7 @@ describe('every line this wiring words is classified', () => {
     // 28 of these, and a walk that regressed to a line-wise pattern would land near it.
     expect(FOUND.files).toBeGreaterThan(35);
     expect(FOUND.calls).toBeGreaterThan(80);
-    expect(FOUND.sites.length).toBe(70);
+    expect(FOUND.sites.length).toBe(71);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -631,9 +635,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(33);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(34);
     expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(37);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(33);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(34);
   });
 
   it('every reason says where the value comes from', () => {
@@ -776,6 +780,8 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'key.ts «this machine keeps the key file at {}» #1':
     'needs a key root whose path holds a newline, and a key of two identities',
   'next-actions.ts «Task {} is terminal — no legal moves.» #1': 'the id must match a task',
+  'report.ts «this machine keeps the key file at {}» #1':
+    'needs a key root whose path holds a newline, and a checkout its key has left',
   'next-actions.ts «Task {} — {} legal move(s):» #1': 'the id must match a task',
   'resume.ts «{} {}» #1': 'read back from a run this suite opens through `run start`',
   'run.ts «by {}» #1': 'needs an open run to close',

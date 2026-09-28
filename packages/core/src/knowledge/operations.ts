@@ -129,7 +129,9 @@ export function captureMemory(ctx: WriteContext, input: CaptureInput): CaptureOk
   const id = mintId();
 
   // Found this installation's anchor before the fact, so its signer is a key
-  // valid for its anchor at verify. A no-op once founded.
+  // valid for its anchor at verify.
+  // Once founded it appends nothing, and refuses an anchor that no longer counts
+  // this key (see `ensureFounded`).
   ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
   const appended = appendEvent(
