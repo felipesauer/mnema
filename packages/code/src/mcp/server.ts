@@ -13,7 +13,9 @@
  * delegates to a pure adapter in {@link ./tools.js}, and every one of them DECLARES what
  * calling it can do to the record, in the same two words a verb of the command line
  * declares in (`record-effect.ts`): the registrar takes the declaration where the SDK
- * takes a name, so a tool cannot be hung here without answering.
+ * takes a name, so a tool cannot be hung here without answering. The protocol's own four
+ * hints — `readOnlyHint` and the three beside it — are read off that same declaration by
+ * the registrar ({@link hintsOf}), so a client is told what a reviewer is told.
  *
  * THIS PARAGRAPH USED TO NAME THE TOOLS ONE BY ONE, and the list is gone because it was
  * WRONG. It spelled twenty-four names against twenty-five registrations —
@@ -88,7 +90,10 @@ import {
 import { McpServer, type ToolCallback } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import type { ZodRawShapeCompat } from '@modelcontextprotocol/sdk/server/zod-compat.js';
-import { RootsListChangedNotificationSchema } from '@modelcontextprotocol/sdk/types.js';
+import {
+  RootsListChangedNotificationSchema,
+  type ToolAnnotations,
+} from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { movedLine } from '../moved-record.js';
 import { passedOverSentences } from '../not-a-project.js';
@@ -662,11 +667,67 @@ type ToolRegistrar = <Input extends ZodRawShapeCompat | undefined = undefined>(
  * where `registerVerbs` has returned the verbs' declarations since before anything read
  * them, and where the first production reader (the read-only session) arrived afterwards.
  * What reads these now is the guard, and a reviewer.
+ *
+ * AND IT IS WHERE THE PROTOCOL'S HINTS ARE WRITTEN, for the reason it is where the
+ * declaration is taken: this is the only door a tool comes through, so a hint derived here
+ * cannot be missing from one, and a hint a tool spelled for itself would be a second reading
+ * of what it does. The config a tool hands in has nowhere to spell them — {@link ToolRegistrar}
+ * takes no `annotations`, on purpose.
  */
 function declaringInto(server: McpServer, declared: DeclaredTool[]): ToolRegistrar {
   return (what, config, handle) => {
     declared.push(what);
-    server.registerTool(what.act, config, handle);
+    server.registerTool(what.act, { ...config, annotations: hintsOf(what) }, handle);
+  };
+}
+
+/**
+ * WHAT THE PROTOCOL'S FOUR HINTS SAY ABOUT A TOOL — read off its declaration, and off
+ * nothing else.
+ *
+ * A client reads these to decide what it may call without asking a person, and none was
+ * sent. The protocol's defaults then described all twenty-five tools as tools that may
+ * destroy what they touch and that reach out into an open world — false for every one — and
+ * as tools that may change what they read, which is false for the thirteen reads. Each line
+ * below is a claim, and `every-tool-says-if-it-writes.test.ts` holds it: it calls every tool
+ * twice over one connection to a real project in a sandbox, and holds each hint the protocol
+ * serves against what those calls did to the sandbox.
+ *
+ *   - `readOnlyHint` is the declaration's `reads`, and only that. `skills` and
+ *     `rules_before_an_edit` answer a reading's question and append a fact while answering
+ *     it, so they declare `mutates` and are not read-only here either: a hint that followed
+ *     the question rather than the power would tell a client it can call them for free, and
+ *     each call can leave a signed event behind. The protocol's words are "does not modify
+ *     its environment", which is wider than the record, and the wider thing is what is
+ *     measured: a read leaves every file and directory of the sandbox as it found them, not
+ *     only the chain. The projection it rebuilds is held in memory (`CacheOptions.dbPath` has
+ *     no production caller), so there is no cache file for it to write.
+ *   - `destructiveHint` is false for every tool. The record is append-only and no tool
+ *     removes or rewrites what it holds: every byte a file held before a call is where it
+ *     was after it. The one byte a write ever takes back is the torn fragment a crashed
+ *     append left at a segment's end, which was never a sealed event (`healTornTail`,
+ *     `writer.ts`); the sandbox the case exercises holds no such fragment.
+ *   - `idempotentHint` is true for a read, where asking again changes nothing again, and
+ *     false for every write — no promise, rather than one kept only sometimes. Most writes
+ *     append the event they exist for on every call. Two record at most once per RUN —
+ *     `skills` one consultation per pattern, `rules_before_an_edit` one service (and an
+ *     asking on every call a rule asks a person on) — so a repeat on the same connection may
+ *     add nothing, while a new connection opens a new run and records again.
+ *   - `openWorldHint` is false for every tool. What each reaches is this workspace's record
+ *     on this machine. The one act of the product that reaches past it — asking a calendar to
+ *     attest a checkpoint (`witness-request.ts`) — is `mnema witness`, and no tool serves it.
+ *
+ * The protocol reads `destructiveHint` and `idempotentHint` only beside
+ * `readOnlyHint: false`; they are sent for the reads anyway, because they are true of a
+ * read and a client that reads them regardless should not meet the defaults there.
+ */
+function hintsOf(what: DeclaredTool): ToolAnnotations {
+  const reads = what.effect === 'reads';
+  return {
+    readOnlyHint: reads,
+    destructiveHint: false,
+    idempotentHint: reads,
+    openWorldHint: false,
   };
 }
 
