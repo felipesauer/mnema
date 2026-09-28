@@ -295,8 +295,9 @@ export function runDecisionImport(
 
   // NOTHING NEW TO RECORD OPENS NO WRITER. Every file already derived, or refused by name:
   // the plan is complete and nothing will be appended, and opening one anyway touches the
-  // tree — for a key that never wrote here, its public half, an installation id and an empty
-  // tail, which a run that recorded 0 decisions used to leave behind (measured on the binary).
+  // tree — for a key that never wrote here, an installation id; and its public half and an
+  // empty tail too, which a run that recorded 0 decisions used to leave behind (measured on
+  // the binary), until a tail came to be born at its writer's first append.
   if (fresh.length === 0) {
     return {
       ok: true,

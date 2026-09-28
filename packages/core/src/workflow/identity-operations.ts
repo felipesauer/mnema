@@ -78,10 +78,21 @@ export interface IdentityOk extends ScreenedWrite {
  * anything.
  *
  * With an anchor already recorded locally there is nothing to settle — that file
- * is the decision, made once. With none, the RECORD is asked first: a key another
- * machine already enrolled belongs to that machine's identity, and the tree
- * carries the proof. Only when the record proves nothing does the key fall back
- * to the anchor it derives from itself — the anchor it will found.
+ * is the decision, and it is written only once the fact that settles it is on the
+ * record. With none, the RECORD is asked first: a key another machine already
+ * enrolled belongs to that machine's identity, and the tree carries the proof —
+ * as it does for a founding this key made itself, in a fresh clone or by a process
+ * that died before recording its anchor (`adoption.test.ts`, *adopts a founding it
+ * made itself*; `the-anchor-follows-the-founding.test.ts`, *dies after its founding
+ * landed and before its anchor*). Only when the record proves nothing does the key
+ * fall back to the anchor it derives from itself — the anchor it will found.
+ *
+ * THIS SAID "that file is the decision, made once", and it was made one step too
+ * early: {@link ensureFounded} wrote it BEFORE appending the founding it stood for,
+ * so a founding that failed left a decision the record never took, and this
+ * answered `recorded` for an identity nobody had founded — the one every later
+ * write then signed as. The file follows the fact now; why, and what was measured,
+ * is {@link ensureFounded}'s comment.
  *
  * Asking the record is what stops the trap this closes: a key that is already a
  * member, writing into a tree where it has not yet recorded an anchor (a fresh
@@ -158,9 +169,41 @@ export type AnchorDecision =
 
 /**
  * Makes sure this installation serves an anchor in this tree before its first
- * fact: records which anchor it is, and appends the `identity.founded` when the
- * anchor is its OWN to found. A no-op once an anchor is recorded, so it is safe
- * to call before every write.
+ * fact: appends the `identity.founded` when the anchor is its OWN to found, and
+ * records which anchor it serves once the fact that settles it is on the record.
+ * A no-op once an anchor is recorded, so it is safe to call before every write —
+ * which holds only because an anchor is never recorded ahead of its fact.
+ *
+ * THAT WAS THE PREMISE, AND THE ORDER HERE BROKE IT. This said "records which
+ * anchor it is, and appends the `identity.founded`", and did it in that order: the
+ * anchor first, the founding second. They are two writes, and the first is the one
+ * every later call trusts without reading the record. So a founding whose append
+ * failed left an anchor claiming it, the next write took the no-op, signed as an
+ * identity the record never admitted, and `verify` failed on that tree from then on
+ * (`[T2/T4] … is not a key enrolled for … at this point`), the event appended for
+ * good. Measured on the built binary with ordinary triggers — the tail's lock held
+ * by another session writing the same project, a lock directory that is a link to
+ * nothing, a tail that cannot be born (its birth lives inside this very append), and
+ * a process killed inside it. The anchor is recorded AFTER the founding now, and a
+ * first write that fails leaves nothing that says it founded: the next write founds
+ * (`the-anchor-follows-the-founding.test.ts`, a case per trigger).
+ *
+ * The window left is the other side of the same two writes — a process that dies
+ * after its founding landed and before its anchor — and it is harmless by
+ * construction: the next write finds no anchor, asks the record, and ADOPTS the
+ * founding it finds there, so nothing is founded twice (*dies after its founding
+ * landed and before its anchor*, in the same file).
+ *
+ * WHAT THIS ORDER DOES NOT CLOSE, AND WIDENS: two processes of this installation
+ * making their first write together. Each finds no anchor, each decides to found,
+ * and the tail gets two foundings of one anchor by its own key. The record takes the
+ * second as the copy it is — `verify` adds a key to a set that already holds it, and
+ * `identitiesFoundedBeside` counts the anchor once (`founded-beside.test.ts`,
+ * *counts an anchor founded twice once*) — but it is a second event, and with the
+ * anchor recorded after the append the moment in which it can happen is longer:
+ * measured with two processes started on a barrier, from under 1 ms apart before
+ * this order to about 3 ms after it. Closing it needs the decision taken under the
+ * tail's lock, which the writer does not offer.
  *
  * Two paths reach a recorded anchor, and only one of them founds. A key the
  * record already proves a member ADOPTS that identity — it must not found,
@@ -180,10 +223,13 @@ export function ensureFounded(ctx: WriteContext): string {
   if (ctx.writer.hasAnchor) return ctx.writer.anchor;
 
   const decided = decideAnchor(ctx);
-  ctx.writer.recordAnchor(decided.anchor);
   // An adopted identity is already on the record, vouched for by a member: there
-  // is nothing to found, and founding would mint a second identity.
-  if (decided.source === 'adopted') return decided.anchor;
+  // is nothing to found, and founding would mint a second identity. The fact that
+  // settles its anchor is already there, so the anchor is recorded at once.
+  if (decided.source === 'adopted') {
+    ctx.writer.recordAnchor(decided.anchor);
+    return decided.anchor;
+  }
 
   const at = (ctx.clock ?? systemClock)();
   // Appended straight, with no typed refusal to report, and that is the one place
@@ -200,6 +246,9 @@ export function ensureFounded(ctx: WriteContext): string {
       { foundingFp: ctx.writer.signerFingerprint },
     ),
   );
+  // Only now, with the founding on the tail. Recorded before the append, an append
+  // that failed left an anchor claiming a founding the record never got.
+  ctx.writer.recordAnchor(decided.anchor);
   return decided.anchor;
 }
 

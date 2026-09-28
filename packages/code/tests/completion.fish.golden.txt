@@ -120,7 +120,6 @@ complete -c mnema -f -n '__mnema_at "task move"' -l reason -r
 complete -c mnema -f -n '__mnema_at "task move"' -l note -r
 complete -c mnema -f -n '__mnema_at "task move"' -l feedback -r
 complete -c mnema -f -n '__mnema_at "task move"' -s h -l help
-complete -c mnema -f -n '__mnema_at "task move"' -l scope -x -a 'public private global'
 complete -c mnema -f -n '__mnema_at "task move"' -l which -r
 complete -c mnema -f -n '__mnema_at "task move"' -s V -l version
 complete -c mnema -f -n '__mnema_at "task move"' -l color -x -a 'auto always never'
@@ -140,8 +139,6 @@ complete -c mnema -f -n '__mnema_at "decision"' -l color -x -a 'auto always neve
 # mnema decision move
 complete -c mnema -f -n '__mnema_at "decision move"' -l note -r
 complete -c mnema -f -n '__mnema_at "decision move"' -s h -l help
-complete -c mnema -f -n '__mnema_at "decision move"' -l alternatives -r
-complete -c mnema -f -n '__mnema_at "decision move"' -l scope -x -a 'public private global'
 complete -c mnema -f -n '__mnema_at "decision move"' -l which -r
 complete -c mnema -f -n '__mnema_at "decision move"' -s V -l version
 complete -c mnema -f -n '__mnema_at "decision move"' -l color -x -a 'auto always never'
@@ -150,8 +147,6 @@ complete -c mnema -f -n '__mnema_at "decision move"' -a 'accept reject'
 # mnema decision supersede
 complete -c mnema -f -n '__mnema_at "decision supersede"' -l reason -r
 complete -c mnema -f -n '__mnema_at "decision supersede"' -s h -l help
-complete -c mnema -f -n '__mnema_at "decision supersede"' -l alternatives -r
-complete -c mnema -f -n '__mnema_at "decision supersede"' -l scope -x -a 'public private global'
 complete -c mnema -f -n '__mnema_at "decision supersede"' -l which -r
 complete -c mnema -f -n '__mnema_at "decision supersede"' -s V -l version
 complete -c mnema -f -n '__mnema_at "decision supersede"' -l color -x -a 'auto always never'
@@ -161,7 +156,6 @@ complete -c mnema -f -n '__mnema_at "decision import"' -l write
 complete -c mnema -f -n '__mnema_at "decision import"' -l scope -x -a 'public private'
 complete -c mnema -f -n '__mnema_at "decision import"' -l which -r
 complete -c mnema -f -n '__mnema_at "decision import"' -s h -l help
-complete -c mnema -f -n '__mnema_at "decision import"' -l alternatives -r
 complete -c mnema -f -n '__mnema_at "decision import"' -s V -l version
 complete -c mnema -f -n '__mnema_at "decision import"' -l color -x -a 'auto always never'
 
@@ -179,8 +173,6 @@ complete -c mnema -f -n '__mnema_at "skill"' -l color -x -a 'auto always never'
 complete -c mnema -f -n '__mnema_at "skill move"' -l note -r
 complete -c mnema -f -n '__mnema_at "skill move"' -l reason -r
 complete -c mnema -f -n '__mnema_at "skill move"' -s h -l help
-complete -c mnema -f -n '__mnema_at "skill move"' -l body -r
-complete -c mnema -f -n '__mnema_at "skill move"' -l scope -x -a 'public private global'
 complete -c mnema -f -n '__mnema_at "skill move"' -l which -r
 complete -c mnema -f -n '__mnema_at "skill move"' -s V -l version
 complete -c mnema -f -n '__mnema_at "skill move"' -l color -x -a 'auto always never'
@@ -190,9 +182,6 @@ complete -c mnema -f -n '__mnema_at "skill move"' -a 'review adopt reject deprec
 complete -c mnema -f -n '__mnema_at "skill export"' -l out -r
 complete -c mnema -f -n '__mnema_at "skill export"' -l description -r
 complete -c mnema -f -n '__mnema_at "skill export"' -s h -l help
-complete -c mnema -f -n '__mnema_at "skill export"' -l body -r
-complete -c mnema -f -n '__mnema_at "skill export"' -l scope -x -a 'public private global'
-complete -c mnema -f -n '__mnema_at "skill export"' -l which -r
 complete -c mnema -f -n '__mnema_at "skill export"' -s V -l version
 complete -c mnema -f -n '__mnema_at "skill export"' -l color -x -a 'auto always never'
 
@@ -445,7 +434,6 @@ complete -c mnema -f -n '__mnema_at "witness"' -l color -x -a 'auto always never
 complete -c mnema -f -n '__mnema_at "witness stamp"' -l calendar -r
 complete -c mnema -f -n '__mnema_at "witness stamp"' -l global
 complete -c mnema -f -n '__mnema_at "witness stamp"' -s h -l help
-complete -c mnema -f -n '__mnema_at "witness stamp"' -l json
 complete -c mnema -f -n '__mnema_at "witness stamp"' -s V -l version
 complete -c mnema -f -n '__mnema_at "witness stamp"' -l color -x -a 'auto always never'
 
@@ -453,7 +441,6 @@ complete -c mnema -f -n '__mnema_at "witness stamp"' -l color -x -a 'auto always
 complete -c mnema -f -n '__mnema_at "witness upgrade"' -l blocks -r
 complete -c mnema -f -n '__mnema_at "witness upgrade"' -l global
 complete -c mnema -f -n '__mnema_at "witness upgrade"' -s h -l help
-complete -c mnema -f -n '__mnema_at "witness upgrade"' -l json
 complete -c mnema -f -n '__mnema_at "witness upgrade"' -s V -l version
 complete -c mnema -f -n '__mnema_at "witness upgrade"' -l color -x -a 'auto always never'
 

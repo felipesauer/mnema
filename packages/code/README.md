@@ -355,8 +355,8 @@ mnema completion fish > ~/.config/fish/completions/mnema.fish  # every fish
 ```
 
 It completes **verbs, subcommands and option names** — including an option a parent group
-declares, which the parser accepts under it (`mnema task move --which`) — and a **value
-only where the declaration enumerates one**. That last one now covers every closed set the
+declares, where the subcommand reads it (`mnema task move --which`); one it does not read is
+refused there, and not offered — and a **value only where the declaration enumerates one**. That last one now covers every closed set the
 domain owns: the ten workflow actions of `task move` and `guard`, the two of `decision
 move`, the four of `skill move`, the three scopes of every `--scope` (two on `decision
 import`, which leaves out the machine-global tree), the levels of
@@ -592,8 +592,8 @@ That is what happens in a **body**. In a **name** the door refuses instead:
 mnema skill "xoxb-123456789012-abcdefghijkl" --body "never mind"
 #> Refused (NAME_HOLDS_A_SECRET): "name" reads as slack-token, and it is a name the
 #>   record is addressed by — so replacing it would record a different entity, not a
-#>   redacted one. Nothing was recorded. Name it something else; if the value itself
-#>   matters, rotate it.
+#>   redacted one. The fact was not recorded. Name it something else; if the value
+#>   itself matters, rotate it.
 ```
 
 Replacing means different things in the two. A body with the secret taken out is

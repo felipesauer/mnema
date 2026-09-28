@@ -36,6 +36,7 @@ import type { Command } from 'commander';
 import { fact } from '../presentation/detail.js';
 import { globalTreeGloss } from '../vocabulary.js';
 import { here } from './context.js';
+import { fromTheGroup, REFUSED, takesFromItsGroup } from './from-the-group.js';
 import { writeLines } from './io.js';
 import { onOneLine } from './on-one-line.js';
 import { reportRefusal } from './report.js';
@@ -57,6 +58,13 @@ const WHAT_TRAVELS = [
   'nothing else — no id, no title, no body, no count. Each calendar is handed a hash',
   'of that digest with a nonce of its own, so no two of them see the same value.',
 ].join('\n');
+
+/**
+ * Why an act refuses the group's `--json`: the acts answer in prose, and the reading beside them
+ * is the one with a machine-readable answer.
+ */
+const THE_READING_IS_THE_JSON =
+  'an act answers in prose, and `mnema witness --json` is where each tail’s proof stands, as JSON.';
 
 /** Registers `mnema witness` on the program. */
 export function registerWitness(program: Command, wiring: Wiring): Declared {
@@ -90,7 +98,10 @@ export function registerWitness(program: Command, wiring: Wiring): Declared {
       writeLines(io, witnessReport(render, listing.lines, listing.trees));
     });
 
-  witness
+  // BOTH ACTS DECLARE `--global` AND READ THE GROUP'S. The group declares it too, for the reading,
+  // and commander hands it every `--global` on the line: each act read its own copy, which is never
+  // filled, and so never covered the tree it was asked for. `from-the-group.ts` has the whole of it.
+  const stamp = witness
     .command('stamp')
     .description("ask an outside witness to date each tail's last checkpoint (T3)")
     .option(
@@ -114,17 +125,20 @@ export function registerWitness(program: Command, wiring: Wiring): Declared {
         'until then `verify` reads PENDING, which is not coverage.',
       ].join('\n'),
     )
-    .option('--global', GLOBAL_HELP, false)
-    .action(async (opts: { calendar?: string[]; global: boolean }) => {
-      const { runWitnessStamp } = await import('../commands/witness.js');
-      const act = await runWitnessStamp(
-        { ...here(), global: opts.global },
-        opts.calendar === undefined ? {} : { calendars: opts.calendar },
-      );
-      await report(wiring, act);
-    });
+    .option('--global', GLOBAL_HELP, false);
+  takesFromItsGroup(stamp, { refuses: { '--json': THE_READING_IS_THE_JSON } });
+  stamp.action(async (opts: { calendar?: string[] }) => {
+    const given = await fromTheGroup<{ global: boolean }>(stamp, wiring);
+    if (given === REFUSED) return;
+    const { runWitnessStamp } = await import('../commands/witness.js');
+    const act = await runWitnessStamp(
+      { ...here(), global: given.global },
+      opts.calendar === undefined ? {} : { calendars: opts.calendar },
+    );
+    await report(wiring, act);
+  });
 
-  witness
+  const upgrade = witness
     .command('upgrade')
     .description('go back for every attestation this record is waiting on (T3)')
     .option(
@@ -160,15 +174,18 @@ export function registerWitness(program: Command, wiring: Wiring): Declared {
         'responses.',
       ].join('\n'),
     )
-    .option('--global', GLOBAL_HELP, false)
-    .action(async (opts: { blocks?: string; global: boolean }) => {
-      const { runWitnessUpgrade } = await import('../commands/witness.js');
-      const act = await runWitnessUpgrade(
-        { ...here(), global: opts.global },
-        opts.blocks === undefined ? {} : { blockSource: opts.blocks },
-      );
-      await report(wiring, act);
-    });
+    .option('--global', GLOBAL_HELP, false);
+  takesFromItsGroup(upgrade, { refuses: { '--json': THE_READING_IS_THE_JSON } });
+  upgrade.action(async (opts: { blocks?: string }) => {
+    const given = await fromTheGroup<{ global: boolean }>(upgrade, wiring);
+    if (given === REFUSED) return;
+    const { runWitnessUpgrade } = await import('../commands/witness.js');
+    const act = await runWitnessUpgrade(
+      { ...here(), global: given.global },
+      opts.blocks === undefined ? {} : { blockSource: opts.blocks },
+    );
+    await report(wiring, act);
+  });
 
   return mutatesTheRecord(witness);
 }

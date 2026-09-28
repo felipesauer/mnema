@@ -27,6 +27,7 @@ import {
   listed,
   scopeOption,
 } from './enumerated.js';
+import { fromTheGroup, REFUSED, takesFromItsGroup } from './from-the-group.js';
 import { writeLines } from './io.js';
 import { noSuchRecord } from './no-such-record.js';
 import {
@@ -36,15 +37,20 @@ import {
   WHICH_HELP,
   WHICH_ON_SUBCOMMAND_HELP,
 } from './options.js';
-import {
-  type Reporter,
-  reportRecorded,
-  reportRefusal,
-  reportReplacement,
-  reportUsage,
-} from './report.js';
+import { type Reporter, reportRecorded, reportRefusal, reportReplacement } from './report.js';
 import { PIN_REFUSED } from './run-pin.js';
 import { type Declared, mutatesTheRecord, type Wiring } from './verb.js';
+
+/** Why a move refuses the group's `--scope`. */
+const A_MOVE_FOLLOWS_THE_DECISION = 'a move follows the decision to the tree it was born in.';
+
+/**
+ * Why a move refuses the group's `--alternatives`: what a decision turned down is part of the
+ * decision, recorded at its birth, and a move records no decision.
+ */
+const TURNED_DOWN_AT_BIRTH =
+  'what a decision turned down is recorded with the decision itself — pass it to ' +
+  '`mnema decision` with the title and the rationale.';
 
 /** Registers `mnema decision` on the program. */
 export function registerDecision(program: Command, wiring: Wiring): Declared {
@@ -101,10 +107,10 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
 
   // `decision move <accept|reject> <id>` — the generic move, the sibling of
   // `task move`. The action is an argument the gate validates; the surface knows
-  // no transition table. It takes NO `--scope` (a move follows the entity), and
-  // rejects one that leaks in from the `decision` group's option. Supersede is
-  // deliberately NOT routed here — it needs a successor `by` this generic form
-  // has nowhere to take; it is its own verb below.
+  // no transition table. It takes the group's `--which` and NO `--scope` (a move
+  // follows the entity), and it refuses every flag of the group it does not read
+  // (`from-the-group.ts`). Supersede is deliberately NOT routed here — it needs a
+  // successor `by` this generic form has nowhere to take; it is its own verb below.
   const decisionMove = decision
     .command('move')
     .description(
@@ -118,16 +124,14 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     )
     .addHelpText('after', WHICH_ON_SUBCOMMAND_HELP)
     .addHelpText('after', RECORD_CONTRACT_HELP);
+  takesFromItsGroup(decisionMove, {
+    takes: ['--which'],
+    refuses: { '--scope': A_MOVE_FOLLOWS_THE_DECISION, '--alternatives': TURNED_DOWN_AT_BIRTH },
+  });
   decisionMove.action(async (action: string, id: string, opts: { note?: string }) => {
+    const given = await fromTheGroup<{ which?: string }>(decisionMove, wiring);
+    if (given === REFUSED) return;
     const { runDecisionTransition } = await import('../commands/decision-transition.js');
-    const parentOpts = (decisionMove.parent?.opts() ?? {}) as { scope?: string; which?: string };
-    if (parentOpts.scope !== undefined) {
-      reportUsage(
-        wiring,
-        '`decision move` takes no --scope: a move follows the decision to the tree it was born in.',
-      );
-      return;
-    }
     const run = pinnedRun();
     if (run === PIN_REFUSED) {
       io.fail();
@@ -137,7 +141,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
       id,
       action,
       proof: { ...(opts.note !== undefined ? { note: opts.note } : {}) },
-      ...(parentOpts.which !== undefined ? { which: parentOpts.which } : {}),
+      ...(given.which !== undefined ? { which: given.which } : {}),
       ...(run !== undefined ? { run } : {}),
     });
     await reportDecisionMove(result, id, wiring);
@@ -147,7 +151,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
   // A supersede replaces one decision with a later one, so it needs the successor
   // id (`by`), taken as a required positional so the parser demands the pair on
   // input rather than the gate refusing it late. Like every move it follows the
-  // entity and takes no `--scope`.
+  // entity, takes the group's `--which` and no `--scope`.
   const supersede = decision
     .command('supersede')
     .description('supersede a decision with a later one (follows the decision; takes no --scope)')
@@ -156,16 +160,14 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     .option('--reason <text>', 'why it is being replaced (required)')
     .addHelpText('after', WHICH_ON_SUBCOMMAND_HELP)
     .addHelpText('after', RECORD_CONTRACT_HELP);
+  takesFromItsGroup(supersede, {
+    takes: ['--which'],
+    refuses: { '--scope': A_MOVE_FOLLOWS_THE_DECISION, '--alternatives': TURNED_DOWN_AT_BIRTH },
+  });
   supersede.action(async (oldId: string, newId: string, opts: { reason?: string }) => {
+    const given = await fromTheGroup<{ which?: string }>(supersede, wiring);
+    if (given === REFUSED) return;
     const { runDecisionTransition } = await import('../commands/decision-transition.js');
-    const parentOpts = (supersede.parent?.opts() ?? {}) as { scope?: string; which?: string };
-    if (parentOpts.scope !== undefined) {
-      reportUsage(
-        wiring,
-        '`decision supersede` takes no --scope: a move follows the decision to the tree it was born in.',
-      );
-      return;
-    }
     const run = pinnedRun();
     if (run === PIN_REFUSED) {
       io.fail();
@@ -176,7 +178,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
       action: 'supersede',
       by: newId,
       proof: { ...(opts.reason !== undefined ? { reason: opts.reason } : {}) },
-      ...(parentOpts.which !== undefined ? { which: parentOpts.which } : {}),
+      ...(given.which !== undefined ? { which: given.which } : {}),
       ...(run !== undefined ? { run } : {}),
     });
     await reportDecisionMove(result, oldId, wiring);
@@ -197,12 +199,17 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
   // DECLARING THEM WAS NOT ENOUGH TO RECEIVE THEM, and for as long as this verb
   // existed it received neither. The group declares the same two flags, and commander
   // hands a group every flag it knows wherever the flag is written, so `--which ci`
-  // after `import` landed on `decision`. The check below asked whether the GROUP held a
+  // after `import` landed on `decision`. The check here asked whether the GROUP held a
   // value, and therefore refused the flag in the place this help documents as well as
   // in the place it meant to refuse — no test ran the documented one. What decides now
   // is where the flag was WRITTEN (`written-before.ts`); the value is read where
   // commander put it, on the group. `the-flags-reach-the-import.test.ts` runs both
   // places on the binary and reads the agent and the tree back off the record.
+  //
+  // That reading is no longer this verb's own. The two `witness` acts had the same
+  // pair of copies and read their own, so the rule moved to `from-the-group.ts`, which
+  // also refuses the group's `--alternatives` here: a proposal takes what it turned
+  // down from its file.
   //
   // THIS SAID THE OVERRIDE WAS "THE SAME" AS THE GROUP'S, and it stopped being true the
   // day the flag arrived: `--scope` could then name the machine-global tree, where the
@@ -241,22 +248,21 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
         'is why nothing is accepted on your behalf. Nothing here calls a model.',
     )
     .addHelpText('after', RECORD_CONTRACT_HELP);
+  takesFromItsGroup(decisionImport, {
+    refuses: {
+      '--alternatives':
+        'what each proposal turned down is read from its own file, from a section such as ' +
+        '`## Considered Options`.',
+    },
+  });
   decisionImport.action(async (dir: string, opts: { write?: boolean }) => {
-    const { linkBreakNotice } = await import('./integrity.js');
-    const { runDecisionImport } = await import('../commands/decision-import.js');
-    const { ownFlagsWrittenBefore } = await import('./written-before.js');
-    const [leaked] = ownFlagsWrittenBefore(decisionImport);
-    if (leaked !== undefined) {
-      reportUsage(
-        wiring,
-        `\`decision import\` takes its own ${leaked}: put it after \`import\`, not before.`,
-      );
-      return;
-    }
     // Written after `import`, both flags still land on the GROUP, which declares the same
     // two — so that is where their values are read. This command's own declarations are
     // what its `--help` lists and what `ownFlagsWrittenBefore` knows to look for.
-    const given = (decisionImport.parent?.opts() ?? {}) as { scope?: string; which?: string };
+    const given = await fromTheGroup<{ scope?: string; which?: string }>(decisionImport, wiring);
+    if (given === REFUSED) return;
+    const { linkBreakNotice } = await import('./integrity.js');
+    const { runDecisionImport } = await import('../commands/decision-import.js');
     const scope = parseScope(given.scope, wiring);
     if (scope === INVALID) return;
     const run = pinnedRun();

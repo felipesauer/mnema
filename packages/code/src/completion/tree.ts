@@ -22,14 +22,22 @@
  * implicit `help` command, which are accepted everywhere and live in neither
  * `.options` nor `.commands`. A hidden option stays hidden by the same construction.
  *
- * AN OPTION TRAVELS DOWN, because the PARSER lets it: commander accepts an ancestor's
- * option anywhere below the command that declares it (`mnema task move --which …`,
- * which `task`'s help documents in prose precisely because its own option list does
- * not show it). What is offered at a level is therefore what can be TYPED there, not
- * what that level declares — and the rule is that and nothing narrower. Subsetting it
- * by taste (the program's `--color` is noise under a verb, and it is) would leave a
- * reader unable to read an absence: a flag missing from the menu would sometimes mean
- * "not accepted here" and sometimes mean "we thought you would not want it".
+ * AN OPTION TRAVELS DOWN AS FAR AS IT IS READ. The program's own travel to every level,
+ * because the program reads them for every verb. A GROUP's travel only to a subcommand
+ * that reads them (`mnema task move --which …`, which `task`'s help documents in prose
+ * precisely because the move's own option list does not show it), and which ones those
+ * are is the declaration `wiring/from-the-group.ts` keeps — the same one the subcommand's
+ * refusal reads, so a flag offered here is never one the verb then refuses.
+ *
+ * THIS PARAGRAPH SAID THE RULE WAS WHAT THE PARSER ACCEPTS, "and nothing narrower": what
+ * is offered at a level is what can be TYPED there. It was right about the parser —
+ * commander accepts a group's every flag below it — and what falsified it is what the
+ * subcommands did with them: `decision move --alternatives` and `witness stamp --json`
+ * were offered, accepted and dropped without a word. Those are refused now, and a word
+ * the verb refuses is not a word that can be typed there. The reason the rule was
+ * written still holds, and it is why the menu is not subset by taste (the program's
+ * `--color` is noise under a verb, and it is offered): an absence has to read as one
+ * thing, and it now reads as "refused here".
  *
  * AND A VALUE IS OFFERED ONLY WHERE THE DECLARATION ENUMERATES IT. That used to mean
  * `--color`'s three whens and this verb's three shells, because a `.choices()` was the
@@ -57,6 +65,7 @@
 
 import type { Argument, Command, Help, Option } from 'commander';
 import { valuesDeclaredOn } from '../wiring/enumerated.js';
+import { optionsTakenFromTheGroup } from '../wiring/from-the-group.js';
 import { everyCommandOf, pathOf } from '../wiring/misuse.js';
 
 /** One flag, in every spelling the parser answers to, and what may follow it. */
@@ -85,7 +94,7 @@ export interface CompletionNode {
   readonly path: string;
   /** The subcommands offered here, in the order the help lists them. */
   readonly commands: readonly CompletionWord[];
-  /** Every flag the parser accepts here — this command's, and its ancestors'. */
+  /** Every flag this command reads — its own, the ones it takes from its group, the program's. */
   readonly flags: readonly CompletionFlag[];
   /** The values a positional argument enumerates, when one does. */
   readonly values: readonly string[];
@@ -140,17 +149,21 @@ function enumeratedBy(declaration: Argument | Option): readonly string[] {
 }
 
 /**
- * Every flag the parser accepts at a command: its own first, then each ancestor's.
+ * Every flag a command reads: its own first, then each ancestor's — of a group, only the
+ * ones this command takes from it; of the program, all of them.
  *
- * The nearest declaration wins a name, which matters for exactly one flag today —
- * `-h, --help` is declared by every command — and would matter for any other the day
- * a subcommand narrowed one.
+ * The nearest declaration wins a name, which matters for `-h, --help` — declared by every
+ * command — and for the flags a subcommand declares that its group declares too (the two
+ * `witness` acts' `--global`, `decision import`'s `--scope` and `--which`).
  */
 function flagsInScopeOf(command: Command): readonly CompletionFlag[] {
   const found: CompletionFlag[] = [];
   const seen = new Set<string>();
+  const taken = optionsTakenFromTheGroup(command);
   for (let at: Command | null = command; at !== null; at = at.parent) {
+    const aGroup = at !== command && at.parent !== null;
     for (const option of visibleOptionsOf(at)) {
+      if (aGroup && !taken.includes(option)) continue;
       const name = option.long ?? option.short ?? option.flags;
       if (seen.has(name)) continue;
       seen.add(name);

@@ -1070,8 +1070,10 @@ export function theSessionsOwnWords(): readonly CompletionWord[] {
  * union rather than a flag so that a third answer does not compile until somebody has said
  * what the corner should read like. Which of the two a session is in is asked of the CHEAP
  * question the follower already pays for — whether the chain moved at all, one `readdir`
- * per tail (`proving.ts`) — and never of `verify` again, which is 54 ms to 1.7 s and
- * linear in the history.
+ * per tail (`proving.ts`) — and never of `verify` again, which is 54 ms to 1.7 s. This
+ * said *and linear in the history* as well, and the verifier was quadratic until it
+ * stopped walking the whole tail once per checkpoint; `proving.ts` carries what was
+ * measured and what a verification costs now.
  *
  * THE HUE IS THE ONE FUNCTION'S WHERE THE LEVEL STILL COVERS THE RECORD, and this row has
  * no rule of its own about the SCALE. `levelSeverity` is the table that says how each rung
