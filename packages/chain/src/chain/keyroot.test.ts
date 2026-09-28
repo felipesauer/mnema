@@ -63,6 +63,13 @@ describe('key root separate from chain — materialization', () => {
     expect(existsSync(privateKeyPath({ root: keyRoot }, fp))).toBe(true);
     expect(existsSync(privateKeyPath({ root: chainA }, fp))).toBe(false);
 
+    // Opening publishes nothing: the public half reaches the chain with the tail it
+    // verifies, at the first append. This case read it off the chain right after the
+    // open, when opening materialized it — the residue a refused write left behind.
+    expect(existsSync(publicKeyPath({ root: chainA }, fp))).toBe(false);
+    expect(existsSync(publicKeyPath({ root: keyRoot }, fp))).toBe(true);
+    foundAndWrite(w, 't-a');
+
     // The public key is materialized into the chain (what an anonymous verifier
     // reads), and also present in the key root (its own copy).
     expect(existsSync(publicKeyPath({ root: chainA }, fp))).toBe(true);
@@ -77,6 +84,7 @@ describe('key root separate from chain — materialization', () => {
   it('materializes byte-identically to the key root public key', () => {
     const w = openChainForWriting(chainA, { keyRoot });
     const fp = w.signerFingerprint;
+    foundAndWrite(w, 't-a'); // the public half is born with the tail, at the first append
     const inChain = readFileSync(publicKeyPath({ root: chainA }, fp), 'utf-8');
     const inKeyRoot = readFileSync(publicKeyPath({ root: keyRoot }, fp), 'utf-8');
     expect(inChain).toBe(inKeyRoot);
@@ -95,6 +103,10 @@ describe('one key root, several chains — one identity', () => {
   it('keeps a DISTINCT tail per chain, so their events never overlap', () => {
     const a = openChainForWriting(chainA, { keyRoot });
     const b = openChainForWriting(chainB, { keyRoot });
+    // Written to before `tails/` is read: a tail is born at its first append, and this case
+    // used to find both directories right after the two opens.
+    foundAndWrite(a, 't-a');
+    foundAndWrite(b, 't-b');
     const tailA = readdirSync(join(chainA, 'tails'))[0];
     const tailB = readdirSync(join(chainB, 'tails'))[0];
     // Same fingerprint prefix (same key), different installation suffix (per

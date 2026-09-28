@@ -157,7 +157,11 @@ export interface SwitchRecorded extends Replacement, Landed {
   readonly linkBreaks: readonly ScopedLinkBreak[];
 }
 
-/** The switch was refused; nothing was written. */
+/**
+ * The switch was refused; nothing was recorded. (This said "nothing was written", and a
+ * refusal from the content door comes after the writer opened: for a key new to the tree,
+ * that open mints its installation id, a local file the tree's `.gitignore` keeps out.)
+ */
 export type SwitchRefused =
   /** There is no project here — a project-scoped switch needs one. */
   | { readonly ok: false; readonly reason: 'NO_PROJECT' }

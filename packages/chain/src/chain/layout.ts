@@ -235,7 +235,12 @@ export function installationIdPath(layout: ChainLayout, fingerprint: string): st
  * into (another key's anchor). Kept local because committing it would let a
  * copied key drag a fixed anchor across machines and defeat the per-installation
  * separation the `.inst` provides. When absent, the machine has not yet recorded
- * an anchor and founds its own on first use.
+ * an anchor, and its next write asks the record: it adopts the identity the record
+ * proves the key a member of, a founding of its own included, and founds its own
+ * only when the record proves none (`decideAnchor`, in the core). This said it
+ * "founds its own on first use", which a fresh clone of a record the key founded
+ * never did (`adoption.test.ts`, *adopts a founding it made itself*), and neither does
+ * the write after one that died between its founding and this file.
  */
 export function anchorPath(layout: ChainLayout, fingerprint: string): string {
   return join(keysDir(layout), `${fingerprint}${ANCHOR_SUFFIX}`);

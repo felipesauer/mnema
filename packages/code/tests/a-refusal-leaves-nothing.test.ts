@@ -1,9 +1,9 @@
 /**
  * An answer that writes nothing leaves the tree as it found it — a refusal, and a question.
  *
- * WHAT WAS WRONG. Opening a tree's writer touches the tree before a single event is appended: for a
- * key that never wrote there it materializes the key's public half, mints an installation id, and
- * gives the tail a directory and a proof of ownership. Five paths opened one and then found they had
+ * WHAT WAS WRONG. Opening a tree's writer touched the tree before a single event was appended: for a
+ * key that never wrote there it materialized the key's public half, minted an installation id, and
+ * gave the tail a directory and a proof of ownership. Five paths opened one and then found they had
  * nothing to write, and each left those four entries behind. Measured on the binary, every one of
  * them with a key new to the project:
  *
@@ -20,16 +20,23 @@
  * file under `.mnema/` byte for byte as it was. And beside them, the eye that would have seen it:
  * the same digest over the same tree moves when that key's write is accepted.
  *
- * WHAT IS NOT: the verbs whose refusal comes from the operation's OWN door — an oversize field, a
- * name that holds a credential, a move the gate refuses — still open the writer before that door
- * speaks, and still leave the four entries. The door is inside the operation on purpose (a caller
- * able to screen separately could skip it), so what closes them is the writer's own birth moving to
- * its first act, which is a change to the chain and not to these paths.
+ * AND THE VERBS WHOSE REFUSAL COMES FROM THE OPERATION'S OWN DOOR. This header said they were NOT
+ * asserted: an oversize field, a name that holds a credential, a move the gate refuses — the door is
+ * inside the operation on purpose (a caller able to screen separately could skip it), so they open
+ * the writer before it speaks, and they left the four entries. Measured on the binary, 13 verbs, and
+ * the residue did not stay inert: committed, the empty tail put a tail more in every `verify` of the
+ * record and turned its T3 clause into "no checkpoint of this tail passed its signature check"
+ * whenever it sorted first. What closed them is the change this header named — the writer's birth
+ * moved to its first append (`ChainWriter.ensureBorn`) — and what they leave now is ONE entry, the
+ * key's installation id, which opening still mints and the tree's own `.gitignore` keeps out of
+ * every clone. So for them the claim is "nothing a clone receives", not "nothing", and it is asked
+ * of git as well as of the digest.
  */
 
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
+  cpSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
@@ -45,7 +52,7 @@ import type { DiscoveryEnv } from '@mnema/core';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { buildMcpServer } from '../src/mcp/server.js';
 
 /** The built binary — what a person runs. */
@@ -95,11 +102,16 @@ function mnema(home: string, ...argv: string[]): ReturnType<typeof mnemaIn> {
  * not nothing `git status` shows.
  */
 function tree(): string[] {
+  return treeOf(repo);
+}
+
+/** {@link tree}, of the project checked out at `project`. */
+function treeOf(project: string): string[] {
   const out: string[] = [];
   const walk = (dir: string): void => {
     for (const name of readdirSync(dir).sort()) {
       const path = join(dir, name);
-      const shown = path.slice(repo.length + 1);
+      const shown = path.slice(project.length + 1);
       if (statSync(path).isDirectory()) {
         out.push(`D ${shown}`);
         walk(path);
@@ -108,7 +120,7 @@ function tree(): string[] {
       }
     }
   };
-  walk(join(repo, '.mnema'));
+  walk(join(project, '.mnema'));
   return out;
 }
 
@@ -255,6 +267,126 @@ describe('an answer that writes nothing opens no writer', () => {
       await client.close();
       expect(reply.isError).not.toBe(true);
       expect(tree()).toEqual(before);
+    }
+  });
+});
+
+describe('a refusal from the operation’s own door leaves nothing a clone receives', () => {
+  /**
+   * The project as A left it — founded, with a task, a decision and a skill of A's for the gate to
+   * refuse moves on — built ONCE and copied per case, so each refusal lands on the same bytes and
+   * only the refusal differs. The copy is a working copy, ignored files and all, and it is a git
+   * repository, so what the tree's own `.gitignore` keeps out can be asked of git itself.
+   */
+  let p0: string;
+  let gitHome: string;
+  let taskOfA: string;
+  let decisionOfA: string;
+  let skillOfA: string;
+
+  const idIn = (said: string): string => {
+    const id = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/.exec(said)?.[0];
+    expect(id, said).toBeDefined();
+    return id as string;
+  };
+
+  const git = (dir: string, ...args: string[]): ReturnType<typeof spawnSync> =>
+    spawnSync('git', args, {
+      cwd: dir,
+      encoding: 'utf-8',
+      env: { PATH: process.env.PATH ?? '', HOME: gitHome, GIT_CONFIG_NOSYSTEM: '1' },
+    });
+
+  beforeAll(() => {
+    p0 = mkdtempSync(join(tmpdir(), 'mnema-a-refusal-leaves-nothing-p0-'));
+    gitHome = join(p0, 'git-home');
+    const home = join(p0, 'home-a');
+    const project = join(p0, 'project');
+    for (const dir of [gitHome, home, project]) mkdirSync(dir, { recursive: true });
+    expect(git(project, 'init', '-q').status).toBe(0);
+    expect(mnemaIn(project, home, 'init').status).toBe(0);
+    taskOfA = idIn(mnemaIn(project, home, 'task', 'a task of A').stdout);
+    decisionOfA = idIn(mnemaIn(project, home, 'decision', 'a rule of A', 'why').stdout);
+    skillOfA = idIn(mnemaIn(project, home, 'skill', 'a skill of A', '--body', 'x').stdout);
+  });
+
+  afterAll(() => {
+    rmSync(p0, { recursive: true, force: true });
+  });
+
+  const BIG = 'a'.repeat(70_000);
+  /** Shaped like an AWS access key id — a credential class the door names. */
+  const SECRET = 'AKIAABCDEFGHIJKLMNOP';
+  /** An id no entity of the project carries. */
+  const UNKNOWN = '01a0b100-d28b-7000-9b66-000000000000';
+
+  /**
+   * The thirteen verbs the census on the binary found leaving the four entries, each with the
+   * argument its own door refuses. A function per case, because three of them name an entity of A's
+   * that exists only once `beforeAll` has run.
+   */
+  const CASES: readonly (readonly [string, string, () => string[]])[] = [
+    ['memory', 'CONTENT_TOO_LARGE', () => ['memory', BIG]],
+    ['observe', 'CONTENT_TOO_LARGE', () => ['observe', UNKNOWN, '--topic', 't', '--text', BIG]],
+    ['task', 'CONTENT_TOO_LARGE', () => ['task', BIG]],
+    ['decision', 'CONTENT_TOO_LARGE', () => ['decision', BIG, 'why']],
+    ['skill', 'CONTENT_TOO_LARGE', () => ['skill', BIG, '--body', 'x']],
+    ['handoff', 'NAME_HOLDS_A_SECRET', () => ['handoff', taskOfA, SECRET, 'bob']],
+    [
+      'link',
+      'NAME_HOLDS_A_SECRET',
+      () => ['link', UNKNOWN, 'src', '--rel', 'governs', '--which', SECRET],
+    ],
+    ['switch', 'NAME_HOLDS_A_SECRET', () => ['switch', 'off', 'brief-document', '--which', SECRET]],
+    ['run start', 'NAME_HOLDS_A_SECRET', () => ['run', 'start', '--which', SECRET]],
+    ['task move', 'ILLEGAL_TRANSITION', () => ['task', 'move', 'complete', taskOfA]],
+    ['skill move', 'ILLEGAL_TRANSITION', () => ['skill', 'move', 'deprecate', skillOfA]],
+    ['decision move', 'UNKNOWN_ACTION', () => ['decision', 'move', 'reopen', decisionOfA]],
+    ['run end', 'UNKNOWN_RUN', () => ['run', 'end', UNKNOWN, '--which', 'ci']],
+  ];
+
+  it.each(CASES)('%s, refused as %s', (_verb, code, argv) => {
+    const project = mkdtempSync(join(tmpdir(), 'mnema-a-refusal-leaves-nothing-case-'));
+    try {
+      cpSync(join(p0, 'project'), project, { recursive: true });
+      const before = treeOf(project);
+      const refused = mnemaIn(project, homeB, ...argv());
+      expect(refused.status, refused.stderr).toBe(1);
+      expect(refused.stderr).toContain(`Refused (${code})`);
+      expect(refused.stderr).not.toMatch(/nothing was recorded/i);
+
+      const after = treeOf(project);
+      expect(before.filter((line) => !after.includes(line))).toEqual([]);
+      // ONE new entry: the installation id of B's key, which opening the writer still mints.
+      const added = after.filter((line) => !before.includes(line));
+      expect(added).toHaveLength(1);
+      const [, , installation] = (added[0] as string).split(' ');
+      expect(installation).toMatch(/^\.mnema\/keys\/[0-9a-f]{64}\.inst$/);
+      // And git keeps it out of every clone, by the tree's own `.gitignore`: nothing a clone
+      // receives. The status is asked too, so a new entry git WOULD publish reddens here by name.
+      expect(git(project, 'check-ignore', '-q', installation as string).status).toBe(0);
+      expect(git(project, 'status', '--porcelain', '--untracked-files=all').stdout).toBe(
+        git(join(p0, 'project'), 'status', '--porcelain', '--untracked-files=all').stdout,
+      );
+    } finally {
+      rmSync(project, { recursive: true, force: true });
+    }
+  });
+
+  it('where the door words the refusal, it says the fact did not land — not that nothing did', () => {
+    const project = mkdtempSync(join(tmpdir(), 'mnema-a-refusal-leaves-nothing-words-'));
+    try {
+      cpSync(join(p0, 'project'), project, { recursive: true });
+      for (const argv of [
+        ['memory', BIG],
+        ['run', 'start', '--which', SECRET],
+      ]) {
+        const refused = mnemaIn(project, homeB, ...argv);
+        expect(refused.status, refused.stderr).toBe(1);
+        expect(refused.stderr).toContain('The fact was not recorded');
+      }
+    } finally {
+      rmSync(project, { recursive: true, force: true });
     }
   });
 });

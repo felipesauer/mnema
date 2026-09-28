@@ -100,9 +100,10 @@ export interface InitRefused {
  *
  * THAT SENTENCE WAS TRUE ONLY FOR THE KEY THAT HAD FOUNDED THE TREE, which is the one
  * key `init.test.ts` ran it with. The anchor was read off a WRITER opened for the
- * purpose, and opening one touches the tree before anything is appended: for any other
- * key it materializes that key's public half, mints an installation id and gives its
- * tail a directory and a proof. Measured on the binary, `mnema init` run by a second
+ * purpose, and opening one touched the tree before anything was appended: for any other
+ * key it materialized that key's public half, minted an installation id and gave its
+ * tail a directory and a proof (opening mints only the id now; the rest waits for the
+ * writer's first append). Measured on the binary, `mnema init` run by a second
  * machine in a cloned project answered "nothing to found" and left four new entries
  * under `.mnema/`, two of them untracked in git. The anchor is read from the SIGNER now
  * (`signerFor`), which opens nothing, and the writer is opened only on the path that
@@ -133,7 +134,8 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
     // this tree: reading the derived one would report an identity that the very
     // next write corrects, and this is the command a person runs to check that
     // joining worked. Asked of the SIGNER, which opens nothing: a writer opened to
-    // ask would leave this key's public half and an empty tail behind.
+    // ask would leave this key's installation id behind (and, before a tail was born at
+    // its first append, its public half and an empty tail too).
     return {
       created: false,
       root,

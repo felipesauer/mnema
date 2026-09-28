@@ -132,8 +132,9 @@ describe('mnema tail list', () => {
     expect(locateTailScope(trees, foreign.tail, upcasters)).toBe('global');
 
     // The other direction, over the two shapes that are not in the list: a tail from
-    // another world, and a tail DIRECTORY with nothing in it — the ordinary residue
-    // of a session that only read, which neither reading counts as held.
+    // another world, and a tail DIRECTORY with nothing in it — what older writers left
+    // when they opened, and records committed then still carry — which neither reading
+    // counts as held.
     const absent = `${'a'.repeat(64)}-nowhere`;
     expect(listing.tails.some((held) => held.tail === absent)).toBe(false);
     expect(locateTailScope(trees, absent, upcasters)).toBeUndefined();

@@ -592,8 +592,8 @@ That is what happens in a **body**. In a **name** the door refuses instead:
 mnema skill "xoxb-123456789012-abcdefghijkl" --body "never mind"
 #> Refused (NAME_HOLDS_A_SECRET): "name" reads as slack-token, and it is a name the
 #>   record is addressed by — so replacing it would record a different entity, not a
-#>   redacted one. Nothing was recorded. Name it something else; if the value itself
-#>   matters, rotate it.
+#>   redacted one. The fact was not recorded. Name it something else; if the value
+#>   itself matters, rotate it.
 ```
 
 Replacing means different things in the two. A body with the secret taken out is

@@ -14,8 +14,9 @@
  *
  * AHEAD OF THE WRITER TOO, and that is a second promise rather than the same one. They
  * used to run after the caller had OPENED the tree's writer, which appends nothing and
- * still touches the tree: for a key that never wrote there it materializes the key's
- * public half, mints an installation id and gives the tail a directory and a proof.
+ * still touched the tree: for a key that never wrote there it materialized the key's
+ * public half, minted an installation id and gave the tail a directory and a proof (all
+ * but the id wait for the writer's first append now, and the id is still a file).
  * Measured on the binary, a refused `key enroll` left the tree with an untracked `.pub`
  * and an empty tail, and a refused `key revoke` the same. Both operations take a
  * {@link DecideThenWrite} now: handed a deferred context, they decide with the signer

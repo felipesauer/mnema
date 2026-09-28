@@ -17,8 +17,9 @@
  *
  * THAT SENTENCE SAID THE WAY WAS "to open a WRITER, which founds a tree", and it was the
  * way the product took until it was measured to leave a tail in a tree it only asked
- * about. A writer founds nothing by opening; it gives the tree the key's public half and
- * a tail. Asking now opens none (`signerFor`), and what stays true is the mint.
+ * about. A writer founds nothing by opening; it gave the tree the key's public half and
+ * a tail, and gives it only an installation id now — the rest is born at its first
+ * append. Asking opens none (`signerFor`), and what stays true is the mint.
  *
  * WHAT CHANGES IS THAT A SESSION IS NOT AN INVOCATION. The console resolved this
  * identity when it opened, from LOCAL MATERIAL and without opening a writer — the key
