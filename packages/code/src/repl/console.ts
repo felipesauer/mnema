@@ -126,10 +126,12 @@ import type { Opening } from './panel.js';
 import { fromTheMouse, THE_WHEEL_BACK, WATCHING_THE_WHEEL } from './pointing.js';
 import { Region, type Shown, type Watched } from './region.js';
 import {
+  followingTheTail,
   landedIn,
   NOTHING_SAID,
   type Scrolling,
   scrolledBy,
+  theSameWindow,
   theTranscript,
   theWindowOn,
   toTheTail,
@@ -254,6 +256,17 @@ export interface ConsoleRequest {
    * this file's.
    */
   readonly tips: Drawn;
+  /**
+   * WHAT THE FOOT SAYS WHEN AN ANSWER LEFT THE PAGE AS IT WAS, already rendered — the row the
+   * area draws at its top while that is true, and never a line of the roll.
+   *
+   * BYTES FOR THE REASON THE TIPS ARE BYTES: it says nothing about the record and nothing about
+   * the terminal, so it is composed once when the session opens (`session.ts`,
+   * `alreadyOnThePage`), and what a session changes is only whether it is on the page
+   * ({@link theLastAnswerMovedNothing}). A window too narrow for it to be one row gets no row,
+   * which is the area's call rather than this file's, exactly as it is for the hint.
+   */
+  readonly unmoved: Drawn;
   /**
    * WHICH KEYS MOVE THE LIST OF WORDS, as a line — drawn under the list, and only on the frames
    * there is one.
@@ -400,7 +413,7 @@ export interface OpenConsole {
  * one path onto the page and not a special one for the first three rows.
  */
 export function openConsole(request: ConsoleRequest): OpenConsole {
-  const { stdin, stdout, prompt, renderingAt, tips, picking } = request;
+  const { stdin, stdout, prompt, renderingAt, tips, unmoved, picking } = request;
   // THE ROW IN THE CORNER AS IT STANDS, asked once here and then only on the record's own
   // clock ({@link askTheCorner}). Everything that draws reads this and never the question
   // behind it, which is what makes "a frame reads nothing" a property of this file.
@@ -689,6 +702,31 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    */
   let scrolling: Scrolling = theOpeningOnTheRoll();
   let editing: Editing = NOTHING_TYPED;
+  /**
+   * WHETHER THE LAST ANSWER LEFT THE PAGE AS IT FOUND IT — the one fact the row at the top of the
+   * input area is drawn for ({@link ConsoleRequest.unmoved}).
+   *
+   * THE SAME DOCUMENT ASKED TWICE IS AN ANSWER NOBODY SEES LAND, wherever the window is shorter
+   * than the answer. The window follows the tail, the tail of the second copy says what the tail
+   * of the first one said, and the layout writes nothing for a frame identical to the one on the
+   * screen — so the answer went onto the roll and not a byte of the screen moved
+   * (`tests/a-read-asked-again-draws-what-changed.test.ts`). This is what makes the frame after
+   * it a different frame: one row more at the foot, saying so, and one row fewer of the window.
+   *
+   * RAISED WHERE AN ANSWER ENDS AND NOWHERE ELSE ({@link judged}), and lowered by the next key
+   * that is not a scroll ({@link key}): those are the two places it is written. A reader who
+   * scrolls keeps it, which is a case (`tests/a-read-asked-again-draws-what-changed.test.ts`); a
+   * resize and another process's append do not write it either, and the words stay true through
+   * both because they are about the last answer, in the past tense (`session.ts`,
+   * `alreadyOnThePage`).
+   */
+  let theLastAnswerMovedNothing = false;
+  /**
+   * HOW MANY LINES HAVE BEEN SUBMITTED, counted when the key is pressed rather than when the line
+   * is answered — which is what lets an answer that ends tell whether a later line is already
+   * waiting behind it ({@link judged}).
+   */
+  let submitted = 0;
   let shown: Shown = showing();
   const watchers = new Set<() => void>();
 
@@ -734,14 +772,18 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     const offers = offeredBy(editing.typed, editing.offered, complete);
     // WHICH ARRANGEMENT THE INPUT AREA IS IN, asked again on every frame rather than
     // held. It is a function of the terminal's SIZE, of how many words the palette has to
-    // show, and of how many rows the region above it takes — all three change under a
-    // session, so a value kept beside the frame would be right until the first Tab. It reads
-    // six numbers and composes nothing (`area.ts`).
+    // show, of how many rows the region above it takes and of whether the last answer left the
+    // page as it was — all four change under a session, so a value kept beside the frame would be
+    // right until the first Tab. It reads seven numbers and composes nothing (`area.ts`).
     const area = areaFor({
       rows,
       columns,
       badge: badge.width,
       hint: tips.width,
+      // THE ROW SAYING THE LAST ANSWER LEFT THE PAGE AS IT WAS, at its width while that is true
+      // and at none otherwise. It is the only number here that an answer ending changes, and it
+      // is answered once per answer rather than worked out on a frame ({@link judged}).
+      unmoved: theLastAnswerMovedNothing ? unmoved.width : 0,
       // HOW MANY ROWS THE LIST WANTS, asked of the module that draws them rather than counted
       // here: it is one per offer AND one for the row that says which keys move it, and a
       // count that left the second out would budget a region one row shorter than the one
@@ -807,7 +849,7 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     // it has them at — one answer, from the module that keeps the roll (`scrolling.ts`). Both
     // numbers are the ones just written down, so what is cut and what a later keystroke scrolls
     // are measured by one pair.
-    const window = theWindowOn(scrolling, theMiddle.room, theMiddle.columns);
+    const window = theWindowNow();
     return {
       // WHICH OF THE TWO PAGES THIS IS. The other one is the frame a window under the floor gets,
       // and the layout branches on this rather than on a field being empty (`region.ts`).
@@ -861,6 +903,18 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
       column: widthOfText(prompt) + widthOfText(editing.typed.slice(0, editing.at)),
       area,
     };
+  }
+
+  /**
+   * WHAT A READER CAN SEE OF THE ROLL RIGHT NOW — cut to the middle region as the frame on the
+   * screen laid it out, by the one function that cuts every window (`scrolling.ts`).
+   *
+   * ONE CUT AND TWO READERS: the frame, which draws it ({@link showing}), and the question of
+   * whether an answer moved it ({@link judged}). A cut of its own for the question would be a
+   * second idea of what the page shows, and what the question is about is the page.
+   */
+  function theWindowNow(): readonly string[] {
+    return theWindowOn(scrolling, theMiddle.room, theMiddle.columns);
   }
 
   /** ANYTHING MOVED: the value the layout reads is built again, and everyone watching is told. */
@@ -1114,6 +1168,31 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
       moved();
       return;
     }
+    // THE ROW SAYING THE LAST ANSWER LEFT THE PAGE AS IT WAS COMES DOWN HERE, with the next key
+    // that is not a scroll — a letter, an arrow, a Tab, and the Return of a line typed in one go.
+    // So every answer is judged on a page without it, and the frame that raises it is always one
+    // row more than the frame before: a third copy of the same document takes the row away as its
+    // line is typed and puts it back when it has landed.
+    //
+    // THE MOMENT WAS CHOSEN OUT OF FOUR, and it is the one under which the third copy is as plain
+    // to see as the second:
+    //
+    //   - WHEN THE NEXT LINE IS SUBMITTED, the row is off the page only while the answer runs.
+    //     Measured at the floor with the longest read, twenty runs of twenty: one frame without it,
+    //     drawn 11 to 18 ms after the Return, and the row back 76 to 86 ms after it. The page is
+    //     otherwise the page it was, so what a reader sees land is a row flickering.
+    //   - WHEN THE NEXT ANSWER CHANGES THE WINDOW, the third copy finds the row already up and
+    //     leaves it there: the same silence, one read later.
+    //   - WHEN THE WINDOW MOVES, the same — and a reader who takes the row's advice and scrolls
+    //     back loses the row that gave it.
+    //
+    // HERE, THE ROW IS OFF FOR AS LONG AS THE LINE IS BEING TYPED, and its coming back is the answer
+    // landing. A line pasted whole — its keys and its Return in one write — cannot be told from the
+    // first moment above, and measured the same: one frame without the row, back 76 to 82 ms after.
+    //
+    // THE FOUR KEYS ABOVE ARE NOT AMONG THEM, which is why this sits below them: moving the window
+    // is doing what the row says, and it leaves the row exactly as true as it was.
+    theLastAnswerMovedNothing = false;
     const what = typeKey(editing, stroke, complete);
     switch (what.does) {
       case 'edit':
@@ -1133,16 +1212,25 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
         const line = what.line;
         editing = what.editing;
         moved();
+        submitted += 1;
+        const asked = submitted;
         turn = turn.then(async () => {
           if (left) return;
+          // THE PAGE THE ANSWER FOUND, taken before its echo lands: the echo is part of the
+          // answer, and a window taken after it would be compared with the answer less a line.
+          const found = theWindowNow();
           echoed(line);
           switch (await answer(line)) {
             case 'clear':
               cleared();
-              return;
+              break;
             case 'go on':
-              return;
+              break;
           }
+          // AND WHERE THE ANSWER ENDS — the one place in this file, and the reason it is here: the
+          // port a verb prints through lands each line the moment it is written (`session.ts`,
+          // `onThePage`), so by the time the answer settles everything it printed is on the roll.
+          judged(asked, found);
         });
         return;
       }
@@ -1166,6 +1254,38 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    */
   function cleared(): void {
     scrolling = theOpeningOnTheRoll();
+    moved();
+  }
+
+  /**
+   * WHETHER THE ANSWER THAT HAS JUST ENDED LEFT THE PAGE AS IT FOUND IT — asked once per answer,
+   * where an answer ends, and never per line landed.
+   *
+   * PER ANSWER AND NOT PER LINE, because a line at a time is how an answer ARRIVES rather than
+   * what it is: {@link land} puts one line on the roll per call, and every window between an
+   * answer's first line and its last is a page nobody asked about. What is compared is the window
+   * the answer FOUND, taken before its echo, and the window it LEFT once everything it printed has
+   * landed — by what the lines say (`scrolling.ts`, `theSameWindow`). Two cuts of a window, once
+   * per answer, and never on a keystroke: measured at the floor, about 5 µs together, the same over
+   * a roll of a hundred lines and of ten thousand, because a cut reads only as many lines as the
+   * window holds. The longest answer they follow puts its row on the page 76 to 86 ms after its
+   * Return ({@link key}).
+   *
+   * TWO THINGS KEEP IT FROM SAYING SOMETHING FALSE, and each is a condition here with a case of
+   * its own (`tests/a-read-asked-again-draws-what-changed.test.ts`):
+   *
+   *   - A READER WHO HAS WALKED BACK sees every answer land without the window moving — that is
+   *     the promise the roll keeps (`scrolling.ts`, `landedIn`) — and for them the end of the
+   *     answer is NOT on the page. The row would be false there, so only a reader at the tail is
+   *     told.
+   *   - A LINE ALREADY WAITING BEHIND THIS ONE is answered next, and on a page without the row: its
+   *     own keys took the row down before this answer ended, and nothing after this one would take
+   *     it down again — so a row raised here would stand over whatever the next answer does.
+   */
+  function judged(asked: number, found: readonly string[]): void {
+    if (asked !== submitted || !followingTheTail(scrolling)) return;
+    if (!theSameWindow(found, theWindowNow())) return;
+    theLastAnswerMovedNothing = true;
     moved();
   }
 
@@ -1257,10 +1377,12 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * waiting for a scheduler ({@link resized}).
    *
    * ONE COMPOSITION AND TWO CALLERS, which is what keeps the frame drawn on a resize from being
-   * a different frame from the one mounted: the props are the two things resolved once when the
-   * session opened, and everything that moves is read through {@link Watched}.
+   * a different frame from the one mounted: the props are the things resolved once when the
+   * session opened — the tips, and the words of the row that says an answer left the page as it
+   * was — and everything that moves is read through {@link Watched}.
    */
-  const theFrame = (): ReactElement => createElement(Region, { watched, tips: tips.text });
+  const theFrame = (): ReactElement =>
+    createElement(Region, { watched, tips: tips.text, unmoved: unmoved.text });
 
   const app = render(theFrame(), {
     stdin,

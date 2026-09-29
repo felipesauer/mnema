@@ -385,12 +385,18 @@ const leaves: Step = leavesTheSession;
 /**
  * THE PAGE STARTED OVER, so that what is read next was printed at the size the window is NOW.
  *
- * IT IS HERE BECAUSE THE SAME WORD TWICE PRODUCES NO FRAME. The layout writes nothing at all
+ * IT IS HERE BECAUSE THE SAME WORD TWICE PRODUCED NO FRAME. The layout writes nothing at all
  * for a frame identical to the one on the screen, and a window filled by one copy of this report
  * is filled by the next copy in exactly the same rows — measured: the step that typed the word a
  * second time waited out the whole budget and the session was fine. Starting the page over
  * empties the roll, so the frame that follows cannot be the frame that preceded it, and what is
  * on the page afterwards is only what was printed after the resize.
+ *
+ * THE FIRST HALF OF THAT IS NO LONGER TRUE, AND THE STEP STAYS FOR THE SECOND. The same word
+ * twice does draw a frame now — a row at the foot saying the answer left the page as it was
+ * (`src/repl/console.ts`, `judged`) — but that frame holds the rows the FIRST copy put there, folded
+ * at whatever width it was printed at, and the page read after the resize has to hold only what was
+ * printed at the new one. Emptying the roll is what guarantees that; a second copy never did.
  */
 const startsOver: Step = {
   types: `${CLEAR}\r`,
@@ -522,11 +528,17 @@ describe('the fold follows the window the caller is looking at', () => {
       // rendered for the terminal it opened on, and those are history rather than a defect.
       //
       // SOMETHING IS PRINTED FIRST, AND IT IS THE STEP RATHER THAN THE SUBJECT. Starting the
-      // page over on a page that holds nothing but the opening is a frame identical to the one on
+      // page over on a page that holds nothing but the opening was a frame identical to the one on
       // the screen, and the library writes nothing at all for one of those — so the step would
       // wait for ever and a mutation would come back as the driver's wall instead of as this
       // case's own accusation. Measured: exactly that, on the mutation that composes the opening
       // with a renderer which is not the frame's.
+      //
+      // IT IS NOT IDENTICAL ANY MORE, and the refusal still stands. A clear that leaves the page as
+      // it was is an answer like any other, so it now raises the row that says so
+      // (`src/repl/console.ts`, `judged`) and the step would end on that row — a frame about the
+      // clear, and not the page started over at the new width that this case reads. Printing
+      // first is what makes the page the step ends on a page the clear really changed.
       steps: [opens, resizedTo(narrow), asksWhatItRuns, startsOver, leaves],
     });
 
@@ -648,6 +660,7 @@ describe('the frame is composed for a size the device really answered with', () 
       prompt: PROMPT,
       renderingAt: () => renderPlain,
       tips: { text: '', width: 0 },
+      unmoved: { text: '', width: 0 },
       picking: fact('nothing to pick'),
       badge: () => ({ text: '', width: 0 }),
       openingFor: (columns, rows) => {

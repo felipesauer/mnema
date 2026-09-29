@@ -355,10 +355,12 @@ export interface Showing {
   /**
    * WHICH ARRANGEMENT THE INPUT AREA IS IN, and where the caret goes inside it.
    *
-   * It travels with what is shown rather than arriving as a prop, and the two reasons are
-   * the two things it is a function of: how TALL the caller's terminal is, which changes
-   * when they drag the bottom edge of their window, and whether a Tab left words on the
-   * page, which changes on a keystroke. Both are answered before this value is built
+   * It travels with what is shown rather than arriving as a prop, and the reasons are the
+   * things it is a function of: how TALL the caller's terminal is, which changes when they
+   * drag the bottom edge of their window, whether a Tab left words on the page, which changes
+   * on a keystroke, and whether the last answer left the page as it was, which changes when an
+   * answer ends and again on the first key of the next line. IT SAID *the two reasons*, and the
+   * third is what this delivery added. All of them are answered before this value is built
    * (`area.ts`, `console.ts`); nothing is measured here.
    */
   readonly area: Area;
@@ -387,6 +389,12 @@ export interface Watched {
  * happens inside a session changes them, so putting them in the value rebuilt on every
  * keystroke would have said they might.
  *
+ * THE ROW SAYING THE LAST ANSWER LEFT THE PAGE AS IT WAS IS SPLIT ALONG THE SAME LINE, and it
+ * is the one thing on the page that falls on both sides of it. What it SAYS is resolved once, like
+ * the tips, so the words are a prop; WHETHER it is on the page is what an answer changes, so that
+ * is watched, as part of the area ({@link Showing.area}, `area.ts`). The words never pass through
+ * the roll, which is what keeps them out of the transcript a session hands back.
+ *
  * THIS SENTENCE USED TO NAME THE BADGE BESIDE THEM, and what falsified it is a measurement
  * rather than a preference. It read *"THE TIPS AND THE BADGE ARE PROPS … nothing that happens
  * inside a session changes either"*, and something does: another process appending to the
@@ -414,9 +422,11 @@ export interface Watched {
 export function Region({
   watched,
   tips,
+  unmoved,
 }: {
   readonly watched: Watched;
   readonly tips: string;
+  readonly unmoved: string;
 }): ReactNode {
   const shown = useSyncExternalStore(watched.watch, watched.now, watched.now);
   const { setCursorPosition } = useCursor();
@@ -475,7 +485,7 @@ export function Region({
     // THE ONE BRANCH ON THIS SURFACE THAT IS NOT ABOUT A FORM. Every other choice here is
     // which arrangement there is room for; this is whether there is a page at all
     // (`floor.ts`, {@link Floored}).
-    ...(shown.draws === 'floor' ? rows(shown.said) : theThreeRegions(shown, tips)),
+    ...(shown.draws === 'floor' ? rows(shown.said) : theThreeRegions(shown, tips, unmoved)),
   );
 }
 
@@ -486,7 +496,7 @@ export function Region({
  * It is a function of the value rather than the body of {@link Region} because the frame has two
  * shapes now, and the shape a window under the floor gets is not this one with parts left out.
  */
-function theThreeRegions(shown: Showing, tips: string): readonly ReactNode[] {
+function theThreeRegions(shown: Showing, tips: string, unmoved: string): readonly ReactNode[] {
   return [
     ...(shown.panel === undefined ? [] : theTop(shown.panel)),
     node(Middle, { window: shown.window }),
@@ -495,6 +505,7 @@ function theThreeRegions(shown: Showing, tips: string): readonly ReactNode[] {
       palette: shown.palette,
       area: shown.area,
       tips,
+      unmoved,
       badge: shown.badge,
     }),
   ];
@@ -868,24 +879,35 @@ function theRecord(panel: Panel): ReactNode {
  * the surface*, and what falsified that is the page showing its seams — the top region is
  * closed by a rule of its own and the roll has a guide down its margin, both drawn by the
  * functions these two are drawn by ({@link theTop}, {@link bar}).
+ *
+ * AND THE FIRST ROW OF ALL IS ONE THAT IS USUALLY NOT THERE: what the session says when the last
+ * answer left the page exactly as it was. It is the TOP of the area because what it is about is
+ * the window directly over it, and it is over the palette because the list answers the key being
+ * pressed and belongs against the rules that key is typed between. Whether it is drawn is the
+ * area's answer and what it says is the session's (`area.ts`, `session.ts`), so here it is a
+ * position and nothing else — a row with the words it was handed, in the weight its renderer gave
+ * them.
  */
 function Present({
   present,
   palette,
   area,
   tips,
+  unmoved,
   badge,
 }: {
   readonly present: string;
   readonly palette: readonly string[];
   readonly area: Area;
   readonly tips: string;
+  readonly unmoved: string;
   readonly badge: string;
 }): ReactNode {
   const ruled = area.form !== 'bare';
   return node(
     Box,
     { flexDirection: 'column', flexShrink: 0 },
+    area.unmoved ? node(Text, { wrap: THE_MARGIN }, unmoved) : null,
     palette.length > 0
       ? node(Box, { flexDirection: 'column' }, breathing(), ...dimmed(palette))
       : null,
