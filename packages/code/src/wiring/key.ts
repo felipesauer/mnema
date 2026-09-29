@@ -165,11 +165,17 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
           // exited 0 and left the whole record failing `verify` for good. Every write asks now
           // whether the identity a checkout recorded still counts its key, and refuses when it
           // does not (the core's `ensureFounded`), so the sentence says the refusal.
+          //
+          // AND IT SAID "what it writes here is refused", which is more than the refusal is. The
+          // retirement is recorded in the public tree alone (`key-revoke.ts`), and each tree asks
+          // its own roster, so a `--scope private` write from this checkout lands — measured on
+          // the binary. So the sentence names the public tree, as `init` does where it says the
+          // same refusal; `the-refusal-names-the-way-out.test.ts` runs both writes.
           io.out(
             render(
               fact(
                 "That is THIS machine's key: this checkout still records the identity it left, " +
-                  'so what it writes here is refused until it records another.',
+                  'so what it writes to the public tree here is refused until it records another.',
               ),
             ),
           );

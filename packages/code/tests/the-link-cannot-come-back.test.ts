@@ -56,6 +56,7 @@ import {
   THE_CANARY,
   THE_FOOTERS,
 } from '../../../.github/the-link-cannot-come-back/scan.mjs';
+import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 
@@ -70,7 +71,11 @@ afterEach(() => {
   rmSync(sandbox, { recursive: true, force: true });
 });
 
-/** `git` in the sandbox, with an identity of its own so no machine's config decides the author. */
+/**
+ * `git` in the sandbox, with an identity of its own so no machine's config decides the author, and
+ * with automatic maintenance off, as every git a test writes a repository with
+ * (`support/git-without-maintenance.ts`).
+ */
 function git(...args: string[]): string {
   return execFileSync('git', args, {
     cwd: sandbox,
@@ -81,7 +86,7 @@ function git(...args: string[]): string {
       GIT_AUTHOR_EMAIL: 'person@example.invalid',
       GIT_COMMITTER_NAME: 'A Person',
       GIT_COMMITTER_EMAIL: 'person@example.invalid',
-      GIT_CONFIG_GLOBAL: join(sandbox, 'no-such-gitconfig'),
+      GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE,
       GIT_CONFIG_SYSTEM: join(sandbox, 'no-such-gitconfig'),
     },
   });
@@ -595,7 +600,7 @@ function writeCommit(message: string): string {
       GIT_AUTHOR_EMAIL: 'person@example.invalid',
       GIT_COMMITTER_NAME: 'A Person',
       GIT_COMMITTER_EMAIL: 'person@example.invalid',
-      GIT_CONFIG_GLOBAL: join(sandbox, 'no-such-gitconfig'),
+      GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE,
       GIT_CONFIG_SYSTEM: join(sandbox, 'no-such-gitconfig'),
     },
   });
