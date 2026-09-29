@@ -54,11 +54,18 @@
  * image this repository pins (`ubuntu-24.04` ships 3.12) and the verifier is standard library
  * only, on purpose: no wheel to install, and nothing that has to still resolve in ten years.
  *
- * SO `ci.yml` NEEDS NO STEP FOR IT, and deliberately has none. The dependency is declared
- * HERE, in the case below that runs `python3 --version` before anything else and fails with a
- * named reason if it is absent — which is a better place for it than a workflow step, because
- * it holds for `pnpm test` on a workstation too, and because a workflow step that installed a
- * second toolchain would be a second toolchain to keep current for no gain.
+ * THAT `python3` IS THERE is declared HERE, in the case below that runs `python3 --version`
+ * before anything else and fails with a named reason if it is absent — which is a better place
+ * for it than a workflow step, because it holds for `pnpm test` on a workstation too.
+ *
+ * THIS SAID MORE, AND THE REST WAS WRONG. It went on: *"SO `ci.yml` NEEDS NO STEP FOR IT, and
+ * deliberately has none"*, because *"a workflow step that installed a second toolchain would be
+ * a second toolchain to keep current for no gain"*. The gain was there, unread: two pages promise
+ * the reader runs on a Python as old as the one its README names, and the image's 3.12 was the
+ * only Python this case, or any other, had ever run it on — so the floor was a sentence. `ci.yml`
+ * now has a job that sets up exactly that floor and runs every file that starts `python3`, this
+ * one among them, and `the-python-floor-is-declared-once.test.ts` holds the pages, the job and the
+ * interpreter the cases call to one number.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -152,9 +159,10 @@ function segmentOf(record: string): string {
 
 describe('the second reader can be run at all', () => {
   it('is a program python3 executes, and python3 is here', () => {
-    // THE DEPENDENCY IS DECLARED HERE AND NOWHERE ELSE. This is the case that fails, by name,
-    // on a machine or a runner without `python3` — rather than a workflow step, which would
-    // only cover CI, or a skip, which would cover nothing.
+    // THAT THERE IS A `python3` IS DECLARED HERE. This is the case that fails, by name, on a
+    // machine or a runner without one — rather than a workflow step, which would only cover CI,
+    // or a skip, which would cover nothing. This said "HERE AND NOWHERE ELSE" until the floor got
+    // a job: WHICH Python it has to be is asked in `the-python-floor-is-declared-once.test.ts`.
     const version = python(['--version']);
     expect(
       version.status,

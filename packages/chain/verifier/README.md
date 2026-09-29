@@ -199,3 +199,9 @@ and
 [`second-reader-is-independent.test.ts`](../src/chain/second-reader-is-independent.test.ts).
 It **fails** rather than skips where `python3` is absent: a second reader nobody runs is
 prose again.
+
+The floor at the top of this page is run too, not only stated: a CI job of its own sets up
+exactly that Python and runs every test file that starts `python3`, and
+[`the-python-floor-is-declared-once.test.ts`](../../code/tests/the-python-floor-is-declared-once.test.ts)
+fails if this page, the root one, the job and the interpreter the cases call stop naming the
+same version.

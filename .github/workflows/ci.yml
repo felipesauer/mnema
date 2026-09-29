@@ -135,6 +135,73 @@ jobs:
           path: what-the-suite-left-behind-verdict.json
           if-no-files-found: ignore
 
+  # THE SECOND READER ON ITS PYTHON FLOOR. Two pages promise that `packages/chain/verifier/` runs
+  # on the Python its own README names "or later", and until this job every case that starts it
+  # ran on whatever `python3` the image carried — the matrix above sets up no Python, and
+  # `ubuntu-24.04` ships 3.12. The floor had been checked for its grammar once, by hand, and never
+  # run. A floor CI never runs is a floor nobody has checked, which is the sentence the node floor
+  # already stands on.
+  #
+  # WHAT IT RUNS, AND WHY ONLY THAT. Every test file that starts `python3`, and nothing else: the
+  # rest of the suite never calls the reader, so running it again here would buy nothing. That is
+  # the reader's self-test and the published vectors (two cases of
+  # `second-reader-agrees-on-the-record`), the frozen records and every input `mutate.py` builds,
+  # the records the product writes in-process, section 1 over a corpus, the gaps registry, the
+  # page's own first record and the tarball's own copy. THE LIST IS NOT THIS FILE'S TO KEEP:
+  # `the-python-floor-is-declared-once` finds the files by the literal that starts the interpreter
+  # and is red until this step runs each of them, and red if the version below is not the one the
+  # pages state.
+  #
+  # `PYTHON3_IS_THE_FLOOR` IS THE JOB SAYING WHAT IT SET UP. With it, the case that asks the
+  # interpreter requires the `python3` the cases call to be the floor EXACTLY, so an image or an
+  # action that stopped putting this Python first on `PATH` turns this job red instead of green on
+  # the image's own. Without it — a workstation, the matrix, the flake sampler — the same case asks
+  # only that it be no lower.
+  #
+  # Before the job `the-link-cannot-come-back`, which reads its own job from its header to the end
+  # of this file and so has to stay last.
+  the-second-reader-on-its-python-floor:
+    name: the second reader on its python floor
+    runs-on: ubuntu-24.04
+    env:
+      PYTHON3_IS_THE_FLOOR: '1'
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The code cases import the other packages from `dist`, and one of them packs the tarballs.
+      - name: Build
+        run: pnpm build
+
+      # `vitest` and not the `test` script: `what-the-suite-left-behind` counts every step of this
+      # file that runs that script as a run of the suite its sweep has to bracket, and this one
+      # runs on a runner of its own, which that sweep never sees. It reads this comment too, so
+      # the comment does not spell the step it is about.
+      - name: Every case that starts python3
+        run: >-
+          pnpm exec vitest run
+          packages/chain/src/chain/second-reader-agrees-on-enrolment.test.ts
+          packages/chain/src/chain/second-reader-agrees-on-the-bytes.test.ts
+          packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts
+          packages/chain/src/chain/second-reader-says-what-it-does-not-check.test.ts
+          packages/code/tests/the-front-page-says-what-its-sources-say.test.ts
+          packages/code/tests/the-python-floor-is-declared-once.test.ts
+          packages/code/tests/the-verifier-a-page-publishes-runs.test.ts
+          packages/code/tests/what-a-package-publishes-is-what-its-page-promises.test.ts
+
   # THE LINK CANNOT COME BACK. This repository does not credit the tool that wrote a change in
   # the change's own record, and for 243 pull requests that held because somebody remembered it.
   # A sweep on 2026-09-11 found the trunk carrying one co-author trailer and thirteen

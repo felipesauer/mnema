@@ -454,8 +454,14 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * `support/a-page-held-to-a-run.ts` what the machine mints and what a cut may leave out, where it
  * spelled both itself. The ten branches met at 3174, read off this guard: 3153 and those
  * twenty-one, since no clause came in on more than one of them.
+ * Then 3174 -> 3179 when the second reader's Python floor was held to one number: five clauses
+ * in `the-python-floor-is-declared-once.test.ts`, which asks git for every file that states a
+ * floor, every workflow that sets up a Python and every test that starts one, and asks the
+ * `python3` the cases call for its version — `node:child_process`, `node:fs`, `node:path`,
+ * `node:url` and `vitest`. It imports no production module: its subject is the text of the
+ * workspace's files and the interpreter on `PATH`. Read off this guard.
  */
-const CLAUSES_IN_THE_TREE = 3174;
+const CLAUSES_IN_THE_TREE = 3179;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
