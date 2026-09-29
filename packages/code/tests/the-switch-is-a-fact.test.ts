@@ -514,18 +514,25 @@ describe('the document says when the push is switched off', () => {
     expect(text).toContain('of the rules below');
   });
 
-  it('prints the bytes it printed before, for a project nobody switched', async () => {
+  it('prints the push-on sentence byte for byte, for a project nobody switched', async () => {
     // The other half, and it is what keeps this slice from making every committed AGENTS.md
     // in the world stale. The document is compared with `mnema brief | diff - AGENTS.md`, so
     // a byte that moved for a record that did not change would turn that signal into noise.
-    // The line is wrapped at exactly the column it was wrapped at before the switch existed.
+    // The lines are wrapped by hand. They were the bytes printed before the switch existed,
+    // and they moved ONCE, on purpose, when the sentence was found false: it said the rules
+    // arrive "when a file is about to be changed", and the host hands them over beside the
+    // result of that write (`measurements/mcp-tool-channel/`). This case was called "prints
+    // the bytes it printed before", and after that move it would have said so of new bytes.
     await ruleAddressedAt('Round money at the boundary', 'src/billing');
     const printed = await document();
     expect(printed).toContain(
-      'repository, recorded beside the rule. When a file is about to be changed, the rules',
+      'repository, recorded beside the rule. At each edit of a file, the rules addressed at it',
     );
     expect(printed).toContain(
-      'addressed at it arrive on their own, and nothing arrives for a file none of them names.',
+      'arrive on their own, beside the result of that write, in time for every edit after it',
+    );
+    expect(printed).toContain(
+      'and for a correction of that one. Nothing arrives for a file none of them names.',
     );
   });
 

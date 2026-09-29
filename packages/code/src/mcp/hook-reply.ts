@@ -14,8 +14,9 @@
  * `measurements/mcp-tool-channel/` holds the first capture and
  * `measurements/asks-a-person/` the second: the real binary (2.1.228), a real stdio
  * server, and a stand-in for the model API so that the request the host sends AFTER the
- * hook is the evidence for what reached the session. What they establish, and what each
- * one costs if you get it wrong:
+ * hook is the evidence for what reached the session. Where the text lands was measured
+ * again on 2.1.281, in the first of the two. What they establish, and what each one costs
+ * if you get it wrong:
  *
  *   - PROSE IS DROPPED. A tool returning text that is not this JSON is not an error and
  *     not a warning: the hook runs, the tool is called, and nothing at all reaches the
@@ -43,9 +44,10 @@
  *
  * ## The two grades it can carry, and what stays unrepresentable
  *
- * `additionalContext` — the agent sees the rule — and `permissionDecision: "ask"` — a
- * PERSON decides before the file is written. Nothing else. Not `deny`, not `allow`, not
- * `updatedInput`, not `updatedToolOutput`.
+ * `additionalContext` — the agent sees the rule, beside the result of the write that fired
+ * the hook — and `permissionDecision: "ask"` — a PERSON decides before the file is
+ * written. Nothing else. Not `deny`, not `allow`, not `updatedInput`, not
+ * `updatedToolOutput`.
  *
  * `deny` waits, and by ORDER rather than by nerve: refusing outright is a different power
  * over somebody else's work, and its own tie has not been settled. `allow` is worse than

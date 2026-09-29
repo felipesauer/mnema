@@ -226,12 +226,12 @@ const HOW_TO_REGENERATE = [
  * How many of the rules below have an ADDRESS, and what it means when nothing arrives.
  *
  * THIS IS THE OTHER HALF OF A DECISION TAKEN ELSEWHERE, and it does not stand on its own.
- * The product pushes a rule at the moment a file it addresses is about to be written
- * (`edit-rules-push.ts`), and that channel is silent when no rule addresses the path —
- * because the alternative is paying for the sentence "nothing governs this file" on every
- * edit of every session, measured at up to 3,424 edits in one of them. A silence is only
- * readable to somebody who knows there is a mechanism; this is where they are told, once,
- * for the price of one line in a file that is read once.
+ * The product pushes a rule at each edit of a file it addresses (`edit-rules-push.ts`),
+ * beside the result of that write, and that channel is silent when no rule addresses the
+ * path — because the alternative is paying for the sentence "nothing governs this file" on
+ * every edit of every session, measured at up to 3,424 edits in one of them. A silence is
+ * only readable to somebody who knows there is a mechanism; this is where they are told,
+ * once, for the price of one line in a file that is read once.
  *
  * It says what IS and where to ask, and nothing about what to do: the count is a fact
  * about the record, and `governing_rules` is a door of this product rather than an opinion
@@ -270,18 +270,31 @@ function whatHasAnAddress(addressed: number, push: ChannelState): string[] {
 }
 
 /**
- * What happens at an edit while the push is on — the sentence the count explains, and the
- * bytes this file printed before it could be switched off.
+ * What happens at an edit while the push is on — the sentence the count explains.
  *
- * It is TWO lines carrying the end of the first sentence, wrapped by hand at exactly the
- * column it was wrapped at before, and that is the point rather than an accident of
- * formatting: a project whose push is on prints the document it printed yesterday, so
- * nobody's committed copy went stale because this product grew a switch. The `diff` that
- * detects a stale copy only means one thing if the bytes move when the record does.
+ * THESE BYTES MOVED ONCE, ON PURPOSE, AND THE REASON IS THAT THE SENTENCE WAS FALSE. It read
+ * "When a file is about to be changed, the rules addressed at it arrive on their own", which
+ * tells a reader the rules are in front of them before they write the file. The host says
+ * otherwise, measured twice against the real binary with the request it sends afterwards as
+ * the evidence (`measurements/mcp-tool-channel/`, on 2.1.228 and on 2.1.281): the hook fires
+ * before the write, and the text it hands over reaches the conversation after the result of
+ * that write. So it is in time for every edit after it and for a correction of that one, and
+ * not for the bytes of the edit that fired it. Only the pause a rule asks for holds a write,
+ * and its sentence is the gate's, below.
+ *
+ * The lines are still wrapped by hand, and that is still the point rather than an accident of
+ * formatting: the same record prints the same bytes. This comment used to say they were "the
+ * document it printed yesterday", kept so that nobody's committed copy went stale when the
+ * product grew a switch. That held until the sentence itself was found false: a committed
+ * copy now differs once, and regenerating it hands over the true sentence. The `diff` that
+ * detects a stale copy only means one thing if the bytes move when the record does — or,
+ * once, when what they said was wrong. `cli.reads.golden.txt` and
+ * `the-switch-is-a-fact.test.ts` hold the new bytes.
  */
 const ARRIVES_AT_AN_EDIT = [
-  'repository, recorded beside the rule. When a file is about to be changed, the rules',
-  'addressed at it arrive on their own, and nothing arrives for a file none of them names.',
+  'repository, recorded beside the rule. At each edit of a file, the rules addressed at it',
+  'arrive on their own, beside the result of that write, in time for every edit after it',
+  'and for a correction of that one. Nothing arrives for a file none of them names.',
 ];
 
 /**

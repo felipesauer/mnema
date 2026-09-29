@@ -21,7 +21,8 @@ number beside the build it came from, never beside this prose.**
 The difficulty is that only the HOST dispatches a hook, and a hook fires on a tool call
 that only a model emits. So the model was replaced and nothing else was:
 
-- the real `claude` binary, 2.1.228, the one installed on this machine;
+- the real `claude` binary, 2.1.228, the one installed on this machine (and 2.1.281 for
+  §5, the one installed on 29 Sep 2026);
 - a real stdio MCP server, answering `initialize` / `tools/list` / `tools/call` and logging
   every call it received;
 - a **stand-in for the model API** on `127.0.0.1`, which answers the first request with a
@@ -56,8 +57,8 @@ away, with no error and no warning. What reaches the model is
 host wraps it as `PreToolUse:Write hook additional context: …`. That was the competing
 hypothesis, and a product built on it would have looked installed and injected nothing.
 
-**Where it lands.** In the request after the edit, as a message of its own — **after** the
-tool result, not before it. So the rule arrives with the outcome of the edit that triggered
+**Where it lands** (2.1.228; §5 measures it again on 2.1.281, and the answer holds). In the
+request after the edit, as a message of its own — **after** the tool result, not before it. So the rule arrives with the outcome of the edit that triggered
 it: in time for every later edit of the session and for a correction of that one, and not
 in time to shape the first one's bytes. It stays in the conversation afterwards, so a
 per-edit push spends its bytes once and then carries them.
@@ -156,11 +157,44 @@ three points, because a hot microbench understates at scale and the tail is the 
 decides. For comparison, the same hook as a `type: "command"` process would cost
 **5.8 s / 20.8 s / 9 min 47 s** before doing any work at all.
 
+## 5 · Where it lands, measured again on 2.1.281
+
+The sentence this product says most about the per-edit push is WHEN it arrives, and §2 answers
+that for 2.1.228 alone. So on 29 Sep 2026 the case that matters —
+`PreToolUse`, the tool returns the hook-response JSON — ran again on the host installed that
+day, 2.1.281, the same way: the real binary, a real stdio server, a stand-in for the model API
+that answers the request offering `Write` with a canned `tool_use`, and the request the host
+sends next as the evidence. Nothing was called but the stand-in: the host ran with an empty
+environment and its own config directory, inside a network namespace with only loopback in
+it. [`results/2026-09-29/where-the-rule-lands.json`](results/2026-09-29/where-the-rule-lands.json)
+holds two runs.
+
+Two controls were declared before the run, and both came out as declared: with no hook at all,
+and with a tool that returns the mark as prose, the mark is in **no** request the host sent.
+The request that produced the write never carries it either — so it did not get there through
+the prompt.
+
+| | 2.1.228 (19 Aug) | 2.1.281 (29 Sep) |
+|---|---|---|
+| the request that produced the write | no text of the hook | no text of the hook |
+| the request after the write | the text, **after** the tool result | the text, **after** the tool result |
+| as what | a message of its own | a text block of the **same** `user` message as the tool result, right after it |
+| wrapped as | `PreToolUse:Write hook additional context: …` | the same words, inside `<system-reminder>` |
+| the edit went through | yes | yes |
+
+**The position held and the form moved.** On both hosts the rule arrives with the outcome of
+the edit that fired it — in time for every edit after it and for a correction of that one, and
+not in time to shape the first one's bytes. What changed is the container: 2.1.281 puts the text
+beside the result inside one message, where 2.1.228 put it in a message of its own. Nothing this
+product sends depends on the container, and every sentence it says about when the rules arrive
+is written against the position.
+
 ## Which of these numbers expire, and what invalidates each
 
 | number | expires when |
 |---|---|
-| every answer in §2 and §3 | **the host changes.** They are facts about `claude` 2.1.228 and about nothing else. The naming rule of §3 is the one to re-check first, because getting it wrong is silent |
+| every answer in §2 and §3 | **the host changes.** They are facts about `claude` 2.1.228 and about nothing else. The naming rule of §3 is the one to re-check first, because getting it wrong is silent. Only where the text lands has been re-checked since, in §5 |
+| §5 | **the host changes**, again: it is a fact about `claude` 2.1.281. The position held across two hosts while the form moved, so the form is the part to expect to move next |
 | the 1.24 ms floor | the host changes when it connects a declared server, or the server's start-up work changes. It is `channel-cost/`'s number, not this directory's |
 | the work terms in §4 | the reading changes, or the record's shape does. They scale with decisions in force, so a project's own figure is its own. The large regime is a band across two runs; a third run should be expected inside it, and a figure outside it is news |
 | the session totals | the edit counts do — they are a snapshot of one machine in Aug 2026, and biased toward editing (see `channel-cost/`) |
@@ -173,3 +207,4 @@ decides. For comparison, the same hook as a `type: "command"` process would cost
 | [`results/2026-08-19/channel-exists.json`](results/2026-08-19/channel-exists.json) | §2, §3 — twelve cases against the real host, with the host's own diagnostics |
 | [`results/2026-08-19/edit-hook-cost.json`](results/2026-08-19/edit-hook-cost.json) | §4 — the work term at three record sizes, order alternated |
 | [`results/2026-08-19/edit-hook-cost-run-b.json`](results/2026-08-19/edit-hook-cost-run-b.json) | §4 again, a second run — published so the spread of the large regime is data rather than a claim |
+| [`results/2026-09-29/where-the-rule-lands.json`](results/2026-09-29/where-the-rule-lands.json) | §5 — where the text lands on 2.1.281, two runs, with both controls |
