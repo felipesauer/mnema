@@ -390,6 +390,25 @@ const IT_WAS_ANSWERED = 'answered';
 const ITS_END_WAS_THERE = 'its end was already on the page';
 const HOW_TO_SCROLL_BACK = 'PgUp and Home scroll back';
 
+/**
+ * AND THE TWO CLAUSES THE SAME ROW SAYS INSTEAD TO A READER WHO HAS WALKED BACK, after the same
+ * first one: where the end of the answer is, and the key that goes there (see {@link belowThePage}
+ * for when this is the sentence on the page).
+ *
+ * THE SECOND IS IN THE PRESENT TENSE, AND THAT IS WHAT DECIDES HOW LONG THE ROW STANDS. The
+ * sentence beside it can stand through a scroll because both of its facts are about the answer;
+ * this one is about the page NOW, so it is on the page only while it is true of it — the first
+ * frame whose window holds the end takes it down, whichever key or size put the end there
+ * (`console.ts`, `moved`).
+ *
+ * THE THIRD NAMES ONE KEY, THE ONE THAT ALWAYS ARRIVES. A page down reaches the end only when the
+ * reader is less than a page away from it, and the sentence cannot know that; End goes to the tail
+ * from wherever the reader stands. It says *there* rather than *to it* because the clause before it
+ * ends on *the page*, and *it* would name the page.
+ */
+const ITS_END_IS_BELOW = 'its end is below the page';
+const END_GOES_THERE = 'End goes there';
+
 /** What one line of the session needs: where to write, how, and what it is called. */
 export interface Session {
   /** Where a command's output goes — the caller's own port. */
@@ -571,8 +590,13 @@ export async function openSession(request: SessionRequest): Promise<void> {
   // AND THE ROW THAT SAYS AN ANSWER LEFT THE PAGE AS IT WAS, rendered ONCE for the same reason and
   // measured for the same reader: the area draws it only on one row of the terminal. The opening
   // is NOT budgeted against it ({@link NO_ANSWER_HAS_LANDED}), because while it stands it comes
-  // out of the window rather than out of anything the page was chosen for.
-  const unmovedRow = drawn(alreadyOnThePage(), renderingAt(NO_SCREEN_TO_FOLD_TO));
+  // out of the window rather than out of anything the page was chosen for. BOTH OF ITS SENTENCES,
+  // because which one it says is decided once per answer, inside the session, by where the reader
+  // is standing — and a sentence rendered then would be words composed on an answer's clock.
+  const unmovedRow = {
+    onThePage: drawn(alreadyOnThePage(), renderingAt(NO_SCREEN_TO_FOLD_TO)),
+    belowThePage: drawn(belowThePage(), renderingAt(NO_SCREEN_TO_FOLD_TO)),
+  };
   // THE WORDS THE SESSION ANSWERS TO ITSELF, read ONCE and handed to ONE thing: the
   // completer, which puts them in the same list as the verbs. THEY WENT TO THE CONSOLE AS
   // WELL, so that a slash could be answered out of them, and that is what made the two keys
@@ -749,8 +773,8 @@ export async function openSession(request: SessionRequest): Promise<void> {
     // opening reads the same value, because how tall the area under it is is part of
     // whether the page fits.
     tips: hint,
-    // Rendered once, above, like the tips: what it says never changes inside a session, and
-    // whether it is on the page is the console's to say, once per answer.
+    // Rendered once, above, like the tips: its two sentences never change inside a session, and
+    // whether one is on the page, and which, is the console's to say, once per answer.
     unmoved: unmovedRow,
     // AND THE ROW UNDER THE LIST, as a LINE rather than as bytes: it is one of the palette's own
     // rows, so it is rendered and measured with them (`palette.ts`). Composed once, for the
@@ -1066,12 +1090,34 @@ export function pickingTips(): Line {
  * AN ASIDE, LIKE THE TWO ROWS ABOVE, and for their reason: it says something about the console
  * and nothing about the record, so it reads as the console's own and the words are the whole of
  * the carrier. It takes no argument either, so it is resolved once when the session opens and
- * only WHETHER it is on the page changes (`console.ts`, `theLastAnswerMovedNothing`). Exported
- * for the reason {@link tips} is: a case that has to find this row on a page would otherwise
- * retype it.
+ * only WHETHER it is on the page changes (`console.ts`, `theRowSays`) — that, and whether the
+ * row holds this sentence or {@link belowThePage}, which is said to a reader who has walked back.
+ * Exported for the reason {@link tips} is: a case that has to find this row on a page would
+ * otherwise retype it.
  */
 export function alreadyOnThePage(): Line {
   return aside([IT_WAS_ANSWERED, ITS_END_WAS_THERE, HOW_TO_SCROLL_BACK].join(BETWEEN_CLAUSES));
+}
+
+/**
+ * WHAT THE SAME ROW SAYS WHEN THE ANSWER LANDED BELOW A READER WHO HAS WALKED BACK — the other of
+ * its two sentences, and never beside the first one.
+ *
+ * FOR THAT READER NO ANSWER MOVES THE PAGE, and that is a promise rather than a defect: what they
+ * are reading stays where they are reading it, and everything new goes on the roll under it
+ * (`scrolling.ts`, `landedIn`). So an answer asked from there lands with nothing on the screen
+ * moving, which is the silence {@link alreadyOnThePage} exists to break — and the words of that
+ * one would be false here, because the end of the answer is NOT on the page. These say where it
+ * is and how to get to it.
+ *
+ * ONE ROW, TWO SENTENCES, AND WHICH ONE IS A QUESTION WITH TWO ANSWERS: whether the reader was
+ * following the tail when the answer ended (`console.ts`, `judged`). The two are composed once
+ * here, side by side, and the console holds at most one of them on the page
+ * (`tests/a-read-asked-again-draws-what-changed.test.ts`). An aside, for the reason the other one
+ * is; exported for the reason it is.
+ */
+export function belowThePage(): Line {
+  return aside([IT_WAS_ANSWERED, ITS_END_IS_BELOW, END_GOES_THERE].join(BETWEEN_CLAUSES));
 }
 
 /**
