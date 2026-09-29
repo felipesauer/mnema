@@ -145,8 +145,8 @@ Each was accepted, and none of them superseded. For the argument behind one, ask
 
 No other decision recorded here is awaiting a judgement.
 
-- **ADR-2 — UTC everywhere below the presentation layer** · `01a0edc8-84ae-7000-be36-c86fd8fc4621`
-- **ADR-1 — Keep money as integer cents** · `01a0edc8-8348-7000-81b6-aa2b2f99ab78`
+- **ADR-2 — UTC everywhere below the presentation layer** · `01a0edc3-5adf-7000-89f5-ca9c43baaffc`
+- **ADR-1 — Keep money as integer cents** · `01a0edc3-591f-7000-a5cb-26a226118ccc`
 …
 ```
 
