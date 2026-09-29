@@ -790,9 +790,8 @@ mnema brief
 #> that way is not below, and each heading counts what is printed under it.
 #> …
 #> 1 of the rules below has an ADDRESS: a path in this
-#> repository, recorded beside the rule. At each edit of a file, the rules addressed at it
-#> arrive on their own, beside the result of that write, in time for every edit after it
-#> and for a correction of that one. Nothing arrives for a file none of them names.
+#> repository, recorded beside the rule. The rules addressed at a file arrive on their own
+#> at each edit, beside the result of that write, and not for a file none of them names.
 #> Ask `governing_rules` with a path for the whole answer about it.
 #>
 #> ## Decisions in force (2)

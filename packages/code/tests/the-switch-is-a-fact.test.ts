@@ -526,13 +526,10 @@ describe('the document says when the push is switched off', () => {
     await ruleAddressedAt('Round money at the boundary', 'src/billing');
     const printed = await document();
     expect(printed).toContain(
-      'repository, recorded beside the rule. At each edit of a file, the rules addressed at it',
+      'repository, recorded beside the rule. The rules addressed at a file arrive on their own',
     );
     expect(printed).toContain(
-      'arrive on their own, beside the result of that write, in time for every edit after it',
-    );
-    expect(printed).toContain(
-      'and for a correction of that one. Nothing arrives for a file none of them names.',
+      'at each edit, beside the result of that write, and not for a file none of them names.',
     );
   });
 

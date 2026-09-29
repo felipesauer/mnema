@@ -282,6 +282,13 @@ function whatHasAnAddress(addressed: number, push: ChannelState): string[] {
  * not for the bytes of the edit that fired it. Only the pause a rule asks for holds a write,
  * and its sentence is the gate's, below.
  *
+ * THE TRUE SENTENCE IS A CUT OF THE FRONT PAGE'S, and the cut is what kept it on two lines.
+ * The page says the rules land "beside the result of that write, in time for every edit after
+ * it and for a correction of that one"; here it says the first half, because the whole of it
+ * takes a third line, and the document's length is bounded by a decision of its own
+ * (`brief.test.ts`, "grows by exactly one line per decision and per pattern", 42 lines) that
+ * correcting a sentence is not the place to take.
+ *
  * The lines are still wrapped by hand, and that is still the point rather than an accident of
  * formatting: the same record prints the same bytes. This comment used to say they were "the
  * document it printed yesterday", kept so that nobody's committed copy went stale when the
@@ -292,9 +299,8 @@ function whatHasAnAddress(addressed: number, push: ChannelState): string[] {
  * `the-switch-is-a-fact.test.ts` hold the new bytes.
  */
 const ARRIVES_AT_AN_EDIT = [
-  'repository, recorded beside the rule. At each edit of a file, the rules addressed at it',
-  'arrive on their own, beside the result of that write, in time for every edit after it',
-  'and for a correction of that one. Nothing arrives for a file none of them names.',
+  'repository, recorded beside the rule. The rules addressed at a file arrive on their own',
+  'at each edit, beside the result of that write, and not for a file none of them names.',
 ];
 
 /**
