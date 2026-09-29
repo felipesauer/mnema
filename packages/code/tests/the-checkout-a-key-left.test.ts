@@ -39,6 +39,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildMcpServer } from '../src/mcp/server.js';
+import { GIT_WITHOUT_MAINTENANCE } from './support/git-without-maintenance.js';
 import { argvOf } from './support/reading-a-shell-line.js';
 
 /** The built binary — what a person runs. */
@@ -91,7 +92,14 @@ function git(dir: string, ...args: string[]): string {
     {
       cwd: dir,
       encoding: 'utf-8',
-      env: { PATH: process.env.PATH ?? '', HOME: join(sandbox, 'git'), GIT_CONFIG_NOSYSTEM: '1' },
+      env: {
+        PATH: process.env.PATH ?? '',
+        HOME: join(sandbox, 'git'),
+        GIT_CONFIG_NOSYSTEM: '1',
+        // Automatic maintenance off, through the one channel a push's remote reads: its background
+        // repack deleted objects a clone was copying (`support/git-without-maintenance.ts`).
+        GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE,
+      },
     },
   );
   if (ran.status !== 0) throw new Error(`setup: git ${args.join(' ')} in ${dir}: ${ran.stderr}`);
