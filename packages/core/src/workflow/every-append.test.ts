@@ -516,6 +516,7 @@ describe('every write refuses what no read could accept', () => {
     deferredWrite: 'pairs a signer with a writer it has not opened; the write is the operation’s',
     encodeKeyRequest: 'serializes one',
     openTreeForWriting: 'opens a writer; the write is the caller’s',
+    recordedAnchorOf: 'asks whether the recorded identity still counts the key; appends nothing',
     requestEnrollment: 'produces a request and may mint a key, but appends no event',
     restoreKey: 'installs key material and records an anchor; appends no event',
     signerFor: 'reads who would sign in a tree and may mint a key, but opens no writer',

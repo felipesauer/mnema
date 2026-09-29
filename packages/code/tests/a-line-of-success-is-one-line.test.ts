@@ -435,6 +435,14 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'a path built under this machine’s key root',
   },
+  'init.ts «a write to the public tree here is refused ({}): {}» #1': {
+    verdict: 'collapsed',
+    why: 'the refusal a write here gets — its code, and the words the core wrote for it',
+  },
+  'init.ts «this machine keeps the key file at {}» #1': {
+    verdict: 'collapsed',
+    why: 'a path built under this machine’s key root: the file the refusal’s restore takes',
+  },
   'key.ts «private half installed at {}» #1': {
     verdict: 'collapsed',
     why: 'a path under this machine’s key root',
@@ -615,7 +623,7 @@ describe('every line this wiring words is classified', () => {
     // 28 of these, and a walk that regressed to a line-wise pattern would land near it.
     expect(FOUND.files).toBeGreaterThan(35);
     expect(FOUND.calls).toBeGreaterThan(80);
-    expect(FOUND.sites.length).toBe(71);
+    expect(FOUND.sites.length).toBe(73);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -635,9 +643,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(34);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(36);
     expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(37);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(34);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(36);
   });
 
   it('every reason says where the value comes from', () => {
@@ -687,10 +695,11 @@ const VALUE = '<value>';
  * How each REACHABLE closed site is driven, with the forged value entering by the argv
  * exactly as somebody would type it.
  *
- * Seven of the twenty-six are reachable this way. The other nineteen are named in
- * {@link UNREACHABLE} with what stands between them and a command line, and the two lists
- * are reconciled against the classification — so a site cannot be quietly dropped from
- * both.
+ * Seven are reachable this way. The rest are named in {@link UNREACHABLE} with what stands
+ * between them and a command line, and the two lists are reconciled against the
+ * classification — so a site cannot be quietly dropped from both. (This said "seven of the
+ * twenty-six" and "the other nineteen", and the case below "all thirty-three": sites were
+ * added and the prose stayed, so the counts are the assertions' alone now.)
  */
 const PROBES: readonly Probe[] = [
   {
@@ -774,6 +783,11 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'init.ts «Initialized mnema project at {}» #1': 'needs a directory whose NAME holds a newline',
   'init.ts «Already a mnema project at {} — nothing to found.» #1': 'the same directory',
   'init.ts «backup key: created and enrolled — private half at {}» #1': 'needs such a key root',
+  'init.ts «a write to the public tree here is refused ({}): {}» #1':
+    'needs a checkout its key has left — and the values inside the words are the core’s, ' +
+    'each collapsed where it is written (`the-phrase-the-domain-words-is-one-line.test.ts`)',
+  'init.ts «this machine keeps the key file at {}» #1':
+    'needs a key root whose path holds a newline, and a checkout its key has left',
   'key.ts «private half installed at {}» #1': 'needs a PEM to restore from',
   'key.ts «Your copy at {} was read, not moved — keep it where it is.» #1': 'the same restore',
   'key.ts «recorded in {}» #1': 'needs a request from a second machine',
@@ -805,7 +819,7 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
 };
 
 describe('every closed site is either driven or named', () => {
-  it('covers all thirty-three, once each', () => {
+  it('covers every closed site, once each', () => {
     const closed = Object.entries(CLASSIFIED)
       .filter(([, said]) => said.verdict === 'collapsed')
       .map(([key]) => key)

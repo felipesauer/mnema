@@ -425,8 +425,16 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * `../src/repl/console.js`, `../src/presentation/detail.js` for the row under its list, and
  * `support/console.js` for the terminal it is opened on. The seven branches met at 3127, read off
  * this guard: 3121 and those six, since no clause came in on more than one of them.
+ * The next one was written from 3121, where the first six met, on an eighth branch merged after
+ * the seventh. Then 3121 -> 3132 where `init` says that a write is refused in a checkout its key
+ * left: eleven clauses in `the-init-says-a-write-is-refused.test.ts`, which drives the built
+ * binary over git clones and reads this surface's source for who asks the write's question —
+ * `node:child_process`, `node:crypto`, `node:fs`, `node:os`, `node:path`, `node:url`,
+ * `@mnema/chain`, `@mnema/core`, `vitest`, and the two support modules that read a shell line and
+ * a source file. The eight branches met at 3138, read off this guard: 3127 and those eleven,
+ * since no clause came in on more than one of them.
  */
-const CLAUSES_IN_THE_TREE = 3127;
+const CLAUSES_IN_THE_TREE = 3138;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 

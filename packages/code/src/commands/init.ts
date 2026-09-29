@@ -36,10 +36,11 @@
 
 import { statSync } from 'node:fs';
 import { join } from 'node:path';
-import { catalogUpcasters, ensureTree } from '@mnema/chain';
+import { catalogUpcasters, ensureTree, privateKeyPath } from '@mnema/chain';
 import {
   chainRootForScope,
   type DiscoveryEnv,
+  type IdentityUnavailableError,
   type NoProjectRoot,
   PROJECT_DIR,
   resolveTrees,
@@ -50,6 +51,7 @@ import {
   type EstablishedIdentity,
   establishIdentity,
   openTreeForWriting,
+  recordedAnchorOf,
   signerFor,
 } from '@mnema/core/write';
 
@@ -67,7 +69,11 @@ export interface InitResult {
   readonly created: boolean;
   /** The absolute path of the project's public tree. */
   readonly root: string;
-  /** The identity anchor this installation founded (or already serves). */
+  /**
+   * The identity anchor this installation founded, or the one it writes as in the public tree
+   * already here — or, where {@link writeRefused} is present, the one this checkout RECORDED,
+   * which no write here signs as any more.
+   */
   readonly anchor: string;
   /**
    * What establishing the identity produced — the cold backup key and the keys
@@ -75,6 +81,18 @@ export interface InitResult {
    * second init appends nothing, so there is nothing to report.
    */
   readonly identity?: EstablishedIdentity;
+  /**
+   * Present only in a project already here whose checkout recorded an identity that no longer
+   * counts this machine's key: every write to its public tree is refused, and this is that
+   * refusal — the code and the words a write prints, asked of the same function the write asks
+   * (`recordedAnchorOf`), and the file those words' restore takes, where they name one.
+   */
+  readonly writeRefused?: {
+    readonly code: IdentityUnavailableError['code'];
+    readonly message: string;
+    /** Where this machine keeps the key file `mnema key restore "<the key file>"` means. */
+    readonly keyFile?: string;
+  };
 }
 
 /** A project could not be established here: the directory can be no project's root. */
@@ -88,15 +106,18 @@ export interface InitRefused {
 /**
  * Establishes a project at `cwd`. If a `.mnema/` already exists at this exact
  * directory, init does NOT re-found — running it twice is a mistake, not a fresh
- * start — and answers with the anchor this machine writes as here. Otherwise it
+ * start — and answers with the anchor this machine writes as here, or, where the
+ * identity this checkout recorded no longer counts its key, with the refusal every
+ * write to the public tree gets ({@link InitResult.writeRefused}). Otherwise it
  * creates the tree, establishes the identity into it (anchor, cold backup key, and
  * every key of the identity enrolled), and checkpoints so all of that is
  * signature-covered at once.
  *
- * A second init therefore WRITES NOTHING, anywhere: it reads an anchor and returns.
- * That is not a claim about calls — `init.test.ts` digests every file of the project
- * tree and of the app data directory before and after, and requires both maps to be
- * unchanged.
+ * A second init therefore WRITES NOTHING, anywhere: it reads an anchor, asks the record
+ * whether that identity still counts the key, and returns. That is not a claim about
+ * calls — `init.test.ts` digests every file of the project tree and of the app data
+ * directory before and after, and requires both maps to be unchanged, and
+ * `the-init-says-a-write-is-refused.test.ts` does the same in a checkout the key left.
  *
  * THAT SENTENCE WAS TRUE ONLY FOR THE KEY THAT HAD FOUNDED THE TREE, which is the one
  * key `init.test.ts` ran it with. The anchor was read off a WRITER opened for the
@@ -137,20 +158,36 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
     // ask would leave this key's installation id behind (and, before a tail was born at
     // its first append, its public half and an empty tail too).
     //
-    // WHAT IT DOES NOT ASK: whether the identity a checkout RECORDED still counts its key.
-    // A write asks that before it appends, and refuses where the record retired the key
-    // from it (the core's `ensureFounded`); this reports the recorded identity all the
-    // same, so in a checkout the key has left, "the anchor it will write as" is the one
-    // its next write is refused as. Saying so here would change what `init` prints and
-    // exits with, which is not this answer's to decide.
+    // AND WHETHER THE IDENTITY A CHECKOUT RECORDED STILL COUNTS ITS KEY. This said it did not
+    // ask that: a write asks it before it appends, and refuses where the record retired the
+    // key from it, while this reported the recorded identity all the same — so in a checkout
+    // the key had left, "the anchor it will write as" was the one its next write was refused
+    // as. Measured on the binary: `identity: <that identity>` with exit 0, and the write
+    // right after it refused `STALE_ANCHOR`. It asks now, through the function the write asks
+    // (`recordedAnchorOf`, the core's), and answers with that refusal instead. It still
+    // writes nothing and exits 0: `init` did not fail, and what it says is what changed.
+    const asked = {
+      writer: signerFor(trees, 'public'),
+      layout: { root: chainRootForScope(trees, 'public') as string },
+      upcasters: catalogUpcasters(),
+    };
+    const recorded = recordedAnchorOf(asked);
+    if (recorded === undefined) return { created: false, root, anchor: authorizingAnchor(asked) };
+    if (recorded.counted) return { created: false, root, anchor: recorded.anchor };
+    const { refusal } = recorded;
     return {
       created: false,
       root,
-      anchor: authorizingAnchor({
-        writer: signerFor(trees, 'public'),
-        layout: { root: chainRootForScope(trees, 'public') as string },
-        upcasters: catalogUpcasters(),
-      }),
+      anchor: recorded.anchor,
+      writeRefused: {
+        code: refusal.code,
+        message: refusal.message,
+        // The file is said where the words name the restore that takes it — the same path the
+        // command line's catch builds for a refused write, from the same key root.
+        ...(refusal.restores !== undefined
+          ? { keyFile: privateKeyPath({ root: trees.keyRoot }, refusal.restores) }
+          : {}),
+      },
     };
   }
 
