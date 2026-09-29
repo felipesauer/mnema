@@ -105,6 +105,8 @@ export {
   ensureFounded,
   establishIdentity,
   type IdentityOk,
+  type RecordedAnchor,
+  recordedAnchorOf,
   revokeKey,
 } from './workflow/identity-operations.js';
 // The write operations for the work domain: each appends an event a gate

@@ -138,7 +138,7 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
         io.out(render(fact(THE_LINE_IN_THEIRS, 2)));
       } else {
         io.out(onOneLine`Already a mnema project at ${result.root} — nothing to found.`);
-        io.out(render(fact(`identity: ${result.anchor}`)));
+        reportWhoWritesHere(result, io, render);
       }
     });
   return mutatesTheRecord(init);
@@ -186,5 +186,40 @@ function reportIdentity(identity: InitResult['identity'], io: CliIo, render: Ren
   }
   for (const declined of identity.declined) {
     io.out(render(fact(`key ${declined.fingerprint} was NOT enrolled: ${declined.reason}`)));
+  }
+}
+
+/**
+ * The line under "nothing to found": the identity this machine writes as here — or, where the
+ * identity this checkout recorded no longer counts its key, that a write to the public tree is
+ * refused.
+ *
+ * IT WAS THE IDENTITY ALONE, and in a checkout the key had left that was the identity the next
+ * write was refused as: measured on the binary, `identity: <the recorded identity>` with exit 0,
+ * then `Refused (STALE_ANCHOR)` on the write after it. There the line says the refusal now, in
+ * the words the refused write prints — its code, its message, and the file its restore takes, on
+ * the line `reportIdentityRefusal` puts it on (`wiring/report.ts`) — so a person who runs `init`
+ * to see who they are here is told what the write would have told them.
+ *
+ * THE PUBLIC TREE, because that is the tree this verb answers for and the one a retirement
+ * reaches: `key revoke` writes it alone, and a `--scope private` write in the same checkout lands
+ * (measured). THE EXIT STAYS 0: `init` did what it was asked, and the line is what changed.
+ * `the-init-says-a-write-is-refused.test.ts` runs both checkouts on the binary.
+ */
+function reportWhoWritesHere(result: InitResult, io: CliIo, render: Render): void {
+  const refused = result.writeRefused;
+  if (refused === undefined) {
+    io.out(render(fact(`identity: ${result.anchor}`)));
+    return;
+  }
+  io.out(
+    render(
+      fact(
+        onOneLine`a write to the public tree here is refused (${refused.code}): ${refused.message}`,
+      ),
+    ),
+  );
+  if (refused.keyFile !== undefined) {
+    io.out(render(fact(onOneLine`this machine keeps the key file at ${refused.keyFile}`)));
   }
 }
