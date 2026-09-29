@@ -162,6 +162,37 @@ describe('mnema verify', () => {
   });
 });
 
+describe('the machine the verdict is asked from', () => {
+  it('says the backup `init` made as one where it was made, and as the record alone says it anywhere else', () => {
+    // The link from the verb to the chain: the census can only say a key is a backup if the
+    // verb hands it THIS machine's key root, and a verb that stopped handing it would print
+    // the key `init` made never to write as one whose tail may have gone.
+    const { repo, env } = setup();
+    const made = runInit({ cwd: repo, env });
+    const backup = made.identity?.backup?.fingerprint;
+    expect(backup).toBeDefined();
+    const anotherMachine = join(sandbox, 'another-machine');
+    mkdirSync(anotherMachine, { recursive: true });
+
+    const here = runVerify({ cwd: repo, env, requirement: 'chained', global: false });
+    const there = runVerify({
+      cwd: repo,
+      env: { home: anotherMachine },
+      requirement: 'chained',
+      global: false,
+    });
+    if (!here.ok || !there.ok) throw new Error('verify refused a project it was run in');
+
+    const kinds = (out: VerifyDone) =>
+      verdictOf(out, 'public').result.census.map((note) => [note.kind, note.fingerprint]);
+    expect(kinds(here)).toEqual([['backup-key', backup]]);
+    expect(kinds(there)).toEqual([['key-without-tail', backup]]);
+    // What the machine knows moves the words, never the verdict.
+    expect(here.record.level).toBe(there.record.level);
+    expect(here.record.ok).toBe(there.record.ok);
+  });
+});
+
 describe('which trees the verdict covers', () => {
   it('covers the private tree, and its signed facts are in the verdict', () => {
     // The defect, at the command: a fact written `--scope private` is signed, and

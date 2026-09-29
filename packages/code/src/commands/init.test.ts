@@ -166,7 +166,11 @@ describe('mnema init', () => {
   it('reports the backup key with no tail as a census note, not as a break', () => {
     // A consequence worth pinning: a cold key never writes, so it never has a
     // tail, and the verifier's census flags a committed key without one. It is
-    // informational by construction — `ok` and `fullySigned` stay true.
+    // informational by construction — `ok` and `fullySigned` stay true. Asked with
+    // no key root, as here, the census reads the record alone and cannot tell the
+    // backup from a key whose tail went; `mnema verify` hands it this machine's, and
+    // then says the key as a backup (`verify.test.ts`, "the machine the verdict is
+    // asked from").
     const { repo, env } = setup();
     const result = runInit({ cwd: repo, env });
     const verdict = verify(result.root);

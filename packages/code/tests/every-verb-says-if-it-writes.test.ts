@@ -42,11 +42,14 @@
  *
  * WHY EVENTS AND KEYS RATHER THAN A DIGEST OF THE SANDBOX. `guard.test.ts` proves that
  * one verb writes nothing by hashing the whole sandbox, and that is the stronger
- * statement — but it is only available to a verb that opens no cache. Most reads rebuild
- * the projection cache, which writes a file, and a digest would accuse all of them. The
- * question this classification answers is not "does it touch the disk": it is "can this
- * reach the record" — an event in a chain, or the key material an identity is. Those two
- * are counted, and the cache is deliberately not.
+ * statement. This paragraph said it was "only available to a verb that opens no cache",
+ * because "most reads rebuild the projection cache, which writes a file". That premise was
+ * false: the projection is held in memory (`CacheOptions.dbPath` has no production caller),
+ * and the tools' guard, which does digest its whole sandbox, finds no read that changes a
+ * path of it. What stands is the other half: the question this classification answers is
+ * not "does it touch the disk" but "can this reach the record" — an event in a chain, or
+ * the key material an identity is — and those two are what is counted here. Whether every
+ * VERB also leaves its whole sandbox as it found it has not been measured.
  *
  * AND THE EXERCISE IS CHECKED FOR HAVING HAPPENED. A refused invocation writes nothing,
  * so a fixture that quietly stopped producing a valid id would leave every read passing

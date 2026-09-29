@@ -645,13 +645,15 @@ function report(io: CliIo, render: Render, tree: TreeReport, where = ''): void {
  * look at. A note whose locus was guessed from whichever field happened to be there
  * would send a reader to the wrong file, which is worse than not printing it.
  *
- * The two are different things and they name different things: one is about a KEY
- * with no tail (so it names the fingerprint), the other about a TAIL whose last line
- * was dropped (so it names the tail).
+ * They are about different things and they name different things: two are about a KEY
+ * with no tail — a key the record alone cannot place, and a backup this machine
+ * registered — so they name the fingerprint; the third is about a TAIL whose last line
+ * was dropped, so it names the tail.
  */
 function censusLocus(note: CensusNote): string {
   switch (note.kind) {
     case 'key-without-tail':
+    case 'backup-key':
       return note.fingerprint;
     case 'partial-final-line':
       return note.tail;
