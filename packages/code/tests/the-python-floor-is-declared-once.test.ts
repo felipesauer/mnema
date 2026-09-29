@@ -75,10 +75,12 @@ function textOf(where: string): string | null {
 const OWNER = 'packages/chain/verifier/README.md';
 
 /**
- * A PYTHON FLOOR, AS A FILE STATES ONE. The discriminant is the claim, in every shape a claim of
- * a floor takes — the number followed by `or later`, `or newer`, `or above`, `or higher` or `+`,
- * or preceded by `≥` or `>=` — and not the word `Python` near a number: the runner's own 3.12 is
- * named in this workspace, correctly, and it is not a floor.
+ * A PYTHON FLOOR, AS A FILE STATES ONE. The discriminant is the claim, and not the word `Python`
+ * near a number: the runner's own 3.12 is named in this workspace, correctly, and it is not a
+ * floor. It reads five shapes — `Python` and a number followed by `or later`, `or newer`,
+ * `or above`, `or higher` or `+`, or preceded by `≥` or `>=` — and NOTHING ELSE: a floor written
+ * as "requires 3.9" with no `Python` before it, or as `python3.9`, is not seen. The owner's own
+ * sentence has to be one of the five, which the first case below holds.
  */
 const SAYS_A_PYTHON_FLOOR =
   /\bPython\s*(?:≥|>=)\s*(\d+\.\d+)\b|\bPython\s+(\d+\.\d+)(?:\+|\s+or\s+(?:later|newer|above|higher)\b)/g;
