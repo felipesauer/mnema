@@ -63,10 +63,12 @@
  * AND THERE IS A ROW THAT COMES AND GOES WITH AN ANSWER, which is the palette's shape of row
  * turned on the roll rather than on a keystroke. An answer as tall as the window leaves the page
  * exactly as it was when its end is the end the page already showed — the same document asked
- * twice — and a page that does not move is an answer nobody saw land. So the area says so, on a
- * row of its own at the top, directly under the window it is about; the row exists only while it
- * is true and it takes its row out of the middle region, exactly as the list does. Every ordinary
- * frame, the opening included, is the area it always was ({@link AreaRequest.unmoved}).
+ * twice — and so does every answer asked by a reader who has walked back, whose page the roll
+ * holds still on purpose. A page that does not move is an answer nobody saw land. So the area
+ * says so, on a row of its own at the top, directly under the window it is about; the row exists
+ * only while it is true and it takes its row out of the middle region, exactly as the list does.
+ * It is ONE row whichever of its two sentences it holds, so what arrives here is one width. Every
+ * ordinary frame, the opening included, is the area it always was ({@link AreaRequest.unmoved}).
  *
  * NOTHING HERE DRAWS AND NOTHING HERE COMPOSES. It receives what there is to show as
  * numbers — how wide each thing is, how many rows the palette wants, how many rows the region
@@ -126,8 +128,8 @@ export interface AreaRequest {
    * row costs the arrangement nothing: the page is chosen against the area as it stands on a frame
    * with no such row, and the row, while it stands, comes out of the middle region rather than out
    * of anything the page was budgeted for — the list of words is budgeted the same way. What makes
-   * it non-zero is the console's to say, once per answer (`console.ts`,
-   * `theLastAnswerMovedNothing`).
+   * it non-zero is the console's to say, once per answer, and so is which of the row's two
+   * sentences it is the width of (`console.ts`, `theRowSays`).
    *
    * A WIDTH RATHER THAN A YES, for the reason the badge gives: whether it is drawn on one row of
    * this terminal is this file's to rule on, and the caller answers what it knows.

@@ -289,13 +289,7 @@ export function theWindowOn(
   columns: number,
 ): readonly string[] {
   if (room <= 0 || scrolling.said.length === 0) return [];
-  // THE CEILING IS APPLIED HERE TOO, and it is not a second opinion: it is the same function the
-  // clamp uses ({@link backAtMost}), asked at the size of THIS frame. A reader who walked to the
-  // top of a narrow window and then WIDENED it is standing further back than the wider window
-  // has anywhere to stand, and the state is not corrected until they next move — so a window
-  // that took the number as given would drop lines off its own foot for one frame.
-  const last =
-    scrolling.said.length - Math.min(scrolling.back, backAtMost(scrolling.said, room, columns));
+  const last = whereTheWindowEnds(scrolling, room, columns);
   const window: string[] = [];
   let used = 0;
   for (let at = last - 1; at >= 0; at -= 1) {
@@ -306,6 +300,43 @@ export function theWindowOn(
     used += rows;
   }
   return window;
+}
+
+/**
+ * WHERE THE WINDOW ENDS — how many lines of the roll there are up to and including the last one
+ * a reader can see, at this size.
+ *
+ * THE CEILING IS APPLIED HERE TOO, and it is not a second opinion: it is the same function the
+ * clamp uses ({@link backAtMost}), asked at the size of THIS frame. A reader who walked to the
+ * top of a narrow window and then WIDENED it is standing further back than the wider window
+ * has anywhere to stand, and the state is not corrected until they next move — so a window
+ * that took the number as given would drop lines off its own foot for one frame.
+ *
+ * ONE ANSWER AND TWO READERS: the window itself ({@link theWindowOn}), and the question of whether
+ * the tail is in it ({@link theTailIsInTheWindow}). Two copies of this subtraction would be two
+ * ideas of where a reader is standing, and the one nobody draws from would be the wrong one.
+ */
+function whereTheWindowEnds(scrolling: Scrolling, room: number, columns: number): number {
+  return (
+    scrolling.said.length - Math.min(scrolling.back, backAtMost(scrolling.said, room, columns))
+  );
+}
+
+/**
+ * WHETHER THE LAST LINE THE SESSION SAID IS IN THE WINDOW, at this size — which is not always
+ * whether the reader is following the tail ({@link followingTheTail}).
+ *
+ * THE TWO COME APART BY ONE ROAD, and it is the paragraph above. How far back a reader has walked
+ * is corrected only when they next move, so a reader who walked back and then made the window
+ * tall enough for the whole roll is still counted as walked back while every line, the last one
+ * included, is on the page. Whoever asks *is the end of what was said in front of the reader* is
+ * asking about the page, and this answers it by the same subtraction the window is cut by
+ * ({@link whereTheWindowEnds}). A window with no room, or a roll with nothing on it, shows no line
+ * at all, and so not the last one.
+ */
+export function theTailIsInTheWindow(scrolling: Scrolling, room: number, columns: number): boolean {
+  if (room <= 0 || scrolling.said.length === 0) return false;
+  return whereTheWindowEnds(scrolling, room, columns) === scrolling.said.length;
 }
 
 /**
