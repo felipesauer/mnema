@@ -34,6 +34,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { accountsFor, asMinted } from './support/a-page-held-to-a-run.js';
 import { read } from './support/published-examples.js';
 import { argvOf, linesOf } from './support/reading-a-shell-line.js';
 
@@ -43,9 +44,6 @@ const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 /** The page, and the heading the block lives under. */
 const PAGE = 'README.md';
 const SECTION = '## Your first record';
-
-/** The mark of a cut: inside a line, what was shortened; alone on a line, lines left out. */
-const CUT = '…';
 
 /** One command of the block, and the lines the page shows under it. */
 interface Shown {
@@ -105,50 +103,11 @@ function theBlock(): readonly Shown[] {
 /**
  * A line as a SHAPE: what belongs to the machine replaced by what it is. Both sides are read
  * through this one function, so neither can be made to agree by a replacement the other did
- * not get.
+ * not get. What counts as minted is read in one place for every case that holds this page to a
+ * run (`support/a-page-held-to-a-run.ts`); the repository's path is this block's own.
  */
 function asShape(line: string, repo: string): string {
-  return line
-    .split(repo)
-    .join('/path/to/repo')
-    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, '<uuid>')
-    .replace(/\b\d{4}-\d{2}-\d{2}\b/g, '<date>')
-    .replace(/[0-9a-f]{8,}/g, '<hex>');
-}
-
-/** A shown line as a pattern over one printed line: literal, except where it marks a cut. */
-function patternOf(shown: string): RegExp {
-  const literal = shown.split(CUT).map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-  return new RegExp(`^${literal.join('.*?')}$`);
-}
-
-/**
- * Whether the lines a page shows account for every line printed, in order, with {@link CUT}
- * the only way to leave anything out. A line that is the mark alone stands for ONE OR MORE
- * lines: a mark where nothing was cut would say something the page did not do.
- */
-function accountsFor(shown: readonly string[], printed: readonly string[]): boolean {
-  const memo = new Map<string, boolean>();
-  const from = (i: number, j: number): boolean => {
-    const key = `${i},${j}`;
-    const known = memo.get(key);
-    if (known !== undefined) return known;
-    let answer: boolean;
-    if (i === shown.length) {
-      answer = j === printed.length;
-    } else if (shown[i]?.trim() === CUT) {
-      answer = false;
-      for (let k = j + 1; k <= printed.length && !answer; k += 1) answer = from(i + 1, k);
-    } else {
-      answer =
-        j < printed.length &&
-        patternOf(shown[i] as string).test(printed[j] as string) &&
-        from(i + 1, j + 1);
-    }
-    memo.set(key, answer);
-    return answer;
-  };
-  return from(0, 0);
+  return asMinted(line.split(repo).join('/path/to/repo'));
 }
 
 let sandbox: string;
@@ -192,6 +151,22 @@ describe('the first record the root page shows', () => {
         `${where}\n--- the page shows:\n${expected.join('\n')}\n--- the binary printed:\n${printed.join('\n')}`,
       ).toBe(true);
     }
+  });
+
+  it('says how long the id it shortens runs, and it runs that long', () => {
+    // THE ONE NUMBER THE BLOCK STATES OF ITSELF, held to the binary: the page's own comment says
+    // what its `…` shortens, and a comment that said the wrong length would be the one line of the
+    // block nothing read.
+    const said = /an id that runs to (\d+) hex characters/.exec(read(PAGE));
+    expect(said, `${PAGE} no longer says how long the id it shortens runs`).not.toBeNull();
+    const ran = spawnSync(process.execPath, [CLI, 'init'], {
+      cwd: repo,
+      encoding: 'utf-8',
+      env: { PATH: process.env.PATH ?? '', HOME: home },
+    });
+    expect(ran.status, ran.stderr).toBe(0);
+    const identity = /identity: mnid:([0-9a-f]+)/.exec(ran.stdout);
+    expect(identity?.[1]).toHaveLength(Number(said?.[1]));
   });
 
   it('reads the four commands the page publishes, each with what it printed', () => {

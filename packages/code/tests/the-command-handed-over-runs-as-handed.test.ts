@@ -398,11 +398,15 @@ export const NOT_CHECKED: Readonly<Record<string, string>> = {
  * hands over the same restore on that condition where it used to warn; and the way out hands over
  * `key request --anchor … --key "<its file>"` for a copy of a key this machine keeps (28 → 32
  * lines); on the page, the row that says so names that request (23 → 24).
+ *
+ * THE FRONT PAGE SAYS WHAT LEAVES A MACHINE, and that moved one row of the pages, looked at: the
+ * line saying what a privately recorded fact never sends anywhere names `mnema witness stamp`, the
+ * one verb that sends a checkpoint's digest, and only when it is run (63 → 64 names).
  */
 export const HANDED_OVER: Readonly<
   Record<Handed['from'], Readonly<Record<Reading['kind'], number>>>
 > = {
-  span: { line: 24, name: 63, flag: 1, unwritten: 0 },
+  span: { line: 24, name: 64, flag: 1, unwritten: 0 },
   block: { line: 33, name: 20, flag: 0, unwritten: 0 },
   source: { line: 32, name: 42, flag: 3, unwritten: 3 },
 };
