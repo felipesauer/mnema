@@ -15,16 +15,22 @@
  *     and that workflow is the gate's table (`DECISION_TRANSITIONS`) with the proof each move owes.
  *     The state a decision is born into and the one in force are the core's and the copilot's
  *     answers, asked here rather than assumed.
+ *   - TWO COUNTS THE PAGE HAD CARRIED FOR A WHILE, and one of them had gone wrong: the plugin's row
+ *     said *"two hooks"* after the notes arrived beside the opening document and made them three.
+ *     The hooks are counted off `plugin/hooks/hooks.json`, and the points where the format's
+ *     document did not suffice off what the second reader itself lists (`mnema_verify.py gaps`).
  *
  * WHAT IT DOES NOT CHECK: the prose between them. "Handing the decision over moves the agent from
  * 33.3% to 100.0%" is held to the rates, but whether the sentence says what they MEAN is a
  * reviewer's question; so is every diagram on the page that draws a flow rather than a table.
  */
 
+import { execFileSync } from 'node:child_process';
+import { join } from 'node:path';
 import { decisionDisposition } from '@mnema/copilot';
 import { DECISION_STATES, DECISION_TRANSITIONS, INITIAL_DECISION_STATE } from '@mnema/core';
 import { describe, expect, it } from 'vitest';
-import { read } from './support/published-examples.js';
+import { ROOT, read } from './support/published-examples.js';
 import { linesOf } from './support/reading-a-shell-line.js';
 
 /** The page this file rules on. */
@@ -68,13 +74,27 @@ const WORDS = [
   'eight',
   'nine',
   'ten',
+  'eleven',
+  'twelve',
+  'thirteen',
+  'fourteen',
+  'fifteen',
+  'sixteen',
+  'seventeen',
+  'eighteen',
+  'nineteen',
 ];
+
+/** The tens this page could write a count in, from twenty. */
+const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
 
 /** A count in words — and a count this page would never write in words is refused, not guessed. */
 function inWords(count: number): string {
   const word = WORDS[count];
-  if (word === undefined) throw new Error(`no word here for ${count}`);
-  return word;
+  if (word !== undefined) return word;
+  if (count < 20 || count > 99) throw new Error(`no word here for ${count}`);
+  const [tens, units] = [Math.floor(count / 10), count % 10];
+  return units === 0 ? (TENS[tens] as string) : `${TENS[tens]}-${WORDS[units]}`;
 }
 
 const MONTHS = [
@@ -283,5 +303,40 @@ describe("the decision's states the front page draws", () => {
     // NON-VACUITY: four moves and the birth, as the table has today.
     expect(theDiagramDrawn(page)).toHaveLength(DECISION_TRANSITIONS.length + 1);
     expect(DECISION_TRANSITIONS.length).toBeGreaterThan(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The counts the page takes from the rest of the repository
+// ---------------------------------------------------------------------------
+
+describe('the counts the front page takes from the rest of the repository', () => {
+  const page = read(PAGE).replace(/\s+/g, ' ');
+
+  it('counts the plugin’s hooks as its declaration declares them, and when each runs', () => {
+    const declared = JSON.parse(read('plugin/hooks/hooks.json')) as {
+      hooks: Record<string, { hooks: unknown[] }[]>;
+    };
+    const per = (event: string): number =>
+      (declared.hooks[event] ?? []).reduce((total, matcher) => total + matcher.hooks.length, 0);
+    const all = Object.keys(declared.hooks).reduce((total, event) => total + per(event), 0);
+    expect(page).toContain(
+      `The Claude Code plugin: ${inWords(all)} hooks — ${inWords(per('SessionStart'))} as a session opens, ${inWords(per('PreToolUse'))} at each edit —`,
+    );
+    // NON-VACUITY: the declaration is read, not assumed to be empty.
+    expect(all).toBeGreaterThan(1);
+  });
+
+  it('counts the points the second reader lists where the document did not suffice', () => {
+    const listed = execFileSync(
+      'python3',
+      [join(ROOT, 'packages/chain/verifier/mnema_verify.py'), 'gaps'],
+      { encoding: 'utf-8' },
+    );
+    const counted = /^(\d+) gaps:/m.exec(listed);
+    expect(counted, 'the second reader no longer says how many gaps it lists').not.toBeNull();
+    expect(page).toContain(
+      `found ${inWords(Number(counted?.[1]))} points where the specification was not enough`,
+    );
   });
 });

@@ -153,6 +153,22 @@ describe('the first record the root page shows', () => {
     }
   });
 
+  it('says how long the id it shortens runs, and it runs that long', () => {
+    // THE ONE NUMBER THE BLOCK STATES OF ITSELF, held to the binary: the page's own comment says
+    // what its `…` shortens, and a comment that said the wrong length would be the one line of the
+    // block nothing read.
+    const said = /an id that runs to (\d+) hex characters/.exec(read(PAGE));
+    expect(said, `${PAGE} no longer says how long the id it shortens runs`).not.toBeNull();
+    const ran = spawnSync(process.execPath, [CLI, 'init'], {
+      cwd: repo,
+      encoding: 'utf-8',
+      env: { PATH: process.env.PATH ?? '', HOME: home },
+    });
+    expect(ran.status, ran.stderr).toBe(0);
+    const identity = /identity: mnid:([0-9a-f]+)/.exec(ran.stdout);
+    expect(identity?.[1]).toHaveLength(Number(said?.[1]));
+  });
+
   it('reads the four commands the page publishes, each with what it printed', () => {
     // NON-VACUITY. A block the reader stopped finding would make the case above hold over no
     // command at all.

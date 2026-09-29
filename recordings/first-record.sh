@@ -32,6 +32,10 @@ PACE=${PACE:-1}
 pause() { if [ "$PACE" != 0 ]; then sleep "$1"; fi; }
 
 export TERM=xterm-256color
+# One byte, one column, for every tool the script pipes through: `fold` counts bytes where coreutils
+# is built without multibyte support and characters where it is built with it, and the `—` in
+# `verify`'s lines is three bytes, so an unpinned locale folds the same output two ways.
+export LC_ALL=C
 SB=$(realpath "$(mktemp -d "${TMPDIR:-/tmp}/mnema-first-record-XXXXXX")")
 trap 'rm -rf "$SB"' EXIT
 H="$SB/home"
