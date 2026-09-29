@@ -1,13 +1,21 @@
 /**
- * What the product says when a rule of the record reaches the moment a file is about
- * to be written — the first thing mnema pushes that nobody asked for and that is not
- * the opening document.
+ * What the product says when a file a rule of the record addresses is edited — the first
+ * thing mnema pushes that nobody asked for and that is not the opening document.
  *
- * WHAT IT CLOSES, measured rather than supposed. The opening document arrives once, and
- * a round of use scored the arm carrying it at 1/4 on the task that discriminates
+ * WHAT IT WAS BUILT TO CLOSE, measured rather than supposed. The opening document arrives
+ * once, and a round of use scored the arm carrying it at 1/4 on the task that discriminates
  * (`a4-collation`): the rule reached the session and did not survive to the moment the
- * code was written. This is that moment, and it is the only one this module answers —
- * one event, one path, one text.
+ * code was written. This paragraph then said "This is that moment", and the host says it is
+ * not. The hook fires before the write, and the text it hands over reaches the conversation
+ * AFTER the result of that write — measured against the real binary on 2.1.228 and again on
+ * 2.1.281 (`measurements/mcp-tool-channel/`), with the request the host sends next as the
+ * evidence. So a rule this module answers with lands beside the result of that write, in
+ * time for every edit after it and for a correction of that one, and never in time for the
+ * bytes of the edit that fired it. Round 3 of the bench tied the arms with and without this
+ * push on tasks decided by their first write, which is what that predicts
+ * (`measurements/p1/results/2026-08-21-full/report.md`). What holds a write is the pause a
+ * rule asks for (`edit-asks-a-person.ts`), and nothing here. It is still one event, one
+ * path, one text.
  *
  * ## The thin form, and the number that decided it
  *

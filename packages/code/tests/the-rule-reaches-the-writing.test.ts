@@ -1,6 +1,12 @@
 /**
- * The rule reaches the moment the code is written: the first thing this product pushes
- * at a model that is not the opening document.
+ * The rule reaches the writing: the first thing this product pushes at a model that is not
+ * the opening document. It reaches it BESIDE THE RESULT of the write that fired the hook —
+ * in time for every edit after it and for a correction of that one, and not for the bytes of
+ * that first write. This sentence used to say "the rule reaches the moment the code is
+ * written", and the host falsified it: the request it sends after the write carries the text
+ * after that write's result, measured on 2.1.228 and again on 2.1.281
+ * (`measurements/mcp-tool-channel/`). Nothing below can hold that either way, for the reason
+ * the next paragraph gives.
  *
  * WHAT IS PROVED HERE AND WHAT CANNOT BE. The host is what dispatches the hook, and no
  * test in this repository can make it do so — so the assertions below stop exactly where
@@ -9,9 +15,11 @@
  * cannot forge a second rule; that the silence is silence and not an error; and that the
  * two files the plugin ships AGREE about the server the hook names. What they cannot
  * cover — that the host calls the tool at all, and that what it returns arrives in the
- * session — was measured instead, against the real binary, and the capture is
- * `measurements/mcp-tool-channel/results/2026-08-19/channel-exists.json`. A hook only the
- * host dispatches is not testable in CI, and saying so is part of the delivery.
+ * session, and where — was measured instead, against the real binary, and the captures are
+ * `measurements/mcp-tool-channel/results/2026-08-19/channel-exists.json` and, for where the
+ * text lands on the host installed on 29 Sep 2026,
+ * `measurements/mcp-tool-channel/results/2026-09-29/where-the-rule-lands.json`. A hook only
+ * the host dispatches is not testable in CI, and saying so is part of the delivery.
  *
  * THE NAME OF THE SERVER IS THE MOST FRAGILE THING IN THIS SLICE, and it gets a case of
  * its own for that reason. A hook naming a server the host does not know is not an

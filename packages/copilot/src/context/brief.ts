@@ -188,10 +188,10 @@ export interface Brief {
    * `rel: "governs"` in a tree that travels.
    *
    * WHY A NUMBER IS IN THIS ANSWER AT ALL, since everything else in it is a list. The
-   * product pushes a rule at the moment a file it addresses is about to be written, and
-   * that channel is SILENT when no rule addresses the path — a decision taken with a
-   * measurement behind it, because the alternative pays for "nothing governs this" on
-   * every edit of every session. Silence only means something to a reader who knows the
+   * product pushes a rule at each edit of a file it addresses, beside the result of that
+   * write, and that channel is SILENT when no rule addresses the path — a decision taken
+   * with a measurement behind it, because the alternative pays for "nothing governs this"
+   * on every edit of every session. Silence only means something to a reader who knows the
    * mechanism is there, and this is where they are told: once, when the session opens.
    * Zero is a legitimate value and it is the most informative one — it says the record
    * holds rules and none of them has been placed.

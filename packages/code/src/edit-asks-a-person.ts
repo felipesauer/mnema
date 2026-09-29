@@ -3,7 +3,7 @@
  * written — the first thing mnema has ever said that stops somebody.
  *
  * Everything upstream of this module informs. The document a session opens with, the
- * patterns a tool answers, the rules handed over as a file is about to change: all of them
+ * patterns a tool answers, the rules handed over at each edit: all of them
  * hand over text and the reader does what they like with it. This one is different in kind,
  * and the difference is not a matter of degree — the text below comes back as the RESULT of
  * a refused call, and until somebody decides, the file is not written.

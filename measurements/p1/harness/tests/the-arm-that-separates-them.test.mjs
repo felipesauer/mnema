@@ -8,7 +8,7 @@
 // cheapest evidence that it did not is a file about that arm that was not rewritten.
 //
 // WHAT ROUND 3 ASKS, and why the pair is the whole question. Round 2's `mnema+` carried
-// two channels — a document as the session opens, and rules pushed before every matched
+// two channels — a document as the session opens, and rules pushed at every matched
 // edit — and no arm of that round separated them. Its committed `cells.jsonl` says
 // `mcp_pushed` is 1 in all 24 headline cells and the capture of 19 Aug says the pushed
 // text lands AFTER the tool result of the edit that triggered it, so in every headline

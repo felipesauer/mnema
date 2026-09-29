@@ -4,8 +4,8 @@
 // WHAT THIS FILE IS AND IS NOT, stated first because the file used to be the whole
 // mechanism and is not any more. Until 2026-08-19 the fifth arm was one `SessionStart`
 // command hook, this module was all of it, and the arm was called `plugin`. The product
-// then shipped two more channels — the rules addressed at a file, handed over as that
-// file is about to be written, and the pause where a rule asks for a person — and the
+// then shipped two more channels — the rules addressed at a file, handed over at each
+// edit of it, and the pause where a rule asks for a person — and the
 // round's pre-registration names the arm `mnema+`: the record served unasked AND charged
 // for. So this file now holds only the wiring of both declarations, the shim the document
 // handler needs, and the reading of whether the document was produced. What the per-edit
@@ -69,8 +69,8 @@ export const HOOK_EVENT = 'SessionStart'
  *
  * A SECOND EVENT, and it arrived after this file did. Until 2026-08-19 the fifth arm
  * was one `SessionStart` command hook and this module's header said so; the product
- * then shipped the rules addressed at a file, handed over as that file is about to be
- * written, and the pause where a rule asks for a person. Both ride this event, both
+ * then shipped the rules addressed at a file, handed over at each edit of it, and the
+ * pause where a rule asks for a person. Both ride this event, both
  * are declared in the same `hooks.json`, and neither is a command: the entry is of
  * type `mcp_tool`, so what runs is a tool on the MCP server the cell already declares
  * (`packages/code/src/mcp/tools.ts`). That is the arm satisfying G7 of

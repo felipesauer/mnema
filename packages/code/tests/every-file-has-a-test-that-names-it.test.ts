@@ -454,8 +454,15 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * `support/a-page-held-to-a-run.ts` what the machine mints and what a cut may leave out, where it
  * spelled both itself. The ten branches met at 3174, read off this guard: 3153 and those
  * twenty-one, since no clause came in on more than one of them.
+ * Then 3174 -> 3189 where the rules for a file are said to land beside the result of the write
+ * that fired them: fifteen clauses in `the-rules-land-beside-the-write.test.ts`, which reads the
+ * document, the switch listing and the tools where the product composes them, and the manifest
+ * and the pages as files — `node:fs`, `node:os`, `node:path`, `node:url`, `@mnema/chain`,
+ * `@mnema/copilot`, `@mnema/core`, the three modules of the MCP SDK a client connects through,
+ * `vitest`, and `../src/mcp/instructions.js`, `../src/mcp/server.js`,
+ * `../src/presentation/brief.js` and `../src/record-framing.js` for the texts. Read off this guard.
  */
-const CLAUSES_IN_THE_TREE = 3174;
+const CLAUSES_IN_THE_TREE = 3189;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
