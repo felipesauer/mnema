@@ -473,6 +473,13 @@ export function aFrameWithout(
  * all for a frame identical to the one on the screen, so a key that moves nothing produces no
  * bytes and this never answers — which is the driver's own wall rather than a failed assertion.
  * Every caller below is a step whose effect on the page is the thing under test.
+ *
+ * ONE STEP THAT USED TO BE ON THE WRONG SIDE OF THAT IS ON THE RIGHT ONE NOW: a line whose answer
+ * leaves the window exactly as it was. It produced no bytes — the same document asked twice, taller
+ * than the window, leaves the same rows — and this waited for ever on it. Such an answer draws a
+ * row at the foot saying so now (`src/repl/console.ts`, `judged`), so its frame is not identical
+ * and this answers on it. What it answers on is that row, raised once the answer has ENDED — never
+ * the answer itself, which draws nothing new (`a-read-asked-again-draws-what-changed.test.ts`).
  */
 export function aFrameSince(prompt: string): (bytes: string, since: number) => boolean {
   const finished = aFrameAfter(prompt);

@@ -415,13 +415,26 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * `every-link-a-page-carries-lands.test.ts`, and `node:net` in
  * `every-tool-says-if-it-writes.test.ts`, read off this guard. The six branches met at 3121, read
  * off this guard: 3094 and those twenty-seven, since no clause came in on more than one of them.
- * Then 3121 -> 3132 where `init` says that a write is refused in a checkout its key left: eleven
- * clauses in `the-init-says-a-write-is-refused.test.ts`, which drives the built binary over git
- * clones and reads this surface's source for who asks the write's question — `node:child_process`,
- * `node:crypto`, `node:fs`, `node:os`, `node:path`, `node:url`, `@mnema/chain`, `@mnema/core`,
- * `vitest`, and the two support modules that read a shell line and a source file.
+ * The next one was written from 3094, where the first five met, on a seventh branch merged after
+ * the sixth. Then 3094 -> 3100 when a read asked again was made to be seen: six clauses in
+ * `a-read-asked-again-draws-what-changed.test.ts`, which now waits for the row that says an
+ * answer left the page as it was and reads its words off the product — `../src/repl/session.js`
+ * for the line and `../src/presentation/plain.js` to render it as the page shows it — types the
+ * word that clears the page as the session spells it (`../src/session-words.js`), and opens one
+ * console in process, so an answer can be over before the next key is pressed:
+ * `../src/repl/console.js`, `../src/presentation/detail.js` for the row under its list, and
+ * `support/console.js` for the terminal it is opened on. The seven branches met at 3127, read off
+ * this guard: 3121 and those six, since no clause came in on more than one of them.
+ * The next one was written from 3121, where the first six met, on an eighth branch merged after
+ * the seventh. Then 3121 -> 3132 where `init` says that a write is refused in a checkout its key
+ * left: eleven clauses in `the-init-says-a-write-is-refused.test.ts`, which drives the built
+ * binary over git clones and reads this surface's source for who asks the write's question —
+ * `node:child_process`, `node:crypto`, `node:fs`, `node:os`, `node:path`, `node:url`,
+ * `@mnema/chain`, `@mnema/core`, `vitest`, and the two support modules that read a shell line and
+ * a source file. The eight branches met at 3138, read off this guard: 3127 and those eleven,
+ * since no clause came in on more than one of them.
  */
-const CLAUSES_IN_THE_TREE = 3132;
+const CLAUSES_IN_THE_TREE = 3138;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 

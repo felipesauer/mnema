@@ -676,10 +676,16 @@ describe('the answer a caller asked for is on the page, at the shortest window t
       // session hands back, the line it was asked on follows the end of the first one
       // (`a-read-asked-again-draws-what-changed.test.ts`). A document four rows shorter did the
       // same at the THIRD read — the second still changed the page, because the rows above its
-      // line were the opening's and not an answer's. So a second read here is a step that
-      // rightly changes nothing on the page, and a step waiting for a frame it caused waits for
+      // line were the opening's and not an answer's. So a second read here was a step that
+      // rightly changed nothing on the page, and a step waiting for a frame it caused waited for
       // ever, which is what turned this case red when the document grew. It asks for the least
       // it needs.
+      //
+      // THE SECOND READ DOES DRAW A FRAME NOW, and the count stays one for the reason that is
+      // left. A second answer that leaves the window as it was raises a row at the foot saying so
+      // (`src/repl/console.ts`, `judged`), so the step would end — but on the row, over a window
+      // that took nothing new from it; the opening is pushed off by the FIRST read or not at all,
+      // and a second one would only move the row this case does not read.
       // AND THE ASK WAITS FOR THE OPENING TO HAVE GONE, which is the one wait that
       // means what this case is about. A step that waited for *a frame* ended wherever the
       // stream was quiet — measured in whole-suite runs, twice: the page it left behind still
