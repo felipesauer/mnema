@@ -266,6 +266,17 @@ const THE_SHELLS_PROMPT = `${ESC}[1m$${ESC}[0m `;
 const CONSOLE_CAST = 'recordings/console.cast';
 const CONSOLE_SCRIPT = 'recordings/console.json';
 
+/**
+ * WHERE THE CONSOLE'S SANDBOX IS MADE: under `/tmp`, and NOT under the machine's temp directory,
+ * because the console prints the project's path in its panel and the page is arranged around it.
+ * Measured with a temp directory 86 characters long: the panel folded the path over two lines,
+ * the respelling of the home no longer found it whole in the bytes, and the taller panel moved the
+ * drawing of the name into the roll — every page of the drive differed from the recording's. A
+ * sandbox under `/tmp` is the same length on every machine this file can run on: the
+ * pseudo-terminal it drives is Linux's (`script -qec`, `stty -F`), where `/tmp` always is.
+ */
+const UNDER_A_PATH_OF_ONE_LENGTH = '/tmp/mnema-console-recording-';
+
 /** A step as the pseudo-terminal runs it, and how long the recording keeps what it leaves. */
 interface Paced {
   readonly step: Step;
@@ -479,7 +490,7 @@ describe('the console recording', () => {
   beforeAll(async () => {
     // ITS OWN SANDBOX, a home inside it, and the repository inside the home — so the one path the
     // console prints is a path under the home, which the recording spells `~`.
-    sandbox = mkdtempSync(join(tmpdir(), 'mnema-console-recording-'));
+    sandbox = mkdtempSync(UNDER_A_PATH_OF_ONE_LENGTH);
     home = join(sandbox, 'home');
     project = join(home, 'your-repository');
     mkdirSync(project, { recursive: true });
