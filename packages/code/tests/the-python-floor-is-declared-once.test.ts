@@ -61,11 +61,14 @@ const TRACKED: readonly string[] = execFileSync(
   .split('\n')
   .filter((where) => where !== '');
 
-/** A file as text, or null when it is not text this case can read a sentence out of. */
+/**
+ * A file as text, or null when it is not text this case can read a sentence out of. A NUL byte
+ * decodes to U+0000, so looking for it in the text is looking for it in the bytes.
+ */
 function textOf(where: string): string | null {
   if (where === 'pnpm-lock.yaml') return null;
-  const bytes = readFileSync(join(ROOT, where));
-  return bytes.includes(0) ? null : bytes.toString('utf-8');
+  const text = readFileSync(join(ROOT, where), 'utf-8');
+  return text.includes('\u0000') ? null : text;
 }
 
 /** The owner of the floor: the second reader's own page. */
