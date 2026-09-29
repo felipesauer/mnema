@@ -177,10 +177,16 @@ have been wrong until the moment somebody pushed it. So it asks rather than asse
 ### From the terminal
 
 ```sh
+# A … marks where this page shortened what a command prints: a path, a 64-hex id, the
+# rest of a line, or — alone on a line — lines it left out.
+
 # Found a project. This creates the record and this machine's identity.
 mnema init
 #> Initialized mnema project at /path/to/repo/.mnema
-#>   identity: mnid:c0fc3c713f09a43384ac08f7d91fca43…   (64 hex, abbreviated here)
+#>   identity: mnid:c0fc3c713f09a43384ac08f7d91fca43…
+#>   backup key: created and enrolled — private half at …/identity/backup/….key
+#>   Move that file off this machine: a backup left on this disk is lost with it.
+#> …
 
 ME=mnid:c0fc3c713f09a43384ac08f7d91fca43…   # the identity printed above
 
@@ -216,6 +222,7 @@ mnema guard reopen "$TASK" --actor "$ME"
 # verdict per tree of the project, under the tree's name.
 mnema verify
 #> public: local integrity verified (T1/T2/T4); 1 tail(s); all events are signature-covered; …
+#>   census [backup-key] public …: the backup key this machine registered for mnid:c0fc3c71… — …
 #> private: no record here — nothing has been written to this tree on this machine, …
 
 # Auditing several projects? Name them, and get ONE verdict over all of them.
@@ -271,6 +278,11 @@ signature was checked` over the record it cannot vouch for.
 **And what neither value answers, said plainly.** A removed tail is reported but is
 not a break: `verify` crosses the committed keys against the tails on disk and prints
 `N committed key(s) without a tail (see census — informational, not a break)`, exit 0.
+One key is said otherwise, and only on the machine that made it: the backup `mnema init`
+creates never signs until it is restored, so on that machine it reads `N backup key(s),
+which sign nothing until restored` — and its line still says that a backup restored and
+used would have left a tail that is not there. The record does not say which key is a
+backup, so on any other machine the same key reads as a committed key without a tail.
 A tail removed *together with its key* is not reported at all — that record reads
 `0 tail(s); no events yet`, indistinguishable from a fresh one, and only a history
 outside this record (a git log, an external witness) can testify to what was taken

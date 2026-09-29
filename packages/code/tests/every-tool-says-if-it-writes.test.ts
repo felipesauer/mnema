@@ -29,6 +29,17 @@
  *      the key material on the machine — the same instrument the verbs are measured with
  *      (`support/the-record-held.ts`). A read that appends is accused by the record.
  *
+ * AND WHAT THE PROTOCOL TELLS A CLIENT IS HELD TO THE SAME CALLS. The server derives the
+ * four hints a client reads — `readOnlyHint`, `destructiveHint`, `idempotentHint`,
+ * `openWorldHint` — from these declarations (`hintsOf` in `mcp/server.ts`), and each hint
+ * is a claim about the ENVIRONMENT, which is wider than the record. So the same calls are
+ * measured three more ways, and every call is made a second time with the same arguments:
+ * every path of the sandbox is read before and after (a read may create, change or remove
+ * nothing — not a file, not a directory), every byte a file held before a call must still
+ * be where it was after it (nothing a tool does is destructive), a read's repeat may change
+ * nothing either, and every reach for the network is counted. A hint the calls contradict
+ * is named, tool by tool.
+ *
  * WHY ONE CONNECTION AND NOT ONE PER TOOL. A session is the unit of this surface: it
  * holds the warm caches the reads share and the runs the writes open, and two of the
  * writes here (`skills`, `rules_before_an_edit`) record at most once PER RUN by design.
@@ -63,9 +74,19 @@
  *     shows it: asked by `id` it serves a body and records the consultation, asked for
  *     everything adopted it may serve names alone and record nothing, and the
  *     declaration covers both because it is about the power.
+ *   - THE REPEAT IS MADE ON THE SAME CONNECTION. `idempotentHint` is false for every write,
+ *     so nothing a write's repeat does is accused; two writes add nothing on a repeat there
+ *     (`skills` and `rules_before_an_edit` record once per run) and would add again on a new
+ *     connection, which is why neither is called idempotent.
+ *   - THE NETWORK IS WATCHED IN THIS PROCESS: `fetch` and every TCP `connect`. A tool that
+ *     reached it through a child process would not be seen here — and no module of the
+ *     product starts one.
+ *   - THE SANDBOX HOLDS NO TORN FRAGMENT, so the one byte a write may take back (the tail of
+ *     a crashed append, which is not an event) is not what the destructive measurement sees.
  */
 
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { Socket } from 'node:net';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -73,8 +94,8 @@ import { ensureTree } from '@mnema/chain';
 import { type DiscoveryEnv, PROJECT_DIR } from '@mnema/core';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
-import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { ListRootsRequestSchema, type ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildMcpServer } from '../src/mcp/server.js';
 import type { RecordEffect } from '../src/record-effect.js';
 import { sourceFiles } from './support/reading-source.js';
@@ -97,6 +118,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   rmSync(sandbox, { recursive: true, force: true });
 });
 
@@ -155,6 +177,147 @@ interface Exercised {
   readonly appended: number;
   /** Whether it minted, adopted or installed key material. */
   readonly touchedKeys: boolean;
+  /** Every path of the sandbox the call created, changed or removed. */
+  readonly changed: readonly string[];
+  /** Every path whose earlier bytes the call did not leave in place. */
+  readonly destroyed: readonly string[];
+  /** How many times the call reached for the network. */
+  readonly reachedOut: number;
+}
+
+// ---------------------------------------------------------------------------
+// What the call did to the environment, which is wider than the record
+// ---------------------------------------------------------------------------
+
+/** What stands at one path of the sandbox: a directory, or a file's bytes. */
+type Standing = 'directory' | Buffer;
+
+/**
+ * Every path under `dir`, relative to it, and what stands there.
+ *
+ * Directories are paths too: a read that created an empty one would have modified its
+ * environment, and a digest of file contents alone would not see it.
+ */
+function asItStands(dir: string): Map<string, Standing> {
+  const found = new Map<string, Standing>();
+  const walk = (current: string): void => {
+    for (const entry of readdirSync(current, { withFileTypes: true })) {
+      const path = join(current, entry.name);
+      if (entry.isDirectory()) {
+        found.set(relative(dir, path), 'directory');
+        walk(path);
+      } else {
+        found.set(relative(dir, path), readFileSync(path));
+      }
+    }
+  };
+  walk(dir);
+  return found;
+}
+
+/**
+ * What a call did to the sandbox: every path it touched, and the paths whose earlier bytes
+ * it did not leave where they were — removed, or no longer the start of what is there.
+ *
+ * Growing a file is not destroying it: an append leaves every earlier byte in place, which is
+ * the whole of what `destructiveHint: false` claims.
+ */
+function whatTheCallDid(
+  before: ReadonlyMap<string, Standing>,
+  after: ReadonlyMap<string, Standing>,
+): { changed: string[]; destroyed: string[] } {
+  const changed: string[] = [];
+  const destroyed: string[] = [];
+  for (const [at, was] of before) {
+    const now = after.get(at);
+    if (now === undefined) {
+      changed.push(at);
+      destroyed.push(at);
+    } else if (was === 'directory' || now === 'directory') {
+      if (was !== now) {
+        changed.push(at);
+        destroyed.push(at);
+      }
+    } else if (!was.equals(now)) {
+      changed.push(at);
+      if (!now.subarray(0, was.length).equals(was)) destroyed.push(at);
+    }
+  }
+  for (const at of after.keys()) if (!before.has(at)) changed.push(at);
+  return { changed: changed.sort(), destroyed: destroyed.sort() };
+}
+
+/** The four hints the protocol serves, each of which this file holds to the calls. */
+const HINTS = ['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint'] as const;
+
+/** One tool as the protocol serves it, with its first call and the same call made again. */
+interface Hinted {
+  readonly tool: string;
+  readonly hints: ToolAnnotations | undefined;
+  readonly first: Exercised;
+  readonly again: Exercised;
+}
+
+/**
+ * Every hint a tool's calls contradict, one sentence each.
+ *
+ * Only the side that PROMISES is accused, as with the declarations: `readOnlyHint: false`,
+ * `destructiveHint: true`, `idempotentHint: false` and `openWorldHint: true` are the
+ * protocol's defaults and promise nothing, so no call can belie them. A hint that is not
+ * sent at all is accused too — the defaults are what a client then reads, and they are
+ * false of every tool here.
+ */
+function belied(rows: readonly Hinted[]): string[] {
+  const found: string[] = [];
+  for (const { tool, hints, first, again } of rows) {
+    for (const hint of HINTS) {
+      if (typeof hints?.[hint] !== 'boolean') found.push(`${tool} does not say ${hint}`);
+    }
+    const touched = [...first.changed, ...again.changed];
+    if (hints?.readOnlyHint === true && touched.length > 0) {
+      found.push(`${tool} says read-only and changed ${[...new Set(touched)].join(', ')}`);
+    }
+    const lost = [...first.destroyed, ...again.destroyed];
+    if (hints?.destructiveHint === false && lost.length > 0) {
+      found.push(`${tool} says additive and did not leave ${[...new Set(lost)].join(', ')}`);
+    }
+    if (
+      hints?.idempotentHint === true &&
+      (again.appended > 0 || again.touchedKeys || again.changed.length > 0)
+    ) {
+      found.push(`${tool} says idempotent and its repeat appended ${again.appended}`);
+    }
+    const reached = first.reachedOut + again.reachedOut;
+    if (hints?.openWorldHint === false && reached > 0) {
+      found.push(`${tool} says its world is closed and reached out ${reached} time(s)`);
+    }
+  }
+  return found.sort();
+}
+
+/** What a call that touched nothing measures — where the synthetic rows below start. */
+const QUIET: Omit<Exercised, 'tool' | 'effect'> = {
+  appended: 0,
+  touchedKeys: false,
+  changed: [],
+  destroyed: [],
+  reachedOut: 0,
+};
+
+/**
+ * Watches this process's two ways out to the network — `fetch`, and every TCP `connect` —
+ * refusing each attempt and counting it, so a tool that reached out is named rather than let
+ * try. `vi.restoreAllMocks` in `afterEach` takes the watch down.
+ */
+function watchTheNetwork(): () => number {
+  let reached = 0;
+  const offline = (): never => {
+    reached += 1;
+    throw new Error('this sandbox has no network');
+  };
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async () => offline());
+  vi.spyOn(Socket.prototype, 'connect').mockImplementation(offline);
+  return () => reached;
 }
 
 /**
@@ -271,6 +434,38 @@ describe('every tool says if it writes', () => {
     const client = await connectTo(server, project);
     const effectOf = new Map(tools.map((one) => [one.act, one.effect]));
     const measured: Exercised[] = [];
+    // Every call made, in order, so the same calls can be made again with the same arguments.
+    const script: { readonly tool: string; readonly args: Record<string, unknown> }[] = [];
+
+    const reached = watchTheNetwork();
+
+    /** Calls one tool once and measures the record, the sandbox and the network around it. */
+    const measure = async (
+      tool: string,
+      args: Record<string, unknown>,
+    ): Promise<{ said: string; refused: boolean; exercised: Exercised }> => {
+      const effect = effectOf.get(tool);
+      if (effect === undefined) throw new Error(`no declaration for ${tool}`);
+      const started = held(sandbox);
+      const before = asItStands(sandbox);
+      const reachedBefore = reached();
+      const result = await client.callTool({ name: tool, arguments: args });
+      const ended = held(sandbox);
+      const did = whatTheCallDid(before, asItStands(sandbox));
+      return {
+        said: textOf(result),
+        refused: result.isError === true,
+        exercised: {
+          tool,
+          effect,
+          appended: ended.events - started.events,
+          touchedKeys: ended.keys !== started.keys,
+          changed: did.changed,
+          destroyed: did.destroyed,
+          reachedOut: reached() - reachedBefore,
+        },
+      };
+    };
 
     /**
      * Calls one tool and measures the record around the call.
@@ -279,21 +474,12 @@ describe('every tool says if it writes', () => {
      * an id from a birth, a name the product chose. Nothing below types an id.
      */
     const call = async (tool: string, args: Record<string, unknown> = {}): Promise<string> => {
-      const effect = effectOf.get(tool);
-      if (effect === undefined) throw new Error(`no declaration for ${tool}`);
-      const started = held(sandbox);
-      const result = await client.callTool({ name: tool, arguments: args });
-      const said = textOf(result);
+      const { said, refused, exercised } = await measure(tool, args);
       // A refusal writes nothing, so a call that decayed into one would make its tool
       // pass this guard for a reason that has nothing to do with reading.
-      expect(result.isError, `${tool} was refused: ${said}`).toBeFalsy();
-      const ended = held(sandbox);
-      measured.push({
-        tool,
-        effect,
-        appended: ended.events - started.events,
-        touchedKeys: ended.keys !== started.keys,
-      });
+      expect(refused, `${tool} was refused: ${said}`).toBe(false);
+      measured.push(exercised);
+      script.push({ tool, args });
       return said;
     };
 
@@ -341,11 +527,39 @@ describe('every tool says if it writes', () => {
     await call('audit_exposure');
     await call('audit_antipatterns');
 
+    // ---- the same calls, again, with the same arguments ----
+    // Whatever each answers now — a transition asked twice is refused, and that is an
+    // answer — what is measured is what the repeat did to the sandbox.
+    const repeated = new Map<string, Exercised>();
+    for (const { tool, args } of script) repeated.set(tool, (await measure(tool, args)).exercised);
+
+    const servedHints = new Map(
+      (await client.listTools()).tools.map((one) => [one.name, one.annotations] as const),
+    );
     await client.close();
 
     // Every tool was called, and no tool twice: a table that lost a row would otherwise
     // leave a tool this file never measured, silently.
     expect(measured.map((one) => one.tool).sort()).toEqual(tools.map((one) => one.act).sort());
+
+    // WHAT THE PROTOCOL SAYS, HELD TO WHAT THE CALLS DID, tool by tool: nothing a read did
+    // changed a path of the sandbox, on its call or its repeat; nothing any tool did left an
+    // earlier byte out of place; and nothing reached for the network.
+    const rows: Hinted[] = measured.map((first) => ({
+      tool: first.tool,
+      hints: servedHints.get(first.tool),
+      first,
+      again: repeated.get(first.tool) as Exercised,
+    }));
+    expect(belied(rows)).toEqual([]);
+    // The instrument's own teeth, on the same data. It saw the writes change the sandbox —
+    // so a walk that stopped reading files cannot leave the line above passing over nothing —
+    // and it saw a REPEAT change it, so the repeats were really made and really measured.
+    expect(measured.filter((one) => one.changed.length > 0).map((one) => one.tool)).toEqual(
+      measured.filter((one) => one.appended > 0).map((one) => one.tool),
+    );
+    expect([...repeated.values()].filter((one) => one.appended > 0).length).toBeGreaterThan(0);
+    expect(repeated.size).toBe(tools.length);
 
     // THE RULE. Every tool that declared itself a read was called for real, and the
     // record it left behind holds exactly what it held before.
@@ -385,11 +599,11 @@ describe('every tool says if it writes', () => {
     // "nothing is accused": it exercises neither the accusation nor its limit. These rows
     // are synthetic and never enter the server's tables.
     const rows: readonly Exercised[] = [
-      { tool: 'reader', effect: 'reads', appended: 0, touchedKeys: false },
-      { tool: 'liar', effect: 'reads', appended: 1, touchedKeys: false },
-      { tool: 'thief', effect: 'reads', appended: 0, touchedKeys: true },
-      { tool: 'writer', effect: 'mutates', appended: 3, touchedKeys: false },
-      { tool: 'idle-writer', effect: 'mutates', appended: 0, touchedKeys: false },
+      { ...QUIET, tool: 'reader', effect: 'reads', appended: 0, touchedKeys: false },
+      { ...QUIET, tool: 'liar', effect: 'reads', appended: 1, touchedKeys: false },
+      { ...QUIET, tool: 'thief', effect: 'reads', appended: 0, touchedKeys: true },
+      { ...QUIET, tool: 'writer', effect: 'mutates', appended: 3, touchedKeys: false },
+      { ...QUIET, tool: 'idle-writer', effect: 'mutates', appended: 0, touchedKeys: false },
     ];
     expect(accused(rows)).toEqual([
       'liar declares reads and appended 1',
@@ -409,6 +623,121 @@ describe('every tool says if it writes', () => {
       unexpected: [],
       stale: ['idle-writer'],
     });
+  });
+
+  it('names every hint a call belies, and never one that promises nothing — on rows of its own', () => {
+    // The hints' half of the case above: with the server honest, the measurement says only
+    // "nothing is belied", which exercises neither the accusation nor its limit.
+    const read: ToolAnnotations = {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    };
+    const write: ToolAnnotations = { ...read, readOnlyHint: false, idempotentHint: false };
+    const reader = (tool: string, measured: Partial<Exercised> = {}): Exercised => ({
+      ...QUIET,
+      tool,
+      effect: 'reads',
+      ...measured,
+    });
+    const writer = (tool: string, measured: Partial<Exercised> = {}): Exercised =>
+      reader(tool, { effect: 'mutates', ...measured });
+    const rows: readonly Hinted[] = [
+      { tool: 'reader', hints: read, first: reader('reader'), again: reader('reader') },
+      // A read that made an empty directory: no event, no key, and still not read-only.
+      {
+        tool: 'nester',
+        hints: read,
+        first: reader('nester', { changed: ['home/.mnema'] }),
+        again: reader('nester'),
+      },
+      // A read whose REPEAT appended, which belies two of its hints at once.
+      {
+        tool: 'echo',
+        hints: read,
+        first: reader('echo'),
+        again: reader('echo', { appended: 1, changed: ['seg'] }),
+      },
+      // A write that grew a file, and a write that did not leave what the file held.
+      {
+        tool: 'appender',
+        hints: write,
+        first: writer('appender', { appended: 1, changed: ['seg'] }),
+        again: writer('appender', { appended: 1, changed: ['seg'] }),
+      },
+      {
+        tool: 'shredder',
+        hints: write,
+        first: writer('shredder', { appended: 1, changed: ['seg'], destroyed: ['seg'] }),
+        again: writer('shredder'),
+      },
+      {
+        tool: 'caller',
+        hints: write,
+        first: writer('caller'),
+        again: writer('caller', { reachedOut: 1 }),
+      },
+      // A tool that sends no hint leaves a client reading the defaults.
+      { tool: 'mute', hints: undefined, first: reader('mute'), again: reader('mute') },
+      // And the defaults themselves promise nothing, so no call can belie them.
+      {
+        tool: 'modest',
+        hints: {
+          readOnlyHint: false,
+          destructiveHint: true,
+          idempotentHint: false,
+          openWorldHint: true,
+        },
+        first: writer('modest', { changed: ['x'], destroyed: ['x'], reachedOut: 2 }),
+        again: writer('modest', { appended: 1, changed: ['x'] }),
+      },
+    ];
+    expect(belied(rows)).toEqual([
+      'caller says its world is closed and reached out 1 time(s)',
+      'echo says idempotent and its repeat appended 1',
+      'echo says read-only and changed seg',
+      'mute does not say destructiveHint',
+      'mute does not say idempotentHint',
+      'mute does not say openWorldHint',
+      'mute does not say readOnlyHint',
+      'nester says read-only and changed home/.mnema',
+      'shredder says additive and did not leave seg',
+    ]);
+  });
+
+  it('tells a file that grew from one that lost what it held', () => {
+    // The destructive measurement's own case: an instrument that called every append a
+    // rewrite would accuse every write, and one that called every rewrite an append would
+    // accuse none.
+    const bytes = (text: string): Buffer => Buffer.from(text);
+    const before = new Map<string, Standing>([
+      ['same', bytes('one\n')],
+      ['grown', bytes('one\n')],
+      ['rewritten', bytes('one\n')],
+      ['cut', bytes('one\ntwo\n')],
+      ['removed', bytes('one\n')],
+      ['dir', 'directory'],
+    ]);
+    const after = new Map<string, Standing>([
+      ['same', bytes('one\n')],
+      ['grown', bytes('one\ntwo\n')],
+      ['rewritten', bytes('uno\n')],
+      ['cut', bytes('one\n')],
+      ['dir', bytes('now a file\n')],
+      ['born', 'directory'],
+    ]);
+    expect(whatTheCallDid(before, after)).toEqual({
+      changed: ['born', 'cut', 'dir', 'grown', 'removed', 'rewritten'],
+      destroyed: ['cut', 'dir', 'removed', 'rewritten'],
+    });
+  });
+
+  it('counts a reach for the network by either way out, and lets it reach nothing', async () => {
+    const reached = watchTheNetwork();
+    await expect(fetch('https://example.invalid/')).rejects.toThrow('this sandbox has no network');
+    expect(() => new Socket().connect(9, '127.0.0.1')).toThrow('this sandbox has no network');
+    expect(reached()).toBe(2);
   });
 });
 

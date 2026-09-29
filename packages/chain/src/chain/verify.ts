@@ -104,8 +104,9 @@
 import { existsSync, readFileSync } from 'node:fs';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import { oneLine } from '../one-line.js';
+import { isBackupRegistration, listRegistrations } from './backup.js';
 import { type Checkpoint, checkpointHash, verifyCheckpoint } from './checkpoint.js';
-import { resolveIdentity } from './enrollment.js';
+import { type IdentityResolution, resolveIdentity } from './enrollment.js';
 import { describeLinkBreak, type Entry, linkBreakAt } from './entry.js';
 import { entryHash } from './hash.js';
 import { type ChainLayout, tailFingerprint, tailProofPath } from './layout.js';
@@ -162,11 +163,11 @@ export interface TailIssue {
  * cut is still not a verdict: it moves neither `ok` nor the exit code, because a cut
  * that was authorized is not a break — and it is not a cure for one either.
  *
- * It is a union rather than one shape because the two observations are about
- * different things, and a reader that has to branch on `kind` is a reader who
- * cannot mistake one for the other.
+ * It is a union rather than one shape because the observations are about different
+ * things, and a reader that has to branch on `kind` is a reader who cannot mistake one
+ * for the other.
  */
-export type CensusNote = KeyWithoutTailNote | PartialFinalLineNote;
+export type CensusNote = KeyWithoutTailNote | BackupKeyNote | PartialFinalLineNote;
 
 /**
  * A committed public key with no tail on disk.
@@ -201,6 +202,38 @@ export interface KeyWithoutTailNote {
    * the record says where the tail went.
    */
   readonly waivers: readonly TailWaiver[];
+}
+
+/**
+ * A committed public key with no tail on disk that THE MACHINE ASKING made as an
+ * identity's cold backup — the key `mnema init` creates beside the machine's own and
+ * tells a person to carry off the machine.
+ *
+ * A backup signs nothing until it is restored, so having no tail is the state it is made
+ * in. Said as a {@link KeyWithoutTailNote}, it was the first thing a person read in their
+ * first `verify`: a key whose tail "may have been dropped (a botched merge), never
+ * written (an empty tail is not versioned), or removed" — a warning of loss about the one
+ * key built so that nothing is lost.
+ *
+ * TWO FACTS DECIDE IT, and neither is the absence of anything. The key root of the
+ * machine asking holds a usable registration naming this key as a backup
+ * ({@link isBackupRegistration}), and the record proves the key a member of the identity
+ * that registration names (the enrollment fold, {@link IdentityResolution.members}). A key
+ * short of either is a {@link KeyWithoutTailNote}, exactly as before.
+ *
+ * WHAT IT CANNOT KNOW, AND SAYS. The record does not say which key is a backup — the
+ * enrollment event carries no role — so a verify on any machine that did not register
+ * the key reads the same key as a {@link KeyWithoutTailNote}. And a backup that WAS
+ * restored and signed would have a tail of its own, so the note still says that tail
+ * would then be missing here.
+ */
+export interface BackupKeyNote {
+  readonly kind: 'backup-key';
+  /** The backup key's fingerprint. */
+  readonly fingerprint: string;
+  /** The identity the registration names, and the record enrolled the key into. */
+  readonly anchor: string;
+  readonly detail: string;
 }
 
 /**
@@ -315,8 +348,28 @@ export interface VerifyResult {
   readonly summary: string;
 }
 
+/**
+ * What the machine asking a verification knows that the record does not.
+ *
+ * Nothing here moves the verdict: `ok`, the level and every issue are the record's alone,
+ * and a verification handed nothing reads exactly what it always read. What it can change
+ * is how the census SAYS a key it found with no tail.
+ */
+export interface VerifyOptions {
+  /**
+   * The key root of the machine asking. A key it registered as an identity's cold backup,
+   * and that the record enrolls into that identity, is said as a {@link BackupKeyNote}
+   * instead of a key whose tail may have gone. Left out, the census reads the record alone.
+   */
+  readonly keyRoot?: string;
+}
+
 /** Verifies an entire chain, aggregating all tails. */
-export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): VerifyResult {
+export function verifyChain(
+  layout: ChainLayout,
+  upcasters: UpcasterRegistry,
+  options: VerifyOptions = {},
+): VerifyResult {
   const tails = listTails(layout);
   let uncheckpointed = 0;
   // A tail directory is named `<fingerprint>-<installationId>`: the owning key's
@@ -412,8 +465,8 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
   // machine authorizes events on another), it is resolved once over the merged
   // order, and each issue is attributed back to the tail and seq of the event
   // that failed.
-  for (const identityIssue of resolveIdentity(layout, entriesByTail, checkpointedByTail, keys)
-    .issues) {
+  const identity = resolveIdentity(layout, entriesByTail, checkpointedByTail, keys);
+  for (const identityIssue of identity.issues) {
     (issuesByTail.get(identityIssue.tail) ?? []).push({
       tail: identityIssue.tail,
       layer: 'T2/T4',
@@ -435,7 +488,8 @@ export function verifyChain(layout: ChainLayout, upcasters: UpcasterRegistry): V
   // asks only about keys with no tail at all, so a waiver can never quiet an issue
   // on a tail that is present and broken.
   const waivers = tailWaiversIn(entriesByTail);
-  const census: CensusNote[] = [...keysWithoutTail(layout, tails, waivers), ...notes];
+  const backups = backupsTheRecordEnrolled(options.keyRoot, identity.members);
+  const census: CensusNote[] = [...keysWithoutTail(layout, tails, waivers, backups), ...notes];
 
   const ok = allIssues.length === 0;
   const fullySigned = ok && uncheckpointed === 0;
@@ -555,17 +609,28 @@ function tailFingerprintIsCommitted(tail: string, committed: ReadonlySet<string>
  * point and a second pass over the disk to find them would be a second reading of
  * the record. A key with a waiver for one of its tails gets a note that NAMES the
  * account; a key with none gets exactly the note it has always got.
+ *
+ * AND THE BACKUPS ARE WHAT ANSWERS THE SECOND ONE, for the key a machine made never to
+ * write: a key in `backups` becomes a {@link BackupKeyNote}. A waiver still comes first —
+ * it is the record's own account of a cut, and a backup that was restored, signed and then
+ * cut is exactly the key whose account a reader needs.
  */
 function keysWithoutTail(
   layout: ChainLayout,
   tails: readonly string[],
   waivers: readonly TailWaiver[],
-): KeyWithoutTailNote[] {
+  backups: ReadonlyMap<string, string>,
+): (KeyWithoutTailNote | BackupKeyNote)[] {
   const fingerprintsWithTail = new Set(tails.map(tailFingerprint));
-  const notes: KeyWithoutTailNote[] = [];
+  const notes: (KeyWithoutTailNote | BackupKeyNote)[] = [];
   for (const fingerprint of listPublicKeyFingerprints(layout)) {
     if (fingerprintsWithTail.has(fingerprint)) continue;
     const accounted = waiversForKey(fingerprint, waivers);
+    const anchor = backups.get(fingerprint);
+    if (accounted.length === 0 && anchor !== undefined) {
+      notes.push({ kind: 'backup-key', fingerprint, anchor, detail: backupKeyDetail(anchor) });
+      continue;
+    }
     notes.push({
       kind: 'key-without-tail',
       fingerprint,
@@ -574,6 +639,41 @@ function keysWithoutTail(
     });
   }
   return notes;
+}
+
+/**
+ * The keys the machine asking registered as an identity's cold backup, each with that
+ * identity — kept only where the record's enrollment fold proves the key a member of it.
+ *
+ * Both halves are required, and each is the other's missing fact: the registration says
+ * what the key was made FOR, which the record does not carry, and the fold says whether
+ * the identity took it in, which a file on one machine cannot. Handed no key root, there
+ * is nothing to cross and every key reads as the record alone says it.
+ */
+function backupsTheRecordEnrolled(
+  keyRoot: string | undefined,
+  members: IdentityResolution['members'],
+): ReadonlyMap<string, string> {
+  const backups = new Map<string, string>();
+  if (keyRoot === undefined) return backups;
+  for (const registration of listRegistrations({ root: keyRoot })) {
+    if (!isBackupRegistration(registration)) continue;
+    if (members.get(registration.anchor)?.has(registration.fingerprint) !== true) continue;
+    backups.set(registration.fingerprint, registration.anchor);
+  }
+  return backups;
+}
+
+/**
+ * How a backup key with no tail READS: what it is, why it has no tail, and the one reading
+ * that would make the absence mean something — said, because the record cannot rule it out.
+ */
+function backupKeyDetail(anchor: string): string {
+  return (
+    `the backup key this machine registered for ${oneLine(anchor)} — a backup signs nothing ` +
+    'until it is restored, so it has no tail (if it was restored and has signed, that tail ' +
+    'is not here)'
+  );
 }
 
 /**
@@ -1017,6 +1117,8 @@ function coverageClause(facts: VerdictFacts): string {
 const CENSUS_CLAUSE: Readonly<Record<CensusNote['kind'], (count: number) => string>> = {
   'key-without-tail': (count) =>
     `${count} committed key(s) without a tail (see census — informational, not a break)`,
+  'backup-key': (count) =>
+    `${count} backup key(s), which sign nothing until restored (see census — informational, not a break)`,
   'partial-final-line': (count) =>
     `${count} tail(s) ending in a dropped partial line (see census — informational, not a break)`,
 };

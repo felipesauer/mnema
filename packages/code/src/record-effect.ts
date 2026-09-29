@@ -65,9 +65,12 @@
  * unsafe side — so the wording widened to the thing all three have in common, which is
  * what a verifier would afterwards say.
  *
- * IT IS NOT "TOUCHES DISK", and the difference is not academic. Most reads open the
- * projection cache and rebuild it, which writes a file — and none of that reaches the
- * record a reader cites or a verifier rules on. The other direction is what makes the
+ * IT IS NOT "TOUCHES DISK". This paragraph used to give a read that touches disk as the
+ * first half of why: "most reads open the projection cache and rebuild it, which writes a
+ * file". That was false. The projection is held in memory — `CacheOptions.dbPath` has no
+ * production caller — and on the MCP every read is measured leaving every file and
+ * directory of its sandbox as it found them (`every-tool-says-if-it-writes.test.ts`, the
+ * case the protocol's `readOnlyHint` is held to). The other direction is what makes the
  * wording earn its place, and it is the sharpest case on either surface: the `skills`
  * TOOL serves a pattern's body and records that a run was served it, so a reading that
  * mints a fact belongs on the `mutates` side. Its namesake on the command line,

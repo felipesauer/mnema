@@ -407,8 +407,16 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * they need — and one in `gated-transition.test.ts`, for the founding its stand-in writer rests
  * on now. The five branches met at 3094, read off this guard: 3047 and those forty-seven, since
  * no clause came in on more than one of them.
+ * The next one was written from 3047, where the first four met, on a sixth branch merged after
+ * the fifth. 3047 -> 3074 when the tools' hints were held to their calls, the census learnt to
+ * say a backup, and the pages' links and first record were held: twelve clauses in
+ * `the-census-says-what-a-backup-is.test.ts` (`chain`), eight in
+ * `the-first-record-a-page-shows-is-the-one-printed.test.ts`, six in
+ * `every-link-a-page-carries-lands.test.ts`, and `node:net` in
+ * `every-tool-says-if-it-writes.test.ts`, read off this guard. The six branches met at 3121, read
+ * off this guard: 3094 and those twenty-seven, since no clause came in on more than one of them.
  */
-const CLAUSES_IN_THE_TREE = 3094;
+const CLAUSES_IN_THE_TREE = 3121;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 

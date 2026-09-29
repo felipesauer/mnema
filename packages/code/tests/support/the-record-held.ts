@@ -18,10 +18,13 @@
  * record* means: a key minted, adopted or installed by something that claimed to read is a
  * change even though no event was appended.
  *
- * AND THE CACHE IS DELIBERATELY NOT COUNTED. Most reads rebuild the projection, which writes a
- * file, so a digest of the whole sandbox would accuse every one of them. The question is whether
- * something can reach the RECORD, not whether it touched the disk — the argument in full is in
- * `every-verb-says-if-it-writes.test.ts`.
+ * AND NOTHING ELSE IS COUNTED. This said the cache was left out because "most reads rebuild the
+ * projection, which writes a file, so a digest of the whole sandbox would accuse every one of
+ * them". The premise was false — the projection is held in memory (`CacheOptions.dbPath` has no
+ * production caller) — and the tools' guard digests its whole sandbox beside this reading and
+ * finds no read that changes a path of it (`every-tool-says-if-it-writes.test.ts`). What this
+ * module answers is still the narrower question — whether something reached the RECORD — and
+ * the argument for asking that one is in `every-verb-says-if-it-writes.test.ts`.
  */
 
 import { createHash } from 'node:crypto';
