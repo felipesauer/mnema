@@ -164,6 +164,28 @@ export function readRegistration(keyRoot: ChainLayout, fingerprint: string): Key
 }
 
 /**
+ * Whether a registration is a usable cold BACKUP key — of `anchor`, or of any identity when
+ * none is named.
+ *
+ * The one reading of it, asked from two sides: {@link ensureBackupKey} asks it for the
+ * identity it is about to protect, so a second backup is never minted beside the first, and
+ * the verifier's census asks it for every key it finds with no tail, so the key this module
+ * made is said as what it is rather than as a key whose tail may have gone. Usable is the
+ * whole of the trust put in it: the ROLE is not covered by the signature — only the anchor
+ * and the fingerprint are — and nothing but this machine's own key root carries it.
+ */
+export function isBackupRegistration(
+  registration: KeyRegistration,
+  anchor?: string,
+): registration is Extract<KeyRegistration, { readonly usable: true }> {
+  return (
+    registration.usable &&
+    registration.role === BACKUP_ROLE &&
+    (anchor === undefined || registration.anchor === anchor)
+  );
+}
+
+/**
  * Makes sure the identity at `anchor` has a cold backup key, generating and
  * registering one on first use, and reports it either way.
  *
@@ -191,9 +213,7 @@ export function readRegistration(keyRoot: ChainLayout, fingerprint: string): Key
  */
 export function ensureBackupKey(keyRoot: ChainLayout, anchor: string): BackupKey | null {
   const registered = listRegistrations(keyRoot);
-  const existing = registered.find(
-    (r) => r.usable && r.role === BACKUP_ROLE && r.anchor === anchor,
-  );
+  const existing = registered.find((r) => isBackupRegistration(r, anchor));
   if (existing !== undefined) {
     return {
       fingerprint: existing.fingerprint,

@@ -208,11 +208,11 @@ function coverProject(
     kind: 'verdict',
     scope: 'public',
     root,
-    result: verify(root, upcasters),
+    result: verify(root, upcasters, { keyRoot: trees.keyRoot }),
   };
   const rest = recordTrees(trees, undefined)
     .filter((tree) => tree.scope !== 'public' && (tree.scope !== 'global' || global))
-    .map((tree) => reportOn(tree, upcasters));
+    .map((tree) => reportOn(tree, upcasters, trees.keyRoot));
   return {
     trees: [committed, ...rest],
     record: aggregate([committed, ...rest.filter(isVerdict)]),
@@ -427,8 +427,9 @@ export function runVerifyWorkspace(ctx: WorkspaceContext): WorkspaceDone {
         : { kind: 'verdict', dir: dirname(root), ...coverProject(trees, root, false, upcasters) },
     );
   }
+  const here = resolveTrees(ctx.cwd, ctx.env);
   const globalTree = ctx.global
-    ? reportOn({ scope: 'global', chainRoot: resolveTrees(ctx.cwd, ctx.env).global }, upcasters)
+    ? reportOn({ scope: 'global', chainRoot: here.global }, upcasters, here.keyRoot)
     : undefined;
   const record = foldSet(projects, globalTree);
   return {
@@ -503,13 +504,18 @@ function identityOf(path: string): string {
  * The check is asked INSTEAD of the verification, never before one that runs anyway —
  * `verify` over an absent root answers green with no signature checked, and that
  * hollow verdict, folded into the record's level, is what would fail every clone.
+ *
+ * The key root is THIS machine's, and it is required rather than defaulted: what it
+ * registered as a backup is how the census says the key `init` made never to write
+ * ({@link VerifyOptions.keyRoot} in the chain), and a caller that forgot it would print
+ * that key as one whose tail may have gone — on every tree but the one it remembered.
  */
-function reportOn(tree: ScopedTree, upcasters: UpcasterRegistry): TreeReport {
+function reportOn(tree: ScopedTree, upcasters: UpcasterRegistry, keyRoot: string): TreeReport {
   const root = tree.chainRoot;
   if (!holdsRecord({ root })) {
     return { kind: 'no-record', scope: tree.scope, root };
   }
-  return { kind: 'verdict', scope: tree.scope, root, result: verify(root, upcasters) };
+  return { kind: 'verdict', scope: tree.scope, root, result: verify(root, upcasters, { keyRoot }) };
 }
 
 /**

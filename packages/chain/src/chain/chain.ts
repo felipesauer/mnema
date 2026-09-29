@@ -20,7 +20,7 @@ import {
   signerOf,
 } from './keystore.js';
 import type { ChainLayout } from './layout.js';
-import { type VerifyResult, verifyChain } from './verify.js';
+import { type VerifyOptions, type VerifyResult, verifyChain } from './verify.js';
 import { ChainWriter, type WriterOptions } from './writer.js';
 
 /** Where a chain's writer reads its key from and (with the writer options) how it writes. */
@@ -87,10 +87,16 @@ export function signerAt(chainRoot: string, options: { readonly keyRoot: string 
   return signerOf({ root: chainRoot }, keyPair.fingerprint);
 }
 
-/** Verifies the whole chain rooted at `root`. */
+/**
+ * Verifies the whole chain rooted at `root`.
+ *
+ * `options` is what the machine asking knows that the record does not ({@link VerifyOptions});
+ * the verdict never depends on it.
+ */
 export function verify(
   root: string,
   upcasters: UpcasterRegistry = catalogUpcasters(),
+  options: VerifyOptions = {},
 ): VerifyResult {
-  return verifyChain({ root }, upcasters);
+  return verifyChain({ root }, upcasters, options);
 }
