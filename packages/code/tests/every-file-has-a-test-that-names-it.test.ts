@@ -415,8 +415,13 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * `every-link-a-page-carries-lands.test.ts`, and `node:net` in
  * `every-tool-says-if-it-writes.test.ts`, read off this guard. The six branches met at 3121, read
  * off this guard: 3094 and those twenty-seven, since no clause came in on more than one of them.
+ * Then 3121 -> 3132 where `init` says that a write is refused in a checkout its key left: eleven
+ * clauses in `the-init-says-a-write-is-refused.test.ts`, which drives the built binary over git
+ * clones and reads this surface's source for who asks the write's question — `node:child_process`,
+ * `node:crypto`, `node:fs`, `node:os`, `node:path`, `node:url`, `@mnema/chain`, `@mnema/core`,
+ * `vitest`, and the two support modules that read a shell line and a source file.
  */
-const CLAUSES_IN_THE_TREE = 3121;
+const CLAUSES_IN_THE_TREE = 3132;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 

@@ -166,6 +166,13 @@ export function decideAnchor(ctx: AnchorContext): AnchorDecision {
  * On the hot path it costs what reading the writer's anchor cost: the recorded
  * anchor answers immediately, and the record is only consulted while no anchor is
  * recorded yet.
+ *
+ * WHAT IT DOES NOT ASK is whether a RECORDED identity still counts the key, and so it is
+ * not, alone, who this machine writes as: in a checkout the key has left it answers the
+ * identity the next write is refused as. `mnema init` said who this machine writes as in a
+ * project that already exists from this alone, and printed that identity with exit 0 while
+ * the write after it was refused — measured on the binary. The question is
+ * {@link recordedAnchorOf}'s, and a caller that says who writes here asks it too.
  */
 export function authorizingAnchor(ctx: AnchorContext): string {
   return decideAnchor(ctx).anchor;
@@ -181,12 +188,56 @@ export type AnchorDecision =
   | { readonly source: 'unfounded'; readonly anchor: string };
 
 /**
+ * The identity a checkout RECORDED in a tree, and whether that identity's roster in the record
+ * still counts the key — the question every write asks before it appends ({@link ensureFounded}).
+ *
+ * `undefined` where no anchor is recorded yet: there is nothing to ask, and the write decides the
+ * anchor on its way in, from the record ({@link decideAnchor}). Where one is recorded and the
+ * roster no longer counts the key, `refusal` is what that write is refused with — never a second
+ * decision of the anchor ({@link staleAnchorRefusal} says why that would shut the door out).
+ *
+ * ONE FUNCTION FOR THE TWO PLACES THAT NEED THE ANSWER. The write refuses by it, and `mnema init`
+ * in a project that already exists says by it who this machine writes as here — or, where the
+ * key has left the identity this checkout recorded, that a write is refused, in the refusal's own
+ * words. It used to answer from {@link authorizingAnchor} alone, which does not ask the roster:
+ * measured on the binary, it printed the recorded identity with exit 0 in a checkout whose next
+ * write was refused `STALE_ANCHOR` (`code/tests/the-init-says-a-write-is-refused.test.ts`).
+ *
+ * It reads and writes nothing else: the recorded anchor, a roster — the one the caller hands
+ * (`WriteContext.roster`), or a replay of the tree — and, on a refusal only, the replays the
+ * refusal's words take.
+ */
+export function recordedAnchorOf(
+  ctx: AnchorContext & Pick<WriteContext, 'roster'>,
+): RecordedAnchor | undefined {
+  if (!ctx.writer.hasAnchor) return undefined;
+  const anchor = ctx.writer.anchor;
+  const fingerprint = ctx.writer.signerFingerprint;
+  const query = { tree: ctx.layout.root, upcasters: ctx.upcasters };
+  const counted = ctx.roster?.(anchor) ?? rosterOf(query, anchor);
+  if (counted.has(fingerprint)) return { anchor, counted: true };
+  return { anchor, counted: false, refusal: staleAnchorRefusal(query, fingerprint, anchor) };
+}
+
+/** A checkout's recorded identity, asked whether its roster in the record still counts the key. */
+export type RecordedAnchor =
+  /** It does: this is the identity a write here signs as. */
+  | { readonly anchor: string; readonly counted: true }
+  /** It does not: every write here is refused with this, and nothing is appended. */
+  | {
+      readonly anchor: string;
+      readonly counted: false;
+      readonly refusal: IdentityUnavailableError;
+    };
+
+/**
  * Makes sure this installation serves an anchor in this tree before its first
  * fact: appends the `identity.founded` when the anchor is its OWN to found, and
  * records which anchor it serves once the fact that settles it is on the record.
  * Once an anchor is recorded it appends nothing, and it REFUSES a recorded anchor
  * whose roster in this record no longer counts the key — so it is called before
- * every write, and it is the one place a write asks.
+ * every write, and it is the one place a write asks. The question itself is
+ * {@link recordedAnchorOf}, which `mnema init` asks too, to say who writes here.
  *
  * THIS SAID "A no-op once an anchor is recorded", and the premise under it was that
  * a recorded anchor stays true. It does not: a key LEAVES an identity — the way out
@@ -252,13 +303,10 @@ export type AnchorDecision =
  * Returns the anchor this installation serves either way.
  */
 export function ensureFounded(ctx: WriteContext): string {
-  if (ctx.writer.hasAnchor) {
-    const anchor = ctx.writer.anchor;
-    const fingerprint = ctx.writer.signerFingerprint;
-    const query = { tree: ctx.layout.root, upcasters: ctx.upcasters };
-    const counted = ctx.roster?.(anchor) ?? rosterOf(query, anchor);
-    if (!counted.has(fingerprint)) throw staleAnchorRefusal(query, fingerprint, anchor);
-    return anchor;
+  const recorded = recordedAnchorOf(ctx);
+  if (recorded !== undefined) {
+    if (!recorded.counted) throw recorded.refusal;
+    return recorded.anchor;
   }
 
   const decided = decideAnchor(ctx);

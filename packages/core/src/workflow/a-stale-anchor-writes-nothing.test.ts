@@ -7,6 +7,7 @@ import {
   deriveAnchor,
   openChainForWriting,
   publicKeyPath,
+  signerAt,
   writeAnchor,
 } from '@mnema/chain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -29,7 +30,14 @@ import {
   rejectDecision,
   supersedeDecision,
 } from './decision-operations.js';
-import { enrollKey, ensureFounded, establishIdentity, revokeKey } from './identity-operations.js';
+import {
+  type AnchorContext,
+  enrollKey,
+  ensureFounded,
+  establishIdentity,
+  recordedAnchorOf,
+  revokeKey,
+} from './identity-operations.js';
 import { createTask, transitionTask, type WriteContext } from './operations.js';
 import { authorizeTailPrune } from './prune-operations.js';
 import { endRun, startRun } from './session-operations.js';
@@ -365,6 +373,8 @@ describe('a checkout the key left writes nothing, through every write of the sur
     deferredWrite: 'pairs a signer with a writer it has not opened',
     encodeKeyRequest: 'serializes one',
     openTreeForWriting: 'opens a writer; the write is the caller’s',
+    recordedAnchorOf:
+      'asks the question every append asks — whether the recorded identity counts the key',
     requestEnrollment: 'produces a request and may mint a key, in the key root',
     restoreKey: 'records an anchor from the record — the way out this refusal names',
     signerFor: 'reads who would sign in a tree',
@@ -577,6 +587,58 @@ describe('the roster a write asks is the one the caller hands it, when it hands 
     ).toBe(true);
     expect(captureMemory({ ...ctx, roster: () => undefined }, { content: 'z' }).ok).toBe(true);
     expect(rosterOf({ tree, upcasters }, anchor).has(fingerprint)).toBe(true);
+  });
+});
+
+describe('recordedAnchorOf — the question a write asks, asked by what only reads', () => {
+  it('answers nothing before an anchor is recorded, the identity while it counts, and the write’s own refusal once it does not', () => {
+    const k = keyRoot();
+    // Asked of the SIGNER, as `mnema init` asks it — nothing is opened, nothing is recorded.
+    const signer = (): AnchorContext => ({
+      writer: signerAt(tree, { keyRoot: k }),
+      layout: { root: tree },
+      upcasters,
+    });
+    expect(recordedAnchorOf(signer())).toBeUndefined();
+
+    const left = contextOf(k);
+    const anchor = ensureFounded(left);
+    const memberRoot = keyRoot();
+    join_(left, anchor, memberRoot);
+    expect(recordedAnchorOf(signer())).toEqual({ anchor, counted: true });
+    expect(recordedAnchorOf(left)).toEqual({ anchor, counted: true });
+
+    const member = contextOf(memberRoot);
+    expect(
+      revokeMember(member, { fingerprint: left.writer.signerFingerprint, reason: 'r' }).ok,
+    ).toBe(true);
+    const before = eventCount();
+    const asked = recordedAnchorOf(signer());
+    expect(eventCount()).toBe(before);
+    if (asked === undefined || asked.counted)
+      throw new Error(`not refused: ${JSON.stringify(asked)}`);
+    expect(asked.anchor).toBe(anchor);
+    expect(asked.refusal.code).toBe('STALE_ANCHOR');
+    // The SAME refusal the write gets — the words and the file its restore takes — because the
+    // write asks this very function before it appends.
+    const thrown = thrownBy(() => captureMemory(left, { content: 'written after it left' }));
+    expect(thrown).toBeInstanceOf(IdentityUnavailableError);
+    expect((thrown as IdentityUnavailableError).message).toBe(asked.refusal.message);
+    expect((thrown as IdentityUnavailableError).restores).toBe(asked.refusal.restores);
+    expect(eventCount()).toBe(before);
+  });
+
+  it('asks the roster the caller hands it, where it hands one', () => {
+    const ctx = contextOf(keyRoot());
+    const anchor = ensureFounded(ctx);
+    expect(recordedAnchorOf({ ...ctx, roster: () => new Set<string>() })).toMatchObject({
+      anchor,
+      counted: false,
+    });
+    expect(recordedAnchorOf({ ...ctx, roster: () => undefined })).toEqual({
+      anchor,
+      counted: true,
+    });
   });
 });
 
