@@ -1,0 +1,47 @@
+{
+  "what": [
+    "THE CONSOLE, REACHED THE WAY A PERSON REACHES IT: `mnema` typed at a shell, the first door, and three reads.",
+    "It opens over a record of its own: two accepted decisions, one adopted pattern, a task and a note, each written by the built binary in `record` below — where `<the id above>` stands for the id the previous command printed.",
+    "Each step is a key, or a line typed one character at a time and then Enter, and it ends when what it asked for is on the page: `waitsFor` is the text the step's own frame brings onto it. `hold` is how many seconds the recording keeps that page before the next key — the recording's pace, and nothing the console does.",
+    "The recording is made and checked by packages/code/tests/the-recordings-are-what-the-binary-draws.test.ts, whose header says how."
+  ],
+  "size": { "columns": 96, "rows": 44 },
+  "shell": "mnema",
+  "record": [
+    ["init"],
+    [
+      "decision",
+      "Keep money as integer cents",
+      "Float sums drift; cents are exact.",
+      "--alternatives",
+      "A decimal library: slower, one more dependency."
+    ],
+    ["decision", "move", "accept", "<the id above>", "--note", "Agreed in review."],
+    [
+      "decision",
+      "UTC everywhere below the presentation layer",
+      "Local time is a way of showing an instant, never a way of storing one.",
+      "--alternatives",
+      "Local time with an offset: two ways to be wrong about one instant."
+    ],
+    ["decision", "move", "accept", "<the id above>", "--note", "Agreed in review."],
+    [
+      "skill",
+      "Retry a webhook three times, then park it",
+      "--body",
+      "Three attempts with backoff; a fourth failure parks the delivery for a person to look at."
+    ],
+    ["skill", "move", "review", "<the id above>", "--note", "Read in review."],
+    ["skill", "move", "adopt", "<the id above>", "--note", "In use on the payment webhook."],
+    ["task", "Move the invoice totals to integer cents"],
+    ["memory", "The staging database is reset every Monday at 06:00 UTC."]
+  ],
+  "steps": [
+    { "waitsFor": "what would you like to do here?", "hold": 2.2 },
+    { "keys": "\r", "waitsFor": "mnema>", "hold": 2.8 },
+    { "types": "status", "waitsFor": "where things stand.", "hold": 4.2 },
+    { "types": "search money", "waitsFor": "matching \"money\"", "hold": 3.6 },
+    { "types": "verify", "waitsFor": "census [backup-key]", "hold": 4.8 },
+    { "keys": "\u0004", "leaves": true, "hold": 4 }
+  ]
+}

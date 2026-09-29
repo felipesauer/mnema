@@ -433,8 +433,20 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * `@mnema/chain`, `@mnema/core`, `vitest`, and the two support modules that read a shell line and
  * a source file. The eight branches met at 3138, read off this guard: 3127 and those eleven,
  * since no clause came in on more than one of them.
+ * The next one was written from 3138, where the eight met. Then 3138 -> 3157 where the front
+ * page's recordings and figures are held to what they came from: thirteen clauses in
+ * `the-recordings-are-what-the-binary-draws.test.ts`, which runs the command line's script against
+ * the built binary and drives the console over a pseudo-terminal — `node:child_process`,
+ * `node:fs`, `node:os`, `node:path`, `node:url`, `vitest`, `../src/repl/floor.js` for the size the
+ * page names, and the support modules for a page held to a run, a console, the pages, the
+ * pseudo-terminal, a shell line and the screen; five in
+ * `the-front-page-says-what-its-sources-say.test.ts` — `@mnema/core` and `@mnema/copilot` for the
+ * decision's states, `vitest`, and the support modules for the pages and a shell line; and one in
+ * `the-first-record-a-page-shows-is-the-one-printed.test.ts`, which asks
+ * `support/a-page-held-to-a-run.ts` what the machine mints and what a cut may leave out, where it
+ * spelled both itself.
  */
-const CLAUSES_IN_THE_TREE = 3138;
+const CLAUSES_IN_THE_TREE = 3157;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
