@@ -252,6 +252,7 @@ function needsOnThatPage(drawing: readonly Line[], columns: number, rows: number
     columns,
     badge: 0,
     hint: 0,
+    unmoved: 0,
     palette: 0,
     header: 0,
   }).height;

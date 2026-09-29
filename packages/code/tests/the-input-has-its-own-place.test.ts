@@ -47,7 +47,13 @@ import { renderStyled } from '../src/presentation/styled.js';
 import { statement } from '../src/presentation/verdict.js';
 import { areaFor } from '../src/repl/area.js';
 import { THE_FLOOR } from '../src/repl/floor.js';
-import { badgeLine, openSession, theSessionsOwnWords, tips } from '../src/repl/session.js';
+import {
+  alreadyOnThePage,
+  badgeLine,
+  openSession,
+  theSessionsOwnWords,
+  tips,
+} from '../src/repl/session.js';
 import { PREFIX, SESSION_WORDS } from '../src/session-words.js';
 import { here } from '../src/wiring/context.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
@@ -177,6 +183,7 @@ const showingEverything = {
   columns: 200,
   badge: widthOf(badgeLine('fully-signed', 'the-whole-record')),
   hint: widthOf(tips()),
+  unmoved: 0,
   palette: 0,
   // NOTHING ABOVE THE AREA, and the field it fills is not the field it used to. It was the
   // FLOW on the screen — everything the session had said that a reader could still see, which
@@ -320,6 +327,70 @@ describe('the area has forms, and the tallest one that fits is the one drawn', (
     // not drawn: the budget is what keeps the caret and the drawing agreeing about the
     // shape (`a-palette-for-the-words.test.ts` measures where the room runs out).
     expect(areaFor({ ...showingEverything, rows: 1, palette: 1 }).above).toBe(bare.above);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The row that says an answer left the page as it was
+// ---------------------------------------------------------------------------
+
+/**
+ * HOW WIDE THAT ROW IS, measured off the row the session really composes — for the reason the
+ * other two widths above are: a number written down here would be ruling on a row nobody draws.
+ */
+const UNMOVED_IS = widthOf(alreadyOnThePage());
+
+describe('the row saying an answer left the page as it was is counted where it is drawn', () => {
+  it('costs the area one row over the row being typed while it stands, and nothing otherwise', () => {
+    // A ROW THE LAYOUT DRAWS IS A ROW THIS ARITHMETIC COUNTS, in both of the sums it answers
+    // with: the height the window is cut against, and the depth the caret is put at. Counted in
+    // neither, the frame is one row taller than the screen and the row it loses is the foot of the
+    // window; counted in one, the caret sits a row off the line being typed.
+    const request = { ...showingEverything, rows: THE_FLOOR.rows };
+    const without = areaFor(request);
+    const up = areaFor({ ...request, unmoved: UNMOVED_IS });
+    expect(without.unmoved, 'a row nobody asked for is drawn').toBe(false);
+    expect(up.unmoved, 'the row is not drawn on a window with room for it').toBe(true);
+    expect(up.form, 'the row changed the arrangement under it').toBe(without.form);
+    expect(up.height - without.height, 'the row is not one row of the area').toBe(1);
+    expect(up.above - without.above, 'the row is not over the row being typed').toBe(1);
+  });
+
+  it('is not drawn where it would fold, and a row it does not draw is a row it does not count', () => {
+    // THE HINT'S RULE, on the other axis the row has: a row two rows tall is not the one row the
+    // arithmetic above counts, so a window too narrow for it gets no row rather than a folded one.
+    const at = (columns: number) =>
+      areaFor({ ...showingEverything, rows: THE_FLOOR.rows, columns, unmoved: UNMOVED_IS });
+    expect(at(UNMOVED_IS).unmoved, `the row is ${UNMOVED_IS} columns`).toBe(true);
+    expect(at(UNMOVED_IS - 1).unmoved, `the row is ${UNMOVED_IS} columns`).toBe(false);
+    expect(at(UNMOVED_IS).height - at(UNMOVED_IS - 1).height).toBe(1);
+  });
+
+  it('fits one row of the narrowest window this console draws a page on', () => {
+    // THE FLOOR IS WHERE IT MATTERS MOST — the window there is the shortest, so an answer outgrows
+    // it soonest — and a row wider than the floor would never be drawn exactly there.
+    expect(UNMOVED_IS, 'the row folds at the floor').toBeLessThanOrEqual(THE_FLOOR.columns);
+  });
+
+  it('keeps its row when the list wants the whole screen', () => {
+    // THE LIST GROWS INTO WHATEVER IS LEFT and the forms give way to it, down to the bare one — and
+    // the bare form still draws this row, so a list that counted it as room would make the area one
+    // row taller than what is under the region above it.
+    for (const header of [0, 14]) {
+      for (const rows of [THE_FLOOR.rows, 60]) {
+        const area = areaFor({
+          ...showingEverything,
+          rows,
+          header,
+          palette: rows * 2,
+          unmoved: UNMOVED_IS,
+        });
+        expect(area.unmoved, `${rows}/${header}: the list took the row`).toBe(true);
+        expect(area.height, `${rows}/${header}: the area is taller than its room`).toBe(
+          rows - header,
+        );
+      }
+    }
   });
 });
 

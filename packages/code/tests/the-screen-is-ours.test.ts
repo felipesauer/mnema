@@ -594,10 +594,18 @@ function saidEnoughToScroll(): Step[] {
  *
  * EVERY LINE HAS TO BE A DIFFERENT ONE, and that is a property of the model rather than a
  * habit of these cases. The layout writes NOTHING for a frame identical to the one on the
- * screen, and two runs of the same verb produce identical frames once the window has filled:
- * the window shows the last rows of the roll, and the last rows of two identical answers are the
- * same rows. Measured — the second such step waited out the driver's whole budget and reported
- * *the session never ran verify*, which is a defect of the case and not of the console.
+ * screen, and the window shows the last rows of the roll — so two runs of the same verb, once the
+ * window has filled, leave the same rows in it. Measured — the second such step waited out the
+ * driver's whole budget and reported *the session never ran verify*, which is a defect of the case
+ * and not of the console.
+ *
+ * IT SAID THE TWO RUNS *produce identical frames*, and that half is no longer true. A second
+ * answer that leaves the window as it was now draws a row at the foot saying so
+ * (`src/repl/console.ts`, `judged`), so such a step would end on that row instead of waiting out
+ * the budget — the rule about identical frames did not move, the frame did
+ * (`a-read-asked-again-draws-what-changed.test.ts`). The lines still differ, for the half of the
+ * reason that survives: the cases here read what each line LANDED, and a same-verb step lands a
+ * tail the page already showed — its frame says an answer ended and nothing about which one.
  */
 function submits(line: string): Step {
   return { types: `${line}\r`, until: aFrameSince(PROMPT), what: `submitted ${line}` };
@@ -850,6 +858,11 @@ describe('the middle region scrolls, and the two fixed regions do not', () => {
     // (`support/pty.ts`, {@link aFrameSince}). The wait is the stream going quiet, and what makes
     // that honest is the step after them — a key that really does redraw, waited for properly, so
     // every byte the three notches could have written is in front of it.
+    //
+    // AND IT STAYS NOTHING NOW THAT A ROW CAN SAY AN ANSWER LEFT THE PAGE AS IT WAS. That row is
+    // the one thing on this page an unmoved answer draws, and it changes a frame only when an
+    // answer ends or when a key that is not a scroll is pressed (`src/repl/console.ts`, `key`) —
+    // a notch of the wheel is neither, and no row is up here to take down.
     for (let at = 0; at < 3; at += 1) {
       steps.push({ types: WHEEL_UP, until: () => true, what: `turned the wheel ${at + 1}` });
     }

@@ -306,8 +306,14 @@ async function openedAt(
     // THE LINE AND THE RETURN ARE TWO WRITES, and that is forced by what the layout does with
     // a frame it has already drawn: it writes NOTHING for one that is identical, and a word that
     // clears the page leaves exactly the page that was on it before the word was typed. So a
-    // whole line submitted in one write produces no bytes at all, and a wait for growth waits
+    // whole line submitted in one write produced no bytes at all, and a wait for growth waited
     // for ever. Typing changes the row being typed; the Return changes it back.
+    //
+    // THE CLEAR DOES DRAW SOMETHING NOW, and the two writes stay for what they always bought. A
+    // clear that leaves the page as it was is an answer that left the page as it was, and that
+    // raises a row at the foot saying so (`src/repl/console.ts`, `judged`) — once the answer has
+    // ended, which is after the growth this loop waits for. Each half of a line is a frame the
+    // moment its key is answered; that is the property this wait rests on, and it did not move.
     let grown = terminal.bytes().length;
     terminal.type(line);
     await until(() => terminal.bytes().length > grown, `typed ${line}`);

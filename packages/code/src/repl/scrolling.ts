@@ -308,6 +308,21 @@ export function theWindowOn(
   return window;
 }
 
+/**
+ * WHETHER TWO WINDOWS SHOW THE SAME LINES, in the same order — which is whether a reader looking
+ * at the one could tell it from the other.
+ *
+ * BY WHAT THE LINES SAY AND NOT BY WHICH LINES THEY ARE, and that is the question rather than a
+ * shortcut. The same document asked twice lands a second copy of every line, so the window after
+ * it holds different entries of the roll saying exactly what the entries before it said — and what
+ * a reader sees is the words. Measured as a page on a real terminal before this existed: the second
+ * copy left the screen byte for byte as the first one had
+ * (`tests/a-read-asked-again-draws-what-changed.test.ts`).
+ */
+export function theSameWindow(one: readonly string[], other: readonly string[]): boolean {
+  return one.length === other.length && one.every((line, at) => line === other[at]);
+}
+
 /** How many rows some lines take together, at a given width. */
 export function rowsOfTheWindow(window: readonly string[], columns: number): number {
   return window.reduce((rows, line) => rows + rowsForTheLine(line, columns), 0);

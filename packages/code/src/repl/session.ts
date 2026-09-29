@@ -281,6 +281,19 @@ const NOTHING_OFFERED_YET = 0;
 const NOTHING_ABOVE_YET = 0;
 
 /**
+ * How wide the row saying an answer left the page as it was is while the page is being opened:
+ * nothing, because no answer has landed.
+ *
+ * AND IT IS NOTHING ON PURPOSE AT EVERY LATER FRAME THE OPENING IS CHOSEN FOR, which is the half
+ * that decides something. The row comes and goes with answers, and an arrangement budgeted against
+ * it would either spend a row of the shortest window on a row that is usually absent or re-lay the
+ * top of the page each time the same read was asked twice. So the page is chosen against the area
+ * without it, and while it stands it is taken out of the middle region — the window — exactly as
+ * the list of words is (`area.ts`, `AreaRequest.unmoved`).
+ */
+const NO_ANSWER_HAS_LANDED = 0;
+
+/**
  * A HEIGHT NO ARRANGEMENT CAN BUST — what the opening is composed against when the question is
  * *what would this drawing's arrangement COST*, rather than *does it fit*.
  *
@@ -356,6 +369,26 @@ const NO_SCREEN_TO_FOLD_TO = 0;
 const ARROWS_MOVE = '\u2191\u2193 moves';
 const RETURN_FILLS = 'Enter fills the row';
 const ESCAPE_SHUTS = 'Esc shuts the list';
+
+/**
+ * THE THREE CLAUSES OF THE ROW THAT SAYS AN ANSWER LEFT THE PAGE AS IT WAS, in the voice the two
+ * rows above already speak: what happened, what it looked like, and the keys that show the rest
+ * (see {@link alreadyOnThePage} for when it is on the page at all).
+ *
+ * THE FIRST TWO ARE FACTS AND THEY ARE IN THE PAST TENSE, which is what lets the row stand until
+ * the next key rather than only until the page next moves. A reader who scrolls, a window that is
+ * resized, a record another process appends to \u2014 none of them makes *answered* or *its end was
+ * already on the page* untrue, because both are about the answer and not about the page now.
+ *
+ * THE THIRD NAMES BOTH KEYS BECAUSE THEY GO TO DIFFERENT PLACES: a page back, and the top of what
+ * the session has said. It says *scroll back* rather than *show the rest* because Home goes past
+ * the answer to the top of the roll, and a clause saying it showed the rest of the answer would
+ * be promising what the key does not do. IT IS THE FIRST PLACE EITHER KEY IS NAMED to a reader of
+ * this surface \u2014 the row under the prompt names three keystrokes and neither of these.
+ */
+const IT_WAS_ANSWERED = 'answered';
+const ITS_END_WAS_THERE = 'its end was already on the page';
+const HOW_TO_SCROLL_BACK = 'PgUp and Home scroll back';
 
 /** What one line of the session needs: where to write, how, and what it is called. */
 export interface Session {
@@ -535,6 +568,11 @@ export async function openSession(request: SessionRequest): Promise<void> {
   // here as well, because two things read the width: the area, which draws no hint the
   // terminal would fold, and the opening, which is budgeted against the area under it.
   const hint = drawn(tips(), renderingAt(NO_SCREEN_TO_FOLD_TO));
+  // AND THE ROW THAT SAYS AN ANSWER LEFT THE PAGE AS IT WAS, rendered ONCE for the same reason and
+  // measured for the same reader: the area draws it only on one row of the terminal. The opening
+  // is NOT budgeted against it ({@link NO_ANSWER_HAS_LANDED}), because while it stands it comes
+  // out of the window rather than out of anything the page was chosen for.
+  const unmovedRow = drawn(alreadyOnThePage(), renderingAt(NO_SCREEN_TO_FOLD_TO));
   // THE WORDS THE SESSION ANSWERS TO ITSELF, read ONCE and handed to ONE thing: the
   // completer, which puts them in the same list as the verbs. THEY WENT TO THE CONSOLE AS
   // WELL, so that a slash could be answered out of them, and that is what made the two keys
@@ -646,6 +684,7 @@ export async function openSession(request: SessionRequest): Promise<void> {
       columns,
       badge: badgeWidth,
       hint: hint.width,
+      unmoved: NO_ANSWER_HAS_LANDED,
       palette: NOTHING_OFFERED_YET,
       header: NOTHING_ABOVE_YET,
     }).height;
@@ -710,6 +749,9 @@ export async function openSession(request: SessionRequest): Promise<void> {
     // opening reads the same value, because how tall the area under it is is part of
     // whether the page fits.
     tips: hint,
+    // Rendered once, above, like the tips: what it says never changes inside a session, and
+    // whether it is on the page is the console's to say, once per answer.
+    unmoved: unmovedRow,
     // AND THE ROW UNDER THE LIST, as a LINE rather than as bytes: it is one of the palette's own
     // rows, so it is rendered and measured with them (`palette.ts`). Composed once, for the
     // reason the tips are — three keystrokes, and nothing about the record.
@@ -1000,6 +1042,36 @@ export function tips(): Line {
  */
 export function pickingTips(): Line {
   return aside([ARROWS_MOVE, RETURN_FILLS, ESCAPE_SHUTS].join(BETWEEN_CLAUSES));
+}
+
+/**
+ * WHAT THE SESSION SAYS WHEN AN ANSWER LEFT THE PAGE EXACTLY AS IT WAS — the row the input area
+ * draws at its top, directly under the window, while that is true and never otherwise.
+ *
+ * IT EXISTS BECAUSE A PAGE THAT DID NOT MOVE IS AN ANSWER NOBODY SAW LAND. Asked twice for a
+ * document taller than the window, the console puts the second copy on the roll and the window,
+ * which follows the tail, shows the tail of the second copy — which says what the tail of the
+ * first one said, row for row. The layout writes nothing for a frame identical to the one on the
+ * screen, so not a byte moves and a reader decides nothing happened
+ * (`tests/a-read-asked-again-draws-what-changed.test.ts`).
+ *
+ * IT IS A ROW AND NOT A MARK, and each of the things it could have been instead was refused for a
+ * reason the page already had. A mark in colour alone is gone under `NO_COLOR`; the rules and the
+ * guide carry no text by construction (`region.ts`); the corner says what the record proved; the
+ * row under the prompt is resolved once, for the whole session; and a permanent count or position
+ * would cost a row of the shortest window for ever and would make every pair of identical reads
+ * look different, which is the one thing about them that was right — the same refusal the status
+ * line makes of counts (`standing.ts`).
+ *
+ * AN ASIDE, LIKE THE TWO ROWS ABOVE, and for their reason: it says something about the console
+ * and nothing about the record, so it reads as the console's own and the words are the whole of
+ * the carrier. It takes no argument either, so it is resolved once when the session opens and
+ * only WHETHER it is on the page changes (`console.ts`, `theLastAnswerMovedNothing`). Exported
+ * for the reason {@link tips} is: a case that has to find this row on a page would otherwise
+ * retype it.
+ */
+export function alreadyOnThePage(): Line {
+  return aside([IT_WAS_ANSWERED, ITS_END_WAS_THERE, HOW_TO_SCROLL_BACK].join(BETWEEN_CLAUSES));
 }
 
 /**
