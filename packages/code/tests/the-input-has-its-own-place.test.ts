@@ -50,6 +50,7 @@ import { THE_FLOOR } from '../src/repl/floor.js';
 import {
   alreadyOnThePage,
   badgeLine,
+  belowThePage,
   openSession,
   theSessionsOwnWords,
   tips,
@@ -340,6 +341,16 @@ describe('the area has forms, and the tallest one that fits is the one drawn', (
  */
 const UNMOVED_IS = widthOf(alreadyOnThePage());
 
+/**
+ * AND IN EACH OF ITS TWO SENTENCES — the one a reader at the tail is told, and the one a reader who
+ * has walked back is told instead (`src/repl/session.ts`, `belowThePage`). The row is one row
+ * whichever it holds, so every rule below about how wide it may be is a rule about both.
+ */
+const EITHER_SENTENCE = [
+  ['its end was on the page', UNMOVED_IS],
+  ['its end is below the page', widthOf(belowThePage())],
+] as const;
+
 describe('the row saying an answer left the page as it was is counted where it is drawn', () => {
   it('costs the area one row over the row being typed while it stands, and nothing otherwise', () => {
     // A ROW THE LAYOUT DRAWS IS A ROW THIS ARITHMETIC COUNTS, in both of the sums it answers
@@ -359,17 +370,21 @@ describe('the row saying an answer left the page as it was is counted where it i
   it('is not drawn where it would fold, and a row it does not draw is a row it does not count', () => {
     // THE HINT'S RULE, on the other axis the row has: a row two rows tall is not the one row the
     // arithmetic above counts, so a window too narrow for it gets no row rather than a folded one.
-    const at = (columns: number) =>
-      areaFor({ ...showingEverything, rows: THE_FLOOR.rows, columns, unmoved: UNMOVED_IS });
-    expect(at(UNMOVED_IS).unmoved, `the row is ${UNMOVED_IS} columns`).toBe(true);
-    expect(at(UNMOVED_IS - 1).unmoved, `the row is ${UNMOVED_IS} columns`).toBe(false);
-    expect(at(UNMOVED_IS).height - at(UNMOVED_IS - 1).height).toBe(1);
+    for (const [which, width] of EITHER_SENTENCE) {
+      const at = (columns: number) =>
+        areaFor({ ...showingEverything, rows: THE_FLOOR.rows, columns, unmoved: width });
+      expect(at(width).unmoved, `${which}: the row is ${width} columns`).toBe(true);
+      expect(at(width - 1).unmoved, `${which}: the row is ${width} columns`).toBe(false);
+      expect(at(width).height - at(width - 1).height, which).toBe(1);
+    }
   });
 
-  it('fits one row of the narrowest window this console draws a page on', () => {
+  it('fits one row of the narrowest window this console draws a page on, in either sentence', () => {
     // THE FLOOR IS WHERE IT MATTERS MOST — the window there is the shortest, so an answer outgrows
     // it soonest — and a row wider than the floor would never be drawn exactly there.
-    expect(UNMOVED_IS, 'the row folds at the floor').toBeLessThanOrEqual(THE_FLOOR.columns);
+    for (const [which, width] of EITHER_SENTENCE) {
+      expect(width, `${which}: the row folds at the floor`).toBeLessThanOrEqual(THE_FLOOR.columns);
+    }
   });
 
   it('keeps its row when the list wants the whole screen', () => {

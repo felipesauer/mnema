@@ -269,6 +269,20 @@ export interface Showing {
    */
   readonly badge: string;
   /**
+   * WHAT THE ROW OVER THE INPUT AREA SAYS, when the last answer left the page as it was — already
+   * rendered, and empty while there is no such row.
+   *
+   * IT IS HERE FOR THE CORNER'S REASON, AND IT ARRIVED HERE THE SAME WAY. The words were a prop of
+   * {@link Region} on the premise that nothing inside a session changes what they say, and the
+   * row has two sentences now: one for a reader following the tail, one for a reader who has
+   * walked back (`session.ts`, `alreadyOnThePage` and `belowThePage`). Both are composed once when
+   * the session opens; which is held is decided once per answer (`console.ts`, `judged`), and a
+   * prop would be the one it opened with. Whether there is a row to put it on is the area's
+   * answer ({@link Showing.area}); what it says is the session's; this file draws it and decides
+   * neither.
+   */
+  readonly unmoved: string;
+  /**
    * THE TOP REGION: the arrangement the page opens with, or nothing when this terminal has no
    * room for one.
    *
@@ -359,9 +373,10 @@ export interface Showing {
    * things it is a function of: how TALL the caller's terminal is, which changes when they
    * drag the bottom edge of their window, whether a Tab left words on the page, which changes
    * on a keystroke, and whether the last answer left the page as it was, which changes when an
-   * answer ends and again on the first key of the next line. IT SAID *the two reasons*, and the
-   * third is what this delivery added. All of them are answered before this value is built
-   * (`area.ts`, `console.ts`); nothing is measured here.
+   * answer ends, again on the first key of the next line, and — for a reader who had walked back
+   * — on the first frame that brings the end of the answer onto the page. IT SAID *the two
+   * reasons*, and the third is what this delivery added. All of them are answered before this
+   * value is built (`area.ts`, `console.ts`); nothing is measured here.
    */
   readonly area: Area;
 }
@@ -389,11 +404,15 @@ export interface Watched {
  * happens inside a session changes them, so putting them in the value rebuilt on every
  * keystroke would have said they might.
  *
- * THE ROW SAYING THE LAST ANSWER LEFT THE PAGE AS IT WAS IS SPLIT ALONG THE SAME LINE, and it
- * is the one thing on the page that falls on both sides of it. What it SAYS is resolved once, like
- * the tips, so the words are a prop; WHETHER it is on the page is what an answer changes, so that
- * is watched, as part of the area ({@link Showing.area}, `area.ts`). The words never pass through
- * the roll, which is what keeps them out of the transcript a session hands back.
+ * THE ROW SAYING THE LAST ANSWER LEFT THE PAGE AS IT WAS WAS SPLIT ALONG THE SAME LINE, and it
+ * is watched whole now. It read: *what it SAYS is resolved once, like the tips, so the words are a
+ * prop; WHETHER it is on the page is what an answer changes, so that is watched*. The first half
+ * stopped being true when the row got a second sentence — one for a reader following the tail,
+ * one for a reader who has walked back — because WHICH of the two is on the page is also what an
+ * answer changes. Both sentences are still resolved once, in the session; the one held travels in
+ * the value ({@link Showing.unmoved}), and whether there is a row for it is part of the area
+ * ({@link Showing.area}, `area.ts`). The words never pass through the roll, which is what keeps
+ * them out of the transcript a session hands back.
  *
  * THIS SENTENCE USED TO NAME THE BADGE BESIDE THEM, and what falsified it is a measurement
  * rather than a preference. It read *"THE TIPS AND THE BADGE ARE PROPS … nothing that happens
@@ -422,11 +441,9 @@ export interface Watched {
 export function Region({
   watched,
   tips,
-  unmoved,
 }: {
   readonly watched: Watched;
   readonly tips: string;
-  readonly unmoved: string;
 }): ReactNode {
   const shown = useSyncExternalStore(watched.watch, watched.now, watched.now);
   const { setCursorPosition } = useCursor();
@@ -485,7 +502,7 @@ export function Region({
     // THE ONE BRANCH ON THIS SURFACE THAT IS NOT ABOUT A FORM. Every other choice here is
     // which arrangement there is room for; this is whether there is a page at all
     // (`floor.ts`, {@link Floored}).
-    ...(shown.draws === 'floor' ? rows(shown.said) : theThreeRegions(shown, tips, unmoved)),
+    ...(shown.draws === 'floor' ? rows(shown.said) : theThreeRegions(shown, tips)),
   );
 }
 
@@ -496,7 +513,7 @@ export function Region({
  * It is a function of the value rather than the body of {@link Region} because the frame has two
  * shapes now, and the shape a window under the floor gets is not this one with parts left out.
  */
-function theThreeRegions(shown: Showing, tips: string, unmoved: string): readonly ReactNode[] {
+function theThreeRegions(shown: Showing, tips: string): readonly ReactNode[] {
   return [
     ...(shown.panel === undefined ? [] : theTop(shown.panel)),
     node(Middle, { window: shown.window }),
@@ -505,7 +522,7 @@ function theThreeRegions(shown: Showing, tips: string, unmoved: string): readonl
       palette: shown.palette,
       area: shown.area,
       tips,
-      unmoved,
+      unmoved: shown.unmoved,
       badge: shown.badge,
     }),
   ];

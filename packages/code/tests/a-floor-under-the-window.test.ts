@@ -532,7 +532,7 @@ describe('the floor is crossed in both directions and the session survives it', 
       prompt: PROMPT,
       renderingAt: () => renderPlain,
       tips: { text: '', width: 0 },
-      unmoved: { text: '', width: 0 },
+      unmoved: { onThePage: { text: '', width: 0 }, belowThePage: { text: '', width: 0 } },
       picking: fact('nothing to pick'),
       badge: () => ({ text: '', width: 0 }),
       openingFor: (columns, rows) => {

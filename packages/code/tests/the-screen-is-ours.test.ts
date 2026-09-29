@@ -53,6 +53,7 @@ import { THE_FLOOR } from '../src/repl/floor.js';
 import { fromTheMouse, THE_WHEEL_BACK, WATCHING_THE_WHEEL } from '../src/repl/pointing.js';
 import {
   backAtMost,
+  followingTheTail,
   landedIn,
   NOTHING_SAID,
   rowsForTheLine,
@@ -60,6 +61,7 @@ import {
   type Scrolling,
   scrolledBy,
   THE_CEILING,
+  theTailIsInTheWindow,
   theTranscript,
   theWindowOn,
   toTheTail,
@@ -301,6 +303,32 @@ describe('the roll the middle region is a window onto', () => {
     // AND THE TAIL IS STILL THERE TO GO BACK TO, so the case above is a reader held still rather
     // than a roll that stopped growing.
     expect(theWindowOn(toTheTail(landing), 3, 80)).toEqual(['later-2', 'later-3', 'later-4']);
+  });
+
+  it('tells the tail in the window from a reader at the tail, by the cut the window is made by', () => {
+    // THE TWO QUESTIONS AGREE ON EVERY ROAD BUT ONE. At the tail the last line is in the window;
+    // walked back it is not; and a walk back that the region then outgrew is still a walk back by
+    // the count while every line is on the page, because the count is corrected only by the next
+    // move (`src/repl/scrolling.ts`, `theWindowOn`). The row that says the end of an answer is below
+    // the page asks this one, and that last road is the reason (`src/repl/console.ts`, `moved`).
+    const roll = said(10);
+    expect(theTailIsInTheWindow(roll, 3, 80), 'the tail is not in the window at the tail').toBe(
+      true,
+    );
+    const walked = scrolledBy(roll, 4, 3, 80);
+    expect(theTailIsInTheWindow(walked, 3, 80), 'the tail is in the window walked back').toBe(
+      false,
+    );
+    expect(followingTheTail(walked), 'the walk back did not walk').toBe(false);
+    // A REGION GROWN TO HOLD THE WHOLE ROLL: the same count, every line on the page.
+    expect(theWindowOn(walked, 12, 80), 'the grown region does not hold the roll').toEqual(
+      roll.said,
+    );
+    expect(theTailIsInTheWindow(walked, 12, 80), 'the grown region hid the tail').toBe(true);
+    expect(followingTheTail(walked), 'growing the region moved the reader').toBe(false);
+    // AND WHERE NOTHING IS SHOWN, NOT THE LAST LINE EITHER: no rows, or nothing said.
+    expect(theTailIsInTheWindow(roll, 0, 80)).toBe(false);
+    expect(theTailIsInTheWindow(NOTHING_SAID, 3, 80)).toBe(false);
   });
 
   it('stops at both ends rather than running off either', () => {
@@ -642,6 +670,17 @@ function rowOf(screen: Screen, what: string): number {
 }
 
 /**
+ * The glyph the guide down the margin of the roll is drawn out of (`src/repl/region.ts`, `bar`) —
+ * spelled by code point, like every other unusual byte in this repository.
+ */
+const THE_GUIDE = '\u2502';
+
+/** The rows of a page that are rows of the roll — the ones with the guide down their margin. */
+function rowsOfTheRoll(page: Screen): readonly string[] {
+  return page.rows.filter((row) => row.includes(THE_GUIDE));
+}
+
+/**
  * HOW MANY ROWS OF THE PAGE HAVE ANYTHING ON THEM — the caller's own reading of the defect below.
  *
  * *The text simply disappears from the middle* is a statement about a COUNT: a page with
@@ -957,7 +996,13 @@ describe('the middle region scrolls, and the two fixed regions do not', () => {
     theHistorySurvived(ran, 'a session that walked a roll bigger than its window');
   }, 240_000);
 
-  it('does not jump a reader who has walked back when something new lands', async () => {
+  it('keeps a reader who has walked back on the rows they were reading when something new lands', async () => {
+    // IT WAS *does not jump a reader who has walked back*, AND THE PAGE DOES MOVE NOW — BY A ROW AT
+    // THE FOOT, NOT BY A SCROLL. An answer asked from back there ends by raising a row that says
+    // where its end went (`src/repl/console.ts`, `judged`), and that row takes its row from the top
+    // of the window, as the list of words does: the window keeps the line it ends on and gives up
+    // the one it began with. The case is renamed with it, so what the name promises is what the
+    // assertions below hold (`a-read-asked-again-draws-what-changed.test.ts` reads the row itself).
     const { columns, rows } = THREE_REGIONS;
     const ran = await inPty({
       columns,
@@ -966,12 +1011,11 @@ describe('the middle region scrolls, and the two fixed regions do not', () => {
         opens,
         ...saidEnoughToScroll(),
         presses('walked back', PAGE_UP),
-        // THE LINE IS TYPED AND SUBMITTED AS TWO STEPS, and that is forced by what the case
-        // is about rather than by taste: a line landing under a reader who has walked back
-        // changes NOTHING on the screen, so the layout writes nothing and a step waiting for a
-        // frame waits for ever. Typing it changes the row being typed and submitting it changes
-        // that row back, so each half is a frame — and the frame the second one produces is the
-        // one under test.
+        // THE LINE IS TYPED AND SUBMITTED AS TWO STEPS, so the page it was typed over is a page of
+        // its own. IT SAID a line landing here *changes NOTHING on the screen*, so a step waiting
+        // for a frame would wait for ever — and that half fell: the answer's end draws the row. What
+        // survives is that the Return's own frame, the row being typed emptied, can come before the
+        // row or together with it, and what is asserted below is true of either page.
         presses('typed a line while walked back', says(ENOUGH_TO_OVERFLOW)),
         presses('submitted it while walked back', '\r'),
         presses('went back to the tail', TO_THE_TAIL),
@@ -982,8 +1026,14 @@ describe('the middle region scrolls, and the two fixed regions do not', () => {
     const landed = screenAt(ran, ENOUGH_TO_OVERFLOW + 3, columns, rows);
     const tail = screenAt(ran, ENOUGH_TO_OVERFLOW + 4, columns, rows);
     // THE WINDOW IS WHERE THE READER LEFT IT. What landed went onto the roll, under what they are
-    // reading, and the page did not move.
-    expect(landed.text, 'new output pulled the page out from under a reader').toBe(walked.text);
+    // reading: the last row of the window is the row it was, and every row above it is a row that
+    // was there — all of them, or all but what the row at the foot took from the top.
+    const before = rowsOfTheRoll(walked);
+    const after = rowsOfTheRoll(landed);
+    expect(after.at(-1), 'new output pulled the page out from under a reader').toBe(before.at(-1));
+    expect(after, 'new output pulled the page out from under a reader').toEqual(
+      before.slice(before.length - after.length),
+    );
     // AND IT REALLY DID LAND, or the assertion above is about a session that answered nothing:
     // going back to the tail shows something the window did not have.
     expect(tail.text, 'nothing landed while the reader was walked back').not.toBe(walked.text);

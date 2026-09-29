@@ -132,6 +132,7 @@ import {
   type Scrolling,
   scrolledBy,
   theSameWindow,
+  theTailIsInTheWindow,
   theTranscript,
   theWindowOn,
   toTheTail,
@@ -258,15 +259,22 @@ export interface ConsoleRequest {
   readonly tips: Drawn;
   /**
    * WHAT THE FOOT SAYS WHEN AN ANSWER LEFT THE PAGE AS IT WAS, already rendered — the row the
-   * area draws at its top while that is true, and never a line of the roll.
+   * area draws at its top while that is true, and never a line of the roll. It has TWO
+   * SENTENCES, one for each side of the tail: that the end of the answer was already on the page,
+   * for a reader following it, and that the end is below the page, for a reader who has walked
+   * back and whose page no answer moves.
    *
-   * BYTES FOR THE REASON THE TIPS ARE BYTES: it says nothing about the record and nothing about
-   * the terminal, so it is composed once when the session opens (`session.ts`,
-   * `alreadyOnThePage`), and what a session changes is only whether it is on the page
-   * ({@link theLastAnswerMovedNothing}). A window too narrow for it to be one row gets no row,
-   * which is the area's call rather than this file's, exactly as it is for the hint.
+   * BYTES FOR THE REASON THE TIPS ARE BYTES: neither says anything about the record or about the
+   * terminal, so both are composed once when the session opens (`session.ts`, `alreadyOnThePage`
+   * and `belowThePage`), and what a session changes is only whether one of them is on the page,
+   * and which ({@link theRowSays}). A window too narrow for the one it holds to be one row gets
+   * no row, which is the area's call rather than this file's, exactly as it is for the hint.
+   *
+   * IT WAS ONE SENTENCE, and what made it two is the reader it had to leave out. The first was
+   * true only at the tail, so a reader who had walked back was told nothing at all — and for them
+   * EVERY answer lands without the page moving, which is the silence the row exists to break.
    */
-  readonly unmoved: Drawn;
+  readonly unmoved: { readonly onThePage: Drawn; readonly belowThePage: Drawn };
   /**
    * WHICH KEYS MOVE THE LIST OF WORDS, as a line — drawn under the list, and only on the frames
    * there is one.
@@ -703,24 +711,36 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
   let scrolling: Scrolling = theOpeningOnTheRoll();
   let editing: Editing = NOTHING_TYPED;
   /**
-   * WHETHER THE LAST ANSWER LEFT THE PAGE AS IT FOUND IT — the one fact the row at the top of the
-   * input area is drawn for ({@link ConsoleRequest.unmoved}).
+   * WHICH OF ITS TWO SENTENCES THE ROW AT THE TOP OF THE INPUT AREA SAYS ABOUT THE LAST ANSWER —
+   * or `undefined`, when the last answer moved the page and there is nothing to say
+   * ({@link ConsoleRequest.unmoved}).
    *
    * THE SAME DOCUMENT ASKED TWICE IS AN ANSWER NOBODY SEES LAND, wherever the window is shorter
    * than the answer. The window follows the tail, the tail of the second copy says what the tail
    * of the first one said, and the layout writes nothing for a frame identical to the one on the
    * screen — so the answer went onto the roll and not a byte of the screen moved
-   * (`tests/a-read-asked-again-draws-what-changed.test.ts`). This is what makes the frame after
-   * it a different frame: one row more at the foot, saying so, and one row fewer of the window.
+   * (`tests/a-read-asked-again-draws-what-changed.test.ts`). AND SO IS EVERY ANSWER ASKED BY A
+   * READER WHO HAS WALKED BACK, by the promise the roll keeps rather than by accident: what they
+   * are reading stays where it is, and the answer goes on the roll under it (`scrolling.ts`,
+   * `landedIn`). Either way the frame after it is made a different frame: one row more at the
+   * foot, saying where the end of the answer is, and one row fewer of the window.
    *
-   * RAISED WHERE AN ANSWER ENDS AND NOWHERE ELSE ({@link judged}), and lowered by the next key
-   * that is not a scroll ({@link key}): those are the two places it is written. A reader who
-   * scrolls keeps it, which is a case (`tests/a-read-asked-again-draws-what-changed.test.ts`); a
-   * resize and another process's append do not write it either, and the words stay true through
-   * both because they are about the last answer, in the past tense (`session.ts`,
-   * `alreadyOnThePage`).
+   * ONE VALUE AND NOT TWO FLAGS, which is what makes *one row, one of two sentences, never both*
+   * a property of the type rather than of the code that sets it: there is nowhere to hold both.
+   * Its keys are the keys of the sentences it chooses between, so a third sentence added to the
+   * request is a value this can hold without a line changing here.
+   *
+   * RAISED WHERE AN ANSWER ENDS AND NOWHERE ELSE ({@link judged}), and lowered in two places: by
+   * the next key that is not a scroll ({@link key}), whichever sentence it holds, and — for the
+   * sentence that says the end is below the page — by the first frame whose window holds the end
+   * ({@link moved}). A reader who scrolls keeps the first sentence, which is a case
+   * (`tests/a-read-asked-again-draws-what-changed.test.ts`); a resize and another process's append
+   * leave it too, and its words stay true through both because they are about the last answer, in
+   * the past tense (`session.ts`, `alreadyOnThePage`). The second is in the present tense, about
+   * the page, and it is taken down the moment the page makes it false (`session.ts`,
+   * `belowThePage`).
    */
-  let theLastAnswerMovedNothing = false;
+  let theRowSays: keyof ConsoleRequest['unmoved'] | undefined;
   /**
    * HOW MANY LINES HAVE BEEN SUBMITTED, counted when the key is pressed rather than when the line
    * is answered — which is what lets an answer that ends tell whether a later line is already
@@ -780,10 +800,11 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
       columns,
       badge: badge.width,
       hint: tips.width,
-      // THE ROW SAYING THE LAST ANSWER LEFT THE PAGE AS IT WAS, at its width while that is true
-      // and at none otherwise. It is the only number here that an answer ending changes, and it
-      // is answered once per answer rather than worked out on a frame ({@link judged}).
-      unmoved: theLastAnswerMovedNothing ? unmoved.width : 0,
+      // THE ROW SAYING THE LAST ANSWER LEFT THE PAGE AS IT WAS, at the width of the sentence it
+      // holds while it holds one and at none otherwise. It is the only number here that an answer
+      // ending changes, and which sentence is answered once per answer rather than worked out on a
+      // frame ({@link judged}).
+      unmoved: theRowSays === undefined ? 0 : unmoved[theRowSays].width,
       // HOW MANY ROWS THE LIST WANTS, asked of the module that draws them rather than counted
       // here: it is one per offer AND one for the row that says which keys move it, and a
       // count that left the second out would budget a region one row shorter than the one
@@ -859,6 +880,10 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
       // session: the corner degrades when the record moves past what was ruled on, and a
       // prop would be drawn once and never again ({@link Region}).
       badge: badge.text,
+      // AND THE WORDS OF THE ROW OVER THE INPUT AREA, for the same reason: which of its two
+      // sentences it holds is decided inside the session, once per answer ({@link theRowSays}).
+      // Empty while it holds none — the area has already said there is no row to put them on.
+      unmoved: theRowSays === undefined ? '' : unmoved[theRowSays].text,
       panel: drawn ? opening.panel : undefined,
       window,
       // BOTH MEASUREMENTS OF THE SCREEN, out of the one reading taken at the top of this frame.
@@ -917,9 +942,33 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     return theWindowOn(scrolling, theMiddle.room, theMiddle.columns);
   }
 
-  /** ANYTHING MOVED: the value the layout reads is built again, and everyone watching is told. */
+  /**
+   * ANYTHING MOVED: the value the layout reads is built again, and everyone watching is told.
+   *
+   * AND A ROW THAT HAS JUST BECOME FALSE IS TAKEN DOWN HERE, before anyone is told. The row that
+   * says the end of the last answer is below the page is a sentence about the page NOW
+   * (`session.ts`, `belowThePage`), and the page changes under it by more roads than one: End,
+   * enough pages down, the wheel, and a window made tall enough to hold the whole roll. This is
+   * the one place every one of them passes through, so it is the one place the question is asked:
+   * whether the frame just built — the one that would be drawn with the row on it — holds the end
+   * in its window, by the subtraction the window itself is cut by (`scrolling.ts`,
+   * `theTailIsInTheWindow`). If it does, the row comes down and the frame is built again without
+   * it, and only that frame is shown.
+   *
+   * ASKED OF THE FRAME WITH THE ROW ON IT, and that is the half that cannot go round in a circle.
+   * The row takes a row from the window, so a window that holds the end with the row up holds it
+   * without the row as well; a window that holds it only without the row keeps the row, and is a
+   * page whose end really is under the row that says so.
+   */
   function moved(): void {
     shown = showing();
+    if (
+      theRowSays === 'belowThePage' &&
+      theTailIsInTheWindow(scrolling, theMiddle.room, theMiddle.columns)
+    ) {
+      theRowSays = undefined;
+      shown = showing();
+    }
     for (const watcher of watchers) watcher();
   }
 
@@ -1192,7 +1241,15 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
     //
     // THE FOUR KEYS ABOVE ARE NOT AMONG THEM, which is why this sits below them: moving the window
     // is doing what the row says, and it leaves the row exactly as true as it was.
-    theLastAnswerMovedNothing = false;
+    //
+    // THAT WAS ONE SENTENCE AND IT IS TWO NOW, AND THIS SITE TAKES DOWN EITHER. The one said to a
+    // reader who has walked back — the end of the answer is below the page — is taken down here by
+    // the same rule and for the same reason: their next line is answered below the page too, and a
+    // row already up with the same words would be the same silence one read later. What the four
+    // keys above CAN do to that sentence is make it false, by bringing the end onto the page, and
+    // that is answered where every frame is built rather than here, because a window made taller
+    // brings it there as well ({@link moved}).
+    theRowSays = undefined;
     const what = typeKey(editing, stroke, complete);
     switch (what.does) {
       case 'edit':
@@ -1276,16 +1333,30 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    *
    *   - A READER WHO HAS WALKED BACK sees every answer land without the window moving — that is
    *     the promise the roll keeps (`scrolling.ts`, `landedIn`) — and for them the end of the
-   *     answer is NOT on the page. The row would be false there, so only a reader at the tail is
-   *     told.
+   *     answer is NOT on the page. The first sentence would be false there, so only a reader at
+   *     the tail is told it.
    *   - A LINE ALREADY WAITING BEHIND THIS ONE is answered next, and on a page without the row: its
    *     own keys took the row down before this answer ended, and nothing after this one would take
    *     it down again — so a row raised here would stand over whatever the next answer does.
+   *
+   * AND THE FIRST OF THOSE USED TO END THE QUESTION, and that is the half that fell. It read
+   * *only a reader at the tail is told*, and so a reader who had walked back was told nothing —
+   * for whom every answer lands with the page as it was, the silence the row exists for. They
+   * are told the other sentence now: the end is below the page, and End goes there
+   * (`session.ts`, `belowThePage`). It needs no comparison of windows, because for them the page
+   * not moving is the promise rather than the question; and nothing here moves them to the answer,
+   * which would be the promise broken to say it. The two sentences are the two sides of ONE
+   * condition — following the tail or not — so they cannot both be true of one answer, and the
+   * row holds one value that cannot be both ({@link theRowSays}).
    */
   function judged(asked: number, found: readonly string[]): void {
-    if (asked !== submitted || !followingTheTail(scrolling)) return;
-    if (!theSameWindow(found, theWindowNow())) return;
-    theLastAnswerMovedNothing = true;
+    if (asked !== submitted) return;
+    if (followingTheTail(scrolling)) {
+      if (!theSameWindow(found, theWindowNow())) return;
+      theRowSays = 'onThePage';
+    } else {
+      theRowSays = 'belowThePage';
+    }
     moved();
   }
 
@@ -1377,12 +1448,15 @@ export function openConsole(request: ConsoleRequest): OpenConsole {
    * waiting for a scheduler ({@link resized}).
    *
    * ONE COMPOSITION AND TWO CALLERS, which is what keeps the frame drawn on a resize from being
-   * a different frame from the one mounted: the props are the things resolved once when the
-   * session opened — the tips, and the words of the row that says an answer left the page as it
-   * was — and everything that moves is read through {@link Watched}.
+   * a different frame from the one mounted: the props are what was resolved once when the session
+   * opened, and everything that moves is read through {@link Watched}.
+   *
+   * THE WORDS OF THE ROW THAT SAYS AN ANSWER LEFT THE PAGE AS IT WAS WERE A PROP HERE, beside the
+   * tips, and what moved them is their second sentence. Which of the two is on the page is decided
+   * inside the session, once per answer, so it travels with what is shown — exactly as the corner's
+   * two forms do ({@link showing}, `region.ts`).
    */
-  const theFrame = (): ReactElement =>
-    createElement(Region, { watched, tips: tips.text, unmoved: unmoved.text });
+  const theFrame = (): ReactElement => createElement(Region, { watched, tips: tips.text });
 
   const app = render(theFrame(), {
     stdin,
