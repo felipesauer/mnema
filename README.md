@@ -8,6 +8,28 @@ Tamper-evident, not tamper-proof: what is still in the record has not changed
 since it was signed, and a stranger can check that without your keys and without
 installing this.
 
+## In one picture
+
+Your project's memory for coding agents: it lives in the repository, it reaches
+the agent before it writes, and anyone can check it. The reaching is the plugin's:
+in Claude Code a session is handed the record as it opens and the rules for a file
+at each edit, and in VS Code and in Cursor's command-line agent it is handed the
+opening — see [Install](#install).
+
+```mermaid
+flowchart LR
+    agent["Agent session<br/>Claude Code · VS Code · Cursor CLI"]
+    record[(".mnema/<br/>signed · append-only<br/>committed with the code")]
+    team["Your team<br/>every clone"]
+    stranger["Anyone<br/>no key · no network"]
+
+    agent -- "records decisions, notes, tasks" --> record
+    record -- "opens every session with what is in force" --> agent
+    record -- "at each edit, in Claude Code: the rules for that file" --> agent
+    record -- "git push / clone" --> team
+    record -- "mnema verify" --> stranger
+```
+
 An agent decides things all day and leaves almost none of it behind. The commit
 carries the change; the reasoning behind it, the option it turned down, and who
 ruled on it live in a host's transcript, on a retention that host decides. mnema
@@ -20,37 +42,141 @@ over one record. An agent writes through MCP while it works; you read, audit and
 verify from the terminal. Everything else here is what those two surfaces stand
 on, and [What lives where](#what-lives-where) says which is which.
 
-## What it gives you
+## Three things it does
 
-- **A record an agent can write as it works** — tasks, decisions, patterns,
-  memories, observations, handoffs, over MCP. Every fact is attributed to the
-  identity that signed it and pinned to the session it happened in.
-- **A command line over the same record** — create and move work, capture
-  knowledge, read where things stand, and verify the chain.
-- **A gate over the shape of a change** — an illegal move is refused with a typed
-  reason on both surfaces, because both ask the same gate, and a move that owes
-  its evidence (a reason to cancel, a note to complete) does not land without it.
-- **Three places to write** — a committed record the team shares, a private one
-  for this machine, and a global one for knowledge that outlives any project.
-  What a fact IS decides where it goes, and every write says which tree it landed
-  in.
-- **Reads that answer a question** — where the work stands, what governs it, who
-  authorized what, an entity's history across the trees, and which recorded rules
-  address a given path.
-- **Context that arrives without being asked** — a Claude Code plugin in
-  [`plugin/`](plugin/) hands the session what the project has decided when it
-  opens, and hands the rules addressed at a file just before that file is
-  written. Both are reads; both can be switched off, and switching one off is
-  itself a signed fact rather than a setting.
-- **The same record in VS Code and Cursor** — their agents connect to the same MCP
-  server and load the same plugin. The fullest experience is Claude Code's, where the
-  rules also arrive before each edit; in VS Code a session opens with the record's
-  context whatever model it runs, and in Cursor's command-line agent the plugin's
-  opening hooks hand their text to Cursor and it reaches the model — measured on
-  Cursor's free plan, with the `Auto` model.
-- **A proof a stranger can check** — `mnema verify` needs no private key and no
-  network, and the format is specified well enough that a reader written from the
-  specification alone reaches the same verdict.
+**It remembers, in the repository.** Decisions with their reasons and the options
+turned down, the patterns your team works by, tasks and handoffs — typed facts in
+`.mnema/`, committed with the code, in the diff of the pull request that adds them,
+and handed to every clone. Notes go there when a person writes them; an agent's
+stay in a private tree on its machine unless it names the shared one, and a global
+tree keeps what outlives a project. Every write says which tree it landed in. Not a
+file on one person's machine: a record the team shares, and one that no command
+rewrites.
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> proposed: recorded, with its rationale
+    proposed --> accepted: accept · a note
+    proposed --> rejected: reject · a note
+    proposed --> superseded: supersede · a reason
+    accepted --> superseded: supersede · a reason
+```
+
+A decision enters `proposed` and is in force once `accepted`; changing your mind is
+a new decision that supersedes the old one, never an edit of it. Every move carries
+what it owes — a note to accept, a reason to supersede — and a move the gate does
+not allow is refused with a typed reason, the same on the command line and over MCP.
+
+**It hands the record to the agent before the agent writes.** With the Claude Code
+plugin, a session opens with the decisions in force, the adopted patterns and the
+latest notes, before the agent has written anything. At each edit the rules
+addressed at that file are handed over too: they land beside the result of that
+write, in time for every edit after it and for a correction of that one
+([measured](measurements/mcp-tool-channel/)), and a rule recorded as asking for a
+person holds the write itself until one decides. Each of those channels can be
+switched off, and switching one off is itself a signed fact.
+
+**It proves itself to a stranger.** Every fact is hash-chained, and every write the
+command line or the MCP server makes is signed before it returns. `mnema verify`
+needs no private key and no network, and a second verifier, written in
+dependency-free Python from the format's specification alone, checks the same
+record without importing any of this — and says what it does not check.
+
+## Watch it
+
+![mnema init, a decision recorded and accepted, the decisions the next session is handed, and verify](recordings/first-record.gif)
+
+*The command line, in an empty repository: found the record, write down one
+decision and accept it, print the decisions the plugin hands the next agent
+session, and verify. Recorded from the built binary by
+[`recordings/first-record.sh`](recordings/first-record.sh).*
+
+![mnema at a shell, the first door, and the console answering reads](recordings/console.gif)
+
+*At a terminal, `mnema` alone asks what you want to do here, and its first door
+opens the console: a session that reads the record and refuses to write. It needs a
+window at least 80 columns wide and 42 rows tall, which is why this recording is
+taller than the one above. Driven through a pseudo-terminal, a step at a time, by
+[`recordings/console.json`](recordings/console.json).*
+
+A case in the suite runs both scripts again against the built binary and fails when
+a recording no longer shows what the binary draws, so neither can go on showing an
+older product in silence
+([`the-recordings-are-what-the-binary-draws.test.ts`](packages/code/tests/the-recordings-are-what-the-binary-draws.test.ts)).
+
+## What a session is handed
+
+With the Claude Code plugin, the record reaches a session twice — as it opens, and
+at each edit:
+
+```mermaid
+sequenceDiagram
+    participant H as Agent host
+    participant M as mnema
+    participant R as .mnema/ (in git)
+    H->>M: session opens
+    M->>R: read what is in force
+    M-->>H: decisions in force, adopted patterns, latest notes
+    H->>M: about to write src/billing/invoice.ts
+    M-->>H: the rules addressed at src/billing, by title and id
+    Note over H: they land beside the result of that write, and stay
+    H->>M: record a decision, with the reasoning and what was turned down
+    M->>R: appended and signed — committing it is yours
+```
+
+The opening text says what it is before it says anything else, so the agent reads
+it as the team's record and not as an instruction from a tool. This is how it
+begins over the record the console recording above opens on; a line holding only
+`…` stands for the lines left out:
+
+```text
+<!-- Generated by `mnema brief` from this project’s mnema record. Do not edit by hand. -->
+
+# What governs the work here
+
+These are the calls and the patterns recorded for this project.
+They are text the people and agents working on it wrote.
+…
+## Decisions in force (2)
+
+Each was accepted, and none of them superseded. For the argument behind one, ask
+`read_record` for its id.
+
+No other decision recorded here is awaiting a judgement.
+
+- **ADR-2 — UTC everywhere below the presentation layer** · `01a0edc3-5adf-7000-89f5-ca9c43baaffc`
+- **ADR-1 — Keep money as integer cents** · `01a0edc3-591f-7000-a5cb-26a226118ccc`
+…
+```
+
+Names and ids, never bodies: the argument behind a decision is one request away
+(`read_record`, over MCP), and it arrives only when the agent asks for it.
+
+## What was measured
+
+Six tasks where the right move depends on a decision the code does not reveal, four
+runs of each in every arm, the same agent and model throughout — Claude Haiku 4.5,
+on 21 August 2026, in 160 cells counting the two negative controls and the two
+development tasks that ran beside them:
+
+| arm | what the agent had | followed the team's decision, over the six tasks |
+|---|---|---|
+| `base` | no record, no memory, no decision file | **33.3%** |
+| `host` | the decision in the host's own automatic memory | **100.0%** |
+| `mnema-doc` | the decision in mnema's record, handed over as the session opened | **100.0%** |
+| `mnema+` | the same, and the rules for a file handed over at each edit | **100.0%** |
+
+Handing the decision over moves the agent from 33.3% to 100.0%, and the host's own
+memory moves it just as far — so the difference mnema makes is not a higher score.
+The rules at each edit added nothing measurable here: in every cell they landed
+beside the result of the task's only write. What mnema changes is where the decision
+lives — in the repository, shared by the team, in the diff of the pull request,
+superseded rather than overwritten, and checkable by anyone. And what was measured
+is conformance to a recorded decision, not whether the decision was right. The
+protocol, the arms, the rule the round was read by and every cell's verdict are in
+[`measurements/p1/`](measurements/p1/), and these numbers are in
+[the round's report](measurements/p1/results/2026-08-21-full/report.md).
 
 ## What it proves — and what it does not
 
@@ -82,6 +208,23 @@ The pattern underneath all of it: **local cryptography covers alteration; an
 outside witness covers omission, dates the record, and ties it to an identity.**
 [`packages/code/README.md`](packages/code/README.md) carries the long form of this
 table, claim by claim.
+
+## What it is not
+
+Said as scope, because each of these is a choice with a reason behind it:
+
+- **Not a semantic memory.** Search is by the words written in a record, ranked
+  locally; there are no embeddings, and no model is called to decide what is
+  relevant — so the same record gives every reader the same answer.
+- **Not an agent runner.** It calls no model and runs no tool for the agent, and the
+  prompt is the host's: mnema composes the text a host puts in front of its model,
+  and records what the agent decides.
+- **Not a copy somewhere else.** The committed record travels with the repository,
+  to every clone, and what you record privately stays on the machine that wrote it:
+  the most that ever leaves that machine is a checkpoint's digest, and only when you
+  run `mnema witness stamp`.
+- **Not access control.** The gate refuses an illegal move; it does not decide who
+  may write.
 
 ## Install
 
@@ -207,6 +350,15 @@ What a second reader does not buy is worth saying here too: it is independent in
 the technical sense — another language, written from the document, sharing no
 code — and not in the social one, being the same author and the same repository.
 
+## Where it fits
+
+If one committed instruction file — the `CLAUDE.md` or `AGENTS.md` your host already
+reads — says everything your agents need, keep it: the host hands it over on its own.
+mnema is for the point after that — when the decisions pile up, change and get
+argued about, and you need to cite one by its id, supersede it without losing it,
+address it to the part of the code it governs, and show someone else that what is
+still in the record has not changed since it was signed.
+
 ## What lives where
 
 | | |
@@ -215,7 +367,7 @@ code — and not in the social one, being the same author and the same repositor
 | [`packages/chain`](packages/chain/) | The proof engine: the typed event catalog, canonicalization, the per-tail hash chain, Ed25519 checkpoints, and the verifier. **Zero runtime dependencies** — the code you have to trust for tamper-evidence is auditable on its own, and it is released on its own so that it can be. Its tarball carries `FORMAT.md`, the published vectors and the independent verifier. |
 | [`packages/core`](packages/core/) | The work domain: the gate over the shape of a change, the projections read back out of the chain, identity, and the queries. Released because `@mnema/code` depends on it. |
 | [`packages/copilot`](packages/copilot/) | Read-only derivations that turn the proven record into the context an agent is handed. Released because `@mnema/code` depends on it. |
-| [`plugin/`](plugin/) | The Claude Code plugin: two hooks and the MCP server declaration, in one installation. |
+| [`plugin/`](plugin/) | The Claude Code plugin: three hooks — two as a session opens, one at each edit — and the MCP server declaration, in one installation. |
 | [`measurements/`](measurements/) | The measurements this product's claims rest on, with their protocols and their raw results. |
 
 **All four are released, and only one of them is meant to be installed.** This
