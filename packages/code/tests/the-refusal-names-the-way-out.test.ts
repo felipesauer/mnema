@@ -25,7 +25,8 @@
  *     told that its key founded an identity of its own;
  *   - the revocation of a machine's own key says what the record leaves it: a restore and the file
  *     it takes, where the record still proves the key in one identity, and a warning where it
- *     proves none;
+ *     proves none — and that what the checkout writes to the PUBLIC tree is refused, which is the
+ *     tree the retirement reaches: a private write from it lands;
  *   - and the agent is told the same words, from the same sentence.
  *
  * THIS FILE USED TO FINISH THE COMMAND ITSELF, and then to share the record for the words. The
@@ -511,7 +512,7 @@ describe('a key that is the only key of both identities', () => {
     expect(out.leftIn).toBe(y);
     // The revocation of this machine's own key said what the record leaves it, and where the file is.
     expect(out.revoked).toContain(
-      "That is THIS machine's key: this checkout still records the identity it left, so what it writes here is refused until it records another.",
+      "That is THIS machine's key: this checkout still records the identity it left, so what it writes to the public tree here is refused until it records another.",
     );
     expect(out.revoked).toContain(`The record proves the key a member of ${y}:`);
     expect(out.revoked).toContain(
@@ -663,7 +664,7 @@ describe('the revocation of this machine’s own key says what the record leaves
     return revoked.stdout;
   }
 
-  it('where the record proves the key in no other identity: its writes here are refused, and the restore is said only on the condition a pull meets', () => {
+  it('where the record proves the key in no other identity: its writes to the public tree here are refused, and the restore is said only on the condition a pull meets', () => {
     // THIS CASE WAS "it must not write here again, and no restore is offered". Its premise held
     // while nothing read a recorded anchor again: the words were a warning, and the write they
     // warned against exited 0. The write is refused now, and the words say so; and since what the
@@ -674,7 +675,7 @@ describe('the revocation of this machine’s own key says what the record leaves
     // `init` enrolled a backup key beside this one, so this machine's key is not the last.
     const words = retire(founding, a, keyOf(a));
     expect(words).toContain(
-      "That is THIS machine's key: this checkout still records the identity it left, so what it writes here is refused until it records another.",
+      "That is THIS machine's key: this checkout still records the identity it left, so what it writes to the public tree here is refused until it records another.",
     );
     expect(words).toContain(
       'The record this checkout holds proves the key a member of no single other identity: if the record, once pulled, proves it a member of one, `mnema key restore "<the key file>"` here makes this checkout write as it.',
@@ -687,6 +688,11 @@ describe('the revocation of this machine’s own key says what the record leaves
     const wrote = mnema(founding, a, 'memory', 'written after the key left');
     expect(wrote.status).toBe(1);
     expect(wrote.stderr).toContain('Refused (STALE_ANCHOR)');
+    // The PUBLIC tree, as the words say. They said "what it writes here", and a private write from
+    // this checkout lands: the retirement is recorded in the public tree alone.
+    const kept = mnema(founding, a, 'memory', 'written to the private tree', '--scope', 'private');
+    expect(kept.status, kept.stderr).toBe(0);
+    expect(kept.stderr).not.toContain('Refused');
   }, 60_000);
 
   it('where the checkout had not pulled, followed to the letter: the pull, the restore — and it writes as the other identity, and verifies', () => {
