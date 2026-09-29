@@ -16,7 +16,7 @@
  * target carries the source's own number inside it — and three reads that serve one
  * record whole were taught to carry it. The channels that arrive UNASKED were not, and
  * they are the ones with a reader who never chose to read: the committed document, the
- * rules pushed as a file is about to be written, and the charge that stops a write. They
+ * rules pushed at each edit, and the charge that stops a write. They
  * carry it now, which makes four printers of one fact.
  *
  * ## Why a constant and not a function that builds the phrase

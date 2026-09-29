@@ -80,12 +80,12 @@ identically, because they are the same call.
   tree this machine holds, including the private one the document may not carry; a
   project with no notes gets nothing from the second. A `PreToolUse` hook on
   `Write|Edit|NotebookEdit` hands over the rules of the record **addressed at the file
-  about to be written** — the ones still in force, each with the id you would cite — and
-  hands over **nothing** for a file none of them addresses, which is why the opening
-  document says how many of the project's rules have an address. The two opening hooks
-  are reads: they append nothing and open no run. The per-edit one records that it served,
-  and holds a write for a person only where a rule of your own record asks it to — the
-  plugin's page says how. All three are **silent** where there is no project, so a
+  about to be written**, beside the result of that write — the ones still in force, each
+  with the id you would cite — and hands over **nothing** for a file none of them
+  addresses, which is why the opening document says how many of the project's rules have
+  an address. The two opening hooks are reads: they append nothing and open no run. The
+  per-edit one records that it served, and holds a write for a person only where a rule of
+  your own record asks it to — the plugin's page says how. All three are **silent** where there is no project, so a
   machine that installs this and opens a session somewhere else sees nothing. Asserted in
   `tests/the-record-arrives-unasked.test.ts`, `tests/the-rule-reaches-the-writing.test.ts`
   and `tests/the-record-asks-for-a-person.test.ts`; the plugin's own page states what it
@@ -790,8 +790,8 @@ mnema brief
 #> that way is not below, and each heading counts what is printed under it.
 #> …
 #> 1 of the rules below has an ADDRESS: a path in this
-#> repository, recorded beside the rule. When a file is about to be changed, the rules
-#> addressed at it arrive on their own, and nothing arrives for a file none of them names.
+#> repository, recorded beside the rule. The rules addressed at a file arrive on their own
+#> at each edit, beside the result of that write, and not for a file none of them names.
 #> Ask `governing_rules` with a path for the whole answer about it.
 #>
 #> ## Decisions in force (2)
@@ -897,7 +897,7 @@ mnema switch
 #> 4 channel(s), looked in public, private, global:
 #>   brief-document      on   the document `mnema brief` prints, which a session opens with: …
 #>   recall-document     on   the notes `mnema recall` prints, which a session opens with: …
-#>   edit-rules-push     on   the rules addressed at a file, handed over at the moment …
+#>   edit-rules-push     on   the rules addressed at a file, handed over at each edit of it, …
 #>   edit-asks-a-person  on   the pause before a file is written where the record asks …
 ```
 

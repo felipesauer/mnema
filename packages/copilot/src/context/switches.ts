@@ -43,7 +43,7 @@
  * ## Every consumer reads it here
  *
  * Two channels consult this today — the document a session opens with, and the push
- * before a file is written — and they pass different sources: the document carries the
+ * at each edit — and they pass different sources: the document carries the
  * tree that TRAVELS and nothing else, the push carries every tree the session can see.
  * That is one function asked two questions, not two rules: the fold, the tie-break and
  * the meaning of an absence are decided once, here, and a consumer that narrowed the

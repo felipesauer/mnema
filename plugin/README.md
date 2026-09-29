@@ -2,10 +2,11 @@
 
 One installation, both surfaces. When a session opens, the project's **committed**
 mnema record arrives in the agent's context without the agent asking for it, and beside it
-the latest **notes** recorded for the project on this machine; when a file is about to be
-written, the rules of the record **addressed at that file** arrive the same way; and while
-the session runs, the mnema **MCP server** is connected — and says what its tools are for
-— so the agent can read the rest and record its own work.
+the latest **notes** recorded for the project on this machine; at each edit, the rules of
+the record **addressed at that file** arrive the same way, beside the result of that write,
+in time for every edit after it and for a correction of that one; and while the session
+runs, the mnema **MCP server** is connected — and says what its tools are for — so the
+agent can read the rest and record its own work.
 
 ## Why it exists
 
@@ -33,13 +34,14 @@ document, delivered by the host instead of waited for.
   a hook of its own because the host caps what each hook adds at 10,000 characters, and
   two texts in one hook would share one cap.
 - **A `PreToolUse` hook** on `Write|Edit|NotebookEdit` that hands over the rules
-  **addressed at the file about to be written**: the ones still in force, each with the
-  address that matched and the id you would cite. It hands over **nothing** for a file no
-  rule addresses — which is why the opening document says how many of this project's
-  rules have an address, so a quiet edit means "none of them names this file" rather than
-  "there is no mechanism". It is not a process: the host calls a tool on the MCP server
-  this same plugin declares, which costs a call on an open connection instead of a
-  command start (measured: 1.24 ms against 171.5 ms).
+  **addressed at the file about to be written**, beside the result of that write — in time
+  for every edit after it and for a correction of that one: the ones still in force, each
+  with the address that matched and the id you would cite. It hands over **nothing** for a
+  file no rule addresses — which is why the opening document says how many of this
+  project's rules have an address, so a quiet edit means "none of them names this file"
+  rather than "there is no mechanism". It is not a process: the host calls a tool on the
+  MCP server this same plugin declares, which costs a call on an open connection instead
+  of a command start (measured: 1.24 ms against 171.5 ms).
 - **A switch for each of them.** `mnema switch` says where each stands and what each
   carries; `mnema switch off edit-rules-push` stops the per-edit push, `mnema switch off
   brief-document` stops the opening document, and `mnema switch off recall-document` stops
@@ -83,7 +85,7 @@ that was measured against the real binary instead, and the capture is
 | **Every charge is a fact of your record** | The asking is an event before it is a charge: one `channel.asked` per rule that asked, citing the rule and the path, appended and signed **before** the reply is composed — so a record that cannot be written charges nothing and nobody is stopped. The push that only informs records one `channel.served` per session and per channel, which is what makes a quiet edit readable. Both travel with the repository by default. *(`the asking is a FACT, and the service is one too`)* |
 | **The rules reach the file about to change** | Only the rules with an **address** — a path someone linked them to with `rel: "governs"` — and only the ones **still in force**. A superseded decision that addresses the file does not arrive; `governing_rules` still reports it, with its state, to whoever asks. A task or a memory given an address is not a rule and never arrives. What arrives is a name, an address and an **id**, never a body: the argument and the pattern text are a second read. *(`a rule with an address reaches the file about to be written`, `what does NOT reach the writing`)* |
 | **A quiet edit means "no rule names this file"** | And that meaning is bought where it costs once: the opening document says how many of this project's rules have an address, **and how many of them ask for a person**. Injecting "nothing governs this file" on every edit was the alternative, and it was refused with a number — the median session on the machine this was measured on edits 34 files, the p90 edits 121, and one edited 3,424, with every injection staying in the context for the rest of the session. **THE SENTENCE ABOVE IS NOW TRUE OF ONE CASE FEWER AGAIN.** A quiet edit has FOUR readings, not three: no rule names this file, the rules were switched off, the gate was switched off, or the hook did not run. The opening document distinguishes the first three — when either is switched off in the **committed** record it says so, naming who switched it and when, and it stops claiming that the rules arrive or that anything waits. **What this still does not buy, said plainly:** a switch recorded `--scope private` is invisible to that document (it carries the committed record, and a fact about one machine in a committed file would make `mnema brief \| diff - MNEMA.md` report a difference that is not the record's), and *"the hook did not run"* is not distinguishable from either. `mnema switch` is the reading that spans every tree, and it is where a private switch is ever spelled. |
-| **It is a snapshot** | The opening context is: a decision accepted an hour into the session is not in what the `SessionStart` hook injected, and the live answer is one MCP call away. The per-edit hook is **not** a snapshot — it reads the record at the moment of the edit, so a rule accepted and addressed mid-session reaches the next edit it applies to. |
+| **It is a snapshot** | The opening context is: a decision accepted an hour into the session is not in what the `SessionStart` hook injected, and the live answer is one MCP call away. The per-edit hook is **not** a snapshot — it reads the record at the moment of the edit, so a rule accepted and addressed mid-session arrives at the next edit it applies to, beside the result of that write. |
 | **It proves nothing on its own** | The proof is the record's — `mnema verify` is what rules on the chain, and the plugin neither strengthens nor weakens it. What arrives in the context is a **projection**: throw it away and the next session builds it again. |
 
 ## Install
@@ -138,8 +140,9 @@ mnema rules src/billing/invoice.ts
 ```
 
 The rules it reports as governing that path, minus any whose state is not in force, are
-what a session is handed just before writing that file. Nothing there means nothing
-arrives — which the opening document's address count is there to make readable.
+what a session is handed at each edit of that file, beside the result of that write.
+Nothing there means nothing arrives — which the opening document's address count is there
+to make readable.
 
 And if you would rather it did not:
 
@@ -162,7 +165,7 @@ What each one runs of it:
 | **The MCP server** | connected, in the project the session has open | connected, in the project the window has open | connected once you approve it, in the project of the directory Cursor starts it in — Cursor announces no workspace folders, so that directory is what the server goes by |
 | **What the server says its tools are for** | reaches the session | reaches the model in the families whose prompt carries a server's instructions; in the ones whose prompt does not — the Codex models among them — the opening below is what arrives | reaches the model beside the names of the server's tools; each tool's own description arrives only when the model looks that tool up |
 | **The opening — the document and the notes** | handed to every session | handed to every session, whatever model it runs | both hooks run, and their text reaches the model |
-| **The rules before each edit** | handed over, and recorded as served | not run: it is an `mcp_tool` hook, a type Claude Code runs and the other two do not | not run, for the same reason |
+| **The rules at each edit** | handed over beside the result of that write, and recorded as served | not run: it is an `mcp_tool` hook, a type Claude Code runs and the other two do not | not run, for the same reason |
 
 **How each loads it.** VS Code's agent loads it from a folder listed in its
 `chat.pluginLocations` setting, which is the route these rows were measured on. Cursor's

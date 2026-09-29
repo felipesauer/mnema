@@ -1,0 +1,367 @@
+{
+  "probe": "mcp-tool-channel / where the rule lands",
+  "question": "On the host installed today, where does the additionalContext of a PreToolUse mcp_tool hook reach the model, relative to the tool_result of the write that fired it?",
+  "method": "The REAL host under env -i inside unshare -rn (loopback only), a real stdio MCP server, and a local stand-in for the model API that answers the request offering Write with a canned tool_use. No model was called. The request the host sends after the hook is the ground truth for what reached the session. The stand-in answers only the request that OFFERS Write and carries no tool_result yet; everything else gets a text end_turn. Two controls were declared before the run: no hook at all, and a tool that returns the mark as prose (which the host drops, per 2026-08-19); in both the mark must be absent from every request, and it was. The reading of each capture is a separate module with its own case, fed bodies whose answer is known — BEFORE included — so the verdict below is not the only verdict it has ever given.",
+  "rubric": "AFTER-THE-TOOL-RESULT: the mark sits at a (message, block) index greater than the tool_result of the Write, in the request that carries that result. BEFORE-THE-TOOL-RESULT: a smaller index, or the mark in the request that PRODUCED the write. INSIDE-THE-TOOL-RESULT: inside the tool_result block itself.",
+  "compared_with": {
+    "capture": "results/2026-08-19/channel-exists.json",
+    "host": "2.1.228 (Claude Code)",
+    "where_it_landed": "after the tool_result, as a message of its own (index 4 of 5, after user:tool_result at index 3)"
+  },
+  "runs": [
+    {
+      "stamp": {
+        "at": "2026-09-29T18:20:37.656Z",
+        "host": "2.1.281 (Claude Code)",
+        "node": "v24.14.0",
+        "platform": "linux-x64",
+        "cpus": 16,
+        "total_mem_gib": 13.3,
+        "loadavg_1m": 6.59,
+        "mark": "PROBE_RULE_MARK_b8a87d0e0a12"
+      },
+      "cases": [
+        {
+          "case": "no-hook",
+          "hook_declared": false,
+          "tool_was_called": 0,
+          "tool_arguments": null,
+          "the_edit_went_through": true,
+          "host_exit": 0,
+          "message_requests": 2,
+          "mark_in_any_request": false,
+          "the_request_that_produced_the_write": {
+            "conversation": [
+              "0:user:text+text+text+text+text+text+text+text"
+            ],
+            "mark": {
+              "inSystem": false,
+              "blocks": []
+            }
+          },
+          "the_request_after_the_write": {
+            "conversation": [
+              "0:user:text+text+text+text+text+text+text+text",
+              "1:assistant:tool_use",
+              "2:user:tool_result"
+            ],
+            "mark": {
+              "inSystem": false,
+              "blocks": []
+            }
+          },
+          "the_tool_result_at": {
+            "message": 2,
+            "block": 0,
+            "content": "File created successfully at: <sandbox>/work/written-by-the-probe.txt (file state is current in your context — no need to Read it back)\n\n<system-reminder>\n<total_tokens>14999998 tokens left</total_tokens>\n</system-reminder>"
+          },
+          "verdict": "NO-MARK",
+          "host_recorded_in_its_transcript": []
+        },
+        {
+          "case": "prose",
+          "hook_declared": true,
+          "tool_was_called": 1,
+          "tool_arguments": {
+            "name": "rules_before_an_edit",
+            "arguments": {
+              "path": "<sandbox>/work/written-by-the-probe.txt"
+            }
+          },
+          "the_edit_went_through": true,
+          "host_exit": 0,
+          "message_requests": 2,
+          "mark_in_any_request": false,
+          "the_request_that_produced_the_write": {
+            "conversation": [
+              "0:user:text+text+text+text+text+text+text+text"
+            ],
+            "mark": {
+              "inSystem": false,
+              "blocks": []
+            }
+          },
+          "the_request_after_the_write": {
+            "conversation": [
+              "0:user:text+text+text+text+text+text+text+text",
+              "1:assistant:tool_use",
+              "2:user:tool_result"
+            ],
+            "mark": {
+              "inSystem": false,
+              "blocks": []
+            }
+          },
+          "the_tool_result_at": {
+            "message": 2,
+            "block": 0,
+            "content": "File created successfully at: <sandbox>/work/written-by-the-probe.txt (file state is current in your context — no need to Read it back)\n\n<system-reminder>\n<total_tokens>14999998 tokens left</total_tokens>\n</system-reminder>"
+          },
+          "verdict": "NO-MARK",
+          "host_recorded_in_its_transcript": [
+            {
+              "type": "hook_success",
+              "hookName": "PreToolUse:Write",
+              "toolUseID": "toolu_probe_0001",
+              "hookEvent": "PreToolUse",
+              "content": "PreToolUse:Write completed",
+              "stdout": "PROBE_RULE_MARK_b8a87d0e0a12",
+              "stderr": "",
+              "command": "probe/rules_before_an_edit",
+              "durationMs": 2
+            }
+          ]
+        },
+        {
+          "case": "hook-json",
+          "hook_declared": true,
+          "tool_was_called": 1,
+          "tool_arguments": {
+            "name": "rules_before_an_edit",
+            "arguments": {
+              "path": "<sandbox>/work/written-by-the-probe.txt"
+            }
+          },
+          "the_edit_went_through": true,
+          "host_exit": 0,
+          "message_requests": 2,
+          "mark_in_any_request": true,
+          "the_request_that_produced_the_write": {
+            "conversation": [
+              "0:user:text+text+text+text+text+text+text+text"
+            ],
+            "mark": {
+              "inSystem": false,
+              "blocks": []
+            }
+          },
+          "the_request_after_the_write": {
+            "conversation": [
+              "0:user:text+text+text+text+text+text+text+text",
+              "1:assistant:tool_use",
+              "2:user:tool_result+text+text"
+            ],
+            "mark": {
+              "inSystem": false,
+              "blocks": [
+                {
+                  "message": 2,
+                  "role": "user",
+                  "block": 1,
+                  "type": "text",
+                  "textBeforeTheMark": "<system-reminder>\nPreToolUse:Write hook additional context: ",
+                  "textAfterTheMark": "\n</system-reminder>"
+                }
+              ]
+            }
+          },
+          "the_tool_result_at": {
+            "message": 2,
+            "block": 0,
+            "content": "File created successfully at: <sandbox>/work/written-by-the-probe.txt (file state is current in your context — no need to Read it back)"
+          },
+          "verdict": "AFTER-THE-TOOL-RESULT",
+          "host_recorded_in_its_transcript": [
+            {
+              "type": "hook_success",
+              "hookName": "PreToolUse:Write",
+              "toolUseID": "toolu_probe_0001",
+              "hookEvent": "PreToolUse",
+              "content": "",
+              "stdout": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"PROBE_RULE_MARK_b8a87d0e0a12\"}}",
+              "stderr": "",
+              "exitCode": 0,
+              "command": "probe/rules_before_an_edit"
+            },
+            {
+              "type": "hook_additional_context",
+              "content": [
+                "PROBE_RULE_MARK_b8a87d0e0a12"
+              ],
+              "hookName": "PreToolUse:Write",
+              "toolUseID": "toolu_probe_0001",
+              "hookEvent": "PreToolUse"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "stamp": {
+        "at": "2026-09-29T18:20:40.088Z",
+        "host": "2.1.281 (Claude Code)",
+        "node": "v24.14.0",
+        "platform": "linux-x64",
+        "cpus": 16,
+        "total_mem_gib": 13.3,
+        "loadavg_1m": 6.59,
+        "mark": "PROBE_RULE_MARK_295e143deaa7"
+      },
+      "cases": [
+        {
+          "case": "no-hook",
+          "hook_declared": false,
+          "tool_was_called": 0,
+          "tool_arguments": null,
+          "the_edit_went_through": true,
+          "host_exit": 0,
+          "message_requests": 2,
+          "mark_in_any_request": false,
+          "the_request_that_produced_the_write": {
+            "conversation": [
+              "0:user:text+text+text+text+text+text+text+text"
+            ],
+            "mark": {
+              "inSystem": false,
+              "blocks": []
+            }
+          },
+          "the_request_after_the_write": {
+            "conversation": [
+              "0:user:text+text+text+text+text+text+text+text",
+              "1:assistant:tool_use",
+              "2:user:tool_result"
+            ],
+            "mark": {
+              "inSystem": false,
+              "blocks": []
+            }
+          },
+          "the_tool_result_at": {
+            "message": 2,
+            "block": 0,
+            "content": "File created successfully at: <sandbox>/work/written-by-the-probe.txt (file state is current in your context — no need to Read it back)\n\n<system-reminder>\n<total_tokens>14999998 tokens left</total_tokens>\n</system-reminder>"
+          },
+          "verdict": "NO-MARK",
+          "host_recorded_in_its_transcript": []
+        },
+        {
+          "case": "prose",
+          "hook_declared": true,
+          "tool_was_called": 1,
+          "tool_arguments": {
+            "name": "rules_before_an_edit",
+            "arguments": {
+              "path": "<sandbox>/work/written-by-the-probe.txt"
+            }
+          },
+          "the_edit_went_through": true,
+          "host_exit": 0,
+          "message_requests": 2,
+          "mark_in_any_request": false,
+          "the_request_that_produced_the_write": {
+            "conversation": [
+              "0:user:text+text+text+text+text+text+text+text"
+            ],
+            "mark": {
+              "inSystem": false,
+              "blocks": []
+            }
+          },
+          "the_request_after_the_write": {
+            "conversation": [
+              "0:user:text+text+text+text+text+text+text+text",
+              "1:assistant:tool_use",
+              "2:user:tool_result"
+            ],
+            "mark": {
+              "inSystem": false,
+              "blocks": []
+            }
+          },
+          "the_tool_result_at": {
+            "message": 2,
+            "block": 0,
+            "content": "File created successfully at: <sandbox>/work/written-by-the-probe.txt (file state is current in your context — no need to Read it back)\n\n<system-reminder>\n<total_tokens>14999998 tokens left</total_tokens>\n</system-reminder>"
+          },
+          "verdict": "NO-MARK",
+          "host_recorded_in_its_transcript": [
+            {
+              "type": "hook_success",
+              "hookName": "PreToolUse:Write",
+              "toolUseID": "toolu_probe_0001",
+              "hookEvent": "PreToolUse",
+              "content": "PreToolUse:Write completed",
+              "stdout": "PROBE_RULE_MARK_295e143deaa7",
+              "stderr": "",
+              "command": "probe/rules_before_an_edit",
+              "durationMs": 2
+            }
+          ]
+        },
+        {
+          "case": "hook-json",
+          "hook_declared": true,
+          "tool_was_called": 1,
+          "tool_arguments": {
+            "name": "rules_before_an_edit",
+            "arguments": {
+              "path": "<sandbox>/work/written-by-the-probe.txt"
+            }
+          },
+          "the_edit_went_through": true,
+          "host_exit": 0,
+          "message_requests": 2,
+          "mark_in_any_request": true,
+          "the_request_that_produced_the_write": {
+            "conversation": [
+              "0:user:text+text+text+text+text+text+text+text"
+            ],
+            "mark": {
+              "inSystem": false,
+              "blocks": []
+            }
+          },
+          "the_request_after_the_write": {
+            "conversation": [
+              "0:user:text+text+text+text+text+text+text+text",
+              "1:assistant:tool_use",
+              "2:user:tool_result+text+text"
+            ],
+            "mark": {
+              "inSystem": false,
+              "blocks": [
+                {
+                  "message": 2,
+                  "role": "user",
+                  "block": 1,
+                  "type": "text",
+                  "textBeforeTheMark": "<system-reminder>\nPreToolUse:Write hook additional context: ",
+                  "textAfterTheMark": "\n</system-reminder>"
+                }
+              ]
+            }
+          },
+          "the_tool_result_at": {
+            "message": 2,
+            "block": 0,
+            "content": "File created successfully at: <sandbox>/work/written-by-the-probe.txt (file state is current in your context — no need to Read it back)"
+          },
+          "verdict": "AFTER-THE-TOOL-RESULT",
+          "host_recorded_in_its_transcript": [
+            {
+              "type": "hook_success",
+              "hookName": "PreToolUse:Write",
+              "toolUseID": "toolu_probe_0001",
+              "hookEvent": "PreToolUse",
+              "content": "",
+              "stdout": "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"PROBE_RULE_MARK_295e143deaa7\"}}",
+              "stderr": "",
+              "exitCode": 0,
+              "command": "probe/rules_before_an_edit"
+            },
+            {
+              "type": "hook_additional_context",
+              "content": [
+                "PROBE_RULE_MARK_295e143deaa7"
+              ],
+              "hookName": "PreToolUse:Write",
+              "toolUseID": "toolu_probe_0001",
+              "hookEvent": "PreToolUse"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
