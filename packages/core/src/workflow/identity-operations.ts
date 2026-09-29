@@ -223,7 +223,7 @@ export function recordedAnchorOf(
 export type RecordedAnchor =
   /** It does: this is the identity a write here signs as. */
   | { readonly anchor: string; readonly counted: true }
-  /** It does not: every write here is refused with this, and nothing is appended. */
+  /** It does not: every write to this tree is refused with this, and nothing is appended. */
   | {
       readonly anchor: string;
       readonly counted: false;

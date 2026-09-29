@@ -1,0 +1,6 @@
+# The global configuration every git a test runs to write a repository reads, through
+# GIT_CONFIG_GLOBAL. Why it exists, and what was measured, is in `git-without-maintenance.ts`.
+[maintenance]
+	auto = false
+[gc]
+	auto = 0

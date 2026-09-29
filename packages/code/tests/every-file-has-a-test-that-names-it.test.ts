@@ -433,8 +433,15 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * `@mnema/chain`, `@mnema/core`, `vitest`, and the two support modules that read a shell line and
  * a source file. The eight branches met at 3138, read off this guard: 3127 and those eleven,
  * since no clause came in on more than one of them.
+ * Then 3138 -> 3153 where every git a test writes a repository with runs with automatic
+ * maintenance off: nine clauses in `every-git-that-writes-runs-without-maintenance.test.ts`, which
+ * walks the workspace for the calls that start git and pushes into a bare remote behind the file
+ * they are handed — `node:child_process`, `node:crypto`, `node:fs`, `node:os`, `node:path`,
+ * `node:url`, `vitest`, and the support modules that name that file and read a source file; one
+ * in `support/git-without-maintenance.ts`, `node:url`, for the file's path; and one in each of the
+ * five files whose git now reads it. Read off this guard.
  */
-const CLAUSES_IN_THE_TREE = 3138;
+const CLAUSES_IN_THE_TREE = 3153;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
