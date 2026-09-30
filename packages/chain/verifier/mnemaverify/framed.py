@@ -20,7 +20,7 @@ from typing import Union
 # `Union`, and not `bytes | str | None`: an alias is an assignment, which runs on import and
 # which `from __future__ import annotations` does not defer, and `|` between types is 3.10.
 # Spelled with `|`, the reader did not import on the 3.9 its README promises.
-Field = Union[bytes, str, None]
+Field = bytes | str | None
 
 
 def frame(field: Field) -> bytes:
