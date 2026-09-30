@@ -985,6 +985,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-wait-asks-the-page.test.ts': 2,
   'packages/code/tests/the-walk-stops-at-its-ceiling.test.ts': 4,
   'packages/code/tests/the-witness-acts-cover-the-tree-asked-for.test.ts': 7,
+  'packages/code/tests/the-witness-counts-the-tails-verify-counts.test.ts': 7,
   'packages/code/tests/the-witness-flags-reach-the-act.test.ts': 5,
   'packages/code/tests/the-words-of-the-session.test.ts': 10,
   'packages/code/tests/the-write-says-what-it-landed-on.test.ts': 11,
