@@ -164,6 +164,7 @@ export {
   compareSearchHits,
   effectiveLimit,
   isSearchKind,
+  type PertinenceQuery,
   SEARCH_DEFAULT_LIMIT,
   SEARCH_KINDS,
   SEARCH_MAX_LIMIT,
@@ -171,7 +172,9 @@ export {
   type SearchKind,
   type SearchQuery,
   type SearchResult,
+  searchPertinent,
   searchRecord,
+  wordsOf,
 } from './projections/search-store.js';
 export {
   projectSkills,

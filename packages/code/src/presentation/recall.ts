@@ -39,6 +39,13 @@
  * so nothing here can print what it found; the rewriting half of the door stays on the
  * writing side, where the core keeps it.
  *
+ * THE ORDER IS SAID, IN ONE LINE, EVERY TIME. The notes that share a word with what this
+ * session touches come first and the newest fill the rest (`commands/recall.ts`), and with
+ * nothing touched the list is the newest alone; a reader cannot tell the two apart from the
+ * lines, so the text says which it is ({@link orderLine}), and under each heading where
+ * the near part ends ({@link nearCount}). What was touched is said as counts of where the
+ * words came from, never as the words.
+ *
  * NOTHING AT ALL WHEN NOTHING IS RECORDED, which is the one way this differs from the
  * document's skeleton. The document is a file compared with `diff`, and a heading that
  * disappeared would make its first entry read as a rewrite; this is not a file, and a
@@ -49,13 +56,14 @@
  * heading in it would read as a kind this record does not keep.
  */
 
-import type { RecordHit, RecordSearch } from '@mnema/copilot';
+import type { PertinentSearch, RecordHit, RecordSearch } from '@mnema/copilot';
 import { detectSecrets } from '@mnema/core';
 import { oneLine } from '../one-line.js';
 import { recordFraming } from '../record-framing.js';
+import type { SessionTouch } from '../what-the-session-touches.js';
 
 /** The heading: what the text IS. */
-const TITLE = '# What was noted here lately';
+const TITLE = '# What was noted here';
 
 /** What the content is and whose text it is — the channel's declaration, from one place. */
 const WHAT_THIS_IS = recordFraming('recall-document');
@@ -69,9 +77,41 @@ const WHAT_THIS_IS = recordFraming('recall-document');
  */
 const WHERE_THEY_COME_FROM = [
   'They come from every tree this machine holds for the project — the committed one, this',
-  'machine’s own and the personal one — newest first, one line each; `read_record` with an',
-  'id serves the whole of one.',
+  'machine’s own and the personal one — one line each; `read_record` with an id serves the',
+  'whole of one.',
 ];
+
+/**
+ * The order the notes are in — ONE line, and it is always there, because a reader handed
+ * a list is owed what the list is ordered by. With something this session touches, the
+ * line names where the words came from, as counts and never as the words: a branch's name
+ * or a path is text somebody chose, and this channel prints no text of a note's that it
+ * does not have to, let alone of a file's.
+ */
+function orderLine(touched: SessionTouch): string {
+  if (touched.words.length === 0) {
+    return 'Newest first: nothing this session touches could be read here — no changed file, no task in progress, no branch name and no commit.';
+  }
+  return `Nearest first: the ones that share a word with what this session touches — ${whereTheWordsCameFrom(touched)} — closest first, then the newest.`;
+}
+
+/** The sources of the words, in the order they were read, joined as a sentence. */
+function whereTheWordsCameFrom(touched: SessionTouch): string {
+  const parts: string[] = [];
+  if (touched.changed > 0)
+    parts.push(`${counted(touched.changed, 'file')} changed in the working tree`);
+  if (touched.tasks > 0) parts.push(`${counted(touched.tasks, 'task')} in progress`);
+  if (touched.branch) parts.push('the name of the branch');
+  if (touched.commits > 0)
+    parts.push(`the files of the last ${counted(touched.commits, 'commit')}`);
+  // "a, b and c": the last comma of the list is the one that becomes "and".
+  return parts.join(', ').replace(/, (?=[^,]*$)/, ' and ');
+}
+
+/** `n` with its noun, the noun made plural by an `s` — true of the three nouns above. */
+function counted(n: number, noun: string): string {
+  return `${n} ${n === 1 ? noun : `${noun}s`}`;
+}
 
 /**
  * How a note gets in, and what becomes of it — the door, named once, as a fact.
@@ -98,15 +138,35 @@ const NO_OBSERVATION = 'No observation is recorded here.';
  * reader told "these are the newest" is also told how many there are and how to reach the
  * rest — a list cut without saying so reads as the whole of it.
  */
-function cutAt(search: RecordSearch, kind: 'memory' | 'observation'): string[] {
+function cutAt(search: RecordSearch, kind: 'memory' | 'observation', near: boolean): string[] {
   const printed = search.hits.length;
   if (search.total <= printed) return [];
+  const these = near ? `${printed} of them` : `the ${printed} newest`;
   return [
-    `${search.total} are recorded here, and these are the ${printed} newest; \`search\` with`,
+    `${search.total} are recorded here, and these are ${these}; \`search\` with`,
     `\`kind\` \`${kind}\` serves the rest.`,
     '',
   ];
 }
+
+/**
+ * Where the near part of a section ends — said, because the order line says the near ones
+ * come first and a reader cannot see where "first" stops. Only when there was something to
+ * be near: with no signal every line is there for being recent, and the order line says so.
+ */
+function nearCount(search: PertinentSearch, near: boolean): string[] {
+  if (!near || search.hits.length === 0) return [];
+  const n = search.pertinent;
+  if (n === 0) return [NONE_NEAR, ''];
+  if (n >= search.hits.length) return [ALL_NEAR, ''];
+  if (n === 1) return [FIRST_NEAR, ''];
+  return [`The first ${n} share a word with what this session touches.`, ''];
+}
+
+/** What {@link nearCount} says when no line, every line, or the first line alone is near. */
+const NONE_NEAR = 'None of these shares a word with what this session touches.';
+const ALL_NEAR = 'Every one of these shares a word with what this session touches.';
+const FIRST_NEAR = 'The first of these shares a word with what this session touches.';
 
 /**
  * What stands where a note's line would carry a credential in a recognized format: the fact
@@ -140,15 +200,18 @@ function observationLine(hit: RecordHit): string {
 /** One section: the heading with how many are PRINTED under it, then the notes or the none. */
 function section(
   heading: string,
-  search: RecordSearch,
+  search: PertinentSearch,
   kind: 'memory' | 'observation',
+  near: boolean,
   none: string,
   line: (hit: RecordHit) => string,
 ): string[] {
   return [
     `## ${heading} (${search.hits.length})`,
     '',
-    ...(search.hits.length === 0 ? [none] : [...cutAt(search, kind), ...search.hits.map(line)]),
+    ...(search.hits.length === 0
+      ? [none]
+      : [...cutAt(search, kind, near), ...nearCount(search, near), ...search.hits.map(line)]),
   ];
 }
 
@@ -157,10 +220,12 @@ function section(
  * what makes the plugin's handler hand a session nothing.
  */
 export function recallDocument(notes: {
-  readonly memories: RecordSearch;
-  readonly observations: RecordSearch;
+  readonly touched: SessionTouch;
+  readonly memories: PertinentSearch;
+  readonly observations: PertinentSearch;
 }): string[] {
   if (notes.memories.hits.length === 0 && notes.observations.hits.length === 0) return [];
+  const near = notes.touched.words.length > 0;
   return [
     TITLE,
     '',
@@ -168,10 +233,19 @@ export function recallDocument(notes: {
     '',
     ...WHERE_THEY_COME_FROM,
     '',
+    orderLine(notes.touched),
+    '',
     ...HOW_A_NOTE_ENTERS,
     '',
-    ...section('Memories', notes.memories, 'memory', NO_MEMORY, memoryLine),
+    ...section('Memories', notes.memories, 'memory', near, NO_MEMORY, memoryLine),
     '',
-    ...section('Observations', notes.observations, 'observation', NO_OBSERVATION, observationLine),
+    ...section(
+      'Observations',
+      notes.observations,
+      'observation',
+      near,
+      NO_OBSERVATION,
+      observationLine,
+    ),
   ];
 }

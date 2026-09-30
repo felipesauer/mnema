@@ -53,7 +53,7 @@ _mnema_described() {
       'skills:show where each pattern came from (who proposed it, who adopted it)' \
       'usage:what each run cost, read from this machine'\''s Claude Code transcripts' \
       'brief:print what governs the work here as markdown, for an agent to read' \
-      'recall:print the latest notes recorded here as markdown, for an agent to read' \
+      'recall:print the notes recorded here as markdown, near ones first, for an agent to read' \
       'key:manage this machine'\''s signing keys' \
       'tail:authorize a cut in the record'\''s own tails' \
       'witness:ask an outside witness to date this record, and read where that stands' \

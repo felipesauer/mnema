@@ -76,9 +76,10 @@ identically, because they are the same call.
   from depending on somebody remembering to regenerate a file. It declares three hooks and
   the MCP server below, in one installation. As a session opens, one hook runs `mnema
   brief` and hands over the document, and another runs `mnema recall` and hands over the
-  latest **notes** — the memories and observations recorded for the project, from every
-  tree this machine holds, including the private one the document may not carry; a
-  project with no notes gets nothing from the second. A `PreToolUse` hook on
+  **notes** — the memories and observations recorded for the project, from every tree
+  this machine holds, including the private one the document may not carry, the ones
+  near what the session touches first; a project with no notes gets nothing from the
+  second. A `PreToolUse` hook on
   `Write|Edit|NotebookEdit` hands over the rules of the record **addressed at the file
   about to be written**, beside the result of that write — the ones still in force, each
   with the id you would cite — and hands over **nothing** for a file none of them
@@ -760,8 +761,8 @@ a URL. The dry run cannot catch that. You can, by opening two of the files it wr
 
 Reading the record is something an agent has to think of doing. What a session is
 handed as it opens is not. The [plugin](../../plugin/) hands this document to every
-Claude Code session with no file in the repository at all, and beside it the latest
-notes recorded here (`mnema recall`, below). Where the plugin does not reach, `mnema
+Claude Code session with no file in the repository at all, and beside it the notes
+recorded here (`mnema recall`, below). Where the plugin does not reach, `mnema
 brief` prints what governs the work as markdown, and where the file goes is your choice.
 
 **Which file a host reads is the host's to say, and this page used to say it for it.**
@@ -862,7 +863,7 @@ thing about the whole record, chain by chain, without anyone generating the file
 
 ### The notes a session opens with
 
-Beside the document, the plugin hands a session the latest **notes** recorded here — the
+Beside the document, the plugin hands a session the **notes** recorded here — the
 memories and the observations, out of every tree this machine holds for the project: the
 committed one, this machine's own, and your personal one. It is the one text this product
 pushes that carries the private tree, and that is why it is not part of the document: a
@@ -872,7 +873,7 @@ unless that session went looking.
 
 ```sh
 mnema recall
-#> # What was noted here lately
+#> # What was noted here
 #> …
 #> ## Memories (2)
 #>
@@ -882,8 +883,18 @@ mnema recall
 ```
 
 Each note is **one line** — a memory by the start of its content, an observation by its
-topic — with the id `mnema show <id>` reads whole; newest first, cut where `mnema search`
-cuts, and saying how many there are when there are more. A line that still holds a
+topic — with the id `mnema show <id>` reads whole, cut where `mnema search` cuts, and
+saying how many there are when there are more.
+
+**The notes near the work come first.** As a session opens nobody has asked anything yet,
+so what it is near is read from the project itself, with no model: the files changed in
+the working tree, the tasks in progress, the name of the branch, and the files of the last
+three commits — the record's own directory left out of both git reads, and git asked to
+take no lock. A note that shares a word with those is ranked by the same index
+`mnema search` ranks by, and comes first; the rest of the list is the newest. With nothing
+to read — a clean tree outside git, say — the list is the newest, as it was. The text says
+in one line which order it used, and under each heading how many of the notes are the near
+ones. A line that still holds a
 credential in a recognized format is handed over as the fact that the note exists, never
 as its text. Where nothing is noted it prints **nothing**, and a session there is handed
 nothing. It is never a file to commit: it carries what was kept on this machine.

@@ -39,7 +39,9 @@ Requires Node ≥ 22.12.0; the packages are ESM-only.
   reaches the chain; a password written out in prose does, and nothing deletes a fact
   afterwards.
 - **A Claude Code plugin.** A session opens with the decisions in force, the adopted patterns
-  and the latest notes. At each edit, the rules addressed at that file land beside the result
+  and the notes recorded for the project — first the ones that share a word with what the
+  session touches (the files changed in the working tree, the tasks in progress, the branch,
+  the last three commits), read with no model, then the newest. At each edit, the rules addressed at that file land beside the result
   of the write, and a rule recorded as asking for a person holds the write until one decides.
   Each channel can be switched off, and switching one off is itself a signed fact. VS Code's
   agent and Cursor's command-line agent are handed the opening.

@@ -1,5 +1,5 @@
 /**
- * `mnema recall` — the latest notes recorded here, as the text a session opens with.
+ * `mnema recall` — the notes recorded here, as the text a session opens with.
  *
  * WHAT IT EXISTS TO CLOSE. A note an agent records here did not come back. The document a
  * session opens with (`mnema brief`) carries what GOVERNS — the decisions in force and the
@@ -20,24 +20,29 @@
  * text for THIS machine's session, out of every tree this machine holds for the project,
  * and never a file.
  *
- * IT DOES NOT DECIDE WHICH NOTES, OR IN WHAT ORDER — `search` does. What it asks is the
- * record's own index with no term, once per kind: the most recent records, newest first by
- * the core's one rule for that, merged across trees the way a single tree would have
- * served them, cut at the index's own limit and saying how many there were in all. A second
- * ordering of the same records would be a second answer to "which are the latest", and the
- * index already gives one — so the channel and the read a person runs (`mnema search --kind
- * memory`) cannot disagree about what was noted.
+ * IT CHOOSES THE NOTES BY WHAT THE SESSION TOUCHES, AND THE INDEX RANKS THEM. This read
+ * said *"it does not decide which notes, or in what order — `search` does"*, and served the
+ * newest of each kind. That premise held the channel to a question nobody opening a session
+ * asks: the newest note is not the one about the work in front of it. So the notes that
+ * share a word with what this session touches (`what-the-session-touches.ts` — the changed
+ * files, the tasks in progress, the branch, the last commits) come first, ranked by the
+ * index's own bm25; the rest of the list is the newest of the others, by the core's one rule
+ * for that. The ranking is still the index's and never a second one written here: this
+ * asks it two questions (`pertinentFirst`) where it used to ask one. And with no signal —
+ * a clean tree outside git, say — the list is the newest, record for record, as before; the
+ * text says which order it used.
  *
  * IT REFUSES OUTSIDE A PROJECT, and when its own channel is switched off, in the shape
  * `mnema brief` refuses in — one refusal per producer of a channel, read by one function
  * ({@link switchedOff}). Both are non-zero exits on stderr, which is what the plugin's
  * handler already treats as silence.
  *
- * Read-only in the strict sense: a cache per visible tree, rebuilt in memory, and two index
- * queries. No writer, no key, no event.
+ * Read-only in the strict sense: a cache per visible tree, rebuilt in memory, four index
+ * queries, and two git reads that take no lock. No writer, no key, no event.
  */
 
-import { type RecordSearch, searchRecords } from '@mnema/copilot';
+import { dirname } from 'node:path';
+import { type PertinentSearch, pertinentFirst } from '@mnema/copilot';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
 import { RECALL_CHANNEL } from '../record-framing.js';
 import {
@@ -46,6 +51,7 @@ import {
   THE_READING_THAT_OPENED_THESE,
   withScopedCaches,
 } from '../tree-sources.js';
+import { type SessionTouch, whatTheSessionTouches } from '../what-the-session-touches.js';
 import { type BriefSwitchedOff, switchedOff } from './brief.js';
 
 /** What the recall needs — injected so it is testable. */
@@ -56,13 +62,15 @@ export interface RecallContext {
   readonly env: DiscoveryEnv;
 }
 
-/** The latest notes: the memories and the observations, each as the index serves them. */
+/** The notes: the memories and the observations, the near ones first, then the newest. */
 export interface RecallDone {
   readonly ok: true;
-  /** The most recent memories, newest first, with how many there are in all. */
-  readonly memories: RecordSearch;
-  /** The most recent observations, newest first, with how many there are in all. */
-  readonly observations: RecordSearch;
+  /** What the session touches — the words the notes were ranked by, and where they came from. */
+  readonly touched: SessionTouch;
+  /** The memories: the near ones first, then the newest, with how many there are in all. */
+  readonly memories: PertinentSearch;
+  /** The observations, in the same order, with how many there are in all. */
+  readonly observations: PertinentSearch;
   /** The tails among those read that do not chain — empty for a sound record. */
   readonly linkBreaks: readonly ScopedLinkBreak[];
 }
@@ -74,25 +82,30 @@ export interface RecallRefused {
 }
 
 /**
- * Reads the latest notes out of every tree visible from `ctx.cwd` — the committed one, this
+ * Reads the notes out of every tree visible from `ctx.cwd`, the near ones first — the committed one, this
  * machine's own and the personal one — which is the whole difference from {@link runBrief}'s
  * reading, and the reason it is a verb of its own.
  */
 export function runRecall(ctx: RecallContext): RecallDone | RecallRefused | BriefSwitchedOff {
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  if (trees.projectPublic === undefined) {
+  const projectPublic = trees.projectPublic;
+  if (projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
   }
   return withScopedCaches(trees, (sources) => {
     const off = switchedOff(sources, RECALL_CHANNEL);
     if (off !== undefined) return off;
+    // The project's directory is the one holding its committed tree — the one the session
+    // opened in, or above it — and it is what the working tree and the commits are read in.
+    const touched = whatTheSessionTouches(dirname(projectPublic), sources);
     return {
       ok: true as const,
       // On `err` at the surface, as the document's: what the record says about its own proof
       // qualifies the answer and is not part of it.
       linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
-      memories: searchRecords(sources, { kind: 'memory' }),
-      observations: searchRecords(sources, { kind: 'observation' }),
+      touched,
+      memories: pertinentFirst(sources, { kind: 'memory', words: touched.words }),
+      observations: pertinentFirst(sources, { kind: 'observation', words: touched.words }),
     };
   });
 }

@@ -11,7 +11,9 @@ import {
   type SearchHit,
   type SearchQuery,
   type SearchSources,
+  searchPertinent,
   searchRecord,
+  wordsOf,
 } from './search-store.js';
 import type { SkillProjection } from './skill.js';
 import type { TaskProjection } from './task.js';
@@ -455,5 +457,61 @@ describe('the order', () => {
     index({ memories: [memory('m2', 'same', 1), memory('m1', 'same', 1)] });
 
     expect(ids(search().hits)).toEqual(['m2', 'm1']);
+  });
+});
+
+describe('searchPertinent — the records that share any of several words', () => {
+  beforeEach(() => {
+    index({
+      memories: [
+        memory('m-invoice', 'the invoice rounding job runs at night', 1),
+        memory('m-both', 'invoice totals are shown on the login screen', 2),
+        memory('m-login', 'the login screen keeps the session', 3),
+        memory('m-other', 'nothing to do with either', 4),
+      ],
+      decisions: [decision('d-invoice', 'invoices are rounded', 'rounding at the end', 5)],
+    });
+  });
+
+  it('serves a record that holds ANY of the words, where a term needs all of them', () => {
+    // As a term, `invoice rounding` is one question and needs both words.
+    expect(ids(search({ term: 'invoice rounding', kind: 'memory' }).hits)).toEqual(['m-invoice']);
+    const near = searchPertinent(db, { words: ['invoice', 'rounding'], kind: 'memory' });
+    expect(near.total).toBe(2);
+    // Both words outrank one: bm25 sums over the words a record holds.
+    expect(ids(near.hits)).toEqual(['m-invoice', 'm-both']);
+  });
+
+  it('narrows by kind, and serves nothing for no word at all', () => {
+    expect(ids(searchPertinent(db, { words: ['rounding'] }).hits).sort()).toEqual(
+      ['d-invoice', 'm-invoice'].sort(),
+    );
+    expect(searchPertinent(db, { words: [] })).toEqual({ hits: [], total: 0 });
+    // Words with nothing searchable in them are no word: nothing, never a listing.
+    expect(searchPertinent(db, { words: ['***', '--', '"'] })).toEqual({ hits: [], total: 0 });
+  });
+
+  it('reads a word carrying FTS5 syntax as text, and never obeys it', () => {
+    // Every one of these is an operator or a token of FTS5's grammar if it reaches the parser
+    // raw: a stray quote is a syntax error, `NEAR(`/`OR`/`NOT` are operators, `-` and `*`
+    // are column filter and prefix. As entries they are only their letters.
+    const hostile = ['"login', 'NEAR(screen', 'NOT', 'OR', '-session', 'keep*', 'title:login'];
+    const near = searchPertinent(db, { words: hostile, kind: 'memory' });
+    expect(ids(near.hits)).toContain('m-login');
+    // `NOT` as an operator would have EXCLUDED what follows it; as a word it matches nothing
+    // here and takes nothing away.
+    expect(ids(near.hits)).toContain('m-both');
+  });
+
+  it('cuts words by the one reading a typed term is cut by', () => {
+    expect(wordsOf('src/billing/"invoice" NEAR(x) -y.ts')).toEqual([
+      'src',
+      'billing',
+      'invoice',
+      'NEAR',
+      'x',
+      'y',
+      'ts',
+    ]);
   });
 });

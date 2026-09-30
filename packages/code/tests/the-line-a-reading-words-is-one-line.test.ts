@@ -576,14 +576,50 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'how many notes are printed under the heading — the count the lines are counted by',
   },
-  'recall.ts «{} are recorded here, and these are the {} newest; \\`search\\` with» search.total #1':
-    {
-      verdict: 'minted',
-      why: 'how many of this kind the index holds in all — its own total, a count',
-    },
-  'recall.ts «{} are recorded here, and these are the {} newest; \\`search\\` with» printed #1': {
+  'recall.ts «{} are recorded here, and these are {}; \\`search\\` with» search.total #1': {
+    verdict: 'minted',
+    why: 'how many of this kind the index holds in all — its own total, a count',
+  },
+  'recall.ts «{} are recorded here, and these are {}; \\`search\\` with» these #1': {
+    verdict: 'composed',
+    why: 'which of the two phrases for the printed part, both worded just above in `cutAt` out of a count',
+  },
+  'recall.ts «{} of them» printed #1': {
     verdict: 'minted',
     why: 'how many of them are printed — the length of the list under the sentence',
+  },
+  'recall.ts «the {} newest» printed #1': {
+    verdict: 'minted',
+    why: 'how many of them are printed — the length of the list under the sentence',
+  },
+  'recall.ts «Nearest first: the ones that share a word with what this session touches — {} — closest first, then the newest.» whereTheWordsCameFrom(touched) #1':
+    {
+      verdict: 'composed',
+      why: 'where the words came from, worded by `whereTheWordsCameFrom` out of counts and constants — never the words, which are paths and a branch somebody named',
+    },
+  'recall.ts «{} changed in the working tree» counted(touched.changed, \'file\') #1': {
+    verdict: 'composed',
+    why: 'how many files changed, worded by `counted` out of a count and a noun of this module',
+  },
+  'recall.ts «{} in progress» counted(touched.tasks, \'task\') #1': {
+    verdict: 'composed',
+    why: 'how many tasks are in progress, worded by `counted` out of a count and a noun of this module',
+  },
+  'recall.ts «the files of the last {}» counted(touched.commits, \'commit\') #1': {
+    verdict: 'composed',
+    why: 'how many commits were read, worded by `counted` out of a count and a noun of this module',
+  },
+  'recall.ts «{} {}» n #1': {
+    verdict: 'minted',
+    why: 'a count of what the session touches — files, tasks or commits — never anything they hold',
+  },
+  'recall.ts «{} {}» n === 1 ? noun : `${noun}s` #1': {
+    verdict: 'minted',
+    why: 'a noun this module writes, made plural by the count beside it — nothing from the tree reaches it',
+  },
+  'recall.ts «The first {} share a word with what this session touches.» n #1': {
+    verdict: 'minted',
+    why: 'how many of the printed notes share a word with what the session touches — a count of the list',
   },
   'recall.ts «\\`kind\\` \\`{}\\` serves the rest.» kind #1': {
     verdict: 'minted',
@@ -1447,7 +1483,7 @@ describe('every value this layer puts on a line is classified', () => {
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
     expect(FOUND.builders.length).toBeGreaterThan(10);
-    expect(FOUND.sites.length).toBe(237);
+    expect(FOUND.sites.length).toBe(246);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1469,8 +1505,8 @@ describe('every value this layer puts on a line is classified', () => {
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
     expect(count('collapsed')).toBe(64);
-    expect(count('minted')).toBe(134);
-    expect(count('composed')).toBe(39);
+    expect(count('minted')).toBe(138);
+    expect(count('composed')).toBe(44);
     expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(64);
   });
 

@@ -88,7 +88,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'rules' -d 'show which recorded rules
 complete -c mnema -f -n '__mnema_at ""' -a 'skills' -d 'show where each pattern came from (who proposed it, who adopted it)'
 complete -c mnema -f -n '__mnema_at ""' -a 'usage' -d 'what each run cost, read from this machine\'s Claude Code transcripts'
 complete -c mnema -f -n '__mnema_at ""' -a 'brief' -d 'print what governs the work here as markdown, for an agent to read'
-complete -c mnema -f -n '__mnema_at ""' -a 'recall' -d 'print the latest notes recorded here as markdown, for an agent to read'
+complete -c mnema -f -n '__mnema_at ""' -a 'recall' -d 'print the notes recorded here as markdown, near ones first, for an agent to read'
 complete -c mnema -f -n '__mnema_at ""' -a 'key' -d 'manage this machine\'s signing keys'
 complete -c mnema -f -n '__mnema_at ""' -a 'tail' -d 'authorize a cut in the record\'s own tails'
 complete -c mnema -f -n '__mnema_at ""' -a 'witness' -d 'ask an outside witness to date this record, and read where that stands'

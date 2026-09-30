@@ -232,8 +232,9 @@ describe('one declaration, and one place that decides it', () => {
     for (const line of recordFraming('brief-document')) expect(document).toContain(line);
 
     // And the notes, which carry the same claim under the subject they served.
-    const noted = { hits: [], total: 0 };
+    const noted = { hits: [], total: 0, pertinent: 0 };
     const recalled = recallDocument({
+      touched: { words: [], changed: 0, tasks: 0, branch: false, commits: 0 },
       memories: {
         hits: [
           {
@@ -246,6 +247,7 @@ describe('one declaration, and one place that decides it', () => {
           },
         ],
         total: 1,
+        pertinent: 0,
       },
       observations: noted,
     });

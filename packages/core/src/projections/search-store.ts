@@ -41,7 +41,9 @@
  * 43 is under 1 600.
  *
  * The order is relevance when there is a term and recency when there is not —
- * without a term there is no relevance to speak of. Both are total orders (ties
+ * without a term there is no relevance to speak of. A third question is served by the
+ * same index and the same order: {@link searchPertinent} ranks the records that share
+ * ANY of several words, which is how a session's notes are chosen by what it touches. Both are total orders (ties
  * broken by instant, then id, by {@link newestFirst}), so the same query returns the
  * same bytes: what a read returns lands in the prefix of an agent's prompt, and an
  * unstable order invalidates its cache for no change in content.
@@ -307,7 +309,60 @@ export function searchRecord(db: SqliteDatabase, query: SearchQuery): SearchResu
   // search that matches nothing. Answering it with a listing would silently turn
   // "find this" into "here is everything", which is the wrong answer twice over.
   if (match === null) return { hits: [], total: 0 };
+  return askTheIndex(db, query, match);
+}
 
+/**
+ * What to look for when the question is not "these words" but "anything that shares
+ * a word with these": the records that hold ANY of {@link words}, best first.
+ */
+export interface PertinenceQuery {
+  /**
+   * The words to rank by. Each one is TEXT, read by the same rule a typed term is
+   * ({@link wordsOf}): whatever an entry holds that is not a word is dropped, so a
+   * word carrying FTS5 syntax (`NEAR`, `"`, `*`, `-`) is looked for and never obeyed.
+   */
+  readonly words: readonly string[];
+  /** Only this kind of record. */
+  readonly kind?: SearchKind;
+  /** How many hits to return — {@link effectiveLimit}, as for a search. */
+  readonly limit?: number;
+}
+
+/**
+ * The records of this tree that share at least one word with `query.words`, best
+ * first by the same bm25 a search ranks by, and then {@link newestFirst}. `total` is
+ * how many shared a word before the limit.
+ *
+ * It is a search whose words are joined by OR where a typed term's are joined by AND:
+ * a typed term is one question, and every word of it has to be answered; these words
+ * are several things a caller is near, and a record near any of them is near. bm25
+ * sums over the words a record holds, so a record sharing more of them, or rarer
+ * ones, ranks above one sharing a single common word.
+ *
+ * No word at all — an empty list, or entries with nothing searchable in them — is
+ * nothing to be near, and it answers with nothing rather than with a listing.
+ */
+export function searchPertinent(db: SqliteDatabase, query: PertinenceQuery): SearchResult {
+  const match = toAnyMatchExpression(query.words);
+  if (match === null) return { hits: [], total: 0 };
+  const filters: SearchQuery = {
+    ...(query.kind !== undefined ? { kind: query.kind } : {}),
+    ...(query.limit !== undefined ? { limit: query.limit } : {}),
+  };
+  return askTheIndex(db, filters, match);
+}
+
+/**
+ * The one query both reads run: the filters, the match when there is one, the order
+ * and the count. Two writings of this SQL would be two answers to "what does the
+ * index rank by".
+ */
+function askTheIndex(
+  db: SqliteDatabase,
+  query: SearchQuery,
+  match: string | undefined,
+): SearchResult {
   const limit = effectiveLimit(query.limit);
   const where = whereClause(query, match);
   const excerpt =
@@ -366,20 +421,53 @@ export function compareSearchHits(a: SearchHit, b: SearchHit): number {
  * The term is TEXT, never a query language. Raw input reaches FTS5's parser as
  * syntax — `AND`, a stray `"`, a bare `*` — and a search for `"the" quote` would
  * come back as a SQL error rather than an answer. So the input is reduced to its
- * word characters, each word is quoted as a phrase, and the phrases are joined by
- * whitespace (FTS5 reads that as AND: every word must appear).
+ * word characters ({@link wordsOf}), each word is quoted as a phrase
+ * ({@link phraseOf}), and the phrases are joined by whitespace (FTS5 reads that as
+ * AND: every word must appear).
+ */
+function toMatchExpression(term: string): string | null {
+  const words = wordsOf(term);
+  if (words.length === 0) return null;
+  return words.map(phraseOf).join(' ');
+}
+
+/**
+ * The same reduction for a list of words any of which will do — {@link searchPertinent}'s
+ * expression. Every entry goes through {@link wordsOf}, so an entry is text however it
+ * was spelled, and the phrases are joined by `OR`, which is the one operator this
+ * module ever writes between them: it is typed here, never taken from an entry.
+ */
+function toAnyMatchExpression(entries: readonly string[]): string | null {
+  const words = entries.flatMap(wordsOf);
+  if (words.length === 0) return null;
+  return words.map(phraseOf).join(' OR ');
+}
+
+/**
+ * The words of a text, as the index is asked for them: its runs of letters, digits and
+ * underscores, in order, and nothing else.
+ *
+ * THE ONE READING OF "A TERM IS TEXT", exported because a caller that builds words out
+ * of something that is not typed (a path, a branch name) has to cut them by this rule
+ * and not by its own — a second tokenizer would be a second answer to which characters
+ * reach the index, and the answer that matters is that no operator does.
+ */
+export function wordsOf(text: string): string[] {
+  return text.match(/[\p{L}\p{N}_]+/gu) ?? [];
+}
+
+/**
+ * One word as an FTS5 phrase. The word is letters, digits and underscores only (it came
+ * out of {@link wordsOf}), so nothing inside the quotes can end the phrase early — the
+ * quoting cannot be escaped through.
  *
  * Words of {@link PREFIX_MIN_LENGTH} characters or more get a trailing `*`. There
  * is no stemmer — one language's suffix rules applied to a record written in
  * another do more harm than good — and a prefix is the honest substitute: it
  * reaches the plural and the conjugation without pretending to know the grammar.
  */
-function toMatchExpression(term: string): string | null {
-  const words = term.match(/[\p{L}\p{N}_]+/gu);
-  if (words === null || words.length === 0) return null;
-  // Each word is letters, digits and underscores only, so nothing inside the
-  // quotes can end the phrase early — the quoting cannot be escaped through.
-  return words.map((word) => `"${word}"${word.length >= PREFIX_MIN_LENGTH ? '*' : ''}`).join(' ');
+function phraseOf(word: string): string {
+  return `"${word}"${word.length >= PREFIX_MIN_LENGTH ? '*' : ''}`;
 }
 
 /** A WHERE clause and the parameters it binds. */
