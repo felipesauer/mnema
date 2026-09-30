@@ -190,23 +190,24 @@ mnema init
 
 ME=mnid:c0fc3c713f09a43384ac08f7d91fca43…   # the identity printed above
 
-# Create a task. It is named by its id; `t-4f2a` is a display alias derived
+# Create a task. It is named by its id; `t-0b76` is a display alias derived
 # from that id, not a second key you can look it up by.
 mnema task "Ship the parser"
-#> Created task t-4f2a (0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b44)
+#> Created task t-0b76 (0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b44)
+#> …
 
 TASK=0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b44
 
 # Move it through the workflow. A task opens in DRAFT, so it is submitted
 # before it can start; the gate decides which moves exist, not the command.
 mnema task move submit "$TASK"
-#> Task t-4f2a (0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b44) → READY
+#> Task t-0b76 (0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b44) → READY
 mnema task move start "$TASK"
-#> Task t-4f2a (0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b44) → IN_PROGRESS
+#> Task t-0b76 (0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b44) → IN_PROGRESS
 
 # Some moves require their evidence, and the gate refuses without it.
 mnema task move complete "$TASK" --note "parser ships"
-#> Task t-4f2a (0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b44) → DONE
+#> Task t-0b76 (0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b44) → DONE
 
 # Ask what the workflow allows next.
 mnema next-actions "$TASK"
@@ -228,7 +229,9 @@ mnema verify
 # Auditing several projects? Name them, and get ONE verdict over all of them.
 mnema verify --workspace ~/work/api ~/work/web
 #> /home/you/work/api public: local integrity verified (T1/T2/T4); …
+#> …
 #> /home/you/work/web public: local integrity FAILED — see issues; …
+#> …
 #> 2 path(s) named → 2 distinct: 2 project(s) covered. …
 ```
 

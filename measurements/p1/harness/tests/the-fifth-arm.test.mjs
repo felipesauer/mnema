@@ -653,11 +653,11 @@ describe('8c · the line says the surface ran, and says what these cells are', (
   })
 
   test('the pluginDir a caller passes REACHES the cell, and changes what it runs', () => {
-    // A2: the option is threaded run.mjs -> runCell -> writeCellConfig, and an
-    // option plumbed to the end with nothing consuming it is four defects of this
-    // series. Asserted by the declaration naming the directory that was PASSED, and
-    // by the outcome moving with it — the handler there does not exist, so nothing
-    // reaches the shim.
+    // A public option needs a caller that feeds it: the option is threaded
+    // run.mjs -> runCell -> writeCellConfig, and an option plumbed to the end with
+    // nothing consuming it is four defects of this series. Asserted by the declaration
+    // naming the directory that was PASSED, and by the outcome moving with it — the
+    // handler there does not exist, so nothing reaches the shim.
     const dir = workspace()
     const plugin = pluginThatWillNotInject(dir)
     const claudeBin = fakeAgent(dir, { refDir: join(axisA.dir, 'refs/good'), hook: false })
@@ -833,11 +833,11 @@ describe('8c · the line says the surface ran, and says what these cells are', (
     })
 
     test('one reading of the axis, and every place that applies it reads THAT one', () => {
-    // A3, STRUCTURALLY, and the reason it is worth a test of its own: the rule was written
-    // three times and MISSING from a fourth, and the fourth is what cost the round. So the
-    // sites are found by the discriminant — a comparison of an axis against a bare letter —
-    // and never by a list in a handoff, which is the thing that carried the blind spot in
-    // the first place.
+    // ONE READING WITH EVERY CALLER, STRUCTURALLY, and the reason it is worth a test of its
+    // own: the rule was written three times and MISSING from a fourth, and the fourth is
+    // what cost the round. So the sites are found by the discriminant — a comparison of an
+    // axis against a bare letter — and never by a list in a handoff, which is the thing
+    // that carried the blind spot in the first place.
     //
     // IT SCANS THE TESTS TOO. A test that asserts the shape of a rule is a site of that
     // rule, and filtering `.test.mjs` out of the search would build the blind spot inside
@@ -855,8 +855,8 @@ describe('8c · the line says the surface ran, and says what these cells are', (
       const text = readFileSync(join(dir, name), 'utf8')
       for (const [i, row] of text.split('\n').entries()) {
         // A doc-comment that QUOTES the old shape has to stay: the comment saying which
-        // premise was falsified is the one thing A4 forbids deleting. So prose is skipped
-        // and only code is scanned.
+        // premise was falsified is rewritten to say what fell, and never deleted. So prose is
+        // skipped and only code is scanned.
         const trimmed = row.trim()
         if (trimmed.startsWith('*') || trimmed.startsWith('//') || trimmed.startsWith('/*')) continue
         if (!/axis\s*(===|!==|==|!=)\s*['"][AB]['"]/.test(row.split('//')[0])) continue

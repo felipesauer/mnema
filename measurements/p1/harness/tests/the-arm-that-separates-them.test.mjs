@@ -250,8 +250,9 @@ describe('11b · the switch SILENCES the channel, and the record says nothing ha
   })
 
   test('one reading of who speaks, and it turns on the axis AND on the arm', () => {
-    // A3. The rule has two terms and each is a whole conclusion about the product if read
-    // wrong, so the truth table is written out rather than sampled.
+    // ONE READING, asked by every call site. The rule has two terms and each is a whole
+    // conclusion about the product if read wrong, so the truth table is written out rather
+    // than sampled.
     assert.equal(editPushSpeaks(SURFACE_ARM, 'A'), true, 'on, and a rule is recorded')
     assert.equal(editPushSpeaks(SURFACE_ARM, 'B'), false, 'on, and nothing is recorded')
     assert.equal(editPushSpeaks(DOC_ARM, 'A'), false, 'off, and a rule is recorded')

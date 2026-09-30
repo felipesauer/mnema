@@ -17,8 +17,8 @@
  *     time under a different name. Its two figures are two measurements of one thing,
  *     so a difference between them is the noise floor — and no difference smaller than
  *     that floor may be reported as a finding.
- *   - ITS OWN SANDBOX, made and destroyed here (A6). Nothing is written into the
- *     working tree.
+ *   - ITS OWN SANDBOX, made and destroyed here, because whoever measures makes and
+ *     removes its own temporary directory. Nothing is written into the working tree.
  *   - A RECORD THE READ'S OWN DOC SIZES. 30 live tasks, 15 decisions, 25 adopted
  *     patterns, 20 memories, 10 observations — the "modest record" the budget
  *     paragraph of `bootstrap.ts` was written against, so the number is comparable to
