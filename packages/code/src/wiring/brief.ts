@@ -2,13 +2,23 @@
  * The `mnema brief` wiring: what it declares, and what it prints.
  *
  * `mnema brief` — the decisions in force and the adopted patterns of the COMMITTED
- * record, as the markdown document a session opens with. It takes NO options at
- * all, which makes it the only read here with none, and every one it does not take was
- * decided rather than skipped: no `--actor` (the answer is the project's, not an
- * asker's), no `--check` (a pipe into `diff` answers that, and does not have to guess
- * where the operator's file is), no `--json` — the document IS the contract, and a
- * second serialization of the same answer would be a second thing to keep byte-stable
+ * record, as the markdown document a session opens with. It takes ONE option, and every
+ * one it does not take was decided rather than skipped: no `--actor` (the answer is the
+ * project's, not an asker's), no `--check` (a pipe into `diff` answers that, and does not
+ * have to guess where the operator's file is), no `--json` — the document IS the contract,
+ * and a second serialization of the same answer would be a second thing to keep byte-stable
  * for no consumer, since what reads this file reads markdown.
+ *
+ * THIS SAID IT TAKES NO OPTIONS AT ALL, "the only read here with none", and the reader that
+ * falsified it is the one the plugin serves. `--hook` is for the handler that hands this
+ * document to a session: the host carries a hook's text whole only up to a ceiling it measures
+ * (`presentation/within-a-hook.ts`), and past it replaces all of it by a file path. With the
+ * flag the document stops at a whole rule and says how many it left out; without it, nothing
+ * changes — a file has no ceiling, so `mnema brief > MNEMA.md` still prints every rule. It is
+ * a flag rather than something the verb works out, because nothing in the verb's environment
+ * says a hook is reading, and guessing would make the same record print two documents
+ * depending on where it ran. The plugin's handler is its caller, and
+ * `the-record-arrives-unasked.test.ts` holds that the flag reaches the text.
  *
  * AND NO `--scope`, which is the one absence a reader of this list will look for now
  * that the document has a scope. It has ONE, and it is the point rather than a default
@@ -132,7 +142,10 @@ export function registerBrief(program: Command, wiring: Wiring): Declared {
         'somebody’s own method and this document would replace every word of it — the',
         'line `@MNEMA.md` in a `CLAUDE.md` brings the file above in with it, where a',
         'sentence naming the file is read only if the agent chooses to open it.',
-        'The mnema plugin hands this document to a Claude Code session with no file at all.',
+        'The mnema plugin hands this document to a Claude Code session with no file at all,',
+        'with `--hook`: past what a hook carries, the host would replace the whole text with a',
+        'file path, so there the rules stop at a whole one and the document says how many it',
+        'left out. Without the flag nothing is cut.',
         '',
         'The output holds no clock, no session and no path, so the same record always',
         'prints the same bytes and a difference is a difference in the record.',
@@ -153,10 +166,16 @@ export function registerBrief(program: Command, wiring: Wiring): Declared {
         'what switching it off asks for, and a truncated AGENTS.md is not.',
       ].join('\n'),
     )
-    .action(async () => {
+    .option(
+      '--hook',
+      'print it for a Claude Code hook: whole rules up to what a hook carries, and a ' +
+        'closing paragraph saying how many were left out and what serves them',
+    )
+    .action(async (opts: { hook?: boolean }) => {
       const { linkBreakNotice } = await import('./integrity.js');
       const { runBrief } = await import('../commands/brief.js');
-      const { briefDocument } = await import('../presentation/brief.js');
+      const { briefDocument, briefWithin } = await import('../presentation/brief.js');
+      const { roomBeside } = await import('../presentation/within-a-hook.js');
       const result = runBrief(here());
       if (!result.ok) {
         reportRefusal(
@@ -170,8 +189,16 @@ export function registerBrief(program: Command, wiring: Wiring): Declared {
       // whole of a file and `mnema brief | diff - AGENTS.md` compares it; a notice on
       // stdout would be committed into that file and would outlive the repair. See
       // `commands/brief.ts` for what that leaves and which door covers it.
-      for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
-      writeLines(io, briefDocument(result.brief));
+      const notice = linkBreakNotice(result.linkBreaks);
+      for (const line of notice) io.err(render(line));
+      // WITH THE FLAG, THE NOTICE ABOVE IS PART OF WHAT HAS TO FIT: the handler appends it to
+      // the document and the host measures the two as one string.
+      writeLines(
+        io,
+        opts.hook === true
+          ? briefWithin(result.brief, roomBeside(notice.map((line) => render(line))))
+          : briefDocument(result.brief),
+      );
     });
   return readsTheRecord(brief);
 }

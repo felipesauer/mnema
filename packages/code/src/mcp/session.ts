@@ -429,7 +429,7 @@ export interface Session {
    * find that out.
    *
    * WHY A CHANNEL IS RECORDED ONCE AND AN ASKING EVERY TIME. Serving is continuous — a
-   * reader needs to know the push was live in that run, which one fact carries — while
+   * reader needs to know the push was live at the edits of that run, which one fact carries — while
    * asking is a discrete exercise of authority over one call at one path, and every one of
    * them is a fact of its own. So the asking has no map here: nothing about it is
    * deduplicated, and that is the granularity of the power rather than an omission.

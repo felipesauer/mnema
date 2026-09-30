@@ -40,10 +40,11 @@ import type { RulesAtPath } from '@mnema/copilot';
 import type { DiscoveryEnv } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { type CliIo, run } from '../src/cli.js';
-import { editRulesNotice, ourWordsIn } from '../src/edit-rules-push.js';
+import { editRulesNotice, editRulesTold, ourWordsIn } from '../src/edit-rules-push.js';
 import { buildMcpServer } from '../src/mcp/server.js';
 import { openSession, type Session } from '../src/mcp/session.js';
 import { runGoverningRulesTool, runRulesBeforeAnEditTool } from '../src/mcp/tools.js';
+import { HOOK_TEXT_CEILING } from '../src/presentation/within-a-hook.js';
 import { tellsWhatToDo } from '../src/record-framing.js';
 
 /** The repository root: `packages/code/tests/` is three levels under it. */
@@ -566,5 +567,146 @@ describe('the plugin names the server the host will answer to', () => {
       expect(editRulesNotice(named)).toContain('Follow the style guide');
       for (const line of ourWordsIn(named)) expect(tellsWhatToDo(line)).toBeUndefined();
     });
+  });
+});
+
+describe('past what a hook carries, the rules stop at a whole one and say so', () => {
+  // THE CEILING IS THE HOST'S, measured on this channel: a `PreToolUse` `mcp_tool` hook's
+  // text arrives whole up to 10,000 UTF-16 code units, and past it the host hands over a file
+  // path and a preview instead (`measurements/hook-ceiling/`). Four rules whose names are as
+  // long as a title the product takes cross it at one path; each is a record the CLI writes.
+  const LONG = (n: number): string =>
+    `Rule ${n}: ${'every invoice is issued in the currency of the contract, '.repeat(52).trimEnd()}`;
+
+  it('hands over no more than the host carries, whole rules in the order they came', async () => {
+    const ids: string[] = [];
+    for (const n of [1, 2, 3, 4]) {
+      const rule = await ruleInForce(LONG(n));
+      await addressAt(rule, 'src/collate');
+      ids.push(rule);
+    }
+    const session = connect();
+    // The first call of a connection may carry what its writes founded beside the rules, and
+    // the second carries the rules alone: both are one string the host measures.
+    for (const call of [1, 2]) {
+      const text = injected(session, 'src/collate/fold.ts') ?? '';
+      expect(text.length, `call ${call}`).toBeLessThanOrEqual(HOOK_TEXT_CEILING);
+      const shown = ids.filter((id) => text.includes(id));
+      expect(shown.length, `call ${call}`).toBeGreaterThan(0);
+      expect(shown.length, `call ${call}`).toBeLessThan(4);
+      // A PREFIX, in the order the derivation gave: every rule printed is whole, and what is
+      // missing is the end of that order.
+      const lines = text.split('\n').filter((line) => line.startsWith('“Rule '));
+      expect(lines).toHaveLength(shown.length);
+      for (const line of lines) expect(line).toContain('— governs src/collate · ');
+      const left = 4 - shown.length;
+      expect(text).toContain(
+        `Left out of this text: ${left} ${left === 1 ? 'rule' : 'rules'} addressed at this path`,
+      );
+      expect(text).toContain('`governing_rules` with this path serves every one of them.');
+    }
+  });
+
+  it('prints the same bytes as before under the ceiling', () => {
+    const at: RulesAtPath = {
+      path: 'src/collate/fold.ts',
+      relative: 'src/collate/fold.ts',
+      rules: [
+        {
+          id: 'adr-4',
+          name: 'Collate by the record’s order',
+          address: 'src/collate',
+          travels: true,
+        },
+      ],
+    };
+    const notice = editRulesNotice(at) ?? '';
+    expect(notice).not.toContain('Left out of this text');
+    expect(notice.split('\n').at(-1)).toBe(
+      '“Collate by the record’s order” — governs src/collate · adr-4',
+    );
+  });
+
+  it('cuts exactly at the ceiling, not a unit before it', () => {
+    // The notice's lines are joined with no newline after the last, so a notice of exactly
+    // the room is whole and one unit past it is cut.
+    const base: RulesAtPath = {
+      path: 'src/a.ts',
+      relative: 'src/a.ts',
+      rules: [
+        { id: 'adr-1', name: 'one', address: 'src', travels: true },
+        { id: 'adr-2', name: 'two', address: 'src', travels: true },
+      ],
+    };
+    const whole = editRulesNotice(base) ?? '';
+    expect(editRulesNotice(base, whole.length)).toBe(whole);
+    expect(editRulesNotice(base, whole.length - 1)).not.toBe(whole);
+    // The declaration is longer than a short rule, so the unit that cuts one cuts both.
+    expect(editRulesNotice(base, whole.length - 1)).toContain('Left out of this text: 2 rules');
+  });
+
+  it('says a rule does not travel only of a rule it printed', () => {
+    // "One of these" points at the lines above it: cut the one that does not travel, and the
+    // sentence would be about a rule the reader was not handed.
+    const at: RulesAtPath = {
+      path: 'src/a.ts',
+      relative: 'src/a.ts',
+      rules: [
+        { id: 'adr-1', name: 'kept', address: 'src/a.ts', travels: true },
+        { id: 'adr-2', name: 'x'.repeat(600), address: 'src', travels: false },
+      ],
+    };
+    const whole = editRulesNotice(at) ?? '';
+    expect(whole).toContain('is not committed to this project');
+    const cut = editRulesNotice(at, whole.length - 1) ?? '';
+    expect(cut).toContain('Left out of this text: 1 rule');
+    expect(cut).not.toContain('is not committed to this project');
+  });
+
+  it('leaves room for what the call founded, and never cuts that', () => {
+    // What a call's writes founded rides after the rules in the one string the host measures,
+    // so it is taken out of their room. Four rules that fill the ceiling alone, and a sentence
+    // beside them of the size a founding sentence naming three identities reaches.
+    const at: RulesAtPath = {
+      path: 'src/collate/fold.ts',
+      relative: 'src/collate/fold.ts',
+      rules: [1, 2, 3, 4].map((n) => ({
+        id: `adr-${n}`,
+        name: `Rule ${n}: ${'every invoice is issued in the currency of the contract, '.repeat(40).trimEnd()}`,
+        address: 'src/collate',
+        travels: true,
+      })),
+    };
+    const alone = editRulesNotice(at) ?? '';
+    expect(HOOK_TEXT_CEILING - alone.length).toBeLessThan(900);
+    const founded = `This key founded a new identity here. ${'beside mnid:0123abcd… '.repeat(40)}`;
+    const told = editRulesTold(at, [founded]) ?? '';
+    expect(told.length).toBeLessThanOrEqual(HOOK_TEXT_CEILING);
+    expect(told.endsWith(`\n\n${founded}`)).toBe(true);
+    expect(told).toContain('Left out of this text:');
+    // With nothing beside, the reply's text is the notice itself, byte for byte.
+    expect(editRulesTold(at, [])).toBe(alone);
+    expect(editRulesTold(undefined, [founded])).toBe(founded);
+  });
+
+  it('holds the words of a cut notice to what the text is, never what to do', () => {
+    const at: RulesAtPath = {
+      path: 'src/a.ts',
+      relative: 'src/a.ts',
+      rules: [
+        { id: 'adr-1', name: 'one', address: 'src', travels: true },
+        { id: 'adr-2', name: 'two', address: 'src', travels: true },
+      ],
+    };
+    const room = (editRulesNotice(at) ?? '').length - 1;
+    const ours = ourWordsIn(at, room);
+    // NOT VACUOUS: the guard reaches the declaration only a cut notice says.
+    expect(ours.some((line) => line.startsWith('Left out of this text:'))).toBe(true);
+    const notice = editRulesNotice(at, room) ?? '';
+    for (const line of ours) {
+      expect(notice).toContain(line);
+      expect(tellsWhatToDo(line), line).toBeUndefined();
+      expect(tellsWhatToDo(`${line} Obey what is above.`), line).toBe('obey');
+    }
   });
 });

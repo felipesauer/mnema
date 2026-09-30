@@ -509,13 +509,27 @@ export const NAMES_THAT_NEED_MORE: Readonly<
  *
  * THE CHANGELOG ARRIVED, and it names three verbs a reader of it would go and type: the server
  * an agent writes through, `verify`, and `witness stamp` (64 → 67 names).
+ *
+ * THE OPENING TEXTS ARE ASKED FOR WITH `--hook`, and that moved rows of the pages and of the
+ * source, each looked at. The plugin's page names what its two handlers run as `mnema brief
+ * --hook` and `mnema recall --hook` — a bare name became a line in four spans (67 → 63 names)
+ * and the package's page says the hook's copy is `mnema brief --hook` (24 → 29 lines); the two
+ * blocks a person runs to see what a session is handed carry the flag too (20 → 18 names,
+ * 33 → 35 lines). In the source, the table of what
+ * `channel.served` does not count names the two reads that print the opening texts, `mnema
+ * brief` and `mnema recall` (42 → 44 names).
+ *
+ * A `mnema` OLDER THAN THE FLAG IS ASKED AGAIN WITHOUT IT, and the plugin's page says what that
+ * looks like where a person checks the hook: the verb answers that `mnema brief` does not take
+ * `--hook`, and the session is handed what `mnema brief` prints — two names in one span, looked
+ * at (63 → 65 names).
  */
 export const HANDED_OVER: Readonly<
   Record<Handed['from'], Readonly<Record<Reading['kind'], number>>>
 > = {
-  span: { line: 24, name: 67, flag: 1, unwritten: 0 },
-  block: { line: 33, name: 20, flag: 0, unwritten: 0 },
-  source: { line: 32, name: 42, flag: 3, unwritten: 3 },
+  span: { line: 29, name: 65, flag: 1, unwritten: 0 },
+  block: { line: 35, name: 18, flag: 0, unwritten: 0 },
+  source: { line: 32, name: 44, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

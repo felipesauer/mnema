@@ -83,8 +83,9 @@ identically, because they are the same call.
   about to be written**, beside the result of that write — the ones still in force, each
   with the id you would cite — and hands over **nothing** for a file none of them
   addresses, which is why the opening document says how many of the project's rules have
-  an address. The two opening hooks are reads: they append nothing and open no run. The
-  per-edit one records that it served, and holds a write for a person only where a rule of
+  an address. The two opening hooks are reads: they append nothing and open no run, so the
+  record's `channel.served` counts what the per-edit hook pushed and never the opening
+  texts. The per-edit one records that it served, and holds a write for a person only where a rule of
   your own record asks it to — the plugin's page says how. All three are **silent** where there is no project, so a
   machine that installs this and opens a session somewhere else sees nothing. Asserted in
   `tests/the-record-arrives-unasked.test.ts`, `tests/the-rule-reaches-the-writing.test.ts`
@@ -554,7 +555,7 @@ the tree the waiver will land in, and whether a cut of it is already authorized:
 
 ```sh
 mnema tail list
-#> 2 tail(s):
+#> 2 tail(s) holding events — the ones a cut can name:
 #>   8f21ab…-3c9d0e…  public   41 event(s) through 5e4391d8…  the tail of mnid:60a50d38…  ·  no waiver
 #>   4b90cd…-7ae112…  private  12 event(s) through 9c02f7a1…  the tail of mnid:c0fc3c71…  ·  no waiver
 ```
@@ -838,8 +839,11 @@ queue changes by the hour, and a copy of one in a hand-regenerated file would be
 wrong between two runs, which is the one thing this record exists not to be. The
 counts of what is awaiting a judgement are not that: a count over the record moves
 only when the record does, where the names in it move by the hour — and the names are
-`mnema status --actor <id>`. And it is never **cut by size** — a rule missing from the
-file is a rule the agent does not follow.
+`mnema status --actor <id>`. And the file is never **cut by size** — a rule missing from
+the file is a rule the agent does not follow. The copy the plugin hands a session is
+`mnema brief --hook`, and that one is: past 10,000 characters the host replaces a hook's
+whole text with a file path it does not ask the model to open, so `--hook` stops at a
+whole rule inside that and ends by saying how many it left out and which read serves them.
 
 What it does leave out is the record that **does not travel**. A decision or a pattern
 recorded with `--scope private`, or in your machine-global tree, governs your own work

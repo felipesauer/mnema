@@ -157,7 +157,8 @@ const TREE_BY_KIND: { readonly [K in RoutedKind]: Scope | typeof BY_ORIGIN } = {
   'observation.recorded': BY_ORIGIN,
   'channel.switched': 'public',
   // Both facts a channel produces travel, for the reason the consultation's entry gives:
-  // the evidence is worth nothing on one machine. "This channel was live in that run" and
+  // the evidence is worth nothing on one machine. "This channel was live at an edit of that
+  // run" (the only service counted — the opening texts are reads and leave no fact) and
   // "this rule stopped a write here" are read by a teammate asking why a rule did not
   // arrive, or auditing what the record charged for — and filed where only the machine
   // that produced them can read, neither question has an answer. `--scope private` is

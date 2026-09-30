@@ -158,7 +158,7 @@ export function switchChannel(ctx: WriteContext, input: SwitchInput): SwitchOk |
  * else's work.
  */
 
-/** The service was recorded: this channel was live in this run. */
+/** The service was recorded: this channel was live at an edit of this run. */
 export interface ServedOk extends ScreenedWrite {
   readonly ok: true;
   /** The channel that served — the event's subject, as it was recorded. */
@@ -207,7 +207,9 @@ export interface AskedInput extends ServedInput {
  *
  * The caller decides WHETHER to write one — once per run and per channel is the rule, and
  * it belongs to the surface that knows what a session already recorded, not here. This
- * appends whatever it is asked to, exactly as switching does.
+ * appends whatever it is asked to, exactly as switching does. Which channels are ever
+ * counted is the surface's too, and it is the ones that push at an edit: the texts a session
+ * opens with are printed by reads, which write nothing, so none of them reaches this.
  */
 export function recordChannelServed(
   ctx: WriteContext,

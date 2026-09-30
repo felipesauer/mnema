@@ -758,6 +758,14 @@ export interface ChannelSwitchedV1 extends Envelope {
  * reached that session" from "the plugin was not installed that week". This is the
  * missing fact, and it is what gives a silence a name.
  *
+ * IT COUNTS WHAT IS PUSHED AT AN EDIT, AND ONLY THAT. The channels that append it are the two
+ * the per-edit hook carries — the rules addressed at a path, and the asking for a person —
+ * because that is where something is pushed and something is written in the same act. The
+ * two texts a session OPENS with are pushed too, and they are not counted: they are printed
+ * by reads, and a read of this record writes nothing to it, on purpose. So "the channel was
+ * live in that run" is a sentence about the edits of that run; a run with no such fact says
+ * nothing about whether its opening texts arrived.
+ *
  * IT IS ONCE PER RUN AND PER CHANNEL, never once per push, and the granularity is the
  * granularity of the POWER rather than of the mechanism. An injection is continuous
  * service, not a discrete act: the median session of this bench edits 34 files, the p90
