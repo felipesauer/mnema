@@ -9,7 +9,16 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  utimesSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -166,6 +175,37 @@ describe('whatTheSessionTouches — read off a real repository', () => {
     runInit({ cwd: repo, env });
     write('docs/"quoted" NEAR(x y) -minus star*.md');
     expect(touched().words).toEqual(['docs', 'quoted', 'NEAR', 'minus', 'star']);
+  });
+
+  it('writes nothing into the repository: the index is the same bytes after the read', () => {
+    git('init', '-q', '-b', 'main');
+    write('src/kept.ts');
+    git('add', '-A');
+    git('commit', '-q', '-m', 'kept');
+    runInit({ cwd: repo, env });
+    // A file whose content is committed and whose stat is not: a `git status` that may take
+    // the index lock refreshes the stat into the index, which is a write. Measured on git
+    // 2.55: without `--no-optional-locks` the index's bytes change here.
+    utimesSync(join(repo, 'src/kept.ts'), new Date('2020-01-01'), new Date('2020-01-01'));
+    const index = join(repo, '.git', 'index');
+    const before = readFileSync(index);
+    touched();
+    expect(readFileSync(index).equals(before)).toBe(true);
+  });
+
+  it('runs no program the repository’s configuration names', () => {
+    git('init', '-q', '-b', 'main');
+    runInit({ cwd: repo, env });
+    // `core.fsmonitor` naming a program is run by every `git status` that honours it — a
+    // repository somebody cloned can name anything there.
+    const marker = join(sandbox, 'the-monitor-ran');
+    const monitor = join(sandbox, 'monitor.sh');
+    writeFileSync(monitor, `#!/bin/sh\necho ran >> '${marker}'\n`);
+    chmodSync(monitor, 0o755);
+    git('config', 'core.fsmonitor', monitor);
+    write('src/a.ts');
+    expect(touched().changed).toBe(1);
+    expect(existsSync(marker)).toBe(false);
   });
 
   it('is the same words for the same tree, read twice', () => {

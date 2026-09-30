@@ -597,15 +597,15 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
       verdict: 'composed',
       why: 'where the words came from, worded by `whereTheWordsCameFrom` out of counts and constants — never the words, which are paths and a branch somebody named',
     },
-  'recall.ts «{} changed in the working tree» counted(touched.changed, \'file\') #1': {
+  "recall.ts «{} changed in the working tree» counted(touched.changed, 'file') #1": {
     verdict: 'composed',
     why: 'how many files changed, worded by `counted` out of a count and a noun of this module',
   },
-  'recall.ts «{} in progress» counted(touched.tasks, \'task\') #1': {
+  "recall.ts «{} in progress» counted(touched.tasks, 'task') #1": {
     verdict: 'composed',
     why: 'how many tasks are in progress, worded by `counted` out of a count and a noun of this module',
   },
-  'recall.ts «the files of the last {}» counted(touched.commits, \'commit\') #1': {
+  "recall.ts «the files of the last {}» counted(touched.commits, 'commit') #1": {
     verdict: 'composed',
     why: 'how many commits were read, worded by `counted` out of a count and a noun of this module',
   },

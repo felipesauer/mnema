@@ -64,7 +64,11 @@ describe('recallDocument — the notes a session opens with', () => {
   });
 
   it('says whose text the notes are, in the channel’s own declaration', () => {
-    const lines = recallDocument({ touched: untouched, memories: all([memory(1, 'a note')]), observations: none });
+    const lines = recallDocument({
+      touched: untouched,
+      memories: all([memory(1, 'a note')]),
+      observations: none,
+    });
     for (const line of recordFraming('recall-document')) expect(lines).toContain(line);
   });
 
@@ -130,12 +134,20 @@ describe('recallDocument — the notes a session opens with', () => {
     expect(lines).toContain('25 are recorded here, and these are the 2 newest; `search` with');
     expect(lines).toContain('`kind` `memory` serves the rest.');
     // And a list that was NOT cut says nothing of the kind.
-    const whole = recallDocument({ touched: untouched, memories: all([memory(1, 'one')]), observations: none });
+    const whole = recallDocument({
+      touched: untouched,
+      memories: all([memory(1, 'one')]),
+      observations: none,
+    });
     expect(whole.join('\n')).not.toContain('are recorded here, and these are');
   });
 
   it('says in words which kind holds nothing, when the other holds something', () => {
-    const lines = recallDocument({ touched: untouched, memories: none, observations: all([observation(1, 'x')]) });
+    const lines = recallDocument({
+      touched: untouched,
+      memories: none,
+      observations: all([observation(1, 'x')]),
+    });
     expect(lines).toContain('## Memories (0)');
     expect(lines).toContain('No memory is recorded here.');
     expect(lines).toContain('## Observations (1)');
