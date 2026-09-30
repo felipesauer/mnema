@@ -38,6 +38,8 @@ This Code of Conduct applies within all community spaces, and also applies when 
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the community leaders responsible for enforcement, privately, through the contact listed on the maintainer's [GitHub profile](https://github.com/felipesauer). All complaints will be reviewed and investigated promptly and fairly.
 
+Questions about this Code of Conduct that are not a report, such as what it covers or how it is applied, can be asked in the repository's [Discussions](https://github.com/felipesauer/mnema/discussions). Discussions are public, and everyone can read what is written there, so do not use them to report an incident: a report goes privately, through the contact on the maintainer's profile.
+
 All community leaders are obligated to respect the privacy and security of the reporter of any incident.
 
 ## Enforcement Guidelines
