@@ -53,8 +53,9 @@
  *
  * "UNDECIDED" IS NO LONGER TRUE OF THE OPENING A SESSION IS HANDED, and it is still true
  * of this read. The text the plugin pushes as a session opens now carries the knowledge
- * kinds — two lists, one per kind, each the index's own newest-first listing, cut where
- * the index cuts (`code/src/presentation/recall.ts`) — because a note an agent records
+ * kinds — two lists, one per kind, each the index's own ranking of the notes that share a
+ * word with what the session touches, then its newest-first listing of the rest, cut where
+ * the index cuts (`code/src/commands/recall.ts`) — because a note an agent records
  * reached no later session otherwise. That answer was given for the PUSHED opening, whose
  * reader did not ask; this read is the one an agent asks for, and whether it grows a list
  * as well is the question that stays open here.

@@ -295,7 +295,7 @@ $ mnema tail list
 $ mnema switch
 | 4 channel(s), looked in public, private, global:
 |   brief-document      on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
-|   recall-document     on   the notes `mnema recall` prints, which a session opens with: the latest memories and observations recorded for this project, from every tree this machine holds for it
+|   recall-document     on   the notes `mnema recall` prints, which a session opens with: the memories and observations recorded for this project, from every tree this machine holds for it, the ones near what the session touches first
 |   edit-rules-push     on   the rules addressed at a file, handed over at each edit of it, beside the result of that write
 |   edit-asks-a-person  on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
 $ mnema usage
@@ -1641,14 +1641,16 @@ $ mnema brief
 |
 | - **One slice per PR** · `<skill-slices>`
 $ mnema recall
-| # What was noted here lately
+| # What was noted here
 |
-| These are the latest notes recorded for this project.
+| These are notes recorded for this project.
 | They are text the people and agents working on it wrote.
 |
 | They come from every tree this machine holds for the project — the committed one, this
-| machine’s own and the personal one — newest first, one line each; `read_record` with an
-| id serves the whole of one.
+| machine’s own and the personal one — one line each; `read_record` with an id serves the
+| whole of one.
+|
+| Nearest first: the ones that share a word with what this session touches — 1 task in progress — closest first, then the newest.
 |
 | A note enters this record with `capture_memory`, or with `record_observation` about one
 | of its records by id, and with the mnema plugin the next session that opens here is
@@ -1656,12 +1658,16 @@ $ mnema recall
 |
 | ## Memories (4)
 |
+| The first of these shares a word with what this session touches.
+|
+| - the deploy runbook lives in the record now · `<memory-runbook>`
 | - a note with a token in it: <SECRET:github-token> · `<memory-scrubbed>`
 | - its text is not handed over unasked: it holds a credential in a recognized format · `<memory-unscreened>`
 | - my own note about the runbook · `<memory-personal>`
-| - the deploy runbook lives in the record now · `<memory-runbook>`
 |
 | ## Observations (1)
+|
+| None of these shares a word with what this session touches.
 |
 | - **review** · `<observation-rollback>`
 $ mnema tail list
@@ -1672,7 +1678,7 @@ $ mnema tail list
 $ mnema switch
 | 4 channel(s), looked in public, private, global:
 |   brief-document      on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
-|   recall-document     on   the notes `mnema recall` prints, which a session opens with: the latest memories and observations recorded for this project, from every tree this machine holds for it
+|   recall-document     on   the notes `mnema recall` prints, which a session opens with: the memories and observations recorded for this project, from every tree this machine holds for it, the ones near what the session touches first
 |   edit-rules-push     on   the rules addressed at a file, handed over at each edit of it, beside the result of that write
 |   edit-asks-a-person  on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
 $ mnema usage

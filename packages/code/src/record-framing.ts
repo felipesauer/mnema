@@ -316,7 +316,8 @@ export type SwitchableChannel =
 export const DOCUMENT_CHANNEL: SwitchableChannel = 'brief-document';
 
 /**
- * The channel that hands a session, as it opens, the latest notes recorded here.
+ * The channel that hands a session, as it opens, the notes recorded here — the ones near
+ * what it touches first.
  *
  * ITS OWN SWITCH AND NOT A READING OF {@link DOCUMENT_CHANNEL}, for the reason
  * {@link ASKS_A_PERSON_CHANNEL} is its own: the two carry different things to the same
@@ -403,8 +404,9 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
     'the document `mnema brief` prints, which a session opens with: the decisions in ' +
     'force and the adopted patterns of the committed record, by name',
   'recall-document':
-    'the notes `mnema recall` prints, which a session opens with: the latest memories and ' +
-    'observations recorded for this project, from every tree this machine holds for it',
+    'the notes `mnema recall` prints, which a session opens with: the memories and ' +
+    'observations recorded for this project, from every tree this machine holds for it, ' +
+    'the ones near what the session touches first',
   'edit-rules-push':
     'the rules addressed at a file, handed over at each edit of it, beside the result of ' +
     'that write',
@@ -488,7 +490,7 @@ const WHOSE_TEXT = 'They are text the people and agents working on it wrote.';
 const NAMES_WHAT_WAS_SERVED: { readonly [K in ServedSubject]: string } = {
   patterns: 'These patterns come from this project’s record.',
   rules: 'These are the calls and the patterns recorded for this project.',
-  notes: 'These are the latest notes recorded for this project.',
+  notes: 'These are notes recorded for this project.',
 };
 
 /**

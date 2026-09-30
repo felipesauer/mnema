@@ -45,6 +45,13 @@
  * so nothing here can print what it found; the rewriting half of the door stays on the
  * writing side, where the core keeps it.
  *
+ * THE ORDER IS SAID, IN ONE LINE, EVERY TIME. The notes that share a word with what this
+ * session touches come first and the newest fill the rest (`commands/recall.ts`), and with
+ * nothing touched the list is the newest alone; a reader cannot tell the two apart from the
+ * lines, so the text says which it is ({@link orderLine}), and under each heading where
+ * the near part ends ({@link nearCount}). What was touched is said as counts of where the
+ * words came from, never as the words.
+ *
  * NOTHING AT ALL WHEN NOTHING IS RECORDED, which is the one way this differs from the
  * document's skeleton. The document is a file compared with `diff`, and a heading that
  * disappeared would make its first entry read as a rewrite; this is not a file, and a
@@ -55,14 +62,15 @@
  * heading in it would read as a kind this record does not keep.
  */
 
-import type { RecordHit, RecordSearch } from '@mnema/copilot';
+import type { PertinentSearch, RecordHit, RecordSearch } from '@mnema/copilot';
 import { detectSecrets, excerptOf } from '@mnema/core';
 import { oneLine } from '../one-line.js';
 import { recordFraming } from '../record-framing.js';
+import type { SessionTouch } from '../what-the-session-touches.js';
 import { fitWhole } from './within-a-hook.js';
 
 /** The heading: what the text IS. */
-const TITLE = '# What was noted here lately';
+const TITLE = '# What was noted here';
 
 /** What the content is and whose text it is — the channel's declaration, from one place. */
 const WHAT_THIS_IS = recordFraming('recall-document');
@@ -76,9 +84,41 @@ const WHAT_THIS_IS = recordFraming('recall-document');
  */
 const WHERE_THEY_COME_FROM = [
   'They come from every tree this machine holds for the project — the committed one, this',
-  'machine’s own and the personal one — newest first, one line each; `read_record` with an',
-  'id serves the whole of one.',
+  'machine’s own and the personal one — one line each; `read_record` with an id serves the',
+  'whole of one.',
 ];
+
+/**
+ * The order the notes are in — ONE line, and it is always there, because a reader handed
+ * a list is owed what the list is ordered by. With something this session touches, the
+ * line names where the words came from, as counts and never as the words: a branch's name
+ * or a path is text somebody chose, and this channel prints no text of a note's that it
+ * does not have to, let alone of a file's.
+ */
+function orderLine(touched: SessionTouch): string {
+  if (touched.words.length === 0) {
+    return 'Newest first: nothing this session touches could be read here — no changed file, no task in progress, no branch name and no commit.';
+  }
+  return `Nearest first: the ones that share a word with what this session touches — ${whereTheWordsCameFrom(touched)} — closest first, then the newest.`;
+}
+
+/** The sources of the words, in the order they were read, joined as a sentence. */
+function whereTheWordsCameFrom(touched: SessionTouch): string {
+  const parts: string[] = [];
+  if (touched.changed > 0)
+    parts.push(`${counted(touched.changed, 'file')} changed in the working tree`);
+  if (touched.tasks > 0) parts.push(`${counted(touched.tasks, 'task')} in progress`);
+  if (touched.branch) parts.push('the name of the branch');
+  if (touched.commits > 0)
+    parts.push(`the files of the last ${counted(touched.commits, 'commit')}`);
+  // "a, b and c": the last comma of the list is the one that becomes "and".
+  return parts.join(', ').replace(/, (?=[^,]*$)/, ' and ');
+}
+
+/** `n` with its noun, the noun made plural by an `s` — true of the three nouns above. */
+function counted(n: number, noun: string): string {
+  return `${n} ${n === 1 ? noun : `${noun}s`}`;
+}
 
 /**
  * How a note gets in, and what becomes of it — the door, named once, as a fact.
@@ -107,20 +147,48 @@ const NO_OBSERVATION = 'No observation is recorded here.';
  *
  * `printed` IS WHAT IS PRINTED, NOT WHAT THE INDEX SERVED, and there are two cuts now. The index
  * serves the newest few of each kind, and a hook's copy of this text may stop earlier still,
- * at a whole note, to stay inside what a hook carries ({@link recallWithin}). Both leave the
- * newest ones and drop from the end, so one sentence is true of either — and a section a hook
+ * at a whole note, to stay inside what a hook carries ({@link recallWithin}). Both keep the start
+ * of the section's order and drop from its end — the newest with nothing touched, the nearest
+ * and then the newest with something — so one sentence is true of either, and a section a hook
  * cut to nothing says how many there are rather than that there are none.
  */
-function cutAt(search: RecordSearch, printed: number, kind: 'memory' | 'observation'): string[] {
+function cutAt(
+  search: RecordSearch,
+  printed: number,
+  kind: 'memory' | 'observation',
+  near: boolean,
+): string[] {
   if (search.total <= printed) return [];
+  const these = near ? `${printed} of them` : `the ${printed} newest`;
   return [
     printed === 0
       ? `${search.total} are recorded here, and none of them is below; \`search\` with`
-      : `${search.total} are recorded here, and these are the ${printed} newest; \`search\` with`,
+      : `${search.total} are recorded here, and these are ${these}; \`search\` with`,
     `\`kind\` \`${kind}\` serves the rest.`,
     '',
   ];
 }
+
+/**
+ * Where the near part of a section ends — said, because the order line says the near ones
+ * come first and a reader cannot see where "first" stops. Only when there was something to
+ * be near: with no signal every line is there for being recent, and the order line says so.
+ */
+function nearCount(search: PertinentSearch, printed: number, near: boolean): string[] {
+  if (!near || printed === 0) return [];
+  // Counted among the lines PRINTED: a hook's copy drops from the end, and the near ones are
+  // first, so what was cut is the newest part before any of the near.
+  const n = Math.min(search.pertinent, printed);
+  if (n === 0) return [NONE_NEAR, ''];
+  if (n >= printed) return [ALL_NEAR, ''];
+  if (n === 1) return [FIRST_NEAR, ''];
+  return [`The first ${n} share a word with what this session touches.`, ''];
+}
+
+/** What {@link nearCount} says when no line, every line, or the first line alone is near. */
+const NONE_NEAR = 'None of these shares a word with what this session touches.';
+const ALL_NEAR = 'Every one of these shares a word with what this session touches.';
+const FIRST_NEAR = 'The first of these shares a word with what this session touches.';
 
 /**
  * What stands where a note's line would carry a credential in a recognized format: the fact
@@ -171,9 +239,10 @@ function observationLine(hit: RecordHit): string {
  */
 function section(
   heading: string,
-  search: RecordSearch,
+  search: PertinentSearch,
   shown: number,
   kind: 'memory' | 'observation',
+  near: boolean,
   none: string,
   line: (hit: RecordHit) => string,
 ): string[] {
@@ -183,14 +252,19 @@ function section(
     '',
     ...(search.hits.length === 0
       ? [none]
-      : [...cutAt(search, hits.length, kind), ...hits.map(line)]),
+      : [
+          ...cutAt(search, hits.length, kind, near),
+          ...nearCount(search, hits.length, near),
+          ...hits.map(line),
+        ]),
   ];
 }
 
 /** The notes this text reads from — the index's answer for each kind. */
 interface Notes {
-  readonly memories: RecordSearch;
-  readonly observations: RecordSearch;
+  readonly touched: SessionTouch;
+  readonly memories: PertinentSearch;
+  readonly observations: PertinentSearch;
 }
 
 /**
@@ -202,9 +276,9 @@ export function recallDocument(notes: Notes): string[] {
 }
 
 /**
- * The text for a hook: whole notes, in the text's own order — memories, then observations,
- * newest first in each — up to what fits in `room`, by the rule the document's hook copy is
- * cut by ({@link fitWhole}).
+ * The text for a hook: whole notes, in the text's own order — memories, then observations, each
+ * in the order the order line names — up to what fits in `room`, by the rule the document's hook
+ * copy is cut by ({@link fitWhole}).
  *
  * With every line an excerpt, twenty of each kind stay under what a hook carries, so this
  * returns {@link recallDocument} byte for byte on every record the index can hand it today; the
@@ -224,6 +298,7 @@ function notesIn(notes: Notes): number {
 /** The text with its first `shown` notes — the one shape both copies print. */
 function composed(notes: Notes, shown: number): string[] {
   if (notes.memories.hits.length === 0 && notes.observations.hits.length === 0) return [];
+  const near = notes.touched.words.length > 0;
   const memories = Math.min(shown, notes.memories.hits.length);
   return [
     TITLE,
@@ -232,15 +307,18 @@ function composed(notes: Notes, shown: number): string[] {
     '',
     ...WHERE_THEY_COME_FROM,
     '',
+    orderLine(notes.touched),
+    '',
     ...HOW_A_NOTE_ENTERS,
     '',
-    ...section('Memories', notes.memories, memories, 'memory', NO_MEMORY, memoryLine),
+    ...section('Memories', notes.memories, memories, 'memory', near, NO_MEMORY, memoryLine),
     '',
     ...section(
       'Observations',
       notes.observations,
       shown - memories,
       'observation',
+      near,
       NO_OBSERVATION,
       observationLine,
     ),
