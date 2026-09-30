@@ -95,7 +95,9 @@ class _Reader:
         self.data = data
         self.at = 0
 
-    def bytes(self, count: int) -> bytes:
+    # `take`, and not `bytes`: a method named `bytes` makes every `bytes` annotation in this
+    # class read, to a type checker, as the method.
+    def take(self, count: int) -> bytes:
         if self.at + count > len(self.data):
             raise Refusal("8", "a proof that ends in the middle of a field")
         out = self.data[self.at : self.at + count]
@@ -103,7 +105,7 @@ class _Reader:
         return out
 
     def byte(self) -> int:
-        return self.bytes(1)[0]
+        return self.take(1)[0]
 
     def varuint(self) -> int:
         value, shift = 0, 0
@@ -117,7 +119,7 @@ class _Reader:
                 raise Refusal("8", "a varuint wider than 64 bits")
 
     def varbytes(self) -> bytes:
-        return self.bytes(self.varuint())
+        return self.take(self.varuint())
 
 
 def _apply(tag: int, message: bytes, reader: _Reader) -> bytes:
@@ -150,7 +152,7 @@ def _apply(tag: int, message: bytes, reader: _Reader) -> bytes:
 
 
 def _attestation(reader: _Reader, message: bytes, depth: int) -> Attestation:
-    tag = reader.bytes(8)
+    tag = reader.take(8)
     payload = _Reader(reader.varbytes())
     if tag == _TAG_BITCOIN:
         return Attestation("bitcoin", message, depth, height=payload.varuint())
@@ -214,7 +216,7 @@ def parse(raw: bytes) -> Proof:
     if len(raw) > MAX_PROOF_BYTES:
         raise Refusal("8", f"a proof past {MAX_PROOF_BYTES} bytes")
     reader = _Reader(raw)
-    if reader.bytes(len(MAGIC)) != MAGIC:
+    if reader.take(len(MAGIC)) != MAGIC:
         raise Refusal("8", "not an OpenTimestamps detached proof")
     version = reader.varuint()
     if version != 1:
@@ -222,7 +224,7 @@ def parse(raw: bytes) -> Proof:
     op = reader.byte()
     if op not in _DIGEST_LENGTHS:
         raise Refusal("8", f"a file-hash operation this reader does not know: {op:#04x}")
-    subject = reader.bytes(_DIGEST_LENGTHS[op])
+    subject = reader.take(_DIGEST_LENGTHS[op])
     found, depth = _walk(reader, subject)
     if reader.at != len(raw):
         raise Refusal("8", f"{len(raw) - reader.at} trailing bytes after the proof")

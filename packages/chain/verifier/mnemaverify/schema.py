@@ -111,10 +111,10 @@ def load(path: str = DEFAULT_SCHEMA) -> Schema:
         if not isinstance(v, int) or isinstance(v, bool):
             raise Refusal("4", f"{path}: contract {row['kind']} has no integer v")
         payload = _rule_map(row.get("payload", {}), f"contract {row['kind']}@{v}", path)
-        key = (row["kind"], v)
-        if key in contracts:
+        pair = (row["kind"], v)
+        if pair in contracts:
             raise Refusal("4", f"{path} declares {row['kind']}@{v} twice")
-        contracts[key] = Contract(row["kind"], v, payload)
+        contracts[pair] = Contract(row["kind"], v, payload)
 
     glossary = document.get("rules")
     rules = glossary if isinstance(glossary, dict) else {}
