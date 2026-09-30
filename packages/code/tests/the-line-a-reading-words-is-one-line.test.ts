@@ -1037,10 +1037,6 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
 
   // --- witness.ts: where the external witness stands ------------------------------
-  "witness.ts «No tail holds events in any tree here — looked in {}.» trees.join(', ') #1": {
-    verdict: 'minted',
-    why: 'the trees that were looked in — closed words, joined by this report',
-  },
   'witness.ts «{} tail(s):» lines.length #1': {
     verdict: 'minted',
     why: 'how many tails follow — the count the rows are counted by',
@@ -1447,7 +1443,8 @@ describe('every value this layer puts on a line is classified', () => {
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
     expect(FOUND.builders.length).toBeGreaterThan(10);
-    expect(FOUND.sites.length).toBe(237);
+    // 237 until `witness`'s copy of the no-tail sentence became a call of `tails.ts`'s one.
+    expect(FOUND.sites.length).toBe(236);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1469,7 +1466,7 @@ describe('every value this layer puts on a line is classified', () => {
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
     expect(count('collapsed')).toBe(64);
-    expect(count('minted')).toBe(134);
+    expect(count('minted')).toBe(133);
     expect(count('composed')).toBe(39);
     expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(64);
   });
@@ -1738,7 +1735,7 @@ const PROBES: readonly Probe[] = [
       'record.ts statedFact(oneLine(body.record.title)) #1',
       'status.ts itemLine(oneLine(item.title)) #1',
     ],
-    first: ['task', VALUE],
+    first: ['task', 'create', VALUE],
     argv: ['status', '--actor', ACTOR],
     says: 'live task(s):',
   },

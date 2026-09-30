@@ -183,7 +183,7 @@ beforeAll(async () => {
   process.chdir(project);
 
   await shell('init');
-  await shell('task', 'the task the session opened over');
+  await shell('task', 'create', 'the task the session opened over');
 
   environment = {
     ...process.env,
@@ -267,7 +267,7 @@ describe('a session shows what another process wrote while it was open', () => {
     // step before it.
     const writes = (title: string, sofar: number, keep: (id: string) => void): Step => ({
       does: () => {
-        keep(mintedIn(elsewhere('task', title, '--which', THE_AGENT)));
+        keep(mintedIn(elsewhere('task', 'create', title, '--which', THE_AGENT)));
       },
       until: (bytes) => times(bytes, 'task.created') >= sofar,
       what: `showed what another process wrote (${title})`,
@@ -517,7 +517,7 @@ describe('following the record answers with what grew, and only once', () => {
 
   it('answers with what was appended, and does not answer with it twice', async () => {
     const following = followingTheRecord(roots());
-    const id = mintedIn(await shell('task', 'appended while somebody was following'));
+    const id = mintedIn(await shell('task', 'create', 'appended while somebody was following'));
     const happened = following.whatHappened();
     expect(happened.map((event) => event.kind)).toContain('task.created');
     expect(happened.some((event) => event.subject === id)).toBe(true);
@@ -532,7 +532,8 @@ describe('following the record answers with what grew, and only once', () => {
   it('answers with every event of a burst, in the order the tail proves', async () => {
     const following = followingTheRecord(roots());
     const many = 40;
-    for (let each = 0; each < many; each += 1) await shell('task', `one of a burst ${each}`);
+    for (let each = 0; each < many; each += 1)
+      await shell('task', 'create', `one of a burst ${each}`);
     const happened = following.whatHappened();
     // Every task is a creation and the transition that puts it in its first state, so the
     // count is read off the kinds rather than typed twice.

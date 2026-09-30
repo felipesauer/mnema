@@ -305,9 +305,11 @@ describe('a refusal from the operation’s own door leaves nothing a clone recei
     for (const dir of [gitHome, home, project]) mkdirSync(dir, { recursive: true });
     expect(git(project, 'init', '-q').status).toBe(0);
     expect(mnemaIn(project, home, 'init').status).toBe(0);
-    taskOfA = idIn(mnemaIn(project, home, 'task', 'a task of A').stdout);
-    decisionOfA = idIn(mnemaIn(project, home, 'decision', 'a rule of A', 'why').stdout);
-    skillOfA = idIn(mnemaIn(project, home, 'skill', 'a skill of A', '--body', 'x').stdout);
+    taskOfA = idIn(mnemaIn(project, home, 'task', 'create', 'a task of A').stdout);
+    decisionOfA = idIn(mnemaIn(project, home, 'decision', 'record', 'a rule of A', 'why').stdout);
+    skillOfA = idIn(
+      mnemaIn(project, home, 'skill', 'create', 'a skill of A', '--body', 'x').stdout,
+    );
   });
 
   afterAll(() => {
@@ -328,9 +330,9 @@ describe('a refusal from the operation’s own door leaves nothing a clone recei
   const CASES: readonly (readonly [string, string, () => string[]])[] = [
     ['memory', 'CONTENT_TOO_LARGE', () => ['memory', BIG]],
     ['observe', 'CONTENT_TOO_LARGE', () => ['observe', UNKNOWN, '--topic', 't', '--text', BIG]],
-    ['task', 'CONTENT_TOO_LARGE', () => ['task', BIG]],
-    ['decision', 'CONTENT_TOO_LARGE', () => ['decision', BIG, 'why']],
-    ['skill', 'CONTENT_TOO_LARGE', () => ['skill', BIG, '--body', 'x']],
+    ['task create', 'CONTENT_TOO_LARGE', () => ['task', 'create', BIG]],
+    ['decision record', 'CONTENT_TOO_LARGE', () => ['decision', 'record', BIG, 'why']],
+    ['skill create', 'CONTENT_TOO_LARGE', () => ['skill', 'create', BIG, '--body', 'x']],
     ['handoff', 'NAME_HOLDS_A_SECRET', () => ['handoff', taskOfA, SECRET, 'bob']],
     [
       'link',

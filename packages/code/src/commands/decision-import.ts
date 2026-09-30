@@ -345,11 +345,15 @@ export function runDecisionImport(
       stopped = { path: document.path, code: linked.code, message: linked.message };
       break;
     }
+    // BOTH writes' reports: the provenance link is a fact this verb recorded too, and its
+    // report used to be dropped here. (Its `target` and `rel` are names, refused rather than
+    // redacted, so today it can replace nothing; the next field it carries could.)
+    const replaced = [...(recorded.replaced ?? []), ...(linked.replaced ?? [])];
     proposals.push({
       ...proposed(document),
       id: recorded.id,
       adr: recorded.adr,
-      ...(recorded.replaced !== undefined ? { replaced: recorded.replaced } : {}),
+      ...(replaced.length > 0 ? { replaced } : {}),
     });
   }
   // One checkpoint for the whole directory: the tree is left fully signed, at the

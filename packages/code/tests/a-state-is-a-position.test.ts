@@ -262,7 +262,11 @@ beforeAll(async () => {
   // deliberately does NOT name the state: a line is located by the id it carries, so no
   // assertion below can be satisfied by a word the fixture chose.
   for (const [index, state] of TASK_STATES.entries()) {
-    const created = await invoke('task', `the task the fixture wrote number ${index + 1}`);
+    const created = await invoke(
+      'task',
+      'create',
+      `the task the fixture wrote number ${index + 1}`,
+    );
     const line = created.find((text) => text.startsWith('Created task ')) ?? '';
     const id = /\(([^)]+)\)/.exec(line)?.[1];
     if (id === undefined) throw new Error(`fixture: no task id in ${created.join(' / ')}`);
@@ -279,6 +283,7 @@ beforeAll(async () => {
   for (const [index, state] of DECISION_STATES.entries()) {
     const created = await invoke(
       'decision',
+      'record',
       `the decision the fixture wrote number ${index + 1}`,
       'because the fixture needed one here',
     );
@@ -292,6 +297,7 @@ beforeAll(async () => {
   for (const [index, state] of SKILL_STATES.entries()) {
     const created = await invoke(
       'skill',
+      'create',
       `the pattern the fixture wrote number ${index + 1}`,
       '--body',
       'A pattern is one way of working.',

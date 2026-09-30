@@ -339,10 +339,6 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the transition table’s own words — an action, a state, the proof it requires',
   },
-  'report.ts «this machine keeps the key file at {}» #1': {
-    verdict: 'collapsed',
-    why: 'a path built under this machine’s key root: the file a refusal’s restore takes',
-  },
   'resume.ts «{} has no runs.» #1': {
     verdict: 'minted',
     why: 'an anchor: `--actor` is resolved to one before the read runs',
@@ -439,10 +435,6 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the refusal a write here gets — its code, and the words the core wrote for it',
   },
-  'init.ts «this machine keeps the key file at {}» #1': {
-    verdict: 'collapsed',
-    why: 'a path built under this machine’s key root: the file the refusal’s restore takes',
-  },
   'key.ts «private half installed at {}» #1': {
     verdict: 'collapsed',
     why: 'a path under this machine’s key root',
@@ -454,10 +446,6 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   'key.ts «recorded in {}» #1': {
     verdict: 'collapsed',
     why: 'the project root, discovered from the cwd — the same value `init` prints',
-  },
-  'key.ts «this machine keeps the key file at {}» #1': {
-    verdict: 'collapsed',
-    why: 'a path built under this machine’s key root: the file the retired key is kept in',
   },
   'link.ts «Linked {} —{}→ {}» #1': {
     verdict: 'collapsed',
@@ -513,10 +501,6 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
 
   // --- witness.ts: the act that speaks to somebody outside --------------------------
-  'witness.ts «No tail holds events in any tree here — looked in {}.» #1': {
-    verdict: 'minted',
-    why: 'the trees that were looked in — closed words, joined by the act',
-  },
   'witness.ts «{} ({}): {} — {}» #1': {
     verdict: 'collapsed',
     why: 'the TAIL ID, which is a directory name anybody who can write the tree chooses',
@@ -623,7 +607,10 @@ describe('every line this wiring words is classified', () => {
     // 28 of these, and a walk that regressed to a line-wise pattern would land near it.
     expect(FOUND.files).toBeGreaterThan(35);
     expect(FOUND.calls).toBeGreaterThan(80);
-    expect(FOUND.sites.length).toBe(73);
+    // Seventy-three until the three that said where the key file is moved into one function
+    // of their own (`key-file.ts`), which collapses its values where it words them, and the
+    // `witness` act's "No tail holds events" moved into `presentation/tails.ts`.
+    expect(FOUND.sites.length).toBe(69);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -643,9 +630,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(36);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(37);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(36);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(33);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(36);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(33);
   });
 
   it('every reason says where the value comes from', () => {
@@ -719,7 +706,7 @@ const PROBES: readonly Probe[] = [
   },
   {
     keys: ['skill.ts «Proposed skill "{}" ({})» #1'],
-    argv: ['skill', VALUE, '--body', 'a reusable pattern'],
+    argv: ['skill', 'create', VALUE, '--body', 'a reusable pattern'],
     says: `Proposed skill "${VALUE}"`,
   },
   {
@@ -786,16 +773,10 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'init.ts «a write to the public tree here is refused ({}): {}» #1':
     'needs a checkout its key has left — and the values inside the words are the core’s, ' +
     'each collapsed where it is written (`the-phrase-the-domain-words-is-one-line.test.ts`)',
-  'init.ts «this machine keeps the key file at {}» #1':
-    'needs a key root whose path holds a newline, and a checkout its key has left',
   'key.ts «private half installed at {}» #1': 'needs a PEM to restore from',
   'key.ts «Your copy at {} was read, not moved — keep it where it is.» #1': 'the same restore',
   'key.ts «recorded in {}» #1': 'needs a request from a second machine',
-  'key.ts «this machine keeps the key file at {}» #1':
-    'needs a key root whose path holds a newline, and a key of two identities',
   'next-actions.ts «Task {} is terminal — no legal moves.» #1': 'the id must match a task',
-  'report.ts «this machine keeps the key file at {}» #1':
-    'needs a key root whose path holds a newline, and a checkout its key has left',
   'next-actions.ts «Task {} — {} legal move(s):» #1': 'the id must match a task',
   'resume.ts «{} {}» #1': 'read back from a run this suite opens through `run start`',
   'run.ts «by {}» #1': 'needs an open run to close',

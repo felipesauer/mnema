@@ -554,7 +554,20 @@ export function readsItsOwnCopy(actionSource: string, attribute: string): boolea
 function verdicts(): Verdict[] {
   return OPTIONS.map((declared) => {
     const option = `${declared.where} ${declared.flags}`;
-    if (declared.action === undefined) return { option, destinations: [], read: [] };
+    if (declared.action === undefined) {
+      // A group that does nothing on its own (`task`, `decision`, `skill`, since creating became
+      // a subcommand) still receives its flags wherever they are written, and hands them to the
+      // subcommand that declares the same one and reads it off the group. That subcommand's read
+      // is this option's read; with no such subcommand, nothing reads it.
+      const read = OPTIONS.filter(
+        (taker) => taker.takenBy === declared.where && taker.flags === declared.flags,
+      ).flatMap((taker) =>
+        verdictOf(`${taker.where} ${taker.flags}`, taker.action ?? '', taker.attribute).read.map(
+          (site) => `${site}, through ${taker.where}`,
+        ),
+      );
+      return { option, destinations: [], read };
+    }
     // Its own copy, which `takenBy` receives instead: a read of a value that never arrives.
     if (declared.takenBy !== undefined && readsItsOwnCopy(declared.action, declared.attribute)) {
       return { option, destinations: [], read: [] };
@@ -799,7 +812,8 @@ describe('every option the CLI declares feeds something', () => {
       expect(readsItsOwnCopy(declared?.action ?? '', 'global'), act).toBe(false);
       expect(verdictOf(act, declared?.action ?? '', 'global').read.length, act).toBeGreaterThan(0);
     }
-    // The four the tree holds, and no more: an option declared twice anywhere else is new.
+    // The twelve the tree holds, and no more: an option declared twice anywhere else is new.
+    // Eight are the verbs that create, which declare their group's creation flags.
     expect(
       OPTIONS.filter((one) => one.takenBy !== undefined)
         .map((one) => `${one.where} ${one.flags}`)
@@ -807,6 +821,14 @@ describe('every option the CLI declares feeds something', () => {
     ).toEqual([
       'mnema decision import --scope <scope>',
       'mnema decision import --which <agent>',
+      'mnema decision record --alternatives <text>',
+      'mnema decision record --scope <scope>',
+      'mnema decision record --which <agent>',
+      'mnema skill create --body <text>',
+      'mnema skill create --scope <scope>',
+      'mnema skill create --which <agent>',
+      'mnema task create --scope <scope>',
+      'mnema task create --which <agent>',
       'mnema witness stamp --global',
       'mnema witness upgrade --global',
     ]);

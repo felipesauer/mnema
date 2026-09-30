@@ -31,6 +31,7 @@ import {
 } from '@mnema/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runInit } from './init.js';
+import { runShow } from './show.js';
 import { runSkill } from './skill.js';
 import { runSkillExport } from './skill-export.js';
 import { runSkillTransition } from './skill-transition.js';
@@ -243,5 +244,41 @@ describe('the file the export composes', () => {
     // The whole anchor, not the short form the reads print: the file leaves the record,
     // and a short form only resolves against the record it was shortened in.
     expect(result.adoptedBy).toMatch(/^mnid:[0-9a-f]{64}$/);
+  });
+});
+
+/**
+ * OUTSIDE A PROJECT, the two reads that also serve the machine-global tree say so when the id is
+ * in no tree they could read — and still answer when it is in that one. `show` and `skill export`
+ * answered "No record <id> here" in a directory with no record at all, which told a person in the
+ * wrong folder their record was missing; the other verbs said there is no project.
+ */
+describe('outside a project', () => {
+  /** A directory that is no project, under the same machine as the founded one. */
+  function nowhere(where: { env: DiscoveryEnv }): { cwd: string; env: DiscoveryEnv } {
+    const cwd = join(sandbox, 'nowhere');
+    mkdirSync(cwd, { recursive: true });
+    return { cwd, env: where.env };
+  }
+
+  it('says there is no project for an id no tree holds, and writes nothing', () => {
+    const at = nowhere(setup());
+    const id = '00000000-0000-7000-8000-000000000000';
+    expect(runSkillExport(at, { id, out })).toEqual({ ok: false, reason: 'NO_PROJECT' });
+    expect(runShow(at, { id })).toEqual({ ok: false, reason: 'NO_PROJECT' });
+    expect(filesUnder(out)).toEqual([]);
+  });
+
+  it('still reads the machine-global tree, which it reads from anywhere', () => {
+    const where = setup();
+    const at = nowhere(where);
+    const proposed = runSkill(at, { name: 'mine-everywhere', body: 'A habit.', scope: 'global' });
+    if (!proposed.ok) throw new Error('setup: the global propose refused');
+    for (const action of pathsToEveryState().get('adopted') ?? []) {
+      const moved = runSkillTransition(at, { id: proposed.id, action, proof: proofFor(action) });
+      if (!moved.ok) throw new Error(`setup: ${action} refused`);
+    }
+    expect(runSkillExport(at, { id: proposed.id, out })).toMatchObject({ ok: true });
+    expect(runShow(at, { id: proposed.id })).toMatchObject({ ok: true });
   });
 });

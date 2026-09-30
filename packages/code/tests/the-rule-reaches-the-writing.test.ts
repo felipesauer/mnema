@@ -88,7 +88,7 @@ function idIn(said: Said): string {
 
 /** Records a decision and accepts it, so that it is IN FORCE. */
 async function ruleInForce(title: string, ...extra: string[]): Promise<string> {
-  const recorded = await mnema('decision', title, `why ${title}`, ...extra);
+  const recorded = await mnema('decision', 'record', title, `why ${title}`, ...extra);
   expect(recorded.failed, recorded.err.join(' / ')).toBe(false);
   const id = idIn(recorded);
   const accepted = await mnema('decision', 'move', 'accept', id, '--note', 'agreed');
@@ -98,7 +98,7 @@ async function ruleInForce(title: string, ...extra: string[]): Promise<string> {
 
 /** Records and adopts a pattern. */
 async function patternAdopted(name: string, body: string): Promise<string> {
-  const recorded = await mnema('skill', name, '--body', body);
+  const recorded = await mnema('skill', 'create', name, '--body', body);
   expect(recorded.failed, recorded.err.join(' / ')).toBe(false);
   const id = idIn(recorded);
   for (const action of ['review', 'adopt']) {
@@ -319,7 +319,7 @@ describe('what does NOT reach the writing', () => {
   });
 
   it('holds back a task, which is addressable and is not a rule', async () => {
-    const task = await mnema('task', 'rewrite the collation');
+    const task = await mnema('task', 'create', 'rewrite the collation');
     expect(task.failed, task.err.join(' / ')).toBe(false);
     await addressAt(idIn(task), 'src/collate');
     // Nothing pushed: only a decision in force and an adopted pattern are rules. The

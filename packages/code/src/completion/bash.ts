@@ -9,7 +9,7 @@
  *
  * THE WALK IS IN THE SCRIPT because the shell is the only one that knows what has been
  * typed. It keeps a word only when the level reached so far declares it as a
- * subcommand, so a title (`mnema task "ship the parser"`) and a flag's value never
+ * subcommand, so a title (`mnema task create "ship the parser"`) and a flag's value never
  * shift the level, and depth is not assumed: a third level added tomorrow is a row in
  * the tables and no change here.
  *

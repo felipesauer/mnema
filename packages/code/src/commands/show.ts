@@ -98,7 +98,13 @@ export interface ShowDone {
 /** No visible tree holds a record with this id. */
 export interface ShowRefused {
   readonly ok: false;
-  readonly reason: 'UNKNOWN_RECORD';
+  /**
+   * `UNKNOWN_RECORD` inside a project; `NO_PROJECT` outside one, where the global tree was
+   * read and does not hold it either — the person is most likely in the wrong directory,
+   * which is the news, and "No record <id> here" told them their record had lost it
+   * (`outside-a-project-the-surface-says-so.test.ts`).
+   */
+  readonly reason: 'UNKNOWN_RECORD' | 'NO_PROJECT';
 }
 
 /**
@@ -116,7 +122,12 @@ export function runShow(ctx: ShowContext, input: { id: string }): ShowDone | Sho
       const source = open(SCOPES[next] as Scope);
       if (source !== undefined) found = readRecord([source], input.id);
     }
-    if (found === null) return { ok: false, reason: 'UNKNOWN_RECORD' };
+    if (found === null) {
+      return {
+        ok: false,
+        reason: trees.projectPublic === undefined ? 'NO_PROJECT' : 'UNKNOWN_RECORD',
+      };
+    }
     if (found.kind !== 'memory' && found.kind !== 'skill') {
       // OVER THE TREES THIS READ ACTUALLY OPENED, which here is fewer than all of them:
       // this verb stops at the first tree holding the id. That is the right answer and

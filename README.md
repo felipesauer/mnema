@@ -291,7 +291,7 @@ mnema init
 #>     @MNEMA.md
 
 # Write down a call, with the reasoning that is the whole point of writing it.
-mnema decision "Use SQLite for the projection cache" \
+mnema decision record "Use SQLite for the projection cache" \
   "It is embedded, it is fast enough at our sizes, and it needs no service."
 #> Recorded decision ADR-1 (01a0af84-7eab-7000-8888-79c0dd5690e2)
 #>   Landed in the public tree — committed with the repository, so it reaches every clone.

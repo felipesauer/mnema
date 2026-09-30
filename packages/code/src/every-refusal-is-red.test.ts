@@ -335,7 +335,7 @@ describe('and what it refuses comes out red, with the words still on the line', 
     delete process.env.FORCE_COLOR;
     process.chdir(repo);
     await invoke('init');
-    const created = await invoke('task', 'Write the deploy runbook');
+    const created = await invoke('task', 'create', 'Write the deploy runbook');
     const id = /\(([^)]+)\)/.exec(created)?.[1];
     if (id === undefined) throw new Error(`fixture: no task id in ${created}`);
     taskId = id;
@@ -362,8 +362,12 @@ describe('and what it refuses comes out red, with the words still on the line', 
     ['the gate', ['task', 'move', 'complete', taskId], 'Refused (ILLEGAL_TRANSITION)'],
     ['an unknown record', ['show', 'nope'], 'No record nope here.'],
     ['a bad direction', ['refs', taskId, '--direction', 'sideways'], 'Not a direction: sideways'],
-    ['a bad scope', ['task', 'nothing born', '--scope', 'elsewhere'], 'Invalid --scope'],
-    ['a missing argument', ['decision', 'a title'], 'mnema decision needs <rationale>'],
+    ['a bad scope', ['task', 'create', 'nothing born', '--scope', 'elsewhere'], 'Invalid --scope'],
+    [
+      'a missing argument',
+      ['decision', 'record', 'a title'],
+      'mnema decision record needs <rationale>',
+    ],
     ['a word that names no verb', ['nope'], 'mnema has no command "nope".'],
   ];
 

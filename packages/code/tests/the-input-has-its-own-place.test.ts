@@ -150,7 +150,7 @@ beforeAll(async () => {
   process.chdir(project);
 
   await shell('init');
-  await shell('task', 'the task the input is typed over');
+  await shell('task', 'create', 'the task the input is typed over');
 
   environment = {
     ...process.env,
@@ -546,11 +546,11 @@ describe('the badge says what the record proved, and the verb that says the rest
     process.chdir(second);
     try {
       await shell('init');
-      await shell('task', 'a task in the committed tree');
+      await shell('task', 'create', 'a task in the committed tree');
       // The one verb that writes the OTHER tree. A memory lands in the committed one — a
       // record travels by its KIND (`the-record-travels.test.ts`), and only an explicit
       // scope puts a task in the private tree.
-      await shell('task', 'a task that stays on this machine', '--scope', 'private');
+      await shell('task', 'create', 'a task that stays on this machine', '--scope', 'private');
       const emptied = privateCheckpoints(second);
       expect(emptied, 'the fixture never wrote a private tree').toBeDefined();
       writeFileSync(emptied as string, '', 'utf-8');

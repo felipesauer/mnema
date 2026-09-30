@@ -194,7 +194,7 @@ function refusedWrite(
   const line = wrote.stderr.split('\n').find((one) => one.startsWith(REFUSED));
   expect(line, wrote.stderr).toBeDefined();
   expect(whoWrote(dir, content), 'a refused write landed').toBeUndefined();
-  const keyFile = /this machine keeps the key file at (.+)$/m.exec(wrote.stderr)?.[1];
+  const keyFile = /this machine keeps the key file at (.+?), under /m.exec(wrote.stderr)?.[1];
   return { words: (line as string).slice(REFUSED.length), keyFile };
 }
 

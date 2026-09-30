@@ -16,18 +16,22 @@
  * the tokens here would have to know what commander knows — which flags take a value, the
  * `--flag=value` spelling, a value that happens to be a subcommand's name (`--which import` is an
  * agent called "import") — and a second reading of a rule is how two readings come to disagree.
- * So the question is put to a throwaway command holding the group's option table and its
- * subcommands' names, with positional options on: commander then stops at the subcommand's name,
- * and what that command took is exactly what was written before it. Each of those spellings is a
- * case in `a-flag-declared-twice.test.ts`, over the real `decision` group.
+ * So the question is put to throwaway commands holding the group's option table, parsed by
+ * commander's DEFAULT rules, over growing prefixes of the line: the first prefix whose parse leaves
+ * an operand ends at the subcommand's name — every word before it was an option or an option's
+ * value, as commander read them — and what a parse of the words before it took is exactly what was
+ * written before the subcommand. Each of those spellings is a case in
+ * `a-flag-declared-twice.test.ts`, over the real `decision` group.
  *
- * THE THROWAWAY IS NEVER PART OF THE PROGRAM, and that is the only reason positional options may
- * be turned on here. On the program they would decide this for every verb at once: a group's flag
- * written after its subcommand would stop reaching the group, and that is how the moves take
- * their executor today (`task move submit <id> --which …` is refused by the GROUP's parser when
- * the value names nobody — `cli-e2e.test.ts`). That would change what other verbs accept, which is
- * not a repair of this one. `the-command-handed-over-runs-as-handed.test.ts` holds the program to
- * that, and names this file as the one place the setting appears.
+ * IT TURNS NO PARSE SETTING ON, and it did. It asked a throwaway with positional options on, so
+ * commander would stop at the subcommand's name itself; that made this file the one exception to
+ * the guard that the program uses no setting its mirror cannot copy
+ * (`the-command-handed-over-runs-as-handed.test.ts`), argued as harmless because the throwaway was
+ * never registered. The prefixes give the same answer with no setting at all, and the guard has
+ * no exception now. Positional options on the PROGRAM would decide this for every verb at once: a
+ * group's flag written after its subcommand would stop reaching the group, which is how the moves
+ * take their executor today (`task move submit <id> --which …` is refused by the GROUP's parser
+ * when the value names nobody — `cli-e2e.test.ts`).
  *
  * It is asked by `from-the-group.ts`, for every subcommand that declares a flag its group declares
  * too — `decision import`'s two, and the two `witness` acts' `--global`.
@@ -56,15 +60,48 @@ export function ownFlagsWrittenBefore(sub: Command): readonly string[] {
   const group = sub.parent;
   const line = group?.parent?.args;
   if (group === null || line === undefined) return [];
-  // It may never speak or end the process: it runs inside somebody's command. A line no group
-  // could have read throws here, silently, and the surface's own last resort reports it.
-  const probe = new Command().enablePositionalOptions().helpCommand(false).exitOverride();
-  probe.configureOutput({ outputError: () => {} });
-  for (const option of group.options) probe.addOption(new Option(option.flags));
-  for (const command of group.commands) probe.command(command.name());
   // The first word the parent kept is the group's own name; what follows is what the group read.
-  probe.parseOptions(line.slice(1));
+  const before = wordsBeforeTheSubcommand(group, line.slice(1), sub.name());
+  if (before === undefined) return [];
+  const probe = probeOf(group);
+  probe.parseOptions([...before]);
   return sub.options
     .filter((own) => probe.getOptionValueSource(own.attributeName()) === 'cli')
     .map((own) => own.long ?? own.flags);
+}
+
+/**
+ * The words the group read before the subcommand's name, found by commander: the shortest prefix
+ * whose parse leaves an operand ends at it. A prefix that stops inside an option — its value not
+ * yet written — is refused by the parse, and the next one is asked. Undefined when the first word
+ * commander takes as an operand is not the subcommand's name, which no line that reached the
+ * subcommand can be.
+ */
+function wordsBeforeTheSubcommand(
+  group: Command,
+  words: readonly string[],
+  name: string,
+): readonly string[] | undefined {
+  for (let end = 1; end <= words.length; end++) {
+    let operands: readonly string[];
+    try {
+      operands = probeOf(group).parseOptions(words.slice(0, end)).operands;
+    } catch {
+      continue;
+    }
+    if (operands.length > 0) return operands[0] === name ? words.slice(0, end - 1) : undefined;
+  }
+  return undefined;
+}
+
+/**
+ * A throwaway holding the group's option table and nothing else — commander's default parse, no
+ * setting turned on. It may never speak or end the process: it runs inside somebody's command.
+ * A line no group could have read throws here, silently, and the caller asks the next prefix.
+ */
+function probeOf(group: Command): Command {
+  const probe = new Command().helpCommand(false).exitOverride();
+  probe.configureOutput({ outputError: () => {}, writeErr: () => {}, writeOut: () => {} });
+  for (const option of group.options) probe.addOption(new Option(option.flags));
+  return probe;
 }

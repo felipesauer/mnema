@@ -144,7 +144,7 @@ beforeAll(async () => {
 
   const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
   await run(['init'], io);
-  await run(['task', 'the task the floor is measured over'], io);
+  await run(['task', 'create', 'the task the floor is measured over'], io);
 
   environment = {
     ...process.env,

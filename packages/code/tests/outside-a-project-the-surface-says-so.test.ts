@@ -33,10 +33,11 @@
  *      global tree is answering a legitimate question about whatever record there is, and
  *      `init` is the verb whose whole job is that there is not one yet.
  *   4. IT REFUSES SOMETHING ELSE FIRST — the parser, a missing session, or its own no.
- *      TWO OF THESE ARE A FINDING, recorded rather than repaired here: `show` and `skill
- *      export` answer "No record … here" for an id in a directory that holds no record at
- *      all, which tells a person in the wrong folder that their record is missing.
- *      Changing what a verb says is not this slice's to change.
+ *      Two of these WERE a finding, recorded here rather than repaired: `show` and `skill
+ *      export` answered "No record … here" for an id in a directory that holds no record
+ *      at all, which told a person in the wrong folder that their record was missing. They
+ *      say there is no project now, as the others do, after reading the machine-global
+ *      tree they read from anywhere — so they are in the first box.
  *
  * All four boxes are reconciled against the walk in both directions, so a path that
  * changes box has to be moved by hand and a path that disappears cannot leave an excuse
@@ -109,31 +110,25 @@ const ANSWERS_ANYWAY: Readonly<Record<string, string>> = {
 };
 
 /**
- * THE SENTENCE THE TWO WITNESS ROWS OF BOX 3 ANSWER WITH, whole — and a finding inside it.
+ * THE SENTENCE THE TWO WITNESS ROWS OF BOX 3 ANSWER WITH, whole.
  *
  * `witness` and `witness upgrade` are the two rows above whose reason is that they report
- * on the tails they can see and say so when there are none. This is what saying so IS, and
- * until it was read here nothing read it: the wording is written THREE times in `src` —
- * `presentation/tails.ts`, `presentation/witness.ts` and `wiring/witness.ts` — and only the
- * first of the three had ever been asserted (`the-verb-says-which-tails.test.ts`, over
- * `mnema tail list`). The other two are the two paths below, one each.
+ * on the tails they can see and say so when there are none. This is what saying so IS. The
+ * wording was written THREE times in `src` — `presentation/tails.ts`, `presentation/witness.ts`
+ * and `wiring/witness.ts` — and is one function now (`noTailHoldsEvents`), which each of the
+ * three paths below reaches.
  *
- * THE TREE LIST IS EMPTY, and that is recorded rather than repaired. Outside a project the
- * only tree that resolves is this machine's global one, which every witness path leaves out
- * unless asked, so the sentence names nothing and reads `looked in .` — a list with no
- * items and a full stop. This said asking was not available on the acts either: `--global`
- * is declared on the group AND on each act, `mnema witness upgrade --global` bound it to the
- * GROUP, whose value no act read, and so the flag on `stamp` and on `upgrade` fed nothing —
- * commander's documented arithmetic, since a parent stops consuming its own options at a
- * subcommand only under `enablePositionalOptions()`, which this program does not set. The
- * arithmetic is unchanged and the acts now read the value where it lands, off the group
- * (`wiring/from-the-group.ts`): asked, `upgrade` outside a project goes back for the global
- * tail, which `the-witness-acts-cover-the-tree-asked-for.test.ts` runs on the binary. Not
- * asked, it still says this sentence, and the empty list is still what it says.
+ * THE TREE LIST IS EMPTY HERE, and it used to be SAID as a list: outside a project the only tree
+ * that resolves is this machine's global one, which every witness path leaves out unless asked,
+ * so the sentence read `looked in .` — a list with no items and a full stop. It says why the list
+ * is empty now, and what asks for the one tree there is: `--global`, which the acts read off the
+ * group (`wiring/from-the-group.ts`), and which `the-witness-acts-cover-the-tree-asked-for.test.ts`
+ * runs on the binary.
  */
-const NO_TAIL_HOLDS_EVENTS = 'No tail holds events in any tree here — looked in .';
+const NO_TAIL_HOLDS_EVENTS =
+  'No tail holds events here: this is not a mnema project, and this machine’s global tree is read only with --global.';
 
-/** Which path is the one reader of which copy of that sentence. */
+/** Which path reaches the one sentence by which of its callers. */
 const SAYS_NO_TAIL_HOLDS_EVENTS: Readonly<Record<string, string>> = {
   witness: 'src/presentation/witness.ts',
   'witness upgrade': 'src/wiring/witness.ts',
@@ -174,21 +169,22 @@ const THE_PARSER_ANSWERED_FIRST =
 /**
  * A path whose own refusal arrives before the project is ever missed — with what it says.
  *
- * THE FIRST FOUR ARE STRUCTURE and the last two are a FINDING. `run`, `key` and `tail`
- * are groups whose bare form routes nothing, so the parser answers before any action
- * runs, and `run end` with neither an id nor a variable has no session to be missing a
- * project for. `show` and `skill export` reach their adapter and refuse the ID: in a directory
- * with no record at all, a person is told the record they named does not exist rather
- * than that they are in the wrong place. It is recorded here rather than repaired,
- * because what a verb SAYS is not a coverage slice's to change.
+ * ALL OF THEM ARE STRUCTURE. `task`, `decision`, `skill`, `run`, `key` and `tail` are groups
+ * whose bare form routes nothing, so the parser answers before any action runs (the first
+ * three created with a title typed after their name, until creating became a subcommand),
+ * and `run end` with neither an id nor a variable has no session to be missing a project
+ * for. Two rows here were a FINDING — `show` and `skill export` answered "No record <id>
+ * here" in a directory with no record at all — and they left for the first box when they
+ * began saying there is no project.
  */
 const REFUSES_SOMETHING_ELSE_FIRST: Readonly<Record<string, string>> = {
+  task: THE_PARSER_ANSWERED_FIRST,
+  decision: THE_PARSER_ANSWERED_FIRST,
+  skill: THE_PARSER_ANSWERED_FIRST,
   run: THE_PARSER_ANSWERED_FIRST,
   key: THE_PARSER_ANSWERED_FIRST,
   tail: THE_PARSER_ANSWERED_FIRST,
   'run end': 'with no id and no MNEMA_RUN there is no session named, which it says first',
-  show: 'FINDING: it answers "No record <id> here" where there is no record at all',
-  'skill export': 'FINDING: it answers "No skill <id> here" where there is no record at all',
   'witness stamp':
     'with no tail anywhere it refuses NO_TAIL at its first line, before a fetch is composed',
 };

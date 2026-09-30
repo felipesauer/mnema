@@ -204,12 +204,13 @@ async function report(
 ): Promise<void> {
   const { io, render } = wiring;
   const { witnessRefusalWord, witnessWord } = await import('../presentation/witness.js');
+  const { noTailHoldsEvents } = await import('../presentation/tails.js');
   if (!act.ok) {
     reportRefusal(wiring, act, {});
     return;
   }
   if (act.outcomes.length === 0) {
-    io.out(`No tail holds events in any tree here — looked in ${act.trees.join(', ')}.`);
+    io.out(noTailHoldsEvents(act.trees));
     return;
   }
   for (const outcome of act.outcomes) {

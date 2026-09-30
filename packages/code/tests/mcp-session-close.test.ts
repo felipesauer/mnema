@@ -22,7 +22,7 @@
  * because there deliberately is no sweeper.
  */
 
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -303,6 +303,32 @@ describe('a connection that ends', () => {
 
     expect(kindsIn(project)).toEqual([]);
     expect(logged).toContain('session closed: no run was opened (nothing was written)');
+    await client.close();
+  });
+
+  it('does not say nothing was written when a write began and its run did not open', async () => {
+    // A run's opening is two writes for a key with no anchor in the tree — the founding, then
+    // `run.started` — and the line said "(nothing was written)" whenever no run was in the map,
+    // which is false the moment the first of the two landed. Here the run cannot open at all:
+    // the tree's lock directory is a link to nothing, so the append that would open it throws.
+    const project = makeProject('proj');
+    const locks = join(project, PROJECT_DIR, 'locks');
+    rmSync(locks, { recursive: true, force: true });
+    symlinkSync(join(sandbox, 'nowhere-at-all'), locks);
+    const { client, end } = await connect([pathToFileURL(project).href]);
+    const reply = await client.callTool({
+      name: 'capture_memory',
+      arguments: { content: 'a note that cannot land', scope: 'public' },
+    });
+    expect((reply as { isError?: boolean }).isError).toBe(true);
+
+    end();
+
+    const closing = logged.filter((line) => line.startsWith('session closed:'));
+    expect(closing).toHaveLength(1);
+    expect(closing[0]).not.toContain('nothing was written');
+    expect(closing[0]).toContain('no run was opened; a write began in ');
+    expect(closing[0]).toContain('may be on disk');
     await client.close();
   });
 

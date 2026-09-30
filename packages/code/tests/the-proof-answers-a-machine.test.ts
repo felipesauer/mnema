@@ -114,7 +114,7 @@ function forge(needle: string, replacement: string): void {
 async function record(title: string): Promise<void> {
   const founded = await mnema('init');
   if (founded.failed) throw new Error(`setup: init failed: ${founded.err}`);
-  const written = await mnema('task', title);
+  const written = await mnema('task', 'create', title);
   if (written.failed) throw new Error(`setup: task failed: ${written.err}`);
 }
 
