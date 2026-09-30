@@ -54,8 +54,9 @@ the ones a first change usually meets:
   enough here: [`every-file-has-a-test-that-names-it.test.ts`](packages/code/tests/every-file-has-a-test-that-names-it.test.ts)
   accuses a file under `packages/*/src` that no test imports and asserts about, unless it has
   a row in the file's ledger saying what reaches it instead. The ledger can only shrink. The
-  same file counts the import clauses of the whole test tree, so a new test moves that number:
-  the failing case shows the new count, and you write it into the file on purpose.
+  same file keeps a line for every product file and a line for every test file with the number
+  of import clauses in it, so a new file, a removed one, or a changed import is red: the failing
+  case names the file and what it read, and you write that line into the file on purpose.
 - **Pages are checked against the binary.** A `mnema` command in a shell block, or in an
   inline code span, of a tracked Markdown page is parsed by the real command tree, and a verb
   or a flag the binary does not have is a red

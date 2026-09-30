@@ -7,8 +7,9 @@ release yet (`npm view @mnema/code version` says whether that is still so), so u
 exists the supported version is the default branch itself, and after that, the latest
 release.
 
-The 0.x alpha published earlier as `@felipesauer/mnema` is the previous line. It lives on
-the `main` branch, kept as it was, and receives no fixes.
+The 0.x alpha published earlier as `@felipesauer/mnema` is the previous line. It is
+deprecated on npm (`npm view @felipesauer/mnema deprecated` says so), it lives on the `main`
+branch, kept as it was, and it receives no fixes.
 
 ## Reporting a vulnerability
 

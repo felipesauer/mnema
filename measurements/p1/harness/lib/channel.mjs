@@ -132,8 +132,9 @@ export function channelService({ sandbox, arm, mnemaBin }) {
  * Does the per-edit channel SPEAK in a cell of this arm, on this axis? One reading,
  * three call sites.
  *
- * A3, and it is the rule this delivery adds. It has two terms and each one is a whole
- * conclusion about the product if it is read wrong:
+ * ONE READING WITH EVERY CALLER, because two readings of one rule drift apart where
+ * nobody sees it — and it is the rule this delivery adds. It has two terms and each one
+ * is a whole conclusion about the product if it is read wrong:
  *
  *   - the AXIS. On axis B nothing is recorded and no rule addresses the file, so the
  *     channel correctly says nothing and correctly appends nothing. Reading that as a

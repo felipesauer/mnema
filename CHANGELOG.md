@@ -4,8 +4,9 @@ Notable changes to the packages in this repository are recorded here. The format
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-The line before this one, the 0.x alpha published as `@felipesauer/mnema`, lives on the
-[`main`](https://github.com/felipesauer/mnema/tree/main) branch, with its own changelog.
+The line before this one, the 0.x alpha published as `@felipesauer/mnema`, is deprecated on
+npm and lives on the [`main`](https://github.com/felipesauer/mnema/tree/main) branch, with its
+own changelog.
 
 ## [Unreleased]
 

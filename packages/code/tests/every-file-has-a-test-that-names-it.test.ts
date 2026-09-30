@@ -148,328 +148,6 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
   .sort()
   .map((path) => ({ path, text: readFileSync(join(REPO, path), 'utf-8') }));
 
-/**
- * Every import clause in that tree, counted rather than bounded.
- *
- * A FLOOR CANNOT SEE A SCANNER STOP SCANNING. The case that reads this used to say
- * `toBeGreaterThan(2000)`, and the narrowing of the clause grammar is one character away
- * from losing real imports in silence: dropping `_` from `[\w$*,{}\s]` loses 211 of these
- * and leaves 2145, which clears that floor and reddens nothing else in this file. Restate
- * this number when the tree gains an import, which is the point of writing it down. It
- * went 2446 -> 2453 when `the-strict-gate-catches-the-forgery.test.ts` arrived with seven
- * clauses, and the delta was checked against that file rather than accepted from the
- * failure — a count restated from whatever the run reported is a count that pins nothing.
- * It went 2453 -> 2454 when `every-public-value-has-a-caller.test.ts` began importing
- * `ALIAS_PREFIXES` to enumerate the arms of a vocabulary from the vocabulary itself: one
- * clause, counted in that file, not read off the failure. It went 2454 -> 2465 when
- * `every-description-reaches-the-model.test.ts` arrived: eleven clauses, counted in that
- * file — a sandbox, a project, a client, a transport, and the server it connects to. It
- * went 2465 -> 2482 when `the-origin-travels-beside-the-label.test.ts` arrived:
- * seventeen clauses, counted in that file, which drives six verbs and one tool. It went
- * 2482 -> 2505 over three files of one delivery: `the-moves-say-what-they-said.test.ts`
- * with eighteen, and the two sibling units beside the modules they name — the catalog's
- * proof reader with three and the projection's with two. Twenty-three, counted in the
- * three files. It went 2505 -> 2513 when `one-window-three-readings.test.ts` arrived —
- * the test a doc-comment had named for as long as it stood, and which did not exist:
- * eight clauses, counted in it. It went 2513 -> 2520 when
- * `the-proof-answers-a-machine.test.ts` arrived: seven clauses, counted in it. It went
- * 2520 -> 2530 when `the-feed-covers-this-project.test.ts` arrived: ten clauses, counted
- * in it, which found two projects and exported from one of them. It went 2530 -> 2543
- * when `the-address-names-a-rule-a-reader-can-open.test.ts` arrived: thirteen clauses,
- * counted in it, which founds a project, clones its committed tree and asks four
- * readings the same question. It went 2543 -> 2549 when
- * `the-address-a-proof-names-is-checked.test.ts` arrived: six clauses, counted in it,
- * which plants a proof as bytes and reads the line the real program prints about an
- * address it declined to contact. It went 2549 -> 2556 when
- * `the-sentence-reaches-every-door.test.ts` arrived: seven clauses, counted in it, which
- * reads the promise off every door that carries it and sweeps the tracked tree for the
- * clauses the sentence it replaced affirmed. It went 2556 -> 2578 over four files of one
- * delivery, which made a package's published example the example that runs: five clauses
- * in the chain's case and seven in the core's (each opens a chain in a sandbox, and the
- * core's reaches two barrels because writing lives on a subpath), and five each in the two
- * guards over the pages. Twenty-two, counted in the four files. It went 2578 -> 2587 when
- * the example a package publishes became type-checked as well as compared: six clauses in
- * `the-example-is-type-checked.test.ts`, which extracts each page's block into a sandbox
- * and compiles it against the built declarations, and three in
- * `tests/support/published-examples.ts`, the roster both guards over the pages now read so
- * there is one list and not two. Nine, counted in the two files — the comparison guard's
- * own count did not move, because the import it lost to that module it gained back. It went
- * 2587 -> 2594 when the attribution footer got a machine: seven clauses in
- * `the-link-cannot-come-back.test.ts`, which builds a repository under a temp directory of
- * its own and commits into it, so it reaches `node:child_process` and `node:fs` as well as
- * the scanner under `.github/` that the row in {@link LED_NOWHERE} is about. It went
- * 2638 -> 2643 when the published recipe had to say what it overwrites: five clauses in
- * `the-recipe-says-what-it-overwrites.test.ts`, which builds the program to capture the
- * help pages as the binary writes them and composes the document beside them, so the two
- * places that teach `mnema brief >` are ruled on by one reading. It went 2643 -> 2658
- * when the broken link had to reach every reader: the two halves of that proof —
- * `the-broken-link-reaches-every-reader.test.ts` over the source and
- * `the-agent-is-told-the-record-does-not-chain.test.ts` over a real MCP client — read
- * the tree, spawn a transport pair and plant a break in a tail by hand. It went
- * 2658 -> 2669 when the same fact had to reach a WRITE: eleven clauses in
- * `the-write-says-what-it-landed-on.test.ts`, which stands up a real client over a
- * transport pair, plants a break by hand and calls every tool that records or moves —
- * so it reaches `node:fs`, `node:os`, `node:path`, `node:url`, the SDK's client and
- * in-memory transport, and the chain's own `verify` to prove the break is really there.
- * It went 2669 -> 2670 when the recipe gained a third publisher: the block `mnema init`
- * prints is owned by `wiring/init.ts`, so the guard that holds every publisher to one
- * clause imports it from there rather than transcribing it.
- *
- * It went 2670 -> 2684 when three guards arrived together: `tree-sources.test.ts`, which
- * stands up a real tree in a sandbox to watch a cache refuse after it is closed;
- * `the-record-is-opened-and-closed-together.test.ts`, which sweeps the package for the
- * open; and `a-sticky-pattern-answers-differently-each-call.test.ts`, which sweeps every
- * package — tests included — for a pattern carrying `g` asked a yes-or-no question.
- *
- * It went 2684 -> 2689 when `the-shell-a-page-publishes-is-the-shell-that-runs.test.ts`
- * arrived: five clauses, of which two are the ones that make it a guard rather than a
- * reading of text — `commander`, for the declarations a flag is looked up in, and
- * `../src/cli.js`, for the program those declarations hang on.
- *
- * It went 2689 -> 2703 when the corner of the console stopped claiming a level about a
- * record it had not read: fourteen clauses in
- * `the-corner-says-what-its-level-covers.test.ts`, which stands a real session up in a
- * pseudo-terminal, plants a break in a tail from another process while the page is up, and
- * asks the watch on the proof directly as well — so it reaches `node:child_process`,
- * `node:fs`, `node:os`, `node:path`, the pty and screen harnesses, and the two product
- * modules that compose and decide the row (`repl/session.ts`, `repl/proving.ts`).
- *
- * It went 2703 -> 2704 when `mnema status` began naming conventional decision bases the
- * record has never read: ONE clause, in `outside-the-record.test.ts`, which already
- * reached every module that reading needs and now also asks `adrFileNames` directly — to
- * hold the arrival count against the same function the drift count is made of.
- *
- * It went 2704 -> 2713 when this package published a CONVERTER and grew the guard that
- * runs it: nine clauses in `the-converter-a-page-publishes-runs.test.ts`, which lifts the
- * script out of `packages/code/README.md`, runs it under `node` in a sandbox and feeds
- * what it wrote to the import — so it reaches `node:child_process`, `node:fs`, `node:os`,
- * `node:path`, the published-examples harness and the two commands it drives
- * (`commands/decision-import.ts`, `commands/init.ts`).
- *
- * It went 2713 -> 2720 when the entry began to be invoked the way it is INSTALLED: seven
- * clauses in `the-binary-a-page-promises-is-the-one-that-speaks.test.ts`, which runs the
- * built binary through a symlink and from a directory whose name carries a space and an
- * accent — the two spellings under which it printed nothing at all — so it reaches
- * `node:child_process`, `node:fs`, `node:os`, `node:path`, `node:url` and the entry's own
- * `version.ts`, which is the one line it asserts on.
- *
- * It went 2720 -> 2728 when the root page's verifier stopped being prose: eight clauses in
- * `the-verifier-a-page-publishes-runs.test.ts`, which lifts the published `python3` line
- * out of `README.md`, founds the record that page teaches and runs the line against it — so
- * it reaches `node:child_process`, `node:fs`, `node:os`, `node:path`, the published-examples
- * harness and the two commands that make the record (`commands/decision.ts`,
- * `commands/init.ts`).
- *
- * It went 2728 -> 2733 when the guard over what a published file may cite arrived: five
- * clauses in `what-ships-cites-only-what-ships.test.ts`, which asks git for every tracked
- * file under a package's `src` or under `plugin/` and reads each one — so it reaches
- * `node:child_process`, `node:fs`, `node:path` and `node:url`, and `vitest` for the fifth.
- * It imports no production module at all, deliberately: its subject is the TEXT of the
- * workspace's files rather than anything they export.
- *
- * It went 2733 -> 2749 when the four packages became publishable: sixteen clauses across two
- * guards, both of which read the workspace from outside rather than importing much of it.
- * `the-version-is-one-number.test.ts` reconciles every tracked manifest, the plugin's
- * included, with the constant the program answers `--version` with — `node:child_process`,
- * `node:fs`, `node:path`, `node:url`, and `version.ts`, the one production module it asserts
- * on. `what-a-package-publishes-is-what-its-page-promises.test.ts` packs all four packages
- * with `pnpm`, reads each tarball with `tar`, then extracts the chain's and runs the Python
- * verifier out of it — the same four built-ins plus `node:os` for its sandbox, and no
- * production module at all: its subject is the tarball, not anything this workspace exports.
- *
- * It went 2749 -> 2785 when the server began announcing what its tools are for and a session
- * began being handed the notes recorded for its project: thirty-six clauses, most of them in
- * the four test files that witness the four new modules (`mcp/instructions.ts` and the three
- * halves of `mnema recall`) — the one that drives the built binary over stdio imports the
- * SDK's client and both transports — and the rest in the guards that learned a second
- * `SessionStart` handler and a second verb that frames its output (`codeOnly` for the scan
- * that keeps the plugin's spawn in one module, `recallDocument` for the framing check).
- *
- * It went 2785 -> 2790 when the guard over the labels a file may lean on arrived: five
- * clauses in `a-label-a-stranger-can-look-up.test.ts`, which asks git for every tracked file,
- * tests included, and reads each one — `node:child_process`, `node:fs`, `node:path`,
- * `node:url`, and `vitest` for the fifth. Like its sibling it imports no production module:
- * its subject is the text of the workspace's files.
- *
- * It went 2790 -> 2804 when a client that names no workspace began to be served the project
- * it works in: fourteen clauses in `a-client-that-names-no-workspace.test.ts`, which drives
- * the server through the SDK's own client and the built binary over its own pipes — so it
- * reaches `node:child_process`, `node:fs`, `node:os`, `node:path`, `node:url`, the chain and
- * the core, the SDK's client, in-memory transport and types, `vitest`, the server module,
- * and the two support modules that collect a stream and poll what it collected.
- *
- * It went 2804 -> 2826 when the home directory stopped being taken for a project: fourteen
- * clauses in `the-home-is-not-a-project.test.ts`, which runs the built binary in a sandbox
- * home and drives the server through the SDK's client — `node:child_process`,
- * `node:crypto`, `node:fs`, `node:os`, `node:path`, `node:url`, the chain, the core and
- * its write door, the SDK's client, in-memory transport and types, `vitest` and the server
- * module — and eight in `not-a-project.test.ts`, the witness of the module that words it:
- * `node:fs`, `node:os`, `node:path`, the chain, the core and its write door, `vitest`, and
- * the module itself. Then 2826 -> 2830, in the same delivery, when a mutation of `standing()`
- * lit nothing and `asked.test.ts` began asking the question from inside a sandbox home:
- * `node:os` and `node:path` for the sandbox, and the two verb names it expects back.
- * Then 2830 -> 2837 when every test process was given a home of its own: seven clauses in
- * `a-home-of-its-own.test.ts`, the case that proves the guard — `node:child_process`,
- * `node:fs`, `node:path`, `node:url`, `node:util`, `vitest`, and the setup module itself.
- * Then 2837 -> 2849 when the key root stopped following `$XDG_DATA_HOME`: eight clauses in
- * `the-key-lives-in-one-place.test.ts`, which drives the built binary and the server it
- * spawns — `node:child_process`, `node:fs`, `node:os`, `node:path`, `node:url`, the SDK's
- * client and its stdio transport, and `vitest` — and four in `env.test.ts`, the first test of
- * `discoveryEnv` itself: `node:os`, `node:path`, `vitest`, and the module. And 2849 -> 2850 in
- * the same delivery, when the guard's count of hand-read homes learned to read code and not
- * prose: `support/reading-source.js` in `a-home-of-its-own.test.ts`. Then 2850 -> 2883 when a
- * write that founds an identity beside others began to say so: twelve clauses in
- * `founded-beside.test.ts`, which drives the core's own writers over one tree, eight in
- * `a-new-identity.test.ts`, the witness of the module that words it, and thirteen in
- * `a-write-says-what-it-founded.test.ts`, which runs the built binary, the server through the
- * SDK's client, and the hook's tool. And 2883 -> 2891 when the key root began to ignore itself
- * in git: eight in `keystore.test.ts`, which asks `git check-ignore` about what the key writers
- * produce — `node:child_process`, `node:fs`, `node:os`, `node:path`, `vitest`, and the three
- * modules of the key root it drives. And 2891 -> 2919 when an answer that writes nothing
- * stopped opening a writer, and the account the agent reads began to carry the founding mark:
- * twelve clauses in `a-refusal-leaves-nothing.test.ts`, which digests the tree around the built
- * binary and a server reached through the SDK's client, twelve in
- * `the-refusal-names-the-way-out.test.ts`, which follows the refusal's own command through git
- * clones and asks the agent for the same words, three in the copilot's `accountability.test.ts`
- * for the second key its foundings need, and one in `founded-beside.test.ts` for the cache.
- * And 2919 -> 2921 when the way out began to be run as it is written: the reading of a shell
- * line moved into `support/reading-a-shell-line.ts`, and its two readers import it — the guard
- * it came out of, and the case that copies the refusal's command and hands the binary the words
- * a shell would. And 2921 -> 2931 when every command the product hands over began to be parsed
- * whole: nine clauses in `the-command-handed-over-runs-as-handed.test.ts`, which asks git for
- * the pages and the sources that speak and reads them — `node:child_process`, `node:fs`,
- * `node:path`, `commander` for the mirror it parses with, `vitest`, `../src/cli.js` for the
- * program the mirror is made from, and the three support modules — and two in the shell reading
- * itself, which took the page sweep over with its `git ls-files` and its workspace root; the
- * guard that used to hold that sweep lost its `node:child_process`. And 2931 -> 2947 when a
- * subcommand's own flag began to be read where it was written: seven clauses in
- * `the-flags-reach-the-import.test.ts`, which digests the tree around the built binary and reads
- * the feed back — `node:child_process`, `node:crypto`, `node:fs`, `node:os`, `node:path`,
- * `node:url` and `vitest` — and nine in `a-flag-declared-twice.test.ts`, which drives the real
- * program with the import's action swapped — `node:fs`, `node:os`, `node:path`, `commander`,
- * `vitest`, `../src/cli.js`, `../src/wiring/misuse.js`, the module it witnesses, and
- * `support/reading-source.js`. And 2947 -> 2979 when verification stopped walking a tail once
- * per checkpoint: five clauses in `range.test.ts`, which holds the new route to a range to the
- * filter it replaced — `vitest`, the event builders, `./entry.js`, `./keys.js` and the module
- * it witnesses; eight in `the-verdict-over-a-broken-tail.test.ts`, which edits the lines of a
- * record the product's writer wrote — `node:fs`, `node:os`, `node:path`, `vitest`, the event
- * builders, `./chain.js`, `./layout.js` and `./store.js`; ten in
- * `verify-costs-what-the-record-holds.test.ts`, which counts what a verification reads —
- * `node:fs`, `node:os`, `node:path`, `vitest`, the event builders, `./chain.js`, `./keys.js`,
- * `./keystore.js`, `./layout.js` and the writer's type; and nine in
- * `witness-stamp-judges-each-tree-once.test.ts` — `node:fs`, `node:os`, `node:path`,
- * `@mnema/chain`, `@mnema/core`, `vitest`, `./init.js`, `./memory.js` and the module it
- * witnesses.
- * The next two were written from the same 2947, on a branch merged after that one. And
- * 2947 -> 2962 when a tail began to be born at its first append and the installation id to be
- * minted exclusively: ten clauses in `installation-id.test.ts`, which plants the two states the
- * race leaves — `node:crypto`, `node:events`, `node:fs`, `node:os`, `node:path`,
- * `node:worker_threads`, `vitest`, `./keys.js`, `./keystore.js` and `./layout.js` — two in
- * `sleep.test.ts` for the wait they share with the tail lock, two in `waiver.test.ts` for the
- * empty tail an older writer left, now planted rather than opened (`./keystore.js`,
- * `./tailproof.js`), and one in `the-broken-link-reaches-every-reader.test.ts`, which reads the
- * refusals as code (`support/reading-source.js`). And 2962 -> 2974 when a key's anchor began to
- * be recorded only after its founding: twelve clauses in
- * `the-anchor-follows-the-founding.test.ts`, which plants each way a first write can fail between
- * the two — `node:crypto`, `node:fs`, `node:module`, `node:os`, `node:path`, the chain, `vitest`,
- * `../knowledge/operations.js`, `../projections/order.js`, `./clock.js`,
- * `./identity-operations.js` and `./operations.js`. The two branches met at 3006, read off this
- * guard: 2979 and those twenty-seven, since no clause came in on both sides.
- * The next two were written from the same 2947, on a third branch merged after those two. And
- * 2947 -> 2972 when every flag of a group began to be read by the subcommand it reaches or
- * refused there: nine clauses in `every-group-flag-is-read-or-refused.test.ts`, which runs every
- * pair in process — `node:fs`, `node:os`, `node:path`, `commander`, `vitest`, `../src/cli.js`,
- * the completion tree, `../src/wiring/misuse.js`, and the support table of what each subcommand
- * reads — seven each in `the-witness-acts-cover-the-tree-asked-for.test.ts` and
- * `a-refused-group-flag-leaves-the-record.test.ts`, which digest the tree around the built binary
- * — `node:child_process`, `node:crypto`, `node:fs`, `node:os`, `node:path`, `node:url` and
- * `vitest` — one in `every-verb-says-if-it-writes.test.ts` for the module that says which group
- * flags a subcommand takes, and one in `the-shell-knows-the-verbs.test.ts` for the support table.
- * Then 2972 -> 2978 in the same delivery: five clauses in `from-the-group.test.ts`, the witness
- * of that module over programs of its own — `commander`, `vitest`, the plain renderer, the module
- * itself, and `report.js` for the reporter's type — and one in `completion/lookups.test.ts`,
- * which declares a flag a subcommand takes to see the menu follow it. The three branches met at
- * 3037, read off this guard: 3006 and those thirty-one, since no clause came in on more than one
- * of them.
- * The next one was written from the same 2947, on a fourth branch merged after those three. And
- * 2947 -> 2957 when a read asked again was pinned to draw what changed: ten clauses in
- * `a-read-asked-again-draws-what-changed.test.ts`, which drives the built binary on a
- * pseudo-terminal and replays its pages — `node:fs`, `node:os`, `node:path`, `node:url`,
- * `vitest`, `../src/cli.js`, `../src/repl/floor.js`, `../src/wiring/repl.js`, `support/pty.js`
- * and `support/screen.js`. The four branches met at 3047, read off this guard: 3037 and those
- * ten, since no clause came in on more than one of them.
- * The next one was written from 3037, where the first three met, on a fifth branch merged after
- * the fourth. Then 3037 -> 3084 where a checkout its key left is refused: thirteen clauses in
- * `the-checkout-a-key-left.test.ts` and fourteen in
- * `mcp-write-reads-the-roster-it-holds.test.ts`, which drive the built binary and the MCP server
- * over git clones and a session's caches, nineteen in the core's
- * `a-stale-anchor-writes-nothing.test.ts` — one module per write the surface exports, and what
- * they need — and one in `gated-transition.test.ts`, for the founding its stand-in writer rests
- * on now. The five branches met at 3094, read off this guard: 3047 and those forty-seven, since
- * no clause came in on more than one of them.
- * The next one was written from 3047, where the first four met, on a sixth branch merged after
- * the fifth. 3047 -> 3074 when the tools' hints were held to their calls, the census learnt to
- * say a backup, and the pages' links and first record were held: twelve clauses in
- * `the-census-says-what-a-backup-is.test.ts` (`chain`), eight in
- * `the-first-record-a-page-shows-is-the-one-printed.test.ts`, six in
- * `every-link-a-page-carries-lands.test.ts`, and `node:net` in
- * `every-tool-says-if-it-writes.test.ts`, read off this guard. The six branches met at 3121, read
- * off this guard: 3094 and those twenty-seven, since no clause came in on more than one of them.
- * The next one was written from 3094, where the first five met, on a seventh branch merged after
- * the sixth. Then 3094 -> 3100 when a read asked again was made to be seen: six clauses in
- * `a-read-asked-again-draws-what-changed.test.ts`, which now waits for the row that says an
- * answer left the page as it was and reads its words off the product — `../src/repl/session.js`
- * for the line and `../src/presentation/plain.js` to render it as the page shows it — types the
- * word that clears the page as the session spells it (`../src/session-words.js`), and opens one
- * console in process, so an answer can be over before the next key is pressed:
- * `../src/repl/console.js`, `../src/presentation/detail.js` for the row under its list, and
- * `support/console.js` for the terminal it is opened on. The seven branches met at 3127, read off
- * this guard: 3121 and those six, since no clause came in on more than one of them.
- * The next one was written from 3121, where the first six met, on an eighth branch merged after
- * the seventh. Then 3121 -> 3132 where `init` says that a write is refused in a checkout its key
- * left: eleven clauses in `the-init-says-a-write-is-refused.test.ts`, which drives the built
- * binary over git clones and reads this surface's source for who asks the write's question —
- * `node:child_process`, `node:crypto`, `node:fs`, `node:os`, `node:path`, `node:url`,
- * `@mnema/chain`, `@mnema/core`, `vitest`, and the two support modules that read a shell line and
- * a source file. The eight branches met at 3138, read off this guard: 3127 and those eleven,
- * since no clause came in on more than one of them.
- * Then 3138 -> 3153 where every git a test writes a repository with runs with automatic
- * maintenance off: nine clauses in `every-git-that-writes-runs-without-maintenance.test.ts`, which
- * walks the workspace for the calls that start git and pushes into a bare remote behind the file
- * they are handed — `node:child_process`, `node:crypto`, `node:fs`, `node:os`, `node:path`,
- * `node:url`, `vitest`, and the support modules that name that file and read a source file; one
- * in `support/git-without-maintenance.ts`, `node:url`, for the file's path; and one in each of the
- * five files whose git now reads it. Read off this guard.
- * The next one was written from 3138, where the eight met. Then 3138 -> 3159 where the front
- * page's recordings and figures are held to what they came from: thirteen clauses in
- * `the-recordings-are-what-the-binary-draws.test.ts`, which runs the command line's script against
- * the built binary and drives the console over a pseudo-terminal — `node:child_process`,
- * `node:fs`, `node:os`, `node:path`, `node:url`, `vitest`, `../src/repl/floor.js` for the size the
- * page names, and the support modules for a page held to a run, a console, the pages, the
- * pseudo-terminal, a shell line and the screen; seven in
- * `the-front-page-says-what-its-sources-say.test.ts` — `@mnema/core` and `@mnema/copilot` for the
- * decision's states, `node:child_process` and `node:path` to ask the second reader how many gaps it
- * lists, `vitest`, and the support modules for the pages and a shell line; and one in
- * `the-first-record-a-page-shows-is-the-one-printed.test.ts`, which asks
- * `support/a-page-held-to-a-run.ts` what the machine mints and what a cut may leave out, where it
- * spelled both itself. The ten branches met at 3174, read off this guard: 3153 and those
- * twenty-one, since no clause came in on more than one of them.
- * Then 3174 -> 3189 where the rules for a file are said to land beside the result of the write
- * that fired them: fifteen clauses in `the-rules-land-beside-the-write.test.ts`, which reads the
- * document, the switch listing and the tools where the product composes them, and the manifest
- * and the pages as files — `node:fs`, `node:os`, `node:path`, `node:url`, `@mnema/chain`,
- * `@mnema/copilot`, `@mnema/core`, the three modules of the MCP SDK a client connects through,
- * `vitest`, and `../src/mcp/instructions.js`, `../src/mcp/server.js`,
- * `../src/presentation/brief.js` and `../src/record-framing.js` for the texts. Read off this guard.
- * Then 3189 -> 3194 when the second reader's Python floor was held to one number: five clauses
- * in `the-python-floor-is-declared-once.test.ts`, which asks git for every file that states a
- * floor, every workflow that sets up a Python and every test that starts one, and asks the
- * `python3` the cases call for its version — `node:child_process`, `node:fs`, `node:path`,
- * `node:url` and `vitest`. It imports no production module: its subject is the text of the
- * workspace's files and the interpreter on `PATH`. Read off this guard.
- */
-const CLAUSES_IN_THE_TREE = 3194;
-
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
 /** How a file with no witness is reached today — the two shapes of the same debt. */
@@ -946,6 +624,795 @@ function groupOf(path: string): string {
   return 'scattered';
 }
 
+// ---------------------------------------------------------------------------
+// The two censuses: a line per file, so that two branches edit two lines
+// ---------------------------------------------------------------------------
+
+/**
+ * WHY A LINE PER FILE, AND NOT ONE NUMBER. The size of the test tree's import graph was one
+ * number, `CLAUSES_IN_THE_TREE`, with a paragraph above it for every step it took, and
+ * production was pinned by two more, the length of the walk and how many of its files are
+ * witnessed. A branch that added a test rewrote the first; one that added a product file
+ * rewrote the other two. So any two branches open at once collided on the same lines, whatever
+ * files they touched, and every one of them was merged by resolving those lines here by hand.
+ *
+ * A line per file keeps what the numbers were for and moves the collision to where the change
+ * is: two branches that change different files edit different lines. What made the numbers
+ * worth writing stays — a change to one file's imports, a new file and a removed one are each
+ * an edit someone makes on purpose, and the red names the file and the value it read. What
+ * each step used to explain in prose lives in the commit that made it, beside its diff.
+ *
+ * The one collision left is between two lines next to each other, which git cannot tell apart
+ * from one change: two branches that add or change neighbouring files in sorted order.
+ */
+
+/** What a census tolerates and what it does not, in every direction. */
+interface Census {
+  /** A file the walk read that has no line: new, renamed, or never written down. */
+  readonly unlisted: readonly string[];
+  /** A line whose file the walk did not read: removed, renamed, or mistyped. */
+  readonly gone: readonly string[];
+  /** A line that says another count than the one read. */
+  readonly miscounted: readonly string[];
+}
+
+/** One census against what was read, each accusation naming the file and what was read. */
+export function reconcileCensus(
+  read: ReadonlyMap<string, number>,
+  declared: Readonly<Record<string, number>>,
+): Census {
+  const lines = new Map(Object.entries(declared));
+  return {
+    unlisted: [...read]
+      .filter(([file]) => !lines.has(file))
+      .map(([file, count]) => `${file} (read ${count})`)
+      .sort(),
+    gone: [...lines.keys()].filter((file) => !read.has(file)).sort(),
+    miscounted: [...read]
+      .filter(([file, count]) => lines.has(file) && lines.get(file) !== count)
+      .map(([file, count]) => `${file} (read ${count}, the line says ${lines.get(file)})`)
+      .sort(),
+  };
+}
+
+/** A walk as a census of its own, for a list whose lines carry no count. */
+const eachOnce = (files: readonly string[]): Map<string, number> =>
+  new Map(files.map((file) => [file, 1]));
+
+/** The same, for the list it is held to. */
+const census = (files: readonly string[]): Record<string, number> =>
+  Object.fromEntries(eachOnce(files));
+
+/** The lines out of order, by the same comparison that sorts both walks. */
+function outOfOrder(lines: readonly string[]): string[] {
+  return lines.filter((line, at) => at > 0 && (lines[at - 1] as string) >= line);
+}
+
+/**
+ * THE IMPORT CLAUSES OF EACH FILE OF THE TEST TREE, sorted by path, the files with none
+ * included — so a new file with no line is red whatever it imports.
+ *
+ * HOW MANY, NOT AT LEAST HOW MANY. The case that reads this once said
+ * `toBeGreaterThan(2000)`, and the clause grammar is one character away from losing real
+ * imports in silence: dropping `_` from its word class `[\w$*,{}\s]` lost 211 and left 2145,
+ * which cleared that floor and reddened nothing else in this file. An exact count per file
+ * sees that the moment a clause the grammar used to match stops matching.
+ *
+ * WHEN A FILE'S IMPORTS CHANGE, its line changes with them, and the number is counted in that
+ * file rather than copied from the failure: a count restated from whatever the run reported is
+ * a count that pins nothing.
+ */
+const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
+  'packages/chain/src/boundaries.test.ts': 3,
+  'packages/chain/src/chain/backup.test.ts': 8,
+  'packages/chain/src/chain/bitcoin.test.ts': 3,
+  'packages/chain/src/chain/chain.test.ts': 18,
+  'packages/chain/src/chain/enrollment.test.ts': 13,
+  'packages/chain/src/chain/format-on-disk.test.ts': 8,
+  'packages/chain/src/chain/freshness.test.ts': 6,
+  'packages/chain/src/chain/hash.test.ts': 4,
+  'packages/chain/src/chain/installation-id.test.ts': 10,
+  'packages/chain/src/chain/invariants.test.ts': 8,
+  'packages/chain/src/chain/keyroot.test.ts': 11,
+  'packages/chain/src/chain/keys.test.ts': 3,
+  'packages/chain/src/chain/keystore.test.ts': 8,
+  'packages/chain/src/chain/level.test.ts': 2,
+  'packages/chain/src/chain/lines.test.ts': 5,
+  'packages/chain/src/chain/ots.test.ts': 3,
+  'packages/chain/src/chain/range.test.ts': 5,
+  'packages/chain/src/chain/second-reader-agrees-on-enrolment.test.ts': 16,
+  'packages/chain/src/chain/second-reader-agrees-on-the-bytes.test.ts': 3,
+  'packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts': 8,
+  'packages/chain/src/chain/second-reader-is-independent.test.ts': 5,
+  'packages/chain/src/chain/second-reader-says-what-it-does-not-check.test.ts': 6,
+  'packages/chain/src/chain/sleep.test.ts': 2,
+  'packages/chain/src/chain/tail-lock.test.ts': 11,
+  'packages/chain/src/chain/tailproof.test.ts': 3,
+  'packages/chain/src/chain/the-census-says-what-a-backup-is.test.ts': 12,
+  'packages/chain/src/chain/the-verdict-over-a-broken-tail.test.ts': 8,
+  'packages/chain/src/chain/tree.test.ts': 7,
+  'packages/chain/src/chain/upcast-vs-proof.test.ts': 13,
+  'packages/chain/src/chain/verify-costs-what-the-record-holds.test.ts': 10,
+  'packages/chain/src/chain/waiver.test.ts': 13,
+  'packages/chain/src/chain/witness-request.test.ts': 5,
+  'packages/chain/src/chain/witness.test.ts': 12,
+  'packages/chain/src/chain/witnessed-record.test.ts': 10,
+  'packages/chain/src/chain/witnessed-then-written.test.ts': 9,
+  'packages/chain/src/chain/writer.test.ts': 14,
+  'packages/chain/src/events/build.test.ts': 5,
+  'packages/chain/src/events/canonical-vectors.test.ts': 9,
+  'packages/chain/src/events/canonical.test.ts': 2,
+  'packages/chain/src/events/event-schema.test.ts': 7,
+  'packages/chain/src/events/parse.test.ts': 6,
+  'packages/chain/src/events/proof.test.ts': 3,
+  'packages/chain/src/events/registry.test.ts': 5,
+  'packages/chain/src/events/task-state.test.ts': 3,
+  'packages/chain/src/events/upcaster.test.ts': 2,
+  'packages/chain/src/format-doc.test.ts': 9,
+  'packages/chain/src/one-line.test.ts': 3,
+  'packages/chain/src/readme-example.test.ts': 5,
+  'packages/code/src/a-new-identity.test.ts': 8,
+  'packages/code/src/agent-skill.test.ts': 2,
+  'packages/code/src/anchors.test.ts': 3,
+  'packages/code/src/choice/asked.test.ts': 16,
+  'packages/code/src/choice/doors.test.ts': 8,
+  'packages/code/src/chosen-once.test.ts': 11,
+  'packages/code/src/cli.golden.test.ts': 9,
+  'packages/code/src/cli.test.ts': 3,
+  'packages/code/src/commands/accountability.test.ts': 9,
+  'packages/code/src/commands/antipatterns.test.ts': 13,
+  'packages/code/src/commands/brief.test.ts': 15,
+  'packages/code/src/commands/decision-import.test.ts': 8,
+  'packages/code/src/commands/decision-transition.test.ts': 10,
+  'packages/code/src/commands/decision.test.ts': 8,
+  'packages/code/src/commands/exposure.test.ts': 13,
+  'packages/code/src/commands/focus.test.ts': 9,
+  'packages/code/src/commands/guard.test.ts': 10,
+  'packages/code/src/commands/handoff.test.ts': 8,
+  'packages/code/src/commands/init.test.ts': 8,
+  'packages/code/src/commands/key-restore.test.ts': 9,
+  'packages/code/src/commands/key-roster.test.ts': 10,
+  'packages/code/src/commands/link.test.ts': 8,
+  'packages/code/src/commands/memory.test.ts': 8,
+  'packages/code/src/commands/next-actions.test.ts': 9,
+  'packages/code/src/commands/observe.test.ts': 8,
+  'packages/code/src/commands/recall.test.ts': 13,
+  'packages/code/src/commands/references.test.ts': 14,
+  'packages/code/src/commands/resume.test.ts': 9,
+  'packages/code/src/commands/run-end.test.ts': 9,
+  'packages/code/src/commands/run-start.test.ts': 8,
+  'packages/code/src/commands/search.test.ts': 15,
+  'packages/code/src/commands/skill-export.test.ts': 10,
+  'packages/code/src/commands/skill-transition.test.ts': 10,
+  'packages/code/src/commands/skill.test.ts': 8,
+  'packages/code/src/commands/tail-list.test.ts': 11,
+  'packages/code/src/commands/tail-prune.test.ts': 9,
+  'packages/code/src/commands/task-transition.test.ts': 10,
+  'packages/code/src/commands/task.test.ts': 8,
+  'packages/code/src/commands/timeline.test.ts': 12,
+  'packages/code/src/commands/usage.test.ts': 10,
+  'packages/code/src/commands/verify.test.ts': 8,
+  'packages/code/src/commands/witness-stamp-judges-each-tree-once.test.ts': 9,
+  'packages/code/src/commands/witness.test.ts': 11,
+  'packages/code/src/completion/lookups.test.ts': 8,
+  'packages/code/src/env.test.ts': 4,
+  'packages/code/src/every-refusal-is-red.test.ts': 7,
+  'packages/code/src/mcp/lifecycle.test.ts': 2,
+  'packages/code/src/not-a-project.test.ts': 8,
+  'packages/code/src/one-voice-for-a-no.test.ts': 11,
+  'packages/code/src/outside-the-record.test.ts': 10,
+  'packages/code/src/pinned-run.test.ts': 9,
+  'packages/code/src/presentation/brief.test.ts': 3,
+  'packages/code/src/presentation/folded.test.ts': 15,
+  'packages/code/src/presentation/forms.test.ts': 6,
+  'packages/code/src/presentation/one-line-per-item.test.ts': 10,
+  'packages/code/src/presentation/parts.test.ts': 11,
+  'packages/code/src/presentation/recall.test.ts': 5,
+  'packages/code/src/presentation/references.test.ts': 4,
+  'packages/code/src/presentation/styled.test.ts': 13,
+  'packages/code/src/presentation/width.test.ts': 9,
+  'packages/code/src/repl/asking.test.ts': 4,
+  'packages/code/src/repl/editing.test.ts': 5,
+  'packages/code/src/repl/leaving.test.ts': 2,
+  'packages/code/src/repl/seen.test.ts': 2,
+  'packages/code/src/repl/session.test.ts': 9,
+  'packages/code/src/served-patterns.test.ts': 4,
+  'packages/code/src/tree-sources.test.ts': 7,
+  'packages/code/src/wiring/from-the-group.test.ts': 5,
+  'packages/code/tests/a-client-that-names-no-workspace.test.ts': 14,
+  'packages/code/tests/a-flag-declared-twice.test.ts': 9,
+  'packages/code/tests/a-floor-under-the-window.test.ts': 16,
+  'packages/code/tests/a-home-of-its-own.test.ts': 8,
+  'packages/code/tests/a-label-a-stranger-can-look-up.test.ts': 5,
+  'packages/code/tests/a-line-of-success-is-one-line.test.ts': 7,
+  'packages/code/tests/a-palette-for-the-words.test.ts': 24,
+  'packages/code/tests/a-read-asked-again-draws-what-changed.test.ts': 16,
+  'packages/code/tests/a-refusal-is-one-line.test.ts': 7,
+  'packages/code/tests/a-refusal-leaves-nothing.test.ts': 12,
+  'packages/code/tests/a-refused-group-flag-leaves-the-record.test.ts': 7,
+  'packages/code/tests/a-state-is-a-position.test.ts': 8,
+  'packages/code/tests/a-sticky-pattern-answers-differently-each-call.test.ts': 3,
+  'packages/code/tests/a-terminal-of-its-own.test.ts': 19,
+  'packages/code/tests/a-write-says-what-it-founded.test.ts': 14,
+  'packages/code/tests/both-surfaces-one-vocabulary.test.ts': 18,
+  'packages/code/tests/cli-e2e.test.ts': 14,
+  'packages/code/tests/every-description-reaches-the-model.test.ts': 12,
+  'packages/code/tests/every-file-has-a-test-that-names-it.test.ts': 6,
+  'packages/code/tests/every-git-that-writes-runs-without-maintenance.test.ts': 9,
+  'packages/code/tests/every-group-flag-is-read-or-refused.test.ts': 9,
+  'packages/code/tests/every-instant-is-its-own.test.ts': 4,
+  'packages/code/tests/every-link-a-page-carries-lands.test.ts': 6,
+  'packages/code/tests/every-option-feeds-something.test.ts': 8,
+  'packages/code/tests/every-page-of-the-cli-is-pinned.test.ts': 7,
+  'packages/code/tests/every-public-value-has-a-caller.test.ts': 6,
+  'packages/code/tests/every-readme-says-what-it-does-not.test.ts': 5,
+  'packages/code/tests/every-sandbox-is-removed-where-it-was-made.test.ts': 6,
+  'packages/code/tests/every-tool-says-if-it-writes.test.ts': 15,
+  'packages/code/tests/every-verb-says-if-it-writes.test.ts': 14,
+  'packages/code/tests/every-write-signs-what-it-wrote.test.ts': 29,
+  'packages/code/tests/mcp-audit-across-workspace.test.ts': 12,
+  'packages/code/tests/mcp-configured-project.test.ts': 11,
+  'packages/code/tests/mcp-context.test.ts': 8,
+  'packages/code/tests/mcp-deferred-run.test.ts': 11,
+  'packages/code/tests/mcp-e2e.test.ts': 16,
+  'packages/code/tests/mcp-find-and-count-across-workspace.test.ts': 15,
+  'packages/code/tests/mcp-flag-reaches-the-server.test.ts': 1,
+  'packages/code/tests/mcp-locate-cache.test.ts': 12,
+  'packages/code/tests/mcp-move-across-workspace.test.ts': 12,
+  'packages/code/tests/mcp-read-across-workspace.test.ts': 13,
+  'packages/code/tests/mcp-refusal-scope.test.ts': 10,
+  'packages/code/tests/mcp-session-cache.test.ts': 11,
+  'packages/code/tests/mcp-session-close.test.ts': 12,
+  'packages/code/tests/mcp-unreadable-refusal.test.ts': 9,
+  'packages/code/tests/mcp-write-reads-the-roster-it-holds.test.ts': 14,
+  'packages/code/tests/mcp-write-routing.test.ts': 13,
+  'packages/code/tests/no-classification-table-reaches-the-surface.test.ts': 5,
+  'packages/code/tests/no-task-is-published-before-it-is-used.test.ts': 5,
+  'packages/code/tests/one-authority-over-colour.test.ts': 18,
+  'packages/code/tests/one-rule-for-newest-first.test.ts': 4,
+  'packages/code/tests/one-source-for-a-vocabulary.test.ts': 18,
+  'packages/code/tests/one-walk-down-a-tail.test.ts': 3,
+  'packages/code/tests/one-width-per-frame.test.ts': 25,
+  'packages/code/tests/outside-a-project-the-surface-says-so.test.ts': 9,
+  'packages/code/tests/support/a-page-held-to-a-run.ts': 3,
+  'packages/code/tests/support/a-tail-from-another-machine.ts': 4,
+  'packages/code/tests/support/arriving.ts': 1,
+  'packages/code/tests/support/console.ts': 3,
+  'packages/code/tests/support/git-without-maintenance.ts': 1,
+  'packages/code/tests/support/pty.ts': 7,
+  'packages/code/tests/support/published-examples.ts': 3,
+  'packages/code/tests/support/reading-a-shell-line.ts': 2,
+  'packages/code/tests/support/reading-source.ts': 2,
+  'packages/code/tests/support/screen.ts': 2,
+  'packages/code/tests/support/the-line-a-path-takes.ts': 4,
+  'packages/code/tests/support/the-record-held.ts': 3,
+  'packages/code/tests/support/what-a-subcommand-reads.ts': 0,
+  'packages/code/tests/support/witnessing.ts': 0,
+  'packages/code/tests/the-address-a-proof-names-is-checked.test.ts': 6,
+  'packages/code/tests/the-address-names-a-rule-a-reader-can-open.test.ts': 13,
+  'packages/code/tests/the-address-says-what-it-covers.test.ts': 14,
+  'packages/code/tests/the-agent-is-told-the-record-does-not-chain.test.ts': 11,
+  'packages/code/tests/the-agent-is-told-what-it-has.test.ts': 15,
+  'packages/code/tests/the-bare-name-asks.test.ts': 15,
+  'packages/code/tests/the-binary-a-page-promises-is-the-one-that-speaks.test.ts': 7,
+  'packages/code/tests/the-bodies-fit-one-read.test.ts': 15,
+  'packages/code/tests/the-broken-link-reaches-every-reader.test.ts': 5,
+  'packages/code/tests/the-ceiling-belongs-to-the-case.test.ts': 5,
+  'packages/code/tests/the-channel-says-what-it-carries.test.ts': 8,
+  'packages/code/tests/the-checkout-a-key-left.test.ts': 14,
+  'packages/code/tests/the-citation-that-arrives-opens.test.ts': 11,
+  'packages/code/tests/the-command-handed-over-runs-as-handed.test.ts': 9,
+  'packages/code/tests/the-console-on-ink.test.ts': 22,
+  'packages/code/tests/the-converter-a-page-publishes-runs.test.ts': 9,
+  'packages/code/tests/the-corner-says-what-its-level-covers.test.ts': 14,
+  'packages/code/tests/the-cost-comes-from-the-host.test.ts': 6,
+  'packages/code/tests/the-document-is-a-function-of-the-record.test.ts': 6,
+  'packages/code/tests/the-echo-names-the-record.test.ts': 13,
+  'packages/code/tests/the-example-is-read-from-the-page.test.ts': 5,
+  'packages/code/tests/the-example-is-type-checked.test.ts': 6,
+  'packages/code/tests/the-feed-covers-this-project.test.ts': 10,
+  'packages/code/tests/the-feed-leaves-the-bodies-behind.test.ts': 7,
+  'packages/code/tests/the-first-record-a-page-shows-is-the-one-printed.test.ts': 8,
+  'packages/code/tests/the-flags-reach-the-import.test.ts': 7,
+  'packages/code/tests/the-floor-is-the-declaration.test.ts': 6,
+  'packages/code/tests/the-floor-is-where-the-name-is-drawn.test.ts': 24,
+  'packages/code/tests/the-front-page-says-what-its-sources-say.test.ts': 7,
+  'packages/code/tests/the-home-is-not-a-project.test.ts': 14,
+  'packages/code/tests/the-index-names-the-runs-that-exist.test.ts': 4,
+  'packages/code/tests/the-init-says-a-write-is-refused.test.ts': 12,
+  'packages/code/tests/the-input-has-its-own-place.test.ts': 22,
+  'packages/code/tests/the-key-lives-in-one-place.test.ts': 8,
+  'packages/code/tests/the-line-a-reading-words-is-one-line.test.ts': 7,
+  'packages/code/tests/the-link-cannot-come-back.test.ts': 8,
+  'packages/code/tests/the-moves-say-what-they-said.test.ts': 18,
+  'packages/code/tests/the-name-and-the-hints.test.ts': 17,
+  'packages/code/tests/the-name-in-full-blocks.test.ts': 10,
+  'packages/code/tests/the-opening-fits-the-height.test.ts': 17,
+  'packages/code/tests/the-opening-fits-the-screen.test.ts': 17,
+  'packages/code/tests/the-origin-travels-beside-the-label.test.ts': 17,
+  'packages/code/tests/the-page-shows-its-seams.test.ts': 19,
+  'packages/code/tests/the-panel.test.ts': 21,
+  'packages/code/tests/the-pattern-leaves-in-the-hosts-shape.test.ts': 6,
+  'packages/code/tests/the-phrase-the-domain-words-is-one-line.test.ts': 8,
+  'packages/code/tests/the-plugin-spawns-what-the-package-installs.test.ts': 6,
+  'packages/code/tests/the-port-writes-to-the-process.test.ts': 2,
+  'packages/code/tests/the-product-calls-no-model.test.ts': 5,
+  'packages/code/tests/the-prompt-is-painted-where-you-type.test.ts': 15,
+  'packages/code/tests/the-proof-answers-a-machine.test.ts': 7,
+  'packages/code/tests/the-prose-carries-its-own-emphasis.test.ts': 5,
+  'packages/code/tests/the-python-floor-is-declared-once.test.ts': 5,
+  'packages/code/tests/the-read-says-the-record-does-not-chain.test.ts': 6,
+  'packages/code/tests/the-recipe-says-what-it-overwrites.test.ts': 8,
+  'packages/code/tests/the-record-arrives-unasked.test.ts': 10,
+  'packages/code/tests/the-record-asks-for-a-person.test.ts': 14,
+  'packages/code/tests/the-record-is-opened-and-closed-together.test.ts': 4,
+  'packages/code/tests/the-record-may-have-moved.test.ts': 10,
+  'packages/code/tests/the-record-travels.test.ts': 14,
+  'packages/code/tests/the-record-you-can-see.test.ts': 14,
+  'packages/code/tests/the-recordings-are-what-the-binary-draws.test.ts': 13,
+  'packages/code/tests/the-red-says-why-it-went-red.test.ts': 7,
+  'packages/code/tests/the-refusal-names-the-way-out.test.ts': 14,
+  'packages/code/tests/the-refused-run-is-refused-everywhere.test.ts': 13,
+  'packages/code/tests/the-rule-has-an-address.test.ts': 10,
+  'packages/code/tests/the-rule-reaches-the-writing.test.ts': 14,
+  'packages/code/tests/the-ruler-runs-in-another-hand.test.ts': 4,
+  'packages/code/tests/the-rulers-are-read-by-the-rules.test.ts': 6,
+  'packages/code/tests/the-rules-land-beside-the-write.test.ts': 15,
+  'packages/code/tests/the-runtime-floor-is-declared-once.test.ts': 5,
+  'packages/code/tests/the-sampler-counts-or-refuses.test.ts': 6,
+  'packages/code/tests/the-screen-a-choice-is-drawn-on.test.ts': 6,
+  'packages/code/tests/the-screen-is-ours.test.ts': 15,
+  'packages/code/tests/the-screen-says-what-it-was-drawn-at.test.ts': 10,
+  'packages/code/tests/the-sentence-reaches-every-door.test.ts': 7,
+  'packages/code/tests/the-session-knows-who-you-are.test.ts': 15,
+  'packages/code/tests/the-session-learns-where-it-is.test.ts': 12,
+  'packages/code/tests/the-session-the-manual-shows-is-the-one-printed.test.ts': 8,
+  'packages/code/tests/the-shell-a-page-publishes-is-the-shell-that-runs.test.ts': 5,
+  'packages/code/tests/the-shell-knows-the-verbs.test.ts': 16,
+  'packages/code/tests/the-split-is-frozen-before-the-number.test.ts': 4,
+  'packages/code/tests/the-strict-gate-catches-the-forgery.test.ts': 7,
+  'packages/code/tests/the-switch-is-a-fact.test.ts': 12,
+  'packages/code/tests/the-vectors-hold-what-the-product-produces.test.ts': 6,
+  'packages/code/tests/the-verb-says-which-tails.test.ts': 9,
+  'packages/code/tests/the-verb-that-does-not-cut.test.ts': 7,
+  'packages/code/tests/the-verdict-covers-what-you-name.test.ts': 9,
+  'packages/code/tests/the-verdict-is-parts.test.ts': 13,
+  'packages/code/tests/the-verdict-says-what-it-covered.test.ts': 7,
+  'packages/code/tests/the-verdict-tells-the-truth.test.ts': 7,
+  'packages/code/tests/the-verifier-a-page-publishes-runs.test.ts': 8,
+  'packages/code/tests/the-version-is-one-number.test.ts': 6,
+  'packages/code/tests/the-wait-asks-the-page.test.ts': 2,
+  'packages/code/tests/the-walk-stops-at-its-ceiling.test.ts': 4,
+  'packages/code/tests/the-witness-acts-cover-the-tree-asked-for.test.ts': 7,
+  'packages/code/tests/the-witness-flags-reach-the-act.test.ts': 5,
+  'packages/code/tests/the-words-of-the-session.test.ts': 10,
+  'packages/code/tests/the-write-says-what-it-landed-on.test.ts': 11,
+  'packages/code/tests/what-a-package-publishes-is-what-its-page-promises.test.ts': 6,
+  'packages/code/tests/what-ships-cites-only-what-ships.test.ts': 5,
+  'packages/code/tests/what-the-agent-just-did.test.ts': 19,
+  'packages/code/tests/what-the-record-can-witness.test.ts': 10,
+  'packages/code/tests/what-the-suite-left-behind.test.ts': 7,
+  'packages/code/tests/where-things-stand.test.ts': 11,
+  'packages/copilot/src/boundaries.test.ts': 3,
+  'packages/copilot/src/context/bootstrap.test.ts': 6,
+  'packages/copilot/src/context/brief.test.ts': 7,
+  'packages/copilot/src/context/decisions.test.ts': 5,
+  'packages/copilot/src/context/disposition.test.ts': 5,
+  'packages/copilot/src/context/focus.test.ts': 4,
+  'packages/copilot/src/context/next-action.test.ts': 4,
+  'packages/copilot/src/context/search.test.ts': 5,
+  'packages/copilot/src/context/skills.test.ts': 6,
+  'packages/copilot/src/context/switches.test.ts': 6,
+  'packages/copilot/src/context/tasks.test.ts': 6,
+  'packages/copilot/src/context/unread.test.ts': 6,
+  'packages/copilot/src/guard/guard.test.ts': 4,
+  'packages/copilot/src/intelligence/accountability.test.ts': 9,
+  'packages/copilot/src/intelligence/antipatterns.test.ts': 5,
+  'packages/copilot/src/intelligence/audit-feed.test.ts': 4,
+  'packages/copilot/src/intelligence/consultation.test.ts': 5,
+  'packages/copilot/src/intelligence/exposure.test.ts': 3,
+  'packages/copilot/src/intelligence/governance.test.ts': 6,
+  'packages/copilot/src/intelligence/identities.test.ts': 5,
+  'packages/copilot/src/intelligence/pattern-moves.test.ts': 4,
+  'packages/copilot/src/intelligence/provenance.test.ts': 5,
+  'packages/copilot/src/intelligence/reach.test.ts': 2,
+  'packages/copilot/src/intelligence/references.test.ts': 6,
+  'packages/copilot/src/intelligence/timeline.test.ts': 7,
+  'packages/copilot/src/sources.test.ts': 12,
+  'packages/copilot/tests/readme-example.test.ts': 4,
+  'packages/copilot/tests/support/chain.ts': 7,
+  'packages/copilot/tests/the-bench-leaves-nothing-behind.test.ts': 5,
+  'packages/core/src/adr/read.test.ts': 3,
+  'packages/core/src/adr/scan.test.ts': 6,
+  'packages/core/src/content/every-door.test.ts': 14,
+  'packages/core/src/content/every-field.test.ts': 17,
+  'packages/core/src/content/screen.test.ts': 3,
+  'packages/core/src/content/secrets.test.ts': 2,
+  'packages/core/src/identity/alias.test.ts': 3,
+  'packages/core/src/identity/anchor.test.ts': 2,
+  'packages/core/src/identity/authority.test.ts': 3,
+  'packages/core/src/identity/founded-beside.test.ts': 13,
+  'packages/core/src/identity/handshake.test.ts': 6,
+  'packages/core/src/identity/id.test.ts': 3,
+  'packages/core/src/identity/restore.test.ts': 11,
+  'packages/core/src/identity/roster.test.ts': 13,
+  'packages/core/src/identity/who.test.ts': 2,
+  'packages/core/src/index.test.ts': 2,
+  'packages/core/src/knowledge/end-to-end.test.ts': 11,
+  'packages/core/src/knowledge/link-end-to-end.test.ts': 11,
+  'packages/core/src/knowledge/operations.test.ts': 11,
+  'packages/core/src/projections/advance.test.ts': 19,
+  'packages/core/src/projections/cache.test.ts': 7,
+  'packages/core/src/projections/decision.test.ts': 3,
+  'packages/core/src/projections/knowledge.test.ts': 4,
+  'packages/core/src/projections/newest-first.test.ts': 3,
+  'packages/core/src/projections/one-window-three-readings.test.ts': 8,
+  'packages/core/src/projections/order.test.ts': 6,
+  'packages/core/src/projections/proof.test.ts': 2,
+  'packages/core/src/projections/reference-store.test.ts': 6,
+  'packages/core/src/projections/run-store.test.ts': 7,
+  'packages/core/src/projections/run.test.ts': 3,
+  'packages/core/src/projections/search-store.test.ts': 9,
+  'packages/core/src/projections/skill-store.test.ts': 8,
+  'packages/core/src/projections/skill.test.ts': 3,
+  'packages/core/src/projections/task-store.test.ts': 9,
+  'packages/core/src/projections/task.test.ts': 3,
+  'packages/core/src/topology/compose.test.ts': 6,
+  'packages/core/src/topology/locate.test.ts': 8,
+  'packages/core/src/topology/resolve.test.ts': 5,
+  'packages/core/src/topology/routing.test.ts': 11,
+  'packages/core/src/workflow/a-stale-anchor-writes-nothing.test.ts': 19,
+  'packages/core/src/workflow/adoption.test.ts': 12,
+  'packages/core/src/workflow/decision-gate.test.ts': 5,
+  'packages/core/src/workflow/decision-operations.test.ts': 9,
+  'packages/core/src/workflow/decision-states.test.ts': 2,
+  'packages/core/src/workflow/decision-transitions.test.ts': 3,
+  'packages/core/src/workflow/disposition.test.ts': 4,
+  'packages/core/src/workflow/every-append.test.ts': 18,
+  'packages/core/src/workflow/gate.test.ts': 5,
+  'packages/core/src/workflow/identity-operations.test.ts': 9,
+  'packages/core/src/workflow/prune-operations.test.ts': 8,
+  'packages/core/src/workflow/session-operations.test.ts': 15,
+  'packages/core/src/workflow/skill-gate.test.ts': 5,
+  'packages/core/src/workflow/skill-operations.test.ts': 9,
+  'packages/core/src/workflow/skill-states.test.ts': 2,
+  'packages/core/src/workflow/skill-transitions.test.ts': 3,
+  'packages/core/src/workflow/states.test.ts': 2,
+  'packages/core/src/workflow/the-anchor-follows-the-founding.test.ts': 12,
+  'packages/core/src/workflow/transitions.test.ts': 3,
+  'packages/core/tests/integration/cross-entity.test.ts': 13,
+  'packages/core/tests/integration/enrollment-e2e.test.ts': 8,
+  'packages/core/tests/integration/gated-transition.test.ts': 9,
+  'packages/core/tests/readme-example.test.ts': 7,
+};
+
+/**
+ * THE PRODUCTION FILES, sorted by path. Not a second definition of production: the walk above
+ * is the only one, read off the coverage gate's globs, and this is the census it is held to.
+ * A new product file is written down here by whoever creates it, and a removed one is taken
+ * out; how many of them are witnessed is read off this list and the ledger, which say it
+ * together.
+ */
+const PRODUCTION_FILES: readonly string[] = [
+  'packages/chain/src/chain/backup.ts',
+  'packages/chain/src/chain/bitcoin.ts',
+  'packages/chain/src/chain/chain.ts',
+  'packages/chain/src/chain/checkpoint.ts',
+  'packages/chain/src/chain/enrollment.ts',
+  'packages/chain/src/chain/entry.ts',
+  'packages/chain/src/chain/freshness.ts',
+  'packages/chain/src/chain/hash.ts',
+  'packages/chain/src/chain/keys.ts',
+  'packages/chain/src/chain/keystore.ts',
+  'packages/chain/src/chain/layout.ts',
+  'packages/chain/src/chain/level.ts',
+  'packages/chain/src/chain/lines.ts',
+  'packages/chain/src/chain/ots.ts',
+  'packages/chain/src/chain/range.ts',
+  'packages/chain/src/chain/sleep.ts',
+  'packages/chain/src/chain/store.ts',
+  'packages/chain/src/chain/tail-lock.ts',
+  'packages/chain/src/chain/tailproof.ts',
+  'packages/chain/src/chain/tree.ts',
+  'packages/chain/src/chain/verify.ts',
+  'packages/chain/src/chain/waiver.ts',
+  'packages/chain/src/chain/witness-request.ts',
+  'packages/chain/src/chain/witness-vectors.ts',
+  'packages/chain/src/chain/witness.ts',
+  'packages/chain/src/chain/writer.ts',
+  'packages/chain/src/events/build.ts',
+  'packages/chain/src/events/canonical.ts',
+  'packages/chain/src/events/catalog.ts',
+  'packages/chain/src/events/envelope.ts',
+  'packages/chain/src/events/parse.ts',
+  'packages/chain/src/events/proof.ts',
+  'packages/chain/src/events/registry.ts',
+  'packages/chain/src/events/schema.ts',
+  'packages/chain/src/events/upcaster.ts',
+  'packages/chain/src/events/vectors.ts',
+  'packages/chain/src/one-line.ts',
+  'packages/code/src/a-new-identity.ts',
+  'packages/code/src/agent-skill.ts',
+  'packages/code/src/anchors.ts',
+  'packages/code/src/choice/asked.ts',
+  'packages/code/src/choice/doors.ts',
+  'packages/code/src/choice/screen.ts',
+  'packages/code/src/cli.ts',
+  'packages/code/src/commands/accountability.ts',
+  'packages/code/src/commands/antipatterns.ts',
+  'packages/code/src/commands/brief.ts',
+  'packages/code/src/commands/decision-import.ts',
+  'packages/code/src/commands/decision-transition.ts',
+  'packages/code/src/commands/decision.ts',
+  'packages/code/src/commands/export.ts',
+  'packages/code/src/commands/exposure.ts',
+  'packages/code/src/commands/focus.ts',
+  'packages/code/src/commands/guard.ts',
+  'packages/code/src/commands/handoff.ts',
+  'packages/code/src/commands/init.ts',
+  'packages/code/src/commands/key-enroll.ts',
+  'packages/code/src/commands/key-request.ts',
+  'packages/code/src/commands/key-restore.ts',
+  'packages/code/src/commands/key-revoke.ts',
+  'packages/code/src/commands/link.ts',
+  'packages/code/src/commands/memory.ts',
+  'packages/code/src/commands/next-actions.ts',
+  'packages/code/src/commands/observe.ts',
+  'packages/code/src/commands/recall.ts',
+  'packages/code/src/commands/references.ts',
+  'packages/code/src/commands/resume.ts',
+  'packages/code/src/commands/rules.ts',
+  'packages/code/src/commands/run-end.ts',
+  'packages/code/src/commands/run-start.ts',
+  'packages/code/src/commands/search.ts',
+  'packages/code/src/commands/show.ts',
+  'packages/code/src/commands/skill-export.ts',
+  'packages/code/src/commands/skill-transition.ts',
+  'packages/code/src/commands/skill.ts',
+  'packages/code/src/commands/skills.ts',
+  'packages/code/src/commands/status.ts',
+  'packages/code/src/commands/switch.ts',
+  'packages/code/src/commands/tail-list.ts',
+  'packages/code/src/commands/tail-prune.ts',
+  'packages/code/src/commands/task-transition.ts',
+  'packages/code/src/commands/task.ts',
+  'packages/code/src/commands/timeline.ts',
+  'packages/code/src/commands/usage.ts',
+  'packages/code/src/commands/verify.ts',
+  'packages/code/src/commands/witness.ts',
+  'packages/code/src/completion/bash.ts',
+  'packages/code/src/completion/fish.ts',
+  'packages/code/src/completion/lookups.ts',
+  'packages/code/src/completion/script.ts',
+  'packages/code/src/completion/text.ts',
+  'packages/code/src/completion/tree.ts',
+  'packages/code/src/completion/zsh.ts',
+  'packages/code/src/edit-asks-a-person.ts',
+  'packages/code/src/edit-rules-push.ts',
+  'packages/code/src/env.ts',
+  'packages/code/src/governed-tree.ts',
+  'packages/code/src/intelligence-source.ts',
+  'packages/code/src/mcp/cache-registry.ts',
+  'packages/code/src/mcp/context.ts',
+  'packages/code/src/mcp/hook-reply.ts',
+  'packages/code/src/mcp/instructions.ts',
+  'packages/code/src/mcp/lifecycle.ts',
+  'packages/code/src/mcp/locate.ts',
+  'packages/code/src/mcp/route.ts',
+  'packages/code/src/mcp/server.ts',
+  'packages/code/src/mcp/session.ts',
+  'packages/code/src/mcp/tools.ts',
+  'packages/code/src/moved-record.ts',
+  'packages/code/src/not-a-project.ts',
+  'packages/code/src/one-line.ts',
+  'packages/code/src/outside-the-record.ts',
+  'packages/code/src/pinned-run.ts',
+  'packages/code/src/presentation/banner.ts',
+  'packages/code/src/presentation/brief.ts',
+  'packages/code/src/presentation/consultation.ts',
+  'packages/code/src/presentation/detail.ts',
+  'packages/code/src/presentation/echo.ts',
+  'packages/code/src/presentation/exported.ts',
+  'packages/code/src/presentation/exposure.ts',
+  'packages/code/src/presentation/folded.ts',
+  'packages/code/src/presentation/items.ts',
+  'packages/code/src/presentation/line.ts',
+  'packages/code/src/presentation/occurrence.ts',
+  'packages/code/src/presentation/plain.ts',
+  'packages/code/src/presentation/provenance.ts',
+  'packages/code/src/presentation/recall.ts',
+  'packages/code/src/presentation/record.ts',
+  'packages/code/src/presentation/references.ts',
+  'packages/code/src/presentation/render.ts',
+  'packages/code/src/presentation/rules.ts',
+  'packages/code/src/presentation/runs.ts',
+  'packages/code/src/presentation/search.ts',
+  'packages/code/src/presentation/state.ts',
+  'packages/code/src/presentation/status.ts',
+  'packages/code/src/presentation/styled.ts',
+  'packages/code/src/presentation/switches.ts',
+  'packages/code/src/presentation/tails.ts',
+  'packages/code/src/presentation/usage.ts',
+  'packages/code/src/presentation/verdict.ts',
+  'packages/code/src/presentation/width.ts',
+  'packages/code/src/presentation/witness.ts',
+  'packages/code/src/promise.ts',
+  'packages/code/src/provenance.ts',
+  'packages/code/src/record-effect.ts',
+  'packages/code/src/record-framing.ts',
+  'packages/code/src/record-integrity.ts',
+  'packages/code/src/recorded-content.ts',
+  'packages/code/src/reference-directions.ts',
+  'packages/code/src/repl/area.ts',
+  'packages/code/src/repl/asking.ts',
+  'packages/code/src/repl/complete.ts',
+  'packages/code/src/repl/console.ts',
+  'packages/code/src/repl/editing.ts',
+  'packages/code/src/repl/erasing.ts',
+  'packages/code/src/repl/floor.ts',
+  'packages/code/src/repl/following.ts',
+  'packages/code/src/repl/gate.ts',
+  'packages/code/src/repl/inset.ts',
+  'packages/code/src/repl/leaving.ts',
+  'packages/code/src/repl/painting.ts',
+  'packages/code/src/repl/palette.ts',
+  'packages/code/src/repl/panel.ts',
+  'packages/code/src/repl/pointing.ts',
+  'packages/code/src/repl/proving.ts',
+  'packages/code/src/repl/region.ts',
+  'packages/code/src/repl/scrolling.ts',
+  'packages/code/src/repl/seen.ts',
+  'packages/code/src/repl/session.ts',
+  'packages/code/src/repl/standing.ts',
+  'packages/code/src/served-patterns.ts',
+  'packages/code/src/session-words.ts',
+  'packages/code/src/transcripts.ts',
+  'packages/code/src/tree-sources.ts',
+  'packages/code/src/version.ts',
+  'packages/code/src/vocabulary.ts',
+  'packages/code/src/wiring/accountability.ts',
+  'packages/code/src/wiring/antipatterns.ts',
+  'packages/code/src/wiring/brief.ts',
+  'packages/code/src/wiring/color.ts',
+  'packages/code/src/wiring/completion.ts',
+  'packages/code/src/wiring/context.ts',
+  'packages/code/src/wiring/decision.ts',
+  'packages/code/src/wiring/enumerated.ts',
+  'packages/code/src/wiring/export.ts',
+  'packages/code/src/wiring/exposure.ts',
+  'packages/code/src/wiring/focus.ts',
+  'packages/code/src/wiring/from-the-group.ts',
+  'packages/code/src/wiring/guard.ts',
+  'packages/code/src/wiring/handoff.ts',
+  'packages/code/src/wiring/index.ts',
+  'packages/code/src/wiring/init.ts',
+  'packages/code/src/wiring/integrity.ts',
+  'packages/code/src/wiring/io.ts',
+  'packages/code/src/wiring/key.ts',
+  'packages/code/src/wiring/link.ts',
+  'packages/code/src/wiring/mcp.ts',
+  'packages/code/src/wiring/memory.ts',
+  'packages/code/src/wiring/misuse.ts',
+  'packages/code/src/wiring/next-actions.ts',
+  'packages/code/src/wiring/no-such-record.ts',
+  'packages/code/src/wiring/observe.ts',
+  'packages/code/src/wiring/on-one-line.ts',
+  'packages/code/src/wiring/options.ts',
+  'packages/code/src/wiring/recall.ts',
+  'packages/code/src/wiring/refs.ts',
+  'packages/code/src/wiring/repl.ts',
+  'packages/code/src/wiring/report.ts',
+  'packages/code/src/wiring/resume.ts',
+  'packages/code/src/wiring/rules.ts',
+  'packages/code/src/wiring/run-pin.ts',
+  'packages/code/src/wiring/run.ts',
+  'packages/code/src/wiring/search.ts',
+  'packages/code/src/wiring/show.ts',
+  'packages/code/src/wiring/skill.ts',
+  'packages/code/src/wiring/skills.ts',
+  'packages/code/src/wiring/status.ts',
+  'packages/code/src/wiring/switch.ts',
+  'packages/code/src/wiring/tail.ts',
+  'packages/code/src/wiring/task.ts',
+  'packages/code/src/wiring/timeline.ts',
+  'packages/code/src/wiring/usage.ts',
+  'packages/code/src/wiring/verb.ts',
+  'packages/code/src/wiring/verify.ts',
+  'packages/code/src/wiring/witness.ts',
+  'packages/code/src/wiring/written-before.ts',
+  'packages/copilot/src/context/bootstrap.ts',
+  'packages/copilot/src/context/brief.ts',
+  'packages/copilot/src/context/decisions.ts',
+  'packages/copilot/src/context/disposition.ts',
+  'packages/copilot/src/context/focus.ts',
+  'packages/copilot/src/context/next-action.ts',
+  'packages/copilot/src/context/search.ts',
+  'packages/copilot/src/context/skills.ts',
+  'packages/copilot/src/context/switches.ts',
+  'packages/copilot/src/context/tasks.ts',
+  'packages/copilot/src/context/unread.ts',
+  'packages/copilot/src/guard/guard.ts',
+  'packages/copilot/src/intelligence/accountability.ts',
+  'packages/copilot/src/intelligence/antipatterns.ts',
+  'packages/copilot/src/intelligence/audit-feed.ts',
+  'packages/copilot/src/intelligence/consultation.ts',
+  'packages/copilot/src/intelligence/events.ts',
+  'packages/copilot/src/intelligence/exposure.ts',
+  'packages/copilot/src/intelligence/governance.ts',
+  'packages/copilot/src/intelligence/identities.ts',
+  'packages/copilot/src/intelligence/pattern-moves.ts',
+  'packages/copilot/src/intelligence/provenance.ts',
+  'packages/copilot/src/intelligence/references.ts',
+  'packages/copilot/src/intelligence/timeline.ts',
+  'packages/copilot/src/sources.ts',
+  'packages/core/src/adr/read.ts',
+  'packages/core/src/adr/scan.ts',
+  'packages/core/src/content/fields.ts',
+  'packages/core/src/content/screen.ts',
+  'packages/core/src/content/secrets.ts',
+  'packages/core/src/db/schema.ts',
+  'packages/core/src/db/sqlite.ts',
+  'packages/core/src/identity/alias.ts',
+  'packages/core/src/identity/anchor.ts',
+  'packages/core/src/identity/authority.ts',
+  'packages/core/src/identity/founded-beside.ts',
+  'packages/core/src/identity/handshake.ts',
+  'packages/core/src/identity/id.ts',
+  'packages/core/src/identity/index.ts',
+  'packages/core/src/identity/membership.ts',
+  'packages/core/src/identity/restore.ts',
+  'packages/core/src/identity/roster.ts',
+  'packages/core/src/identity/who.ts',
+  'packages/core/src/knowledge/operations.ts',
+  'packages/core/src/one-line.ts',
+  'packages/core/src/projections/cache.ts',
+  'packages/core/src/projections/channel-store.ts',
+  'packages/core/src/projections/channel.ts',
+  'packages/core/src/projections/decision-store.ts',
+  'packages/core/src/projections/decision.ts',
+  'packages/core/src/projections/fed-by.ts',
+  'packages/core/src/projections/knowledge-store.ts',
+  'packages/core/src/projections/knowledge.ts',
+  'packages/core/src/projections/newest-first.ts',
+  'packages/core/src/projections/order.ts',
+  'packages/core/src/projections/proof.ts',
+  'packages/core/src/projections/rebuild.ts',
+  'packages/core/src/projections/reference-store.ts',
+  'packages/core/src/projections/run-store.ts',
+  'packages/core/src/projections/run.ts',
+  'packages/core/src/projections/search-store.ts',
+  'packages/core/src/projections/skill-store.ts',
+  'packages/core/src/projections/skill.ts',
+  'packages/core/src/projections/task-store.ts',
+  'packages/core/src/projections/task.ts',
+  'packages/core/src/projections/window.ts',
+  'packages/core/src/topology/index.ts',
+  'packages/core/src/topology/locate.ts',
+  'packages/core/src/topology/resolve.ts',
+  'packages/core/src/topology/routing.ts',
+  'packages/core/src/workflow/append.ts',
+  'packages/core/src/workflow/channel-operations.ts',
+  'packages/core/src/workflow/clock.ts',
+  'packages/core/src/workflow/decision-gate.ts',
+  'packages/core/src/workflow/decision-operations.ts',
+  'packages/core/src/workflow/decision-states.ts',
+  'packages/core/src/workflow/decision-transitions.ts',
+  'packages/core/src/workflow/disposition.ts',
+  'packages/core/src/workflow/gate.ts',
+  'packages/core/src/workflow/identity-operations.ts',
+  'packages/core/src/workflow/index.ts',
+  'packages/core/src/workflow/operations.ts',
+  'packages/core/src/workflow/prune-operations.ts',
+  'packages/core/src/workflow/session-operations.ts',
+  'packages/core/src/workflow/skill-gate.ts',
+  'packages/core/src/workflow/skill-operations.ts',
+  'packages/core/src/workflow/skill-states.ts',
+  'packages/core/src/workflow/skill-transitions.ts',
+  'packages/core/src/workflow/states.ts',
+  'packages/core/src/workflow/transitions.ts',
+  'packages/core/src/write.ts',
+];
+
 describe('every file has a test that names it', () => {
   it('walks the universe the coverage gate measures, not one of its own', () => {
     // One statement of what production is. If the gate's globs change, this walk has to
@@ -954,13 +1421,18 @@ describe('every file has a test that names it', () => {
     expect(config).toContain("include: ['packages/**/src/**/*.ts']");
     expect(config).toContain("'packages/**/src/**/*.d.ts'");
     expect(config).toContain("'packages/**/src/index.ts'");
-    // The four nested barrels are production by that reading, and the count is the
+    // The four nested barrels are production by that reading, and the census is the
     // non-vacuity of this whole file: a walk that found nothing would leave every
-    // assertion below true.
+    // assertion below true, and here it leaves every line of the census gone.
     expect(PRODUCTION).toContain('packages/code/src/wiring/index.ts');
     expect(PRODUCTION).toContain('packages/core/src/topology/index.ts');
     expect(PRODUCTION).not.toContain('packages/core/src/index.ts');
-    expect(PRODUCTION).toHaveLength(317);
+    expect(reconcileCensus(eachOnce(PRODUCTION), census(PRODUCTION_FILES))).toEqual({
+      unlisted: [],
+      gone: [],
+      miscounted: [],
+    });
+    expect(outOfOrder(PRODUCTION_FILES), 'the production census is kept sorted').toEqual([]);
     expect(TEST_TREE.length).toBeGreaterThan(250);
     // No file is in both corpora, which is what keeps a test from witnessing itself.
     const tests = new Set(TEST_TREE.map((one) => one.path));
@@ -980,7 +1452,11 @@ describe('every file has a test that names it', () => {
     const found = unwitnessed();
     const byReach = (reach: Reach): number =>
       [...found.values()].filter((one) => one === reach).length;
-    expect(PRODUCTION.length - found.size).toBe(246);
+    // Read off the census and the ledger, which say it together: a product file that
+    // arrives witnessed moves the first, one that arrives without a witness moves both.
+    expect(PRODUCTION.length - found.size).toBe(
+      PRODUCTION_FILES.length - Object.keys(UNWITNESSED).length,
+    );
     expect(found.size).toBe(71);
     expect(byReach('nobody imports it')).toBe(71);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
@@ -1037,9 +1513,9 @@ describe('every file has a test that names it', () => {
   });
 
   it('cannot be dissolved by the ledger that describes it', () => {
-    // The keys below are 71 paths. Naming requires an IMPORT, so listing a file here
-    // cannot witness it — and this file, which mentions every one of them, imports no
-    // product file at all.
+    // The keys below are 71 paths, and the production census names every product file.
+    // Naming requires an IMPORT, so listing a file here cannot witness it — and this file,
+    // which mentions every one of them, imports no product file at all.
     const self = TEST_TREE.find((one) =>
       one.path.endsWith('every-file-has-a-test-that-names-it.test.ts'),
     );
@@ -1497,6 +1973,37 @@ describe('the source it reads is code, and a pattern is not code', () => {
 });
 
 describe('the scanner’s parts, each on input of its own', () => {
+  it('holds a census to what was read in every direction, naming the file and the count', () => {
+    const read = new Map([
+      ['a.test.ts', 3],
+      ['b.test.ts', 5],
+      ['new.test.ts', 2],
+    ]);
+    expect(reconcileCensus(read, { 'a.test.ts': 3, 'b.test.ts': 4, 'removed.test.ts': 1 })).toEqual(
+      {
+        unlisted: ['new.test.ts (read 2)'],
+        gone: ['removed.test.ts'],
+        miscounted: ['b.test.ts (read 5, the line says 4)'],
+      },
+    );
+    // A file read with no clause is still a file, and its line says so.
+    expect(reconcileCensus(new Map([['empty.ts', 0]]), {})).toEqual({
+      unlisted: ['empty.ts (read 0)'],
+      gone: [],
+      miscounted: [],
+    });
+    // Non-vacuity in the other direction: agreement is silence.
+    expect(reconcileCensus(read, { 'a.test.ts': 3, 'b.test.ts': 5, 'new.test.ts': 2 })).toEqual({
+      unlisted: [],
+      gone: [],
+      miscounted: [],
+    });
+    // The order is the one `.sort()` gives both walks, and a line written twice is out of it.
+    expect(outOfOrder(['a', 'b', 'c'])).toEqual([]);
+    expect(outOfOrder(['b', 'a', 'c'])).toEqual(['a']);
+    expect(outOfOrder(['a', 'a'])).toEqual(['a']);
+  });
+
   it('follows a relative specifier to source and refuses everything else', () => {
     const known = new Set(['pkg/src/store.ts', 'pkg/src/deep/index.ts']);
     expect(resolveImport('pkg/src/a.test.ts', './store.js', known)).toBe('pkg/src/store.ts');
@@ -1587,18 +2094,20 @@ describe('the scanner’s parts, each on input of its own', () => {
       .filter((one) => /[^\w$*,{}\s]/.test(one.clause))
       .map((one) => `${one.where}: ${one.clause.trim().slice(0, 40)}`);
     expect(invented).toEqual([]);
-    // HOW MANY, NOT AT LEAST HOW MANY, because a floor cannot see the scanner stop
-    // seeing. This was `toBeGreaterThan(2000)`, and when that was replaced the tree
-    // yielded 2362: dropping `_` alone from the clause's word class lost 211 real imports
-    // and left 2145, which cleared that floor and every other assertion in this file —
-    // measured. The current size is {@link CLAUSES_IN_THE_TREE} and nothing here restates
-    // it in prose. A count goes red the moment a clause the grammar used to match stops
-    // matching.
-    //
-    // THE COST IS THAT A NEW IMPORT REDDENS IT, and that is the price of the property:
-    // this number is the size of the test tree's import graph, and it is meant to be
-    // restated deliberately rather than drifted past.
-    expect(clauses.length).toBe(CLAUSES_IN_THE_TREE);
+    // HOW MANY, NOT AT LEAST HOW MANY, file by file: {@link CLAUSES_PER_FILE} says why.
+    // THE COST IS THAT A NEW IMPORT REDDENS IT, and that is the price of the property: a
+    // file's line is meant to be restated deliberately rather than drifted past, and the
+    // red says which file and what it read.
+    const read = new Map(TEST_TREE.map((one) => [one.path, 0]));
+    for (const one of clauses) read.set(one.where, (read.get(one.where) ?? 0) + 1);
+    expect(reconcileCensus(read, CLAUSES_PER_FILE)).toEqual({
+      unlisted: [],
+      gone: [],
+      miscounted: [],
+    });
+    expect(outOfOrder(Object.keys(CLAUSES_PER_FILE)), 'the clause census is kept sorted').toEqual(
+      [],
+    );
     expect(clauses.filter((one) => one.clause.includes('\n')).length).toBeGreaterThan(50);
   });
 

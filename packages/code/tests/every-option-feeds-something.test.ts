@@ -105,6 +105,7 @@ import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
 import { describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo } from '../src/cli.js';
+import { everyCommandOf, pathOf } from '../src/wiring/misuse.js';
 import { codeOnly, sourceFiles } from './support/reading-source.js';
 
 const PACKAGES = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -453,7 +454,10 @@ function declaredOptions(): Declared[] {
     Command.prototype.action = real;
   }
   const found: Declared[] = [];
-  const walk = (command: Command, path: readonly string[]): void => {
+  // The program's own walk and its own words for a page, which the parser's refusals and the
+  // completion tree take too; the count below is a floor under what they reach.
+  for (const command of everyCommandOf(program)) {
+    const path = ['mnema', ...pathOf(command)];
     const handler = handlers.get(command);
     for (const option of command.options) {
       found.push({
@@ -464,9 +468,7 @@ function declaredOptions(): Declared[] {
         takenBy: ancestorDeclaring(command, path, option),
       });
     }
-    for (const sub of command.commands) walk(sub, [...path, sub.name()]);
-  };
-  walk(program, ['mnema']);
+  }
   return found;
 }
 

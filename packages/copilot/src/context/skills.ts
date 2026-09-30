@@ -142,9 +142,11 @@ import { type Disposition, statesMeaning } from './disposition.js';
  * Both halves of that sentence are CHECKED and no longer only declared:
  * `no-classification-table-reaches-the-surface.test.ts` walks the runtime exports of
  * every entry point in the workspace and asserts that this table is absent from all
- * of them and that {@link skillDisposition} is present on this package's. What it
- * does NOT cover is written in its own doc — a consumer that reimplements the
- * classification from scratch touches neither the table nor the function.
+ * of them and that {@link skillDisposition} is present on this package's. A consumer
+ * that reimplements the classification from scratch touches neither the table nor the
+ * function, and this said nothing there could see one; the same file now reads every
+ * production file for a value named `state` compared against a state word, and what
+ * that reading still misses is written in its own doc.
  */
 export const SKILL_DISPOSITION: Readonly<Record<SkillState, Disposition>> = {
   proposed: 'awaiting-judgement',
