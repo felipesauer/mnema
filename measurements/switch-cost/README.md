@@ -20,8 +20,8 @@ Two questions, and only the first is about the guard:
 
 ## 1 · How it was measured
 
-The probe lives on the local workbench (`.refactor/active/the-switch-is-a-fact/probe/`); this
-directory holds the captures, each stamped with the commit, the node, the machine and its load.
+The probe itself is not published: it lived in a local working directory outside this
+repository's tracked tree. This directory holds the captures, each stamped with the commit, the node, the machine and its load.
 
 - **The switch is timed ON ITS OWN**, over the **session's own warm caches** — the same objects the
   tool reads, asked the same question — so the delta is a measurement rather than a subtraction

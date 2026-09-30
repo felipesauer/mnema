@@ -398,7 +398,7 @@ pnpm test
 `pnpm build` leaves the binary at `packages/code/dist/cli.js`, and that file is
 the whole command line: run it as `node packages/code/dist/cli.js --version`, or
 symlink it onto your `PATH` under the name `mnema`, which is the shape a
-published install takes.
+published install takes. To change the code, start with [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## License
 

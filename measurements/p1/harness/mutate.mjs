@@ -444,7 +444,7 @@ export const MUTATIONS = [
     file: ROOT,
     from: '  let current = resolve(from)',
     to: "  return resolve(from, '../../../../..')\n  let current = resolve(from)",
-    expect: 'the root lands on .refactor/ again, and every path built from it points at nothing',
+    expect: 'the root lands inside the working directory again, and every path built from it points at nothing',
   },
 ]
 

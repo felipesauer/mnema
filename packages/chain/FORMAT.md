@@ -6,10 +6,15 @@ against their implementation, and get the same digests we do.
 
 **Somebody has.** [`verifier/`](./verifier/) beside this file is a second implementation, in
 Python, written from this document and importing nothing of the product it checks. It
-reproduces the 23 published vectors and the four aggregate digests, and reaches the same
-verdict as the product over the frozen records in the test suite
+reproduces the 23 published vectors and the four aggregate digests, and checks the frozen
+records in the test suite beside the product
 (`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts`), on honest records
-and on every input the format refuses. Twenty-five points
+and on every input the format refuses. The two verdicts differ in two pinned cases. With the
+public keys removed, the product says broken over a signature it cannot verify, and this
+reader, unable to ask, says INCOMPLETE. And on a tail cut in the middle with no
+`tail.pruned`, the product calls the signed range a contradiction and says broken, while
+this reader reports a gap it cannot judge, because §3 leaves a reader of this document alone
+unable to tell an authorized cut from tampering. Twenty-five points
 where this document was **not enough** for that were found in the writing, and every one of
 them has been fixed here — `python3 verifier/mnema_verify.py gaps` lists them, with which
 were resolved by reading a specification, which by experiment against the published bytes,
@@ -641,7 +646,8 @@ Stated plainly, because a published format invites all three readings:
   entry used to read *"there is no second implementation"*, and
   [`verifier/`](./verifier/) is what falsified it: a verifier in Python, written
   from this document, importing nothing of the product, reproducing the published
-  vectors and reaching the same verdict as the product over real records —
+  vectors and reaching the product's verdict over real records, save the two pinned
+  cases at the top of this document —
   **including on every input the format refuses**, which is the half that took a
   second delivery: it accepted two things the product refused (a field no kind
   declares, on an appended event; a signer no enrolment authorized) and refused one
