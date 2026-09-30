@@ -103,14 +103,18 @@ identically, because they are the same call.
   the captures.
 - **A rules file for a host without the plugin** — `mnema rules-file --host vscode` prints the
   committed rules in force whose address is a file, as a `.instructions.md` with an `applyTo`,
-  and `--host cursor` as a `.mdc` with `globs`. It prints only where the glob matches exactly
-  the paths the address governs: a directory is left out, because whether `**` reaches a name
-  that starts with a dot is the matcher's choice, and so is an address holding a character a
-  glob reads as syntax — `app/[id]` as a glob matches `app/i`. Every rule it leaves out is named
+  and `--host cursor` as a `.mdc` with `globs`. A directory is left out, because no list of
+  globs was found to match exactly what it governs in either host: VS Code puts `**/` before a
+  relative pattern, so `src/billing/**` would also match a `src/billing` anywhere else under the
+  folder it reads, and Cursor matches `globs` on its servers, where it could not be measured. So
+  is an address holding a character a glob reads as syntax — `app/[id]` as a glob matches
+  `app/i`. The same `**/` reaches a file too — `src/x.ts` also matches `other/src/x.ts` — and the
+  output says so where it prints a file for VS Code. Every rule it leaves out is named
   on the second stream with the reason, in the same run; the file goes to stdout, and where it
   lands is your choice — the `>` replaces the whole of the file it names. Asserted in
   `tests/a-rules-file-carries-only-what-becomes-a-glob-exactly.test.ts`, against Node's own glob
-  matcher.
+  matcher; what each host does with the pattern is
+  [`measurements/hooks-by-host/`](../../measurements/hooks-by-host/).
 - **A switch for everything it pushes** — `mnema switch` says where each of those
   channels stands and what each carries; `mnema switch off edit-rules-push` stops the
   per-edit push, `mnema switch off brief-document` stops the opening document and `mnema

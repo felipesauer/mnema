@@ -63,9 +63,9 @@ $ mnema
 !                                         across the trees
 !   rules [options] <path>                show which recorded rules govern a path,
 !                                         and which address nothing
-!   rules-file [options]                  print the rules that have an address as
-!                                         another host’s rules file, where the
-!                                         glob is exact
+!   rules-file [options]                  print the rules addressed at a file as
+!                                         another host’s rules file, and why the
+!                                         rest are not
 !   skills [options]                      show where each pattern came from (who
 !                                         proposed it, who adopted it)
 !   usage                                 what each run cost, read from this
@@ -161,9 +161,9 @@ $ mnema --help
 |                                         across the trees
 |   rules [options] <path>                show which recorded rules govern a path,
 |                                         and which address nothing
-|   rules-file [options]                  print the rules that have an address as
-|                                         another host’s rules file, where the
-|                                         glob is exact
+|   rules-file [options]                  print the rules addressed at a file as
+|                                         another host’s rules file, and why the
+|                                         rest are not
 |   skills [options]                      show where each pattern came from (who
 |                                         proposed it, who adopted it)
 |   usage                                 what each run cost, read from this
@@ -664,8 +664,8 @@ $ mnema rules --help
 $ mnema rules-file --help
 | Usage: mnema rules-file [options]
 |
-| print the rules that have an address as another host’s rules file, where the
-| glob is exact
+| print the rules addressed at a file as another host’s rules file, and why the
+| rest are not
 |
 | Options:
 |   --host <host>  the host whose rules-file format to print: vscode, cursor

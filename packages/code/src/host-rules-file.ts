@@ -1,6 +1,6 @@
 /**
- * The rules of the record, in the file format another host reads its own rules from — only where
- * an address becomes a glob EXACTLY, and saying which did not and why.
+ * The rules of the record, in the file format another host reads its own rules from — only for an
+ * address a glob can name, and saying which were left out and why.
  *
  * FOR WHOM. A session with the plugin is handed the rules addressed at a file by the per-edit
  * hook. A host without the plugin reads rules from files of its own: VS Code's agent from
@@ -16,17 +16,26 @@
  * and translating one into the other can govern the wrong file in silence — `app/[id]` as a glob
  * is a character class that matches `app/i` and `app/d` and not the directory it names. So an
  * address goes into the file only when its glob matches exactly the paths the address governs,
- * under any reading of the glob a host could apply:
+ * under any reading of the glob a host could apply — or, where the host adds a reading of its own,
+only when the output says what it adds:
  *
  *   - A FILE whose every segment is letters, digits, `.`, `_` and `-` becomes its own path. A
  *     literal path matches itself in every glob dialect, a leading dot included, since the dot is
- *     written in the pattern.
- *   - A DIRECTORY does not go in, and neither does the project root. Its glob is `<dir>/**`, and
- *     whether `**` reaches a name that starts with a dot is a choice each matcher makes for itself
- *     — the two most used JavaScript glob libraries skip them by default — while the address
- *     governs them. Who matches is not this product: VS Code 1.137 does not match `applyTo` in its
- *     agent at all, it lists the file and its pattern to the MODEL, which decides whether to read
- *     it (measured, `measurements/hooks-by-host/`); Cursor matches `globs` on its servers.
+ *     written in the pattern. THAT SENTENCE STOPPED THERE, AND VS CODE ADDS A READING: where it
+ *     matches an `applyTo` at all — against a file attached to its chat — it puts `**` and a
+ *     slash before a relative pattern and matches the file's absolute path, so `src/x.ts` also
+ *     matches `other/src/x.ts` (VS Code 1.137's own glob, run on 30 Sep 2026,
+ *     `measurements/hooks-by-host/`). A file stays in, and {@link WHO_MATCHES} says so beside it.
+ *   - A DIRECTORY does not go in, and neither does the project root — and the reason is measured
+ *     now, where it used to be that whether `**` reaches a name that starts with a dot "is a choice
+ *     each matcher makes for itself". Each host's was looked at. VS Code's `**` does reach those
+ *     names, and `<dir>/**` still matches a directory of that name anywhere under the one it
+ *     reads, by the same prefix; no list of patterns relative to the repository escapes it, and an
+ *     absolute one is one machine's path. Cursor's agent does not match `globs` at all: it sends
+ *     them to its servers, so no list could be shown to match. So no translation of a directory
+ *     was found exact in either host. And who matches is not this product anyway: VS Code 1.137's
+ *     agent lists the file and its pattern to the MODEL, which decides whether to read it
+ *     (measured, `measurements/hooks-by-host/`).
  *   - An address that names nothing in the working tree does not go in: whether it would be a
  *     file or a directory cannot be told.
  *   - A character a glob reads as syntax — `* ? [ ] { } ! ,` or a backslash, or anything outside
@@ -53,7 +62,7 @@ export const WHERE_A_HOST_READS: { readonly [H in RulesFileHost]: string } = {
 /** What each host does with the file's pattern, said beside the output — measured or not. */
 export const WHO_MATCHES: { readonly [H in RulesFileHost]: string } = {
   vscode:
-    'VS Code’s agent lists this file to the model with its applyTo and leaves reading it to the model; it does not paste it in (measured on VS Code 1.137 with Copilot Chat 0.65).',
+    'VS Code’s agent lists this file to the model with its applyTo and leaves reading it to the model; it does not paste it in (measured on VS Code 1.137 with Copilot Chat 0.65). Where VS Code does match an applyTo — against a file attached to the chat — it puts “**/” before it, so a file of the same name under another directory matches too.',
   cursor: 'Cursor matches the globs of this file on its servers, which was not measured here.',
 };
 
@@ -94,7 +103,7 @@ export function globFor(
   }
   if (rule.address === '.') {
     return {
-      why: 'addresses the whole project, and whether “**” reaches a name that starts with a dot is the matcher’s choice',
+      why: 'addresses the whole project, and no glob was found to match exactly that in either host: VS Code matches a pattern against any file attached to its chat, and Cursor matches on its servers',
     };
   }
   if (one.onDisk === 'absent') {
@@ -104,7 +113,7 @@ export function globFor(
   }
   if (one.onDisk === 'directory') {
     return {
-      why: `is a directory, and whether “${rule.address}/**” reaches a name that starts with a dot is the matcher’s choice`,
+      why: `is a directory, and no list of globs was found to match exactly what it governs in either host: VS Code puts “**/” before a pattern, so “${rule.address}/**” would also match a directory of that name elsewhere, and Cursor matches on its servers`,
     };
   }
   return { glob: rule.address };

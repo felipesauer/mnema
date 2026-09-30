@@ -50,7 +50,7 @@ _mnema_described() {
       'export:emit the record as an OCSF audit feed (NDJSON, envelope only — never a body)' \
       'refs:show what an entity is connected to across the trees' \
       'rules:show which recorded rules govern a path, and which address nothing' \
-      'rules-file:print the rules that have an address as another host’s rules file, where the glob is exact' \
+      'rules-file:print the rules addressed at a file as another host’s rules file, and why the rest are not' \
       'skills:show where each pattern came from (who proposed it, who adopted it)' \
       'usage:what each run cost, read from this machine'\''s Claude Code transcripts' \
       'brief:print what governs the work here as markdown, for an agent to read' \

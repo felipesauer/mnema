@@ -126,8 +126,8 @@ describe('what goes into the file', () => {
       ),
     ).toEqual({
       'src/billing':
-        'is a directory, and whether “src/billing/**” reaches a name that starts with a dot is the matcher’s choice',
-      '.': 'addresses the whole project, and whether “**” reaches a name that starts with a dot is the matcher’s choice',
+        'is a directory, and no list of globs was found to match exactly what it governs in either host: VS Code puts “**/” before a pattern, so “src/billing/**” would also match a directory of that name elsewhere, and Cursor matches on its servers',
+      '.': 'addresses the whole project, and no glob was found to match exactly that in either host: VS Code matches a pattern against any file attached to its chat, and Cursor matches on its servers',
       'src/legacy':
         'names nothing in the working tree, so whether it is a file or a directory cannot be told',
       'src/billing/invoice.ts (private)':
@@ -208,13 +208,28 @@ describe('mnema rules-file, as a person runs it', () => {
     expect(printed.stderr).toContain('app/[id]');
   });
 
+  it('says beside a VS Code file that the host reads a file pattern more widely than it is written', async () => {
+    // VS Code puts "**/" before a relative applyTo and matches the file's absolute path (its own
+    // glob, run: measurements/hooks-by-host/), so a file address is carried and the widening is
+    // said where the file is printed — and for Cursor, which matches on its servers, it is not.
+    await governing('Invoices are immutable', 'src/billing/invoice.ts');
+    const vscode = cli('rules-file', '--host', 'vscode');
+    expect(vscode.status).toBe(0);
+    expect(vscode.stdout).toContain('applyTo: "src/billing/invoice.ts"');
+    expect(vscode.stderr).toContain(
+      'it puts “**/” before it, so a file of the same name under another directory matches too.',
+    );
+    const cursor = cli('rules-file', '--host', 'cursor');
+    expect(cursor.stderr).not.toContain('“**/”');
+  });
+
   it('prints no file, and says so, when nothing translates', async () => {
     await governing('Billing is UTC', 'src/billing');
     const printed = cli('rules-file', '--host', 'vscode');
     expect(printed.status).toBe(0);
     expect(printed.stdout).toBe('');
     expect(printed.stderr).toContain(
-      'No addressed rule of this project becomes a glob exactly, so no file was printed — a `>` would have left its file empty.',
+      'No rule of this project is addressed at a file a glob can name, so no file was printed — a `>` would have left its file empty.',
     );
   });
 

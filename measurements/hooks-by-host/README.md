@@ -71,12 +71,12 @@ environment a hook saw only the names are kept.
 - **The rules at each edit stay Claude Code's.** VS Code would carry a hook's text, inside the
   tool result; the product records that the push served once per session, and a process started
   per write has no session to remember it by.
-- **A rule file is printed only where a glob is exact.** VS Code 1.137's agent does not match an
+- **A rule file carries file addresses only.** VS Code 1.137's agent does not match an
   `applyTo` itself: it lists each `.github/instructions` file and its pattern to the model and
   leaves reading it to the model — measured with five placements, the matching one included, and
   the file's text reached the model in none of them. Cursor matches `globs` on its servers.
-  Neither is a matcher this product can check a directory's glob against, so `mnema rules-file`
-  carries file addresses only. The file it prints is read by both as it is written: VS Code lists
+  Whether a directory's glob could be exact was then looked at in each host (§5): it is not, in
+  either, so `mnema rules-file` carries file addresses only. The file it prints is read by both as it is written: VS Code lists
   it with its `applyTo` (`v-rules-file`), and Cursor's agent sends the rule to its backend as
   file-globbed, the two globs apart (`c-rules-file`).
 
@@ -119,3 +119,30 @@ runs a `preToolUse` hook before a tool handles `deny` and has no branch for `ask
 reading, not a measurement); Cursor's editor; where Cursor's real backend places a hook's text;
 Windows, where the filter in front of VS Code's command is a POSIX shell construct; VS Code's
 own `.github/hooks` file format, which this product does not use.
+
+## 5 · Where a rules file's pattern is matched, and whether a directory's could be exact
+
+An address in the record governs a path and everything under it, names that start with a dot
+included. `mnema rules-file` carried file addresses only, because whether a host's `**` reaches
+those names was not known. On 30 Sep 2026 each host's own code was read, and VS Code's glob was
+run — [`results/2026-09-30/rules-file-globs.json`](results/2026-09-30/rules-file-globs.json):
+
+- **VS Code 1.137 with Copilot Chat 0.65** matches an `applyTo` in one place: against a file
+  attached to the chat, with its own `vs/base/common/glob` and no option but ignoring case. It
+  splits the patterns at commas outside braces and brackets, puts `**/` before every pattern that
+  is relative, and matches the file's **absolute** path. Its `**` reaches names that start with a
+  dot. Run over the same paths with the function taken from the installed bundle, `dir/**` matched
+  every path under `dir` — `dir/.env`, `dir/.a/b.ts` and `dir/x/.y/z` among them — and also
+  `other/dir/a.ts`; no list of relative patterns (`dir/**/.*`, `dir/**/.*/**`, the three together,
+  braces or commas) left `other/dir/a.ts` out, and only an absolute path did, which is one
+  machine's. The same prefix reaches a file: `src/x.ts` matched `/ws/other/src/x.ts`.
+- **Cursor's command-line agent 2026.09.18** does not match `globs` on the machine. It reads the
+  `.mdc`, splits its globs at commas, and sends the rule to its backend as file-globbed; the one
+  glob library in the agent is used for repository URLs. Where the rule is matched is on Cursor's
+  servers, and that was not measured.
+
+So a directory's glob was found exact in neither host, and it stays out, with that reason on the
+second stream. A file stays in: in Cursor a literal path is the pattern it names, and in VS Code
+the output says what the `**/` adds. What was not done: the VS Code function was run outside
+VS Code, taken from its bundle, and not in a window with a file attached; Cursor's editor is not
+installed here, and only its command-line agent was read.
