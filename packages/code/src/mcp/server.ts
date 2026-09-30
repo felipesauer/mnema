@@ -1691,11 +1691,14 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         'the path with `rel: "asks-for-a-person"`, the reply also carries ' +
         '`permissionDecision: "ask"` and the host holds the write until a PERSON ' +
         'decides — citing that rule’s id. It cannot refuse, allow, or rewrite your ' +
-        'input: none of the three is representable in what it returns. Every asking is ' +
-        'appended to the record as a fact citing the rule, before the reply is composed. ' +
-        'For the whole answer — every address whatever its state, whose file no longer ' +
-        'exists, and the counts for both relations — ask `governing_rules` instead; ' +
-        'this one is deliberately thin, because it is paid for on every edit.',
+        'input: none of the three is representable in what it returns. It WRITES: every ' +
+        'asking is appended to the record as a fact citing the rule and the path you ' +
+        'named, before the reply is composed, and the first service of a session is ' +
+        'appended too. For the whole answer — every address whatever its state, whose ' +
+        'file no longer exists, and the counts for both relations — ask ' +
+        '`governing_rules` instead; this one is deliberately thin, because it is paid ' +
+        'for on every edit.' +
+        RECORD_CONTRACT,
       inputSchema: {
         path: z
           .string()
@@ -1720,7 +1723,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       // DISCARDED IN SILENCE — no error, no warning, nothing reaching the model. A
       // notice spliced in here would therefore never be read by anybody, while being
       // paid for on every edit of every session. It is listed in
-      // `SERVES_NO_RECORD_CONTENT` with that reason, and `governing_rules` — the same
+      // `TOOLS_SERVING_NO_RECORD_CONTENT` with that reason, and `governing_rules` — the same
       // answer asked for rather than pushed — does carry it.
       return { content: [{ type: 'text' as const, text: JSON.stringify(result.value) }] };
     },
