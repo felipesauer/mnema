@@ -43,15 +43,30 @@ const SCOPE_WIDTH = 7;
 const AUTHORIZED = 'cut authorized';
 const NOT_AUTHORIZED = 'no waiver';
 
+/**
+ * What a reading of the tails says when none holds an event: the trees it read, or — when it read
+ * none — why.
+ *
+ * ONE SENTENCE FOR THE THREE PLACES THAT SAY IT (`tail list`, `witness`, `witness upgrade`), which
+ * wrote it three times. And the list can be empty: the witness paths leave this machine's global
+ * tree out unless `--global` asks for it, so outside a project there is no tree left to read, and
+ * the three copies said `looked in .` — a list with no items and a full stop. Measured on the
+ * binary, and now said: there is no project here, and `--global` is what reads the one tree there
+ * is (`outside-a-project-the-surface-says-so.test.ts`).
+ */
+export function noTailHoldsEvents(trees: readonly Scope[]): string {
+  return trees.length === 0
+    ? 'No tail holds events here: this is not a mnema project, and this machine’s global tree is read only with --global.'
+    : `No tail holds events in any tree here — looked in ${trees.join(', ')}.`;
+}
+
 /** The lines `mnema tail list` prints. */
 export function tailReport(
   render: Render,
   tails: readonly HeldTail[],
   trees: readonly Scope[],
 ): string[] {
-  if (tails.length === 0) {
-    return [`No tail holds events in any tree here — looked in ${trees.join(', ')}.`];
-  }
+  if (tails.length === 0) return [noTailHoldsEvents(trees)];
   return [
     `${tails.length} tail(s):`,
     ...tails.map((held) =>

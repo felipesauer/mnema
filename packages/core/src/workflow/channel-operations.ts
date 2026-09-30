@@ -46,7 +46,7 @@ import {
   screened,
 } from '../content/screen.js';
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
-import { appendEvent, type UnreadableEventErr } from './append.js';
+import { type AppendRefusal, appendEvent } from './append.js';
 import { systemClock } from './clock.js';
 import { authorizingAnchor, ensureFounded } from './identity-operations.js';
 import type { WriteContext } from './operations.js';
@@ -67,7 +67,7 @@ export interface SwitchOk extends ScreenedWrite {
  * There is no refusal for a channel this package does not know, because it knows none
  * (see the module note), and none for switching a channel to where it already stands.
  */
-export type SwitchError = SelfAuthorizedErr | ScreenRefusal | UnreadableEventErr;
+export type SwitchError = SelfAuthorizedErr | ScreenRefusal | AppendRefusal;
 
 /** What the caller asks to switch. */
 export interface SwitchInput {
@@ -175,7 +175,7 @@ export interface AskedOk extends ScreenedWrite {
 }
 
 /** The refusals either can earn — the ones every fact can, and nothing of their own. */
-export type ChannelFactError = SelfAuthorizedErr | ScreenRefusal | UnreadableEventErr;
+export type ChannelFactError = SelfAuthorizedErr | ScreenRefusal | AppendRefusal;
 
 /** What the caller records: which channel, in which run, driven by which agent. */
 export interface ServedInput {

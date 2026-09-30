@@ -53,7 +53,7 @@ import {
 } from '../identity/membership.js';
 import { oneLine } from '../one-line.js';
 import { orderedEvents } from '../projections/order.js';
-import { appendEvent, type UnreadableEventErr } from './append.js';
+import { type AppendRefusal, appendEvent } from './append.js';
 import { systemClock } from './clock.js';
 import type { WriteContext } from './operations.js';
 
@@ -480,7 +480,7 @@ export function establishIdentity(
 export function enrollKey(
   ctx: WriteContext,
   input: { newFp: string; reverseSig: string },
-): IdentityOk | UnreadableEventErr {
+): IdentityOk | AppendRefusal {
   const anchor = ensureFounded(ctx);
   const at = (ctx.clock ?? systemClock)();
   // Through the door like every other write, even though both fields are derived
@@ -520,7 +520,7 @@ export function enrollKey(
 export function revokeKey(
   ctx: WriteContext,
   input: { revokedFp: string; reason: string },
-): IdentityOk | ScreenRefusal | UnreadableEventErr {
+): IdentityOk | ScreenRefusal | AppendRefusal {
   const text = screenContent({ reason: input.reason });
   if (!text.ok) return text;
 

@@ -25,6 +25,7 @@ import type { WitnessReading, WitnessRefusalKind } from '@mnema/chain';
 import type { Scope } from '@mnema/core';
 import { asId, asScope, asWord, column, itemLine } from './items.js';
 import type { Render } from './render.js';
+import { noTailHoldsEvents } from './tails.js';
 
 /** The width the tree column is padded to, so what follows it lines up. */
 const SCOPE_WIDTH = 7;
@@ -95,9 +96,7 @@ export function witnessReport(
   lines: readonly WitnessLine[],
   trees: readonly Scope[],
 ): string[] {
-  if (lines.length === 0) {
-    return [`No tail holds events in any tree here — looked in ${trees.join(', ')}.`];
-  }
+  if (lines.length === 0) return [noTailHoldsEvents(trees)];
   return [
     `${lines.length} tail(s):`,
     ...lines.map((line) =>

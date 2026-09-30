@@ -2148,10 +2148,20 @@ describe('MCP session + tools — unit', () => {
       throw new Error('setup: capture refused');
     }
     const run = theRun(session) as string;
-    expect(closeSession(session)).toEqual({ closed: [run], leftOpen: [] });
+    expect(closeSession(session)).toEqual({
+      closed: [run],
+      leftOpen: [],
+      replaced: [],
+      begunWithNoRun: [],
+    });
     // Already ended — endRun refuses, closeSession swallows it and NAMES the run it
     // could not close, so a run is never simply absent from the account.
-    expect(closeSession(session)).toEqual({ closed: [], leftOpen: [run] });
+    expect(closeSession(session)).toEqual({
+      closed: [],
+      leftOpen: [run],
+      replaced: [],
+      begunWithNoRun: [],
+    });
   });
 
   it('closing a session that never wrote records nothing at all', () => {
@@ -2163,7 +2173,12 @@ describe('MCP session + tools — unit', () => {
     });
     // Closing is the LAST chance to write, so it is where a run would otherwise be
     // founded, started and ended in one go for a connection that only read.
-    expect(closeSession(session)).toEqual({ closed: [], leftOpen: [] });
+    expect(closeSession(session)).toEqual({
+      closed: [],
+      leftOpen: [],
+      replaced: [],
+      begunWithNoRun: [],
+    });
     for (const scope of ['public', 'private'] as const) {
       const root = chainRootForScope(session.trees, scope) as string;
       expect(orderedEvents({ root }, catalogUpcasters())).toEqual([]);
@@ -3506,17 +3521,16 @@ describe('MCP — what enters the record', () => {
     // two below — so the missing names were the interesting ones, which is the shape a
     // hand-kept list always ends up in.
     const writes = declaredTools.filter((one) => one.effect === 'mutates').map((one) => one.act);
-    // The two writes that carry NO content contract, each with the reason, reconciled
-    // both ways: a write that stops stating it has to arrive here, and one that starts
-    // has to leave. The contract is about the FREE TEXT a caller supplies — credentials
-    // it must not hold, the byte limit it is refused over — and these two take none: the
-    // first takes a skill id, the second a path, and what they append is minted from
-    // what the record already holds.
+    // The write that carries NO content contract, with the reason, reconciled both ways:
+    // a write that stops stating it has to arrive here, and one that starts has to leave.
+    // The contract is about what a caller supplies that ends up in the record —
+    // credentials it must not hold, the byte limit it is refused over — and `skills` takes
+    // an id and appends what the record already holds. `rules_before_an_edit` was here
+    // too, on the reading that "a path is not content", and the record falsified it: the
+    // path the caller named is what its `channel.asked` carries, through the same content
+    // door as any other value — so it carries the contract now.
     const NO_CONTENT_OF_ITS_OWN: Readonly<Record<string, string>> = {
       skills: 'takes an id and serves a body; it carries SERVED_PATTERN_CONTRACT instead',
-      rules_before_an_edit:
-        'takes a path and appends the asking and the service; the agent supplies no ' +
-        'content, and the description says the asking is recorded',
     };
     const describes = (name: string): string =>
       tools.tools.find((t) => t.name === name)?.description ?? '';
@@ -3530,9 +3544,11 @@ describe('MCP — what enters the record', () => {
       expect(description, `${name}: where it lands`).toContain('committed to the repository');
       expect(description, `${name}: the limit of the defense`).toContain('written verbatim');
     }
-    // Non-vacuity: the loop above ran over the ten writes that DO take content, so a
+    // Non-vacuity: the loop above ran over the eleven writes that DO take content, so a
     // declaration list that came back empty could not leave this case green.
-    expect(writes.filter((one) => !(one in NO_CONTENT_OF_ITS_OWN))).toHaveLength(10);
+    expect(writes.filter((one) => !(one in NO_CONTENT_OF_ITS_OWN))).toHaveLength(11);
+    // And the hook's description says what it records, in so many words.
+    expect(describes('rules_before_an_edit')).toContain('the path you named');
 
     // And a READ carries none of it — there is nothing to declare about a read.
     expect(describes('search')).not.toContain('RECORDING IS PERMANENT');

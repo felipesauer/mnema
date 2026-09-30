@@ -350,8 +350,67 @@ describe('nothing a document writes as punctuation is read as a field', () => {
       for (const pattern of emptiness) if (pattern.test(line)) found.push(line.trim());
     }
     expect(found).toEqual([]);
-    // NOT VACUOUS: the file really is the one being read, and the rule really is asked.
-    expect(source.match(/statesSomething\(/g) ?? []).toHaveLength(7);
+    // NOT VACUOUS: the file really is the one being read, and the rule really is asked — six
+    // calls, and the function they call is the one the write door asks too, imported rather
+    // than defined here, so the two doors cannot come to read a reason two ways again. And the
+    // marker is asked by the door's own function too, of the three fields that are recorded.
+    expect(source.match(/statesSomething\(/g) ?? []).toHaveLength(6);
+    expect(source.match(/isMarker\(/g) ?? []).toHaveLength(3);
+    expect(source).toContain(
+      "import { isMarker, statesSomething } from '../a-reason-states-something.js';",
+    );
+    expect(source).not.toMatch(/function statesSomething/);
+    expect(source).not.toMatch(/function isMarker/);
+  });
+});
+
+/**
+ * A MARKER LEFT WHERE THE WORDS GO IS NOT A FIELD EITHER — a template never filled in.
+ *
+ * What was wrong: `<why>` has letters, so the reader took it for a rationale and handed it to
+ * the write door, which refused it and stopped the whole import there; `# <title>` was imported
+ * as a decision named `<title>`. The reader now asks the door's own function (`isMarker`), and
+ * names the field.
+ */
+describe('a marker left where the words go is not read as a field', () => {
+  it('refuses a title that is a marker, whatever numbering is before it', () => {
+    for (const heading of ['# <title>', '# ADR-3: <title>', '# 4. <short title>']) {
+      expect(readAdr(`${heading}\n\n## Context\n\nthe logs disagree\n`), heading).toEqual({
+        ok: false,
+        code: 'TITLE_IS_A_MARKER',
+      });
+    }
+  });
+
+  it('refuses a context section, and a lead, that is a marker', () => {
+    expect(readAdr('# Use UTC\n\n## Context\n\n<why>\n')).toEqual({
+      ok: false,
+      code: 'RATIONALE_IS_A_MARKER',
+    });
+    expect(readAdr('# Use UTC\n\n<why>\n\n## Consequences\n\nclocks agree\n')).toEqual({
+      ok: false,
+      code: 'RATIONALE_IS_A_MARKER',
+    });
+  });
+
+  it('refuses a section of what was turned down that is a marker', () => {
+    expect(
+      readAdr(
+        '# Use UTC\n\n## Context\n\nthe logs disagree\n\n## Alternatives\n\n<alternatives>\n',
+      ),
+    ).toEqual({ ok: false, code: 'ALTERNATIVES_ARE_A_MARKER' });
+  });
+
+  it('and reads the same fields when a tag is only part of the words', () => {
+    const read = readAdr(
+      '# Use <b> for bold\n\n## Context\n\nthe <em> tag is gone\n\n## Alternatives\n\nkeep <i>\n',
+    );
+    expect(read).toMatchObject({
+      ok: true,
+      title: 'Use <b> for bold',
+      rationale: 'the <em> tag is gone',
+      alternatives: 'keep <i>',
+    });
   });
 });
 

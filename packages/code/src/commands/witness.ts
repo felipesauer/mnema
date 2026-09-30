@@ -133,9 +133,9 @@ export interface WitnessListing {
    * That sentence is true where it was written: `commands/tail-list.ts` answers with
    * `treesSearched(trees)` whole, and the machine-global tree always resolves. Here the
    * same list is filtered by `--global`, which every path of this group leaves off by
-   * default, so outside a project there is nothing left. A reading that interpolates this
-   * then prints `looked in .` — a list with no items and a full stop — and that is what a
-   * caller sees today.
+   * default, so outside a project there is nothing left. A reading that interpolated this
+   * printed `looked in .` — a list with no items and a full stop; the sentence the readings
+   * say now (`noTailHoldsEvents`, `presentation/tails.ts`) says why the list is empty instead.
    */
   readonly trees: readonly Scope[];
 }

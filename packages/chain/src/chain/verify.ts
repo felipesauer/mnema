@@ -489,7 +489,10 @@ export function verifyChain(
   // on a tail that is present and broken.
   const waivers = tailWaiversIn(entriesByTail);
   const backups = backupsTheRecordEnrolled(options.keyRoot, identity.members);
-  const census: CensusNote[] = [...keysWithoutTail(layout, tails, waivers, backups), ...notes];
+  const census: CensusNote[] = [
+    ...keysWithoutTail(committedFingerprints, tails, waivers, backups),
+    ...notes,
+  ];
 
   const ok = allIssues.length === 0;
   const fullySigned = ok && uncheckpointed === 0;
@@ -614,16 +617,21 @@ function tailFingerprintIsCommitted(tail: string, committed: ReadonlySet<string>
  * write: a key in `backups` becomes a {@link BackupKeyNote}. A waiver still comes first —
  * it is the record's own account of a cut, and a backup that was restored, signed and then
  * cut is exactly the key whose account a reader needs.
+ *
+ * THE ROSTER IS HANDED IN, the set the tail names were checked against at the top of the
+ * verification. This listed the committed keys a second time, from the disk, so one verdict read
+ * the roster twice — and a key committed between the two reads was a tail-name check that had not
+ * seen it and a census that had. One read, one roster, for the whole verdict.
  */
 function keysWithoutTail(
-  layout: ChainLayout,
+  committed: ReadonlySet<string>,
   tails: readonly string[],
   waivers: readonly TailWaiver[],
   backups: ReadonlyMap<string, string>,
 ): (KeyWithoutTailNote | BackupKeyNote)[] {
   const fingerprintsWithTail = new Set(tails.map(tailFingerprint));
   const notes: (KeyWithoutTailNote | BackupKeyNote)[] = [];
-  for (const fingerprint of listPublicKeyFingerprints(layout)) {
+  for (const fingerprint of committed) {
     if (fingerprintsWithTail.has(fingerprint)) continue;
     const accounted = waiversForKey(fingerprint, waivers);
     const anchor = backups.get(fingerprint);

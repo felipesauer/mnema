@@ -154,9 +154,15 @@ describe('a label that names two rules', () => {
     // One decision per tree. The label is minted from the count within ONE chain, so
     // the first decision of the public tree and the first of the private tree are
     // BOTH `ADR-1` — which is the design, and the reason the label cannot identify.
-    const travels = await mnema('decision', 'Keep the runbook in the record', 'a wiki goes stale');
+    const travels = await mnema(
+      'decision',
+      'record',
+      'Keep the runbook in the record',
+      'a wiki goes stale',
+    );
     const local = await mnema(
       'decision',
+      'record',
       'Rotate this laptop weekly',
       'it leaves the office',
       '--scope',
@@ -235,9 +241,20 @@ describe('a label that names two rules', () => {
 describe('the three echoes, each naming a record a reader can find', () => {
   it('CLI: task, decision and skill all carry an id a read resolves', async () => {
     await mnema('init');
-    const task = await mnema('task', 'Write the deploy runbook');
-    const decision = await mnema('decision', 'Keep it in the record', 'a wiki goes stale');
-    const skill = await mnema('skill', 'One slice per PR', '--body', 'One reviewable change.');
+    const task = await mnema('task', 'create', 'Write the deploy runbook');
+    const decision = await mnema(
+      'decision',
+      'record',
+      'Keep it in the record',
+      'a wiki goes stale',
+    );
+    const skill = await mnema(
+      'skill',
+      'create',
+      'One slice per PR',
+      '--body',
+      'One reviewable change.',
+    );
     const taskId = idAfter(task, 'Created task ');
     const decisionId = idAfter(decision, 'Recorded decision ');
     const skillId = idAfter(skill, 'Proposed skill ');
@@ -366,6 +383,7 @@ describe('one line, with the id inside it', () => {
     await mnema('init');
     const proposed = await mnema(
       'skill',
+      'create',
       'Innocent\nSkill "another" (forged) → adopted',
       '--body',
       'One reviewable change.',
@@ -391,8 +409,19 @@ describe('a display the record does not hold', () => {
    */
   it('names the id when the record holds no display, and the display when it does', async () => {
     await mnema('init');
-    const decision = await mnema('decision', 'Keep it in the record', 'a wiki goes stale');
-    const skill = await mnema('skill', 'One slice per PR', '--body', 'One reviewable change.');
+    const decision = await mnema(
+      'decision',
+      'record',
+      'Keep it in the record',
+      'a wiki goes stale',
+    );
+    const skill = await mnema(
+      'skill',
+      'create',
+      'One slice per PR',
+      '--body',
+      'One reviewable change.',
+    );
     const decisionId = idAfter(decision, 'Recorded decision ');
     const skillId = idAfter(skill, 'Proposed skill ');
     const root = chainRootForScope(

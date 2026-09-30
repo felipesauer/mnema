@@ -359,13 +359,17 @@ export async function parseWith(built: BuiltProgram, argv: readonly string[]): P
       // key root is this side's to resolve, and the words were written below it. The path
       // helper is imported on this path only, so the floor every other command starts on does
       // not grow an edge for a refusal (`the-floor-is-the-declaration.test.ts`).
-      let keyFile: string | undefined;
+      let whereTheKeyIs: string | undefined;
       if (error.restores !== undefined) {
         const { privateKeyPath } = await import('@mnema/chain');
+        const { keyFileLine } = await import('./key-file.js');
         const { keyRoot } = resolveTrees(here().cwd, here().env);
-        keyFile = privateKeyPath({ root: keyRoot }, error.restores);
+        whereTheKeyIs = keyFileLine(
+          privateKeyPath({ root: keyRoot }, error.restores),
+          here().env.mnemaHome,
+        );
       }
-      reportIdentityRefusal({ io, render }, error, keyFile);
+      reportIdentityRefusal({ io, render }, error, whereTheKeyIs);
       return;
     }
     // Any other throw — e.g. a read whose replay meets a stored line no parser

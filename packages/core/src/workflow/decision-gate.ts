@@ -10,7 +10,9 @@
  *      agent `which`. Checked first: the identity invariant holds regardless of
  *      the move.
  *   2. LEGALITY — the (from, action) pair is a transition the workflow allows.
- *   3. PROOF — every field the action requires is present and non-empty.
+ *   3. PROOF — every field the action requires is present and non-empty, and every
+ *      prose field given states something: no letter and no digit, or the `<why>` a
+ *      recipe prints, is refused `NOT_A_REASON` (`a-reason-states-something.ts`).
  *   4. SUPERSEDE SHAPE — a `supersede` must name a `by` (the successor), and
  *      that `by` must not be the decision being superseded (a decision cannot
  *      supersede itself). Any non-supersede action must NOT carry a `by`.
@@ -31,6 +33,7 @@
  */
 
 import type { TransitionFields } from '@mnema/chain';
+import { unstatedProof } from '../a-reason-states-something.js';
 import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalId } from '../identity/id.js';
 import { canonicalIdentity } from '../identity/who.js';
@@ -87,6 +90,12 @@ export type DecisionGateErrorCode =
   | 'ILLEGAL_TRANSITION'
   /** A required proof field is missing or empty. */
   | 'MISSING_PROOF'
+  /**
+   * A proof field that carries the why says nothing: no letter and no digit, or the marker a
+   * recipe prints in its place (`<why>`). The same question the append door asks
+   * (`a-reason-states-something.ts`), put here so a dry run and the move it previews agree.
+   */
+  | 'NOT_A_REASON'
   /** A `supersede` did not name the successor `by`. */
   | 'MISSING_BY'
   /** A `by` was supplied on an action that is not a supersede. */
@@ -169,6 +178,8 @@ export function decisionGate(request: DecisionGateRequest): DecisionGateResult {
       };
     }
   }
+  const unstated = unstatedProof(request.fields);
+  if (unstated !== undefined) return err('NOT_A_REASON', unstated);
 
   // Supersede shape: `by` is mandatory on a supersede and forbidden elsewhere.
   // `by` names another ENTITY, so it is taken in the chain's id form (NFC, no

@@ -380,15 +380,22 @@ beforeAll(() => {
   chmodSync(shim, 0o755);
 
   cli('init');
-  const decision = idIn(cli('decision', COMMITTED_TITLE, COMMITTED_RATIONALE));
+  const decision = idIn(cli('decision', 'record', COMMITTED_TITLE, COMMITTED_RATIONALE));
   cli('decision', 'move', 'accept', decision, '--note', 'agreed in review');
-  const pattern = idIn(cli('skill', PATTERN_NAME, '--body', PATTERN_BODY));
+  const pattern = idIn(cli('skill', 'create', PATTERN_NAME, '--body', PATTERN_BODY));
   cli('skill', 'move', 'review', pattern, '--note', 'read it');
   cli('skill', 'move', 'adopt', pattern, '--note', 'how the work is done here');
   // The tree that does NOT travel, accepted so that nothing but its SCOPE keeps it
   // out of the document the plugin injects.
   const mine = idIn(
-    cli('decision', PRIVATE_TITLE, 'It is a laptop-local convention', '--scope', 'private'),
+    cli(
+      'decision',
+      'record',
+      PRIVATE_TITLE,
+      'It is a laptop-local convention',
+      '--scope',
+      'private',
+    ),
   );
   cli('decision', 'move', 'accept', mine, '--note', 'mine to make');
   // THE NOTES: one that travels, one kept on this machine, and an observation about the
@@ -399,12 +406,12 @@ beforeAll(() => {
   cli('observe', decision, '--topic', OBSERVED_TOPIC, '--text', OBSERVED_TEXT);
   // A project with a record and no note, for the silence the notes channel keeps.
   cliAt(unnoted, 'init');
-  cliAt(unnoted, 'decision', 'A call and nothing noted', 'so the record is not empty');
+  cliAt(unnoted, 'decision', 'record', 'A call and nothing noted', 'so the record is not empty');
   // A project past the ceiling: four accepted rules the file carries whole and a hook cannot,
   // and one observation whose topic is longer than a line of the notes.
   cliAt(crowded, 'init');
   for (const title of CROWDED_TITLES) {
-    const id = idIn(cliAt(crowded, 'decision', title, 'agreed with finance'));
+    const id = idIn(cliAt(crowded, 'decision', 'record', title, 'agreed with finance'));
     cliAt(crowded, 'decision', 'move', 'accept', id, '--note', 'agreed in review');
     if (title === CROWDED_TITLES[0]) {
       cliAt(crowded, 'observe', id, '--topic', LONG_TOPIC, '--text', 'measured in August');

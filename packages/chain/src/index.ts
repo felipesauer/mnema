@@ -111,6 +111,7 @@ export {
   type TailRead,
   type TailSince,
 } from './chain/store.js';
+export { TailBusyError } from './chain/tail-lock.js';
 export { ensureTree } from './chain/tree.js';
 export {
   type BackupKeyNote,

@@ -206,7 +206,7 @@ beforeAll(async () => {
   process.chdir(project);
 
   await shell('init');
-  await shell('task', 'the task the window is resized over');
+  await shell('task', 'create', 'the task the window is resized over');
 
   // AND THE DEEP ONE, for the half of the opening a window at the floor still folds ({@link deep}).
   deep = join(
@@ -218,14 +218,14 @@ beforeAll(async () => {
   mkdirSync(deep, { recursive: true });
   process.chdir(deep);
   await shell('init');
-  await shell('task', 'the task the deep project is opened over');
+  await shell('task', 'create', 'the task the deep project is opened over');
 
   // AND THE WIDE ONE ({@link wide}): one task, titled in the language the defect was measured in.
   wide = join(sandbox, 'wide');
   mkdirSync(wide, { recursive: true });
   process.chdir(wide);
   await shell('init');
-  await shell('task', A_TITLE_IN_JAPANESE);
+  await shell('task', 'create', A_TITLE_IN_JAPANESE);
   process.chdir(project);
 
   environment = {

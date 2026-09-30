@@ -555,7 +555,7 @@ export function runLinkKnowledge(
 }
 
 /**
- * `create_task` — creates a task, the MCP counterpart of `mnema task`. Until it
+ * `create_task` — creates a task, the MCP counterpart of `mnema task create`. Until it
  * existed the agent could MOVE tasks but never open one, so an agent told to
  * break work down had no tool for it — the asymmetry this closes.
  *
@@ -682,7 +682,7 @@ function proofToFields(input: {
 
 /**
  * `record_decision` — records one decision into a tree, the MCP counterpart of
- * `mnema decision`. The destination is a per-action choice: an explicit `project` and
+ * `mnema decision record`. The destination is a per-action choice: an explicit `project` and
  * `scope` win, else the cascade's project and the tree this KIND names — a decision is
  * a declaration about the project, so it goes to the record that travels. A decision
  * needs both a `title` and a `rationale`, both required by the schema; what it
@@ -834,7 +834,7 @@ function decisionProofToFields(input: {
 
 /**
  * `create_skill` — proposes a reusable pattern into a tree, the MCP counterpart
- * of `mnema skill`. Like `record_decision`, the destination is a per-action choice: an
+ * of `mnema skill create`. Like `record_decision`, the destination is a per-action choice: an
  * explicit `project` and `scope` win, else the cascade's project and the tree this KIND
  * names — a pattern states how the work is done here, so it travels. A skill needs both
  * a `name` and a `body`, both required by the schema.
@@ -2182,7 +2182,9 @@ export function runRulesBeforeAnEditTool(
   // a call that already speaks, because the facts above are written only for a channel that
   // said something, and it is the first write of a connection into a tree that can found. So
   // this path, which nobody asked for and nobody reads the output of, is not silent about it.
-  const founded = session.founding.take();
+  // And what the content door replaced in those facts, for the same reason and by the same
+  // field: the path the host named is screened on its way into `channel.asked`.
+  const founded = [...session.founding.take(), ...session.replacementsOwed.take()];
   const told =
     founded.length === 0
       ? context
@@ -2228,6 +2230,7 @@ function recordAskings(session: Session, at: RulesAtPath): { readonly ok: boolea
       if (appended > 0) ctx.writer.checkpoint();
       return { ok: false };
     }
+    session.replacementsOwed.add(done.replaced);
     appended += 1;
   }
   ctx.writer.checkpoint();
@@ -2271,6 +2274,7 @@ function recordServices(session: Session, channels: readonly CountedChannel[]): 
   for (const channel of fresh) {
     const done = recordChannelServed(ctx, { channel, which: session.which, run });
     if (!done.ok) break;
+    session.replacementsOwed.add(done.replaced);
     recordedInRun.add(channel);
     appended += 1;
   }

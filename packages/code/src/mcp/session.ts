@@ -63,6 +63,7 @@ import {
   type PassedOverTree,
   type ResolvedTrees,
   type Scope,
+  type SecretClass,
 } from '@mnema/core';
 import {
   authorizingAnchor,
@@ -74,6 +75,7 @@ import {
 } from '@mnema/core/write';
 import { FoundingWatch } from '../a-new-identity.js';
 import { oneLine } from '../one-line.js';
+import { replacementNotice } from '../recorded-content.js';
 import { type CacheRegistry, createCacheRegistry } from './cache-registry.js';
 import {
   type ClientWorkspace,
@@ -369,6 +371,25 @@ export interface Session {
    */
   readonly founding: FoundingWatch;
   /**
+   * What the content door replaced in the facts this connection records ON ITS OWN, owed to the
+   * next reply — the run it opens ({@link ensureRun}) and what the edit hook appends
+   * (`channel.asked`, `channel.served`). No tool call asked for those, so no tool's own reply
+   * carries their report, and each of those sites used to drop it: a credential in the name the
+   * client announced was replaced in the run's `run.started` and nobody was told. Emptied where a
+   * reply is composed, beside {@link founding}. Of those sites only the asking can replace
+   * anything today — its `path` is a body; the run's agent and every `which` are names, refused
+   * rather than redacted — and `what-a-session-records-on-its-own-it-reports.test.ts` asks it.
+   */
+  readonly replacementsOwed: ReplacementsOwed;
+  /**
+   * The chain roots this connection BEGAN writing to — {@link ensureRun} adds one before the
+   * run's first append, whether or not the run then opens. A run's opening is two writes when
+   * the key has no anchor there (the founding, then `run.started`), so a connection whose run
+   * failed to open may still have written the first. The close's log line reads this rather than
+   * the run map alone, which is how it came to say "nothing was written" over a founding.
+   */
+  readonly writesBegun: Set<string>;
+  /**
    * The skills already recorded as consulted, per RUN — the ids, not the facts,
    * grouped by the chain root of the run they were recorded against. A consultation
    * is recorded ONCE per (run, skill): reading a pattern three times in one run is
@@ -500,6 +521,8 @@ export function openSession(input: OpenSessionInput): Session {
     log: input.log ?? (() => {}),
     caches,
     founding: new FoundingWatch(),
+    replacementsOwed: new ReplacementsOwed(),
+    writesBegun: new Set<string>(),
     consulted: new Map<string, Set<string>>(),
     served: new Map<string, Set<string>>(),
   };
@@ -731,6 +754,34 @@ export function openWrite(session: Session, scope: Scope, target?: WriteTarget):
 }
 
 /**
+ * What the content door replaced in facts no tool call asked for, held for the next reply.
+ *
+ * The wording is the one every write already uses ({@link replacementNotice}), under a line
+ * saying which facts it is about — they are not the fact the reply acknowledges.
+ */
+export class ReplacementsOwed {
+  private held: SecretClass[] = [];
+
+  /** Holds what a write the connection made on its own replaced, when it replaced anything. */
+  add(replaced: readonly SecretClass[] | undefined): void {
+    if (replaced !== undefined) this.held.push(...replaced);
+  }
+
+  /** The block owed since the last take — none when nothing was replaced — and forgets it. */
+  take(): string[] {
+    const was = this.held;
+    this.held = [];
+    if (was.length === 0) return [];
+    return [
+      [
+        'What this connection recorded on its own — its session run, the edit hook’s facts:',
+        ...replacementNotice(was),
+      ].join('\n'),
+    ];
+  }
+}
+
+/**
  * Opens the run for a destination if it has none, and returns its id.
  *
  * Synchronous from the check to the assignment, and that is a requirement rather
@@ -758,12 +809,17 @@ function ensureRun(session: Session, trees: ResolvedTrees, scope: Scope): string
   // run's own opening is that first thing, and a key with no anchor in the tree founds on its
   // way in. What the tree's anchors were a moment before is what the next reply compares with.
   session.founding.opened(root, scope);
+  session.writesBegun.add(root);
   const ctx = writeContext(trees, scope, session.caches);
   const started = startRun(ctx, { agent: session.which });
   if (!started.ok) {
     throw new Error(`could not open a session run: ${started.code} — ${started.message}`);
   }
   session.runs.set(root, { id: started.id, trees, scope });
+  // The run is this connection's own fact, and the name it carries is the one the client
+  // announced — the value the door screens. What it replaced is owed to the reply that
+  // caused the opening, which is the first reply able to say it.
+  session.replacementsOwed.add(started.replaced);
   // SIGNED HERE, because opening a run is an act of writing and every act of writing
   // signs what it wrote. Nothing above this line guarantees a later one: a call whose
   // operation is REFUSED checkpoints nothing (by design — see the tools), so the
@@ -801,6 +857,14 @@ export interface SessionClose {
    * accounts for, which is the state the projection reads as work still in flight.
    */
   readonly leftOpen: readonly string[];
+  /**
+   * What the content door replaced in the `run.ended` facts this close wrote. A close answers
+   * no tool call, so the host's log is the one place it can be said; the same name was
+   * already reported to the agent when the run opened ({@link ReplacementsOwed}).
+   */
+  readonly replaced: readonly SecretClass[];
+  /** The roots a write began in with no run to show for it — see {@link Session.writesBegun}. */
+  readonly begunWithNoRun: readonly string[];
 }
 
 /**
@@ -831,6 +895,7 @@ export interface SessionClose {
 export function closeSession(session: Session): SessionClose {
   const closed: string[] = [];
   const leftOpen: string[] = [];
+  const replaced: SecretClass[] = [];
   // FIRST, before a single `run.ended` is appended: from here on this session has no
   // run a write could honestly pin to, and a call already in flight resumes after this
   // function returns (see {@link Session.ended}). Set even if the closes below fail —
@@ -860,6 +925,7 @@ export function closeSession(session: Session): SessionClose {
         // only what landed: a refused close leaves nothing pending, so this is a
         // no-op there rather than a second signature over the same range.
         if (ended.ok) ctx.writer.checkpoint();
+        if (ended.ok) replaced.push(...(ended.replaced ?? []));
         (ended.ok ? closed : leftOpen).push(run.id);
       } catch {
         leftOpen.push(run.id);
@@ -868,7 +934,9 @@ export function closeSession(session: Session): SessionClose {
   } finally {
     session.caches.closeAll();
   }
-  return { closed, leftOpen };
+  const opened = new Set(session.runs.keys());
+  const begunWithNoRun = [...session.writesBegun].filter((root) => !opened.has(root));
+  return { closed, leftOpen, replaced, begunWithNoRun };
 }
 
 /**

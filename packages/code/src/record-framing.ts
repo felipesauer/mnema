@@ -57,7 +57,8 @@
  * `read_record`, 24 through the `mnema` command in their own shell, none through both. The
  * other three rounds counted calls to this product, and the reader that went looking did
  * find something through its door: it ran `cat` on the file of a decision the record held
- * and nothing pushed had carried, and cited it in the two decisions it wrote. Once the
+ * and nothing pushed had carried, and cited it in the three decisions it wrote (this said
+ * two, and the session recorded three, one after another). Once the
  * origin travelled beside the label, the reader of the opening document on that project ran
  * `cat` on the file it cited six minutes after it arrived, in a session that had made, by
  * 22/09/2026, 2,863 tool calls — none to this product, nine in ten through the shell. The

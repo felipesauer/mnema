@@ -599,7 +599,7 @@ describe('the brief declares a label that names more than one rule', () => {
     expect(text).not.toMatch(/\d{4}-\d{2}-\d{2}/);
     expect(text).not.toMatch(/mnid:/);
     expect(text.match(/\(\d+\)/g)).toEqual(['(2)', '(1)']);
-    for (const absent of ['task', 'in_progress', 'to do', 'next up', 'work item']) {
+    for (const absent of ['task', 'create', 'in_progress', 'to do', 'next up', 'work item']) {
       expect(text.toLowerCase(), `the declaration mentions ${absent}`).not.toContain(absent);
     }
   });
@@ -689,7 +689,7 @@ describe('the brief has the same skeleton whether or not anything was decided', 
     const text = printed(
       governance({ decisions: [decision(1)], skills: [pattern(1)] }),
     ).toLowerCase();
-    for (const absent of ['task', 'in_progress', 'to do', 'next up', 'work item']) {
+    for (const absent of ['task', 'create', 'in_progress', 'to do', 'next up', 'work item']) {
       expect(text, `the document mentions ${absent}`).not.toContain(absent);
     }
   });

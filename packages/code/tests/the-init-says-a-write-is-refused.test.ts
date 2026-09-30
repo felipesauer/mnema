@@ -233,7 +233,7 @@ function saysTheRefusal(
 
   // THE SAME BYTES: the refusal's words after init's own opening, and the file on the same line.
   expect(said.lines).toEqual([said.lines[0], `${SAID}${words}`, fileLine, '']);
-  const keyFile = /this machine keeps the key file at (.+)$/.exec(fileLine as string)?.[1];
+  const keyFile = /this machine keeps the key file at (.+?), under /.exec(fileLine as string)?.[1];
   expect(keyFile).toBe(join(homeDir, '.mnema', 'identity', 'keys', `${keyOf(homeDir)}.key`));
   return { words, keyFile: keyFile as string };
 }

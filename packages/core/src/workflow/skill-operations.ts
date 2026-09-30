@@ -42,7 +42,7 @@ import { canonicalId, mintId } from '../identity/id.js';
 import { oneLine } from '../one-line.js';
 import { orderedEvents } from '../projections/order.js';
 import { projectSkills, type SkillProjection } from '../projections/skill.js';
-import { appendEvent, appendEvents, type UnreadableEventErr } from './append.js';
+import { type AppendRefusal, appendEvent, appendEvents } from './append.js';
 import { type Clock, systemClock } from './clock.js';
 import { authorizingAnchor, ensureFounded } from './identity-operations.js';
 import { type SkillGateErr, skillGate } from './skill-gate.js';
@@ -63,7 +63,7 @@ export type SkillWriteError =
   /** A free-text field was over the size limit (see {@link screenContent}). */
   | ScreenRefusal
   /** A read would not have accepted the event (see {@link appendEvent}). */
-  | UnreadableEventErr
+  | AppendRefusal
   /** The skill acted on does not exist (no `skill.created` for this id). */
   | { readonly ok: false; readonly code: 'UNKNOWN_SKILL'; readonly message: string };
 
@@ -223,7 +223,7 @@ export interface ConsultationInput {
 export function recordConsultation(
   ctx: SkillWriteContext,
   input: ConsultationInput,
-): ConsultationOk | SelfAuthorizedErr | ScreenRefusal | UnreadableEventErr {
+): ConsultationOk | SelfAuthorizedErr | ScreenRefusal | AppendRefusal {
   // Both of its caller-supplied strings in one screen: the skill id that becomes
   // the SUBJECT, and the run that pins the fact to a session. Neither is proved
   // here, so both are fields through which an unbounded — or dirty — value could

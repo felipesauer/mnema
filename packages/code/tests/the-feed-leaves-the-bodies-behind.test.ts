@@ -108,14 +108,17 @@ async function aRecordFullOfBodies(): Promise<{ anchor: string; task: string }> 
   const started = await mnema('run', 'start', '--which', 'agent-alpha', '--goal', BODY);
   process.env.MNEMA_RUN = after(started, 'Started run ');
 
-  const task = after(await mnema('task', `a task about ${BODY}`), 'Created task ');
+  const task = after(await mnema('task', 'create', `a task about ${BODY}`), 'Created task ');
   await mnema('task', 'move', 'submit', task, '--note', BODY);
-  const decision = after(await mnema('decision', `a decision about ${BODY}`, BODY), 'Recorded ');
+  const decision = after(
+    await mnema('decision', 'record', `a decision about ${BODY}`, BODY),
+    'Recorded ',
+  );
   await mnema('decision', 'move', 'accept', decision, '--note', BODY);
   // A skill is BORN proposed, so its report says so — the workflow's own word, not a
   // generic "created".
   const skill = after(
-    await mnema('skill', `a pattern about ${BODY}`, '--body', BODY),
+    await mnema('skill', 'create', `a pattern about ${BODY}`, '--body', BODY),
     'Proposed skill ',
   );
   await mnema('skill', 'move', 'review', skill, '--note', BODY);

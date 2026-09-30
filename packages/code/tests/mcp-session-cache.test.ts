@@ -474,7 +474,12 @@ describe('the session releases what it held', () => {
         ]),
       ),
     };
-    expect(closeSession(broken)).toEqual({ closed: [], leftOpen: [open?.id] });
+    expect(closeSession(broken)).toEqual({
+      closed: [],
+      leftOpen: [open?.id],
+      replaced: [],
+      begunWithNoRun: [],
+    });
     expect(() => cache.listTasks()).toThrow();
   });
 
