@@ -527,9 +527,9 @@ export const NAMES_THAT_NEED_MORE: Readonly<
 export const HANDED_OVER: Readonly<
   Record<Handed['from'], Readonly<Record<Reading['kind'], number>>>
 > = {
-  span: { line: 29, name: 66, flag: 1, unwritten: 0 },
+  span: { line: 34, name: 66, flag: 1, unwritten: 0 },
   block: { line: 35, name: 18, flag: 0, unwritten: 0 },
-  source: { line: 32, name: 45, flag: 3, unwritten: 3 },
+  source: { line: 34, name: 46, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

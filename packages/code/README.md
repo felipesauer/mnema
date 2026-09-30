@@ -73,7 +73,7 @@ identically, because they are the same call.
   The same record always prints the same bytes, which is what makes
   `mnema brief | diff - MNEMA.md` a staleness check.
 - **A plugin for Claude Code**, in [`plugin/`](../../plugin/), that stops the delivery
-  from depending on somebody remembering to regenerate a file. It declares three hooks and
+  from depending on somebody remembering to regenerate a file. It declares four hooks and
   the MCP server below, in one installation. As a session opens, one hook runs `mnema
   brief` and hands over the document, and another runs `mnema recall` and hands over the
   **notes** — the memories and observations recorded for the project, from every tree
@@ -87,14 +87,34 @@ identically, because they are the same call.
   an address. The two opening hooks are reads: they append nothing and open no run, so the
   record's `channel.served` counts what the per-edit hook pushed and never the opening
   texts. The per-edit one records that it served, and holds a write for a person only where a rule of
-  your own record asks it to — the plugin's page says how. All three are **silent** where there is no project, so a
+  your own record asks it to — the plugin's page says how. The fourth is that same pause for a
+  host whose hooks are processes: VS Code's agent runs it as `mnema before-a-write --host vscode`
+  before a write, and it asks, and records, exactly where the third would; Claude Code and
+  Cursor never run it. All four are **silent** where there is no project, so a
   machine that installs this and opens a session somewhere else sees nothing. Asserted in
   `tests/the-record-arrives-unasked.test.ts`, `tests/the-rule-reaches-the-writing.test.ts`
-  and `tests/the-record-asks-for-a-person.test.ts`; the plugin's own page states what it
-  carries and what it leaves behind. VS Code's agent and Cursor's command-line agent read
-  the same plugin: the two opening hooks run in both, and the per-edit one is Claude Code's
-  — the [plugin's page](../../plugin/README.md#in-vs-code-and-cursor) has the table, host
-  by host.
+  and `tests/the-record-asks-for-a-person.test.ts`, and the fourth in
+  `tests/a-host-that-runs-commands-asks-for-a-person.test.ts`; the plugin's own page states what
+  it carries and what it leaves behind. VS Code's agent and Cursor's command-line agent read
+  the same plugin: the two opening hooks run in both, the rules at each edit are Claude Code's,
+  and the pause for a person reaches VS Code too and not Cursor's agent, which runs the hook
+  and ignores the pause — the [plugin's page](../../plugin/README.md#in-vs-code-and-cursor) has
+  the table, host by host, and [`measurements/hooks-by-host/`](../../measurements/hooks-by-host/)
+  the captures.
+- **A rules file for a host without the plugin** — `mnema rules-file --host vscode` prints the
+  committed rules in force whose address is a file, as a `.instructions.md` with an `applyTo`,
+  and `--host cursor` as a `.mdc` with `globs`. A directory is left out, because no list of
+  globs was found to match exactly what it governs in either host: VS Code puts `**/` before a
+  relative pattern, so `src/billing/**` would also match a `src/billing` anywhere else under the
+  folder it reads, and Cursor matches `globs` on its servers, where it could not be measured. So
+  is an address holding a character a glob reads as syntax — `app/[id]` as a glob matches
+  `app/i`. The same `**/` reaches a file too — `src/x.ts` also matches `other/src/x.ts` — and the
+  output says so where it prints a file for VS Code. Every rule it leaves out is named
+  on the second stream with the reason, in the same run; the file goes to stdout, and where it
+  lands is your choice — the `>` replaces the whole of the file it names. Asserted in
+  `tests/a-rules-file-carries-only-what-becomes-a-glob-exactly.test.ts`, against Node's own glob
+  matcher; what each host does with the pattern is
+  [`measurements/hooks-by-host/`](../../measurements/hooks-by-host/).
 - **A switch for everything it pushes** — `mnema switch` says where each of those
   channels stands and what each carries; `mnema switch off edit-rules-push` stops the
   per-edit push, `mnema switch off brief-document` stops the opening document and `mnema

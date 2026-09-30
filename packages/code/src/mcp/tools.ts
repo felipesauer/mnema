@@ -128,14 +128,9 @@ import {
   supersedeDecision,
   transitionTask,
 } from '@mnema/core/write';
-import { editAsksNotice } from '../edit-asks-a-person.js';
+import { whatAWriteAsks } from '../edit-asks-a-person.js';
 import { editRulesNotice, editRulesTold } from '../edit-rules-push.js';
-import {
-  reachOfAddress,
-  readAsksForAPersonAt,
-  readGoverningRules,
-  readRulesInForceAt,
-} from '../governed-tree.js';
+import { reachOfAddress, readGoverningRules, readRulesInForceAt } from '../governed-tree.js';
 import {
   projectEventsOf,
   recordTrees,
@@ -2160,13 +2155,11 @@ export function runRulesBeforeAnEditTool(
   // THE GATE, AND ITS WHOLE ORDER OF OPERATIONS. The rules that ask are derived, the text
   // is composed, and only then is the fact appended — because the fact cites what the text
   // cites, and appending first would mean recording an accusation whose wording could still
-  // fail to compose. Then the reply: the charge rides only if the append landed.
-  const asked = asking ? readAsksForAPersonAt(caches, read) : undefined;
-  const ask = asked === undefined ? undefined : editAsksNotice(asked);
-  const charged =
-    ask === undefined || asked === undefined
-      ? { ok: true as const }
-      : recordAskings(session, asked);
+  // fail to compose. Then the reply: the charge rides only if the append landed. What asks
+  // is decided where the other door decides it too (`whatAWriteAsks`).
+  const gate = asking ? whatAWriteAsks(caches, read) : undefined;
+  const ask = gate?.notice;
+  const charged = gate === undefined ? { ok: true as const } : recordAskings(session, gate.asked);
   // A RECORD THAT CANNOT BE WRITTEN CHARGES NOTHING, and the silence is not this line's to
   // explain: the tool still answers `ok` with whatever text it had, so the edit goes
   // through and nobody's afternoon is spent on a refusal that was never recorded. What says

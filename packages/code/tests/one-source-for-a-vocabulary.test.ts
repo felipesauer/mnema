@@ -204,8 +204,9 @@ describe('a declaration lists the set it takes', () => {
     // Twenty since `decision import` declared its own `--scope`: it is a birth, and a
     // birth takes the per-action override. Twenty-three since the three births moved from
     // their groups into `task create`, `decision record` and `skill create`, which declare
-    // the group's `--scope` too, so their `--help` lists it.
-    expect(DECLARED_SETS.length).toBe(23);
+    // the group's `--scope` too, so their `--help` lists it; twenty-five since the two `--host`
+    // sets, of `before-a-write` and `rules-file`, each read from `host-names.ts`.
+    expect(DECLARED_SETS.length).toBe(25);
   });
 
   it('takes the set from the DOMAIN, at each of the levels that take one', () => {

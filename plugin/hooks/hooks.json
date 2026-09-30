@@ -1,5 +1,5 @@
 {
-  "description": "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name — and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. At each edit, hands over the rules of the record addressed at that path, beside the result of that write — and where a rule of that record asks for it, pauses the write until a person decides, citing the rule. Every one of those is recorded as a fact of the chain. Each can be switched off with `mnema switch`, which records that it was.",
+  "description": "Hands the project's committed record to the session as it opens: the decisions in force and the adopted patterns, by name — and, beside it, the memories and observations recorded for the project, from every tree this machine holds, the ones that share a word with what the session touches first. At each edit, hands over the rules of the record addressed at that path, beside the result of that write — and where a rule of that record asks for it, pauses the write until a person decides, citing the rule — in Claude Code through a call into the server, and in VS Code, whose hooks are processes, through a command of its own that Claude Code and Cursor never match. Every one of those is recorded as a fact of the chain. Each can be switched off with `mnema switch`, which records that it was.",
   "hooks": {
     "SessionStart": [
       {
@@ -26,6 +26,16 @@
             "server": "plugin:mnema:mnema",
             "tool": "rules_before_an_edit",
             "input": { "path": "${tool_input.file_path}" },
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "^(create_file|replace_string_in_file|multi_replace_string_in_file|insert_edit_into_file|edit_notebook_file|apply_patch)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "IN=$(cat); case \"$IN\" in *'\"create_file\"'*|*'\"replace_string_in_file\"'*|*'\"multi_replace_string_in_file\"'*|*'\"insert_edit_into_file\"'*|*'\"edit_notebook_file\"'*|*'\"apply_patch\"'*) printf '%s' \"$IN\" | node \"${CLAUDE_PLUGIN_ROOT}/hooks/edit-asks-a-person.mjs\";; esac",
             "timeout": 15
           }
         ]

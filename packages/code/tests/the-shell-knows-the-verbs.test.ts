@@ -48,6 +48,7 @@ import { Argument, Command, Option } from 'commander';
 import { afterAll, describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo } from '../src/cli.js';
 import { completionScript } from '../src/completion/script.js';
+import { HOOK_HOSTS, RULES_FILE_HOSTS } from '../src/host-names.js';
 import { SWITCHABLE_CHANNELS } from '../src/record-framing.js';
 import { REFERENCE_DIRECTIONS } from '../src/reference-directions.js';
 import { SHELLS, type Shell } from '../src/wiring/completion.js';
@@ -147,6 +148,11 @@ function everyDomainWord(): readonly string[] {
     // anything at all — so the vocabulary is the surface's (`src/record-framing.ts`), and
     // it is derived from the union of channels rather than typed a second time.
     ...SWITCHABLE_CHANNELS,
+    // And the two host sets `--host` takes, the surface's too, for the same reason: which host
+    // a hook can ask for a person in, and which reads a rules file, are measurements about
+    // hosts (`src/host-names.ts`), not facts the domain holds.
+    ...HOOK_HOSTS,
+    ...RULES_FILE_HOSTS,
   ];
 }
 

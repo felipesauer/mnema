@@ -75,8 +75,10 @@ agent has written anything. At each edit the rules
 addressed at that file are handed over too: they land beside the result of that
 write, in time for every edit after it and for a correction of that one
 ([measured](measurements/mcp-tool-channel/)), and a rule recorded as asking for a
-person holds the write itself until one decides. Each of those channels can be
-switched off, and switching one off is itself a signed fact.
+person holds the write itself until one decides — in VS Code's agent too, through a hook of its
+own, and not in Cursor's command-line agent, which runs the hook and ignores the pause
+([measured](measurements/hooks-by-host/)). Each of those channels can be switched off, and
+switching one off is itself a signed fact.
 
 **It proves itself to a stranger.** Every fact is hash-chained, and every write the
 command line or the MCP server makes is signed before it returns. `mnema verify`
@@ -266,8 +268,10 @@ redundant: a session would be offered every tool twice, under two prefixes.
 **In VS Code and Cursor**, the server is the same `mnema mcp`, and the plugin is the same
 one. VS Code's agent reads the Claude Code plugin format, and Cursor's command-line agent
 picks up a plugin installed in Claude Code on the same machine; the per-host details — what
-each one runs, and the one hook that is Claude Code's alone — are in the
-[plugin's page](plugin/README.md#in-vs-code-and-cursor).
+each one runs, the rules at each edit that are Claude Code's alone, and the pause for a person
+that reaches VS Code as well — are in the [plugin's page](plugin/README.md#in-vs-code-and-cursor).
+Without the plugin, `mnema rules-file --host vscode` or `--host cursor` prints the committed rules
+addressed at a file in that host's own rules format, and says which rules it left out and why.
 
 ## Your first record
 
@@ -368,7 +372,7 @@ still in the record has not changed since it was signed.
 | [`packages/chain`](packages/chain/) | The proof engine: the typed event catalog, canonicalization, the per-tail hash chain, Ed25519 checkpoints, and the verifier. **Zero runtime dependencies** — the code you have to trust for tamper-evidence is auditable on its own, and it is released on its own so that it can be. Its tarball carries `FORMAT.md`, the published vectors and the independent verifier. |
 | [`packages/core`](packages/core/) | The work domain: the gate over the shape of a change, the projections read back out of the chain, identity, and the queries. Released because `@mnema/code` depends on it. |
 | [`packages/copilot`](packages/copilot/) | Read-only derivations that turn the proven record into the context an agent is handed. Released because `@mnema/code` depends on it. |
-| [`plugin/`](plugin/) | The Claude Code plugin: three hooks — two as a session opens, one at each edit — and the MCP server declaration, in one installation. |
+| [`plugin/`](plugin/) | The Claude Code plugin: four hooks — two as a session opens, two at each edit — the one Claude Code runs and the one VS Code runs, each skipped by the other — and the MCP server declaration, in one installation. |
 | [`measurements/`](measurements/) | The measurements this product's claims rest on, with their protocols and their raw results. |
 
 **All four are released, and only one of them is meant to be installed.** This

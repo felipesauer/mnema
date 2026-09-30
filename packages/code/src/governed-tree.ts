@@ -36,6 +36,7 @@ import {
   type GovernanceQuery,
   type GoverningRules,
   governingRules,
+  governsInForceEverywhere,
   type RulesAtPath,
   rulesInForceAt,
   type ScopedCache,
@@ -118,6 +119,24 @@ export function readAsksForAPersonAt(
   read: GovernedRead,
 ): RulesAtPath {
   return asksForAPersonAt(sources, asked(read));
+}
+
+/**
+ * Every address the rules in force hold under `governs` — the push's own reading, without the
+ * path — what a rules file for another host is composed from (`commands/rules-file.ts`).
+ *
+ * FIFTH ENTRY POINT, SAME PROBE. It asks no path, so it does not go through {@link asked}; what
+ * it shares with the others is the root and the disk probe, which is the part two surfaces
+ * could come to disagree about, so it is written here and nowhere else.
+ */
+export function readGovernsInForceEverywhere(
+  sources: readonly ScopedCache[],
+  root: string,
+): ReturnType<typeof governsInForceEverywhere> {
+  return governsInForceEverywhere(sources, {
+    root,
+    onDisk: (relative) => existsSync(join(root, relative)),
+  });
 }
 
 /**

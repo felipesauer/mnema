@@ -107,6 +107,8 @@ const ANSWERS_ANYWAY: Readonly<Record<string, string>> = {
   completion: 'the script it writes is generated from the declarations, and no record is consulted',
   witness: 'it reports on the tails it can see, and says so when there are none',
   'witness upgrade': 'the same: with no tail waiting on an attestation there is nothing to refuse',
+  'before-a-write':
+    'a host runs it on every tool call of a session, and outside a project it answers `{}` — the silence a host reads — because that session is not the product’s to speak into',
 };
 
 /**

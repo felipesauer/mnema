@@ -420,6 +420,10 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: 'Composes the whole antipatterns page, yet the only cases reaching it sit in the brief block and grep it for the label-clash line, leaving its six counts and closing note unread.',
   },
+  'packages/code/src/wiring/before-a-write.ts': {
+    reached: 'nobody imports it',
+    why: "The before-a-write verb's wiring, reading a host's payload through the standard-input port; a-host-that-runs-commands-asks-for-a-person.test.ts runs it through the binary with a payload and through the plugin's own command, and every-verb-says-if-it-writes.test.ts exercises it in process.",
+  },
   'packages/code/src/wiring/brief.ts': {
     reached: 'nobody imports it',
     why: 'The option-less brief registration and its switched-off sentence; the brief cases all assert the document presentation/brief.ts renders, and the switch test is about the switch.',
@@ -491,6 +495,10 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
   'packages/code/src/wiring/rules.ts': {
     reached: 'nobody imports it',
     why: "The rules verb's wiring for reading which recorded rules govern a path; the-rule-has-an-address.test.ts drives it only to compare the CLI's answer with the governing_rules tool's.",
+  },
+  'packages/code/src/wiring/rules-file.ts': {
+    reached: 'nobody imports it',
+    why: "The rules-file verb's wiring and the lines it says on the second stream; a-rules-file-carries-only-what-becomes-a-glob-exactly.test.ts runs it through the binary for both hosts, with and without a file to print.",
   },
   'packages/code/src/wiring/run.ts': {
     reached: 'nobody imports it',
@@ -604,7 +612,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  * reading, so nothing can fall in two.
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
-  wiring: 32,
+  wiring: 34,
   presentation: 11,
   projections: 4,
   completion: 4,
@@ -826,6 +834,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-flag-declared-twice.test.ts': 9,
   'packages/code/tests/a-floor-under-the-window.test.ts': 16,
   'packages/code/tests/a-home-of-its-own.test.ts': 8,
+  'packages/code/tests/a-host-that-runs-commands-asks-for-a-person.test.ts': 12,
   'packages/code/tests/a-label-a-stranger-can-look-up.test.ts': 5,
   'packages/code/tests/a-line-of-success-is-one-line.test.ts': 7,
   'packages/code/tests/a-marker-is-not-a-reason.test.ts': 7,
@@ -835,6 +844,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-refusal-is-one-line.test.ts': 7,
   'packages/code/tests/a-refusal-leaves-nothing.test.ts': 12,
   'packages/code/tests/a-refused-group-flag-leaves-the-record.test.ts': 7,
+  'packages/code/tests/a-rules-file-carries-only-what-becomes-a-glob-exactly.test.ts': 11,
   'packages/code/tests/a-state-is-a-position.test.ts': 8,
   'packages/code/tests/a-sticky-pattern-answers-differently-each-call.test.ts': 3,
   'packages/code/tests/a-terminal-of-its-own.test.ts': 19,
@@ -854,7 +864,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/every-sandbox-is-removed-where-it-was-made.test.ts': 6,
   'packages/code/tests/every-tool-says-if-it-writes.test.ts': 15,
   'packages/code/tests/every-verb-says-if-it-writes.test.ts': 14,
-  'packages/code/tests/every-write-signs-what-it-wrote.test.ts': 29,
+  'packages/code/tests/every-write-signs-what-it-wrote.test.ts': 30,
   'packages/code/tests/mcp-audit-across-workspace.test.ts': 12,
   'packages/code/tests/mcp-configured-project.test.ts': 11,
   'packages/code/tests/mcp-context.test.ts': 8,
@@ -923,6 +933,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-floor-is-the-declaration.test.ts': 6,
   'packages/code/tests/the-floor-is-where-the-name-is-drawn.test.ts': 24,
   'packages/code/tests/the-front-page-says-what-its-sources-say.test.ts': 7,
+  'packages/code/tests/the-gate-is-decided-once.test.ts': 5,
   'packages/code/tests/the-home-is-not-a-project.test.ts': 14,
   'packages/code/tests/the-index-names-the-runs-that-exist.test.ts': 4,
   'packages/code/tests/the-init-says-a-write-is-refused.test.ts': 12,
@@ -974,7 +985,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-session-learns-where-it-is.test.ts': 12,
   'packages/code/tests/the-session-the-manual-shows-is-the-one-printed.test.ts': 8,
   'packages/code/tests/the-shell-a-page-publishes-is-the-shell-that-runs.test.ts': 5,
-  'packages/code/tests/the-shell-knows-the-verbs.test.ts': 16,
+  'packages/code/tests/the-shell-knows-the-verbs.test.ts': 17,
   'packages/code/tests/the-split-is-frozen-before-the-number.test.ts': 4,
   'packages/code/tests/the-strict-gate-catches-the-forgery.test.ts': 7,
   'packages/code/tests/the-switch-is-a-fact.test.ts': 12,
@@ -1149,6 +1160,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/cli.ts',
   'packages/code/src/commands/accountability.ts',
   'packages/code/src/commands/antipatterns.ts',
+  'packages/code/src/commands/before-a-write.ts',
   'packages/code/src/commands/brief.ts',
   'packages/code/src/commands/decision-import.ts',
   'packages/code/src/commands/decision-transition.ts',
@@ -1170,6 +1182,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/commands/recall.ts',
   'packages/code/src/commands/references.ts',
   'packages/code/src/commands/resume.ts',
+  'packages/code/src/commands/rules-file.ts',
   'packages/code/src/commands/rules.ts',
   'packages/code/src/commands/run-end.ts',
   'packages/code/src/commands/run-start.ts',
@@ -1200,6 +1213,9 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/edit-rules-push.ts',
   'packages/code/src/env.ts',
   'packages/code/src/governed-tree.ts',
+  'packages/code/src/host-hook.ts',
+  'packages/code/src/host-names.ts',
+  'packages/code/src/host-rules-file.ts',
   'packages/code/src/intelligence-source.ts',
   'packages/code/src/key-file.ts',
   'packages/code/src/mcp/cache-registry.ts',
@@ -1284,6 +1300,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/what-the-session-touches.ts',
   'packages/code/src/wiring/accountability.ts',
   'packages/code/src/wiring/antipatterns.ts',
+  'packages/code/src/wiring/before-a-write.ts',
   'packages/code/src/wiring/brief.ts',
   'packages/code/src/wiring/color.ts',
   'packages/code/src/wiring/completion.ts',
@@ -1315,6 +1332,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/repl.ts',
   'packages/code/src/wiring/report.ts',
   'packages/code/src/wiring/resume.ts',
+  'packages/code/src/wiring/rules-file.ts',
   'packages/code/src/wiring/rules.ts',
   'packages/code/src/wiring/run-pin.ts',
   'packages/code/src/wiring/run.ts',
@@ -1470,8 +1488,8 @@ describe('every file has a test that names it', () => {
     expect(PRODUCTION.length - found.size).toBe(
       PRODUCTION_FILES.length - Object.keys(UNWITNESSED).length,
     );
-    expect(found.size).toBe(71);
-    expect(byReach('nobody imports it')).toBe(71);
+    expect(found.size).toBe(73);
+    expect(byReach('nobody imports it')).toBe(73);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -1493,7 +1511,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(71);
+    expect(reasons).toHaveLength(73);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

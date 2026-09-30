@@ -390,8 +390,11 @@ describe('every handler that pushes declares the channel it carries', () => {
     // TWO now, one per text a session opens with; the module they share (`hand-over.mjs`)
     // answers with text and writes nothing out, so it is walked and not asked — which is
     // what keeps the rule that decides silence in ONE file without giving that file a
-    // channel it does not carry.
+    // channel it does not carry. AND A THIRD, the gate as VS Code runs it: a process that
+    // hands back what `mnema before-a-write` answers, whose reason is framed where the MCP
+    // tool's is (`edit-asks-a-person.ts`), under the same channel.
     expect(named).toEqual([
+      'edit-asks-a-person.mjs:edit-asks-a-person',
       'session-recall.mjs:recall-document',
       'session-start.mjs:brief-document',
     ]);
@@ -439,6 +442,7 @@ describe('every handler that pushes declares the channel it carries', () => {
       'SessionStart:command:session-start.mjs',
       'SessionStart:command:session-recall.mjs',
       'PreToolUse:mcp_tool:rules_before_an_edit:edit-rules-push+edit-asks-a-person',
+      'PreToolUse:command:edit-asks-a-person.mjs',
     ]);
   });
 
