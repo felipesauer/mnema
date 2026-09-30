@@ -186,11 +186,30 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # THE READER TYPE-CHECKED AGAINST ITS FLOOR. The cases find what the floor lacks only on a
+      # line they reach, and only one error at a time: the reader first failed here on import, on
+      # a `bytes | str | None` alias, which is 3.9's grammar and 3.10's library. `mypy`, told the
+      # floor, reads every line of the reader and names that class of error without running it.
+      # 1.19.1 is pinned: it is the last release that installs on 3.9, the only Python this job
+      # sets up; 1.20 still targets 3.9 but needs 3.10 to run, and 2.0 refuses 3.9 as a target.
+      # Installing a checker here does not break the reader's promise,
+      # which is about what it needs to RUN, not to be checked; and it goes into a venv of its
+      # own, so the `python3` the cases call below still has nothing but the standard library.
+      # The cases run after a failed check too, so one run says both what the checker saw and
+      # what the floor did.
+      - name: Type-check the second reader against its floor
+        id: types
+        run: |
+          python -m venv "$RUNNER_TEMP/types"
+          "$RUNNER_TEMP/types/bin/pip" install --disable-pip-version-check mypy==1.19.1
+          "$RUNNER_TEMP/types/bin/mypy" --python-version 3.9 --warn-unused-ignores --cache-dir "$RUNNER_TEMP/types-cache" packages/chain/verifier/
+
       # `vitest` and not the `test` script: `what-the-suite-left-behind` counts every step of this
       # file that runs that script as a run of the suite its sweep has to bracket, and this one
       # runs on a runner of its own, which that sweep never sees. It reads this comment too, so
       # the comment does not spell the step it is about.
       - name: Every case that starts python3
+        if: success() || steps.types.outcome == 'failure'
         run: >-
           pnpm exec vitest run
           packages/chain/src/chain/second-reader-agrees-on-enrolment.test.ts

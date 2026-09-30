@@ -21,6 +21,11 @@
  *     literal that is the interpreter's name and nothing else — so a new file that starts the
  *     reader is red here until the job runs it too, and a file the job names that no longer
  *     starts it is red as well.
+ *   - THAT JOB TYPE-CHECKS THE WHOLE READER AGAINST THE FLOOR, with a pinned `mypy`: every
+ *     `--python-version` a job passes is the floor, like every page's sentence. The cases below
+ *     only see what the floor lacks on a line they reach, and one error at a time — the reader's
+ *     first run on 3.9 died on import, on a type alias spelled with `|`, and said nothing about
+ *     the rest. The checker reads every line.
  *   - AND THE `python3` THOSE CASES CALL IS THE FLOOR, EXACTLY, in that job. The job says so by
  *     setting `PYTHON3_IS_THE_FLOOR`, and the last case here asks the interpreter itself for
  *     `sys.version_info[:2]` — so an image or an action that stopped putting the floor first on
@@ -29,8 +34,10 @@
  *     lower than the floor.
  *
  * WHAT IT DOES NOT COVER, said out loud rather than left to be discovered:
- *   - A path of the reader that no case exercises. The job runs what the cases run; an API newer
- *     than the floor on a line no case reaches is as unchecked on the floor as it was before.
+ *   - A path of the reader that no case exercises, beyond what the checker reads. `mypy` names
+ *     syntax and library the floor lacks when its stubs for the floor say so; a difference in
+ *     BEHAVIOUR between the floor and a newer Python, on a line no case reaches, is as unchecked
+ *     on the floor as it was before.
  *   - The patch release. The floor is a major and a minor, and `actions/setup-python` takes the
  *     newest release of that line it knows.
  *   - Whether the floor is too HIGH. Over-declaring is safe, under-declaring is the defect, and
@@ -222,6 +229,33 @@ describe('CI runs the floor', () => {
       [...new Set(named)].sort(),
       'the floor job does not run exactly the files that start python3',
     ).toEqual([...starting].sort());
+  });
+
+  it('and that job type-checks the whole reader against the floor, with a checker pinned', () => {
+    // THE FLOOR'S OTHER SPELLING. A checker told a target is one more place that repeats the
+    // floor, so it is read here like the pages are: every `--python-version` any job passes is
+    // the floor, and the floor's own job passes it to `mypy` over the reader's directory.
+    const targets = JOBS.flatMap((job) =>
+      [...job.body.matchAll(/--python-version[\s=]+(\S+)/g)].map((found) => ({
+        where: job.where,
+        said: (found[1] ?? '').replace(/^['"]|['"]$/g, ''),
+      })),
+    );
+    expect(
+      targets.filter((one) => one.said !== FLOOR).map((one) => `${one.where}: ${one.said}`),
+      `a job type-checks against a Python other than the floor ${FLOOR}`,
+    ).toEqual([]);
+    const body = THE_FLOORS_JOB[0]?.body ?? '';
+    expect(body, 'the floor job does not run mypy over the reader against the floor').toMatch(
+      new RegExp(
+        `\\bmypy\\b[^\\n]*--python-version[\\s=]+${FLOOR.replace('.', '\\.')}\\b[^\\n]*\\spackages/chain/verifier/?(?:\\s|$)`,
+      ),
+    );
+    // A CHECKER THAT FLOATS IS A CHECK THAT CHANGES UNDER THE SAME HEAD, and one release of it
+    // already refuses the floor as a target.
+    expect(body, 'the floor job installs a mypy whose version is not pinned').toMatch(
+      /\bmypy==\d+\.\d+\.\d+\b/,
+    );
   });
 });
 

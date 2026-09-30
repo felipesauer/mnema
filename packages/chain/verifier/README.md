@@ -201,7 +201,9 @@ It **fails** rather than skips where `python3` is absent: a second reader nobody
 prose again.
 
 The floor at the top of this page is run too, not only stated: a CI job of its own sets up
-exactly that Python and runs every test file that starts `python3`, and
+exactly that Python, type-checks every line of the reader against it with a pinned `mypy`
+(the cases only reach the lines they exercise), and runs every test file that starts `python3`.
 [`the-python-floor-is-declared-once.test.ts`](../../code/tests/the-python-floor-is-declared-once.test.ts)
-fails if this page, the root one, the job and the interpreter the cases call stop naming the
-same version.
+fails if this page, the root one, the job, the checker's target and the interpreter the cases
+call stop naming the same version. The checker is the job's, not the reader's: running the
+reader still needs nothing but the standard library.

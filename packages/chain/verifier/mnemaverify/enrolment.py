@@ -187,7 +187,9 @@ def resolve(
             if not is_covered(tail, seq):
                 continue
             revoked = payload.get("revokedFp")
-            keys_of(anchor).discard(revoked)
+            # Section 4 refuses a key.revoked with no string revokedFp; if one got here anyway,
+            # discarding None removes nothing.
+            keys_of(anchor).discard(revoked)  # type: ignore[arg-type]
             covered_revoked.add(f"{anchor}|{revoked}")
             continue
 
