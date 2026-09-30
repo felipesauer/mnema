@@ -99,6 +99,16 @@ identically, because they are the same call.
   and ignores the pause — the [plugin's page](../../plugin/README.md#in-vs-code-and-cursor) has
   the table, host by host, and [`measurements/hooks-by-host/`](../../measurements/hooks-by-host/)
   the captures.
+- **A rules file for a host without the plugin** — `mnema rules-file --host vscode` prints the
+  committed rules in force whose address is a file, as a `.instructions.md` with an `applyTo`,
+  and `--host cursor` as a `.mdc` with `globs`. It prints only where the glob matches exactly
+  the paths the address governs: a directory is left out, because whether `**` reaches a name
+  that starts with a dot is the matcher's choice, and so is an address holding a character a
+  glob reads as syntax — `app/[id]` as a glob matches `app/i`. Every rule it leaves out is named
+  on the second stream with the reason, in the same run; the file goes to stdout, and where it
+  lands is your choice — the `>` replaces the whole of the file it names. Asserted in
+  `tests/a-rules-file-carries-only-what-becomes-a-glob-exactly.test.ts`, against Node's own glob
+  matcher.
 - **A switch for everything it pushes** — `mnema switch` says where each of those
   channels stands and what each carries; `mnema switch off edit-rules-push` stops the
   per-edit push, `mnema switch off brief-document` stops the opening document and `mnema

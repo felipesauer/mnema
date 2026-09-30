@@ -12,7 +12,7 @@
 function __mnema_commands --description 'the subcommands one level of the tree offers'
     switch "$argv[1]"
         case ''
-            echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs rules skills usage brief recall key tail witness switch verify mcp repl completion help'
+            echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs rules rules-file skills usage brief recall before-a-write key tail witness switch verify mcp repl completion help'
         case 'task'
             echo 'move'
         case 'decision'
@@ -85,10 +85,12 @@ complete -c mnema -f -n '__mnema_at ""' -a 'exposure' -d 'show which records hol
 complete -c mnema -f -n '__mnema_at ""' -a 'export' -d 'emit the record as an OCSF audit feed (NDJSON, envelope only — never a body)'
 complete -c mnema -f -n '__mnema_at ""' -a 'refs' -d 'show what an entity is connected to across the trees'
 complete -c mnema -f -n '__mnema_at ""' -a 'rules' -d 'show which recorded rules govern a path, and which address nothing'
+complete -c mnema -f -n '__mnema_at ""' -a 'rules-file' -d 'print the rules that have an address as another host’s rules file, where the glob is exact'
 complete -c mnema -f -n '__mnema_at ""' -a 'skills' -d 'show where each pattern came from (who proposed it, who adopted it)'
 complete -c mnema -f -n '__mnema_at ""' -a 'usage' -d 'what each run cost, read from this machine\'s Claude Code transcripts'
 complete -c mnema -f -n '__mnema_at ""' -a 'brief' -d 'print what governs the work here as markdown, for an agent to read'
 complete -c mnema -f -n '__mnema_at ""' -a 'recall' -d 'print the latest notes recorded here as markdown, for an agent to read'
+complete -c mnema -f -n '__mnema_at ""' -a 'before-a-write' -d 'answer a host’s hook before a file is written: ask for a person where a rule asks'
 complete -c mnema -f -n '__mnema_at ""' -a 'key' -d 'manage this machine\'s signing keys'
 complete -c mnema -f -n '__mnema_at ""' -a 'tail' -d 'authorize a cut in the record\'s own tails'
 complete -c mnema -f -n '__mnema_at ""' -a 'witness' -d 'ask an outside witness to date this record, and read where that stands'
@@ -347,6 +349,12 @@ complete -c mnema -f -n '__mnema_at "rules"' -s h -l help
 complete -c mnema -f -n '__mnema_at "rules"' -s V -l version
 complete -c mnema -f -n '__mnema_at "rules"' -l color -x -a 'auto always never'
 
+# mnema rules-file
+complete -c mnema -f -n '__mnema_at "rules-file"' -l host -x -a 'vscode cursor'
+complete -c mnema -f -n '__mnema_at "rules-file"' -s h -l help
+complete -c mnema -f -n '__mnema_at "rules-file"' -s V -l version
+complete -c mnema -f -n '__mnema_at "rules-file"' -l color -x -a 'auto always never'
+
 # mnema skills
 complete -c mnema -f -n '__mnema_at "skills"' -l json
 complete -c mnema -f -n '__mnema_at "skills"' -s h -l help
@@ -367,6 +375,12 @@ complete -c mnema -f -n '__mnema_at "brief"' -l color -x -a 'auto always never'
 complete -c mnema -f -n '__mnema_at "recall"' -s h -l help
 complete -c mnema -f -n '__mnema_at "recall"' -s V -l version
 complete -c mnema -f -n '__mnema_at "recall"' -l color -x -a 'auto always never'
+
+# mnema before-a-write
+complete -c mnema -f -n '__mnema_at "before-a-write"' -l host -x -a 'vscode'
+complete -c mnema -f -n '__mnema_at "before-a-write"' -s h -l help
+complete -c mnema -f -n '__mnema_at "before-a-write"' -s V -l version
+complete -c mnema -f -n '__mnema_at "before-a-write"' -l color -x -a 'auto always never'
 
 # mnema key
 complete -c mnema -f -n '__mnema_at "key"' -a 'restore' -d 'restore this machine\'s identity from a copy of a key\'s private half'

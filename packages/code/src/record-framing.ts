@@ -164,7 +164,8 @@ export type ModelChannel =
   | 'recall-document'
   | 'exported-skill'
   | 'edit-rules-push'
-  | 'edit-asks-a-person';
+  | 'edit-asks-a-person'
+  | 'host-rules-file';
 
 /** The channels that carry a declaration — the ones {@link SUBJECT_OF} answers for. */
 export type FramedChannel =
@@ -172,7 +173,8 @@ export type FramedChannel =
   | 'brief-document'
   | 'recall-document'
   | 'edit-rules-push'
-  | 'edit-asks-a-person';
+  | 'edit-asks-a-person'
+  | 'host-rules-file';
 
 /**
  * What each framed channel served, and therefore what its declaration names.
@@ -203,6 +205,12 @@ const SUBJECT_OF: { readonly [K in FramedChannel]: ServedSubject } = {
   // same record saying the same kind of thing — what differs is that this one stops
   // somebody, and what a text says about ITSELF does not change with how hard it lands.
   'edit-asks-a-person': 'rules',
+  // A FILE IN ANOTHER HOST'S RULE FORMAT (`mnema rules-file`), and it is framed where the
+  // exported skill is not: that one is a recorded body byte for byte, whose provenance rides
+  // in the format's own metadata; this one is text this product COMPOSES out of the record —
+  // names, addresses, ids — for a host to put in front of a model when a file matches, which
+  // is the document's case with a narrower set of rules.
+  'host-rules-file': 'rules',
 };
 
 /**
@@ -406,6 +414,9 @@ export const NOT_SWITCHABLE: {
   'exported-skill':
     'it is a file somebody asked to have written, in somebody else’s directory and ' +
     'format; what governs whether it exists is the command that writes it',
+  'host-rules-file':
+    'it is printed for somebody who asked for it, to put in a file of their own; what ' +
+    'governs whether it reaches a model is whether that file exists',
 };
 
 /**

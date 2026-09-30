@@ -409,9 +409,9 @@ export const NOT_CHECKED: Readonly<Record<string, string>> = {
 export const HANDED_OVER: Readonly<
   Record<Handed['from'], Readonly<Record<Reading['kind'], number>>>
 > = {
-  span: { line: 24, name: 67, flag: 1, unwritten: 0 },
+  span: { line: 29, name: 67, flag: 1, unwritten: 0 },
   block: { line: 33, name: 20, flag: 0, unwritten: 0 },
-  source: { line: 32, name: 42, flag: 3, unwritten: 3 },
+  source: { line: 34, name: 43, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

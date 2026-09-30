@@ -196,6 +196,11 @@ export {
 // said at the moment somebody recorded it. It takes an injected walk for the reason the
 // other three take an injected probe, and it is in the same module so that it compares an
 // address by the very prefix the gate is decided by.
+//
+// `governsInForceEverywhere` is a fifth, and it is the push's own narrowing without the path:
+// every address a rule in force holds, which is what a file written for another host's
+// matcher has to carry (`mnema rules-file`). It routes through the same walk and the same
+// in-force set as `rulesInForceAt`, so it lists nothing the push would not hand over.
 export {
   type AddressCounts,
   type AddressedRule,
@@ -206,6 +211,7 @@ export {
   type GovernanceQuery,
   type GoverningRules,
   governingRules,
+  governsInForceEverywhere,
   type PushedRule,
   type ReachQuery,
   type RulesAtPath,

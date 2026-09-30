@@ -35,10 +35,12 @@ $ mnema
 !   export [options]                        emit the record as an OCSF audit feed (NDJSON, envelope only — never a body)
 !   refs [options] <id>                     show what an entity is connected to across the trees
 !   rules [options] <path>                  show which recorded rules govern a path, and which address nothing
+!   rules-file [options]                    print the rules that have an address as another host’s rules file, where the glob is exact
 !   skills [options]                        show where each pattern came from (who proposed it, who adopted it)
 !   usage                                   what each run cost, read from this machine's Claude Code transcripts
 !   brief                                   print what governs the work here as markdown, for an agent to read
 !   recall                                  print the latest notes recorded here as markdown, for an agent to read
+!   before-a-write [options]                answer a host’s hook before a file is written: ask for a person where a rule asks
 !   key                                     manage this machine's signing keys
 !   tail                                    authorize a cut in the record's own tails
 !   witness [options]                       ask an outside witness to date this record, and read where that stands
@@ -87,10 +89,12 @@ $ mnema --help
 |   export [options]                        emit the record as an OCSF audit feed (NDJSON, envelope only — never a body)
 |   refs [options] <id>                     show what an entity is connected to across the trees
 |   rules [options] <path>                  show which recorded rules govern a path, and which address nothing
+|   rules-file [options]                    print the rules that have an address as another host’s rules file, where the glob is exact
 |   skills [options]                        show where each pattern came from (who proposed it, who adopted it)
 |   usage                                   what each run cost, read from this machine's Claude Code transcripts
 |   brief                                   print what governs the work here as markdown, for an agent to read
 |   recall                                  print the latest notes recorded here as markdown, for an agent to read
+|   before-a-write [options]                answer a host’s hook before a file is written: ask for a person where a rule asks
 |   key                                     manage this machine's signing keys
 |   tail                                    authorize a cut in the record's own tails
 |   witness [options]                       ask an outside witness to date this record, and read where that stands
@@ -572,6 +576,17 @@ $ mnema rules --help
 |   --json      emit the faithful reading as JSON
 |   -h, --help  display help for command
 
+### mnema rules-file --help
+$ mnema rules-file --help
+| Usage: mnema rules-file [options]
+|
+| print the rules that have an address as another host’s rules file, where the
+| glob is exact
+|
+| Options:
+|   --host <host>  the host whose rules-file format to print: vscode, cursor
+|   -h, --help     display help for command
+
 ### mnema skills --help
 $ mnema skills --help
 | Usage: mnema skills [options]
@@ -668,6 +683,25 @@ $ mnema recall --help
 | when there are more.
 | It prints NOTHING when nothing is recorded, so a session opens with nothing added.
 | It can be switched off (`mnema switch off recall-document`), and then it refuses.
+
+### mnema before-a-write --help
+$ mnema before-a-write --help
+| Usage: mnema before-a-write [options]
+|
+| answer a host’s hook before a file is written: ask for a person where a rule
+| asks
+|
+| Options:
+|   --host <host>  the host whose hook runs this, and whose payload arrives on
+|                  stdin: vscode
+|   -h, --help     display help for command
+|
+| What it reads and what it prints:
+|   The JSON a host hands a hook before a tool runs, on stdin. On stdout, the reply the
+|   host reads: {} unless a rule of this project linked to a path with
+|   `asks-for-a-person` addresses a path the write touches, and then `ask`, citing the
+|   rules. Each asking is recorded as a fact before the reply is printed. The gate can be
+|   switched off with `mnema switch off edit-asks-a-person`.
 
 ### mnema key --help
 $ mnema key --help

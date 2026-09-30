@@ -42,7 +42,8 @@
    "hook_additional_contexts_sent_with_the_result": [
     "1: \"preToolUse\" | 2: \"PROBE_CONTEXT_MARK_CU\""
    ],
-   "mnema_calls": []
+   "mnema_calls": [],
+   "rule_file_sent_to_the_backend": null
   },
   {
    "case": "c-native-ask",
@@ -83,7 +84,8 @@
    "hook_additional_contexts_sent_with_the_result": [
     "1: \"preToolUse\" | 2: \"PROBE_CONTEXT_MARK_CU\""
    ],
-   "mnema_calls": []
+   "mnema_calls": [],
+   "rule_file_sent_to_the_backend": null
   },
   {
    "case": "c-native-deny",
@@ -124,7 +126,8 @@
    "hook_additional_contexts_sent_with_the_result": [
     "1: \"preToolUse\" | 2: \"PROBE_CONTEXT_MARK_CU\""
    ],
-   "mnema_calls": []
+   "mnema_calls": [],
+   "rule_file_sent_to_the_backend": null
   },
   {
    "case": "c-plugin-context",
@@ -167,7 +170,8 @@
    "hook_additional_contexts_sent_with_the_result": [
     "1: \"preToolUse\" | 2: \"PROBE_CONTEXT_MARK_CU\""
    ],
-   "mnema_calls": []
+   "mnema_calls": [],
+   "rule_file_sent_to_the_backend": null
   },
   {
    "case": "c-plugin-ask",
@@ -210,7 +214,8 @@
    "hook_additional_contexts_sent_with_the_result": [
     "1: \"preToolUse\" | 2: \"PROBE_CONTEXT_MARK_CU\""
    ],
-   "mnema_calls": []
+   "mnema_calls": [],
+   "rule_file_sent_to_the_backend": null
   },
   {
    "case": "c-plugin-deny",
@@ -253,7 +258,8 @@
    "hook_additional_contexts_sent_with_the_result": [
     "1: \"preToolUse\" | 2: \"PROBE_CONTEXT_MARK_CU\""
    ],
-   "mnema_calls": []
+   "mnema_calls": [],
+   "rule_file_sent_to_the_backend": null
   },
   {
    "case": "c-plugin-vscode-matcher",
@@ -267,7 +273,8 @@
    "write_result": "success",
    "write_result_error_text": null,
    "hook_additional_contexts_sent_with_the_result": [],
-   "mnema_calls": []
+   "mnema_calls": [],
+   "rule_file_sent_to_the_backend": null
   },
   {
    "case": "c-plugin-mcp",
@@ -281,7 +288,8 @@
    "write_result": "success",
    "write_result_error_text": null,
    "hook_additional_contexts_sent_with_the_result": [],
-   "mnema_calls": []
+   "mnema_calls": [],
+   "rule_file_sent_to_the_backend": null
   },
   {
    "case": "c-plugin-e2e",
@@ -299,7 +307,29 @@
     "mcp",
     "brief",
     "recall"
-   ]
+   ],
+   "rule_file_sent_to_the_backend": null
+  },
+  {
+   "case": "c-rules-file",
+   "written": true,
+   "hook_runs": 0,
+   "hook_tool_name": null,
+   "hook_event_name": null,
+   "hook_stdin_keys": [],
+   "hook_tool_input_keys": [],
+   "hook_env_names": [],
+   "write_result": "success",
+   "write_result_error_text": null,
+   "hook_additional_contexts_sent_with_the_result": [],
+   "mnema_calls": [],
+   "rule_file_sent_to_the_backend": {
+    "type": "fileGlobbed",
+    "globs": [
+     "src/billing/invoice.ts",
+     "src/.env"
+    ]
+   }
   }
  ]
 }

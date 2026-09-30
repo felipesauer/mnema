@@ -43,6 +43,8 @@
    ],
    "tool_result_text": "[{\"text\":\"The following files were successfully edited:\\n<sandbox>/vs/v-cmd-claude-matcher/ws/src/billing/probe.ts\\n\\n<PreToolUse-context>\\nPROBE_CONTEXT_MARK_VS\\n</PreToolUse-context>\"}]",
    "instructions_mark_in_any_request": false,
+   "generated_rules_file_listed_with": null,
+   "generated_rules_file_body_pasted": false,
    "host_log": [
     "[info] [#0] [PreToolUse] Completed (Success) in 80ms"
    ],
@@ -89,6 +91,8 @@
    ],
    "tool_result_text": "[{\"text\":\"The following files were successfully edited:\\n<sandbox>/vs/v-cmd-vscode-matcher/ws/src/billing/probe.ts\\n\\n<PreToolUse-context>\\nPROBE_CONTEXT_MARK_VS\\n</PreToolUse-context>\"}]",
    "instructions_mark_in_any_request": false,
+   "generated_rules_file_listed_with": null,
+   "generated_rules_file_body_pasted": false,
    "host_log": [
     "[info] [#0] [PreToolUse] Completed (Success) in 45ms"
    ],
@@ -135,6 +139,8 @@
    ],
    "tool_result_text": "[{\"text\":\"The following files were successfully edited:\\n<sandbox>/vs/v-cmd-nomatch/ws/src/billing/probe.ts\\n\\n<PreToolUse-context>\\nPROBE_CONTEXT_MARK_VS\\n</PreToolUse-context>\"}]",
    "instructions_mark_in_any_request": false,
+   "generated_rules_file_listed_with": null,
+   "generated_rules_file_body_pasted": false,
    "host_log": [
     "[info] [#0] [PreToolUse] Completed (Success) in 39ms"
    ],
@@ -181,6 +187,8 @@
    ],
    "tool_result_text": null,
    "instructions_mark_in_any_request": false,
+   "generated_rules_file_listed_with": null,
+   "generated_rules_file_body_pasted": false,
    "host_log": [
     "[info] [#0] [PreToolUse] Completed (Success) in 42ms",
     "[debug] [LanguageModelToolsService#invokeTool] Tool copilot_createFile requires confirmation (preToolUse hook returned 'ask')"
@@ -228,6 +236,8 @@
    ],
    "tool_result_text": "[{\"text\":\"Tool execution denied: PROBE_REASON_MARK_VS\\n<PreToolUse-context>\\nPROBE_CONTEXT_MARK_VS\\n</PreToolUse-context>\"}]",
    "instructions_mark_in_any_request": false,
+   "generated_rules_file_listed_with": null,
+   "generated_rules_file_body_pasted": false,
    "host_log": [
     "[info] [#0] [PreToolUse] Completed (Success) in 67ms",
     "[debug] [LanguageModelToolsService#invokeTool] Tool copilot_createFile denied by preToolUse hook: PROBE_REASON_MARK_VS"
@@ -247,6 +257,8 @@
    "hook_env_names": [],
    "tool_result_text": "[{\"text\":\"The following files were successfully edited:\\n<sandbox>/vs/v-mcp-tool/ws/src/billing/probe.ts\\n\"}]",
    "instructions_mark_in_any_request": false,
+   "generated_rules_file_listed_with": null,
+   "generated_rules_file_body_pasted": false,
    "host_log": [],
    "mnema_calls": [],
    "channel_facts": []
@@ -263,6 +275,8 @@
    "hook_env_names": [],
    "tool_result_text": "[{\"text\":\"The following files were successfully edited:\\n<sandbox>/vs/v-instr-dir/ws/src/billing/probe.ts\\n\"}]",
    "instructions_mark_in_any_request": false,
+   "generated_rules_file_listed_with": null,
+   "generated_rules_file_body_pasted": false,
    "host_log": [],
    "mnema_calls": [],
    "channel_facts": []
@@ -279,6 +293,8 @@
    "hook_env_names": [],
    "tool_result_text": "[{\"text\":\"The following files were successfully edited:\\n<sandbox>/vs/v-instr-dir-dot/ws/src/billing/.probe.ts\\n\"}]",
    "instructions_mark_in_any_request": false,
+   "generated_rules_file_listed_with": null,
+   "generated_rules_file_body_pasted": false,
    "host_log": [],
    "mnema_calls": [],
    "channel_facts": []
@@ -295,6 +311,8 @@
    "hook_env_names": [],
    "tool_result_text": "[{\"text\":\"The following files were successfully edited:\\n<sandbox>/vs/v-instr-dir-outside/ws/src/other/probe.ts\\n\"}]",
    "instructions_mark_in_any_request": false,
+   "generated_rules_file_listed_with": null,
+   "generated_rules_file_body_pasted": false,
    "host_log": [],
    "mnema_calls": [],
    "channel_facts": []
@@ -311,6 +329,8 @@
    "hook_env_names": [],
    "tool_result_text": "[{\"text\":\"The following files were successfully edited:\\n<sandbox>/vs/v-instr-file/ws/src/billing/probe.ts\\n\"}]",
    "instructions_mark_in_any_request": false,
+   "generated_rules_file_listed_with": null,
+   "generated_rules_file_body_pasted": false,
    "host_log": [],
    "mnema_calls": [],
    "channel_facts": []
@@ -327,6 +347,8 @@
    "hook_env_names": [],
    "tool_result_text": "[{\"text\":\"The following files were successfully edited:\\n<sandbox>/vs/v-instr-pair-dir/ws/src/billing/deep/probe.ts\\n\"}]",
    "instructions_mark_in_any_request": false,
+   "generated_rules_file_listed_with": null,
+   "generated_rules_file_body_pasted": false,
    "host_log": [],
    "mnema_calls": [],
    "channel_facts": []
@@ -343,6 +365,8 @@
    "hook_env_names": [],
    "tool_result_text": null,
    "instructions_mark_in_any_request": false,
+   "generated_rules_file_listed_with": null,
+   "generated_rules_file_body_pasted": false,
    "host_log": [
     "[info] [#1] [PreToolUse] Completed (Success) in 388ms",
     "[debug] [LanguageModelToolsService#invokeTool] Tool copilot_createFile requires confirmation (preToolUse hook returned 'ask')"
@@ -370,6 +394,8 @@
    "hook_env_names": [],
    "tool_result_text": "[{\"text\":\"The following files were successfully edited:\\n<sandbox>/vs/e2e-quiet/ws/src/other/x.ts\\n\"}]",
    "instructions_mark_in_any_request": false,
+   "generated_rules_file_listed_with": null,
+   "generated_rules_file_body_pasted": false,
    "host_log": [
     "[info] [#1] [PreToolUse] Completed (Success) in 326ms, no output"
    ],
@@ -393,6 +419,8 @@
    "hook_env_names": [],
    "tool_result_text": "[{\"text\":\"export const probe = 1;\"}]",
    "instructions_mark_in_any_request": false,
+   "generated_rules_file_listed_with": null,
+   "generated_rules_file_body_pasted": false,
    "host_log": [
     "[info] [#1] [PreToolUse] Completed (Success) in 13ms, no output"
    ],
@@ -401,6 +429,24 @@
     "brief",
     "recall"
    ],
+   "channel_facts": []
+  },
+  {
+   "case": "v-rules-file",
+   "tool_asked_for": "create_file",
+   "requests_the_model_got": 2,
+   "written": true,
+   "hook_runs": 0,
+   "hook_tool_name": null,
+   "hook_stdin_keys": [],
+   "hook_tool_input_keys": [],
+   "hook_env_names": [],
+   "tool_result_text": "[{\"text\":\"ERROR while calling tool: File already exists. You must use an edit tool to modify it.\\nPlease check your input and try again.\"}]",
+   "instructions_mark_in_any_request": false,
+   "generated_rules_file_listed_with": "src/billing/invoice.ts,src/.env",
+   "generated_rules_file_body_pasted": false,
+   "host_log": [],
+   "mnema_calls": [],
    "channel_facts": []
   }
  ]

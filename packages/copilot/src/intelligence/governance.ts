@@ -727,33 +727,73 @@ function inForceUnder(
 ): RulesAtPath {
   const asked = relativeSegments(query.path, query.root);
   const found = addressesUnder(sources, query, relation, asked);
+  return {
+    path: query.path,
+    ...(asked !== null ? { relative: posix(asked) } : {}),
+    rules: inForceOf(sources, found.matching).map((entry) => entry.pushed),
+  };
+}
+
+/**
+ * The rules of this project in force under `governs`, EVERY address each one holds — not the
+ * ones covering a path — with the tree that asserted each address and whether it lies inside
+ * the project.
+ *
+ * It answers the question a FILE for another host is composed from (`mnema rules-file`): which
+ * addresses would a glob have to carry. The walk and the in-force narrowing are the push's own
+ * ({@link addressesUnder}, {@link inForceOf}), so a rule this lists is a rule the per-edit push
+ * would hand over at a file under its address, and never one it would not.
+ */
+export function governsInForceEverywhere(
+  sources: readonly ScopedCache[],
+  query: Omit<GovernanceQuery, 'path'>,
+): readonly {
+  readonly rule: PushedRule;
+  readonly assertedIn: Scope;
+  readonly inProject: boolean;
+}[] {
+  const found = addressesUnder(sources, { ...query, path: query.root }, GOVERNS_RELATION, null);
+  return inForceOf(sources, found.all).map((entry) => ({
+    rule: entry.pushed,
+    assertedIn: entry.addressed.assertedIn,
+    inProject: entry.addressed.address !== undefined,
+  }));
+}
+
+/**
+ * The entries of a walk whose rule is in force, as the line a channel pushes — the one body
+ * both readings above narrow through.
+ */
+function inForceOf(
+  sources: readonly ScopedCache[],
+  entries: readonly Addressed[],
+): { readonly pushed: PushedRule; readonly addressed: AddressedRule }[] {
   const caches = sources.map((source) => source.cache);
   const inForce = new Map<string, string>();
   for (const decision of decisionsInForce(caches)) inForce.set(decision.id, decision.title);
   for (const skill of adoptedSkills(caches)) inForce.set(skill.id, skill.name);
-  return {
-    path: query.path,
-    ...(asked !== null ? { relative: posix(asked) } : {}),
-    rules: ordered(found.matching).flatMap((rule) => {
-      // THIS FILTER USED TO BE THE ONLY THING KEEPING AN UNREADABLE RULE OUT OF HERE,
-      // and it kept it out for the wrong reason. An address whose subject resolves
-      // nowhere has no STATE, so it was never in the in-force set and fell out — which
-      // made `brief` and the edit gate right by accident while `rules` and
-      // `governing_rules` counted it as a rule that governs. `addressesUnder` now
-      // answers the question by name, so what is left here is the narrowing this
-      // function is actually about: a rule that IS readable and is not in force.
-      const name = inForce.get(rule.rule);
-      if (name === undefined) return [];
-      // WHERE IT CAME FROM, read out of the tree that HOLDS the rule and no other. A
-      // link is legitimately cross-tree, so the private tree may assert a provenance
-      // about a public decision; serving that here would put a file of one machine into
-      // a text pushed at everybody's edit, and the id beside it would resolve in a clone
-      // while the path would not. `rule.scope` is the rule's own tree and it is defined
-      // for everything that reaches this point — an address whose subject resolves
-      // nowhere has no state, so it was never in the in-force set.
-      const origin = originOf(cachesOf(sources, rule.scope), rule.rule);
-      return [
-        {
+  return ordered(entries).flatMap((rule) => {
+    // THIS FILTER USED TO BE THE ONLY THING KEEPING AN UNREADABLE RULE OUT OF HERE,
+    // and it kept it out for the wrong reason. An address whose subject resolves
+    // nowhere has no STATE, so it was never in the in-force set and fell out — which
+    // made `brief` and the edit gate right by accident while `rules` and
+    // `governing_rules` counted it as a rule that governs. `addressesUnder` now
+    // answers the question by name, so what is left here is the narrowing this
+    // function is actually about: a rule that IS readable and is not in force.
+    const name = inForce.get(rule.rule);
+    if (name === undefined) return [];
+    // WHERE IT CAME FROM, read out of the tree that HOLDS the rule and no other. A
+    // link is legitimately cross-tree, so the private tree may assert a provenance
+    // about a public decision; serving that here would put a file of one machine into
+    // a text pushed at everybody's edit, and the id beside it would resolve in a clone
+    // while the path would not. `rule.scope` is the rule's own tree and it is defined
+    // for everything that reaches this point — an address whose subject resolves
+    // nowhere has no state, so it was never in the in-force set.
+    const origin = originOf(cachesOf(sources, rule.scope), rule.rule);
+    return [
+      {
+        addressed: rule,
+        pushed: {
           id: rule.rule,
           name,
           // The compared form when the address resolved into this project, and the
@@ -766,9 +806,9 @@ function inForceUnder(
           // list would give the line a field with nothing in it.
           ...(origin.length > 0 ? { origin } : {}),
         },
-      ];
-    }),
-  };
+      },
+    ];
+  });
 }
 
 /**

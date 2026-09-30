@@ -223,7 +223,7 @@ export function ourWordsIn(at: RulesAtPath): readonly string[] {
  * target reaches the chain without being checked, so it is a caller's string on the same
  * terms as the name and the address.
  */
-function ruleLine(rule: PushedRule): string {
+export function ruleLine(rule: PushedRule): string {
   const from = (rule.origin ?? [])
     .map((target) => ` · ${DERIVED_FROM} ${oneLine(target)}`)
     .join('');

@@ -238,6 +238,11 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   switch: {
     argv: () => ['switch', 'off', 'edit-rules-push', '--reason', 'too much noise while porting'],
   },
+  // A HOST FEEDS IT, and this harness drives the program in process, where the port for the
+  // standard input is absent and reads as empty — so the verb answers `{}` and records nothing.
+  // The one invocation that records, an asking, is exercised through the binary with a payload
+  // (`a-host-that-runs-commands-asks-for-a-person.test.ts`) and in the signing sweep.
+  'before-a-write': { argv: () => ['before-a-write', '--host', 'vscode'] },
   mcp: CANNOT_BE_EXERCISED,
   // The reads.
   status: { argv: (f) => ['status', '--actor', f.anchor] },
@@ -254,6 +259,7 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   export: { argv: () => ['export'] },
   refs: { argv: (f) => ['refs', f.task] },
   rules: { argv: () => ['rules', 'src'] },
+  'rules-file': { argv: () => ['rules-file', '--host', 'vscode'] },
   skills: { argv: () => ['skills'] },
   usage: { argv: () => ['usage'] },
   brief: { argv: () => ['brief'] },
@@ -275,11 +281,16 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
  *
  * What it is instead is DECLARED, and reconciled in both directions: a verb here that
  * starts recording has to leave, and one that stops recording has to arrive. So the write
- * side is not simply unmeasured — and it holds ONE entry, the verb no invocation can
- * exercise at all.
+ * side is not simply unmeasured. It said it holds ONE entry, the verb no invocation can
+ * exercise at all; it holds three now — that one, `witness`, which writes what this instrument
+ * cannot count, and `before-a-write`, which records only on a payload the in-process harness has
+ * no standard input to hand it.
  */
 const RECORDS_NOTHING: Readonly<Record<string, string>> = {
   mcp: 'not exercised: it serves a connection for its lifetime and would not return',
+  'before-a-write':
+    'answers a payload a host hands it on the standard input, and in process there is none — ' +
+    'its asking is exercised with a payload through the binary',
   // AND THE ONE THAT WRITES SOMETHING THIS INSTRUMENT CANNOT SEE. `witness` appends no
   // event and touches no key: it writes an ATTESTATION beside the checkpoints, which
   // changes what `verify` rules on and reaches neither of the two things counted here.
@@ -534,7 +545,7 @@ describe('every verb says if it writes', () => {
     expect(Object.keys(INVOCATION).sort()).toEqual([...EFFECT_BY_VERB.keys()].sort());
   });
 
-  it('counts fourteen writes and twenty-one reads over the whole surface', () => {
+  it('counts fifteen writes and twenty-two reads over the whole surface', () => {
     // The count in the report, asserted rather than trusted, and the total against the
     // list: a verb that stopped being registered would otherwise leave both halves
     // looking healthy.
@@ -548,6 +559,7 @@ describe('every verb says if it writes', () => {
       'handoff',
       'link',
       'run',
+      'before-a-write',
       'key',
       'tail',
       'witness',
@@ -569,6 +581,7 @@ describe('every verb says if it writes', () => {
       'export',
       'refs',
       'rules',
+      'rules-file',
       'skills',
       'usage',
       'brief',

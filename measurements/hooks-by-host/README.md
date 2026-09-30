@@ -76,7 +76,9 @@ environment a hook saw only the names are kept.
   leaves reading it to the model — measured with five placements, the matching one included, and
   the file's text reached the model in none of them. Cursor matches `globs` on its servers.
   Neither is a matcher this product can check a directory's glob against, so `mnema rules-file`
-  carries file addresses only.
+  carries file addresses only. The file it prints is read by both as it is written: VS Code lists
+  it with its `applyTo` (`v-rules-file`), and Cursor's agent sends the rule to its backend as
+  file-globbed, the two globs apart (`c-rules-file`).
 
 ## 4 · What a firing costs
 

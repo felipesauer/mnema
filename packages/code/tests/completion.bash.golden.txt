@@ -10,7 +10,7 @@
 
 _mnema_commands() {
   case "$1" in
-    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs rules skills usage brief recall key tail witness switch verify mcp repl completion help' ;;
+    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs rules rules-file skills usage brief recall before-a-write key tail witness switch verify mcp repl completion help' ;;
     'task') echo 'move' ;;
     'decision') echo 'move supersede import' ;;
     'skill') echo 'move export' ;;
@@ -57,10 +57,12 @@ _mnema_flags() {
     'export') echo '--from --to --who --which --global -h --help -V --version --color' ;;
     'refs') echo '--direction --depth --json -h --help -V --version --color' ;;
     'rules') echo '--json -h --help -V --version --color' ;;
+    'rules-file') echo '--host -h --help -V --version --color' ;;
     'skills') echo '--json -h --help -V --version --color' ;;
     'usage') echo '-h --help -V --version --color' ;;
     'brief') echo '-h --help -V --version --color' ;;
     'recall') echo '-h --help -V --version --color' ;;
+    'before-a-write') echo '--host -h --help -V --version --color' ;;
     'key') echo '-h --help -V --version --color' ;;
     'key restore') echo '-h --help -V --version --color' ;;
     'key request') echo '--anchor --key -h --help -V --version --color' ;;
@@ -132,10 +134,14 @@ _mnema_values() {
     'refs:--direction') echo 'both out in' ;;
     'refs:--color') echo 'auto always never' ;;
     'rules:--color') echo 'auto always never' ;;
+    'rules-file:--host') echo 'vscode cursor' ;;
+    'rules-file:--color') echo 'auto always never' ;;
     'skills:--color') echo 'auto always never' ;;
     'usage:--color') echo 'auto always never' ;;
     'brief:--color') echo 'auto always never' ;;
     'recall:--color') echo 'auto always never' ;;
+    'before-a-write:--host') echo 'vscode' ;;
+    'before-a-write:--color') echo 'auto always never' ;;
     'key:--color') echo 'auto always never' ;;
     'key restore:--color') echo 'auto always never' ;;
     'key request:--color') echo 'auto always never' ;;

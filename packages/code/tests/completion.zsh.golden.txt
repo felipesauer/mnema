@@ -12,7 +12,7 @@
 
 _mnema_commands() {
   case "$1" in
-    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs rules skills usage brief recall key tail witness switch verify mcp repl completion help' ;;
+    '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs rules rules-file skills usage brief recall before-a-write key tail witness switch verify mcp repl completion help' ;;
     'task') echo 'move' ;;
     'decision') echo 'move supersede import' ;;
     'skill') echo 'move export' ;;
@@ -50,10 +50,12 @@ _mnema_described() {
       'export:emit the record as an OCSF audit feed (NDJSON, envelope only — never a body)' \
       'refs:show what an entity is connected to across the trees' \
       'rules:show which recorded rules govern a path, and which address nothing' \
+      'rules-file:print the rules that have an address as another host’s rules file, where the glob is exact' \
       'skills:show where each pattern came from (who proposed it, who adopted it)' \
       'usage:what each run cost, read from this machine'\''s Claude Code transcripts' \
       'brief:print what governs the work here as markdown, for an agent to read' \
       'recall:print the latest notes recorded here as markdown, for an agent to read' \
+      'before-a-write:answer a host’s hook before a file is written: ask for a person where a rule asks' \
       'key:manage this machine'\''s signing keys' \
       'tail:authorize a cut in the record'\''s own tails' \
       'witness:ask an outside witness to date this record, and read where that stands' \
@@ -129,10 +131,12 @@ _mnema_flags() {
     'export') echo '--from --to --who --which --global -h --help -V --version --color' ;;
     'refs') echo '--direction --depth --json -h --help -V --version --color' ;;
     'rules') echo '--json -h --help -V --version --color' ;;
+    'rules-file') echo '--host -h --help -V --version --color' ;;
     'skills') echo '--json -h --help -V --version --color' ;;
     'usage') echo '-h --help -V --version --color' ;;
     'brief') echo '-h --help -V --version --color' ;;
     'recall') echo '-h --help -V --version --color' ;;
+    'before-a-write') echo '--host -h --help -V --version --color' ;;
     'key') echo '-h --help -V --version --color' ;;
     'key restore') echo '-h --help -V --version --color' ;;
     'key request') echo '--anchor --key -h --help -V --version --color' ;;
@@ -203,10 +207,14 @@ _mnema_values() {
     'refs:--direction') echo 'both out in' ;;
     'refs:--color') echo 'auto always never' ;;
     'rules:--color') echo 'auto always never' ;;
+    'rules-file:--host') echo 'vscode cursor' ;;
+    'rules-file:--color') echo 'auto always never' ;;
     'skills:--color') echo 'auto always never' ;;
     'usage:--color') echo 'auto always never' ;;
     'brief:--color') echo 'auto always never' ;;
     'recall:--color') echo 'auto always never' ;;
+    'before-a-write:--host') echo 'vscode' ;;
+    'before-a-write:--color') echo 'auto always never' ;;
     'key:--color') echo 'auto always never' ;;
     'key restore:--color') echo 'auto always never' ;;
     'key request:--color') echo 'auto always never' ;;
