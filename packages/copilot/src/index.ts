@@ -89,6 +89,9 @@ export {
 } from './context/next-action.js';
 export {
   type HiddenMatches,
+  type PertinentSearch,
+  pertinentFirst,
+  pertinentRecords,
   type RecordBody,
   type RecordHit,
   type RecordQuery,
