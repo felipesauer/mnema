@@ -39,12 +39,21 @@
  *
  * WHAT IT DOES NOT CHECK. Whether a publish would be ACCEPTED: that needs the registry, an
  * account and a scope that does not exist yet, and this delivery deliberately publishes
- * nothing. Nor the sourcemaps: every package ships `dist/**.js.map` and `dist/**.d.ts.map`
- * whose `sources` name `../src/*.ts` with no `sourcesContent`, so they resolve to nothing in
- * an installed tree — 72 of them in `@mnema/chain` alone. That is declared debt rather than a
- * silence here; it degrades a debugger, it breaks no promise a page makes, and fixing it is a
- * choice between shipping `src/` and dropping the maps that `@mnema/code` made before this
- * delivery existed.
+ * nothing.
+ *
+ * THE SOURCE MAPS USED TO BE THE OTHER THING IT DID NOT CHECK, and this header said so as
+ * declared debt: every package shipped `dist/**.js.map` and `dist/**.d.ts.map` whose
+ * `sources` named `../src/*.ts` with no `sourcesContent`, so in an installed tree, where
+ * `src/` does not travel, they resolved to nothing. Measured on 30/09/2026 out of the
+ * tarballs: 76 such maps in `@mnema/chain`, 134 in `@mnema/core`, 52 in `@mnema/copilot` and
+ * 380 in `@mnema/code`. The choice was between shipping `src/` and embedding the source in
+ * the maps, and it was made for the second. `tsconfig.base.json` now sets `inlineSources`,
+ * which the compiler honours for the maps of the emitted JavaScript and NOT for declaration
+ * maps — measured with `tsc` 7.0.2, a `.d.ts.map` comes out with `sources` and no
+ * `sourcesContent` whatever `inlineSources` says. A declaration map can therefore only point
+ * at a `src/` the tarball does not carry, so `declarationMap` is off, and
+ * {@link mapsWithoutTheirSource} below holds both halves: every map that travels carries the
+ * text of every file it names, and no declaration map travels at all.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -250,6 +259,98 @@ describe('every package carries the licence its manifest claims', () => {
   });
 });
 
+/**
+ * EVERY SOURCE MAP THAT TRAVELS CARRIES THE SOURCE IT MAPS TO.
+ *
+ * A map is only worth shipping if a debugger in an installed tree can open what it names, and
+ * the installed tree has no `src/`. So each map read out of a tarball must hold, for every
+ * entry of `sources`, a `sourcesContent` string — and that string must be the repository's
+ * file at that path, because an empty string or a stale copy satisfies a check
+ * on the shape and leaves the debugger showing something other than what ran.
+ *
+ * Returns one line per defect, `<package>: <map> <what is wrong>`, so a red names the map.
+ * `readMap` and `readSource` are parameters so the mutations below can hand it a map this
+ * workspace no longer produces.
+ */
+function mapsWithoutTheirSource(
+  name: string,
+  maps: readonly string[],
+  readMap: (path: string) => { sources?: unknown; sourcesContent?: unknown },
+  readSource: (map: string, source: string) => string | undefined,
+): string[] {
+  const defects: string[] = [];
+  for (const map of maps) {
+    if (map.endsWith('.d.ts.map')) {
+      defects.push(`${name}: ${map} is a declaration map, which the compiler cannot fill`);
+      continue;
+    }
+    const { sources, sourcesContent } = readMap(map);
+    if (!Array.isArray(sources) || sources.length === 0) {
+      defects.push(`${name}: ${map} names no source`);
+      continue;
+    }
+    if (!Array.isArray(sourcesContent) || sourcesContent.length !== sources.length) {
+      defects.push(`${name}: ${map} does not carry the text of the ${sources.length} it names`);
+      continue;
+    }
+    sources.forEach((source, at) => {
+      const held = readSource(map, String(source));
+      if (held === undefined) {
+        defects.push(`${name}: ${map} names ${source}, which the repository does not hold`);
+      } else if (sourcesContent[at] !== held) {
+        defects.push(
+          `${name}: ${map} carries a text for ${source} that is not the repository's file`,
+        );
+      }
+    });
+  }
+  return defects;
+}
+
+/** Where each package's tarball is unpacked for the maps, apart from the chain's own run. */
+const unpackedFor = (name: string): string => join(SANDBOX, 'maps', name.replace('/', '__'));
+
+/** The repository's file a map in `<package dir>/dist/…` names, resolved from the map itself. */
+const trackedSourceOf =
+  (dir: string) =>
+  (map: string, source: string): string | undefined => {
+    try {
+      return readFileSync(join(dir, map, '..', source), 'utf-8');
+    } catch {
+      return undefined;
+    }
+  };
+
+describe('every source map that travels carries the source it maps to', () => {
+  beforeAll(() => {
+    for (const [name, tarball] of TARBALLS) {
+      mkdirSync(unpackedFor(name), { recursive: true });
+      execFileSync('tar', ['-xzf', tarball, '-C', unpackedFor(name)]);
+    }
+  }, 60_000);
+
+  const mapsOf = (name: string): readonly string[] =>
+    carried(name).filter((path) => path.endsWith('.map'));
+  const readPacked =
+    (name: string) =>
+    (map: string): { sources?: unknown; sourcesContent?: unknown } =>
+      JSON.parse(readFileSync(join(unpackedFor(name), 'package', map), 'utf-8'));
+
+  it('finds maps in every package, or the case below passes over nothing', () => {
+    // NON-VACUITY: `sourceMap` switched off would ship no map at all, and an empty list has
+    // no map without its source.
+    const none = PUBLISHABLE.filter((m) => mapsOf(m.name).length === 0).map((m) => m.name);
+    expect(none).toEqual([]);
+  });
+
+  it('carries, in every map, the text of every file the map names, as the repository holds it', () => {
+    const defects = PUBLISHABLE.flatMap((m) =>
+      mapsWithoutTheirSource(m.name, mapsOf(m.name), readPacked(m.name), trackedSourceOf(m.dir)),
+    );
+    expect(defects).toEqual([]);
+  });
+});
+
 /** What the proof engine has to carry for its page to be true. */
 const AUDIT_ARTIFACTS = ['FORMAT.md', 'canonical-vectors.json', 'event-schema.json'] as const;
 
@@ -379,6 +480,34 @@ describe('the guard is not vacuous', () => {
       'verifier/mnemaverify/__pycache__/framed.cpython-312.pyc',
       'dist/.tsbuildinfo',
     ]);
+  });
+
+  it('reddens on a map that names its source and does not carry it, as every map once did', () => {
+    // The shape the compiler emits without `inlineSources`, byte for byte in the fields read.
+    const bare = () => ({ sources: ['../src/index.ts'] });
+    const source = () => 'export {};\n';
+    expect(mapsWithoutTheirSource('m', ['dist/index.js.map'], bare, source)).toEqual([
+      'm: dist/index.js.map does not carry the text of the 1 it names',
+    ]);
+  });
+
+  it('reddens on a map whose text is not the file it names, which a shape check would pass', () => {
+    const stale = () => ({ sources: ['../src/index.ts'], sourcesContent: ['export {};\n'] });
+    const source = () => 'export const moved = 1;\n';
+    expect(mapsWithoutTheirSource('m', ['dist/index.js.map'], stale, source)).toEqual([
+      "m: dist/index.js.map carries a text for ../src/index.ts that is not the repository's file",
+    ]);
+  });
+
+  it('reddens on a declaration map, which `inlineSources` leaves without its source', () => {
+    const filled = () => ({ sources: ['../src/index.ts'], sourcesContent: ['export {};\n'] });
+    const source = () => 'export {};\n';
+    expect(mapsWithoutTheirSource('m', ['dist/index.d.ts.map'], filled, source)).toEqual([
+      'm: dist/index.d.ts.map is a declaration map, which the compiler cannot fill',
+    ]);
+    // And the same map with its source, under the JavaScript name, is clean — so the red
+    // above is the declaration map and not the fixture.
+    expect(mapsWithoutTheirSource('m', ['dist/index.js.map'], filled, source)).toEqual([]);
   });
 
   it('reddens when the licence text stops travelling', () => {
