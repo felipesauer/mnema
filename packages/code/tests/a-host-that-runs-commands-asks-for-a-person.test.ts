@@ -27,7 +27,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type CatalogEvent, catalogUpcasters } from '@mnema/chain';
 import { type DiscoveryEnv, orderedEvents, resolveTrees } from '@mnema/core';
@@ -373,7 +373,9 @@ describe('the plugin command VS Code runs', () => {
         // As VS Code runs it: the plugin root in the environment, no CLAUDE_PROJECT_DIR.
         env: {
           HOME: join(sandbox, 'home'),
-          PATH: `${bin}:/usr/bin:/bin`,
+          // The plugin's command calls `node` by name, as a host's shell would find it: the
+          // directory of the node running this suite, which on a CI runner is not /usr/bin.
+          PATH: `${bin}:${dirname(process.execPath)}:/usr/bin:/bin`,
           MNEMA_CALLS: calls,
           CLAUDE_PLUGIN_ROOT: PLUGIN,
         },
