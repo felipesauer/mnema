@@ -2179,7 +2179,9 @@ export function runRulesBeforeAnEditTool(
   // a call that already speaks, because the facts above are written only for a channel that
   // said something, and it is the first write of a connection into a tree that can found. So
   // this path, which nobody asked for and nobody reads the output of, is not silent about it.
-  const founded = session.founding.take();
+  // And what the content door replaced in those facts, for the same reason and by the same
+  // field: the path the host named is screened on its way into `channel.asked`.
+  const founded = [...session.founding.take(), ...session.replacementsOwed.take()];
   const told =
     founded.length === 0
       ? context
@@ -2225,6 +2227,7 @@ function recordAskings(session: Session, at: RulesAtPath): { readonly ok: boolea
       if (appended > 0) ctx.writer.checkpoint();
       return { ok: false };
     }
+    session.replacementsOwed.add(done.replaced);
     appended += 1;
   }
   ctx.writer.checkpoint();
@@ -2264,6 +2267,7 @@ function recordServices(session: Session, channels: readonly SwitchableChannel[]
   for (const channel of fresh) {
     const done = recordChannelServed(ctx, { channel, which: session.which, run });
     if (!done.ok) break;
+    session.replacementsOwed.add(done.replaced);
     recordedInRun.add(channel);
     appended += 1;
   }

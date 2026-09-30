@@ -18,7 +18,7 @@ import type { ScanRefusalCode } from '@mnema/core';
 import type { Command } from 'commander';
 import type { runDecisionImport } from '../commands/decision-import.js';
 import type { runDecisionTransition } from '../commands/decision-transition.js';
-import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
+import { RECORD_CONTRACT_HELP, replacementNotice } from '../recorded-content.js';
 import { here } from './context.js';
 import {
   actionsRequiring,
@@ -381,11 +381,11 @@ function importLines(
       `from ${proposal.path}`,
       ...(proposal.status !== undefined ? [`the file says "${proposal.status}"`] : []),
       ...(proposal.alternatives ? ['names what it turned down'] : []),
-      ...(proposal.replaced !== undefined
-        ? [`a ${proposal.replaced.join(', ')} was replaced`]
-        : []),
     ];
     lines.push(`      ${notes.join(' · ')}`);
+    // In the words every write says it, under the proposal it is about. This was a second
+    // wording — the classes' raw names, no count and no instruction to rotate.
+    for (const line of replacementNotice(proposal.replaced)) lines.push(`    ${line}`);
   }
   if (result.already.length > 0) {
     lines.push(`${result.already.length} file(s) already in the record, unchanged:`);

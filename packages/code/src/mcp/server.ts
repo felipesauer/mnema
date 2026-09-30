@@ -77,7 +77,7 @@
  * server side never fires it.
  */
 
-import { privateKeyPath } from '@mnema/chain';
+import { privateKeyPath, TailBusyError } from '@mnema/chain';
 import { REFERENCE_DEFAULT_DEPTH, REFERENCE_MAX_DEPTH } from '@mnema/copilot';
 import {
   canonicalIdentity,
@@ -596,13 +596,30 @@ export function buildMcpServer(options: McpServerOptions): {
    */
   const closeNow = (): void => {
     if (openedSession === undefined) return;
-    const { closed, leftOpen } = closeSession(openedSession);
+    const { closed, leftOpen, replaced, begunWithNoRun } = closeSession(openedSession);
+    // "Nothing was written" only where no write began: a run's opening founds on its way in
+    // when the key has no anchor there, so a run that failed to open may have left the founding
+    // behind — and the line said "nothing was written" over it.
+    const begun =
+      begunWithNoRun.length > 0
+        ? `; a write began in ${begunWithNoRun.join(', ')} and no run opened there, so what comes before a run (a founding) may be on disk`
+        : '';
+    const door =
+      replaced.length > 0
+        ? `; ${replacementNotice(replaced)
+            .map((line) => line.trim())
+            .join(' ')}`
+        : '';
     log(
-      closed.length === 0 && leftOpen.length === 0
-        ? 'session closed: no run was opened (nothing was written)'
-        : `session closed: ${runList('closed', closed)}${
-            leftOpen.length > 0 ? `; ${runList('left open', leftOpen)}` : ''
-          }`,
+      oneLine(
+        closed.length === 0 && leftOpen.length === 0
+          ? begun === ''
+            ? 'session closed: no run was opened (nothing was written)'
+            : `session closed: no run was opened${begun}`
+          : `session closed: ${runList('closed', closed)}${
+              leftOpen.length > 0 ? `; ${runList('left open', leftOpen)}` : ''
+            }${begun}${door}`,
+      ),
     );
   };
 
@@ -686,7 +703,7 @@ function declaringInto(
     server.registerTool(
       what.act,
       { ...config, annotations: hintsOf(what) },
-      answeringIdentityRefusals(handle, ensureSession),
+      answeringThrownRefusals(handle, ensureSession),
     );
   };
 }
@@ -742,20 +759,29 @@ function hintsOf(what: DeclaredTool): ToolAnnotations {
 }
 
 /**
- * `handle`, with the refusal thrown below every write answered through {@link refused} — the door
- * every other refusal leaves by — instead of by the SDK.
+ * `handle`, with the refusals thrown below every write answered through {@link refused} — the
+ * door every other refusal leaves by — instead of by the SDK.
  *
- * A key the record gives no honest identity THROWS rather than returns (`IdentityUnavailableError`,
- * from the core), because the decision sits below every write and there is no honest way on. The
- * tools never caught it, so the SDK answered with the bare message: no `Refused (CODE)`, and none
- * of what the session owed. The one that most needs its code is the checkout whose recorded
- * identity no longer counts its key (`STALE_ANCHOR`), whose way out is a restore of this machine's
- * key file — so the reply says where that file is, which the session can and the core cannot
- * (the key root is read where a writer opens). Only that class is caught: any other throw is the
- * SDK's to answer, as before, and a session that could not open at all has nothing to answer
- * from, so its throw goes out as it came. `the-checkout-a-key-left.test.ts` asks it over stdio.
+ * TWO CLASSES, AND BOTH ARE REFUSALS RATHER THAN DEFECTS:
+ *   - A key the record gives no honest identity THROWS rather than returns
+ *     (`IdentityUnavailableError`, from the core), because the decision sits below every write
+ *     and there is no honest way on. The one that most needs its code is the checkout whose
+ *     recorded identity no longer counts its key (`STALE_ANCHOR`), whose way out is a restore of
+ *     this machine's key file — so the reply says where that file is, which the session can and
+ *     the core cannot (the key root is read where a writer opens).
+ *     `the-checkout-a-key-left.test.ts` asks it over stdio.
+ *   - A tail another process holds past the lock's budget (`TailBusyError`, from the chain). A
+ *     write opens its run before the operation decides (`ensureRun`), so the call that meets a
+ *     busy tail may already have founded an identity and opened a run on the way in; answered
+ *     by the SDK, the throw went out as its bare message, and the founding sentence and the
+ *     replacement report the session owed waited for a next reply a closing connection never
+ *     makes. `the-busy-tail-is-a-refusal.test.ts` asks it.
+ * The tools never caught either, so the SDK answered with the bare message: no `Refused (CODE)`,
+ * and none of what the session owed. Any other throw is the SDK's to answer, as before, and a
+ * session that could not open at all has nothing to answer from, so its throw goes out as it
+ * came.
  */
-function answeringIdentityRefusals<Input extends ZodRawShapeCompat | undefined>(
+function answeringThrownRefusals<Input extends ZodRawShapeCompat | undefined>(
   handle: ToolCallback<Input>,
   ensureSession: () => Promise<Session>,
 ): ToolCallback<Input> {
@@ -764,6 +790,9 @@ function answeringIdentityRefusals<Input extends ZodRawShapeCompat | undefined>(
     try {
       return await called(...args);
     } catch (error) {
+      if (error instanceof TailBusyError) {
+        return refused(await ensureSession(), { code: error.code, message: error.message });
+      }
       if (!(error instanceof IdentityUnavailableError)) throw error;
       const session = await ensureSession();
       const keyFile =
@@ -2147,6 +2176,9 @@ function replied(
       // there beside others — once per key per tree for an installation, and again for a fresh
       // clone of the record, which is a new one (`a-new-identity.ts`).
       ...session.founding.take(),
+      // AND WHAT THE CONTENT DOOR REPLACED IN WHAT THE CONNECTION RECORDED ON ITS OWN — its run,
+      // the edit hook's facts — which no tool's own reply acknowledges (`ReplacementsOwed`).
+      ...session.replacementsOwed.take(),
       ...after,
     ].map((text) => ({
       type: 'text' as const,
@@ -2199,9 +2231,11 @@ function refused(
 ): RefusalReply {
   return {
     isError: true,
-    content: [`Refused (${refusal.code}): ${refusal.message}`, ...session.founding.take()].map(
-      (text) => ({ type: 'text' as const, text }),
-    ),
+    content: [
+      `Refused (${refusal.code}): ${refusal.message}`,
+      ...session.founding.take(),
+      ...session.replacementsOwed.take(),
+    ].map((text) => ({ type: 'text' as const, text })),
   };
 }
 

@@ -2148,10 +2148,20 @@ describe('MCP session + tools — unit', () => {
       throw new Error('setup: capture refused');
     }
     const run = theRun(session) as string;
-    expect(closeSession(session)).toEqual({ closed: [run], leftOpen: [] });
+    expect(closeSession(session)).toEqual({
+      closed: [run],
+      leftOpen: [],
+      replaced: [],
+      begunWithNoRun: [],
+    });
     // Already ended — endRun refuses, closeSession swallows it and NAMES the run it
     // could not close, so a run is never simply absent from the account.
-    expect(closeSession(session)).toEqual({ closed: [], leftOpen: [run] });
+    expect(closeSession(session)).toEqual({
+      closed: [],
+      leftOpen: [run],
+      replaced: [],
+      begunWithNoRun: [],
+    });
   });
 
   it('closing a session that never wrote records nothing at all', () => {
@@ -2163,7 +2173,12 @@ describe('MCP session + tools — unit', () => {
     });
     // Closing is the LAST chance to write, so it is where a run would otherwise be
     // founded, started and ended in one go for a connection that only read.
-    expect(closeSession(session)).toEqual({ closed: [], leftOpen: [] });
+    expect(closeSession(session)).toEqual({
+      closed: [],
+      leftOpen: [],
+      replaced: [],
+      begunWithNoRun: [],
+    });
     for (const scope of ['public', 'private'] as const) {
       const root = chainRootForScope(session.trees, scope) as string;
       expect(orderedEvents({ root }, catalogUpcasters())).toEqual([]);

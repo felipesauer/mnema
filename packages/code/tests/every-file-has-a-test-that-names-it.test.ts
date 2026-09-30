@@ -462,7 +462,7 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * `vitest`, and `../src/mcp/instructions.js`, `../src/mcp/server.js`,
  * `../src/presentation/brief.js` and `../src/record-framing.js` for the texts. Read off this guard.
  */
-const CLAUSES_IN_THE_TREE = 3215;
+const CLAUSES_IN_THE_TREE = 3237;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
