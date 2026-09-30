@@ -402,11 +402,14 @@ export const NOT_CHECKED: Readonly<Record<string, string>> = {
  * THE FRONT PAGE SAYS WHAT LEAVES A MACHINE, and that moved one row of the pages, looked at: the
  * line saying what a privately recorded fact never sends anywhere names `mnema witness stamp`, the
  * one verb that sends a checkpoint's digest, and only when it is run (63 → 64 names).
+ *
+ * THE CHANGELOG ARRIVED, and it names three verbs a reader of it would go and type: the server
+ * an agent writes through, `verify`, and `witness stamp` (64 → 67 names).
  */
 export const HANDED_OVER: Readonly<
   Record<Handed['from'], Readonly<Record<Reading['kind'], number>>>
 > = {
-  span: { line: 24, name: 64, flag: 1, unwritten: 0 },
+  span: { line: 24, name: 67, flag: 1, unwritten: 0 },
   block: { line: 33, name: 20, flag: 0, unwritten: 0 },
   source: { line: 32, name: 42, flag: 3, unwritten: 3 },
 };
