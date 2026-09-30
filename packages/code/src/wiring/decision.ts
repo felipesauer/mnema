@@ -425,6 +425,12 @@ function importLines(
 const IMPORT_REFUSALS: Record<ScanRefusalCode, string> = {
   NO_TITLE: 'no level-1 title — nothing names the decision',
   NO_RATIONALE: 'no context section and no lead — it states a decision and never states a why',
+  TITLE_IS_A_MARKER:
+    'its title is only the marker a template leaves where the words go — nothing names the decision',
+  RATIONALE_IS_A_MARKER:
+    'its why is only the marker a template leaves where the words go — it never states a why',
+  ALTERNATIVES_ARE_A_MARKER:
+    'what it turned down is only the marker a template leaves where the words go — write what was turned down, or leave the section out',
   RETIRED: 'the document’s own status says it is no longer in force',
   HOLDS_A_SECRET: 'it holds something shaped like a credential, so nothing was read from it',
   FIELD_TOO_LARGE: 'a field is over the size a recorded field may hold',

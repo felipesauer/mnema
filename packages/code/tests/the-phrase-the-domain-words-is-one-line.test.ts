@@ -617,10 +617,26 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     },
   '@mnema/core a-reason-states-something.ts «the {} "{}" is the marker a recipe prints where the words go, » oneLine(value.trim()) #1':
     { verdict: 'collapsed', why: 'the marker a caller pasted, from the argv or a tool argument' },
+  '@mnema/core a-reason-states-something.ts «the {} "{}" is the marker a recipe prints where the words go, » field #2':
+    { verdict: 'minted', why: 'the name of a title field, one of the rows `TITLES` holds' },
+  '@mnema/core a-reason-states-something.ts «the {} "{}" is the marker a recipe prints where the words go, » oneLine(value.trim()) #2':
+    {
+      verdict: 'collapsed',
+      why: 'the marker a caller pasted as a title, from the argv or a tool argument',
+    },
+  '@mnema/core a-reason-states-something.ts «not the words: write the {} in its place» field #1': {
+    verdict: 'minted',
+    why: 'the name of a title field, one of the rows `TITLES` holds',
+  },
   '@mnema/core workflow/append.ts «{}. The fact was NOT recorded — a record is permanent, and its why is the part a later reader reads.» unstated #1':
     {
       verdict: 'composed',
       why: 'the reason refusal `a-reason-states-something.ts` words, whose two values are sites there',
+    },
+  '@mnema/core workflow/append.ts «{}. The fact was NOT recorded — a record is permanent, and its title is what every later reading finds it by.» unfilled #1':
+    {
+      verdict: 'composed',
+      why: 'the title refusal `a-reason-states-something.ts` words, whose two values are sites there',
     },
   // --- @mnema/chain: the enrollment fold's findings -------------------------------
   '@mnema/chain chain/enrollment.ts «re-adds {} revoked under signature coverage without being checkpointed itself» oneLine(fp) #1':
@@ -1353,9 +1369,9 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
     // sites, twelve in `core` and eleven in `chain` — because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(147);
+    expect(SITES.length).toBe(151);
     expect(FOUND[0]?.sites.length).toBe(48);
-    expect(FOUND[1]?.sites.length).toBe(99);
+    expect(FOUND[1]?.sites.length).toBe(103);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
 
@@ -1405,11 +1421,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(89);
-    expect(count('minted')).toBe(38);
-    expect(count('composed')).toBe(20);
+    expect(count('collapsed')).toBe(90);
+    expect(count('minted')).toBe(40);
+    expect(count('composed')).toBe(21);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      89,
+      90,
     );
   });
 

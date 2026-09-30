@@ -9,10 +9,14 @@ import {
   REASONS,
   reasonRefusal,
   statesSomething,
+  TITLES,
+  titleRefusal,
+  unfilledTitle,
   unstatedReason,
 } from './a-reason-states-something.js';
 import { requestEnrollment } from './identity/handshake.js';
 import { enrollFromRequest, revokeMember } from './identity/roster.js';
+import { recordObservation } from './knowledge/operations.js';
 import { orderedEvents } from './projections/order.js';
 import { switchChannel } from './workflow/channel-operations.js';
 import { decisionGate } from './workflow/decision-gate.js';
@@ -277,6 +281,114 @@ describe('every kind says where its why is, and the door asks it there', () => {
         ok: true,
       });
     }
+  });
+});
+
+/**
+ * A TITLE THAT IS A MARKER IS REFUSED ON THE WAY IN, by the function that refuses one as a reason.
+ *
+ * What was wrong: `mnema decision record "<title>" "<rationale>"`, pasted from a recipe, recorded
+ * a decision named `<title>` — the rule asked the marker question of the why alone.
+ */
+describe('the title, asked of one value', () => {
+  it('refuses a marker and names the field and what goes in its place', () => {
+    expect(titleRefusal('name', '<name>')?.message).toBe(
+      'the name "<name>" is the marker a recipe prints where the words go, not the words: write the name in its place',
+    );
+    expect(titleRefusal('title', ' <title> ')).toBeDefined();
+  });
+
+  it('asks only the marker: a title in words, with a tag in it, or of punctuation, passes', () => {
+    // Only the marker, as the module's header says: whether a title states something is not
+    // asked here (the reader of decision files asks it of a file, `NO_TITLE`).
+    for (const said of ['Use UTC', 'use <b> for bold', '理由', '***']) {
+      expect(titleRefusal('title', said), said).toBeUndefined();
+    }
+  });
+});
+
+describe('every kind says where its title is, and the door asks it there', () => {
+  let root: string;
+  let ctx: WriteContext;
+  const upcasters = catalogUpcasters();
+
+  beforeEach(() => {
+    root = mkdtempSync(join(tmpdir(), 'mnema-title-'));
+    ctx = { writer: openChainForWriting(root, { keyRoot: root }), layout: { root }, upcasters };
+    ensureFounded(ctx);
+  });
+
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  const count = (): number => orderedEvents(ctx.layout, upcasters).length;
+
+  /** One row per (kind, site) {@link TITLES} lists, with the value put where the title goes. */
+  const rows: readonly {
+    readonly kind: string;
+    readonly site: string;
+    readonly drive: (said: string) => { readonly ok: boolean; readonly code?: string };
+  }[] = [
+    { kind: 'task.created', site: 'title', drive: (said) => createTask(ctx, { title: said }) },
+    {
+      kind: 'decision.recorded',
+      site: 'title',
+      drive: (said) => recordDecision(ctx, { title: said, rationale: 'one clock' }),
+    },
+    {
+      kind: 'skill.created',
+      site: 'name',
+      drive: (said) => createSkill(ctx, { name: said, body: 'do it so' }),
+    },
+    {
+      kind: 'observation.recorded',
+      site: 'topic',
+      drive: (said) =>
+        recordObservation(ctx, {
+          about: '0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b44',
+          topic: said,
+          text: 'it was slow',
+        }),
+    },
+  ];
+
+  it('is total over the catalog, and every site listed has a row here', () => {
+    expect(Object.keys(TITLES).sort()).toEqual(Object.keys(LATEST_VERSION).sort());
+    const listed = Object.entries(TITLES).flatMap(([kind, sites]) =>
+      (sites as readonly string[]).map((site) => `${kind} ${site}`),
+    );
+    expect(rows.map((row) => `${row.kind} ${row.site}`).sort()).toEqual(listed.sort());
+  });
+
+  for (const said of ['<title>', ' <name> ', '<t>', '<short title>']) {
+    it(`refuses ${JSON.stringify(said)} at every site, and appends nothing`, () => {
+      for (const row of rows) {
+        const before = count();
+        expect(row.drive(said), `${row.kind} ${row.site}`).toMatchObject({
+          ok: false,
+          code: 'NOT_A_TITLE',
+        });
+        expect(count(), `${row.kind} ${row.site}`).toBe(before);
+      }
+    });
+  }
+
+  it('and records the same row with a title in words, so the refusal is about the marker', () => {
+    for (const row of rows) {
+      expect(row.drive('clocks in UTC'), `${row.kind} ${row.site}`).toMatchObject({ ok: true });
+    }
+  });
+
+  it('asks the title before the why, so a fact with both unfilled names the title first', () => {
+    const refused = recordDecision(ctx, { title: '<title>', rationale: '<why>' });
+    expect(refused).toMatchObject({ ok: false, code: 'NOT_A_TITLE' });
+    expect(
+      unfilledTitle({
+        kind: 'decision.recorded',
+        payload: { title: '<title>', rationale: 'r', adr: 'ADR-1' },
+      } as never),
+    ).toContain('the title "<title>"');
   });
 });
 

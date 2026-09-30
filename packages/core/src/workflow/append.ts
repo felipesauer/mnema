@@ -34,7 +34,7 @@
  */
 
 import { type CatalogEvent, type ChainWriter, type Entry, unreadableReason } from '@mnema/chain';
-import { unstatedReason } from '../a-reason-states-something.js';
+import { unfilledTitle, unstatedReason } from '../a-reason-states-something.js';
 
 /**
  * A write refused because the record would not have been readable back; nothing
@@ -68,8 +68,25 @@ export interface NotAReasonErr {
   readonly message: string;
 }
 
-/** Why the door refused an event: a read could not open it, or its why says nothing. */
-export type AppendRefusal = UnreadableEventErr | NotAReasonErr;
+/**
+ * A write refused because the line that names the fact — a task's or a decision's title, a
+ * skill's name, an observation's topic — is the marker a recipe prints where the words go
+ * (`<title>`). Nothing was appended.
+ *
+ * NOT {@link NotAReasonErr}, although the rule is the same function: a title is not a reason, and
+ * the code is what a caller reads to know which argument to fix.
+ */
+export interface NotATitleErr {
+  readonly ok: false;
+  readonly code: 'NOT_A_TITLE';
+  readonly message: string;
+}
+
+/**
+ * Why the door refused an event: a read could not open it, its why says nothing, or its title is
+ * a marker.
+ */
+export type AppendRefusal = UnreadableEventErr | NotAReasonErr | NotATitleErr;
 
 /** One event appended, or the refusal it earned before anything was sealed. */
 export type AppendedEvent = { readonly ok: true; readonly entry: Entry } | AppendRefusal;
@@ -124,6 +141,14 @@ function refuse(event: CatalogEvent): AppendRefusal | undefined {
       message:
         `${reason}. The fact was NOT recorded — an entry no read could open would ` +
         'leave every later read of this project failing, and a tail cannot be edited.',
+    };
+  }
+  const unfilled = unfilledTitle(event);
+  if (unfilled !== undefined) {
+    return {
+      ok: false,
+      code: 'NOT_A_TITLE',
+      message: `${unfilled}. The fact was NOT recorded — a record is permanent, and its title is what every later reading finds it by.`,
     };
   }
   const unstated = unstatedReason(event);

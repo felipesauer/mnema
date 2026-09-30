@@ -19,6 +19,15 @@
  * the product hands over (`the-command-handed-over-runs-as-handed.test.ts`) fills markers by
  * this same pattern, so a marker a new page prints is one the write door already refuses.
  *
+ * AND A MARKER IS NO TITLE. This module used to ask the marker question of the why alone, and
+ * said so: `<title>` as a title was accepted. It was the same paste one field over —
+ * `mnema decision record "<title>" "<rationale>"` recorded a decision named `<title>`, and a
+ * decision file whose heading was `# <title>` was imported as one. {@link TITLES} is where each
+ * kind keeps the one short line that names a record, and {@link titleRefusal} asks
+ * {@link isMarker} of it, the same function. Only the marker: a title is not asked whether it
+ * states something here, so `***` as a title is still recorded (the reader of decision files
+ * refuses that one on its own, `NO_TITLE`).
+ *
  * WHAT IT DOES NOT JUDGE is whether the words are a GOOD reason. `n/a` states something. A
  * person rules on prose; this rules only that there is some, and that it is not the blank a
  * recipe left for it.
@@ -73,6 +82,23 @@ export function reasonRefusal(
     };
   }
   return undefined;
+}
+
+/**
+ * The refusal a title earns, or undefined when it is not a marker. `field` is the name the kind
+ * gives it (`title`, `name`, `topic`), so the sentence names the value they typed and what goes
+ * in its place.
+ */
+export function titleRefusal(
+  field: string,
+  value: unknown,
+): { readonly message: string } | undefined {
+  if (typeof value !== 'string' || !isMarker(value)) return undefined;
+  return {
+    message:
+      `the ${field} "${oneLine(value.trim())}" is the marker a recipe prints where the words go, ` +
+      `not the words: write the ${field} in its place`,
+  };
 }
 
 /** The proof fields of a transition that carry a why (a pull request url and links do not). */
@@ -137,6 +163,52 @@ export function unstatedReason(event: CatalogEvent): string | undefined {
       continue;
     }
     const refused = reasonRefusal(site, payload[site]);
+    if (refused !== undefined) return refused.message;
+  }
+  return undefined;
+}
+
+/**
+ * Which field of each kind is its TITLE — the one short line that names a record — the field
+ * {@link titleRefusal} is asked of on the way in.
+ *
+ * The cut is the one the search index already draws (`projections/search-store.ts`): its `title`
+ * column takes a task's and a decision's title, a skill's name and an observation's topic, and
+ * nothing else. The other names of the catalog (a run's agent, an observation's `about`, a link's
+ * target and relation, a handoff's two agents) are references and labels a reading looks up by
+ * exact string, not a line a person writes to name what they record.
+ *
+ * TOTAL BY TYPE, like {@link REASONS}: a kind added to the catalog does not compile until it has a
+ * row here, even an empty one.
+ */
+export const TITLES: { readonly [K in EventKind]: readonly TextField<K>[] } = {
+  'run.started': [],
+  'run.ended': [],
+  'task.created': ['title'],
+  'task.transitioned': [],
+  'decision.recorded': ['title'],
+  'decision.transitioned': [],
+  'identity.founded': [],
+  'key.enrolled': [],
+  'key.revoked': [],
+  'memory.captured': [],
+  'observation.recorded': ['topic'],
+  'handoff.recorded': [],
+  'knowledge.linked': [],
+  'skill.created': ['name'],
+  'skill.transitioned': [],
+  'skill.consulted': [],
+  'tail.pruned': [],
+  'channel.switched': [],
+  'channel.served': [],
+  'channel.asked': [],
+};
+
+/** The refusal the title of `event` earns when it is a marker, or undefined. */
+export function unfilledTitle(event: CatalogEvent): string | undefined {
+  const payload = event.payload as Readonly<Record<string, unknown>>;
+  for (const site of TITLES[event.kind] as readonly string[]) {
+    const refused = titleRefusal(site, payload[site]);
     if (refused !== undefined) return refused.message;
   }
   return undefined;

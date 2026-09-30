@@ -54,7 +54,7 @@
  * record); this reads other people's.
  */
 
-import { statesSomething } from '../a-reason-states-something.js';
+import { isMarker, statesSomething } from '../a-reason-states-something.js';
 
 /** The four things this product records about a decision, read out of a document. */
 export interface AdrDocument {
@@ -82,7 +82,18 @@ export type AdrRefusalCode =
    * states a why. The product requires a rationale (a decision with none records
    * nothing worth proving), so there is nothing honest to propose.
    */
-  | 'NO_RATIONALE';
+  | 'NO_RATIONALE'
+  /**
+   * The title is only the marker a template leaves where the words go (`# <title>`): the
+   * document was never filled in there. The write door refuses the same value by the same
+   * function ({@link isMarker}); this is the reader saying so file by file, where a file that
+   * reached the door used to stop the whole import there.
+   */
+  | 'TITLE_IS_A_MARKER'
+  /** The rationale is only such a marker (`<why>`), by the same function. */
+  | 'RATIONALE_IS_A_MARKER'
+  /** What was turned down is only such a marker (`<alternatives>`), by the same function. */
+  | 'ALTERNATIVES_ARE_A_MARKER';
 
 /** A document that could not be read as a decision, and why. */
 export interface AdrRefused {
@@ -435,12 +446,17 @@ export function readAdr(text: string): AdrRead | AdrRefused {
   if (rawTitle === undefined) return { ok: false, code: 'NO_TITLE' };
   const title = stripAdrNumbering(rawTitle.replace(/\*/g, '').trim());
   if (!statesSomething(title)) return { ok: false, code: 'NO_TITLE' };
+  if (isMarker(title)) return { ok: false, code: 'TITLE_IS_A_MARKER' };
 
   const rationale =
     sectionBody(sections, CONTEXT_LABELS) ?? (statesSomething(lead) ? lead : undefined);
   if (rationale === undefined) return { ok: false, code: 'NO_RATIONALE' };
+  if (isMarker(rationale)) return { ok: false, code: 'RATIONALE_IS_A_MARKER' };
 
   const alternatives = sectionBody(sections, ALTERNATIVE_LABELS);
+  if (alternatives !== undefined && isMarker(alternatives)) {
+    return { ok: false, code: 'ALTERNATIVES_ARE_A_MARKER' };
+  }
   const status = statusOf(text, sections);
   return {
     ok: true,
