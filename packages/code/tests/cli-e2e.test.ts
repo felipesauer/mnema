@@ -44,12 +44,12 @@ import {
   resolveTrees,
 } from '@mnema/core';
 import { openTreeForWriting } from '@mnema/core/write';
-import type { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo, run } from '../src/cli.js';
 import { closeSession, openSession } from '../src/mcp/session.js';
 import { runCreateSkill, runSkillsTool, runSkillTransition } from '../src/mcp/tools.js';
 import { patternsFraming } from '../src/served-patterns.js';
+import { everyCommandOf, pathOf } from '../src/wiring/misuse.js';
 
 let sandbox: string;
 let repo: string;
@@ -2878,15 +2878,17 @@ describe('mnema CLI — a --which that names nobody', () => {
     const { program } = buildProgram(capture().io);
     const declaring: string[] = [];
     const unvalidated: string[] = [];
-    const walk = (command: Command, path: string): void => {
+    // The program's own walk, the one its refusals and its completion tree take, so a verb
+    // this misses is a verb those miss too — and the exact list below still reads every
+    // omission, in both directions.
+    for (const command of everyCommandOf(program)) {
+      const path = pathOf(command).join(' ');
       for (const option of command.options) {
         if (option.long !== '--which') continue;
         declaring.push(path);
         if (option.parseArg === undefined) unvalidated.push(path);
       }
-      for (const child of command.commands) walk(child, `${path} ${child.name()}`.trim());
-    };
-    walk(program, '');
+    }
 
     // Every verb that DECLARES the flag is listed, so a new one shows up here.
     expect(declaring.sort()).toEqual(

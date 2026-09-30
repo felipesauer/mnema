@@ -464,8 +464,11 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * Then 3189 -> 3190 where a pure layer may not import a function that reaches the machine: one
  * clause in `the-document-is-a-function-of-the-record.test.ts`, `node:module`, for the list of
  * the runtime's own modules that the indirect net does not follow. Read off this guard.
+ * Then 3190 -> 3191 where two guards that walked the command tree alone take the program's own
+ * walk: `../src/wiring/misuse.js` in `every-option-feeds-something.test.ts` and in
+ * `cli-e2e.test.ts`, which drops its `commander` type import for it. Read off this guard.
  */
-const CLAUSES_IN_THE_TREE = 3190;
+const CLAUSES_IN_THE_TREE = 3191;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
