@@ -1,0 +1,407 @@
+{
+ "host": "VS Code 1.137.0 (commit 645f29cc), Copilot Chat 0.65.0 built in",
+ "at": "2026-09-30",
+ "method": "A disposable window per case: fresh profile and extensions dir, env emptied, xvfb, unshare -rn (loopback only). The \"model\" is a test extension registering a language model provider that answers the first request offering the tool with ONE tool call and records every request. Copilot enabled by its anonymous local setup; no account, no network, no model. Hooks come from a plugin folder listed in chat.pluginLocations; the command hook logs what it was handed and prints a fixed reply. The v-instr cases put one .github/instructions file with an applyTo in the workspace; the e2e cases use the plugin of this commit and the built binary.",
+ "cases": [
+  {
+   "case": "v-cmd-claude-matcher",
+   "tool_asked_for": "create_file",
+   "requests_the_model_got": 2,
+   "written": true,
+   "hook_runs": 1,
+   "hook_tool_name": "create_file",
+   "hook_stdin_keys": [
+    "cwd",
+    "hook_event_name",
+    "session_id",
+    "timestamp",
+    "tool_input",
+    "tool_name",
+    "tool_use_id",
+    "transcript_path"
+   ],
+   "hook_tool_input_keys": [
+    "content",
+    "filePath"
+   ],
+   "hook_env_names": [
+    "CLAUDE_PLUGIN_ROOT",
+    "COPILOT_CLI_ENABLED_FEATURE_FLAGS",
+    "COPILOT_OTEL_FILE_EXPORTER_PATH",
+    "HOME",
+    "PATH",
+    "PWD",
+    "VSCODE_CODE_CACHE_PATH",
+    "VSCODE_CRASH_REPORTER_PROCESS_TYPE",
+    "VSCODE_CWD",
+    "VSCODE_ESM_ENTRYPOINT",
+    "VSCODE_HANDLES_UNCAUGHT_ERRORS",
+    "VSCODE_IPC_HOOK",
+    "VSCODE_L10N_BUNDLE_LOCATION",
+    "VSCODE_NLS_CONFIG",
+    "VSCODE_PID"
+   ],
+   "tool_result_text": "[{\"text\":\"The following files were successfully edited:\\n<sandbox>/vs/v-cmd-claude-matcher/ws/src/billing/probe.ts\\n\\n<PreToolUse-context>\\nPROBE_CONTEXT_MARK_VS\\n</PreToolUse-context>\"}]",
+   "instructions_mark_in_any_request": false,
+   "host_log": [
+    "[info] [#0] [PreToolUse] Completed (Success) in 80ms"
+   ],
+   "mnema_calls": [],
+   "channel_facts": []
+  },
+  {
+   "case": "v-cmd-vscode-matcher",
+   "tool_asked_for": "create_file",
+   "requests_the_model_got": 2,
+   "written": true,
+   "hook_runs": 1,
+   "hook_tool_name": "create_file",
+   "hook_stdin_keys": [
+    "cwd",
+    "hook_event_name",
+    "session_id",
+    "timestamp",
+    "tool_input",
+    "tool_name",
+    "tool_use_id",
+    "transcript_path"
+   ],
+   "hook_tool_input_keys": [
+    "content",
+    "filePath"
+   ],
+   "hook_env_names": [
+    "CLAUDE_PLUGIN_ROOT",
+    "COPILOT_CLI_ENABLED_FEATURE_FLAGS",
+    "COPILOT_OTEL_FILE_EXPORTER_PATH",
+    "HOME",
+    "PATH",
+    "PWD",
+    "VSCODE_CODE_CACHE_PATH",
+    "VSCODE_CRASH_REPORTER_PROCESS_TYPE",
+    "VSCODE_CWD",
+    "VSCODE_ESM_ENTRYPOINT",
+    "VSCODE_HANDLES_UNCAUGHT_ERRORS",
+    "VSCODE_IPC_HOOK",
+    "VSCODE_L10N_BUNDLE_LOCATION",
+    "VSCODE_NLS_CONFIG",
+    "VSCODE_PID"
+   ],
+   "tool_result_text": "[{\"text\":\"The following files were successfully edited:\\n<sandbox>/vs/v-cmd-vscode-matcher/ws/src/billing/probe.ts\\n\\n<PreToolUse-context>\\nPROBE_CONTEXT_MARK_VS\\n</PreToolUse-context>\"}]",
+   "instructions_mark_in_any_request": false,
+   "host_log": [
+    "[info] [#0] [PreToolUse] Completed (Success) in 45ms"
+   ],
+   "mnema_calls": [],
+   "channel_facts": []
+  },
+  {
+   "case": "v-cmd-nomatch",
+   "tool_asked_for": "create_file",
+   "requests_the_model_got": 2,
+   "written": true,
+   "hook_runs": 1,
+   "hook_tool_name": "create_file",
+   "hook_stdin_keys": [
+    "cwd",
+    "hook_event_name",
+    "session_id",
+    "timestamp",
+    "tool_input",
+    "tool_name",
+    "tool_use_id",
+    "transcript_path"
+   ],
+   "hook_tool_input_keys": [
+    "content",
+    "filePath"
+   ],
+   "hook_env_names": [
+    "CLAUDE_PLUGIN_ROOT",
+    "COPILOT_CLI_ENABLED_FEATURE_FLAGS",
+    "COPILOT_OTEL_FILE_EXPORTER_PATH",
+    "HOME",
+    "PATH",
+    "PWD",
+    "VSCODE_CODE_CACHE_PATH",
+    "VSCODE_CRASH_REPORTER_PROCESS_TYPE",
+    "VSCODE_CWD",
+    "VSCODE_ESM_ENTRYPOINT",
+    "VSCODE_HANDLES_UNCAUGHT_ERRORS",
+    "VSCODE_IPC_HOOK",
+    "VSCODE_L10N_BUNDLE_LOCATION",
+    "VSCODE_NLS_CONFIG",
+    "VSCODE_PID"
+   ],
+   "tool_result_text": "[{\"text\":\"The following files were successfully edited:\\n<sandbox>/vs/v-cmd-nomatch/ws/src/billing/probe.ts\\n\\n<PreToolUse-context>\\nPROBE_CONTEXT_MARK_VS\\n</PreToolUse-context>\"}]",
+   "instructions_mark_in_any_request": false,
+   "host_log": [
+    "[info] [#0] [PreToolUse] Completed (Success) in 39ms"
+   ],
+   "mnema_calls": [],
+   "channel_facts": []
+  },
+  {
+   "case": "v-cmd-ask",
+   "tool_asked_for": "create_file",
+   "requests_the_model_got": 1,
+   "written": false,
+   "hook_runs": 1,
+   "hook_tool_name": "create_file",
+   "hook_stdin_keys": [
+    "cwd",
+    "hook_event_name",
+    "session_id",
+    "timestamp",
+    "tool_input",
+    "tool_name",
+    "tool_use_id",
+    "transcript_path"
+   ],
+   "hook_tool_input_keys": [
+    "content",
+    "filePath"
+   ],
+   "hook_env_names": [
+    "CLAUDE_PLUGIN_ROOT",
+    "COPILOT_CLI_ENABLED_FEATURE_FLAGS",
+    "COPILOT_OTEL_FILE_EXPORTER_PATH",
+    "HOME",
+    "PATH",
+    "PWD",
+    "VSCODE_CODE_CACHE_PATH",
+    "VSCODE_CRASH_REPORTER_PROCESS_TYPE",
+    "VSCODE_CWD",
+    "VSCODE_ESM_ENTRYPOINT",
+    "VSCODE_HANDLES_UNCAUGHT_ERRORS",
+    "VSCODE_IPC_HOOK",
+    "VSCODE_L10N_BUNDLE_LOCATION",
+    "VSCODE_NLS_CONFIG",
+    "VSCODE_PID"
+   ],
+   "tool_result_text": null,
+   "instructions_mark_in_any_request": false,
+   "host_log": [
+    "[info] [#0] [PreToolUse] Completed (Success) in 42ms",
+    "[debug] [LanguageModelToolsService#invokeTool] Tool copilot_createFile requires confirmation (preToolUse hook returned 'ask')"
+   ],
+   "mnema_calls": [],
+   "channel_facts": []
+  },
+  {
+   "case": "v-cmd-deny",
+   "tool_asked_for": "create_file",
+   "requests_the_model_got": 2,
+   "written": false,
+   "hook_runs": 1,
+   "hook_tool_name": "create_file",
+   "hook_stdin_keys": [
+    "cwd",
+    "hook_event_name",
+    "session_id",
+    "timestamp",
+    "tool_input",
+    "tool_name",
+    "tool_use_id",
+    "transcript_path"
+   ],
+   "hook_tool_input_keys": [
+    "content",
+    "filePath"
+   ],
+   "hook_env_names": [
+    "CLAUDE_PLUGIN_ROOT",
+    "COPILOT_CLI_ENABLED_FEATURE_FLAGS",
+    "COPILOT_OTEL_FILE_EXPORTER_PATH",
+    "HOME",
+    "PATH",
+    "PWD",
+    "VSCODE_CODE_CACHE_PATH",
+    "VSCODE_CRASH_REPORTER_PROCESS_TYPE",
+    "VSCODE_CWD",
+    "VSCODE_ESM_ENTRYPOINT",
+    "VSCODE_HANDLES_UNCAUGHT_ERRORS",
+    "VSCODE_IPC_HOOK",
+    "VSCODE_L10N_BUNDLE_LOCATION",
+    "VSCODE_NLS_CONFIG",
+    "VSCODE_PID"
+   ],
+   "tool_result_text": "[{\"text\":\"Tool execution denied: PROBE_REASON_MARK_VS\\n<PreToolUse-context>\\nPROBE_CONTEXT_MARK_VS\\n</PreToolUse-context>\"}]",
+   "instructions_mark_in_any_request": false,
+   "host_log": [
+    "[info] [#0] [PreToolUse] Completed (Success) in 67ms",
+    "[debug] [LanguageModelToolsService#invokeTool] Tool copilot_createFile denied by preToolUse hook: PROBE_REASON_MARK_VS"
+   ],
+   "mnema_calls": [],
+   "channel_facts": []
+  },
+  {
+   "case": "v-mcp-tool",
+   "tool_asked_for": "create_file",
+   "requests_the_model_got": 2,
+   "written": true,
+   "hook_runs": 0,
+   "hook_tool_name": null,
+   "hook_stdin_keys": [],
+   "hook_tool_input_keys": [],
+   "hook_env_names": [],
+   "tool_result_text": "[{\"text\":\"The following files were successfully edited:\\n<sandbox>/vs/v-mcp-tool/ws/src/billing/probe.ts\\n\"}]",
+   "instructions_mark_in_any_request": false,
+   "host_log": [],
+   "mnema_calls": [],
+   "channel_facts": []
+  },
+  {
+   "case": "v-instr-dir",
+   "tool_asked_for": "create_file",
+   "requests_the_model_got": 2,
+   "written": true,
+   "hook_runs": 0,
+   "hook_tool_name": null,
+   "hook_stdin_keys": [],
+   "hook_tool_input_keys": [],
+   "hook_env_names": [],
+   "tool_result_text": "[{\"text\":\"The following files were successfully edited:\\n<sandbox>/vs/v-instr-dir/ws/src/billing/probe.ts\\n\"}]",
+   "instructions_mark_in_any_request": false,
+   "host_log": [],
+   "mnema_calls": [],
+   "channel_facts": []
+  },
+  {
+   "case": "v-instr-dir-dot",
+   "tool_asked_for": "create_file",
+   "requests_the_model_got": 2,
+   "written": true,
+   "hook_runs": 0,
+   "hook_tool_name": null,
+   "hook_stdin_keys": [],
+   "hook_tool_input_keys": [],
+   "hook_env_names": [],
+   "tool_result_text": "[{\"text\":\"The following files were successfully edited:\\n<sandbox>/vs/v-instr-dir-dot/ws/src/billing/.probe.ts\\n\"}]",
+   "instructions_mark_in_any_request": false,
+   "host_log": [],
+   "mnema_calls": [],
+   "channel_facts": []
+  },
+  {
+   "case": "v-instr-dir-outside",
+   "tool_asked_for": "create_file",
+   "requests_the_model_got": 2,
+   "written": true,
+   "hook_runs": 0,
+   "hook_tool_name": null,
+   "hook_stdin_keys": [],
+   "hook_tool_input_keys": [],
+   "hook_env_names": [],
+   "tool_result_text": "[{\"text\":\"The following files were successfully edited:\\n<sandbox>/vs/v-instr-dir-outside/ws/src/other/probe.ts\\n\"}]",
+   "instructions_mark_in_any_request": false,
+   "host_log": [],
+   "mnema_calls": [],
+   "channel_facts": []
+  },
+  {
+   "case": "v-instr-file",
+   "tool_asked_for": "create_file",
+   "requests_the_model_got": 2,
+   "written": true,
+   "hook_runs": 0,
+   "hook_tool_name": null,
+   "hook_stdin_keys": [],
+   "hook_tool_input_keys": [],
+   "hook_env_names": [],
+   "tool_result_text": "[{\"text\":\"The following files were successfully edited:\\n<sandbox>/vs/v-instr-file/ws/src/billing/probe.ts\\n\"}]",
+   "instructions_mark_in_any_request": false,
+   "host_log": [],
+   "mnema_calls": [],
+   "channel_facts": []
+  },
+  {
+   "case": "v-instr-pair-dir",
+   "tool_asked_for": "create_file",
+   "requests_the_model_got": 2,
+   "written": true,
+   "hook_runs": 0,
+   "hook_tool_name": null,
+   "hook_stdin_keys": [],
+   "hook_tool_input_keys": [],
+   "hook_env_names": [],
+   "tool_result_text": "[{\"text\":\"The following files were successfully edited:\\n<sandbox>/vs/v-instr-pair-dir/ws/src/billing/deep/probe.ts\\n\"}]",
+   "instructions_mark_in_any_request": false,
+   "host_log": [],
+   "mnema_calls": [],
+   "channel_facts": []
+  },
+  {
+   "case": "e2e-ask",
+   "tool_asked_for": "create_file",
+   "requests_the_model_got": 1,
+   "written": false,
+   "hook_runs": 0,
+   "hook_tool_name": null,
+   "hook_stdin_keys": [],
+   "hook_tool_input_keys": [],
+   "hook_env_names": [],
+   "tool_result_text": null,
+   "instructions_mark_in_any_request": false,
+   "host_log": [
+    "[info] [#1] [PreToolUse] Completed (Success) in 388ms",
+    "[debug] [LanguageModelToolsService#invokeTool] Tool copilot_createFile requires confirmation (preToolUse hook returned 'ask')"
+   ],
+   "mnema_calls": [
+    "mcp",
+    "brief",
+    "recall",
+    "before-a-write --host vscode"
+   ],
+   "channel_facts": [
+    "channel.asked",
+    "channel.served"
+   ]
+  },
+  {
+   "case": "e2e-quiet",
+   "tool_asked_for": "create_file",
+   "requests_the_model_got": 2,
+   "written": true,
+   "hook_runs": 0,
+   "hook_tool_name": null,
+   "hook_stdin_keys": [],
+   "hook_tool_input_keys": [],
+   "hook_env_names": [],
+   "tool_result_text": "[{\"text\":\"The following files were successfully edited:\\n<sandbox>/vs/e2e-quiet/ws/src/other/x.ts\\n\"}]",
+   "instructions_mark_in_any_request": false,
+   "host_log": [
+    "[info] [#1] [PreToolUse] Completed (Success) in 326ms, no output"
+   ],
+   "mnema_calls": [
+    "mcp",
+    "brief",
+    "recall",
+    "before-a-write --host vscode"
+   ],
+   "channel_facts": []
+  },
+  {
+   "case": "e2e-read",
+   "tool_asked_for": "read_file",
+   "requests_the_model_got": 2,
+   "written": true,
+   "hook_runs": 0,
+   "hook_tool_name": null,
+   "hook_stdin_keys": [],
+   "hook_tool_input_keys": [],
+   "hook_env_names": [],
+   "tool_result_text": "[{\"text\":\"export const probe = 1;\"}]",
+   "instructions_mark_in_any_request": false,
+   "host_log": [
+    "[info] [#1] [PreToolUse] Completed (Success) in 13ms, no output"
+   ],
+   "mnema_calls": [
+    "mcp",
+    "brief",
+    "recall"
+   ],
+   "channel_facts": []
+  }
+ ]
+}
