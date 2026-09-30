@@ -359,11 +359,13 @@ complete -c mnema -f -n '__mnema_at "usage"' -s V -l version
 complete -c mnema -f -n '__mnema_at "usage"' -l color -x -a 'auto always never'
 
 # mnema brief
+complete -c mnema -f -n '__mnema_at "brief"' -l hook
 complete -c mnema -f -n '__mnema_at "brief"' -s h -l help
 complete -c mnema -f -n '__mnema_at "brief"' -s V -l version
 complete -c mnema -f -n '__mnema_at "brief"' -l color -x -a 'auto always never'
 
 # mnema recall
+complete -c mnema -f -n '__mnema_at "recall"' -l hook
 complete -c mnema -f -n '__mnema_at "recall"' -s h -l help
 complete -c mnema -f -n '__mnema_at "recall"' -s V -l version
 complete -c mnema -f -n '__mnema_at "recall"' -l color -x -a 'auto always never'

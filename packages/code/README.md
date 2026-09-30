@@ -838,8 +838,11 @@ queue changes by the hour, and a copy of one in a hand-regenerated file would be
 wrong between two runs, which is the one thing this record exists not to be. The
 counts of what is awaiting a judgement are not that: a count over the record moves
 only when the record does, where the names in it move by the hour — and the names are
-`mnema status --actor <id>`. And it is never **cut by size** — a rule missing from the
-file is a rule the agent does not follow.
+`mnema status --actor <id>`. And the file is never **cut by size** — a rule missing from
+the file is a rule the agent does not follow. The copy the plugin hands a session is
+`mnema brief --hook`, and that one is: past 10,000 characters the host replaces a hook's
+whole text with a file path it does not ask the model to open, so `--hook` stops at a
+whole rule inside that and ends by saying how many it left out and which read serves them.
 
 What it does leave out is the record that **does not travel**. A decision or a pattern
 recorded with `--scope private`, or in your machine-global tree, governs your own work

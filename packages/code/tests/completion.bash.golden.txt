@@ -59,8 +59,8 @@ _mnema_flags() {
     'rules') echo '--json -h --help -V --version --color' ;;
     'skills') echo '--json -h --help -V --version --color' ;;
     'usage') echo '-h --help -V --version --color' ;;
-    'brief') echo '-h --help -V --version --color' ;;
-    'recall') echo '-h --help -V --version --color' ;;
+    'brief') echo '--hook -h --help -V --version --color' ;;
+    'recall') echo '--hook -h --help -V --version --color' ;;
     'key') echo '-h --help -V --version --color' ;;
     'key restore') echo '-h --help -V --version --color' ;;
     'key request') echo '--anchor --key -h --help -V --version --color' ;;

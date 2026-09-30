@@ -7,10 +7,11 @@
  */
 
 import type { RecordHit, RecordSearch } from '@mnema/copilot';
-import { detectSecrets } from '@mnema/core';
+import { detectSecrets, SEARCH_DEFAULT_LIMIT } from '@mnema/core';
 import { describe, expect, it } from 'vitest';
 import { recordFraming, tellsWhatToDo } from '../record-framing.js';
-import { recallDocument } from './recall.js';
+import { recallDocument, recallWithin } from './recall.js';
+import { HOOK_TEXT_CEILING, printedLength } from './within-a-hook.js';
 
 /** A memory as the index serves it: the start of its content, marked as an excerpt. */
 function memory(n: number, title: string): RecordHit {
@@ -131,5 +132,46 @@ describe('recallDocument — the notes a session opens with', () => {
     expect(text).toContain('`capture_memory`');
     expect(text).toContain('`record_observation`');
     expect(tellsWhatToDo(text)).toBeUndefined();
+  });
+});
+
+describe('the hook’s copy of the notes stays inside what a hook carries', () => {
+  /** The longest line each kind can print: an excerpt at its full length. */
+  const longest = `${'every word of a long note is here '.repeat(5).slice(0, 135).trimEnd()}…`;
+  const full = (make: (n: number, text: string) => RecordHit): RecordSearch => ({
+    hits: Array.from({ length: SEARCH_DEFAULT_LIMIT }, (_, at) => make(at + 1, longest)),
+    total: 9_999,
+  });
+
+  it('fits whole at the most the index serves, at the longest line each kind prints', () => {
+    const notes = { memories: full(memory), observations: full(observation) };
+    expect(printedLength(recallDocument(notes))).toBeLessThanOrEqual(HOOK_TEXT_CEILING);
+    expect(recallWithin(notes, HOOK_TEXT_CEILING)).toEqual(recallDocument(notes));
+  });
+
+  it('stops at a whole note in a smaller room, newest first, and says how many there are', () => {
+    const notes = { memories: full(memory), observations: full(observation) };
+    const room = 4_000;
+    const cut = recallWithin(notes, room);
+    expect(printedLength(cut)).toBeLessThanOrEqual(room);
+    const lines = cut.filter((line) => line.startsWith('- '));
+    // A prefix of the whole text's notes, in its order: every memory before any observation.
+    expect(lines).toEqual(
+      recallDocument(notes)
+        .filter((line) => line.startsWith('- '))
+        .slice(0, lines.length),
+    );
+    expect(cut).toContain(
+      `9999 are recorded here, and these are the ${lines.length} newest; \`search\` with`,
+    );
+  });
+
+  it('says a section cut to nothing holds notes — never that none is recorded', () => {
+    const notes = { memories: full(memory), observations: full(observation) };
+    const cut = recallWithin(notes, 4_000);
+    expect(cut).toContain('## Observations (0)');
+    expect(cut).toContain('9999 are recorded here, and none of them is below; `search` with');
+    expect(cut).toContain('`kind` `observation` serves the rest.');
+    expect(cut).not.toContain('No observation is recorded here.');
   });
 });

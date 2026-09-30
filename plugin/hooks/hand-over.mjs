@@ -35,6 +35,14 @@
  * preamble of a handler's, no cut. A second place deciding what a session is told about the
  * record is a second place that can come to disagree with it. Asserted in the same test
  * ("hands over exactly what the verb prints").
+ *
+ * IT ASKS THE VERB FOR THE COPY A HOOK CAN CARRY ({@link FOR_A_HOOK}), and that is not a cut
+ * made here. The host hands a hook's text over whole only up to a ceiling, and past it swaps
+ * ALL of it for a file path; so the verb, which knows where each rule and each note ends, stops
+ * at a whole one inside the ceiling and says what it left out — the text and its measurement
+ * are `packages/code/src/presentation/within-a-hook.ts`. What reaches the session is still
+ * exactly what that verb printed. Asserted in `the-record-arrives-unasked.test.ts` ("stops at a
+ * whole rule where a hook's text would be replaced, and says so").
  */
 
 import { spawnSync } from 'node:child_process';
@@ -67,6 +75,12 @@ export function whereTheSessionIs() {
 const BETWEEN_THE_STREAMS = '\n\n';
 
 /**
+ * The flag every verb this plugin runs is given: print the copy a hook can carry. One flag for
+ * both verbs, because the ceiling is the channel's and both texts ride the same channel.
+ */
+const FOR_A_HOOK = '--hook';
+
+/**
  * What a verb has to say here, or `null` when it has nothing.
  *
  * BOTH STREAMS ARE KEPT AND THE EXIT CODE IS WHAT PICKS. A refusal arrives with a non-zero
@@ -81,7 +95,7 @@ const BETWEEN_THE_STREAMS = '\n\n';
  * @returns {string | null}
  */
 export function whatTheVerbSays(verb, cwd) {
-  const ran = spawnSync(BINARY, [verb], {
+  const ran = spawnSync(BINARY, [verb, FOR_A_HOOK], {
     cwd,
     encoding: 'utf-8',
     stdio: ['ignore', 'pipe', 'pipe'],

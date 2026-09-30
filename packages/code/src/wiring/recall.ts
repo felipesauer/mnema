@@ -6,7 +6,11 @@
  * document `mnema brief` prints. The plugin's second `SessionStart` handler runs it; a
  * person runs it to see what that session is handed.
  *
- * IT TAKES NO OPTIONS, and the absences are decided the way `brief`'s are. No `--scope`:
+ * IT TAKES ONE OPTION, `--hook`, and it is `brief`'s, for `brief`'s reason: the plugin's handler
+ * hands this text to a session through a hook, the host replaces a hook's text by a file path
+ * past a ceiling it measures, and with the flag the text stops at a whole note inside it
+ * (`presentation/within-a-hook.ts`). Without it nothing is cut. This said it takes NO options;
+ * the other absences are still decided the way `brief`'s are. No `--scope`:
  * what it reads is every tree, and that is the point of it — a note an agent records lands
  * in the tree that does not travel, and a scope flag would be a way to leave out exactly
  * the notes this verb exists to bring back. No `--limit`: the cut is the index's own, so
@@ -57,10 +61,16 @@ export function registerRecall(program: Command, wiring: Wiring): Declared {
         'It can be switched off (`mnema switch off recall-document`), and then it refuses.',
       ].join('\n'),
     )
-    .action(async () => {
+    .option(
+      '--hook',
+      'print it for a Claude Code hook: whole notes up to what a hook carries, each section ' +
+        'saying how many it left out',
+    )
+    .action(async (opts: { hook?: boolean }) => {
       const { linkBreakNotice } = await import('./integrity.js');
       const { runRecall } = await import('../commands/recall.js');
-      const { recallDocument } = await import('../presentation/recall.js');
+      const { recallDocument, recallWithin } = await import('../presentation/recall.js');
+      const { roomBeside } = await import('../presentation/within-a-hook.js');
       const result = runRecall(here());
       if (!result.ok) {
         reportRefusal(
@@ -72,8 +82,15 @@ export function registerRecall(program: Command, wiring: Wiring): Declared {
       }
       // On `err`, as `brief` puts it: the state of the record's proof qualifies the notes,
       // and the plugin's handler hands that stream over under them when the verb succeeded.
-      for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
-      writeLines(io, recallDocument(result));
+      const notice = linkBreakNotice(result.linkBreaks);
+      for (const line of notice) io.err(render(line));
+      // With the flag the notice is part of what has to fit, as it is for `brief`.
+      writeLines(
+        io,
+        opts.hook === true
+          ? recallWithin(result, roomBeside(notice.map((line) => render(line))))
+          : recallDocument(result),
+      );
     });
   return readsTheRecord(recall);
 }

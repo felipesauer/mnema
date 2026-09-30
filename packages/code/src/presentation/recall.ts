@@ -53,6 +53,7 @@ import type { RecordHit, RecordSearch } from '@mnema/copilot';
 import { detectSecrets } from '@mnema/core';
 import { oneLine } from '../one-line.js';
 import { recordFraming } from '../record-framing.js';
+import { fitWhole } from './within-a-hook.js';
 
 /** The heading: what the text IS. */
 const TITLE = '# What was noted here lately';
@@ -92,17 +93,24 @@ const NO_MEMORY = 'No memory is recorded here.';
 const NO_OBSERVATION = 'No observation is recorded here.';
 
 /**
- * The declaration of a cut, when the index held more than it served.
+ * The declaration of a cut, when the index held more than this text prints.
  *
  * The number is the index's own `total` and the door is the read that reaches past it, so a
  * reader told "these are the newest" is also told how many there are and how to reach the
  * rest — a list cut without saying so reads as the whole of it.
+ *
+ * `printed` IS WHAT IS PRINTED, NOT WHAT THE INDEX SERVED, and there are two cuts now. The index
+ * serves the newest few of each kind, and a hook's copy of this text may stop earlier still,
+ * at a whole note, to stay inside what a hook carries ({@link recallWithin}). Both leave the
+ * newest ones and drop from the end, so one sentence is true of either — and a section a hook
+ * cut to nothing says how many there are rather than that there are none.
  */
-function cutAt(search: RecordSearch, kind: 'memory' | 'observation'): string[] {
-  const printed = search.hits.length;
+function cutAt(search: RecordSearch, printed: number, kind: 'memory' | 'observation'): string[] {
   if (search.total <= printed) return [];
   return [
-    `${search.total} are recorded here, and these are the ${printed} newest; \`search\` with`,
+    printed === 0
+      ? `${search.total} are recorded here, and none of them is below; \`search\` with`
+      : `${search.total} are recorded here, and these are the ${printed} newest; \`search\` with`,
     `\`kind\` \`${kind}\` serves the rest.`,
     '',
   ];
@@ -137,30 +145,68 @@ function observationLine(hit: RecordHit): string {
   return `- **${oneLine(hit.title)}** · \`${oneLine(hit.id)}\``;
 }
 
-/** One section: the heading with how many are PRINTED under it, then the notes or the none. */
+/**
+ * One section: the heading with how many are PRINTED under it, then the notes or the none.
+ *
+ * `shown` is how many of the index's hits are printed — all of them, unless a hook's copy
+ * stopped earlier. What says "none" is the INDEX being empty, never the list being cut short.
+ */
 function section(
   heading: string,
   search: RecordSearch,
+  shown: number,
   kind: 'memory' | 'observation',
   none: string,
   line: (hit: RecordHit) => string,
 ): string[] {
+  const hits = search.hits.slice(0, shown);
   return [
-    `## ${heading} (${search.hits.length})`,
+    `## ${heading} (${hits.length})`,
     '',
-    ...(search.hits.length === 0 ? [none] : [...cutAt(search, kind), ...search.hits.map(line)]),
+    ...(search.hits.length === 0
+      ? [none]
+      : [...cutAt(search, hits.length, kind), ...hits.map(line)]),
   ];
+}
+
+/** The notes this text reads from — the index's answer for each kind. */
+interface Notes {
+  readonly memories: RecordSearch;
+  readonly observations: RecordSearch;
 }
 
 /**
  * The whole text, as lines — or NO lines at all when neither kind holds anything, which is
  * what makes the plugin's handler hand a session nothing.
  */
-export function recallDocument(notes: {
-  readonly memories: RecordSearch;
-  readonly observations: RecordSearch;
-}): string[] {
+export function recallDocument(notes: Notes): string[] {
+  return composed(notes, notesIn(notes));
+}
+
+/**
+ * The text for a hook: whole notes, in the text's own order — memories, then observations,
+ * newest first in each — up to what fits in `room`, by the rule the document's hook copy is
+ * cut by ({@link fitWhole}).
+ *
+ * With every line an excerpt, twenty of each kind stay under what a hook carries, so this
+ * returns {@link recallDocument} byte for byte on every record the index can hand it today; the
+ * bound is `recall.test.ts`'s, at the longest line each kind can print. It is here so that the
+ * day the lines or the counts grow, the text shortens at a whole note and says so in the words
+ * each section already has ({@link cutAt}), instead of being replaced whole by a file path.
+ */
+export function recallWithin(notes: Notes, room: number): string[] {
+  return fitWhole(notesIn(notes), room, (shown) => composed(notes, shown));
+}
+
+/** How many notes the index handed over, both kinds together. */
+function notesIn(notes: Notes): number {
+  return notes.memories.hits.length + notes.observations.hits.length;
+}
+
+/** The text with its first `shown` notes — the one shape both copies print. */
+function composed(notes: Notes, shown: number): string[] {
   if (notes.memories.hits.length === 0 && notes.observations.hits.length === 0) return [];
+  const memories = Math.min(shown, notes.memories.hits.length);
   return [
     TITLE,
     '',
@@ -170,8 +216,15 @@ export function recallDocument(notes: {
     '',
     ...HOW_A_NOTE_ENTERS,
     '',
-    ...section('Memories', notes.memories, 'memory', NO_MEMORY, memoryLine),
+    ...section('Memories', notes.memories, memories, 'memory', NO_MEMORY, memoryLine),
     '',
-    ...section('Observations', notes.observations, 'observation', NO_OBSERVATION, observationLine),
+    ...section(
+      'Observations',
+      notes.observations,
+      shown - memories,
+      'observation',
+      NO_OBSERVATION,
+      observationLine,
+    ),
   ];
 }

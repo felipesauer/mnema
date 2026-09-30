@@ -37,8 +37,8 @@ $ mnema
 !   rules [options] <path>                  show which recorded rules govern a path, and which address nothing
 !   skills [options]                        show where each pattern came from (who proposed it, who adopted it)
 !   usage                                   what each run cost, read from this machine's Claude Code transcripts
-!   brief                                   print what governs the work here as markdown, for an agent to read
-!   recall                                  print the latest notes recorded here as markdown, for an agent to read
+!   brief [options]                         print what governs the work here as markdown, for an agent to read
+!   recall [options]                        print the latest notes recorded here as markdown, for an agent to read
 !   key                                     manage this machine's signing keys
 !   tail                                    authorize a cut in the record's own tails
 !   witness [options]                       ask an outside witness to date this record, and read where that stands
@@ -89,8 +89,8 @@ $ mnema --help
 |   rules [options] <path>                  show which recorded rules govern a path, and which address nothing
 |   skills [options]                        show where each pattern came from (who proposed it, who adopted it)
 |   usage                                   what each run cost, read from this machine's Claude Code transcripts
-|   brief                                   print what governs the work here as markdown, for an agent to read
-|   recall                                  print the latest notes recorded here as markdown, for an agent to read
+|   brief [options]                         print what governs the work here as markdown, for an agent to read
+|   recall [options]                        print the latest notes recorded here as markdown, for an agent to read
 |   key                                     manage this machine's signing keys
 |   tail                                    authorize a cut in the record's own tails
 |   witness [options]                       ask an outside witness to date this record, and read where that stands
@@ -613,6 +613,9 @@ $ mnema brief --help
 | print what governs the work here as markdown, for an agent to read
 |
 | Options:
+|   --hook      print it for a Claude Code hook: whole rules up to what a hook
+|               carries, and a closing paragraph saying how many were left out and
+|               what serves them
 |   -h, --help  display help for command
 |
 | It prints to stdout and writes nothing — the redirection is yours, and `>`
@@ -626,7 +629,10 @@ $ mnema brief --help
 | somebody’s own method and this document would replace every word of it — the
 | line `@MNEMA.md` in a `CLAUDE.md` brings the file above in with it, where a
 | sentence naming the file is read only if the agent chooses to open it.
-| The mnema plugin hands this document to a Claude Code session with no file at all.
+| The mnema plugin hands this document to a Claude Code session with no file at all,
+| with `--hook`: past what a hook carries, the host would replace the whole text with a
+| file path, so there the rules stop at a whole one and the document says how many it
+| left out. Without the flag nothing is cut.
 |
 | The output holds no clock, no session and no path, so the same record always
 | prints the same bytes and a difference is a difference in the record.
@@ -653,6 +659,8 @@ $ mnema recall --help
 | print the latest notes recorded here as markdown, for an agent to read
 |
 | Options:
+|   --hook      print it for a Claude Code hook: whole notes up to what a hook
+|               carries, each section saying how many it left out
 |   -h, --help  display help for command
 |
 | It prints to stdout and writes nothing. It is what a session opens with beside the
