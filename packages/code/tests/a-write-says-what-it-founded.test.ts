@@ -478,7 +478,7 @@ describe('the server says it where the agent reads', () => {
     expect(mnema(homeA, 'init').status).toBe(0);
     // The id in the parentheses of the echo, never the `ADR-<n>` in front of it.
     const rule = /\(([0-9a-f-]{20,})\)/.exec(
-      mnema(homeA, 'decision', 'lay it out', 'why').stdout,
+      mnema(homeA, 'decision', 'record', 'lay it out', 'why').stdout,
     )?.[1];
     expect(rule).toBeDefined();
     expect(

@@ -1,5 +1,5 @@
 /**
- * `mnema skill "<name>" --body "<text>"` — propose a reusable pattern.
+ * `mnema skill create "<name>" --body "<text>"` — propose a reusable pattern.
  *
  * A sibling of `task` and `decision` create, differing only in what a skill
  * needs. It is the same adapter shape (resolve which tree the write belongs to,

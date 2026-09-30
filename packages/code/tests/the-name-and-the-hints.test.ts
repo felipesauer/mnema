@@ -264,7 +264,7 @@ beforeAll(async () => {
   process.chdir(project);
 
   await shell('init');
-  await shell('task', 'the task the console is opened over');
+  await shell('task', 'create', 'the task the console is opened over');
 }, 180_000);
 
 afterAll(() => {

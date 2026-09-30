@@ -1,0 +1,157 @@
+/**
+ * Whether a piece of text that carries the WHY of a fact says anything — the one rule, asked by
+ * the reader of decision files and by every door a reason is written through.
+ *
+ * THE READER ASKED IT FIRST. Pointed at this project's own decision documents, the reader of
+ * decision files took the markdown rule `---` under a header block for a document's rationale,
+ * 48 times; its answer was {@link statesSomething}, one letter or one digit in any script. The
+ * write door kept asking an older question — is the string empty? — so `mnema decision record
+ * "Use UTC" "***"` was recorded as a decision's why, permanently, while the reader refused the
+ * same three characters from a file. Two doors, two readings of one rule. The function moved here
+ * so both ask the same one: `adr/read.ts` imports it, and so does the write side through
+ * {@link reasonRefusal}.
+ *
+ * AND A MARKER IS NOT A REASON EITHER. The product prints recipes with markers in them —
+ * `mnema key revoke <fingerprint> --reason "<why>"`, `--note "<why>"` — and a recipe pasted
+ * without filling the marker in used to record `<why>` as the reason, for good. `<why>` has
+ * letters, so {@link statesSomething} cannot see it. {@link isMarker} is the SHAPE the product's
+ * markers take (`<` a lowercase word `>`), not a list of today's: the guard over every command
+ * the product hands over (`the-command-handed-over-runs-as-handed.test.ts`) fills markers by
+ * this same pattern, so a marker a new page prints is one the write door already refuses.
+ *
+ * WHAT IT DOES NOT JUDGE is whether the words are a GOOD reason. `n/a` states something. A
+ * person rules on prose; this rules only that there is some, and that it is not the blank a
+ * recipe left for it.
+ */
+
+import type { CatalogEvent, EventKind, TransitionFields } from '@mnema/chain';
+import { oneLine } from './one-line.js';
+
+/**
+ * True when the text holds one letter or one digit, in any script. Markdown's furniture — rules,
+ * emphasis, pipes, bullets — has neither by construction, so it falls out without being listed.
+ */
+export function statesSomething(text: string): boolean {
+  return /[\p{L}\p{N}]/u.test(text);
+}
+
+/**
+ * The shape of a marker the product prints for a value a person fills in: `<why>`, `<id>`,
+ * `<the line>`, `<path...>`. Exported so the guard over the commands the product hands over fills
+ * markers by the same pattern this door refuses them by.
+ */
+export const MARKER = /<[a-z][a-z0-9 .-]*>/;
+
+const WHOLE_MARKER = new RegExp(`^${MARKER.source}$`);
+
+/** True when the whole value, trimmed, is a marker and nothing else. */
+export function isMarker(text: string): boolean {
+  return WHOLE_MARKER.test(text.trim());
+}
+
+/**
+ * The refusal a reason earns, or undefined when it says something. `field` is the name a person
+ * gave it (`rationale`, `reason`, `note`), so the sentence names the value they typed.
+ */
+export function reasonRefusal(
+  field: string,
+  value: unknown,
+): { readonly message: string } | undefined {
+  if (typeof value !== 'string' || value.length === 0) return undefined;
+  if (isMarker(value)) {
+    return {
+      message:
+        `the ${field} "${oneLine(value.trim())}" is the marker a recipe prints where the words go, ` +
+        'not the words: write the why in its place',
+    };
+  }
+  if (!statesSomething(value)) {
+    return {
+      message:
+        `the ${field} "${oneLine(value)}" has no letter and no digit in it, so it says nothing: ` +
+        'write the why in words',
+    };
+  }
+  return undefined;
+}
+
+/** The proof fields of a transition that carry a why (a pull request url and links do not). */
+export const REASON_PROOF_FIELDS = [
+  'reason',
+  'note',
+  'feedback',
+] as const satisfies readonly (keyof TransitionFields)[];
+
+type PayloadOf<K extends EventKind> = Extract<CatalogEvent, { kind: K }>['payload'];
+
+/** A payload field of kind `K` whose value is text. */
+type TextField<K extends EventKind> = {
+  [F in keyof PayloadOf<K>]-?: NonNullable<PayloadOf<K>[F]> extends string ? F : never;
+}[keyof PayloadOf<K>];
+
+/** What of an event of kind `K` can carry a why: its own text fields, or its proof. */
+type ReasonSite<K extends EventKind> =
+  | TextField<K>
+  | (PayloadOf<K> extends { readonly fields?: TransitionFields } ? 'fields' : never);
+
+/**
+ * Which part of each kind carries the WHY of the fact — the fields {@link reasonRefusal} is asked
+ * of on the way in. `fields` stands for a transition's proof, of which {@link REASON_PROOF_FIELDS}
+ * are the ones that are prose.
+ *
+ * TOTAL BY TYPE: a kind added to the catalog does not compile until it has a row here, even an
+ * empty one, so nobody adds a reason field without being asked whether it says something. An
+ * empty row is a kind whose text is the fact itself (a title, a memory, an observation) or an
+ * identifier, and not the why of one.
+ */
+export const REASONS: { readonly [K in EventKind]: readonly ReasonSite<K>[] } = {
+  'run.started': [],
+  'run.ended': [],
+  'task.created': [],
+  'task.transitioned': ['fields'],
+  'decision.recorded': ['rationale', 'alternatives'],
+  'decision.transitioned': ['fields'],
+  'identity.founded': [],
+  'key.enrolled': [],
+  'key.revoked': ['reason'],
+  'memory.captured': [],
+  'observation.recorded': [],
+  'handoff.recorded': [],
+  'knowledge.linked': [],
+  'skill.created': [],
+  'skill.transitioned': ['fields'],
+  'skill.consulted': [],
+  'tail.pruned': ['reason'],
+  'channel.switched': ['reason'],
+  'channel.served': [],
+  'channel.asked': [],
+};
+
+/** The refusal the first reason of `event` that says nothing earns, or undefined. */
+export function unstatedReason(event: CatalogEvent): string | undefined {
+  const payload = event.payload as Readonly<Record<string, unknown>>;
+  for (const site of REASONS[event.kind] as readonly string[]) {
+    if (site === 'fields') {
+      const refused = unstatedProof(payload.fields as TransitionFields | undefined);
+      if (refused !== undefined) return refused;
+      continue;
+    }
+    const refused = reasonRefusal(site, payload[site]);
+    if (refused !== undefined) return refused.message;
+  }
+  return undefined;
+}
+
+/**
+ * The refusal the first prose field of a transition's proof that says nothing earns — the
+ * question the gates put to a proof before they authorize it, so a dry run and the write it
+ * previews give one verdict.
+ */
+export function unstatedProof(fields: TransitionFields | undefined): string | undefined {
+  if (fields === undefined || fields === null || typeof fields !== 'object') return undefined;
+  for (const field of REASON_PROOF_FIELDS) {
+    const refused = reasonRefusal(field, fields[field]);
+    if (refused !== undefined) return refused.message;
+  }
+  return undefined;
+}

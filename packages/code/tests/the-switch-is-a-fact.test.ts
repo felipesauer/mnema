@@ -113,7 +113,7 @@ function idIn(said: Said): string {
 
 /** A decision in force, addressed at a path — the one thing the push has to say. */
 async function ruleAddressedAt(title: string, path: string): Promise<string> {
-  const id = idIn(await did('decision', title, `why ${title}`));
+  const id = idIn(await did('decision', 'record', title, `why ${title}`));
   await did('decision', 'move', 'accept', id, '--note', 'agreed');
   await did('link', id, path, '--rel', 'governs');
   return id;
@@ -121,7 +121,7 @@ async function ruleAddressedAt(title: string, path: string): Promise<string> {
 
 /** Records a rule in force and links it as ASKING FOR A PERSON at a path. */
 async function ruleAskingAt(title: string, path: string): Promise<string> {
-  const id = idIn(await did('decision', title, `why ${title}`));
+  const id = idIn(await did('decision', 'record', title, `why ${title}`));
   await did('decision', 'move', 'accept', id, '--note', 'agreed');
   await did('link', id, path, '--rel', 'asks-for-a-person');
   return id;
@@ -327,7 +327,7 @@ const HONOURED: Readonly<
     // The document is the whole of a verb's output, so "does it speak" is "did the verb
     // print one" — and the refusal is what the plugin's handler reads as silence.
     setUp: async () => {
-      await did('decision', 'A call the document would carry', 'because it was made');
+      await did('decision', 'record', 'A call the document would carry', 'because it was made');
     },
     speaks: async () => {
       const said = await mnema('brief');

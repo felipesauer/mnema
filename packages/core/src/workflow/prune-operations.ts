@@ -49,7 +49,7 @@ import {
 } from '../content/screen.js';
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { oneLine } from '../one-line.js';
-import { appendEvent, type UnreadableEventErr } from './append.js';
+import { type AppendRefusal, appendEvent } from './append.js';
 import { systemClock } from './clock.js';
 import { authorizingAnchor, ensureFounded } from './identity-operations.js';
 import type { WriteContext } from './operations.js';
@@ -75,7 +75,7 @@ export interface PruneOk extends ScreenedWrite {
 export type PruneError =
   | SelfAuthorizedErr
   | ScreenRefusal
-  | UnreadableEventErr
+  | AppendRefusal
   | { readonly ok: false; readonly code: 'UNKNOWN_TAIL'; readonly message: string }
   | { readonly ok: false; readonly code: 'TAIL_IS_OWN'; readonly message: string };
 

@@ -202,8 +202,10 @@ describe('a declaration lists the set it takes', () => {
     // And it is asked of every declaration there is, so a set that stopped being
     // declared cannot make this vacuous by leaving the list empty.
     // Twenty since `decision import` declared its own `--scope`: it is a birth, and a
-    // birth takes the per-action override.
-    expect(DECLARED_SETS.length).toBe(20);
+    // birth takes the per-action override. Twenty-three since the three births moved from
+    // their groups into `task create`, `decision record` and `skill create`, which declare
+    // the group's `--scope` too, so their `--help` lists it.
+    expect(DECLARED_SETS.length).toBe(23);
   });
 
   it('takes the set from the DOMAIN, at each of the levels that take one', () => {
@@ -647,7 +649,7 @@ describe('the gate still owns the vocabulary', () => {
     // below would be unreachable, and a typed code the product answers with would be
     // gone from the surface.
     expect(cli('init').status).toBe(0);
-    const created = cli('task', 'a task for the refusal probe');
+    const created = cli('task', 'create', 'a task for the refusal probe');
     const id = /\(([^)]+)\)/.exec(created.out)?.[1] as string;
     expect(id).toBeDefined();
     const refused = cli('task', 'move', 'nonsense', id);
@@ -668,7 +670,7 @@ describe('the gate still owns the vocabulary', () => {
     // The three flags whose set is now declared and whose refusal is unchanged — one per
     // place the check lives: the shared parser, the verb's own, and the adapter's.
     expect(cli('init').status).toBe(0);
-    expect(cli('task', 'a task', '--scope', 'nowhere').out).toContain(
+    expect(cli('task', 'create', 'a task', '--scope', 'nowhere').out).toContain(
       `Invalid --scope "nowhere". Use one of: ${SCOPES.join(', ')}.`,
     );
     expect(cli('verify', '--require', 'nonsense').out).toContain(

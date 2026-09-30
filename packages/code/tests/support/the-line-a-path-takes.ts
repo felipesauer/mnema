@@ -45,8 +45,10 @@ export interface Routed {
 /**
  * Every command path a program routes, in the order it was registered.
  *
- * Groups are included alongside their subcommands, because a group is invocable in its
- * own right on this surface: `mnema task <title>` creates and `mnema switch` lists.
+ * Groups are included alongside their subcommands, because a group can be invocable in its
+ * own right on this surface: `mnema switch` lists and `mnema witness` reads. (This said `mnema
+ * task <title>` creates, until creating became `task create` and `task` alone stopped doing
+ * anything — a group that answers its bare form with usage is still a path the walk reaches.)
  *
  * THE WALK AND THE NAMING ARE THE PRODUCT'S OWN, not a second pair written here.
  * `wiring/misuse.ts` already answers both halves — {@link everyCommandOf} for which pages
@@ -191,7 +193,7 @@ export const THE_ID_MEANT: Readonly<Record<string, keyof Fixture>> = {
  * A move's `--note` and a supersede's `--reason` are declared as plain options so a
  * sibling command does not inherit them as mandatory, and the requirement is the
  * WORKFLOW's: the gate refuses the move without them. `--body` is the same shape on
- * `skill`, enforced in the action. `--write` is required by nothing — it is what makes
+ * `skill create`, enforced in the action. `--write` is required by nothing — it is what makes
  * `decision import` record instead of print, and a caller that needs the path to write
  * has to ask for it.
  *
@@ -199,7 +201,7 @@ export const THE_ID_MEANT: Readonly<Record<string, keyof Fixture>> = {
  * say out loud. Callers reconcile its keys against the walk.
  */
 export const ALSO_NEEDS: Readonly<Record<string, readonly string[]>> = {
-  skill: ['--body', 'the reusable pattern itself'],
+  'skill create': ['--body', 'the reusable pattern itself'],
   'skill move': ['--note', 'why this verdict'],
   'decision move': ['--note', 'why this verdict'],
   'decision supersede': ['--reason', 'a later decision replaces it'],

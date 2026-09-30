@@ -54,6 +54,8 @@
  * record); this reads other people's.
  */
 
+import { statesSomething } from '../a-reason-states-something.js';
+
 /** The four things this product records about a decision, read out of a document. */
 export interface AdrDocument {
   /** The decision's title — the level-1 heading, with any ADR numbering removed. */
@@ -163,9 +165,12 @@ export const RETIRED_STATUSES: readonly string[] = [
   'obsoleta',
 ];
 
-/**
+/*
  * Whether a run of text STATES something — whether one character of it is a letter or
- * a digit in any script.
+ * a digit in any script: {@link statesSomething}, imported. It was born in this module
+ * and lives in `../a-reason-states-something.ts` now, because the write door asks it
+ * too — a reason with no word in it was refused here and recorded there, and two
+ * readings of one rule is the divergence that function exists to end.
  *
  * WHAT IT IS FOR, AND THE MEASUREMENT THAT PUT IT HERE. Every field this module reads is
  * a field somebody has to READ: the title names the decision in a citation, the rationale
@@ -198,9 +203,6 @@ export const RETIRED_STATUSES: readonly string[] = [
  * `n/a` has two letters and is proposed, and that is right — a person rules on a proposal,
  * and this reader has no business ruling on prose. It rules only that there is prose.
  */
-function statesSomething(text: string): boolean {
-  return /[\p{L}\p{N}]/u.test(text);
-}
 
 /**
  * Lowercases, strips accents and drops everything that is not a letter, a digit or

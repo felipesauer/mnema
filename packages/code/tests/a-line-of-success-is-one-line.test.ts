@@ -719,7 +719,7 @@ const PROBES: readonly Probe[] = [
   },
   {
     keys: ['skill.ts «Proposed skill "{}" ({})» #1'],
-    argv: ['skill', VALUE, '--body', 'a reusable pattern'],
+    argv: ['skill', 'create', VALUE, '--body', 'a reusable pattern'],
     says: `Proposed skill "${VALUE}"`,
   },
   {

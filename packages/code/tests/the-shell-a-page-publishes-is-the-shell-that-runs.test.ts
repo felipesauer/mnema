@@ -193,8 +193,6 @@ export const NOT_CHECKED: Readonly<Record<string, string>> = {
     'The value of a positional argument or of a flag — `"$TASK"`, `mnid:c0fc3c71…`, `./skills`, `~/work/api`, a record body. They are ids that do not exist until somebody writes them, paths on somebody else’s disk, and prose. Nothing declarative can know them; a guard that tried would be asserting its own fixtures.',
   A_GATE_DECIDES_THE_MOVE:
     '`submit` in `mnema task move submit` is that command’s declared `<action>`, not a subcommand, so a misspelling of it is not visible here. Which moves exist is the gate’s answer over one record’s state, not the program’s declaration — asking it means founding a record, which is a different piece of work with a sandbox of its own.',
-  A_TITLE_SWALLOWS_A_MISSPELLING:
-    'A subcommand misspelt under a parent that ALSO declares a positional argument. `mnema task moveZZZ` is a legal invocation \u2014 it creates a task titled "moveZZZ" \u2014 so no reading of the declarations can call it wrong. Measured on 16/09/2026: of the eight commands with subcommands, three are in this state (`task <title>`, `decision <title> [rationale]`, `skill <name>`); the other five (`run`, `key`, `tail`, `witness`, `switch`) and the program itself declare no argument, and under those a misspelt verb IS accused.',
   THE_SHELL_IS_NOT_OURS:
     'Redirections, pipes and substitutions. The `>` in `mnema brief > MNEMA.md` belongs to the shell; the verb never learns there was a file. That hazard is ruled on by `the-recipe-says-what-it-overwrites.test.ts`, which requires every publisher of that recipe to say the file is replaced whole.',
   RUNNING_IS_NOT_READING:
@@ -296,14 +294,12 @@ describe('what it does not check is written down', () => {
       ANOTHER_PROGRAM: carries('pnpm add -g @mnema/code'),
       A_VALUE_IS_NOT_A_NAME: carries('--which release-bot'),
       A_GATE_DECIDES_THE_MOVE: carries('mnema task move submit'),
-      A_TITLE_SWALLOWS_A_MISSPELLING: carries('mnema task "Ship the parser"'),
       THE_SHELL_IS_NOT_OURS: carries('mnema brief > MNEMA.md'),
       THE_OUTPUT_IS_A_SECOND_RULE: carries('#> '),
     }).toEqual({
       ANOTHER_PROGRAM: true,
       A_VALUE_IS_NOT_A_NAME: true,
       A_GATE_DECIDES_THE_MOVE: true,
-      A_TITLE_SWALLOWS_A_MISSPELLING: true,
       THE_SHELL_IS_NOT_OURS: true,
       THE_OUTPUT_IS_A_SECOND_RULE: true,
     });
@@ -366,11 +362,14 @@ describe('the reading FIRES', () => {
     expect(resolve(program, ['key', 'revokeZZZ']).strays).toEqual(['revokeZZZ']);
     // And the argument of a command that declares one is not a stray: `task move` takes it.
     expect(resolve(program, ['task', 'move', 'submit', '"$TASK"']).strays).toEqual([]);
-    // The limit, held as a case rather than as a sentence: `task` declares a `<title>`, so
-    // a misspelt subcommand under it becomes that title and nothing here can see it. This
-    // is the measurement behind NOT_CHECKED.A_TITLE_SWALLOWS_A_MISSPELLING, and it goes red
-    // if `task` ever stops taking one — at which point the exemption should go too.
-    expect(resolve(program, ['task', 'moveZZZ']).strays).toEqual([]);
+    // This was the limit, held as a case: `task` declared a `<title>`, so a misspelt
+    // subcommand under it became that title and nothing here could see it — the
+    // measurement behind an exemption, `A_TITLE_SWALLOWS_A_MISSPELLING`, that said to go
+    // when `task` stopped taking one. It stopped: creating is `task create`, no group takes
+    // a word of its own, and the misspelling is accused under `task` as under `key`. The
+    // title, typed after `create`, is that verb's argument and not a stray.
+    expect(resolve(program, ['task', 'moveZZZ']).strays).toEqual(['moveZZZ']);
+    expect(resolve(program, ['task', 'create', 'moveZZZ']).strays).toEqual([]);
   });
 
   it('an unknown flag is accused, and a real one is not, wherever it was typed', () => {

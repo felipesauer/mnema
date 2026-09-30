@@ -591,7 +591,7 @@ describe('the reading FIRES', () => {
     expect(says(['verify', '--requireZZZ'])).toBe('commander.unknownOption');
     expect(says(['verifyZZZ'])).toBe('commander.unknownCommand');
     // A verb that acts AND holds verbs takes a title; a group that only holds them does not act.
-    expect(says(['task', 'Ship the parser'])).toBeUndefined();
+    expect(says(['task', 'create', 'Ship the parser'])).toBeUndefined();
     expect(says(['key'])).toBe('commander.help');
     // Asking for help or for the version is taken: both end with exit 0.
     expect(says(['--version'])).toBeUndefined();

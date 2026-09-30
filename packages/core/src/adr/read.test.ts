@@ -350,8 +350,12 @@ describe('nothing a document writes as punctuation is read as a field', () => {
       for (const pattern of emptiness) if (pattern.test(line)) found.push(line.trim());
     }
     expect(found).toEqual([]);
-    // NOT VACUOUS: the file really is the one being read, and the rule really is asked.
-    expect(source.match(/statesSomething\(/g) ?? []).toHaveLength(7);
+    // NOT VACUOUS: the file really is the one being read, and the rule really is asked — six
+    // calls, and the function they call is the one the write door asks too, imported rather
+    // than defined here, so the two doors cannot come to read a reason two ways again.
+    expect(source.match(/statesSomething\(/g) ?? []).toHaveLength(6);
+    expect(source).toContain("import { statesSomething } from '../a-reason-states-something.js';");
+    expect(source).not.toMatch(/function statesSomething/);
   });
 });
 

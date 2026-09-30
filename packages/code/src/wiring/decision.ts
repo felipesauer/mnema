@@ -1,9 +1,10 @@
 /**
  * The `mnema decision` wiring: what it declares, and what it prints.
  *
- * `decision` is a group, shaped like `task`: its default action records a
- * decision (`mnema decision "<title>" "<rationale>"`), and its subcommands move
- * an existing one. A decision needs BOTH a title and a rationale, so both are
+ * `decision` is a group, shaped like `task`: one subcommand records a decision
+ * (`mnema decision record "<title>" "<rationale>"`), the others move an existing one
+ * or propose the ones already written in files. The group does nothing on its own,
+ * for `task`'s reason (see `wiring/task.ts`). A decision needs BOTH a title and a rationale, so both are
  * required positionals — a missing one is the parser's clear error, not a late
  * gate refusal. What it turned down is `--alternatives`, a flag rather than a
  * third positional: most decisions had no contender, and a positional that is
@@ -29,6 +30,7 @@ import {
 } from './enumerated.js';
 import { fromTheGroup, REFUSED, takesFromItsGroup } from './from-the-group.js';
 import { writeLines } from './io.js';
+import { createsBy } from './misuse.js';
 import { noSuchRecord } from './no-such-record.js';
 import {
   declaredAgent,
@@ -50,22 +52,21 @@ const A_MOVE_FOLLOWS_THE_DECISION = 'a move follows the decision to the tree it 
  */
 const TURNED_DOWN_AT_BIRTH =
   'what a decision turned down is recorded with the decision itself — pass it to ' +
-  '`mnema decision` with the title and the rationale.';
+  '`mnema decision record` with the title and the rationale.';
+
+/** What `--alternatives` is, said once for the group and for `record`, which both declare it. */
+const ALTERNATIVES_HELP =
+  'what was considered and turned down, and why not (optional). A decision ' +
+  'is immutable, so this is recorded at birth: an option rejected later is a ' +
+  'new decision, or supersedes this one.';
 
 /** Registers `mnema decision` on the program. */
 export function registerDecision(program: Command, wiring: Wiring): Declared {
   const { io, pinnedRun, render } = wiring;
   const decision = program
     .command('decision')
-    .description('record a decision in the current project')
-    .argument('<title>', 'the decision title')
-    .argument('<rationale>', 'why the decision was made')
-    .option(
-      '--alternatives <text>',
-      'what was considered and turned down, and why not (optional). A decision ' +
-        'is immutable, so this is recorded at birth: an option rejected later is a ' +
-        'new decision, or supersedes this one.',
-    )
+    .description('record a decision, or move one, in the current project')
+    .option('--alternatives <text>', ALTERNATIVES_HELP)
     .addOption(
       scopeOption(
         'decision',
@@ -73,37 +74,58 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
       ),
     )
     .option('--which <agent>', WHICH_HELP, declaredAgent)
-    .addHelpText('after', RECORD_CONTRACT_HELP)
-    .action(
-      async (
-        title: string,
-        rationale: string,
-        opts: { alternatives?: string; scope?: string; which?: string },
-      ) => {
-        const { runDecision } = await import('../commands/decision.js');
-        const scope = parseScope(opts.scope, wiring);
-        if (scope === INVALID) return;
-        const run = pinnedRun();
-        if (run === PIN_REFUSED) {
-          io.fail();
-          return;
-        }
-        const result = runDecision(here(), {
-          title,
-          rationale,
-          ...(opts.alternatives !== undefined ? { alternatives: opts.alternatives } : {}),
-          ...(scope !== undefined ? { scope } : {}),
-          ...(opts.which !== undefined ? { which: opts.which } : {}),
-          ...(run !== undefined ? { run } : {}),
-        });
-        if (result.ok) {
-          io.out(`Recorded decision ${result.adr} (${result.id})`);
-          reportRecorded(result, io);
-          return;
-        }
-        reportRefusal(wiring, result);
-      },
+    .addHelpText('after', RECORD_CONTRACT_HELP);
+
+  // `decision record <title> <rationale>` — the verb the agent's surface calls
+  // `record_decision`. The group used to record with the two typed right after its name, and a
+  // group that takes a free word cannot refuse a mistyped subcommand: `mnema decision showZZZ
+  // why-not` recorded ADR-1. Its flags are its own, so its `--help` lists them; written after
+  // `record` they still land on the group, which declares the same three, and are read from
+  // there (`import` below has the same shape).
+  const record = decision
+    .command('record')
+    .description('record a decision in the current project')
+    .argument('<title>', 'the decision title')
+    .argument('<rationale>', 'why the decision was made')
+    .option('--alternatives <text>', ALTERNATIVES_HELP)
+    .addOption(
+      scopeOption(
+        'decision',
+        'Omitted, a decision lands in the public tree (a declaration about the project).',
+      ),
+    )
+    .option('--which <agent>', WHICH_HELP, declaredAgent)
+    .addHelpText('after', RECORD_CONTRACT_HELP);
+  createsBy(record);
+  record.action(async (title: string, rationale: string) => {
+    const given = await fromTheGroup<{ alternatives?: string; scope?: string; which?: string }>(
+      record,
+      wiring,
     );
+    if (given === REFUSED) return;
+    const { runDecision } = await import('../commands/decision.js');
+    const scope = parseScope(given.scope, wiring);
+    if (scope === INVALID) return;
+    const run = pinnedRun();
+    if (run === PIN_REFUSED) {
+      io.fail();
+      return;
+    }
+    const result = runDecision(here(), {
+      title,
+      rationale,
+      ...(given.alternatives !== undefined ? { alternatives: given.alternatives } : {}),
+      ...(scope !== undefined ? { scope } : {}),
+      ...(given.which !== undefined ? { which: given.which } : {}),
+      ...(run !== undefined ? { run } : {}),
+    });
+    if (result.ok) {
+      io.out(`Recorded decision ${result.adr} (${result.id})`);
+      reportRecorded(result, io);
+      return;
+    }
+    reportRefusal(wiring, result);
+  });
 
   // `decision move <accept|reject> <id>` — the generic move, the sibling of
   // `task move`. The action is an argument the gate validates; the surface knows

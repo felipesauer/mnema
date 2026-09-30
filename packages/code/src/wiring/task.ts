@@ -1,9 +1,12 @@
 /**
  * The `mnema task` wiring: what it declares, and what it prints.
  *
- * `task` is a group: its default action creates (`mnema task "<title>"`),
- * and its one subcommand moves an existing task through the workflow
- * (`mnema task move <action> <id>`). Create takes an optional `--scope` — the
+ * `task` is a group of two subcommands: one creates (`mnema task create "<title>"`),
+ * and one moves an existing task through the workflow
+ * (`mnema task move <action> <id>`). The group does nothing on its own: it used to
+ * create with the title typed right after its name, and a group that takes a free
+ * word cannot refuse a mistyped subcommand (`mnema task moveZZZ` created a task
+ * called `moveZZZ`); `one-voice-for-a-no.test.ts` holds that no group does. Create takes an optional `--scope` — the
  * per-action override for where the task is born; omitted, the KIND decides, and a
  * task is the team's board, so it lands in the tree that travels. `move` takes NO
  * scope: a move follows the entity to the tree it was born in, never a scope the
@@ -29,6 +32,7 @@ import {
   TASK_ACTIONS,
 } from './enumerated.js';
 import { fromTheGroup, REFUSED, takesFromItsGroup } from './from-the-group.js';
+import { createsBy } from './misuse.js';
 import { noSuchRecord } from './no-such-record.js';
 import {
   declaredAgent,
@@ -46,35 +50,53 @@ export function registerTask(program: Command, wiring: Wiring): Declared {
   const { io, pinnedRun } = wiring;
   const task = program
     .command('task')
+    .description('create a task, or move one, in the current project')
+    .addOption(
+      scopeOption('task', 'Omitted, a task lands in the public tree (the team’s work board).'),
+    )
+    .option('--which <agent>', WHICH_HELP, declaredAgent)
+    .addHelpText('after', RECORD_CONTRACT_HELP);
+
+  // `task create <title>` — the verb the agent's surface calls `create_task`. The group used
+  // to create with the title typed right after its name, and a group that takes a free word
+  // cannot refuse a mistyped subcommand: `mnema task moveZZZ` created a task called `moveZZZ`.
+  // Its flags are its own, so its `--help` lists them; written after `create` they still land
+  // on the group, which declares the same two, and are read from there (`decision import` has
+  // the same shape).
+  const create = task
+    .command('create')
     .description('create a task in the current project')
     .argument('<title>', 'the task title')
     .addOption(
       scopeOption('task', 'Omitted, a task lands in the public tree (the team’s work board).'),
     )
     .option('--which <agent>', WHICH_HELP, declaredAgent)
-    .addHelpText('after', RECORD_CONTRACT_HELP)
-    .action(async (title: string, opts: { scope?: string; which?: string }) => {
-      const { runTask } = await import('../commands/task.js');
-      const scope = parseScope(opts.scope, wiring);
-      if (scope === INVALID) return;
-      const run = pinnedRun();
-      if (run === PIN_REFUSED) {
-        io.fail();
-        return;
-      }
-      const result = runTask(here(), {
-        title,
-        ...(scope !== undefined ? { scope } : {}),
-        ...(opts.which !== undefined ? { which: opts.which } : {}),
-        ...(run !== undefined ? { run } : {}),
-      });
-      if (result.ok) {
-        io.out(`Created task ${result.alias} (${result.id})`);
-        reportRecorded(result, io);
-        return;
-      }
-      reportRefusal(wiring, result);
+    .addHelpText('after', RECORD_CONTRACT_HELP);
+  createsBy(create);
+  create.action(async (title: string) => {
+    const given = await fromTheGroup<{ scope?: string; which?: string }>(create, wiring);
+    if (given === REFUSED) return;
+    const { runTask } = await import('../commands/task.js');
+    const scope = parseScope(given.scope, wiring);
+    if (scope === INVALID) return;
+    const run = pinnedRun();
+    if (run === PIN_REFUSED) {
+      io.fail();
+      return;
+    }
+    const result = runTask(here(), {
+      title,
+      ...(scope !== undefined ? { scope } : {}),
+      ...(given.which !== undefined ? { which: given.which } : {}),
+      ...(run !== undefined ? { run } : {}),
     });
+    if (result.ok) {
+      io.out(`Created task ${result.alias} (${result.id})`);
+      reportRecorded(result, io);
+      return;
+    }
+    reportRefusal(wiring, result);
+  });
 
   // One generic move: the action is an argument the gate validates, not a
   // hardcoded per-action command. The surface knows nothing of the transition

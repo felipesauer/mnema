@@ -176,7 +176,8 @@ describe('the first record the root page shows', () => {
     expect(block.map((one) => one.argv[1])).toEqual(['init', 'decision', 'search', 'verify']);
     expect(block.every((one) => one.shown.length > 0)).toBe(true);
     // The continuation was read as the shell reads it: the rationale is one word.
-    expect(block[1]?.argv).toHaveLength(4);
+    expect(block[1]?.argv).toHaveLength(5);
+    expect(block[1]?.argv[2]).toBe('record');
   });
 });
 

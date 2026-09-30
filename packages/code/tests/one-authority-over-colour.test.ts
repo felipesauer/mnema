@@ -159,7 +159,7 @@ beforeAll(async () => {
   process.chdir(project);
 
   await run(['init'], quiet);
-  await run(['task', 'the task the colour is measured over'], quiet);
+  await run(['task', 'create', 'the task the colour is measured over'], quiet);
 
   // TAKEN BEFORE ANY SESSION RUNS IN THIS PROCESS, because opening one writes the
   // library's channel into this process's own environment — which is the whole subject.

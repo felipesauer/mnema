@@ -1738,7 +1738,7 @@ const PROBES: readonly Probe[] = [
       'record.ts statedFact(oneLine(body.record.title)) #1',
       'status.ts itemLine(oneLine(item.title)) #1',
     ],
-    first: ['task', VALUE],
+    first: ['task', 'create', VALUE],
     argv: ['status', '--actor', ACTOR],
     says: 'live task(s):',
   },

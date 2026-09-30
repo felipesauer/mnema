@@ -145,7 +145,7 @@ beforeAll(async () => {
 
   const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
   await run(['init'], io);
-  await run(['task', 'the task the opening is measured over'], io);
+  await run(['task', 'create', 'the task the opening is measured over'], io);
 
   // AND THE SECOND PROJECT, DEEP ENOUGH THAT ITS PATH DOES NOT FIT: the arrangement is chosen
   // against the widest row it holds, and the row that says where the session is standing is one of
@@ -159,7 +159,7 @@ beforeAll(async () => {
   mkdirSync(deep, { recursive: true });
   process.chdir(deep);
   await run(['init'], io);
-  await run(['task', 'the task the floor of the ladder is measured over'], io);
+  await run(['task', 'create', 'the task the floor of the ladder is measured over'], io);
   process.chdir(project);
 
   environment = {

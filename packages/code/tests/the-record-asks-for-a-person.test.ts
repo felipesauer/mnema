@@ -86,7 +86,7 @@ function idIn(said: Said): string {
 
 /** Records a decision and accepts it, so that it is IN FORCE. */
 async function ruleInForce(title: string, ...extra: string[]): Promise<string> {
-  const id = idIn(await did('decision', title, `why ${title}`, ...extra));
+  const id = idIn(await did('decision', 'record', title, `why ${title}`, ...extra));
   await did('decision', 'move', 'accept', id, '--note', 'agreed');
   return id;
 }

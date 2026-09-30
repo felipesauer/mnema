@@ -111,9 +111,47 @@ export const WORDED: readonly string[] = Object.keys(SAID).sort();
  */
 export function misuseReport(misuse: Misuse): readonly Line[] {
   const said = SAID[misuse.error.code]?.(misuse);
-  return said === undefined
-    ? [refusalLine(misuse.error.code, misuse.error.message)]
-    : [said, fact(usageOf(misuse.command))];
+  if (said === undefined) return [refusalLine(misuse.error.code, misuse.error.message)];
+  // A word a group has no command for, where the group creates by a subcommand, is most often
+  // the form that group used to take — a title right after the group's name — so the line to
+  // type is the creating verb's, not the group's.
+  const creating = isAWordNoCommandTakes(misuse) ? CREATES_BY.get(misuse.command) : undefined;
+  return [said, fact(usageOf(creating ?? misuse.command))];
+}
+
+/**
+ * Which subcommand of a group creates what the group is named for: `task create`, `decision
+ * record`, `skill create`.
+ *
+ * WHY IT IS DECLARED. Those three groups used to create with a title typed right after their
+ * name (`mnema task "Fix the login"`), and a group that takes a free positional cannot refuse a
+ * mistyped subcommand — `mnema task moveZZZ` created a task called `moveZZZ`. Creating is a
+ * subcommand now and the group takes no positional, so a title typed the old way is a word the
+ * group has no command for; this is what lets that refusal name the way that works.
+ */
+const CREATES_BY = new WeakMap<Command, Command>();
+
+/** Declares `sub` as the subcommand that creates what its group is named for. */
+export function createsBy(sub: Command): void {
+  if (sub.parent !== null) CREATES_BY.set(sub.parent, sub);
+}
+
+/** True for the two codes that mean a group was handed a word it has no command for. */
+function isAWordNoCommandTakes({ error, command }: Misuse): boolean {
+  return (
+    error.code === 'commander.unknownCommand' ||
+    (error.code === 'commander.excessArguments' && isAGroupThatTakesNoWord(command))
+  );
+}
+
+/**
+ * A group that does nothing with a word of its own: it has subcommands and declares no
+ * positional. Whether it also declares an action (`witness`, `switch` run on their own) is how
+ * commander tells the two apart — `excessArguments` for one, `unknownCommand` for the other — and
+ * not a difference the person typing can see, so both are said one way.
+ */
+function isAGroupThatTakesNoWord(command: Command): boolean {
+  return command.commands.length > 0 && command.registeredArguments.length === 0;
 }
 
 /**
@@ -241,20 +279,36 @@ function unknownOption({ command, typed }: Misuse): Line | undefined {
  */
 function unknownCommand({ command }: Misuse): Line | undefined {
   const asked = command.args[0];
-  const name = spoken(command);
-  return asked === undefined
-    ? undefined
-    : refusalSentence(
-        `${name} has no command ${quoted(asked)}. Run \`${name} --help\` to see what it does.`,
-      );
+  return asked === undefined ? undefined : noSuchCommand(command, asked);
 }
 
-/** More arguments than the command declares. The extra ones are the news. */
+/**
+ * The one sentence for a word a group has no command for — whichever of commander's two codes
+ * carried it. When the group creates by a subcommand, it says how: the word was most likely a
+ * title, typed where the group used to take one.
+ */
+function noSuchCommand(command: Command, asked: string): Line {
+  const name = spoken(command);
+  const creating = CREATES_BY.get(command);
+  const what = creating?.registeredArguments[0]?.name();
+  return refusalSentence(
+    creating === undefined || what === undefined
+      ? `${name} has no command ${quoted(asked)}. Run \`${name} --help\` to see what it does.`
+      : `${name} has no command ${quoted(asked)}. To ${creating.name()} a ${command.name()}, ` +
+          `put \`${creating.name()}\` before its ${what}.`,
+  );
+}
+
+/**
+ * More arguments than the command declares. The extra ones are the news — except on a group
+ * that takes no word of its own, where the first is a command it does not have, and is said the
+ * way every other group says it.
+ */
 function excessArguments({ command }: Misuse): Line | undefined {
   const extra = command.args.slice(command.registeredArguments.length);
-  return extra.length === 0
-    ? undefined
-    : refusalSentence(`${spoken(command)} does not take ${extra.map(quoted).join(', ')}.`);
+  if (extra.length === 0) return undefined;
+  if (isAGroupThatTakesNoWord(command)) return noSuchCommand(command, extra[0] as string);
+  return refusalSentence(`${spoken(command)} does not take ${extra.map(quoted).join(', ')}.`);
 }
 
 /**

@@ -462,7 +462,7 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * `vitest`, and `../src/mcp/instructions.js`, `../src/mcp/server.js`,
  * `../src/presentation/brief.js` and `../src/record-framing.js` for the texts. Read off this guard.
  */
-const CLAUSES_IN_THE_TREE = 3189;
+const CLAUSES_IN_THE_TREE = 3215;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
@@ -954,7 +954,7 @@ describe('every file has a test that names it', () => {
     expect(PRODUCTION).toContain('packages/code/src/wiring/index.ts');
     expect(PRODUCTION).toContain('packages/core/src/topology/index.ts');
     expect(PRODUCTION).not.toContain('packages/core/src/index.ts');
-    expect(PRODUCTION).toHaveLength(317);
+    expect(PRODUCTION).toHaveLength(318);
     expect(TEST_TREE.length).toBeGreaterThan(250);
     // No file is in both corpora, which is what keeps a test from witnessing itself.
     const tests = new Set(TEST_TREE.map((one) => one.path));
@@ -974,7 +974,7 @@ describe('every file has a test that names it', () => {
     const found = unwitnessed();
     const byReach = (reach: Reach): number =>
       [...found.values()].filter((one) => one === reach).length;
-    expect(PRODUCTION.length - found.size).toBe(246);
+    expect(PRODUCTION.length - found.size).toBe(247);
     expect(found.size).toBe(71);
     expect(byReach('nobody imports it')).toBe(71);
     expect(byReach('imported, and no assertion observes it')).toBe(0);

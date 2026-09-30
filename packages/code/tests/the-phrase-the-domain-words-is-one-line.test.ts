@@ -603,6 +603,25 @@ type Verdict = 'collapsed' | 'minted' | 'composed';
  * the part that rots — which values exist, and whether each is collapsed — is derived.
  */
 const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = {
+  '@mnema/core a-reason-states-something.ts «the {} "{}" has no letter and no digit in it, so it says nothing: » field #1':
+    {
+      verdict: 'minted',
+      why: 'the name of a reason field, one of the rows `REASONS` holds or `REASON_PROOF_FIELDS`',
+    },
+  '@mnema/core a-reason-states-something.ts «the {} "{}" has no letter and no digit in it, so it says nothing: » oneLine(value) #1':
+    { verdict: 'collapsed', why: 'the reason a caller typed, from the argv or a tool argument' },
+  '@mnema/core a-reason-states-something.ts «the {} "{}" is the marker a recipe prints where the words go, » field #1':
+    {
+      verdict: 'minted',
+      why: 'the name of a reason field, one of the rows `REASONS` holds or `REASON_PROOF_FIELDS`',
+    },
+  '@mnema/core a-reason-states-something.ts «the {} "{}" is the marker a recipe prints where the words go, » oneLine(value.trim()) #1':
+    { verdict: 'collapsed', why: 'the marker a caller pasted, from the argv or a tool argument' },
+  '@mnema/core workflow/append.ts «{}. The fact was NOT recorded — a record is permanent, and its why is the part a later reader reads.» unstated #1':
+    {
+      verdict: 'composed',
+      why: 'the reason refusal `a-reason-states-something.ts` words, whose two values are sites there',
+    },
   // --- @mnema/chain: the enrollment fold's findings -------------------------------
   '@mnema/chain chain/enrollment.ts «re-adds {} revoked under signature coverage without being checkpointed itself» oneLine(fp) #1':
     {
@@ -1296,6 +1315,9 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
  * appears has to be declared, and a declaration whose template went away has to leave.
  */
 const NOT_A_SENTENCE: Readonly<Record<string, string>> = {
+  '@mnema/core a-reason-states-something.ts «^{}$» MARKER.source':
+    'the pattern of a WHOLE marker, built from the shape a marker takes so the two cannot ' +
+    'drift apart. It is a regular expression, never printed.',
   '@mnema/chain chain/enrollment.ts «{}|{}» anchor':
     'half a key of a `Set`, not a sentence — `restoreKey` pairs an anchor with a fingerprint',
   '@mnema/chain chain/enrollment.ts «{}|{}» fp': 'the other half of that same Set key',
@@ -1331,9 +1353,9 @@ describe('every value the domain puts in a sentence is classified', () => {
     // are equal. The scale is stated, and so is what the HANDOFF said — twenty-three
     // sites, twelve in `core` and eleven in `chain` — because it counted sentences
     // written at a `message:` or a `detail:` directly, and a value is not a sentence.
-    expect(SITES.length).toBe(142);
+    expect(SITES.length).toBe(147);
     expect(FOUND[0]?.sites.length).toBe(48);
-    expect(FOUND[1]?.sites.length).toBe(94);
+    expect(FOUND[1]?.sites.length).toBe(99);
     expect(FOUND.flatMap((layer) => layer.wording).length).toBeGreaterThan(15);
   });
 
@@ -1383,11 +1405,11 @@ describe('every value the domain puts in a sentence is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(87);
-    expect(count('minted')).toBe(36);
-    expect(count('composed')).toBe(19);
+    expect(count('collapsed')).toBe(89);
+    expect(count('minted')).toBe(38);
+    expect(count('composed')).toBe(20);
     expect(SITES.filter((site) => new RegExp(`\\b${DOOR}\\b`).test(site.expression))).toHaveLength(
-      87,
+      89,
     );
   });
 
@@ -1474,7 +1496,9 @@ describe('the rule has one door and it is below both packages', () => {
     const importing = LAYERS.flatMap((layer) =>
       sourceFiles(layer.src)
         .filter((file) =>
-          /import \{[^}]*\boneLine\b[^}]*\} from '(?:\.\.\/)+one-line\.js'/.test(
+          // `./` as well as `../`: a module BESIDE the door imports it with one dot, and the
+          // pattern read only climbs until `a-reason-states-something.ts` was the first such.
+          /import \{[^}]*\boneLine\b[^}]*\} from '(?:\.\/|(?:\.\.\/)+)one-line\.js'/.test(
             readFileSync(file, 'utf-8'),
           ),
         )

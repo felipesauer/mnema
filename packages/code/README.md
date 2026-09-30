@@ -192,7 +192,7 @@ ME=mnid:c0fc3c713f09a43384ac08f7d91fca43…   # the identity printed above
 
 # Create a task. It is named by its id; `t-4f2a` is a display alias derived
 # from that id, not a second key you can look it up by.
-mnema task "Ship the parser"
+mnema task create "Ship the parser"
 #> Created task t-4f2a (0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b44)
 
 TASK=0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b44
@@ -396,7 +396,7 @@ asserts. So an agent driving the CLI — a script, a CI step, an agent with no M
 server — names itself with `--which`, on every verb that writes:
 
 ```sh
-mnema task "Regenerate the fixtures" --which release-bot
+mnema task create "Regenerate the fixtures" --which release-bot
 mnema task move complete "$TASK" --note "fixtures regenerated" --which release-bot
 ```
 
@@ -434,7 +434,7 @@ mnema run start --which release-bot --goal "regenerate the fixtures"
 export MNEMA_RUN=019fa572-32c2-7780-b1a7-0fe895a1c7ef
 
 # Every fact written from here on names that session.
-mnema task "Regenerate the fixtures" --which release-bot
+mnema task create "Regenerate the fixtures" --which release-bot
 
 mnema run end --which release-bot --outcome "fixtures regenerated"
 unset MNEMA_RUN
@@ -601,7 +601,7 @@ tells you to rotate, which is the only remedy an append-only record leaves.
 That is what happens in a **body**. In a **name** the door refuses instead:
 
 ```sh
-mnema skill "xoxb-123456789012-abcdefghijkl" --body "never mind"
+mnema skill create "xoxb-123456789012-abcdefghijkl" --body "never mind"
 #> Refused (NAME_HOLDS_A_SECRET): "name" reads as slack-token, and it is a name the
 #>   record is addressed by — so replacing it would record a different entity, not a
 #>   redacted one. The fact was not recorded. Name it something else; if the value

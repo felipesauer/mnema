@@ -137,7 +137,7 @@ async function aProject(named: string): Promise<string> {
   mkdirSync(at, { recursive: true });
   process.chdir(at);
   await shell('init');
-  await shell('decision', 'the decision the session opened over', 'because');
+  await shell('decision', 'record', 'the decision the session opened over', 'because');
   return at;
 }
 
@@ -338,7 +338,7 @@ describe('a record nothing moves leaves the corner exactly where it was', () => 
           // duplicate does — and that is the honest reading of what the cheap question can
           // answer (`repl/proving.ts`).
           does: () => {
-            elsewhere(project, 'task', 'a sound append by somebody else');
+            elsewhere(project, 'task', 'create', 'a sound append by somebody else');
           },
           until: arrivedSince(theClause()),
           what: 'degraded the corner over a sound append too',
@@ -399,7 +399,7 @@ describe('the watch on the proof, asked directly', () => {
     const project = await aProject('asked-directly-and-moved');
     const proof = watchingTheProof([chainRoot(project)]);
     expect(proof.coversTheWholeRecord()).toBe(true);
-    elsewhere(project, 'task', 'somebody else appended');
+    elsewhere(project, 'task', 'create', 'somebody else appended');
     expect(proof.coversTheWholeRecord()).toBe(false);
     // AND IT LATCHES. A verdict is formed at an INSTANT, so a later instant whose extent
     // happens to match is not that instant — and the latch is also what bounds the cost,

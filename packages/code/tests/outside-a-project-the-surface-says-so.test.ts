@@ -33,10 +33,11 @@
  *      global tree is answering a legitimate question about whatever record there is, and
  *      `init` is the verb whose whole job is that there is not one yet.
  *   4. IT REFUSES SOMETHING ELSE FIRST — the parser, a missing session, or its own no.
- *      TWO OF THESE ARE A FINDING, recorded rather than repaired here: `show` and `skill
- *      export` answer "No record … here" for an id in a directory that holds no record at
- *      all, which tells a person in the wrong folder that their record is missing.
- *      Changing what a verb says is not this slice's to change.
+ *      Two of these WERE a finding, recorded here rather than repaired: `show` and `skill
+ *      export` answered "No record … here" for an id in a directory that holds no record
+ *      at all, which told a person in the wrong folder that their record was missing. They
+ *      say there is no project now, as the others do, after reading the machine-global
+ *      tree they read from anywhere — so they are in the first box.
  *
  * All four boxes are reconciled against the walk in both directions, so a path that
  * changes box has to be moved by hand and a path that disappears cannot leave an excuse
@@ -174,21 +175,22 @@ const THE_PARSER_ANSWERED_FIRST =
 /**
  * A path whose own refusal arrives before the project is ever missed — with what it says.
  *
- * THE FIRST FOUR ARE STRUCTURE and the last two are a FINDING. `run`, `key` and `tail`
- * are groups whose bare form routes nothing, so the parser answers before any action
- * runs, and `run end` with neither an id nor a variable has no session to be missing a
- * project for. `show` and `skill export` reach their adapter and refuse the ID: in a directory
- * with no record at all, a person is told the record they named does not exist rather
- * than that they are in the wrong place. It is recorded here rather than repaired,
- * because what a verb SAYS is not a coverage slice's to change.
+ * ALL OF THEM ARE STRUCTURE. `task`, `decision`, `skill`, `run`, `key` and `tail` are groups
+ * whose bare form routes nothing, so the parser answers before any action runs (the first
+ * three created with a title typed after their name, until creating became a subcommand),
+ * and `run end` with neither an id nor a variable has no session to be missing a project
+ * for. Two rows here were a FINDING — `show` and `skill export` answered "No record <id>
+ * here" in a directory with no record at all — and they left for the first box when they
+ * began saying there is no project.
  */
 const REFUSES_SOMETHING_ELSE_FIRST: Readonly<Record<string, string>> = {
+  task: THE_PARSER_ANSWERED_FIRST,
+  decision: THE_PARSER_ANSWERED_FIRST,
+  skill: THE_PARSER_ANSWERED_FIRST,
   run: THE_PARSER_ANSWERED_FIRST,
   key: THE_PARSER_ANSWERED_FIRST,
   tail: THE_PARSER_ANSWERED_FIRST,
   'run end': 'with no id and no MNEMA_RUN there is no session named, which it says first',
-  show: 'FINDING: it answers "No record <id> here" where there is no record at all',
-  'skill export': 'FINDING: it answers "No skill <id> here" where there is no record at all',
   'witness stamp':
     'with no tail anywhere it refuses NO_TAIL at its first line, before a fetch is composed',
 };

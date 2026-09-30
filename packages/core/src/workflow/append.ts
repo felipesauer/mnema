@@ -34,6 +34,7 @@
  */
 
 import { type CatalogEvent, type ChainWriter, type Entry, unreadableReason } from '@mnema/chain';
+import { unstatedReason } from '../a-reason-states-something.js';
 
 /**
  * A write refused because the record would not have been readable back; nothing
@@ -50,13 +51,33 @@ export interface UnreadableEventErr {
   readonly message: string;
 }
 
+/**
+ * A write refused because a text that carries the why of the fact says nothing — no letter and
+ * no digit (`***`), or the marker a recipe prints where the why goes (`<why>`). Nothing was
+ * appended.
+ *
+ * A READ would accept it, which is why it is not {@link UnreadableEventErr}: the chain's rule is
+ * about what can be opened, and a line of punctuation opens fine. It is the rule the reader of
+ * decision files applies to a rationale (`a-reason-states-something.ts`), asked here of every
+ * kind's reason fields, so a fact whose why is empty of words is refused at the one door every
+ * core write goes through.
+ */
+export interface NotAReasonErr {
+  readonly ok: false;
+  readonly code: 'NOT_A_REASON';
+  readonly message: string;
+}
+
+/** Why the door refused an event: a read could not open it, or its why says nothing. */
+export type AppendRefusal = UnreadableEventErr | NotAReasonErr;
+
 /** One event appended, or the refusal it earned before anything was sealed. */
-export type AppendedEvent = { readonly ok: true; readonly entry: Entry } | UnreadableEventErr;
+export type AppendedEvent = { readonly ok: true; readonly entry: Entry } | AppendRefusal;
 
 /** Several events appended atomically, or the refusal that stopped all of them. */
 export type AppendedEvents =
   | { readonly ok: true; readonly entries: readonly Entry[] }
-  | UnreadableEventErr;
+  | AppendRefusal;
 
 /**
  * Appends one event after checking a read would accept it. On refusal nothing is
@@ -94,14 +115,22 @@ export function appendEvents(writer: ChainWriter, events: readonly CatalogEvent[
  * runs before any identity is consulted and therefore costs literally nothing. The
  * difference is small and it is stated rather than papered over.
  */
-function refuse(event: CatalogEvent): UnreadableEventErr | undefined {
+function refuse(event: CatalogEvent): AppendRefusal | undefined {
   const reason = unreadableReason(event);
-  if (reason === undefined) return undefined;
+  if (reason !== undefined) {
+    return {
+      ok: false,
+      code: 'UNREADABLE_EVENT',
+      message:
+        `${reason}. The fact was NOT recorded — an entry no read could open would ` +
+        'leave every later read of this project failing, and a tail cannot be edited.',
+    };
+  }
+  const unstated = unstatedReason(event);
+  if (unstated === undefined) return undefined;
   return {
     ok: false,
-    code: 'UNREADABLE_EVENT',
-    message:
-      `${reason}. The fact was NOT recorded — an entry no read could open would ` +
-      'leave every later read of this project failing, and a tail cannot be edited.',
+    code: 'NOT_A_REASON',
+    message: `${unstated}. The fact was NOT recorded — a record is permanent, and its why is the part a later reader reads.`,
   };
 }

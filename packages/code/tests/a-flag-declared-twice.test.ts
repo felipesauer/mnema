@@ -22,8 +22,10 @@
  *
  * EVERY PAIR THE TREE HOLDS, each with how its subcommand reads the flag, enumerated from the
  * program itself: a subcommand that starts declaring its group's flag is red here until somebody
- * says which of the two it is. There are four today, and all four are read where they were
- * written. Two of them were a FINDING until they were repaired (see {@link DECLARED_TWICE}).
+ * says which of the two it is. There are twelve today, and all twelve are read where they were
+ * written: eight are the creating verbs (`task create`, `decision record`, `skill create`), which
+ * declare their group's creation flags since creating stopped being the group's own action. Two
+ * of the other four were a FINDING until they were repaired (see {@link DECLARED_TWICE}).
  */
 
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -181,6 +183,17 @@ type Reading = 'where it was written' | 'its own copy, which the group takes';
  * refuses it, and both rows turned when the acts began reading it where it was written.
  */
 const DECLARED_TWICE: Readonly<Record<string, Reading>> = {
+  // The three verbs that create. The groups used to create themselves, with the title right
+  // after their name; creating moved into a subcommand that declares the group's creation flags
+  // so its `--help` lists them, and reads them off the group the way `decision import` does.
+  'task create --scope': 'where it was written',
+  'task create --which': 'where it was written',
+  'decision record --alternatives': 'where it was written',
+  'decision record --scope': 'where it was written',
+  'decision record --which': 'where it was written',
+  'skill create --body': 'where it was written',
+  'skill create --scope': 'where it was written',
+  'skill create --which': 'where it was written',
   'decision import --scope': 'where it was written',
   'decision import --which': 'where it was written',
   'witness stamp --global': 'where it was written',

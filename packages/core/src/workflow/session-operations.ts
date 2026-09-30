@@ -72,7 +72,7 @@ import { canonicalId, mintId } from '../identity/id.js';
 import { oneLine } from '../one-line.js';
 import { orderedEvents } from '../projections/order.js';
 import { projectRuns } from '../projections/run.js';
-import { appendEvent, type UnreadableEventErr } from './append.js';
+import { type AppendRefusal, appendEvent } from './append.js';
 import { systemClock } from './clock.js';
 import { authorizingAnchor, ensureFounded } from './identity-operations.js';
 import type { WriteContext } from './operations.js';
@@ -109,7 +109,7 @@ export type StartRunError =
   /** A free-text field was over the size limit (see {@link screenContent}). */
   | ScreenRefusal
   /** A read would not have accepted the event (see {@link appendEvent}). */
-  | UnreadableEventErr
+  | AppendRefusal
   /**
    * The executing agent IS the authorizing anchor — an agent cannot open the
    * session that authorizes its own work.
@@ -121,7 +121,7 @@ export type EndRunError =
   /** A free-text field was over the size limit (see {@link screenContent}). */
   | ScreenRefusal
   /** A read would not have accepted the event (see {@link appendEvent}). */
-  | UnreadableEventErr
+  | AppendRefusal
   /**
    * The closing agent IS the authorizing anchor — the same refusal the birth
    * earns, from the same function, because it is a rule of the record and not of
