@@ -444,7 +444,7 @@ export const MUTATIONS = [
     file: ROOT,
     from: '  let current = resolve(from)',
     to: "  return resolve(from, '../../../../..')\n  let current = resolve(from)",
-    expect: 'the root lands on .refactor/ again, and every path built from it points at nothing',
+    expect: 'the root lands inside the working directory again, and every path built from it points at nothing',
   },
 ]
 
@@ -492,9 +492,9 @@ function report(result, { isMutation }) {
  * A `finally` restores after an exception. It does NOT restore after a signal —
  * Node's default SIGINT/SIGTERM handling terminates without unwinding — and this
  * script was killed exactly once, mid-mutation, leaving the wrapper on disk with
- * a hole punched in its transport. That is the A14 hazard in a file git does not
- * track, so there is no `checkout` to save it: the only copy is the one held
- * here, and it has to survive the way the process actually died.
+ * a hole punched in its transport. That is a mutation outliving the run that made it,
+ * in a file git does not track, so there is no `checkout` to save it: the only copy is
+ * the one held here, and it has to survive the way the process actually died.
  *
  * AND UNTIL 2026-08-18 THE HANDLER COULD NOT RUN AT ALL, which is the opposite of
  * what the paragraph above claimed. Node delivers a signal from the event loop, and

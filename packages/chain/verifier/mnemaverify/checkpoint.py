@@ -49,7 +49,9 @@ class Checkpoint(NamedTuple):
     message: bytes
     message_hash: str
     line_is_canonical: bool
-    index: int
+    # A field named like `tuple.index`, which mypy reads as an override. The field shadows the
+    # method on every Python, and nothing here calls the method.
+    index: int  # type: ignore[assignment]
 
     @property
     def from_seq(self) -> int:

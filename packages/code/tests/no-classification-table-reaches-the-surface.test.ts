@@ -15,8 +15,8 @@
  * invalidates. It is here by the same mechanism and for the same reason: it declares
  * itself hidden, so the sweep finds it.
  *
- * It is the second guard of a pair that cannot go red, and THE ONE RED IT USED TO
- * PROMISE IS GONE. The sentence here read: making a surface classify for itself
+ * IT WAS THE SECOND GUARD OF A PAIR THAT COULD NOT GO RED, and the last net below is what
+ * changed that. THE ONE RED IT USED TO PROMISE HAD ALREADY GONE. The sentence here read: making a surface classify for itself
  * (`state === 'adopted'` instead of asking) leaves ONE red, and it comes from
  * `every-public-value-has-a-caller.test.ts` — the accessor loses its only consumer.
  * What falsified it is running that same mutation again over the whole suite.
@@ -35,6 +35,10 @@
  * can go red are not a measurement: the same edit made WRONG — `accepted` painted
  * `closed` — goes red 4 times in 2 files (`a-state-is-a-position.test.ts`,
  * `styled.test.ts`). The zeros above are this guard's silence and not a broken run.
+ *
+ * THAT SAME MUTATION IS RED NOW, in this file, by the third net: the comparison written out
+ * in `presentation/state.ts` is read as `state === 'accepted'` and `state === 'proposed'`
+ * and accused by path. It is the only case that goes red on it; the behaviour still does not.
  *
  * So this walks the public surface, in both directions of one rule:
  *   - no table a module declares hidden reaches an entry point's runtime exports;
@@ -57,13 +61,28 @@
  *     (`export { SKILL_DISPOSITION as MEANINGS }`) is the cheapest evasion of a
  *     name check and costs nothing to catch, since the module instance is the same
  *     one this file imported.
+ *   - BY TEXT, the third net, over every production file of every package. It answers the
+ *     case the other two cannot see — a surface that asks neither and writes the comparison
+ *     itself — by reading a value NAMED `state` compared against a state word
+ *     ({@link writtenOut}), in each spelling that says one.
  *
  * WHAT IT DOES NOT DO, so a pass is not read as more than it says:
- *   - IT DOES NOT CATCH REIMPLEMENTATION FROM SCRATCH. A surface that writes
- *     `state === 'adopted'` for itself touches neither the table nor the accessor,
- *     and nothing here sees it. TWO scans have now been measured and both refused,
- *     and it is the SECOND that decides the limit — the first argument, kept below
- *     because it was right about the scan it was about, does not reach it.
+ *   - IT CATCHES REIMPLEMENTATION FROM SCRATCH ONLY IN THE SPELLINGS IT READS. This bullet
+ *     read "IT DOES NOT CATCH REIMPLEMENTATION FROM SCRATCH … and nothing here sees it", after
+ *     TWO scans were measured and both refused — the paragraphs below, kept because they were
+ *     right about the scans they were about. The narrow one was chosen and built, because
+ *     what serves the proof is a guard whose every accusation is true: it was born with no
+ *     exception, and it was refused only for its POWER. Its power is what grew. Still keyed
+ *     on a value NAMED `state`, it reads the state word inline, behind a constant the same
+ *     file binds, in an array or a `Set` asked for membership, and as a `switch`'s `case` —
+ *     three of the five spellings the refusal measured, the inline one among them, which is
+ *     the mutation that left the suite green. WHAT IT STILL DOES NOT SEE: the word on a field
+ *     called anything else (`to`, `status`, `currentState`), behind an alias (`const s =
+ *     d.state`), computed rather than written, in a constant bound in another file, or in a
+ *     table keyed by the states and kept inside one file rather than published. And the
+ *     other way round: a value called `state` in some other domain, compared against a word
+ *     that happens to be a workflow state, would be accused — none exists today, and that
+ *     would be the day to argue it in place.
  *
  *     THE COARSE SCAN CARRIES AN EXCEPTION. `grep -rnE "(===|!==|case) '<state>'"`
  *     over packages/*​/src finds ONE production site and it is a FALSE POSITIVE:
@@ -93,9 +112,9 @@
  *     to reach that shape and that site is the innocent it accuses. Narrow and
  *     powerless, or wide and born with an exception: neither was built.
  *
- *     This limit is the price, and it is the whole of what stays uncovered. HOW
- *     total it is, is the paragraph at the top of this file: the reimplementation
- *     leaves nothing red at all.
+ *     That was the price, and the narrow scan widened within its own property is what
+ *     paid part of it: its reading reaches the house style's constant, and its key — a
+ *     value named `state` — is what keeps both innocents out without an exception.
  *   - It is blind to a table keyed by a SUBSET of a machine's states, and to one
  *     keyed by a vocabulary that is not a machine's states at all: `LATEST_VERSION`
  *     is keyed by every event kind and is public on purpose, and `UNROUTED_KINDS` is
@@ -112,7 +131,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { sourceFiles } from './support/reading-source.js';
+import { codeOnly, LITERAL_EDGE, literalsOnly, sourceFiles } from './support/reading-source.js';
 
 const PACKAGES = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -362,6 +381,127 @@ function accessorsInProduction(): string[] {
 }
 
 // ---------------------------------------------------------------------------
+// The classification written out again, where it should have been asked
+// ---------------------------------------------------------------------------
+
+/**
+ * A source file with its comments blanked and its literals KEPT, each literal fenced by
+ * `LITERAL_EDGE` where its quotes were. `codeOnly` and `literalsOnly` are one walk read two
+ * ways and keep every position, so a character is taken from the code where the code has one
+ * and from the literals where it does not — which is what lets a comparison against a state
+ * word be read without reading a sentence that merely quotes one.
+ */
+function codeWithLiterals(source: string): string {
+  const code = codeOnly(source);
+  const literals = literalsOnly(source);
+  let merged = '';
+  for (let at = 0; at < code.length; at += 1) {
+    merged += code[at] !== ' ' ? code[at] : literals[at];
+  }
+  return merged;
+}
+
+/** Every state of every machine — the words a classification is written over. */
+const STATE_WORDS: ReadonlySet<string> = new Set(MACHINES.flatMap((machine) => machine.states));
+
+/** A literal as {@link codeWithLiterals} fences it, with its text captured. */
+const WORD = String.raw`${LITERAL_EDGE}([^${LITERAL_EDGE}\n]*)${LITERAL_EDGE}`;
+
+/** The expression a classification is written over: a property or a binding named `state`. */
+const A_STATE = String.raw`(?:[\w$]+\??\.)*state\b`;
+
+/**
+ * Every place one file writes a classification out for itself: a value NAMED `state` compared
+ * against a machine's state word — the question the accessors exist to be asked instead.
+ *
+ * THE PROPERTY IS THE NARROW SCAN'S, AND THE READING IS WIDER. What is compared is always a
+ * value called `state`, which is what keeps `decided.source === 'adopted'` (where an anchor came
+ * from) and `event.payload.to === ADOPTED` (a position, inside the fold that computes state) out
+ * of it. What it is compared WITH is read in every spelling that says a state word: inline,
+ * behind a constant the same file binds to one, in an array or a `Set` asked `.includes` or
+ * `.has`, or as the `case` of a `switch` on it.
+ */
+function writtenOut(source: string): string[] {
+  const text = codeWithLiterals(source);
+  const isState = (word: string | undefined): boolean =>
+    word !== undefined && STATE_WORDS.has(word);
+  const constants = new Map<string, string>();
+  for (const bound of text.matchAll(
+    new RegExp(String.raw`\bconst\s+([\w$]+)\s*=\s*${WORD}`, 'g'),
+  )) {
+    constants.set(bound[1] as string, bound[2] as string);
+  }
+  const lists = new Map<string, string[]>();
+  const wordsIn = (list: string): string[] =>
+    [...list.matchAll(new RegExp(WORD, 'g'))].map((word) => word[1] as string);
+  for (const bound of text.matchAll(
+    /\bconst\s+([\w$]+)\s*(?::[^=]*)?=\s*(?:new\s+Set\(\s*)?\[([^\]]*)\]/g,
+  )) {
+    lists.set(bound[1] as string, wordsIn(bound[2] as string));
+  }
+  const found: string[] = [];
+  const said = (match: RegExpMatchArray): void => {
+    found.push(match[0].replaceAll(LITERAL_EDGE, "'").replace(/\s+/g, ' '));
+  };
+  for (const match of text.matchAll(new RegExp(String.raw`\b${A_STATE}\s*[!=]==\s*${WORD}`, 'g'))) {
+    if (isState(match[1])) said(match);
+  }
+  for (const match of text.matchAll(new RegExp(String.raw`${WORD}\s*[!=]==\s*${A_STATE}`, 'g'))) {
+    if (isState(match[1])) said(match);
+  }
+  for (const match of text.matchAll(
+    new RegExp(String.raw`\b${A_STATE}\s*[!=]==\s*([A-Za-z_$][\w$]*)\b(?!\s*[.(\[])`, 'g'),
+  )) {
+    if (isState(constants.get(match[1] as string))) said(match);
+  }
+  for (const match of text.matchAll(
+    new RegExp(String.raw`\b([A-Za-z_$][\w$]*)\s*[!=]==\s*${A_STATE}`, 'g'),
+  )) {
+    if (isState(constants.get(match[1] as string))) said(match);
+  }
+  for (const match of text.matchAll(
+    new RegExp(String.raw`\[([^\]]*)\]\s*\)?\s*\.(?:includes|has)\(\s*${A_STATE}\s*\)`, 'g'),
+  )) {
+    if (wordsIn(match[1] as string).some(isState)) said(match);
+  }
+  for (const match of text.matchAll(
+    new RegExp(String.raw`\b([A-Za-z_$][\w$]*)\s*\.(?:includes|has)\(\s*${A_STATE}\s*\)`, 'g'),
+  )) {
+    if ((lists.get(match[1] as string) ?? []).some(isState)) said(match);
+  }
+  for (const match of text.matchAll(
+    new RegExp(String.raw`switch\s*\(\s*${A_STATE}\s*\)\s*\{`, 'g'),
+  )) {
+    const body = text.slice((match.index ?? 0) + match[0].length);
+    const first = new RegExp(String.raw`case\s+${WORD}`).exec(body.slice(0, body.indexOf('\n}')));
+    if (isState(first?.[1])) said(match);
+  }
+  return found;
+}
+
+/** Every production file of every package, and what each writes out, by path from `packages/`. */
+function writtenOutInProduction(): { read: number; accused: string[] } {
+  let read = 0;
+  const accused: string[] = [];
+  for (const directory of readdirSync(PACKAGES).sort()) {
+    const src = join(PACKAGES, directory, 'src');
+    if (!statSync(src, { throwIfNoEntry: false })?.isDirectory()) continue;
+    for (const path of sourceFiles(src)) {
+      read += 1;
+      for (const hit of writtenOut(readFileSync(path, 'utf-8'))) {
+        accused.push(
+          `${path
+            .slice(PACKAGES.length + 1)
+            .split(sep)
+            .join('/')}: ${hit}`,
+        );
+      }
+    }
+  }
+  return { read, accused };
+}
+
+// ---------------------------------------------------------------------------
 // The guard
 // ---------------------------------------------------------------------------
 
@@ -446,5 +586,51 @@ describe('no classification table reaches the surface', () => {
     // And the list cannot rot: every accessor production defines has to be in it, so a
     // second one arrives as a failure here rather than as an undecided export.
     expect(accessorsInProduction()).toEqual(ASKED_NOT_COPIED.map((entry) => entry.accessor).sort());
+  });
+  it('finds no production file writing a classification out for itself', () => {
+    // THE THIRD NET, over the text rather than the surface. The two above keep the TABLE off
+    // the surface and the ACCESSOR on it; neither sees a surface that asks neither and writes
+    // the comparison itself — which left the whole suite green when it was done on purpose.
+    const { read, accused } = writtenOutInProduction();
+    expect(read, 'RULER BROKEN: the sweep read no production file').toBeGreaterThan(300);
+    // Fourteen words over three machines when this was written — sixteen states, two of them
+    // shared by decisions and patterns. A vocabulary that emptied would clear everything.
+    expect(STATE_WORDS.size).toBeGreaterThanOrEqual(14);
+    expect(accused).toEqual([]);
+  });
+
+  it('reads the rewrite in the spellings it names, and not the innocent — on input of its own', () => {
+    // THE SCAN'S OWN CASE, from both sides. The five spellings are the five the refusal of
+    // this net measured, each with the behaviour of the others; three are read, and the two
+    // that are not are the limit this file declares, held here so they stay a decision.
+    const reads = (source: string): number => writtenOut(source).length;
+    // The mutation that went green: `presentation/state.ts` classifying for itself, inline.
+    expect(reads("found.push(state === 'accepted' ? 'in-force' : 'closed');")).toBe(1);
+    // Behind a constant, which is how this repository writes a state word.
+    expect(reads("const ACCEPTED = 'accepted';\nif (d.state === ACCEPTED) x();")).toBe(1);
+    // In a list asked for membership, named or not, array or set.
+    expect(reads("const IN_FORCE = ['accepted'];\nif (IN_FORCE.includes(d.state)) x();")).toBe(1);
+    expect(reads("if (['accepted', 'proposed'].includes(d.state)) x();")).toBe(1);
+    expect(reads("if (new Set(['accepted']).has(d.state)) x();")).toBe(1);
+    // As the case of a switch on it, and reversed around the operator.
+    expect(reads("switch (d.state) {\n  case 'accepted':\n    return 1;\n}")).toBe(1);
+    expect(reads("if ('DONE' === task.state) x();")).toBe(1);
+    // NOT READ, and declared: the state word on a field called something else, and behind
+    // a one-line alias.
+    expect(reads("if (e.payload.to === 'adopted') x();")).toBe(0);
+    expect(reads("const s = d.state;\nif (s === 'accepted') x();")).toBe(0);
+    // And what must never be accused: a sentence quoting the shape, a word that is not a
+    // state, and the two innocents — read from the files that hold them, so a day they move
+    // is a failure here rather than a case that quietly tests nothing.
+    expect(reads("// state === 'accepted' in prose\nconst y = 'state === \"accepted\"';")).toBe(0);
+    expect(reads("if (d.state === 'accepting') x();")).toBe(0);
+    for (const [path, innocent] of [
+      ['core/src/workflow/identity-operations.ts', "decided.source === 'adopted'"],
+      ['core/src/projections/skill.ts', 'event.payload.to === ADOPTED'],
+    ] as const) {
+      const source = readFileSync(join(PACKAGES, path), 'utf-8');
+      expect(source, path).toContain(innocent);
+      expect(writtenOut(source), path).toEqual([]);
+    }
   });
 });

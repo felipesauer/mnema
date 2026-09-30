@@ -34,9 +34,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { accountsFor, asMinted } from './support/a-page-held-to-a-run.js';
+import { accountsFor, asMinted, blockUnder } from './support/a-page-held-to-a-run.js';
 import { read } from './support/published-examples.js';
-import { argvOf, linesOf } from './support/reading-a-shell-line.js';
 
 /** The built binary — what a person runs. */
 const CLI = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
@@ -53,51 +52,12 @@ interface Shown {
 }
 
 /**
- * The block under {@link SECTION}: its commands, each with the `#>` lines under it.
- *
- * A command may run over several lines with a trailing `\`, as a shell reads it. `cd` is the
- * reader's own step, into their repository, and the sandbox is already there. Throws when the
- * section or its block is gone, because a guard that silently read nothing would be a guard
- * reporting that output it never compared agrees.
+ * The block under {@link SECTION}: its commands, each with the `#>` lines under it, read by the
+ * one reading every case that holds a page's block to a run shares (`blockUnder`). This block
+ * sets no shell variable, so every step is a command.
  */
 function theBlock(): readonly Shown[] {
-  const page = read(PAGE);
-  const heading = page.split('\n').indexOf(SECTION) + 1;
-  if (heading === 0) throw new Error(`${PAGE} no longer carries "${SECTION}"`);
-  const lines = linesOf(page);
-  const start = lines.findIndex((line) => line.at > heading && line.fence !== null);
-  if (start < 0) throw new Error(`${PAGE} carries "${SECTION}" and no block under it`);
-  // The block is the run of fenced lines with no line between them: the next fence on the
-  // page is another block, and its first line does not follow this one's last.
-  const fenced: typeof lines = [];
-  for (const line of lines.slice(start)) {
-    const previous = fenced.at(-1);
-    if (line.fence === null || (previous !== undefined && line.at !== previous.at + 1)) break;
-    fenced.push(line);
-  }
-  const block: { at: number; argv: readonly string[]; shown: string[] }[] = [];
-  let pending: { at: number; text: string } | undefined;
-  for (const { at, source } of fenced) {
-    if (pending !== undefined) {
-      pending.text += ` ${source.trim()}`;
-    } else if (source.startsWith('mnema ')) {
-      pending = { at, text: source };
-    } else if (source.startsWith('#>')) {
-      const current = block.at(-1);
-      if (current === undefined) throw new Error(`${PAGE}:${at} shows output under no command`);
-      current.shown.push(source.replace(/^#> ?/, ''));
-      continue;
-    } else {
-      continue;
-    }
-    if (pending.text.endsWith(' \\')) {
-      pending.text = pending.text.slice(0, -2);
-      continue;
-    }
-    block.push({ at: pending.at, argv: argvOf(pending.text), shown: [] });
-    pending = undefined;
-  }
-  return block;
+  return blockUnder(PAGE, SECTION).flatMap((step) => (step.kind === 'command' ? [step] : []));
 }
 
 /**

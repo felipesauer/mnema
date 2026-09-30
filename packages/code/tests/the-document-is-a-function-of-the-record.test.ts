@@ -37,6 +37,18 @@
  * and `Date.UTC` are string-and-number functions — rather than a list of what this
  * repository happens to call today, which is the kind of list that rots.
  *
+ * AND A THIRD DOOR, WHICH THIS FILE DECLARED OPEN UNTIL IT WAS CLOSED: an import of somebody
+ * else's function that does the reaching. `resolveTrees` walks the filesystem and
+ * `systemClock` reads a clock, both are on `@mnema/core`'s surface, and neither net above sees
+ * a layer that imports one — the specifier is a package of the workspace and the call names no
+ * global. This file said closing it was "a different guard — which exports of `core` touch the
+ * world, derived from `core`'s own source rather than from a list that rots". The third net is
+ * that guard, and it reaches further than `core` because the door does: every value a layer
+ * imports from outside its own root is followed to its declaration, through every re-export,
+ * into `@mnema/chain`, into modules of this package outside `presentation/`, and into the
+ * published source of a package from outside; and that declaration is judged by the two
+ * readings above, applied to it and to everything it names. No export is named in this file.
+ *
  * THE PRINTER IS IN IT TOO, for the same reason at the other end: `presentation/brief.ts`
  * composes the bytes, and a printer that read an environment variable would move them just
  * as far. The adapter between them is deliberately NOT in this net — it is where the disk
@@ -53,7 +65,8 @@
  * the second says nothing about colour.
  */
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
+import { builtinModules } from 'node:module';
 import { dirname, join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -92,8 +105,23 @@ const PURE: readonly { readonly what: string; readonly root: string }[] = [
  * where this repository writes every one of them and where a `*`-prefixed doc-comment line
  * can never be. It is the same anchoring `DECLARES_MODEL_CHANNEL` uses, for the same reason.
  */
-const REACHES_THE_MACHINE =
-  /^import\s(?:[^;]*?\bfrom\s+)?['"](?:node:)?(?:fs|path|os|process|child_process|crypto|url|tty|dns|net|http|https)(?:\/[a-z]+)?['"]/m;
+const REACHES_THE_MACHINE = new RegExp(
+  String.raw`^import\s(?:[^;]*?\bfrom\s+)?['"]${runtimeModules()}['"]`,
+  'm',
+);
+
+/**
+ * The same modules of the runtime, as a whole specifier — what the INDIRECT net below counts
+ * as a door when it finds one at the far end of an import. Both patterns are built from
+ * {@link runtimeModules}, so the two nets cannot come to disagree about which modules of the
+ * runtime reach this machine.
+ */
+const A_MODULE_OF_THE_RUNTIME = new RegExp(`^${runtimeModules()}$`);
+
+/** The modules of the runtime that reach this machine, both spellings — one list, two nets. */
+function runtimeModules(): string {
+  return String.raw`(?:node:)?(?:fs|path|os|process|child_process|crypto|url|tty|dns|net|http|https)(?:\/[a-z]+)?`;
+}
 
 /**
  * A global of this machine, reached with NO import at all — the other door.
@@ -152,6 +180,415 @@ function reachTheMachine(root: string): string[] {
         .join('/'),
     )
     .sort();
+}
+
+// ---------------------------------------------------------------------------
+// The third door: what an import from outside the layer brings in with it
+// ---------------------------------------------------------------------------
+
+/** A top-level declaration of one module: its name, what it is, and its code. */
+interface Declaration {
+  readonly file: string;
+  readonly name: string;
+  readonly kind: string;
+  /** The declaration's lines over `codeOnly`: no comment, no literal, the code alone. */
+  body: string;
+}
+
+/** One module, read as far as this net needs it. */
+interface Module {
+  readonly declarations: ReadonlyMap<string, Declaration>;
+  /** Every name bound by a VALUE import, to where it comes from. `import type` binds none. */
+  readonly imports: ReadonlyMap<string, { readonly spec: string; readonly name: string }>;
+  /** `export { a as b } from '…'`, by the name it goes out under. */
+  readonly reexports: ReadonlyMap<string, { readonly spec: string; readonly name: string }>;
+  /** `export * from '…'`. */
+  readonly stars: readonly string[];
+}
+
+/**
+ * Where an exported name ends: a declaration this net can read, a door out of what it can read,
+ * a module of the runtime that reaches nothing, or nowhere — which is a ruler that broke.
+ */
+type Destination =
+  | { readonly declaration: Declaration }
+  | { readonly door: string }
+  | { readonly builtin: string }
+  | { readonly unread: string };
+
+/**
+ * The bindings of one import or export clause: `{ a, b as c, type T }`, `* as ns`, `d`.
+ * A member marked `type` binds no value and is left out, as the compiler leaves it out.
+ */
+function bindingsOf(clause: string): { readonly local: string; readonly name: string }[] {
+  const found: { local: string; name: string }[] = [];
+  const braced = /\{([^}]*)\}/.exec(clause);
+  for (const part of (braced?.[1] ?? '').split(',').map((one) => one.trim())) {
+    if (part === '' || part.startsWith('type ')) continue;
+    const [name, local] = part.split(/\s+as\s+/) as [string, string | undefined];
+    found.push({ name, local: local ?? name });
+  }
+  const namespace = /\*\s+as\s+([\w$]+)/.exec(clause);
+  if (namespace !== null) found.push({ name: '*', local: namespace[1] as string });
+  const byDefault = /^([\w$]+)\s*(?:,|$)/.exec(clause.trim());
+  if (byDefault !== null) found.push({ name: 'default', local: byDefault[1] as string });
+  return found;
+}
+
+/**
+ * A top-level declaration's first line. Anchored at column 0, which is where this repository
+ * writes every one of them and where no statement inside a body ever starts.
+ */
+const A_DECLARATION =
+  /^(?:export\s+)?(?:default\s+)?(?:declare\s+)?(?:abstract\s+)?(?:async\s+)?(function\*?|const|let|var|class|interface|type|enum)\s+([A-Za-z_$][\w$]*)/;
+
+/** Kinds that carry no code: a type reaches nothing, and a name used as one reaches nothing. */
+const NO_CODE = new Set(['interface', 'type']);
+
+/**
+ * One module of the workspace, read from its text.
+ *
+ * Imports and re-exports are read from the RAW source, anchored at the start of a line, for the
+ * reason {@link REACHES_THE_MACHINE} gives: a specifier is a literal, and `codeOnly` blanks it.
+ * Declarations are read over `codeOnly`, so a name in a comment or a string is not a use of it;
+ * each runs from its first line to the next top-level declaration or import.
+ */
+function moduleOf(file: string, source: string): Module {
+  const declarations = new Map<string, Declaration>();
+  const imports = new Map<string, { spec: string; name: string }>();
+  const reexports = new Map<string, { spec: string; name: string }>();
+  const stars: string[] = [];
+  for (const match of source.matchAll(/^import\s+(type\s+)?([^;]*?)\s+from\s+'([^']+)'/gm)) {
+    if (match[1] !== undefined) continue;
+    for (const { local, name } of bindingsOf(match[2] as string)) {
+      imports.set(local, { spec: match[3] as string, name });
+    }
+  }
+  for (const match of source.matchAll(/^export\s+(type\s+)?\{([^}]*)\}\s*from\s+'([^']+)'/gm)) {
+    if (match[1] !== undefined) continue;
+    for (const { local, name } of bindingsOf(`{${match[2]}}`)) {
+      reexports.set(local, { spec: match[3] as string, name });
+    }
+  }
+  for (const match of source.matchAll(/^export\s+\*\s+from\s+'([^']+)'/gm)) {
+    stars.push(match[1] as string);
+  }
+  let current: Declaration | undefined;
+  let byDefault: string | undefined;
+  for (const line of codeOnly(source).split('\n')) {
+    const declared = A_DECLARATION.exec(line);
+    const named = /^export\s+default\s+([A-Za-z_$][\w$]*)\s*;/.exec(line);
+    if (declared !== null) {
+      current = { file, name: declared[2] as string, kind: declared[1] as string, body: '' };
+      declarations.set(current.name, current);
+      if (/^export\s+default\b/.test(line)) declarations.set('default', current);
+    } else if (named !== null) {
+      byDefault = named[1] as string;
+      current = undefined;
+    } else if (/^export\s+default\b/.test(line)) {
+      // An anonymous default — a function, a class or an expression — is a declaration too.
+      current = { file, name: 'default', kind: 'const', body: '' };
+      declarations.set('default', current);
+    } else if (/^(?:import\b|export\s*[{*])/.test(line)) {
+      current = undefined;
+    }
+    if (current !== undefined) current.body += `${line}\n`;
+  }
+  // `export default name;` goes out under a name declared or imported above it.
+  if (byDefault !== undefined) {
+    const local = declarations.get(byDefault);
+    const imported = imports.get(byDefault);
+    if (local !== undefined) declarations.set('default', local);
+    else if (imported !== undefined) reexports.set('default', imported);
+  }
+  return { declarations, imports, reexports, stars };
+}
+
+/**
+ * THE INDIRECT NET: which declarations reach this machine, directly or through anything they
+ * name, read from the source of everything a layer's imports lead to.
+ *
+ * WHAT REACHES, DIRECTLY. A declaration whose code uses a global of this machine (the second
+ * net's reading, {@link globalsOf}), or names a binding imported from a DOOR: a module of the
+ * runtime on the first net's list ({@link A_MODULE_OF_THE_RUNTIME}), or a package this net
+ * cannot find and read. A module of the runtime OFF that list reaches nothing here, exactly as
+ * it reaches nothing to the first net.
+ *
+ * AND THROUGH WHAT IT NAMES. A declaration that names another declaration — of its own module,
+ * or one it imports, followed through every re-export to where it is declared — reaches
+ * whatever that one reaches. The answer is a fixed point over every declaration found, so a
+ * cycle of calls cannot hide a door behind the order it was walked in.
+ *
+ * WHERE A SPECIFIER LEADS, and nothing about it is listed here. `@mnema/<name>[/<subpath>]` is
+ * the `exports` entry of the package with that name, taken from `dist/` back to `src/`. Any
+ * other package is found the way Node finds it — `node_modules/<name>`, walking up from the
+ * REAL path of the file that imports it, because pnpm puts a package's own dependencies beside
+ * it in the store and not beside the workspace — and its published source is read like ours.
+ * A package it cannot find is a door: nothing here can clear what it cannot read.
+ *
+ * `read` and `real` are seams for this net's own cases, which hand it a workspace of a few
+ * lines; the suite hands it the disk.
+ */
+function reachOf(
+  read: (file: string) => string | undefined,
+  root: string,
+  real: (path: string) => string = (path) => path,
+) {
+  const modules = new Map<string, Module>();
+  const moduleAt = (file: string): Module => {
+    const known = modules.get(file);
+    if (known !== undefined) return known;
+    const source = read(file);
+    if (source === undefined) throw new Error(`RULER BROKEN: no module at ${file}`);
+    const found = moduleOf(file, source);
+    modules.set(file, found);
+    return found;
+  };
+
+  /** The file an `exports` map (or a `main`) points at for one subpath, or undefined. */
+  const entryIn = (manifest: string, subpath: string): string | undefined => {
+    const { exports, main } = JSON.parse(manifest) as { exports?: unknown; main?: string };
+    const pick = (target: unknown): string | undefined => {
+      if (typeof target === 'string') return target;
+      if (target === null || typeof target !== 'object') return undefined;
+      const conditions = target as Record<string, unknown>;
+      for (const condition of ['import', 'node', 'default']) {
+        const chosen = pick(conditions[condition]);
+        if (chosen !== undefined) return chosen;
+      }
+      return undefined;
+    };
+    if (exports === undefined) return subpath === '.' ? (main ?? 'index.js') : undefined;
+    const keyed =
+      typeof exports === 'object' &&
+      exports !== null &&
+      Object.keys(exports).some((key) => key.startsWith('.'));
+    return pick(keyed ? (exports as Record<string, unknown>)[subpath] : exports);
+  };
+
+  /** The file a specifier names from `from`, or undefined when there is none to read. */
+  const fileOf = (from: string, spec: string): string | undefined => {
+    if (spec.startsWith('.')) {
+      const base = join(dirname(from), spec);
+      const bare = base.replace(/\.m?js$/, '');
+      for (const candidate of [
+        `${bare}.ts`,
+        join(bare, 'index.ts'),
+        base,
+        `${bare}.js`,
+        join(bare, 'index.js'),
+      ]) {
+        if (read(candidate) !== undefined) return candidate;
+      }
+      throw new Error(`RULER BROKEN: ${spec} from ${from} names no module`);
+    }
+    const [, name, subpath] = /^((?:@[^/]+\/)?[^/]+)(\/.+)?$/.exec(spec) ?? [];
+    if (name === undefined) return undefined;
+    if (name.startsWith('@mnema/')) {
+      for (const dir of ['chain', 'core', 'copilot', 'code']) {
+        const manifest = read(join(root, dir, 'package.json'));
+        if (manifest === undefined || JSON.parse(manifest).name !== name) continue;
+        const built = entryIn(manifest, `.${subpath ?? ''}`);
+        if (built === undefined) return undefined;
+        return join(root, dir, built.replace(/^\.\/dist\//, 'src/').replace(/\.js$/, '.ts'));
+      }
+      return undefined;
+    }
+    for (let at = dirname(real(from)); ; at = dirname(at)) {
+      const manifest = read(join(at, 'node_modules', name, 'package.json'));
+      if (manifest !== undefined) {
+        const target = entryIn(manifest, `.${subpath ?? ''}`);
+        return target === undefined
+          ? undefined
+          : join(real(join(at, 'node_modules', name)), target);
+      }
+      if (dirname(at) === at) return undefined;
+    }
+  };
+
+  const exported = (file: string, name: string, seen: Set<string>): Destination => {
+    const key = `${file}#${name}`;
+    if (seen.has(key)) return { unread: key };
+    seen.add(key);
+    const module = moduleAt(file);
+    const declaration = module.declarations.get(name);
+    if (declaration !== undefined) return { declaration };
+    const onward = module.reexports.get(name) ?? module.imports.get(name);
+    if (onward !== undefined) return destinationOf(file, onward.spec, onward.name, seen);
+    for (const star of module.stars) {
+      const found = destinationOf(file, star, name, seen);
+      if (!('unread' in found)) return found;
+    }
+    return { unread: key };
+  };
+
+  const destinationOf = (
+    from: string,
+    spec: string,
+    name: string,
+    seen = new Set<string>(),
+  ): Destination => {
+    if (A_MODULE_OF_THE_RUNTIME.test(spec)) return { door: spec };
+    if (spec.startsWith('node:') || builtinModules.includes(spec)) return { builtin: spec };
+    const file = fileOf(from, spec);
+    if (file === undefined) return { door: spec };
+    const found = exported(file, name, seen);
+    // Inside the workspace a name that leads nowhere is a ruler that broke; in a package from
+    // outside it is source this reader cannot read (CommonJS declares nothing it sees), and what
+    // cannot be read cannot be cleared.
+    return 'unread' in found && file.includes(`${sep}node_modules${sep}`) ? { door: spec } : found;
+  };
+
+  /** Why each declaration reaches the machine, one step at a time; absent when it does not. */
+  const why = new Map<Declaration, string>();
+  const edges = new Map<Declaration, { to: Declaration; via: string }[]>();
+  /** Names a declaration used that led nowhere this net can read — a ruler that broke. */
+  const unread: string[] = [];
+
+  const mentions = (body: string, name: string): boolean =>
+    new RegExp(`(?<![.\\w$])${name.replace(/\$/g, '\\$')}(?![\\w$])`).test(body);
+
+  const visit = (start: Declaration): void => {
+    const pending = [start];
+    while (pending.length > 0) {
+      const declaration = pending.pop() as Declaration;
+      if (edges.has(declaration) || NO_CODE.has(declaration.kind)) continue;
+      const out: { to: Declaration; via: string }[] = [];
+      edges.set(declaration, out);
+      const uses = globalsOf(declaration.body);
+      if (uses.length > 0) why.set(declaration, `uses ${uses[0]}`);
+      const module = moduleAt(declaration.file);
+      for (const [local, from] of module.imports) {
+        if (!mentions(declaration.body, local)) continue;
+        const found = destinationOf(declaration.file, from.spec, from.name);
+        if ('door' in found) {
+          if (!why.has(declaration)) why.set(declaration, `imports ${local} from ${found.door}`);
+        } else if ('declaration' in found) {
+          out.push({ to: found.declaration, via: local });
+          pending.push(found.declaration);
+        } else if ('unread' in found) {
+          unread.push(`${declaration.name} uses ${local}, and ${found.unread} does not declare it`);
+        }
+      }
+      for (const [name, other] of module.declarations) {
+        if (other === declaration || NO_CODE.has(other.kind)) continue;
+        if (!mentions(declaration.body, name)) continue;
+        out.push({ to: other, via: name });
+        pending.push(other);
+      }
+    }
+    let moved = true;
+    while (moved) {
+      moved = false;
+      for (const [declaration, out] of edges) {
+        if (why.has(declaration)) continue;
+        const through = out.find((edge) => why.has(edge.to));
+        if (through === undefined) continue;
+        why.set(declaration, `calls ${through.via}`);
+        moved = true;
+      }
+    }
+  };
+
+  /** The chain of reasons from `declaration` to the door it reaches, or undefined. */
+  const reason = (declaration: Declaration): string | undefined => {
+    const steps: string[] = [];
+    const walked = new Set<Declaration>();
+    for (let at: Declaration | undefined = declaration; at !== undefined && !walked.has(at); ) {
+      walked.add(at);
+      const step = why.get(at);
+      if (step === undefined) break;
+      steps.push(`${at.name} ${step}`);
+      const via = step.startsWith('calls ') ? step.slice('calls '.length) : undefined;
+      at = via === undefined ? undefined : edges.get(at)?.find((edge) => edge.via === via)?.to;
+    }
+    return steps.length === 0 ? undefined : steps.join(' → ');
+  };
+
+  /** What `name`, imported by `from` through `spec`, reaches — and by what path — or undefined. */
+  const reaches = (from: string, spec: string, name: string): string | undefined => {
+    const found = destinationOf(from, spec, name);
+    if ('door' in found) return `${name} is ${found.door} itself`;
+    if ('builtin' in found) return undefined;
+    if ('unread' in found) {
+      unread.push(`${name} from ${spec}: ${found.unread} does not declare it`);
+      return undefined;
+    }
+    visit(found.declaration);
+    return reason(found.declaration);
+  };
+
+  return { reaches, fileOf, unread };
+}
+
+/** The disk, as {@link reachOf} reads it: a file's text, or undefined when there is none. */
+function fromDisk(file: string): string | undefined {
+  try {
+    return readFileSync(file, 'utf-8');
+  } catch {
+    return undefined;
+  }
+}
+
+/** A path with its links resolved, as {@link reachOf} walks up from it; itself when absent. */
+function realOnDisk(path: string): string {
+  try {
+    return realpathSync(path);
+  } catch {
+    return path;
+  }
+}
+
+/** One value a layer imports from a module outside its own root. */
+interface Imported {
+  readonly layer: string;
+  readonly file: string;
+  readonly name: string;
+  readonly spec: string;
+}
+
+/**
+ * Every value a pure layer imports from OUTSIDE ITS OWN ROOT: another package of the workspace,
+ * a module of the same package elsewhere (`presentation/` importing `../one-line.js`), or a door.
+ * What a layer imports from inside itself is already read by the two nets above, file by file.
+ */
+function importedFromOutside(net: ReturnType<typeof reachOf>): Imported[] {
+  const found: Imported[] = [];
+  for (const layer of PURE) {
+    for (const file of sourceFiles(layer.root)) {
+      const module = moduleOf(file, readFileSync(file, 'utf-8'));
+      for (const [local, from] of module.imports) {
+        const where = from.spec.startsWith('.') ? net.fileOf(file, from.spec) : undefined;
+        if (where?.startsWith(layer.root + sep) === true) continue;
+        // A namespace names no export, so there is nothing to follow; said, not skipped.
+        if (from.name === '*' && !A_MODULE_OF_THE_RUNTIME.test(from.spec)) {
+          net.unread.push(`${file}: \`* as ${local}\` from ${from.spec} is not read by this net`);
+          continue;
+        }
+        found.push({ layer: layer.what, file, name: from.name, spec: from.spec });
+      }
+    }
+  }
+  return found;
+}
+
+/** Every import of a pure layer that reaches the machine, with the path it takes. */
+function reachedThroughAnImport(): { accused: string[]; read: number; unread: string[] } {
+  const net = reachOf(fromDisk, PACKAGES, realOnDisk);
+  const imported = importedFromOutside(net);
+  const accused: string[] = [];
+  for (const { layer, file, name, spec } of imported) {
+    // The first net already rules on an import of a module of the runtime; this one adds the
+    // imports it cannot see through.
+    if (A_MODULE_OF_THE_RUNTIME.test(spec)) continue;
+    const path = net.reaches(file, spec, name);
+    if (path !== undefined) {
+      accused.push(
+        `${layer}: ${file.slice(PACKAGES.length + 1)} imports ${name} from ${spec} — ${path}`,
+      );
+    }
+  }
+  return { accused, read: imported.length, unread: net.unread };
 }
 
 describe('the bytes of the document move when the record moves, and at no other time', () => {
@@ -244,23 +681,142 @@ describe('the bytes of the document move when the record moves, and at no other 
     expect(adapters.filter((path) => path.startsWith('code/src/presentation/'))).toEqual([]);
   });
 
-  it('says what it does NOT cover, so the promise is not wider than the net', () => {
-    // THE LIMIT, AND IT IS A REAL ONE — but it is no longer the one this case used to
-    // state. It read "this guards the DIRECT reach — an import of the runtime — which is
-    // the shape the mutation took and the shape a person writes", and that sentence was
-    // what let `process.cwd()` through: a person writes a global just as readily, and
-    // `cwd` was named in the doc-comment above as something caught. Both doors are shut
-    // now, and what remains open is the INDIRECT one: a layer can still reach a disk by
-    // importing a function of `@mnema/core` that does. `resolveTrees` walks the filesystem
-    // and `systemClock` reads a clock, and both are on that package's surface.
-    //
-    // It is declared rather than closed because closing it is a different guard — which
-    // exports of `core` touch the world, derived from `core`'s own source rather than from
-    // a list that rots — and that is worth its own delivery. What is asserted here is that
-    // the hole is real and NAMED: these two are reachable from the layers above, today.
-    const core = readFileSync(join(PACKAGES, 'core', 'src', 'index.ts'), 'utf-8');
-    for (const reaches of ['resolveTrees', 'systemClock']) {
-      expect(core, `${reaches} is no longer on core's surface`).toContain(reaches);
+  it('lets no layer import what reaches the machine from another module', () => {
+    // THE THIRD DOOR, AND IT WAS DECLARED RATHER THAN CLOSED UNTIL THIS CASE. The one this
+    // replaces read: "what remains open is the INDIRECT one: a layer can still reach a disk by
+    // importing a function of `@mnema/core` that does. `resolveTrees` walks the filesystem and
+    // `systemClock` reads a clock", and closing it was "a different guard — which exports of
+    // `core` touch the world, derived from `core`'s own source rather than from a list that
+    // rots". That is {@link reachOf}: nothing in this file names an export, and the answer for
+    // each comes off the workspace's source. It reaches past `core` because the door does:
+    // the printer imports `@mnema/chain`, `@mnema/copilot` and four modules of its own package
+    // from outside `presentation/`, and each is the same door with another name.
+    const { accused, unread } = reachedThroughAnImport();
+    expect(unread, 'RULER BROKEN: an import led somewhere this net cannot read').toEqual([]);
+    expect(accused).toEqual([]);
+  });
+
+  it('read every import from outside the layers, and knows what core touches without a list', () => {
+    // NON-VACUITY, from both ends. A net that resolved nothing would accuse nothing, so the
+    // count of what it read is pinned under what is there; and the two names the case above
+    // replaced as a DECLARATION are asserted here as a DERIVATION — found reaching the machine,
+    // with the path, while four the layers really import are found reaching nothing.
+    const { read } = reachedThroughAnImport();
+    expect(read).toBeGreaterThanOrEqual(40);
+    const net = reachOf(fromDisk, PACKAGES, realOnDisk);
+    const printer = join(PACKAGES, 'code', 'src', 'presentation', 'state.ts');
+    expect(net.reaches(printer, '@mnema/core', 'resolveTrees')).toMatch(/^resolveTrees calls /);
+    expect(net.reaches(printer, '@mnema/core', 'resolveTrees')).toMatch(/imports \w+ from node:/);
+    expect(net.reaches(printer, '@mnema/core', 'systemClock')).toBe('systemClock uses new Date');
+    expect(net.reaches(printer, '@mnema/core', 'openDatabase')).toMatch(/from node:fs/);
+    expect(net.reaches(printer, '@mnema/core/write', 'openTreeForWriting')).toBeDefined();
+    for (const pure of ['isTaskState', 'taskDisposition', 'newestFirst', 'detectSecrets']) {
+      expect(net.reaches(printer, '@mnema/core', pure), pure).toBeUndefined();
     }
+    expect(net.unread).toEqual([]);
+  });
+
+  it('follows a name through its re-exports and its calls, on a workspace of its own', () => {
+    // THE INSTRUMENT'S OWN CASE. Over the real tree the two cases above only ever say "nothing
+    // is accused", and that has never shown this net can tell a door from a function.
+    const files: Record<string, string> = {
+      '/w/core/package.json': JSON.stringify({
+        name: '@mnema/core',
+        exports: { '.': { default: './dist/index.js' } },
+      }),
+      '/w/core/src/index.ts': "export { far, near, pure } from './a.js';\nexport * from './b.js';",
+      '/w/core/src/a.ts': [
+        "import { readFileSync } from 'node:fs';",
+        "import { format } from 'node:util';",
+        "import type { Shape } from './b.js';",
+        'function door(): string {',
+        "  return readFileSync('x', 'utf-8');",
+        '}',
+        'export function near(): string {',
+        '  return door();',
+        '}',
+        'export function far(): string {',
+        '  return near();',
+        '}',
+        'export function pure(at: Shape): string {',
+        '  // door() and readFileSync are only mentioned here',
+        "  const said = 'door()';",
+        '  return format(said, at.door, at);',
+        '}',
+      ].join('\n'),
+      '/w/core/src/b.ts': [
+        'export interface Shape { readonly door: string }',
+        'export const late = (): number => Date.now();',
+      ].join('\n'),
+      // Packages from outside the workspace, found the way Node finds them and read.
+      '/w/node_modules/measures/package.json': JSON.stringify({
+        exports: { types: './index.d.ts', default: './index.js' },
+      }),
+      '/w/node_modules/measures/index.js': [
+        "import { part } from './part.js';",
+        'export default function width(s) {',
+        '  return part(s) * 2;',
+        '}',
+      ].join('\n'),
+      '/w/node_modules/measures/part.js': 'export const part = (s) => s.length;',
+      '/w/node_modules/colours/package.json': JSON.stringify({ main: 'main.js' }),
+      '/w/node_modules/colours/main.js': [
+        'const level = () => (process.env.NO_COLOR ? 0 : 1);',
+        'export default level;',
+      ].join('\n'),
+      '/w/node_modules/common/package.json': JSON.stringify({ main: 'index.js' }),
+      '/w/node_modules/common/index.js': 'module.exports = function open() {};',
+    };
+    const net = reachOf((file) => files[file], '/w');
+    const from = '/w/code/src/presentation/x.ts';
+    // A call chain, followed through a re-export, to the door and with the path.
+    expect(net.reaches(from, '@mnema/core', 'far')).toBe(
+      'far calls near → near calls door → door imports readFileSync from node:fs',
+    );
+    // A global with no import at all, through `export *`.
+    expect(net.reaches(from, '@mnema/core', 'late')).toBe('late uses Date.now');
+    // And what it must NOT accuse: a mention in a comment or a string, a property that shares
+    // a name, a type, and a module of the runtime off the first net's list.
+    expect(net.reaches(from, '@mnema/core', 'pure')).toBeUndefined();
+    // A package from outside is read like ours: one that only counts clears, one that asks the
+    // environment is accused, and one this reader cannot read — nowhere to be found, or
+    // CommonJS, which declares nothing it sees — is a door, because nothing here can clear it.
+    expect(net.reaches(from, 'measures', 'default')).toBeUndefined();
+    expect(net.reaches(from, 'colours', 'default')).toBe('level uses process');
+    expect(net.reaches(from, 'common', 'default')).toBe('default is common itself');
+    expect(net.reaches(from, 'nowhere', 'default')).toBe('default is nowhere itself');
+    // And an export of the WORKSPACE that is not there says the ruler broke instead of passing.
+    expect(net.unread).toEqual([]);
+    expect(net.reaches(from, '@mnema/core', 'missing')).toBeUndefined();
+    expect(net.unread).toEqual([
+      'missing from @mnema/core: /w/core/src/index.ts#missing does not declare it',
+    ]);
+  });
+
+  it('says what it does NOT cover, so the promise is not wider than the net', () => {
+    // THE LIMITS OF THE THIRD NET, each one a way it can be wrong and which way:
+    //   - A DECLARATION IS ONE UNIT. A class with one method that reads the disk reaches the
+    //     machine as a whole, and so does every function that names it — even as a type in an
+    //     annotation, because a name is a use wherever it stands as an identifier. So is a
+    //     local that shadows a top-level name. All three ACCUSE; none clears.
+    //   - A VALUE THAT ARRIVES AT RUNTIME is not followed: a callback, or a handle a caller
+    //     opened — `copilot` answers over caches somebody else opened, by design, and a method
+    //     called on one is invisible here.
+    //   - `import()` at runtime, `require` (the second net's), `export default` and a
+    //     destructured declaration are not read. The last two cannot slip through: a name that
+    //     resolves to nothing is `RULER BROKEN` rather than pure.
+    //   - A module of the runtime off the first net's list reaches nothing to this net either;
+    //     one list, read by both. And a module ON the list counts whole, as it does to the first
+    //     net: `join` from `node:path` or `createHash` from `node:crypto` reaches the machine
+    //     here, so a helper that only joins strings or hashes them ACCUSES — `resolveTrees` is
+    //     found through a `join` before any read of the disk.
+    //   - A package from outside the workspace is read as far as it can be: the entry its
+    //     `exports` map or `main` names, as ESM, on this disk. One it cannot find, or cannot
+    //     read — CommonJS declares nothing it sees — is a door, and ACCUSES.
+    // And the other side of the rule, so no layer is asked for more than it owes: the ADAPTER
+    // is where the disk is supposed to be touched, and the case above that names it holds.
+    expect(A_MODULE_OF_THE_RUNTIME.test('node:fs')).toBe(true);
+    expect(A_MODULE_OF_THE_RUNTIME.test('fs/promises')).toBe(true);
+    expect(A_MODULE_OF_THE_RUNTIME.test('node:util')).toBe(false);
   });
 });

@@ -25,6 +25,12 @@
  * clause, so a wording changed in one of them and not the others is red here rather than a
  * divergence nobody sees.
  *
+ * AND THE PAGES, READ THE SAME WAY. `the-shell-a-page-publishes-is-the-shell-that-runs.test.ts`
+ * says the `>` of this recipe on a page is ruled on HERE, and until the case that reads them this
+ * file read no Markdown at all: `packages/code/README.md` published `mnema brief > MNEMA.md` and
+ * nothing compared it. Every tracked page is swept now, passage by passage, and a publication
+ * has to say what it does in its own passage — or, for a fenced block, in the one introducing it.
+ *
  * AND THE PUBLISHERS COME OFF THE PROGRAM. The pages are walked with `everyCommandOf`,
  * the same walk the parser's refusals and the completion tree use, so a page that copies
  * the recipe tomorrow — a `brief` subcommand, a verb that suggests the redirection in its
@@ -48,6 +54,8 @@ import { buildProgram, type CliIo } from '../src/cli.js';
 import { briefDocument } from '../src/presentation/brief.js';
 import { REACHES_AN_AGENT, THE_LINE_IN_THEIRS } from '../src/wiring/init.js';
 import { everyCommandOf, pathOf } from '../src/wiring/misuse.js';
+import { read } from './support/published-examples.js';
+import { linesOf, trackedPages } from './support/reading-a-shell-line.js';
 
 /** A silent port: nothing here runs a verb, it only reads what they declare. */
 const silent: CliIo = { out: () => {}, err: () => {}, fail: () => {} };
@@ -118,6 +126,71 @@ function everyPublishedText(): ReadonlyMap<string, string> {
   return texts;
 }
 
+/**
+ * A page as its PASSAGES: a fenced block is one, and outside a fence a run of lines with no
+ * blank line between them is one — a paragraph, a list item, a table. Read through `linesOf`,
+ * the one reading of what is fenced that every guard over the pages shares.
+ */
+function passagesOf(
+  markdown: string,
+): { readonly at: number; readonly fenced: boolean; readonly text: string }[] {
+  const passages: {
+    at: number;
+    fenced: boolean;
+    lines: string[];
+    last: number;
+    fence: string | null;
+  }[] = [];
+  for (const { at, fence, source } of linesOf(markdown)) {
+    const open = passages.at(-1);
+    const continues =
+      open !== undefined &&
+      open.last === at - 1 &&
+      open.fence === fence &&
+      (fence !== null || source.trim() !== '');
+    if (fence === null && source.trim() === '') continue;
+    if (continues) {
+      open.lines.push(source);
+      open.last = at;
+    } else {
+      passages.push({ at, fenced: fence !== null, lines: [source], last: at, fence });
+    }
+  }
+  return passages.map(({ at, fenced, lines }) => ({ at, fenced, text: lines.join('\n') }));
+}
+
+/**
+ * Every place a tracked Markdown page publishes the recipe, with the text that has to say what
+ * it does: the passage itself, and — for a fenced block — the passage that introduces it, which
+ * is where a page says what a block is about to do. Keyed `<page>:<line>`.
+ *
+ * THE PAGES ARE SWEPT, NOT LISTED, in the shape of the shell guard's sweep: `git ls-files '*.md'`
+ * is the reach, and {@link PAGES_PUBLISHING} below is a reconciliation, never a filter.
+ */
+function everyPublishedPassage(): ReadonlyMap<string, string> {
+  const found = new Map<string, string>();
+  for (const page of trackedPages()) {
+    const passages = passagesOf(read(page));
+    passages.forEach((passage, index) => {
+      if (!PUBLISHES_THE_RECIPE.test(passage.text)) return;
+      const before = passage.fenced ? (passages[index - 1]?.text ?? '') : '';
+      found.set(`${page}:${passage.at}`, `${before}\n${passage.text}`);
+    });
+  }
+  return found;
+}
+
+/**
+ * The pages that publish the recipe today, and how many passages each. Compared with what the
+ * sweep found in BOTH directions, so a page that starts publishing it is read here the day it
+ * does, and one whose publications vanish tells a broken sweep from a changed workspace.
+ */
+const PAGES_PUBLISHING: Readonly<Record<string, number>> = {
+  'README.md': 1,
+  'packages/code/README.md': 2,
+  'plugin/README.md': 1,
+};
+
 describe('every place that publishes the recipe says what the redirection does', () => {
   it('finds the publications at all, and there is more than one', () => {
     // Non-vacuity, and it is the failure this guard is likeliest to have: a walk that
@@ -179,5 +252,47 @@ describe('every place that publishes the recipe says what the redirection does',
     expect(founding).toContain('AGENTS.md');
     expect(founding).toContain('\n@MNEMA.md');
     expect(founding).not.toContain('What governs the work here is in');
+  });
+  it('reads the pages too, and every page that publishes it says what it does', () => {
+    // THE PAGES, which this file did not read while the shell guard said it did: that guard's
+    // `THE_SHELL_IS_NOT_OURS` hands the `>` in `mnema brief > MNEMA.md` to this one, and until
+    // this case the text read here was the help pages and two texts printed at run time.
+    const passages = everyPublishedPassage();
+    const perPage: Record<string, number> = {};
+    for (const where of passages.keys()) {
+      const page = where.slice(0, where.lastIndexOf(':'));
+      perPage[page] = (perPage[page] ?? 0) + 1;
+    }
+    expect(perPage).toEqual(PAGES_PUBLISHING);
+    const silent = [...passages]
+      .filter(([, text]) => !SAYS_WHAT_IT_DOES.test(text))
+      .map(([where]) => where);
+    expect(
+      silent,
+      'these passages publish the recipe and do not say the file is replaced whole',
+    ).toEqual([]);
+  });
+
+  it('cuts a page into the passages a reader reads together', () => {
+    // THE READING'S OWN CASE. A paragraph, a list item and a table are one passage each; a
+    // fenced block is one, and carries the passage before it; a blank line ends a passage.
+    const page = [
+      'Intro line one,',
+      'and two.',
+      '',
+      '```sh',
+      'mnema brief > MNEMA.md',
+      '```',
+      '| a | b |',
+      '| - | - |',
+      '',
+      'Last.',
+    ].join('\n');
+    expect(passagesOf(page)).toEqual([
+      { at: 1, fenced: false, text: 'Intro line one,\nand two.' },
+      { at: 5, fenced: true, text: 'mnema brief > MNEMA.md' },
+      { at: 7, fenced: false, text: '| a | b |\n| - | - |' },
+      { at: 10, fenced: false, text: 'Last.' },
+    ]);
   });
 });

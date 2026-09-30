@@ -17,8 +17,9 @@
 // "somebody built a different set of packages". That what does NOT execute — the `.d.ts`
 // and the source maps — does not move it, because the column is about the bytes a node
 // process loads. That a binary outside the tree makes the column say it cannot answer
-// rather than digest something else. And that the value REACHES THE LINE, which is A2:
-// four defects of this series were an option plumbed to the end with nothing to feed it.
+// rather than digest something else. And that the value REACHES THE LINE, because an option
+// is only real if something downstream reads it: four defects of this series were an option
+// plumbed to the end with nothing to feed it.
 
 import { test, describe, after } from 'node:test'
 import assert from 'node:assert/strict'
@@ -162,8 +163,9 @@ describe('11 · the line says which build the cell executed', () => {
   })
 
   test('the probe says what the digest covers and what it cannot see', () => {
-    // A4: the sentence that rides in the line names the limit, because the digest is
-    // sampled ONCE per cell and a rebuild landing inside one cell is invisible to it.
+    // A sentence that states a behaviour is held by a test, so this one is: the sentence that
+    // rides in the line names the limit, because the digest is sampled ONCE per cell and a
+    // rebuild landing inside one cell is invisible to it.
     const out = builtProduct(plantBuild(ONE_BUILD).bin)
     assert.match(out.probe, /packages\/\*\/dist/)
     assert.match(out.probe, /two cells with different digests executed different products/)
@@ -194,10 +196,10 @@ describe('11 · the line says which build the cell executed', () => {
 })
 
 describe('11b · and a mutable copy of the product changes the LINE, not only the digest', () => {
-  // A2, and the elo this file exists to close: a digest nothing carries is an option
-  // plumbed to the end with nothing to feed it. What is asserted is the pair the report
-  // claims — two cells whose `dist` differ have different lines — and it is asserted on a
-  // product the test can actually edit.
+  // The link from the option to the line, which this file exists to close: a digest
+  // nothing carries is an option plumbed to the end with nothing to feed it. What is
+  // asserted is the pair the report claims — two cells whose `dist` differ have different
+  // lines — and it is asserted on a product the test can actually edit.
   //
   // THE COPY IS A SHIM AND NOT A BUILD. A copied `dist` would not resolve `@mnema/core`,
   // so the cell could not seed; this planted `cli.js` DELEGATES to the real one, which
@@ -248,7 +250,7 @@ describe('11b · and a mutable copy of the product changes the LINE, not only th
     assert.equal(a.files, 1, 'the planted product is one executed file')
     assert.equal(b.files, 1)
 
-    // And the cells that RUN those two products carry the difference. This is the elo:
+    // And the cells that RUN those two products carry the difference. This is the link:
     // without it the digest would be a function nothing calls, which is four defects of
     // this series in one shape.
     const one = lineFor(first)

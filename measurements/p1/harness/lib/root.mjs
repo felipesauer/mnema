@@ -3,9 +3,9 @@
 // THE DEFECT THIS FILE REPLACES, and it is measured. Two modules derived the
 // repository root by counting `..` from their own file: `lib/split.mjs` with
 // `'../../../../..'` and `tests/helpers.mjs` with `'../../..'`. Both were correct
-// while the bench lived at `.refactor/active/<bench>/`. The bench was then moved
-// to `.refactor/archive/surface-2026-08/<bench>/`, one level deeper, and both
-// landed on `.refactor/` instead. Nothing said so: `measurements/p1/split.json`
+// while the bench lived in a local, untracked working directory two levels below
+// the repository root. The bench was then moved one level deeper, and both landed
+// on that working directory instead of on the root. Nothing said so: `measurements/p1/split.json`
 // simply did not exist, `packages/code/dist/cli.js` simply did not exist, and the
 // suite went from green to **34 pass / 28 fail** — the state it was found in.
 //
