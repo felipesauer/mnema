@@ -76,15 +76,17 @@ identically, because they are the same call.
   from depending on somebody remembering to regenerate a file. It declares four hooks and
   the MCP server below, in one installation. As a session opens, one hook runs `mnema
   brief` and hands over the document, and another runs `mnema recall` and hands over the
-  latest **notes** — the memories and observations recorded for the project, from every
-  tree this machine holds, including the private one the document may not carry; a
-  project with no notes gets nothing from the second. A `PreToolUse` hook on
+  **notes** — the memories and observations recorded for the project, from every tree
+  this machine holds, including the private one the document may not carry, the ones
+  near what the session touches first; a project with no notes gets nothing from the
+  second. A `PreToolUse` hook on
   `Write|Edit|NotebookEdit` hands over the rules of the record **addressed at the file
   about to be written**, beside the result of that write — the ones still in force, each
   with the id you would cite — and hands over **nothing** for a file none of them
   addresses, which is why the opening document says how many of the project's rules have
-  an address. The two opening hooks are reads: they append nothing and open no run. The
-  per-edit one records that it served, and holds a write for a person only where a rule of
+  an address. The two opening hooks are reads: they append nothing and open no run, so the
+  record's `channel.served` counts what the per-edit hook pushed and never the opening
+  texts. The per-edit one records that it served, and holds a write for a person only where a rule of
   your own record asks it to — the plugin's page says how. The fourth is that same pause for a
   host whose hooks are processes: VS Code's agent runs it as `mnema before-a-write --host vscode`
   before a write, and it asks, and records, exactly where the third would; Claude Code and
@@ -208,7 +210,7 @@ ME=mnid:c0fc3c713f09a43384ac08f7d91fca43…   # the identity printed above
 
 # Create a task. It is named by its id; `t-0b76` is a display alias derived
 # from that id, not a second key you can look it up by.
-mnema task "Ship the parser"
+mnema task create "Ship the parser"
 #> Created task t-0b76 (0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b44)
 #> …
 
@@ -415,7 +417,7 @@ asserts. So an agent driving the CLI — a script, a CI step, an agent with no M
 server — names itself with `--which`, on every verb that writes:
 
 ```sh
-mnema task "Regenerate the fixtures" --which release-bot
+mnema task create "Regenerate the fixtures" --which release-bot
 mnema task move complete "$TASK" --note "fixtures regenerated" --which release-bot
 ```
 
@@ -453,7 +455,7 @@ mnema run start --which release-bot --goal "regenerate the fixtures"
 export MNEMA_RUN=019fa572-32c2-7780-b1a7-0fe895a1c7ef
 
 # Every fact written from here on names that session.
-mnema task "Regenerate the fixtures" --which release-bot
+mnema task create "Regenerate the fixtures" --which release-bot
 
 mnema run end --which release-bot --outcome "fixtures regenerated"
 unset MNEMA_RUN
@@ -570,7 +572,7 @@ the tree the waiver will land in, and whether a cut of it is already authorized:
 
 ```sh
 mnema tail list
-#> 2 tail(s):
+#> 2 tail(s) holding events — the ones a cut can name:
 #>   8f21ab…-3c9d0e…  public   41 event(s) through 5e4391d8…  the tail of mnid:60a50d38…  ·  no waiver
 #>   4b90cd…-7ae112…  private  12 event(s) through 9c02f7a1…  the tail of mnid:c0fc3c71…  ·  no waiver
 ```
@@ -620,7 +622,7 @@ tells you to rotate, which is the only remedy an append-only record leaves.
 That is what happens in a **body**. In a **name** the door refuses instead:
 
 ```sh
-mnema skill "xoxb-123456789012-abcdefghijkl" --body "never mind"
+mnema skill create "xoxb-123456789012-abcdefghijkl" --body "never mind"
 #> Refused (NAME_HOLDS_A_SECRET): "name" reads as slack-token, and it is a name the
 #>   record is addressed by — so replacing it would record a different entity, not a
 #>   redacted one. The fact was not recorded. Name it something else; if the value
@@ -776,8 +778,8 @@ a URL. The dry run cannot catch that. You can, by opening two of the files it wr
 
 Reading the record is something an agent has to think of doing. What a session is
 handed as it opens is not. The [plugin](../../plugin/) hands this document to every
-Claude Code session with no file in the repository at all, and beside it the latest
-notes recorded here (`mnema recall`, below). Where the plugin does not reach, `mnema
+Claude Code session with no file in the repository at all, and beside it the notes
+recorded here (`mnema recall`, below). Where the plugin does not reach, `mnema
 brief` prints what governs the work as markdown, and where the file goes is your choice.
 
 **Which file a host reads is the host's to say, and this page used to say it for it.**
@@ -854,8 +856,11 @@ queue changes by the hour, and a copy of one in a hand-regenerated file would be
 wrong between two runs, which is the one thing this record exists not to be. The
 counts of what is awaiting a judgement are not that: a count over the record moves
 only when the record does, where the names in it move by the hour — and the names are
-`mnema status --actor <id>`. And it is never **cut by size** — a rule missing from the
-file is a rule the agent does not follow.
+`mnema status --actor <id>`. And the file is never **cut by size** — a rule missing from
+the file is a rule the agent does not follow. The copy the plugin hands a session is
+`mnema brief --hook`, and that one is: past 10,000 characters the host replaces a hook's
+whole text with a file path it does not ask the model to open, so `--hook` stops at a
+whole rule inside that and ends by saying how many it left out and which read serves them.
 
 What it does leave out is the record that **does not travel**. A decision or a pattern
 recorded with `--scope private`, or in your machine-global tree, governs your own work
@@ -878,7 +883,7 @@ thing about the whole record, chain by chain, without anyone generating the file
 
 ### The notes a session opens with
 
-Beside the document, the plugin hands a session the latest **notes** recorded here — the
+Beside the document, the plugin hands a session the **notes** recorded here — the
 memories and the observations, out of every tree this machine holds for the project: the
 committed one, this machine's own, and your personal one. It is the one text this product
 pushes that carries the private tree, and that is why it is not part of the document: a
@@ -888,7 +893,7 @@ unless that session went looking.
 
 ```sh
 mnema recall
-#> # What was noted here lately
+#> # What was noted here
 #> …
 #> ## Memories (2)
 #>
@@ -898,8 +903,19 @@ mnema recall
 ```
 
 Each note is **one line** — a memory by the start of its content, an observation by its
-topic — with the id `mnema show <id>` reads whole; newest first, cut where `mnema search`
-cuts, and saying how many there are when there are more. A line that still holds a
+topic — with the id `mnema show <id>` reads whole, cut where `mnema search` cuts, and
+saying how many there are when there are more.
+
+**The notes near the work come first.** As a session opens nobody has asked anything yet,
+so what it is near is read from the project itself, with no model: the files changed in
+the working tree, the tasks in progress, the name of the branch, and the files of the last
+three commits — the record's own directory left out of both git reads, and git asked to
+take no lock. A note that shares a word with those is ranked by the same index
+`mnema search` ranks by, and comes first — a word more than half of the notes hold tells
+them apart from nothing and is left out; the rest of the list is the newest. With nothing
+to read — a clean tree outside git, say — the list is the newest, as it was. The text says
+in one line which order it used, and under each heading how many of the notes are the near
+ones. A line that still holds a
 credential in a recognized format is handed over as the fact that the note exists, never
 as its text. Where nothing is noted it prints **nothing**, and a session there is handed
 nothing. It is never a file to commit: it carries what was kept on this machine.

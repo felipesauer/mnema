@@ -141,23 +141,49 @@ async function aRecordThatReachesEveryCell(): Promise<{
   const runId = opened.slice('Started run '.length).trim();
   process.env.MNEMA_RUN = runId;
 
-  const liveTask = bornId(await mnema('task', 'Write the deploy runbook'), 'Created task ');
-  const waitingTask = bornId(await mnema('task', 'Rewrite the rollback step'), 'Created task ');
-  const overTask = bornId(await mnema('task', 'Rename the staging bucket'), 'Created task ');
+  const liveTask = bornId(
+    await mnema('task', 'create', 'Write the deploy runbook'),
+    'Created task ',
+  );
+  const waitingTask = bornId(
+    await mnema('task', 'create', 'Rewrite the rollback step'),
+    'Created task ',
+  );
+  const overTask = bornId(
+    await mnema('task', 'create', 'Rename the staging bucket'),
+    'Created task ',
+  );
   const inForce = bornId(
-    await mnema('decision', 'Keep the runbook in the record', 'a wiki page goes stale'),
+    await mnema('decision', 'record', 'Keep the runbook in the record', 'a wiki page goes stale'),
     'Recorded decision ',
   );
   const waitingDecision = bornId(
-    await mnema('decision', 'Move the console into a pane', 'the terminal is the product'),
+    await mnema(
+      'decision',
+      'record',
+      'Move the console into a pane',
+      'the terminal is the product',
+    ),
     'Recorded decision ',
   );
   const adopted = bornId(
-    await mnema('skill', 'One slice per PR', '--body', 'One reviewable change with its tests.'),
+    await mnema(
+      'skill',
+      'create',
+      'One slice per PR',
+      '--body',
+      'One reviewable change with its tests.',
+    ),
     'Proposed skill ',
   );
   const waitingSkill = bornId(
-    await mnema('skill', 'Measure before you copy', '--body', 'Take the reference number first.'),
+    await mnema(
+      'skill',
+      'create',
+      'Measure before you copy',
+      '--body',
+      'Take the reference number first.',
+    ),
     'Proposed skill ',
   );
 

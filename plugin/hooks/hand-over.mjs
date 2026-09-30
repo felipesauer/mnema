@@ -35,6 +35,23 @@
  * preamble of a handler's, no cut. A second place deciding what a session is told about the
  * record is a second place that can come to disagree with it. Asserted in the same test
  * ("hands over exactly what the verb prints").
+ *
+ * IT ASKS THE VERB FOR THE COPY A HOOK CAN CARRY ({@link FOR_A_HOOK}), and that is not a cut
+ * made here. The host hands a hook's text over whole only up to a ceiling, and past it swaps
+ * ALL of it for a file path; so the verb, which knows where each rule and each note ends, stops
+ * at a whole one inside the ceiling and says what it left out — the text and its measurement
+ * are `packages/code/src/presentation/within-a-hook.ts`. What reaches the session is still
+ * exactly what that verb printed. Asserted in `the-record-arrives-unasked.test.ts` ("stops at a
+ * whole rule where a hook's text would be replaced, and says so").
+ *
+ * AND A `mnema` OLDER THAN THE FLAG IS ASKED AGAIN WITHOUT IT. The plugin and the binary are
+ * installed apart, so a new plugin can meet an old `mnema` on the PATH; that binary refuses
+ * `--hook` with exit 1, and exit 1 is silence — a session that opened with no document and no
+ * notes and no word about why. So a refusal that names the flag ({@link refusesTheFlag}) runs
+ * the verb once more with none, and the session is handed what that binary prints, as it was
+ * before the flag existed: whole, and past the host's ceiling replaced by a file path. Any other
+ * refusal is asked once and stays silence. Asserted in the same test ("asks a binary older than
+ * the flag again without it").
  */
 
 import { spawnSync } from 'node:child_process';
@@ -67,6 +84,12 @@ export function whereTheSessionIs() {
 const BETWEEN_THE_STREAMS = '\n\n';
 
 /**
+ * The flag every verb this plugin runs is given: print the copy a hook can carry. One flag for
+ * both verbs, because the ceiling is the channel's and both texts ride the same channel.
+ */
+const FOR_A_HOOK = '--hook';
+
+/**
  * What a verb has to say here, or `null` when it has nothing.
  *
  * BOTH STREAMS ARE KEPT AND THE EXIT CODE IS WHAT PICKS. A refusal arrives with a non-zero
@@ -81,11 +104,8 @@ const BETWEEN_THE_STREAMS = '\n\n';
  * @returns {string | null}
  */
 export function whatTheVerbSays(verb, cwd) {
-  const ran = spawnSync(BINARY, [verb], {
-    cwd,
-    encoding: 'utf-8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  const asked = running(verb, [FOR_A_HOOK], cwd);
+  const ran = refusesTheFlag(asked) ? running(verb, [], cwd) : asked;
   // EVERY NON-ZERO OUTCOME IS STILL SILENCE, and the refusal on stderr goes with it: it
   // is addressed to a person who typed a verb, and nobody typed this one.
   if (ran.error !== undefined || ran.status !== 0) return null;
@@ -126,6 +146,39 @@ export function whatTheVerbAnswers(argv, cwd, input) {
   if (ran.error !== undefined || ran.status !== 0) return null;
   const text = ran.stdout ?? '';
   return text.trim() === '' || text.trim() === '{}' ? null : text;
+}
+
+/**
+ * One run of `verb` with `flags`, both streams kept.
+ *
+ * @param {string} verb
+ * @param {readonly string[]} flags
+ * @param {string} cwd
+ * @returns {import('node:child_process').SpawnSyncReturns<string>}
+ */
+function running(verb, flags, cwd) {
+  return spawnSync(BINARY, [verb, ...flags], {
+    cwd,
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+}
+
+/**
+ * Whether a run was refused for the flag itself — what a `mnema` older than {@link FOR_A_HOOK}
+ * answers.
+ *
+ * READ OFF THE REFUSAL, and only its naming of the flag: the binary's own words for an option it
+ * does not take (`mnema brief does not take "--hook".`, and commander's `unknown option '--hook'`
+ * before them) both carry it, and no refusal of a verb this plugin runs repeats its argv
+ * otherwise. So a project that is not there, or a record that will not read, is asked ONCE and
+ * stays silent, and only a binary that could not read the flag is asked a second time.
+ *
+ * @param {import('node:child_process').SpawnSyncReturns<string>} ran
+ * @returns {boolean}
+ */
+function refusesTheFlag(ran) {
+  return ran.error === undefined && ran.status !== 0 && (ran.stderr ?? '').includes(FOR_A_HOOK);
 }
 
 /**

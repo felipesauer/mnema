@@ -740,7 +740,7 @@ describe('a verb that loads its work still answers', () => {
 
   it('writes, prints what it recorded, and exits zero', () => {
     expect(cli('init').status).toBe(0);
-    const done = cli('task', 'a task the floor test wrote');
+    const done = cli('task', 'create', 'a task the floor test wrote');
     expect(done.stdout).toContain('Created task ');
     expect(done.status).toBe(0);
     // TWO PROCESSES, and one of them FOUNDS a project — the only case in this file that

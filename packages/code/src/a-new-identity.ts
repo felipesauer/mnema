@@ -104,7 +104,9 @@ interface TreeWords {
  * an enrollment can spare is the public trees of the person's projects; after a private founding
  * that includes this project's own, which this key may not have written yet. And the machine that
  * can vouch may be this one: the identity was written from here, so if the key it was written with
- * is still on the disk, a `key enroll` signed with it is a member's vouch.
+ * is still on the disk, a `key enroll` signed with it is a member's vouch — and the words say how
+ * to sign with it, which they did not: that key is under another data directory than the one this
+ * key signs from, and `MNEMA_HOME` naming that directory is what makes a command sign with it.
  */
 const BY_TREE: Readonly<Record<Scope, TreeWords>> = {
   public: {
@@ -129,7 +131,8 @@ const BY_TREE: Readonly<Record<Scope, TreeWords>> = {
     spared: 'the public trees of your projects, this one’s included,',
     vouching:
       'a machine already in that identity (this one, if it still holds the key that identity ' +
-      'wrote with here)',
+      'wrote with here — run the enrollment with MNEMA_HOME naming the directory that key is ' +
+      'kept under)',
     notHere: '',
   },
   global: {
@@ -141,7 +144,8 @@ const BY_TREE: Readonly<Record<Scope, TreeWords>> = {
     spared: 'the public trees of your projects',
     vouching:
       'a machine already in that identity (this one, if it still holds the key that identity ' +
-      'wrote with here)',
+      'wrote with here — run the enrollment with MNEMA_HOME naming the directory that key is ' +
+      'kept under)',
     notHere: '',
   },
 };

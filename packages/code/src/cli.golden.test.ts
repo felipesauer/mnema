@@ -541,12 +541,13 @@ beforeAll(async () => {
   process.env.MNEMA_RUN = run1;
 
   section('writes', 'the births');
-  const task = await mnema('writes', 'task', 'Write the deploy runbook');
+  const task = await mnema('writes', 'task', 'create', 'Write the deploy runbook');
   const taskId = name(inParens(task, 'Created task '), 'task-runbook');
   name(after(task, 'Created task ').split(' ')[0] as string, 'task-runbook-alias');
   const chore = await mnema(
     'writes',
     'task',
+    'create',
     'Rotate the local credentials',
     '--scope',
     'private',
@@ -555,7 +556,14 @@ beforeAll(async () => {
   );
   const choreId = name(inParens(chore, 'Created task '), 'task-chore');
   name(after(chore, 'Created task ').split(' ')[0] as string, 'task-chore-alias');
-  const errand = await mnema('writes', 'task', 'Read the release notes', '--scope', 'global');
+  const errand = await mnema(
+    'writes',
+    'task',
+    'create',
+    'Read the release notes',
+    '--scope',
+    'global',
+  );
   name(inParens(errand, 'Created task '), 'task-errand');
   name(after(errand, 'Created task ').split(' ')[0] as string, 'task-errand-alias');
 
@@ -565,6 +573,7 @@ beforeAll(async () => {
   const decision = await mnema(
     'writes',
     'decision',
+    'record',
     'Keep the runbook in the record',
     'a wiki page nobody owns goes stale',
     '--alternatives',
@@ -574,6 +583,7 @@ beforeAll(async () => {
   const older = await mnema(
     'writes',
     'decision',
+    'record',
     'Keep the runbook in the wiki',
     'it is where we look',
   );
@@ -582,6 +592,7 @@ beforeAll(async () => {
   const skill = await mnema(
     'writes',
     'skill',
+    'create',
     'One slice per PR',
     '--body',
     'A slice is one reviewable change with its tests.',
@@ -590,6 +601,7 @@ beforeAll(async () => {
   const stale = await mnema(
     'writes',
     'skill',
+    'create',
     'Ship on Fridays',
     '--body',
     'Cut the release at the end of the week.',
@@ -782,14 +794,14 @@ beforeAll(async () => {
 
   // ── The refusals: what a wrong invocation says, and that it exits non-zero.
   section('writes', 'refusals');
-  await mnema('writes', 'task', 'A task with a bad scope', '--scope', 'elsewhere');
-  await mnema('writes', 'task', 'A task an unnamed agent asked for', '--which', '   ');
+  await mnema('writes', 'task', 'create', 'A task with a bad scope', '--scope', 'elsewhere');
+  await mnema('writes', 'task', 'create', 'A task an unnamed agent asked for', '--which', '   ');
   await mnema('writes', 'task', 'move', 'submit', taskId, '--scope', 'public');
   await mnema('writes', 'task', 'move', 'approve', taskId, '--note', 'not from here');
   await mnema('writes', 'task', 'move', 'submit', 'no-such-id');
   await mnema('writes', 'decision', 'move', 'accept', 'no-such-id', '--note', 'nothing to accept');
   await mnema('writes', 'skill', 'move', 'adopt', 'no-such-id', '--note', 'nothing to adopt');
-  await mnema('writes', 'skill', 'A skill with no body');
+  await mnema('writes', 'skill', 'create', 'A skill with no body');
   // Two ways `run end` refuses: with an agent but no run to close, and with a run but
   // no agent to credit the close to. The second is commander's own, and it is the one
   // that keeps the pair reading like the pair — `run start` refuses the same way.
@@ -856,12 +868,22 @@ beforeAll(async () => {
   //    `--help` and `--version` are not here and must not be: they arrive by the same
   //    door and they are the caller getting exactly what they asked for.
   section('writes', 'refusals — what the parser turns down');
-  await mnema('writes', 'decision', 'A decision with no rationale');
-  await mnema('writes', 'task', 'A task', 'and one word too many');
-  await mnema('writes', 'task', 'A task', '--bogus');
-  await mnema('writes', 'task', 'A task', '--which');
+  await mnema('writes', 'decision', 'record', 'A decision with no rationale');
+  await mnema('writes', 'task', 'create', 'A task', 'and one word too many');
+  await mnema('writes', 'task', 'create', 'A task', '--bogus');
+  await mnema('writes', 'task', 'create', 'A task', '--which');
   await mnema('writes', 'tsk', 'a verb nobody declared');
   await mnema('writes', 'run', 'nothing');
+  // The three groups that create used to take the title right after their name, and a
+  // group with a free positional cannot refuse a misspelt subcommand: `task moveZZZ`
+  // created a task called `moveZZZ`. Creating is a subcommand, and the old form is
+  // refused by naming it.
+  await mnema('writes', 'task', 'Fix the login');
+  await mnema('writes', 'task', 'moveZZZ');
+  await mnema('writes', 'decision', 'Use UTC', 'one clock for every machine');
+  await mnema('writes', 'skill', 'A pattern', '--body', 'do it so');
+  // A group that runs on its own says the same sentence for a word it has no command for.
+  await mnema('writes', 'switch', 'offZZZ');
   // A cut with no recorded reason is the one an audit cannot read later, so the
   // parser demands it before anything is opened.
   await mnema('writes', 'tail', 'prune', ownTail);
@@ -873,9 +895,9 @@ beforeAll(async () => {
   //    per kind the CLI can reach, plus both halves of an event (a payload field and
   //    the ENVELOPE's subject) and both classes (required, and optional-if-present).
   section('writes', 'refusals — what no read could accept');
-  await mnema('writes', 'task', '');
-  await mnema('writes', 'decision', '', 'a rationale with no title');
-  await mnema('writes', 'skill', '', '--body', 'a body with no name');
+  await mnema('writes', 'task', 'create', '');
+  await mnema('writes', 'decision', 'record', '', 'a rationale with no title');
+  await mnema('writes', 'skill', 'create', '', '--body', 'a body with no name');
   await mnema('writes', 'memory', '');
   await mnema('writes', 'observe', taskId, '--topic', '', '--text', 'a note with no topic');
   await mnema('writes', 'handoff', '', 'agent-alpha', 'agent-beta');
@@ -883,11 +905,27 @@ beforeAll(async () => {
   await mnema('writes', 'run', 'start', '--which', 'agent-gamma', '--goal', '');
   await mnema('writes', 'run', 'end', run2, '--which', 'agent-beta', '--outcome', '');
 
+  // ── A why that says nothing: no letter and no digit, or the marker a recipe prints
+  //    where the why goes. A read would accept both; the reader of decision files
+  //    already refused the first, and the write door asks it the same question.
+  section('writes', 'refusals — a reason that says nothing');
+  await mnema('writes', 'decision', 'record', 'Use UTC', '***');
+  await mnema('writes', 'decision', 'record', 'Use UTC', 'one clock', '--alternatives', '---');
+  await mnema('writes', 'task', 'move', 'cancel', choreId, '--reason', '<why>');
+  await mnema('writes', 'switch', 'off', 'edit-rules-push', '--reason', '<why>');
+
   // ── The authorizing identity offered as the executing agent, in the SHORT form the
   //    reads print. The long form was always refused; the short one is a second
   //    spelling of the same identity and only became typeable when the reads began
   //    printing it.
-  await mnema('writes', 'task', 'A task the anchor claims to have executed', '--which', short);
+  await mnema(
+    'writes',
+    'task',
+    'create',
+    'A task the anchor claims to have executed',
+    '--which',
+    short,
+  );
 
   // ── Every whole record `show` serves, one per kind it knows.
   // A record of every kind `show` knows, and both ends of a supersession: the

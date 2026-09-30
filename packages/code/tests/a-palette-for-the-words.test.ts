@@ -173,7 +173,7 @@ beforeAll(async () => {
   process.chdir(project);
 
   await shell('init');
-  await shell('task', 'the task the palette is opened over');
+  await shell('task', 'create', 'the task the palette is opened over');
 
   environment = {
     ...process.env,
@@ -1376,7 +1376,14 @@ describe('a Tab shows the verbs with the description the declaration gives them'
     let verbs = 0;
     for (const offer of offers) {
       if (offer.word.startsWith(PREFIX)) continue;
-      expect(help, `--help does not say this about ${offer.word}`).toContain(offer.description);
+      // Read as prose, not as a layout: commander wraps a description at the column its
+      // longest command sets, so where the line breaks depends on the NEIGHBOURS — measured
+      // when `decision` stopped declaring `<title> <rationale>` and the column narrowed,
+      // splitting `accountability`'s description across two lines with nothing it says
+      // changed.
+      expect(help.replace(/\s+/g, ' '), `--help does not say this about ${offer.word}`).toContain(
+        offer.description.replace(/\s+/g, ' '),
+      );
       verbs += 1;
     }
     expect(verbs).toBeGreaterThan(10);

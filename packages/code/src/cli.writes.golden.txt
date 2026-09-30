@@ -26,25 +26,25 @@ $ mnema run start --which agent-alpha --goal 'set the record up'
 |   session. `mnema run end --which <agent>` closes it.
 
 ### the births
-$ mnema task 'Write the deploy runbook'
+$ mnema task create 'Write the deploy runbook'
 | Created task <task-runbook-alias> (<task-runbook>)
 |   Landed in the public tree — committed with the repository, so it reaches every clone.
-$ mnema task 'Rotate the local credentials' --scope private --which agent-alpha
+$ mnema task create 'Rotate the local credentials' --scope private --which agent-alpha
 | Created task <task-chore-alias> (<task-chore>)
 |   Landed in the private tree — this machine's own; it is not committed and does not travel.
-$ mnema task 'Read the release notes' --scope global
+$ mnema task create 'Read the release notes' --scope global
 | Created task <task-errand-alias> (<task-errand>)
 |   Landed in the global tree — personal and cross-project, outside any repository.
-$ mnema decision 'Keep the runbook in the record' 'a wiki page nobody owns goes stale' --alternatives 'a shared spreadsheet: it has no history and nobody reviews it'
+$ mnema decision record 'Keep the runbook in the record' 'a wiki page nobody owns goes stale' --alternatives 'a shared spreadsheet: it has no history and nobody reviews it'
 | Recorded decision ADR-1 (<decision-runbook>)
 |   Landed in the public tree — committed with the repository, so it reaches every clone.
-$ mnema decision 'Keep the runbook in the wiki' 'it is where we look'
+$ mnema decision record 'Keep the runbook in the wiki' 'it is where we look'
 | Recorded decision ADR-2 (<decision-wiki>)
 |   Landed in the public tree — committed with the repository, so it reaches every clone.
-$ mnema skill 'One slice per PR' --body 'A slice is one reviewable change with its tests.'
+$ mnema skill create 'One slice per PR' --body 'A slice is one reviewable change with its tests.'
 | Proposed skill "One slice per PR" (<skill-slices>)
 |   Landed in the public tree — committed with the repository, so it reaches every clone.
-$ mnema skill 'Ship on Fridays' --body 'Cut the release at the end of the week.' --scope private
+$ mnema skill create 'Ship on Fridays' --body 'Cut the release at the end of the week.' --scope private
 | Proposed skill "Ship on Fridays" (<skill-fridays>)
 |   Landed in the private tree — this machine's own; it is not committed and does not travel.
 $ mnema memory 'the deploy runbook lives in the record now'
@@ -162,12 +162,12 @@ $ mnema run start --which agent-beta --goal 'read the record back'
 |   session. `mnema run end --which <agent>` closes it.
 
 ### refusals
-$ mnema task 'A task with a bad scope' --scope elsewhere
+$ mnema task create 'A task with a bad scope' --scope elsewhere
 ! Invalid --scope "elsewhere". Use one of: public, private, global.
 [exit 1]
-$ mnema task 'A task an unnamed agent asked for' --which '   '
+$ mnema task create 'A task an unnamed agent asked for' --which '   '
 ! mnema task does not accept "   " for --which <agent>: it names no agent. Name the agent that executed this, or omit --which — omitted, the record says a person acted directly. (A `--which "$AGENT"` with the variable empty would otherwise credit you for an agent's work.)
-!   mnema task [options] [command] <title>
+!   mnema task [options] [command]
 [exit 1]
 $ mnema task move submit <task-runbook> --scope public
 ! `task move` takes no --scope: a move follows the task to the tree it was born in.
@@ -184,8 +184,8 @@ $ mnema decision move accept no-such-id --note 'nothing to accept'
 $ mnema skill move adopt no-such-id --note 'nothing to adopt'
 ! No skill no-such-id here.
 [exit 1]
-$ mnema skill 'A skill with no body'
-! `mnema skill` requires --body: the reusable pattern itself.
+$ mnema skill create 'A skill with no body'
+! `mnema skill create` requires --body: the reusable pattern itself.
 [exit 1]
 $ mnema run end --which agent-beta
 ! `mnema run end` needs a run: pass its id, or set MNEMA_RUN to the one `mnema run start` printed.
@@ -237,7 +237,7 @@ $ mnema tail prune <backup-key-fingerprint> --reason 'the key that never wrote a
 $ mnema switch
 | 4 channel(s), looked in public, private, global:
 |   brief-document      on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
-|   recall-document     on   the notes `mnema recall` prints, which a session opens with: the latest memories and observations recorded for this project, from every tree this machine holds for it
+|   recall-document     on   the notes `mnema recall` prints, which a session opens with: the memories and observations recorded for this project, from every tree this machine holds for it, the ones near what the session touches first
 |   edit-rules-push     on   the rules addressed at a file, handed over at each edit of it, beside the result of that write
 |   edit-asks-a-person  on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
 $ mnema switch off edit-rules-push --reason 'noisy while porting'
@@ -248,7 +248,7 @@ $ mnema switch off edit-rules-push --reason 'noisy while porting'
 $ mnema switch
 | 4 channel(s), looked in public, private, global:
 |   brief-document      on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
-|   recall-document     on   the notes `mnema recall` prints, which a session opens with: the latest memories and observations recorded for this project, from every tree this machine holds for it
+|   recall-document     on   the notes `mnema recall` prints, which a session opens with: the memories and observations recorded for this project, from every tree this machine holds for it, the ones near what the session touches first
 |   edit-rules-push     off  the rules addressed at a file, handed over at each edit of it, beside the result of that write  ·  switched off by <anchor-short>  <at:01>  — noisy while porting
 |   edit-asks-a-person  on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
 $ mnema switch on edit-rules-push
@@ -260,21 +260,21 @@ $ mnema switch off no-such-channel
 [exit 1]
 
 ### refusals — what the parser turns down
-$ mnema decision 'A decision with no rationale'
-! mnema decision needs <rationale>: why the decision was made
-!   mnema decision [options] [command] <title> <rationale>
+$ mnema decision record 'A decision with no rationale'
+! mnema decision record needs <rationale>: why the decision was made
+!   mnema decision record [options] <title> <rationale>
 [exit 1]
-$ mnema task 'A task' 'and one word too many'
-! mnema task does not take "and one word too many".
-!   mnema task [options] [command] <title>
+$ mnema task create 'A task' 'and one word too many'
+! mnema task create does not take "and one word too many".
+!   mnema task create [options] <title>
 [exit 1]
-$ mnema task 'A task' --bogus
-! mnema task does not take "--bogus".
-!   mnema task [options] [command] <title>
+$ mnema task create 'A task' --bogus
+! mnema task create does not take "--bogus".
+!   mnema task create [options] <title>
 [exit 1]
-$ mnema task 'A task' --which
+$ mnema task create 'A task' --which
 ! mnema task needs a value after --which <agent>: the agent that executed this, when an agent (a script, a CI step) is driving mnema — omit it when you are acting directly. Declared, never assumed; it names the executor. See --scope for where the fact lands. A value that names no agent (an unset variable) is refused, never credited to you.
-!   mnema task [options] [command] <title>
+!   mnema task [options] [command]
 [exit 1]
 $ mnema tsk 'a verb nobody declared'
 ! mnema has no command "tsk". Run `mnema --help` to see what it does.
@@ -284,19 +284,39 @@ $ mnema run nothing
 ! mnema run has no command "nothing". Run `mnema run --help` to see what it does.
 !   mnema run [options] [command]
 [exit 1]
+$ mnema task 'Fix the login'
+! mnema task has no command "Fix the login". To create a task, put `create` before its title.
+!   mnema task create [options] <title>
+[exit 1]
+$ mnema task moveZZZ
+! mnema task has no command "moveZZZ". To create a task, put `create` before its title.
+!   mnema task create [options] <title>
+[exit 1]
+$ mnema decision 'Use UTC' 'one clock for every machine'
+! mnema decision has no command "Use UTC". To record a decision, put `record` before its title.
+!   mnema decision record [options] <title> <rationale>
+[exit 1]
+$ mnema skill 'A pattern' --body 'do it so'
+! mnema skill has no command "A pattern". To create a skill, put `create` before its name.
+!   mnema skill create [options] <name>
+[exit 1]
+$ mnema switch offZZZ
+! mnema switch has no command "offZZZ". Run `mnema switch --help` to see what it does.
+!   mnema switch [options] [command]
+[exit 1]
 $ mnema tail prune <tail-own>
 ! mnema tail prune needs --reason <text>: why it is being cut (recorded in the fact)
 !   mnema tail prune [options] <tail>
 [exit 1]
 
 ### refusals — what no read could accept
-$ mnema task ''
+$ mnema task create ''
 ! Refused (UNREADABLE_EVENT): event "task.created" needs a non-empty string at payload.title. The fact was NOT recorded — an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
 [exit 1]
-$ mnema decision '' 'a rationale with no title'
+$ mnema decision record '' 'a rationale with no title'
 ! Refused (UNREADABLE_EVENT): event "decision.recorded" needs a non-empty string at payload.title. The fact was NOT recorded — an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
 [exit 1]
-$ mnema skill '' --body 'a body with no name'
+$ mnema skill create '' --body 'a body with no name'
 ! Refused (UNREADABLE_EVENT): event "skill.created" needs a non-empty string at payload.name. The fact was NOT recorded — an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
 [exit 1]
 $ mnema memory ''
@@ -317,7 +337,21 @@ $ mnema run start --which agent-gamma --goal ''
 $ mnema run end <run-second> --which agent-beta --outcome ''
 ! Refused (UNREADABLE_EVENT): event "run.ended" needs a non-empty string at payload.outcome. The fact was NOT recorded — an entry no read could open would leave every later read of this project failing, and a tail cannot be edited.
 [exit 1]
-$ mnema task 'A task the anchor claims to have executed' --which <anchor-short>
+
+### refusals — a reason that says nothing
+$ mnema decision record 'Use UTC' '***'
+! Refused (NOT_A_REASON): the rationale "***" has no letter and no digit in it, so it says nothing: write the why in words. The fact was NOT recorded — a record is permanent, and its why is the part a later reader reads.
+[exit 1]
+$ mnema decision record 'Use UTC' 'one clock' --alternatives ---
+! Refused (NOT_A_REASON): the alternatives "---" has no letter and no digit in it, so it says nothing: write the why in words. The fact was NOT recorded — a record is permanent, and its why is the part a later reader reads.
+[exit 1]
+$ mnema task move cancel <task-chore> --reason '<why>'
+! Refused (NOT_A_REASON): the reason "<why>" is the marker a recipe prints where the words go, not the words: write the why in its place
+[exit 1]
+$ mnema switch off edit-rules-push --reason '<why>'
+! Refused (NOT_A_REASON): the reason "<why>" is the marker a recipe prints where the words go, not the words: write the why in its place. The fact was NOT recorded — a record is permanent, and its why is the part a later reader reads.
+[exit 1]
+$ mnema task create 'A task the anchor claims to have executed' --which <anchor-short>
 ! Refused (WHO_IS_WHICH): the authorizing human and the executing agent must be different identities
 [exit 1]
 

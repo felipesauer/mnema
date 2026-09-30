@@ -165,7 +165,7 @@ describe('mnema tail list', () => {
 
     const listed = await mnema('tail', 'list');
     expect(listed.failed, listed.err.join(' / ')).toBe(false);
-    expect(listed.out[0]).toBe('2 tail(s):');
+    expect(listed.out[0]).toBe('2 tail(s) holding events — the ones a cut can name:');
     const row = listedRows(listed).find((line) => idOn(line) === foreign) as string;
     expect(row, `no row for ${foreign} in ${listed.out.join(' / ')}`).toBeDefined();
 

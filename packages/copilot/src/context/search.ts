@@ -65,10 +65,12 @@ import {
   effectiveLimit,
   type MemoryProjection,
   type ObservationProjection,
+  type PertinenceQuery,
   type Scope,
   type SearchHit,
   type SearchKind,
   type SearchQuery,
+  type SearchResult,
   type SkillProjection,
   type TaskProjection,
 } from '@mnema/core';
@@ -223,7 +225,84 @@ export function searchRecords(
 ): RecordSearch {
   const { scope, ...rest } = query;
   const searched = scope === undefined ? sources : sources.filter((s) => s.scope === scope);
+  return mergedAcross(searched, query.limit, (cache) => cache.search(rest));
+}
 
+/**
+ * The records every tree in `sources` holds that share any of `query.words`, merged into
+ * one index the way {@link searchRecords} merges a search — the same per-tree ask, the
+ * same re-order and the same cut, because it is the same merge.
+ *
+ * The approximation the note above declares holds here too, and a little more: each
+ * tree ranks the words against its own corpus.
+ */
+export function pertinentRecords(
+  sources: readonly ScopedCache[],
+  query: PertinenceQuery,
+): RecordSearch {
+  return mergedAcross(sources, query.limit, (cache) => cache.searchPertinent(query));
+}
+
+/** What {@link pertinentFirst} serves: an index, and how much of its head is the near part. */
+export interface PertinentSearch extends RecordSearch {
+  /**
+   * How many of the leading hits share a word with what was asked about. Every hit after
+   * them is there because it is recent and for no other reason.
+   */
+  readonly pertinent: number;
+}
+
+/**
+ * One kind's records with the ones that share a word with `words` FIRST, closest first,
+ * and the rest of the list filled with the newest of the others — cut at the index's own
+ * limit, and with `total` the kind's whole count, as a listing's is.
+ *
+ * WITH NO WORD THIS IS THE LISTING, record for record: nothing is near, so nothing moves
+ * ahead of the newest, and `pertinent` is zero. So a caller that has nothing to be near
+ * serves exactly what `searchRecords` with no term serves.
+ *
+ * Two questions to the index, and the second answers the first's gap: what is near, and
+ * what is newest. A record the first already served is not served twice.
+ *
+ * `hidden` is never set. It says a whole project's matches were shut out of ONE ranking,
+ * and this list is two rankings joined, so neither answer's `hidden` would be true of it.
+ */
+export function pertinentFirst(
+  sources: readonly ScopedCache[],
+  query: { readonly kind: SearchKind; readonly words: readonly string[] },
+): PertinentSearch {
+  const limit = effectiveLimit();
+  const newest = searchRecords(sources, { kind: query.kind });
+  const near = pertinentRecords(sources, { kind: query.kind, words: query.words }).hits;
+  const served = new Set(near.map(servedAs));
+  const rest = newest.hits.filter((hit) => !served.has(servedAs(hit)));
+  return {
+    hits: [...near, ...rest].slice(0, limit),
+    total: newest.total,
+    pertinent: near.length,
+  };
+}
+
+/**
+ * What makes two hits the same record: its id, and the tree that holds it. An id is minted
+ * once, so the id alone would do inside one project; the chain root is what keeps two
+ * projects' trees apart in a workspace read.
+ */
+function servedAs(hit: RecordHit): string {
+  return `${hit.project ?? ''}\u0000${hit.scope}\u0000${hit.id}`;
+}
+
+/**
+ * The merge both reads share — ask every tree, re-order by the core's own rule, cut to the
+ * caller's limit, say what the cut shut out — written once, so a pertinence read and a
+ * search cannot come to merge by two rules. Why asking each tree for the limit is enough
+ * is on {@link searchRecords}.
+ */
+function mergedAcross(
+  searched: readonly ScopedCache[],
+  limit: number | undefined,
+  ask: (cache: ScopedCache['cache']) => SearchResult,
+): RecordSearch {
   const found: Array<{ readonly hit: SearchHit; readonly source: ScopedCache }> = [];
   // What each RECORD matched, keyed by the project holding it (`undefined` is the
   // machine-global tree). Kept per record and not only summed, because the sum cannot
@@ -231,7 +310,7 @@ export function searchRecords(
   const matched = new Map<string | undefined, number>();
   let total = 0;
   for (const source of searched) {
-    const result = source.cache.search(rest);
+    const result = ask(source.cache);
     total += result.total;
     matched.set(source.project, (matched.get(source.project) ?? 0) + result.total);
     for (const hit of result.hits) found.push({ hit, source });
@@ -241,7 +320,7 @@ export function searchRecords(
   // holding the same records would have landed, or the answer would depend on
   // how the record happens to be split across trees.
   found.sort(byTheRecordsOwnOrder);
-  const hits = found.slice(0, effectiveLimit(query.limit)).map(toRecordHit);
+  const hits = found.slice(0, effectiveLimit(limit)).map(toRecordHit);
   const hidden = hiddenByLimit(matched, hits);
   return { hits, total, ...(hidden.length > 0 ? { hidden } : {}) };
 }

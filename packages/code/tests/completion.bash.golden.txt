@@ -11,9 +11,9 @@
 _mnema_commands() {
   case "$1" in
     '') echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs rules rules-file skills usage brief recall before-a-write key tail witness switch verify mcp repl completion help' ;;
-    'task') echo 'move' ;;
-    'decision') echo 'move supersede import' ;;
-    'skill') echo 'move export' ;;
+    'task') echo 'create move help' ;;
+    'decision') echo 'record move supersede import help' ;;
+    'skill') echo 'create move export help' ;;
     'run') echo 'start end help' ;;
     'key') echo 'restore request enroll revoke help' ;;
     'tail') echo 'list prune help' ;;
@@ -28,12 +28,15 @@ _mnema_flags() {
     '') echo '-V --version --color -h --help' ;;
     'init') echo '-h --help -V --version --color' ;;
     'task') echo '--scope --which -h --help -V --version --color' ;;
+    'task create') echo '--scope --which -h --help -V --version --color' ;;
     'task move') echo '--reason --note --feedback -h --help --which -V --version --color' ;;
     'decision') echo '--alternatives --scope --which -h --help -V --version --color' ;;
+    'decision record') echo '--alternatives --scope --which -h --help -V --version --color' ;;
     'decision move') echo '--note -h --help --which -V --version --color' ;;
     'decision supersede') echo '--reason -h --help --which -V --version --color' ;;
     'decision import') echo '--write --scope --which -h --help -V --version --color' ;;
     'skill') echo '--body --scope --which -h --help -V --version --color' ;;
+    'skill create') echo '--body --scope --which -h --help -V --version --color' ;;
     'skill move') echo '--note --reason -h --help --which -V --version --color' ;;
     'skill export') echo '--out --description -h --help -V --version --color' ;;
     'memory') echo '--scope --which -h --help -V --version --color' ;;
@@ -60,8 +63,8 @@ _mnema_flags() {
     'rules-file') echo '--host -h --help -V --version --color' ;;
     'skills') echo '--json -h --help -V --version --color' ;;
     'usage') echo '-h --help -V --version --color' ;;
-    'brief') echo '-h --help -V --version --color' ;;
-    'recall') echo '-h --help -V --version --color' ;;
+    'brief') echo '--hook -h --help -V --version --color' ;;
+    'recall') echo '--hook -h --help -V --version --color' ;;
     'before-a-write') echo '--host -h --help -V --version --color' ;;
     'key') echo '-h --help -V --version --color' ;;
     'key restore') echo '-h --help -V --version --color' ;;
@@ -91,10 +94,14 @@ _mnema_values() {
     'init:--color') echo 'auto always never' ;;
     'task:--scope') echo 'public private global' ;;
     'task:--color') echo 'auto always never' ;;
+    'task create:--scope') echo 'public private global' ;;
+    'task create:--color') echo 'auto always never' ;;
     'task move:--color') echo 'auto always never' ;;
     'task move:') echo 'submit start block unblock submit_review request_changes approve complete cancel reopen' ;;
     'decision:--scope') echo 'public private global' ;;
     'decision:--color') echo 'auto always never' ;;
+    'decision record:--scope') echo 'public private global' ;;
+    'decision record:--color') echo 'auto always never' ;;
     'decision move:--color') echo 'auto always never' ;;
     'decision move:') echo 'accept reject' ;;
     'decision supersede:--color') echo 'auto always never' ;;
@@ -102,6 +109,8 @@ _mnema_values() {
     'decision import:--color') echo 'auto always never' ;;
     'skill:--scope') echo 'public private global' ;;
     'skill:--color') echo 'auto always never' ;;
+    'skill create:--scope') echo 'public private global' ;;
+    'skill create:--color') echo 'auto always never' ;;
     'skill move:--color') echo 'auto always never' ;;
     'skill move:') echo 'review adopt reject deprecate' ;;
     'skill export:--color') echo 'auto always never' ;;

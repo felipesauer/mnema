@@ -49,7 +49,7 @@ async function did(...argv: string[]): Promise<string> {
 
 /** Records a decision, accepts it, and addresses it with `governs` at `path`. */
 async function governing(title: string, path: string, ...scope: string[]): Promise<string> {
-  const id = (await did('decision', title, `why ${title}`, ...scope)).match(
+  const id = (await did('decision', 'record', title, `why ${title}`, ...scope)).match(
     /\(([0-9a-f-]{20,})\)/,
   )?.[1] as string;
   await did('decision', 'move', 'accept', id, '--note', 'agreed');

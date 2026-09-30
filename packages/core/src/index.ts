@@ -163,7 +163,9 @@ export { getRun, listOpenRuns, listRuns } from './projections/run-store.js';
 export {
   compareSearchHits,
   effectiveLimit,
+  excerptOf,
   isSearchKind,
+  type PertinenceQuery,
   SEARCH_DEFAULT_LIMIT,
   SEARCH_KINDS,
   SEARCH_MAX_LIMIT,
@@ -171,7 +173,9 @@ export {
   type SearchKind,
   type SearchQuery,
   type SearchResult,
+  searchPertinent,
   searchRecord,
+  wordsOf,
 } from './projections/search-store.js';
 export {
   projectSkills,

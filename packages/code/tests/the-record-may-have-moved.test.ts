@@ -208,7 +208,12 @@ describe('the seven steps that were measured', () => {
 
     expect(seen(session)).toBe(0); // 0. the session opens — was 0
 
-    cli('decision', 'Keep the runbook in the record', 'a wiki page nobody owns goes stale');
+    cli(
+      'decision',
+      'record',
+      'Keep the runbook in the record',
+      'a wiki page nobody owns goes stale',
+    );
     expect(seen(session)).toBe(1); // 1. the CLI writes a PUBLIC decision — was 0
 
     expect(seen(session)).toBe(1); // 2. it reads again, writing nothing — was 0
@@ -223,7 +228,7 @@ describe('the seven steps that were measured', () => {
     }
     expect(seen(session)).toBe(3); // 4. the reader writes PUBLIC — was 3, by accident
 
-    cli('decision', 'Cut the release on Thursdays', 'Friday deploys page the on-call');
+    cli('decision', 'record', 'Cut the release on Thursdays', 'Friday deploys page the on-call');
     expect(seen(session)).toBe(4); // 5. the CLI writes another PUBLIC decision — was 3
 
     if (!runCaptureMemory(session, { content: 'Thursday it is' }).ok) {
@@ -251,7 +256,7 @@ describe('the warm cache is still warm', () => {
     // could quietly destroy: a probe that answered "changed" on an unchanged
     // chain would replay on every single read and put the cost back.
     const session = openHere();
-    cli('decision', 'Something to read', 'so the trees are not empty');
+    cli('decision', 'record', 'Something to read', 'so the trees are not empty');
     // Warm all three trees first, so what follows is measuring reuse and not
     // first opens.
     seen(session);
@@ -288,10 +293,10 @@ describe('every way a chain can move is seen', () => {
     // creates a directory that was not there, under its own key. A probe that
     // watched only the tails it had already seen would miss the whole of it.
     const session = openHere();
-    cli('decision', 'Ours', 'the tail this session knows');
+    cli('decision', 'record', 'Ours', 'the tail this session knows');
     expect(seen(session)).toBe(1);
 
-    cliFromAnotherMachine('decision', 'Theirs', 'written by another installation');
+    cliFromAnotherMachine('decision', 'record', 'Theirs', 'written by another installation');
 
     expect(seen(session)).toBe(2);
     closeSession(session);
@@ -336,7 +341,7 @@ describe('a tree that goes away, or stops being readable, between two reads', ()
     // The extent of an emptied tree is the extent of an empty one, so the read
     // replays and reports what is there — nothing.
     const session = openHere();
-    cli('decision', 'Written and then withdrawn', 'a record that will be removed');
+    cli('decision', 'record', 'Written and then withdrawn', 'a record that will be removed');
     expect(seen(session)).toBe(1);
 
     rmSync(join(rootOf(session, 'public'), 'tails'), { recursive: true, force: true });
@@ -353,7 +358,7 @@ describe('a tree that goes away, or stops being readable, between two reads', ()
     // gives. The entry keeps its older extent through the failure, so the read
     // after the fault clears replays rather than trusting what it held.
     const session = openHere();
-    cli('decision', 'Readable for now', 'until the tails go away');
+    cli('decision', 'record', 'Readable for now', 'until the tails go away');
     expect(seen(session)).toBe(1);
 
     const tails = join(rootOf(session, 'public'), 'tails');
@@ -384,7 +389,7 @@ describe('the trees are still read one at a time', () => {
     session.caches.get(rootOf(session, 'public'));
     session.caches.get(rootOf(session, 'private'));
 
-    cli('decision', 'Decided elsewhere', 'while this session was reading');
+    cli('decision', 'record', 'Decided elsewhere', 'while this session was reading');
 
     const publicRead = countingReplays(() =>
       session.caches.get(rootOf(session, 'public')).listDecisions(),

@@ -458,6 +458,28 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'one of two sentences written in this module, chosen by the count beside it — the shape the address paragraph uses, and the words are constants of this file handed in by the call above',
   },
+  'brief.ts «{} {}» n #1': {
+    verdict: 'minted',
+    why: 'how many rules of one kind a hook’s copy left out — a count this document made',
+  },
+  'brief.ts «{} {}» n === 1 ? one : many #1': {
+    verdict: 'minted',
+    why: 'the singular or the plural of a noun written in this module, chosen by the count beside it',
+  },
+  'brief.ts «Left out of this text: {} — the last {} in the order above.» parts #1': {
+    verdict: 'composed',
+    why: 'the counts of what a hook’s copy left out, joined — every part is a count and a noun of this module',
+  },
+  "brief.ts «Left out of this text: {} — the last {} in the order above.» decisions + patterns === 1 ? 'one' : 'ones' #1":
+    {
+      verdict: 'minted',
+      why: 'one of two words written here, chosen by how many were left out',
+    },
+  'brief.ts «A hook hands a session at most {} characters, and a file path in place of a longer» HOOK_CEILING_IN_WORDS #1':
+    {
+      verdict: 'minted',
+      why: 'the host’s ceiling as a sentence prints it — derived from the one constant that holds the measurement',
+    },
   'brief.ts «{} — {}» decision.adr #1': {
     verdict: 'composed',
     why: 'the `ADR-<n>` half of a rule’s name — the whole name is collapsed by `rule` below',
@@ -572,18 +594,59 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the name of one of the two sections, a constant this module hands in',
   },
-  'recall.ts «## {} ({})» search.hits.length #1': {
+  'recall.ts «## {} ({})» hits.length #1': {
     verdict: 'minted',
     why: 'how many notes are printed under the heading — the count the lines are counted by',
   },
-  'recall.ts «{} are recorded here, and these are the {} newest; \\`search\\` with» search.total #1':
+  'recall.ts «{} are recorded here, and none of them is below; \\`search\\` with» search.total #1':
     {
       verdict: 'minted',
-      why: 'how many of this kind the index holds in all — its own total, a count',
+      why: 'how many of this kind the index holds in all, said where a hook’s copy printed none of them — its own total, a count',
     },
-  'recall.ts «{} are recorded here, and these are the {} newest; \\`search\\` with» printed #1': {
+  'recall.ts «{} are recorded here, and these are {}; \\`search\\` with» search.total #1': {
+    verdict: 'minted',
+    why: 'how many of this kind the index holds in all — its own total, a count',
+  },
+  'recall.ts «{} are recorded here, and these are {}; \\`search\\` with» these #1': {
+    verdict: 'composed',
+    why: 'which of the two phrases for the printed part, both worded just above in `cutAt` out of a count',
+  },
+  'recall.ts «{} of them» printed #1': {
     verdict: 'minted',
     why: 'how many of them are printed — the length of the list under the sentence',
+  },
+  'recall.ts «the {} newest» printed #1': {
+    verdict: 'minted',
+    why: 'how many of them are printed — the length of the list under the sentence',
+  },
+  'recall.ts «Nearest first: the ones that share a word with what this session touches — {} — closest first, then the newest.» whereTheWordsCameFrom(touched) #1':
+    {
+      verdict: 'composed',
+      why: 'where the words came from, worded by `whereTheWordsCameFrom` out of counts and constants — never the words, which are paths and a branch somebody named',
+    },
+  "recall.ts «{} changed in the working tree» counted(touched.changed, 'file') #1": {
+    verdict: 'composed',
+    why: 'how many files changed, worded by `counted` out of a count and a noun of this module',
+  },
+  "recall.ts «{} in progress» counted(touched.tasks, 'task') #1": {
+    verdict: 'composed',
+    why: 'how many tasks are in progress, worded by `counted` out of a count and a noun of this module',
+  },
+  "recall.ts «the files of the last {}» counted(touched.commits, 'commit') #1": {
+    verdict: 'composed',
+    why: 'how many commits were read, worded by `counted` out of a count and a noun of this module',
+  },
+  'recall.ts «{} {}» n #1': {
+    verdict: 'minted',
+    why: 'a count of what the session touches — files, tasks or commits — never anything they hold',
+  },
+  'recall.ts «{} {}» n === 1 ? noun : `${noun}s` #1': {
+    verdict: 'minted',
+    why: 'a noun this module writes, made plural by the count beside it — nothing from the tree reaches it',
+  },
+  'recall.ts «The first {} share a word with what this session touches.» n #1': {
+    verdict: 'minted',
+    why: 'how many of the printed notes share a word with what the session touches — a count of the list',
   },
   'recall.ts «\\`kind\\` \\`{}\\` serves the rest.» kind #1': {
     verdict: 'minted',
@@ -605,9 +668,9 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the memory’s id, beside text somebody typed — collapsed for the reason the document collapses its ids',
   },
-  'recall.ts «- **{}** · \\`{}\\`» oneLine(hit.title) #1': {
+  'recall.ts «- **{}** · \\`{}\\`» oneLine(excerptOf(hit.title)) #1': {
     verdict: 'collapsed',
-    why: 'an observation’s topic — a name whoever recorded it chose, in the weight of one',
+    why: 'the start of an observation’s topic — a name whoever recorded it chose, cut by the index’s excerpt rule and collapsed where the line is built',
   },
   'recall.ts «- **{}** · \\`{}\\`» oneLine(hit.id) #1': {
     verdict: 'collapsed',
@@ -1019,7 +1082,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the trees that were looked in — closed words, joined by this report',
   },
-  'tails.ts «{} tail(s):» tails.length #1': {
+  'tails.ts «{} tail(s) holding events — the ones a cut can name:» tails.length #1': {
     verdict: 'minted',
     why: 'how many tails follow — the count the rows are counted by',
   },
@@ -1037,10 +1100,6 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
 
   // --- witness.ts: where the external witness stands ------------------------------
-  "witness.ts «No tail holds events in any tree here — looked in {}.» trees.join(', ') #1": {
-    verdict: 'minted',
-    why: 'the trees that were looked in — closed words, joined by this report',
-  },
   'witness.ts «{} tail(s):» lines.length #1': {
     verdict: 'minted',
     why: 'how many tails follow — the count the rows are counted by',
@@ -1441,13 +1500,17 @@ describe('every value this layer puts on a line is classified', () => {
     // to this layer is counted here the day it is written, which is what this number is for.
     // The twenty-ninth is `recall.ts`, a COMPOSER: the notes a session opens with, whose
     // values are the start of a memory and an observation's topic, both typed by somebody.
-    expect(FOUND.composers.length + FOUND.machinery.length).toBe(29);
+    // The thirtieth is `within-a-hook.ts`, MACHINERY: it words nothing and receives no record —
+    // it measures what the two opening texts print for a hook, and cuts them at a whole item.
+    expect(FOUND.composers.length + FOUND.machinery.length).toBe(30);
     expect(FOUND.composers.length).toBe(17);
     expect(FOUND.machinery).toContain('items.ts');
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
+    expect(FOUND.machinery).toContain('within-a-hook.ts');
     expect(FOUND.builders.length).toBeGreaterThan(10);
-    expect(FOUND.sites.length).toBe(237);
+    // 237 until `witness`'s copy of the no-tail sentence became a call of `tails.ts`'s one.
+    expect(FOUND.sites.length).toBe(251);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1469,8 +1532,8 @@ describe('every value this layer puts on a line is classified', () => {
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
     expect(count('collapsed')).toBe(64);
-    expect(count('minted')).toBe(134);
-    expect(count('composed')).toBe(39);
+    expect(count('minted')).toBe(142);
+    expect(count('composed')).toBe(45);
     expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(64);
   });
 
@@ -1738,7 +1801,7 @@ const PROBES: readonly Probe[] = [
       'record.ts statedFact(oneLine(body.record.title)) #1',
       'status.ts itemLine(oneLine(item.title)) #1',
     ],
-    first: ['task', VALUE],
+    first: ['task', 'create', VALUE],
     argv: ['status', '--actor', ACTOR],
     says: 'live task(s):',
   },

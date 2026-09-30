@@ -56,7 +56,11 @@
  *
  * It does NOT refuse outside a project, for `skills`' reason and not for a new one: a
  * pattern is a CAPABILITY, and the machine-global tree holds a person's own
- * conventions, which are a legitimate thing to export from anywhere.
+ * conventions, which are a legitimate thing to export from anywhere. What it says when
+ * the id is in NO tree it could read does depend on where it runs: inside a project the
+ * skill is missing (`UNKNOWN_SKILL`); outside one, it answers `NO_PROJECT`, like every
+ * other verb, because "No skill <id> here" told a person in the wrong directory that
+ * their record had lost it (`outside-a-project-the-surface-says-so.test.ts`).
  */
 
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -168,6 +172,12 @@ export interface SkillExportDone {
 export type SkillExportRefused =
   /** No visible tree holds a skill with this id (the surface words this one). */
   | { readonly ok: false; readonly reason: 'UNKNOWN_SKILL' }
+  /**
+   * No visible tree holds it AND there is no project here: the global tree was read and does
+   * not have it, and the person is most likely in the wrong directory — which is the news, and
+   * not that a record they named is missing.
+   */
+  | { readonly ok: false; readonly reason: 'NO_PROJECT' }
   /** Its state does not export, and the message names the state. */
   | { readonly ok: false; readonly reason: 'NOT_EXPORTED'; readonly message: string }
   /** Its recorded name is not a name of the specification, and the message says why. */
@@ -210,7 +220,9 @@ export function runSkillExport(
   const composed = withScopedCaches(trees, (sources) => {
     const held = readRecord(sources, input.id);
     if (held === null || held.kind !== 'skill') {
-      return { ok: false, reason: 'UNKNOWN_SKILL' } as const;
+      return trees.projectPublic === undefined
+        ? ({ ok: false, reason: 'NO_PROJECT' } as const)
+        : ({ ok: false, reason: 'UNKNOWN_SKILL' } as const);
     }
     const skill = held.record;
 

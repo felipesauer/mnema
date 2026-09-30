@@ -7,49 +7,93 @@ $ mnema
 ! happens.
 !
 ! Options:
-!   -V, --version                           output the version number
-!   --color <when>                          when to use bold, dim and color: auto (a terminal only), always (also in a pipe), never. NO_COLOR and FORCE_COLOR are honored; an explicit --color beats both. Style never changes what a line says. (choices: "auto", "always", "never", default: "auto")
-!   -h, --help                              display help for command
+!   -V, --version                         output the version number
+!   --color <when>                        when to use bold, dim and color: auto (a
+!                                         terminal only), always (also in a pipe),
+!                                         never. NO_COLOR and FORCE_COLOR are
+!                                         honored; an explicit --color beats both.
+!                                         Style never changes what a line says.
+!                                         (choices: "auto", "always", "never",
+!                                         default: "auto")
+!   -h, --help                            display help for command
 !
 ! Commands:
-!   init                                    establish a mnema project in the current directory
-!   task [options] <title>                  create a task in the current project
-!   decision [options] <title> <rationale>  record a decision in the current project
-!   skill [options] <name>                  propose a reusable skill in the current project
-!   memory [options] <content>              capture a memory in the current project
-!   observe [options] <about>               record an observation about an entity in the current project
-!   handoff [options] <task> <from> <to>    record a handoff on a task in the current project
-!   link [options] <subject> <target>       link one piece of knowledge to another in the current project
-!   run                                     open and close the session an agent works inside
-!   status [options]                        show where things stand: the work, what governs, what awaits a ruling
-!   focus [options]                         show an actor's open runs (what they are touching now)
-!   resume [options]                        show where an actor left off (their latest run, open or ended)
-!   next-actions [options] <task-id>        show the moves the workflow allows a task next
-!   guard [options] <action> <id>           dry-run the gate: would a move be allowed on a task, and if not, why?
-!   search [options] [term]                 find what has been recorded, or list the most recent (no term)
-!   show [options] <id>                     show one whole record by id (the body a search only pointed at)
-!   timeline [options] <id>                 show an entity's history across the trees (subject, about, target)
-!   accountability [options]                show who authorized what across the record (optionally windowed/filtered)
-!   antipatterns [options]                  show recurring shapes in the record (reopens, supersessions, deprecations)
-!   exposure [options]                      show which records hold something shaped like a credential (never the value)
-!   export [options]                        emit the record as an OCSF audit feed (NDJSON, envelope only — never a body)
-!   refs [options] <id>                     show what an entity is connected to across the trees
-!   rules [options] <path>                  show which recorded rules govern a path, and which address nothing
-!   rules-file [options]                    print the rules that have an address as another host’s rules file, where the glob is exact
-!   skills [options]                        show where each pattern came from (who proposed it, who adopted it)
-!   usage                                   what each run cost, read from this machine's Claude Code transcripts
-!   brief                                   print what governs the work here as markdown, for an agent to read
-!   recall                                  print the latest notes recorded here as markdown, for an agent to read
-!   before-a-write [options]                answer a host’s hook before a file is written: ask for a person where a rule asks
-!   key                                     manage this machine's signing keys
-!   tail                                    authorize a cut in the record's own tails
-!   witness [options]                       ask an outside witness to date this record, and read where that stands
-!   switch                                  turn off, or back on, what mnema hands to a model unasked
-!   verify [options]                        verify this project's record — its committed tree and its private one
-!   mcp [options]                           run the mnema MCP server over stdio (for an agent host)
-!   repl                                    open an interactive session that reads this project
-!   completion <shell>                      print the tab-completion script for a shell
-!   help [command]                          display help for command
+!   init                                  establish a mnema project in the current
+!                                         directory
+!   task [options]                        create a task, or move one, in the
+!                                         current project
+!   decision [options]                    record a decision, or move one, in the
+!                                         current project
+!   skill [options]                       propose a reusable skill, move one, or
+!                                         export one, in the current project
+!   memory [options] <content>            capture a memory in the current project
+!   observe [options] <about>             record an observation about an entity in
+!                                         the current project
+!   handoff [options] <task> <from> <to>  record a handoff on a task in the
+!                                         current project
+!   link [options] <subject> <target>     link one piece of knowledge to another
+!                                         in the current project
+!   run                                   open and close the session an agent
+!                                         works inside
+!   status [options]                      show where things stand: the work, what
+!                                         governs, what awaits a ruling
+!   focus [options]                       show an actor's open runs (what they are
+!                                         touching now)
+!   resume [options]                      show where an actor left off (their
+!                                         latest run, open or ended)
+!   next-actions [options] <task-id>      show the moves the workflow allows a
+!                                         task next
+!   guard [options] <action> <id>         dry-run the gate: would a move be
+!                                         allowed on a task, and if not, why?
+!   search [options] [term]               find what has been recorded, or list the
+!                                         most recent (no term)
+!   show [options] <id>                   show one whole record by id (the body a
+!                                         search only pointed at)
+!   timeline [options] <id>               show an entity's history across the
+!                                         trees (subject, about, target)
+!   accountability [options]              show who authorized what across the
+!                                         record (optionally windowed/filtered)
+!   antipatterns [options]                show recurring shapes in the record
+!                                         (reopens, supersessions, deprecations)
+!   exposure [options]                    show which records hold something shaped
+!                                         like a credential (never the value)
+!   export [options]                      emit the record as an OCSF audit feed
+!                                         (NDJSON, envelope only — never a body)
+!   refs [options] <id>                   show what an entity is connected to
+!                                         across the trees
+!   rules [options] <path>                show which recorded rules govern a path,
+!                                         and which address nothing
+!   rules-file [options]                  print the rules that have an address as
+!                                         another host’s rules file, where the
+!                                         glob is exact
+!   skills [options]                      show where each pattern came from (who
+!                                         proposed it, who adopted it)
+!   usage                                 what each run cost, read from this
+!                                         machine's Claude Code transcripts
+!   brief [options]                       print what governs the work here as
+!                                         markdown, for an agent to read
+!   recall [options]                      print the notes recorded here as
+!                                         markdown, near ones first, for an agent
+!                                         to read
+!   before-a-write [options]              answer a host’s hook before a file is
+!                                         written: ask for a person where a rule
+!                                         asks
+!   key                                   manage this machine's signing keys
+!   tail                                  authorize a cut in the record's own
+!                                         tails
+!   witness [options]                     ask an outside witness to date this
+!                                         record, and read where that stands
+!   switch                                turn off, or back on, what mnema hands
+!                                         to a model unasked
+!   verify [options]                      verify this project's record — its
+!                                         committed tree and its private one
+!   mcp [options]                         run the mnema MCP server over stdio (for
+!                                         an agent host)
+!   repl                                  open an interactive session that reads
+!                                         this project
+!   completion <shell>                    print the tab-completion script for a
+!                                         shell
+!   help [command]                        display help for command
 [exit 1]
 
 ### the program
@@ -61,49 +105,93 @@ $ mnema --help
 | happens.
 |
 | Options:
-|   -V, --version                           output the version number
-|   --color <when>                          when to use bold, dim and color: auto (a terminal only), always (also in a pipe), never. NO_COLOR and FORCE_COLOR are honored; an explicit --color beats both. Style never changes what a line says. (choices: "auto", "always", "never", default: "auto")
-|   -h, --help                              display help for command
+|   -V, --version                         output the version number
+|   --color <when>                        when to use bold, dim and color: auto (a
+|                                         terminal only), always (also in a pipe),
+|                                         never. NO_COLOR and FORCE_COLOR are
+|                                         honored; an explicit --color beats both.
+|                                         Style never changes what a line says.
+|                                         (choices: "auto", "always", "never",
+|                                         default: "auto")
+|   -h, --help                            display help for command
 |
 | Commands:
-|   init                                    establish a mnema project in the current directory
-|   task [options] <title>                  create a task in the current project
-|   decision [options] <title> <rationale>  record a decision in the current project
-|   skill [options] <name>                  propose a reusable skill in the current project
-|   memory [options] <content>              capture a memory in the current project
-|   observe [options] <about>               record an observation about an entity in the current project
-|   handoff [options] <task> <from> <to>    record a handoff on a task in the current project
-|   link [options] <subject> <target>       link one piece of knowledge to another in the current project
-|   run                                     open and close the session an agent works inside
-|   status [options]                        show where things stand: the work, what governs, what awaits a ruling
-|   focus [options]                         show an actor's open runs (what they are touching now)
-|   resume [options]                        show where an actor left off (their latest run, open or ended)
-|   next-actions [options] <task-id>        show the moves the workflow allows a task next
-|   guard [options] <action> <id>           dry-run the gate: would a move be allowed on a task, and if not, why?
-|   search [options] [term]                 find what has been recorded, or list the most recent (no term)
-|   show [options] <id>                     show one whole record by id (the body a search only pointed at)
-|   timeline [options] <id>                 show an entity's history across the trees (subject, about, target)
-|   accountability [options]                show who authorized what across the record (optionally windowed/filtered)
-|   antipatterns [options]                  show recurring shapes in the record (reopens, supersessions, deprecations)
-|   exposure [options]                      show which records hold something shaped like a credential (never the value)
-|   export [options]                        emit the record as an OCSF audit feed (NDJSON, envelope only — never a body)
-|   refs [options] <id>                     show what an entity is connected to across the trees
-|   rules [options] <path>                  show which recorded rules govern a path, and which address nothing
-|   rules-file [options]                    print the rules that have an address as another host’s rules file, where the glob is exact
-|   skills [options]                        show where each pattern came from (who proposed it, who adopted it)
-|   usage                                   what each run cost, read from this machine's Claude Code transcripts
-|   brief                                   print what governs the work here as markdown, for an agent to read
-|   recall                                  print the latest notes recorded here as markdown, for an agent to read
-|   before-a-write [options]                answer a host’s hook before a file is written: ask for a person where a rule asks
-|   key                                     manage this machine's signing keys
-|   tail                                    authorize a cut in the record's own tails
-|   witness [options]                       ask an outside witness to date this record, and read where that stands
-|   switch                                  turn off, or back on, what mnema hands to a model unasked
-|   verify [options]                        verify this project's record — its committed tree and its private one
-|   mcp [options]                           run the mnema MCP server over stdio (for an agent host)
-|   repl                                    open an interactive session that reads this project
-|   completion <shell>                      print the tab-completion script for a shell
-|   help [command]                          display help for command
+|   init                                  establish a mnema project in the current
+|                                         directory
+|   task [options]                        create a task, or move one, in the
+|                                         current project
+|   decision [options]                    record a decision, or move one, in the
+|                                         current project
+|   skill [options]                       propose a reusable skill, move one, or
+|                                         export one, in the current project
+|   memory [options] <content>            capture a memory in the current project
+|   observe [options] <about>             record an observation about an entity in
+|                                         the current project
+|   handoff [options] <task> <from> <to>  record a handoff on a task in the
+|                                         current project
+|   link [options] <subject> <target>     link one piece of knowledge to another
+|                                         in the current project
+|   run                                   open and close the session an agent
+|                                         works inside
+|   status [options]                      show where things stand: the work, what
+|                                         governs, what awaits a ruling
+|   focus [options]                       show an actor's open runs (what they are
+|                                         touching now)
+|   resume [options]                      show where an actor left off (their
+|                                         latest run, open or ended)
+|   next-actions [options] <task-id>      show the moves the workflow allows a
+|                                         task next
+|   guard [options] <action> <id>         dry-run the gate: would a move be
+|                                         allowed on a task, and if not, why?
+|   search [options] [term]               find what has been recorded, or list the
+|                                         most recent (no term)
+|   show [options] <id>                   show one whole record by id (the body a
+|                                         search only pointed at)
+|   timeline [options] <id>               show an entity's history across the
+|                                         trees (subject, about, target)
+|   accountability [options]              show who authorized what across the
+|                                         record (optionally windowed/filtered)
+|   antipatterns [options]                show recurring shapes in the record
+|                                         (reopens, supersessions, deprecations)
+|   exposure [options]                    show which records hold something shaped
+|                                         like a credential (never the value)
+|   export [options]                      emit the record as an OCSF audit feed
+|                                         (NDJSON, envelope only — never a body)
+|   refs [options] <id>                   show what an entity is connected to
+|                                         across the trees
+|   rules [options] <path>                show which recorded rules govern a path,
+|                                         and which address nothing
+|   rules-file [options]                  print the rules that have an address as
+|                                         another host’s rules file, where the
+|                                         glob is exact
+|   skills [options]                      show where each pattern came from (who
+|                                         proposed it, who adopted it)
+|   usage                                 what each run cost, read from this
+|                                         machine's Claude Code transcripts
+|   brief [options]                       print what governs the work here as
+|                                         markdown, for an agent to read
+|   recall [options]                      print the notes recorded here as
+|                                         markdown, near ones first, for an agent
+|                                         to read
+|   before-a-write [options]              answer a host’s hook before a file is
+|                                         written: ask for a person where a rule
+|                                         asks
+|   key                                   manage this machine's signing keys
+|   tail                                  authorize a cut in the record's own
+|                                         tails
+|   witness [options]                     ask an outside witness to date this
+|                                         record, and read where that stands
+|   switch                                turn off, or back on, what mnema hands
+|                                         to a model unasked
+|   verify [options]                      verify this project's record — its
+|                                         committed tree and its private one
+|   mcp [options]                         run the mnema MCP server over stdio (for
+|                                         an agent host)
+|   repl                                  open an interactive session that reads
+|                                         this project
+|   completion <shell>                    print the tab-completion script for a
+|                                         shell
+|   help [command]                        display help for command
 $ mnema --version
 | 0.1.0
 
@@ -118,12 +206,9 @@ $ mnema init --help
 
 ### mnema task --help
 $ mnema task --help
-| Usage: mnema task [options] [command] <title>
+| Usage: mnema task [options] [command]
 |
-| create a task in the current project
-|
-| Arguments:
-|   title                         the task title
+| create a task, or move one, in the current project
 |
 | Options:
 |   --scope <scope>               where the task is born: public (team-visible),
@@ -140,8 +225,10 @@ $ mnema task --help
 |   -h, --help                    display help for command
 |
 | Commands:
+|   create [options] <title>      create a task in the current project
 |   move [options] <action> <id>  move a task through the workflow (follows the
 |                                 task; takes no --scope)
+|   help [command]                display help for command
 |
 | What recording means here:
 |   Permanent — mnema is append-only and nothing deletes a fact. A public record
@@ -152,13 +239,9 @@ $ mnema task --help
 
 ### mnema decision --help
 $ mnema decision --help
-| Usage: mnema decision [options] [command] <title> <rationale>
+| Usage: mnema decision [options] [command]
 |
-| record a decision in the current project
-|
-| Arguments:
-|   title                                  the decision title
-|   rationale                              why the decision was made
+| record a decision, or move one, in the current project
 |
 | Options:
 |   --alternatives <text>                  what was considered and turned down, and why not (optional). A decision is immutable, so this is recorded at birth: an option rejected later is a new decision, or supersedes this one.
@@ -167,9 +250,11 @@ $ mnema decision --help
 |   -h, --help                             display help for command
 |
 | Commands:
+|   record [options] <title> <rationale>   record a decision in the current project
 |   move [options] <action> <id>           accept or reject a decision (follows the decision; takes no --scope)
 |   supersede [options] <old-id> <new-id>  supersede a decision with a later one (follows the decision; takes no --scope)
 |   import [options] <dir>                 propose the decisions already written in this repository’s decision files
+|   help [command]                         display help for command
 |
 | What recording means here:
 |   Permanent — mnema is append-only and nothing deletes a fact. A public record
@@ -180,12 +265,9 @@ $ mnema decision --help
 
 ### mnema skill --help
 $ mnema skill --help
-| Usage: mnema skill [options] [command] <name>
+| Usage: mnema skill [options] [command]
 |
-| propose a reusable skill in the current project
-|
-| Arguments:
-|   name                          a short title for the pattern
+| propose a reusable skill, move one, or export one, in the current project
 |
 | Options:
 |   --body <text>                 the reusable pattern itself (required)
@@ -204,10 +286,12 @@ $ mnema skill --help
 |   -h, --help                    display help for command
 |
 | Commands:
+|   create [options] <name>       propose a reusable skill in the current project
 |   move [options] <action> <id>  move a skill through the workflow (follows the
 |                                 skill; takes no --scope)
 |   export [options] <id>         write an adopted pattern as the SKILL.md an
 |                                 agent host reads (records nothing)
+|   help [command]                display help for command
 |
 | What recording means here:
 |   Permanent — mnema is append-only and nothing deletes a fact. A public record
@@ -628,6 +712,9 @@ $ mnema brief --help
 | print what governs the work here as markdown, for an agent to read
 |
 | Options:
+|   --hook      print it for a Claude Code hook: whole rules up to what a hook
+|               carries, and a closing paragraph saying how many were left out and
+|               what serves them
 |   -h, --help  display help for command
 |
 | It prints to stdout and writes nothing — the redirection is yours, and `>`
@@ -641,7 +728,10 @@ $ mnema brief --help
 | somebody’s own method and this document would replace every word of it — the
 | line `@MNEMA.md` in a `CLAUDE.md` brings the file above in with it, where a
 | sentence naming the file is read only if the agent chooses to open it.
-| The mnema plugin hands this document to a Claude Code session with no file at all.
+| The mnema plugin hands this document to a Claude Code session with no file at all,
+| with `--hook`: past what a hook carries, the host would replace the whole text with a
+| file path, so there the rules stop at a whole one and the document says how many it
+| left out. Without the flag nothing is cut.
 |
 | The output holds no clock, no session and no path, so the same record always
 | prints the same bytes and a difference is a difference in the record.
@@ -665,22 +755,29 @@ $ mnema brief --help
 $ mnema recall --help
 | Usage: mnema recall [options]
 |
-| print the latest notes recorded here as markdown, for an agent to read
+| print the notes recorded here as markdown, near ones first, for an agent to read
 |
 | Options:
+|   --hook      print it for a Claude Code hook: whole notes up to what a hook
+|               carries, each section saying how many it left out
 |   -h, --help  display help for command
 |
 | It prints to stdout and writes nothing. It is what a session opens with beside the
 | document `mnema brief` prints: the memories and the observations recorded for this
-| project, newest first, one line each — out of EVERY tree this machine holds for it,
-| the committed one, this machine’s own and your personal one.
+| project, one line each — out of EVERY tree this machine holds for it, the committed
+| one, this machine’s own and your personal one.
 | So it is NOT a file to commit: `mnema brief` carries the committed record and is
 | written to be redirected into one; this carries what was kept on this machine too.
 |
 | Each line is the one the record already knows a note by — an observation’s topic,
-| the start of a memory — with the id `mnema show <id>` reads whole. The newest of
-| each kind, cut where `mnema search` cuts, and it says how many there are in all
-| when there are more.
+| the start of a memory — with the id `mnema show <id>` reads whole. Cut where
+| `mnema search` cuts, and it says how many there are in all when there are more.
+|
+| The notes that share a word with what this session touches come first, ranked
+| as `mnema search` ranks: the files changed in the working tree, the tasks in
+| progress, the name of the branch and the files of the last 3 commits, read with
+| git and no lock, the record’s own directory left out. The rest are the newest.
+| With nothing to read there, all of them are the newest. It says which, in a line.
 | It prints NOTHING when nothing is recorded, so a session opens with nothing added.
 | It can be switched off (`mnema switch off recall-document`), and then it refuses.
 
@@ -733,8 +830,8 @@ $ mnema tail --help
 |   -h, --help              display help for command
 |
 | Commands:
-|   list                    list the tails the record holds here, with the id
-|                           `prune` takes
+|   list                    list the tails that hold events here — the ones a cut
+|                           can name — with the id `prune` takes
 |   prune [options] <tail>  record that one whole tail was authorized to be cut
 |                           (it removes nothing)
 |   help [command]          display help for command
@@ -888,6 +985,34 @@ $ mnema completion --help
 | The script is generated from this program, so a verb added to it is completed
 | the same day. Print it again after an upgrade.
 
+### mnema task create --help
+$ mnema task create --help
+| Usage: mnema task create [options] <title>
+|
+| create a task in the current project
+|
+| Arguments:
+|   title            the task title
+|
+| Options:
+|   --scope <scope>  where the task is born: public (team-visible), private (this
+|                    machine, this project), or global (personal, cross-project).
+|                    Omitted, a task lands in the public tree (the team’s work
+|                    board).
+|   --which <agent>  the agent that executed this, when an agent (a script, a CI
+|                    step) is driving mnema — omit it when you are acting
+|                    directly. Declared, never assumed; it names the executor. See
+|                    --scope for where the fact lands. A value that names no agent
+|                    (an unset variable) is refused, never credited to you.
+|   -h, --help       display help for command
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
 ### mnema task move --help
 $ mnema task move --help
 | Usage: mnema task move [options] <action> <id>
@@ -911,6 +1036,40 @@ $ mnema task move --help
 |                    a CI step) is driving mnema — omit it when you are acting
 |                    directly. It names the executor only: a move always follows
 |                    the entity to the tree it was born in.
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema decision record --help
+$ mnema decision record --help
+| Usage: mnema decision record [options] <title> <rationale>
+|
+| record a decision in the current project
+|
+| Arguments:
+|   title                  the decision title
+|   rationale              why the decision was made
+|
+| Options:
+|   --alternatives <text>  what was considered and turned down, and why not
+|                          (optional). A decision is immutable, so this is
+|                          recorded at birth: an option rejected later is a new
+|                          decision, or supersedes this one.
+|   --scope <scope>        where the decision is born: public (team-visible),
+|                          private (this machine, this project), or global
+|                          (personal, cross-project). Omitted, a decision lands in
+|                          the public tree (a declaration about the project).
+|   --which <agent>        the agent that executed this, when an agent (a script,
+|                          a CI step) is driving mnema — omit it when you are
+|                          acting directly. Declared, never assumed; it names the
+|                          executor. See --scope for where the fact lands. A value
+|                          that names no agent (an unset variable) is refused,
+|                          never credited to you.
+|   -h, --help             display help for command
 |
 | What recording means here:
 |   Permanent — mnema is append-only and nothing deletes a fact. A public record
@@ -1007,6 +1166,35 @@ $ mnema decision import --help
 | is proposed — including one that is no decision at all: an index page or a
 | roadmap wears the same shape, and no fact of the document separates them. That
 | is why nothing is accepted on your behalf. Nothing here calls a model.
+|
+| What recording means here:
+|   Permanent — mnema is append-only and nothing deletes a fact. A public record
+|   is committed and reaches every machine that clones the repository.
+|   Do not record credentials: a recognized format is replaced with a placeholder
+|   and reported back, but what mnema does not recognize is written verbatim.
+|   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema skill create --help
+$ mnema skill create --help
+| Usage: mnema skill create [options] <name>
+|
+| propose a reusable skill in the current project
+|
+| Arguments:
+|   name             a short title for the pattern
+|
+| Options:
+|   --body <text>    the reusable pattern itself (required)
+|   --scope <scope>  where the skill is born: public (team-visible), private (this
+|                    machine, this project), or global (personal, cross-project).
+|                    Omitted, a skill lands in the public tree (a declaration
+|                    about the project).
+|   --which <agent>  the agent that executed this, when an agent (a script, a CI
+|                    step) is driving mnema — omit it when you are acting
+|                    directly. Declared, never assumed; it names the executor. See
+|                    --scope for where the fact lands. A value that names no agent
+|                    (an unset variable) is refused, never credited to you.
+|   -h, --help       display help for command
 |
 | What recording means here:
 |   Permanent — mnema is append-only and nothing deletes a fact. A public record
@@ -1163,7 +1351,8 @@ $ mnema key revoke --help
 $ mnema tail list --help
 | Usage: mnema tail list [options]
 |
-| list the tails the record holds here, with the id `prune` takes
+| list the tails that hold events here — the ones a cut can name — with the id
+| `prune` takes
 |
 | Options:
 |   -h, --help  display help for command

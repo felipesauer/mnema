@@ -70,10 +70,10 @@ mnema init | tilde
 pause 1.6
 
 say "write down a call, with the reasoning and what was turned down"
-typed 'mnema decision "Keep money as integer cents" \' \
+typed 'mnema decision record "Keep money as integer cents" \' \
   '"Float sums drift; cents are exact." \' \
   '--alternatives "A decimal library: slower, one more dependency."'
-OUT=$(mnema decision "Keep money as integer cents" "Float sums drift; cents are exact." \
+OUT=$(mnema decision record "Keep money as integer cents" "Float sums drift; cents are exact." \
   --alternatives "A decimal library: slower, one more dependency.")
 echo "$OUT" | tilde
 ID=$(echo "$OUT" | grep -m1 -oE '[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}')

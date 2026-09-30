@@ -99,7 +99,7 @@ async function record(count: number): Promise<void> {
   await run(['init'], capture().io);
   for (let i = 0; i < count; i += 1) {
     const c = capture();
-    await run(['task', `task number ${i}`], c.io);
+    await run(['task', 'create', `task number ${i}`], c.io);
     if (c.failed()) throw new Error(`setup: task ${i} failed: ${c.err.join(' / ')}`);
   }
 }

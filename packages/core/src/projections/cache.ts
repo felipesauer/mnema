@@ -62,7 +62,13 @@ import {
 } from './reference-store.js';
 import type { RunProjection } from './run.js';
 import { getRun, listOpenRuns, listRuns } from './run-store.js';
-import { type SearchQuery, type SearchResult, searchRecord } from './search-store.js';
+import {
+  type PertinenceQuery,
+  type SearchQuery,
+  type SearchResult,
+  searchPertinent,
+  searchRecord,
+} from './search-store.js';
 import type { SkillProjection } from './skill.js';
 import { getSkill, listSkills, listSkillsByState } from './skill-store.js';
 import type { TaskProjection } from './task.js';
@@ -484,6 +490,14 @@ export class ProjectionCache {
    */
   search(query: SearchQuery = {}): SearchResult {
     return searchRecord(this.db, query);
+  }
+
+  /**
+   * The records of this tree that share any of `query.words`, best first — the index's
+   * answer to "what here is near these", with the same line per hit a search serves.
+   */
+  searchPertinent(query: PertinenceQuery): SearchResult {
+    return searchPertinent(this.db, query);
   }
 
   /**

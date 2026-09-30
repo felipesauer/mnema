@@ -172,7 +172,7 @@ beforeAll(async () => {
   const identity = founded.out.find((line) => line.trim().startsWith('identity:'));
   if (identity === undefined) throw new Error(`fixture: init printed no identity: ${founded.out}`);
   mine = identity.trim().slice('identity:'.length).trim();
-  await shell('task', 'the task the console is asked about');
+  await shell('task', 'create', 'the task the console is asked about');
 
   // The second installation, writing into the same project: after this the record knows
   // two identities, and either one can be named at the prompt.

@@ -59,9 +59,12 @@
  *     only transitions (`core/src/workflow/decision-transitions.ts`), and the brief's own
  *     cases for which decisions it lists;
  *   - that a credential does not belong here because a record is permanent and a public
- *     one is committed — `RECORD_CONTRACT`, the text every write tool already carries;
+ *     one is committed — `RECORD_CONTRACT`, the text every write tool but `skills` carries
+ *     (`mcp-e2e.test.ts`, "every write tool declares the contract"; this said "every write
+ *     tool", while two did not, and `rules_before_an_edit` came to carry it);
  *   - that, with the plugin, a session opens with the decisions in force, the adopted
- *     patterns and the latest notes this machine holds, unless that was switched off —
+ *     patterns and the notes this machine holds, the ones near the work first, unless that was
+ *     switched off —
  *     `the-record-arrives-unasked.test.ts` for both handlers the plugin declares, and
  *     `the-switch-is-a-fact.test.ts` for the switch.
  * It does NOT claim that the plugin is installed, because a server cannot see how it was
@@ -101,9 +104,10 @@ const LINES = [
   'cloned), what the code or its history already says, or a log of every step.',
   '',
   'With the mnema plugin, a session here opens with the decisions in force, the adopted',
-  'patterns and the latest memories and observations this machine holds for the project,',
-  'unless someone switched that off — so a note recorded here comes back without anybody',
-  'asking for it, and a decision does once it is accepted.',
+  'patterns and the memories and observations this machine holds for the project, those near',
+  'the files and tasks the session touches first, unless someone switched that off — so a',
+  'note recorded here comes back without anybody asking for it, and a decision does once it',
+  'is accepted.',
 ];
 
 /** What the server sends as `instructions` in the handshake. */

@@ -62,9 +62,9 @@ beforeAll(() => {
     '# Use a queue\n\n## Status\n\nAccepted\n\n## Context\n\nWhy a queue.\n',
   );
   expect(mnema('init').status).toBe(0);
-  decision = idOf(mnema('decision', 'Use UTC', 'one clock'));
-  successor = idOf(mnema('decision', 'Use UTC everywhere', 'one clock, stated'));
-  skill = idOf(mnema('skill', 'Run the gates', '--body', 'build, lint, test'));
+  decision = idOf(mnema('decision', 'record', 'Use UTC', 'one clock'));
+  successor = idOf(mnema('decision', 'record', 'Use UTC everywhere', 'one clock, stated'));
+  skill = idOf(mnema('skill', 'create', 'Run the gates', '--body', 'build, lint, test'));
 });
 
 afterAll(() => {
@@ -136,7 +136,7 @@ function refused(argv: readonly string[], sentence: string): void {
 
 const TURNED_DOWN_AT_BIRTH =
   'takes no --alternatives: what a decision turned down is recorded with the decision itself — ' +
-  'pass it to `mnema decision` with the title and the rationale.';
+  'pass it to `mnema decision record` with the title and the rationale.';
 
 describe('the decision group’s --alternatives', () => {
   it('is refused on a move, written after it or before it', () => {
@@ -208,13 +208,13 @@ describe('the completion the binary writes', () => {
 
 describe('the group’s --which, which a move does read', () => {
   it('is the agent on the transition, written after the move', () => {
-    const task = idOf(mnema('task', 'Ship it'));
+    const task = idOf(mnema('task', 'create', 'Ship it'));
     expect(mnema('task', 'move', 'submit', task, '--which', 'agent-after').status).toBe(0);
     expect(movedBy('agent-after')).toEqual([task]);
   });
 
   it('is the agent on the transition, written before the move', () => {
-    const decided = idOf(mnema('decision', 'Use a queue', 'back-pressure'));
+    const decided = idOf(mnema('decision', 'record', 'Use a queue', 'back-pressure'));
     expect(
       mnema('decision', '--which', 'agent-before', 'move', 'accept', decided, '--note', 'ok')
         .status,

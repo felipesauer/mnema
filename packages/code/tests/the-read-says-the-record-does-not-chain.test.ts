@@ -98,15 +98,15 @@ beforeAll(async () => {
   delete process.env.MNEMA_RUN;
   process.chdir(project);
   await invoke('init');
-  await invoke('decision', 'The first', 'because');
+  await invoke('decision', 'record', 'The first', 'because');
   // A task and an adopted pattern, because three of the reads take one: `next-actions`
   // and `guard` are about a task, and `show` is about a record with a body. Every value
   // here is one the PRODUCT produced — the ids are read back out of what it printed, so
   // no case runs over a state no write can reach.
-  const made = await invoke('task', 'The work');
+  const made = await invoke('task', 'create', 'The work');
   task = /\(([^)]+)\)/.exec(made.out.join(LF))?.[1] ?? '';
   if (task === '') throw new Error(`fixture: no task in ${made.out.join(LF)}`);
-  const skilled = await invoke('skill', 'the-way', '--body', 'do it like this');
+  const skilled = await invoke('skill', 'create', 'the-way', '--body', 'do it like this');
   skill = /\(([^)]+)\)/.exec(skilled.out.join(LF))?.[1] ?? '';
   if (skill === '') throw new Error(`fixture: no skill in ${skilled.out.join(LF)}`);
   // Carried to ADOPTED through the product's own transitions, because `skill export`

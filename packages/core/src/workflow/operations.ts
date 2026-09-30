@@ -71,7 +71,7 @@ import { canonicalId, mintId } from '../identity/id.js';
 import { oneLine } from '../one-line.js';
 import { orderedEvents } from '../projections/order.js';
 import { projectTasks } from '../projections/task.js';
-import { appendEvent, appendEvents, type UnreadableEventErr } from './append.js';
+import { type AppendRefusal, appendEvent, appendEvents } from './append.js';
 import { type Clock, systemClock } from './clock.js';
 import { type GateErr, gate } from './gate.js';
 import { authorizingAnchor, ensureFounded } from './identity-operations.js';
@@ -152,7 +152,7 @@ export type WriteError =
   /** A free-text field was over the size limit (see {@link screenContent}). */
   | ScreenRefusal
   /** A read would not have accepted the event (see {@link appendEvent}). */
-  | UnreadableEventErr
+  | AppendRefusal
   /** The task does not exist (no `task.created` for this id). */
   | { readonly ok: false; readonly code: 'UNKNOWN_TASK'; readonly message: string };
 

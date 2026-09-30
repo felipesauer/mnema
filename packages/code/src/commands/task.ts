@@ -1,5 +1,5 @@
 /**
- * `mnema task <title>` — create a task.
+ * `mnema task create <title>` — create a task.
  *
  * This is the MOLD every writing verb copies: an adapter that parses input,
  * resolves which tree the write belongs to, opens that tree's writer, calls ONE

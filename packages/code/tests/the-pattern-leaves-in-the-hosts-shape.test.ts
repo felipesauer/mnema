@@ -116,7 +116,7 @@ function idOf(said: Said): string {
 
 /** Proposes a pattern under `name` and walks it to adopted, answering with its id. */
 async function anAdoptedPattern(name: string, body = BODY): Promise<string> {
-  const proposed = await mnema('skill', name, '--body', body);
+  const proposed = await mnema('skill', 'create', name, '--body', body);
   expect(proposed.failed, proposed.err.join(' / ')).toBe(false);
   const id = idOf(proposed);
   for (const [action, field, why] of [

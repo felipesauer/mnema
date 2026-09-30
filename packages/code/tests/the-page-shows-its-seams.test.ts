@@ -140,7 +140,7 @@ beforeAll(async () => {
   process.chdir(project);
 
   await run(['init'], quiet);
-  await run(['task', 'the task the seams are measured over'], quiet);
+  await run(['task', 'create', 'the task the seams are measured over'], quiet);
 
   environment = {
     ...process.env,

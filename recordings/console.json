@@ -11,6 +11,7 @@
     ["init"],
     [
       "decision",
+      "record",
       "Keep money as integer cents",
       "Float sums drift; cents are exact.",
       "--alternatives",
@@ -19,6 +20,7 @@
     ["decision", "move", "accept", "<the id above>", "--note", "Agreed in review."],
     [
       "decision",
+      "record",
       "UTC everywhere below the presentation layer",
       "Local time is a way of showing an instant, never a way of storing one.",
       "--alternatives",
@@ -27,13 +29,14 @@
     ["decision", "move", "accept", "<the id above>", "--note", "Agreed in review."],
     [
       "skill",
+      "create",
       "Retry a webhook three times, then park it",
       "--body",
       "Three attempts with backoff; a fourth failure parks the delivery for a person to look at."
     ],
     ["skill", "move", "review", "<the id above>", "--note", "Read in review."],
     ["skill", "move", "adopt", "<the id above>", "--note", "In use on the payment webhook."],
-    ["task", "Move the invoice totals to integer cents"],
+    ["task", "create", "Move the invoice totals to integer cents"],
     ["memory", "The staging database is reset every Monday at 06:00 UTC."]
   ],
   "steps": [

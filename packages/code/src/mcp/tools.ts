@@ -129,7 +129,7 @@ import {
   transitionTask,
 } from '@mnema/core/write';
 import { whatAWriteAsks } from '../edit-asks-a-person.js';
-import { editRulesNotice } from '../edit-rules-push.js';
+import { editRulesNotice, editRulesTold } from '../edit-rules-push.js';
 import { reachOfAddress, readGoverningRules, readRulesInForceAt } from '../governed-tree.js';
 import {
   projectEventsOf,
@@ -141,8 +141,8 @@ import { movedDisplay } from '../moved-record.js';
 import { oneLine } from '../one-line.js';
 import {
   ASKS_A_PERSON_CHANNEL,
+  type CountedChannel,
   EDIT_PUSH_CHANNEL,
-  type SwitchableChannel,
 } from '../record-framing.js';
 import type { ScopedLinkBreak } from '../record-integrity.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
@@ -550,7 +550,7 @@ export function runLinkKnowledge(
 }
 
 /**
- * `create_task` — creates a task, the MCP counterpart of `mnema task`. Until it
+ * `create_task` — creates a task, the MCP counterpart of `mnema task create`. Until it
  * existed the agent could MOVE tasks but never open one, so an agent told to
  * break work down had no tool for it — the asymmetry this closes.
  *
@@ -677,7 +677,7 @@ function proofToFields(input: {
 
 /**
  * `record_decision` — records one decision into a tree, the MCP counterpart of
- * `mnema decision`. The destination is a per-action choice: an explicit `project` and
+ * `mnema decision record`. The destination is a per-action choice: an explicit `project` and
  * `scope` win, else the cascade's project and the tree this KIND names — a decision is
  * a declaration about the project, so it goes to the record that travels. A decision
  * needs both a `title` and a `rationale`, both required by the schema; what it
@@ -829,7 +829,7 @@ function decisionProofToFields(input: {
 
 /**
  * `create_skill` — proposes a reusable pattern into a tree, the MCP counterpart
- * of `mnema skill`. Like `record_decision`, the destination is a per-action choice: an
+ * of `mnema skill create`. Like `record_decision`, the destination is a per-action choice: an
  * explicit `project` and `scope` win, else the cascade's project and the tree this KIND
  * names — a pattern states how the work is done here, so it travels. A skill needs both
  * a `name` and a `body`, both required by the schema.
@@ -2093,7 +2093,10 @@ export function runGoverningRulesTool(
  * have to infer. Two facts, both under the CHANNEL as subject:
  *   - `channel.served`, once per run and per channel, saying the push was live. It pays a
  *     tie this channel shipped owing: a push that recorded nothing left "the rules reached
- *     that session" and "the plugin was never installed" as the same nothing.
+ *     that session" and "the plugin was never installed" as the same nothing. It is written
+ *     HERE AND NOWHERE ELSE, so it counts what is pushed at an edit and nothing more: the two
+ *     texts a session opens with are reads and leave no fact (`CountedChannel`, in
+ *     `record-framing.ts`, is the type that holds the line).
  *   - `channel.asked`, once per asking, citing the rule and the path.
  * The ASKING IS APPENDED BEFORE THE REPLY IS COMPOSED. A charge outside the record is the
  * product acting outside its own record, so if the fact cannot be written the reply carries
@@ -2146,7 +2149,8 @@ export function runRulesBeforeAnEditTool(
   // directory, and a server has no working directory of its own to resolve against.
   const root = session.project ?? '';
   const read = { path: input.path, root, from: root };
-  const context = pushing ? editRulesNotice(readRulesInForceAt(caches, read)) : undefined;
+  const rulesAt = pushing ? readRulesInForceAt(caches, read) : undefined;
+  const context = rulesAt === undefined ? undefined : editRulesNotice(rulesAt);
 
   // THE GATE, AND ITS WHOLE ORDER OF OPERATIONS. The rules that ask are derived, the text
   // is composed, and only then is the fact appended — because the fact cites what the text
@@ -2172,11 +2176,12 @@ export function runRulesBeforeAnEditTool(
   // a call that already speaks, because the facts above are written only for a channel that
   // said something, and it is the first write of a connection into a tree that can found. So
   // this path, which nobody asked for and nobody reads the output of, is not silent about it.
-  const founded = session.founding.take();
-  const told =
-    founded.length === 0
-      ? context
-      : [...(context !== undefined ? [context] : []), ...founded].join('\n\n');
+  // And what the content door replaced in those facts, for the same reason and by the same
+  // field: the path the host named is screened on its way into `channel.asked`.
+  const founded = [...session.founding.take(), ...session.replacementsOwed.take()];
+  // THEY SHARE THE CEILING with the rules, since the host measures the one string it is
+  // handed — which is why the rules and they are joined by one function (`edit-rules-push.ts`).
+  const told = editRulesTold(rulesAt, founded);
   const said = {
     ...(told !== undefined ? { context: told } : {}),
     ...(charged.ok && ask !== undefined ? { ask } : {}),
@@ -2218,6 +2223,7 @@ function recordAskings(session: Session, at: RulesAtPath): { readonly ok: boolea
       if (appended > 0) ctx.writer.checkpoint();
       return { ok: false };
     }
+    session.replacementsOwed.add(done.replaced);
     appended += 1;
   }
   ctx.writer.checkpoint();
@@ -2235,12 +2241,16 @@ function recordAskings(session: Session, at: RulesAtPath): { readonly ok: boolea
  * one fires on every edit, and after the first of a run every call must cost one set lookup
  * and nothing else.
  *
+ * It takes a {@link CountedChannel} and nothing wider, which is where "the fact counts what is
+ * pushed at an edit" stops being a sentence: a caller handing it one of the opening texts'
+ * channels does not build.
+ *
  * A channel joins the run's set only once its fact is on the chain, so a refused write
  * leaves it eligible for a later edit rather than marking it recorded. Nothing is reported:
  * a service fact that failed to append is a gap in the evidence, not a reason to make
  * somebody's session worse.
  */
-function recordServices(session: Session, channels: readonly SwitchableChannel[]): void {
+function recordServices(session: Session, channels: readonly CountedChannel[]): void {
   if (channels.length === 0) return;
   const route = routeWrite(session, 'channel.served', {});
   if (!route.ok) return;
@@ -2257,6 +2267,7 @@ function recordServices(session: Session, channels: readonly SwitchableChannel[]
   for (const channel of fresh) {
     const done = recordChannelServed(ctx, { channel, which: session.which, run });
     if (!done.ok) break;
+    session.replacementsOwed.add(done.replaced);
     recordedInRun.add(channel);
     appended += 1;
   }

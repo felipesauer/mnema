@@ -185,7 +185,7 @@ async function found(project: string, ...scope: readonly string[]): Promise<void
   process.chdir(dir);
   const initiated = await mnema('init');
   expect(initiated.failed, initiated.issues.join(' / ')).toBe(false);
-  const recorded = await mnema('task', `work in ${project}`, ...scope);
+  const recorded = await mnema('task', 'create', `work in ${project}`, ...scope);
   expect(recorded.failed, recorded.issues.join(' / ')).toBe(false);
   process.chdir(sandbox);
 }

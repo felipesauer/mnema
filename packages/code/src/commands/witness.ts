@@ -73,12 +73,14 @@ import {
   checkpointHash,
   checkpointToWitness,
   completeWitness,
+  listTails,
   meetsRequirement,
   type ProvenCheckpoint,
   type ProvenLevel,
   readTailCheckpoints,
   readWitness,
   stampCheckpoint,
+  tailStanding,
   verify,
   type WitnessNetwork,
   type WitnessReading,
@@ -93,7 +95,6 @@ import {
   type DiscoveryEnv,
   resolveTrees,
   type Scope,
-  tailsHeld,
   treesSearched,
 } from '@mnema/core';
 
@@ -132,9 +133,9 @@ export interface WitnessListing {
    * That sentence is true where it was written: `commands/tail-list.ts` answers with
    * `treesSearched(trees)` whole, and the machine-global tree always resolves. Here the
    * same list is filtered by `--global`, which every path of this group leaves off by
-   * default, so outside a project there is nothing left. A reading that interpolates this
-   * then prints `looked in .` — a list with no items and a full stop — and that is what a
-   * caller sees today.
+   * default, so outside a project there is nothing left. A reading that interpolated this
+   * printed `looked in .` — a list with no items and a full stop; the sentence the readings
+   * say now (`noTailHoldsEvents`, `presentation/tails.ts`) says why the list is empty instead.
    */
   readonly trees: readonly Scope[];
 }
@@ -177,30 +178,45 @@ function storedCheckpoints(chain: HeldChain): readonly ProvenCheckpoint[] {
   }));
 }
 
-/** Every tail the trees visible from `ctx.cwd` hold, with the chain each lives in. */
+/**
+ * Every tail the trees visible from `ctx.cwd` hold, with the chain each lives in — counted
+ * the way `verify` counts them.
+ *
+ * IT IS `verify`'s ENUMERATION, `listTails`, AND IT USED TO BE `tail list`'s. It read the tails
+ * through `tailsHeld`, which leaves out a tail with no event in it — the directory an older
+ * writer left with only its ownership proof, which records committed then still carry. That
+ * is the right answer for the verbs that CUT a tail (there is nothing in one to account for),
+ * and the wrong one here: the verifier counts every directory under `tails/`, and folds an
+ * empty one into the witness level as a tail with nothing attested. Measured over a record
+ * holding one, `verify` said `2 tail(s)` and this verb listed one — and the tail missing from
+ * the listing was the very one lowering the level, so the verb a reader opens to find out why
+ * the witness stands where it does could not show them. Now both walk the same directories,
+ * and the empty tail is listed with the reading it has: no checkpoint to witness.
+ *
+ * The events each tail holds are its standing's count, 0 for the empty one — the same reading
+ * `tailsHeld` took, asked of each tail once.
+ */
 function heldChains(ctx: WitnessContext): {
   chains: readonly HeldChain[];
   trees: readonly Scope[];
 } {
   const trees = resolveTrees(ctx.cwd, ctx.env);
-  const chains = tailsHeld(trees, catalogUpcasters()).flatMap((held): HeldChain[] => {
-    if (held.scope === 'global' && !ctx.global) return [];
-    const root = chainRootForScope(trees, held.scope);
-    // A tail is only ever reported for a tree that resolved, so this drops nothing in
-    // practice; it is here because the router's answer is optional by type and a
-    // non-null assertion would be this file deciding a question the router owns.
-    return root === undefined
-      ? []
-      : [
-          {
-            scope: held.scope,
-            tail: held.tail,
-            layout: { root },
-            events: held.standing.eventCount,
-          },
-        ];
-  });
+  const upcasters = catalogUpcasters();
   const searched = treesSearched(trees).filter((scope) => ctx.global || scope !== 'global');
+  const chains = searched.flatMap((scope): HeldChain[] => {
+    const root = chainRootForScope(trees, scope);
+    // A searched tree always resolved, so this drops nothing in practice; it is here because
+    // the router's answer is optional by type and a non-null assertion would be this file
+    // deciding a question the router owns.
+    if (root === undefined) return [];
+    const layout = { root };
+    return listTails(layout).map((tail) => ({
+      scope,
+      tail,
+      layout,
+      events: tailStanding(layout, tail, upcasters)?.eventCount ?? 0,
+    }));
+  });
   return { chains, trees: searched };
 }
 
@@ -297,7 +313,10 @@ export async function runWitnessStamp(
   network: WitnessNetwork = {},
 ): Promise<WitnessAct> {
   const { chains, trees } = heldChains(ctx);
-  if (chains.length === 0) {
+  // NOTHING RECORDED, whatever the directories say. The listing counts an empty tail now, as
+  // `verify` does, and the refusal is still about there being nothing to witness: a tree whose
+  // only tail holds no event is refused exactly as a tree with no tail was.
+  if (!chains.some((chain) => chain.events > 0)) {
     return {
       ok: false,
       reason: 'NO_TAIL',

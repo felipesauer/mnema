@@ -144,7 +144,7 @@ beforeAll(async () => {
 
   const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
   await run(['init'], io);
-  await run(['task', 'the task the floor is measured over'], io);
+  await run(['task', 'create', 'the task the floor is measured over'], io);
 
   environment = {
     ...process.env,
@@ -668,6 +668,9 @@ describe('the floor is asked in one place, and every site that rules on room is 
       'presentation/banner.ts',
       // where a line too wide is broken, and how many rows it then takes
       'presentation/folded.ts',
+      // NOT A WINDOW, and named for that reason: how many whole rules or notes fit in the text a
+      // hook hands a session, whose ceiling is the host's and is counted in characters, not rows
+      'presentation/within-a-hook.ts',
       // which arrangement the input area has room for, and whether the badge and the hint are
       // each one row
       'repl/area.ts',

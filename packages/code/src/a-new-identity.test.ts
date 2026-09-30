@@ -103,10 +103,12 @@ describe('foundingSentence — one sentence, both surfaces', () => {
           'once this key writes there — no enrollment reaches a tree kept on one machine;',
       );
       expect(said, scope).not.toContain('your other projects');
-      // The machine that can vouch may be this very one, under the key it wrote with before.
+      // The machine that can vouch may be this very one, under the key it wrote with before —
+      // and the words say how to sign with that key: it is under another data directory.
       expect(said, scope).toContain(
         'a machine already in that identity (this one, if it still holds the key that identity ' +
-          'wrote with here)',
+          'wrote with here — run the enrollment with MNEMA_HOME naming the directory that key ' +
+          'is kept under)',
       );
       // Its enrollment goes to a PUBLIC tree, which this key may not have written — so nothing
       // keeps it out of this project, and the words do not.

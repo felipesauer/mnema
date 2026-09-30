@@ -346,15 +346,20 @@ describe('every line the CLI writes says the same thing either way', () => {
     delete process.env.FORCE_COLOR;
     process.chdir(repo);
     await invoke(['init']);
-    const task = await invoke(['task', 'Write the deploy runbook']);
+    const task = await invoke(['task', 'create', 'Write the deploy runbook']);
     const created = task.find((line) => line.startsWith('Created task ')) ?? '';
     const id = /\(([^)]+)\)/.exec(created)?.[1];
     if (id === undefined) throw new Error(`fixture: no task id in ${task.join(' / ')}`);
-    await invoke(['decision', 'Keep the runbook in the record', 'It is what a reader asks for']);
+    await invoke([
+      'decision',
+      'record',
+      'Keep the runbook in the record',
+      'It is what a reader asks for',
+    ]);
     // `--body` is REQUIRED and this call used to omit it, so the fixture refused
     // silently and `skills` had nothing to list — which is why a read that composes
     // an id column sat outside the corpus of the slice that measured what paints.
-    await invoke(['skill', 'Write the runbook first', '--body', 'Open the runbook.']);
+    await invoke(['skill', 'create', 'Write the runbook first', '--body', 'Open the runbook.']);
     await invoke(['memory', 'The runbook lives in the record']);
     await invoke(['observe', id]);
     const account = await invoke(['accountability', '--json']);

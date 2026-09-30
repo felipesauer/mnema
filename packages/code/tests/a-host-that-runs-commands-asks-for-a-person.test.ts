@@ -153,10 +153,12 @@ beforeEach(async () => {
   env = { home: join(sandbox, 'home') };
   process.chdir(repo);
   await did('init');
-  asking = idIn(await did('decision', 'Refunds need finance', 'Money leaves the company'));
+  asking = idIn(
+    await did('decision', 'record', 'Refunds need finance', 'Money leaves the company'),
+  );
   await did('decision', 'move', 'accept', asking, '--note', 'agreed');
   await did('link', asking, 'src/billing', '--rel', 'asks-for-a-person');
-  governing = idIn(await did('decision', 'Bill in UTC', 'The ledger is UTC'));
+  governing = idIn(await did('decision', 'record', 'Bill in UTC', 'The ledger is UTC'));
   await did('decision', 'move', 'accept', governing, '--note', 'agreed');
   await did('link', governing, 'src/other', '--rel', 'governs');
 });

@@ -122,7 +122,7 @@ async function page(path: string): Promise<string> {
 
 /** Records a decision through the real verb and returns its id. */
 async function decide(title: string): Promise<string> {
-  const said = await mnema('decision', title, `why ${title}`);
+  const said = await mnema('decision', 'record', title, `why ${title}`);
   expect(said.failed, said.err.join(' / ')).toBe(false);
   // The id is in the PARENTHESES: the line leads with the citable `ADR-<n>` label,
   // which is display and not identity, and a fixture that took the first word would

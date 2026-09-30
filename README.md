@@ -70,7 +70,8 @@ not allow is refused with a typed reason, the same on the command line and over 
 
 **It hands the record to the agent before the agent writes.** With the Claude Code
 plugin, a session opens with the decisions in force, the adopted patterns and the
-latest notes, before the agent has written anything. At each edit the rules
+notes recorded for the project, the ones near the files it touches first, before the
+agent has written anything. At each edit the rules
 addressed at that file are handed over too: they land beside the result of that
 write, in time for every edit after it and for a correction of that one
 ([measured](measurements/mcp-tool-channel/)), and a rule recorded as asking for a
@@ -119,7 +120,7 @@ sequenceDiagram
     participant R as .mnema/ (in git)
     H->>M: session opens
     M->>R: read what is in force
-    M-->>H: decisions in force, adopted patterns, latest notes
+    M-->>H: decisions in force, adopted patterns, the notes near the work
     H->>M: about to write src/billing/invoice.ts
     M-->>H: the rules addressed at src/billing, by title and id
     Note over H: they land beside the result of that write, and stay
@@ -296,7 +297,7 @@ mnema init
 #>     @MNEMA.md
 
 # Write down a call, with the reasoning that is the whole point of writing it.
-mnema decision "Use SQLite for the projection cache" \
+mnema decision record "Use SQLite for the projection cache" \
   "It is embedded, it is fast enough at our sizes, and it needs no service."
 #> Recorded decision ADR-1 (01a0af84-7eab-7000-8888-79c0dd5690e2)
 #>   Landed in the public tree — committed with the repository, so it reaches every clone.

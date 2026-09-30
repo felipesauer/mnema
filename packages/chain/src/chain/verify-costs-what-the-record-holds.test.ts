@@ -65,6 +65,7 @@ const counted = vi.hoisted(() => {
     reads: 0,
     keyReads: new Map<string, number>(),
     derivations: 0,
+    rosterListings: 0,
   };
   const tick = () => {
     if (state.on) state.reads += 1;
@@ -101,6 +102,10 @@ vi.mock('./store.js', async (importActual) => {
     },
     readTailCheckpoints: (...args: Parameters<typeof actual.readTailCheckpoints>) =>
       counted.items(actual.readTailCheckpoints(...args)),
+    listPublicKeyFingerprints: (...args: Parameters<typeof actual.listPublicKeyFingerprints>) => {
+      if (counted.state.on) counted.state.rosterListings += 1;
+      return actual.listPublicKeyFingerprints(...args);
+    },
   };
 });
 
@@ -199,6 +204,7 @@ function countedVerification(root: string) {
   counted.state.reads = 0;
   counted.state.keyReads.clear();
   counted.state.derivations = 0;
+  counted.state.rosterListings = 0;
   counted.state.on = true;
   const result = verify(root);
   counted.state.on = false;
@@ -207,6 +213,7 @@ function countedVerification(root: string) {
     reads: counted.state.reads,
     keyReads: new Map(counted.state.keyReads),
     derivations: counted.state.derivations,
+    rosterListings: counted.state.rosterListings,
   };
 }
 
@@ -252,6 +259,16 @@ describe('what a verification costs', () => {
     );
     // And what each key's fingerprint is, derived once for every check that compares it.
     expect(derivations).toBe(record.keys.length);
+  });
+
+  it('lists the committed keys once — one roster for the whole verdict', () => {
+    // It listed them twice: once to tie each tail's name to a committed key, and again for the
+    // census of keys with no tail — two reads of the roster in one verdict, so a key committed
+    // between them was seen by the census and not by the check.
+    const record = twoMachines(3);
+    const { result, rosterListings } = countedVerification(record.root);
+    expect(result.level).toBe('fully-signed');
+    expect(rosterListings).toBe(1);
   });
 
   it('reads them again on the next verification, which holds a reader of its own', () => {

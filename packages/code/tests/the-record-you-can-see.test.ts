@@ -154,7 +154,7 @@ async function shell(...argv: string[]): Promise<string> {
 
 /** One task, created at the shell, with the id the surface printed for it. */
 async function task(title: string): Promise<Record> {
-  const said = await shell('task', title);
+  const said = await shell('task', 'create', title);
   const id = THE_ID_PRINTED.exec(said)?.[1];
   if (id === undefined) throw new Error(`fixture: task printed no id: ${said}`);
   return { title, id };
