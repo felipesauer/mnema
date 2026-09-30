@@ -14,11 +14,11 @@ function __mnema_commands --description 'the subcommands one level of the tree o
         case ''
             echo 'init task decision skill memory observe handoff link run status focus resume next-actions guard search show timeline accountability antipatterns exposure export refs rules skills usage brief recall key tail witness switch verify mcp repl completion help'
         case 'task'
-            echo 'move'
+            echo 'create move help'
         case 'decision'
-            echo 'move supersede import'
+            echo 'record move supersede import help'
         case 'skill'
-            echo 'move export'
+            echo 'create move export help'
         case 'run'
             echo 'start end help'
         case 'key'
@@ -63,9 +63,9 @@ complete -c mnema -e
 
 # mnema
 complete -c mnema -f -n '__mnema_at ""' -a 'init' -d 'establish a mnema project in the current directory'
-complete -c mnema -f -n '__mnema_at ""' -a 'task' -d 'create a task in the current project'
-complete -c mnema -f -n '__mnema_at ""' -a 'decision' -d 'record a decision in the current project'
-complete -c mnema -f -n '__mnema_at ""' -a 'skill' -d 'propose a reusable skill in the current project'
+complete -c mnema -f -n '__mnema_at ""' -a 'task' -d 'create a task, or move one, in the current project'
+complete -c mnema -f -n '__mnema_at ""' -a 'decision' -d 'record a decision, or move one, in the current project'
+complete -c mnema -f -n '__mnema_at ""' -a 'skill' -d 'propose a reusable skill, move one, or export one, in the current project'
 complete -c mnema -f -n '__mnema_at ""' -a 'memory' -d 'capture a memory in the current project'
 complete -c mnema -f -n '__mnema_at ""' -a 'observe' -d 'record an observation about an entity in the current project'
 complete -c mnema -f -n '__mnema_at ""' -a 'handoff' -d 'record a handoff on a task in the current project'
@@ -108,12 +108,21 @@ complete -c mnema -f -n '__mnema_at "init"' -s V -l version
 complete -c mnema -f -n '__mnema_at "init"' -l color -x -a 'auto always never'
 
 # mnema task
+complete -c mnema -f -n '__mnema_at "task"' -a 'create' -d 'create a task in the current project'
 complete -c mnema -f -n '__mnema_at "task"' -a 'move' -d 'move a task through the workflow (follows the task; takes no --scope)'
+complete -c mnema -f -n '__mnema_at "task"' -a 'help' -d 'display help for command'
 complete -c mnema -f -n '__mnema_at "task"' -l scope -x -a 'public private global'
 complete -c mnema -f -n '__mnema_at "task"' -l which -r
 complete -c mnema -f -n '__mnema_at "task"' -s h -l help
 complete -c mnema -f -n '__mnema_at "task"' -s V -l version
 complete -c mnema -f -n '__mnema_at "task"' -l color -x -a 'auto always never'
+
+# mnema task create
+complete -c mnema -f -n '__mnema_at "task create"' -l scope -x -a 'public private global'
+complete -c mnema -f -n '__mnema_at "task create"' -l which -r
+complete -c mnema -f -n '__mnema_at "task create"' -s h -l help
+complete -c mnema -f -n '__mnema_at "task create"' -s V -l version
+complete -c mnema -f -n '__mnema_at "task create"' -l color -x -a 'auto always never'
 
 # mnema task move
 complete -c mnema -f -n '__mnema_at "task move"' -l reason -r
@@ -126,15 +135,25 @@ complete -c mnema -f -n '__mnema_at "task move"' -l color -x -a 'auto always nev
 complete -c mnema -f -n '__mnema_at "task move"' -a 'submit start block unblock submit_review request_changes approve complete cancel reopen'
 
 # mnema decision
+complete -c mnema -f -n '__mnema_at "decision"' -a 'record' -d 'record a decision in the current project'
 complete -c mnema -f -n '__mnema_at "decision"' -a 'move' -d 'accept or reject a decision (follows the decision; takes no --scope)'
 complete -c mnema -f -n '__mnema_at "decision"' -a 'supersede' -d 'supersede a decision with a later one (follows the decision; takes no --scope)'
 complete -c mnema -f -n '__mnema_at "decision"' -a 'import' -d 'propose the decisions already written in this repository’s decision files'
+complete -c mnema -f -n '__mnema_at "decision"' -a 'help' -d 'display help for command'
 complete -c mnema -f -n '__mnema_at "decision"' -l alternatives -r
 complete -c mnema -f -n '__mnema_at "decision"' -l scope -x -a 'public private global'
 complete -c mnema -f -n '__mnema_at "decision"' -l which -r
 complete -c mnema -f -n '__mnema_at "decision"' -s h -l help
 complete -c mnema -f -n '__mnema_at "decision"' -s V -l version
 complete -c mnema -f -n '__mnema_at "decision"' -l color -x -a 'auto always never'
+
+# mnema decision record
+complete -c mnema -f -n '__mnema_at "decision record"' -l alternatives -r
+complete -c mnema -f -n '__mnema_at "decision record"' -l scope -x -a 'public private global'
+complete -c mnema -f -n '__mnema_at "decision record"' -l which -r
+complete -c mnema -f -n '__mnema_at "decision record"' -s h -l help
+complete -c mnema -f -n '__mnema_at "decision record"' -s V -l version
+complete -c mnema -f -n '__mnema_at "decision record"' -l color -x -a 'auto always never'
 
 # mnema decision move
 complete -c mnema -f -n '__mnema_at "decision move"' -l note -r
@@ -160,14 +179,24 @@ complete -c mnema -f -n '__mnema_at "decision import"' -s V -l version
 complete -c mnema -f -n '__mnema_at "decision import"' -l color -x -a 'auto always never'
 
 # mnema skill
+complete -c mnema -f -n '__mnema_at "skill"' -a 'create' -d 'propose a reusable skill in the current project'
 complete -c mnema -f -n '__mnema_at "skill"' -a 'move' -d 'move a skill through the workflow (follows the skill; takes no --scope)'
 complete -c mnema -f -n '__mnema_at "skill"' -a 'export' -d 'write an adopted pattern as the SKILL.md an agent host reads (records nothing)'
+complete -c mnema -f -n '__mnema_at "skill"' -a 'help' -d 'display help for command'
 complete -c mnema -f -n '__mnema_at "skill"' -l body -r
 complete -c mnema -f -n '__mnema_at "skill"' -l scope -x -a 'public private global'
 complete -c mnema -f -n '__mnema_at "skill"' -l which -r
 complete -c mnema -f -n '__mnema_at "skill"' -s h -l help
 complete -c mnema -f -n '__mnema_at "skill"' -s V -l version
 complete -c mnema -f -n '__mnema_at "skill"' -l color -x -a 'auto always never'
+
+# mnema skill create
+complete -c mnema -f -n '__mnema_at "skill create"' -l body -r
+complete -c mnema -f -n '__mnema_at "skill create"' -l scope -x -a 'public private global'
+complete -c mnema -f -n '__mnema_at "skill create"' -l which -r
+complete -c mnema -f -n '__mnema_at "skill create"' -s h -l help
+complete -c mnema -f -n '__mnema_at "skill create"' -s V -l version
+complete -c mnema -f -n '__mnema_at "skill create"' -l color -x -a 'auto always never'
 
 # mnema skill move
 complete -c mnema -f -n '__mnema_at "skill move"' -l note -r

@@ -138,7 +138,7 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
         io.out(render(fact(THE_LINE_IN_THEIRS, 2)));
       } else {
         io.out(onOneLine`Already a mnema project at ${result.root} — nothing to found.`);
-        reportWhoWritesHere(result, io, render);
+        reportWhoWritesHere(result, io, render, (await import('../key-file.js')).keyFileLine);
       }
     });
   return mutatesTheRecord(init);
@@ -206,7 +206,12 @@ function reportIdentity(identity: InitResult['identity'], io: CliIo, render: Ren
  * (measured). THE EXIT STAYS 0: `init` did what it was asked, and the line is what changed.
  * `the-init-says-a-write-is-refused.test.ts` runs both checkouts on the binary.
  */
-function reportWhoWritesHere(result: InitResult, io: CliIo, render: Render): void {
+function reportWhoWritesHere(
+  result: InitResult,
+  io: CliIo,
+  render: Render,
+  keyFileLine: typeof import('../key-file.js').keyFileLine,
+): void {
   const refused = result.writeRefused;
   if (refused === undefined) {
     io.out(render(fact(`identity: ${result.anchor}`)));
@@ -220,6 +225,6 @@ function reportWhoWritesHere(result: InitResult, io: CliIo, render: Render): voi
     ),
   );
   if (refused.keyFile !== undefined) {
-    io.out(render(fact(onOneLine`this machine keeps the key file at ${refused.keyFile}`)));
+    io.out(render(fact(keyFileLine(refused.keyFile, here().env.mnemaHome))));
   }
 }

@@ -142,7 +142,7 @@ beforeAll(async () => {
   const identity = founded.out.find((line) => line.trim().startsWith('identity:'));
   if (identity === undefined) throw new Error(`fixture: init printed no identity: ${founded.out}`);
   anchor = identity.trim().slice('identity:'.length).trim();
-  const created = await shell('task', 'the task the session is asked about');
+  const created = await shell('task', 'create', 'the task the session is asked about');
   const id = created.out.join('\n').match(/\(([0-9a-f-]{36})\)/);
   if (id?.[1] === undefined) throw new Error(`fixture: task printed no id: ${created.out}`);
   task = id[1];

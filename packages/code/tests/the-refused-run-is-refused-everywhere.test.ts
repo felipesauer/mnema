@@ -304,10 +304,15 @@ async function fixture(name: string): Promise<Fixture> {
 
   return {
     anchor: identity.trim().slice('identity:'.length).trim(),
-    task: await idOf(['task', 'the task the lines name']),
-    decision: await idOf(['decision', 'a decision to move', 'because it was decided']),
-    successor: await idOf(['decision', 'the decision that replaces it', 'because it is later']),
-    skill: await idOf(['skill', 'a pattern to move', '--body', 'the pattern itself']),
+    task: await idOf(['task', 'create', 'the task the lines name']),
+    decision: await idOf(['decision', 'record', 'a decision to move', 'because it was decided']),
+    successor: await idOf([
+      'decision',
+      'record',
+      'the decision that replaces it',
+      'because it is later',
+    ]),
+    skill: await idOf(['skill', 'create', 'a pattern to move', '--body', 'the pattern itself']),
     foreignTail: mergeAForeignTail(
       join(project, PROJECT_DIR),
       join(sandbox, name, 'other-machine'),
@@ -369,7 +374,7 @@ describe('the refused run is refused everywhere', () => {
     // The walk found the three shapes this file reasons about: a top-level verb, a group
     // that is itself an act, and a subcommand two words deep.
     expect(surface).toContain('memory');
-    expect(surface).toContain('task');
+    expect(surface).toContain('witness');
     expect(surface).toContain('decision supersede');
     expect(new Set(surface).size).toBe(surface.length);
 
@@ -391,20 +396,20 @@ describe('the refused run is refused everywhere', () => {
     // `switch on` are one site, declared once by a function that hangs both.
     const asks = measured.filter((one) => one.asked).map((one) => one.path);
     expect([...asks].sort()).toEqual([
-      'decision',
       'decision import',
       'decision move',
+      'decision record',
       'decision supersede',
       'handoff',
       'link',
       'memory',
       'observe',
-      'skill',
+      'skill create',
       'skill move',
       'switch off',
       'switch on',
       'tail prune',
-      'task',
+      'task create',
       'task move',
     ]);
     // The count is the walk's, and it says only that: every path the walk found was
@@ -414,9 +419,10 @@ describe('the refused run is refused everywhere', () => {
     // anywhere is a row like any other.
     expect(measured.length).toBe(theSurface().length - Object.keys(SERVES_OR_REACHES_OUT).length);
 
-    // SO THE CLAIM IS MEASURED SEPARATELY, and it does not hold for three: a line that
+    // SO THE CLAIM IS MEASURED SEPARATELY, and it does not hold for six: a line that
     // stopped at the parser was counted as a path that does not ask, silently, and here
-    // are the ones it happened to. All three are groups whose bare form routes nothing —
+    // are the ones it happened to. (Three, until `task`, `decision` and `skill` stopped
+    // creating on their own and moved it into a subcommand.) All six are groups whose bare form routes nothing —
     // they declare subcommands and no act of their own, so the parser answers with usage
     // and no code of this surface runs. They have no run to be refused and nothing here is
     // said about them; what this pins is that there are no OTHERS. A fourth arriving is a
@@ -427,7 +433,7 @@ describe('the refused run is refused everywhere', () => {
         .filter((one) => one.parserAnswered)
         .map((one) => one.path)
         .sort(),
-    ).toEqual(['key', 'run', 'tail']);
+    ).toEqual(['decision', 'key', 'run', 'skill', 'tail', 'task']);
     // And the two facts are exclusive, which is what makes the first list readable: a path
     // the parser answered for cannot also have been heard by the pin resolver.
     expect(measured.filter((one) => one.parserAnswered && one.asked)).toEqual([]);
@@ -509,8 +515,8 @@ describe('the refused run is refused everywhere', () => {
     // shape the pin exists to catch, and the literal `Usage: mnema` saw none of them: the
     // prefix is commander's help formatter's, and this voice never goes through it.
     const misused: readonly (readonly [string, readonly string[], string])[] = [
-      ['task', ['task'], 'a required positional given nothing'],
-      ['decision', ['decision', 'a title'], 'the SECOND positional given nothing'],
+      ['task create', ['task', 'create'], 'a required positional given nothing'],
+      ['decision record', ['decision', 'record', 'a title'], 'the SECOND positional given nothing'],
       ['link', ['link', 'a', 'b', '--rel'], 'a flag that takes a value given none'],
       ['completion', ['completion', 'powershell'], 'a value the declaration’s parser refuses'],
     ];

@@ -11,7 +11,9 @@
  *      the move, so a self-authorized illegal move reports the more fundamental
  *      fault.
  *   2. LEGALITY — the (from, action) pair is a transition the workflow allows.
- *   3. PROOF — every field the action requires is present and non-empty.
+ *   3. PROOF — every field the action requires is present and non-empty, and every
+ *      prose field given states something: no letter and no digit, or the `<why>` a
+ *      recipe prints, is refused `NOT_A_REASON` (`a-reason-states-something.ts`).
  *
  * On success it returns the resolved `to` state (taken from the table, never
  * from the caller) so the writer records the transition the workflow defines.
@@ -25,6 +27,7 @@
  */
 
 import type { TransitionFields } from '@mnema/chain';
+import { unstatedProof } from '../a-reason-states-something.js';
 import { resolveExecutingAgent } from '../identity/authority.js';
 import { canonicalIdentity } from '../identity/who.js';
 import { oneLine } from '../one-line.js';
@@ -71,6 +74,12 @@ export type SkillGateErrorCode =
   | 'ILLEGAL_TRANSITION'
   /** A required proof field is missing or empty. */
   | 'MISSING_PROOF'
+  /**
+   * A proof field that carries the why says nothing: no letter and no digit, or the marker a
+   * recipe prints in its place (`<why>`). The same question the append door asks
+   * (`a-reason-states-something.ts`), put here so a dry run and the move it previews agree.
+   */
+  | 'NOT_A_REASON'
   /** No human `who` authorized the move. */
   | 'MISSING_WHO'
   /** `who` and `which` are the same identity — an agent cannot self-authorize. */
@@ -152,6 +161,8 @@ export function skillGate(request: SkillGateRequest): SkillGateResult {
       };
     }
   }
+  const unstated = unstatedProof(request.fields);
+  if (unstated !== undefined) return err('NOT_A_REASON', unstated);
 
   return request.fields !== undefined
     ? { ok: true, to: transition.to, action: request.action, fields: request.fields }

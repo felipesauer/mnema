@@ -201,7 +201,7 @@ describe('the command-line recording', () => {
     // NON-VACUITY. A script that printed nothing and a cast that held nothing would agree above.
     expect(typedIn(today).map((command) => command.split(' ').slice(0, 3).join(' '))).toEqual([
       'mnema init',
-      'mnema decision "Keep',
+      'mnema decision record',
       'mnema decision move',
       'mnema brief |',
       'mnema verify',

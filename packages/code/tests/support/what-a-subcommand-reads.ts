@@ -14,6 +14,11 @@
  * to refuse. The program is not a group — its own flags are read by the program, for every verb.
  */
 export const WHAT_A_SUBCOMMAND_READS: Readonly<Record<string, readonly string[]>> = {
+  // The births: every flag of the group, which the group declares for them — its own copy is
+  // what its `--help` lists, and the value is read off the group where commander put it.
+  'task create': ['--scope', '--which'],
+  'decision record': ['--alternatives', '--scope', '--which'],
+  'skill create': ['--body', '--scope', '--which'],
   // The moves name the agent that executed them, and follow the entity to its tree.
   'task move': ['--which'],
   'decision move': ['--which'],

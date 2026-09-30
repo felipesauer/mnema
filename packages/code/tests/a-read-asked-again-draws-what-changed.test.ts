@@ -178,7 +178,7 @@ beforeAll(async () => {
 
   const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
   await run(['init'], io);
-  await run(['task', 'the task the answer is read over'], io);
+  await run(['task', 'create', 'the task the answer is read over'], io);
 
   environment = {
     ...process.env,

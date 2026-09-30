@@ -117,7 +117,7 @@ beforeAll(async () => {
 
   const quiet: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
   await run(['init'], quiet);
-  await run(['task', 'the task the question is asked over'], quiet);
+  await run(['task', 'create', 'the task the question is asked over'], quiet);
 
   environment = {
     ...process.env,

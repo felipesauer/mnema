@@ -54,7 +54,6 @@ import {
   replacementNotice,
 } from '../recorded-content.js';
 import { type CliIo, writeLines } from './io.js';
-import { onOneLine } from './on-one-line.js';
 
 /**
  * The two things saying a refusal needs: where it goes, and how a line becomes bytes.
@@ -156,20 +155,19 @@ export function reportRefusal(
  * What only this side can add is WHERE THE KEY FILE IS. A checkout whose recorded identity no
  * longer counts its key is told that `mnema key restore "<the key file>"` points it where the
  * record proves the key a member, and the file that marker means lives under this machine's key
- * root, which the core never reads outside opening a writer. So `keyFile` is the path the entry
- * built from the key root it resolves, and it is printed on its own line, in the words
- * `mnema key revoke` prints for the same file (`wiring/key.ts`), so a person who follows the
- * refusal finds it the way the revocation already taught them to.
+ * root, which the core never reads outside opening a writer. So `whereTheKeyIs` is the line the
+ * entry composed from the key root it resolves (`keyFileLine`, `key-file.ts`), printed on its own
+ * line — the words `mnema key revoke` prints for the same file, so a person who follows the
+ * refusal finds it the way the revocation already taught them to. It arrives composed, so this
+ * module, which every command loads, does not grow an edge for a refusal.
  */
 export function reportIdentityRefusal(
   to: Reporter,
   refusal: { readonly code: string; readonly message: string },
-  keyFile?: string,
+  whereTheKeyIs?: string,
 ): void {
   to.io.err(to.render(refusalLine(refusal.code, refusal.message)));
-  if (keyFile !== undefined) {
-    to.io.err(to.render(fact(onOneLine`this machine keeps the key file at ${keyFile}`)));
-  }
+  if (whereTheKeyIs !== undefined) to.io.err(to.render(fact(whereTheKeyIs)));
   to.io.fail();
 }
 

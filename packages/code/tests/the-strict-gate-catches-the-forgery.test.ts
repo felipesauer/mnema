@@ -136,7 +136,7 @@ function rewriteFact(needle: string, replacement: string, opts: { rehash: boolea
 async function record(title: string): Promise<void> {
   const founded = await mnema('init');
   if (founded.failed) throw new Error(`setup: init failed: ${founded.err}`);
-  const written = await mnema('task', title);
+  const written = await mnema('task', 'create', title);
   if (written.failed) throw new Error(`setup: task failed: ${written.err}`);
 }
 
@@ -227,7 +227,7 @@ describe('the strict gate in the state the help said it would fail in', () => {
     // What the printed export line does in a shell, done here.
     process.env.MNEMA_RUN = opened;
 
-    const inFlight = await mnema('task', 'a fact written inside the open run');
+    const inFlight = await mnema('task', 'create', 'a fact written inside the open run');
     expect(inFlight.failed, inFlight.err).toBe(false);
 
     const gated = await mnema('verify', '--require=signed');

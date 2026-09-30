@@ -44,7 +44,7 @@ import { canonicalId, mintId } from '../identity/id.js';
 import { oneLine } from '../one-line.js';
 import { type DecisionProjection, projectDecisions } from '../projections/decision.js';
 import { orderedEvents } from '../projections/order.js';
-import { appendEvent, appendEvents, type UnreadableEventErr } from './append.js';
+import { type AppendRefusal, appendEvent, appendEvents } from './append.js';
 import { type Clock, systemClock } from './clock.js';
 import { type DecisionGateErr, decisionGate } from './decision-gate.js';
 import { INITIAL_DECISION_STATE } from './decision-states.js';
@@ -65,7 +65,7 @@ export type DecisionWriteError =
   /** A free-text field was over the size limit (see {@link screenContent}). */
   | ScreenRefusal
   /** A read would not have accepted the event (see {@link appendEvent}). */
-  | UnreadableEventErr
+  | AppendRefusal
   /**
    * The decision acted on does not exist (no `decision.recorded` for this id).
    * This is the subject-existence check for every transition, supersede

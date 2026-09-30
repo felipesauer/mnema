@@ -211,9 +211,9 @@ type Invocation = Exercise | typeof CANNOT_BE_EXERCISED;
 const INVOCATION: Readonly<Record<string, Invocation>> = {
   // The writes.
   init: { argv: () => ['init'], outsideAProject: true },
-  task: { argv: () => ['task', 'a second task'] },
-  decision: { argv: () => ['decision', 'a title', 'a rationale'] },
-  skill: { argv: () => ['skill', 'a pattern', '--body', 'the pattern itself'] },
+  task: { argv: () => ['task', 'create', 'a second task'] },
+  decision: { argv: () => ['decision', 'record', 'a title', 'a rationale'] },
+  skill: { argv: () => ['skill', 'create', 'a pattern', '--body', 'the pattern itself'] },
   memory: { argv: () => ['memory', 'something worth keeping'] },
   observe: {
     argv: (f) => ['observe', f.task, '--topic', 'review', '--text', 'it needs a rollback'],
@@ -407,7 +407,7 @@ async function fixture(name: string): Promise<Fixture> {
   const AT = 'private half at ';
   const backup = founded.out.find((line) => line.includes(AT));
   if (backup === undefined) throw new Error(`fixture: init named no backup key: ${founded.out}`);
-  const created = await mnema(['task', 'the task the reads are asked about']);
+  const created = await mnema(['task', 'create', 'the task the reads are asked about']);
   const id = created.out.join('\n').match(/\(([0-9a-f-]{36})\)/);
   if (id?.[1] === undefined) throw new Error(`fixture: task printed no id: ${created.out}`);
   return {

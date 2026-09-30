@@ -270,7 +270,13 @@ describe('the three answers the record can give about a pattern move', () => {
     // The sequence the study said nothing could tell apart from skipping the reading:
     // a session IS open, the body WAS read, and `mnema show` records nothing because the
     // auditor's surface has no writer. The rule of the run tells it apart.
-    const proposed = await mnema('skill', 'the-way-we-slice', '--body', 'a reusable pattern');
+    const proposed = await mnema(
+      'skill',
+      'create',
+      'the-way-we-slice',
+      '--body',
+      'a reusable pattern',
+    );
     expect(proposed.failed, proposed.err.join(' / ')).toBe(false);
     const id = /\(([0-9a-f-]{36})\)/.exec(proposed.out.join('\n'))?.[1] as string;
     expect(id).toBeDefined();

@@ -62,7 +62,14 @@ export type EnrollRequestErrorCode =
   /** This machine's own key is not currently valid for its identity, so it cannot vouch. */
   | 'CANNOT_VOUCH'
   /** The material would have made a fact no read could accept; nothing was written. */
-  | 'UNREADABLE_EVENT';
+  | 'UNREADABLE_EVENT'
+  /**
+   * Never earned today: an enrollment carries no reason, so the door has nothing to ask of it.
+   * It is here because the door's refusal is one type (`AppendRefusal`), forwarded as it comes.
+   */
+  | 'NOT_A_REASON'
+  /** Never earned today either: an enrollment carries no title. Here for the same reason. */
+  | 'NOT_A_TITLE';
 
 /** The enrollment was refused; nothing was written. */
 export interface EnrollRequestErr {
@@ -194,7 +201,14 @@ export type RevokeMemberErrorCode =
    */
   | 'NAME_HOLDS_A_SECRET'
   /** The reason came in empty, and no read would have accepted the fact. */
-  | 'UNREADABLE_EVENT';
+  | 'UNREADABLE_EVENT'
+  /** The reason says nothing — no letter and no digit, or the `<why>` a recipe prints. */
+  | 'NOT_A_REASON'
+  /**
+   * Never earned today: a revocation carries no title. It is here because the door's refusal is
+   * one type (`AppendRefusal`), forwarded as it comes.
+   */
+  | 'NOT_A_TITLE';
 
 /** The revocation was refused; nothing was written. */
 export interface RevokeMemberErr {

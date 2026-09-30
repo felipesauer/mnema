@@ -77,7 +77,7 @@
  * server side never fires it.
  */
 
-import { privateKeyPath } from '@mnema/chain';
+import { privateKeyPath, TailBusyError } from '@mnema/chain';
 import { REFERENCE_DEFAULT_DEPTH, REFERENCE_MAX_DEPTH } from '@mnema/copilot';
 import {
   canonicalIdentity,
@@ -97,6 +97,7 @@ import {
   type ToolAnnotations,
 } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
+import { keyFileLine } from '../key-file.js';
 import { movedLine } from '../moved-record.js';
 import { passedOverSentences } from '../not-a-project.js';
 import { oneLine } from '../one-line.js';
@@ -596,13 +597,30 @@ export function buildMcpServer(options: McpServerOptions): {
    */
   const closeNow = (): void => {
     if (openedSession === undefined) return;
-    const { closed, leftOpen } = closeSession(openedSession);
+    const { closed, leftOpen, replaced, begunWithNoRun } = closeSession(openedSession);
+    // "Nothing was written" only where no write began: a run's opening founds on its way in
+    // when the key has no anchor there, so a run that failed to open may have left the founding
+    // behind — and the line said "nothing was written" over it.
+    const begun =
+      begunWithNoRun.length > 0
+        ? `; a write began in ${begunWithNoRun.join(', ')} and no run opened there, so what comes before a run (a founding) may be on disk`
+        : '';
+    const door =
+      replaced.length > 0
+        ? `; ${replacementNotice(replaced)
+            .map((line) => line.trim())
+            .join(' ')}`
+        : '';
     log(
-      closed.length === 0 && leftOpen.length === 0
-        ? 'session closed: no run was opened (nothing was written)'
-        : `session closed: ${runList('closed', closed)}${
-            leftOpen.length > 0 ? `; ${runList('left open', leftOpen)}` : ''
-          }`,
+      oneLine(
+        closed.length === 0 && leftOpen.length === 0
+          ? begun === ''
+            ? 'session closed: no run was opened (nothing was written)'
+            : `session closed: no run was opened${begun}`
+          : `session closed: ${runList('closed', closed)}${
+              leftOpen.length > 0 ? `; ${runList('left open', leftOpen)}` : ''
+            }${begun}${door}`,
+      ),
     );
   };
 
@@ -686,7 +704,7 @@ function declaringInto(
     server.registerTool(
       what.act,
       { ...config, annotations: hintsOf(what) },
-      answeringIdentityRefusals(handle, ensureSession),
+      answeringThrownRefusals(handle, ensureSession),
     );
   };
 }
@@ -742,20 +760,29 @@ function hintsOf(what: DeclaredTool): ToolAnnotations {
 }
 
 /**
- * `handle`, with the refusal thrown below every write answered through {@link refused} — the door
- * every other refusal leaves by — instead of by the SDK.
+ * `handle`, with the refusals thrown below every write answered through {@link refused} — the
+ * door every other refusal leaves by — instead of by the SDK.
  *
- * A key the record gives no honest identity THROWS rather than returns (`IdentityUnavailableError`,
- * from the core), because the decision sits below every write and there is no honest way on. The
- * tools never caught it, so the SDK answered with the bare message: no `Refused (CODE)`, and none
- * of what the session owed. The one that most needs its code is the checkout whose recorded
- * identity no longer counts its key (`STALE_ANCHOR`), whose way out is a restore of this machine's
- * key file — so the reply says where that file is, which the session can and the core cannot
- * (the key root is read where a writer opens). Only that class is caught: any other throw is the
- * SDK's to answer, as before, and a session that could not open at all has nothing to answer
- * from, so its throw goes out as it came. `the-checkout-a-key-left.test.ts` asks it over stdio.
+ * TWO CLASSES, AND BOTH ARE REFUSALS RATHER THAN DEFECTS:
+ *   - A key the record gives no honest identity THROWS rather than returns
+ *     (`IdentityUnavailableError`, from the core), because the decision sits below every write
+ *     and there is no honest way on. The one that most needs its code is the checkout whose
+ *     recorded identity no longer counts its key (`STALE_ANCHOR`), whose way out is a restore of
+ *     this machine's key file — so the reply says where that file is, which the session can and
+ *     the core cannot (the key root is read where a writer opens).
+ *     `the-checkout-a-key-left.test.ts` asks it over stdio.
+ *   - A tail another process holds past the lock's budget (`TailBusyError`, from the chain). A
+ *     write opens its run before the operation decides (`ensureRun`), so the call that meets a
+ *     busy tail may already have founded an identity and opened a run on the way in; answered
+ *     by the SDK, the throw went out as its bare message, and the founding sentence and the
+ *     replacement report the session owed waited for a next reply a closing connection never
+ *     makes. `the-busy-tail-is-a-refusal.test.ts` asks it.
+ * The tools never caught either, so the SDK answered with the bare message: no `Refused (CODE)`,
+ * and none of what the session owed. Any other throw is the SDK's to answer, as before, and a
+ * session that could not open at all has nothing to answer from, so its throw goes out as it
+ * came.
  */
-function answeringIdentityRefusals<Input extends ZodRawShapeCompat | undefined>(
+function answeringThrownRefusals<Input extends ZodRawShapeCompat | undefined>(
   handle: ToolCallback<Input>,
   ensureSession: () => Promise<Session>,
 ): ToolCallback<Input> {
@@ -764,12 +791,15 @@ function answeringIdentityRefusals<Input extends ZodRawShapeCompat | undefined>(
     try {
       return await called(...args);
     } catch (error) {
+      if (error instanceof TailBusyError) {
+        return refused(await ensureSession(), { code: error.code, message: error.message });
+      }
       if (!(error instanceof IdentityUnavailableError)) throw error;
       const session = await ensureSession();
       const keyFile =
         error.restores === undefined
           ? ''
-          : ` — this machine keeps the key file at ${oneLine(privateKeyPath({ root: session.trees.keyRoot }, error.restores))}`;
+          : ` — ${keyFileLine(privateKeyPath({ root: session.trees.keyRoot }, error.restores), session.env.mnemaHome)}`;
       return refused(session, { code: error.code, message: `${error.message}${keyFile}` });
     }
   }) as ToolCallback<Input>;
@@ -1691,11 +1721,14 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         'the path with `rel: "asks-for-a-person"`, the reply also carries ' +
         '`permissionDecision: "ask"` and the host holds the write until a PERSON ' +
         'decides — citing that rule’s id. It cannot refuse, allow, or rewrite your ' +
-        'input: none of the three is representable in what it returns. Every asking is ' +
-        'appended to the record as a fact citing the rule, before the reply is composed. ' +
-        'For the whole answer — every address whatever its state, whose file no longer ' +
-        'exists, and the counts for both relations — ask `governing_rules` instead; ' +
-        'this one is deliberately thin, because it is paid for on every edit.',
+        'input: none of the three is representable in what it returns. It WRITES: every ' +
+        'asking is appended to the record as a fact citing the rule and the path you ' +
+        'named, before the reply is composed, and the first service of a session is ' +
+        'appended too. For the whole answer — every address whatever its state, whose ' +
+        'file no longer exists, and the counts for both relations — ask ' +
+        '`governing_rules` instead; this one is deliberately thin, because it is paid ' +
+        'for on every edit.' +
+        RECORD_CONTRACT,
       inputSchema: {
         path: z
           .string()
@@ -1720,7 +1753,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       // DISCARDED IN SILENCE — no error, no warning, nothing reaching the model. A
       // notice spliced in here would therefore never be read by anybody, while being
       // paid for on every edit of every session. It is listed in
-      // `SERVES_NO_RECORD_CONTENT` with that reason, and `governing_rules` — the same
+      // `TOOLS_SERVING_NO_RECORD_CONTENT` with that reason, and `governing_rules` — the same
       // answer asked for rather than pushed — does carry it.
       return { content: [{ type: 'text' as const, text: JSON.stringify(result.value) }] };
     },
@@ -2144,6 +2177,9 @@ function replied(
       // there beside others — once per key per tree for an installation, and again for a fresh
       // clone of the record, which is a new one (`a-new-identity.ts`).
       ...session.founding.take(),
+      // AND WHAT THE CONTENT DOOR REPLACED IN WHAT THE CONNECTION RECORDED ON ITS OWN — its run,
+      // the edit hook's facts — which no tool's own reply acknowledges (`ReplacementsOwed`).
+      ...session.replacementsOwed.take(),
       ...after,
     ].map((text) => ({
       type: 'text' as const,
@@ -2196,9 +2232,11 @@ function refused(
 ): RefusalReply {
   return {
     isError: true,
-    content: [`Refused (${refusal.code}): ${refusal.message}`, ...session.founding.take()].map(
-      (text) => ({ type: 'text' as const, text }),
-    ),
+    content: [
+      `Refused (${refusal.code}): ${refusal.message}`,
+      ...session.founding.take(),
+      ...session.replacementsOwed.take(),
+    ].map((text) => ({ type: 'text' as const, text })),
   };
 }
 

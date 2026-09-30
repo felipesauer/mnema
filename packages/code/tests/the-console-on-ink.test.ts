@@ -177,7 +177,7 @@ beforeAll(async () => {
   process.chdir(project);
 
   await shell('init');
-  await shell('task', 'the task the console is asked about');
+  await shell('task', 'create', 'the task the console is asked about');
   await shell('memory', 'a fact the console is asked about');
 
   environment = {
