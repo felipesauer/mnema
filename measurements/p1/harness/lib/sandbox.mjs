@@ -1,6 +1,6 @@
 // One sandbox per cell — created here, destroyed here, never the working tree.
 //
-// A6 of the bench: whoever measures makes its own temporary directory and
+// The rule this follows: whoever measures makes its own temporary directory and
 // removes it. Two things ride on that here and neither is optional. The `a3`
 // fixture already broke once by inheriting `"type": "module"` from the product's
 // own `package.json`, so a cell that ran inside this repository would be
