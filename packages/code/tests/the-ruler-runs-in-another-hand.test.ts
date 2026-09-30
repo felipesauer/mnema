@@ -269,9 +269,15 @@ function specifiersIn(text: string): readonly string[] {
     // capture it cannot read is refused rather than resumed from"* ends in that word, so
     // `from', () => {` matched and the scanner reported the whole of the next two lines as an
     // import specifier — accusing a file whose imports are all `node:`. An import written
-    // `from'x'` is legal JavaScript and is the false negative this accepts; it cannot survive
-    // this tree's own formatter, which is what makes the trade a safe one HERE and not a rule
-    // about scanners in general.
+    // `from'x'` is legal JavaScript and is the false negative this accepts, and NOTHING IN THIS
+    // TREE KEEPS IT OUT. This sentence used to say the form "cannot survive this tree's own
+    // formatter", and the formatter never sees these files: `biome.json` includes
+    // `packages/**/*.ts` and the `.mjs` under `.github/` and `plugin/`, and `measurements/` is in
+    // none of them — handed a harness file by name, biome answers that the path was ignored. So
+    // the trade rests on what the runner holds today, which is a measurement and not a guard:
+    // when this was rewritten, every `from'` under `measurements/` was prose (the test name
+    // above) or a column heading in `threshold.mjs`, and no import. A `from'x'` written tomorrow
+    // would pass here unseen.
     ...[...text.matchAll(/\bfrom\s+'([^']+)'/g)],
     ...[...text.matchAll(/^\s*import\s*'([^']+)'/gm)],
     ...[...text.matchAll(/\bimport\(\s*'([^']+)'/g)],
