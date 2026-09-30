@@ -43,7 +43,9 @@ document, delivered by the host instead of waited for.
   project's rules have an address, so a quiet edit means "none of them names this file"
   rather than "there is no mechanism". It is not a process: the host calls a tool on the
   MCP server this same plugin declares, which costs a call on an open connection instead
-  of a command start (measured: 1.24 ms against 171.5 ms).
+  of a command start (measured: 1.24 ms against 171.5 ms). This hook has the same 10,000-character
+  ceiling as the opening ones (measured), so past it the rules stop at a whole one and the text
+  says how many it left out and that `governing_rules` serves them all.
 - **A switch for each of them.** `mnema switch` says where each stands and what each
   carries; `mnema switch off edit-rules-push` stops the per-edit push, `mnema switch off
   brief-document` stops the opening document, and `mnema switch off recall-document` stops

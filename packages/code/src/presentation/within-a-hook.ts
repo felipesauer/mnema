@@ -17,9 +17,15 @@
  * --hook`). The same verbs without the flag print whole: `mnema brief > MNEMA.md` writes a file
  * whose bytes are compared with `diff`, and a file's reader has no ceiling anybody measured —
  * so a cut there would drop rules for a limit that is not there, and would make the staleness
- * check report a difference that is not the record's. The per-edit push rides a hook too and
- * is not bound here; what it hands over is the rules addressed at ONE path, and that is a
- * different size question from a whole record's.
+ * check report a difference that is not the record's.
+ *
+ * AND IT BINDS THE PER-EDIT PUSH, which this paragraph said it did not. It read: "The per-edit
+ * push rides a hook too and is not bound here; what it hands over is the rules addressed at ONE
+ * path, and that is a different size question from a whole record's." The size question is
+ * different, and it did not make the ceiling go away: measured on the same host, an `mcp_tool`
+ * hook on `PreToolUse` has the same 10,000 units, inclusive, and the same file path past them
+ * (`measurements/hook-ceiling/`, the per-edit table). The rules at one path rarely come near it,
+ * and nothing held that they never would, so `edit-rules-push.ts` cuts by {@link fitWhole} too.
  *
  * WHY THE PRODUCT CUTS AND THE PLUGIN DOES NOT. The handler hands over byte for byte what the
  * verb prints (`plugin/hooks/hand-over.mjs`), and it is right to: cutting there would be a

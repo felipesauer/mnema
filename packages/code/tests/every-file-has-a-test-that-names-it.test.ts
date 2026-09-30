@@ -959,7 +959,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-refusal-names-the-way-out.test.ts': 14,
   'packages/code/tests/the-refused-run-is-refused-everywhere.test.ts': 13,
   'packages/code/tests/the-rule-has-an-address.test.ts': 10,
-  'packages/code/tests/the-rule-reaches-the-writing.test.ts': 14,
+  'packages/code/tests/the-rule-reaches-the-writing.test.ts': 15,
   'packages/code/tests/the-ruler-runs-in-another-hand.test.ts': 4,
   'packages/code/tests/the-rulers-are-read-by-the-rules.test.ts': 6,
   'packages/code/tests/the-rules-land-beside-the-write.test.ts': 15,

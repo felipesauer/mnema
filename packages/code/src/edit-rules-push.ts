@@ -106,6 +106,18 @@
  * The THREE COUNTS are not here, for the reason `rulesInForceAt` gives: a count paid on
  * every edit to say the same thing is the shape the thin form exists to avoid.
  *
+ * ## Past the host's ceiling, a whole rule and what was left out
+ *
+ * The hook's text has the ceiling the opening texts have, and it was measured on this channel
+ * rather than assumed from theirs: on 2.1.281 a `PreToolUse` `mcp_tool` hook's
+ * `additionalContext` arrives whole up to 10,000 UTF-16 code units and is replaced by a file
+ * path and a 2,000-unit preview past it (`measurements/hook-ceiling/`, the per-edit table). The
+ * rules addressed at ONE path rarely come near that — nothing held that they never would. So
+ * the notice is cut the way the opening document is ({@link fitWhole}): the rules in the
+ * derivation's order, most specific first, a whole rule or none, and the text that was cut
+ * SAYS so and names the read that serves every one. Under the ceiling it is the same bytes it
+ * always was.
+ *
  * ## The rule of the line
  *
  * Every value on a line came out of the record — the rule's name, the address someone
@@ -119,6 +131,11 @@
 
 import type { PushedRule, RulesAtPath } from '@mnema/copilot';
 import { oneLine } from './one-line.js';
+import {
+  fitWhole,
+  HOOK_CEILING_IN_WORDS,
+  HOOK_TEXT_CEILING,
+} from './presentation/within-a-hook.js';
 import { DERIVED_FROM } from './provenance.js';
 import { recordFramingBlock } from './record-framing.js';
 
@@ -162,10 +179,65 @@ const ONE_IS_NOT_COMMITTED =
  * the caller has to decide what silence means on its channel — on this host it is a
  * reply carrying no context at all, which is not the same thing as a reply carrying
  * empty text.
+ *
+ * `room` is how much of the hook's ceiling the notice may take: all of it, unless the same
+ * reply carries something else beside it. Whether there is anything to say never depends on
+ * it — a notice cut to no rule still names the path and says how many it left out.
  */
-export function editRulesNotice(at: RulesAtPath): string | undefined {
+export function editRulesNotice(
+  at: RulesAtPath,
+  room: number = HOOK_TEXT_CEILING,
+): string | undefined {
   if (at.rules.length === 0) return undefined;
-  return [...opening(at), ...at.rules.map(ruleLine), ...closing(at)].join('\n');
+  return fitted(at, room).join('\n');
+}
+
+/** What separates the rules from what the same reply carries after them. */
+const BESIDE = '\n\n';
+
+/**
+ * The whole text a reply to the host carries: the notice for `at`, and after it `beside` —
+ * what the same call's writes founded or replaced — or `undefined` when there is neither.
+ *
+ * ONE STRING, ONE CEILING. The host measures what it is handed as one text, so what is said
+ * beside the rules is taken out of their room, and the notice is composed inside what is left,
+ * a whole rule at a time. What is said beside is never cut: it is a sentence or two about the
+ * key and the path, and it is the only place those are said. Asserted in
+ * `the-rule-reaches-the-writing.test.ts` ("leaves room for what the call founded").
+ */
+export function editRulesTold(
+  at: RulesAtPath | undefined,
+  beside: readonly string[],
+): string | undefined {
+  if (beside.length === 0) return at === undefined ? undefined : editRulesNotice(at);
+  const after = beside.join(BESIDE);
+  const within =
+    at === undefined
+      ? undefined
+      : editRulesNotice(at, HOOK_TEXT_CEILING - after.length - BESIDE.length);
+  return [...(within !== undefined ? [within] : []), after].join(BESIDE);
+}
+
+/**
+ * The lines of the notice that fit in `room`, the rules a whole one at a time.
+ *
+ * The lines are joined with no newline after the last, where {@link fitWhole} measures one
+ * after every line — so the room it is handed is one more, and a notice of exactly the
+ * ceiling is not cut.
+ */
+function fitted(at: RulesAtPath, room: number): string[] {
+  return fitWhole(at.rules.length, room + 1, (shown) => composed(at, shown));
+}
+
+/** The notice with its first `shown` rules, saying what it left out when that is not all. */
+function composed(at: RulesAtPath, shown: number): string[] {
+  const printed = at.rules.slice(0, shown);
+  return [
+    ...opening(at),
+    ...printed.map(ruleLine),
+    ...closing(printed),
+    ...leftOut(at.rules.length - shown),
+  ];
 }
 
 /** What this channel says before the rules: whose text this is, and about which file. */
@@ -173,9 +245,25 @@ function opening(at: RulesAtPath): readonly string[] {
   return [recordFramingBlock('edit-rules-push'), addressedAt(at.relative ?? at.path)];
 }
 
-/** What it says after them, which is nothing unless one of them does not travel. */
-function closing(at: RulesAtPath): readonly string[] {
-  return at.rules.every((rule) => rule.travels) ? [] : [ONE_IS_NOT_COMMITTED];
+/**
+ * What it says after them, which is nothing unless one of them does not travel — one of the
+ * rules PRINTED, since "one of these" points at the lines above it.
+ */
+function closing(printed: readonly PushedRule[]): readonly string[] {
+  return printed.every((rule) => rule.travels) ? [] : [ONE_IS_NOT_COMMITTED];
+}
+
+/**
+ * What a notice cut at the ceiling says about the rules it does not carry, or nothing when it
+ * carries them all: how many, which ones (the end of the order above), why, and the read that
+ * serves every one. It says what the text is, as every sentence here does, and not what to do.
+ */
+function leftOut(left: number): readonly string[] {
+  if (left === 0) return [];
+  return [
+    `Left out of this text: ${left} ${left === 1 ? 'rule' : 'rules'} addressed at this path — the last ${left === 1 ? 'one' : 'ones'} in the order above.`,
+    `A hook hands a session at most ${HOOK_CEILING_IN_WORDS} characters, and a file path in place of a longer text, so this one stops at a whole rule instead. \`governing_rules\` with this path serves every one of them.`,
+  ];
 }
 
 /**
@@ -191,12 +279,14 @@ function closing(at: RulesAtPath): readonly string[] {
  * So this returns the product's half and `the-rule-reaches-the-writing.test.ts` runs
  * `record-framing.ts`'s `tellsWhatToDo` over it — over the lines a person composing a new
  * sentence would add to, rather than over a list kept in step by hand. A sentence added
- * to {@link opening} or {@link closing} arrives inside the guard without anybody
- * remembering it, which is the only reason this is composed from the same two functions
- * the notice is.
+ * to {@link opening}, {@link closing} or {@link leftOut} arrives inside the guard without
+ * anybody remembering it, which is the only reason this is the notice's own lines with the
+ * record's taken out, rather than a second composition beside it. `room` is the notice's:
+ * a room that cuts is how the guard reaches the sentences only a cut notice says.
  */
-export function ourWordsIn(at: RulesAtPath): readonly string[] {
-  return [...opening(at), ...closing(at)];
+export function ourWordsIn(at: RulesAtPath, room: number = HOOK_TEXT_CEILING): readonly string[] {
+  const theRecords = new Set(at.rules.map(ruleLine));
+  return fitted(at, room).filter((line) => !theRecords.has(line));
 }
 
 /**

@@ -47,11 +47,40 @@ arrived). Past the ceiling the whole text is gone from the request: what is ther
 first 2,000 units, inside a `<persisted-output>` block — with no sentence asking the model to open
 the file.
 
+## The per-edit hook — `results/2026-09-30/per-edit-cases.json`
+
+The per-edit hook is another hook type on another event: an `mcp_tool` on `PreToolUse`, whose
+text is what a tool of a connected MCP server returns. This first section did not measure it, so
+it was measured the same way, on the same host, **2.1.281**, the same day: a real stdio MCP server
+whose tool returns `{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext": T}}`,
+the hook declared the way `plugin/hooks/hooks.json` declares it (matcher `Write|Edit|NotebookEdit`),
+and a stand-in for the model API that answers the request offering `Write` with a canned
+`tool_use`, so the write happens and the hook fires. **The evidence is the request that carries the
+result of that write.**
+
+| case | the text (code units / code points / bytes) | arrived |
+|---|---|---|
+| no hook | — | nothing, and the write went through |
+| control | 100 / 100 / 100 | whole |
+| at the ceiling | 10,000 / 10,000 / 10,000 | whole |
+| one past it | 10,001 / 10,001 / 10,001 | **replaced**: a path and a preview of 2,000 |
+| 9,999 ASCII + U+1F600 | 10,001 / 10,000 / 10,003 | **replaced** |
+| 9,998 ASCII + U+2014 + 1 ASCII | 10,000 / 10,000 / 10,002 | whole |
+| three times the ceiling | 30,000 / 30,000 / 30,000 | **replaced** |
+
+**The same ceiling, in the same unit**: 10,000 UTF-16 code units, inclusive. What arrives past it
+is the same frame — `<persisted-output>`, `Output too large (…KB). Full output saved to: <a path>`,
+`Preview (first 2KB):` — inside the `<system-reminder>` that carries the hook's text beside the
+result of the write. The tool was called once in every case with a hook, and every write went
+through. So the rules pushed at an edit are cut the way the opening texts are
+(`packages/code/src/edit-rules-push.ts`): a whole rule or none, and the cut said.
+
 ## What it does not show
 
-- **One event, one hook type, one output shape**: `SessionStart`, `command`, JSON
-  `hookSpecificOutput`. The per-edit hook is an `mcp_tool` on `PreToolUse` and was not measured
-  here.
+- **Two events, two hook types, one output shape**: `SessionStart` with `command`, and
+  `PreToolUse` with `mcp_tool`, both with JSON `hookSpecificOutput.additionalContext`. Not
+  `permissionDecisionReason`, the text a hook that asks for a person hands back — that one comes
+  back as the result of the refused call, and its ceiling, if it has one, was not measured.
 - **One host, one version**: 2.1.281 on Linux, in `-p` mode. Not the VS Code or Cursor hosts, and
   not an interactive session.
 - **n = 1 per case**, and no boundary but the ones in the table: not a surrogate pair split across

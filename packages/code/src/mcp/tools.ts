@@ -129,7 +129,7 @@ import {
   transitionTask,
 } from '@mnema/core/write';
 import { editAsksNotice } from '../edit-asks-a-person.js';
-import { editRulesNotice } from '../edit-rules-push.js';
+import { editRulesNotice, editRulesTold } from '../edit-rules-push.js';
 import {
   reachOfAddress,
   readAsksForAPersonAt,
@@ -2154,7 +2154,8 @@ export function runRulesBeforeAnEditTool(
   // directory, and a server has no working directory of its own to resolve against.
   const root = session.project ?? '';
   const read = { path: input.path, root, from: root };
-  const context = pushing ? editRulesNotice(readRulesInForceAt(caches, read)) : undefined;
+  const rulesAt = pushing ? readRulesInForceAt(caches, read) : undefined;
+  const context = rulesAt === undefined ? undefined : editRulesNotice(rulesAt);
 
   // THE GATE, AND ITS WHOLE ORDER OF OPERATIONS. The rules that ask are derived, the text
   // is composed, and only then is the fact appended — because the fact cites what the text
@@ -2185,10 +2186,9 @@ export function runRulesBeforeAnEditTool(
   // And what the content door replaced in those facts, for the same reason and by the same
   // field: the path the host named is screened on its way into `channel.asked`.
   const founded = [...session.founding.take(), ...session.replacementsOwed.take()];
-  const told =
-    founded.length === 0
-      ? context
-      : [...(context !== undefined ? [context] : []), ...founded].join('\n\n');
+  // THEY SHARE THE CEILING with the rules, since the host measures the one string it is
+  // handed — which is why the rules and they are joined by one function (`edit-rules-push.ts`).
+  const told = editRulesTold(rulesAt, founded);
   const said = {
     ...(told !== undefined ? { context: told } : {}),
     ...(charged.ok && ask !== undefined ? { ask } : {}),
