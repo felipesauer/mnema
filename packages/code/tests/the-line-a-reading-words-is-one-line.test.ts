@@ -632,9 +632,9 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the memory’s id, beside text somebody typed — collapsed for the reason the document collapses its ids',
   },
-  'recall.ts «- **{}** · \\`{}\\`» oneLine(hit.title) #1': {
+  'recall.ts «- **{}** · \\`{}\\`» oneLine(excerptOf(hit.title)) #1': {
     verdict: 'collapsed',
-    why: 'an observation’s topic — a name whoever recorded it chose, in the weight of one',
+    why: 'the start of an observation’s topic — a name whoever recorded it chose, cut by the index’s excerpt rule and collapsed where the line is built',
   },
   'recall.ts «- **{}** · \\`{}\\`» oneLine(hit.id) #1': {
     verdict: 'collapsed',

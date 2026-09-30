@@ -944,7 +944,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/the-python-floor-is-declared-once.test.ts': 5,
   'packages/code/tests/the-read-says-the-record-does-not-chain.test.ts': 6,
   'packages/code/tests/the-recipe-says-what-it-overwrites.test.ts': 8,
-  'packages/code/tests/the-record-arrives-unasked.test.ts': 11,
+  'packages/code/tests/the-record-arrives-unasked.test.ts': 12,
   'packages/code/tests/the-record-asks-for-a-person.test.ts': 14,
   'packages/code/tests/the-record-is-opened-and-closed-together.test.ts': 4,
   'packages/code/tests/the-record-may-have-moved.test.ts': 10,

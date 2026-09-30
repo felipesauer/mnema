@@ -7,7 +7,7 @@
  */
 
 import type { RecordHit, RecordSearch } from '@mnema/copilot';
-import { detectSecrets, SEARCH_DEFAULT_LIMIT } from '@mnema/core';
+import { detectSecrets, excerptOf, SEARCH_DEFAULT_LIMIT } from '@mnema/core';
 import { describe, expect, it } from 'vitest';
 import { recordFraming, tellsWhatToDo } from '../record-framing.js';
 import { recallDocument, recallWithin } from './recall.js';
@@ -135,15 +135,47 @@ describe('recallDocument — the notes a session opens with', () => {
   });
 });
 
+describe('an observation’s topic is cut by the index’s own rule', () => {
+  /** A topic longer than any line the notes print — a name somebody typed has no length. */
+  const topic = `month-end volume ${'and the batch that follows it '.repeat(40).trimEnd()}`;
+
+  it('prints the start of a long topic, as a memory prints the start of its text', () => {
+    const lines = recallDocument({ memories: none, observations: all([observation(1, topic)]) });
+    expect(topic.length).toBeGreaterThan(excerptOf(topic).length);
+    expect(lines).toContain(`- **${excerptOf(topic)}** · \`01a0ca93-9ab1-7000-8a6c-000000000001\``);
+    expect(lines.join('\n')).not.toContain(topic);
+  });
+
+  it('prints a short topic exactly as it was named', () => {
+    const lines = recallDocument({
+      memories: none,
+      observations: all([observation(1, 'a topic')]),
+    });
+    expect(lines).toContain('- **a topic** · `01a0ca93-9ab1-7000-8a6c-000000000001`');
+  });
+
+  it('asks the WHOLE topic for a credential, not the part it prints', () => {
+    // A credential past where the line is cut: judging the excerpt would print the start of a
+    // line that, whole, the door would have recognized.
+    const token = 'ghp_0123456789abcdefghijklmnopqrstuvwxyzA';
+    const late = `${'a long preamble about the deploy '.repeat(6)}${token}`;
+    expect(excerptOf(late)).not.toContain(token);
+    const text = recallDocument({ memories: none, observations: all([observation(1, late)]) });
+    expect(text.join('\n')).toContain('holds a credential');
+    expect(text.join('\n')).not.toContain('a long preamble');
+  });
+});
+
 describe('the hook’s copy of the notes stays inside what a hook carries', () => {
   /** The longest line each kind can print: an excerpt at its full length. */
-  const longest = `${'every word of a long note is here '.repeat(5).slice(0, 135).trimEnd()}…`;
+  const longest = excerptOf('every word of a long note is here '.repeat(20));
   const full = (make: (n: number, text: string) => RecordHit): RecordSearch => ({
     hits: Array.from({ length: SEARCH_DEFAULT_LIMIT }, (_, at) => make(at + 1, longest)),
     total: 9_999,
   });
 
   it('fits whole at the most the index serves, at the longest line each kind prints', () => {
+    // The bound the topic's excerpt bought: before it, twenty long topics alone crossed it.
     const notes = { memories: full(memory), observations: full(observation) };
     expect(printedLength(recallDocument(notes))).toBeLessThanOrEqual(HOOK_TEXT_CEILING);
     expect(recallWithin(notes, HOOK_TEXT_CEILING)).toEqual(recallDocument(notes));

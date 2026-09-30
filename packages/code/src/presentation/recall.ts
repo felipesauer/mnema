@@ -23,6 +23,12 @@
  * document's bullets do: a note is text an actor typed, and one holding a newline would end
  * its own bullet and start a note nobody wrote.
  *
+ * "CUT WHERE IT ALREADY CUTS" WAS TRUE OF ONE KIND OF THE TWO. The index cuts a memory's line
+ * and serves an observation's topic whole, so this text carried a topic of any length into a
+ * channel with a measured ceiling (`within-a-hook.ts`). The topic is now cut here, by the index's own
+ * excerpt rule (see {@link observationLine}): the line is still the index's, and the length is
+ * the one the index already gives the other kind.
+ *
  * A MEMORY'S LINE IS NOT BOLD AND AN OBSERVATION'S IS. The topic is a name somebody chose;
  * the start of a memory is an excerpt nobody chose, and the index says so of it — presenting
  * it in the weight of a name would claim a choice that was never made.
@@ -50,7 +56,7 @@
  */
 
 import type { RecordHit, RecordSearch } from '@mnema/copilot';
-import { detectSecrets } from '@mnema/core';
+import { detectSecrets, excerptOf } from '@mnema/core';
 import { oneLine } from '../one-line.js';
 import { recordFraming } from '../record-framing.js';
 import { fitWhole } from './within-a-hook.js';
@@ -139,10 +145,22 @@ function memoryLine(hit: RecordHit): string {
   return `- ${oneLine(hit.title)} · \`${oneLine(hit.id)}\``;
 }
 
-/** One observation: its topic, in the weight of a name, and the id that reads the rest. */
+/**
+ * One observation: its topic, in the weight of a name, and the id that reads the rest.
+ *
+ * THE TOPIC IS CUT BY THE INDEX'S OWN RULE FOR A MEMORY'S LINE ({@link excerptOf}), and it used
+ * to go out whole. The index serves a topic raw because it is the record's name for the note,
+ * and a name somebody typed has no length — so twenty long ones carried this text past what a
+ * hook hands a model, where twenty memories never could, because a memory's line was already
+ * an excerpt. The same rule now bounds both lines of this text, from one place; the index and
+ * `read_record` still serve the topic whole.
+ *
+ * The credential is asked of the WHOLE topic, before it is cut: a credential the excerpt split
+ * in half would be a line that no longer looks like one and still carries most of it.
+ */
 function observationLine(hit: RecordHit): string {
   if (holdsACredential(hit.title)) return withheld(hit);
-  return `- **${oneLine(hit.title)}** · \`${oneLine(hit.id)}\``;
+  return `- **${oneLine(excerptOf(hit.title))}** · \`${oneLine(hit.id)}\``;
 }
 
 /**

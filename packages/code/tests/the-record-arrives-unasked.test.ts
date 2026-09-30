@@ -50,6 +50,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { excerptOf } from '@mnema/core';
 import type { Command } from 'commander';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildProgram } from '../src/cli.js';
@@ -235,6 +236,27 @@ const CROWDED_TITLES = [1, 2, 3, 4].map(
     `Rule ${n}: ${'every invoice is issued in the currency of the contract, '.repeat(52).trimEnd()}`,
 );
 
+/** An observation topic longer than any line the notes print — the kind the index serves raw. */
+const LONG_TOPIC = `month-end volume ${'and the batch that follows it '.repeat(20).trimEnd()}`;
+/** The directory the recording `mnema` shim lives in, put first on the PATH. */
+let shimDir: string;
+let calls = 0;
+
+/** The title of the accepted decision that TRAVELS, and the rationale that does not. */
+const COMMITTED_TITLE = 'Bill on the last business day of the month';
+const COMMITTED_RATIONALE = 'The host locale is not the team’s calendar';
+/** The title of the accepted decision recorded `--scope private`. */
+const PRIVATE_TITLE = 'Keep the staging credentials on this machine only';
+/** The adopted pattern's name, and the body that stays in the record. */
+const PATTERN_NAME = 'Never retry a charge automatically';
+const PATTERN_BODY = 'A failed charge is reported to the operator, never retried.';
+/** A note that travels, and one kept on this machine — the one the document may not carry. */
+const COMMITTED_NOTE = 'The invoice job runs at 02:00 in the operator timezone';
+const PRIVATE_NOTE = 'The staging database on this laptop resets every night';
+/** An observation's topic, which is its line, and its text, which is not. */
+const OBSERVED_TOPIC = 'month-end volume';
+const OBSERVED_TEXT = 'Measured 40 thousand invoices on the last business day of August';
+
 /** The environment the host gives a command hook, over this sandbox. */
 function hostEnv(recordingTo: string): NodeJS.ProcessEnv {
   const inherited = { ...process.env };
@@ -378,11 +400,15 @@ beforeAll(() => {
   // A project with a record and no note, for the silence the notes channel keeps.
   cliAt(unnoted, 'init');
   cliAt(unnoted, 'decision', 'A call and nothing noted', 'so the record is not empty');
-  // A project past the ceiling: four accepted rules the file carries whole and a hook cannot.
+  // A project past the ceiling: four accepted rules the file carries whole and a hook cannot,
+  // and one observation whose topic is longer than a line of the notes.
   cliAt(crowded, 'init');
   for (const title of CROWDED_TITLES) {
     const id = idIn(cliAt(crowded, 'decision', title, 'agreed with finance'));
     cliAt(crowded, 'decision', 'move', 'accept', id, '--note', 'agreed in review');
+    if (title === CROWDED_TITLES[0]) {
+      cliAt(crowded, 'observe', id, '--topic', LONG_TOPIC, '--text', 'measured in August');
+    }
   }
 }, 120_000);
 
@@ -624,6 +650,19 @@ describe('the record arrives unasked', () => {
     expect(qualified).toBe(`${broken.out}\n\n${broken.err}`);
     expect(qualified).toContain('issue [T1]');
     expect(qualified.length).toBeLessThanOrEqual(HOOK_TEXT_CEILING);
+  });
+
+  it('hands over an observation by the start of its topic, as a memory by the start of its text', () => {
+    // THE TOPIC USED TO GO OUT WHOLE. The index serves it raw because it is the note's name, and
+    // twenty long ones carried the notes past what a hook carries; it is now cut by the index's
+    // own rule for a memory's line (`excerptOf`), from the one place that rule lives.
+    const ran = runHook(hookRunning(NOTES_HOOK), crowded);
+    expect(ran.mnema).toEqual(['recall --hook']);
+    const context = (JSON.parse(ran.out) as { hookSpecificOutput: { additionalContext: string } })
+      .hookSpecificOutput.additionalContext;
+    expect(LONG_TOPIC.length).toBeGreaterThan(excerptOf(LONG_TOPIC).length);
+    expect(context).toContain(`- **${excerptOf(LONG_TOPIC)}** · `);
+    expect(context).not.toContain(LONG_TOPIC);
   });
 
   it('says nothing when the verb refuses, whatever it printed first', () => {
