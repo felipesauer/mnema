@@ -498,7 +498,8 @@ export function channelSwitched(
 }
 
 /**
- * Builds a `channel.served` event (subject = the CHANNEL that served).
+ * Builds a `channel.served` event (subject = the CHANNEL that served) — one of the channels
+ * that push at an edit; the texts a session opens with are reads and leave none.
  *
  * No payload at all, and the same shape {@link skillConsulted} has for the same reason:
  * everything the fact says is envelope, and the empty object is what makes any payload key

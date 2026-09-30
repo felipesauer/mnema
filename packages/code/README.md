@@ -83,8 +83,9 @@ identically, because they are the same call.
   about to be written**, beside the result of that write — the ones still in force, each
   with the id you would cite — and hands over **nothing** for a file none of them
   addresses, which is why the opening document says how many of the project's rules have
-  an address. The two opening hooks are reads: they append nothing and open no run. The
-  per-edit one records that it served, and holds a write for a person only where a rule of
+  an address. The two opening hooks are reads: they append nothing and open no run, so the
+  record's `channel.served` counts what the per-edit hook pushed and never the opening
+  texts. The per-edit one records that it served, and holds a write for a person only where a rule of
   your own record asks it to — the plugin's page says how. All three are **silent** where there is no project, so a
   machine that installs this and opens a session somewhere else sees nothing. Asserted in
   `tests/the-record-arrives-unasked.test.ts`, `tests/the-rule-reaches-the-writing.test.ts`

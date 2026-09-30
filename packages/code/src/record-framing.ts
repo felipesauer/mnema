@@ -329,7 +329,7 @@ export const DOCUMENT_CHANNEL: SwitchableChannel = 'brief-document';
 export const RECALL_CHANNEL: SwitchableChannel = 'recall-document';
 
 /** The channel that hands over the rules addressed at a file, as that file is written. */
-export const EDIT_PUSH_CHANNEL: SwitchableChannel = 'edit-rules-push';
+export const EDIT_PUSH_CHANNEL: CountedChannel = 'edit-rules-push';
 
 /**
  * The channel that stops a file being written until a person looks — the only one of them
@@ -343,7 +343,44 @@ export const EDIT_PUSH_CHANNEL: SwitchableChannel = 'edit-rules-push';
  * information to escape the charge — and the tie that every charge be switchable would be
  * satisfied in the letter while trapping the person it exists for.
  */
-export const ASKS_A_PERSON_CHANNEL: SwitchableChannel = 'edit-asks-a-person';
+export const ASKS_A_PERSON_CHANNEL: CountedChannel = 'edit-asks-a-person';
+
+/**
+ * The switchable channels whose service the record COUNTS — the ones that append a
+ * `channel.served` when they speak, once per run.
+ *
+ * THEY ARE THE TWO THAT PUSH AT EACH EDIT, AND ONLY THOSE, which is what the fact says and all
+ * it says. `channel.served` is written by the tool the per-edit hook calls
+ * (`rules_before_an_edit`), because that is the one place something is pushed and something
+ * can be appended in the same act. The two texts a session OPENS with are not counted, and
+ * that is a decision rather than a gap left open: they are printed by reads, and a read writes
+ * nothing — see {@link NOT_COUNTED_AS_SERVED} for each one's sentence. So a run with no
+ * `channel.served` says nothing about whether the opening texts arrived; it says that no edit
+ * of that run was handed a rule, or that the push was off, or that the hook never ran.
+ *
+ * A union here, and the table below total over what it leaves out, so a channel added to
+ * {@link SwitchableChannel} does not build until somebody says which side it is on.
+ */
+export type CountedChannel = Extract<SwitchableChannel, 'edit-rules-push' | 'edit-asks-a-person'>;
+
+/**
+ * Why each switchable channel the record does NOT count is not counted — one sentence each,
+ * because "this one leaves no fact" is a claim that has to be answerable.
+ *
+ * Exported for the same reason {@link UNFRAMED_CHANNELS} is: it is the totality proof, and the
+ * type is what makes a new channel fail to compile until it is classified.
+ */
+export const NOT_COUNTED_AS_SERVED: {
+  readonly [K in Exclude<SwitchableChannel, CountedChannel>]: string;
+} = {
+  'brief-document':
+    'the document is printed by `mnema brief`, a read that writes nothing — no event, no ' +
+    'key, no run — so that printing it into a file or into a session never moves the record ' +
+    'it describes',
+  'recall-document':
+    'the notes are printed by `mnema recall`, a read that writes nothing, for the reason the ' +
+    'document is not counted',
+};
 
 /**
  * What stops arriving when each switchable channel is off — one sentence each, in the

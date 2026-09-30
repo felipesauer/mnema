@@ -146,8 +146,8 @@ import { movedDisplay } from '../moved-record.js';
 import { oneLine } from '../one-line.js';
 import {
   ASKS_A_PERSON_CHANNEL,
+  type CountedChannel,
   EDIT_PUSH_CHANNEL,
-  type SwitchableChannel,
 } from '../record-framing.js';
 import type { ScopedLinkBreak } from '../record-integrity.js';
 import { forwardReplacement, type Landed, type Replacement } from '../recorded-content.js';
@@ -2098,7 +2098,10 @@ export function runGoverningRulesTool(
  * have to infer. Two facts, both under the CHANNEL as subject:
  *   - `channel.served`, once per run and per channel, saying the push was live. It pays a
  *     tie this channel shipped owing: a push that recorded nothing left "the rules reached
- *     that session" and "the plugin was never installed" as the same nothing.
+ *     that session" and "the plugin was never installed" as the same nothing. It is written
+ *     HERE AND NOWHERE ELSE, so it counts what is pushed at an edit and nothing more: the two
+ *     texts a session opens with are reads and leave no fact (`CountedChannel`, in
+ *     `record-framing.ts`, is the type that holds the line).
  *   - `channel.asked`, once per asking, citing the rule and the path.
  * The ASKING IS APPENDED BEFORE THE REPLY IS COMPOSED. A charge outside the record is the
  * product acting outside its own record, so if the fact cannot be written the reply carries
@@ -2242,12 +2245,16 @@ function recordAskings(session: Session, at: RulesAtPath): { readonly ok: boolea
  * one fires on every edit, and after the first of a run every call must cost one set lookup
  * and nothing else.
  *
+ * It takes a {@link CountedChannel} and nothing wider, which is where "the fact counts what is
+ * pushed at an edit" stops being a sentence: a caller handing it one of the opening texts'
+ * channels does not build.
+ *
  * A channel joins the run's set only once its fact is on the chain, so a refused write
  * leaves it eligible for a later edit rather than marking it recorded. Nothing is reported:
  * a service fact that failed to append is a gap in the evidence, not a reason to make
  * somebody's session worse.
  */
-function recordServices(session: Session, channels: readonly SwitchableChannel[]): void {
+function recordServices(session: Session, channels: readonly CountedChannel[]): void {
   if (channels.length === 0) return;
   const route = routeWrite(session, 'channel.served', {});
   if (!route.ok) return;
