@@ -23,10 +23,12 @@ document, delivered by the host instead of waited for.
 
 ## What it gives you
 
-- **A `SessionStart` hook** that runs `mnema brief` and hands the result to the
+- **A `SessionStart` hook** that runs `mnema brief --hook` and hands the result to the
   session as opening context — the decisions in force and the patterns adopted in
-  this project, each by name.
-- **A second `SessionStart` hook** that runs `mnema recall` and hands over the latest
+  this project, each by name. Past 10,000 characters the host would replace the whole
+  text with a file path it does not ask the model to open, so `--hook` stops at a whole
+  rule inside that and ends by saying how many it left out and which read serves them.
+- **A second `SessionStart` hook** that runs `mnema recall --hook` and hands over the latest
   **notes** — the memories and observations recorded for the project, newest first, one
   line each, out of every tree this machine holds, the private one included. It is the
   half that makes a note worth writing: what an agent records here comes back to the next
@@ -41,7 +43,9 @@ document, delivered by the host instead of waited for.
   project's rules have an address, so a quiet edit means "none of them names this file"
   rather than "there is no mechanism". It is not a process: the host calls a tool on the
   MCP server this same plugin declares, which costs a call on an open connection instead
-  of a command start (measured: 1.24 ms against 171.5 ms).
+  of a command start (measured: 1.24 ms against 171.5 ms). This hook has the same 10,000-character
+  ceiling as the opening ones (measured), so past it the rules stop at a whole one and the text
+  says how many it left out and that `governing_rules` serves them all.
 - **A switch for each of them.** `mnema switch` says where each stands and what each
   carries; `mnema switch off edit-rules-push` stops the per-edit push, `mnema switch off
   brief-document` stops the opening document, and `mnema switch off recall-document` stops
@@ -76,13 +80,13 @@ that was measured against the real binary instead, and the capture is
 
 | Claim | What actually holds |
 |---|---|
-| **It injects the project's record** | Only what is **committed** — the tree a clone of the repository gets. A decision or a pattern recorded `--scope private`, or in your machine's global tree, governs your work and **is not in this document**. That is not a gap to route around: the document is the same one `mnema brief > MNEMA.md` writes into a tracked file (the `>` replaces the whole of the file it names), and a private rule that travelled there would be the defect. Someone will record one and wonder where it went — this is where it went. *(`carries the committed record by name`)* |
+| **It injects the project's record** | Only what is **committed** — the tree a clone of the repository gets. A decision or a pattern recorded `--scope private`, or in your machine's global tree, governs your work and **is not in this document**. That is not a gap to route around: the document is the same one `mnema brief > MNEMA.md` writes into a tracked file, up to where a hook's copy stops at a whole rule (the `>` replaces the whole of the file it names), and a private rule that travelled there would be the defect. Someone will record one and wonder where it went — this is where it went. *(`carries the committed record by name`)* |
 | **It injects the rules** | It injects **names**, not bodies. A decision arrives as its title and its citable `ADR-<n>` label; a pattern arrives as its name. The argument behind a decision, what it turned down, and the text of a pattern are a **second read** — the agent asks `read_record` or `skills` about the one item that bears on the task, through the MCP server this same plugin declares. A file read on every prompt pays for its length every time. *(`carries the committed record by name`)* |
-| **It hands over the notes, from every tree** | The second opening hook hands over what `mnema recall` prints, byte for byte: the latest memories and observations, newest first, one line each — a memory by the start of its content, an observation by its topic — out of the committed tree, this machine's own and your personal one. **It is the one text the plugin pushes that carries the private tree**, because it is this machine's own session reading it and nothing of it is a file to commit; the document beside it still carries the committed record alone. A line that holds a credential in a recognized format arrives as the fact that the note exists, never its text. Where nothing is noted, nothing is handed over. *(`hands this machine’s notes to its session — the private tree too, one line each`, `says nothing where nothing is noted`, `says nothing at all when the notes channel is switched OFF`)* |
-| **It says the record's words** | Byte for byte what `mnema brief` prints, with no preamble and no cut of the plugin's own — a second place deciding what governs the work is a second place that can come to disagree with the record. It is **not** unframed, and this row used to say it was: the document opens by saying whose text it carries — the project's own people and agents wrote it — and that sentence is decided in one place for every channel that puts record text in front of a model, so a second channel cannot word it differently. "No framing" was true of what the *handler* adds and was read as a claim that the text reaches the model undeclared. *(`hands over exactly what the verb prints`, `carries the declaration of the channel it says it is`)* |
+| **It hands over the notes, from every tree** | The second opening hook hands over what `mnema recall --hook` prints, byte for byte: the latest memories and observations, newest first, one line each — a memory by the start of its content, an observation by its topic — out of the committed tree, this machine's own and your personal one. **It is the one text the plugin pushes that carries the private tree**, because it is this machine's own session reading it and nothing of it is a file to commit; the document beside it still carries the committed record alone. A line that holds a credential in a recognized format arrives as the fact that the note exists, never its text. Where nothing is noted, nothing is handed over. *(`hands this machine’s notes to its session — the private tree too, one line each`, `says nothing where nothing is noted`, `says nothing at all when the notes channel is switched OFF`)* |
+| **It says the record's words** | Byte for byte what `mnema brief --hook` prints, with no preamble and no cut of the plugin's own — the one cut there is, past a hook's ceiling, is the verb's, and the text says it — a second place deciding what governs the work is a second place that can come to disagree with the record. It is **not** unframed, and this row used to say it was: the document opens by saying whose text it carries — the project's own people and agents wrote it — and that sentence is decided in one place for every channel that puts record text in front of a model, so a second channel cannot word it differently. "No framing" was true of what the *handler* adds and was read as a claim that the text reaches the model undeclared. *(`hands over exactly what the verb prints`, `carries the declaration of the channel it says it is`)* |
 | **It is silent when it has nothing to say** | Outside a mnema project — which is most projects on most machines — the hook produces **no output and no error**, and the session opens exactly as it would without the plugin. The same is true of every other failure: `mnema` missing from the `PATH`, a record that will not read. **It is not silent about a record that does not chain, and that row used to say it was.** When the verb succeeds and still has something to say about the record — a tail that stops chaining, so the proof that nothing was inserted has failed — it says it on stderr, and the handler now hands that over under the document, byte for byte. The muteness was measured against a project with **no record**, where the verb exits non-zero; over a sound record stderr is empty, so no session of a healthy project gains a word. **And when you switch the document off**, by the same mechanism and with no new branch in the handler: the verb refuses on stderr with a non-zero exit, and every non-zero outcome here is silence. *(`says nothing at all where there is no project`, `says nothing at all when the document channel is switched OFF`, `says that the record does not chain, when it does not`)* |
 | **It can hold up a write, and only where your own record says so** | **THIS ROW SAID "It never blocks", AND THAT HAS STOPPED BEING TRUE.** Rewritten rather than deleted, because what changed is one specific thing and the rest of the row was the reason it was safe to. When a rule of **your** record is linked to a path with `rel: "asks-for-a-person"`, the hook answers `permissionDecision: "ask"` and the host holds the write until somebody decides — naming the rule's id in what comes back. Nothing else: `deny`, `allow` and a rewritten tool input are **not representable** in the reply's type, so those three refusals are not promises in this table. There is no heuristic anywhere in it — no "sensitive file", no inference from a path. A rule that only `governs` a path still just informs. **Three things worth knowing before you record one:** the verb that records the link now tells you how much of the working tree that address covers, as a fraction of the files it counted, which is worth reading because one segment of depth can change it tenfold; asking overrides every permission mode, `--permission-mode bypassPermissions` included, so `mnema switch off edit-asks-a-person` is the only way out and it is a separate switch from the one that stops the rules arriving; and in a headless session there is nobody to ask, so the call is refused and the reason goes to the model as an error. *(`the reply asks for a person, and only when the record does`, `the reply cannot express any decision but asking`, `goes quiet when edit-asks-a-person is switched off`)* |
-| **Every charge is a fact of your record** | The asking is an event before it is a charge: one `channel.asked` per rule that asked, citing the rule and the path, appended and signed **before** the reply is composed — so a record that cannot be written charges nothing and nobody is stopped. The push that only informs records one `channel.served` per session and per channel, which is what makes a quiet edit readable. Both travel with the repository by default. *(`the asking is a FACT, and the service is one too`)* |
+| **Every charge is a fact of your record** | The asking is an event before it is a charge: one `channel.asked` per rule that asked, citing the rule and the path, appended and signed **before** the reply is composed — so a record that cannot be written charges nothing and nobody is stopped. The push that only informs records one `channel.served` per session and per channel, which is what makes a quiet edit readable. That fact counts what is pushed **at an edit** and nothing else: the two opening texts are reads and are not counted, so a session with no `channel.served` says nothing about whether they arrived. Both travel with the repository by default. *(`the asking is a FACT, and the service is one too`)* |
 | **The rules reach the file about to change** | Only the rules with an **address** — a path someone linked them to with `rel: "governs"` — and only the ones **still in force**. A superseded decision that addresses the file does not arrive; `governing_rules` still reports it, with its state, to whoever asks. A task or a memory given an address is not a rule and never arrives. What arrives is a name, an address and an **id**, never a body: the argument and the pattern text are a second read. *(`a rule with an address reaches the file about to be written`, `what does NOT reach the writing`)* |
 | **A quiet edit means "no rule names this file"** | And that meaning is bought where it costs once: the opening document says how many of this project's rules have an address, **and how many of them ask for a person**. Injecting "nothing governs this file" on every edit was the alternative, and it was refused with a number — the median session on the machine this was measured on edits 34 files, the p90 edits 121, and one edited 3,424, with every injection staying in the context for the rest of the session. **THE SENTENCE ABOVE IS NOW TRUE OF ONE CASE FEWER AGAIN.** A quiet edit has FOUR readings, not three: no rule names this file, the rules were switched off, the gate was switched off, or the hook did not run. The opening document distinguishes the first three — when either is switched off in the **committed** record it says so, naming who switched it and when, and it stops claiming that the rules arrive or that anything waits. **What this still does not buy, said plainly:** a switch recorded `--scope private` is invisible to that document (it carries the committed record, and a fact about one machine in a committed file would make `mnema brief \| diff - MNEMA.md` report a difference that is not the record's), and *"the hook did not run"* is not distinguishable from either. `mnema switch` is the reading that spans every tree, and it is where a private switch is ever spelled. |
 | **It is a snapshot** | The opening context is: a decision accepted an hour into the session is not in what the `SessionStart` hook injected, and the live answer is one MCP call away. The per-edit hook is **not** a snapshot — it reads the record at the moment of the edit, so a rule accepted and addressed mid-session arrives at the next edit it applies to, beside the result of that write. |
@@ -121,16 +125,19 @@ The hook hands over what the verb prints, so the verb is how you see it:
 
 ```sh
 cd your-project
-mnema brief
+mnema brief --hook
 ```
 
 What that command prints is what the agent is handed at the start of the next
 session. If it refuses with `No mnema project here`, the hook stays quiet — run
-`mnema init` if this project should have a record. The notes handed over beside it are
+`mnema init` if this project should have a record. If it answers that `mnema brief` does not
+take `--hook`, the `mnema` on your PATH is older than this plugin: the hook asks it again
+without the flag and hands over what `mnema brief` prints, whole — past the host's ceiling, a
+file path the model is not asked to open. Updating `@mnema/code` brings the cut back. The notes handed over beside it are
 what this prints — nothing at all, until something is noted:
 
 ```sh
-mnema recall
+mnema recall --hook
 ```
 
 For the per-edit hook, ask about a path the way it does:
@@ -191,8 +198,8 @@ plugin/
 ├── hooks/
 │   ├── hooks.json           two events: SessionStart, PreToolUse
 │   ├── hand-over.mjs        the rule both handlers follow: run a verb, or say nothing
-│   ├── session-recall.mjs   runs `mnema recall`; silent when nothing is noted
-│   └── session-start.mjs    runs `mnema brief`; silent when there is nothing to say
+│   ├── session-recall.mjs   runs `mnema recall --hook`; silent when nothing is noted
+│   └── session-start.mjs    runs `mnema brief --hook`; silent when there is nothing to say
 └── README.md
 ```
 

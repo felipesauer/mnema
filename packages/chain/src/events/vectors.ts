@@ -373,6 +373,11 @@ export const CANONICAL_VECTORS: {
   ],
   'channel.served': [
     {
+      // A VALID EVENT BY THE FORMAT THAT THE PRODUCT DOES NOT WRITE. Its subject is the
+      // opening document's channel, and `@mnema/code` records `channel.served` only for the
+      // two channels pushed at an edit (`CountedChannel`, in its `record-framing.ts`): the
+      // opening texts are reads and append nothing. The vector pins the format, which takes
+      // any channel as subject — so it stays as it is, and its bytes with it.
       name: 'channel.served (empty payload, inside a run)',
       event: channelServed(agent(DOCUMENT_CHANNEL, RUN_ID)),
     },

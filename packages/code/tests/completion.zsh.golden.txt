@@ -89,7 +89,7 @@ _mnema_described() {
       'revoke:retire a key from this identity, from this point forward' \
       'help:display help for command' ;;
     'tail') printf '%s\n' \
-      'list:list the tails the record holds here, with the id `prune` takes' \
+      'list:list the tails that hold events here — the ones a cut can name — with the id `prune` takes' \
       'prune:record that one whole tail was authorized to be cut (it removes nothing)' \
       'help:display help for command' ;;
     'witness') printf '%s\n' \
@@ -140,8 +140,8 @@ _mnema_flags() {
     'rules') echo '--json -h --help -V --version --color' ;;
     'skills') echo '--json -h --help -V --version --color' ;;
     'usage') echo '-h --help -V --version --color' ;;
-    'brief') echo '-h --help -V --version --color' ;;
-    'recall') echo '-h --help -V --version --color' ;;
+    'brief') echo '--hook -h --help -V --version --color' ;;
+    'recall') echo '--hook -h --help -V --version --color' ;;
     'key') echo '-h --help -V --version --color' ;;
     'key restore') echo '-h --help -V --version --color' ;;
     'key request') echo '--anchor --key -h --help -V --version --color' ;;

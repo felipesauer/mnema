@@ -25,6 +25,15 @@
  * wrote, so there is nothing to collapse with `oneLine` (contrast `provenance.ts`,
  * where a pattern's name is somebody's text).
  *
+ * IT COUNTS THE TAILS THAT HOLD EVENTS, AND SAYS SO ON ITS FIRST LINE. A tail with none — an
+ * installation that proved it owns a tail and never wrote to it — is not listed, on purpose: there
+ * is nothing in it a cut could remove, and `prune` refuses a tail without events. `mnema verify`
+ * and `mnema witness` count that tail, because it is a tail the record holds, so over the same
+ * record the two numbers can differ by it. The first line names what this one counts, so the
+ * difference reads as two questions and not as two answers to one
+ * (`the-witness-counts-the-tails-verify-counts.test.ts`, "tail list says it counts the tails
+ * holding events").
+ *
  * WITH NOTHING TO SHOW IT NAMES WHERE IT LOOKED. An empty list and a record with no
  * trees say the same nothing otherwise, and the reader who most needs this line is
  * the one who ran the verb in the wrong directory. It follows `prune`'s own refusal
@@ -68,7 +77,7 @@ export function tailReport(
 ): string[] {
   if (tails.length === 0) return [noTailHoldsEvents(trees)];
   return [
-    `${tails.length} tail(s):`,
+    `${tails.length} tail(s) holding events — the ones a cut can name:`,
     ...tails.map((held) =>
       render(
         itemLine([

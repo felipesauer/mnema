@@ -16,7 +16,8 @@
 
 import type { Brief, ChannelState } from '@mnema/copilot';
 import { describe, expect, it } from 'vitest';
-import { briefDocument } from './brief.js';
+import { briefDocument, briefWithin } from './brief.js';
+import { HOOK_TEXT_CEILING, printedLength } from './within-a-hook.js';
 
 /**
  * What governs, as the composition hands it over.
@@ -761,6 +762,89 @@ describe('the brief says how a decision of the reader’s own gets in', () => {
         (line ?? '').toLowerCase(),
         `the gesture orders the reader to ${ordered}`,
       ).not.toContain(ordered);
+    }
+  });
+});
+
+describe('the hook’s copy stops at a whole rule, and says so', () => {
+  /** A title as long as a real one gets — the kind that takes a record past the ceiling. */
+  const long = (n: number) =>
+    `A call numbered ${n} about ${'the invoice run and its retries '.repeat(6)}`;
+  /** Sixty decisions and five patterns, which print well past what a hook carries. */
+  const crowded = governance({
+    decisions: Array.from({ length: 60 }, (_, at) => decision(at + 1, long(at + 1))),
+    skills: Array.from({ length: 5 }, (_, at) => pattern(at + 1)),
+  });
+  const bullets = (lines: readonly string[]) => lines.filter((line) => line.startsWith('- **'));
+
+  it('is the file’s copy byte for byte while the file fits', () => {
+    const small = governance({ decisions: [decision(1), decision(2)], skills: [pattern(1)] });
+    expect(briefWithin(small, HOOK_TEXT_CEILING)).toEqual(briefDocument(small));
+  });
+
+  it('fits, where the file does not — and the file keeps every rule', () => {
+    expect(printedLength(briefDocument(crowded))).toBeGreaterThan(HOOK_TEXT_CEILING);
+    expect(bullets(briefDocument(crowded))).toHaveLength(65);
+    expect(printedLength(briefWithin(crowded, HOOK_TEXT_CEILING))).toBeLessThanOrEqual(
+      HOOK_TEXT_CEILING,
+    );
+  });
+
+  it('prints WHOLE rules, the file’s first ones, in the file’s order', () => {
+    const handed = bullets(briefWithin(crowded, HOOK_TEXT_CEILING));
+    expect(handed.length).toBeGreaterThan(0);
+    expect(handed.length).toBeLessThan(65);
+    expect(handed).toEqual(bullets(briefDocument(crowded)).slice(0, handed.length));
+  });
+
+  it('keeps the skeleton the file has, heading for heading and paragraph for paragraph', () => {
+    const hook = briefWithin(crowded, HOOK_TEXT_CEILING);
+    const file = briefDocument(crowded);
+    const skeleton = (lines: readonly string[]) =>
+      lines.filter((line) => !line.startsWith('- **') && !/^## /.test(line));
+    // Everything that is not a bullet or a heading is the file's, in its order, and the
+    // closing paragraph is what the hook's copy adds after it.
+    expect(skeleton(hook).slice(0, skeleton(file).length)).toEqual(skeleton(file));
+    expect(hook.filter((line) => /^## /.test(line))).toEqual([
+      `## Decisions in force (${bullets(hook).length})`,
+      '## Patterns adopted (0)',
+    ]);
+  });
+
+  it('says what a section whose bullets were all cut holds — never that it holds none', () => {
+    const hook = briefWithin(crowded, HOOK_TEXT_CEILING).join('\n');
+    expect(hook).not.toContain('No pattern has been adopted here yet');
+    expect(hook).toContain('Adopted here, and expected to be worked by.');
+  });
+
+  it('ends by saying how many it left out, of which kind, and what serves them', () => {
+    const hook = briefWithin(crowded, HOOK_TEXT_CEILING);
+    const decisionsLeft = 60 - bullets(hook).length;
+    expect(hook.join('\n')).toContain(
+      `Left out of this text: ${decisionsLeft} decisions in force and 5 adopted patterns — the last ones in the order above.`,
+    );
+    expect(hook.join('\n')).toContain('`search` with `kind` `decision` and');
+    expect(hook.join('\n')).toContain('`kind` `skill` and `state` `adopted`');
+    // The count of what is printed and the count of what is not add up to the file's.
+    expect(bullets(hook).length + decisionsLeft + 5).toBe(bullets(briefDocument(crowded)).length);
+  });
+
+  it('names one kind alone when only one kind was cut, in the singular at one', () => {
+    // Two rules each longer than the closing paragraph, so leaving ONE out is what fits.
+    const two = governance({
+      decisions: [1, 2].map((n) => decision(n, `A call numbered ${n} ${'at length '.repeat(100)}`)),
+    });
+    const hook = briefWithin(two, printedLength(briefDocument(two)) - 1).join('\n');
+    expect(hook).toContain(
+      'Left out of this text: 1 decision in force — the last one in the order',
+    );
+    expect(hook).not.toContain('adopted pattern');
+  });
+
+  it('measures its closing paragraph as part of what has to fit', () => {
+    // Every room from the one the fixed part needs up to the file's: the cut never crosses it.
+    for (const room of [3_000, 4_500, 6_000, 7_777, HOOK_TEXT_CEILING]) {
+      expect(printedLength(briefWithin(crowded, room)), `room ${room}`).toBeLessThanOrEqual(room);
     }
   });
 });
