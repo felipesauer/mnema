@@ -96,6 +96,39 @@ export function whatTheVerbSays(verb, cwd) {
 }
 
 /**
+ * What a verb ANSWERS to the payload a host handed this hook, or `null` when it answers nothing.
+ *
+ * THE THIRD HANDLER READS ITS STDIN, AND THE TWO ABOVE STILL DO NOT. `whereTheSessionIs` says a
+ * handler needs no input, and for the two that hand over a document that is still so. The gate a
+ * host runs before a write is different in kind: what it answers depends on WHICH file the host
+ * is about to write, and the host says that on stdin. So the payload goes to the verb byte for
+ * byte, and what the verb prints comes back byte for byte — it is already the host's reply.
+ *
+ * THE SAME GATE AS {@link whatTheVerbSays}: every non-zero outcome is silence, and so is an empty
+ * answer — and so is `{}`, the verb's own spelling of having nothing to say, so that a handler that
+ * says nothing writes no byte, the way the other two do. Unlike them, the second stream is never
+ * kept: what goes back is JSON the host parses, and a line under it would make the whole reply
+ * unreadable — which a host reads as nothing to say, in the one place where saying nothing lets a
+ * write through.
+ *
+ * @param {readonly string[]} argv The verb and its flags.
+ * @param {string} cwd Where to run it.
+ * @param {string} input What the host handed this hook.
+ * @returns {string | null}
+ */
+export function whatTheVerbAnswers(argv, cwd, input) {
+  const ran = spawnSync(BINARY, [...argv], {
+    cwd,
+    input,
+    encoding: 'utf-8',
+    stdio: ['pipe', 'pipe', 'ignore'],
+  });
+  if (ran.error !== undefined || ran.status !== 0) return null;
+  const text = ran.stdout ?? '';
+  return text.trim() === '' || text.trim() === '{}' ? null : text;
+}
+
+/**
  * The reply the host reads: the text as context for the session, under the event it answers.
  *
  * The event name is echoed back because the host routes the reply by it, and a reply naming

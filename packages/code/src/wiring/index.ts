@@ -216,6 +216,7 @@
 import type { Command } from 'commander';
 import { registerAccountability } from './accountability.js';
 import { registerAntipatterns } from './antipatterns.js';
+import { registerBeforeAWrite } from './before-a-write.js';
 import { registerBrief } from './brief.js';
 import { registerCompletion } from './completion.js';
 import { registerDecision } from './decision.js';
@@ -280,6 +281,7 @@ export const VERBS: readonly Verb[] = [
   registerUsage,
   registerBrief,
   registerRecall,
+  registerBeforeAWrite,
   registerKey,
   registerTail,
   registerWitness,

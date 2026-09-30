@@ -177,6 +177,13 @@ function declaredCommands(): string[] {
 const DOCUMENT_HOOK = 'session-start.mjs';
 /** The handler that hands a session the notes `mnema recall` prints. */
 const NOTES_HOOK = 'session-recall.mjs';
+/**
+ * The handler of the gate in a host whose hooks are processes — VS Code's — which runs `mnema
+ * before-a-write --host vscode` on the payload of a write. It is driven here like the other two,
+ * so these cases are not blind to it; what it asks, and what it records when it does, is
+ * `a-host-that-runs-commands-asks-for-a-person.test.ts`.
+ */
+const GATE_HOOK = 'edit-asks-a-person.mjs';
 
 /**
  * The verb each declared handler runs — what the recording shim must see it try.
@@ -188,7 +195,24 @@ const NOTES_HOOK = 'session-recall.mjs';
 const VERB_OF: Readonly<Record<string, string>> = {
   [DOCUMENT_HOOK]: 'brief',
   [NOTES_HOOK]: 'recall',
+  [GATE_HOOK]: 'before-a-write --host vscode',
 };
+
+/**
+ * What the host hands each handler on stdin. The opening handlers read nothing; the gate reads
+ * the write it is about to allow or hold, and without one it is never TRIED — its filter passes
+ * no payload that does not name a tool that writes. The path is one no rule of these projects
+ * asks about, so the gate is tried, derives nothing, and writes nothing.
+ */
+function stdinOf(command: string, at: string): string {
+  if (handlerOf(command) !== GATE_HOOK) return '';
+  return JSON.stringify({
+    hook_event_name: 'PreToolUse',
+    tool_name: 'create_file',
+    tool_input: { filePath: join(at, 'src', 'unasked.ts'), content: 'export {};\n' },
+    cwd: at,
+  });
+}
 
 /** The handler file a declared command runs. */
 function handlerOf(command: string): string {
@@ -264,6 +288,7 @@ function runHook(command: string, at: string): Ran {
   calls += 1;
   const recordingTo = join(sandbox, `calls-${calls}.txt`);
   const ran = spawnSync('sh', ['-c', command], {
+    input: stdinOf(command, at),
     cwd: at,
     env: { ...hostEnv(recordingTo), CLAUDE_PROJECT_DIR: at },
     encoding: 'utf-8',
@@ -401,8 +426,9 @@ describe('the record arrives unasked', () => {
       // nothing at all, which is the shape a broken command path has.
       expect(ran.mnema, command).toEqual([VERB_OF[handlerOf(command)]]);
     }
-    // Both handlers, which is what "every command" has to mean now.
-    expect(commands.map(handlerOf)).toEqual([DOCUMENT_HOOK, NOTES_HOOK]);
+    // Every handler, which is what "every command" has to mean now — the gate included, whose
+    // verb answers `{}` outside a project and whose handler writes no byte for it.
+    expect(commands.map(handlerOf)).toEqual([DOCUMENT_HOOK, NOTES_HOOK, GATE_HOOK]);
   });
 
   it('says nothing at all when the document channel is switched OFF', () => {
@@ -723,6 +749,10 @@ describe('the record arrives unasked', () => {
     // counted by reading the files rather than by asking the product to replay them.
     // A run opened by the hook would be an event here, which is why this case is the
     // one that holds the plugin's claim that no session of its own is started.
+    //
+    // THE GATE IS RUN HERE TOO, on a write no rule of this project asks about, and it writes
+    // nothing: it records a fact only when it asks for a person, which is the case its own file
+    // holds, byte for byte around the call.
     const before = held(sandbox);
     expect(before.events).toBeGreaterThan(0);
     for (const command of declaredCommands()) {
@@ -732,7 +762,7 @@ describe('the record arrives unasked', () => {
     expect(held(sandbox)).toEqual(before);
   });
 
-  it('runs only verbs that read, and names each one', () => {
+  it('runs the verbs it names — two that read, and the gate, which writes only when it asks', () => {
     // The guard that keeps the write half out. The read half was delivered alone on
     // purpose: `ensureRun` already opens a run on the FIRST WRITE with the `who` off
     // the key, so a hook that opened one would move the moment and open an empty run
@@ -752,23 +782,36 @@ describe('the record arrives unasked', () => {
     // renamed it: the event that opens a session now runs two handlers, and each runs one
     // verb. What it guards is unchanged — every verb a handler reaches is a READ — and the
     // list says which two, so a third is a line somebody has to write.
+    //
+    // A THIRD VERB ARRIVED, AND IT WRITES — so the sentence "every verb a handler reaches is a
+    // READ" is false now, rewritten rather than dropped, and the case is renamed with it so a
+    // reader who knew the old name finds a different claim. VS Code runs only command hooks and
+    // holds a write for a person when a command answers `ask` (measured,
+    // `measurements/hooks-by-host/`), so the gate reaches it as a process: `mnema before-a-write
+    // --host vscode`, which records a `channel.asked` per rule when it asks, exactly as the
+    // `mcp_tool` gate does in Claude Code. What this case holds now is the set, and which side
+    // each is on: the two opening verbs read, the gate is declared as writing, and a fourth verb
+    // is a line somebody has to write.
     expect(declaredEvents()).toEqual(['SessionStart', 'PreToolUse']);
 
     const reached = new Set<string>();
     for (const command of declaredCommands()) {
       for (const line of runHook(command, project).mnema) reached.add(line);
     }
-    expect([...reached]).toEqual(['brief', 'recall']);
+    expect([...reached]).toEqual(['brief', 'recall', 'before-a-write --host vscode']);
     expect([...reached]).toEqual(Object.values(VERB_OF));
 
-    // And each is a verb the PRODUCT classifies as a read. Read off the same
-    // declaration the parser routes with, so a verb that ever changed sides would
-    // land here rather than in a session.
+    // And each is on the side the PRODUCT declares it on. Read off the same declaration the
+    // parser routes with, so a verb that ever changed sides would land here rather than in a
+    // session.
     const declared = buildProgram({ out: () => {}, err: () => {}, fail: () => {} }).verbs;
-    for (const line of reached) {
-      const verb = declared.find((one) => one.act.name() === line.split(' ')[0]);
-      expect(verb?.effect, line).toBe('reads');
-    }
+    const sideOf = (line: string) =>
+      declared.find((one) => one.act.name() === line.split(' ')[0])?.effect;
+    expect([...reached].map((line) => `${line}: ${sideOf(line)}`)).toEqual([
+      'brief: reads',
+      'recall: reads',
+      'before-a-write --host vscode: mutates',
+    ]);
   });
 
   it('declares a manifest, a marketplace and hooks the host can read', () => {
@@ -845,6 +888,7 @@ describe('the record arrives unasked', () => {
       'command:/hooks/session-start.mjs',
       'command:/hooks/session-recall.mjs',
       'mcp_tool:rules_before_an_edit',
+      'command:/hooks/edit-asks-a-person.mjs',
     ]);
 
     const marketplace = readJson<Marketplace>(MARKETPLACE);

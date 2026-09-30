@@ -21,6 +21,7 @@ import {
 } from '@mnema/core';
 import { createTask, openTreeForWriting } from '@mnema/core/write';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { runBeforeAWrite } from '../src/commands/before-a-write.js';
 import { runDecision } from '../src/commands/decision.js';
 import { runDecisionImport } from '../src/commands/decision-import.js';
 import { runDecisionTransition } from '../src/commands/decision-transition.js';
@@ -148,7 +149,7 @@ const CODE_SRC = join(HERE, 'src');
 const CORE_OPERATIONS_THAT_APPEND = 32;
 
 /** How many paths of the shipped surface reach one of them. */
-const SURFACE_WRITE_PATHS = 33;
+const SURFACE_WRITE_PATHS = 34;
 
 /** Every non-test TypeScript file under a source root. */
 function sourceFiles(dir: string): string[] {
@@ -589,6 +590,26 @@ describe('every write path leaves the record fully signed', () => {
       {
         at: 'commands/run-end.ts:runRunEnd',
         drive: () => void ok('run end', runRunEnd(ctx, { run, which: 'agent-alpha' })),
+      },
+      {
+        // The gate as a host whose hooks are processes asks for it: reaching the writer takes
+        // a rule in force that asks for a person at the path, or the verb answers `{}` and
+        // this row passes having driven nothing.
+        at: 'commands/before-a-write.ts:recordAskings',
+        drive: () => {
+          void ok(
+            'asks-for-a-person',
+            runLink(ctx, { subject: decision, target: 'src/billing', rel: 'asks-for-a-person' }),
+          );
+          const done = runBeforeAWrite(ctx, {
+            host: 'vscode',
+            payload: JSON.stringify({
+              tool_name: 'create_file',
+              tool_input: { filePath: 'src/billing/invoice.ts', content: '' },
+            }),
+          });
+          if (!('hookSpecificOutput' in done.reply)) throw new Error('the gate did not ask');
+        },
       },
       {
         at: 'commands/switch.ts:runSwitch',

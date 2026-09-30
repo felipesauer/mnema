@@ -17,6 +17,13 @@ export interface CliIo {
   readonly err: (line: string) => void;
   /** Records a non-zero exit intent without killing the process under test. */
   readonly fail: () => void;
+  /**
+   * Everything on the standard input, for the one verb a host feeds a payload to
+   * (`before-a-write`). Absent is empty — the in-process harness has no input to give, and a
+   * verb that read the real stream there would wait on a pipe its test runner never closes
+   * (it did: the suite hung on the first run of that verb in process).
+   */
+  readonly input?: () => Promise<string>;
 }
 
 /** The real streams, and a non-zero exit code on failure. */
@@ -25,6 +32,11 @@ export const processIo: CliIo = {
   err: (line) => process.stderr.write(`${line}\n`),
   fail: () => {
     process.exitCode = 1;
+  },
+  input: async () => {
+    const chunks: Buffer[] = [];
+    for await (const chunk of process.stdin) chunks.push(Buffer.from(chunk as Buffer));
+    return Buffer.concat(chunks).toString('utf-8');
   },
 };
 

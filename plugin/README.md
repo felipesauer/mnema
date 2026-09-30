@@ -42,6 +42,14 @@ document, delivered by the host instead of waited for.
   rather than "there is no mechanism". It is not a process: the host calls a tool on the
   MCP server this same plugin declares, which costs a call on an open connection instead
   of a command start (measured: 1.24 ms against 171.5 ms).
+- **A second `PreToolUse` hook, for VS Code**, which pauses a write for a person where a rule
+  of your record asks it to. VS Code's agent runs only command hooks, so this one is a process:
+  it runs `mnema before-a-write --host vscode` on the write the host is about to make, and it
+  answers with the same reason, and records the same facts, as the hook above does in Claude
+  Code. It sits under a matcher of VS Code's own tool names, which Claude Code and Cursor apply
+  and never match, so neither runs it; VS Code runs a plugin's command hook on every tool call
+  whatever its matcher says, so a filter in the shell passes it only the tools that write, and a
+  read costs a shell and nothing more.
 - **A switch for each of them.** `mnema switch` says where each stands and what each
   carries; `mnema switch off edit-rules-push` stops the per-edit push, `mnema switch off
   brief-document` stops the opening document, and `mnema switch off recall-document` stops
@@ -166,6 +174,7 @@ What each one runs of it:
 | **What the server says its tools are for** | reaches the session | reaches the model in the families whose prompt carries a server's instructions; in the ones whose prompt does not — the Codex models among them — the opening below is what arrives | reaches the model beside the names of the server's tools; each tool's own description arrives only when the model looks that tool up |
 | **The opening — the document and the notes** | handed to every session | handed to every session, whatever model it runs | both hooks run, and their text reaches the model |
 | **The rules at each edit** | handed over beside the result of that write, and recorded as served | not run: it is an `mcp_tool` hook, a type Claude Code runs and the other two do not | not run, for the same reason |
+| **A write paused for a person, where a rule asks** | yes, through the same `mcp_tool` hook | **yes**, through the plugin's command hook: the write waits for a person, and the asking is recorded as it is in Claude Code | **no**: the agent runs the hook before its write and **ignores** `ask` — the file was written — while it honors `deny` |
 
 **How each loads it.** VS Code's agent loads it from a folder listed in its
 `chat.pluginLocations` setting, which is the route these rows were measured on. Cursor's
@@ -173,7 +182,12 @@ command-line agent loads it on its own from the Claude Code installation on the 
 machine, with Cursor's import of third-party plugins on, which is how it ships.
 
 **Where the table stops.** It was measured with VS Code 1.137 and its Copilot Chat 0.65,
-and with Cursor's command-line agent 2026.09.18 — not Cursor's editor. On Cursor's side it
+and with Cursor's command-line agent 2026.09.18 — not Cursor's editor. The last row was
+measured on 30 Sep 2026 against each host with no model and no network — a stand-in model in
+VS Code, a stand-in backend for Cursor's agent — with the plugin of this repository and the
+built binary; the captures are [`measurements/hooks-by-host/`](../measurements/hooks-by-host/).
+VS Code puts a hook's reason in front of the person who decides and a hook's text inside the
+result of the tool; what a person sees in the confirmation was not read from the screen. On Cursor's side it
 was measured on the free plan with the `Auto` model, the only model used: the server's
 instructions and both opening texts are in the prompt Cursor's servers assembled for the
 model, read back from the chat the agent keeps on the machine — the instructions whole,
@@ -189,8 +203,9 @@ plugin/
 ├── .claude-plugin/
 │   └── plugin.json          the manifest, and the MCP server declaration
 ├── hooks/
-│   ├── hooks.json           two events: SessionStart, PreToolUse
-│   ├── hand-over.mjs        the rule both handlers follow: run a verb, or say nothing
+│   ├── hooks.json           two events: SessionStart, PreToolUse (one hook per host there)
+│   ├── edit-asks-a-person.mjs  VS Code's gate: runs `mnema before-a-write --host vscode`
+│   ├── hand-over.mjs        the rule the handlers follow: run a verb, or say nothing
 │   ├── session-recall.mjs   runs `mnema recall`; silent when nothing is noted
 │   └── session-start.mjs    runs `mnema brief`; silent when there is nothing to say
 └── README.md
@@ -211,6 +226,14 @@ plugin declares, and a hook that named it `mnema` would never be called and woul
 nothing about it. Measured four ways, and the two files are checked against each other so
 that renaming either half is a failing test rather than a plugin that looks installed and
 does half of what it says.
+
+**AND A THIRD HANDLER, FOR THE HOST THAT CANNOT MAKE THAT CALL.** This paragraph said the
+`PreToolUse` hook has no file, and the one Claude Code runs still has none. VS Code's agent drops
+an `mcp_tool` hook without a word and runs only commands, so the pause for a person reaches it
+through `edit-asks-a-person.mjs`, which hands the host's payload to `mnema before-a-write --host
+vscode` and hands its answer back, byte for byte. Which rules ask, and the reason the person
+reads, are decided in the one place the `mcp_tool` hook's tool decides them — so the two hosts
+cannot come to stop different writes.
 
 ## License
 
