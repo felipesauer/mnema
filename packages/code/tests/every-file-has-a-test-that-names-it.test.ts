@@ -461,8 +461,11 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * `@mnema/copilot`, `@mnema/core`, the three modules of the MCP SDK a client connects through,
  * `vitest`, and `../src/mcp/instructions.js`, `../src/mcp/server.js`,
  * `../src/presentation/brief.js` and `../src/record-framing.js` for the texts. Read off this guard.
+ * Then 3189 -> 3190 where a pure layer may not import a function that reaches the machine: one
+ * clause in `the-document-is-a-function-of-the-record.test.ts`, `node:module`, for the list of
+ * the runtime's own modules that the indirect net does not follow. Read off this guard.
  */
-const CLAUSES_IN_THE_TREE = 3189;
+const CLAUSES_IN_THE_TREE = 3190;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 
