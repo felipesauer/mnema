@@ -202,7 +202,10 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
               ),
             ),
           );
-          io.out(render(fact(onOneLine`this machine keeps the key file at ${result.keyFile}`)));
+          // Loaded here, on the one path that says it, so every other command's floor does not
+          // grow an edge for a line only a revocation of this machine's own key prints.
+          const { keyFileLine } = await import('../key-file.js');
+          io.out(render(fact(keyFileLine(result.keyFile, here().env.mnemaHome))));
         }
         io.out(
           render(

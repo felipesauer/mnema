@@ -110,31 +110,25 @@ const ANSWERS_ANYWAY: Readonly<Record<string, string>> = {
 };
 
 /**
- * THE SENTENCE THE TWO WITNESS ROWS OF BOX 3 ANSWER WITH, whole — and a finding inside it.
+ * THE SENTENCE THE TWO WITNESS ROWS OF BOX 3 ANSWER WITH, whole.
  *
  * `witness` and `witness upgrade` are the two rows above whose reason is that they report
- * on the tails they can see and say so when there are none. This is what saying so IS, and
- * until it was read here nothing read it: the wording is written THREE times in `src` —
- * `presentation/tails.ts`, `presentation/witness.ts` and `wiring/witness.ts` — and only the
- * first of the three had ever been asserted (`the-verb-says-which-tails.test.ts`, over
- * `mnema tail list`). The other two are the two paths below, one each.
+ * on the tails they can see and say so when there are none. This is what saying so IS. The
+ * wording was written THREE times in `src` — `presentation/tails.ts`, `presentation/witness.ts`
+ * and `wiring/witness.ts` — and is one function now (`noTailHoldsEvents`), which each of the
+ * three paths below reaches.
  *
- * THE TREE LIST IS EMPTY, and that is recorded rather than repaired. Outside a project the
- * only tree that resolves is this machine's global one, which every witness path leaves out
- * unless asked, so the sentence names nothing and reads `looked in .` — a list with no
- * items and a full stop. This said asking was not available on the acts either: `--global`
- * is declared on the group AND on each act, `mnema witness upgrade --global` bound it to the
- * GROUP, whose value no act read, and so the flag on `stamp` and on `upgrade` fed nothing —
- * commander's documented arithmetic, since a parent stops consuming its own options at a
- * subcommand only under `enablePositionalOptions()`, which this program does not set. The
- * arithmetic is unchanged and the acts now read the value where it lands, off the group
- * (`wiring/from-the-group.ts`): asked, `upgrade` outside a project goes back for the global
- * tail, which `the-witness-acts-cover-the-tree-asked-for.test.ts` runs on the binary. Not
- * asked, it still says this sentence, and the empty list is still what it says.
+ * THE TREE LIST IS EMPTY HERE, and it used to be SAID as a list: outside a project the only tree
+ * that resolves is this machine's global one, which every witness path leaves out unless asked,
+ * so the sentence read `looked in .` — a list with no items and a full stop. It says why the list
+ * is empty now, and what asks for the one tree there is: `--global`, which the acts read off the
+ * group (`wiring/from-the-group.ts`), and which `the-witness-acts-cover-the-tree-asked-for.test.ts`
+ * runs on the binary.
  */
-const NO_TAIL_HOLDS_EVENTS = 'No tail holds events in any tree here — looked in .';
+const NO_TAIL_HOLDS_EVENTS =
+  'No tail holds events here: this is not a mnema project, and this machine’s global tree is read only with --global.';
 
-/** Which path is the one reader of which copy of that sentence. */
+/** Which path reaches the one sentence by which of its callers. */
 const SAYS_NO_TAIL_HOLDS_EVENTS: Readonly<Record<string, string>> = {
   witness: 'src/presentation/witness.ts',
   'witness upgrade': 'src/wiring/witness.ts',

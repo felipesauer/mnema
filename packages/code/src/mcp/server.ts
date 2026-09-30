@@ -97,6 +97,7 @@ import {
   type ToolAnnotations,
 } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
+import { keyFileLine } from '../key-file.js';
 import { movedLine } from '../moved-record.js';
 import { passedOverSentences } from '../not-a-project.js';
 import { oneLine } from '../one-line.js';
@@ -798,7 +799,7 @@ function answeringThrownRefusals<Input extends ZodRawShapeCompat | undefined>(
       const keyFile =
         error.restores === undefined
           ? ''
-          : ` — this machine keeps the key file at ${oneLine(privateKeyPath({ root: session.trees.keyRoot }, error.restores))}`;
+          : ` — ${keyFileLine(privateKeyPath({ root: session.trees.keyRoot }, error.restores), session.env.mnemaHome)}`;
       return refused(session, { code: error.code, message: `${error.message}${keyFile}` });
     }
   }) as ToolCallback<Input>;

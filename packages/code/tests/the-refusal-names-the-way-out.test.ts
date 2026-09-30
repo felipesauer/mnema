@@ -320,7 +320,7 @@ function leave(
       revoked = ran.stdout;
       // What the words say the revocation prints, run there: where that machine keeps the file.
       if (clause.includes('prints where that machine keeps the key file')) {
-        const file = /this machine keeps the key file at (.+)$/m.exec(ran.stdout)?.[1];
+        const file = /this machine keeps the key file at (.+?), under /m.exec(ran.stdout)?.[1];
         if (file !== undefined) fills['<the key file>'] = file;
       }
     }
@@ -720,7 +720,7 @@ describe('the revocation of this machine’s own key says what the record leaves
     if (words.includes('once pulled')) pull(atB);
     const [restore] = commandsIn(words).filter((one) => one.startsWith('mnema key restore '));
     expect(restore, words).toBeDefined();
-    const file = /this machine keeps the key file at (.+)$/m.exec(words)?.[1];
+    const file = /this machine keeps the key file at (.+?), under /m.exec(words)?.[1];
     expect(file, words).toBeDefined();
     const ran = mnema(atB, b, ...argvFor(restore as string, { '<the key file>': file as string }));
     expect(ran.status, `${ran.stdout}${ran.stderr}`).toBe(0);

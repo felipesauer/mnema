@@ -54,6 +54,7 @@ import { join } from 'node:path';
 import { Argument, Command, CommanderError, Option } from 'commander';
 import { describe, expect, it } from 'vitest';
 import { buildProgram, type CliIo } from '../src/cli.js';
+import { everyCommandOf } from '../src/wiring/misuse.js';
 import { ROOT } from './support/published-examples.js';
 import { invocationsIn, linesOf, trackedPages, unquoted } from './support/reading-a-shell-line.js';
 import { codeOnly, INTERPOLATED, LITERAL_EDGE, literalsOnly } from './support/reading-source.js';
@@ -278,13 +279,34 @@ export function readingsOf(program: Command, text: string): readonly Reading[] {
 // ---------------------------------------------------------------------------
 
 /**
- * Whether a command runs an action of its own. commander keeps it in a field it does not publish,
- * and it is the one thing the mirror cannot read any other way: `task` takes a title AND holds
- * `move`, while `key` only holds its verbs, and a mirror that gave both the same answer would
- * either refuse `mnema task "Ship the parser"` or accept a bare `mnema key`.
+ * The commands of the program that were handed an action of their own — read by watching the
+ * public `action()` while the program is built, and not out of commander's private field.
+ *
+ * It is the one thing the mirror cannot read back from a declaration: `witness` and `switch` act
+ * AND hold subcommands, while `key` only holds its verbs, and a mirror that gave both the same
+ * answer would either refuse a bare `mnema switch` or accept a bare `mnema key`. This read
+ * `_actionHandler`, which commander does not publish and may rename in any release; the method
+ * that sets it is published, so the watch is on that.
  */
+const ACTING = new WeakSet<Command>();
+
+/** Builds the program with every `action()` it declares seen, so {@link actsOnItsOwn} can ask. */
+function watchedProgram(): Command {
+  const real = Command.prototype.action;
+  Command.prototype.action = function action(this: Command, fn: (...args: never[]) => unknown) {
+    ACTING.add(this);
+    return real.call(this, fn as Parameters<typeof real>[0]);
+  } as typeof real;
+  try {
+    return buildProgram(silent).program;
+  } finally {
+    Command.prototype.action = real;
+  }
+}
+
+/** Whether a command runs an action of its own. */
 function actsOnItsOwn(command: Command): boolean {
-  return (command as unknown as { readonly _actionHandler: unknown })._actionHandler != null;
+  return ACTING.has(command);
 }
 
 /** How commander spells an argument it declares: `<id>`, `[id]`, `<path...>`. */
@@ -355,7 +377,7 @@ export const NOT_CHECKED: Readonly<Record<string, string>> = {
   MEASUREMENTS_ARE_EVIDENCE:
     'Pages under `measurements/` are the protocols and results of rounds that already ran. What their commands say is what was typed then — `round-3/arms.md` publishes `mnema switch --off edit-rules-push`, which the program never had — and rewriting one rewrites the evidence of what was measured.',
   A_NAME_IS_NOT_A_LINE:
-    'A verb’s bare path is read as its NAME, and a name is checked only for naming a verb. Measured when this guard landed: nineteen names whose verb requires more than its path — `mnema key revoke` in the refusal that answers a line typed outside a project, `mnema tail prune` in the sentence saying what it takes. There were twenty, and the reading cannot tell a name from an instruction to type a bare line: the twentieth WAS one (`run start`’s "`mnema run end` closes it"), and it is a line now.',
+    'A verb’s bare path is read as its NAME, and a name is checked only for naming a verb — the reading cannot tell a name from an instruction to type a bare line (one of the first twenty WAS one: `run start`’s "`mnema run end` closes it", a line now). So every name whose verb requires more than its path is on {@link NAMES_THAT_NEED_MORE}, looked at one by one with the reason it is a name, and reconciled with the corpus both ways: a new one is red until somebody says which it is.',
   A_VALUE_IS_NOT_A_NAME:
     'A marker is filled with a value nothing checks, and the mirror carries no value parser: which actions `task move` has, which shells `completion` knows and which scopes exist are the gate’s and the declaration’s answers about a value, and a marker is exactly what does not know it. `the-shell-a-page-publishes-is-the-shell-that-runs.test.ts` declares the same for the pages.',
   A_LINE_HEADED_BY_ANOTHER_PROGRAM:
@@ -366,6 +388,88 @@ export const NOT_CHECKED: Readonly<Record<string, string>> = {
     'Whether a line SUCCEEDS against a record: the roster that decides a revocation, the gate that decides a move, the run a close names. Parsing is what a line must pass before any of that is asked, and `the-refusal-names-the-way-out.test.ts` runs the one line whose success the words promise, in git clones, end to end.',
   TESTS_HAND_NOTHING_OVER:
     'The corpus is what the product delivers: its sources and its pages. The sweep that found the class read the tests too, and the tests that pin the form of a handed-over command changed with it; but a string in a test is handed to nobody, and reading one as a command would accuse fixtures that are exactly right.',
+};
+
+/**
+ * Every NAME in the corpus whose verb requires more than its path, keyed by the file and the
+ * command, with how many times the file names it and why it is a name and not a line to type.
+ *
+ * It used to be a count inside a sentence — "nineteen names" — and a count cannot tell the next
+ * instruction to type a bare line from the next mention of a verb. Each was read in its sentence
+ * (29/09/2026): the ones below NAME a verb — to say what it does, what its output is for, or to
+ * answer a line the person already typed whole — and none tells a person to type the verb alone.
+ */
+export const NAMES_THAT_NEED_MORE: Readonly<
+  Record<string, { readonly times: number; readonly why: string }>
+> = {
+  'packages/code/README.md: mnema tail prune': {
+    times: 2,
+    why: 'the verb named in prose, as the one that cuts a tail; its own section hands the line over',
+  },
+  'packages/code/README.md: mnema key restore': {
+    times: 1,
+    why: 'the verb named in the table row; the same row hands the whole restore over as a line',
+  },
+  'packages/code/README.md: mnema skill export': {
+    times: 1,
+    why: 'the verb named in the sentence about what leaves the record as a file',
+  },
+  'packages/code/README.md: mnema show': {
+    times: 3,
+    why: 'the read named in sentences about what it serves; its lines are in the reading section',
+  },
+  'packages/code/README.md: mnema memory': {
+    times: 1,
+    why: 'a verb named in a list of what a session’s facts are written with',
+  },
+  'packages/code/README.md: mnema observe': {
+    times: 1,
+    why: 'a verb named beside `mnema memory`, in the same list',
+  },
+  'packages/code/README.md: mnema decision import': {
+    times: 1,
+    why: 'the verb named in the sentence about reading decision files; its block has the line',
+  },
+  'packages/code/src/wiring/decision.ts: mnema decision record': {
+    times: 1,
+    why: 'names the verb a move’s `--alternatives` belongs to, and says the rest of the line in words',
+  },
+  'packages/code/src/wiring/key.ts: mnema key restore': {
+    times: 1,
+    why: 'answers a line typed outside a project, whole, by naming the verb to run inside one',
+  },
+  'packages/code/src/wiring/key.ts: mnema key request': {
+    times: 1,
+    why: 'the help of `key enroll`, naming the verb whose output its argument is',
+  },
+  'packages/code/src/wiring/key.ts: mnema key enroll': {
+    times: 1,
+    why: 'answers a line typed outside a project, whole, by naming the verb to run inside one',
+  },
+  'packages/code/src/wiring/key.ts: mnema key revoke': {
+    times: 1,
+    why: 'answers a line typed outside a project, whole, by naming the verb to run inside one',
+  },
+  'packages/code/src/wiring/run.ts: mnema run end': {
+    times: 1,
+    why: 'the usage refusal of that very verb, naming it before saying what it needs',
+  },
+  'packages/code/src/wiring/run.ts: mnema run start': {
+    times: 1,
+    why: 'names the verb whose printed id the variable holds',
+  },
+  'packages/code/src/wiring/skill.ts: mnema skill create': {
+    times: 1,
+    why: 'the usage refusal of that very verb, naming it before saying what it requires',
+  },
+  'packages/code/src/wiring/tail.ts: mnema tail prune': {
+    times: 1,
+    why: 'the help that says what each line of the listing is for, naming the verb the id is for',
+  },
+  'packages/copilot/src/intelligence/pattern-moves.ts: mnema show': {
+    times: 1,
+    why: 'names the read a person uses, in the sentence about what nothing records',
+  },
 };
 
 /**
@@ -387,7 +491,7 @@ export const NOT_CHECKED: Readonly<Record<string, string>> = {
  * A SUBCOMMAND THAT REFUSES ITS GROUP'S FLAG SAYS WHERE THE FLAG IS READ, and that moved two rows
  * of the source, each looked at: the two `witness` acts refuse `--json` by handing over `mnema
  * witness --json`, the reading that has it (27 → 28 lines), and the two moves of a decision refuse
- * `--alternatives` by naming `mnema decision`, the verb that records it (41 → 42 names).
+ * `--alternatives` by naming `mnema decision record`, the verb that records it (41 → 42 names).
  *
  * A CHECKOUT THE KEY LEFT IS REFUSED, AND TOLD THE RESTORE, and the way out learned the copy this
  * machine keeps: four lines of the source and one of the page, each looked at and run to the
@@ -413,7 +517,7 @@ export const HANDED_OVER: Readonly<
 
 // ---------------------------------------------------------------------------
 
-const program = buildProgram(silent).program;
+const program = watchedProgram();
 const verbs = new Set(program.commands.map((one) => one.name()));
 
 const pages = trackedPages().filter((page) => !page.startsWith(EVIDENCE));
@@ -459,6 +563,37 @@ describe('the command handed over runs as handed', () => {
   });
 });
 
+describe('a name whose verb needs more is one somebody looked at', () => {
+  it('is on the roster, as many times as the file names it, and the roster holds no other', () => {
+    const found: Record<string, number> = {};
+    for (const one of read) {
+      for (const reading of one.readings) {
+        if (reading.kind !== 'name' || refusalOf(program, reading.path) === undefined) continue;
+        const key = `${one.where.split(':')[0]}: mnema ${reading.path.join(' ')}`;
+        found[key] = (found[key] ?? 0) + 1;
+      }
+    }
+    const listed = Object.fromEntries(
+      Object.entries(NAMES_THAT_NEED_MORE).map(([key, said]) => [key, said.times]),
+    );
+    expect(found).toEqual(listed);
+    // NON-VACUITY: the names the finding was about are among them.
+    expect(Object.keys(found)).toContain('packages/code/src/wiring/key.ts: mnema key revoke');
+    expect(Object.keys(found)).toContain('packages/code/src/wiring/run.ts: mnema run end');
+  });
+
+  it('the mirror knows which commands act, from the published method and not a private field', () => {
+    const acting = everyCommandOf(program)
+      .filter((command) => command.commands.length > 0 && actsOnItsOwn(command))
+      .map((command) => command.name())
+      .sort();
+    expect(acting).toEqual(['switch', 'witness']);
+    // And the source reads no private field of commander's.
+    const source = readFileSync(new URL(import.meta.url), 'utf8');
+    expect(codeOnly(source).includes(['_action', 'Handler'].join(''))).toBe(false);
+  });
+});
+
 describe('the readings know what they read', () => {
   it('each part of the corpus hands over what the count says', () => {
     const counted: Record<string, Record<string, number>> = {
@@ -498,12 +633,12 @@ describe('the readings know what they read', () => {
     const using = speakingSources()
       .filter((file) => file.endsWith('.ts'))
       .filter((file) => setters.test(codeOnly(readFileSync(join(ROOT, file), 'utf8'))));
-    // ONE FILE, AND IT IS NOT A VERB. `written-before.ts` turns positional options on for a
-    // throwaway command it builds to ask where a flag was WRITTEN, and it never registers that
-    // command anywhere, so the program this mirror copies parses exactly as before. The file
-    // holds that one function and nothing else, which is what keeps this exemption from
-    // covering a real verb's setting: one written anywhere else is still red here.
-    expect(using).toEqual(['packages/code/src/wiring/written-before.ts']);
+    // NO FILE. There was one, and it was not a verb: `written-before.ts` turned positional
+    // options on for a throwaway command it built to ask where a flag was WRITTEN, and this case
+    // named it as the one exception. It asks commander's default parse over prefixes of the line
+    // now, which answers the same without the setting, so no exception is left to cover a real
+    // verb's.
+    expect(using).toEqual([]);
   });
 });
 

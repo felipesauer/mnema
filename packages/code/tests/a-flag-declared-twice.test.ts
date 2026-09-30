@@ -31,7 +31,7 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { Command, CommanderError } from 'commander';
+import { Command } from 'commander';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { buildProgram, type CliIo } from '../src/cli.js';
 import { everyCommandOf, pathOf } from '../src/wiring/misuse.js';
@@ -137,19 +137,26 @@ describe('where a flag was written is what commander read before the verb', () =
     expect(await answer(['group', '-q', 'act', '--global'])).toEqual(['-q']);
   });
 
-  it('never prints and never ends the process, even over a line no group could have read', () => {
+  it('never prints and never ends the process, and names nothing over a line no group could have read', () => {
     // Unreachable through a real parse — a group's flag with nothing after it stops the line
     // before any subcommand runs — so the line is handed over by hand, the way commander keeps it.
+    // This THREW, from a throwaway parsed with positional options on; the prefixes a default
+    // parse is asked over find no subcommand in it, and a line with no subcommand in it has no
+    // flag written before one. What stays is the half that mattered: nothing is printed and the
+    // process is not ended from inside somebody's command.
     const root = new Command('tool');
     const group = root.command('group').option('--opt <value>');
     const act = group.command('act').option('--opt <value>');
     root.args = ['group', '--opt'];
     const written = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const out = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
     try {
-      expect(() => ownFlagsWrittenBefore(act)).toThrow(CommanderError);
+      expect(ownFlagsWrittenBefore(act)).toEqual([]);
       expect(written).not.toHaveBeenCalled();
+      expect(out).not.toHaveBeenCalled();
     } finally {
       written.mockRestore();
+      out.mockRestore();
     }
   });
 
