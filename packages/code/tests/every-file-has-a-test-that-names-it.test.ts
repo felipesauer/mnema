@@ -461,8 +461,14 @@ const TEST_TREE: readonly TestSource[] = READABLE.flatMap((pkg) =>
  * `@mnema/copilot`, `@mnema/core`, the three modules of the MCP SDK a client connects through,
  * `vitest`, and `../src/mcp/instructions.js`, `../src/mcp/server.js`,
  * `../src/presentation/brief.js` and `../src/record-framing.js` for the texts. Read off this guard.
+ * Then 3189 -> 3194 when the second reader's Python floor was held to one number: five clauses
+ * in `the-python-floor-is-declared-once.test.ts`, which asks git for every file that states a
+ * floor, every workflow that sets up a Python and every test that starts one, and asks the
+ * `python3` the cases call for its version — `node:child_process`, `node:fs`, `node:path`,
+ * `node:url` and `vitest`. It imports no production module: its subject is the text of the
+ * workspace's files and the interpreter on `PATH`. Read off this guard.
  */
-const CLAUSES_IN_THE_TREE = 3189;
+const CLAUSES_IN_THE_TREE = 3194;
 
 const { importedBy, witnessedBy, unresolved } = witnessing(PRODUCTION, TEST_TREE, codeOnly);
 

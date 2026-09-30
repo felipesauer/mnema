@@ -493,7 +493,9 @@ def _check_witness(
 
         used: set[int] = set()
         for attestation in proof.confirmed:
-            header = headers.get(attestation.height)
+            # `confirmed` holds only bitcoin attestations, and `ots` builds each of those with
+            # its height, so the `None` a type checker sees in `height` cannot reach here.
+            header = headers.get(attestation.height)  # type: ignore[arg-type]
             if header is None:
                 report.note(
                     "8",
@@ -503,7 +505,7 @@ def _check_witness(
                     "G19",
                 )
                 continue
-            used.add(attestation.height)
+            used.add(attestation.height)  # type: ignore[arg-type]
             if header.merkle_root != attestation.folded:
                 report.fail(
                     "8",
@@ -534,7 +536,7 @@ def _check_witness(
             candidate = Coverage(
                 covered=checkpoint.to_seq >= last_seq,
                 instant=header.instant,
-                block=attestation.height,
+                block=attestation.height,  # type: ignore[arg-type]
                 events_after=max(0, last_seq - checkpoint.to_seq),
                 dates_up_to=checkpoint.to_seq,
                 last_seq=last_seq,
@@ -543,7 +545,7 @@ def _check_witness(
             # attestations of that checkpoint the EARLIEST block: an attestation in an
             # earlier block is the stronger existence claim, so reporting a later one
             # would understate what the files prove.
-            if best is None or (candidate.dates_up_to, -attestation.height) > (
+            if best is None or (candidate.dates_up_to, -attestation.height) > (  # type: ignore[operator]
                 best.dates_up_to,
                 -best.block,
             ):
