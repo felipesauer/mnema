@@ -891,7 +891,8 @@ so what it is near is read from the project itself, with no model: the files cha
 the working tree, the tasks in progress, the name of the branch, and the files of the last
 three commits — the record's own directory left out of both git reads, and git asked to
 take no lock. A note that shares a word with those is ranked by the same index
-`mnema search` ranks by, and comes first; the rest of the list is the newest. With nothing
+`mnema search` ranks by, and comes first — a word more than half of the notes hold tells
+them apart from nothing and is left out; the rest of the list is the newest. With nothing
 to read — a clean tree outside git, say — the list is the newest, as it was. The text says
 in one line which order it used, and under each heading how many of the notes are the near
 ones. A line that still holds a

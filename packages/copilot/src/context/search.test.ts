@@ -313,13 +313,18 @@ describe('readRecord — one whole record by id', () => {
 });
 
 describe('pertinentFirst — the near records first, then the newest', () => {
-  /** Twenty-five notes: three old ones about invoices, then twenty-two newer about login. */
+  /**
+   * Twenty-five notes in the team's tree — three old ones about invoices, then twenty-two
+   * newer about login — and three in this machine's, one of them about invoices.
+   */
   function notes(): ScopedCache[] {
     const team = bench();
     for (let i = 0; i < 3; i += 1) capture(team, `m-invoice-${i}`, `invoice rounding note ${i}`);
     for (let i = 0; i < 22; i += 1) capture(team, `m-login-${i}`, `login session note ${i}`);
     const mine = bench();
     capture(mine, 'm-mine-invoice', 'my own invoice note');
+    capture(mine, 'm-mine-a', 'my own reminder about lunch');
+    capture(mine, 'm-mine-b', 'my own reminder about the gym');
     return [tree(team, 'public'), tree(mine, 'private')];
   }
 
@@ -338,7 +343,7 @@ describe('pertinentFirst — the near records first, then the newest', () => {
     expect(served.hits[4]?.id).toBe('m-login-21');
     // The index's own cut, and the kind's whole count.
     expect(served.hits).toHaveLength(20);
-    expect(served.total).toBe(26);
+    expect(served.total).toBe(28);
     // No record twice.
     expect(new Set(served.hits.map((hit) => hit.id)).size).toBe(served.hits.length);
   });
@@ -357,5 +362,18 @@ describe('pertinentFirst — the near records first, then the newest', () => {
     expect(near.hits.map((hit) => hit.scope).sort()).toEqual(
       ['private', 'public', 'public', 'public'].sort(),
     );
+  });
+
+  it('counts nothing as near for a word most of the records hold', () => {
+    // `session` is in twenty-two of the team's twenty-five, and in none of this machine's:
+    // bm25 gives it no weight in the one tree that holds it, and a list that called all of
+    // those near for holding it would be saying nothing.
+    const sources = notes();
+    const served = pertinentFirst(sources, { kind: 'memory', words: ['session'] });
+    expect(served.pertinent).toBe(0);
+    expect(served).toEqual({ ...searchRecords(sources, { kind: 'memory' }), pertinent: 0 });
+    // Beside a word that does tell them apart, it neither adds nor takes away.
+    const told = pertinentFirst(sources, { kind: 'memory', words: ['session', 'rounding'] });
+    expect(told.pertinent).toBe(3);
   });
 });

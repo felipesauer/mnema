@@ -503,6 +503,18 @@ describe('searchPertinent — the records that share any of several words', () =
     expect(ids(near.hits)).toContain('m-both');
   });
 
+  it('drops a word more than half the records hold, and keeps one half of them hold', () => {
+    // `the` is in three of the four memories: no weight in bm25, so no match either.
+    expect(searchPertinent(db, { words: ['the'], kind: 'memory' })).toEqual({ hits: [], total: 0 });
+    // `login` is in two of four — exactly half — and still tells them apart.
+    expect(searchPertinent(db, { words: ['login'], kind: 'memory' }).total).toBe(2);
+    // The count is per kind: `rounding` is in one decision of one, and one memory of four.
+    expect(ids(searchPertinent(db, { words: ['rounding'], kind: 'decision' }).hits)).toEqual([]);
+    expect(ids(searchPertinent(db, { words: ['rounding'], kind: 'memory' }).hits)).toEqual([
+      'm-invoice',
+    ]);
+  });
+
   it('cuts words by the one reading a typed term is cut by', () => {
     expect(wordsOf('src/billing/"invoice" NEAR(x) -y.ts')).toEqual([
       'src',

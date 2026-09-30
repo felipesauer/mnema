@@ -344,13 +344,60 @@ export interface PertinenceQuery {
  * nothing to be near, and it answers with nothing rather than with a listing.
  */
 export function searchPertinent(db: SqliteDatabase, query: PertinenceQuery): SearchResult {
-  const match = toAnyMatchExpression(query.words);
-  if (match === null) return { hits: [], total: 0 };
   const filters: SearchQuery = {
     ...(query.kind !== undefined ? { kind: query.kind } : {}),
     ...(query.limit !== undefined ? { limit: query.limit } : {}),
   };
+  const match = toAnyMatchExpression(tellingWords(db, filters, query.words));
+  if (match === null) return { hits: [], total: 0 };
   return askTheIndex(db, filters, match);
+}
+
+/**
+ * The words that tell the records apart: every word of `entries` held by at most HALF the
+ * records the filters select, each once.
+ *
+ * A WORD MORE THAN HALF OF THEM HOLD IS DROPPED, and the rule is bm25's own, made explicit.
+ * FTS5 weighs a word by `log((N - n + 0.5) / (n + 0.5))`, which is not positive once `n`
+ * passes `N / 2`, and it floors that weight at 1e-6 — so such a word moves no record's rank.
+ * But joined by OR it still MATCHES, and a caller counting what matched would count every
+ * record that holds it as near. Measured on this repository, whose test files are named in
+ * sentences: `the` came out of the paths of the last commits, and every one of a hundred
+ * notes "shared a word" with the session. Dropping it here keeps the ranking exactly as it
+ * was and makes "matched" mean "ranked by something".
+ *
+ * The consequence for a tiny record is declared rather than patched: in a tree holding one
+ * record of the kind, any word it holds is held by all of it, so nothing there is near —
+ * and nothing needs to be, since one record is served whole by any list.
+ */
+function tellingWords(
+  db: SqliteDatabase,
+  filters: SearchQuery,
+  entries: readonly string[],
+): string[] {
+  const seen = new Set<string>();
+  const words = entries.flatMap(wordsOf).filter((word) => {
+    const folded = word.toLowerCase();
+    if (seen.has(folded)) return false;
+    seen.add(folded);
+    return true;
+  });
+  if (words.length === 0) return [];
+  const all = whereClause(filters, undefined);
+  const records = (
+    db.prepare(`SELECT COUNT(*) AS n FROM record_search ${all.sql}`).get(all.params) as {
+      n: number;
+    }
+  ).n;
+  return words.filter((word) => {
+    const one = whereClause(filters, phraseOf(word));
+    const holding = (
+      db.prepare(`SELECT COUNT(*) AS n FROM record_search ${one.sql}`).get(one.params) as {
+        n: number;
+      }
+    ).n;
+    return holding * 2 <= records;
+  });
 }
 
 /**

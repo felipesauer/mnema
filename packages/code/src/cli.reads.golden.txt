@@ -1658,16 +1658,16 @@ $ mnema recall
 |
 | ## Memories (4)
 |
-| The first 3 share a word with what this session touches.
+| The first of these shares a word with what this session touches.
 |
 | - the deploy runbook lives in the record now · `<memory-runbook>`
-| - my own note about the runbook · `<memory-personal>`
-| - its text is not handed over unasked: it holds a credential in a recognized format · `<memory-unscreened>`
 | - a note with a token in it: <SECRET:github-token> · `<memory-scrubbed>`
+| - its text is not handed over unasked: it holds a credential in a recognized format · `<memory-unscreened>`
+| - my own note about the runbook · `<memory-personal>`
 |
 | ## Observations (1)
 |
-| Every one of these shares a word with what this session touches.
+| None of these shares a word with what this session touches.
 |
 | - **review** · `<observation-rollback>`
 $ mnema tail list
