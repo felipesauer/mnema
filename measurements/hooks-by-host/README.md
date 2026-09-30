@@ -146,3 +146,19 @@ second stream. A file stays in: in Cursor a literal path is the pattern it names
 the output says what the `**/` adds. What was not done: the VS Code function was run outside
 VS Code, taken from its bundle, and not in a window with a file attached; Cursor's editor is not
 installed here, and only its command-line agent was read.
+
+## 6 · What Cursor's servers handed the model, on a real account
+
+[`results/2026-09-30/cursor-prompt-2026-09-23-session-1.sanitized.txt`](results/2026-09-30/cursor-prompt-2026-09-23-session-1.sanitized.txt)
+is the prompt Cursor's servers assembled for the model in one session of 23 Sep 2026 — Cursor's
+command-line agent on the free plan, the `Auto` model, a sandbox project with the plugin — read
+back from the chat the agent keeps on the machine. It is the evidence behind the plugin page's
+sentence that the server's instructions and both opening texts reach the model there.
+
+**What is kept whole**: the `mnema` entry of the tool namespaces (the server's instructions, as
+they arrived), the hooks' context (the opening document and the notes of the sandbox project) and
+the question the probe asked. **What is cut to one line that says how long it was**: everything
+else — Cursor's own prose and its namespace, the account's rules, this machine's skills and the
+paths of its home, the git status and the sandbox paths. They were cut because they are Cursor's
+text or this machine's configuration, none of it is sent by mnema, and some of it names a person's
+files. The session was one of four; the other three were not published.
