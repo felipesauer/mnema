@@ -348,8 +348,9 @@ export const ISOLATION_CHECKLIST = [
       'depend on the installation route, and the cell takes a different one. Left alone the host ' +
       'would look for a server nothing declares, the tool would never be called, and it fails ' +
       'SILENTLY — measured, with four wrong spellings, in measurements/mcp-tool-channel/. That the ' +
-      'plain name IS the one that works was measured too, on the real host and with no model, in ' +
-      '.refactor/probes/the-record-asks-for-a-person/asks-a-person.mjs',
+      'plain name IS the one that works was measured too, on the real host and with no model: a ' +
+      'probe that declared the server as probe through --mcp-config, and a hook naming probe as ' +
+      'its server through --settings, got the tool called',
   ],
   [
     'an ADDRESS on the seeded decision',
@@ -372,8 +373,9 @@ export const ISOLATION_CHECKLIST = [
       '`mnema switch` rather than out of a promise this bench makes. THE SCOPE IS PRIVATE AND IT WAS ' +
       'CHOSEN BY MEASUREMENT: `public` is the product’s default and makes `brief` replace the two ' +
       'lines saying the addressed rules arrive at an edit with three saying nothing will, naming the ' +
-      'channel, who switched it and when — measured at +111 bytes of text handed to the model, in ' +
-      '.refactor/probes/the-arm-that-separates-them/. That is correct of the product and wrong for ' +
+      'channel, who switched it and when — measured at +111 bytes of text handed to the model, by ' +
+      'seeding the same arm both ways with no model called and diffing the two opening ' +
+      'documents. That is correct of the product and wrong for ' +
       'this pair: round-3/arms.md asks that the two arms differ in exactly one bit, and a public ' +
       'switch makes them differ in a switch AND in three lines about the bench’s own arrangement. A ' +
       'private switch is invisible to the committed document, so the two arms hand over the SAME ' +
