@@ -35,7 +35,7 @@
 // UNTIL 2026-08-19 THIS ARM WAS CALLED `plugin` AND ITS WHOLE MECHANISM WAS THE
 // `SessionStart` HOOK, and that premise is falsified rather than deleted. The
 // product shipped two more channels afterwards — the rules addressed at a file,
-// handed over as that file is about to be written, and the pause where a rule asks
+// handed over at each edit of it, and the pause where a rule asks
 // for a person — and the round's own pre-registration names the arm `mnema+` and
 // defines it as the record "served unasked and charged for". A hook that hands over
 // a document is only the first third of that, so the arm is renamed and the other

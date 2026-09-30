@@ -264,8 +264,8 @@ $ mnema brief
 | what it writes: nothing else in that file survives a regeneration.
 |
 | 0 of the rules below have an ADDRESS: a path in this
-| repository, recorded beside the rule. When a file is about to be changed, the rules
-| addressed at it arrive on their own, and nothing arrives for a file none of them names.
+| repository, recorded beside the rule. The rules addressed at a file arrive on their own
+| at each edit, beside the result of that write, and not for a file none of them names.
 | Ask `governing_rules` with a path for the whole answer about it.
 |
 | 0 of them ask for a PERSON at an address: where one
@@ -296,7 +296,7 @@ $ mnema switch
 | 4 channel(s), looked in public, private, global:
 |   brief-document      on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
 |   recall-document     on   the notes `mnema recall` prints, which a session opens with: the latest memories and observations recorded for this project, from every tree this machine holds for it
-|   edit-rules-push     on   the rules addressed at a file, handed over at the moment that file is about to be written
+|   edit-rules-push     on   the rules addressed at a file, handed over at each edit of it, beside the result of that write
 |   edit-asks-a-person  on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
 $ mnema usage
 | No run is recorded here — looked in public, private, global.
@@ -1612,8 +1612,8 @@ $ mnema brief
 | what it writes: nothing else in that file survives a regeneration.
 |
 | 1 of the rules below has an ADDRESS: a path in this
-| repository, recorded beside the rule. When a file is about to be changed, the rules
-| addressed at it arrive on their own, and nothing arrives for a file none of them names.
+| repository, recorded beside the rule. The rules addressed at a file arrive on their own
+| at each edit, beside the result of that write, and not for a file none of them names.
 | Ask `governing_rules` with a path for the whole answer about it.
 |
 | 0 of them ask for a PERSON at an address: where one
@@ -1673,7 +1673,7 @@ $ mnema switch
 | 4 channel(s), looked in public, private, global:
 |   brief-document      on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
 |   recall-document     on   the notes `mnema recall` prints, which a session opens with: the latest memories and observations recorded for this project, from every tree this machine holds for it
-|   edit-rules-push     on   the rules addressed at a file, handed over at the moment that file is about to be written
+|   edit-rules-push     on   the rules addressed at a file, handed over at each edit of it, beside the result of that write
 |   edit-asks-a-person  on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
 $ mnema usage
 | 2 run(s):

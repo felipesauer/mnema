@@ -13,8 +13,8 @@
  * `the-origin-travels-beside-the-label.test.ts` put it on the three reads somebody ASKS
  * for. This is the N+1 site of that rule, and it is the side that matters more: those
  * three are doors a reader chose to open. These channels arrive unasked — the committed
- * document a session opens with, the rules pushed as a file is about to be written, and
- * the charge that STOPS a write — and until now each of them handed its reader a name, an
+ * document a session opens with, the rules pushed at each edit, and the charge that STOPS
+ * a write — and until now each of them handed its reader a name, an
  * address and a uuid, with this product the only way to reach the argument. This paragraph
  * used to end "Four measurements of this bench say that tool is not called", about
  * `read_record`, and they do not: the cells that opened with a uuid called it 62 times.
@@ -274,7 +274,7 @@ describe('a rule that arrives unasked carries a path that opens', () => {
     expect(provenancesIn(text).sort()).toEqual([`docs/adr/${GATEWAY}`, `docs/adr/${LEDGER}`]);
   });
 
-  it('opens from the rules pushed before an edit, per path', async () => {
+  it('opens from the rules pushed at an edit, per path', async () => {
     const rules = await importedAndAccepted();
     await addressAt(rules.get(GATEWAY) as string, 'src/collate', 'governs');
     await addressAt(rules.get(LEDGER) as string, 'src/ledger', 'governs');

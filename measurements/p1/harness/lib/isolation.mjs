@@ -23,7 +23,7 @@
 // carried the `SessionStart` hook alone; the arm the round pre-registered is `mnema+` and
 // carries everything the product hands over unasked, so the same key now holds BOTH of
 // the product's declarations — the document as the session opens, and the rules addressed
-// at a file as that file is about to be written. The second one needed one substitution
+// at a file at each edit of it. The second one needed one substitution
 // the first did not: it names an MCP server, and the name depends on how the plugin was
 // installed. See `hooksDeclaration`.
 //

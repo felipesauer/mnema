@@ -192,7 +192,7 @@ const SUBJECT_OF: { readonly [K in FramedChannel]: ServedSubject } = {
   // machine holds, where the document carries the committed one alone.
   'recall-document': 'notes',
   // The same subject as the document, and the same words: what governs the work is one
-  // thing whether it arrives when a session opens or when a file is about to change.
+  // thing whether it arrives when a session opens or at an edit.
   // The difference between the two is WHICH rules, and that belongs to the derivation
   // behind each — never to what the channel says about the text.
   'edit-rules-push': 'rules',
@@ -368,8 +368,8 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
     'the notes `mnema recall` prints, which a session opens with: the latest memories and ' +
     'observations recorded for this project, from every tree this machine holds for it',
   'edit-rules-push':
-    'the rules addressed at a file, handed over at the moment that file is about to ' +
-    'be written',
+    'the rules addressed at a file, handed over at each edit of it, beside the result of ' +
+    'that write',
   'edit-asks-a-person':
     'the pause before a file is written where the record asks that a person look ' +
     'first — the rules go on arriving, and nothing stops',

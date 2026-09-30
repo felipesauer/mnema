@@ -1683,8 +1683,9 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       description:
         'The HOST calls this one, as a `PreToolUse` hook, before a file is written: it ' +
         'hands the session the rules of this project’s record that are addressed ' +
-        'at that path AND still in force, as one short text — each rule’s name, ' +
-        'the address that matched, and the id you cite. You may call it yourself; what ' +
+        'at that path AND still in force, as one short text that lands beside the ' +
+        'result of that write — each rule’s name, the address that matched, and the ' +
+        'id you cite. You may call it yourself; what ' +
         'you get back is a HOOK REPLY, because that is the only shape this host reads, ' +
         'and `{}` when there is nothing to say. Where a rule of the record is linked to ' +
         'the path with `rel: "asks-for-a-person"`, the reply also carries ' +
