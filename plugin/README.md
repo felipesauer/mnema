@@ -128,7 +128,10 @@ mnema brief --hook
 
 What that command prints is what the agent is handed at the start of the next
 session. If it refuses with `No mnema project here`, the hook stays quiet — run
-`mnema init` if this project should have a record. The notes handed over beside it are
+`mnema init` if this project should have a record. If it answers that `mnema brief` does not
+take `--hook`, the `mnema` on your PATH is older than this plugin: the hook asks it again
+without the flag and hands over what `mnema brief` prints, whole — past the host's ceiling, a
+file path the model is not asked to open. Updating `@mnema/code` brings the cut back. The notes handed over beside it are
 what this prints — nothing at all, until something is noted:
 
 ```sh

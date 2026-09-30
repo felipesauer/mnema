@@ -749,6 +749,63 @@ describe('the record arrives unasked', () => {
     expect(said).toBe('a document of sorts\n\n\nand something to say');
   });
 
+  it('asks a binary older than the flag again without it', () => {
+    // THE PLUGIN AND THE BINARY ARE INSTALLED APART, so a new plugin can meet a `mnema` on the
+    // PATH that predates `--hook`. That binary refuses the flag with exit 1, and exit 1 is
+    // silence: the session would open with no document and no notes, and no word about why.
+    // The plant is that binary: it refuses the flag in the words a `mnema` has used for an
+    // option it does not take — this binary's own, and commander's before them — and is the
+    // real CLI otherwise, so what reaches the session is what an old binary would print.
+    const older = join(sandbox, 'older');
+    mkdirSync(older, { recursive: true });
+    const shim = join(older, 'mnema');
+    const refusals = [
+      (verb: string) => `mnema ${verb} does not take "--hook".`,
+      () => "error: unknown option '--hook'",
+    ];
+    for (const [file, verb] of [
+      [DOCUMENT_HOOK, 'brief'],
+      [NOTES_HOOK, 'recall'],
+    ] as const) {
+      for (const refusal of refusals) {
+        writeFileSync(
+          shim,
+          [
+            '#!/bin/sh',
+            'printf \'%s\\n\' "$*" >> "$MNEMA_CALLS"',
+            'for arg in "$@"; do',
+            `  if [ "$arg" = "--hook" ]; then printf '%s\\n' '${refusal(verb)}' >&2; exit 1; fi`,
+            'done',
+            `exec "${process.execPath}" "${CLI}" "$@"`,
+            '',
+          ].join('\n'),
+        );
+        chmodSync(shim, 0o755);
+        const recordingTo = join(sandbox, `calls-older-${verb}-${refusals.indexOf(refusal)}.txt`);
+        const ran = spawnSync('sh', ['-c', hookRunning(file)], {
+          cwd: project,
+          env: {
+            ...hostEnv(recordingTo),
+            CLAUDE_PROJECT_DIR: project,
+            PATH: `${older}:${process.env.PATH ?? ''}`,
+          },
+          encoding: 'utf-8',
+        });
+        expect(ran.status).toBe(0);
+        const said = (
+          JSON.parse(ran.stdout as string) as { hookSpecificOutput: { additionalContext: string } }
+        ).hookSpecificOutput.additionalContext;
+        // What an old binary prints without the flag, byte for byte, and asked for TWICE: once
+        // with the flag and once without — the second only because the first named it.
+        expect(said).toBe(cliAt(project, verb));
+        expect(readFileSync(recordingTo, 'utf-8').split('\n').filter(Boolean)).toEqual([
+          `${verb} --hook`,
+          verb,
+        ]);
+      }
+    }
+  });
+
   it('carries the committed record by name — not the private tree, and not the bodies', () => {
     // The two absences the plugin's README states out loud, asserted where the README
     // states them: about what reaches the SESSION, not about what the verb composes.

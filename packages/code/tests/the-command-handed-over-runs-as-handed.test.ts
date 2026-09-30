@@ -518,11 +518,16 @@ export const NAMES_THAT_NEED_MORE: Readonly<
  * 33 → 35 lines). In the source, the table of what
  * `channel.served` does not count names the two reads that print the opening texts, `mnema
  * brief` and `mnema recall` (42 → 44 names).
+ *
+ * A `mnema` OLDER THAN THE FLAG IS ASKED AGAIN WITHOUT IT, and the plugin's page says what that
+ * looks like where a person checks the hook: the verb answers that `mnema brief` does not take
+ * `--hook`, and the session is handed what `mnema brief` prints — two names in one span, looked
+ * at (63 → 65 names).
  */
 export const HANDED_OVER: Readonly<
   Record<Handed['from'], Readonly<Record<Reading['kind'], number>>>
 > = {
-  span: { line: 29, name: 63, flag: 1, unwritten: 0 },
+  span: { line: 29, name: 65, flag: 1, unwritten: 0 },
   block: { line: 35, name: 18, flag: 0, unwritten: 0 },
   source: { line: 32, name: 44, flag: 3, unwritten: 3 },
 };
