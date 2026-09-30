@@ -7,11 +7,12 @@
  */
 
 import type { PertinentSearch, RecordHit } from '@mnema/copilot';
-import { detectSecrets } from '@mnema/core';
+import { detectSecrets, excerptOf, SEARCH_DEFAULT_LIMIT } from '@mnema/core';
 import { describe, expect, it } from 'vitest';
 import { recordFraming, tellsWhatToDo } from '../record-framing.js';
 import type { SessionTouch } from '../what-the-session-touches.js';
-import { recallDocument } from './recall.js';
+import { recallDocument, recallWithin } from './recall.js';
+import { HOOK_TEXT_CEILING, printedLength } from './within-a-hook.js';
 
 /** A memory as the index serves it: the start of its content, marked as an excerpt. */
 function memory(n: number, title: string): RecordHit {
@@ -214,5 +215,121 @@ describe('recallDocument — the notes a session opens with', () => {
       expect(text).toContain('`record_observation`');
       expect(tellsWhatToDo(text)).toBeUndefined();
     }
+  });
+});
+
+describe('an observation’s topic is cut by the index’s own rule', () => {
+  /** A topic longer than any line the notes print — a name somebody typed has no length. */
+  const topic = `month-end volume ${'and the batch that follows it '.repeat(40).trimEnd()}`;
+
+  it('prints the start of a long topic, as a memory prints the start of its text', () => {
+    const lines = recallDocument({
+      touched: untouched,
+      memories: none,
+      observations: all([observation(1, topic)]),
+    });
+    expect(topic.length).toBeGreaterThan(excerptOf(topic).length);
+    expect(lines).toContain(`- **${excerptOf(topic)}** · \`01a0ca93-9ab1-7000-8a6c-000000000001\``);
+    expect(lines.join('\n')).not.toContain(topic);
+  });
+
+  it('prints a short topic exactly as it was named', () => {
+    const lines = recallDocument({
+      touched: untouched,
+      memories: none,
+      observations: all([observation(1, 'a topic')]),
+    });
+    expect(lines).toContain('- **a topic** · `01a0ca93-9ab1-7000-8a6c-000000000001`');
+  });
+
+  it('asks the WHOLE topic for a credential, not the part it prints', () => {
+    // A credential past where the line is cut: judging the excerpt would print the start of a
+    // line that, whole, the door would have recognized.
+    const token = 'ghp_0123456789abcdefghijklmnopqrstuvwxyzA';
+    const late = `${'a long preamble about the deploy '.repeat(6)}${token}`;
+    expect(excerptOf(late)).not.toContain(token);
+    const text = recallDocument({
+      touched: untouched,
+      memories: none,
+      observations: all([observation(1, late)]),
+    });
+    expect(text.join('\n')).toContain('holds a credential');
+    expect(text.join('\n')).not.toContain('a long preamble');
+  });
+});
+
+describe('the hook’s copy of the notes stays inside what a hook carries', () => {
+  /** The longest line each kind can print: an excerpt at its full length. */
+  const longest = excerptOf('every word of a long note is here '.repeat(20));
+  const full = (make: (n: number, text: string) => RecordHit, pertinent = 0): PertinentSearch => ({
+    hits: Array.from({ length: SEARCH_DEFAULT_LIMIT }, (_, at) => make(at + 1, longest)),
+    total: 9_999,
+    pertinent,
+  });
+
+  it('fits whole at the most the index serves, at the longest line each kind prints', () => {
+    // The bound the topic's excerpt bought: before it, twenty long topics alone crossed it.
+    const notes = {
+      touched: untouched,
+      memories: full(memory),
+      observations: full(observation),
+    };
+    expect(printedLength(recallDocument(notes))).toBeLessThanOrEqual(HOOK_TEXT_CEILING);
+    expect(recallWithin(notes, HOOK_TEXT_CEILING)).toEqual(recallDocument(notes));
+  });
+
+  it('stops at a whole note in a smaller room, newest first, and says how many there are', () => {
+    const notes = {
+      touched: untouched,
+      memories: full(memory),
+      observations: full(observation),
+    };
+    const room = 4_000;
+    const cut = recallWithin(notes, room);
+    expect(printedLength(cut)).toBeLessThanOrEqual(room);
+    const lines = cut.filter((line) => line.startsWith('- '));
+    // A prefix of the whole text's notes, in its order: every memory before any observation.
+    expect(lines).toEqual(
+      recallDocument(notes)
+        .filter((line) => line.startsWith('- '))
+        .slice(0, lines.length),
+    );
+    expect(cut).toContain(
+      `9999 are recorded here, and these are the ${lines.length} newest; \`search\` with`,
+    );
+  });
+
+  it('says a section cut to nothing holds notes — never that none is recorded', () => {
+    const notes = {
+      touched: untouched,
+      memories: full(memory),
+      observations: full(observation),
+    };
+    const cut = recallWithin(notes, 4_000);
+    expect(cut).toContain('## Observations (0)');
+    expect(cut).toContain('9999 are recorded here, and none of them is below; `search` with');
+    expect(cut).toContain('`kind` `observation` serves the rest.');
+    expect(cut).not.toContain('No observation is recorded here.');
+  });
+
+  it('counts the near ones among the lines it printed, when a hook cut the nearest part short', () => {
+    // The order is nearest first when the session touched something, and the hook's copy drops
+    // from the end — so a cut that falls inside the near part leaves every printed line near,
+    // and the count under the heading says so of what is there, never of what was cut.
+    const notes = {
+      touched,
+      memories: full(memory, 18),
+      observations: full(observation, 3),
+    };
+    const cut = recallWithin(notes, 4_000);
+    const printed = cut.filter((line) => line.startsWith('- '));
+    expect(printed.length).toBeGreaterThan(0);
+    expect(printed.length).toBeLessThan(18);
+    expect(cut).toContain(
+      `9999 are recorded here, and these are ${printed.length} of them; \`search\` with`,
+    );
+    expect(cut).toContain('Every one of these shares a word with what this session touches.');
+    expect(cut.join('\n')).not.toContain('The first 18 share a word');
+    expect(cut).toContain('9999 are recorded here, and none of them is below; `search` with');
   });
 });

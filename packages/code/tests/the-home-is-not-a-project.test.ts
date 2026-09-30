@@ -271,6 +271,7 @@ describe('a home tree written before this — passed over, named, and left as it
     const recorded = mnema(
       at,
       'skill',
+      'create',
       'my-own',
       '--body',
       'across every project',

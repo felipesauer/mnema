@@ -1,5 +1,5 @@
 /**
- * `mnema decision <title> <rationale>` — record a decision.
+ * `mnema decision record <title> <rationale>` — record a decision.
  *
  * A sibling of `task` create, differing only in what a decision needs. It is the
  * same adapter shape (resolve which tree the write belongs to, open its writer,

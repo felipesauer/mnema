@@ -23,6 +23,12 @@
  * document's bullets do: a note is text an actor typed, and one holding a newline would end
  * its own bullet and start a note nobody wrote.
  *
+ * "CUT WHERE IT ALREADY CUTS" WAS TRUE OF ONE KIND OF THE TWO. The index cuts a memory's line
+ * and serves an observation's topic whole, so this text carried a topic of any length into a
+ * channel with a measured ceiling (`within-a-hook.ts`). The topic is now cut here, by the index's own
+ * excerpt rule (see {@link observationLine}): the line is still the index's, and the length is
+ * the one the index already gives the other kind.
+ *
  * A MEMORY'S LINE IS NOT BOLD AND AN OBSERVATION'S IS. The topic is a name somebody chose;
  * the start of a memory is an excerpt nobody chose, and the index says so of it — presenting
  * it in the weight of a name would claim a choice that was never made.
@@ -57,10 +63,11 @@
  */
 
 import type { PertinentSearch, RecordHit, RecordSearch } from '@mnema/copilot';
-import { detectSecrets } from '@mnema/core';
+import { detectSecrets, excerptOf } from '@mnema/core';
 import { oneLine } from '../one-line.js';
 import { recordFraming } from '../record-framing.js';
 import type { SessionTouch } from '../what-the-session-touches.js';
+import { fitWhole } from './within-a-hook.js';
 
 /** The heading: what the text IS. */
 const TITLE = '# What was noted here';
@@ -132,18 +139,31 @@ const NO_MEMORY = 'No memory is recorded here.';
 const NO_OBSERVATION = 'No observation is recorded here.';
 
 /**
- * The declaration of a cut, when the index held more than it served.
+ * The declaration of a cut, when the index held more than this text prints.
  *
  * The number is the index's own `total` and the door is the read that reaches past it, so a
  * reader told "these are the newest" is also told how many there are and how to reach the
  * rest — a list cut without saying so reads as the whole of it.
+ *
+ * `printed` IS WHAT IS PRINTED, NOT WHAT THE INDEX SERVED, and there are two cuts now. The index
+ * serves the newest few of each kind, and a hook's copy of this text may stop earlier still,
+ * at a whole note, to stay inside what a hook carries ({@link recallWithin}). Both keep the start
+ * of the section's order and drop from its end — the newest with nothing touched, the nearest
+ * and then the newest with something — so one sentence is true of either, and a section a hook
+ * cut to nothing says how many there are rather than that there are none.
  */
-function cutAt(search: RecordSearch, kind: 'memory' | 'observation', near: boolean): string[] {
-  const printed = search.hits.length;
+function cutAt(
+  search: RecordSearch,
+  printed: number,
+  kind: 'memory' | 'observation',
+  near: boolean,
+): string[] {
   if (search.total <= printed) return [];
   const these = near ? `${printed} of them` : `the ${printed} newest`;
   return [
-    `${search.total} are recorded here, and these are ${these}; \`search\` with`,
+    printed === 0
+      ? `${search.total} are recorded here, and none of them is below; \`search\` with`
+      : `${search.total} are recorded here, and these are ${these}; \`search\` with`,
     `\`kind\` \`${kind}\` serves the rest.`,
     '',
   ];
@@ -154,11 +174,13 @@ function cutAt(search: RecordSearch, kind: 'memory' | 'observation', near: boole
  * come first and a reader cannot see where "first" stops. Only when there was something to
  * be near: with no signal every line is there for being recent, and the order line says so.
  */
-function nearCount(search: PertinentSearch, near: boolean): string[] {
-  if (!near || search.hits.length === 0) return [];
-  const n = search.pertinent;
+function nearCount(search: PertinentSearch, printed: number, near: boolean): string[] {
+  if (!near || printed === 0) return [];
+  // Counted among the lines PRINTED: a hook's copy drops from the end, and the near ones are
+  // first, so what was cut is the newest part before any of the near.
+  const n = Math.min(search.pertinent, printed);
   if (n === 0) return [NONE_NEAR, ''];
-  if (n >= search.hits.length) return [ALL_NEAR, ''];
+  if (n >= printed) return [ALL_NEAR, ''];
   if (n === 1) return [FIRST_NEAR, ''];
   return [`The first ${n} share a word with what this session touches.`, ''];
 }
@@ -191,41 +213,93 @@ function memoryLine(hit: RecordHit): string {
   return `- ${oneLine(hit.title)} · \`${oneLine(hit.id)}\``;
 }
 
-/** One observation: its topic, in the weight of a name, and the id that reads the rest. */
+/**
+ * One observation: its topic, in the weight of a name, and the id that reads the rest.
+ *
+ * THE TOPIC IS CUT BY THE INDEX'S OWN RULE FOR A MEMORY'S LINE ({@link excerptOf}), and it used
+ * to go out whole. The index serves a topic raw because it is the record's name for the note,
+ * and a name somebody typed has no length — so twenty long ones carried this text past what a
+ * hook hands a model, where twenty memories never could, because a memory's line was already
+ * an excerpt. The same rule now bounds both lines of this text, from one place; the index and
+ * `read_record` still serve the topic whole.
+ *
+ * The credential is asked of the WHOLE topic, before it is cut: a credential the excerpt split
+ * in half would be a line that no longer looks like one and still carries most of it.
+ */
 function observationLine(hit: RecordHit): string {
   if (holdsACredential(hit.title)) return withheld(hit);
-  return `- **${oneLine(hit.title)}** · \`${oneLine(hit.id)}\``;
+  return `- **${oneLine(excerptOf(hit.title))}** · \`${oneLine(hit.id)}\``;
 }
 
-/** One section: the heading with how many are PRINTED under it, then the notes or the none. */
+/**
+ * One section: the heading with how many are PRINTED under it, then the notes or the none.
+ *
+ * `shown` is how many of the index's hits are printed — all of them, unless a hook's copy
+ * stopped earlier. What says "none" is the INDEX being empty, never the list being cut short.
+ */
 function section(
   heading: string,
   search: PertinentSearch,
+  shown: number,
   kind: 'memory' | 'observation',
   near: boolean,
   none: string,
   line: (hit: RecordHit) => string,
 ): string[] {
+  const hits = search.hits.slice(0, shown);
   return [
-    `## ${heading} (${search.hits.length})`,
+    `## ${heading} (${hits.length})`,
     '',
     ...(search.hits.length === 0
       ? [none]
-      : [...cutAt(search, kind, near), ...nearCount(search, near), ...search.hits.map(line)]),
+      : [
+          ...cutAt(search, hits.length, kind, near),
+          ...nearCount(search, hits.length, near),
+          ...hits.map(line),
+        ]),
   ];
+}
+
+/** The notes this text reads from — the index's answer for each kind. */
+interface Notes {
+  readonly touched: SessionTouch;
+  readonly memories: PertinentSearch;
+  readonly observations: PertinentSearch;
 }
 
 /**
  * The whole text, as lines — or NO lines at all when neither kind holds anything, which is
  * what makes the plugin's handler hand a session nothing.
  */
-export function recallDocument(notes: {
-  readonly touched: SessionTouch;
-  readonly memories: PertinentSearch;
-  readonly observations: PertinentSearch;
-}): string[] {
+export function recallDocument(notes: Notes): string[] {
+  return composed(notes, notesIn(notes));
+}
+
+/**
+ * The text for a hook: whole notes, in the text's own order — memories, then observations, each
+ * in the order the order line names — up to what fits in `room`, by the rule the document's hook
+ * copy is cut by ({@link fitWhole}).
+ *
+ * With every line an excerpt, twenty of each kind stay under what a hook carries, so this
+ * returns {@link recallDocument} byte for byte on every record the index can hand it today; the
+ * bound is `recall.test.ts`'s, at the longest line each kind can print. It is here so that the
+ * day the lines or the counts grow, the text shortens at a whole note and says so in the words
+ * each section already has ({@link cutAt}), instead of being replaced whole by a file path.
+ */
+export function recallWithin(notes: Notes, room: number): string[] {
+  return fitWhole(notesIn(notes), room, (shown) => composed(notes, shown));
+}
+
+/** How many notes the index handed over, both kinds together. */
+function notesIn(notes: Notes): number {
+  return notes.memories.hits.length + notes.observations.hits.length;
+}
+
+/** The text with its first `shown` notes — the one shape both copies print. */
+function composed(notes: Notes, shown: number): string[] {
   if (notes.memories.hits.length === 0 && notes.observations.hits.length === 0) return [];
   const near = notes.touched.words.length > 0;
+  const memories = Math.min(shown, notes.memories.hits.length);
   return [
     TITLE,
     '',
@@ -237,11 +311,12 @@ export function recallDocument(notes: {
     '',
     ...HOW_A_NOTE_ENTERS,
     '',
-    ...section('Memories', notes.memories, 'memory', near, NO_MEMORY, memoryLine),
+    ...section('Memories', notes.memories, memories, 'memory', near, NO_MEMORY, memoryLine),
     '',
     ...section(
       'Observations',
       notes.observations,
+      shown - memories,
       'observation',
       near,
       NO_OBSERVATION,

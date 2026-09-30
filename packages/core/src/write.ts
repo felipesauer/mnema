@@ -93,7 +93,11 @@ export {
 // The refusal an event the READER would not accept earns. Like the screen, only
 // the refusal type crosses the line: the check lives inside every write, and a
 // caller able to run it separately would be a caller able to skip it.
-export type { UnreadableEventErr } from './workflow/append.js';
+export type {
+  AppendRefusal,
+  NotAReasonErr,
+  UnreadableEventErr,
+} from './workflow/append.js';
 export {
   type AnchorContext,
   type AnchorDecision,

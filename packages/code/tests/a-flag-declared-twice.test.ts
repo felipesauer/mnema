@@ -22,14 +22,16 @@
  *
  * EVERY PAIR THE TREE HOLDS, each with how its subcommand reads the flag, enumerated from the
  * program itself: a subcommand that starts declaring its group's flag is red here until somebody
- * says which of the two it is. There are four today, and all four are read where they were
- * written. Two of them were a FINDING until they were repaired (see {@link DECLARED_TWICE}).
+ * says which of the two it is. There are twelve today, and all twelve are read where they were
+ * written: eight are the creating verbs (`task create`, `decision record`, `skill create`), which
+ * declare their group's creation flags since creating stopped being the group's own action. Two
+ * of the other four were a FINDING until they were repaired (see {@link DECLARED_TWICE}).
  */
 
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { Command, CommanderError } from 'commander';
+import { Command } from 'commander';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { buildProgram, type CliIo } from '../src/cli.js';
 import { everyCommandOf, pathOf } from '../src/wiring/misuse.js';
@@ -135,19 +137,26 @@ describe('where a flag was written is what commander read before the verb', () =
     expect(await answer(['group', '-q', 'act', '--global'])).toEqual(['-q']);
   });
 
-  it('never prints and never ends the process, even over a line no group could have read', () => {
+  it('never prints and never ends the process, and names nothing over a line no group could have read', () => {
     // Unreachable through a real parse — a group's flag with nothing after it stops the line
     // before any subcommand runs — so the line is handed over by hand, the way commander keeps it.
+    // This THREW, from a throwaway parsed with positional options on; the prefixes a default
+    // parse is asked over find no subcommand in it, and a line with no subcommand in it has no
+    // flag written before one. What stays is the half that mattered: nothing is printed and the
+    // process is not ended from inside somebody's command.
     const root = new Command('tool');
     const group = root.command('group').option('--opt <value>');
     const act = group.command('act').option('--opt <value>');
     root.args = ['group', '--opt'];
     const written = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const out = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
     try {
-      expect(() => ownFlagsWrittenBefore(act)).toThrow(CommanderError);
+      expect(ownFlagsWrittenBefore(act)).toEqual([]);
       expect(written).not.toHaveBeenCalled();
+      expect(out).not.toHaveBeenCalled();
     } finally {
       written.mockRestore();
+      out.mockRestore();
     }
   });
 
@@ -181,6 +190,17 @@ type Reading = 'where it was written' | 'its own copy, which the group takes';
  * refuses it, and both rows turned when the acts began reading it where it was written.
  */
 const DECLARED_TWICE: Readonly<Record<string, Reading>> = {
+  // The three verbs that create. The groups used to create themselves, with the title right
+  // after their name; creating moved into a subcommand that declares the group's creation flags
+  // so its `--help` lists them, and reads them off the group the way `decision import` does.
+  'task create --scope': 'where it was written',
+  'task create --which': 'where it was written',
+  'decision record --alternatives': 'where it was written',
+  'decision record --scope': 'where it was written',
+  'decision record --which': 'where it was written',
+  'skill create --body': 'where it was written',
+  'skill create --scope': 'where it was written',
+  'skill create --which': 'where it was written',
   'decision import --scope': 'where it was written',
   'decision import --which': 'where it was written',
   'witness stamp --global': 'where it was written',

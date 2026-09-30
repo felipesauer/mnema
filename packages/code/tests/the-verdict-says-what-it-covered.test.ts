@@ -109,7 +109,7 @@ async function found(): Promise<void> {
 /** Records one task through the CLI, in the tree `scope` names — each one signed. */
 async function record(title: string, ...scope: readonly string[]): Promise<void> {
   const c = capture();
-  await run(['task', title, ...scope], c.io);
+  await run(['task', 'create', title, ...scope], c.io);
   if (c.failed()) throw new Error(`setup: "${title}" failed: ${c.err.join(' / ')}`);
 }
 

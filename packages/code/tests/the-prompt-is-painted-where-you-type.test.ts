@@ -124,7 +124,7 @@ beforeAll(async () => {
   process.chdir(project);
 
   await shell('init');
-  await shell('task', 'the task the input is typed over');
+  await shell('task', 'create', 'the task the input is typed over');
 
   environment = {
     ...process.env,

@@ -50,9 +50,11 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { excerptOf } from '@mnema/core';
 import type { Command } from 'commander';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildProgram } from '../src/cli.js';
+import { HOOK_TEXT_CEILING } from '../src/presentation/within-a-hook.js';
 import {
   DECLARES_MODEL_CHANNEL,
   FRAMED_CHANNELS,
@@ -179,15 +181,20 @@ const DOCUMENT_HOOK = 'session-start.mjs';
 const NOTES_HOOK = 'session-recall.mjs';
 
 /**
- * The verb each declared handler runs — what the recording shim must see it try.
+ * The command line each declared handler runs — what the recording shim must see it try.
  *
  * A table in the test, and reconciled rather than trusted: "runs only verbs that read"
  * asserts the set of verbs the handlers REACH, off the shim, against these values, so a
  * handler that ran something else is red there and not here.
+ *
+ * THE FLAG IS PART OF THE LINE, and it is what this table exists to hold now. Both handlers ask
+ * for the copy a hook can carry (`--hook`), and a handler that dropped it would hand a session
+ * the file's copy — whole, and over the host's ceiling replaced by a file path in silence. The
+ * shim records the argv, so a missing flag is red here by the line it ran.
  */
 const VERB_OF: Readonly<Record<string, string>> = {
-  [DOCUMENT_HOOK]: 'brief',
-  [NOTES_HOOK]: 'recall',
+  [DOCUMENT_HOOK]: 'brief --hook',
+  [NOTES_HOOK]: 'recall --hook',
 };
 
 /** The handler file a declared command runs. */
@@ -216,6 +223,21 @@ let elsewhere: string;
 let project: string;
 /** A project with a record and not one note in it. */
 let unnoted: string;
+/** A project whose rules in force print past what a hook carries. */
+let crowded: string;
+
+/**
+ * The titles of the crowded project's rules — long enough that four of them cross the host's
+ * ceiling and two do not. A title is text a person types and the product takes up to its field
+ * limit, so this is a record the product can hold, not one only a fixture can.
+ */
+const CROWDED_TITLES = [1, 2, 3, 4].map(
+  (n) =>
+    `Rule ${n}: ${'every invoice is issued in the currency of the contract, '.repeat(52).trimEnd()}`,
+);
+
+/** An observation topic longer than any line the notes print — the kind the index serves raw. */
+const LONG_TOPIC = `month-end volume ${'and the batch that follows it '.repeat(20).trimEnd()}`;
 /** The directory the recording `mnema` shim lives in, put first on the PATH. */
 let shimDir: string;
 let calls = 0;
@@ -315,7 +337,7 @@ function lastSegment(at: string): string {
  * the same bytes the handler would have composed.
  */
 function brief(at: string): { readonly out: string; readonly err: string } {
-  const ran = spawnSync(process.execPath, [CLI, 'brief'], {
+  const ran = spawnSync(process.execPath, [CLI, 'brief', '--hook'], {
     cwd: at,
     env: hostEnv(join(sandbox, 'calls-stderr.txt')),
     encoding: 'utf-8',
@@ -337,8 +359,9 @@ beforeAll(() => {
   elsewhere = join(sandbox, 'elsewhere');
   project = join(sandbox, 'repo');
   unnoted = join(sandbox, 'unnoted');
+  crowded = join(sandbox, 'crowded');
   shimDir = join(sandbox, 'bin');
-  for (const dir of [home, data, elsewhere, project, unnoted, shimDir]) {
+  for (const dir of [home, data, elsewhere, project, unnoted, crowded, shimDir]) {
     mkdirSync(dir, { recursive: true });
   }
 
@@ -357,15 +380,22 @@ beforeAll(() => {
   chmodSync(shim, 0o755);
 
   cli('init');
-  const decision = idIn(cli('decision', COMMITTED_TITLE, COMMITTED_RATIONALE));
+  const decision = idIn(cli('decision', 'record', COMMITTED_TITLE, COMMITTED_RATIONALE));
   cli('decision', 'move', 'accept', decision, '--note', 'agreed in review');
-  const pattern = idIn(cli('skill', PATTERN_NAME, '--body', PATTERN_BODY));
+  const pattern = idIn(cli('skill', 'create', PATTERN_NAME, '--body', PATTERN_BODY));
   cli('skill', 'move', 'review', pattern, '--note', 'read it');
   cli('skill', 'move', 'adopt', pattern, '--note', 'how the work is done here');
   // The tree that does NOT travel, accepted so that nothing but its SCOPE keeps it
   // out of the document the plugin injects.
   const mine = idIn(
-    cli('decision', PRIVATE_TITLE, 'It is a laptop-local convention', '--scope', 'private'),
+    cli(
+      'decision',
+      'record',
+      PRIVATE_TITLE,
+      'It is a laptop-local convention',
+      '--scope',
+      'private',
+    ),
   );
   cli('decision', 'move', 'accept', mine, '--note', 'mine to make');
   // THE NOTES: one that travels, one kept on this machine, and an observation about the
@@ -376,7 +406,17 @@ beforeAll(() => {
   cli('observe', decision, '--topic', OBSERVED_TOPIC, '--text', OBSERVED_TEXT);
   // A project with a record and no note, for the silence the notes channel keeps.
   cliAt(unnoted, 'init');
-  cliAt(unnoted, 'decision', 'A call and nothing noted', 'so the record is not empty');
+  cliAt(unnoted, 'decision', 'record', 'A call and nothing noted', 'so the record is not empty');
+  // A project past the ceiling: four accepted rules the file carries whole and a hook cannot,
+  // and one observation whose topic is longer than a line of the notes.
+  cliAt(crowded, 'init');
+  for (const title of CROWDED_TITLES) {
+    const id = idIn(cliAt(crowded, 'decision', 'record', title, 'agreed with finance'));
+    cliAt(crowded, 'decision', 'move', 'accept', id, '--note', 'agreed in review');
+    if (title === CROWDED_TITLES[0]) {
+      cliAt(crowded, 'observe', id, '--topic', LONG_TOPIC, '--text', 'measured in August');
+    }
+  }
 }, 120_000);
 
 afterAll(() => {
@@ -426,7 +466,7 @@ describe('the record arrives unasked', () => {
       expect(ran.status).toBe(0);
       // And it was TRIED, which is what separates "the channel is off" from "the handler
       // never ran the verb".
-      expect(ran.mnema).toEqual(['brief']);
+      expect(ran.mnema).toEqual([VERB_OF[DOCUMENT_HOOK]]);
     } finally {
       cli('switch', 'on', 'brief-document');
     }
@@ -449,7 +489,7 @@ describe('the record arrives unasked', () => {
       expect(ran.out).toBe('');
       expect(ran.err).toBe('');
       expect(ran.status).toBe(0);
-      expect(ran.mnema).toEqual(['recall']);
+      expect(ran.mnema).toEqual([VERB_OF[NOTES_HOOK]]);
       // The other channel is untouched by this switch.
       expect(runHook(document, project).out).toContain(COMMITTED_TITLE);
     } finally {
@@ -464,10 +504,15 @@ describe('the record arrives unasked', () => {
     // Byte for byte, with nothing of the plugin's own around it: a preamble here
     // would be a SECOND place deciding what the agent reads about what governs the
     // work, and two such places can come to disagree with the record.
-    const document = cli('brief');
+    const document = cli('brief', '--hook');
     expect(document).toContain(COMMITTED_TITLE);
-    const notes = cli('recall');
+    const notes = cli('recall', '--hook');
     expect(notes).toContain(PRIVATE_NOTE);
+    // UNDER THE CEILING THE HOOK'S COPY IS THE FILE'S, byte for byte: the flag cuts only a text
+    // that would not arrive as text, so a record this size is handed over exactly as
+    // `mnema brief > MNEMA.md` writes it.
+    expect(document).toBe(cli('brief'));
+    expect(notes).toBe(cli('recall'));
 
     // Each handler, and the text of the verb IT runs — the two are one rule over two verbs.
     for (const [hook, printed] of [
@@ -555,6 +600,78 @@ describe('the record arrives unasked', () => {
     expect(quiet).toBe(cli('brief'));
   });
 
+  it('stops at a whole rule where a hook’s text would be replaced, and says so', () => {
+    // WHAT THE HOST DOES PAST ITS CEILING, and why this case exists. A hook's text is handed to
+    // the model whole up to a ceiling, and past it ALL of it is replaced by a file path and a
+    // preview the model is not asked to open — measured on the binary
+    // (`measurements/hook-ceiling/`). The file's copy of the document has no such reader, so it
+    // keeps every rule; the hook's copy stops at a whole one and says how many it left out.
+    const file = cliAt(crowded, 'brief');
+    expect(file.length).toBeGreaterThan(HOOK_TEXT_CEILING);
+    for (const title of CROWDED_TITLES) expect(file).toContain(title);
+
+    const ran = runHook(hookRunning(DOCUMENT_HOOK), crowded);
+    expect(ran.status).toBe(0);
+    expect(ran.mnema).toEqual(['brief --hook']);
+    const context = (JSON.parse(ran.out) as { hookSpecificOutput: { additionalContext: string } })
+      .hookSpecificOutput.additionalContext;
+    expect(context.length).toBeLessThanOrEqual(HOOK_TEXT_CEILING);
+    expect(context).toBe(cliAt(crowded, 'brief', '--hook'));
+
+    // WHOLE RULES, A PREFIX OF THE FILE'S, IN ITS ORDER: every bullet handed over is a bullet
+    // of the file, and they are the file's first ones — nothing cut in half, nothing promoted.
+    const bulletsOf = (text: string) => text.split('\n').filter((line) => line.startsWith('- **'));
+    const handed = bulletsOf(context);
+    expect(handed.length).toBeGreaterThan(0);
+    expect(handed.length).toBeLessThan(CROWDED_TITLES.length);
+    expect(handed).toEqual(bulletsOf(file).slice(0, handed.length));
+    expect(CROWDED_TITLES.filter((title) => context.includes(title))).toHaveLength(handed.length);
+    // THE HEADING COUNTS WHAT IS UNDER IT, AND THE END SAYS WHAT IS NOT — the number, and the
+    // read that serves them.
+    const left = CROWDED_TITLES.length - handed.length;
+    expect(context).toContain(`## Decisions in force (${handed.length})`);
+    expect(context).toContain(
+      `Left out of this text: ${left} ${left === 1 ? 'decision' : 'decisions'} in force`,
+    );
+    expect(context).toContain('`search` with `kind` `decision` and');
+
+    // AND WHAT THE SAME RUN SAYS ABOUT THE RECORD IS PART OF WHAT FITS. The handler appends the
+    // second stream to the document and the host measures the two as one string, so over a
+    // record that stops chaining — the day that notice matters — the two together still fit.
+    const segment = lastSegment(crowded);
+    const before = readFileSync(segment);
+    let broken: { readonly out: string; readonly err: string };
+    let noticed: Ran;
+    try {
+      const lines = readFileSync(segment, 'utf-8').trimEnd().split('\n');
+      appendFileSync(segment, `${lines[lines.length - 1] as string}\n`, 'utf-8');
+      broken = brief(crowded);
+      expect(broken.err).toContain('issue [T1]');
+      noticed = runHook(hookRunning(DOCUMENT_HOOK), crowded);
+    } finally {
+      writeFileSync(segment, before);
+    }
+    const qualified = (
+      JSON.parse(noticed.out) as { hookSpecificOutput: { additionalContext: string } }
+    ).hookSpecificOutput.additionalContext;
+    expect(qualified).toBe(`${broken.out}\n\n${broken.err}`);
+    expect(qualified).toContain('issue [T1]');
+    expect(qualified.length).toBeLessThanOrEqual(HOOK_TEXT_CEILING);
+  });
+
+  it('hands over an observation by the start of its topic, as a memory by the start of its text', () => {
+    // THE TOPIC USED TO GO OUT WHOLE. The index serves it raw because it is the note's name, and
+    // twenty long ones carried the notes past what a hook carries; it is now cut by the index's
+    // own rule for a memory's line (`excerptOf`), from the one place that rule lives.
+    const ran = runHook(hookRunning(NOTES_HOOK), crowded);
+    expect(ran.mnema).toEqual(['recall --hook']);
+    const context = (JSON.parse(ran.out) as { hookSpecificOutput: { additionalContext: string } })
+      .hookSpecificOutput.additionalContext;
+    expect(LONG_TOPIC.length).toBeGreaterThan(excerptOf(LONG_TOPIC).length);
+    expect(context).toContain(`- **${excerptOf(LONG_TOPIC)}** · `);
+    expect(context).not.toContain(LONG_TOPIC);
+  });
+
   it('says nothing when the verb refuses, whatever it printed first', () => {
     // THE EXIT CODE IS THE GATE, AND NOTHING WITNESSED IT. Measured: removing
     // `ran.status !== 0` from the handler left every case in this file green, because the
@@ -632,6 +749,63 @@ describe('the record arrives unasked', () => {
     expect(said).toBe('a document of sorts\n\n\nand something to say');
   });
 
+  it('asks a binary older than the flag again without it', () => {
+    // THE PLUGIN AND THE BINARY ARE INSTALLED APART, so a new plugin can meet a `mnema` on the
+    // PATH that predates `--hook`. That binary refuses the flag with exit 1, and exit 1 is
+    // silence: the session would open with no document and no notes, and no word about why.
+    // The plant is that binary: it refuses the flag in the words a `mnema` has used for an
+    // option it does not take — this binary's own, and commander's before them — and is the
+    // real CLI otherwise, so what reaches the session is what an old binary would print.
+    const older = join(sandbox, 'older');
+    mkdirSync(older, { recursive: true });
+    const shim = join(older, 'mnema');
+    const refusals = [
+      (verb: string) => `mnema ${verb} does not take "--hook".`,
+      () => "error: unknown option '--hook'",
+    ];
+    for (const [file, verb] of [
+      [DOCUMENT_HOOK, 'brief'],
+      [NOTES_HOOK, 'recall'],
+    ] as const) {
+      for (const refusal of refusals) {
+        writeFileSync(
+          shim,
+          [
+            '#!/bin/sh',
+            'printf \'%s\\n\' "$*" >> "$MNEMA_CALLS"',
+            'for arg in "$@"; do',
+            `  if [ "$arg" = "--hook" ]; then printf '%s\\n' '${refusal(verb)}' >&2; exit 1; fi`,
+            'done',
+            `exec "${process.execPath}" "${CLI}" "$@"`,
+            '',
+          ].join('\n'),
+        );
+        chmodSync(shim, 0o755);
+        const recordingTo = join(sandbox, `calls-older-${verb}-${refusals.indexOf(refusal)}.txt`);
+        const ran = spawnSync('sh', ['-c', hookRunning(file)], {
+          cwd: project,
+          env: {
+            ...hostEnv(recordingTo),
+            CLAUDE_PROJECT_DIR: project,
+            PATH: `${older}:${process.env.PATH ?? ''}`,
+          },
+          encoding: 'utf-8',
+        });
+        expect(ran.status).toBe(0);
+        const said = (
+          JSON.parse(ran.stdout as string) as { hookSpecificOutput: { additionalContext: string } }
+        ).hookSpecificOutput.additionalContext;
+        // What an old binary prints without the flag, byte for byte, and asked for TWICE: once
+        // with the flag and once without — the second only because the first named it.
+        expect(said).toBe(cliAt(project, verb));
+        expect(readFileSync(recordingTo, 'utf-8').split('\n').filter(Boolean)).toEqual([
+          `${verb} --hook`,
+          verb,
+        ]);
+      }
+    }
+  });
+
   it('carries the committed record by name — not the private tree, and not the bodies', () => {
     // The two absences the plugin's README states out loud, asserted where the README
     // states them: about what reaches the SESSION, not about what the verb composes.
@@ -675,7 +849,7 @@ describe('the record arrives unasked', () => {
       for (const line of recordFraming(channel)) expect(context, hook).toContain(line);
       // And the handler added none of it itself: the words are the VERB's, so they are
       // in what the verb printed too.
-      const printed = cli(VERB_OF[hook] as string);
+      const printed = cli(...(VERB_OF[hook] as string).split(' '));
       for (const line of recordFraming(channel)) expect(printed, hook).toContain(line);
     }
   });
@@ -707,7 +881,7 @@ describe('the record arrives unasked', () => {
     expect(ran.out).toBe('');
     expect(ran.err).toBe('');
     expect(ran.status).toBe(0);
-    expect(ran.mnema).toEqual(['recall']);
+    expect(ran.mnema).toEqual([VERB_OF[NOTES_HOOK]]);
     // Non-vacuity: the DOCUMENT of the same project does arrive, so the silence above is
     // the notes channel's and not a project the handlers cannot read. (Its one decision is
     // proposed, so the document counts it rather than naming it — it is the document's
@@ -758,7 +932,7 @@ describe('the record arrives unasked', () => {
     for (const command of declaredCommands()) {
       for (const line of runHook(command, project).mnema) reached.add(line);
     }
-    expect([...reached]).toEqual(['brief', 'recall']);
+    expect([...reached]).toEqual(['brief --hook', 'recall --hook']);
     expect([...reached]).toEqual(Object.values(VERB_OF));
 
     // And each is a verb the PRODUCT classifies as a read. Read off the same

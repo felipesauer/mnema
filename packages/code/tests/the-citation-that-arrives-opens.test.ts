@@ -320,7 +320,12 @@ describe('what the channels say when the record asserts no provenance', () => {
     // THE CONTRAST. Without it, a product that stamped the field on everything would pass
     // every case above. Absent, and the line is whole without it. Nothing is imported in
     // this case, so the ADRs on disk are a directory the record never read.
-    const recorded = await mnema('decision', 'Queues are at-least-once', 'The broker says so.');
+    const recorded = await mnema(
+      'decision',
+      'record',
+      'Queues are at-least-once',
+      'The broker says so.',
+    );
     expect(recorded.failed, recorded.err.join(' / ')).toBe(false);
     const rule = idIn(recorded);
     const accepted = await mnema('decision', 'move', 'accept', rule, '--note', 'agreed');

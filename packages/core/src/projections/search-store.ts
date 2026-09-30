@@ -642,8 +642,17 @@ function toHit(row: SearchRow): SearchHit {
  * already windowed by FTS5 (which cuts on tokens, never inside a word) and passes
  * through untouched; the head of a body is cut here, and backing up to the last
  * space is what keeps a truncated line from ending mid-word.
+ *
+ * EXPORTED, AND IT HAS A SECOND CALLER FOR A REASON THE LISTING DOES NOT HAVE. The notes
+ * a session opens with (`mnema recall`) serve an observation by its TOPIC, which this
+ * index hands over raw because it is the record's name — and a name somebody typed has
+ * no length. Twenty long ones would carry that text past what a hook hands a model,
+ * where a memory's line never could, because a memory's line is cut here. So the notes
+ * cut the topic by THIS rule rather than by a copy of it, and "one line" and "how much of
+ * one" stay answered in one place each. The index itself still serves the topic whole:
+ * `search` is asked for, and a name it shortened would be a name it changed.
  */
-function excerptOf(text: string): string {
+export function excerptOf(text: string): string {
   // The collapse is the rule of the line's, not this module's — one place decides what
   // "one line" means, and an excerpt that disagreed with it would be a second answer.
   const collapsed = oneLine(text);

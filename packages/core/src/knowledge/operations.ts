@@ -69,7 +69,7 @@ import {
 } from '../content/screen.js';
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
 import { canonicalId, mintId } from '../identity/id.js';
-import { appendEvent, type UnreadableEventErr } from '../workflow/append.js';
+import { type AppendRefusal, appendEvent } from '../workflow/append.js';
 import { systemClock } from '../workflow/clock.js';
 import { authorizingAnchor, ensureFounded } from '../workflow/identity-operations.js';
 import type { WriteContext } from '../workflow/operations.js';
@@ -86,7 +86,7 @@ export interface CaptureOk extends ScreenedWrite {
  * authorized itself, one of its fields was over the size limit, or a field the
  * catalog needs came in empty and no read would have accepted the fact.
  */
-export type FactError = SelfAuthorizedErr | ScreenRefusal | UnreadableEventErr;
+export type FactError = SelfAuthorizedErr | ScreenRefusal | AppendRefusal;
 
 /** What the caller asks to capture. */
 export interface CaptureInput {

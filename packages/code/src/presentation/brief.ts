@@ -58,6 +58,14 @@
  * it is still pure over the record, so the `diff` that detects a stale copy means exactly
  * what it meant before.
  *
+ * "NOTHING IS CUT BY SIZE" IS STILL TRUE OF THE FILE AND IT WAS NEVER TRUE OF THE HOOK, and
+ * the paragraph above is kept because the file is the reader it was written for. The plugin
+ * hands this document to a session through a hook, and the host carries a hook's text whole
+ * only up to a ceiling: over it the WHOLE text is replaced by a file path, in silence. So the
+ * hook's copy was already cut by size — all of it, by somebody else — past a few dozen rules.
+ * What it gets now is {@link briefWithin}: whole rules up to the ceiling, and a paragraph
+ * that says how many were left out and what serves them. The file keeps every rule.
+ *
  * "ONE NUMBER" WAS TRUE WHEN IT WAS WRITTEN AND THERE ARE FOUR NOW, and the sentence is
  * kept rather than quietly widened because the ARGUMENT in it is what the new ones stand
  * on. The doctrine above refuses a total for omission by SIZE, and it is right: with the
@@ -109,6 +117,7 @@ import type { AdrCollision, Brief, ChannelState } from '@mnema/copilot';
 import { oneLine } from '../one-line.js';
 import { DERIVED_FROM } from '../provenance.js';
 import { recordFraming } from '../record-framing.js';
+import { fitWhole, HOOK_CEILING_IN_WORDS } from './within-a-hook.js';
 
 /**
  * The marker that says what this file is, to a reader and to a `grep`.
@@ -599,6 +608,81 @@ function whatAwaitsAJudgement(awaiting: number, words: WaitingWords): string[] {
  * `brief` in @mnema/copilot).
  */
 export function briefDocument(governance: Brief): string[] {
+  return composed(governance, rulesIn(governance));
+}
+
+/**
+ * The document for a hook: whole rules, in the document's own order, up to what fits in
+ * `room`, and a closing paragraph that says how many were left out and where they are.
+ *
+ * "NOTHING IS CUT BY SIZE" WAS TRUE OF EVERY READER THIS DOCUMENT HAD, AND THE HOOK FALSIFIED
+ * IT. The header above says it and it still holds for the file: `mnema brief > MNEMA.md` prints
+ * everything, because a file has no ceiling anybody measured. What the plugin hands a session
+ * does have one, and it is not this product's: over it the host replaces the WHOLE text by a
+ * file path and a preview of 2,000 characters and does not ask the model to open the file —
+ * measured, with titles of 80 characters, between 50 rules in force (8,722 characters) and 60
+ * (10,092); a record with none prints 1,952.
+ * So past that point "nothing is cut" was already false, silently and entirely, and the only
+ * choice left was between that and a cut this product makes and SAYS. It is the second one,
+ * and the ceiling and its measurement are in one place ({@link HOOK_TEXT_CEILING}).
+ *
+ * WHAT MOVES AND WHAT DOES NOT. Under the ceiling this is {@link briefDocument}, byte for byte
+ * ({@link fitWhole} asks the whole first). Over it, the skeleton is untouched — every heading,
+ * every paragraph, in the same order — and what shortens is the list of bullets, from its end:
+ * decisions first and patterns after, as the document already orders them. Each heading still
+ * counts what is printed under it, which is what {@link WHAT_TRAVELS} tells the reader a heading
+ * does, and the paragraph under a heading is the one its FULL list earns — a section whose
+ * bullets were all cut says what its rules are, never that there are none.
+ */
+export function briefWithin(governance: Brief, room: number): string[] {
+  return fitWhole(rulesIn(governance), room, (shown) => composed(governance, shown));
+}
+
+/** How many rules the document can print: every decision in force and every pattern adopted. */
+function rulesIn(governance: Brief): number {
+  return governance.decisions.length + governance.skills.length;
+}
+
+/**
+ * What is said at the end of a document that was cut, and nothing when it was not.
+ *
+ * It is a count, the order it was taken in, the reason, and the door — the four things a
+ * reader holding only this text needs to know that the list above is not the record's and
+ * how to reach the rest without guessing. The door is `search` with a kind and a state
+ * because that is the read that lists rules in force by name, the whole of them; the bullets
+ * above are names, so the rest arrive in the shape these did.
+ *
+ * It is a FACT and not a request, the voice every line of this document is held to: it says
+ * what the text is and what serves the rest, and nothing about whether to ask.
+ */
+function leftOut(decisions: number, patterns: number): string[] {
+  if (decisions + patterns === 0) return [];
+  const parts = [
+    ...(decisions > 0 ? [counted(decisions, 'decision in force', 'decisions in force')] : []),
+    ...(patterns > 0 ? [counted(patterns, 'adopted pattern', 'adopted patterns')] : []),
+  ].join(' and ');
+  return [
+    '',
+    `Left out of this text: ${parts} — the last ${decisions + patterns === 1 ? 'one' : 'ones'} in the order above.`,
+    `A hook hands a session at most ${HOOK_CEILING_IN_WORDS} characters, and a file path in place of a longer`,
+    'text, so this one stops at a whole rule instead. `search` with `kind` `decision` and',
+    '`state` `accepted`, or `kind` `skill` and `state` `adopted`, serves every one of them.',
+  ];
+}
+
+/** A count and its noun, singular or plural by the count — both constants of this module. */
+function counted(n: number, one: string, many: string): string {
+  return `${n} ${n === 1 ? one : many}`;
+}
+
+/**
+ * The document with its first `shown` rules — the one shape both the file and the hook
+ * print, so the two can differ only by where the list stops and by the paragraph that says
+ * it stopped.
+ */
+function composed(governance: Brief, shown: number): string[] {
+  const decisions = governance.decisions.slice(0, shown);
+  const skills = governance.skills.slice(0, Math.max(0, shown - governance.decisions.length));
   return [
     GENERATED,
     '',
@@ -618,22 +702,26 @@ export function briefDocument(governance: Brief): string[] {
     '',
     ...section(
       'Decisions in force',
-      governance.decisions.length,
+      decisions.length,
       governance.decisions.length === 0
         ? NO_DECISIONS
         : [...WHERE_THE_RATIONALE_IS, ...ambiguousLabels(governance.collisions)],
       whatAwaitsAJudgement(governance.decisionsAwaiting, DECISIONS_WAITING),
-      governance.decisions.map((decision) =>
+      decisions.map((decision) =>
         rule(`${decision.adr} — ${decision.title}`, decision.id, decision.origin),
       ),
     ),
     '',
     ...section(
       'Patterns adopted',
-      governance.skills.length,
+      skills.length,
       governance.skills.length === 0 ? NO_PATTERNS : WHERE_THE_PATTERN_IS,
       whatAwaitsAJudgement(governance.skillsAwaiting, PATTERNS_WAITING),
-      governance.skills.map((skill) => rule(skill.name, skill.id, skill.origin)),
+      skills.map((skill) => rule(skill.name, skill.id, skill.origin)),
+    ),
+    ...leftOut(
+      governance.decisions.length - decisions.length,
+      governance.skills.length - skills.length,
     ),
   ];
 }

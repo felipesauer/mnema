@@ -290,7 +290,7 @@ $ mnema brief
 | No other pattern recorded here is awaiting a judgement.
 $ mnema recall
 $ mnema tail list
-| 1 tail(s):
+| 1 tail(s) holding events — the ones a cut can name:
 |   <tail-own>  public   2 event(s) through <tail-head-an-empty-project-1>  the tail of <anchor>  ·  no waiver
 $ mnema switch
 | 4 channel(s), looked in public, private, global:
@@ -1671,7 +1671,7 @@ $ mnema recall
 |
 | - **review** · `<observation-rollback>`
 $ mnema tail list
-| 3 tail(s):
+| 3 tail(s) holding events — the ones a cut can name:
 |   <tail-own>  public   36 event(s) through <tail-head-a-populated-project-1>  the tail of <anchor>  ·  no waiver
 |   <tail-private>  private  8 event(s) through <tail-head-a-populated-project-2>  the tail of <anchor>  ·  no waiver
 |   <tail-global>  global   4 event(s) through <tail-head-a-populated-project-3>  the tail of <anchor>  ·  no waiver

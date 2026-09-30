@@ -40,10 +40,12 @@ import { recallDocument } from '../src/presentation/recall.js';
 import {
   DECLARES_MODEL_CHANNEL,
   FRAMED_CHANNELS,
+  NOT_COUNTED_AS_SERVED,
   PUSHED_BY_TOOL,
   recordFraming,
   recordFramingBlock,
   SAYS_WHAT_TO_DO,
+  SWITCHABLE_CHANNELS,
   tellsWhatToDo,
   UNFRAMED_CHANNELS,
 } from '../src/record-framing.js';
@@ -263,6 +265,27 @@ describe('one declaration, and one place that decides it', () => {
     for (const [channel, why] of unframed) {
       expect(why.length, channel).toBeGreaterThan(40);
       expect(FRAMED_CHANNELS, channel).not.toContain(channel);
+    }
+  });
+});
+
+describe('what `channel.served` counts, said by the table the type makes total', () => {
+  it('counts exactly what the per-edit hook pushes, and nothing a session opens with', () => {
+    // `CountedChannel` is what `recordServices` takes, so a channel outside it cannot be
+    // recorded as served — that half is the compiler's. What this holds is that the table
+    // naming the rest agrees with what a hook actually pushes through its tool.
+    const counted = SWITCHABLE_CHANNELS.filter((channel) => !(channel in NOT_COUNTED_AS_SERVED));
+    expect([...counted].sort()).toEqual([...(PUSHED_BY_TOOL.rules_before_an_edit ?? [])].sort());
+    expect(Object.keys(NOT_COUNTED_AS_SERVED).sort()).toEqual([
+      'brief-document',
+      'recall-document',
+    ]);
+  });
+
+  it('says why for each channel it does not count — a read, which writes nothing', () => {
+    for (const [channel, why] of Object.entries(NOT_COUNTED_AS_SERVED)) {
+      expect(why.length, channel).toBeGreaterThan(40);
+      expect(why, channel).toContain('writes nothing');
     }
   });
 });

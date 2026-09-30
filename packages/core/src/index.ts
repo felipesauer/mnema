@@ -163,6 +163,7 @@ export { getRun, listOpenRuns, listRuns } from './projections/run-store.js';
 export {
   compareSearchHits,
   effectiveLimit,
+  excerptOf,
   isSearchKind,
   type PertinenceQuery,
   SEARCH_DEFAULT_LIMIT,

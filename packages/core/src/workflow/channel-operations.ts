@@ -46,7 +46,7 @@ import {
   screened,
 } from '../content/screen.js';
 import { resolveExecutingAgent, type SelfAuthorizedErr } from '../identity/authority.js';
-import { appendEvent, type UnreadableEventErr } from './append.js';
+import { type AppendRefusal, appendEvent } from './append.js';
 import { systemClock } from './clock.js';
 import { authorizingAnchor, ensureFounded } from './identity-operations.js';
 import type { WriteContext } from './operations.js';
@@ -67,7 +67,7 @@ export interface SwitchOk extends ScreenedWrite {
  * There is no refusal for a channel this package does not know, because it knows none
  * (see the module note), and none for switching a channel to where it already stands.
  */
-export type SwitchError = SelfAuthorizedErr | ScreenRefusal | UnreadableEventErr;
+export type SwitchError = SelfAuthorizedErr | ScreenRefusal | AppendRefusal;
 
 /** What the caller asks to switch. */
 export interface SwitchInput {
@@ -158,7 +158,7 @@ export function switchChannel(ctx: WriteContext, input: SwitchInput): SwitchOk |
  * else's work.
  */
 
-/** The service was recorded: this channel was live in this run. */
+/** The service was recorded: this channel was live at an edit of this run. */
 export interface ServedOk extends ScreenedWrite {
   readonly ok: true;
   /** The channel that served — the event's subject, as it was recorded. */
@@ -175,7 +175,7 @@ export interface AskedOk extends ScreenedWrite {
 }
 
 /** The refusals either can earn — the ones every fact can, and nothing of their own. */
-export type ChannelFactError = SelfAuthorizedErr | ScreenRefusal | UnreadableEventErr;
+export type ChannelFactError = SelfAuthorizedErr | ScreenRefusal | AppendRefusal;
 
 /** What the caller records: which channel, in which run, driven by which agent. */
 export interface ServedInput {
@@ -207,7 +207,9 @@ export interface AskedInput extends ServedInput {
  *
  * The caller decides WHETHER to write one — once per run and per channel is the rule, and
  * it belongs to the surface that knows what a session already recorded, not here. This
- * appends whatever it is asked to, exactly as switching does.
+ * appends whatever it is asked to, exactly as switching does. Which channels are ever
+ * counted is the surface's too, and it is the ones that push at an edit: the texts a session
+ * opens with are printed by reads, which write nothing, so none of them reaches this.
  */
 export function recordChannelServed(
   ctx: WriteContext,

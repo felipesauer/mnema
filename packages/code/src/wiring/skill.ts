@@ -1,17 +1,17 @@
 /**
  * The `mnema skill` wiring: what it declares, and what it prints.
  *
- * `skill` is a group, shaped like `task` and `decision`: its default action
- * proposes a skill (`mnema skill "<name>" --body "<text>"`), one subcommand moves an
+ * `skill` is a group, shaped like `task` and `decision`: one subcommand proposes a
+ * skill (`mnema skill create "<name>" --body "<text>"`), one moves an
  * existing one, and one WRITES AN ADOPTED ONE OUT as the file an agent host reads
  * (`skill export`, whose own reasons are in `commands/skill-export.ts`). A skill needs
  * BOTH a name and a body; the name is a short positional, the body a flag (`--body`) —
  * content that big never goes in a positional (the `git commit -m` / `gh --body`
  * convention).
- * The body is required, but NOT declared as commander's `requiredOption`: an
- * option on the GROUP is inherited by the `move` subcommand, and a required one
- * there would force `--body` on a move too. So it is a plain option the create
- * action checks itself — a missing `--body` on a propose is a usage error the
+ * The body is required, but NOT declared as commander's `requiredOption`: the
+ * group declares it too, so a `--body` written after `create` lands on the GROUP
+ * and the subcommand's own required option would never see it. So it is a plain
+ * option the create action checks itself — a missing `--body` on a propose is a usage error the
  * CLI reports (nothing is born), while `move` is unaffected. Propose takes an
  * optional `--scope` (the per-action birth override, defaulting to public); the
  * move takes none (it follows the entity). A skill has no alias — propose prints
@@ -42,6 +42,7 @@ import {
 } from './enumerated.js';
 import { fromTheGroup, REFUSED, takesFromItsGroup } from './from-the-group.js';
 import { writeLines } from './io.js';
+import { createsBy } from './misuse.js';
 import { noSuchRecord } from './no-such-record.js';
 import { onOneLine } from './on-one-line.js';
 import {
@@ -97,14 +98,16 @@ const SKILL_EXPORT_HELP = [
   '  It records nothing — no event, no consultation — and it writes nowhere but --out.',
 ].join('\n');
 
+/** What `--body` is, said once for the group and for `create`, which both declare it. */
+const BODY_HELP = 'the reusable pattern itself (required)';
+
 /** Registers `mnema skill` on the program. */
 export function registerSkill(program: Command, wiring: Wiring): Declared {
   const { io, pinnedRun, render } = wiring;
   const skill = program
     .command('skill')
-    .description('propose a reusable skill in the current project')
-    .argument('<name>', 'a short title for the pattern')
-    .option('--body <text>', 'the reusable pattern itself (required)')
+    .description('propose a reusable skill, move one, or export one, in the current project')
+    .option('--body <text>', BODY_HELP)
     .addOption(
       scopeOption(
         'skill',
@@ -112,42 +115,67 @@ export function registerSkill(program: Command, wiring: Wiring): Declared {
       ),
     )
     .option('--which <agent>', WHICH_HELP, declaredAgent)
-    .addHelpText('after', RECORD_CONTRACT_HELP)
-    .action(async (name: string, opts: { body?: string; scope?: string; which?: string }) => {
-      const { runSkill } = await import('../commands/skill.js');
-      // The body is required for a propose, but declared as a plain option (so it
-      // is not inherited as mandatory by `move`); enforce it here.
-      if (opts.body === undefined) {
-        reportUsage(wiring, '`mnema skill` requires --body: the reusable pattern itself.');
-        return;
-      }
-      const scope = parseScope(opts.scope, wiring);
-      if (scope === INVALID) return;
-      const run = pinnedRun();
-      if (run === PIN_REFUSED) {
-        io.fail();
-        return;
-      }
-      const result = runSkill(here(), {
-        name,
-        body: opts.body,
-        ...(scope !== undefined ? { scope } : {}),
-        ...(opts.which !== undefined ? { which: opts.which } : {}),
-        ...(run !== undefined ? { run } : {}),
-      });
-      if (result.ok) {
-        // Print both the name (orients the human) and the id (the key a move
-        // takes) — a skill has no alias.
-        //
-        // The name is the positional, in quotes, and it is text somebody wrote: the
-        // same value `moved-record.ts` already collapses when a skill MOVES, closed
-        // here for the line that reports its birth (see {@link onOneLine}).
-        io.out(onOneLine`Proposed skill "${result.name}" (${result.id})`);
-        reportRecorded(result, io);
-        return;
-      }
-      reportRefusal(wiring, result);
+    .addHelpText('after', RECORD_CONTRACT_HELP);
+
+  // `skill create <name> --body <text>` — the verb the agent's surface calls `create_skill`.
+  // The group used to propose with the name typed right after its name, and a group that takes
+  // a free word cannot refuse a mistyped subcommand: `mnema skill exportZZZ --body abc` proposed
+  // a skill called `exportZZZ`. Its flags are its own, so its `--help` lists them; written after
+  // `create` they still land on the group, which declares the same three, and are read from
+  // there — which is also why `--body` is checked here rather than declared required: commander
+  // would ask the subcommand for a value the group took.
+  const create = skill
+    .command('create')
+    .description('propose a reusable skill in the current project')
+    .argument('<name>', 'a short title for the pattern')
+    .option('--body <text>', BODY_HELP)
+    .addOption(
+      scopeOption(
+        'skill',
+        'Omitted, a skill lands in the public tree (a declaration about the project).',
+      ),
+    )
+    .option('--which <agent>', WHICH_HELP, declaredAgent)
+    .addHelpText('after', RECORD_CONTRACT_HELP);
+  createsBy(create);
+  create.action(async (name: string) => {
+    const given = await fromTheGroup<{ body?: string; scope?: string; which?: string }>(
+      create,
+      wiring,
+    );
+    if (given === REFUSED) return;
+    const { runSkill } = await import('../commands/skill.js');
+    if (given.body === undefined) {
+      reportUsage(wiring, '`mnema skill create` requires --body: the reusable pattern itself.');
+      return;
+    }
+    const scope = parseScope(given.scope, wiring);
+    if (scope === INVALID) return;
+    const run = pinnedRun();
+    if (run === PIN_REFUSED) {
+      io.fail();
+      return;
+    }
+    const result = runSkill(here(), {
+      name,
+      body: given.body,
+      ...(scope !== undefined ? { scope } : {}),
+      ...(given.which !== undefined ? { which: given.which } : {}),
+      ...(run !== undefined ? { run } : {}),
     });
+    if (result.ok) {
+      // Print both the name (orients the human) and the id (the key a move
+      // takes) — a skill has no alias.
+      //
+      // The name is the positional, in quotes, and it is text somebody wrote: the
+      // same value `moved-record.ts` already collapses when a skill MOVES, closed
+      // here for the line that reports its birth (see {@link onOneLine}).
+      io.out(onOneLine`Proposed skill "${result.name}" (${result.id})`);
+      reportRecorded(result, io);
+      return;
+    }
+    reportRefusal(wiring, result);
+  });
 
   // `skill move <action> <id>` — the generic move, the sibling of `task move`.
   // The action is an argument; the surface knows no transition table. It takes

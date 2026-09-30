@@ -156,7 +156,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
 
     // 2. task adds an event through the gate.
     const t = capture();
-    await run(['task', 'ship the CLI'], t.io);
+    await run(['task', 'create', 'ship the CLI'], t.io);
     expect(t.failed()).toBe(false);
     expect(t.out.join('\n')).toMatch(/Created task t-[0-9a-f]{4}/);
 
@@ -180,7 +180,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
 
     // Create, and read the id back out of the CLI's own output.
     const c = capture();
-    await run(['task', 'ship the feature'], c.io);
+    await run(['task', 'create', 'ship the feature'], c.io);
     const match = c.out.join('\n').match(/Created task t-[0-9a-f]{4} \(([0-9a-f-]{36})\)/);
     expect(match).not.toBeNull();
     const id = (match as RegExpMatchArray)[1] as string;
@@ -219,7 +219,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     // so the team (who reads only public) sees the whole history.
     await run(['init'], capture().io);
     const c = capture();
-    await run(['task', 'ship it'], c.io);
+    await run(['task', 'create', 'ship it'], c.io);
     const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
     await run(['task', 'move', 'submit', id], capture().io);
     await run(['task', 'move', 'start', id], capture().io);
@@ -250,7 +250,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
   it('--scope private on create routes the birth to the private tree', async () => {
     await run(['init'], capture().io);
     const c = capture();
-    await run(['task', 'a private draft', '--scope', 'private'], c.io);
+    await run(['task', 'create', 'a private draft', '--scope', 'private'], c.io);
     expect(c.failed()).toBe(false);
     const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
 
@@ -277,7 +277,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     mkdirSync(orphan, { recursive: true });
     process.chdir(orphan);
     const c = capture();
-    await run(['task', 'a cross-project lesson', '--scope', 'global'], c.io);
+    await run(['task', 'create', 'a cross-project lesson', '--scope', 'global'], c.io);
     expect(c.failed()).toBe(false);
     expect(c.out.join('\n')).toMatch(/Created task t-[0-9a-f]{4}/);
     const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
@@ -296,7 +296,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     mkdirSync(orphan, { recursive: true });
     process.chdir(orphan);
     const c = capture();
-    await run(['task', 'homeless public', '--scope', 'public'], c.io);
+    await run(['task', 'create', 'homeless public', '--scope', 'public'], c.io);
     expect(c.failed()).toBe(true);
     expect(c.err.join('\n')).toContain('Run `mnema init`');
   });
@@ -304,7 +304,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
   it('an unknown --scope value is a usage error the CLI reports itself', async () => {
     await run(['init'], capture().io);
     const c = capture();
-    await run(['task', 'a task', '--scope', 'team'], c.io);
+    await run(['task', 'create', 'a task', '--scope', 'team'], c.io);
     expect(c.failed()).toBe(true);
     expect(c.err.join('\n')).toContain('Invalid --scope "team"');
     // Nothing was born: no task event in any tree.
@@ -322,7 +322,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
     // --scope; passing one is a usage error, so a caller cannot re-home a move.
     await run(['init'], capture().io);
     const c = capture();
-    await run(['task', 'ship it'], c.io);
+    await run(['task', 'create', 'ship it'], c.io);
     const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
 
     const m = capture();
@@ -333,7 +333,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
   it('an illegal move prints the gate refusal and signals failure', async () => {
     await run(['init'], capture().io);
     const c = capture();
-    await run(['task', 'a task'], c.io);
+    await run(['task', 'create', 'a task'], c.io);
     const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
 
     // start from DRAFT is illegal — the gate refuses, the CLI prints it and fails.
@@ -345,7 +345,7 @@ describe('mnema CLI — init → task → verify, end to end', () => {
 
   it('task before init refuses and signals failure', async () => {
     const t = capture();
-    await run(['task', 'homeless'], t.io);
+    await run(['task', 'create', 'homeless'], t.io);
     expect(t.failed()).toBe(true);
     expect(t.err.join('\n')).toContain('Run `mnema init`');
   });
@@ -521,11 +521,11 @@ describe('mnema CLI — a record no read could open, end to end', () => {
     // The list IS the finding: the report this closes named six paths; driving the
     // built binary found eighteen, and these are the ones a single command reaches.
     const paths: readonly [readonly string[], string][] = [
-      [['task', ''], 'payload.title'],
-      [['decision', '', 'why'], 'payload.title'],
-      [['decision', 'a title', ''], 'payload.rationale'],
-      [['skill', '', '--body', 'b'], 'payload.name'],
-      [['skill', 'a name', '--body', ''], 'payload.body'],
+      [['task', 'create', ''], 'payload.title'],
+      [['decision', 'record', '', 'why'], 'payload.title'],
+      [['decision', 'record', 'a title', ''], 'payload.rationale'],
+      [['skill', 'create', '', '--body', 'b'], 'payload.name'],
+      [['skill', 'create', 'a name', '--body', ''], 'payload.body'],
       [['memory', ''], 'payload.content'],
       [['observe', '', '--topic', 'k', '--text', 't'], 'payload.about'],
       [['observe', 'x', '--topic', '', '--text', 't'], 'payload.topic'],
@@ -554,7 +554,7 @@ describe('mnema CLI — a record no read could open, end to end', () => {
     // these would have made all of them fail — so this is the assertion the whole
     // slice exists for.
     for (const argv of [
-      ['task', ''],
+      ['task', 'create', ''],
       ['memory', ''],
       ['handoff', '', 'a', 'b'],
       ['link', 'x', 'y', '--rel', ''],
@@ -564,7 +564,7 @@ describe('mnema CLI — a record no read could open, end to end', () => {
     }
 
     const task = capture();
-    await run(['task', 'a task the record can hold'], task.io);
+    await run(['task', 'create', 'a task the record can hold'], task.io);
     expect(task.failed()).toBe(false);
     const id = /\(([^)]+)\)/.exec(task.out.join('\n'))?.[1] as string;
 
@@ -591,13 +591,19 @@ describe('mnema CLI — a record no read could open, end to end', () => {
     const short = /mnid:[0-9a-f]+/.exec(accountability.out.join('\n'))?.[0] as string;
     expect(short.length).toBeLessThan('mnid:'.length + 64);
 
-    const said = await refused(['task', 'a task the anchor claims to have run', '--which', short]);
+    const said = await refused([
+      'task',
+      'create',
+      'a task the anchor claims to have run',
+      '--which',
+      short,
+    ]);
     expect(said).toContain('Refused (WHO_IS_WHICH)');
 
     // And an honest agent name still passes, so the refusal is about the identity
     // and not about the flag.
     const ok = capture();
-    await run(['task', 'a task an agent really ran', '--which', 'agent-alpha'], ok.io);
+    await run(['task', 'create', 'a task an agent really ran', '--which', 'agent-alpha'], ok.io);
     expect(ok.failed()).toBe(false);
   });
 });
@@ -611,7 +617,7 @@ describe('mnema CLI — decision, end to end', () => {
   it('records a decision, prints its ADR (not an alias), and verifies', async () => {
     await run(['init'], capture().io);
     const c = capture();
-    await run(['decision', 'adopt the ledger', 'it is the audit surface'], c.io);
+    await run(['decision', 'record', 'adopt the ledger', 'it is the audit surface'], c.io);
     expect(c.failed()).toBe(false);
     // The human name is the ADR — never a `t-xxxx`-style alias, which a decision
     // does not have. The output is `ADR-<n> (<uuid>)`: the label and the id, and
@@ -636,14 +642,14 @@ describe('mnema CLI — decision, end to end', () => {
     await run(['init'], capture().io);
     const c = capture();
     // Only the title given; the rationale positional is missing.
-    await run(['decision', 'only a title'], c.io);
+    await run(['decision', 'record', 'only a title'], c.io);
     expect(c.failed()).toBe(true);
   });
 
   it('accepts a decision with a note and prints the ADR AND the id → accepted', async () => {
     await run(['init'], capture().io);
     const c = capture();
-    await run(['decision', 'a call', 'because'], c.io);
+    await run(['decision', 'record', 'a call', 'because'], c.io);
     const id = idOf(c.out.join('\n'));
 
     const a = capture();
@@ -657,7 +663,7 @@ describe('mnema CLI — decision, end to end', () => {
   it('accept without a note prints the gate refusal and fails', async () => {
     await run(['init'], capture().io);
     const c = capture();
-    await run(['decision', 'a call', 'because'], c.io);
+    await run(['decision', 'record', 'a call', 'because'], c.io);
     const id = idOf(c.out.join('\n'));
 
     const a = capture();
@@ -669,10 +675,10 @@ describe('mnema CLI — decision, end to end', () => {
   it('supersede <old> <new> --reason links supersededBy, and verifies', async () => {
     await run(['init'], capture().io);
     const o = capture();
-    await run(['decision', 'old approach', 'r1'], o.io);
+    await run(['decision', 'record', 'old approach', 'r1'], o.io);
     const oldId = idOf(o.out.join('\n'));
     const n = capture();
-    await run(['decision', 'new approach', 'r2'], n.io);
+    await run(['decision', 'record', 'new approach', 'r2'], n.io);
     const newId = idOf(n.out.join('\n'));
 
     const s = capture();
@@ -693,10 +699,10 @@ describe('mnema CLI — decision, end to end', () => {
   it('supersede without a reason prints the gate refusal and fails', async () => {
     await run(['init'], capture().io);
     const o = capture();
-    await run(['decision', 'old', 'r1'], o.io);
+    await run(['decision', 'record', 'old', 'r1'], o.io);
     const oldId = idOf(o.out.join('\n'));
     const n = capture();
-    await run(['decision', 'new', 'r2'], n.io);
+    await run(['decision', 'record', 'new', 'r2'], n.io);
     const newId = idOf(n.out.join('\n'));
 
     const s = capture();
@@ -708,7 +714,7 @@ describe('mnema CLI — decision, end to end', () => {
   it('supersede of a decision that does not exist reports UNKNOWN_DECISION', async () => {
     await run(['init'], capture().io);
     const n = capture();
-    await run(['decision', 'new', 'r'], n.io);
+    await run(['decision', 'record', 'new', 'r'], n.io);
     const newId = idOf(n.out.join('\n'));
 
     const s = capture();
@@ -723,7 +729,7 @@ describe('mnema CLI — decision, end to end', () => {
   it('`decision move` takes no --scope: a move follows the entity', async () => {
     await run(['init'], capture().io);
     const c = capture();
-    await run(['decision', 'a call', 'because'], c.io);
+    await run(['decision', 'record', 'a call', 'because'], c.io);
     const id = idOf(c.out.join('\n'));
 
     const m = capture();
@@ -734,7 +740,7 @@ describe('mnema CLI — decision, end to end', () => {
   it('--scope private on record routes the birth to the private tree', async () => {
     await run(['init'], capture().io);
     const c = capture();
-    await run(['decision', 'a private call', 'this machine', '--scope', 'private'], c.io);
+    await run(['decision', 'record', 'a private call', 'this machine', '--scope', 'private'], c.io);
     expect(c.failed()).toBe(false);
     const id = idOf(c.out.join('\n'));
 
@@ -755,7 +761,7 @@ describe('mnema CLI — decision, end to end', () => {
 
   it('decision before init refuses and signals failure', async () => {
     const d = capture();
-    await run(['decision', 'homeless', 'no project'], d.io);
+    await run(['decision', 'record', 'homeless', 'no project'], d.io);
     expect(d.failed()).toBe(true);
     expect(d.err.join('\n')).toContain('Run `mnema init`');
   });
@@ -775,7 +781,7 @@ describe('mnema CLI — skill, end to end', () => {
     await run(['init'], capture().io);
     const chosen = 'sk-check-the-tenant-scope-first';
     const c = capture();
-    await run(['skill', chosen, '--body', 'always check the tenant scope'], c.io);
+    await run(['skill', 'create', chosen, '--body', 'always check the tenant scope'], c.io);
     expect(c.failed()).toBe(false);
 
     // The NAME is asserted, not the absence of a placeholder: a sieve that ate the
@@ -825,7 +831,7 @@ describe('mnema CLI — skill, end to end', () => {
     // ask for or export, permanently. Now the person is told and nothing is written.
     await run(['init'], capture().io);
     const c = capture();
-    await run(['skill', 'xoxb-123456789012-abcdefghijkl', '--body', 'never mind'], c.io);
+    await run(['skill', 'create', 'xoxb-123456789012-abcdefghijkl', '--body', 'never mind'], c.io);
     expect(c.failed()).toBe(true);
 
     // The refusal says the class (what to rotate) and the field (what to rename), and
@@ -878,7 +884,10 @@ describe('mnema CLI — skill, end to end', () => {
   it('proposes a skill, prints its name and id (no alias), and verifies', async () => {
     await run(['init'], capture().io);
     const c = capture();
-    await run(['skill', 'stacked-prs', '--body', 'One slice per PR; merge before the next.'], c.io);
+    await run(
+      ['skill', 'create', 'stacked-prs', '--body', 'One slice per PR; merge before the next.'],
+      c.io,
+    );
     expect(c.failed()).toBe(false);
     // The output is `"<name>" (<uuid>)`: the display name and the key, no alias.
     expect(c.out.join('\n')).toMatch(
@@ -898,7 +907,7 @@ describe('mnema CLI — skill, end to end', () => {
     await run(['init'], capture().io);
     const c = capture();
     // Only the name given; the body flag is missing.
-    await run(['skill', 'no-body'], c.io);
+    await run(['skill', 'create', 'no-body'], c.io);
     expect(c.failed()).toBe(true);
     // Nothing was born: no skill event in the public tree.
     const trees = resolveTrees(repo, {
@@ -913,7 +922,7 @@ describe('mnema CLI — skill, end to end', () => {
   it('walks a skill through its cycle: propose → review → adopt → deprecate → verify', async () => {
     await run(['init'], capture().io);
     const c = capture();
-    await run(['skill', 'a-habit', '--body', 'do the thing'], c.io);
+    await run(['skill', 'create', 'a-habit', '--body', 'do the thing'], c.io);
     const id = idOf(c.out.join('\n'));
 
     const review = capture();
@@ -941,7 +950,7 @@ describe('mnema CLI — skill, end to end', () => {
   it('review without a note prints the gate refusal and fails', async () => {
     await run(['init'], capture().io);
     const c = capture();
-    await run(['skill', 'a-habit', '--body', 'x'], c.io);
+    await run(['skill', 'create', 'a-habit', '--body', 'x'], c.io);
     const id = idOf(c.out.join('\n'));
 
     const r = capture();
@@ -953,7 +962,7 @@ describe('mnema CLI — skill, end to end', () => {
   it('an unknown action is UNKNOWN_ACTION — never a silent transition', async () => {
     await run(['init'], capture().io);
     const c = capture();
-    await run(['skill', 'a-habit', '--body', 'x'], c.io);
+    await run(['skill', 'create', 'a-habit', '--body', 'x'], c.io);
     const id = idOf(c.out.join('\n'));
 
     const bad = capture();
@@ -976,7 +985,7 @@ describe('mnema CLI — skill, end to end', () => {
   it('`skill move` takes no --scope: a move follows the entity', async () => {
     await run(['init'], capture().io);
     const c = capture();
-    await run(['skill', 'a-habit', '--body', 'x'], c.io);
+    await run(['skill', 'create', 'a-habit', '--body', 'x'], c.io);
     const id = idOf(c.out.join('\n'));
 
     const m = capture();
@@ -987,7 +996,10 @@ describe('mnema CLI — skill, end to end', () => {
   it('--scope private on propose routes the birth to the private tree', async () => {
     await run(['init'], capture().io);
     const c = capture();
-    await run(['skill', 'a-private-habit', '--body', 'this machine', '--scope', 'private'], c.io);
+    await run(
+      ['skill', 'create', 'a-private-habit', '--body', 'this machine', '--scope', 'private'],
+      c.io,
+    );
     expect(c.failed()).toBe(false);
     const id = idOf(c.out.join('\n'));
 
@@ -1010,7 +1022,7 @@ describe('mnema CLI — skill, end to end', () => {
 
   it('skill before init refuses and signals failure', async () => {
     const s = capture();
-    await run(['skill', 'homeless', '--body', 'no project'], s.io);
+    await run(['skill', 'create', 'homeless', '--body', 'no project'], s.io);
     expect(s.failed()).toBe(true);
     expect(s.err.join('\n')).toContain('Run `mnema init`');
   });
@@ -1167,7 +1179,7 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
   it('next-actions lists a DRAFT task’s legal moves, and --json emits the faithful list', async () => {
     await run(['init'], capture().io);
     const c = capture();
-    await run(['task', 'ship it'], c.io);
+    await run(['task', 'create', 'ship it'], c.io);
     const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
 
     // Human summary lists the moves.
@@ -1187,7 +1199,7 @@ describe('mnema CLI — knowledge (memory, observe, handoff, link), end to end',
   it('next-actions reports "no legal moves" for a terminal task, and refuses an unknown id', async () => {
     await run(['init'], capture().io);
     const c = capture();
-    await run(['task', 'to abandon'], c.io);
+    await run(['task', 'create', 'to abandon'], c.io);
     const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
     await run(['task', 'move', 'cancel', id, '--reason', 'abandoned'], capture().io);
 
@@ -1295,8 +1307,8 @@ describe('mnema CLI — search and show (the record made readable), end to end',
   it('records three kinds, finds the one a term names, reads its body, then lists the recent', async () => {
     await run(['init'], capture().io);
     const memory = idOf(await output(['memory', 'the auth flow uses PKCE with a rotating secret']));
-    await output(['decision', 'Adopt trunk-based development', 'fewer merges']);
-    const task = idOf(await output(['task', 'wire the callback']));
+    await output(['decision', 'record', 'Adopt trunk-based development', 'fewer merges']);
+    const task = idOf(await output(['task', 'create', 'wire the callback']));
     await output(['observe', task, '--topic', 'perf', '--text', 'the callback is hot']);
 
     // 1. A term that appears in ONE record finds exactly it, grouped by kind.
@@ -1326,8 +1338,8 @@ describe('mnema CLI — search and show (the record made readable), end to end',
     // across two lines makes that count LIE: the second half reads as a record
     // with an id, a tree and a state of its own that nothing ever recorded.
     const forgedLine = '  019f0000-0000-7000-8000-000000000000  public  2026-07-28  forged (open)';
-    await output(['task', `wire the callback\n${forgedLine}`]);
-    await output(['task', `and another\n${forgedLine}`]);
+    await output(['task', 'create', `wire the callback\n${forgedLine}`]);
+    await output(['task', 'create', `and another\n${forgedLine}`]);
 
     const found = await output(['search']);
     const lines = found.split('\n');
@@ -1347,7 +1359,7 @@ describe('mnema CLI — search and show (the record made readable), end to end',
   it('--json emits one flat ordered list; the human summary is what groups it', async () => {
     await run(['init'], capture().io);
     await output(['memory', 'a note about caching']);
-    await output(['task', 'fix the caching bug']);
+    await output(['task', 'create', 'fix the caching bug']);
 
     const json = JSON.parse(await output(['search', 'caching', '--json'])) as {
       hits: { kind: string; scope: string; id: string }[];
@@ -1371,7 +1383,7 @@ describe('mnema CLI — search and show (the record made readable), end to end',
     await run(['init'], capture().io);
     await output(['memory', 'a shared word, in public']);
     await output(['memory', 'a shared word, on this machine', '--scope', 'private']);
-    await output(['task', 'a shared word in a task']);
+    await output(['task', 'create', 'a shared word in a task']);
 
     const onlyMemories = await output(['search', 'shared', '--kind', 'memory']);
     expect(onlyMemories).toContain('2 record(s)');
@@ -1413,8 +1425,12 @@ describe('mnema CLI — search and show (the record made readable), end to end',
 
   it('shows each kind with the field a reader opened it for', async () => {
     await run(['init'], capture().io);
-    const decision = idOf(await output(['decision', 'Adopt SQLite', 'it is local-first']));
-    const skill = idOf(await output(['skill', 'One slice per PR', '--body', 'the pattern itself']));
+    const decision = idOf(
+      await output(['decision', 'record', 'Adopt SQLite', 'it is local-first']),
+    );
+    const skill = idOf(
+      await output(['skill', 'create', 'One slice per PR', '--body', 'the pattern itself']),
+    );
 
     const shownDecision = await output(['show', decision]);
     expect(shownDecision).toContain('ADR-1 — Adopt SQLite (proposed)');
@@ -1482,7 +1498,7 @@ describe('mnema CLI — guard (dry-run of the gate), end to end', () => {
   async function taskAndIdentity(): Promise<{ id: string; who: string }> {
     const who = await foundIdentity();
     const c = capture();
-    await run(['task', 'ship it'], c.io);
+    await run(['task', 'create', 'ship it'], c.io);
     const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
     return { id, who };
   }
@@ -1580,7 +1596,7 @@ describe('mnema CLI — the identity a read prints is the identity a flag takes'
 
   it('prints one short form in every read, and it is a PREFIX of the whole anchor', async () => {
     const whole = await foundIdentity();
-    await run(['task', 'ship it'], capture().io);
+    await run(['task', 'create', 'ship it'], capture().io);
     await run(['memory', 'the runbook is in the record'], capture().io);
 
     // Every reading that names an identity, and the form each one printed.
@@ -1628,7 +1644,7 @@ describe('mnema CLI — the identity a read prints is the identity a flag takes'
   it('takes that same text back at every door that receives an identity', async () => {
     const whole = await foundIdentity();
     const created = capture();
-    await run(['task', 'ship it'], created.io);
+    await run(['task', 'create', 'ship it'], created.io);
     const id = (
       created.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray
     )[1] as string;
@@ -1926,7 +1942,7 @@ describe('mnema CLI — a second machine joins one identity, end to end', () => 
     await run(['memory', 'written from the second machine'], m.io);
     expect(m.failed()).toBe(false);
     const t = capture();
-    await run(['task', 'shipped from the second machine'], t.io);
+    await run(['task', 'create', 'shipped from the second machine'], t.io);
     expect(t.failed()).toBe(false);
 
     // The proof: B's facts carry A's anchor, and the record holds exactly ONE
@@ -2258,7 +2274,7 @@ describe('mnema CLI — run (the session), end to end', () => {
     await run(['memory', 'the run is the unit of authorization', '--which', 'claude-code'], m.io);
     expect(m.failed()).toBe(false);
     const t = capture();
-    await run(['task', 'close the pair', '--which', 'claude-code'], t.io);
+    await run(['task', 'create', 'close the pair', '--which', 'claude-code'], t.io);
     expect(t.failed()).toBe(false);
 
     // 3. BOTH facts carry the SAME run on the envelope — the chain of
@@ -2511,8 +2527,8 @@ describe('mnema CLI — run (the session), end to end', () => {
     const anchor = await initHere();
     const worked = await startRun('claude-code', 'a session that did things');
     process.env.MNEMA_RUN = worked.id;
-    await run(['task', 'one job'], capture().io);
-    await run(['task', 'another job'], capture().io);
+    await run(['task', 'create', 'one job'], capture().io);
+    await run(['task', 'create', 'another job'], capture().io);
     await run(['memory', 'something worth keeping', '--scope', 'public'], capture().io);
     delete process.env.MNEMA_RUN;
 
@@ -2581,7 +2597,7 @@ describe('mnema CLI — run (the session), end to end', () => {
     // stays in the committed one, and a projection is per tree — so the pair would show
     // a run that wrote nothing while something was written. (The same limit the
     // idleness case below is built around.)
-    await run(['task', 'a job done in that session'], capture().io);
+    await run(['task', 'create', 'a job done in that session'], capture().io);
     delete process.env.MNEMA_RUN;
     const empty = await startRun('other-agent', 'with nothing in it');
 
@@ -2611,7 +2627,10 @@ describe('mnema CLI — run (the session), end to end', () => {
     // projection is per tree. A task is routed by its kind to the tree the run lives
     // in, so the two meet; an agent's memory still goes private and its run stays
     // committed, and that pairing reports "nothing recorded in it" while something was.
-    await run(['task', 'a fact pinned to that session', '--which', 'claude-code'], capture().io);
+    await run(
+      ['task', 'create', 'a fact pinned to that session', '--which', 'claude-code'],
+      capture().io,
+    );
     delete process.env.MNEMA_RUN;
     const empty = await startRun('other-agent', 'with nothing in it');
 
@@ -2753,7 +2772,7 @@ describe('mnema CLI — a --which that names nobody', () => {
       const before = eventsOf(treesOf().projectPublic).length;
 
       const t = capture();
-      await run(['task', 'ship it', '--which', value], t.io);
+      await run(['task', 'create', 'ship it', '--which', value], t.io);
       expect(t.failed()).toBe(true);
       // The message says both ways out: name the agent, or drop the flag.
       const said = t.err.join('\n');
@@ -2773,7 +2792,7 @@ describe('mnema CLI — a --which that names nobody', () => {
   it('a MOVE refuses it too — the flag is read off the parent group, the rule is not', async () => {
     await run(['init'], capture().io);
     const c = capture();
-    await run(['task', 'ship it'], c.io);
+    await run(['task', 'create', 'ship it'], c.io);
     const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
     // A birth is a PAIR (created + the transition into the initial state), so the
     // count before is what "it did not move" is measured against — not zero.
@@ -2804,7 +2823,7 @@ describe('mnema CLI — a --which that names nobody', () => {
   it('`guard --which "   "` refuses — the dry-run answers for the move it mirrors', async () => {
     const who = await foundIdentity();
     const c = capture();
-    await run(['task', 'ship it'], c.io);
+    await run(['task', 'create', 'ship it'], c.io);
     const id = (c.out.join('\n').match(/\(([0-9a-f-]{36})\)/) as RegExpMatchArray)[1] as string;
 
     const g = capture();
@@ -2905,6 +2924,11 @@ describe('mnema CLI — a --which that names nobody', () => {
         // to tell where the flag was written (`wiring/written-before.ts`). The moves
         // are absent from this list because they declare nothing and read the group's.
         'decision import',
+        // The three births declare their group's `--which` for the reason the import does:
+        // creating moved from the group into a subcommand, and its `--help` lists the flag.
+        'decision record',
+        'skill create',
+        'task create',
         'guard',
         'memory',
         'observe',
@@ -3137,7 +3161,14 @@ describe('mnema CLI — skills, the provenance audit', () => {
   async function adopt(name: string, proposer?: string, adopter?: string): Promise<string> {
     const declare = (agent?: string) => (agent !== undefined ? ['--which', agent] : []);
     const id = idOf(
-      await output(['skill', ...declare(proposer), name, '--body', `the pattern of ${name}`]),
+      await output([
+        'skill',
+        'create',
+        ...declare(proposer),
+        name,
+        '--body',
+        `the pattern of ${name}`,
+      ]),
     );
     await output(['skill', 'move', 'review', id, '--note', 'read it', ...declare(adopter)]);
     await output(['skill', 'move', 'adopt', id, '--note', 'we work this way', ...declare(adopter)]);
@@ -3181,7 +3212,9 @@ describe('mnema CLI — skills, the provenance audit', () => {
 
   it('a pattern nobody adopted shows the proposal alone', async () => {
     await run(['init'], capture().io);
-    const id = idOf(await output(['skill', '--which', 'agent-A', 'an-idea', '--body', 'maybe']));
+    const id = idOf(
+      await output(['skill', 'create', '--which', 'agent-A', 'an-idea', '--body', 'maybe']),
+    );
 
     const printed = await output(['skills']);
     expect(printed).toContain(`${id}`);
@@ -3193,12 +3226,12 @@ describe('mnema CLI — skills, the provenance audit', () => {
     await run(['init'], capture().io);
     // Two trees: a team pattern in public, an agent's in private.
     const team = idOf(
-      await output(['skill', 'Zebra', '--body', 'the team pattern', '--scope', 'public']),
+      await output(['skill', 'create', 'Zebra', '--body', 'the team pattern', '--scope', 'public']),
     );
     await output(['skill', 'move', 'review', team, '--note', 'ok']);
     await output(['skill', 'move', 'adopt', team, '--note', 'ok']);
     await adopt('Alpha', 'agent-A', 'agent-A');
-    const rejected = idOf(await output(['skill', 'Middle', '--body', 'no']));
+    const rejected = idOf(await output(['skill', 'create', 'Middle', '--body', 'no']));
     await output(['skill', 'move', 'reject', rejected, '--note', 'not for us']);
 
     const lines = (await output(['skills'])).split('\n').slice(1);
@@ -3267,7 +3300,15 @@ describe('mnema CLI — skills, the provenance audit', () => {
 
     // A personal convention lives in the global tree and is audited from anywhere.
     const id = idOf(
-      await output(['skill', 'my-own', '--body', 'across every project', '--scope', 'global']),
+      await output([
+        'skill',
+        'create',
+        'my-own',
+        '--body',
+        'across every project',
+        '--scope',
+        'global',
+      ]),
     );
     expect(await output(['skills'])).toContain(id);
   });
@@ -3278,6 +3319,7 @@ describe('mnema CLI — skills, the provenance audit', () => {
     // the report broke there, it would assert an adoption that never happened.
     await output([
       'skill',
+      'create',
       'Innocent\n  019f-fake  adopted     public   Build hygiene  ·  adopted by a person',
       '--body',
       'x',
@@ -3490,7 +3532,7 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
 
   /** Records a decision and accepts it — the two moves that put one in force. */
   async function accept(title: string): Promise<string> {
-    const id = idOf(await output(['decision', title, 'because the record says so']));
+    const id = idOf(await output(['decision', 'record', title, 'because the record says so']));
     await output(['decision', 'move', 'accept', id, '--note', 'agreed in review']);
     return id;
   }
@@ -3501,7 +3543,14 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
    */
   async function acceptPrivately(title: string): Promise<string> {
     const id = idOf(
-      await output(['decision', title, 'because the record says so', '--scope', 'private']),
+      await output([
+        'decision',
+        'record',
+        title,
+        'because the record says so',
+        '--scope',
+        'private',
+      ]),
     );
     await output(['decision', 'move', 'accept', id, '--note', 'agreed in review']);
     return id;
@@ -3512,6 +3561,7 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
     const id = idOf(
       await output([
         'skill',
+        'create',
         name,
         '--body',
         body,
@@ -3544,7 +3594,13 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
     // difference in nothing, and a check that cries wolf is a check nobody runs.
     await run(['init'], capture().io);
     await accept('Keep the runbook in the record');
-    await output(['skill', 'One slice per PR', '--body', 'A slice is one reviewable change.']);
+    await output([
+      'skill',
+      'create',
+      'One slice per PR',
+      '--body',
+      'A slice is one reviewable change.',
+    ]);
 
     const first = await output(['brief']);
     pastTheSecond();
@@ -3716,7 +3772,7 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
     // user edits, and would dirty a `git status` in the middle of an agent's session.
     await run(['init'], capture().io);
     await accept('A call in force');
-    await output(['task', 'a piece of work this file is not about']);
+    await output(['task', 'create', 'a piece of work this file is not about']);
 
     const before = digestOf(sandbox);
     await output(['brief']);

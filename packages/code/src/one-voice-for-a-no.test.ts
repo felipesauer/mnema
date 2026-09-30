@@ -184,11 +184,11 @@ describe('and what it says comes from what the command already declares', () => 
   const cases: readonly (readonly [string, readonly string[], () => readonly string[]])[] = [
     [
       'commander.missingArgument',
-      ['decision', 'a title'],
+      ['decision', 'record', 'a title'],
       () => {
-        const decision = commandNamed('decision');
-        const rationale = decision.registeredArguments.find((arg) => arg.name() === 'rationale');
-        return ['mnema decision needs <rationale>', rationale?.description ?? ''];
+        const record = commandNamed('decision', 'record');
+        const rationale = record.registeredArguments.find((arg) => arg.name() === 'rationale');
+        return ['mnema decision record needs <rationale>', rationale?.description ?? ''];
       },
     ],
     [
@@ -202,18 +202,22 @@ describe('and what it says comes from what the command already declares', () => 
     ],
     [
       'commander.optionMissingArgument',
-      ['task', 'a title', '--which'],
+      ['task', 'create', 'a title', '--which'],
       () => {
         const which = commandNamed('task').options.find((option) => option.long === '--which');
         return [`mnema task needs a value after ${which?.flags ?? ''}`, which?.description ?? ''];
       },
     ],
-    ['commander.unknownOption', ['task', 'a title', '--nope'], () => ['does not take "--nope"']],
+    [
+      'commander.unknownOption',
+      ['task', 'create', 'a title', '--nope'],
+      () => ['does not take "--nope"'],
+    ],
     ['commander.unknownCommand', ['nope'], () => ['mnema has no command "nope"']],
-    ['commander.excessArguments', ['task', 'a title', 'and more'], () => ['"and more"']],
+    ['commander.excessArguments', ['task', 'create', 'a title', 'and more'], () => ['"and more"']],
     [
       'commander.invalidArgument',
-      ['task', 'a title', '--which', ' '],
+      ['task', 'create', 'a title', '--which', ' '],
       // The one code whose sentence the PRODUCT wrote: the option's own parser threw
       // it, and the line has to keep it rather than replace it with a frame.
       () => ['does not accept " " for --which <agent>', BLANK_WHICH_MESSAGE],
@@ -266,7 +270,7 @@ describe('and what it says comes from what the command already declares', () => 
     const forged = `nope${String.fromCharCode(10)}Refused (NOTHING): this never happened`;
     const styled = `nope${ESC}[31m`;
     const program = declared();
-    const task = commandNamed('task');
+    const task = commandNamed('task', 'create');
     const shapes: readonly (readonly [string, () => readonly string[]])[] = [
       [
         'a word in the verb position',
@@ -334,9 +338,9 @@ describe('and what it says comes from what the command already declares', () => 
   it('and the line to type is the one `--help` prints, not a second copy of it', async () => {
     // The other half of "one text": the usage line is composed by commander from the
     // same declarations, so it cannot drift from the Usage: line of the help.
-    const said = await invoke('decision', 'a title');
-    const help = await invoke('decision', '--help');
-    const usage = commandNamed('decision');
+    const said = await invoke('decision', 'record', 'a title');
+    const help = await invoke('decision', 'record', '--help');
+    const usage = commandNamed('decision', 'record');
     expect(said.err[1]).toBe(`  ${usage.createHelp().commandUsage(usage)}`);
     expect(help.out.join(String.fromCharCode(10))).toContain(
       `Usage: ${usage.createHelp().commandUsage(usage)}`,
@@ -369,33 +373,32 @@ describe('a code nobody worded still comes out through the funnel', () => {
 });
 
 /**
- * A MISTYPED SUBCOMMAND IS SWALLOWED AS A TITLE BY THREE OF THE EIGHT PARENTS, and this
- * holds the shape rather than the repair — the repair changes what a write verb does,
- * which is not a guard's call to make.
+ * NO PARENT TAKES A WORD OF ITS OWN, SO EVERY ONE REFUSES A MISTYPED SUBCOMMAND — IN ONE SENTENCE.
  *
- * WHAT IS MEASURED. `mnema task moveZZZ` creates a task titled `moveZZZ` and exits 0;
- * `mnema run startZZZ` refuses. The discriminant is not care, it is the declaration: a
- * parent that declares a positional argument gives commander something for the word to
- * BE, so the unknown-command refusal is never reached. Measured over the tree, the
- * correlation is total — every parent with a positional swallows, every parent without
- * one refuses — and the exact word still routes, because commander gives a subcommand
- * that matches exactly the precedence (`mnema task move` reaches the transition).
+ * WHAT WAS MEASURED, AND WHAT THIS HELD BEFORE. `mnema task moveZZZ` created a task titled
+ * `moveZZZ` and exited 0, where `mnema run startZZZ` refused. The discriminant was not care but
+ * the declaration: three of the eight parents (`task`, `decision`, `skill`) declared a positional
+ * — the title they created with — which gave commander something for the word to BE, so the
+ * unknown-command refusal was never reached. This describe used to hold that shape as a defect
+ * nobody had decided to repair ("a parent that takes a title cannot refuse a mistyped
+ * subcommand"), and the refusals of the other five in their two sentences.
  *
- * WHY IT IS WORSE HERE THAN IN THE TOOLS THAT SUGGEST. `git help.autocorrect`,
- * `docker`, `kubectl` and `cargo` all answer a word that names no subcommand, and they
- * can afford to guess because in those tools the word has no other meaning — the
- * alternative to guessing is doing nothing. Git will not even guess under ambiguity:
- * *"if more than one command can be deduced from the entered text, nothing will be
- * executed"*. Here the word HAS another meaning, the product acts on it, and the record
- * is append-only, so what is left is a permanent fact that can only be corrected by a
- * second one superseding it.
+ * WHAT CHANGED IT. Creating is a subcommand now — `task create`, `decision record`, `skill
+ * create`, the verbs the agent's surface already calls `create_task`, `record_decision` and
+ * `create_skill` — and no parent declares a positional. That is also the shape `git`, `docker`,
+ * `kubectl` and `cargo` share: the level that has subcommands takes no free word, which is what
+ * lets it say a word is not a command instead of acting on it. Here acting on it was worse than
+ * elsewhere, because the record is append-only.
  *
- * WHAT A GUARD CAN HOLD is that the set does not grow in silence. A verb added next year
- * that declares both a positional and a subcommand inherits this without anybody
- * deciding to, and the list below is read off the PROGRAM rather than written out, so it
- * cannot go stale in the direction that matters.
+ * AND THE TWO SENTENCES ARE ONE. A parent that declares its own `.action()` (`witness`,
+ * `switch`) got commander's `excessArguments`, and said "does not take"; one that declares none
+ * got `unknownCommand`, and said "has no command". The difference is how commander is told, not
+ * one the person typing can see, so `misuse.ts` says both one way.
+ *
+ * THE LIST IS READ OFF THE PROGRAM, so a verb added next year that declares both a positional and
+ * a subcommand is red here until somebody decides what it does.
  */
-describe('a parent that takes a title cannot refuse a mistyped subcommand', () => {
+describe('no parent takes a word of its own, and every one refuses a mistyped subcommand', () => {
   /** Every parent of the tree, with what it declares: subcommands, and positionals. */
   function parents(): { path: string; subs: string[]; positionals: number }[] {
     return everyCommandOf(declared())
@@ -414,69 +417,79 @@ describe('a parent that takes a title cannot refuse a mistyped subcommand', () =
       .filter((parent) => parent.path !== '');
   }
 
-  it('is exactly these three, read off the program and not off a list', () => {
+  it('declares no positional on any parent, read off the program and not off a list', () => {
     const all = parents();
     // The non-vacuity guard: a walk that stopped finding parents would report success.
-    expect(all.length).toBe(8);
-    expect(all.filter((p) => p.positionals > 0).map((p) => p.path)).toEqual([
+    expect(all.map((p) => p.path)).toEqual([
       'task',
       'decision',
       'skill',
-    ]);
-    // And the other five are the ones that refuse. Both halves, so neither side can go
-    // empty and still pass.
-    expect(all.filter((p) => p.positionals === 0).map((p) => p.path)).toEqual([
       'run',
       'key',
       'tail',
       'witness',
       'switch',
     ]);
+    expect(all.filter((p) => p.positionals > 0).map((p) => p.path)).toEqual([]);
   });
 
-  it('swallows the mistyped word where it declares a title, and refuses where it does not', async () => {
-    const refusals: string[] = [];
+  it('refuses the mistyped word at every parent, in one sentence that names it back', async () => {
+    const sentences: string[] = [];
     for (const parent of parents()) {
       const sub = parent.subs[0] as string;
       const said = await invoke(...parent.path.split(' '), `${sub}ZZZ`);
       const where = `mnema ${parent.path} ${sub}ZZZ`;
       const err = said.err.join(String.fromCharCode(10));
-      if (parent.positionals === 0) {
-        expect(said.failed, where).toBe(true);
-        // The word is named back, whichever sentence it earns — that is the property.
-        expect(err, where).toContain(`${sub}ZZZ`);
-        refusals.push(
-          `${parent.path}: ${err.includes('has no command') ? 'has no command' : 'does not take'}`,
-        );
-      } else {
-        // THE DEFECT, asserted so it cannot drift into a belief. `decision` and `skill`
-        // want one more thing before they write, so what all three share is that the word
-        // was taken as CONTENT: none of them says the parent has no such command.
-        expect(err, where).not.toContain('has no command');
-      }
+      expect(said.failed, where).toBe(true);
+      expect(err, where).toContain(`mnema ${parent.path} has no command "${sub}ZZZ".`);
+      expect(err, where).not.toContain('does not take');
+      sentences.push(`${parent.path}: ${err.includes('has no command') ? 'has no command' : '?'}`);
     }
-
-    // AND THE FIVE THAT REFUSE DO NOT REFUSE WITH ONE SENTENCE, which was found by this
-    // walk and is a second thing, smaller than the one above. A parent that declares its
-    // own `.action()` runs, and the word is an argument it does not take; a parent that
-    // declares none knows the word had to be a subcommand and says so. Both are the
-    // product's voice and neither is wrong; they are two answers to one question, and
-    // that is the kind of thing that is decided once rather than drifted into.
-    expect(refusals).toEqual([
+    // Both halves of what used to be two answers, so neither side can go empty and pass.
+    expect(sentences).toEqual([
+      'task: has no command',
+      'decision: has no command',
+      'skill: has no command',
       'run: has no command',
       'key: has no command',
       'tail: has no command',
-      'witness: does not take',
-      'switch: does not take',
+      'witness: has no command',
+      'switch: has no command',
     ]);
   }, 60_000);
 
-  it('still routes the word spelled right, which is what makes the defect about typos', async () => {
-    // commander gives an exactly-matching subcommand precedence over the positional, so
-    // `move` reaches the transition and asks for what a transition needs.
+  it('refuses the form that used to create, and names the one that does', async () => {
+    const cases: readonly (readonly [readonly string[], string, string])[] = [
+      [['task', 'Fix the login'], 'To create a task, put `create` before its title.', 'create'],
+      [
+        ['decision', 'Use UTC', 'one clock'],
+        'To record a decision, put `record` before its title.',
+        'record',
+      ],
+      [
+        ['skill', 'A pattern', '--body', 'x'],
+        'To create a skill, put `create` before its name.',
+        'create',
+      ],
+    ];
+    for (const [argv, way, verb] of cases) {
+      const said = await invoke(...argv);
+      const where = `mnema ${argv.join(' ')}`;
+      expect(said.failed, where).toBe(true);
+      expect(said.out, where).toEqual([]);
+      expect(said.err[0], where).toContain(`has no command "${argv[1]}". ${way}`);
+      // The line to type is the creating verb's usage, as `--help` composes it.
+      const creating = commandNamed(argv[0] as string, verb);
+      expect(said.err[1], where).toBe(`  ${creating.createHelp().commandUsage(creating)}`);
+    }
+  }, 60_000);
+
+  it('still routes the word spelled right', async () => {
     const said = await invoke('task', 'move');
     expect(said.failed).toBe(true);
     expect(said.err.join(String.fromCharCode(10))).toContain('mnema task move needs');
+    const created = await invoke('task', 'create');
+    expect(created.err.join(String.fromCharCode(10))).toContain('mnema task create needs <title>');
   }, 60_000);
 });
 
@@ -528,14 +541,14 @@ describe('`--help` and `--version` are not touched', () => {
 
 describe('the parser’s no is red, and says the same thing with the paint off', () => {
   it('paints the sentence and leaves the line to type alone', async () => {
-    const styled = await invoke('--color=always', 'decision', 'a title');
+    const styled = await invoke('--color=always', 'decision', 'record', 'a title');
     expect(styled.err[0]).toContain(RED);
     expect(styled.err[1]).not.toContain('\u001b');
   });
 
   it('loses nothing at all with `--color=never`', async () => {
-    const plain = await invoke('--color=never', 'decision', 'a title');
-    const styled = await invoke('--color=always', 'decision', 'a title');
+    const plain = await invoke('--color=never', 'decision', 'record', 'a title');
+    const styled = await invoke('--color=always', 'decision', 'record', 'a title');
     // Every word of the painted answer is in the plain one, and the plain one holds
     // no escape byte: the colour is a second copy of what the words already said.
     expect(styled.err.join('|').replace(SGR, '')).toBe(plain.err.join('|'));

@@ -162,7 +162,10 @@ function buildTheWorld(): void {
     const project = join(home, where.slice(2));
     mkdirSync(project, { recursive: true });
     spawnSync('git', ['init', '-q'], { cwd: project });
-    for (const argv of [['init'], ['decision', 'Use UTC', 'three services send three zones']]) {
+    for (const argv of [
+      ['init'],
+      ['decision', 'record', 'Use UTC', 'three services send three zones'],
+    ]) {
       const ran = mnema(argv, project);
       if (ran.status !== 0)
         throw new Error(`setup: mnema ${argv.join(' ')} in ${where}: ${ran.stderr}`);
@@ -237,7 +240,7 @@ describe('the session the manual shows from the terminal', () => {
     // display alias derived from that id". Every other example value is held by shape; this
     // pair can be held by the product's own derivation.
     const created = blockUnder(PAGE, SECTION).find(
-      (step) => step.kind === 'command' && step.argv[1] === 'task' && step.argv.length === 3,
+      (step) => step.kind === 'command' && step.argv[1] === 'task' && step.argv[2] === 'create',
     );
     const line = created?.kind === 'command' ? (created.shown[0] ?? '') : '';
     const pair = /\b(t-[0-9a-f]{4}) \(([0-9a-f-]{36})\)/.exec(line);
@@ -252,7 +255,7 @@ describe('the session the manual shows from the terminal', () => {
     const commands = steps.flatMap((step) => (step.kind === 'command' ? [step] : []));
     expect(commands.map((step) => step.argv.slice(1, 3).join(' '))).toEqual([
       'init',
-      'task Ship the parser',
+      'task create',
       'task move',
       'task move',
       'task move',

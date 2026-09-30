@@ -1,0 +1,108 @@
+[
+  {
+    "case": "c0",
+    "what": "control, 100 ASCII",
+    "host": "claude-cli/2.1.281 (external, sdk-cli)",
+    "exit": "exit=0",
+    "hooks": [
+      {
+        "tag": "a0",
+        "units": 100,
+        "codePoints": 100,
+        "bytes": 100,
+        "arrived": "whole",
+        "unitsInTheRequest": 100
+      }
+    ]
+  },
+  {
+    "case": "c1",
+    "what": "10,000 ASCII",
+    "host": "claude-cli/2.1.281 (external, sdk-cli)",
+    "exit": "exit=0",
+    "hooks": [
+      {
+        "tag": "a1",
+        "units": 10000,
+        "codePoints": 10000,
+        "bytes": 10000,
+        "arrived": "whole",
+        "unitsInTheRequest": 10000
+      }
+    ]
+  },
+  {
+    "case": "c2",
+    "what": "10,001 ASCII",
+    "host": "claude-cli/2.1.281 (external, sdk-cli)",
+    "exit": "exit=0",
+    "hooks": [
+      {
+        "tag": "a2",
+        "units": 10001,
+        "codePoints": 10001,
+        "bytes": 10001,
+        "arrived": "replaced",
+        "unitsInTheRequest": 2000,
+        "frame": "SessionStart hook additional context: <persisted-output>\nOutput too large (9.8KB). Full output saved to: <path in the session directory>\n\nPreview (first 2KB):\n"
+      }
+    ]
+  },
+  {
+    "case": "c3a",
+    "what": "9,999 ASCII + U+1F600",
+    "host": "claude-cli/2.1.281 (external, sdk-cli)",
+    "exit": "exit=0",
+    "hooks": [
+      {
+        "tag": "a3",
+        "units": 10001,
+        "codePoints": 10000,
+        "bytes": 10003,
+        "arrived": "replaced",
+        "unitsInTheRequest": 2000,
+        "frame": "SessionStart hook additional context: <persisted-output>\nOutput too large (9.8KB). Full output saved to: <path in the session directory>\n\nPreview (first 2KB):\n"
+      }
+    ]
+  },
+  {
+    "case": "c3b",
+    "what": "9,998 ASCII + U+2014 + ASCII",
+    "host": "claude-cli/2.1.281 (external, sdk-cli)",
+    "exit": "exit=0",
+    "hooks": [
+      {
+        "tag": "a4",
+        "units": 10000,
+        "codePoints": 10000,
+        "bytes": 10002,
+        "arrived": "whole",
+        "unitsInTheRequest": 10000
+      }
+    ]
+  },
+  {
+    "case": "c4",
+    "what": "two hooks of one event, 9,000 ASCII each",
+    "host": "claude-cli/2.1.281 (external, sdk-cli)",
+    "exit": "exit=0",
+    "hooks": [
+      {
+        "tag": "a5",
+        "units": 9000,
+        "codePoints": 9000,
+        "bytes": 9000,
+        "arrived": "whole",
+        "unitsInTheRequest": 9000
+      },
+      {
+        "tag": "b5",
+        "units": 9000,
+        "codePoints": 9000,
+        "bytes": 9000,
+        "arrived": "whole",
+        "unitsInTheRequest": 9000
+      }
+    ]
+  }
+]

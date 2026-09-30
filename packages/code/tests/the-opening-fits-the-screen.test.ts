@@ -155,7 +155,7 @@ beforeAll(async () => {
 
   const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
   await run(['init'], io);
-  await run(['task', 'the task the opening is counted over'], io);
+  await run(['task', 'create', 'the task the opening is counted over'], io);
 
   environment = {
     ...process.env,
