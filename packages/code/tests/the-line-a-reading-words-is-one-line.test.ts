@@ -1046,7 +1046,7 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the trees that were looked in — closed words, joined by this report',
   },
-  'tails.ts «{} tail(s):» tails.length #1': {
+  'tails.ts «{} tail(s) holding events — the ones a cut can name:» tails.length #1': {
     verdict: 'minted',
     why: 'how many tails follow — the count the rows are counted by',
   },

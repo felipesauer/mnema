@@ -781,8 +781,8 @@ $ mnema tail --help
 |   -h, --help              display help for command
 |
 | Commands:
-|   list                    list the tails the record holds here, with the id
-|                           `prune` takes
+|   list                    list the tails that hold events here — the ones a cut
+|                           can name — with the id `prune` takes
 |   prune [options] <tail>  record that one whole tail was authorized to be cut
 |                           (it removes nothing)
 |   help [command]          display help for command
@@ -1302,7 +1302,8 @@ $ mnema key revoke --help
 $ mnema tail list --help
 | Usage: mnema tail list [options]
 |
-| list the tails the record holds here, with the id `prune` takes
+| list the tails that hold events here — the ones a cut can name — with the id
+| `prune` takes
 |
 | Options:
 |   -h, --help  display help for command

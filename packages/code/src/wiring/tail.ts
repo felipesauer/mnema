@@ -73,7 +73,9 @@ export function registerTail(program: Command, wiring: Wiring): Declared {
 
   tail
     .command('list')
-    .description('list the tails the record holds here, with the id `prune` takes')
+    .description(
+      'list the tails that hold events here — the ones a cut can name — with the id `prune` takes',
+    )
     .addHelpText(
       'after',
       [

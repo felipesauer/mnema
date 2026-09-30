@@ -148,6 +148,17 @@ describe('witness and verify count the same tails', () => {
     expect(upgraded.out.join(' / ')).toContain('skipped — the tail has no checkpoint to witness');
   });
 
+  it('tail list says it counts the tails holding events, which is not the count verify gives', async () => {
+    // The one reading that still leaves the empty tail out, and does it on purpose: it lists
+    // what a cut can name, and a tail with no event holds nothing to cut. Over the SAME record
+    // the two numbers differ by that tail, so the first line says which question it answers.
+    anEmptyTail();
+    const verified = await mnema('verify');
+    const listed = await mnema('tail', 'list');
+    expect(tailsVerified(verified)).toBe(2);
+    expect(listed.out[0]).toBe('1 tail(s) holding events — the ones a cut can name:');
+  });
+
   it('still refuses to stamp a tree whose only tail is empty — nothing is recorded there', async () => {
     // The listing counts the empty tail now; the refusal is about there being nothing to
     // witness, and a tree holding only an ownership proof holds nothing. Asked of this machine's

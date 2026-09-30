@@ -555,7 +555,7 @@ the tree the waiver will land in, and whether a cut of it is already authorized:
 
 ```sh
 mnema tail list
-#> 2 tail(s):
+#> 2 tail(s) holding events — the ones a cut can name:
 #>   8f21ab…-3c9d0e…  public   41 event(s) through 5e4391d8…  the tail of mnid:60a50d38…  ·  no waiver
 #>   4b90cd…-7ae112…  private  12 event(s) through 9c02f7a1…  the tail of mnid:c0fc3c71…  ·  no waiver
 ```
