@@ -176,10 +176,19 @@ Only §6.2 refuses it, which is the whole difference between *the signature veri
 a program that has never seen the implementation. Twenty-five places where the document was
 not enough for that, each one written down. **A refusal for every mutation in `mutate.py`,
 with no exception** — the exception used to be the one that existed to demonstrate an
-acceptance, and there is no acceptance left to demonstrate. **No disagreement with the
-product left**: there was one, and it was not an ambiguity of the document — §8 named the
-rule and the product did not follow it, so the product changed and the readers now date the
-same record from the same block.
+acceptance, and there is no acceptance left to demonstrate. **One disagreement with the
+product left, and it is pinned.** This paragraph used to say there was none, and a case in
+`packages/chain/src/chain/second-reader-agrees-on-the-record.test.ts` says otherwise: a tail
+cut in the middle with no `tail.pruned`, keys present and checkpoint signatures valid. The
+product reads a signed range that outruns the entries present as the record contradicting
+itself, and says broken. This reader says INCOMPLETE, because `FORMAT.md` §3 says a reader
+of the document alone cannot tell an authorized cut from tampering and should report the gap
+and stop. Both readings are faithful to the document. The same file pins one more place the
+two verdicts differ, and it is wording rather than disagreement: with the public keys gone,
+the product says broken over a signature it cannot verify, and this reader, unable to ask,
+says INCOMPLETE. The disagreement that was closed was
+not an ambiguity of the document — §8 named the rule and the product did not follow it, so
+the product changed and the readers now date the same record from the same block.
 
 **What it does not buy.** Independence in the *social* sense. Same author, same repository,
 same interest in it working. It is independent in the **technical** sense — another language,

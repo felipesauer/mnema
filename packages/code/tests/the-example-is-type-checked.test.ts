@@ -100,13 +100,13 @@ const RELAXED: Readonly<Record<string, { readonly value: unknown; readonly why: 
     value: false,
     why: 'A declaration file for an extracted block is consumed by nobody — the block is a leaf.',
   },
-  declarationMap: {
-    value: false,
-    why: 'A map back to a block extracted into a sandbox points at a file that is removed when the run ends.',
-  },
   sourceMap: {
     value: false,
-    why: 'The same: there is no emitted file for a map to be about.',
+    why: 'There is no emitted file for a map to be about.',
+  },
+  inlineSources: {
+    value: false,
+    why: 'It fills a map with its source, and with `sourceMap` off `tsc` refuses the setting outright (TS5051) instead of ignoring it.',
   },
   noUnusedLocals: {
     value: false,

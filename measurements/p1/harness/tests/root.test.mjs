@@ -2,9 +2,9 @@
 //
 // This is the test that would have caught the failure it was written after. Two
 // modules counted `..` from their own file to reach the repository root, and both
-// counts were right while the bench lived at `.refactor/active/<bench>/`. The bench
-// was moved one level deeper, into `.refactor/archive/surface-2026-08/<bench>/`, and
-// both landed on `.refactor/`. Nothing announced it: the pre-registration file
+// counts were right while the bench lived in a local, untracked working directory
+// two levels below the repository root. The bench was moved one level deeper, and
+// both landed on that working directory. Nothing announced it: the pre-registration file
 // simply was not there, the product build simply was not there, and the suite came
 // back 34 pass / 28 fail — read as a broken bench rather than as a broken path.
 //

@@ -164,9 +164,8 @@ export function pluginScopedServerName(pluginDir = productPluginDir()) {
  * second is the SERVER NAME: a hook of type `mcp_tool` names the server it calls, a
  * plugin's server is spelled `plugin:<plugin>:<server>`, and a server declared through
  * `--mcp-config` carries its plain name instead — measured, on the real host, with no
- * model, in `.refactor/probes/the-record-asks-for-a-person/asks-a-person.mjs`, which
- * declares the server as `probe` through `--mcp-config` and the hook as `server:
- * 'probe'` through `--settings` and gets the tool called. Left unrewritten the host
+ * model, by a probe that declares the server as `probe` through `--mcp-config` and the
+ * hook as `server: 'probe'` through `--settings` and gets the tool called. Left unrewritten the host
  * would look for a server nothing declares, the tool would never be called, and the
  * failure is SILENT: no error, no warning, and eight cells that read as "the rules did
  * not help" when the rules never arrived. That is the same trap the PATH shim exists
