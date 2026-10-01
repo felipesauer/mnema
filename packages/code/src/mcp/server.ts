@@ -97,6 +97,7 @@ import {
   type ToolAnnotations,
 } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
+import { acceptedByAnAgent } from '../agent-accepts.js';
 import { keyFileLineForAModel } from '../key-file.js';
 import { movedLine } from '../moved-record.js';
 import { passedOverSentences } from '../not-a-project.js';
@@ -1140,7 +1141,10 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         `a reason. \`by\` applies ONLY to supersede; ${DECISION_VERDICTS} ignore it. ` +
         'An illegal move or missing proof is refused with the gate’s reason. The ' +
         'decision is looked for in EVERY project of this workspace and the move lands ' +
-        'in the project that holds it — the id decides, so no `project` is taken.' +
+        'in the project that holds it — the id decides, so no `project` is taken. An ' +
+        'acceptance made through this tool is recorded as an agent’s, says so in the ' +
+        'reply, and is marked as such wherever the decision is read. The switch ' +
+        '`agent-accepts` turns it off, and then an accept is refused.' +
         RECORD_CONTRACT,
       inputSchema: {
         id: z.string().min(1).describe('The decision id to move.'),
@@ -1168,7 +1172,10 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       if (!result.ok) {
         return refused(active, result);
       }
-      return moved(active, movedLine('decision', result.adr, result.id, result.to), result);
+      return moved(active, movedLine('decision', result.adr, result.id, result.to), result, {
+        after:
+          result.acceptedByAgent === undefined ? [] : [acceptedByAnAgent(result.acceptedByAgent)],
+      });
     },
   );
 
@@ -2058,10 +2065,16 @@ function moved(
   session: Session,
   line: string,
   result: Replacement,
+  // What a particular move owes beyond the acknowledgement: today the one sentence an
+  // acceptance by an agent says about itself. A parameter, as `recorded`'s is, so no other
+  // move's reply gains a slot it can never fill.
+  extra: { readonly after?: readonly string[] } = {},
 ): { readonly content: { readonly type: 'text'; readonly text: string }[] } {
-  return replied(session, [[line, ...replacementNotice(result.replaced)].join('\n')], {
-    wrote: true,
-  });
+  return replied(
+    session,
+    [[line, ...(extra.after ?? []), ...replacementNotice(result.replaced)].join('\n')],
+    { wrote: true },
+  );
 }
 
 /**

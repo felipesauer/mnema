@@ -18,6 +18,7 @@ import type { ScanRefusalCode } from '@mnema/core';
 import type { Command } from 'commander';
 import type { runDecisionImport } from '../commands/decision-import.js';
 import type { runDecisionTransition } from '../commands/decision-transition.js';
+import { fact } from '../presentation/detail.js';
 import { RECORD_CONTRACT_HELP, replacementNotice } from '../recorded-content.js';
 import { here } from './context.js';
 import {
@@ -346,6 +347,10 @@ async function reportDecisionMove(
   if (result.ok) {
     const { movedLine } = await import('../moved-record.js');
     to.io.out(movedLine('decision', result.adr, result.id, result.to));
+    if (result.acceptedByAgent !== undefined) {
+      const { acceptedByAnAgent } = await import('../agent-accepts.js');
+      to.io.out(to.render(fact(acceptedByAnAgent(result.acceptedByAgent))));
+    }
     reportReplacement(result, to.io);
     return;
   }

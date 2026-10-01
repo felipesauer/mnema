@@ -529,7 +529,9 @@ export const HANDED_OVER: Readonly<
 > = {
   span: { line: 34, name: 66, flag: 1, unwritten: 0 },
   block: { line: 35, name: 18, flag: 0, unwritten: 0 },
-  source: { line: 34, name: 46, flag: 3, unwritten: 3 },
+  // 46 until the refusal an agent's `accept` gets, with the switch off, began naming the command a
+  // person accepts with (`agent-accepts.ts`).
+  source: { line: 34, name: 47, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

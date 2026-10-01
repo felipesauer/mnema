@@ -166,7 +166,8 @@ export type ModelChannel =
   | 'exported-skill'
   | 'edit-rules-push'
   | 'edit-asks-a-person'
-  | 'host-rules-file';
+  | 'host-rules-file'
+  | 'agent-accepts';
 
 /** The channels that carry a declaration — the ones {@link SUBJECT_OF} answers for. */
 export type FramedChannel =
@@ -285,6 +286,10 @@ export const PUSHED_BY_TOOL: { readonly [tool: string]: readonly FramedChannel[]
 export const UNFRAMED_CHANNELS: {
   readonly [K in Exclude<ModelChannel, FramedChannel>]: string;
 } = {
+  'agent-accepts':
+    'what it carries is the product’s own sentence about an act the agent just made or was turned ' +
+    'away from — that its acceptance was recorded as an agent’s, or that the switch is off — and ' +
+    'no record text, so there is nobody’s words to say whose they are',
   'exported-skill':
     'the file is the recorded body byte for byte, which is what the chain proves about ' +
     'it, and its provenance rides in the frontmatter `metadata` the specification ' +
@@ -305,7 +310,8 @@ export type SwitchableChannel =
   | 'brief-document'
   | 'recall-document'
   | 'edit-rules-push'
-  | 'edit-asks-a-person';
+  | 'edit-asks-a-person'
+  | 'agent-accepts';
 
 /**
  * The two switchable channels, each named once, so no consumer spells one.
@@ -356,6 +362,24 @@ export const EDIT_PUSH_CHANNEL: CountedChannel = 'edit-rules-push';
 export const ASKS_A_PERSON_CHANNEL: CountedChannel = 'edit-asks-a-person';
 
 /**
+ * The channel that lets an AGENT rule a decision in force: ON by default, because an agent
+ * accepting a decision is free — with the record keeping who, the person told, and a switch for
+ * whoever wants it off.
+ *
+ * IT IS A CHANNEL BECAUSE WHAT IT MOVES REACHES A MODEL, in both directions. On, the reply to an
+ * agent's `accept` carries the sentence that says the acceptance was recorded as an agent's; off,
+ * it is a refusal that says why. And the same fact opens the next session: the brief marks every
+ * rule an agent accepted. It is its own switch and not a reading of any other for the reason the
+ * gate is: the person who wants agents to stop ruling rules in force does not want the document
+ * to stop arriving.
+ *
+ * THE POSITIONS ARE THE SAME AS THE OTHERS' IN SHAPE. Elsewhere off means "nothing arrives" and
+ * here it means "an agent's accept is refused" — a gate closed — and a channel nobody switched is
+ * on, which here is a gate open (`agent-accepts.ts` has the decision and who made it).
+ */
+export const AGENT_ACCEPTS_CHANNEL: SwitchableChannel = 'agent-accepts';
+
+/**
  * The switchable channels whose service the record COUNTS — the ones that append a
  * `channel.served` when they speak, once per run.
  *
@@ -390,6 +414,10 @@ export const NOT_COUNTED_AS_SERVED: {
   'recall-document':
     'the notes are printed by `mnema recall`, a read that writes nothing, for the reason the ' +
     'document is not counted',
+  'agent-accepts':
+    'the sentence it hands an agent is the reply to a call that is itself the recorded fact ' +
+    '(the acceptance, whose actor is on its envelope) or is refused and records nothing, so ' +
+    'a second fact saying it was served would repeat the first',
 };
 
 /**
@@ -421,6 +449,10 @@ export const WHAT_STOPS: { readonly [K in SwitchableChannel]: string } = {
   'edit-asks-a-person':
     'the pause before a file is written where the record asks that a person look ' +
     'first — the rules go on arriving, and nothing stops',
+  'agent-accepts':
+    'an agent ruling a decision in force: with it off, an agent’s `accept` is refused and ' +
+    'only a person at the command line can accept — a proposed decision waits, and nothing ' +
+    'else changes',
 };
 
 /**

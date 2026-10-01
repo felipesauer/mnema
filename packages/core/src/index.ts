@@ -99,6 +99,7 @@ export type { ChannelSwitchProjection } from './projections/channel.js';
 export {
   type AdrCollision,
   adrCollisions,
+  type DecisionActor,
   type DecisionProjection,
   projectDecisions,
 } from './projections/decision.js';
