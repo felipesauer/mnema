@@ -334,6 +334,13 @@ export function mirrorOf(real: Command): Command {
     if (option.mandatory) copied.makeOptionMandatory();
     if (option.defaultValue !== undefined) copied.default(option.defaultValue);
     copy.addOption(copied);
+    // ANSWERED LIKE THE VERSION: the program answers `--identify` from a listener of its own and
+    // ends with exit 0 before any verb (`cli.ts`), which no declaration can be read back as.
+    if (option.attributeName() === 'identify') {
+      copy.on('option:identify', () => {
+        throw new CommanderError(0, 'mnema.identify', '');
+      });
+    }
   }
   if (actsOnItsOwn(real)) copy.action(() => {});
   for (const child of real.commands) copy.addCommand(mirrorOf(child));
@@ -536,15 +543,18 @@ export const HANDED_OVER: Readonly<
 > = {
   // name 66 until the page about where the key lives named the verbs that protect it, and the
   // ones that stay unprotected without it (`key protect`, `key unprotect`, `verify`).
-  span: { line: 34, name: 69, flag: 1, unwritten: 0 },
+  // line 34 until the plugin page named `mnema --identify`, the question its hooks ask first.
+  span: { line: 35, name: 69, flag: 1, unwritten: 0 },
   // name 18 until the page that says where the key lives named `mnema key protect` in a line of
   // its own.
-  block: { line: 35, name: 19, flag: 0, unwritten: 0 },
+  // line 35 until the same page showed that question in a block of its own.
+  block: { line: 36, name: 19, flag: 0, unwritten: 0 },
   // 46 until the refusal an agent's `accept` gets, with the switch off, began naming the command a
   // person accepts with (`agent-accepts.ts`).
   // line 34 until the sentences an agent's accept is answered with began handing whole lines
   // over (`agent-accepts.ts`: the read, the person's accept, and the switch in both positions).
-  source: { line: 40, name: 50, flag: 3, unwritten: 3 },
+  // line 40 until the plugin told a session which program answered that question (`hand-over.mjs`).
+  source: { line: 41, name: 50, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

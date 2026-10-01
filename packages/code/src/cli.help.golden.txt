@@ -15,6 +15,10 @@ $ mnema
 !                                         Style never changes what a line says.
 !                                         (choices: "auto", "always", "never",
 !                                         default: "auto")
+!   --identify                            print this program’s package name and
+!                                         version — how the mnema plugin tells
+!                                         this `mnema` from another program of the
+!                                         same name on the PATH
 !   -h, --help                            display help for command
 !
 ! Commands:
@@ -114,6 +118,10 @@ $ mnema --help
 |                                         Style never changes what a line says.
 |                                         (choices: "auto", "always", "never",
 |                                         default: "auto")
+|   --identify                            print this program’s package name and
+|                                         version — how the mnema plugin tells
+|                                         this `mnema` from another program of the
+|                                         same name on the PATH
 |   -h, --help                            display help for command
 |
 | Commands:
