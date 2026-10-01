@@ -24,11 +24,26 @@
  * as it found it (`code/tests/a-refusal-leaves-nothing.test.ts`).
  */
 
-import { committedPublicKey, materializePublicKey } from '@mnema/chain';
+import { type ChainSigner, committedPublicKey, materializePublicKey } from '@mnema/chain';
 import { type ScreenedWrite, screenContent, screened } from '../content/screen.js';
 import { oneLine } from '../one-line.js';
-import { decideAnchor, enrollKey, revokeKey } from '../workflow/identity-operations.js';
-import { type DecideThenWrite, openedContext, signerOfContext } from '../workflow/operations.js';
+import {
+  type Judged,
+  onTheRecordAsItStands,
+  type RecordAndWriter,
+} from '../workflow/as-the-record-stands.js';
+import {
+  type AnchorDecision,
+  decideAnchor,
+  enrollKey,
+  revokeKey,
+} from '../workflow/identity-operations.js';
+import {
+  type DecideThenWrite,
+  openedContext,
+  signerOfContext,
+  type WriteContext,
+} from '../workflow/operations.js';
 import { decodeKeyRequest } from './handshake.js';
 import { membershipIn, provesConsent, rosterOf } from './membership.js';
 
@@ -112,49 +127,63 @@ export function enrollFromRequest(
 
   // WHO this machine is here, decided without writing — and without a writer: an
   // anchor already recorded, one the record proves it joined, or the anchor it is
-  // about to found.
+  // about to found. Read again under the tail's lock if anything landed since
+  // ({@link onTheRecordAsItStands}): a key retired a moment ago by another session can
+  // no longer vouch, and a key enrolled a moment ago is a member already.
   const signer = signerOfContext(ctx);
-  const decided = decideAnchor({ writer: signer, layout: ctx.layout, upcasters: ctx.upcasters });
-  const anchor = decided.anchor;
   const fingerprint = request.key.fingerprint;
+  const writing = writingOnce(ctx);
+  return onTheRecordAsItStands(
+    writing,
+    () => rosterAsItStands(ctx, signer),
+    ({ decided, roster }): Judged<EnrollRequestOk | EnrollRequestErr> => {
+      const anchor = decided.anchor;
+      if (!provesConsent(request.key, anchor, request.reverseSig)) {
+        return {
+          refuse: {
+            ok: false,
+            code: 'UNPROVEN_REQUEST',
+            message:
+              `that request does not prove the key ${oneLine(fingerprint)} consented to join ${oneLine(anchor)} — ` +
+              `a request is made for ONE identity, so check the joining machine asked to join ${oneLine(anchor)} ` +
+              'and not some other',
+          },
+        };
+      }
 
-  if (!provesConsent(request.key, anchor, request.reverseSig)) {
-    return {
-      ok: false,
-      code: 'UNPROVEN_REQUEST',
-      message:
-        `that request does not prove the key ${oneLine(fingerprint)} consented to join ${oneLine(anchor)} — ` +
-        `a request is made for ONE identity, so check the joining machine asked to join ${oneLine(anchor)} ` +
-        'and not some other',
-    };
-  }
+      // The roster as the record proves it now. A tree with no founding yet has an
+      // empty one, and this machine is about to become its only member — which is why
+      // an unfounded tree may still vouch.
+      if (decided.source !== 'unfounded' && !roster.has(signer.signerFingerprint)) {
+        return {
+          refuse: {
+            ok: false,
+            code: 'CANNOT_VOUCH',
+            message:
+              `this machine's key is not currently valid for ${oneLine(anchor)} — the record retired it, ` +
+              'so a vouch it signed would be rejected. Enroll from a machine that is still a member',
+          },
+        };
+      }
+      if (roster.has(fingerprint)) {
+        return { refuse: { ok: true, fingerprint, anchor, alreadyMember: true } };
+      }
 
-  // The roster as the record proves it now. A tree with no founding yet has an
-  // empty one, and this machine is about to become its only member — which is why
-  // an unfounded tree may still vouch.
-  const roster = rosterOf({ tree: ctx.layout.root, upcasters: ctx.upcasters }, anchor);
-  if (decided.source !== 'unfounded' && !roster.has(signer.signerFingerprint)) {
-    return {
-      ok: false,
-      code: 'CANNOT_VOUCH',
-      message:
-        `this machine's key is not currently valid for ${oneLine(anchor)} — the record retired it, ` +
-        'so a vouch it signed would be rejected. Enroll from a machine that is still a member',
-    };
-  }
-  if (roster.has(fingerprint)) {
-    return { ok: true, fingerprint, anchor, alreadyMember: true };
-  }
-
-  // Every refusal the record can give is behind this line, so only now is the tree touched.
-  const write = openedContext(ctx);
-  materializePublicKey(write.layout, request.key);
-  // The vouch's own refusal is forwarded rather than asserted away: it is the one
-  // refusal here that is about the MATERIAL rather than the roster, and it comes
-  // back with nothing appended, so the caller can hear it and act.
-  const joined = enrollKey(write, { newFp: fingerprint, reverseSig: request.reverseSig });
-  if (!joined.ok) return joined;
-  return { ok: true, fingerprint, anchor, alreadyMember: false };
+      return {
+        write: () => {
+          // Every refusal the record can give is behind this line, so only now is the tree touched.
+          const write = writing.opened();
+          materializePublicKey(write.layout, request.key);
+          // The vouch's own refusal is forwarded rather than asserted away: it is the one
+          // refusal here that is about the MATERIAL rather than the roster, and it comes
+          // back with nothing appended, so the caller can hear it and act.
+          const joined = enrollKey(write, { newFp: fingerprint, reverseSig: request.reverseSig });
+          if (!joined.ok) return joined;
+          return { ok: true, fingerprint, anchor, alreadyMember: false };
+        },
+      };
+    },
+  );
 }
 
 /** What retiring a key needs. */
@@ -233,64 +262,116 @@ export function revokeMember(
   ctx: DecideThenWrite,
   input: RevokeMemberInput,
 ): RevokeMemberOk | RevokeMemberErr {
+  // Judged on the roster, and judged AGAIN under the tail's lock when anything landed since
+  // ({@link onTheRecordAsItStands}). Two revocations of two keys of a two-key identity, run
+  // together, each read two keys and each passed the last-key refusal; the identity came out
+  // with none, which is the one state of the roster with no way back.
   const signer = signerOfContext(ctx);
+  const writing = writingOnce(ctx);
+  return onTheRecordAsItStands(
+    writing,
+    () => rosterAsItStands(ctx, signer),
+    ({ decided, roster }): Judged<RevokeMemberOk | RevokeMemberErr> => {
+      const anchor = decided.anchor;
+      if (decided.source !== 'unfounded' && !roster.has(signer.signerFingerprint)) {
+        return {
+          refuse: {
+            ok: false,
+            code: 'CANNOT_VOUCH',
+            message:
+              `this machine's key is not currently valid for ${oneLine(anchor)} — the record retired it, ` +
+              'so a revocation it signed would have no effect. Revoke from a machine that is still a member',
+          },
+        };
+      }
+      if (!roster.has(input.fingerprint)) {
+        return {
+          refuse: {
+            ok: false,
+            code: 'UNKNOWN_KEY',
+            message:
+              `the record does not count ${oneLine(input.fingerprint)} as a key of ${oneLine(anchor)} — ` +
+              'it was never enrolled here, or it was retired already',
+          },
+        };
+      }
+      if (roster.size <= 1) {
+        return {
+          refuse: {
+            ok: false,
+            code: 'LAST_KEY',
+            message:
+              `${oneLine(input.fingerprint)} is the only key ${oneLine(anchor)} has — retiring it would leave the ` +
+              'identity unable to sign anything again, including a repair. Enroll the replacement ' +
+              'first, then retire this one',
+          },
+        };
+      }
+
+      // The reason is free text, and it is screened HERE, before the writer opens: an
+      // oversize reason is a refusal like the three above, and it must leave the tree as
+      // they do. The mechanism screens it again at the append, which is its own door and
+      // stays one; over text this already cleaned it finds nothing, so what was replaced
+      // is reported from this screening.
+      const text = screenContent({ reason: input.reason });
+      if (!text.ok) return { refuse: text };
+
+      return {
+        write: () => {
+          // Forward the append's refusal rather than asserting success: a reason no read would
+          // accept is the one refusal left, and it comes back with nothing appended.
+          const revoked = revokeKey(writing.opened(), {
+            revokedFp: input.fingerprint,
+            reason: text.fields.reason,
+          });
+          if (!revoked.ok) return revoked;
+          const self = input.fingerprint === signer.signerFingerprint;
+          return {
+            ok: true,
+            fingerprint: input.fingerprint,
+            anchor,
+            self,
+            remaining: roster.size - 1,
+            ...(self ? stillProvenIn(ctx, input.fingerprint) : {}),
+            ...screened(text.replaced),
+          };
+        },
+      };
+    },
+  );
+}
+
+/** Who this machine is in the tree, and the roster of that identity — one reading of both. */
+function rosterAsItStands(
+  ctx: DecideThenWrite,
+  signer: ChainSigner,
+): { readonly decided: AnchorDecision; readonly roster: Set<string> } {
   const decided = decideAnchor({ writer: signer, layout: ctx.layout, upcasters: ctx.upcasters });
-  const anchor = decided.anchor;
-  const roster = rosterOf({ tree: ctx.layout.root, upcasters: ctx.upcasters }, anchor);
-
-  if (decided.source !== 'unfounded' && !roster.has(signer.signerFingerprint)) {
-    return {
-      ok: false,
-      code: 'CANNOT_VOUCH',
-      message:
-        `this machine's key is not currently valid for ${oneLine(anchor)} — the record retired it, ` +
-        'so a revocation it signed would have no effect. Revoke from a machine that is still a member',
-    };
-  }
-  if (!roster.has(input.fingerprint)) {
-    return {
-      ok: false,
-      code: 'UNKNOWN_KEY',
-      message:
-        `the record does not count ${oneLine(input.fingerprint)} as a key of ${oneLine(anchor)} — ` +
-        'it was never enrolled here, or it was retired already',
-    };
-  }
-  if (roster.size <= 1) {
-    return {
-      ok: false,
-      code: 'LAST_KEY',
-      message:
-        `${oneLine(input.fingerprint)} is the only key ${oneLine(anchor)} has — retiring it would leave the ` +
-        'identity unable to sign anything again, including a repair. Enroll the replacement ' +
-        'first, then retire this one',
-    };
-  }
-
-  // The reason is free text, and it is screened HERE, before the writer opens: an
-  // oversize reason is a refusal like the three above, and it must leave the tree as
-  // they do. The mechanism screens it again at the append, which is its own door and
-  // stays one; over text this already cleaned it finds nothing, so what was replaced
-  // is reported from this screening.
-  const text = screenContent({ reason: input.reason });
-  if (!text.ok) return text;
-
-  // Forward the append's refusal rather than asserting success: a reason no read would
-  // accept is the one refusal left, and it comes back with nothing appended.
-  const revoked = revokeKey(openedContext(ctx), {
-    revokedFp: input.fingerprint,
-    reason: text.fields.reason,
-  });
-  if (!revoked.ok) return revoked;
-  const self = input.fingerprint === signer.signerFingerprint;
   return {
-    ok: true,
-    fingerprint: input.fingerprint,
-    anchor,
-    self,
-    remaining: roster.size - 1,
-    ...(self ? stillProvenIn(ctx, input.fingerprint) : {}),
-    ...screened(text.replaced),
+    decided,
+    roster: rosterOf({ tree: ctx.layout.root, upcasters: ctx.upcasters }, decided.anchor),
+  };
+}
+
+/**
+ * The context's writer, opened at most once and only when first asked — which
+ * {@link onTheRecordAsItStands} does after the first reading's last refusal, so a refusal still
+ * leaves the tree as it found it (`code/tests/a-refusal-leaves-nothing.test.ts`). Once: a
+ * deferred context opens a NEW writer each time it is asked, and a second writer of one tail
+ * in one process would wait on the first's lock.
+ */
+function writingOnce(ctx: DecideThenWrite): RecordAndWriter & { opened(): WriteContext } {
+  let opened: WriteContext | undefined;
+  const open = (): WriteContext => {
+    opened ??= openedContext(ctx);
+    return opened;
+  };
+  return {
+    layout: ctx.layout,
+    get writer() {
+      return open().writer;
+    },
+    opened: open,
   };
 }
 
