@@ -98,6 +98,13 @@ export type {
   NotAReasonErr,
   UnreadableEventErr,
 } from './workflow/append.js';
+// Deciding on the record and appending what was decided, as one act against every other
+// session of this installation: what a write that reads before it appends goes through.
+export {
+  type Judged,
+  onTheRecordAsItStands,
+  type RecordAndWriter,
+} from './workflow/as-the-record-stands.js';
 export {
   type AnchorContext,
   type AnchorDecision,
