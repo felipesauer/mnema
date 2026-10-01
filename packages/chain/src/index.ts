@@ -69,6 +69,7 @@ export {
 export {
   type ChainSigner,
   committedPublicKey,
+  KeyRootBusyError,
   listAnchoredFingerprints,
   listPrivateKeyFingerprints,
   loadOrCreateInstallationId,
