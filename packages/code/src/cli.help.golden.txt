@@ -818,6 +818,10 @@ $ mnema key --help
 |                                   identity (run this on a member)
 |   revoke [options] <fingerprint>  retire a key from this identity, from this
 |                                   point forward
+|   protect                         encrypt this machine's private keys at rest
+|                                   with the passphrase in MNEMA_KEY_PASSPHRASE
+|   unprotect                       write this machine's private keys back in the
+|                                   clear (needs MNEMA_KEY_PASSPHRASE)
 |   help [command]                  display help for command
 
 ### mnema tail --help
@@ -1346,6 +1350,25 @@ $ mnema key revoke --help
 |   Do not record credentials: a recognized format is replaced with a placeholder
 |   and reported back, but what mnema does not recognize is written verbatim.
 |   Each text field holds at most 65536 bytes; a longer one is refused.
+
+### mnema key protect --help
+$ mnema key protect --help
+| Usage: mnema key protect [options]
+|
+| encrypt this machine's private keys at rest with the passphrase in
+| MNEMA_KEY_PASSPHRASE
+|
+| Options:
+|   -h, --help  display help for command
+
+### mnema key unprotect --help
+$ mnema key unprotect --help
+| Usage: mnema key unprotect [options]
+|
+| write this machine's private keys back in the clear (needs MNEMA_KEY_PASSPHRASE)
+|
+| Options:
+|   -h, --help  display help for command
 
 ### mnema tail list --help
 $ mnema tail list --help

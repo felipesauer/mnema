@@ -15,7 +15,7 @@ _mnema_commands() {
     'decision') echo 'record move supersede import help' ;;
     'skill') echo 'create move export help' ;;
     'run') echo 'start end help' ;;
-    'key') echo 'restore request enroll revoke help' ;;
+    'key') echo 'restore request enroll revoke protect unprotect help' ;;
     'tail') echo 'list prune help' ;;
     'witness') echo 'stamp upgrade' ;;
     'switch') echo 'off on' ;;
@@ -71,6 +71,8 @@ _mnema_flags() {
     'key request') echo '--anchor --key -h --help -V --version --color' ;;
     'key enroll') echo '-h --help -V --version --color' ;;
     'key revoke') echo '--reason -h --help -V --version --color' ;;
+    'key protect') echo '-h --help -V --version --color' ;;
+    'key unprotect') echo '-h --help -V --version --color' ;;
     'tail') echo '-h --help -V --version --color' ;;
     'tail list') echo '-h --help -V --version --color' ;;
     'tail prune') echo '--reason --which -h --help -V --version --color' ;;
@@ -156,6 +158,8 @@ _mnema_values() {
     'key request:--color') echo 'auto always never' ;;
     'key enroll:--color') echo 'auto always never' ;;
     'key revoke:--color') echo 'auto always never' ;;
+    'key protect:--color') echo 'auto always never' ;;
+    'key unprotect:--color') echo 'auto always never' ;;
     'tail:--color') echo 'auto always never' ;;
     'tail list:--color') echo 'auto always never' ;;
     'tail prune:--color') echo 'auto always never' ;;

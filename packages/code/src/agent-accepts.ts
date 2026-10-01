@@ -49,9 +49,9 @@ export function agentMayAccept(
     code: AGENT_ACCEPTS_IS_OFF,
     message:
       `an agent cannot accept a decision here: ${AGENT_ACCEPTS_CHANNEL} was switched off by ` +
-      `${oneLine(state.by ?? '')} at ${oneLine(state.at ?? '')}. A person accepts it with ` +
-      '`mnema decision move accept <id> --note "<why>"`, and `mnema switch on ' +
-      `${AGENT_ACCEPTS_CHANNEL}\` lets an agent accept again. The decision was not moved.`,
+      `${oneLine(state.by ?? '')} at ${oneLine(state.at ?? '')}. ` +
+      'A person accepts it with `mnema decision move accept <id> --note "<why>"`, ' +
+      'and `mnema switch on agent-accepts` lets an agent accept again. The decision was not moved.',
   };
 }
 
@@ -61,9 +61,9 @@ export function agentMayAccept(
  */
 export function acceptedByAnAgent(agent: string): string {
   return (
-    `This acceptance is recorded as made by an agent (${oneLine(agent)}), not by a person: the ` +
-    'record keeps which agent executed it, `mnema show` and the document a session opens with ' +
-    'say so beside the rule, and the decision now governs as accepted. `mnema switch` says ' +
-    `whether agents may accept, and \`mnema switch off ${AGENT_ACCEPTS_CHANNEL}\` stops it.`
+    `This acceptance is recorded as made by an agent (${oneLine(agent)}), not by a person: ` +
+    'the record keeps which agent executed it, `mnema show <id>` and the document a session ' +
+    'opens with say so beside the rule, and the decision now governs as accepted. ' +
+    'Whether agents may accept is a switch: `mnema switch off agent-accepts` stops it.'
   );
 }

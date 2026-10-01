@@ -104,6 +104,8 @@ const ANSWERS_ANYWAY: Readonly<Record<string, string>> = {
   switch: 'where a channel stands is a question about the trees there are, not about a project',
   'tail list': 'the tails it lists are the ones held here, in whichever trees exist',
   'key request': 'a request to be enrolled is composed from this machine’s key, not from a project',
+  'key unprotect':
+    'it writes this machine’s key files back in the clear, and a machine with none is told so; the key root is the machine’s, not a project’s',
   completion: 'the script it writes is generated from the declarations, and no record is consulted',
   witness: 'it reports on the tails it can see, and says so when there are none',
   'witness upgrade': 'the same: with no tail waiting on an attestation there is nothing to refuse',
@@ -187,6 +189,8 @@ const REFUSES_SOMETHING_ELSE_FIRST: Readonly<Record<string, string>> = {
   key: THE_PARSER_ANSWERED_FIRST,
   tail: THE_PARSER_ANSWERED_FIRST,
   'run end': 'with no id and no MNEMA_RUN there is no session named, which it says first',
+  'key protect':
+    'with no MNEMA_KEY_PASSPHRASE there is nothing to protect with, which it says first; it needs no project either way',
   'witness stamp':
     'with no tail anywhere it refuses NO_TAIL at its first line, before a fetch is composed',
 };

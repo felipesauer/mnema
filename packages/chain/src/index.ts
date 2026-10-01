@@ -55,6 +55,15 @@ export {
   writtenAsStored,
 } from './chain/hash.js';
 export {
+  isProtected,
+  KEY_PASSPHRASE_VARIABLE,
+  KeyIsProtectedError,
+  KeyPassphraseWrongError,
+  NoPassphraseToProtectWithError,
+  passphraseFromEnvironment,
+  readPrivateKeyPair,
+} from './chain/key-protection.js';
+export {
   ANCHOR_PREFIX,
   deriveAnchor,
   fingerprintOf,
@@ -71,15 +80,20 @@ export {
   type ChainSigner,
   committedPublicKey,
   DanglingInstallationIdError,
+  type KeyFileChange,
   listAnchoredFingerprints,
+  listPrivateKeyFiles,
   listPrivateKeyFingerprints,
   loadOrCreateInstallationId,
   loadOrCreateKeyPair,
+  localKeyFingerprint,
   materializePublicKey,
   persistKeyPair,
+  protectPrivateKeys,
   readAnchor,
   UnsettledInstallationIdError,
   UnwrittenInstallationIdError,
+  unprotectPrivateKeys,
   writeAnchor,
 } from './chain/keystore.js';
 export {
