@@ -736,14 +736,10 @@ def refounded_record(root: str) -> tuple[bool, str]:
     lines: list[bytes] = []
     previous: str | None = None
     for seq, body in enumerate(events):
-        link = {
-            "hash": entry_hash(canonical_bytes(body), tail, seq, previous),
-            "prev": previous,
-            "seq": seq,
-            "tail": tail,
-        }
+        digest = entry_hash(canonical_bytes(body), tail, seq, previous)
+        link = {"hash": digest, "prev": previous, "seq": seq, "tail": tail}
         lines.append(canonical_bytes({"event": body, "link": link}))
-        previous = link["hash"]
+        previous = digest
     stored = {
         "contentRoot": content_root([canonical_bytes(body) for body in events]),
         "fromSeq": 0,

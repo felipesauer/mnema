@@ -44,6 +44,14 @@ const VERIFIER = fileURLToPath(new URL('../../verifier/mnema_verify.py', import.
 const MUTATE = fileURLToPath(new URL('../../verifier/mutate.py', import.meta.url));
 const VERIFIER_README = fileURLToPath(new URL('../../verifier/README.md', import.meta.url));
 const FIXTURES = fileURLToPath(new URL('./__fixtures__/', import.meta.url));
+/**
+ * The file that turns git's automatic maintenance off, which the product's suite hands every git
+ * it starts to write a repository (`every-git-that-writes-runs-without-maintenance.test.ts`).
+ * Named by path and not imported: this package imports nothing outside itself.
+ */
+const GIT_WITHOUT_MAINTENANCE = fileURLToPath(
+  new URL('../../../code/tests/support/without-maintenance.gitconfig', import.meta.url),
+);
 
 interface CatalogueGap {
   readonly id: string;
@@ -552,7 +560,7 @@ describe('every limit says how to look at what it cannot check, and the road lea
             PATH: process.env.PATH ?? '',
             HOME: root,
             GIT_CONFIG_NOSYSTEM: '1',
-            GIT_CONFIG_GLOBAL: '/dev/null',
+            GIT_CONFIG_GLOBAL: GIT_WITHOUT_MAINTENANCE,
             GIT_AUTHOR_NAME: 'T',
             GIT_AUTHOR_EMAIL: 't@example.invalid',
             GIT_COMMITTER_NAME: 'T',
