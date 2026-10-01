@@ -92,7 +92,11 @@ export function writtenAsBuilt(event: CatalogEvent): WrittenEvent {
  * composition can all be changed by an honest reformat or a merge without
  * changing the fact, and the canonical form is what both sides agree on. What it
  * does NOT forgive is content: a field the writer never wrote, or one whose value
- * was edited, canonicalizes to different bytes and the recomputation says so.
+ * was edited, canonicalizes to different bytes and the recomputation says so. A
+ * key written TWICE is content too, and the one kind the recomputation cannot see
+ * (`JSON.parse` keeps the last, which is the signed value), so it is refused before
+ * this is ever reached, by `parseStoredJson`
+ * (`both-readers-read-the-same-bytes.test.ts`).
  */
 export function writtenAsStored(value: CanonicalValue): WrittenEvent {
   return { value } as WrittenEvent;

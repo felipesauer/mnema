@@ -27,6 +27,7 @@
  */
 
 import { canonicalBytes, canonicalStringify } from '../events/canonical.js';
+import { parseStoredJson } from '../events/stored-json.js';
 import { type KeyObject, type KeyPair, sign, verify } from './keys.js';
 
 /**
@@ -117,9 +118,9 @@ export function serializeTailProof(proof: TailProof): string {
 export function parseTailProof(line: string): TailProof {
   let raw: Record<string, unknown>;
   try {
-    raw = JSON.parse(line) as Record<string, unknown>;
+    raw = parseStoredJson(line) as Record<string, unknown>;
   } catch (error) {
-    throw new TailProofParseError(`not valid JSON: ${(error as Error).message}`);
+    throw new TailProofParseError((error as Error).message);
   }
   const requireString = (key: string): string => {
     const value = raw[key];
