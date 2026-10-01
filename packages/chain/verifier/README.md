@@ -100,17 +100,22 @@ and has no id:
 
 - §1 — *the refusal of an explicit undefined property, over a record on disk*. JSON has no
   `undefined`, so no line can carry one; §1's refusal is exercised through an in-memory
-  sentinel in `self-test` and is unreachable from a file. (G06)
+  sentinel in `self-test` and is unreachable from a file. To look: `python3 mnema_verify.py
+  self-test`. (G06)
 - §3 — *telling an authorized cut from tampering*. A sequence gap is reported and located;
   whether it was authorized cannot be read from here, because the document does not say what
   authorizes one. The cut itself **is** reported: this bullet used to claim that a removal
   taking a whole tail leaves nothing discontinuous to report, and emptying a record's segments
   in place falsifies that — §6 makes `prev` the hash of the previous checkpoint's signed
   message, so a cut cannot take the checkpoints with it, and every range left outrunning the
-  entries present is named under §5. What stays unreadable is the **authorization**. (G09)
+  entries present is named under §5. What stays unreadable is the **authorization**. To look: `git log --stat -- <record>/tails`,
+  because a cut is a commit. (G09)
 - §7 — *that a proof is never recomputed over a lifted reading*. No published vector carries
-  `v > 1` and no upcaster is published, so there is nothing to lift. (G18)
-- §8 — *the stored header's place in the Bitcoin chain* — which section 8 says of itself.
+  `v > 1` and no upcaster is published, so there is nothing to lift. To look, in a checkout of the repository:
+  `pnpm vitest run -t 'a chain written before a version bump still proves itself'`. (G18)
+- §8 — *the stored header's place in the Bitcoin chain* — which section 8 says of itself. To look:
+  the verdict prints a command that turns each stored header into its block id, to be looked up
+  in any explorer.
 
 The other unresolved gaps are **findings about a record**, not limits: contiguity between
 checkpoint ranges (G11) and the unit of §8's thousand-step limit (G20). Each is observable,

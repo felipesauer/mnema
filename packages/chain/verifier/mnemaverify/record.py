@@ -103,7 +103,15 @@ def _lines(path: str) -> list[tuple[int, bytes]]:
 
 def _read_entries(
     report: Report, tail_dir: str, tail_id: str, declarations: schema.Schema | None
-) -> list[Entry]:
+) -> tuple[list[Entry], list[str]]:
+    """The entries a tail holds, and WHERE each line this reader refused to read was.
+
+    A refused line is not an entry, and the checks that count entries by position (the chain
+    walk, the root fold) cannot be run over a list with a hole in it: the hole reads as a
+    gap in the sequence, a `prev` that does not chain and a root that does not fold, three
+    findings that name a cut or an edit the record does not contain. The caller therefore
+    gets the places back, and says "not checked" about the checks the hole would make lie.
+    """
     segments = sorted(name for name in os.listdir(tail_dir) if SEGMENT_NAME.match(name))
     skipped = sorted(
         name
@@ -121,6 +129,7 @@ def _read_entries(
         report.note("4", f"a tail of {len(segments)} segments", tail_id, "G15")
 
     entries: list[Entry] = []
+    refused: list[str] = []
     for name in segments:
         for number, raw in _lines(os.path.join(tail_dir, name)):
             where = f"{name}:{number}"
@@ -128,6 +137,7 @@ def _read_entries(
                 entry = read_line(raw, where)
             except Refusal as refusal:
                 report.fail(refusal.section, refusal.what, where)
+                refused.append(where)
                 continue
             if not entry.line_is_canonical:
                 report.fail(
@@ -138,7 +148,7 @@ def _read_entries(
                 )
             _check_declarations(report, declarations, entry, where)
             entries.append(entry)
-    return entries
+    return entries, refused
 
 
 def _check_declarations(
@@ -162,7 +172,8 @@ def _check_declarations(
     copies every value it does declare unchanged, so the rebuilt event is the parsed event
     whenever it is produced at all. A third statement of section 4's byte identity - beside
     the canonical-line check and the entry hash, which do fire - is a line of code that looks
-    like a check and is not one, and that is the exact failure this whole delivery is about.
+    like a check and is not one: nothing can turn it red, so a reader of this file would take
+    it for coverage it does not give.
     """
     if declarations is None:
         report.unchecked(
@@ -179,7 +190,18 @@ def _check_declarations(
         report.fail(refusal.section, refusal.what, where, "G08")
 
 
-def _check_chain(report: Report, entries: list[Entry], tail_id: str) -> None:
+def _check_chain(
+    report: Report, entries: list[Entry], tail_id: str, refused: list[str]
+) -> None:
+    if refused:
+        report.unchecked(
+            "3",
+            f"the hash chain was not walked: {refused[0]} was refused above, and a chain read "
+            "past a line this reader could not read would report a gap, a broken prev and a "
+            "root that does not fold, none of which the record contains",
+            tail_id,
+        )
+        return
     previous: str | None = None
     expected = 0
     for entry in entries:
@@ -264,7 +286,7 @@ class Checkpoints(NamedTuple):
 
 def _check_checkpoints(
     report: Report, tail_dir: str, tail_id: str, entries: list[Entry],
-    ring: dict[str, PublicKey],
+    ring: dict[str, PublicKey], refused: list[str],
 ) -> Checkpoints:
     path = os.path.join(tail_dir, CHECKPOINTS_FILE)
     if not os.path.exists(path):
@@ -311,7 +333,14 @@ def _check_checkpoints(
             )
 
         root_held = False
-        if checkpoint.to_seq >= len(entries):
+        if refused:
+            report.unchecked(
+                "5",
+                f"the root could not be folded: {refused[0]} was refused above, so the entries "
+                "this range covers are not all known",
+                label,
+            )
+        elif checkpoint.to_seq >= len(entries):
             # WHY THIS IS UNCHECKED AND NOT A FAIL, and why it cites G09. A signed
             # checkpoint naming events the tail does not hold looks like the record
             # contradicting itself, and the product reads it that way (`broken`). But
@@ -402,6 +431,17 @@ def _check_tailproof(
 ) -> None:
     path = os.path.join(tail_dir, TAILPROOF_FILE)
     if not os.path.exists(path):
+        # Section 6.1: the proof sits beside the segments of EVERY tail, and it is the only
+        # thing that stops a party with no key copying a tail under a real fingerprint and a
+        # forged installation suffix. The product refuses a tail without one, and this
+        # reader used to pass over the absence in silence, so the two disagreed on exactly
+        # the record the proof exists to refuse.
+        report.fail(
+            "6.1",
+            "this tail has no tailproof.json, so nothing shows that the key its id names "
+            "ever signed that id",
+            tail_id,
+        )
         return
     with open(path, "rb") as handle:
         raw = handle.read().rstrip(b"\n")
@@ -665,9 +705,9 @@ def verify_record(root: str, report: Report) -> None:
     for tail_id in tail_ids:
         tail_dir = os.path.join(tails_dir, tail_id)
         _check_tail_id(report, tail_id, ring)
-        entries = _read_entries(report, tail_dir, tail_id, declarations)
-        _check_chain(report, entries, tail_id)
-        found = _check_checkpoints(report, tail_dir, tail_id, entries, ring)
+        entries, refused = _read_entries(report, tail_dir, tail_id, declarations)
+        _check_chain(report, entries, tail_id, refused)
+        found = _check_checkpoints(report, tail_dir, tail_id, entries, ring, refused)
         _check_tailproof(report, tail_dir, tail_id, ring)
         last_seq = entries[-1].seq if entries else -1
         _check_witness(report, tail_dir, tail_id, found.checkpoints, last_seq)
@@ -776,4 +816,6 @@ def declare_scope(report: Report) -> None:
     exactly the runs where a reader is most likely to fix something and try again.
     """
     for entry in gaps.scope():
-        report.declare_not_covered(entry.section, entry.what, entry.why, entry.gap)
+        report.declare_not_covered(
+            entry.section, entry.what, entry.why, entry.gap, entry.explore
+        )

@@ -33,7 +33,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -53,6 +53,7 @@ interface CatalogueGap {
   readonly note: string;
   readonly standing: string;
   readonly notChecked: string;
+  readonly explore: string;
 }
 
 interface ScopeRow {
@@ -60,6 +61,7 @@ interface ScopeRow {
   readonly what: string;
   readonly why: string;
   readonly gap: string;
+  readonly explore: string;
 }
 
 interface Catalogue {
@@ -172,7 +174,7 @@ describe('every gap in the registry says which kind of hole it is', () => {
     expect(wrong).toEqual([]);
   });
 
-  it('REFUSES a catalogue that has not answered, at import — five ways', () => {
+  it('REFUSES a catalogue that has not answered, at import — seven ways', () => {
     // The audit is a structural guard, so here is what lights it. Each mutation is a
     // Gap built in memory and handed to `audit()`; the registry on disk is never touched,
     // because a guard whose non-vacuity proof edits the tree can leave the tree edited.
@@ -187,6 +189,14 @@ describe('every gap in the registry says which kind of hole it is', () => {
       [
         'a settled gap claiming a limit',
         'Gap("G99", "1", "w", "experiment", "n", "reader-limit", "x")',
+      ],
+      [
+        'a reader-limit with words and no road onward',
+        'Gap("G99", "1", "w", "unresolved", "n", "reader-limit", "x")',
+      ],
+      [
+        'a record-finding carrying a road that only a limit has',
+        'Gap("G99", "1", "w", "unresolved", "n", "record-finding", "", "a road")',
       ],
     ];
     for (const [what, construction] of cases) {
@@ -209,7 +219,7 @@ describe('every gap in the registry says which kind of hole it is', () => {
     // The mutation that earns the module-level `audit()` call rather than the
     // function alone: without it a registry that answered nothing would still IMPORT, and
     // `record` would print a block one row short with no sign that anything was wrong — the
-    // exact failure this whole delivery is about, one level up.
+    // same failure one level up: a check that is present and answers nothing.
     //
     // The mutation is applied to a COPY of the verifier in this case's own sandbox. The tree
     // is never edited: a guard whose non-vacuity proof writes to the repository is a guard
@@ -236,13 +246,13 @@ describe('every gap in the registry says which kind of hole it is', () => {
     expect(run.stderr, 'the refusal does not name which gap').toContain('G06');
   });
 
-  it('accepts the shape it is built from, or the five refusals above prove nothing', () => {
+  it('accepts the shape it is built from, or the seven refusals above prove nothing', () => {
     const run = python([
       '-c',
       [
         'import sys; sys.path.insert(0, sys.argv[1])',
         'from mnemaverify.gaps import Gap, audit',
-        'audit((Gap("G99", "1", "w", "unresolved", "n", "reader-limit", "x"),',
+        'audit((Gap("G99", "1", "w", "unresolved", "n", "reader-limit", "x", "a road"),',
         '       Gap("G98", "1", "w", "unresolved", "n", "record-finding"),',
         '       Gap("G97", "1", "w", "experiment", "n", "settled")))',
         'print("ACCEPTED")',
@@ -264,6 +274,7 @@ describe('the block a verdict prints is the registry, read in both directions', 
       expect(entry, `${limit.id} is a limit of this reader and no verdict says so`).toBeDefined();
       expect(entry?.what).toBe(limit.notChecked);
       expect(entry?.why).toBe(limit.note);
+      expect(entry?.explore).toBe(limit.explore);
       expect(entry?.section).toBe(limit.section);
     }
   });
@@ -497,4 +508,111 @@ describe('the instant a verdict prints names the block it came from', () => {
       .join('\n');
     expect(dated).toContain('bitcoin block 963688');
   });
+});
+
+/**
+ * A LIMIT WITH NO ROAD ONWARD IS A WALL, and a road nobody walked is a sentence. Each row of
+ * what this reader does not check carries an `explore` line, and each is RUN here: the
+ * command the verdict prints is the command this case executes, against a record it
+ * knows the answer for. A road that stopped leading anywhere would otherwise stay in every
+ * verdict until somebody followed it.
+ *
+ * The table is keyed by what the row is, and is checked against the registry in both
+ * directions: a limit added with no case here, or a case for a limit that is gone, is red.
+ */
+describe('every limit says how to look at what it cannot check, and the road leads there', () => {
+  /** The command inside `python3 -c "…" <args>` as the verdict prints it. */
+  function inlineProgram(explore: string): string {
+    const found = /^python3 -c "(.*)" <tail>/.exec(explore);
+    if (found === null) throw new Error(`no inline program in ${explore}`);
+    return found[1] as string;
+  }
+
+  const ROADS: Readonly<Record<string, (explore: string) => void>> = {
+    G06: (explore) => {
+      expect(explore).toContain('python3 mnema_verify.py self-test');
+      const run = python([VERIFIER, 'self-test']);
+      expect(run.status, run.stderr).toBe(0);
+      expect(run.stdout.toLowerCase(), 'the self-test does not name the refusal').toContain(
+        'undefined',
+      );
+    },
+    G09: (explore) => {
+      expect(explore).toContain('git log --stat -- <record>/tails');
+      // A cut is a commit: take the newest events and their checkpoint, in two commits, and
+      // ask git the question the verdict says to ask.
+      const repo = join(root, 'cut');
+      const record = join(repo, '.mnema');
+      cpSync(join(FIXTURES, 'witnessed-record'), record, { recursive: true });
+      const git = (...args: string[]) => {
+        const run = spawnSync('git', args, {
+          cwd: repo,
+          encoding: 'utf-8',
+          env: {
+            PATH: process.env.PATH ?? '',
+            HOME: root,
+            GIT_CONFIG_NOSYSTEM: '1',
+            GIT_CONFIG_GLOBAL: '/dev/null',
+            GIT_AUTHOR_NAME: 'T',
+            GIT_AUTHOR_EMAIL: 't@example.invalid',
+            GIT_COMMITTER_NAME: 'T',
+            GIT_COMMITTER_EMAIL: 't@example.invalid',
+          },
+        });
+        expect(run.status, run.stderr).toBe(0);
+        return run.stdout;
+      };
+      git('init', '-q', '.');
+      git('add', '.mnema');
+      git('commit', '-q', '-m', 'record');
+      const cut = python([MUTATE, 'aligned-cut', record]);
+      expect((JSON.parse(cut.stdout) as { applied: boolean }).applied).toBe(true);
+      git('add', '.mnema');
+      git('commit', '-q', '-m', 'cut');
+      const history = git('log', '--stat', '--', '.mnema/tails');
+      expect(history).toContain('000001.jsonl');
+      expect(history).toContain('checkpoints.jsonl');
+      expect(history.match(/^commit /gm)).toHaveLength(2);
+    },
+    G18: (explore) => {
+      const title = /-t '([^']+)'/.exec(explore)?.[1] as string;
+      const source = readFileSync(
+        fileURLToPath(new URL('./upcast-vs-proof.test.ts', import.meta.url)),
+        'utf-8',
+      );
+      expect(source, 'the case the road names is not there').toContain(`describe('${title}'`);
+    },
+    S8: (explore) => {
+      const record = copyOf('witnessed-record');
+      const tail = join(record, 'tails', readdirSync(join(record, 'tails'))[0] as string);
+      const blocks = join(
+        tail,
+        'witness',
+        readdirSync(join(tail, 'witness')).find((name) => name.endsWith('.blocks')) as string,
+      );
+      const run = python(['-c', inlineProgram(explore), blocks]);
+      expect(run.status, run.stderr).toBe(0);
+      const printed = run.stdout.trim().split('\n');
+      expect(printed.map((line) => line.split(' ')[0])).toEqual(['963688', '963690']);
+      for (const line of printed) expect(line).toMatch(/^\d+ 0{16}[0-9a-f]{48}$/);
+    },
+  };
+
+  it('has a road for every row of the block, and a case for every road', () => {
+    const keys = reading(copyOf('witnessed-record')).notCovered.map((row) =>
+      row.gap === '' ? `S${row.section}` : row.gap,
+    );
+    expect(keys.sort()).toEqual(Object.keys(ROADS).sort());
+  });
+
+  it.each(Object.keys(ROADS))(
+    '%s: the printed command does what the verdict says it does',
+    (key) => {
+      const row = reading(copyOf('witnessed-record')).notCovered.find(
+        (candidate) => (candidate.gap === '' ? `S${candidate.section}` : candidate.gap) === key,
+      ) as ScopeRow;
+      expect(row.explore, `${key} has no road onward`).not.toBe('');
+      (ROADS[key] as (explore: string) => void)(row.explore);
+    },
+  );
 });

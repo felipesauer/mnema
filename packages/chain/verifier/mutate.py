@@ -38,7 +38,13 @@ import base64  # noqa: E402
 import hashlib  # noqa: E402
 
 from mnemaverify.canonical import canonical_bytes, strict_loads  # noqa: E402
-from mnemaverify.checkpoint import CHECKPOINT_KEYS, CHECKPOINT_SCHEME, signed_message  # noqa: E402
+from mnemaverify.checkpoint import (  # noqa: E402
+    CHECKPOINT_KEYS,
+    CHECKPOINT_SCHEME,
+    TAILPROOF_KEYS,
+    TAILPROOF_SCHEME,
+    signed_message,
+)
 from mnemaverify.ed25519 import public_key_of, sign  # noqa: E402
 from mnemaverify.entry import entry_hash  # noqa: E402
 from mnemaverify.root import content_root  # noqa: E402
@@ -620,6 +626,162 @@ def blank_line_in_the_checkpoints(root: str) -> tuple[bool, str]:
     return _rewrite(path, lines), "a line of one space appended to checkpoints.jsonl"
 
 
+def duplicate_key_in_a_signed_line(root: str) -> tuple[bool, str]:
+    """A false value placed BEFORE the true one, in a line that is otherwise left as written.
+
+    Every library JSON parser keeps the LAST of two identical keys, so the true value (the
+    one the signature covers) is the one that survives parsing, the recomputed bytes equal
+    the signed bytes, and every hash and signature still closes. A reader that keeps the
+    FIRST of two keys, or a person reading the diff, sees the false one on a line the record
+    calls signed. Nothing about it is a reformatting an honest tool produces, so the format
+    refuses it (section 1) and both readers have to.
+
+    The bytes are edited as TEXT rather than rebuilt through the canonicalizer, because the
+    canonicalizer cannot hold two keys at all.
+    """
+    path = _segment(root)
+    lines = _read_lines(path)
+    at = min(2, len(lines) - 1)
+    record = strict_loads(lines[at].decode("utf-8"))
+    payload = record["event"].get("payload")
+    key = next((k for k, v in payload.items() if isinstance(v, str)), None) if isinstance(payload, dict) else None
+    if key is None:
+        return False, "the line's payload holds no string field to duplicate"
+    text = lines[at].decode("utf-8")
+    start = text.find('"payload":{')
+    needle = json.dumps(key, ensure_ascii=False) + ":"
+    hit = text.find(needle, start)
+    if start < 0 or hit < 0:
+        return False, f"{needle} was not found inside the payload text"
+    false = json.dumps("a false first value", ensure_ascii=False)
+    text = text[:hit] + needle + false + "," + text[hit:]
+    lines[at] = text.encode("utf-8")
+    return _rewrite(path, lines), f"a false first {key!r} placed before the true one on seq {record['link']['seq']}"
+
+
+def aligned_cut(root: str) -> tuple[bool, str]:
+    """The newest events AND the checkpoint that covered them, taken together.
+
+    Nothing is left inconsistent: the shorter tail closes, the checkpoint chain closes, and
+    the last checkpoint that remains is genuinely signed over exactly the entries that
+    remain. A record cannot contain the evidence of its own later length, so no reader that
+    holds only the record can tell this from a record that was once that short. What can is
+    something OUTSIDE it - a witness, a clone, git's history - which is why the format says
+    so (section 3) and why this row exists: both readers have to AGREE it is not refused.
+    """
+    checkpoints = _checkpoints(root)
+    if not os.path.exists(checkpoints):
+        return False, "there is no checkpoints file to cut"
+    cuts = _read_lines(checkpoints)
+    if len(cuts) < 2:
+        return False, "there is only one checkpoint, so no aligned cut leaves one behind"
+    dropped = strict_loads(cuts[-1].decode("utf-8"))
+    path = _segment(root)
+    kept = [
+        line
+        for line in _read_lines(path)
+        if strict_loads(line.decode("utf-8"))["link"]["seq"] < dropped["fromSeq"]
+    ]
+    changed = _rewrite(checkpoints, cuts[:-1])
+    changed = _rewrite(path, kept) or changed
+    return changed, f"seq {dropped['fromSeq']}..{dropped['toSeq']} and their checkpoint taken together"
+
+
+def reordered_lines(root: str) -> tuple[bool, str]:
+    """Two event lines swapped, each left byte for byte as it was written."""
+    path = _segment(root)
+    lines = _read_lines(path)
+    if len(lines) < 4:
+        return False, "the segment holds fewer than four lines"
+    lines[2], lines[3] = lines[3], lines[2]
+    return _rewrite(path, lines), "the lines of seq 2 and seq 3 swapped"
+
+
+def refounded_record(root: str) -> tuple[bool, str]:
+    """The record erased and begun again by whoever holds a key: a different, honest record.
+
+    Every tail and every committed key is removed, and a new identity is founded from
+    nothing, under RFC 8032's published key, with its own events, one signed checkpoint and the proof that the key owns the tail.
+    The result is complete and consistent in itself, so a reader holding only this directory
+    has nothing to refuse - the erased record leaves no trace inside the one that replaced
+    it. That is a limit of any record that lives in a place its writer can rewrite, and
+    both readers have to AGREE on it rather than one of them guessing at a history it
+    cannot see.
+    """
+    fingerprint, pem = _unenrolled_public()
+    anchor = "mnid:" + hashlib.sha256(fingerprint.encode("ascii")).hexdigest()
+    tail = f"{fingerprint}-{'ab' * 16}"
+    template = _last_event(root)
+    at = template["at"]
+
+    def event(kind: str, subject: str, payload: dict) -> dict:
+        return {
+            "at": at,
+            "kind": kind,
+            "payload": payload,
+            "signerFp": fingerprint,
+            "subject": subject,
+            "v": 1,
+            "who": anchor,
+        }
+
+    events = [
+        event("identity.founded", anchor, {"foundingFp": fingerprint}),
+        event(
+            "memory.captured",
+            "01a02d24-730d-7000-988d-ac7784b4a4a3",
+            {"content": "the record was erased and begun again"},
+        ),
+    ]
+    lines: list[bytes] = []
+    previous: str | None = None
+    for seq, body in enumerate(events):
+        link = {
+            "hash": entry_hash(canonical_bytes(body), tail, seq, previous),
+            "prev": previous,
+            "seq": seq,
+            "tail": tail,
+        }
+        lines.append(canonical_bytes({"event": body, "link": link}))
+        previous = link["hash"]
+    stored = {
+        "contentRoot": content_root([canonical_bytes(body) for body in events]),
+        "fromSeq": 0,
+        "prev": None,
+        "scheme": CHECKPOINT_SCHEME,
+        "signerFp": fingerprint,
+        "tail": tail,
+        "toSeq": len(events) - 1,
+    }
+    signature = sign(UNENROLLED_SECRET, signed_message(stored, CHECKPOINT_KEYS)).hex()
+
+    for name in ("tails", "keys"):
+        shutil.rmtree(os.path.join(root, name), ignore_errors=True)
+    _commit_the_unenrolled_key(root)
+    tail_dir = os.path.join(root, "tails", tail)
+    os.makedirs(tail_dir)
+    _write_lines(os.path.join(tail_dir, "000001.jsonl"), lines)
+    _write_lines(os.path.join(tail_dir, "checkpoints.jsonl"), [canonical_bytes({**stored, "sig": signature})])
+    proof = {"scheme": TAILPROOF_SCHEME, "signerFp": fingerprint, "tail": tail}
+    proof["sig"] = sign(UNENROLLED_SECRET, signed_message(proof, TAILPROOF_KEYS)).hex()
+    _write_lines(os.path.join(tail_dir, "tailproof.json"), [canonical_bytes(proof)])
+    return True, f"the record erased and a new identity {anchor[:16]}... founded in its place"
+
+
+def tail_proof_removed(root: str) -> tuple[bool, str]:
+    """The proof that the key signed the tail's id, taken out and nothing else touched.
+
+    Section 6.1: it sits beside every tail, and it is what stops a party with no key copying
+    a tail whose events are not yet checkpointed under a real fingerprint and a forged
+    installation suffix. A reader that passes over its absence verifies the copy.
+    """
+    path = os.path.join(_tail_dir(root), "tailproof.json")
+    if not os.path.exists(path):
+        return False, "there is no tailproof.json to remove"
+    os.remove(path)
+    return True, "tailproof.json removed"
+
+
 def _flip_payload(payload: object) -> object:
     """Change one string in a payload, or add one if it holds none."""
     if isinstance(payload, dict):
@@ -652,6 +814,11 @@ MUTATIONS = {
     "blank-segment-same-size": blank_segment_same_size,
     "blank-line-in-a-segment": blank_line_in_a_segment,
     "blank-line-in-the-checkpoints": blank_line_in_the_checkpoints,
+    "duplicate-key-in-a-signed-line": duplicate_key_in_a_signed_line,
+    "aligned-cut": aligned_cut,
+    "reordered-lines": reordered_lines,
+    "refounded-record": refounded_record,
+    "tail-proof-removed": tail_proof_removed,
 }
 
 
