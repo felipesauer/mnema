@@ -12,7 +12,9 @@
 //     instrument and none of the material;
 //   - every arm is in the state it claims, including the three ABSENCES that
 //     define the floor;
-//   - the three seeded arms carry the SAME knowledge;
+//   - the four arms that hold the decision as text carry the SAME knowledge;
+//   - and what REACHES the model is what each arm declares it reaches: the real host, a stand-in
+//     where the model would be, and the first request it sends — in both directions;
 //   - two sandboxes of the same cell cannot see each other;
 //   - the arms that hold a record ANSWER — a real MCP call, through the cell's own
 //     declaration and so through the traffic wrapper, that returns the seeded
@@ -76,6 +78,7 @@ import {
 } from './seed.mjs'
 import { handlerFiles, injectionProblems, productPluginDir, withoutFreshIds } from './hook.mjs'
 import { editPushProblems } from './channel.mjs'
+import { deliveredAtOpen, deliveredProblems } from './delivered.mjs'
 import { createSandbox, plantRepo, sandboxEnv } from './sandbox.mjs'
 import { mcpProbe } from './mcpcheck.mjs'
 import { mcpAsked } from './mcplog.mjs'
@@ -263,7 +266,7 @@ export async function runSelftest({
    */
   const surfaceArms = ARMS.filter(servesUnasked)
 
-  // 3 — the three seeded arms carry the same knowledge.
+  // 3 — the four arms that hold the decision as text carry the same knowledge.
   {
     const problems = []
     for (const fixture of fixtures) {
@@ -278,7 +281,7 @@ export async function runSelftest({
       'knowledge parity',
       ok,
       ok
-        ? `prosa, host and mnema carry the same decision, in ${fixtures.length} tasks`
+        ? `prosa, claude-md, host and mnema carry the same decision, in ${fixtures.length} tasks`
         : problems.join('\n  '),
     )
     if (!ok) return done(checks)
@@ -286,6 +289,15 @@ export async function runSelftest({
 
   // 4 — every arm of every fixture seeds into the state it claims.
   {
+  //
+  // AND THE SAME SANDBOX IS THEN HANDED TO THE REAL HOST, with no model behind it, to read what
+  // ARRIVES (4b). The seed proves what was PLANTED; only the host's own first request proves what
+  // the session was HANDED, and the two are not the same thing: a file the host does not load is
+  // seeded perfectly and delivered to nobody. Sharing the sandbox is not economy for its own sake —
+  // seeding a record is the slow part of this check, and the delivery is asked of exactly the
+  // bytes the seed produced.
+  const deliveries = []
+  const undelivered = []
     const problems = []
     for (const fixture of fixtures) {
       for (const arm of ARMS) {
@@ -295,6 +307,15 @@ export async function runSelftest({
           seedArm({ arm, fixture, sandbox, mnemaBin })
           assertSeed({ arm, fixture, sandbox, mnemaBin })
         } catch (err) {
+          try {
+            const seen = await deliveredAtOpen({ sandbox, arm, fixture, mnemaBin, pluginDir, claudeBin })
+            for (const problem of deliveredProblems({ arm, axis: fixture.axis, delivered: seen.parts })) {
+              undelivered.push(`${where(fixture)}/${arm}: ${problem}`)
+            }
+            deliveries.push(`${where(fixture)}/${arm}`)
+          } catch (err) {
+            undelivered.push(`${where(fixture)}/${arm}: ${err.message}`)
+          }
           problems.push(`r${fixture.round}/${err.message}`)
         } finally {
           sandbox.destroy()
@@ -305,6 +326,13 @@ export async function runSelftest({
     record('seeding', ok, ok ? `${fixtures.length * ARMS.length} cells seed as declared` : problems.join('\n  '))
     if (!ok) return done(checks)
   }
+
+    // 4b — the text delivered — is RECORDED after the surface arms' checks (7 and 7b), below. It is
+    // measured here, in the sandbox the seed just proved, and judged later, for the reason the
+    // order of this file is the order of the specificity of the diagnosis: a hook that cannot run
+    // fails check 7 with the handler's own words (it is missing, it is mute, it exited 2), and
+    // the same defect seen from the host's first request would say only that a title did not
+    // arrive. The end-to-end question comes after the questions that can name the cause.
 
   // 5 — two sandboxes of the same cell do not see each other.
   const axisA = fixtures.find((f) => carriesDecision(f.axis))
@@ -556,6 +584,27 @@ export async function runSelftest({
   }
 
   // 8 — the bench is the one the pre-registration froze, round by round.
+  // 4b — the text delivered is the text declared, in both directions.
+  //
+  // Run against the real host and the cell's own command line, with a stand-in where the model
+  // would be (`lib/host-session.mjs`): nothing is spent and nothing is asked of a model. What it
+  // proves is what the HOST puts in the first request; that the model read it is not something
+  // this bench can know. It was measured in check 4's sandboxes and is judged here, after the
+  // checks that can name WHY a surface arm's text did not arrive.
+  {
+    const arrived = undelivered.length === 0
+    record(
+      'the text delivered',
+      arrived,
+      arrived
+        ? `${deliveries.length} cells: the first request the host sends carries, per arm, exactly the ` +
+            'parts of the decision the arm declares (title, statement, reasoning, alternative) — ' +
+            "and the instructions arm's file is in it, where the other arms' files are not"
+        : undelivered.join('\n  '),
+    )
+    if (!arrived) return done(checks)
+  }
+
   //
   // It is asked LAST among the bench's own checks, and that is deliberate: a bench
   // broken in its own terms — a discriminant that stopped discriminating, an arm

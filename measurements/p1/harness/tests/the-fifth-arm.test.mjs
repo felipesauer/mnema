@@ -347,13 +347,19 @@ describe('8 · the fifth arm is the mnema arm plus the surface, and nothing else
     const { settingsPath } = cellOf(axisA, SURFACE_ARM)
     const settings = JSON.parse(readFileSync(settingsPath, 'utf8'))
     const files = handlerFiles(settings.hooks)
-    assert.equal(files.length, 1, `expected one handler, got [${files}]`)
+    // TWO COMMANDS since the product's opening hook grew a second one (the notes near what the
+    // session touches). The first is the document and is the one this arm is about; the second is
+    // allowed to say nothing when the record holds no note, which is every cell of this bench.
+    assert.equal(files.length, 2, `expected two handlers, got [${files}]`)
     assert.equal(files[0], join(productPluginDir(), 'hooks', 'session-start.mjs'))
-    assert.equal(existsSync(files[0]), true, 'the declared handler is there')
+    assert.equal(files[1], join(productPluginDir(), 'hooks', 'session-recall.mjs'))
+    for (const file of files) assert.equal(existsSync(file), true, `the declared handler is there: ${file}`)
     // The declaration is the product's own, with the host's variable resolved —
     // never a command string written by the bench.
-    assert.equal(handlerCommands(settings.hooks).length, 1)
-    assert.ok(!handlerCommands(settings.hooks)[0].includes('${'), 'no variable is left unresolved')
+    assert.equal(handlerCommands(settings.hooks).length, 2)
+    for (const command of handlerCommands(settings.hooks)) {
+      assert.ok(!command.includes('${'), 'no variable is left unresolved')
+    }
     assert.equal(HOOK_EVENT, 'SessionStart')
   })
 })
@@ -380,7 +386,9 @@ describe('8b · the injected document names the seeded decision', () => {
     injectedDocument({ sandbox, settingsPath, env })
     const called = hookCalls(sandbox)
     assert.equal(called.ran, true)
-    assert.deepEqual(called.invocations, ['brief:1'])
+    // `recall` is the hook's SECOND command, run by the host as the session opens; `brief` is
+    // still the first thing through the PATH, which is the evidence.
+    assert.deepEqual(called.invocations, ['brief:1', 'recall:1'])
     assert.match(called.probe, /before the model’s first turn/)
   })
 
@@ -499,8 +507,8 @@ describe('8c · the line says the surface ran, and says what these cells are', (
     assert.equal(line.status, 'ok', line.error)
     // The document channel: the bench's own log of what came through the cell's PATH.
     assert.equal(line.hook_ran, true)
-    assert.equal(line.hook_calls, 1)
-    assert.deepEqual(line.hook_invocations, ['brief:1'])
+    assert.equal(line.hook_calls, 2)
+    assert.deepEqual(line.hook_invocations, ['brief:1', 'recall:1'])
     // The per-edit channel: the PRODUCT's own fact, read back out of the cell's record.
     assert.deepEqual(line.channel_served, [`${EDIT_PUSH_CHANNEL}:1`])
     assert.equal(line.channel_served_any, true)
@@ -737,8 +745,8 @@ describe('8c · the line says the surface ran, and says what these cells are', (
     assert.equal(byHand.status, 0, byHand.stderr)
 
     const called = hookCalls(sandbox)
-    assert.equal(called.calls, 2)
-    assert.deepEqual(called.invocations, ['brief:1', 'search:1'], 'each verb is named')
+    assert.equal(called.calls, 3)
+    assert.deepEqual(called.invocations, ['brief:1', 'recall:1', 'search:1'], 'each verb is named')
     assert.equal(called.ran, true, 'the hook still ran — it was FIRST, and that is the evidence')
   })
 

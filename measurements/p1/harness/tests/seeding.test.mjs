@@ -126,6 +126,7 @@ describe('2 · the base arm sees nothing — the floor of the experiment', () =>
       const want = expectedSeedState('base', fixture.axis)
       assert.deepEqual(want, {
         decisionsFile: false,
+        instructionsFile: false,
         hostMemory: false,
         mnemaTree: false,
         mnemaRecords: 0,
@@ -148,19 +149,21 @@ describe('2 · the base arm sees nothing — the floor of the experiment', () =>
     assert.equal(found.stdout.trim(), '', `the floor arm can read: ${found.stdout}`)
   })
 
-  test('every arm is checked on all SIX dimensions, not only on what it adds', () => {
+  test('every arm is checked on all SEVEN dimensions, not only on what it adds', () => {
     // The absences ARE the assertion for base; a checker that only verified what
     // an arm writes would leave the floor unguarded. It said FOUR until 2026-08-19,
     // when the fifth arm gained an address, and SIX from 2026-08-20, when `mnema-doc`
     // gained a switch position: a dimension one arm writes and the rest must not have is
     // exactly the shape this list exists to keep honest, and the switch is the sharpest
     // case of it — `mnema+` differs from `mnema-doc` in that entry ALONE, so a switch
-    // that leaked into it would make the two arms of round 3's subtraction identical.
+    // that leaked into it would make the two arms of round 3's subtraction identical. SEVEN
+    // from 2026-10-01, when `claude-md` gained the file the host loads on its own.
     for (const arm of ARMS) {
       const want = expectedSeedState(arm, 'A')
       assert.deepEqual(Object.keys(want).sort(), [
         'decisionsFile',
         'hostMemory',
+        'instructionsFile',
         'mnemaAddresses',
         'mnemaRecords',
         'mnemaTree',
@@ -211,7 +214,9 @@ describe('3 · two sandboxes of the same cell do not see each other', () => {
   test('the record of one cell is not reachable from the file tree of another', () => {
     const first = seeded(axisA, 'mnema')
     const second = seeded(axisA, 'mnema')
-    assert.equal(existsSync(join(second.xdg, 'mnema')), true, 'the second cell founded its own identity')
+    // The identity lives under the cell's HOME since the key moved there (it used to be under
+    // XDG_DATA_HOME); the cell's HOME is inside its root, which is the isolation being asserted.
+    assert.equal(existsSync(join(second.home, '.mnema', 'identity')), true, 'the second cell founded its own identity')
     const inside = (root, path) => path.startsWith(`${root}/`)
     assert.equal(inside(second.root, join(second.repo, '.mnema')), true)
     assert.equal(inside(second.root, join(first.repo, '.mnema')), false)

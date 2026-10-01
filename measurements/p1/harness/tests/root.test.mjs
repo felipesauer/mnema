@@ -21,7 +21,7 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
-import { basename, join } from 'node:path'
+import { join } from 'node:path'
 import {
   ROOT_MARKER,
   REPO_ROOT,
@@ -37,7 +37,9 @@ import { HARNESS_DIR, MNEMA_BIN } from './helpers.mjs'
 describe('0 · the workspace root is found, not counted', () => {
   test('the root holds the marker that makes it the root', () => {
     assert.equal(existsSync(join(REPO_ROOT, ROOT_MARKER)), true)
-    assert.equal(basename(REPO_ROOT), 'mnema')
+    // It used to assert that the directory is NAMED `mnema`, which is a fact about where one person
+    // cloned the repository and not about the root: a checkout under any other name — a worktree,
+    // a fork, a stranger's clone of the instrument this directory publishes — failed it.
     // The bench is INSIDE it. A root that is not an ancestor of the harness is a
     // root somebody else's tree handed us.
     assert.ok(HARNESS_DIR.startsWith(`${REPO_ROOT}/`), `${HARNESS_DIR} is not under ${REPO_ROOT}`)
