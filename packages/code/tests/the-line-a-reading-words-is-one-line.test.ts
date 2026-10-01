@@ -746,6 +746,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the event kind of a history entry, as the catalog spells it',
   },
+  'occurrence.ts itemLine(...theMove(entry.event)) #1': {
+    verdict: 'composed',
+    why: 'where a move moved to, composed by `theMove` below — the same column the arriving line carries, empty for an event that is not a move',
+  },
   'occurrence.ts «[{}]» oneLine(entry.role) #1': {
     verdict: 'collapsed',
     why: 'the role the queried entity appears by — a closed word of this reading, collapsed because a list of one-line events is what surrounds it',
@@ -1248,6 +1252,14 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the event kind: closed today, and collapsed because the rule is the line’s',
   },
+  'occurrence.ts itemLine(...theMove(event)) #1': {
+    verdict: 'composed',
+    why: 'where a move moved to, composed by `theMove` — one function for this line and the history’s, so the two cannot spell one event two ways',
+  },
+  'occurrence.ts «→ {}» oneLine(to) #1': {
+    verdict: 'collapsed',
+    why: 'the state the gate resolved a move to — a closed word of the workflow, collapsed because the rule is the line’s',
+  },
   'occurrence.ts asWhen(oneLine(event.at)) #1': {
     verdict: 'collapsed',
     why: 'the instant the event carries, as the chain recorded it',
@@ -1510,7 +1522,7 @@ describe('every value this layer puts on a line is classified', () => {
     expect(FOUND.machinery).toContain('within-a-hook.ts');
     expect(FOUND.builders.length).toBeGreaterThan(10);
     // 237 until `witness`'s copy of the no-tail sentence became a call of `tails.ts`'s one.
-    expect(FOUND.sites.length).toBe(251);
+    expect(FOUND.sites.length).toBe(254);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1531,10 +1543,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(64);
+    expect(count('collapsed')).toBe(65);
     expect(count('minted')).toBe(142);
-    expect(count('composed')).toBe(45);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(64);
+    expect(count('composed')).toBe(47);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(65);
   });
 
   it('every reason says where the value comes from', () => {

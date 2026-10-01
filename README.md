@@ -294,6 +294,9 @@ mnema init
 #>   one line in a `CLAUDE.md` brings that file in (an `AGENTS.md` is read there only
 #>   where no `CLAUDE.md` exists):
 #>     @MNEMA.md
+#>
+#>   Commit `.mnema/` with the repository: the record travels with it, and every clone reads it.
+#>   Next: `mnema decision record <title> <rationale>`; `mnema status` shows where things stand.
 
 # Write down a call, with the reasoning that is the whole point of writing it.
 mnema decision record "Use SQLite for the projection cache" \

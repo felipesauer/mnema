@@ -13,6 +13,7 @@
  * line this verb prints, so their absence is pinned there byte for byte.
  */
 
+import { dirname } from 'node:path';
 import type { Command } from 'commander';
 import type { InitResult } from '../commands/init.js';
 import { fact } from '../presentation/detail.js';
@@ -136,6 +137,7 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
         io.out('');
         for (const line of REACHES_AN_AGENT) io.out(render(fact(line)));
         io.out(render(fact(THE_LINE_IN_THEIRS, 2)));
+        for (const line of whatComesNext(result)) io.out(line === '' ? '' : render(fact(line)));
       } else {
         io.out(onOneLine`Already a mnema project at ${result.root} — nothing to found.`);
         reportWhoWritesHere(result, io, render, (await import('../key-file.js')).keyFileLine);
@@ -163,6 +165,42 @@ export function registerInit(program: Command, wiring: Wiring): Declared {
  * changes WHO may speak for the identity. That is not something to learn by
  * reading the chain later.
  */
+/**
+ * What a person who has just founded a project needs next, which `init` used to leave them to find:
+ * that the record is a directory to commit, the first verb, the decision documents the record has
+ * never read, and — when the project was founded somewhere other than the repository's root — that
+ * the walk a session climbs from the workspace root will not find it.
+ *
+ * Each line is conditional on a fact the run READ, and none is about the record: they are advice
+ * about the working tree, said once, at the moment they are useful.
+ * `the-init-says-what-comes-next.test.ts` holds each.
+ */
+export function whatComesNext(result: InitResult): string[] {
+  const lines: string[] = [];
+  const around = result.around;
+  if (around === undefined) return lines;
+  lines.push('');
+  if (around.gitRoot !== undefined) {
+    lines.push(
+      'Commit `.mnema/` with the repository: the record travels with it, and every clone reads it.',
+    );
+    if (around.gitRoot !== dirname(result.root)) {
+      lines.push(
+        onOneLine`This is not the root of the git repository (${around.gitRoot}). A session opened at that root climbs from there and will not find a project founded below it: run \`mnema init\` there instead, unless the project is meant to live here.`,
+      );
+    }
+  }
+  lines.push(
+    'Next: `mnema decision record <title> <rationale>`; `mnema status` shows where things stand.',
+  );
+  for (const base of around.neverImported) {
+    lines.push(
+      onOneLine`${base.directory} holds ${String(base.documents)} decision document(s) this record has never read: \`mnema decision import ${base.directory}\``,
+    );
+  }
+  return lines;
+}
+
 function reportIdentity(identity: InitResult['identity'], io: CliIo, render: Render): void {
   if (identity === undefined) return;
   const backup = identity.backup;

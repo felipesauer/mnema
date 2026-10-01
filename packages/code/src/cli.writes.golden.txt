@@ -11,6 +11,8 @@ $ mnema init
 |   one line in a `CLAUDE.md` brings that file in (an `AGENTS.md` is read there only
 |   where no `CLAUDE.md` exists):
 |     @MNEMA.md
+|
+|   Next: `mnema decision record <title> <rationale>`; `mnema status` shows where things stand.
 $ mnema init
 | Already a mnema project at <sandbox>/project/.mnema — nothing to found.
 |   identity: <anchor>
@@ -378,3 +380,5 @@ $ mnema init
 |   one line in a `CLAUDE.md` brings that file in (an `AGENTS.md` is read there only
 |   where no `CLAUDE.md` exists):
 |     @MNEMA.md
+|
+|   Next: `mnema decision record <title> <rationale>`; `mnema status` shows where things stand.

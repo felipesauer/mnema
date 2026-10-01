@@ -764,21 +764,21 @@ $ mnema exposure --json
 $ mnema timeline <task-runbook>
 | <task-runbook> — 13 event(s):
 |   <at:02>  task.created  [subject]  <anchor-short>
-|   <at:02>  task.transitioned  [subject]  <anchor-short>
+|   <at:02>  task.transitioned  → DRAFT  [subject]  <anchor-short>
 |   <at:09>  observation.recorded  [about]  <anchor-short>
 |   <at:10>  handoff.recorded  [subject]  <anchor-short>
 |   <at:11>  knowledge.linked  [target]  <anchor-short>
 |   <at:12>  knowledge.linked  [subject]  <anchor-short>
-|   <at:16>  task.transitioned  [subject]  <anchor-short>
-|   <at:17>  task.transitioned  [subject]  <anchor-short>
-|   <at:18>  task.transitioned  [subject]  <anchor-short>
+|   <at:16>  task.transitioned  → READY  [subject]  <anchor-short>
+|   <at:17>  task.transitioned  → IN_PROGRESS  [subject]  <anchor-short>
+|   <at:18>  task.transitioned  → DONE  [subject]  <anchor-short>
 |   note: the first draft is in
-|   <at:19>  task.transitioned  [subject]  <anchor-short>
+|   <at:19>  task.transitioned  → IN_PROGRESS  [subject]  <anchor-short>
 |   reason: it has no rollback section
-|   <at:20>  task.transitioned  [subject]  <anchor-short>
-|   <at:21>  task.transitioned  [subject]  <anchor-short>
+|   <at:20>  task.transitioned  → IN_REVIEW  [subject]  <anchor-short>
+|   <at:21>  task.transitioned  → DONE  [subject]  <anchor-short>
 |   note: the rollback section reads well
-|   <at:22>  task.transitioned  [subject]  <anchor-short>
+|   <at:22>  task.transitioned  → IN_PROGRESS  [subject]  <anchor-short>
 |   reason: the rollback step is wrong
 $ mnema timeline <task-runbook> --json
 | [

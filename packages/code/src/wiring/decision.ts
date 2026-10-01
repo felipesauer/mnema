@@ -18,6 +18,7 @@ import type { ScanRefusalCode } from '@mnema/core';
 import type { Command } from 'commander';
 import type { runDecisionImport } from '../commands/decision-import.js';
 import type { runDecisionTransition } from '../commands/decision-transition.js';
+import { fact } from '../presentation/detail.js';
 import { RECORD_CONTRACT_HELP, replacementNotice } from '../recorded-content.js';
 import { here } from './context.js';
 import {
@@ -139,7 +140,10 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
       `${DECISION_MOVE_ACTIONS.join(' or ')} a decision (follows the decision; takes no --scope)`,
     )
     .addArgument(enumeratedArgument('<action>', 'the transition', DECISION_MOVE_ACTIONS))
-    .argument('<id>', 'the decision id (the value shown when it was recorded)')
+    .argument(
+      '<id...>',
+      'the decision id (the value shown when it was recorded) — several, to move each one with the same verdict and note',
+    )
     .option(
       '--note <text>',
       `why this verdict (required by ${listed(actionsRequiring('decision', 'note'))})`,
@@ -150,7 +154,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
     takes: ['--which'],
     refuses: { '--scope': A_MOVE_FOLLOWS_THE_DECISION, '--alternatives': TURNED_DOWN_AT_BIRTH },
   });
-  decisionMove.action(async (action: string, id: string, opts: { note?: string }) => {
+  decisionMove.action(async (action: string, ids: string[], opts: { note?: string }) => {
     const given = await fromTheGroup<{ which?: string }>(decisionMove, wiring);
     if (given === REFUSED) return;
     const { runDecisionTransition } = await import('../commands/decision-transition.js');
@@ -159,14 +163,32 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
       io.fail();
       return;
     }
-    const result = runDecisionTransition(here(), {
-      id,
-      action,
-      proof: { ...(opts.note !== undefined ? { note: opts.note } : {}) },
-      ...(given.which !== undefined ? { which: given.which } : {}),
-      ...(run !== undefined ? { run } : {}),
-    });
-    await reportDecisionMove(result, id, wiring);
+    // ONE FACT PER ID, signed on its own, in the order typed: a verdict on a hundred imported
+    // proposals is a hundred judgements and the record keeps them as a hundred — the command is
+    // the only thing that is one. Each id is moved or refused on its own account, and a refusal
+    // does not stop the ones after it (an append-only record cannot take the ones before it
+    // back, so stopping would only leave the rest undone for no reason the person gave).
+    let moved = 0;
+    for (const id of ids) {
+      const result = runDecisionTransition(here(), {
+        id,
+        action,
+        proof: { ...(opts.note !== undefined ? { note: opts.note } : {}) },
+        ...(given.which !== undefined ? { which: given.which } : {}),
+        ...(run !== undefined ? { run } : {}),
+      });
+      await reportDecisionMove(result, id, wiring);
+      if (result.ok) moved += 1;
+    }
+    if (ids.length > 1 && moved < ids.length) {
+      io.err(
+        render(
+          fact(
+            `Moved ${moved} of ${ids.length}; the rest were refused above and nothing was written for them.`,
+          ),
+        ),
+      );
+    }
   });
 
   // `decision supersede <old-id> <new-id> --reason` — supersede as its own verb.
@@ -353,10 +375,23 @@ async function reportDecisionMove(
   if (result.ok) {
     const { movedLine } = await import('../moved-record.js');
     to.io.out(movedLine('decision', result.adr, result.id, result.to));
+    if (result.notice !== undefined) to.io.out(to.render(fact(result.notice)));
     reportReplacement(result, to.io);
     return;
   }
   reportRefusal(to, result, { UNKNOWN_DECISION: noSuchRecord('decision', id) });
+  if (result.reason === 'UNKNOWN_DECISION') await sayIfALabel(to, id);
+}
+
+/**
+ * After a refusal to find the decision `id`: when what was typed is the `ADR-<n>` label a write
+ * printed, say so and name the id (or the ids, when more than one tree numbered the same label).
+ * The bare refusal is already out; this is the half that tells a person what to type instead.
+ */
+async function sayIfALabel(to: Reporter, id: string): Promise<void> {
+  const { labelAsAddress } = await import('../label-as-address.js');
+  const sentence = labelAsAddress(here(), id);
+  if (sentence !== undefined) to.io.err(to.render(fact(sentence)));
 }
 
 /**

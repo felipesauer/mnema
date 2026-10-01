@@ -137,7 +137,11 @@ import {
   type ScopedTree,
   scopedEventsOf,
 } from '../intelligence-source.js';
-import { movedDisplay } from '../moved-record.js';
+import {
+  movedDisplay,
+  successorOnlyForASupersede,
+  supersedeLeavesNothingInForce,
+} from '../moved-record.js';
 import { oneLine } from '../one-line.js';
 import {
   ASKS_A_PERSON_CHANNEL,
@@ -249,6 +253,8 @@ export type DecisionTransitionResult =
       readonly adr: string;
       /** The state the decision is now in, resolved by the gate. */
       readonly to: string;
+      /** On a supersede whose successor is still `proposed`: nothing is in force until accepted. */
+      readonly notice?: string;
     })
   | {
       readonly ok: false;
@@ -770,6 +776,9 @@ export function runDecisionTransition(
     };
   }
 
+  const unread = successorOnlyForASupersede(input.action, input.by);
+  if (unread !== undefined) return { ok: false, code: 'UNREAD_FIELD', message: unread };
+
   const { ctx, run } = openWrite(session, located.home.scope, located.home.target);
   const fields = decisionProofToFields(input);
   // Every move carries the session's `which` (the executing agent) and `run`, so
@@ -809,7 +818,18 @@ export function runDecisionTransition(
   // it through the one function both surfaces resolve a moved display with, fallback
   // included.
   const adr = movedDisplay('decision', located.home.chainRoot, input.id, upcasters);
-  return { ok: true, id: input.id, adr, to: moved.to, ...forwardReplacement(moved) };
+  const notice =
+    input.action === 'supersede' && input.by !== undefined
+      ? supersedeLeavesNothingInForce(located.home.chainRoot, input.by, upcasters)
+      : undefined;
+  return {
+    ok: true,
+    id: input.id,
+    adr,
+    to: moved.to,
+    ...(notice !== undefined ? { notice } : {}),
+    ...forwardReplacement(moved),
+  };
 }
 
 /**

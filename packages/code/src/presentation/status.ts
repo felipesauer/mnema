@@ -104,9 +104,13 @@ export function statusReport(
   actor: string,
   outside: readonly DecisionsOutside[],
   neverImported: readonly UnimportedBase[],
+  asThisMachine = false,
 ): string[] {
   return [
     `${actor} — where things stand.`,
+    ...(asThisMachine
+      ? [render(fact('The identity this machine writes as in this project.'))]
+      : []),
     ...sessionLines(render, status),
     '',
     ...workLines(render, status),

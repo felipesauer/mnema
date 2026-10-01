@@ -1115,7 +1115,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         `Move an existing decision to a new state. ${DECISION_VERDICTS} a proposed ` +
         'decision (each needs a note); supersede a proposed or accepted decision ' +
         'with a later one — supersede needs the successor decision id in `by` and ' +
-        `a reason. \`by\` applies ONLY to supersede; ${DECISION_VERDICTS} ignore it. ` +
+        `a reason. \`by\` applies ONLY to supersede; ${DECISION_VERDICTS} REFUSE it. ` +
         'An illegal move or missing proof is refused with the gate’s reason. The ' +
         'decision is looked for in EVERY project of this workspace and the move lands ' +
         'in the project that holds it — the id decides, so no `project` is taken.' +
@@ -1129,7 +1129,9 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
         by: z
           .string()
           .optional()
-          .describe('The successor decision id — required by supersede, ignored otherwise.'),
+          .describe(
+            'The successor decision id — required by supersede, refused with any other action.',
+          ),
         note: proofField('Why this verdict', 'decision', 'note'),
         reason: proofField('Why it is being replaced', 'decision', 'reason'),
       },
@@ -1146,7 +1148,12 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       if (!result.ok) {
         return refused(active, result);
       }
-      return moved(active, movedLine('decision', result.adr, result.id, result.to), result);
+      return moved(
+        active,
+        movedLine('decision', result.adr, result.id, result.to),
+        result,
+        result.notice,
+      );
     },
   );
 
@@ -2036,10 +2043,19 @@ function moved(
   session: Session,
   line: string,
   result: Replacement,
+  notice?: string,
 ): { readonly content: { readonly type: 'text'; readonly text: string }[] } {
-  return replied(session, [[line, ...replacementNotice(result.replaced)].join('\n')], {
-    wrote: true,
-  });
+  return replied(
+    session,
+    [
+      [line, ...replacementNotice(result.replaced), ...(notice !== undefined ? [notice] : [])].join(
+        '\n',
+      ),
+    ],
+    {
+      wrote: true,
+    },
+  );
 }
 
 /**

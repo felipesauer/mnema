@@ -34,8 +34,8 @@
  * about a directory that is none, with the anchor of whatever project lies above it.
  */
 
-import { statSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, statSync } from 'node:fs';
+import { dirname, join, parse } from 'node:path';
 import { catalogUpcasters, ensureTree, privateKeyPath } from '@mnema/chain';
 import {
   chainRootForScope,
@@ -54,6 +54,7 @@ import {
   recordedAnchorOf,
   signerFor,
 } from '@mnema/core/write';
+import { basesNeverImported, type UnimportedBase } from '../outside-the-record.js';
 
 /** What init needs from its environment — injected so it is testable. */
 export interface InitContext {
@@ -81,6 +82,19 @@ export interface InitResult {
    * second init appends nothing, so there is nothing to report.
    */
   readonly identity?: EstablishedIdentity;
+  /**
+   * Present only when this run founded the tree, and what it found around it: the root of the
+   * git repository it sits in (absent when there is none), whether that root is somewhere else
+   * than where the project was founded, and the decision bases the record has never imported.
+   * These are READS of the working tree, taken after the founding, and they decide what the
+   * surface says next — never what was written.
+   */
+  readonly around?: {
+    /** The nearest directory above (or at) the project's that holds a `.git`, when there is one. */
+    readonly gitRoot?: string;
+    /** The decision bases with documents in them: nothing is imported in a project just founded. */
+    readonly neverImported: readonly UnimportedBase[];
+  };
   /**
    * Present only in a project already here whose checkout recorded an identity that no longer
    * counts this machine's key: every write to its public tree is refused, and this is that
@@ -207,7 +221,30 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
   // roster added nothing.)
   writer.checkpoint();
 
-  return { created: true, root, anchor: identity.anchor, identity };
+  const gitRoot = nearestGitRoot(ctx.cwd);
+  return {
+    created: true,
+    root,
+    anchor: identity.anchor,
+    identity,
+    around: {
+      ...(gitRoot !== undefined ? { gitRoot } : {}),
+      // Nothing has been imported into a tree founded a moment ago, so no sources are asked.
+      neverImported: basesNeverImported([], ctx.cwd),
+    },
+  };
+}
+
+/**
+ * The nearest directory at or above `from` that holds a `.git` (a directory, or the file a
+ * worktree and a submodule leave), or undefined when none does. A read of the disk, and the only
+ * way this product learns where a repository starts without running git.
+ */
+function nearestGitRoot(from: string): string | undefined {
+  for (let dir = from; ; dir = dirname(dir)) {
+    if (existsSync(join(dir, '.git'))) return dir;
+    if (dir === parse(dir).root) return undefined;
+  }
 }
 
 function isDirectory(path: string): boolean {

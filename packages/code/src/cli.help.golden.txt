@@ -452,7 +452,8 @@ $ mnema status --help
 | Options:
 |   --actor <id>  the identity whose session to report — the `mnid:…` from `mnema
 |                 accountability`, or the short form the reads print (any prefix
-|                 that names one identity here)
+|                 that names one identity here). Omitted, it is the identity this
+|                 machine writes as in this project, and the report says so.
 |   --json        emit the faithful opening context as JSON
 |   -h, --help    display help for command
 

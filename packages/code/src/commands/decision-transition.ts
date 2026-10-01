@@ -50,7 +50,11 @@ import {
   rejectDecision,
   supersedeDecision,
 } from '@mnema/core/write';
-import { movedDisplay } from '../moved-record.js';
+import {
+  movedDisplay,
+  successorOnlyForASupersede,
+  supersedeLeavesNothingInForce,
+} from '../moved-record.js';
 import { forwardReplacement, type Replacement } from '../recorded-content.js';
 
 /** What the transition command needs — injected so it is testable. */
@@ -78,6 +82,11 @@ export interface DecisionTransitioned extends Replacement {
   readonly adr: string;
   /** The state the decision is now in, resolved by the gate. */
   readonly to: string;
+  /**
+   * Present on a supersede whose successor is still `proposed`: nothing is in force on the
+   * subject until a person accepts it ({@link supersedeLeavesNothingInForce}).
+   */
+  readonly notice?: string;
 }
 
 /** The move was refused. */
@@ -153,6 +162,10 @@ export function runDecisionTransition(
       message: `"${input.action}" is not a decision action`,
     };
   }
+  const unread = successorOnlyForASupersede(input.action, input.by);
+  if (unread !== undefined) {
+    return { ok: false, reason: 'REFUSED', code: 'UNREAD_FIELD', message: unread };
+  }
   // The executing agent and the run it belongs to, stamped on whichever op the
   // action routes to — built once so no branch can be the one that forgets them.
   const stamp = {
@@ -194,7 +207,18 @@ export function runDecisionTransition(
   // name is the frozen `ADR-<n>` label. Read after the append so the projection
   // reflects the move that just landed.
   const adr = movedDisplay('decision', root, input.id, upcasters);
-  return { ok: true, id: input.id, adr, to: moved.to, ...forwardReplacement(moved) };
+  const notice =
+    input.action === 'supersede' && input.by !== undefined
+      ? supersedeLeavesNothingInForce(root, input.by, upcasters)
+      : undefined;
+  return {
+    ok: true,
+    id: input.id,
+    adr,
+    to: moved.to,
+    ...(notice !== undefined ? { notice } : {}),
+    ...forwardReplacement(moved),
+  };
 }
 
 /**

@@ -9,6 +9,7 @@
  */
 
 import type { Command } from 'commander';
+import { fact } from '../presentation/detail.js';
 import { here } from './context.js';
 import { writeLines } from './io.js';
 import { noSuchRecord } from './no-such-record.js';
@@ -30,6 +31,11 @@ export function registerShow(program: Command, wiring: Wiring): Declared {
       const result = runShow(here(), { id });
       if (!result.ok) {
         reportRefusal(wiring, result, { UNKNOWN_RECORD: noSuchRecord('record', id) });
+        if (result.reason === 'UNKNOWN_RECORD') {
+          const { labelAsAddress } = await import('../label-as-address.js');
+          const sentence = labelAsAddress(here(), id);
+          if (sentence !== undefined) io.err(render(fact(sentence)));
+        }
         return;
       }
       // BEFORE the answer, and on the other stream — so it survives a pipe, and so

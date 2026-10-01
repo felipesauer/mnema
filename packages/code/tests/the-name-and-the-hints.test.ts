@@ -930,9 +930,12 @@ describe('the session resolves who it is when it opens, and never again', () => 
     // goes through it. Without this the absence below is an absence of an instrument.
     expect(ofTheIdentity(opening).length, 'the opening read no identity at all').toBeGreaterThan(0);
     // AND NOTHING WHILE TYPING, in the window that only sees what a keystroke caused —
-    // asked of the verb that requires the identity, so the line that is filled in is the
-    // line being counted.
-    const typing = await readingWhileTyping('status\r', 'where things stand');
+    // asked of a verb that requires the identity, so the line that is filled in is the
+    // line being counted. (This asked `status`, until `status` stopped requiring one: it answers
+    // as the identity this machine writes as when no `--actor` is typed, and RESOLVES that itself,
+    // on each run, so a typed `status` reads the anchor file — a verb's own work, not the
+    // session's, and not a frame's. `focus` still requires the flag, which the session fills.)
+    const typing = await readingWhileTyping('focus\r', 'no open runs');
     expect(ofTheIdentity(typing)).toEqual([]);
     // The verb really ran, and it really read: without this the emptiness above could be
     // a session that answered nothing at all.

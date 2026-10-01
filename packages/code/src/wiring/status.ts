@@ -24,14 +24,19 @@ export function registerStatus(program: Command, wiring: Wiring): Declared {
   const status = program
     .command('status')
     .description('show where things stand: the work, what governs, what awaits a ruling')
-    .requiredOption('--actor <id>', `the identity whose session to report — ${ACTOR_HELP}`)
+    .option(
+      '--actor <id>',
+      `the identity whose session to report — ${ACTOR_HELP}. Omitted, it is the identity this machine writes as in this project, and the report says so.`,
+    )
     .option('--json', 'emit the faithful opening context as JSON')
-    .action(async (opts: { actor: string; json?: boolean }) => {
+    .action(async (opts: { actor?: string; json?: boolean }) => {
       const { anchorText } = await import('../anchors.js');
       const { runStatus } = await import('../commands/status.js');
       const { statusReport } = await import('../presentation/status.js');
       const { linkBreakNotice } = await import('./integrity.js');
-      const result = runStatus(here(), { actor: opts.actor });
+      const result = runStatus(here(), {
+        ...(opts.actor !== undefined ? { actor: opts.actor } : {}),
+      });
       if (!result.ok) {
         reportRefusal(wiring, result);
         return;
@@ -58,6 +63,7 @@ export function registerStatus(program: Command, wiring: Wiring): Declared {
           // byte for byte and nothing else (`commands/status.ts`).
           result.outside,
           result.neverImported,
+          result.asThisMachine,
         ),
       );
     });

@@ -523,13 +523,20 @@ export const NAMES_THAT_NEED_MORE: Readonly<
  * looks like where a person checks the hook: the verb answers that `mnema brief` does not take
  * `--hook`, and the session is handed what `mnema brief` prints — two names in one span, looked
  * at (63 → 65 names).
+ *
+ * THE FIRST USE NOW SAYS WHAT COMES NEXT, and that moved rows of the source, each looked at. `init`
+ * ends by naming the verb to type, `mnema decision record <title> <rationale>` (a line), and the one
+ * that shows where things stand, `mnema status` (a name), and, when the directory is not the root of
+ * the repository, `mnema init` to run there (a name); `status` without an identity says to run `mnema
+ * init` (a name); and a supersede by a proposal names the accept that would put the successor in
+ * force, `mnema decision move accept <id> --note "<why>"` (a line) — 34 → 36 lines, 46 → 49 names.
  */
 export const HANDED_OVER: Readonly<
   Record<Handed['from'], Readonly<Record<Reading['kind'], number>>>
 > = {
   span: { line: 34, name: 66, flag: 1, unwritten: 0 },
   block: { line: 35, name: 18, flag: 0, unwritten: 0 },
-  source: { line: 34, name: 46, flag: 3, unwritten: 3 },
+  source: { line: 36, name: 49, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

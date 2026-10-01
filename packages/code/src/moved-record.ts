@@ -45,7 +45,8 @@
  */
 
 import type { UpcasterRegistry } from '@mnema/chain';
-import { orderedEvents, projectDecisions, projectSkills } from '@mnema/core';
+import { decisionDisposition } from '@mnema/copilot';
+import { isDecisionState, orderedEvents, projectDecisions, projectSkills } from '@mnema/core';
 import { oneLine } from './one-line.js';
 
 /** The three entities a workflow moves, and whose move a surface echoes. */
@@ -142,4 +143,55 @@ export function movedDisplay(
   upcasters: UpcasterRegistry,
 ): string {
   return PROJECTED_DISPLAY[kind](root, id, upcasters);
+}
+
+/**
+ * What a supersede leaves unsaid when its successor is still `proposed`, or undefined when the
+ * successor is already in force (or is not one the record projects).
+ *
+ * THE SILENCE. `decision supersede <old> <new>` retires the old decision at once and the new one
+ * governs only after a person accepts it. A project whose single rule was replaced by a proposal
+ * is left with NOTHING in force on that subject — and the move answered `→ superseded`, exit 0,
+ * as it does for a clean replacement. Measured on the built binary: the next `brief` opened with
+ * `Decisions in force (0)`, and the agent read it as "nothing was decided".
+ *
+ * `root` is the chain the supersede LANDED in, read AFTER the append like {@link movedDisplay},
+ * and both surfaces that move a decision (the CLI's `decision supersede` and the agent's
+ * `decision_transition`) ask this one function, so neither can say less than the other.
+ * `tests/a-supersede-by-a-proposal-says-so.test.ts` holds both.
+ */
+export function supersedeLeavesNothingInForce(
+  root: string,
+  by: string,
+  upcasters: UpcasterRegistry,
+): string | undefined {
+  const successor = projectDecisions(orderedEvents({ root }, upcasters)).get(by);
+  if (
+    successor === undefined ||
+    !isDecisionState(successor.state) ||
+    decisionDisposition(successor.state) !== 'awaiting-judgement'
+  ) {
+    return undefined;
+  }
+  return `${oneLine(successor.adr)} (${oneLine(by)}) is still proposed, so nothing is in force on this subject until a person accepts it: mnema decision move accept ${oneLine(by)} --note "<why>"`;
+}
+
+/**
+ * The refusal a decision move earns when it is handed a successor (`by`) and the action takes
+ * none, or undefined. Only a supersede reads `by`; accept and reject have no channel for it.
+ *
+ * A FIELD A SURFACE RECEIVES AND DOES NOT READ IS REFUSED, not ignored. The agent surface said
+ * *"`by` applies ONLY to supersede; accept and reject ignore it"* in its own description, and
+ * meant it: `decision_transition accept by=<id>` returned `→ accepted` and the successor the
+ * caller named was recorded nowhere. A caller who passes a successor believes it was recorded;
+ * an answer that does not say it was not is a lie by omission. Both surfaces that move a decision
+ * ask this one function (`commands/decision-transition.ts`, `mcp/tools.ts`), so neither can come
+ * to read the field differently; `tests/the-first-use-says-what-it-did.test.ts` holds both.
+ */
+export function successorOnlyForASupersede(
+  action: string,
+  by: string | undefined,
+): string | undefined {
+  if (by === undefined || action === 'supersede') return undefined;
+  return `"by" names the successor of a supersede and "${oneLine(action)}" takes none, so it was not recorded: leave it out, or supersede`;
 }
