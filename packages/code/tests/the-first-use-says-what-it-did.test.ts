@@ -214,6 +214,19 @@ describe('ADR-<n> as an address', () => {
     expect(said.err).toContain(privateId);
   });
 
+  it('is said for the successor of a supersede too', async () => {
+    repo();
+    await mnema('init');
+    const old = idOf((await mnema('decision', 'record', 'Use UTC', 'three zones')).out);
+    const next = idOf((await mnema('decision', 'record', 'Use ISO instants', 'one format')).out);
+    const said = await mnema('decision', 'supersede', old, 'ADR-2', '--reason', 'newer');
+    expect(said.failed).toBe(true);
+    expect(said.err).toContain('Refused (UNKNOWN_BY)');
+    expect(said.err).toContain(
+      `ADR-2 is a label, not an id: in this project it names the decision ${next}.`,
+    );
+  });
+
   it('is composed in one place, from the record, whoever asks', async () => {
     const dir = repo();
     await mnema('init');

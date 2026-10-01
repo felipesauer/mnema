@@ -225,7 +225,7 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
       ...(given.which !== undefined ? { which: given.which } : {}),
       ...(run !== undefined ? { run } : {}),
     });
-    await reportDecisionMove(result, oldId, wiring);
+    await reportDecisionMove(result, oldId, wiring, newId);
   });
   // `decision import <dir>` — propose the decisions this repository already wrote.
   //
@@ -371,6 +371,7 @@ async function reportDecisionMove(
   result: ReturnType<typeof runDecisionTransition>,
   id: string,
   to: Reporter,
+  successor?: string,
 ): Promise<void> {
   if (result.ok) {
     const { movedLine } = await import('../moved-record.js');
@@ -381,6 +382,12 @@ async function reportDecisionMove(
   }
   reportRefusal(to, result, { UNKNOWN_DECISION: noSuchRecord('decision', id) });
   if (result.reason === 'UNKNOWN_DECISION') await sayIfALabel(to, id);
+  // The successor of a supersede is an address too, and the label every write printed for it is
+  // refused like the first one (`UNKNOWN_BY`, the dangling successor): the same hint, the same
+  // function.
+  if (result.reason === 'REFUSED' && result.code === 'UNKNOWN_BY' && successor !== undefined) {
+    await sayIfALabel(to, successor);
+  }
 }
 
 /**
