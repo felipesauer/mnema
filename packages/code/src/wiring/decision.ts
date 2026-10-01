@@ -310,6 +310,9 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
       // moment on this surface to be silent about.
       for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
       writeLines(io, importLines(result));
+      // A run the door stopped partway is a run that did NOT do what it was asked: the lines
+      // above say where, and the exit says it to whatever is driving this from a script.
+      if (result.stopped !== undefined) io.fail();
       return;
     }
     reportRefusal(wiring, result, {
