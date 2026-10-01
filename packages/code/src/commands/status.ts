@@ -1,5 +1,5 @@
 /**
- * `mnema status --actor <id>` — where things stand: the opening read, on the surface a
+ * `mnema status [--actor <id>]` — where things stand: the opening read, on the surface a
  * person uses.
  *
  * IT DERIVES NOTHING OF THE OPENING CONTEXT. That context is `@mnema/copilot`'s

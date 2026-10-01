@@ -1,9 +1,10 @@
 /**
  * The `mnema status` wiring: what it declares, and what it prints.
  *
- * `mnema status --actor <id> [--json]` — where things stand: where the actor left off,
+ * `mnema status [--actor <id>] [--json]` — where things stand: where the actor left off,
  * the live work, the adopted patterns, the decisions in force, and what is waiting
- * on somebody to rule on it.
+ * on somebody to rule on it. With no `--actor` it is the identity this machine writes as in
+ * the project, and the report says so (`tests/the-first-use-says-what-it-did.test.ts`).
  *
  * It is the OPENING read, and it is the same one the agent surface has always had — the
  * MCP's `bootstrap` tool and this verb call one derivation (`commands/status.ts`). The
