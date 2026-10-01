@@ -15,7 +15,7 @@ import { cliDriftProblem, cliPinProblem } from '../lib/pin.mjs'
 import { ROUNDS, cliVersionOf, modelOf, preregOf } from '../lib/split.mjs'
 import { modelNote } from '../lib/result.mjs'
 import { sandboxRoot } from '../lib/sandbox.mjs'
-import { runPlan } from '../run.mjs'
+import { firstCliOfCapture, runPlan } from '../run.mjs'
 import { FIXTURES_DIR, HARNESS_DIR, MNEMA_BIN, vendorResult } from './helpers.mjs'
 
 const axisA = listFixtures(FIXTURES_DIR).find((f) => carriesDecision(f.axis))
@@ -157,13 +157,14 @@ describe('and does not go on after the CLI changes under it', () => {
 
 describe('the loop that main runs is this one', () => {
   test('main hands runPlan the declared version, the first one and a reader of the machine’s', () => {
+    // `firstCli` is `versions.cli` for a fresh run and the capture's own first line for a resumed one.
     // THE LINK, and it is structural because main cannot be driven without paying for a
     // preflight of minutes. The assertion is that the production path passes every argument
     // that makes the guard able to fire: a runPlan called without `declaredCli` would clear any
     // CLI and be green here in the cases above.
     const source = readFileSync(join(HARNESS_DIR, 'run.mjs'), 'utf8')
     const call = source.slice(source.indexOf('const done = runPlan({'))
-    for (const needed of ['declaredCli: cliVersionOf(prereg)', 'firstCli: versions.cli', 'readCli: () => claudeVersion(', 'model,', 'outputFormat,']) {
+    for (const needed of ['declaredCli: cliVersionOf(prereg)', 'firstCli,', 'readCli: () => claudeVersion(', 'model,', 'outputFormat,']) {
       assert.ok(call.slice(0, 1200).includes(needed), `main's call to runPlan does not pass ${needed}`)
     }
   })
@@ -226,5 +227,62 @@ describe('the model is the pre-registration’s', () => {
     assert.equal(line.model_note, modelNote('claude-sonnet-5-5'))
     assert.match(line.model_note, /not the model rounds 1 to 4 ran on/)
     assert.match(modelNote(MODEL), /a weaker model tends to benefit more/)
+  })
+})
+
+describe('a resumed stage is one capture', () => {
+  const capture = (lines) => {
+    const dir = scratchDir()
+    const path = join(dir, 'cells.jsonl')
+    writeFileSync(path, lines.map((l) => (typeof l === 'string' ? l : JSON.stringify(l))).join('\n') + '\n')
+    return path
+  }
+
+  test('the CLI the first cell ran on is the capture’s first line, and no capture means none', () => {
+    assert.equal(firstCliOfCapture(join(scratchDir(), 'no-such-capture.jsonl')), null)
+    assert.equal(firstCliOfCapture(capture([{ cli_version: '2.1.1 (Claude Code)' }, { cli_version: '2.1.2 (Claude Code)' }])), '2.1.1 (Claude Code)')
+    assert.equal(firstCliOfCapture(capture([{ status: 'ok' }])), null, 'a line from before the key says nothing')
+    assert.throws(() => firstCliOfCapture(capture(['not json'])), /a capture cannot be resumed from/)
+  })
+
+  test('a stage resumed on another CLI stops before the first cell it would spend', () => {
+    const path = capture([{ cli_version: '2.1.1 (Claude Code)', status: 'ok' }])
+    const done = runPlan({
+      plan: cells(3),
+      round: 4,
+      declaredCli: null,
+      firstCli: firstCliOfCapture(path),
+      readCli: () => '2.1.2 (Claude Code)',
+      runOne: () => assert.fail('a cell was spent on a CLI the capture was not taken on'),
+      log: () => {},
+    })
+    assert.equal(done.ran, 0)
+    assert.match(done.stopped, /was "2\.1\.1 \(Claude Code\)" at the first cell and is "2\.1\.2 \(Claude Code\)" now/)
+  })
+
+  test('and main reads it from the capture only when it resumes', () => {
+    const source = readFileSync(join(HARNESS_DIR, 'run.mjs'), 'utf8')
+    assert.ok(source.includes('const firstCli = opts.resume ? (firstCliOfCapture(resultsPath) ?? versions.cli) : versions.cli'))
+  })
+})
+
+describe('the format the round declares reaches the CLI', () => {
+  test('a cell run in stream-json hands the CLI the stream flags, and a json cell does not', () => {
+    const argvOf = (outputFormat) => {
+      const dir = scratchDir()
+      const seen = join(dir, 'argv.json')
+      const claudeBin = join(dir, 'claude')
+      const result = outputFormat === 'stream-json' ? JSON.stringify({ type: 'result', ...vendorResult() }) : JSON.stringify(vendorResult())
+      writeFileSync(claudeBin, `#!/usr/bin/env node\nrequire('fs').writeFileSync(${JSON.stringify(seen)}, JSON.stringify(process.argv.slice(2)))\nprocess.stdout.write(${JSON.stringify(result)})\n`)
+      chmodSync(claudeBin, 0o755)
+      runCell({ fixture: axisA, arm: 'base', run: 1, round: 5, claudeBin, mnemaBin: MNEMA_BIN, authMode: 'api-key', outDir: null, resultsPath: join(dir, 'cells.jsonl'), versions: { cli: 'fake', mnema: 'fake' }, outputFormat })
+      return JSON.parse(readFileSync(seen, 'utf8'))
+    }
+    const stream = argvOf('stream-json')
+    assert.equal(stream[stream.indexOf('--output-format') + 1], 'stream-json')
+    assert.ok(stream.includes('--verbose') && stream.includes('--include-hook-events'))
+    const json = argvOf('json')
+    assert.equal(json[json.indexOf('--output-format') + 1], 'json')
+    assert.equal(json.includes('--verbose'), false)
   })
 })

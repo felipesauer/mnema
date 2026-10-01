@@ -277,6 +277,23 @@ export function cellsNotYetRun(plan, resultsPath) {
   return plan.filter((c) => !done.has(`${c.fixture.id}\u0000${c.arm}\u0000${c.run}`))
 }
 
+/**
+ * The CLI version the first line of a capture was taken on, or `null` when there is no capture or
+ * its first line carries none (a line from before the key, which no round that can be resumed has).
+ */
+export function firstCliOfCapture(resultsPath) {
+  if (!existsSync(resultsPath)) return null
+  const first = readFileSync(resultsPath, 'utf8')
+    .split('\n')
+    .find((line) => line.trim() !== '')
+  if (first === undefined) return null
+  try {
+    return JSON.parse(first).cli_version ?? null
+  } catch {
+    throw new Error(`${resultsPath} holds a line that is not JSON: a capture cannot be resumed from`)
+  }
+}
+
 async function main() {
   const opts = parseArgv(process.argv.slice(2))
   if (!opts.mode || opts.mode === 'help') {
@@ -394,11 +411,15 @@ async function main() {
     mnema: mnemaVersion(DEFAULTS.mnemaBin),
   }
 
+  // A RESUMED STAGE IS ONE CAPTURE, so "the CLI the first cell ran on" is the one the capture's own
+  // first line says, not the one this sitting happens to start with: the session limit that stops a
+  // stage is also the gap in which the CLI updates itself.
+  const firstCli = opts.resume ? (firstCliOfCapture(resultsPath) ?? versions.cli) : versions.cli
   const done = runPlan({
     plan,
     round: opts.round,
     declaredCli: cliVersionOf(prereg),
-    firstCli: versions.cli,
+    firstCli,
     readCli: () => claudeVersion(DEFAULTS.claudeBin),
     runOne: ({ fixture, arm, run }) =>
       runCell({
