@@ -205,6 +205,106 @@ export interface WitnessNetwork extends WitnessReturnVisit {
   readonly calendars?: readonly string[];
 }
 
+/**
+ * How long ONE request of the witness acts may take before it is given up on, in milliseconds.
+ *
+ * THE DEFECT. `fetch` has no deadline of its own, and the acts passed it none. A calendar that
+ * accepts the connection and says nothing — a stalled server, a captive portal, a middlebox that
+ * drops the reply — held `mnema witness stamp` for as long as the operating system kept the
+ * socket, which is minutes, with nothing printed and the record unwitnessed. The measurement that
+ * named it was in the suite itself: the two `.invalid` calendars its cases hand the act reached
+ * the resolver, and each took more than five seconds to be refused on a runner.
+ *
+ * Ten seconds is long for the answer these calendars give (a few hundred bytes, in well under a
+ * second when they are up) and short enough that four of them in turn end the act in under a
+ * minute. A calendar that does not answer in time is NAMED and skipped, like one that refuses.
+ */
+export const WITNESS_DEADLINE_MS = 10_000;
+
+/**
+ * The most bytes one answer may weigh, 64 KiB — the same bound a recorded field has.
+ *
+ * A calendar's answer is a timestamp (a few hundred bytes) and a block header is 80 bytes in hex,
+ * so the bound is two orders above anything an honest peer sends. It exists because the address
+ * the return visit asks comes out of a FILE (`refuseCalendarAddress`), and an answer read to its
+ * end is memory the peer chooses: a body that never stops is read until the process does.
+ */
+export const WITNESS_ANSWER_BYTES = 65_536;
+
+/**
+ * Reads an answer up to {@link WITNESS_ANSWER_BYTES}, or refuses it by name.
+ *
+ * The declared length is believed only to refuse early; what is enforced is the bytes that
+ * actually arrive, because a peer chooses what it declares.
+ */
+async function readBounded(response: Response, gone: Promise<never>): Promise<Buffer> {
+  const declared = Number(response.headers.get('content-length'));
+  if (Number.isFinite(declared) && declared > WITNESS_ANSWER_BYTES) {
+    await response.body?.cancel().catch(() => undefined);
+    throw new Error(`answered with more than ${WITNESS_ANSWER_BYTES} bytes`);
+  }
+  if (response.body === null) return Buffer.alloc(0);
+  const reader = response.body.getReader();
+  const chunks: Buffer[] = [];
+  let total = 0;
+  for (;;) {
+    const next = await Promise.race([reader.read(), gone]);
+    if (next.done) break;
+    total += next.value.byteLength;
+    if (total > WITNESS_ANSWER_BYTES) {
+      await reader.cancel().catch(() => undefined);
+      throw new Error(`answered with more than ${WITNESS_ANSWER_BYTES} bytes`);
+    }
+    chunks.push(Buffer.from(next.value));
+  }
+  return Buffer.concat(chunks);
+}
+
+/**
+ * A fetcher that cannot be waited on for ever and cannot be made to read for ever: every request
+ * has a deadline ({@link WITNESS_DEADLINE_MS}) that covers the connection, the headers AND the
+ * body, and every answer is read up to a bound ({@link WITNESS_ANSWER_BYTES}) before the caller
+ * sees it.
+ *
+ * ONE WRAPPER AT THE TWO ENTRANCES, and not a deadline written at each `call(...)`: `stampCheckpoint`
+ * and `completeWitness` are the only functions that choose a fetcher, so wrapping there reaches
+ * every request either makes — a calendar's stamp, a calendar's upgrade, each hop of a redirect and
+ * both requests for a block header — and a fifth request added tomorrow is bounded without anybody
+ * remembering to. It races the abort against the fetcher too, so a fetcher that ignores its signal
+ * (a stub, a library that does not honour one) is bounded all the same.
+ *
+ * What it hands back is a new `Response` over the bytes that were read, with the status and
+ * headers of the original, so every caller below reads `.ok`, `.status`, `.headers`, `.text()` and
+ * `.arrayBuffer()` as it always did.
+ */
+function bounded(call: Fetcher): Fetcher {
+  return async (url, init) => {
+    const controller = new AbortController();
+    const reason = new Error(`no answer within ${WITNESS_DEADLINE_MS / 1000} s`);
+    const timer = setTimeout(() => controller.abort(reason), WITNESS_DEADLINE_MS);
+    const gone = new Promise<never>((_, reject) => {
+      controller.signal.addEventListener('abort', () => reject(reason), { once: true });
+    });
+    // Nobody may be left holding a rejection nobody awaits: the race below is what reads it.
+    gone.catch(() => undefined);
+    try {
+      const signal =
+        init?.signal === undefined || init.signal === null
+          ? controller.signal
+          : AbortSignal.any([init.signal, controller.signal]);
+      const response = await Promise.race([call(url, { ...init, signal }), gone]);
+      const bytes = await readBounded(response, gone);
+      return new Response(bytes.byteLength > 0 ? new Uint8Array(bytes) : null, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+}
+
 const OTS_HEADERS: Readonly<Record<string, string>> = {
   Accept: 'application/vnd.opentimestamps.v1',
   'Content-Type': 'application/x-www-form-urlencoded',
@@ -229,7 +329,7 @@ export async function stampCheckpoint(
   network: WitnessNetwork = {},
 ): Promise<StampedWitness> {
   const calendars = network.calendars ?? DEFAULT_CALENDARS;
-  const call = network.fetch ?? fetch;
+  const call = bounded(network.fetch ?? fetch);
   const digest = Buffer.from(checkpointHash, 'hex');
   if (digest.length !== 32) throw new Error(`witness: ${checkpointHash} is not a sha256 digest`);
   const steps: OtsTimestamp['steps'][number][] = [];
@@ -313,7 +413,7 @@ export async function completeWitness(
   proofBytes: Buffer,
   network: WitnessReturnVisit = {},
 ): Promise<CompletedWitness> {
-  const call = network.fetch ?? fetch;
+  const call = bounded(network.fetch ?? fetch);
   const refusals: WitnessRefusal[] = [];
   const asked: string[] = [];
   const proof = parseOtsProof(proofBytes);
