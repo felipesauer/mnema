@@ -42,9 +42,9 @@
  */
 
 import type { RecordBody } from '@mnema/copilot';
-import type { TransitionProof } from '@mnema/core';
+import type { DecisionActor, TransitionProof } from '@mnema/core';
 import { type AnchorForms, anchorText } from '../anchors.js';
-import { oneLine } from '../one-line.js';
+import { A_PERSON, neutralized, oneLine } from '../one-line.js';
 import { DERIVED_FROM } from '../provenance.js';
 import { consultedLine } from './consultation.js';
 import { fact, statedFact, subjectLine } from './detail.js';
@@ -85,7 +85,7 @@ function movesSaid(proof: readonly TransitionProof[] | undefined): string[] {
   const lines = ['', 'What each move said:'];
   for (const one of proof) {
     lines.push(`${oneLine(one.action)} · ${oneLine(one.at)}`);
-    lines.push(one.said);
+    lines.push(neutralized(one.said));
   }
   return lines;
 }
@@ -136,6 +136,12 @@ function aboveTheBody(lines: string[], facts: readonly string[]): string[] {
   return lines;
 }
 
+/** `mnid:ab12cd34 (a person)` or `mnid:ab12cd34 (agent claude-code)`. */
+function actorText(anchors: AnchorForms, actor: DecisionActor): string {
+  const act = actor.which === undefined ? A_PERSON : `agent ${oneLine(actor.which)}`;
+  return `${oneLine(anchorText(anchors, actor.who))} (${act})`;
+}
+
 /** The lines one whole record prints for a person. */
 export function recordReport(render: Render, body: RecordBody, context: RecordContext): string[] {
   const lines = [render(subjectLine(`${body.kind} ${body.id}`, body.scope))];
@@ -149,7 +155,7 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
         ),
       );
       lines.push('');
-      lines.push(body.record.content);
+      lines.push(neutralized(body.record.content));
       break;
     case 'observation':
       lines.push(
@@ -157,7 +163,7 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
       );
       lines.push(render(fact(`topic: ${oneLine(body.record.topic)}`)));
       lines.push('');
-      lines.push(body.record.text);
+      lines.push(neutralized(body.record.text));
       break;
     case 'decision':
       lines.push(
@@ -174,8 +180,21 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
       if (body.record.supersededBy !== undefined) {
         lines.push(render(fact(`superseded by ${oneLine(body.record.supersededBy)}`)));
       }
+      // WHO RECORDED IT AND WHO RULED IT, as the events say: the same two facts the document
+      // a session opens with carries per rule, here in full because this is the read that
+      // opens one record. An agent is named; a person is the act with no agent on it.
+      if (body.record.recordedBy !== undefined) {
+        lines.push(
+          render(fact(`recorded by ${actorText(context.anchors, body.record.recordedBy)}`)),
+        );
+      }
+      if (body.record.acceptedBy !== undefined) {
+        lines.push(
+          render(fact(`accepted by ${actorText(context.anchors, body.record.acceptedBy)}`)),
+        );
+      }
       lines.push('');
-      lines.push(body.record.rationale);
+      lines.push(neutralized(body.record.rationale));
       // What it turned down, when the record says so — a SECOND body, headed, so
       // the two paragraphs are not read as one argument. Absent when the decision
       // recorded none: no heading, no blank line, nothing that would read as an
@@ -183,7 +202,7 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
       if (body.record.alternatives !== undefined) {
         lines.push('');
         lines.push('Considered and turned down:');
-        lines.push(body.record.alternatives);
+        lines.push(neutralized(body.record.alternatives));
       }
       lines.push(...movesSaid(body.record.proof));
       break;
@@ -198,7 +217,7 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
       lines.push(render(statedFact(oneLine(body.record.name), asState(body.record.state))));
       lines.push(render(fact(consultedLine(context.consultations ?? 0))));
       lines.push('');
-      lines.push(body.record.body);
+      lines.push(neutralized(body.record.body));
       lines.push(...movesSaid(body.record.proof));
       break;
   }

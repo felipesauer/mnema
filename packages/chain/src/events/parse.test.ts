@@ -101,13 +101,18 @@ describe('parseEvent — memory.captured (closed shape)', () => {
     expect(() => parseEvent(forged, reg)).toThrow(EventParseError);
   });
 
-  it('rebuilds so a duplicate content key cannot pick a value into the bytes', () => {
+  it('REFUSES a duplicate content key instead of letting the parser pick a value', () => {
     const good = memoryCaptured({ ...envelope, subject: 'm-1' }, { content: 'real' });
-    // A hand-forged line with a duplicate key: JSON.parse keeps the last, but the
-    // rebuild re-canonicalizes, so the bytes differ from the stored line.
+    // This case used to assert the opposite: that the line parsed to the LAST value and
+    // the rebuild made the bytes match, "so a duplicate cannot pick a value into the
+    // bytes". That held only for a false value placed AFTER the true one. Placed BEFORE
+    // it, the parsed value, its bytes and the signature are exactly as signed while a
+    // reader that keeps the first key reads the false one, so the parse refuses the line.
     const forged = line(good).replace('"content":"real"', '"content":"evil","content":"real"');
-    const parsed = parseEvent(forged, reg);
-    expect(line(parsed)).toBe(line(good));
+    expect(forged).not.toBe(line(good));
+    expect(() => parseEvent(forged, reg)).toThrow(EventParseError);
+    expect(() => parseEvent(forged, reg)).toThrow('a duplicate object key on the line: "content"');
+    expect(line(parseEvent(line(good), reg))).toBe(line(good));
   });
 });
 
@@ -314,15 +319,19 @@ describe('parseEvent — transition proof fields', () => {
     expect(parseEvent(line(event), reg)).toEqual(event);
   });
 
-  it('rebuilds fields so a duplicate inner key cannot pick a value into the bytes', () => {
-    // JSON.parse keeps the last duplicate; the rebuilt fields reflect only the
-    // declared shape. The recomputed canonical form is deterministic regardless.
+  it('REFUSES a duplicate key inside fields, at any depth, instead of picking one', () => {
+    // It used to assert that the last value won ({ note: 'second' }). Which value a reader
+    // sees must not depend on its parser, so the line is refused (see `stored-json.ts`).
     const dup =
       '{"kind":"task.transitioned","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"s","payload":{"from":"a","to":"b","action":"go","fields":{"note":"first","note":"second"}}}';
-    const parsed = parseEvent(dup, reg);
-    if (parsed.kind === 'task.transitioned') {
-      expect(parsed.payload.fields).toEqual({ note: 'second' });
-    }
+    expect(() => parseEvent(dup, reg)).toThrow(EventParseError);
+    expect(() => parseEvent(dup, reg)).toThrow('a duplicate object key on the line: "note"');
+    const once = dup.replace('"note":"first",', '');
+    expect(once).not.toBe(dup);
+    const parsed = parseEvent(once, reg);
+    expect(parsed.kind === 'task.transitioned' && parsed.payload.fields).toEqual({
+      note: 'second',
+    });
   });
 });
 
@@ -442,12 +451,13 @@ describe('parseEvent — decision events', () => {
     expect(() => parseEvent(forged, reg)).toThrow(/unknown payload\.fields field "by"/);
   });
 
-  it('rebuilds a decision transition so a duplicate `by` cannot pick a value into the bytes', () => {
-    // JSON.parse keeps the last duplicate; the rebuilt payload reflects only the
-    // declared shape, so the recomputed canonical bytes match a clean build.
+  it('REFUSES a decision transition with a duplicate `by`, and builds the single-`by` one', () => {
+    // It used to assert that the last `by` won. A transition names what supersedes a
+    // decision, so which of two it names must not depend on the parser.
     const dup =
       '{"kind":"decision.transitioned","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"d-1","payload":{"from":"a","to":"b","action":"supersede","by":"d-2","by":"d-3"}}';
-    const parsed = parseEvent(dup, reg);
+    expect(() => parseEvent(dup, reg)).toThrow('a duplicate object key on the line: "by"');
+    const parsed = parseEvent(dup.replace('"by":"d-2",', ''), reg);
     if (parsed.kind === 'decision.transitioned') expect(parsed.payload.by).toBe('d-3');
     const clean = decisionTransitioned(
       { at: '2026-07-21T00:00:00.000Z', who: 'h', signerFp: 'fp', subject: 'd-1' },
@@ -517,12 +527,13 @@ describe('parseEvent — enrollment events', () => {
     expect(() => parseEvent(forged, reg)).toThrow(/unknown payload field "evil"/);
   });
 
-  it('rebuilds an enrollment so a duplicate payload key cannot pick a value into the bytes', () => {
-    // JSON.parse keeps the last duplicate; the rebuilt payload reflects only the
-    // declared shape, so the recomputed canonical bytes match a clean build.
+  it('REFUSES a revocation with a duplicate payload key, and builds the single-key one', () => {
+    // It used to assert that the last `reason` won; a revocation's reason is what a person
+    // reads, so which of two it is must not depend on the parser.
     const dup =
       '{"kind":"key.revoked","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"mnid:a","payload":{"revokedFp":"fp-old","reason":"one","reason":"two"}}';
-    const parsed = parseEvent(dup, reg);
+    expect(() => parseEvent(dup, reg)).toThrow('a duplicate object key on the line: "reason"');
+    const parsed = parseEvent(dup.replace('"reason":"one",', ''), reg);
     if (parsed.kind === 'key.revoked') expect(parsed.payload.reason).toBe('two');
     const clean = keyRevoked(
       { at: '2026-07-21T00:00:00.000Z', who: 'h', signerFp: 'fp', subject: 'mnid:a' },
@@ -674,15 +685,14 @@ describe('parseEvent — closed shape (no field smuggling)', () => {
     expect(() => parseEvent(forged, reg)).toThrow(/unknown event field/);
   });
 
-  it('returns a REBUILT event, so a duplicate key cannot silently pick a value into the bytes', () => {
-    // JSON.parse keeps the last of a duplicated key; the rebuilt event's bytes
-    // reflect only the declared shape, so the recomputed canonical form differs
-    // from the raw (duplicate-bearing) line — which the chain rejects rather
-    // than verifies. Here we assert the rebuild is total: the returned object
-    // has exactly the declared keys, whatever the raw line's structure was.
+  it('returns a REBUILT event with exactly the declared keys, and refuses a duplicated `who`', () => {
+    // It used to take a duplicated `who` as the means of showing the rebuild is total, and
+    // the last one won ("IMPOSTER"). A duplicated `who` is now refused at the parse; the
+    // rebuild is shown on the same line without the duplicate.
     const dup =
       '{"kind":"run.ended","v":1,"at":"2026-07-21T00:00:00.000Z","who":"h","signerFp":"fp","subject":"s","payload":{},"who":"IMPOSTER"}';
-    const parsed = parseEvent(dup, reg);
+    expect(() => parseEvent(dup, reg)).toThrow('a duplicate object key on the line: "who"');
+    const parsed = parseEvent(dup.replace('"who":"h",', ''), reg);
     expect(Object.keys(parsed).sort()).toEqual([
       'at',
       'kind',

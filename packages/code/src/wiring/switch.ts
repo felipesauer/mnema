@@ -40,7 +40,7 @@
 
 import type { Command } from 'commander';
 import { fact } from '../presentation/detail.js';
-import { SWITCHABLE_CHANNELS } from '../record-framing.js';
+import { AGENT_ACCEPTS_CHANNEL, SWITCHABLE_CHANNELS } from '../record-framing.js';
 import { RECORD_CONTRACT_HELP } from '../recorded-content.js';
 import { here } from './context.js';
 import { enumeratedArgument, scopeOption } from './enumerated.js';
@@ -61,6 +61,9 @@ const NO_SUCH_CHANNEL = 'mnema pushes no channel by that name — `mnema switch`
  * stop the record, it does not stop a tool an agent calls, and it does not remove the
  * rules — everything the record holds is still there and still answers whoever asks.
  */
+const OFF_LIMIT_OF_AN_ACT =
+  'Nothing was removed: the record still holds what it held, and a person at the command line still accepts a decision. What stops is an agent ruling one in force.';
+
 const OFF_LIMIT =
   'Nothing was removed and nothing else stopped: the record still holds what it held, and every read and tool still answers whoever asks. What stops is this product putting it in front of a model unasked.';
 
@@ -69,7 +72,9 @@ export function registerSwitch(program: Command, wiring: Wiring): Declared {
   const { io, render } = wiring;
   const group = program
     .command('switch')
-    .description('turn off, or back on, what mnema hands to a model unasked')
+    .description(
+      'turn off, or back on, what mnema hands to a model unasked, and whether an agent may accept a decision',
+    )
     .addHelpText(
       'after',
       [
@@ -160,15 +165,22 @@ function position(group: Command, wiring: Wiring, word: 'off' | 'on', descriptio
       // every value this wiring puts on a success line reads the templates INSIDE an
       // `io.out`, so a sentence moved into a named function is a sentence it cannot see
       // (`a-line-of-success-is-one-line.test.ts`).
+      // `agent-accepts` is the one switch that hands nothing to a model: it is a gate on an act, so
+      // "nothing of it reaches a model" and "putting it in front of a model unasked" would be false of it.
+      const ofAnAct = result.channel === AGENT_ACCEPTS_CHANNEL;
       io.out(
         render(
           fact(
             result.effective.on
-              ? `${result.channel} is now ON: it hands the record over as it did before.`
-              : `${result.channel} is now OFF: nothing of it reaches a model. The switch that decides it was made by ${anchorText(result.anchors, result.effective.by ?? '')} at ${result.effective.at ?? ''}.`,
+              ? ofAnAct
+                ? `${result.channel} is now ON: an agent may accept a decision, as it did before.`
+                : `${result.channel} is now ON: it hands the record over as it did before.`
+              : ofAnAct
+                ? `${result.channel} is now OFF: an agent's accept is refused. The switch that decides it was made by ${anchorText(result.anchors, result.effective.by ?? '')} at ${result.effective.at ?? ''}.`
+                : `${result.channel} is now OFF: nothing of it reaches a model. The switch that decides it was made by ${anchorText(result.anchors, result.effective.by ?? '')} at ${result.effective.at ?? ''}.`,
           ),
         ),
       );
-      if (!on) io.out(render(fact(OFF_LIMIT)));
+      if (!on) io.out(render(fact(ofAnAct ? OFF_LIMIT_OF_AN_ACT : OFF_LIMIT)));
     });
 }

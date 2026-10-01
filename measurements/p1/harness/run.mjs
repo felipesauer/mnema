@@ -21,7 +21,8 @@ import { join, resolve } from 'node:path'
 import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { listFixtures } from './lib/fixtures.mjs'
 import { ARMS, servesUnasked } from './lib/seed.mjs'
-import { ISOLATION_CHECKLIST, MODEL, AUTH_MODES } from './lib/isolation.mjs'
+import { ISOLATION_CHECKLIST, AUTH_MODES } from './lib/isolation.mjs'
+import { cliDriftProblem, cliPinProblem } from './lib/pin.mjs'
 import { cloneBench, runSelftest } from './lib/selftest.mjs'
 import { claudeVersion, mnemaVersion, runCell } from './lib/cell.mjs'
 import { QUALIFICATIONS } from './lib/result.mjs'
@@ -30,9 +31,14 @@ import {
   REPO_ROOT,
   ROUNDS,
   preregOf,
+  armCodeOf,
+  cliVersionOf,
+  modelOf,
+  outputFormatOf,
   readSplit,
   refuseUnrunnableRound,
   roundArms,
+  scenarioOf,
   sieveOf,
 } from './lib/split.mjs'
 import { productPluginDir } from './lib/hook.mjs'
@@ -271,6 +277,23 @@ export function cellsNotYetRun(plan, resultsPath) {
   return plan.filter((c) => !done.has(`${c.fixture.id}\u0000${c.arm}\u0000${c.run}`))
 }
 
+/**
+ * The CLI version the first line of a capture was taken on, or `null` when there is no capture or
+ * its first line carries none (a line from before the key, which no round that can be resumed has).
+ */
+export function firstCliOfCapture(resultsPath) {
+  if (!existsSync(resultsPath)) return null
+  const first = readFileSync(resultsPath, 'utf8')
+    .split('\n')
+    .find((line) => line.trim() !== '')
+  if (first === undefined) return null
+  try {
+    return JSON.parse(first).cli_version ?? null
+  } catch {
+    throw new Error(`${resultsPath} holds a line that is not JSON: a capture cannot be resumed from`)
+  }
+}
+
 async function main() {
   const opts = parseArgv(process.argv.slice(2))
   if (!opts.mode || opts.mode === 'help') {
@@ -369,7 +392,10 @@ async function main() {
     }
   }
 
-  console.log(`\n${plan.length} cells, model ${MODEL}`)
+  const prereg = preregOf(opts.round)
+  const outputFormat = outputFormatOf(prereg)
+  const model = modelOf(prereg)
+  console.log(`\n${plan.length} cells, model ${model}, output ${outputFormat}`)
   console.log(`results: ${resultsPath}`)
   if (plan.some((c) => servesUnasked(c.arm))) {
     console.log(`surface under measurement: ${DEFAULTS.pluginDir}`)
@@ -385,28 +411,70 @@ async function main() {
     mnema: mnemaVersion(DEFAULTS.mnemaBin),
   }
 
-  let n = 0
-  for (const { fixture, arm, run } of plan) {
-    n += 1
-    process.stdout.write(`[${n}/${plan.length}] ${fixture.id} ${arm} r${run} ... `)
-    const { line } = runCell({
-      fixture,
-      arm,
-      run,
-      round: opts.round,
-      claudeBin: DEFAULTS.claudeBin,
-      mnemaBin: DEFAULTS.mnemaBin,
-      pluginDir: DEFAULTS.pluginDir,
-      authMode: opts.authMode,
-      outDir,
-      resultsPath,
-      keepSandbox: opts.keep,
-      maxBudgetUsd: opts.maxBudgetUsd,
-      versions,
-    })
-    console.log(line.status === 'ok' ? line.verdict : `${line.status}: ${line.error}`)
+  // A RESUMED STAGE IS ONE CAPTURE, so "the CLI the first cell ran on" is the one the capture's own
+  // first line says, not the one this sitting happens to start with: the session limit that stops a
+  // stage is also the gap in which the CLI updates itself.
+  const firstCli = opts.resume ? (firstCliOfCapture(resultsPath) ?? versions.cli) : versions.cli
+  const done = runPlan({
+    plan,
+    round: opts.round,
+    declaredCli: cliVersionOf(prereg),
+    firstCli,
+    readCli: () => claudeVersion(DEFAULTS.claudeBin),
+    runOne: ({ fixture, arm, run }) =>
+      runCell({
+        fixture,
+        arm,
+        run,
+        round: opts.round,
+        claudeBin: DEFAULTS.claudeBin,
+        mnemaBin: DEFAULTS.mnemaBin,
+        pluginDir: DEFAULTS.pluginDir,
+        authMode: opts.authMode,
+        outDir,
+        resultsPath,
+        keepSandbox: opts.keep,
+        maxBudgetUsd: opts.maxBudgetUsd,
+        versions,
+        outputFormat,
+        model,
+        scenario: scenarioOf(prereg, fixture.id),
+        armCode: armCodeOf(prereg, arm),
+      }).line,
+  })
+  console.log(`\nwrote ${done.ran} lines to ${resultsPath}`)
+  if (done.stopped) {
+    console.error(`\nthe round stopped after ${done.ran} of ${plan.length} cells: ${done.stopped}`)
+    process.exit(1)
   }
-  console.log(`\nwrote ${plan.length} lines to ${resultsPath}`)
+}
+
+/**
+ * Run the planned cells, one at a time, and refuse to continue on a CLI that is not the round's.
+ *
+ * THE LOOP WAS INLINE IN `main` AND IT IS HERE BECAUSE A GUARD THAT LIVES IN A FUNCTION CALLED
+ * ONLY AFTER A TEN-MINUTE PREFLIGHT CANNOT BE EXERCISED BY A TEST. The two refusals are
+ * `lib/pin.mjs`'s: the round declares a CLI and the machine's is another (nothing runs), and the
+ * CLI is not the one the first cell ran on (the round stops at that cell, keeps what it has, and
+ * says so). `runOne` is the only thing that spends; it is injected so that a test can count how
+ * many times it was reached.
+ *
+ * Returns `{ ran, stopped }`; `stopped` is a sentence when the round ended early. It throws for the
+ * declared-version refusal, because that one is decided before any cell exists.
+ */
+export function runPlan({ plan, round, declaredCli, firstCli, readCli, runOne, log = console.log }) {
+  const pinned = cliPinProblem({ round, declared: declaredCli, actual: firstCli })
+  if (pinned) throw new Error(pinned)
+  let ran = 0
+  for (const cell of plan) {
+    const drift = cliDriftProblem({ first: firstCli, now: readCli() })
+    if (drift) return { ran, stopped: drift }
+    ran += 1
+    log(`[${ran}/${plan.length}] ${cell.fixture.id} ${cell.arm} r${cell.run} ...`)
+    const line = runOne(cell)
+    log(`    ${line.status === 'ok' ? line.verdict : `${line.status}: ${line.error}`}`)
+  }
+  return { ran, stopped: null }
 }
 
 export { cloneBench }

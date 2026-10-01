@@ -9,7 +9,7 @@ import {
   moveDecisionAt,
   supersedeDecision,
 } from '../../tests/support/chain.js';
-import { decisionsAwaitingJudgement, decisionsInForce } from './decisions.js';
+import { acceptances, decisionsAwaitingJudgement, decisionsInForce } from './decisions.js';
 
 /**
  * Every fixture here reaches its state through the move the workflow defines, from
@@ -45,7 +45,12 @@ describe('decisionsInForce — the calls that govern', () => {
     const cache = b.cache();
     try {
       expect(decisionsInForce([cache])).toEqual([
-        { id: 'dec-1', adr: 'ADR-dec-1', title: 'Hand-rolled big-integer arithmetic' },
+        {
+          id: 'dec-1',
+          adr: 'ADR-dec-1',
+          title: 'Hand-rolled big-integer arithmetic',
+          acceptance: { by: expect.stringMatching(/^mnid:[0-9a-f]{8}$/), unconfirmed: true },
+        },
       ]);
     } finally {
       cache.close();
@@ -107,7 +112,7 @@ describe('decisionsInForce — the calls that govern', () => {
       const [served] = decisionsInForce([cache]);
       if (served === undefined) throw new Error('the decision in force is missing');
       expect(served).not.toHaveProperty('rationale');
-      expect(Object.keys(served).sort()).toEqual(['adr', 'id', 'title']);
+      expect(Object.keys(served).sort()).toEqual(['acceptance', 'adr', 'id', 'title']);
       // The fixture's rationale is `why <title>` and its alternatives
       // `turned down for <title>`, so these are the actual texts of this record's
       // two body fields, not spellings of the field names. BOTH halves are checked:
@@ -372,6 +377,108 @@ describe('decisionsAwaitingJudgement — the calls somebody still owes a ruling 
     try {
       expect(decisionsAwaitingJudgement([cache])).toEqual([]);
       expect(decisionsAwaitingJudgement([])).toEqual([]);
+    } finally {
+      cache.close();
+    }
+  });
+});
+
+/**
+ * WHO RULED A DECISION IN FORCE, and whether anybody else has looked.
+ *
+ * Every case builds the record with the identities as separate benches and merges the tails, so
+ * the projection sees the events the way a clone does: each one stamped with the identity that
+ * wrote it. The mark is the record's shape — nothing here judges a decision.
+ */
+describe('acceptances — who ruled, and whether another identity has looked', () => {
+  let benches: Bench[] = [];
+  afterEach(() => {
+    for (const b of benches) rmSync(b.root, { recursive: true, force: true });
+    benches = [];
+  });
+
+  function bench(): Bench {
+    const b = makeBench();
+    benches.push(b);
+    return b;
+  }
+
+  function proposed(b: Bench, id: string): void {
+    birthDecision(b, id, `title ${id}`);
+  }
+
+  function ruled(
+    b: Bench,
+    id: string,
+    actor: { readonly who?: string; readonly which?: string } = {},
+  ): void {
+    moveDecision(b, id, 'proposed', 'accepted', 'accept', { note: 'agreed' }, actor);
+  }
+
+  it('is unconfirmed when an identity accepts only what it recorded itself', () => {
+    const b = bench();
+    proposed(b, 'd-1');
+    ruled(b, 'd-1');
+    const cache = b.cache();
+    try {
+      const got = acceptances([cache]).get('d-1');
+      expect(got).toEqual({ by: expect.stringMatching(/^mnid:/), unconfirmed: true });
+      expect(got).not.toHaveProperty('agent');
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('names the agent when the accepting act had one, and a person when it had none', () => {
+    const b = bench();
+    proposed(b, 'by-person');
+    ruled(b, 'by-person');
+    proposed(b, 'by-agent');
+    ruled(b, 'by-agent', { which: 'claude-code' });
+    const cache = b.cache();
+    try {
+      const got = acceptances([cache]);
+      expect(got.get('by-person')).not.toHaveProperty('agent');
+      expect(got.get('by-agent')).toMatchObject({ agent: 'claude-code' });
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('confirms both identities when one accepts a decision the other recorded', () => {
+    const b = bench();
+    proposed(b, 'mine');
+    ruled(b, 'mine');
+    proposed(b, 'theirs');
+    // Another identity accepts a decision this bench's identity recorded.
+    ruled(b, 'theirs', {
+      who: 'mnid:0000000000000000000000000000000000000000000000000000000000000001',
+    });
+    const cache = b.cache();
+    try {
+      const got = acceptances([cache]);
+      expect(got.get('theirs')?.unconfirmed).toBe(false);
+      // The recorder of `theirs` is the bench's identity, so it has been ruled with as well —
+      // its OWN acceptance of `mine` is no longer the only thing it has done.
+      expect(got.get('mine')?.unconfirmed).toBe(false);
+    } finally {
+      cache.close();
+    }
+  });
+
+  it('keeps who accepted a decision that a successor replaced, and says nothing of one never accepted', () => {
+    const b = bench();
+    proposed(b, 'old');
+    ruled(b, 'old');
+    proposed(b, 'successor');
+    ruled(b, 'successor');
+    supersedeDecision(b, 'old', 'successor');
+    proposed(b, 'waiting');
+    const cache = b.cache();
+    try {
+      const got = acceptances([cache]);
+      expect(got.get('old')).toBeDefined();
+      expect(got.has('waiting')).toBe(false);
     } finally {
       cache.close();
     }

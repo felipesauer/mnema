@@ -30,7 +30,7 @@
  * knows there is one. A rule about a string travels; a word does not.
  */
 
-export { oneLine } from '@mnema/chain/one-line';
+export { neutralized, oneLine } from '@mnema/chain/one-line';
 
 /**
  * How an act with no agent on its envelope is said out loud, on both surfaces.

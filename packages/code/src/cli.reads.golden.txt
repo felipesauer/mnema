@@ -293,11 +293,12 @@ $ mnema tail list
 | 1 tail(s) holding events — the ones a cut can name:
 |   <tail-own>  public   2 event(s) through <tail-head-an-empty-project-1>  the tail of <anchor>  ·  no waiver
 $ mnema switch
-| 4 channel(s), looked in public, private, global:
+| 5 channel(s), looked in public, private, global:
 |   brief-document      on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
 |   recall-document     on   the notes `mnema recall` prints, which a session opens with: the memories and observations recorded for this project, from every tree this machine holds for it, the ones near what the session touches first
 |   edit-rules-push     on   the rules addressed at a file, handed over at each edit of it, beside the result of that write
 |   edit-asks-a-person  on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
+|   agent-accepts       on   an agent ruling a decision in force: with it off, an agent’s `accept` is refused and only a person at the command line can accept — a proposed decision waits, and nothing else changes
 $ mnema usage
 | No run is recorded here — looked in public, private, global.
 |
@@ -1433,7 +1434,11 @@ $ mnema status --actor <anchor> --json
 |     {
 |       "id": "<decision-runbook>",
 |       "adr": "ADR-1",
-|       "title": "Keep the runbook in the record"
+|       "title": "Keep the runbook in the record",
+|       "acceptance": {
+|         "by": "<anchor-short>",
+|         "unconfirmed": true
+|       }
 |     }
 |   ],
 |   "decisionsTotal": 1,
@@ -1626,11 +1631,13 @@ $ mnema brief
 |
 | Each was accepted, and none of them superseded. For the argument behind one, ask
 | `read_record` for its id.
+| Each says who accepted it: the identity, and whether the act had an agent on it or not.
+| 1 of them was accepted by an identity marked unconfirmed: it has accepted only decisions it recorded itself, and no other identity has accepted any of them. That is who has looked, not a verdict on the rule.
 |
 | 1 more decision is recorded here and awaiting a judgement, and it is not below.
 | Nothing waiting governs anything yet; ask `bootstrap` for what is waiting.
 |
-| - **ADR-1 — Keep the runbook in the record** · `<decision-runbook>`
+| - **ADR-1 — Keep the runbook in the record** · `<decision-runbook>` · accepted by <anchor-short> (a person; unconfirmed)
 |
 | ## Patterns adopted (1)
 |
@@ -1676,11 +1683,12 @@ $ mnema tail list
 |   <tail-private>  private  8 event(s) through <tail-head-a-populated-project-2>  the tail of <anchor>  ·  no waiver
 |   <tail-global>  global   4 event(s) through <tail-head-a-populated-project-3>  the tail of <anchor>  ·  no waiver
 $ mnema switch
-| 4 channel(s), looked in public, private, global:
+| 5 channel(s), looked in public, private, global:
 |   brief-document      on   the document `mnema brief` prints, which a session opens with: the decisions in force and the adopted patterns of the committed record, by name
 |   recall-document     on   the notes `mnema recall` prints, which a session opens with: the memories and observations recorded for this project, from every tree this machine holds for it, the ones near what the session touches first
 |   edit-rules-push     on   the rules addressed at a file, handed over at each edit of it, beside the result of that write
 |   edit-asks-a-person  on   the pause before a file is written where the record asks that a person look first — the rules go on arriving, and nothing stops
+|   agent-accepts       on   an agent ruling a decision in force: with it off, an agent’s `accept` is refused and only a person at the command line can accept — a proposed decision waits, and nothing else changes
 $ mnema usage
 | 2 run(s):
 |   <run-second>  agent-beta      <at:33> → open  no transcript
@@ -1713,6 +1721,8 @@ $ mnema show <decision-runbook>
 | decision <decision-runbook>  ·  public
 |   ADR-1 — Keep the runbook in the record (accepted)
 |   supersedes <decision-wiki>
+|   recorded by <anchor-short> (a person)
+|   accepted by <anchor-short> (a person)
 |
 | a wiki page nobody owns goes stale
 |
@@ -1726,6 +1736,7 @@ $ mnema show <decision-wiki>
 | decision <decision-wiki>  ·  public
 |   ADR-2 — Keep the runbook in the wiki (superseded)
 |   superseded by <decision-runbook>
+|   recorded by <anchor-short> (a person)
 |
 | it is where we look
 |

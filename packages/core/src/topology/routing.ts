@@ -46,6 +46,7 @@ import {
 } from '@mnema/chain';
 import { canonicalIdentity } from '../identity/who.js';
 import type { DeferredWriteContext } from '../workflow/operations.js';
+import { PrivateTreeVisibleError, privateTreeVisibility } from './private-tree.js';
 import type { ResolvedTrees } from './resolve.js';
 
 /** The three trees a write can be routed to. */
@@ -276,6 +277,13 @@ export function openTreeForWriting(
   // safe for either project scope.
   if (scope === 'public' || scope === 'private') {
     ensureTree({ root: trees.projectPublic as string });
+  }
+  // THE PRIVATE TREE IS ONLY PRIVATE IF GIT SAYS SO, and the file that makes it so is committed.
+  // Asked here because this is the one door every write to a tree opens through, and after the
+  // `.gitignore` is ensured so a project that never had one is given the line before it is asked.
+  if (scope === 'private') {
+    const seen = privateTreeVisibility(trees);
+    if (seen.state === 'visible') throw new PrivateTreeVisibleError(seen);
   }
   return openChainForWriting(chainRoot, { keyRoot: trees.keyRoot, ...options });
 }

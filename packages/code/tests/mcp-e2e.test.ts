@@ -2925,7 +2925,10 @@ describe('MCP server — end to end over a real client', () => {
       arguments: { id, action: 'accept', note: 'we ship it' },
     });
     expect(accepted.isError).toBeFalsy();
-    expect(textOf(accepted)).toBe(`Decision ADR-1 (${id}) → accepted`);
+    // The acknowledgement is the first line; an acceptance by an agent adds the sentence that says
+    // it was recorded as an agent's (`a-rule-says-who-ruled-it.test.ts` holds the sentence).
+    expect(textOf(accepted).split('\n')[0]).toBe(`Decision ADR-1 (${id}) → accepted`);
+    expect(textOf(accepted)).toContain('recorded as made by an agent (');
 
     // A supersede with no `by` comes back as a tool error carrying MISSING_BY.
     const noBy = await client.callTool({

@@ -50,12 +50,14 @@ import {
   rejectDecision,
   supersedeDecision,
 } from '@mnema/core/write';
+import { agentMayAccept } from '../agent-accepts.js';
 import {
   movedDisplay,
   successorOnlyForASupersede,
   supersedeLeavesNothingInForce,
 } from '../moved-record.js';
 import { forwardReplacement, type Replacement } from '../recorded-content.js';
+import { withScopedCaches } from '../tree-sources.js';
 
 /** What the transition command needs — injected so it is testable. */
 export interface DecisionTransitionContext {
@@ -87,6 +89,11 @@ export interface DecisionTransitioned extends Replacement {
    * subject until a person accepts it ({@link supersedeLeavesNothingInForce}).
    */
   readonly notice?: string;
+  /**
+   * Present when an AGENT ruled it accepted — one declared with `--which` — and the agent's
+   * name, so the verb can say the acceptance was recorded as an agent's (`agent-accepts.ts`).
+   */
+  readonly acceptedByAgent?: string;
 }
 
 /** The move was refused. */
@@ -166,6 +173,15 @@ export function runDecisionTransition(
   if (unread !== undefined) {
     return { ok: false, reason: 'REFUSED', code: 'UNREAD_FIELD', message: unread };
   }
+  // AN AGENT'S ACCEPT IS FREE UNLESS THE SWITCH IS OFF (`agent-accepts.ts`). Asked after the
+  // action is known to be one and before anything is appended, so a refusal leaves the record
+  // as it found it. Only an act declared with `--which` is an agent's on this surface; a person
+  // at the prompt is not asked, and neither is any action but `accept`.
+  const turnedAway = withScopedCaches(trees, (sources) =>
+    agentMayAccept(sources, { action: input.action, agent: input.which }),
+  );
+  if (turnedAway !== undefined) return { ok: false, reason: 'REFUSED', ...turnedAway };
+
   // The executing agent and the run it belongs to, stamped on whichever op the
   // action routes to — built once so no branch can be the one that forgets them.
   const stamp = {
@@ -217,6 +233,9 @@ export function runDecisionTransition(
     adr,
     to: moved.to,
     ...(notice !== undefined ? { notice } : {}),
+    ...(input.action === 'accept' && input.which !== undefined
+      ? { acceptedByAgent: input.which }
+      : {}),
     ...forwardReplacement(moved),
   };
 }

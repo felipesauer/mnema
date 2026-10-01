@@ -33,6 +33,7 @@
 import { createHash } from 'node:crypto';
 
 import { canonicalBytes, canonicalStringify } from '../events/canonical.js';
+import { parseStoredJson } from '../events/stored-json.js';
 import { contentRoot, type WrittenEvent } from './hash.js';
 import type { KeyPair } from './keys.js';
 import { type KeyObject, sign, verify } from './keys.js';
@@ -169,7 +170,7 @@ export function serializeCheckpoint(checkpoint: Checkpoint): string {
 
 /** Parses a stored checkpoint line. */
 export function parseCheckpoint(line: string): Checkpoint {
-  const raw = JSON.parse(line) as Record<string, unknown>;
+  const raw = parseStoredJson(line) as Record<string, unknown>;
   const requireString = (key: string): string => {
     const value = raw[key];
     if (typeof value !== 'string' || value.length === 0) {

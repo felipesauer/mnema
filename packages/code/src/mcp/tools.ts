@@ -128,6 +128,7 @@ import {
   supersedeDecision,
   transitionTask,
 } from '@mnema/core/write';
+import { agentMayAccept } from '../agent-accepts.js';
 import { whatAWriteAsks } from '../edit-asks-a-person.js';
 import { editRulesNotice, editRulesTold } from '../edit-rules-push.js';
 import { reachOfAddress, readGoverningRules, readRulesInForceAt } from '../governed-tree.js';
@@ -255,6 +256,12 @@ export type DecisionTransitionResult =
       readonly to: string;
       /** On a supersede whose successor is still `proposed`: nothing is in force until accepted. */
       readonly notice?: string;
+      /**
+       * Present when an AGENT ruled it accepted: the agent's name. The reply says so (see
+       * `agent-accepts.ts`), because the person working with the agent is told through the
+       * same transcript the agent is.
+       */
+      readonly acceptedByAgent?: string;
     })
   | {
       readonly ok: false;
@@ -779,6 +786,15 @@ export function runDecisionTransition(
   const unread = successorOnlyForASupersede(input.action, input.by);
   if (unread !== undefined) return { ok: false, code: 'UNREAD_FIELD', message: unread };
 
+  // AN AGENT'S ACCEPT IS FREE UNLESS THE SWITCH IS OFF (`agent-accepts.ts`): asked before the
+  // run is opened and anything is written, so a refusal leaves the record as it found it.
+  // Every call through this server is an agent's, whose name is the session's.
+  const turnedAway = agentMayAccept(workspaceCaches(session), {
+    action: input.action,
+    agent: session.which,
+  });
+  if (turnedAway !== undefined) return { ok: false, ...turnedAway };
+
   const { ctx, run } = openWrite(session, located.home.scope, located.home.target);
   const fields = decisionProofToFields(input);
   // Every move carries the session's `which` (the executing agent) and `run`, so
@@ -828,6 +844,9 @@ export function runDecisionTransition(
     adr,
     to: moved.to,
     ...(notice !== undefined ? { notice } : {}),
+    ...(input.action === 'accept' && session.which !== undefined
+      ? { acceptedByAgent: session.which }
+      : {}),
     ...forwardReplacement(moved),
   };
 }

@@ -121,7 +121,14 @@ CREATE TABLE IF NOT EXISTS decisions (
   updated_at    TEXT NOT NULL,
   -- What each move of this decision SAID: the transitions' own fields, as JSON,
   -- in the chain's order. NULL when no transition ever carried proof.
-  proof         TEXT
+  proof         TEXT,
+  -- Who recorded it, and who ruled it accepted: the identity (who) and the agent that
+  -- executed it (which) of the event that did each. NULL where the act has no agent, and
+  -- NULL on both columns of a decision never accepted. The absence is the fact.
+  recorded_who  TEXT,
+  recorded_which TEXT,
+  accepted_who  TEXT,
+  accepted_which TEXT
 ) STRICT;
 
 CREATE INDEX IF NOT EXISTS idx_decisions_state ON decisions (state);

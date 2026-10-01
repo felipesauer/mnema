@@ -2,7 +2,7 @@
 // is made of.
 //
 // The harness never edits a fixture. It reads `ticket.txt`, `decision.md` and
-// `verify.<ext>`, and everything downstream (the three seeded arms) is derived
+// `verify.<ext>`, and everything downstream (the four arms that hold it as text) is derived
 // from those bytes. That is what makes the parity check in `canonicalKnowledge`
 // meaningful: if the three arms are built from one source, "does every arm carry
 // the same knowledge?" is a question the harness can answer without a model.

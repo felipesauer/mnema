@@ -113,8 +113,8 @@
  * argument, and it is in it now.
  */
 
-import type { AdrCollision, Brief, ChannelState } from '@mnema/copilot';
-import { oneLine } from '../one-line.js';
+import type { Acceptance, AdrCollision, Brief, ChannelState } from '@mnema/copilot';
+import { A_PERSON, oneLine } from '../one-line.js';
 import { DERIVED_FROM } from '../provenance.js';
 import { recordFraming } from '../record-framing.js';
 import { fitWhole, HOOK_CEILING_IN_WORDS } from './within-a-hook.js';
@@ -458,6 +458,47 @@ const WHERE_THE_RATIONALE_IS = [
   '`read_record` for its id.',
 ];
 
+/**
+ * WHO RULED EACH DECISION, said once above the list and then on every line of it.
+ *
+ * WHY THE DOCUMENT SAYS IT. It hands decisions over as rules, and a rule is as good as whoever
+ * made it one. Measured on the shipped binary, a clone with a key of its own recorded a
+ * decision whose title was an instruction to a model and accepted it itself; after the pull it
+ * was the only rule in force in the brief, with no author, under the same heading as the team's.
+ * The facts that tell the two apart were already in the chain — the accepting event names the
+ * identity and, when one executed it, the agent — and this file did not carry them.
+ *
+ * IT SAYS WHAT THE ENVELOPE SAYS AND NOTHING MORE. `a person` is an act with no agent on it, not
+ * a claim that a human typed it; `agent <name>` is an act that had one. `unconfirmed` is the
+ * record's shape and not a verdict on the rule (see {@link Acceptance}): an identity that has
+ * only ever accepted what it recorded itself, with nobody else ruling on any of it. Every rule
+ * of a one-person project is marked, truthfully; the mark leaves the day a second identity
+ * rules on one of them.
+ *
+ * THE COUNTS ARE OF EVERY RULE IN FORCE and not of the ones this text carries, so a copy cut
+ * short by a hook's ceiling still says how many were ruled by an agent. Nothing here says what
+ * to do about any of it: that is the reader's, and `mnema switch` is where a person decides
+ * whether an agent may rule at all.
+ */
+function whoRuled(decisions: Brief['decisions']): string[] {
+  if (decisions.length === 0) return [];
+  const byAnAgent = decisions.filter((one) => one.acceptance?.agent !== undefined).length;
+  const unconfirmed = decisions.filter((one) => one.acceptance?.unconfirmed === true).length;
+  return [
+    'Each says who accepted it: the identity, and whether the act had an agent on it or not.',
+    ...(byAnAgent > 0
+      ? [
+          `${byAnAgent} of them ${byAnAgent === 1 ? 'was' : 'were'} accepted by an agent. The record keeps which, and \`mnema switch\` says whether an agent may accept.`,
+        ]
+      : []),
+    ...(unconfirmed > 0
+      ? [
+          `${unconfirmed} of them ${unconfirmed === 1 ? 'was' : 'were'} accepted by an identity marked unconfirmed: it has accepted only decisions it recorded itself, and no other identity has accepted any of them. That is who has looked, not a verdict on the rule.`,
+        ]
+      : []),
+  ];
+}
+
 /** Where the pattern itself is, since this file carries only its name. */
 const WHERE_THE_PATTERN_IS = [
   'Adopted here, and expected to be worked by. For the pattern itself, ask `skills`',
@@ -705,10 +746,19 @@ function composed(governance: Brief, shown: number): string[] {
       decisions.length,
       governance.decisions.length === 0
         ? NO_DECISIONS
-        : [...WHERE_THE_RATIONALE_IS, ...ambiguousLabels(governance.collisions)],
+        : [
+            ...WHERE_THE_RATIONALE_IS,
+            ...whoRuled(governance.decisions),
+            ...ambiguousLabels(governance.collisions),
+          ],
       whatAwaitsAJudgement(governance.decisionsAwaiting, DECISIONS_WAITING),
       decisions.map((decision) =>
-        rule(`${decision.adr} — ${decision.title}`, decision.id, decision.origin),
+        rule(
+          `${decision.adr} — ${decision.title}`,
+          decision.id,
+          decision.origin,
+          decision.acceptance,
+        ),
       ),
     ),
     '',
@@ -801,9 +851,22 @@ function section(
  * composed name is collapsed as a whole, so a break in either the label or the title
  * is closed by the same call.
  */
-function rule(name: string, id: string, origin?: readonly string[]): string {
+function rule(
+  name: string,
+  id: string,
+  origin?: readonly string[],
+  acceptance?: Acceptance,
+): string {
   const from = (origin ?? []).map((target) => ` · ${DERIVED_FROM} \`${oneLine(target)}\``).join('');
-  return `- **${oneLine(name)}** · \`${oneLine(id)}\`${from}`;
+  const by = acceptance === undefined ? '' : ` · ${acceptedBy(acceptance)}`;
+  return `- **${oneLine(name)}** · \`${oneLine(id)}\`${from}${by}`;
+}
+
+/** `accepted by mnid:ab12cd34 (a person)`, `(agent claude-code; unconfirmed)`. */
+function acceptedBy(acceptance: Acceptance): string {
+  const act = acceptance.agent === undefined ? A_PERSON : `agent ${oneLine(acceptance.agent)}`;
+  const mark = acceptance.unconfirmed ? '; unconfirmed' : '';
+  return `accepted by ${oneLine(acceptance.by)} (${act}${mark})`;
 }
 
 /**

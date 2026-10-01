@@ -36,8 +36,16 @@
  * ## What happens when the holder dies
  *
  * A lock that outlives its holder would wedge the tail forever, so a waiter breaks
- * one it can prove is abandoned: the recorded pid is gone, or the record is older
- * than {@link DEFAULT_STALE_MS}. Breaking is itself a race — two waiters could both
+ * one it judges abandoned, and there are TWO judgements and only one is a proof: the
+ * recorded pid is gone (a proof, as far as a pid proves anything), or the record is older
+ * than {@link DEFAULT_STALE_MS} (a PRESUMPTION — the pid may answer, and a holder that is
+ * alive and slow is broken all the same). This paragraph said "one it can prove is
+ * abandoned" for both, which was true of the first and false of the second: a holder that
+ * is alive past the minute loses the lock to the next waiter and the two then write the
+ * one tail, which is the corruption the lock exists to prevent. The presumption is kept
+ * because its alternative wedges a tail on a recycled pid with nobody to clear it, and the
+ * hold it presumes against is measured in milliseconds; `tail-lock.test.ts` fixes both
+ * judgements as cases so the day the second is replaced it is replaced on purpose. Breaking is itself a race — two waiters could both
  * decide to break, and the second could unlink a lock the first had just taken
  * fresh — so a breaker first `rename`s the file away, which the kernel gives to
  * exactly one of them, and then confirms the bytes it moved are the bytes it judged.
@@ -61,6 +69,7 @@ import {
 } from 'node:fs';
 import { dirname } from 'node:path';
 
+import { CodedError } from './coded-error.js';
 import { sleepSync } from './sleep.js';
 
 /**
@@ -88,6 +97,10 @@ export const DEFAULT_WAIT_MS = 2_000;
  * the pid cannot decide: a dead holder's pid reused by an unrelated process. It has
  * to be comfortably longer than the longest honest hold, or it would break a lock
  * that is merely working — hence a minute against a hold measured in milliseconds.
+ *
+ * WHAT IT COSTS, SAID PLAINLY: the pid cannot tell a recycled pid from a live holder, so the
+ * backstop breaks BOTH. A process that is alive and has held the lock for over a minute (a
+ * stopped one, a suspended laptop) loses it, and may append after the next writer has.
  */
 export const DEFAULT_STALE_MS = 60_000;
 
@@ -106,7 +119,7 @@ const POLL_MS = 5;
  * It names the holder's pid because the only useful next move is to find it — the
  * common cause is a second window of the same host open on the same project.
  */
-export class TailBusyError extends Error {
+export class TailBusyError extends CodedError {
   readonly code = 'TAIL_BUSY';
 
   constructor(
@@ -219,9 +232,11 @@ function holderOf(path: string): Holder | undefined {
 }
 
 /**
- * Breaks a lock whose holder is provably gone. Returns true if the caller should
- * try to take it again — either because this broke it, or because it moved under us
- * and the situation is worth re-reading.
+ * Breaks a lock whose holder is gone — or has held it past {@link DEFAULT_STALE_MS}, alive or
+ * not. Only the first is "provably gone"; the second is a presumption that a minute is
+ * longer than any honest hold, and it takes the lock from a live holder that is merely slow.
+ * Returns true if the caller should try to take it again — either because this broke it, or
+ * because it moved under us and the situation is worth re-reading.
  */
 function breakIfAbandoned(path: string, held: Holder, staleMs: number): boolean {
   const abandoned = !alive(held.pid) || Date.now() - held.since > staleMs;

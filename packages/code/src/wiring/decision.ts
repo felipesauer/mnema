@@ -377,6 +377,10 @@ async function reportDecisionMove(
     const { movedLine } = await import('../moved-record.js');
     to.io.out(movedLine('decision', result.adr, result.id, result.to));
     if (result.notice !== undefined) to.io.out(to.render(fact(result.notice)));
+    if (result.acceptedByAgent !== undefined) {
+      const { acceptedByAnAgent } = await import('../agent-accepts.js');
+      to.io.out(to.render(fact(acceptedByAnAgent(result.acceptedByAgent))));
+    }
     reportReplacement(result, to.io);
     return;
   }

@@ -292,8 +292,10 @@ describe('the agent in the checkout the key left', () => {
     expect(told.startsWith(REFUSED), told).toBe(true);
     expect(told).toContain(printed);
     expect(told).toContain(
-      `this machine keeps the key file at ${join(b, '.mnema', 'identity', 'keys', `${fp}.key`)}`,
+      `this machine keeps the key file ${fp}.key in identity/keys under ~/.mnema, since MNEMA_HOME is not set`,
     );
+    // And no path: the reply goes to a model, and a model has no use for the person's home.
+    expect(told).not.toContain(b);
     expect(whoWrote(atB, 'from the agent, for the team')).toBeUndefined();
     // The private tree never receives a revocation — `key revoke` writes the public one only —
     // so the identity this checkout recorded there still counts its key, and the default lands.

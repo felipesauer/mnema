@@ -34,6 +34,8 @@ describe('projectDecisions — the fold', () => {
       state: 'proposed',
       createdAt: at(0),
       updatedAt: at(0),
+      // Who recorded it is the actor of the birth event; nobody has accepted it.
+      recordedBy: { who: 'felipe' },
     });
   });
 
@@ -68,6 +70,50 @@ describe('projectDecisions — the fold', () => {
     const d = projectDecisions(events).get('d-1');
     expect(d?.state).toBe('accepted');
     expect(d?.updatedAt).toBe(at(1));
+  });
+
+  it('keeps who recorded a decision and who ruled it accepted, agent included', () => {
+    const events = [
+      ...birth('d-1', 'ADR-1'),
+      decisionTransitioned(
+        { ...env('d-1', 1), who: 'mnid:other', which: 'claude-code' },
+        { from: 'proposed', to: 'accepted', action: 'accept', fields: { note: 'agreed' } },
+      ),
+    ];
+    const d = projectDecisions(events).get('d-1');
+    expect(d?.recordedBy).toEqual({ who: 'felipe' });
+    expect(d?.acceptedBy).toEqual({ who: 'mnid:other', which: 'claude-code' });
+  });
+
+  it('says nothing of who accepted a decision that was rejected, and keeps who accepted a superseded one', () => {
+    const rejected = [
+      ...birth('d-1', 'ADR-1'),
+      decisionTransitioned(env('d-1', 1), {
+        from: 'proposed',
+        to: 'rejected',
+        action: 'reject',
+        fields: { note: 'no' },
+      }),
+    ];
+    expect(projectDecisions(rejected).get('d-1')?.acceptedBy).toBeUndefined();
+    const superseded = [
+      ...birth('d-1', 'ADR-1'),
+      decisionTransitioned(env('d-1', 1), {
+        from: 'proposed',
+        to: 'accepted',
+        action: 'accept',
+        fields: { note: 'yes' },
+      }),
+      decisionTransitioned(env('d-1', 2), {
+        from: 'accepted',
+        to: 'superseded',
+        action: 'supersede',
+        by: 'd-2',
+        fields: { reason: 'later' },
+      }),
+    ];
+    // Whether it still governs is the state's to say; who ruled it is the event's.
+    expect(projectDecisions(superseded).get('d-1')?.acceptedBy).toEqual({ who: 'felipe' });
   });
 
   it('drops a subject with transitions but no record (truncated tail)', () => {

@@ -48,7 +48,19 @@ import { servesUnasked } from './seed.mjs'
 // number with nothing in the data to say so. `mnema_build_sha256_16` is the bytes. Those
 // 208 lines have no such key, they are not re-run to gain one, and the absent key is what
 // says which side of this they are from.
-export const RESULT_SCHEMA = 'mnema-bench/cell/8'
+//
+// AND WHAT `/9` ADDS is the PATH, which no line could say. `--output-format stream-json` makes the
+// vendor print every event of the session, and four columns are read out of it: the tools the
+// agent called and in what order, how many of those wrote a file, how many hooks handed the
+// session text before a write, and how many writes came after the first of those. The last is the
+// per-edit channel's opportunity: the text it pushes lands after the result of the write that fired
+// it, so a cell with ONE write can never have been changed by it, and the rounds that measured that
+// channel at "+0.0 points" had no cell with a second write. The lines before `/9` carry none of
+// this, are not re-run to gain it, and the absent key is what says which side of that they are on.
+// `output_format` says how the capture was taken, because `null` in the interaction columns means
+// "this capture could not know" and `0` means "it knew and nothing happened" — the two are never
+// merged, and the format is what tells a reader which of them a `null` is.
+export const RESULT_SCHEMA = 'mnema-bench/cell/9'
 
 /**
  * What a surface-arm cell run on ROUND 1's tasks is, carried in the DATA and not only in
@@ -77,10 +89,26 @@ export const MECHANISM_CHECK_NOTE =
   'channel_served) and whether the verdict moves with it. Round 2 pre-registered this arm before the ' +
   'surface existed, so its cells carry null here — and so does every cell of the other four arms.'
 
+/**
+ * What the line says about its model. The default text is the one every line of rounds 1 to 4
+ * carries; a round on another model (its pre-registration names it) says so instead of repeating
+ * a sentence about a model it did not run.
+ */
+export function modelNote(model) {
+  if (model === MODEL) {
+    return (
+      `${MODEL} is fixed by design; a weaker model tends to benefit more from external ` +
+      'knowledge, so a positive result here is a ceiling, not the value in real use'
+    )
+  }
+  return (
+    `${model} is fixed by the round's pre-registration and is not the model rounds 1 to 4 ran on ` +
+    `(${MODEL}): a rate here is comparable with theirs only as a comparison ACROSS models`
+  )
+}
+
 export const QUALIFICATIONS = {
-  model_note:
-    `${MODEL} is fixed by design; a weaker model tends to benefit more from external ` +
-    'knowledge, so a positive result here is a ceiling, not the value in real use',
+  model_note: modelNote(MODEL),
   scoring_note:
     'deterministic: the fixture’s own verify.<ext>, calibrated against a conforming and a ' +
     'violating reference before any model was called. No LLM judge.',
@@ -133,6 +161,20 @@ export function resultLine(fields) {
     round,
     startedAt,
     endedAt,
+    // How the CLI printed this session. No default, for the reason `round` has none: a line that
+    // could not say how it was captured would have interaction columns nobody can read.
+    outputFormat,
+    // The labels a round gives its cells (`lib/split.mjs`): the scenario family of the task and
+    // the code of the arm. `null` is a round that declares none, which every round before the
+    // fifth did — and the same word says so in a line from `/8` or earlier, where the key is
+    // absent, once it is read through `lib/cells.mjs`.
+    scenario = null,
+    armCode = null,
+    // The model this cell ran on: the round's, passed in. It defaults to the harness's own so that
+    // a caller who names none writes what rounds 1 to 4 wrote.
+    model = MODEL,
+    // What the session DID, from `lib/interactions.mjs`; `null` when the capture was `json`.
+    interactions = null,
     cliVersion,
     mnemaVersion,
     verdict = null,
@@ -154,6 +196,11 @@ export function resultLine(fields) {
     build,
   } = fields
 
+  // `round` is a key of the line now, and an undefined one would be DROPPED by the serializer —
+  // a missing key where a null key was meant, which is the confusion the line exists to prevent.
+  // It is a caller's mistake and not a runtime failure, so it is loud.
+  if (round === undefined) throw new Error('a result line has to say which round it belongs to')
+
   const usage = result?.usage ?? {}
   return {
     schema: RESULT_SCHEMA,
@@ -161,8 +208,15 @@ export function resultLine(fields) {
     axis,
     arm,
     run,
-    model: MODEL,
+    // WHICH ROUND, in the line. `round` was a parameter of every cell from the start and reached
+    // only a caveat; joining a capture to its pre-registration was done by the name of the
+    // directory it sat in — the gap round 3's own report listed.
+    round,
+    scenario,
+    arm_code: armCode,
+    model,
     cli_version: cliVersion,
+    output_format: outputFormat,
     mnema_version: mnemaVersion,
     // WHICH BUILD, beside WHICH VERSION, and the pair is the point: the version is
     // `0.0.0` on both sides of a rebuild and the digest is not. `null` with a probe when
@@ -205,6 +259,14 @@ export function resultLine(fields) {
     api_error_status: result?.api_error_status ?? null,
     terminal_reason: result?.terminal_reason ?? null,
     missing_result_fields: missingResultFields,
+
+    // The path. `null` is a capture that could not know (`json`); an empty object and zero are a
+    // capture that knew and saw nothing. See the header of `lib/interactions.mjs`.
+    tool_calls: interactions?.toolCalls ?? null,
+    tool_sequence: interactions?.toolSequence ?? null,
+    writes: interactions?.writes ?? null,
+    pushes: interactions?.pushes ?? null,
+    writes_after_push: interactions?.writesAfterPush ?? null,
 
     files_changed: diff?.filesChanged ?? null,
     added_lines: diff?.added ?? null,
@@ -261,6 +323,7 @@ export function resultLine(fields) {
     started_at: startedAt,
     ended_at: endedAt,
     ...QUALIFICATIONS,
+    model_note: modelNote(model),
     // Arm- AND round-dependent, so it cannot live in QUALIFICATIONS with the
     // constants. It used to be arm-dependent alone, on the premise that only the
     // hooked arm's cells could be a mechanism check; round 2 pre-registered this arm

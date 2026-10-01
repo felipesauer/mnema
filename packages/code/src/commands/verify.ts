@@ -68,7 +68,13 @@ import {
   verify,
   weakerLevel,
 } from '@mnema/chain';
-import { type DiscoveryEnv, type ResolvedTrees, resolveTrees, type Scope } from '@mnema/core';
+import {
+  type DiscoveryEnv,
+  privateTreeVisibility,
+  type ResolvedTrees,
+  resolveTrees,
+  type Scope,
+} from '@mnema/core';
 import { recordTrees, type ScopedTree } from '../intelligence-source.js';
 
 /** What verify needs — injected so it is testable. */
@@ -101,6 +107,15 @@ export interface TreeVerdict {
   readonly root: string;
   /** The chain's verdict, unmodified. */
   readonly result: VerifyResult;
+  /**
+   * Present on the PRIVATE tree, and only when git would stage it: the tree holds a record, and
+   * no rule ignores it, so the next `git add` publishes what the product calls this machine's
+   * own. The verdict is about the chain and is not moved by this; it is a fact about the
+   * working tree, said beside it because a reader who trusts "private" has nowhere else to learn
+   * it. Absent is the ordinary case and also the answer where git cannot say (see
+   * `privateTreeVisibility`).
+   */
+  readonly visibleToGit?: { readonly path: string; readonly gitignore: string };
 }
 
 /**
@@ -212,7 +227,8 @@ function coverProject(
   };
   const rest = recordTrees(trees, undefined)
     .filter((tree) => tree.scope !== 'public' && (tree.scope !== 'global' || global))
-    .map((tree) => reportOn(tree, upcasters, trees.keyRoot));
+    .map((tree) => reportOn(tree, upcasters, trees.keyRoot))
+    .map((report) => withWhatGitSees(report, trees));
   return {
     trees: [committed, ...rest],
     record: aggregate([committed, ...rest.filter(isVerdict)]),
@@ -516,6 +532,18 @@ function reportOn(tree: ScopedTree, upcasters: UpcasterRegistry, keyRoot: string
     return { kind: 'no-record', scope: tree.scope, root };
   }
   return { kind: 'verdict', scope: tree.scope, root, result: verify(root, upcasters, { keyRoot }) };
+}
+
+/**
+ * `report`, with the one fact about the PRIVATE tree that no chain can know: whether git would
+ * stage it. Asked only of a private tree that holds a record — an empty one has nothing to
+ * leak — and only once per project, so a set of projects asks once each.
+ */
+function withWhatGitSees(report: TreeReport, trees: ResolvedTrees): TreeReport {
+  if (report.kind !== 'verdict' || report.scope !== 'private') return report;
+  const seen = privateTreeVisibility(trees);
+  if (seen.state !== 'visible') return report;
+  return { ...report, visibleToGit: { path: seen.path, gitignore: seen.gitignore } };
 }
 
 /**

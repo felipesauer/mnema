@@ -3655,6 +3655,10 @@ describe('mnema CLI — brief, the record as the file an agent reads', () => {
       // The heading counts the rules, so it changes with them — and it comes first,
       // because the document's order is the document's order.
       '## Decisions in force (2)',
+      // The count of rules marked unconfirmed is a sentence of the document (`who ruled each`),
+      // and it moves with the rules as the heading does: one rule, then two, both by the one
+      // identity this project has.
+      expect.stringContaining('2 of them were accepted by an identity marked unconfirmed'),
       expect.stringContaining('Rotate the credentials every quarter'),
     ]);
   });

@@ -379,7 +379,14 @@ describe('bootstrap — the opening context, focused on the actor', () => {
     try {
       const b = bootstrap([cache], asking(bench.who));
       expect(b.decisions).toEqual([
-        { id: 'dec-1', adr: 'ADR-dec-1', title: 'Hand-rolled arithmetic' },
+        {
+          id: 'dec-1',
+          adr: 'ADR-dec-1',
+          title: 'Hand-rolled arithmetic',
+          // And WHO RULED IT, because the opening context hands the decision over as a rule: the
+          // same field the committed document carries, from the same derivation.
+          acceptance: { by: expect.stringMatching(/^mnid:[0-9a-f]{8}$/), unconfirmed: true },
+        },
       ]);
       // Neither half of the body enters the opening context. The fixture writes
       // `why <title>` as the rationale and `turned down for <title>` as the
@@ -497,7 +504,12 @@ describe('bootstrap — the opening context, focused on the actor', () => {
       });
       // And the lists did not swap either: each carries its own kind's fields.
       expect(Object.keys(b.work[0] ?? {}).sort()).toEqual(['id', 'state', 'title', 'updatedAt']);
-      expect(Object.keys(b.decisions[0] ?? {}).sort()).toEqual(['adr', 'id', 'title']);
+      expect(Object.keys(b.decisions[0] ?? {}).sort()).toEqual([
+        'acceptance',
+        'adr',
+        'id',
+        'title',
+      ]);
       expect(Object.keys(b.awaitingJudgement[0] ?? {}).sort()).toEqual([
         'adr',
         'id',

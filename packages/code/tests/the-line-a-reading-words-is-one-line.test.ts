@@ -496,18 +496,62 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'how many rules are printed under the heading — a count this document made',
   },
-  'brief.ts «- **{}** · \\`{}\\`{}» oneLine(name) #1': {
+  'brief.ts «- **{}** · \\`{}\\`{}{}» oneLine(name) #1': {
     verdict: 'collapsed',
     why: 'the rule’s name: a title an actor wrote, or a pattern’s name',
   },
-  'brief.ts «- **{}** · \\`{}\\`{}» oneLine(id) #1': {
+  'brief.ts «- **{}** · \\`{}\\`{}{}» oneLine(id) #1': {
     verdict: 'collapsed',
     why: 'the record id — minted, and collapsed anyway because the rule is the line’s',
   },
-  'brief.ts «- **{}** · \\`{}\\`{}» from #1': {
+  'brief.ts «- **{}** · \\`{}\\`{}{}» from #1': {
     verdict: 'composed',
     why: 'the provenance fields, one per source — each already collapsed in the template below, which is why this bullet can take them whole',
   },
+  'brief.ts «- **{}** · \\`{}\\`{}{}» by #1': {
+    verdict: 'composed',
+    why: 'the clause that says who accepted the rule — built by acceptedBy below, every part of it collapsed or this module’s own word',
+  },
+  'brief.ts « · {}» acceptedBy(acceptance) #1': {
+    verdict: 'composed',
+    why: 'the clause itself, joined with its separator; its parts are classified where acceptedBy builds them',
+  },
+  'brief.ts «accepted by {} ({}{})» oneLine(acceptance.by) #1': {
+    verdict: 'collapsed',
+    why: 'the identity that accepted — an anchor read out of the envelope of the accepting event, shortened',
+  },
+  'brief.ts «accepted by {} ({}{})» act #1': {
+    verdict: 'composed',
+    why: 'either this surface’s word for an act with no agent, or the agent clause below, whose name is collapsed',
+  },
+  'brief.ts «accepted by {} ({}{})» mark #1': {
+    verdict: 'minted',
+    why: 'this module’s own word for an identity that nobody else has ruled with, or nothing',
+  },
+  'brief.ts «agent {}» oneLine(acceptance.agent) #1': {
+    verdict: 'collapsed',
+    why: 'the agent’s name as the accepting event carries it, text whoever opened that session wrote',
+  },
+  'brief.ts «{} of them {} accepted by an agent. The record keeps which, and \\`mnema switch\\` says whether an agent may accept.» byAnAgent #1':
+    {
+      verdict: 'minted',
+      why: 'a count of the rules in force, computed here from the list the document is made of',
+    },
+  "brief.ts «{} of them {} accepted by an agent. The record keeps which, and \\`mnema switch\\` says whether an agent may accept.» byAnAgent === 1 ? 'was' : 'were' #1":
+    {
+      verdict: 'minted',
+      why: 'the singular or the plural of a verb written in this module, chosen by the count beside it',
+    },
+  'brief.ts «{} of them {} accepted by an identity marked unconfirmed: it has accepted only decisions it recorded itself, and no other identity has accepted any of them. That is who has looked, not a verdict on the rule.» unconfirmed #1':
+    {
+      verdict: 'minted',
+      why: 'a count of the rules in force, computed here from the list the document is made of',
+    },
+  "brief.ts «{} of them {} accepted by an identity marked unconfirmed: it has accepted only decisions it recorded itself, and no other identity has accepted any of them. That is who has looked, not a verdict on the rule.» unconfirmed === 1 ? 'was' : 'were' #1":
+    {
+      verdict: 'minted',
+      why: 'the singular or the plural of a verb written in this module, chosen by the count beside it',
+    },
   'brief.ts « · {} \\`{}\\`» DERIVED_FROM #1': {
     verdict: 'minted',
     why: 'the one word this product introduces a provenance with, a constant of `provenance.ts` shared by the four printers of the fact',
@@ -563,6 +607,16 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   'exposure.ts «{} of {} record(s) hold a credential format:» report.scanned #1': {
     verdict: 'minted',
     why: 'how many records were read — the same count',
+  },
+
+  // --- plain.ts: the renderer, which neutralizes the text of every part -----------
+  'plain.ts «{}{}» PRECEDED_BY[part.role] #1': {
+    verdict: 'minted',
+    why: 'the punctuation between two parts, chosen by role from a table this module owns',
+  },
+  'plain.ts «{}{}» painted #1': {
+    verdict: 'minted',
+    why: 'a part already classified where its builder took it, with its control bytes made visible here',
   },
 
   // --- occurrence.ts: one event of the chain -------------------------------------
@@ -713,6 +767,26 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   'record.ts «{} — {}» oneLine(body.record.title) #1': {
     verdict: 'collapsed',
     why: 'the decision’s title — text whoever recorded it wrote',
+  },
+  'record.ts «recorded by {}» actorText(context.anchors, body.record.recordedBy) #1': {
+    verdict: 'composed',
+    why: 'the actor of the recording event, worded by actorText below: an anchor in its short form, and an act clause whose agent name is collapsed there',
+  },
+  'record.ts «accepted by {}» actorText(context.anchors, body.record.acceptedBy) #1': {
+    verdict: 'composed',
+    why: 'the actor of the accepting event, worded by actorText below, for the reason the recording actor is',
+  },
+  'record.ts «{} ({})» oneLine(anchorText(anchors, actor.who)) #1': {
+    verdict: 'collapsed',
+    why: 'the identity named on the envelope of the event, in the short form this record’s other reads print it in',
+  },
+  'record.ts «{} ({})» act #1': {
+    verdict: 'composed',
+    why: 'either this surface’s word for an act with no agent, or the agent clause below, whose name is collapsed',
+  },
+  'record.ts «agent {}» oneLine(actor.which) #1': {
+    verdict: 'collapsed',
+    why: 'the agent’s name as the event carries it, text whoever opened that session wrote',
   },
   'record.ts «supersedes {}» oneLine(body.record.supersedes) #1': {
     verdict: 'collapsed',
@@ -1515,14 +1589,17 @@ describe('every value this layer puts on a line is classified', () => {
     // The thirtieth is `within-a-hook.ts`, MACHINERY: it words nothing and receives no record —
     // it measures what the two opening texts print for a hook, and cuts them at a whole item.
     expect(FOUND.composers.length + FOUND.machinery.length).toBe(30);
-    expect(FOUND.composers.length).toBe(17);
+    expect(FOUND.composers.length).toBe(18);
     expect(FOUND.machinery).toContain('items.ts');
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
     expect(FOUND.machinery).toContain('within-a-hook.ts');
     expect(FOUND.builders.length).toBeGreaterThan(10);
     // 237 until `witness`'s copy of the no-tail sentence became a call of `tails.ts`'s one.
-    expect(FOUND.sites.length).toBe(254);
+    // 251 until the renderer began making an actor's control bytes visible and joined the
+    // composers with its two template values; then 253 until the rules in force began saying who
+    // accepted them (`brief.ts`, `record.ts`).
+    expect(FOUND.sites.length).toBe(271);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1543,10 +1620,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(65);
-    expect(count('minted')).toBe(142);
-    expect(count('composed')).toBe(47);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(65);
+    expect(count('collapsed')).toBe(69);
+    expect(count('minted')).toBe(149);
+    expect(count('composed')).toBe(53);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(69);
   });
 
   it('every reason says where the value comes from', () => {
@@ -1660,17 +1737,28 @@ const SERVED_WHOLE: Readonly<Record<string, string>> = {
 describe('the body is served whole, and it is the only thing that is', () => {
   it('names every value this layer prints as a line of its own', () => {
     // Everything else a reading writes goes through a template or through a part. What
-    // is pushed as a BARE value is a paragraph, and there are five of them.
-    const bare: string[] = [];
+    // is pushed as a bare value is a paragraph, and there are six of them.
+    const served: string[] = [];
+    const unmade: string[] = [];
     for (const file of sourceFiles(LAYER)) {
       const text = withoutComments(readFileSync(file, 'utf-8'));
       for (const pushed of text.matchAll(
-        /\.push\(\s*([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)+)\s*\)/g,
+        /\.push\(\s*(neutralized\(\s*)?([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)+)\s*\)/g,
       )) {
-        bare.push(pushed[1] as string);
+        served.push(pushed[2] as string);
+        if (pushed[1] === undefined) unmade.push(pushed[2] as string);
       }
     }
-    expect(bare.sort()).toEqual(Object.keys(SERVED_WHOLE).sort());
+    expect(served.sort()).toEqual(Object.keys(SERVED_WHOLE).sort());
+    // SERVED WHOLE IS NOT SERVED RAW. This census used to read the bare push (`.push(value)`)
+    // as the shape of a paragraph, and the premise under it was that a body needed no rule
+    // because it is not a line. A body is not a LINE, and it is still text a terminal reads:
+    // a decision's rationale holding a clear-screen sequence came out of `show` as one. So
+    // each of the six is pushed through `neutralized`, which keeps every line feed and tab
+    // the paragraph has and makes the bytes that are commands visible, and a bare push is
+    // the defect this asserts away. `neutralizes-control-bytes-everywhere.test.ts` holds the
+    // behaviour; this holds that no seventh paragraph is added without it.
+    expect(unmade).toEqual([]);
   });
 
   it('says why each one is not a line', () => {

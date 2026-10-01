@@ -564,6 +564,43 @@ valid, because a rotation should not make past work unattributable. The identity
 last key cannot be retired — it would leave an identity unable to sign anything
 again, including its own repair — so bring the replacement in first.
 
+### Where your private key lives, and a passphrase for it
+
+Each machine signs with one Ed25519 key, and its private half is one file:
+`<MNEMA_HOME>/identity/keys/<fingerprint>.key` (`~/.mnema/identity/keys/…` when
+`MNEMA_HOME` is not set). That file is the key's PKCS#8 PEM **in the clear**, created with mode
+`0600` and never re-checked afterwards, in a directory made with your umask. The cold backup
+`mnema init` makes sits beside it, in `identity/backup/`, in the same form. Whoever can read
+those files can sign as your identity, and a copy of the disk — a stolen laptop, a synced home
+directory, a backup — is a copy of the identity. Nothing in the record protects the key; the
+proof is only that a signature was made by it.
+
+You can put a passphrase on it, and nothing else changes:
+
+```sh
+export MNEMA_KEY_PASSPHRASE='a long passphrase of your own'
+mnema key protect
+#> Protected 2 of 2 private key file(s)
+#> …
+```
+
+`protect` encrypts the key and its backup in place (scrypt, then AES-256-GCM, written
+atomically with mode `0600`). The signed format is untouched: it is the same key and the same
+signatures, no event or checkpoint says whether a key is protected, and `mnema verify` never
+opens a private key, so a record written with a protected key verifies with no passphrase at all.
+Anything that **signs** needs `MNEMA_KEY_PASSPHRASE` set to the same value — your shell, and the
+environment the host starts an agent's server in. With it missing or wrong a write is refused
+(`KEY_IS_PROTECTED`, `KEY_PASSPHRASE_WRONG`), nothing is recorded, and no second identity is
+created on the way. `mnema key unprotect` writes the files back in the clear, and a wrong
+passphrase changes none of them.
+
+What it does **not** do: a process running as you can read the variable from its own environment
+and the opened key from the process that holds it; a keylogger sees the passphrase typed; and a
+short passphrase is a short passphrase. It protects the key at rest, which is what the file in
+the clear did not. The variable is the only way in on purpose — a server and a hook have no
+terminal to ask at — and a lost passphrase is a lost key, the cold backup included if it was
+protected too: keep the passphrase where you keep that copy.
+
 ### Authorizing a cut, which is not the same as making one
 
 Deleting a machine's tail from a record is invisible to the proof: `verify` reports
@@ -934,15 +971,20 @@ nothing. It is never a file to commit: it carries what was kept on this machine.
 Three things arrive without anybody asking: the document a session opens with, the notes
 beside it, and the rules handed over as a file is written. Each can be switched off, and
 the switching is **recorded** — because turning something off is legitimate and turning it
-off in silence is not.
+off in silence is not. The list also holds two gates that hand nothing over: the pause
+before a write where a rule asks for a person, and `agent-accepts`, which is **on** — an
+agent may accept a decision, freely, and the record keeps which agent did, the reply says
+so, and the document a session opens with marks the rule. Switching it off makes an agent's
+accept a refusal; a person's still lands.
 
 ```sh
 mnema switch
-#> 4 channel(s), looked in public, private, global:
+#> 5 channel(s), looked in public, private, global:
 #>   brief-document      on   the document `mnema brief` prints, which a session opens with: …
 #>   recall-document     on   the notes `mnema recall` prints, which a session opens with: …
 #>   edit-rules-push     on   the rules addressed at a file, handed over at each edit of it, …
 #>   edit-asks-a-person  on   the pause before a file is written where the record asks …
+#>   agent-accepts       on   an agent ruling a decision in force: with it off, an agent’s …
 ```
 
 ```sh

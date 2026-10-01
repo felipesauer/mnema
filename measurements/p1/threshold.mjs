@@ -43,6 +43,7 @@
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { readCells, tally } from './harness/lib/cells.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 
@@ -325,25 +326,10 @@ const OLD_THRESHOLD = 25
 
 function ratesOf(spec) {
   const split = JSON.parse(readFileSync(join(HERE, spec.split), 'utf8'))
-  const headline = split.headline
-  const scorable = new Map()
-  for (const line of readFileSync(join(HERE, spec.cells), 'utf8').split('\n')) {
-    if (!line.trim()) continue
-    const cell = JSON.parse(line)
-    if (cell.status !== 'ok') continue
-    if (cell.verdict !== 'CONFORMS' && cell.verdict !== 'VIOLATES') continue
-    const key = `${cell.arm} ${cell.fixture}`
-    const at = scorable.get(key) ?? { conforms: 0, n: 0 }
-    at.conforms += cell.verdict === 'CONFORMS' ? 1 : 0
-    at.n += 1
-    scorable.set(key, at)
-  }
-  const arms = [...new Set([...scorable.keys()].map((k) => k.split(' ')[0]))].sort()
-  const rate = (arm, task) => {
-    const at = scorable.get(`${arm} ${task}`)
-    return at && at.n > 0 ? at.conforms / at.n : null
-  }
-  return { headline, arms, rate }
+  // The count of what a line is worth lives in `harness/lib/cells.mjs` and nowhere else: this
+  // file used to carry its own copy of it.
+  const counted = tally(readCells(join(HERE, spec.cells)))
+  return { headline: split.headline, arms: counted.arms, rate: counted.rate }
 }
 
 /** Read every ordered pair of one round at one threshold. */

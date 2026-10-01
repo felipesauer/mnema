@@ -356,7 +356,7 @@ describe('11d · the line of a mnema-doc cell proves which arm it is', () => {
     assert.equal(line.status, 'ok', line.error)
     assert.ok(line.verdict !== null, 'a delivered cell of this arm gets a verdict')
     assert.equal(line.hook_ran, true, 'the document channel ran')
-    assert.deepEqual(line.hook_invocations, ['brief:1'])
+    assert.deepEqual(line.hook_invocations, ['brief:1', 'recall:1'], 'the hook’s two opening commands')
     // The host still dispatched — the wiring is the same in both arms, and this column is
     // what `prediction.md` is checked against.
     assert.equal(line.mcp_pushed, 1, 'the host called the tool, as it does in mnema+')
