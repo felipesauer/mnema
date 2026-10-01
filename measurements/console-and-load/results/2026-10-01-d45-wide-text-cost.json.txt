@@ -1,0 +1,96 @@
+# D45 · wide text against ASCII of the same code-point count; head (first) and the untouched base (second)
+# commit bdeb5b5d (origin/main-v1 cd2a420b + the screen-model change); 2026-10-01; Linux 7.0.0, 16 cores; sandbox HOME
+--- head ---
+{
+ "load": "9.02",
+ "lineCodePoints": 80,
+ "blocks": 31,
+ "perBlock": 600,
+ "widthOfText_cold": {
+  "wide_over_ascii": 28.58,
+  "control_ascii_over_ascii": 0.86,
+  "ns_per_line_ascii": 3063,
+  "ns_per_line_wide": 86387,
+  "ratio_range": [
+   19.48,
+   62.21
+  ]
+ },
+ "glyphsOf_cold": {
+  "wide_over_ascii": 5.6,
+  "control_ascii_over_ascii": 0.9,
+  "ns_per_line_ascii": 3108,
+  "ns_per_line_wide": 16102,
+  "ratio_range": [
+   1.65,
+   10.49
+  ]
+ },
+ "rowsForTheLine_cold": {
+  "wide_over_ascii": 38.77,
+  "control_ascii_over_ascii": 1.18,
+  "ns_per_line_ascii": 2068,
+  "ns_per_line_wide": 82001,
+  "ratio_range": [
+   26.52,
+   86.21
+  ]
+ },
+ "rowsForTheLine_warm": {
+  "wide_over_ascii": 1.67,
+  "control_ascii_over_ascii": 0.84,
+  "ns_per_line_ascii": 152,
+  "ns_per_line_wide": 249,
+  "ratio_range": [
+   0.62,
+   2.55
+  ]
+ }
+}
+--- base ---
+{
+ "load": "8.70",
+ "lineCodePoints": 80,
+ "blocks": 31,
+ "perBlock": 600,
+ "widthOfText_cold": {
+  "wide_over_ascii": 29.9,
+  "control_ascii_over_ascii": 0.94,
+  "ns_per_line_ascii": 2864,
+  "ns_per_line_wide": 82872,
+  "ratio_range": [
+   19.99,
+   62.65
+  ]
+ },
+ "glyphsOf_cold": {
+  "wide_over_ascii": 5.28,
+  "control_ascii_over_ascii": 0.93,
+  "ns_per_line_ascii": 3003,
+  "ns_per_line_wide": 16193,
+  "ratio_range": [
+   1.6,
+   9.95
+  ]
+ },
+ "rowsForTheLine_cold": {
+  "wide_over_ascii": 41.77,
+  "control_ascii_over_ascii": 1.05,
+  "ns_per_line_ascii": 2096,
+  "ns_per_line_wide": 83439,
+  "ratio_range": [
+   25.28,
+   78.43
+  ]
+ },
+ "rowsForTheLine_warm": {
+  "wide_over_ascii": 1.47,
+  "control_ascii_over_ascii": 0.85,
+  "ns_per_line_ascii": 145,
+  "ns_per_line_wide": 243,
+  "ratio_range": [
+   0.63,
+   3.05
+  ]
+ }
+}
