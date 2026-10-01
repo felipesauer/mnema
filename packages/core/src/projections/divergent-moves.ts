@@ -48,18 +48,11 @@ export interface DivergentMove {
    * left `from` and the move or moves that were judged on it afterwards.
    */
   readonly evidence: readonly CatalogEvent[];
-}
-
-/**
- * The state one move of the evidence went to — its `to`. The evidence holds only transitions,
- * so the fallback (the event's kind) is never printed by a record the product wrote.
- */
-export function movedTo(event: DivergentMove['evidence'][number]): string {
-  return event.kind === 'decision.transitioned' ||
-    event.kind === 'skill.transitioned' ||
-    event.kind === 'task.transitioned'
-    ? event.payload.to
-    : event.kind;
+  /**
+   * The state each move of {@link evidence} went to, in the same order — what a reader is told,
+   * read here once so no surface has to take a transition apart to say it.
+   */
+  readonly to: readonly string[];
 }
 
 /**
@@ -76,7 +69,17 @@ export function divergentMoves(events: Iterable<CatalogEvent>): DivergentMove[] 
     { kind: DivergentKind; id: string; from: string; ev: CatalogEvent[] }
   >();
   const tasks = new TaskMoves();
+  // A move repeated byte for byte is ONE move read twice — what a tail whose last entry was
+  // duplicated holds, and what the link-break notice already reports as a record that does not
+  // chain — never two moves that did not see each other. Two machines' moves differ at least
+  // in who signed them.
+  const read = new Set<string>();
   for (const event of events) {
+    if (event.kind.endsWith('.transitioned')) {
+      const bytes = JSON.stringify(event);
+      if (read.has(bytes)) continue;
+      read.add(bytes);
+    }
     if (event.kind === 'task.transitioned') {
       tasks.read(event);
       continue;
@@ -98,8 +101,14 @@ export function divergentMoves(events: Iterable<CatalogEvent>): DivergentMove[] 
   return [
     ...[...out.values()]
       .filter((m) => m.ev.length > 1)
-      .map((m) => ({ kind: m.kind, entityId: m.id, from: m.from, evidence: m.ev })),
-    ...tasks.divergent(),
+      .map((m) => ({
+        kind: m.kind,
+        entityId: m.id,
+        from: m.from,
+        evidence: m.ev,
+        to: m.ev.map(movedTo),
+      })),
+    ...tasks.divergent().map((m) => ({ ...m, to: m.evidence.map(movedTo) })),
   ].sort((a, b) => order(a.kind, b.kind) || order(a.entityId, b.entityId) || order(a.from, b.from));
 }
 
@@ -112,7 +121,10 @@ export function divergentMoves(events: Iterable<CatalogEvent>): DivergentMove[] 
 class TaskMoves {
   private readonly state = new Map<string, string>();
   private readonly leftBy = new Map<string, CatalogEvent>();
-  private readonly found = new Map<CatalogEvent, DivergentMove & { evidence: CatalogEvent[] }>();
+  private readonly found = new Map<
+    CatalogEvent,
+    Omit<DivergentMove, 'to'> & { evidence: CatalogEvent[] }
+  >();
 
   read(event: CatalogEvent): void {
     if (event.kind !== 'task.transitioned') return;
@@ -134,11 +146,20 @@ class TaskMoves {
     this.state.set(id, to);
   }
 
-  divergent(): DivergentMove[] {
+  divergent(): Omit<DivergentMove, 'to'>[] {
     return [...this.found.values()];
   }
 }
 
 function order(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
+}
+
+/** The state a transition went to — its `to`. The evidence holds only transitions. */
+function movedTo(event: CatalogEvent): string {
+  return event.kind === 'decision.transitioned' ||
+    event.kind === 'skill.transitioned' ||
+    event.kind === 'task.transitioned'
+    ? event.payload.to
+    : event.kind;
 }

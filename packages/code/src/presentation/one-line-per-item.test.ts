@@ -189,6 +189,14 @@ describe('the brief prints one line per rule', () => {
     // measured against. It cost nothing because that line does not break either way, and
     // it would have cost a case the day a value on it could. Both are carried now, with
     // the switch's own text replaced the way every other field's is.
+    // The declaration about a rule moved apart is text in the same document too, carried for
+    // the reason the clashes are: one per move the case gave, every value break-free.
+    divergent: brief.divergent.map((m, i) => ({
+      ...m,
+      entityId: `v-${i}`,
+      from: `f-${i}`,
+      to: m.to.map((_to, j) => `t-${i}-${j}`),
+    })),
     addressed: brief.addressed,
     asking: brief.asking,
     editPush: plainState(brief.editPush),
@@ -295,6 +303,32 @@ describe('the brief prints one line per rule', () => {
         governs({
           decisions: [decision()],
           collisions: [{ adr: 'ADR-1', ids: ['a', `b${breaker}c`] }],
+        }),
+      ];
+      for (const one of cases) {
+        expect(document(one), JSON.stringify(breaker)).toHaveLength(document(plain(one)).length);
+      }
+    }
+  });
+
+  it('holds the DECLARATION about a rule moved apart, in every one of its fields', () => {
+    // The line that says a rule left one state twice is built out of the record: the id, the
+    // state, and each move's `to`. A break in any would put a second line under it.
+    const apart = (over: Partial<Brief['divergent'][number]>): Brief['divergent'][number] => ({
+      kind: 'decision',
+      entityId: 'the-id',
+      from: 'proposed',
+      evidence: [],
+      to: ['accepted', 'rejected'],
+      ...over,
+    });
+    for (const breaker of BREAKERS) {
+      const cases: Brief[] = [
+        governs({ decisions: [decision()], divergent: [apart({ entityId: `the${breaker}id` })] }),
+        governs({ decisions: [decision()], divergent: [apart({ from: `pro${breaker}posed` })] }),
+        governs({
+          decisions: [decision()],
+          divergent: [apart({ to: ['accepted', `re${breaker}jected`] })],
         }),
       ];
       for (const one of cases) {

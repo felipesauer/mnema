@@ -111,7 +111,6 @@ export {
   type DivergentKind,
   type DivergentMove,
   divergentMoves,
-  movedTo,
 } from './projections/divergent-moves.js';
 export {
   type HandoffProjection,

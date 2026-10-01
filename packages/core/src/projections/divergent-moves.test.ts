@@ -126,6 +126,19 @@ describe('divergentMoves', () => {
     expect(['accepted', 'rejected']).toContain(projectDecisions(eventsOf(tree)).get(id)?.state);
   });
 
+  it('reads a move repeated byte for byte as one move — a duplicated entry, not a divergence', () => {
+    // What a tail whose last entry was duplicated holds; the link-break notice says that one.
+    const tree = tmp('mnema-divergent-dup-');
+    const a = machine(tree, tmp('mnema-divergent-key-'));
+    const recorded = recordDecision(a, { title: 'Use SQLite', rationale: 'r' });
+    if (!recorded.ok) throw new Error(recorded.message);
+    const accepted = acceptDecision(a, { id: recorded.id, fields: { note: 'agreed' } });
+    if (!accepted.ok) throw new Error(accepted.message);
+    const events = eventsOf(tree);
+    const last = events.findLast((e) => e.kind === 'decision.transitioned') as CatalogEvent;
+    expect(divergentMoves([...events, last])).toEqual([]);
+  });
+
   it('says nothing about a record whose subjects each left a state once', () => {
     const tree = tmp('mnema-divergent-one-');
     const a = machine(tree, tmp('mnema-divergent-key-'));

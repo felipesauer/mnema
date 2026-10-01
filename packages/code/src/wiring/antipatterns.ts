@@ -32,7 +32,6 @@
  * of "moves with none" read without it is a list of names.
  */
 
-import { movedTo } from '@mnema/core';
 import type { Command } from 'commander';
 import { statement } from '../presentation/verdict.js';
 import { here } from './context.js';
@@ -149,7 +148,7 @@ export function registerAntipatterns(program: Command, wiring: Wiring): Declared
           render(
             statement(
               onOneLine`moved twice out of one state (${divergent.kind} ${divergent.from})`,
-              onOneLine`${divergent.entityId}: ${divergent.evidence.map(movedTo).join(', ')}`,
+              onOneLine`${divergent.entityId}: ${divergent.to.join(', ')}`,
             ),
           ),
         );

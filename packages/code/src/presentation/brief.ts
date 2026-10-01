@@ -114,7 +114,7 @@
  */
 
 import type { AdrCollision, Brief, ChannelState } from '@mnema/copilot';
-import { type DivergentMove, movedTo } from '@mnema/core';
+import type { DivergentMove } from '@mnema/core';
 import { oneLine } from '../one-line.js';
 import { DERIVED_FROM } from '../provenance.js';
 import { recordFraming } from '../record-framing.js';
@@ -850,8 +850,8 @@ function movedApart(divergent: readonly DivergentMove[], kind: 'decision' | 'ski
 
 /** One rule moved apart, as a bullet: its id, the state it left, and every move out of it. */
 function apart(move: DivergentMove): string {
-  const tos = move.evidence.map((event) => oneLine(movedTo(event))).join(', then ');
-  return `- \`${oneLine(move.entityId)}\` left ${oneLine(move.from)} to ${tos}`;
+  // The moves' states are collapsed as one joined value, the way a rule's composed name is.
+  return `- \`${oneLine(move.entityId)}\` left ${oneLine(move.from)} to ${oneLine(move.to.join(', then '))}`;
 }
 
 /**

@@ -18,7 +18,7 @@
  * there. That is the convention `verify.ts` already keeps.
  */
 
-import { type DivergentMove, movedTo } from '@mnema/core';
+import type { DivergentMove } from '@mnema/core';
 import { fact } from '../presentation/detail.js';
 import type { Line } from '../presentation/line.js';
 import { linkBreakSentences, type ScopedLinkBreak } from '../record-integrity.js';
@@ -49,7 +49,7 @@ export function linkBreakNotice(breaks: readonly ScopedLinkBreak[]): readonly Li
 export function divergenceNotice(divergent: readonly DivergentMove[]): readonly Line[] {
   return divergent.map((move) =>
     fact(
-      onOneLine`this ${move.kind} left ${move.from} more than once, by moves that did not see each other: to ${move.evidence.map(movedTo).join(', then ')}. Each is a signed fact of the record; the state shown is the last of them in its order.`,
+      onOneLine`this ${move.kind} left ${move.from} more than once, by moves that did not see each other: to ${move.to.join(', then ')}. Each is a signed fact of the record; the state shown is the last of them in its order.`,
       0,
     ),
   );

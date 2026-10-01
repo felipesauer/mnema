@@ -558,6 +558,7 @@ describe('the brief declares a rule two machines moved apart', () => {
     entityId: decision(1).id,
     from: 'proposed',
     evidence: [move('rejected', 'reject'), move('accepted', 'accept')],
+    to: ['rejected', 'accepted'],
   };
 
   it('adds NOTHING when no printed rule was moved apart', () => {

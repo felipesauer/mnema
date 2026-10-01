@@ -255,53 +255,6 @@ type Imported =
   | { readonly stopped: NonNullable<ImportDone['stopped']> };
 
 /**
- * Records one file's decision and the edge that names the file it came from — called under the
- * tail's lock, so the two land in one hold and no other import reads the decision without its
- * origin.
- */
-function importOne(
-  context: Parameters<typeof recordDecision>[0],
-  document: ScannedDecision,
-  input: { readonly which?: string; readonly run?: string },
-): Imported {
-  const recorded = recordDecision(context, {
-    title: document.title,
-    rationale: document.rationale,
-    ...(document.alternatives !== undefined ? { alternatives: document.alternatives } : {}),
-    ...(input.which !== undefined ? { which: input.which } : {}),
-    ...(input.run !== undefined ? { run: input.run } : {}),
-  });
-  if (!recorded.ok) {
-    return { stopped: { path: document.path, code: recorded.code, message: recorded.message } };
-  }
-  // The provenance, as a fact of the record rather than a sentence in the prose.
-  // It is recorded right after the decision it is about, so a run that stops
-  // partway never leaves a decision whose origin nobody can name.
-  const linked = linkKnowledge(context, {
-    subject: recorded.id,
-    target: document.path,
-    rel: DERIVED_FROM_RELATION,
-    ...(input.which !== undefined ? { which: input.which } : {}),
-    ...(input.run !== undefined ? { run: input.run } : {}),
-  });
-  if (!linked.ok) {
-    return { stopped: { path: document.path, code: linked.code, message: linked.message } };
-  }
-  // BOTH writes' reports: the provenance link is a fact this verb recorded too, and its
-  // report used to be dropped here. (Its `target` and `rel` are names, refused rather than
-  // redacted, so today it can replace nothing; the next field it carries could.)
-  const replaced = [...(recorded.replaced ?? []), ...(linked.replaced ?? [])];
-  return {
-    proposal: {
-      ...proposed(document),
-      id: recorded.id,
-      adr: recorded.adr,
-      ...(replaced.length > 0 ? { replaced } : {}),
-    },
-  };
-}
-
-/**
  * Reads a directory of decision documents and proposes what it finds — printing the
  * plan, or, with `write`, recording it.
  *
@@ -387,6 +340,47 @@ export function runDecisionImport(
     }
     return known;
   };
+  // One file's decision and the edge that names the file it came from, called under the
+  // tail's lock, so the two land in one hold and no other import reads the decision without
+  // its origin. Inside this function rather than beside it, because it is this verb's write,
+  // signed by the one checkpoint at the end.
+  const importOne = (document: ScannedDecision): Imported => {
+    const recorded = recordDecision(context, {
+      title: document.title,
+      rationale: document.rationale,
+      ...(document.alternatives !== undefined ? { alternatives: document.alternatives } : {}),
+      ...(input.which !== undefined ? { which: input.which } : {}),
+      ...(input.run !== undefined ? { run: input.run } : {}),
+    });
+    if (!recorded.ok) {
+      return { stopped: { path: document.path, code: recorded.code, message: recorded.message } };
+    }
+    // The provenance, as a fact of the record rather than a sentence in the prose.
+    // It is recorded right after the decision it is about, so a run that stops
+    // partway never leaves a decision whose origin nobody can name.
+    const linked = linkKnowledge(context, {
+      subject: recorded.id,
+      target: document.path,
+      rel: DERIVED_FROM_RELATION,
+      ...(input.which !== undefined ? { which: input.which } : {}),
+      ...(input.run !== undefined ? { run: input.run } : {}),
+    });
+    if (!linked.ok) {
+      return { stopped: { path: document.path, code: linked.code, message: linked.message } };
+    }
+    // BOTH writes' reports: the provenance link is a fact this verb recorded too, and its
+    // report used to be dropped here. (Its `target` and `rel` are names, refused rather than
+    // redacted, so today it can replace nothing; the next field it carries could.)
+    const replaced = [...(recorded.replaced ?? []), ...(linked.replaced ?? [])];
+    return {
+      proposal: {
+        ...proposed(document),
+        id: recorded.id,
+        adr: recorded.adr,
+        ...(replaced.length > 0 ? { replaced } : {}),
+      },
+    };
+  };
   const proposals: ImportedProposal[] = [];
   const meanwhile: AlreadyImported[] = [];
   let stopped: ImportDone['stopped'];
@@ -402,7 +396,7 @@ export function runDecisionImport(
       if (decision !== undefined) return { refuse: { already: { path: document.path, decision } } };
       return {
         write: () => {
-          const imported = importOne(context, document, input);
+          const imported = importOne(document);
           // This run's own writes moved the tree, and they are known: the edge it just
           // appended. The extent is taken here, still under the lock, so nothing another
           // session appends after the lock is let go can be folded into it unread.
