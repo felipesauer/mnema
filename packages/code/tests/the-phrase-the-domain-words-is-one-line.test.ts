@@ -1498,9 +1498,16 @@ describe('the rule has one door and it is below both packages', () => {
   it('is re-exported by both packages and written out by neither', () => {
     // `core` and `code` each keep the address their own modules import, and each of
     // them is one line of plumbing to the package below. A copy would be a second rule.
-    for (const at of ['../../core/src/one-line.ts', '../src/one-line.ts']) {
+    // The command line's address carries the second function of the same module, the one
+    // that makes a control byte visible (`neutralized`), because the rule of the line is
+    // applied to a part of a line by the renderers and to a paragraph by `show`.
+    const addresses = {
+      '../../core/src/one-line.ts': "export { oneLine } from '@mnema/chain/one-line';",
+      '../src/one-line.ts': "export { neutralized, oneLine } from '@mnema/chain/one-line';",
+    };
+    for (const [at, line] of Object.entries(addresses)) {
       const source = readFileSync(fileURLToPath(new URL(at, import.meta.url)), 'utf-8');
-      expect(source, at).toContain("export { oneLine } from '@mnema/chain/one-line';");
+      expect(source, at).toContain(line);
       expect(A_COLLAPSE.test(source), at).toBe(false);
     }
   });

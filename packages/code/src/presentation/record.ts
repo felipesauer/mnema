@@ -44,7 +44,7 @@
 import type { RecordBody } from '@mnema/copilot';
 import type { TransitionProof } from '@mnema/core';
 import { type AnchorForms, anchorText } from '../anchors.js';
-import { oneLine } from '../one-line.js';
+import { neutralized, oneLine } from '../one-line.js';
 import { DERIVED_FROM } from '../provenance.js';
 import { consultedLine } from './consultation.js';
 import { fact, statedFact, subjectLine } from './detail.js';
@@ -85,7 +85,7 @@ function movesSaid(proof: readonly TransitionProof[] | undefined): string[] {
   const lines = ['', 'What each move said:'];
   for (const one of proof) {
     lines.push(`${oneLine(one.action)} · ${oneLine(one.at)}`);
-    lines.push(one.said);
+    lines.push(neutralized(one.said));
   }
   return lines;
 }
@@ -149,7 +149,7 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
         ),
       );
       lines.push('');
-      lines.push(body.record.content);
+      lines.push(neutralized(body.record.content));
       break;
     case 'observation':
       lines.push(
@@ -157,7 +157,7 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
       );
       lines.push(render(fact(`topic: ${oneLine(body.record.topic)}`)));
       lines.push('');
-      lines.push(body.record.text);
+      lines.push(neutralized(body.record.text));
       break;
     case 'decision':
       lines.push(
@@ -175,7 +175,7 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
         lines.push(render(fact(`superseded by ${oneLine(body.record.supersededBy)}`)));
       }
       lines.push('');
-      lines.push(body.record.rationale);
+      lines.push(neutralized(body.record.rationale));
       // What it turned down, when the record says so — a SECOND body, headed, so
       // the two paragraphs are not read as one argument. Absent when the decision
       // recorded none: no heading, no blank line, nothing that would read as an
@@ -183,7 +183,7 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
       if (body.record.alternatives !== undefined) {
         lines.push('');
         lines.push('Considered and turned down:');
-        lines.push(body.record.alternatives);
+        lines.push(neutralized(body.record.alternatives));
       }
       lines.push(...movesSaid(body.record.proof));
       break;
@@ -198,7 +198,7 @@ export function recordReport(render: Render, body: RecordBody, context: RecordCo
       lines.push(render(statedFact(oneLine(body.record.name), asState(body.record.state))));
       lines.push(render(fact(consultedLine(context.consultations ?? 0))));
       lines.push('');
-      lines.push(body.record.body);
+      lines.push(neutralized(body.record.body));
       lines.push(...movesSaid(body.record.proof));
       break;
   }

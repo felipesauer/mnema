@@ -100,7 +100,7 @@ import { z } from 'zod';
 import { keyFileLine } from '../key-file.js';
 import { movedLine } from '../moved-record.js';
 import { passedOverSentences } from '../not-a-project.js';
-import { oneLine } from '../one-line.js';
+import { neutralized, oneLine } from '../one-line.js';
 import { type Declared, mutatesTheRecord, readsTheRecord } from '../record-effect.js';
 import { linkBreakBlock, linkBreakBlockOnWrite } from '../record-integrity.js';
 import {
@@ -1755,7 +1755,7 @@ function registerTools(tool: ToolRegistrar, ensureSession: () => Promise<Session
       // paid for on every edit of every session. It is listed in
       // `TOOLS_SERVING_NO_RECORD_CONTENT` with that reason, and `governing_rules` — the same
       // answer asked for rather than pushed — does carry it.
-      return { content: [{ type: 'text' as const, text: JSON.stringify(result.value) }] };
+      return { content: [block(JSON.stringify(result.value))] };
     },
   );
 
@@ -2181,11 +2181,23 @@ function replied(
       // the edit hook's facts — which no tool's own reply acknowledges (`ReplacementsOwed`).
       ...session.replacementsOwed.take(),
       ...after,
-    ].map((text) => ({
-      type: 'text' as const,
-      text,
-    })),
+    ].map(block),
   };
+}
+
+/**
+ * One text block of a reply — the single place this server makes one, and the place the
+ * control bytes of recorded text are made visible.
+ *
+ * A model's transport is not a terminal, but the same bytes are commands to the next
+ * thing that renders what the model says back (an ANSI sequence in a title the model quotes
+ * is a sequence in a pane), and to a log of the exchange. Every reply leaves through
+ * {@link replied}, {@link refused} or the hook reply, and all three build their blocks
+ * here, so a tool added later cannot answer in raw bytes without writing its own block —
+ * which `tests/neutralizes-control-bytes-everywhere.test.ts` reads the source for.
+ */
+function block(text: string): { readonly type: 'text'; readonly text: string } {
+  return { type: 'text' as const, text: neutralized(text) };
 }
 
 /**
@@ -2236,7 +2248,7 @@ function refused(
       `Refused (${refusal.code}): ${refusal.message}`,
       ...session.founding.take(),
       ...session.replacementsOwed.take(),
-    ].map((text) => ({ type: 'text' as const, text })),
+    ].map(block),
   };
 }
 

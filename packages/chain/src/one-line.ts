@@ -94,11 +94,63 @@
  * imitate. The same goes for the session log line and the one sentence `bootstrap`
  * adds about where the session landed.
  *
- * It does NOT reach the control characters a terminal interprets — an ANSI escape,
- * or U+0085 NEL, which is not `\s` and stays. That class is the product's, not this
- * rule's: every read that prints recorded text is exposed to it, and closing it
- * one call site at a time would look like coverage that is not there.
+ * IT USED TO STOP SHORT OF THE CONTROL CHARACTERS A TERMINAL INTERPRETS, and said so: "that
+ * class is the product's, not this rule's… closing it one call site at a time would look
+ * like coverage that is not there." The premise was that the class belonged to some other
+ * place, and nothing was ever put there: measured against the shipped binary, a decision
+ * titled with `ESC[2J`, an OSC title sequence and a prompt-injection sentence came out raw
+ * in `search`, `brief`, `show` and `verify`, because every one of those reads reached this
+ * function and this function let the bytes through. So the class is this rule's after all,
+ * through {@link neutralized}, which is the one function that knows it; a line that has
+ * passed here has no byte a terminal or a model's transport could mistake for a command.
+ * `neutralizes-control-bytes-everywhere.test.ts` holds it over every read that prints
+ * recorded text, and `one-line.test.ts` holds it on the function.
  */
 export function oneLine(text: string): string {
-  return text.replace(/\s+/g, ' ').trim();
+  return neutralized(text.replace(/\s+/g, ' ').trim());
+}
+
+/** C0 but for tab and line feed, a CR that is not half of a CRLF, DEL, and C1. */
+// biome-ignore lint/suspicious/noControlCharactersInRegex: matching control characters is this rule
+const CONTROL_BYTES = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]|\r(?!\n)/g;
+
+/**
+ * Every control byte in `text` made visible as the escape JSON writes for it — the one
+ * function that decides what leaves this product as a command to whatever is reading.
+ *
+ * WHAT IT NEUTRALIZES is the C0 controls (U+0000 to U+001F), DEL (U+007F) and the C1
+ * controls (U+0080 to U+009F): the bytes a terminal reads as a cursor move, a screen clear,
+ * a title change or a hyperlink, and that a log viewer in CI honours the same way. Each
+ * becomes six visible characters — `\u001b` for ESC — which is exactly the spelling the
+ * canonical JSON already gives it on disk, so the text a reader sees is the text the
+ * record holds.
+ *
+ * WHAT IT KEEPS: a line feed and a tab, because recorded prose is multi-line by design
+ * and a tab moves nothing a reader cannot see; and a carriage return that is half of a
+ * CRLF, because a record imported from a file with Windows line ends would otherwise print
+ * an escape at the end of every line. A LONE carriage return is neutralized: it returns the
+ * cursor to the start of the line, and what is printed after it overwrites what was there,
+ * which is how a finding is hidden behind a clean one.
+ *
+ * WHAT IT IS NOT: a judgement of what the text says. It looks at bytes, never at words, and
+ * a sentence addressed to a model comes out of it unchanged — the framing decides what that
+ * sentence is told it is (`record-framing.ts`). It also does not reach the format controls
+ * that are not C0 or C1 (a right-to-left override, a zero-width joiner): those change what
+ * a reader SEES, not what a terminal DOES, and they are declared as a limit rather than
+ * folded in.
+ *
+ * IDEMPOTENT, and it has to be: the escape it writes holds no control byte, so text that
+ * passes through two sinks (a line built by {@link oneLine}, then written by the port) is
+ * not escaped twice. `one-line.test.ts` asserts it.
+ *
+ * ON JSON TEXT IT CHANGES NOTHING A PARSER READS. The six characters it writes for a C1
+ * byte are the escape a JSON string uses for it, and a C0 byte is escaped by the
+ * serializer before it gets here, so a pretty-printed document run through this function
+ * parses to the same value it did.
+ */
+export function neutralized(text: string): string {
+  return text.replace(
+    CONTROL_BYTES,
+    (found) => `\\u${found.charCodeAt(0).toString(16).padStart(4, '0')}`,
+  );
 }

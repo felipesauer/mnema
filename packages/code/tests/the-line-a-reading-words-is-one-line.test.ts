@@ -565,6 +565,16 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     why: 'how many records were read — the same count',
   },
 
+  // --- plain.ts: the renderer, which neutralizes the text of every part -----------
+  'plain.ts «{}{}» PRECEDED_BY[part.role] #1': {
+    verdict: 'minted',
+    why: 'the punctuation between two parts, chosen by role from a table this module owns',
+  },
+  'plain.ts «{}{}» painted #1': {
+    verdict: 'minted',
+    why: 'a part already classified where its builder took it, with its control bytes made visible here',
+  },
+
   // --- occurrence.ts: one event of the chain -------------------------------------
   'occurrence.ts «{} {}» BY #1': {
     verdict: 'minted',
@@ -1503,14 +1513,16 @@ describe('every value this layer puts on a line is classified', () => {
     // The thirtieth is `within-a-hook.ts`, MACHINERY: it words nothing and receives no record —
     // it measures what the two opening texts print for a hook, and cuts them at a whole item.
     expect(FOUND.composers.length + FOUND.machinery.length).toBe(30);
-    expect(FOUND.composers.length).toBe(17);
+    expect(FOUND.composers.length).toBe(18);
     expect(FOUND.machinery).toContain('items.ts');
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
     expect(FOUND.machinery).toContain('within-a-hook.ts');
     expect(FOUND.builders.length).toBeGreaterThan(10);
     // 237 until `witness`'s copy of the no-tail sentence became a call of `tails.ts`'s one.
-    expect(FOUND.sites.length).toBe(251);
+    // 251 until the renderer began making an actor's control bytes visible and joined the
+    // composers with its two template values.
+    expect(FOUND.sites.length).toBe(253);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1532,7 +1544,7 @@ describe('every value this layer puts on a line is classified', () => {
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
     expect(count('collapsed')).toBe(64);
-    expect(count('minted')).toBe(142);
+    expect(count('minted')).toBe(144);
     expect(count('composed')).toBe(45);
     expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(64);
   });
@@ -1648,17 +1660,28 @@ const SERVED_WHOLE: Readonly<Record<string, string>> = {
 describe('the body is served whole, and it is the only thing that is', () => {
   it('names every value this layer prints as a line of its own', () => {
     // Everything else a reading writes goes through a template or through a part. What
-    // is pushed as a BARE value is a paragraph, and there are five of them.
-    const bare: string[] = [];
+    // is pushed as a bare value is a paragraph, and there are six of them.
+    const served: string[] = [];
+    const unmade: string[] = [];
     for (const file of sourceFiles(LAYER)) {
       const text = withoutComments(readFileSync(file, 'utf-8'));
       for (const pushed of text.matchAll(
-        /\.push\(\s*([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)+)\s*\)/g,
+        /\.push\(\s*(neutralized\(\s*)?([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)+)\s*\)/g,
       )) {
-        bare.push(pushed[1] as string);
+        served.push(pushed[2] as string);
+        if (pushed[1] === undefined) unmade.push(pushed[2] as string);
       }
     }
-    expect(bare.sort()).toEqual(Object.keys(SERVED_WHOLE).sort());
+    expect(served.sort()).toEqual(Object.keys(SERVED_WHOLE).sort());
+    // SERVED WHOLE IS NOT SERVED RAW. This census used to read the bare push (`.push(value)`)
+    // as the shape of a paragraph, and the premise under it was that a body needed no rule
+    // because it is not a line. A body is not a LINE, and it is still text a terminal reads:
+    // a decision's rationale holding a clear-screen sequence came out of `show` as one. So
+    // each of the six is pushed through `neutralized`, which keeps every line feed and tab
+    // the paragraph has and makes the bytes that are commands visible, and a bare push is
+    // the defect this asserts away. `neutralizes-control-bytes-everywhere.test.ts` holds the
+    // behaviour; this holds that no seventh paragraph is added without it.
+    expect(unmade).toEqual([]);
   });
 
   it('says why each one is not a line', () => {

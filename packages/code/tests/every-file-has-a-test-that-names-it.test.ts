@@ -320,10 +320,6 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: 'A types-only module (Who, Which, Envelope): every importer uses import type, so it emits no runtime code and there is no value for any assertion to observe.',
   },
-  'packages/chain/src/one-line.ts': {
-    reached: 'nobody imports it',
-    why: 'oneLine, the whitespace-collapse rule: its sibling test reads this file as text to prove it declares no import, and never once calls the function it is about.',
-  },
   'packages/code/src/commands/skills.ts': {
     reached: 'nobody imports it',
     why: "The `mnema skills` provenance-audit adapter; no test imports it, and the verb's lazy import means its tree resolution is only ever read back off printed report lines in cli-e2e.",
@@ -618,7 +614,7 @@ const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
   completion: 4,
   commands: 2,
   barrels: 3,
-  scattered: 15,
+  scattered: 14,
 };
 
 /** Which group of the shape above a debt row belongs to. One reading, so nothing falls in two. */
@@ -757,7 +753,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/chain/src/events/task-state.test.ts': 3,
   'packages/chain/src/events/upcaster.test.ts': 2,
   'packages/chain/src/format-doc.test.ts': 9,
-  'packages/chain/src/one-line.test.ts': 3,
+  'packages/chain/src/one-line.test.ts': 4,
   'packages/chain/src/readme-example.test.ts': 5,
   'packages/code/src/a-new-identity.test.ts': 8,
   'packages/code/src/agent-skill.test.ts': 2,
@@ -881,6 +877,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/mcp-unreadable-refusal.test.ts': 9,
   'packages/code/tests/mcp-write-reads-the-roster-it-holds.test.ts': 14,
   'packages/code/tests/mcp-write-routing.test.ts': 13,
+  'packages/code/tests/neutralizes-control-bytes-everywhere.test.ts': 12,
   'packages/code/tests/no-classification-table-reaches-the-surface.test.ts': 5,
   'packages/code/tests/no-task-is-published-before-it-is-used.test.ts': 5,
   'packages/code/tests/one-authority-over-colour.test.ts': 18,
@@ -1488,8 +1485,9 @@ describe('every file has a test that names it', () => {
     expect(PRODUCTION.length - found.size).toBe(
       PRODUCTION_FILES.length - Object.keys(UNWITNESSED).length,
     );
-    expect(found.size).toBe(73);
-    expect(byReach('nobody imports it')).toBe(73);
+    // 73 until `chain/src/one-line.test.ts` began calling the functions it is about.
+    expect(found.size).toBe(72);
+    expect(byReach('nobody imports it')).toBe(72);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -1511,7 +1509,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(73);
+    expect(reasons).toHaveLength(72);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

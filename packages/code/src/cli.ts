@@ -34,13 +34,14 @@ import {
   COLOR_HELP,
   COLOR_WHENS,
   type ColorWhen,
+  paintsAtAll,
   type RenderingAt,
   rendererAtEachWidth,
   rendererFor,
 } from './wiring/color.js';
 import { here } from './wiring/context.js';
 import { registerVerbs } from './wiring/index.js';
-import { type CliIo, processIo } from './wiring/io.js';
+import { type CliIo, neutralizing, processIo } from './wiring/io.js';
 import { MCP_VERB } from './wiring/mcp.js';
 import { speakUsageErrors } from './wiring/misuse.js';
 import { refusalSentence, reportIdentityRefusal } from './wiring/report.js';
@@ -120,10 +121,12 @@ export interface BuiltProgram {
  * own, which is what every other caller does.
  */
 export function buildProgram(
-  io: CliIo = processIo,
+  given: CliIo = processIo,
   typed: readonly string[] = [],
   render?: Render,
 ): BuiltProgram {
+  // The port every line leaves by, with the control bytes of recorded text made visible.
+  const io = neutralizing(given, () => paintsAtAll(resolved));
   const program = new Command();
   program
     .name('mnema')
