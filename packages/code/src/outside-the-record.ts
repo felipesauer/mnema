@@ -25,6 +25,14 @@
  * fact belongs where the gesture is: at the terminal of the person who decides what to
  * import, which is `mnema status`.
  *
+ * THAT PARAGRAPH IS NOW TRUE OF THE FILE AND NOT OF EVERY COPY, and it is kept for the half that
+ * stands. It went on to place the fact at the terminal of the person who decides, `mnema status`;
+ * what it did not weigh is that the person rarely types `status`, and the agent beside them is
+ * handed the same document every session through the plugin's hook, with `--hook`. That copy is
+ * never committed and never diffed — it is read once and thrown away — so the reason above does
+ * not reach it, and it now ends with these two readings (`presentation/brief.ts`,
+ * `notInTheRecord`). The file `mnema brief` prints without the flag still carries none of it.
+ *
  * THE FIRST READING NAMES NO DIRECTORY OF ITS OWN. `scanAdrDirectory`'s rule is that the
  * caller names the base and the product never picks one, and {@link
  * decisionsOutsideTheRecord} keeps it: its directories come out of the RECORD. Every

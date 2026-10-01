@@ -145,10 +145,12 @@ export function registerBrief(program: Command, wiring: Wiring): Declared {
         'The mnema plugin hands this document to a Claude Code session with no file at all,',
         'with `--hook`: past what a hook carries, the host would replace the whole text with a',
         'file path, so there the rules stop at a whole one and the document says how many it',
-        'left out. Without the flag nothing is cut.',
+        'left out. Without the flag nothing is cut. With it the copy also counts, last, the',
+        'decision documents in this checkout the record has no decision for, as',
+        '`mnema status` does — a fact about one disk, so the file never carries it.',
         '',
-        'The output holds no clock, no session and no path, so the same record always',
-        'prints the same bytes and a difference is a difference in the record.',
+        'Without `--hook` the output holds no clock, no session and no path, so the same',
+        'record always prints the same bytes and a difference is a difference in the record.',
         'It carries this project’s COMMITTED record — what a clone gets. A decision or a',
         'pattern recorded with `--scope private`, or in your global tree, governs your own',
         'work and is not in this file, which is written to be committed.',
@@ -176,7 +178,7 @@ export function registerBrief(program: Command, wiring: Wiring): Declared {
       const { runBrief } = await import('../commands/brief.js');
       const { briefDocument, briefWithin } = await import('../presentation/brief.js');
       const { roomBeside } = await import('../presentation/within-a-hook.js');
-      const result = runBrief(here());
+      const result = runBrief(here(), { outside: opts.hook === true });
       if (!result.ok) {
         reportRefusal(
           wiring,
@@ -196,7 +198,11 @@ export function registerBrief(program: Command, wiring: Wiring): Declared {
       writeLines(
         io,
         opts.hook === true
-          ? briefWithin(result.brief, roomBeside(notice.map((line) => render(line))))
+          ? briefWithin(
+              result.brief,
+              roomBeside(notice.map((line) => render(line))),
+              result.outside,
+            )
           : briefDocument(result.brief),
       );
     });

@@ -114,9 +114,11 @@
  */
 
 import type { Acceptance, AdrCollision, Brief, ChannelState } from '@mnema/copilot';
+import type { BriefDone } from '../commands/brief.js';
 import { A_PERSON, oneLine } from '../one-line.js';
 import { DERIVED_FROM } from '../provenance.js';
 import { recordFraming } from '../record-framing.js';
+import { toImport } from './status.js';
 import { fitWhole, HOOK_CEILING_IN_WORDS } from './within-a-hook.js';
 
 /**
@@ -675,8 +677,39 @@ export function briefDocument(governance: Brief): string[] {
  * does, and the paragraph under a heading is the one its FULL list earns — a section whose
  * bullets were all cut says what its rules are, never that there are none.
  */
-export function briefWithin(governance: Brief, room: number): string[] {
-  return fitWhole(rulesIn(governance), room, (shown) => composed(governance, shown));
+export function briefWithin(
+  governance: Brief,
+  room: number,
+  outside: NonNullable<BriefDone['outside']> = { drift: [], arrival: [] },
+): string[] {
+  const late = notInTheRecord(outside);
+  return fitWhole(rulesIn(governance), room, (shown) => [...composed(governance, shown), ...late]);
+}
+
+/**
+ * What the copy a hook carries says, last, about decision documents in this checkout that the
+ * record has no decision for — and nothing at all where there are none, which is every
+ * repository with no decision base.
+ *
+ * IT IS THE HOOK'S COPY ONLY, and {@link briefDocument} never says it: a count of files on one
+ * disk inside a file somebody commits would make `mnema brief | diff - MNEMA.md` report a
+ * difference that is not the record's. The entries are `mnema status`'s own spelling
+ * ({@link toImport}), and the paragraph is a fact and a door, in the voice of every line here:
+ * how many, where, and what the import does — it proposes, and a person accepts.
+ */
+function notInTheRecord(outside: NonNullable<BriefDone['outside']>): string[] {
+  const bases = [
+    ...outside.drift.map((base) => ({ directory: base.directory, documents: base.outside })),
+    ...outside.arrival,
+  ];
+  if (bases.length === 0) return [];
+  const total = bases.reduce((sum, base) => sum + base.documents, 0);
+  return [
+    '',
+    `Not in the record: ${counted(total, 'decision document', 'decision documents')} in this checkout, by file name, with no decision derived from them here.`,
+    ...bases.map((base) => `- ${toImport(base.directory, base.documents)}`),
+    '`mnema decision import <dir>` prints what it would propose from a directory and writes nothing; with `--write` it records each one as `proposed`, for a person to accept.',
+  ];
 }
 
 /** How many rules the document can print: every decision in force and every pattern adopted. */

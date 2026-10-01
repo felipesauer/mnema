@@ -554,7 +554,8 @@ export const HANDED_OVER: Readonly<
   // line 34 until the sentences an agent's accept is answered with began handing whole lines
   // over (`agent-accepts.ts`: the read, the person's accept, and the switch in both positions).
   // line 40 until the plugin told a session which program answered that question (`hand-over.mjs`).
-  source: { line: 41, name: 50, flag: 3, unwritten: 3 },
+  // name 50 until the hook copy of the opening document named `mnema decision import` (`presentation/brief.ts`).
+  source: { line: 41, name: 51, flag: 3, unwritten: 3 },
 };
 
 // ---------------------------------------------------------------------------

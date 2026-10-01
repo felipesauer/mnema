@@ -809,7 +809,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/mcp/lifecycle.test.ts': 2,
   'packages/code/src/not-a-project.test.ts': 8,
   'packages/code/src/one-voice-for-a-no.test.ts': 11,
-  'packages/code/src/outside-the-record.test.ts': 10,
+  'packages/code/src/outside-the-record.test.ts': 13,
   'packages/code/src/pinned-run.test.ts': 9,
   'packages/code/src/presentation/brief.test.ts': 4,
   'packages/code/src/presentation/folded.test.ts': 15,
