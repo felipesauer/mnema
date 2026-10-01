@@ -132,6 +132,23 @@ describe('witness stamp, against a calendar that misbehaves', () => {
     expect((done as PromiseRejectedResult).reason.message).toContain('answered with more than');
   });
 
+  it('refuses a DECLARED oversize at once, without waiting for a body that is not coming', async () => {
+    // The declared length is believed only to refuse EARLY. The case above reads a body that
+    // arrives in full, which the byte bound catches on its own, so it cannot tell the early
+    // refusal from its absence; this one declares a megabyte, sends ten bytes and goes quiet — a
+    // peer that has not finished is answered by the declaration, not by the deadline.
+    await serving((_request, response) => {
+      response.writeHead(200, { 'content-length': String(1_048_576) });
+      response.write(Buffer.alloc(10, 1));
+    });
+    const done = await crossingTheDeadline(stampCheckpoint(DIGEST, { calendars: [address] }));
+    expect(done.status).toBe('rejected');
+    expect((done as PromiseRejectedResult).reason.message).toContain(
+      `answered with more than ${WITNESS_ANSWER_BYTES} bytes`,
+    );
+    expect((done as PromiseRejectedResult).reason.message).not.toContain('no answer within');
+  });
+
   it('takes the calendars that DO answer when another is mute, and names the mute one', async () => {
     const good = serializeOtsTimestamp({
       attestations: [{ kind: 'pending', uri: 'https://alice.btc.calendar.opentimestamps.org' }],
