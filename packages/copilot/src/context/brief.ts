@@ -113,6 +113,7 @@
 import {
   type AdrCollision,
   ASKS_FOR_A_PERSON_RELATION,
+  type DivergentMove,
   GOVERNS_RELATION,
   type ProjectionCache,
   type Scope,
@@ -183,6 +184,17 @@ export interface Brief {
    * citable handle in a committed file names two rules is not.
    */
   readonly collisions: readonly AdrCollision[];
+  /**
+   * The decisions and patterns PRINTED above that left one state more than once, by moves that
+   * did not see each other — what two machines moving one rule apart leave (`divergentMoves` in
+   * @mnema/core). Empty in the ordinary case, which keeps the document's bytes what they were.
+   *
+   * It is here for the reason {@link Brief.collisions} is: a decision printed as in force that
+   * another machine rejected from the same `proposed` is in force only because of the order the
+   * record's tails merged in, and a file that says what governs owes its reader that fact. A
+   * task's divergence is not here, because no task is: this answer carries no work list.
+   */
+  readonly divergent: readonly DivergentMove[];
   /**
    * How many of the rules above have an ADDRESS — a path they were linked to with
    * `rel: "governs"` in a tree that travels.
@@ -366,6 +378,7 @@ export function brief(sources: readonly ScopedCache[], channels: BriefChannels):
     // printed here would be one word repeated once per rule.
     skills: skills.map(({ id, name }) => withOrigin(travels, { id, name })),
     collisions: printedCollisions(travels, decisions),
+    divergent: printedDivergences(travels, [...decisions, ...skills]),
     addressed: countAddressed(travels, [...decisions, ...skills]),
     // Asked of the COMMITTED sources alone, for the reason the whole answer is: a switch
     // this file could not carry would make the document claim a mechanism is on when the
@@ -526,6 +539,25 @@ function printedCollisions(
     .flatMap((cache) => cache.adrCollisions())
     .filter((collision) => printed.has(collision.adr))
     .sort((a, b) => compare(a.adr, b.adr) || compare(a.ids[0] ?? '', b.ids[0] ?? ''));
+}
+
+/**
+ * The rules this answer PRINTS that left one state more than once, in the trees that travel —
+ * filtered to what is printed for the reason {@link printedCollisions} gives, and in an order
+ * that comes from the content (kind, id, state), so the trees' order cannot reach the bytes.
+ */
+function printedDivergences(
+  travels: readonly ProjectionCache[],
+  rules: readonly { readonly id: string }[],
+): DivergentMove[] {
+  const printed = new Set(rules.map((rule) => rule.id));
+  return travels
+    .flatMap((cache) => cache.divergentMoves())
+    .filter((move) => move.kind !== 'task' && printed.has(move.entityId))
+    .sort(
+      (a, b) =>
+        compare(a.kind, b.kind) || compare(a.entityId, b.entityId) || compare(a.from, b.from),
+    );
 }
 
 /** String order, as a number, so two keys can be tried in sequence. */

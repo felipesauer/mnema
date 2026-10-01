@@ -32,20 +32,13 @@
  * of "moves with none" read without it is a list of names.
  */
 
-import type { DivergentMove } from '@mnema/core';
+import { movedTo } from '@mnema/core';
 import type { Command } from 'commander';
 import { statement } from '../presentation/verdict.js';
 import { here } from './context.js';
 import { onOneLine } from './on-one-line.js';
 import { reportRefusal } from './report.js';
 import { type Declared, readsTheRecord, type Wiring } from './verb.js';
-
-/** The state a move out of a state went to — the `to` of a decision's or a skill's transition. */
-function movedTo(event: DivergentMove['evidence'][number]): string {
-  return event.kind === 'decision.transitioned' || event.kind === 'skill.transitioned'
-    ? event.payload.to
-    : event.kind;
-}
 
 /** Registers `mnema antipatterns` on the program. */
 export function registerAntipatterns(program: Command, wiring: Wiring): Declared {

@@ -131,6 +131,7 @@ function documentWith(editPush: ChannelState, asksAPerson: ChannelState): string
     ],
     skills: [],
     collisions: [],
+    divergent: [],
     addressed: 1,
     asking: 0,
     decisionsAwaiting: 0,

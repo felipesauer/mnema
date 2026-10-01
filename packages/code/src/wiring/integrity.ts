@@ -18,9 +18,11 @@
  * there. That is the convention `verify.ts` already keeps.
  */
 
+import { type DivergentMove, movedTo } from '@mnema/core';
 import { fact } from '../presentation/detail.js';
 import type { Line } from '../presentation/line.js';
 import { linkBreakSentences, type ScopedLinkBreak } from '../record-integrity.js';
+import { onOneLine } from './on-one-line.js';
 
 /**
  * The lines a read owes about the tails it served that do not chain — none at all for
@@ -32,4 +34,23 @@ import { linkBreakSentences, type ScopedLinkBreak } from '../record-integrity.js
  */
 export function linkBreakNotice(breaks: readonly ScopedLinkBreak[]): readonly Line[] {
   return linkBreakSentences(breaks).map((sentence) => fact(sentence, 0));
+}
+
+/**
+ * The lines a read of one record owes about its moves that did not see each other — none at all
+ * for a record moved in one line, which is every record one machine moved.
+ *
+ * Beside the link-break notice and in its shape, because it is the same kind of fact: true of
+ * the record and invisible in the projection the answer prints. Both moves are signed, `verify`
+ * passes them, and the state printed is the last one in the record's order — the line names
+ * every move out of the state, picks none, and says which one the answer shows. Every value in
+ * it came out of the record, so each goes through {@link onOneLine}.
+ */
+export function divergenceNotice(divergent: readonly DivergentMove[]): readonly Line[] {
+  return divergent.map((move) =>
+    fact(
+      onOneLine`this ${move.kind} left ${move.from} more than once, by moves that did not see each other: to ${move.evidence.map(movedTo).join(', then ')}. Each is a signed fact of the record; the state shown is the last of them in its order.`,
+      0,
+    ),
+  );
 }

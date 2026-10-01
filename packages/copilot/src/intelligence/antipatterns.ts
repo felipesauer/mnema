@@ -113,11 +113,13 @@ export interface Antipatterns {
    */
   readonly labelCollisions: readonly AdrCollision[];
   /**
-   * Decisions and skills that left one state more than once, each with every move out of it
-   * — two moves that did not see each other, which is what two machines moving one subject
-   * offline leave (`divergentMoves` in @mnema/core says why the same `from` twice is enough,
-   * and why tasks are not read). Like a label collision it is stated, not judged: both moves
-   * are signed facts, the projection keeps the last one, and nothing here picks between them.
+   * Decisions, skills and tasks that left one state more than once, each with every move out
+   * of it — two moves that did not see each other, which is what two machines moving one
+   * subject offline leave (`divergentMoves` in @mnema/core says why the same `from` twice is
+   * enough for decisions and skills, and why tasks, whose machine has a cycle, are read by the
+   * record's order instead — this said tasks were not read at all). Like a label collision it
+   * is stated, not judged: both moves are signed facts, the projection keeps the last one, and
+   * nothing here picks between them.
    */
   readonly divergentMoves: readonly DivergentMove[];
 }

@@ -24,7 +24,7 @@ export function registerShow(program: Command, wiring: Wiring): Declared {
     .argument('<id>', 'the record id (from `mnema search`)')
     .option('--json', 'emit the faithful record as JSON')
     .action(async (id: string, opts: { json?: boolean }) => {
-      const { linkBreakNotice } = await import('./integrity.js');
+      const { divergenceNotice, linkBreakNotice } = await import('./integrity.js');
       const { runShow } = await import('../commands/show.js');
       const { recordReport } = await import('../presentation/record.js');
       const result = runShow(here(), { id });
@@ -35,6 +35,9 @@ export function registerShow(program: Command, wiring: Wiring): Declared {
       // BEFORE the answer, and on the other stream — so it survives a pipe, and so
       // `--json` stays the machine-readable thing it promises to be.
       for (const line of linkBreakNotice(result.linkBreaks)) io.err(render(line));
+      // The same stream and the same place, for a fact about the record the answer hides:
+      // the projection below keeps the last move, and this says there was another.
+      for (const line of divergenceNotice(result.divergent)) io.err(render(line));
       if (opts.json === true) {
         io.out(JSON.stringify(result.record, null, 2));
         return;

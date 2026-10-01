@@ -124,6 +124,7 @@ describe('the brief prints one line per rule', () => {
     decisions: [],
     skills: [],
     collisions: [],
+    divergent: [],
     addressed: 0,
     asking: 0,
     // Nothing switched either channel, which is the composition's answer for a record with

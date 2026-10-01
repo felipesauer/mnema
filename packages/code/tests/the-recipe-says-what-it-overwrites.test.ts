@@ -83,6 +83,7 @@ const EMPTY_BRIEF: Brief = {
   decisions: [],
   skills: [],
   collisions: [],
+  divergent: [],
   addressed: 0,
   asking: 0,
   decisionsAwaiting: 0,
