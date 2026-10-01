@@ -31,6 +31,7 @@ export {
   signCheckpoint,
   verifyCheckpoint,
 } from './chain/checkpoint.js';
+export { CodedError } from './chain/coded-error.js';
 export {
   type IdentityIssue,
   type IdentityResolution,
@@ -69,6 +70,7 @@ export {
 export {
   type ChainSigner,
   committedPublicKey,
+  DanglingInstallationIdError,
   listAnchoredFingerprints,
   listPrivateKeyFingerprints,
   loadOrCreateInstallationId,
@@ -76,6 +78,8 @@ export {
   materializePublicKey,
   persistKeyPair,
   readAnchor,
+  UnsettledInstallationIdError,
+  UnwrittenInstallationIdError,
   writeAnchor,
 } from './chain/keystore.js';
 export {

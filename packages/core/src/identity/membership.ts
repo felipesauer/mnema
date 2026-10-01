@@ -31,6 +31,7 @@ import {
   anchorPath,
   type CatalogEvent,
   type ChainLayout,
+  CodedError,
   committedPublicKey,
   deriveAnchor,
   enrollmentMessage,
@@ -110,7 +111,7 @@ export interface MembershipRefused {
  * choose an identity on the person's behalf has already lost the property the
  * record exists for — one person, one anchor, provably.
  */
-export class IdentityUnavailableError extends Error {
+export class IdentityUnavailableError extends CodedError {
   override readonly name = 'IdentityUnavailableError';
   constructor(
     readonly code: IdentityRefusalCode,

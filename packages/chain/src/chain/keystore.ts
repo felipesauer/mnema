@@ -35,7 +35,7 @@ import {
   writeFileSync,
   writeSync,
 } from 'node:fs';
-
+import { CodedError } from './coded-error.js';
 import {
   deriveAnchor,
   fingerprintOf,
@@ -279,7 +279,7 @@ export const INSTALLATION_ID_POLL_MS = 5;
  * refuses to guess, because guessing is the fork {@link loadOrCreateInstallationId} exists
  * to prevent.
  */
-export class UnwrittenInstallationIdError extends Error {
+export class UnwrittenInstallationIdError extends CodedError {
   readonly code = 'UNWRITTEN_INSTALLATION_ID';
 
   constructor(
@@ -302,7 +302,7 @@ export class UnwrittenInstallationIdError extends Error {
  * place it points to. There is nobody to wait for, so the refusal comes at once, and it says
  * where the link points, which is what a person needs to see before removing it.
  */
-export class DanglingInstallationIdError extends Error {
+export class DanglingInstallationIdError extends CodedError {
   readonly code = 'DANGLING_INSTALLATION_ID';
 
   constructor(
@@ -325,7 +325,7 @@ export class DanglingInstallationIdError extends Error {
  * filesystem answers the two questions differently — neither is a state this machine resolves by
  * guessing, for the reason {@link UnwrittenInstallationIdError} gives.
  */
-export class UnsettledInstallationIdError extends Error {
+export class UnsettledInstallationIdError extends CodedError {
   readonly code = 'UNSETTLED_INSTALLATION_ID';
 
   constructor(

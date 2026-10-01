@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { keyFileLine } from './key-file.js';
+import { keyFileLine, keyFileLineForAModel } from './key-file.js';
 
 describe('where the key file is, and the setting that put it there', () => {
   it('names the directory MNEMA_HOME names, when it is set', () => {
@@ -41,5 +41,17 @@ describe('the one place the line is worded', () => {
     };
     walk(src);
     expect(spelling).toEqual(['key-file.ts']);
+  });
+});
+
+describe('the same fact, for a model', () => {
+  it('names the file and the setting, and no path', () => {
+    expect(keyFileLineForAModel('abc', '/home/p/keys')).toBe(
+      'this machine keeps the key file abc.key in identity/keys under the directory MNEMA_HOME names',
+    );
+    expect(keyFileLineForAModel('abc', undefined)).toBe(
+      'this machine keeps the key file abc.key in identity/keys under ~/.mnema, since MNEMA_HOME is not set',
+    );
+    expect(keyFileLineForAModel('abc', '/home/p/keys')).not.toContain('/home/p');
   });
 });
