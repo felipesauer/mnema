@@ -66,6 +66,7 @@ class NotCovered(NamedTuple):
     what: str
     why: str
     gap: str = ""
+    explore: str = ""
 
 
 class Report:
@@ -94,10 +95,12 @@ class Report:
     def note(self, section: str, what: str, where: str = "", gap: str = "") -> None:
         self._add(Level.NOTE, section, what, where, gap)
 
-    def declare_not_covered(self, section: str, what: str, why: str, gap: str = "") -> None:
+    def declare_not_covered(
+        self, section: str, what: str, why: str, gap: str = "", explore: str = ""
+    ) -> None:
         if gap:
             self.gaps_leaned_on.add(gap)
-        self.not_covered.append(NotCovered(section, what, why, gap))
+        self.not_covered.append(NotCovered(section, what, why, gap, explore))
 
     def break_out(self, why: str) -> None:
         self.broken = why
@@ -137,7 +140,13 @@ class Report:
                 for f in self.findings
             ],
             "notCovered": [
-                {"section": n.section, "what": n.what, "why": n.why, "gap": n.gap}
+                {
+                    "section": n.section,
+                    "what": n.what,
+                    "why": n.why,
+                    "gap": n.gap,
+                    "explore": n.explore,
+                }
                 for n in self.not_covered
             ],
             "gapsLeanedOn": sorted(self.gaps_leaned_on),
@@ -155,6 +164,8 @@ class Report:
                 suffix = f"  [{n.gap}]" if n.gap else ""
                 lines.append(f"  {tag:>4}  {n.what}")
                 lines.append(f"        why: {n.why}{suffix}")
+                if n.explore:
+                    lines.append(f"        explore: {n.explore}")
             lines.append("")
         if self.gaps_leaned_on:
             lines.append(

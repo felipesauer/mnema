@@ -80,6 +80,7 @@ import {
   type Ran,
   rowsOfTheFrames,
   type Step,
+  widestRowOfTheFrames,
 } from './support/pty.js';
 import {
   drewAt,
@@ -1189,6 +1190,20 @@ describe('a window the caller resizes is a frame drawn at the new size', () => {
       Math.max(...frames),
       `a frame of ${Math.max(...frames)} rows was written onto a ${THE_FLOOR.rows}-row screen`,
     ).toBeLessThanOrEqual(THE_FLOOR.rows);
+    // AND NONE OF THEM IS WIDER THAN THE SCREEN EITHER. The height above is what an old frame
+    // written onto a shorter screen scrolls; this is what one composed at the old WIDTH does, which
+    // the terminal folds, and which a count of rows never sees. Measured on the build this case was
+    // added to, under a load of 23 to 36 on sixteen cores, 108 resizes: every frame of every one
+    // was exactly the new size in both axes, and so was the page after each of them.
+    const widest = widestRowOfTheFrames(after);
+    expect(
+      widest.length,
+      'the resize drew no frame at all, so nothing was measured',
+    ).toBeGreaterThan(0);
+    expect(
+      Math.max(...widest),
+      `a frame ${Math.max(...widest)} columns wide was written onto a ${THE_FLOOR.columns}-column screen`,
+    ).toBeLessThanOrEqual(THE_FLOOR.columns);
     // AND THE PAGE IS WHOLE AFTERWARDS, which is what the frames above are for.
     const settled = theSettledScreen(ran.bytes, THE_FLOOR.columns, THE_FLOOR.rows);
     expect(firstDrawnRow(settled), 'the top region left the screen').toBe(0);

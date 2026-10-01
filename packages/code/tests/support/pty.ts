@@ -27,6 +27,7 @@ import { execFileSync, spawn } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect } from 'vitest';
+import { widthOfText, withoutSequences } from '../../src/presentation/width.js';
 import { decodedWhole } from './arriving.js';
 import { ENDS_THE_INPUT } from './console.js';
 import { theSettledScreen } from './screen.js';
@@ -253,6 +254,33 @@ export function rowsOfTheFrames(bytes: string): readonly number[] {
     rows.push(chunk.slice(begins).split('\n').length);
   }
   return rows;
+}
+
+/**
+ * HOW MANY COLUMNS THE WIDEST ROW OF EACH FRAME TAKES, one number per frame, cut exactly as
+ * {@link rowsOfTheFrames} cuts them.
+ *
+ * THE OTHER AXIS OF THE SAME QUESTION. A frame composed at the width the terminal had BEFORE a
+ * shrink is a frame wider than the screen it is written onto, which the terminal folds; a case
+ * that counts rows sees the height of that and never the width. The width is asked of the
+ * authority the product draws by (`src/presentation/width.ts`), with the control sequences
+ * taken out, because a painted row and its plain twin are the same number of columns.
+ */
+export function widestRowOfTheFrames(bytes: string): readonly number[] {
+  const widest: number[] = [];
+  for (const chunk of bytes.split(FRAME_IS_DRAWN).slice(0, -1)) {
+    const begins = chunk.lastIndexOf(A_FRAME_BEGINS);
+    if (begins < 0) continue;
+    widest.push(
+      Math.max(
+        ...chunk
+          .slice(begins)
+          .split('\n')
+          .map((row) => widthOfText(withoutSequences(row))),
+      ),
+    );
+  }
+  return widest;
 }
 
 /**

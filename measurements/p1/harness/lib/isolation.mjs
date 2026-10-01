@@ -8,7 +8,7 @@
 // declaring it. In the case that nearly falsified `ponytail`, a SessionStart
 // hook fired in every arm and the baseline was silently running the treatment.
 //
-// So: the command line below is IDENTICAL in all six arms. The only thing that
+// So: the command line below is IDENTICAL in all seven arms. The only thing that
 // differs is the CONTENT of the two files it points at.
 //
 // UNTIL 2026-08-18 THIS SAID the settings file was identical too, and the fifth arm
@@ -58,7 +58,20 @@ import {
 export const MODEL = 'claude-haiku-4-5-20251001'
 
 /**
- * The `NO_RUN` equivalent — identical in all six arms.
+ * The shapes the CLI's output can take in a cell.
+ *
+ * `json` is the one rounds 1 to 4 ran with — one result message, no path — and it stays the
+ * default so that the four arms that already spent cells keep their bytes (see
+ * `tests/four-arms.golden.json`). `stream-json` is the one the protocol asks every later round
+ * for: the same result message as its last line, and before it every event of the session, which
+ * is what says which doors the agent went through and in what order. A round DECLARES which one it
+ * uses in its pre-registration (`outputFormatOf`, `lib/split.mjs`).
+ */
+export const OUTPUT_FORMATS = ['json', 'stream-json']
+export const OUTPUT_FORMAT_DEFAULT = 'json'
+
+/**
+ * The `NO_RUN` equivalent — identical in all seven arms.
  *
  * It says how to work, never what to consult. A sentence about memory, records
  * or decisions here would nudge one arm's mechanism and quietly become the
@@ -226,14 +239,30 @@ export function writeCellConfig({ sandbox, arm, mnemaBin, pluginDir = productPlu
  * the file above. Those two lines are the correction that saved the `ponytail`
  * result, and they are copied here on purpose.
  */
-export function claudeArgv({ ticket, settingsPath, mcpPath, maxBudgetUsd = null }) {
+export function claudeArgv({
+  ticket,
+  settingsPath,
+  mcpPath,
+  maxBudgetUsd = null,
+  model = MODEL,
+  outputFormat = OUTPUT_FORMAT_DEFAULT,
+}) {
+  if (!OUTPUT_FORMATS.includes(outputFormat)) {
+    throw new Error(`--output-format must be one of ${OUTPUT_FORMATS.join(', ')}, not ${outputFormat}`)
+  }
   const argv = [
     '-p',
     ticket,
     '--model',
-    MODEL,
+    model,
     '--output-format',
-    'json',
+    outputFormat,
+    // `--verbose` is what the CLI demands of `stream-json` in print mode, and `--include-hook-events`
+    // is what puts a hook's lifecycle in the stream: without it the opening hook is there and
+    // the per-edit one is not, and "did the push arrive before the write" cannot be answered.
+    // Both are part of the one declaration — the stream is the interactions, and the interactions
+    // are the point.
+    ...(outputFormat === 'stream-json' ? ['--verbose', '--include-hook-events'] : []),
     '--setting-sources',
     'project,local',
     '--strict-mcp-config',
@@ -268,7 +297,11 @@ export function claudeArgv({ ticket, settingsPath, mcpPath, maxBudgetUsd = null 
 export const ISOLATION_CHECKLIST = [
   ['--setting-sources project,local', 'the machine’s user settings and plugins do not load'],
   ['--strict-mcp-config', 'no MCP server outside the per-cell file'],
-  [`--model ${MODEL}`, 'fixed, and written into every result line'],
+  [
+    `--model ${MODEL}`,
+    'fixed, and written into every result line. A round whose pre-registration names another model ' +
+      '(`model`) runs on that one and on no other — the flag then carries that id, in every arm alike',
+  ],
   [
     '--settings <cell>/settings.json',
     'autoMemoryDirectory inside the cell, identical in every arm. The file itself is NOT identical ' +
@@ -282,14 +315,24 @@ export const ISOLATION_CHECKLIST = [
     '--mcp-config <cell>/mcp.json',
     'the per-cell file `--strict-mcp-config` reduces the world to. It is the ONE thing that ' +
       'differs between the arms without a record and the arms with one, and the command line is ' +
-      'identical in all six precisely so that this is where the difference has to be',
+      'identical in all seven precisely so that this is where the difference has to be',
   ],
   [
     '--output-format json',
     'the result message is parsed, not scraped: cost, duration and turns are copied from the ' +
-      'vendor’s own fields and a field that did not arrive is written null. It is on this list ' +
-      'because it decides what a cell can be asked afterwards — the protocol asks future rounds ' +
-      'for `stream-json`, which would say which doors the agent went through and in what order',
+      'vendor’s own fields and a field that did not arrive is written null. It is the format ' +
+      'rounds 1 to 4 ran with, and it stays the default so that those arms keep their command line ' +
+      'byte for byte. It is on this list because it decides what a cell can be asked afterwards: ' +
+      'in this format the path is not captured, and the interaction columns are null',
+  ],
+  [
+    '--output-format stream-json --verbose --include-hook-events',
+    'the format a round DECLARES in its pre-registration (`output_format`), identical in every arm ' +
+      'of it. The same result message is the last line, and before it every event of the session: ' +
+      'which tools the agent called and in what order, and which hooks handed it text before a ' +
+      'write. `--verbose` is what the CLI demands of `stream-json` in print mode and ' +
+      '`--include-hook-events` is what puts the per-edit hook in the stream at all. Nothing the ' +
+      'agent sees changes: these flags are about what the cell REPORTS',
   ],
   [
     '--max-budget-usd <n>',
@@ -360,7 +403,7 @@ export const ISOLATION_CHECKLIST = [
       'at all — measured: with no address the tool answers {} and appends nothing, so the arm ' +
       'would collapse into the document channel alone, which is the mechanism the eight cells of ' +
       '2026-08-18 already measured. An address says WHERE a rule applies and never what it says, ' +
-      'so the knowledge the three seeded arms carry is still identical and still asserted. AND ' +
+      'so the knowledge the four arms that hold it as text carry is still identical and still asserted. AND ' +
       'THE ADDRESS THIS ARM DOES NOT GET is --rel asks-for-a-person: the gate’s effect is that the ' +
       'write waits until a person decides, a -p cell has nobody to ask, and every cell of the arm ' +
       'would come back with the edit refused. That is a limit of a headless cell, not a choice ' +

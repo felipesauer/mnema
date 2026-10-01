@@ -388,8 +388,18 @@ export function injectedDocument({ sandbox, settingsPath, env }) {
   if (!ran.ok) return { document: null, detail: ran.detail }
 
   const documents = []
-  for (const out of ran.outputs) {
+  for (const [index, out] of ran.outputs.entries()) {
     if (out.stdout.trim() === '') {
+      // THE FIRST COMMAND IS THE DOCUMENT AND THE ONES AFTER IT MAY CORRECTLY SAY NOTHING.
+      // This function used to demand a reply from every `SessionStart` command, which was true
+      // while the product declared one. It declares two now: the second hands over the notes
+      // near what the session touches, and its correct behaviour when the record holds none —
+      // every cell of this bench, whose records hold one decision and no note — is silence with
+      // exit 0. Demanding a document of it failed every surface cell of every round for a
+      // reason that is the product working. The first command stays strict: a mute document
+      // handler is still the failure this check exists for, and a non-zero exit is a failure
+      // wherever it comes from.
+      if (index > 0 && out.exit === 0) continue
       return {
         document: null,
         detail:

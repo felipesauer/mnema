@@ -27,23 +27,28 @@ import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { type CliIo, run } from '../src/cli.js';
+import { buildProgram, type CliIo, run } from '../src/cli.js';
+import { completionTree } from '../src/completion/tree.js';
 import { renderPlain } from '../src/presentation/plain.js';
+import { completerFor } from '../src/repl/complete.js';
 import { THE_FLOOR } from '../src/repl/floor.js';
+import { verbsOffered } from '../src/repl/gate.js';
 import { CUT } from '../src/repl/palette.js';
-import { pickingTips } from '../src/repl/session.js';
+import { pickingTips, theSessionsOwnWords } from '../src/repl/session.js';
 import { CLEAR } from '../src/session-words.js';
 import { REPL_VERB } from '../src/wiring/repl.js';
 import { ENDS_THE_INPUT } from './support/console.js';
 import {
+  A_FRAME_BEGINS,
   aFrameSince,
   inPty as drive,
   type Fixture,
+  FRAME_IS_DRAWN,
   opensAConsole,
   type Ran,
   type Step,
 } from './support/pty.js';
-import { theFirstScreenWhere, theFirstScreenWith } from './support/screen.js';
+import { screenOf, theFirstScreenWhere, theFirstScreenWith } from './support/screen.js';
 
 /** The built CLI — the same file the `mnema` bin points at. */
 const CLI = new URL('../dist/cli.js', import.meta.url).pathname;
@@ -57,9 +62,66 @@ const PROMPT = 'mnema>';
 const CLEARS_THE_LINE = '\u0003';
 /** Tab, likewise. */
 const COMPLETES = '\u0009';
+/** Down, which moves the mark one word along the palette. */
+const MOVES_DOWN = '\u001b[B';
 
 /** How wide a terminal has to be for a row of this list to be shown whole. */
 const NOTHING_IS_CUT = 160;
+
+/**
+ * EVERY WORD A LINE CAN START WITH, asked of the completer the way the Tab asks it on an empty
+ * row (`a-palette-for-the-words.test.ts`, `everythingOffered`). It is the length of the walk: one
+ * Down per word reaches all of them, and it is read rather than counted twice.
+ */
+const everyWordOffered: readonly string[] = (() => {
+  const io: CliIo = { out: () => undefined, err: () => undefined, fail: () => undefined };
+  const built = buildProgram(io, [], renderPlain);
+  const completer = completerFor(
+    completionTree(built.program),
+    verbsOffered(built.verbs, REPL_VERB),
+    theSessionsOwnWords(),
+    () => [],
+  );
+  return completer('')[0].map((offer) => offer.word);
+})();
+
+/**
+ * HOW MANY TIMES THE LIST IS STEPPED DOWN: every word of the vocabulary and every record the
+ * session has named, so that a list longer by the records it should not hold is walked to its
+ * end all the same. Read when the case runs, because the records are minted by the fixture.
+ */
+const walkLength = (): number => everyWordOffered.length + shown.length;
+
+/** How long a Down waits for the frame it should draw before taking it that there is none. */
+const WAITS_FOR_A_FRAME_MS = 600;
+
+/**
+ * A FRAME SINCE THE STEP BEGAN, or the end of the list: a Down on the last word moves nothing and
+ * the layout draws nothing, so a step that waited for a frame there would wait for ever.
+ */
+function aFrameOrTheEnd(): (bytes: string, since: number) => boolean {
+  let began: number | undefined;
+  return (bytes, since) => {
+    began ??= Date.now();
+    return aFrameSince(PROMPT)(bytes, since) || Date.now() - began > WAITS_FOR_A_FRAME_MS;
+  };
+}
+
+/** The page after each frame the bytes drew from `from` on, replayed at the size they were drawn at. */
+function thePagesOf(
+  bytes: string,
+  from: number,
+  columns: number,
+  rows: number,
+): readonly ReturnType<typeof screenOf>[] {
+  const pages: ReturnType<typeof screenOf>[] = [];
+  let at = from;
+  for (const chunk of bytes.slice(from).split(FRAME_IS_DRAWN).slice(0, -1)) {
+    at += chunk.length + FRAME_IS_DRAWN.length;
+    if (chunk.includes(A_FRAME_BEGINS)) pages.push(screenOf(bytes.slice(0, at), columns, rows));
+  }
+  return pages;
+}
 
 /** What every record the session is asked about has in its title. */
 const NAMED = 'names';
@@ -679,6 +741,22 @@ describe('what it offers is what the session showed, and never the record', () =
           until: (bytes, since) => bytes.slice(since).includes(CUT),
           what: 'offered the words a line starts with',
         },
+        // AND THEN THE LIST IS WALKED TO ITS END, because the ceiling is what hides a leak: four
+        // rows are drawn whatever the vocabulary, so a record offered as the fifth word, or the
+        // fortieth, is on no page until the window is moved onto it. One Down per word of the
+        // vocabulary and one per record the session has named reaches every offer there could be
+        // ({@link walkLength}), a key at a time because keys written together are drawn as one
+        // frame. A Down at the end of the list draws nothing, so a step gives up waiting for its
+        // frame ({@link aFrameOrTheEnd}); and every frame the walk drew is a page that is read
+        // (`thePagesOf`, below), not the page at the end of each step.
+        ...Array.from(
+          { length: walkLength() },
+          (_, at): Step => ({
+            types: MOVES_DOWN,
+            until: aFrameOrTheEnd(),
+            what: `stepped down, ${at + 1} of ${walkLength()}`,
+          }),
+        ),
         leaves,
       ],
     });
@@ -698,5 +776,27 @@ describe('what it offers is what the session showed, and never the record', () =
     expect(screen.text, screen.text).toContain(renderPlain(pickingTips()).trim());
     const listed = theRecordsListedOn(screen);
     expect(listed, `the top level offered a record:\n${screen.text}`).toEqual([]);
-  }, 240_000);
+
+    // BEYOND THE CEILING: the page after each frame of the walk, so every word the palette
+    // can put on a row has been on one.
+    const walked = thePagesOf(
+      ran.bytes.slice(0, ran.at[3 + walkLength()]),
+      ran.at[3] as number,
+      columns,
+      rows,
+    );
+    for (const [at, page] of walked.entries()) {
+      expect(
+        theRecordsListedOn(page),
+        `frame ${at + 1} of ${walked.length} of the walk drew a record:\n${page.text}`,
+      ).toEqual([]);
+    }
+    // NOT VACUOUS: the walk drew several pages, it went past what four rows can hold, and the
+    // page it ended on holds the last word of the vocabulary, which the first page did not.
+    expect(walked.length).toBeGreaterThan(everyWordOffered.length - 4);
+    expect(everyWordOffered.length).toBeGreaterThan(4);
+    const lastPage = walked[walked.length - 1] as { readonly text: string };
+    expect(lastPage.text).toContain(everyWordOffered[everyWordOffered.length - 1] as string);
+    expect(lastPage.text).not.toBe(screen.text);
+  }, 300_000);
 });

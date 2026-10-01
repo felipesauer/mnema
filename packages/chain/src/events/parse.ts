@@ -20,10 +20,16 @@
  * into the signed bytes. Two consequences that serve the proof:
  *   - Unknown top-level or payload fields are rejected outright.
  *   - The returned event — and therefore its canonical bytes — is the
- *     reconstruction, never the raw parsed object. A line with a duplicate key
- *     (JSON.parse silently keeps the last) or an extra field re-canonicalizes
- *     to bytes that DIFFER from the stored line, so the chain's "stored line
- *     equals recomputed bytes" check rejects it rather than verifying it green.
+ *     reconstruction, never the raw parsed object. A line with an extra field
+ *     re-canonicalizes to bytes that DIFFER from the stored line, so the
+ *     recomputed hash rejects it rather than verifying it green.
+ *   - A duplicate key is refused at the parse, by {@link parseStoredJson}. This
+ *     comment used to say a duplicate "re-canonicalizes to bytes that differ", and
+ *     that was false for the case that matters: `JSON.parse` keeps the last of two
+ *     identical keys, so a false value placed BEFORE the true one leaves the parsed
+ *     value, its canonical bytes and every signature exactly as signed (measured:
+ *     the product verified such a line while the second reader refused it). The
+ *     covering test is `a-duplicate-key-is-refused.test.ts`.
  *
  * The flow is: JSON.parse → require an object with a known kind and version →
  * lift to the latest version via the upcaster ladder → validate AND rebuild the
@@ -40,6 +46,7 @@ import {
   PAYLOAD_SCHEMA,
   TRANSITION_FIELDS_SCHEMA,
 } from './schema.js';
+import { parseStoredJson } from './stored-json.js';
 import type { UpcasterRegistry, VersionedEvent } from './upcaster.js';
 
 /** Thrown when a line is not a valid, current-catalog event. */
@@ -66,9 +73,9 @@ const ENVELOPE_FIELDS: readonly string[] = [...Object.keys(ENVELOPE_SCHEMA), 'pa
 export function parseEvent(line: string, upcasters: UpcasterRegistry): CatalogEvent {
   let raw: unknown;
   try {
-    raw = JSON.parse(line);
+    raw = parseStoredJson(line);
   } catch (error) {
-    throw new EventParseError(`not valid JSON: ${(error as Error).message}`);
+    throw new EventParseError((error as Error).message);
   }
   const versioned = asVersioned(raw);
   const upcast = upcasters.upcast(versioned);
