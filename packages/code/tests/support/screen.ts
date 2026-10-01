@@ -59,6 +59,7 @@
  */
 
 import { expect } from 'vitest';
+import { widthOfText } from '../../src/presentation/width.js';
 import { FRAME_IS_DRAWN } from './pty.js';
 
 /** One escape byte, written as an escape so no control byte enters a source file. */
@@ -434,7 +435,11 @@ function theStreamWasDecodedWhole(bytes: string, columns: number): void {
 
 /** A screen, as a reader would see it. */
 export interface Screen {
-  /** Every row of the buffer that is SHOWING, top first, each exactly as wide as the terminal. */
+  /**
+   * Every row of the buffer that is SHOWING, top first, each exactly as wide as the terminal IN
+   * CELLS: a glyph two columns wide is written once, so a row holding one is shorter in characters
+   * than the terminal is wide in columns ({@link widthOfText} says by how much).
+   */
   readonly rows: readonly string[];
   /** The same rows with their trailing blanks off, joined — what a reader reads. */
   readonly text: string;
@@ -713,13 +718,15 @@ export function screenOf(bytes: string, columns: number, rows: number): Screen {
     carried: [],
     saved: undefined,
   };
-  for (let at = 0; at < bytes.length; at++) {
-    const byte = bytes[at] as string;
-    if (byte === ESC) {
-      at = sequence(bytes, at, grid, columns, rows);
+  for (let at = 0; at < bytes.length; ) {
+    if (bytes[at] === ESC) {
+      at = sequence(bytes, at, grid, columns, rows) + 1;
       continue;
     }
-    printable(byte, grid, columns, rows);
+    const next = bytes.indexOf(ESC, at);
+    const end = next < 0 ? bytes.length : next;
+    printed(bytes.slice(at, end), grid, columns, rows);
+    at = end;
   }
   const showing = onScreen(grid);
   const lines = showing.cells.map((cells) => cells.join(''));
@@ -741,8 +748,80 @@ export function screenOf(bytes: string, columns: number, rows: number): Screen {
   };
 }
 
-/** Puts one ordinary byte on the buffer that is showing. */
-function printable(byte: string, grid: Grid, columns: number, rows: number): void {
+/** The units a run of text is cut into: a grapheme each, which is what a terminal draws in a cell. */
+const GRAPHEMES = new Intl.Segmenter();
+
+/**
+ * Puts a run of text, with no escape in it, on the buffer that is showing.
+ *
+ * IT USED TO PUT ONE CODE UNIT IN ONE CELL, and that was the model's debt for as long as it was
+ * written down: a glyph two columns wide took one cell here and two on a real terminal, so a case
+ * that replays a page with wide text (a record titled in Japanese) measured a page the terminal
+ * never drew. What a glyph takes is asked of the SAME function the product asks
+ * (`src/presentation/width.ts`, {@link widthOfText}), and that is the point rather than a
+ * shortcut: the layout wraps by that arithmetic, so a model that counted by another would
+ * disagree with the product exactly where the product is right.
+ *
+ * AND THE ARITHMETIC IS NOT THE ASSERTION. What is asserted about a page is what the product
+ * drew, and independently of this function (`one-width-per-frame.test.ts` declares which glyphs
+ * are wide by listing them); the model only has to put each glyph where a terminal puts it.
+ */
+function printed(run: string, grid: Grid, columns: number, rows: number): void {
+  for (const { segment } of GRAPHEMES.segment(run)) {
+    if ((segment.codePointAt(0) as number) < 0x20) {
+      // A control byte, or the pair `\r\n` the segmenter keeps whole: each is handled alone.
+      for (const control of segment) printable(control, grid, rows);
+      continue;
+    }
+    glyph(segment, grid, columns, rows);
+  }
+}
+
+/**
+ * Puts one glyph where a terminal puts it: in the cell at the cursor, taking as many cells as it is
+ * wide, and on the next row when it does not fit in what is left of this one.
+ *
+ * A WIDE GLYPH IS ONE CELL WITH ITS TEXT AND, AFTER IT, CELLS WITH NOTHING ({@link CONTINUES}), so
+ * a row read back as a string holds the glyph once and a row measured in cells still has the
+ * terminal's width. A glyph that takes no column (a combining mark) joins the one before it.
+ * Overwriting either half of a wide glyph blanks the other, as a terminal does.
+ */
+function glyph(text: string, grid: Grid, columns: number, rows: number): void {
+  const buffer = onScreen(grid);
+  const width = widthOfText(text);
+  if (width === 0) {
+    let at = buffer.column - 1;
+    const cells = buffer.cells[buffer.row] as string[];
+    while (at > 0 && cells[at] === CONTINUES) at -= 1;
+    if (at >= 0) cells[at] = `${cells[at]}${text}`;
+    return;
+  }
+  if (buffer.column + width > columns) {
+    buffer.column = 0;
+    down(grid, rows);
+  }
+  const cells = buffer.cells[buffer.row] as string[];
+  for (let at = buffer.column; at < buffer.column + width; at++) blankTheGlyphAt(cells, at);
+  cells[buffer.column] = text;
+  for (let at = 1; at < width; at++) cells[buffer.column + at] = CONTINUES;
+  buffer.column += width;
+}
+
+/** What the cells after a wide glyph hold: nothing, because the glyph already is in the cell before. */
+const CONTINUES = '';
+
+/** Blanks the whole glyph that has a cell at `at`, whichever of its cells that is. */
+function blankTheGlyphAt(cells: string[], at: number): void {
+  let head = at;
+  while (head > 0 && cells[head] === CONTINUES) head -= 1;
+  cells[head] = BLANK;
+  for (let next = head + 1; next < cells.length && cells[next] === CONTINUES; next++) {
+    cells[next] = BLANK;
+  }
+}
+
+/** Acts on one control byte on the buffer that is showing: the two that move the cursor, and skips the rest. */
+function printable(byte: string, grid: Grid, rows: number): void {
   const buffer = onScreen(grid);
   if (byte === '\n') {
     // The output side of a terminal turns a newline into a new row at column one, which
@@ -757,13 +836,6 @@ function printable(byte: string, grid: Grid, columns: number, rows: number): voi
   }
   // Every other control byte is skipped rather than drawn: a tab, a bell or a backspace
   // that became a character would be text on the page that nobody wrote.
-  if (byte < ' ') return;
-  if (buffer.column >= columns) {
-    buffer.column = 0;
-    down(grid, rows);
-  }
-  (buffer.cells[buffer.row] as string[])[buffer.column] = byte;
-  buffer.column += 1;
 }
 
 /**
@@ -964,5 +1036,10 @@ function eraseRow(how: number, grid: Grid, columns: number): void {
   const cells = buffer.cells[buffer.row] as string[];
   const from = how === 0 ? buffer.column : 0;
   const to = how === 1 ? buffer.column + 1 : columns;
+  // A wide glyph cut by either edge of the erase goes whole, as a terminal blanks it.
+  if (from < to) {
+    blankTheGlyphAt(cells, from);
+    blankTheGlyphAt(cells, to - 1);
+  }
   for (let column = from; column < to; column++) cells[column] = BLANK;
 }
