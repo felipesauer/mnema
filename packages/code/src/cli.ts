@@ -22,6 +22,9 @@
  * without spawning a process or writing to the real streams.
  */
 
+// FIRST, and it must stay first: below the Node floor this says so and exits before any import
+// below it loads the native addon (`node-floor.ts` carries the argument and the test that holds it).
+import './node-floor.js';
 import { realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { IdentityUnavailableError, resolveTrees } from '@mnema/core';

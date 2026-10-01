@@ -367,6 +367,13 @@ const EAGER_EXTERNAL: Readonly<Record<string, string>> = {
     'no symlink anywhere. The escaping is a table this product does not keep, which is the ' +
     'same argument `presentation/width.ts` makes for `string-width`. Same measurement as ' +
     '`node:fs` above; the two arrived together.',
+  'node-floor.ts node:fs':
+    "`readFileSync`, to read `engines.node` out of this package's own `package.json` — the one " +
+    'place the Node floor is declared. The guard runs before anything below it is loaded, so ' +
+    'it cannot wait for a verb. One read of a file of about 2 KB. Measured on `--version`, 60 ' +
+    'pairs alternated in order against the entry without the guard: median 211.2 ms against ' +
+    '213.4 ms, where the same binary against itself in the same alternation read 213.9 ms ' +
+    'against 215.1 ms — the difference is inside the spread of the control.',
   'env.ts node:os':
     '`homedir()` and `userInfo()`, for the discovery environment every verb is handed. A builtin, and ' +
     'the one the entry cannot defer: the environment is resolved before a verb runs.',
@@ -400,6 +407,11 @@ const EAGER_EXTERNAL: Readonly<Record<string, string>> = {
 const FLOOR_MODULES: readonly string[] = [
   'cli.ts',
   'env.ts',
+  // I PUT THIS ON THE FLOOR: the check that the Node under the binary is one it can run on.
+  // It is the FIRST import of `cli.ts` and has to be — it exists to say a line and exit before
+  // a module below it loads the native addon, so it cannot be deferred to a verb. ONE file,
+  // importing only `node:fs`, which is what `the-node-below-the-floor-is-refused.test.ts` holds.
+  'node-floor.ts',
   'one-line.ts',
   'pinned-run.ts',
   // Reached BY `pinned-run.ts`, which was already here: it owns the open-and-close pair
