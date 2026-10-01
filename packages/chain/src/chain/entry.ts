@@ -22,6 +22,7 @@
 import { type CanonicalValue, canonicalStringify } from '../events/canonical.js';
 import type { CatalogEvent } from '../events/catalog.js';
 import { parseEvent } from '../events/parse.js';
+import { parseStoredJson } from '../events/stored-json.js';
 import type { UpcasterRegistry } from '../events/upcaster.js';
 import { oneLine } from '../one-line.js';
 import { entryHash, type WrittenEvent, writtenAsBuilt, writtenAsStored } from './hash.js';
@@ -110,9 +111,9 @@ export function serializeEntry(entry: Entry): string {
 export function parseEntry(line: string, upcasters: UpcasterRegistry): Entry {
   let raw: unknown;
   try {
-    raw = JSON.parse(line);
+    raw = parseStoredJson(line);
   } catch (error) {
-    throw new EntryParseError(`not valid JSON: ${(error as Error).message}`);
+    throw new EntryParseError((error as Error).message);
   }
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
     throw new EntryParseError('entry must be a JSON object');

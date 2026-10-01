@@ -475,7 +475,9 @@ const MUTATIONS = [
   },
   {
     name: 'tail-relocated',
-    refusals: 1,
+    // TWO since the second reader began to require the tail proof (section 6.1): the copy is
+    // refused for the key its id names AND for carrying no proof that the key signed that id.
+    refusals: 2,
     section: '3',
     says: 'which is no key this record carries',
     productLayer: 'T2/T4',
@@ -496,6 +498,54 @@ const MUTATIONS = [
     says: 'not JSON',
     productLayer: 'T1',
     productBreaks: 'ok',
+  },
+  {
+    name: 'duplicate-key-in-a-signed-line',
+    refusals: 1,
+    section: '1',
+    says: 'a duplicate object key on the line',
+    productLayer: 'T1',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'reordered-lines',
+    refusals: 6,
+    section: '3',
+    says: 'a gap in the sequence',
+    productLayer: 'T1',
+    productBreaks: 'ok',
+  },
+  {
+    name: 'tail-proof-removed',
+    refusals: 1,
+    section: '6.1',
+    says: 'no tailproof.json',
+    productLayer: 'T2/T4',
+    productBreaks: 'ok',
+  },
+  {
+    // NOT a refusal in EITHER reader, and that is the row. A cut that takes the newest events
+    // and the checkpoint that covered them leaves a record that closes, and so does a record
+    // erased and begun again under a new key: nothing inside the directory remembers what it
+    // replaced. Both readers have to AGREE it is not refused (see
+    // `both-readers-read-the-same-bytes.test.ts`), which is why these rows are in the table:
+    // the enumeration from `mutate.py list` stays total, and the agreement is asserted there.
+    name: 'aligned-cut',
+    refusals: 0,
+    section: '3',
+    says: '',
+    productLayer: 'T1',
+    productBreaks: 'ok',
+    agreedAccepted: true,
+  },
+  {
+    name: 'refounded-record',
+    refusals: 0,
+    section: '3',
+    says: '',
+    productLayer: 'T1',
+    productBreaks: 'ok',
+    agreedAccepted: true,
   },
   {
     name: 'blank-segment-same-size',
@@ -522,7 +572,10 @@ describe('the second reader refuses, and the mutation that earns each refusal sh
   });
 
   /**
-   * Every row but the TWO that are not refusals. Both are in the table so the enumeration
+   * Every row but the FOUR that are not refusals: the two `agreedAccepted` rows (a cut that
+   * takes events and their checkpoint together, a record erased and refounded), which BOTH
+   * readers accept and which `both-readers-read-the-same-bytes.test.ts` asserts, and the TWO
+   * below. Both of those are in the table so the enumeration
    * from `mutate.py list` above stays total, and both belong to the INCOMPLETE describe
    * below instead: a check that could not run is not a check that refused, and a loop that
    * asserted REFUSED over either would be asserting the wrong thing.
@@ -547,18 +600,22 @@ describe('the second reader refuses, and the mutation that earns each refusal sh
    * SILENTLY: a future acceptance smuggled back in as a row-level flag would make this loop
    * skip it and every case here would stay green.
    */
-  const REFUSING = MUTATIONS.filter((mutation) => !('incomplete' in mutation));
+  const REFUSING = MUTATIONS.filter(
+    (mutation) => !('incomplete' in mutation) && !('agreedAccepted' in mutation),
+  );
 
-  it('leaves exactly TWO rows out of the refusal loop, and no row is an acceptance', () => {
-    expect(MUTATIONS.length - REFUSING.length).toBe(2);
+  it('leaves exactly FOUR rows out of the refusal loop, and no row is an acceptance by one reader alone', () => {
+    expect(MUTATIONS.length - REFUSING.length).toBe(4);
     expect(
-      MUTATIONS.filter((m) => 'incomplete' in m)
+      MUTATIONS.filter((m) => 'incomplete' in m || 'agreedAccepted' in m)
         .map((m) => m.name)
         .sort(),
-    ).toEqual(['blank-segment-same-size', 'keys-removed']);
+    ).toEqual(['aligned-cut', 'blank-segment-same-size', 'keys-removed', 'refounded-record']);
     // NO ROW MAY BE AN ACCEPTANCE. This is the assertion the delivery is measured by: every
     // input `mutate.py` builds that the product refuses is refused here too.
-    expect(MUTATIONS.filter((m) => m.refusals === 0 && !('incomplete' in m))).toEqual([]);
+    expect(
+      MUTATIONS.filter((m) => m.refusals === 0 && !('incomplete' in m) && !('agreedAccepted' in m)),
+    ).toEqual([]);
   });
 
   it.each(REFUSING)('refuses $name, and says so under section $section', (mutation) => {

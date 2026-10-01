@@ -71,6 +71,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 
 import { canonicalStringify } from '../events/canonical.js';
+import { parseStoredJson } from '../events/stored-json.js';
 import { oneLine } from '../one-line.js';
 import { headerCarriesRealWork, parseBlockHeader } from './bitcoin.js';
 import { checkpointHash } from './checkpoint.js';
@@ -254,7 +255,7 @@ const MAX_BLOCKS_BYTES = 1 << 16;
  */
 function parseStoredHeader(line: string): StoredHeader | null {
   try {
-    const parsed: unknown = JSON.parse(line);
+    const parsed: unknown = parseStoredJson(line);
     if (typeof parsed !== 'object' || parsed === null) return null;
     const { height, header } = parsed as Partial<StoredHeader>;
     if (typeof height !== 'number' || !Number.isInteger(height)) return null;
