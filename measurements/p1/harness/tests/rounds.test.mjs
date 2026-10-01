@@ -178,7 +178,9 @@ describe('10b · a round whose arms this harness cannot seed does not run', () =
     // AND WHAT STOPS THE WITHDRAWN ARMS FROM BEING RUN is a different mechanism, because
     // containment alone does not: the plan is built from the ROUND's arms.
     const withdrawn = ARMS.filter((arm) => !three.includes(arm))
-    assert.deepEqual(withdrawn, ['prosa', 'mnema'], 'the two arms round 3 withdrew')
+    // `claude-md` is not one it withdrew: it is an arm that did not exist when round 3 was frozen, and
+    // a round does not run an arm it did not declare — which is the same mechanism.
+    assert.deepEqual(withdrawn, ['prosa', 'mnema', 'claude-md'], 'the two arms round 3 withdrew, and the one built after it')
     assert.deepEqual(roundArms(3), three)
     const planned = new Set(cellPlan([{ id: 'x' }], 1, roundArms(3)).map((c) => c.arm))
     assert.deepEqual([...planned].sort(), [...three].sort())

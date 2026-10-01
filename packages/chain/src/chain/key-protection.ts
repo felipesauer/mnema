@@ -42,6 +42,7 @@
 
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:crypto';
 import { renameSync, statSync, writeFileSync } from 'node:fs';
+import { parseStoredJson } from '../events/stored-json.js';
 import { CodedError } from './coded-error.js';
 import type { KeyPair } from './keys.js';
 import { keyPairFromPrivatePem } from './keys.js';
@@ -140,7 +141,9 @@ export function protectPem(pem: string, passphrase: string): string {
  * The PEM inside a protected key file, or `undefined` when the passphrase does not open it or the
  * file is not what it says it is. The two are one answer on purpose: a wrong passphrase and a
  * damaged file are both "this cannot be opened with that", and a caller that could tell them
- * apart could be asked to.
+ * apart could be asked to. The wrapper's JSON is read by the same strict reader as a stored line
+ * of the record, so a body with a key written twice is refused as a damaged file rather than
+ * opened with whichever value came last.
  */
 export function unprotectPem(text: string, passphrase: string): string | undefined {
   try {
@@ -149,7 +152,7 @@ export function unprotectPem(text: string, passphrase: string): string | undefin
       .split('\n')
       .filter((line) => line !== BEGIN && line !== END)
       .join('');
-    const body = JSON.parse(Buffer.from(encoded, 'base64').toString('utf-8')) as {
+    const body = parseStoredJson(Buffer.from(encoded, 'base64').toString('utf-8')) as {
       v: number;
       kdf: string;
       N: number;

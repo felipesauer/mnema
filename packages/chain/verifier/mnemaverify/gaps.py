@@ -51,6 +51,10 @@ class Gap(NamedTuple):
     #: For a `reader-limit` only: what a reader of a verdict does not get, in that reader's
     #: words. It is the `NOT COVERED` line verbatim; `note` is the `why` beneath it.
     not_checked: str = ""
+    #: For a `reader-limit` only: a way to look at the question that this reader cannot answer,
+    #: written as a command a person holding only the repository can run, and measured -
+    #: the suite runs it. Silence is not an answer and a limit with no road onward is a wall.
+    explore: str = ""
 
 
 GAPS: tuple[Gap, ...] = (
@@ -111,6 +115,8 @@ GAPS: tuple[Gap, ...] = (
         "in-memory sentinel in self-test and is unreachable from a file",
         standing="reader-limit",
         not_checked="the refusal of an explicit undefined property, over a record on disk",
+        explore="python3 mnema_verify.py self-test  (the refusal runs "
+        "there, on an in-memory value, and the line that names it says ok)",
     ),
     Gap(
         "G07",
@@ -153,6 +159,8 @@ GAPS: tuple[Gap, ...] = (
         "any of it was authorized, which is why this is a reader-limit and not a finding",
         standing="reader-limit",
         not_checked="telling an authorized cut from tampering",
+        explore="git log --stat -- <record>/tails  (a cut is a commit: it names the files and "
+        "the lines that left, and who committed it)",
     ),
     Gap(
         "G10",
@@ -238,6 +246,9 @@ GAPS: tuple[Gap, ...] = (
         "from outside to lift. The claim is checkable only from inside today",
         standing="reader-limit",
         not_checked="that a proof is never recomputed over a lifted reading",
+        explore="pnpm vitest run -t 'a chain written before a version bump still proves itself'  "
+        "(in a checkout of the repository: the product's own case lifts an old event and asserts "
+        "the proof is still over the line as written)",
     ),
     Gap(
         "G19",
@@ -250,9 +261,10 @@ GAPS: tuple[Gap, ...] = (
         'bitcoin attestation whose header is absent "is simply one that cannot be folded '
         'offline; it is neither coverage nor a break". This reader reports it by name and '
         "refuses nothing - measured on witnessed-record, which attests 963688/963689/963690 "
-        "and ships two headers, 963689 having none. THIS ENTRY WAS `unresolved` AFTER THAT "
-        "SENTENCE WAS WRITTEN, in the same commit as G23 and for the same reason: the registry "
-        "was a delivery behind the document",
+        "and ships two headers, 963689 having none. THIS ENTRY STOOD `unresolved` AFTER THAT "
+        "SENTENCE WAS WRITTEN, as G23's did, because the registry had not been updated when "
+        "the document was: an entry here that says `unresolved` is worth checking against "
+        "the section it cites",
         standing="settled",
     ),
     Gap(
@@ -362,6 +374,7 @@ class Boundary(NamedTuple):
     section: str
     not_checked: str
     why: str
+    explore: str = ""
 
 
 DOCUMENT_BOUNDARIES: tuple[Boundary, ...] = (
@@ -371,17 +384,23 @@ DOCUMENT_BOUNDARIES: tuple[Boundary, ...] = (
         "section 8 says this itself: the header is checked for its work, not for its place. "
         "A reader who needs that follows the block id into an explorer, or runs the ots "
         "client against a node",
+        "python3 -c \"import hashlib,json,sys; [print(json.loads(l)['height'], "
+        "hashlib.sha256(hashlib.sha256(bytes.fromhex(json.loads(l)['header'])).digest())"
+        ".digest()[::-1].hex()) for l in open(sys.argv[1])]\" <tail>/witness/<digest>.blocks  "
+        "(prints each stored header's height and block id; look the id up in any explorer "
+        "and the height must be the one printed)",
     ),
 )
 
 
 class Scope(NamedTuple):
-    """One line of what this reader does not check, and the reason beneath it."""
+    """One line of what this reader does not check, the reason beneath it, and a road onward."""
 
     section: str
     what: str
     why: str
     gap: str
+    explore: str = ""
 
 
 def audit(catalogue: tuple[Gap, ...] = GAPS) -> None:
@@ -426,6 +445,12 @@ def audit(catalogue: tuple[Gap, ...] = GAPS) -> None:
                 "limit of this reader is printed on every verdict and needs the words it is "
                 "printed in; nothing else may carry them"
             )
+        if (g.standing == "reader-limit") != bool(g.explore):
+            raise ValueError(
+                f"{g.id} stands as {g.standing!r} and its explore is {g.explore!r}: a limit of "
+                "this reader is printed on every verdict, and a verdict that says what it cannot "
+                "check without saying how to look is a wall; nothing else carries a road"
+            )
 
 
 audit()
@@ -449,8 +474,12 @@ def scope() -> tuple[Scope, ...]:
     nowhere else to add one.
     """
     return tuple(
-        [Scope(g.section, g.not_checked, g.note, g.id) for g in GAPS if g.standing == "reader-limit"]
-        + [Scope(b.section, b.not_checked, b.why, "") for b in DOCUMENT_BOUNDARIES]
+        [
+            Scope(g.section, g.not_checked, g.note, g.id, g.explore)
+            for g in GAPS
+            if g.standing == "reader-limit"
+        ]
+        + [Scope(b.section, b.not_checked, b.why, "", b.explore) for b in DOCUMENT_BOUNDARIES]
     )
 
 
@@ -466,6 +495,7 @@ def as_dict() -> dict[str, object]:
                 "note": g.note,
                 "standing": g.standing,
                 "notChecked": g.not_checked,
+                "explore": g.explore,
             }
             for g in GAPS
         ],
@@ -478,11 +508,23 @@ def as_dict() -> dict[str, object]:
             for standing in ("reader-limit", "record-finding", "settled")
         },
         "documentBoundaries": [
-            {"section": b.section, "notChecked": b.not_checked, "why": b.why}
+            {
+                "section": b.section,
+                "notChecked": b.not_checked,
+                "why": b.why,
+                "explore": b.explore,
+            }
             for b in DOCUMENT_BOUNDARIES
         ],
         "scope": [
-            {"section": s.section, "what": s.what, "why": s.why, "gap": s.gap} for s in scope()
+            {
+                "section": s.section,
+                "what": s.what,
+                "why": s.why,
+                "gap": s.gap,
+                "explore": s.explore,
+            }
+            for s in scope()
         ],
     }
 
@@ -524,5 +566,6 @@ def render() -> str:
         suffix = f"  [{s.gap}]" if s.gap else "  [the document says so itself]"
         lines.append(f"  {tag:>4}  {s.what}{suffix}")
         lines.append(f"        why: {s.why}")
+        lines.append(f"        explore: {s.explore}")
     lines.append("")
     return "\n".join(lines)

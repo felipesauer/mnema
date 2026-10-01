@@ -1,0 +1,18 @@
+# harness --selftest, 3 runs, with MNEMA_BENCH_TASKS pointing at the archived tasks; rc 1 = the selftest FAILED, so the seconds are the time to the failure and not a selftest time
+# commit bdeb5b5d (origin/main-v1 cd2a420b + the screen-model change); 2026-10-01; Linux 7.0.0, 16 cores; sandbox HOME
+run 1 load 31.39 rc 1 secs 371.025689362
+run 2 load 33.82 rc 1 secs 360.383496239
+run 3 load 33.94 rc 1 secs 221.903498516
+--- first failing check (run 1) ---
+ok    tasks found
+ok    toolchain
+ok    every pre-registered round is runnable
+ok    fixtures calibrated
+ok    fixtures readable
+ok    knowledge parity
+FAIL  seeding
+FAIL  seeding
+      r1/mnema decision exited 1: mnema decision has no command "Tax on a service invoice is rounded once, over the total". To record a decision, put `record` before its title.
+        mnema decision record [options] <title> <rationale>
+      
+failing lines in total: 120

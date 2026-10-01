@@ -91,7 +91,7 @@ describe('the published file is the reader’s table, byte for byte', () => {
   it('spells every rule it uses in the glossary it carries', () => {
     // The artifact is read by somebody who has only the artifact and the document, so
     // a rule name it uses and does not define is a rule they have to guess at — which
-    // is precisely the failure this whole delivery is about.
+    // is a declaration that exists and cannot be used.
     const used = new Set<string>([
       ...Object.values(artifact.envelope),
       ...Object.values(artifact.transitionFields),

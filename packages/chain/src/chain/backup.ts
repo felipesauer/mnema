@@ -41,6 +41,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 import { enrollmentMessage } from '../events/build.js';
+import { parseStoredJson } from '../events/stored-json.js';
 import {
   fingerprintOf,
   generateKeyPair,
@@ -253,7 +254,7 @@ function readFields(path: string): { anchor: string; role: string; reverseSig: s
   if (!existsSync(path)) return null;
   let parsed: unknown;
   try {
-    parsed = JSON.parse(readFileSync(path, 'utf-8'));
+    parsed = parseStoredJson(readFileSync(path, 'utf-8'));
   } catch {
     return null;
   }

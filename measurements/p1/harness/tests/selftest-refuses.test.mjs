@@ -224,7 +224,7 @@ describe('4 · the preflight refuses', () => {
     assert.match(detail, /not "plugin:mnema:mnema"/)
   })
 
-  test('and clears an unbroken bench — all thirteen checks, by name', async () => {
+  test('and clears an unbroken bench — all fourteen checks, by name', async () => {
     const bench = workspace()
     const result = await runSelftest({
       rounds: [bench],
@@ -240,14 +240,16 @@ describe('4 · the preflight refuses', () => {
     )
     // Named, not counted: a preflight that silently stops running a check is the
     // vacuous instrument this file exists against, and `checks.length` alone
-    // would still be thirteen if two of them swapped places with each other.
+    // would still be fourteen if two of them swapped places with each other.
     //
     // TWO OF THESE NAMES MOVED ON 2026-08-20 and the rename is the technique rather than
     // tidying: the two surface checks used to name ONE arm, they walk two arms now, and a
     // name kept would have left this list green over a preflight that still cleared only
     // `mnema+`. The twelfth is new — the gate that would have refused round 3 — and it is
     // SECOND on purpose: it reads three committed files, so a round declaring an arm
-    // nobody built is refused before the bench does two minutes of seeding.
+    // nobody built is refused before the bench does two minutes of seeding. The fourteenth,
+    // `the text delivered`, is measured with the seeding and JUDGED AFTER the surface checks, so that
+    // a hook that cannot run is named by the check that can say why.
     assert.deepEqual(result.checks.map((c) => c.name), [
       'tasks found',
       'toolchain',
@@ -260,6 +262,7 @@ describe('4 · the preflight refuses', () => {
       'mnema answers over MCP',
       ARRIVES,
       REACHES,
+      'the text delivered',
       'split frozen',
       'auth (api-key)',
     ])

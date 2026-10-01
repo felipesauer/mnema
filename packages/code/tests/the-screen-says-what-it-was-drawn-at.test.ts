@@ -261,6 +261,47 @@ describe('a screen keeps what left the top, because where a row went is the whol
   });
 });
 
+describe('a screen gives a glyph the columns a terminal gives it', () => {
+  // THE GLYPHS ARE WRITTEN BY HAND AND THE COUNTS ARE TOO, never asked of the function the model
+  // asks: 二 and 列 are East Asian Wide, two columns on every terminal there is, and the acute
+  // accent after an `e` takes none. What the model is held to is a number somebody counted.
+  it('puts a wide glyph in two cells, and leaves the cursor two columns on', () => {
+    const screen = screenOf('二列', 6, 2);
+    expect(screen.cursor, JSON.stringify(screen.rows)).toEqual({ row: 0, column: 4 });
+    expect(screen.rows[0]).toBe('二列  ');
+  });
+
+  it('moves to the next row a wide glyph that does not fit in what is left of this one', () => {
+    // Five columns hold two wide glyphs and one blank; the third goes down, whole.
+    const screen = screenOf('二二二', 5, 3);
+    expect(screen.rows[0]).toBe('二二 ');
+    expect(screen.rows[1]).toBe('二   ');
+    expect(screen.cursor).toEqual({ row: 1, column: 2 });
+  });
+
+  it('counts a row of wide text in columns, so it fills the row exactly and does not fold', () => {
+    const screen = screenOf('二二二\nx', 6, 3);
+    expect(screen.rows[0]).toBe('二二二');
+    expect(screen.rows[1]).toBe('x     ');
+  });
+
+  it('gives a mark that takes no column to the glyph before it', () => {
+    const screen = screenOf('e\u0301x', 4, 1);
+    expect(screen.cursor.column).toBe(2);
+    expect(screen.rows[0]).toBe('e\u0301x  ');
+  });
+
+  it('blanks the whole of a wide glyph when either of its cells is written over', () => {
+    expect(screenOf('二\ra', 4, 1).rows[0]).toBe('a   ');
+    expect(screenOf('二\u001b[2Gb', 4, 1).rows[0]).toBe(' b  ');
+  });
+
+  it('blanks the whole of a wide glyph an erase cuts in two', () => {
+    // The cursor is on the second cell of the glyph when the erase to the end of the row runs.
+    expect(screenOf('二\u001b[2G\u001b[K', 4, 1).rows[0]).toBe('    ');
+  });
+});
+
 describe('a screen refuses a stream that was decoded in pieces, and says that is what it is', () => {
   it('accuses a run with a replacement character in it, and says what it costs', () => {
     // THE DEFECT THE WHOLE DELIVERY WENT LOOKING FOR, and it is the instrument's own. The

@@ -54,13 +54,19 @@ describe('9 · the four arms of the pre-registered round are byte-identical', ()
     // compared against. The discriminant is not "is it the newest arm" but "does it
     // carry a surface", which is what the frozen four have in common and what
     // `servesUnasked` reads.
+    //
+    // AND "NO SURFACE" STOPPED BEING THE DISCRIMINANT on 2026-10-01: `claude-md` carries no
+    // surface and also came after the freeze, so it is neither frozen nor a surface arm. The
+    // list of arms that came after is written out here, one name, because "everything that is
+    // not frozen" would make the next arm silently exempt from the question.
+    const AFTER_THE_FREEZE = ['claude-md']
     assert.deepEqual(golden.arms, FROZEN_ARMS)
     assert.deepEqual(
-      ARMS.filter((a) => !servesUnasked(a)),
+      ARMS.filter((a) => !servesUnasked(a) && !AFTER_THE_FREEZE.includes(a)),
       FROZEN_ARMS,
-      'every arm without a surface is frozen',
+      'every arm without a surface, and from before the freeze, is frozen',
     )
-    for (const arm of ARMS.filter(servesUnasked)) {
+    for (const arm of [...ARMS.filter(servesUnasked), ...AFTER_THE_FREEZE]) {
       assert.equal(golden.arms.includes(arm), false, `${arm} came after the freeze`)
     }
     assert.ok(ARMS.filter(servesUnasked).length >= 2, 'and there is more than one of them')

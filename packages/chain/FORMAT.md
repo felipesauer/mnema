@@ -111,7 +111,9 @@ round-trip losslessly would let two different facts produce identical bytes:
   NFC collision. It has to be said, because every library JSON parser, including
   Python's `json` and JavaScript's `JSON.parse`, silently keeps the last of two
   identical keys: a reader that lets its parser do that accepts a line this
-  format refuses (`packages/chain/src/chain/second-reader-agrees-on-the-bytes.test.ts`).
+  format refuses (`packages/chain/src/chain/second-reader-agrees-on-the-bytes.test.ts`); the
+  product's own reading of a stored line refuses it too
+  (`packages/chain/src/chain/both-readers-read-the-same-bytes.test.ts`).
 
 ## 2. Framed hashing
 

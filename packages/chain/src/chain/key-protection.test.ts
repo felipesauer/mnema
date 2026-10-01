@@ -66,6 +66,19 @@ describe('a key protected by a passphrase', () => {
       unprotectPem('-----BEGIN MNEMA PROTECTED KEY-----\nnot base64 json\n', 'p'),
     ).toBeUndefined();
   });
+
+  it('refuses a body with a key written twice, even when the value read last would open it', () => {
+    const pem = privateKeyToPem(generateKeyPair().privateKey);
+    const lines = protectPem(pem, 'p').trim().split('\n');
+    const body = Buffer.from(lines.slice(1, -1).join(''), 'base64').toString('utf-8');
+    // A decoy salt first and the real one after it: a reader where the last value wins opens this.
+    const doubled = body.replace('"salt":', '"salt":"AAAAAAAAAAAAAAAAAAAAAA==","salt":');
+    expect(doubled).not.toBe(body);
+    const text = [lines[0], Buffer.from(doubled, 'utf-8').toString('base64'), lines.at(-1)].join(
+      '\n',
+    );
+    expect(unprotectPem(text, 'p')).toBeUndefined();
+  });
 });
 
 describe('reading a private key file', () => {

@@ -58,6 +58,7 @@ type Isolation = {
     settingsPath: string;
     mcpPath: string;
     maxBudgetUsd?: number | null;
+    outputFormat?: string;
   }) => readonly string[];
 };
 
@@ -202,6 +203,44 @@ describe('the document and the instrument answer for each other', () => {
     });
     expect(contiguously(withCeiling, ['--max-budget-usd', '1.5'])).toBe(true);
     expect(flagsInTheChecklist()).toContain('--max-budget-usd');
+  });
+});
+
+describe('the format a later round declares is declared here too', () => {
+  const STREAM = isolation.claudeArgv({
+    ticket: 'the frozen ticket of some task',
+    settingsPath: '/nowhere/cell/settings.json',
+    mcpPath: '/nowhere/cell/mcp.json',
+    outputFormat: 'stream-json',
+  });
+
+  it('asks for the stream, and every flag it adds over the default is declared by the checklist', () => {
+    // The default vector is the one the tests above read, and it is the format rounds 1 to 4 ran
+    // with. A round that declares `stream-json` adds flags to it, and a flag that appears only in
+    // that vector is exactly the one the cases above cannot see.
+    expect(contiguously(STREAM, ['--output-format', 'stream-json'])).toBe(true);
+    const added = STREAM.filter((a) => a.startsWith('--') && !ARGV.includes(a));
+    expect(
+      added.length,
+      'stream-json adds no flag: the case below is measuring nothing',
+    ).toBeGreaterThan(0);
+    const declared = new Set(flagsInTheChecklist());
+    for (const flag of added) {
+      expect(
+        declared.has(flag),
+        `claudeArgv passes ${flag} for stream-json and nothing declares it`,
+      ).toBe(true);
+    }
+  });
+
+  it('and changes nothing else: the rest of the vector is the default one, in the same order', () => {
+    const without = STREAM.filter(
+      (a) => !['stream-json', '--verbose', '--include-hook-events'].includes(a),
+    );
+    const json = ARGV.filter((a) => a !== 'json');
+    expect(without.filter((a) => a !== '--output-format')).toEqual(
+      json.filter((a) => a !== '--output-format'),
+    );
   });
 });
 

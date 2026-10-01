@@ -33,8 +33,8 @@ Any reading stronger than that is false, and this file says so before it says an
   parameter, and the reason is in `lib/selftest.mjs`: *"a caller free to point the freeze somewhere
   else is a caller free to move it"*;
 - the arms that measure a product measure **this** product — `mnema init`, its MCP server, its
-  plugin declarations. The three that do not (`base`, `prosa`, `host`), and the shape all six
-  share, are the transferable part.
+  plugin declarations. The four that do not (`base`, `prosa`, `host`, `claude-md`), and the shape all
+  seven share, are the transferable part.
 
 ## What it is, in one page
 
@@ -69,7 +69,7 @@ already holds with `status: ok` and plans everything else again — including th
 vendor refused, which are present in the capture and are not results. It never edits a capture,
 and a stopped run resumes into the same file rather than into a second directory.
 
-Six arms exist in code (`ARMS` in `lib/seed.mjs`); a **round** declares which of them it runs, and
+Seven arms exist in code (`ARMS` in `lib/seed.mjs`); a **round** declares which of them it runs, and
 the harness refuses a round that declares an arm it cannot seed — by name, saying which
 (`refuseUnrunnableRound`, asserted both ways in `tests/rounds.test.mjs`).
 
@@ -153,15 +153,16 @@ this is the shape of that correction.
 
 ## What it refuses
 
-**Thirteen checks, all of them before the first model call.** A refusal costs nothing; a run that
+**Fourteen checks, all of them before the first model call.** A refusal costs nothing; a run that
 discovers the same thing halfway through has spent the budget to learn it. In order:
 
 `tasks found` · `toolchain` · `every pre-registered round is runnable` · `fixtures calibrated` ·
 `fixtures readable` · `knowledge parity` · `seeding` · `sandbox isolation` ·
 `mnema answers over MCP` · `the surface arms' context arrives` ·
-`the surface arms' rules reach the writing, or correctly do not` · `split frozen` · `auth`
+`the surface arms' rules reach the writing, or correctly do not` · `the text delivered` ·
+`split frozen` · `auth`
 
-Three of them are worth naming for what they cost to learn:
+Four of them are worth naming for what they cost to learn:
 
 - **`knowledge parity`** — the seeded arms are compared after removing exactly their packaging.
   If one arm carried a paragraph another did not, a difference in the result would be a difference
@@ -169,6 +170,18 @@ Three of them are worth naming for what they cost to learn:
 - **`seeding`** — every (task, arm) pair is seeded and then *proved*, including the **absences**
   that define the floor. A `base` arm that finds a decision file in the task's own repository is
   not a floor.
+- **`the text delivered`** — (measured in the seeding sandboxes, judged after the surface arms' two
+  checks, which can name WHY a hook's text did not arrive.) The seed proves what was *planted*, and only the host's own first
+  request proves what the session was *handed*. Each (task, arm) pair is run once against the real
+  host with a stand-in where the model would be (`lib/fake-api.mjs`, `lib/host-session.mjs`: the
+  cell's own command line, environment and configuration, so it clears the path a paid cell takes),
+  and the title, statement, reasoning and alternative of the decision are looked for in the request.
+  What each arm is *declared* to receive is a table (`DELIVERED_AT_OPEN`, `lib/delivered.mjs`) and
+  the check fails in both directions: text that was declared and did not arrive, and text that
+  arrived where nobody declared it. Measured on 2026-10-01: the instructions file arrives whole,
+  the memory index brings the title and the first words of the statement, the opening document
+  brings the title and nothing else, and `prosa`'s `DECISIONS.md` brings nothing — the host does
+  not load it. It proves what the host puts in the request, never that a model read it.
 - **`split frozen`** — the tasks on disk are checked against the committed pre-registration:
   each on exactly one side of that round's development/held-out split, the pilot on the
   development side, no negative control there, each at the digest the freeze fixed, and **no task
@@ -177,7 +190,7 @@ Three of them are worth naming for what they cost to learn:
 
 `tests/selftest-refuses.test.mjs` breaks a writable copy of a bench seven ways and requires both
 the refusal and the **name** of the check that refused. The names are asserted in order, not
-counted: a count would still be thirteen if two of them swapped places.
+counted: a count would still be fourteen if two of them swapped places.
 
 **And the instrument is expected to say when it broke.** `RULER BROKEN` is a verdict of the
 calibrator, `status: harness_error` is a field of every result line, and `mutate.mjs` reports
@@ -191,6 +204,42 @@ its 48 mutations targets a file of THIS runner — `lib/seed.mjs`, `lib/selftest
 `run.mjs` and nine others, each resolved from its own directory — and it runs this directory's own
 suite. It is the instrument proving that its own guards can go red, which is the only evidence that
 the suite above is worth its green. Nothing in it touches `packages/`.
+
+## What a later round declares, and what is ready before it costs anything
+
+A round's pre-registration (`split.json`) is where everything below is fixed, before the first
+cell, and each key is optional: a round that names none runs as rounds 1 to 4 did, byte for byte
+(`tests/four-arms.golden.json` freezes it).
+
+| key | what it fixes | what refuses it |
+|---|---|---|
+| `model` | the model every cell runs on, written into every line | `modelOf`; a value that is not a model id |
+| `cli_version` | the exact `claude --version` the round was written for | `lib/pin.mjs`: another CLI means the round does not start, and a CLI that changes between two cells stops the round at the second |
+| `output_format` | `stream-json`: the whole event stream, so a line says which tools the session called, in what order, which of them wrote, and how many writes came after a hook had handed the session text | `outputFormatOf`; an unknown format |
+| `scenarios`, `arm_codes` | the family of each task and the code of each arm, written into the line as `scenario` and `arm_code` | `labelProblems`, in the `split frozen` check |
+
+**The seventh arm, `claude-md`,** holds the decision verbatim in the file the host loads on its
+own. It is `prosa` with the file renamed — the same bytes — and that is the design: `prosa`'s
+`DECISIONS.md` is a name the host does not load, so no round ever measured the cheapest
+alternative to a record that people actually install.
+
+**Reading a capture.** `lib/cells.mjs` is the one place that says what a line counts as (a rate is
+`CONFORMS` over the scorable cells; a pair with none has no rate). Two readers stand on it:
+`lib/reading.mjs` is the directory's rule for `>` and `≈` as code — eligible, discriminating and
+degenerate tasks, the `BROKEN` ceiling, the threshold — pinned to the case that validated the
+prose it implements (round 1's cells under round 2's rule: six pairs `≈`, six not comparable, no
+`>`); and [`../analysis.mjs`](../analysis.mjs) adds what a `≈` was missing, a paired-by-task
+permutation test and an equivalence test with a margin fixed ahead of time, so that a tie reads
+`equivalent` only when it could have said otherwise and `unresolved` when it is only a lack of
+data. It was exercised on simulated cells — a true effect of zero, and a planted one — before any
+cell existed for it to read.
+
+**Running a round from an account.** The harness already authenticates by copying one credential
+file into the cell (`--auth copy`), so a round can be run by the Claude Code of a subscription,
+non-interactively, and it was for rounds 1 to 4. What that costs is quota and not dollars, the
+`cost_usd` in a line is the CLI's notional API price, and a session limit cuts a round in pieces
+(`--resume` continues a stage). Whether automated runs of that kind are within a given plan's terms
+is for whoever holds the plan to check.
 
 ## What it does not promise
 
@@ -210,7 +259,9 @@ the suite above is worth its green. Nothing in it touches `packages/`.
 
 ## Dependencies
 
-**None outside `node:`.** 10,089 lines of `.mjs` in 33 files, no `package.json`, no lockfile, no
+**None outside `node:`.** 13,054 lines of `.mjs` in 47 files (the tests included; `find . -name '*.mjs' |
+xargs cat | wc -l` from this directory — the figure this sentence carried before, 10,089, had already
+drifted to 10,542 in 33 files), no `package.json`, no lockfile, no
 build step —
 node and the runtimes a discriminant needs (`php`, `python3`, `node`, `ruby`, plus `git` and
 `bash`), which the `toolchain` check names on the way out if one is missing. That is what makes it

@@ -1,4 +1,4 @@
-// The six arms — where the whole experiment is won or lost.
+// The seven arms — where the whole experiment is won or lost.
 //
 // An arm is ONE variable: where the decision lives, whether it is HANDED OVER
 // without being asked for, and — for the sixth — WHICH HALF of that handing over is
@@ -13,6 +13,19 @@
 //              the product's own door. The document channel and nothing else.
 //   mnema+     the mnema arm exactly, plus the whole surface the product ships to
 //              hand that record over UNASKED and charge for it.
+//   claude-md  the same decision, verbatim, in a CLAUDE.md at the repository root — the
+//              file the host LOADS ON ITS OWN. The cheapest alternative to a record that
+//              anybody has actually installed, and the comparator no round measured.
+//
+// THE SEVENTH ARM IS `prosa` WITH ONE LETTER CHANGED IN THE FILE NAME, and that is the
+// design rather than a coincidence. The `prosa` arm was meant to be "the instructions file"
+// and was not: `DECISIONS.md` is a name the host does not load, so the agent had to choose to
+// open it (`memory_read` is the same kind of fact for the host's memory). An arm called
+// "instructions file" that the host never read measured the agent's habit of opening files,
+// and every sentence in the record that compares the product with an instructions file was
+// comparing it with that. The two arms hold the same bytes; the only variable is whether the
+// host puts them in front of the model unasked — and `lib/delivered.mjs` proves, on the real
+// host's own request, that it does here and does not there.
 //
 // IT SAID "THE FIVE ARMS" UNTIL 2026-08-20, and what falsified that is round 3.
 // Round 2 measured `mnema+` carrying two channels at once and no arm of it separated
@@ -84,7 +97,15 @@ import { spawnSync } from 'node:child_process'
 import { canonicalKnowledge, carriesDecision, readDecision } from './fixtures.mjs'
 import { assertCleanTree, commitAll, exists, sandboxEnv } from './sandbox.mjs'
 
-export const ARMS = ['base', 'prosa', 'host', 'mnema', 'mnema-doc', 'mnema+']
+export const ARMS = ['base', 'prosa', 'host', 'mnema', 'claude-md', 'mnema-doc', 'mnema+']
+
+/**
+ * The arm whose decision sits in the file the host loads by itself.
+ *
+ * The name is the pre-registration's: a round declares it, and `refuseUnrunnableRound` ends a
+ * round that declares an arm this list does not hold.
+ */
+export const INSTRUCTIONS_ARM = 'claude-md'
 
 /**
  * The arm that gets the product's whole unasked surface on top of the mnema arm.
@@ -250,6 +271,8 @@ export const SEEDING_AGENT = 'mnema-bench-harness'
 export const ACCEPT_NOTE = 'Seeded as settled for the measurement.'
 
 export const DECISIONS_FILE = 'DECISIONS.md'
+/** The name the host loads without being asked. The same bytes as `DECISIONS_FILE`, under a name it reads. */
+export const INSTRUCTIONS_FILE = 'CLAUDE.md'
 export const MEMORY_INDEX = 'MEMORY.md'
 
 /**
@@ -265,6 +288,11 @@ export function expectedSeedState(arm, axis) {
   const carries = carriesDecision(axis)
   return {
     decisionsFile: arm === 'prosa' && carries,
+    // The seventh dimension, and the seventh arm's alone: the decision under the name the
+    // host loads. Declared here for the reason the others are — this table is read by both
+    // halves of the seed — and checked in both directions, because the absence in the other
+    // six arms is what makes the one arm that has it a comparator and not a contamination.
+    instructionsFile: arm === INSTRUCTIONS_ARM && carries,
     hostMemory: arm === 'host' && carries,
     // The mechanism, not the content: the tree exists on both axes.
     mnemaTree: servesRecord(arm),
@@ -384,6 +412,10 @@ export function seedArm({ arm, fixture, sandbox, mnemaBin }) {
     writeFileSync(join(sandbox.repo, DECISIONS_FILE), readFileSync(fixture.decisionPath, 'utf8'))
   }
 
+  if (want.instructionsFile) {
+    writeFileSync(join(sandbox.repo, INSTRUCTIONS_FILE), instructionsText(fixture))
+  }
+
   if (want.hostMemory) {
     writeFileSync(join(sandbox.memory, `${slugFor(decision.title)}.md`), hostMemoryFile(decision))
     writeFileSync(join(sandbox.memory, MEMORY_INDEX), hostIndexFile(decision))
@@ -396,6 +428,7 @@ export function seedArm({ arm, fixture, sandbox, mnemaBin }) {
       const recorded = must(
         mnema(sandbox, mnemaBin, [
           'decision',
+          'record',
           fields.title,
           fields.rationale,
           '--alternatives',
@@ -459,6 +492,11 @@ export function seedArm({ arm, fixture, sandbox, mnemaBin }) {
   commitAll(sandbox, `seed: ${arm}`)
   assertCleanTree(sandbox)
   return { arm, axis: fixture.axis, want }
+}
+
+/** What the instructions arm's file holds: the decision, verbatim — the bytes `seedArm` writes. */
+function instructionsText(fixture) {
+  return readFileSync(fixture.decisionPath, 'utf8')
 }
 
 /** The records the mnema arm holds, read back through the product's own index. */
@@ -538,13 +576,13 @@ export function channelNames(positions) {
 }
 
 /**
- * Prove a seeded sandbox is in the state its arm claims — all SIX dimensions, for
+ * Prove a seeded sandbox is in the state its arm claims — all SEVEN dimensions, for
  * every arm.
  *
  * It said "all four" until 2026-08-19, when the address became the fifth, and "all
  * four" again in the same breath until 2026-08-20, when the switch position became the
- * sixth. The count is written out rather than left as "every dimension" because it is
- * the line a seventh has to come and move.
+ * sixth; the instructions file made it seven. The count is written out rather than left as
+ * "every dimension" because it is the line an eighth has to come and move.
  *
  * Checking only what an arm ADDS would leave the floor unguarded: `base` is
  * defined by three absences, and an absence nobody asserts is the one that
@@ -561,7 +599,7 @@ export function assertSeed({ arm, fixture, sandbox, mnemaBin }) {
   if (hasDecisionsFile !== want.decisionsFile) {
     problems.push(`${DECISIONS_FILE} ${hasDecisionsFile ? 'is present' : 'is missing'}, expected the opposite`)
   }
-  if (want.decisionsFile) {
+  if (want.decisionsFile && hasDecisionsFile) {
     const onDisk = readFileSync(join(sandbox.repo, DECISIONS_FILE), 'utf8')
     if (onDisk !== readFileSync(fixture.decisionPath, 'utf8')) {
       problems.push(`${DECISIONS_FILE} is not the decision verbatim`)
@@ -572,6 +610,23 @@ export function assertSeed({ arm, fixture, sandbox, mnemaBin }) {
       env: sandboxEnv(sandbox),
     })
     if (!tracked.stdout.trim()) problems.push(`${DECISIONS_FILE} is not committed`)
+  }
+
+  const hasInstructions = exists(join(sandbox.repo, INSTRUCTIONS_FILE))
+  if (hasInstructions !== want.instructionsFile) {
+    problems.push(`${INSTRUCTIONS_FILE} ${hasInstructions ? 'is present' : 'is missing'}, expected the opposite`)
+  }
+  if (want.instructionsFile && hasInstructions) {
+    const onDisk = readFileSync(join(sandbox.repo, INSTRUCTIONS_FILE), 'utf8')
+    if (onDisk !== instructionsText(fixture)) {
+      problems.push(`${INSTRUCTIONS_FILE} is not the decision verbatim`)
+    }
+    const tracked = spawnSync('git', ['ls-files', INSTRUCTIONS_FILE], {
+      cwd: sandbox.repo,
+      encoding: 'utf8',
+      env: sandboxEnv(sandbox),
+    })
+    if (!tracked.stdout.trim()) problems.push(`${INSTRUCTIONS_FILE} is not committed`)
   }
 
   const memoryFiles = readdirSync(sandbox.memory)
@@ -668,7 +723,29 @@ export function assertSeed({ arm, fixture, sandbox, mnemaBin }) {
 }
 
 /**
- * The three seeded arms must carry the SAME knowledge — asserted, not assumed.
+ * The decision as each arm that holds it AS TEXT would hand it over, keyed by arm.
+ *
+ * Its own function so that "which arms are compared" is a fact a test can enumerate from the
+ * seed table (`expectedSeedState`) instead of a list inside a check: an arm that holds the
+ * decision as text and is missing from here is an arm whose knowledge nobody compared.
+ */
+export function knowledgeShapes(fixture) {
+  const decision = readDecision(fixture)
+  const fields = mnemaFields(decision)
+  // Each arm as the agent would meet it, with the title back in front of the
+  // two shapes that carry it outside the body.
+  return {
+    prosa: readFileSync(fixture.decisionPath, 'utf8'),
+    // The same bytes under another name; compared anyway, because "the same bytes" is a claim
+    // about a table in this file and the parity check is the thing that makes it a fact.
+    [INSTRUCTIONS_ARM]: instructionsText(fixture),
+    host: `${decision.title}\n\n${hostMemoryBody(decision)}`,
+    mnema: `${fields.title}\n\n${fields.rationale}\n\n${fields.alternatives}`,
+  }
+}
+
+/**
+ * The four arms that hold the decision as text must carry the SAME knowledge — asserted, not assumed.
  *
  * This is the fairness invariant of the whole run. If `prosa` carries a
  * paragraph that `mnema` does not, a difference in the result is a difference in
@@ -677,15 +754,7 @@ export function assertSeed({ arm, fixture, sandbox, mnemaBin }) {
 export function assertKnowledgeParity(fixture) {
   if (!fixture.hasDecision) return true
   const decision = readDecision(fixture)
-  const fields = mnemaFields(decision)
-
-  // Each arm as the agent would meet it, with the title back in front of the
-  // two shapes that carry it outside the body.
-  const shapes = {
-    prosa: readFileSync(fixture.decisionPath, 'utf8'),
-    host: `${decision.title}\n\n${hostMemoryBody(decision)}`,
-    mnema: `${fields.title}\n\n${fields.rationale}\n\n${fields.alternatives}`,
-  }
+  const shapes = knowledgeShapes(fixture)
   const canonical = Object.entries(shapes).map(([arm, text]) => [arm, canonicalKnowledge(text)])
   const [[refArm, refText], ...rest] = canonical
   for (const [arm, text] of rest) {
