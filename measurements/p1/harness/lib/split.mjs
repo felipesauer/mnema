@@ -19,6 +19,7 @@ import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { ARMS } from './seed.mjs'
+import { MODEL, OUTPUT_FORMATS, OUTPUT_FORMAT_DEFAULT } from './isolation.mjs'
 import { REPO_ROOT } from './root.mjs'
 
 export { REPO_ROOT }
@@ -240,6 +241,128 @@ export function refuseUnrunnableRound(round, arms = ARMS) {
  */
 export function roundArms(round, arms = ARMS) {
   return armsOf(preregOf(round)) ?? arms
+}
+
+/**
+ * The output format a round's cells run with — `json` unless its pre-registration says otherwise.
+ *
+ * A ROUND DECLARES IT, rather than the harness changing it for everybody, because the four arms
+ * that already spent cells keep their command line byte for byte (`tests/four-arms.golden.json`
+ * freezes it) and a later round asks the CLI for the whole event stream. Declared in the split, it
+ * is fixed before the first cell like the arms are, and a round cannot quietly switch halfway.
+ * A value the harness does not know is a refusal by name: a typo would otherwise fall back to the
+ * default and capture a round without the interactions it was pre-registered to capture.
+ */
+export function outputFormatOf(prereg) {
+  const declared = readSplit(prereg.split).output_format
+  if (declared === undefined) return OUTPUT_FORMAT_DEFAULT
+  if (!OUTPUT_FORMATS.includes(declared)) {
+    throw new Error(`${prereg.split}: "output_format" is ${JSON.stringify(declared)}, expected one of ${OUTPUT_FORMATS.join(', ')}`)
+  }
+  return declared
+}
+
+/**
+ * The model a round's cells run on — the harness's default unless its pre-registration names one.
+ *
+ * THE MODEL IS A PROPERTY OF THE PRE-REGISTRATION, not of the command line. Which model the next
+ * round runs on is a decision still open (the cheap one the earlier rounds used, or the one the
+ * product is used with in practice), and the harness is prepared for both answers: it runs
+ * whichever the split declares, writes it into every line, and runs no other. A `--model` flag
+ * would let the same frozen round be spent on two models by two people and published as one.
+ * Rounds 1 to 4 declare none and keep the model they ran on.
+ */
+export function modelOf(prereg) {
+  const declared = readSplit(prereg.split).model
+  if (declared === undefined) return MODEL
+  if (typeof declared !== 'string' || declared.trim() === '') {
+    throw new Error(`${prereg.split}: "model" is not a model id`)
+  }
+  return declared
+}
+
+/**
+ * The CLI version a round declares, or `null` when it declares none (rounds 1 to 4).
+ * See `lib/pin.mjs` for what is done with it.
+ */
+export function cliVersionOf(prereg) {
+  const declared = readSplit(prereg.split).cli_version
+  if (declared === undefined) return null
+  if (typeof declared !== 'string' || declared.trim() === '') {
+    throw new Error(`${prereg.split}: "cli_version" is not a version string`)
+  }
+  return declared
+}
+
+/** The scenario families a round's tasks can belong to (`measurements/p1/` protocol of the next round). */
+export const SCENARIOS = ['S1', 'S2', 'S3a', 'S3b', 'S4', 'S5']
+
+/**
+ * The scenario a task belongs to in this round, or `null` when the round declares none.
+ *
+ * Rounds 1 to 4 had one kind of task and say nothing; a later round groups its tasks into
+ * families whose readings differ, and the family has to travel in the LINE: reconstructing it
+ * afterwards from the task's id is a second table that drifts. Declared in the split, beside
+ * the task lists, as `scenarios: { "<task id>": "<family>" }`.
+ */
+export function scenarioOf(prereg, taskId) {
+  const declared = readSplit(prereg.split).scenarios
+  if (declared === undefined) return null
+  return declared[taskId] ?? null
+}
+
+/**
+ * The code an arm goes by in this round's lines, or `null` when the round declares none.
+ *
+ * `arm_codes: { "<arm>": "<letter>" }`. The analysis reads the code and the arm's name is the
+ * thing a reader should not need to know to read it; whether a round also keeps the map out of the
+ * repository until the analysis has run is that round's pre-registration to say, not this
+ * function's to enforce.
+ */
+export function armCodeOf(prereg, arm) {
+  const declared = readSplit(prereg.split).arm_codes
+  if (declared === undefined) return null
+  return declared[arm] ?? null
+}
+
+/**
+ * Everything wrong with the labels a split declares, as sentences. Empty when it declares none.
+ *
+ * A label that is declared and wrong would be written into lines that cannot be re-run: a code
+ * on two arms makes the blind reading ambiguous, a code missing from one arm makes a table with
+ * a column nobody can name, and a scenario on a task the round does not hold labels nothing.
+ */
+export function labelProblems(split) {
+  const problems = []
+  if (split.arm_codes !== undefined) {
+    const codes = split.arm_codes
+    const armsDeclared = Array.isArray(split.arms) ? split.arms : null
+    if (typeof codes !== 'object' || codes === null || Array.isArray(codes)) {
+      problems.push('"arm_codes" is not an object from arm to code')
+    } else {
+      const values = Object.values(codes)
+      if (values.some((code) => typeof code !== 'string' || code === '')) {
+        problems.push('"arm_codes" holds a code that is not a non-empty string')
+      }
+      if (new Set(values).size !== values.length) {
+        problems.push('"arm_codes" gives one code to two arms')
+      }
+      if (armsDeclared) {
+        const missing = armsDeclared.filter((arm) => !(arm in codes))
+        const extra = Object.keys(codes).filter((arm) => !armsDeclared.includes(arm))
+        if (missing.length) problems.push(`"arm_codes" has no code for [${missing.join(', ')}]`)
+        if (extra.length) problems.push(`"arm_codes" names [${extra.join(', ')}], which the round does not run`)
+      }
+    }
+  }
+  if (split.scenarios !== undefined) {
+    const held = new Set([...(split.development ?? []), ...(split.held_out ?? [])])
+    for (const [task, family] of Object.entries(split.scenarios ?? {})) {
+      if (!held.has(task)) problems.push(`"scenarios" labels ${task}, which the split does not hold`)
+      if (!SCENARIOS.includes(family)) problems.push(`"scenarios" gives ${task} the family ${JSON.stringify(family)}, expected one of ${SCENARIOS.join(', ')}`)
+    }
+  }
+  return problems
 }
 
 /**

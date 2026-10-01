@@ -20,7 +20,8 @@ import { assertCleanTree, createSandbox, git, plantRepo } from './sandbox.mjs'
 import { assertSeed, seedArm } from './seed.mjs'
 import { cellPushedTools, cellPushMatchers, mechanismBefore, mechanismBetween } from './mechanism.mjs'
 import { surfaceProblem } from './channel.mjs'
-import { cellEnv, claudeArgv, installAuth, writeCellConfig } from './isolation.mjs'
+import { MODEL, OUTPUT_FORMAT_DEFAULT, cellEnv, claudeArgv, installAuth, writeCellConfig } from './isolation.mjs'
+import { readAgentOutput } from './interactions.mjs'
 import { runVerify } from './verdict.mjs'
 import { appendResult, missingFrom, resultLine } from './result.mjs'
 import { readTicket } from './fixtures.mjs'
@@ -61,6 +62,14 @@ export function runCell({
   maxBudgetUsd = null,
   timeoutMs = 20 * 60_000,
   versions = {},
+  // How the CLI prints the session: the round declares it (`outputFormatOf`), the default is the
+  // one rounds 1 to 4 ran with. `stream-json` is what makes the interactions readable.
+  outputFormat = OUTPUT_FORMAT_DEFAULT,
+  // The round's model (`modelOf`); the harness's default is the one rounds 1 to 4 ran on.
+  model = MODEL,
+  // The labels the round declares for this cell; `null` where it declares none.
+  scenario = null,
+  armCode = null,
 }) {
   const startedAt = new Date().toISOString()
   const label = `${fixture.id}-${arm}-r${run}`
@@ -81,6 +90,10 @@ export function runCell({
       round,
       startedAt,
       endedAt: new Date().toISOString(),
+      outputFormat,
+      model,
+      scenario,
+      armCode,
       cliVersion: versions.cli ?? null,
       mnemaVersion: versions.mnema ?? null,
       build,
@@ -134,7 +147,7 @@ export function runCell({
 
   const agent = spawnSync(
     claudeBin,
-    claudeArgv({ ticket, settingsPath, mcpPath, maxBudgetUsd }),
+    claudeArgv({ ticket, settingsPath, mcpPath, maxBudgetUsd, outputFormat, model }),
     {
       cwd: sandbox.repo,
       encoding: 'utf8',
@@ -147,7 +160,7 @@ export function runCell({
 
   if (outDir) {
     mkdirSync(join(outDir, 'raw'), { recursive: true })
-    writeFileSync(join(outDir, 'raw', `${label}.stdout.json`), agent.stdout ?? '')
+    writeFileSync(join(outDir, 'raw', `${label}.stdout.${outputFormat === 'stream-json' ? 'jsonl' : 'json'}`), agent.stdout ?? '')
     writeFileSync(join(outDir, 'raw', `${label}.stderr.txt`), agent.stderr ?? '')
   }
 
@@ -159,8 +172,9 @@ export function runCell({
   }
 
   let result = null
+  let interactions = null
   try {
-    result = JSON.parse(agent.stdout ?? '')
+    ;({ result, interactions } = readAgentOutput(agent.stdout ?? '', outputFormat))
   } catch {
     const head = (agent.stdout || agent.stderr || '').split('\n')[0] ?? ''
     return finish({
@@ -176,6 +190,7 @@ export function runCell({
       status: 'harness_error',
       error: `the agent CLI reported ${subtype ?? 'no subtype'}: ${String(result?.result ?? '').slice(0, 300)}`,
       result,
+      interactions,
       missingResultFields: missingFrom(result),
     })
   }
@@ -214,6 +229,7 @@ export function runCell({
         `${result?.terminal_reason ? `, terminal_reason ${result.terminal_reason}` : ''}` +
         `: ${String(result?.result ?? '').slice(0, 300)}`,
       result,
+      interactions,
       missingResultFields: missingFrom(result),
     })
   }
@@ -259,6 +275,7 @@ export function runCell({
       error: `the arm was not delivered to this cell: ${undelivered}`,
       exit: null,
       result,
+      interactions,
       missingResultFields: missingFrom(result),
       diff,
       mechanism,
@@ -275,6 +292,7 @@ export function runCell({
       rulerDetail: scored.detail,
       exit: scored.exit,
       result,
+      interactions,
       missingResultFields: missingFrom(result),
       diff,
       mechanism,
@@ -292,6 +310,7 @@ export function runCell({
     // The sentence was always printed; it was only ever thrown away.
     brokenDetail: scored.verdict === 'BROKEN' ? firstLine(scored.stdout) : null,
     result,
+    interactions,
     missingResultFields: missingFrom(result),
     diff,
     mechanism,

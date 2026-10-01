@@ -87,6 +87,7 @@ import {
   ROUNDS,
   armsOf,
   crossRoundProblems,
+  labelProblems,
   preregOf,
   readDigests,
   readSplit,
@@ -288,7 +289,6 @@ export async function runSelftest({
   }
 
   // 4 — every arm of every fixture seeds into the state it claims.
-  {
   //
   // AND THE SAME SANDBOX IS THEN HANDED TO THE REAL HOST, with no model behind it, to read what
   // ARRIVES (4b). The seed proves what was PLANTED; only the host's own first request proves what
@@ -298,6 +298,7 @@ export async function runSelftest({
   // bytes the seed produced.
   const deliveries = []
   const undelivered = []
+  {
     const problems = []
     for (const fixture of fixtures) {
       for (const arm of ARMS) {
@@ -306,7 +307,6 @@ export async function runSelftest({
           plantRepo(sandbox, fixture)
           seedArm({ arm, fixture, sandbox, mnemaBin })
           assertSeed({ arm, fixture, sandbox, mnemaBin })
-        } catch (err) {
           try {
             const seen = await deliveredAtOpen({ sandbox, arm, fixture, mnemaBin, pluginDir, claudeBin })
             for (const problem of deliveredProblems({ arm, axis: fixture.axis, delivered: seen.parts })) {
@@ -316,6 +316,7 @@ export async function runSelftest({
           } catch (err) {
             undelivered.push(`${where(fixture)}/${arm}: ${err.message}`)
           }
+        } catch (err) {
           problems.push(`r${fixture.round}/${err.message}`)
         } finally {
           sandbox.destroy()
@@ -325,7 +326,6 @@ export async function runSelftest({
     const ok = problems.length === 0
     record('seeding', ok, ok ? `${fixtures.length * ARMS.length} cells seed as declared` : problems.join('\n  '))
     if (!ok) return done(checks)
-  }
 
     // 4b — the text delivered — is RECORDED after the surface arms' checks (7 and 7b), below. It is
     // measured here, in the sandbox the seed just proved, and judged later, for the reason the
@@ -333,6 +333,7 @@ export async function runSelftest({
     // fails check 7 with the handler's own words (it is missing, it is mute, it exited 2), and
     // the same defect seen from the host's first request would say only that a title did not
     // arrive. The end-to-end question comes after the questions that can name the cause.
+  }
 
   // 5 — two sandboxes of the same cell do not see each other.
   const axisA = fixtures.find((f) => carriesDecision(f.axis))
@@ -583,7 +584,6 @@ export async function runSelftest({
     if (!ok) return done(checks)
   }
 
-  // 8 — the bench is the one the pre-registration froze, round by round.
   // 4b — the text delivered is the text declared, in both directions.
   //
   // Run against the real host and the cell's own command line, with a stand-in where the model
@@ -605,6 +605,7 @@ export async function runSelftest({
     if (!arrived) return done(checks)
   }
 
+  // 8 — the bench is the one the pre-registration froze, round by round.
   //
   // It is asked LAST among the bench's own checks, and that is deliberate: a bench
   // broken in its own terms — a discriminant that stopped discriminating, an arm
@@ -624,11 +625,15 @@ export async function runSelftest({
     for (const { round, fixturesDir } of rounds) {
       const prereg = preregOf(round)
       try {
-        for (const problem of splitProblems({
-          fixtures: listFixtures(fixturesDir),
-          split: readSplit(prereg.split),
-          frozen: readDigests(prereg.digests),
-        })) {
+        const split = readSplit(prereg.split)
+        for (const problem of [
+          ...splitProblems({
+            fixtures: listFixtures(fixturesDir),
+            split,
+            frozen: readDigests(prereg.digests),
+          }),
+          ...labelProblems(split),
+        ]) {
           problems.push(`round ${round}: ${problem}`)
         }
       } catch (err) {

@@ -58,6 +58,19 @@ import {
 export const MODEL = 'claude-haiku-4-5-20251001'
 
 /**
+ * The shapes the CLI's output can take in a cell.
+ *
+ * `json` is the one rounds 1 to 4 ran with — one result message, no path — and it stays the
+ * default so that the four arms that already spent cells keep their bytes (see
+ * `tests/four-arms.golden.json`). `stream-json` is the one the protocol asks every later round
+ * for: the same result message as its last line, and before it every event of the session, which
+ * is what says which doors the agent went through and in what order. A round DECLARES which one it
+ * uses in its pre-registration (`outputFormatOf`, `lib/split.mjs`).
+ */
+export const OUTPUT_FORMATS = ['json', 'stream-json']
+export const OUTPUT_FORMAT_DEFAULT = 'json'
+
+/**
  * The `NO_RUN` equivalent — identical in all six arms.
  *
  * It says how to work, never what to consult. A sentence about memory, records
@@ -226,14 +239,30 @@ export function writeCellConfig({ sandbox, arm, mnemaBin, pluginDir = productPlu
  * the file above. Those two lines are the correction that saved the `ponytail`
  * result, and they are copied here on purpose.
  */
-export function claudeArgv({ ticket, settingsPath, mcpPath, maxBudgetUsd = null }) {
+export function claudeArgv({
+  ticket,
+  settingsPath,
+  mcpPath,
+  maxBudgetUsd = null,
+  model = MODEL,
+  outputFormat = OUTPUT_FORMAT_DEFAULT,
+}) {
+  if (!OUTPUT_FORMATS.includes(outputFormat)) {
+    throw new Error(`--output-format must be one of ${OUTPUT_FORMATS.join(', ')}, not ${outputFormat}`)
+  }
   const argv = [
     '-p',
     ticket,
     '--model',
-    MODEL,
+    model,
     '--output-format',
-    'json',
+    outputFormat,
+    // `--verbose` is what the CLI demands of `stream-json` in print mode, and `--include-hook-events`
+    // is what puts a hook's lifecycle in the stream: without it the opening hook is there and
+    // the per-edit one is not, and "did the push arrive before the write" cannot be answered.
+    // Both are part of the one declaration — the stream is the interactions, and the interactions
+    // are the point.
+    ...(outputFormat === 'stream-json' ? ['--verbose', '--include-hook-events'] : []),
     '--setting-sources',
     'project,local',
     '--strict-mcp-config',
@@ -287,9 +316,19 @@ export const ISOLATION_CHECKLIST = [
   [
     '--output-format json',
     'the result message is parsed, not scraped: cost, duration and turns are copied from the ' +
-      'vendor’s own fields and a field that did not arrive is written null. It is on this list ' +
-      'because it decides what a cell can be asked afterwards — the protocol asks future rounds ' +
-      'for `stream-json`, which would say which doors the agent went through and in what order',
+      'vendor’s own fields and a field that did not arrive is written null. It is the format ' +
+      'rounds 1 to 4 ran with, and it stays the default so that those arms keep their command line ' +
+      'byte for byte. It is on this list because it decides what a cell can be asked afterwards: ' +
+      'in this format the path is not captured, and the interaction columns are null',
+  ],
+  [
+    '--output-format stream-json --verbose --include-hook-events',
+    'the format a round DECLARES in its pre-registration (`output_format`), identical in every arm ' +
+      'of it. The same result message is the last line, and before it every event of the session: ' +
+      'which tools the agent called and in what order, and which hooks handed it text before a ' +
+      'write. `--verbose` is what the CLI demands of `stream-json` in print mode and ' +
+      '`--include-hook-events` is what puts the per-edit hook in the stream at all. Nothing the ' +
+      'agent sees changes: these flags are about what the cell REPORTS',
   ],
   [
     '--max-budget-usd <n>',
