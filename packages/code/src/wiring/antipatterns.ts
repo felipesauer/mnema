@@ -32,12 +32,20 @@
  * of "moves with none" read without it is a list of names.
  */
 
+import type { DivergentMove } from '@mnema/core';
 import type { Command } from 'commander';
 import { statement } from '../presentation/verdict.js';
 import { here } from './context.js';
 import { onOneLine } from './on-one-line.js';
 import { reportRefusal } from './report.js';
 import { type Declared, readsTheRecord, type Wiring } from './verb.js';
+
+/** The state a move out of a state went to — the `to` of a decision's or a skill's transition. */
+function movedTo(event: DivergentMove['evidence'][number]): string {
+  return event.kind === 'decision.transitioned' || event.kind === 'skill.transitioned'
+    ? event.payload.to
+    : event.kind;
+}
 
 /** Registers `mnema antipatterns` on the program. */
 export function registerAntipatterns(program: Command, wiring: Wiring): Declared {
@@ -70,6 +78,7 @@ export function registerAntipatterns(program: Command, wiring: Wiring): Declared
         deprecatedSkills,
         skillCandidates,
         labelCollisions,
+        divergentMoves,
       } = result.patterns;
       const moves = result.moves;
       io.out(render(statement('reopened tasks', String(reopenedTasks.length))));
@@ -135,6 +144,19 @@ export function registerAntipatterns(program: Command, wiring: Wiring): Declared
             statement(
               onOneLine`label naming more than one rule (${collision.adr})`,
               collision.ids.map((id) => onOneLine`${id}`).join(', '),
+            ),
+          ),
+        );
+      }
+      for (const divergent of divergentMoves) {
+        // Two moves of one subject out of one state — two machines that did not see each
+        // other. The id, the state and each move's `to` are read out of the record, so all
+        // of them are collapsed like the label above; the line says the moves and picks none.
+        io.out(
+          render(
+            statement(
+              onOneLine`moved twice out of one state (${divergent.kind} ${divergent.from})`,
+              onOneLine`${divergent.entityId}: ${divergent.evidence.map(movedTo).join(', ')}`,
             ),
           ),
         );

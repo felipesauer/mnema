@@ -399,6 +399,14 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the entity ids that share that label, read back out of the record',
   },
+  'antipatterns.ts «moved twice out of one state ({} {})» #1': {
+    verdict: 'collapsed',
+    why: 'the kind is a closed word, the state it left was read back out of the record',
+  },
+  'antipatterns.ts «{}: {}» #1': {
+    verdict: 'collapsed',
+    why: 'the id of the subject moved twice and the states each move went to — the record’s',
+  },
   'focus.ts «{}» #1': {
     verdict: 'collapsed',
     why: 'the agent a run names — text whoever opened the session wrote',
@@ -609,8 +617,9 @@ describe('every line this wiring words is classified', () => {
     expect(FOUND.calls).toBeGreaterThan(80);
     // Seventy-three until the three that said where the key file is moved into one function
     // of their own (`key-file.ts`), which collapses its values where it words them, and the
-    // `witness` act's "No tail holds events" moved into `presentation/tails.ts`.
-    expect(FOUND.sites.length).toBe(69);
+    // `witness` act's "No tail holds events" moved into `presentation/tails.ts`. Seventy-one
+    // since `antipatterns` says a subject moved twice out of one state, in two lines.
+    expect(FOUND.sites.length).toBe(71);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -630,9 +639,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(33);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(35);
     expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(36);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(33);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(35);
   });
 
   it('every reason says where the value comes from', () => {
@@ -763,6 +772,9 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
     'needs a run that was served one pattern’s body and moved another — the MCP surface',
   'antipatterns.ts «label naming more than one rule ({})» #1': 'needs two decisions sharing an ADR',
   'antipatterns.ts «{}» #2': 'the same collision',
+  'antipatterns.ts «moved twice out of one state ({} {})» #1':
+    'needs two machines moving one decision out of one state, then merged',
+  'antipatterns.ts «{}: {}» #1': 'the same divergence',
   'focus.ts «{}» #1': 'the run’s own line — driven by `run start`, read back by `focus`',
   'focus.ts « — {}» #1': 'the same line',
   'guard.ts «{} {} → {}» #1': 'the id must match a task, so a forged one never reaches it',
