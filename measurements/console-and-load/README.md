@@ -11,7 +11,7 @@ service with a memory ceiling. A control is a run in which the instrument is *ex
 see the thing*; a measurement whose control does not see it is declared **invalid**, never
 reinterpreted as a result about the product.
 
-## D04 · does Ctrl-D leave an echo behind
+## does Ctrl-D leave an echo behind
 
 *Question.* `restore()` hands the terminal back before the process is gone. If a second
 Ctrl-D reaches the device in that window, the line discipline (cooked again) echoes `^D`
@@ -32,7 +32,7 @@ declared broken.
 means no echo was reachable by this protocol; it does **not** prove none exists at a delay
 this protocol did not try.
 
-## D10 · the corner under a concurrent writer
+## the corner under a concurrent writer
 
 *Question.* What does a person who is reading (and typing) see when an agent appends to the
 record in another process?
@@ -51,7 +51,7 @@ differs; whether any frame is taller than the screen.
 *Control (must see it).* Arm (b) must change the page at all (a line lands on the roll, or the
 corner changes); if it does not, the writer never reached the console and the run is invalid.
 
-## D12 · two writers, on the private and global trees
+## two writers, on the private and global trees
 
 *Question.* The race between two processes appending to a fresh tail was measured on the public
 tree only. The lock is per tail and every tree has its own; is the outcome the same on the other
@@ -70,7 +70,7 @@ taken (`0042bc28`)}. N = 20 per cell.
 *Reading.* Per cell: runs where `verify` fails, runs that lost a title, runs where a writer was
 refused.
 
-## D25 · the branch that moves with load
+## the branch that moves with load
 
 *Question.* The whole-suite branch coverage has read 88.38 and 88.36 on the same content. Which
 branch in `copilot/src/intelligence` is it?
@@ -84,7 +84,7 @@ and says so; it does not find the branch absent.
 
 *Reading.* The file, line and branch that differ, and the test files that reach it.
 
-## D34 · the `--selftest` of the measurement harness
+## the `--selftest` of the measurement harness
 
 *Question.* The recorded figure (67 s) predates rounds 3 and 4. What does the selftest cost
 with today's task set?
@@ -95,7 +95,7 @@ load recorded; the task set it enumerates is counted.
 *Reading.* Median and range of the wall time, and the count of tasks. A selftest that fails is
 reported with its first error and the number is not a time.
 
-## D42 · the two height cases below the floor
+## the two height cases below the floor
 
 *Question.* Two cases fix a height below the floor (42): the one that seeds the console from a
 device answering `120x24` first (`one-width-per-frame.test.ts`, *asks the device ONCE*), and the
@@ -111,7 +111,7 @@ the case was already blind and the comparison is moot.
 *Reading.* Per case: green or red clean at the floor, and the number of reds under the
 mutation, against the same at the old height.
 
-## D45 · what wide text costs the fold
+## what wide text costs the fold
 
 *Question.* East Asian wide text costs more than ASCII in the measure of a line (3.8x in August).
 Is it still, on the same load?

@@ -1,4 +1,4 @@
-# D10 · one row per run: writers, rep, loadavg, frames, taller-than-screen, typed text kept, caret column before->after, rows that differ, rows on the roll, other rows (the corner), ms to first frame
+# one row per run: writers, rep, loadavg, frames, taller-than-screen, typed text kept, caret column before->after, rows that differ, rows on the roll, other rows (the corner), ms to first frame
 # commit bdeb5b5d (origin/main-v1 cd2a420b + the screen-model change); 2026-10-01; Linux 7.0.0, 16 cores; sandbox HOME
 0	0	36.87	frames=0	taller=0	typed=true	caret=10->10	diffrows=0	onroll=0	other=[]	latency_ms=-1
 0	1	34.80	frames=0	taller=0	typed=true	caret=10->10	diffrows=0	onroll=0	other=[]	latency_ms=-1

@@ -1,4 +1,4 @@
-# D12 · cells: build x tree, N=20 each. prefix = 0042bc28 (before the tail lock); head = this branch. broke = verify failed; lost = fewer than two titles on the tail; refused = a writer exited non-zero. The first global/prefix line counted the tail at the wrong path (lost=20 is that artifact); the recount line is the cell.
+# cells: build x tree, N=20 each. prefix = 0042bc28 (before the tail lock); head = this branch. broke = verify failed; lost = fewer than two titles on the tail; refused = a writer exited non-zero. The first global/prefix line counted the tail at the wrong path (lost=20 is that artifact); the recount line is the cell.
 # commit bdeb5b5d (origin/main-v1 cd2a420b + the screen-model change); 2026-10-01; Linux 7.0.0, 16 cores; sandbox HOME
 load 32.67
 prefix tree=public N=20 broke=2 lost=0 refused=0

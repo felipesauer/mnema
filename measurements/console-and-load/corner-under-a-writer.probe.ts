@@ -1,5 +1,5 @@
-// D10 probe. Copy to packages/code/tests/zz-d10.test.ts and run from the repo root:
-//   PROBE_OUT=<tsv> PROBE_N=12 npx vitest run packages/code/tests/zz-d10.test.ts
+// Probe. Copy to packages/code/tests/zz-probe.test.ts and run from the repo root:
+//   PROBE_OUT=<tsv> PROBE_N=12 npx vitest run packages/code/tests/zz-probe.test.ts
 import { execFile } from 'node:child_process';
 import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -22,7 +22,7 @@ let project: string;
 let environment: NodeJS.ProcessEnv;
 
 beforeAll(async () => {
-  sandbox = mkdtempSync(join(tmpdir(), 'mnema-d10-'));
+  sandbox = mkdtempSync(join(tmpdir(), 'mnema-'));
   project = join(sandbox, 'project');
   mkdirSync(project, { recursive: true });
   process.env.HOME = join(sandbox, 'home');

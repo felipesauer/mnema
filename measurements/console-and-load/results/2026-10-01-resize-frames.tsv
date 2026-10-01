@@ -1,4 +1,4 @@
-# D40 · base under load 23-36: frames of one resize (tsv: label, rep, loadavg, case, frames, max rows, screen rows, taller, heights, widths, wider, diffvsfinal). Runs missing from the tsv are the ones the instrument itself refused: a frame drawn at an intermediate size the device passed through.
+# base under load 23-36: frames of one resize (tsv: label, rep, loadavg, case, frames, max rows, screen rows, taller, heights, widths, wider, diffvsfinal). Runs missing from the tsv are the ones the instrument itself refused: a frame drawn at an intermediate size the device passed through.
 # commit bdeb5b5d (origin/main-v1 cd2a420b + the screen-model change); 2026-10-01; Linux 7.0.0, 16 cores; sandbox HOME
 base	0	32.95	shrink-both 120x55->80x42	frames=2	max=42	screen=42	taller=0	heights=42,42	widths=80,80	wider=0	diffvsfinal=0,0
 base	1	33.04	shrink-both 120x55->80x42	frames=2	max=42	screen=42	taller=0	heights=42,42	widths=80,80	wider=0	diffvsfinal=0,0

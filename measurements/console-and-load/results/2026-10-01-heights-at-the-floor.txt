@@ -1,4 +1,4 @@
-# D42 · the two cases at their old height and at the floor, clean and with the mutation each exists for (A: the opening seeded from two reads of the device; B: closing does not unhook)
+# the two cases at their old height and at the floor, clean and with the mutation each exists for (A: the opening seeded from two reads of the device; B: closing does not unhook)
 # commit bdeb5b5d (origin/main-v1 cd2a420b + the screen-model change); 2026-10-01; Linux 7.0.0, 16 cores; sandbox HOME
 == height=old
 0

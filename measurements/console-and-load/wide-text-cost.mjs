@@ -1,5 +1,5 @@
-// D45. What wide text costs the measure of a line, against ASCII of the same code-point count.
-//   node d45-wide-text-cost.mjs <repo-root>
+// . What wide text costs the measure of a line, against ASCII of the same code-point count.
+//   node wide-text-cost.mjs <repo-root>
 // In-process, on the built modules. Every text is unique (a counter prefix) so the memo of
 // `widthOfText` cannot answer; the arms are alternated block by block; a third arm (ASCII against
 // ASCII) is the control that identical work must tie on.

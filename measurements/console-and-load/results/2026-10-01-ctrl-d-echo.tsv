@@ -1,4 +1,4 @@
-# D04 · one row per run: arm, delay_ms (-1 = one Ctrl-D), rep, loadavg, gave the screen back, ^D count after it, exit code; controls: c1 non-canonical (must see ^D), c2 cooked
+# one row per run: arm, delay_ms (-1 = one Ctrl-D), rep, loadavg, gave the screen back, ^D count after it, exit code; controls: c1 non-canonical (must see ^D), c2 cooked
 # commit bdeb5b5d (origin/main-v1 cd2a420b + the screen-model change); 2026-10-01; Linux 7.0.0, 16 cores; sandbox HOME
 console	-1	0	32.05	gaveback=true	echo=0	code=0
 console	-1	1	32.13	gaveback=true	echo=0	code=0

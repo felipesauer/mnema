@@ -1,5 +1,5 @@
-// D40 probe. Copy to packages/code/tests/zz-d40.test.ts and run from the repo root:
-//   PROBE_N=15 PROBE_OUT=<tsv> PROBE_LABEL=<label> npx vitest run packages/code/tests/zz-d40.test.ts
+// Probe. Copy to packages/code/tests/zz-probe.test.ts and run from the repo root:
+//   PROBE_N=15 PROBE_OUT=<tsv> PROBE_LABEL=<label> npx vitest run packages/code/tests/zz-probe.test.ts
 // One frame-by-frame reading of a resize: heights, widths, and the page after each frame against the settled one.
 import { appendFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';

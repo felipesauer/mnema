@@ -1,4 +1,4 @@
-# D45 · wide text against ASCII of the same code-point count; head (first) and the untouched base (second)
+# wide text against ASCII of the same code-point count; head (first) and the untouched base (second)
 # commit bdeb5b5d (origin/main-v1 cd2a420b + the screen-model change); 2026-10-01; Linux 7.0.0, 16 cores; sandbox HOME
 --- head ---
 {

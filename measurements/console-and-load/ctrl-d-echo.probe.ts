@@ -1,5 +1,5 @@
-// D04 probe. Copy to packages/code/tests/zz-d04.test.ts and run with vitest from the repo root:
-//   PROBE_OUT=<tsv> PROBE_N=20 npx vitest run packages/code/tests/zz-d04.test.ts
+// Probe. Copy to packages/code/tests/zz-probe.test.ts and run with vitest from the repo root:
+//   PROBE_OUT=<tsv> PROBE_N=20 npx vitest run packages/code/tests/zz-probe.test.ts
 // Never committed under tests/: it is an instrument, not a case.
 import { spawn } from 'node:child_process';
 import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -21,7 +21,7 @@ let project: string;
 let environment: NodeJS.ProcessEnv;
 
 beforeAll(async () => {
-  sandbox = mkdtempSync(join(tmpdir(), 'mnema-d04-'));
+  sandbox = mkdtempSync(join(tmpdir(), 'mnema-'));
   project = join(sandbox, 'project');
   mkdirSync(project, { recursive: true });
   process.env.HOME = join(sandbox, 'home');

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# D12. Two concurrent `decision` writes into a fresh tail of ONE tree, N times, in a sandbox each.
+# . Two concurrent `decision` writes into a fresh tail of ONE tree, N times, in a sandbox each.
 #   race-by-tree.sh <repo-root> <public|private|global> <N> [label]
 # Counts per run: verify failed (broke), fewer than two titles on the tail (lost), a writer exited
 # non-zero (refused). The HOME of every run is an absolute sandbox; nothing touches the real one.
