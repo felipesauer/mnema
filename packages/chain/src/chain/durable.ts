@@ -15,9 +15,12 @@
  * whose name is not can still vanish whole. Asserted in `durable.test.ts`, which counts the
  * syncs a write and a checkpoint issue against the files they wrote.
  *
- * WHAT IT COSTS, measured before it was turned on (four arms, order rotated, 40 repetitions,
- * ext4 on NVMe): an act of one entry and one checkpoint went from about 0.09 ms to 4 to 11 ms.
- * The measurement on the head that turned it on is in the delivery that did.
+ * WHAT IT COSTS, measured through the writer itself on the head that turned it on, against the
+ * trunk before it (two arms and an A/A copy of each, order rotated, 20 repetitions, ext4 on NVMe
+ * with other work on the disk): an act of one entry and one checkpoint went from about 0.4–0.5 ms
+ * to 10–13 ms at the median, 20–23 ms at the 90th percentile; one `mnema memory` on the command
+ * line, base and head alternated 20 times, from 180 ms to 189 ms at the median. The number moves
+ * with what else the disk is doing, and nothing here waits on anything but the disk.
  *
  * WHAT IT DOES NOT COVER. The files written once beside the record — the public half of a
  * key materialized into the tree, a tail's proof of ownership, the local installation id and
