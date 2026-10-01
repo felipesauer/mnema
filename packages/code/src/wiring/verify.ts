@@ -289,6 +289,22 @@ function noRecordAtNamedPaths(dirs: readonly string[]): string {
 }
 
 /**
+ * What a verdict owes about a private tree git would stage — the chain is whole, and the
+ * working tree is about to publish it.
+ *
+ * Said by `verify` and not by a refusal alone because a refusal only meets the person who
+ * WRITES: a private record already on disk, in a project whose committed `.gitignore` lost its
+ * line, is exposed to every `git add` whether or not anybody writes again. The paths come from
+ * the file system, so they go through the tag.
+ */
+function privateTreeVisible(
+  named: string,
+  seen: { readonly path: string; readonly gitignore: string },
+): string {
+  return onOneLine`note [private tree] ${named}: git would stage ${seen.path} — no rule ignores it, so the next \`git add\` would commit what this machine keeps to itself. ${seen.gitignore} is where its \`/private/\` line belongs`;
+}
+
+/**
  * WHY THE EXIT IS NON-ZERO WHEN NOTHING SAYS SO — one sentence, for the caller's
  * minimum over a record that has no break in it.
  *
@@ -636,6 +652,12 @@ function report(io: CliIo, render: Render, tree: TreeReport, where = ''): void {
         ),
       ),
     );
+  }
+  // What the chain cannot know about its own tree: that git would take it. On stderr, with the
+  // evidence, and not a break — the verdict above is about the record, and the exit is not
+  // moved by a fact about a working tree.
+  if (tree.visibleToGit !== undefined) {
+    io.err(render(fact(privateTreeVisible(named, tree.visibleToGit))));
   }
 }
 

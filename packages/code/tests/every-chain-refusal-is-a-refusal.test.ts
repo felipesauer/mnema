@@ -68,6 +68,9 @@ const BUILT_WITH: Readonly<Record<string, readonly unknown[]>> = {
   DanglingInstallationIdError: ['/tmp/x.inst', '/nowhere'],
   UnsettledInstallationIdError: ['/tmp/x.inst', 2000],
   IdentityUnavailableError: ['UNKNOWN_ANCHOR', 'the record names no identity for this key'],
+  PrivateTreeVisibleError: [
+    { state: 'visible', path: '.mnema/private', gitignore: '.mnema/.gitignore' },
+  ],
 };
 
 const EXPORTED: Readonly<Record<string, unknown>> = { ...chain, ...core };
