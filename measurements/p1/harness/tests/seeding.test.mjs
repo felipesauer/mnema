@@ -223,7 +223,7 @@ describe('3 · two sandboxes of the same cell do not see each other', () => {
   })
 })
 
-describe('the three seeded arms carry the same knowledge', () => {
+describe('the four arms that hold the decision as text carry the same knowledge', () => {
   for (const fixture of fixtures.filter((f) => f.hasDecision)) {
     test(fixture.id, () => {
       assert.equal(assertKnowledgeParity(fixture), true)
