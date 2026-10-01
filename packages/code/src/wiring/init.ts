@@ -13,7 +13,6 @@
  * line this verb prints, so their absence is pinned there byte for byte.
  */
 
-import { dirname } from 'node:path';
 import type { Command } from 'commander';
 import type { InitResult } from '../commands/init.js';
 import { fact } from '../presentation/detail.js';
@@ -184,7 +183,7 @@ export function whatComesNext(result: InitResult): string[] {
     lines.push(
       'Commit `.mnema/` with the repository: the record travels with it, and every clone reads it.',
     );
-    if (around.gitRoot !== dirname(result.root)) {
+    if (around.foundedBelowTheRoot) {
       lines.push(
         onOneLine`This is not the root of the git repository (${around.gitRoot}). A session opened at that root climbs from there and will not find a project founded below it: run \`mnema init\` there instead, unless the project is meant to live here.`,
       );

@@ -251,7 +251,7 @@ $ mnema decision --help
 |
 | Commands:
 |   record [options] <title> <rationale>   record a decision in the current project
-|   move [options] <action> <id>           accept or reject a decision (follows the decision; takes no --scope)
+|   move [options] <action> <id...>        accept or reject a decision (follows the decision; takes no --scope)
 |   supersede [options] <old-id> <new-id>  supersede a decision with a later one (follows the decision; takes no --scope)
 |   import [options] <dir>                 propose the decisions already written in this repository’s decision files
 |   help [command]                         display help for command
@@ -1081,13 +1081,14 @@ $ mnema decision record --help
 
 ### mnema decision move --help
 $ mnema decision move --help
-| Usage: mnema decision move [options] <action> <id>
+| Usage: mnema decision move [options] <action> <id...>
 |
 | accept or reject a decision (follows the decision; takes no --scope)
 |
 | Arguments:
 |   action         the transition (accept, reject)
-|   id             the decision id (the value shown when it was recorded)
+|   id             the decision id (the value shown when it was recorded) —
+|                  several, to move each one with the same verdict and note
 |
 | Options:
 |   --note <text>  why this verdict (required by accept, reject)

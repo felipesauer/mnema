@@ -92,6 +92,8 @@ export interface InitResult {
   readonly around?: {
     /** The nearest directory above (or at) the project's that holds a `.git`, when there is one. */
     readonly gitRoot?: string;
+    /** Whether that root is above the directory the project was founded in. */
+    readonly foundedBelowTheRoot: boolean;
     /** The decision bases with documents in them: nothing is imported in a project just founded. */
     readonly neverImported: readonly UnimportedBase[];
   };
@@ -229,6 +231,7 @@ export function runInit(ctx: InitContext): InitResult | InitRefused {
     identity,
     around: {
       ...(gitRoot !== undefined ? { gitRoot } : {}),
+      foundedBelowTheRoot: gitRoot !== undefined && gitRoot !== ctx.cwd,
       // Nothing has been imported into a tree founded a moment ago, so no sources are asked.
       neverImported: basesNeverImported([], ctx.cwd),
     },
