@@ -50,14 +50,7 @@
  * is BORN at the first append ({@link ChainWriter.ensureBorn}), not when it is opened.
  */
 
-import {
-  appendFileSync,
-  existsSync,
-  mkdirSync,
-  statSync,
-  truncateSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, mkdirSync, statSync, truncateSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
 import type { CatalogEvent } from '../events/catalog.js';
@@ -69,6 +62,7 @@ import {
   serializeCheckpoint,
   signCheckpoint,
 } from './checkpoint.js';
+import { appendDurably } from './durable.js';
 import { type Entry, sealEntry, serializeEntry } from './entry.js';
 import type { WrittenEvent } from './hash.js';
 import type { KeyPair } from './keys.js';
@@ -524,7 +518,7 @@ export class ChainWriter {
     });
     const line = `${serializeEntry(entry)}\n`;
     const path = segmentPath(this.layout, this.tailId, this.segment);
-    appendFileSync(path, line, 'utf-8');
+    appendDurably(path, line);
 
     this.head = entry.link.hash;
     this.nextSeq += 1;
@@ -588,7 +582,7 @@ export class ChainWriter {
       seq += 1;
     }
     const path = segmentPath(this.layout, this.tailId, this.segment);
-    appendFileSync(path, lines, 'utf-8');
+    appendDurably(path, lines);
 
     this.head = prev;
     this.nextSeq = seq;
@@ -695,7 +689,7 @@ export class ChainWriter {
     });
     const path = checkpointsPath(this.layout, this.tailId);
     ensureDir(path);
-    appendFileSync(path, `${serializeCheckpoint(checkpoint)}\n`, 'utf-8');
+    appendDurably(path, `${serializeCheckpoint(checkpoint)}\n`);
     // Advanced only after the checkpoint reached the file, so a failed append
     // leaves the buffer intact and a retry signs the same range again.
     this.lastCheckpointedSeq = toSeq;
