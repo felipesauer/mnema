@@ -432,6 +432,10 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: 'The decision group, three subcommands and two private printers; cli-e2e reads its lines to prove the decision workflow, the import plan survives as committed golden bytes, and the import flags are driven on the binary.',
   },
+  'packages/code/src/wiring/diagram.ts': {
+    reached: 'nobody imports it',
+    why: "The diagram verb's declaration and its two usage refusals; a-picture-of-the-record.test.ts drives the verb through the program and asserts the diagrams it prints, never a value this file returns.",
+  },
   'packages/code/src/wiring/export.ts': {
     reached: 'nobody imports it',
     why: "The only read with no --json and no summary; the feed test driving it is about copilot's OCSF mapping, and this verb appears in no golden and its adapter has no test of its own.",
@@ -612,7 +616,7 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
  * reading, so nothing can fall in two.
  */
 const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
-  wiring: 34,
+  wiring: 35,
   presentation: 11,
   projections: 4,
   completion: 4,
@@ -842,6 +846,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/tests/a-marker-is-not-a-reason.test.ts': 7,
   'packages/code/tests/a-marker-is-not-a-title.test.ts': 7,
   'packages/code/tests/a-palette-for-the-words.test.ts': 24,
+  'packages/code/tests/a-picture-of-the-record.test.ts': 8,
   'packages/code/tests/a-read-asked-again-draws-what-changed.test.ts': 16,
   'packages/code/tests/a-refusal-is-one-line.test.ts': 7,
   'packages/code/tests/a-refusal-leaves-nothing.test.ts': 12,
@@ -1241,6 +1246,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/presentation/brief.ts',
   'packages/code/src/presentation/consultation.ts',
   'packages/code/src/presentation/detail.ts',
+  'packages/code/src/presentation/diagram.ts',
   'packages/code/src/presentation/echo.ts',
   'packages/code/src/presentation/exported.ts',
   'packages/code/src/presentation/exposure.ts',
@@ -1310,6 +1316,7 @@ const PRODUCTION_FILES: readonly string[] = [
   'packages/code/src/wiring/completion.ts',
   'packages/code/src/wiring/context.ts',
   'packages/code/src/wiring/decision.ts',
+  'packages/code/src/wiring/diagram.ts',
   'packages/code/src/wiring/enumerated.ts',
   'packages/code/src/wiring/export.ts',
   'packages/code/src/wiring/exposure.ts',
@@ -1492,8 +1499,8 @@ describe('every file has a test that names it', () => {
     expect(PRODUCTION.length - found.size).toBe(
       PRODUCTION_FILES.length - Object.keys(UNWITNESSED).length,
     );
-    expect(found.size).toBe(73);
-    expect(byReach('nobody imports it')).toBe(73);
+    expect(found.size).toBe(74);
+    expect(byReach('nobody imports it')).toBe(74);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -1515,7 +1522,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(73);
+    expect(reasons).toHaveLength(74);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

@@ -104,6 +104,8 @@ const ANSWERS_ANYWAY: Readonly<Record<string, string>> = {
   switch: 'where a channel stands is a question about the trees there are, not about a project',
   'tail list': 'the tails it lists are the ones held here, in whichever trees exist',
   'key request': 'a request to be enrolled is composed from this machine’s key, not from a project',
+  diagram:
+    'the three state machines are read from the gate’s tables and need no record; `timeline` and `refs` refuse as the reads they draw do',
   completion: 'the script it writes is generated from the declarations, and no record is consulted',
   witness: 'it reports on the tails it can see, and says so when there are none',
   'witness upgrade': 'the same: with no tail waiting on an attestation there is nothing to refuse',

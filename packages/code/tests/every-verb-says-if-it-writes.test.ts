@@ -258,6 +258,7 @@ const INVOCATION: Readonly<Record<string, Invocation>> = {
   exposure: { argv: () => ['exposure'] },
   export: { argv: () => ['export'] },
   refs: { argv: (f) => ['refs', f.task] },
+  diagram: { argv: (f) => ['diagram', 'timeline', f.task] },
   rules: { argv: () => ['rules', 'src'] },
   'rules-file': { argv: () => ['rules-file', '--host', 'vscode'] },
   skills: { argv: () => ['skills'] },
@@ -545,7 +546,7 @@ describe('every verb says if it writes', () => {
     expect(Object.keys(INVOCATION).sort()).toEqual([...EFFECT_BY_VERB.keys()].sort());
   });
 
-  it('counts fifteen writes and twenty-two reads over the whole surface', () => {
+  it('counts fifteen writes and twenty-three reads over the whole surface', () => {
     // The count in the report, asserted rather than trusted, and the total against the
     // list: a verb that stopped being registered would otherwise leave both halves
     // looking healthy.
@@ -580,6 +581,7 @@ describe('every verb says if it writes', () => {
       'exposure',
       'export',
       'refs',
+      'diagram',
       'rules',
       'rules-file',
       'skills',
