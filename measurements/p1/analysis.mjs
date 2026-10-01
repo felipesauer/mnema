@@ -181,7 +181,7 @@ export function tost(diffs, pooled, margin = DEFAULT_MARGIN) {
  *   `unresolved`  the test cannot separate them and the interval is too wide to call them the same:
  *                 not enough data, which the old `≈` did not say.
  */
-export function analysePair(counted, headline, a, b, { margin = DEFAULT_MARGIN, seed = 1 } = {}) {
+export function analysePair(counted, headline, a, b, { margin = DEFAULT_MARGIN, seed = 1, samples = SAMPLES } = {}) {
   const { diffs, tasks } = pairedDifferences(counted, headline, a, b)
   const pooled = { xA: 0, nA: 0, xB: 0, nB: 0 }
   for (const task of tasks) {
@@ -196,7 +196,7 @@ export function analysePair(counted, headline, a, b, { margin = DEFAULT_MARGIN, 
   if (diffs.length < 2) {
     return { a, b, tasks: diffs.length, meanDiff, p: null, tost: null, reading: 'unresolved' }
   }
-  const p = signFlipPermutation(diffs, { seed })
+  const p = signFlipPermutation(diffs, { seed, samples })
   const equivalence = tost(diffs, pooled, margin)
   const separated = p < ALPHA
   const reading = separated
@@ -234,15 +234,22 @@ export function simulateCells({ tasks, runs, effect, heterogeneous = false, rand
   return cells
 }
 
-/** The share of simulated rounds in which the permutation test separates the arms. */
+/**
+ * The share of simulated rounds in which `analysePair` reads the arms as higher or lower.
+ *
+ * IT GOES THROUGH THE SAME FUNCTION THE REAL READING DOES, and it used to call the permutation
+ * test directly. A simulation that re-implements the decision proves the re-implementation: the
+ * level of the real reading could be loosened to 0.5 and the figures this file is frozen against
+ * would not move, which is what the mutation battery found.
+ */
 export function separationRate({ tasks, runs, effect, heterogeneous = false, rounds, seed, samples = 2000 }) {
   const random = seededRandom(seed)
   const headline = Array.from({ length: tasks }, (_, t) => `t${t}`)
   let separated = 0
   for (let k = 0; k < rounds; k += 1) {
     const counted = tally(simulateCells({ tasks, runs, effect, heterogeneous, random }))
-    const { diffs } = pairedDifferences(counted, headline, 'treated', 'control')
-    if (signFlipPermutation(diffs, { seed: seed + k, samples }) < ALPHA) separated += 1
+    const { reading } = analysePair(counted, headline, 'treated', 'control', { seed: seed + k, samples })
+    if (reading === 'higher' || reading === 'lower') separated += 1
   }
   return separated / rounds
 }

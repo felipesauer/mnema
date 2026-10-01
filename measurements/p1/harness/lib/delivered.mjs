@@ -30,6 +30,12 @@ import { runAgainstStandIn } from './host-session.mjs'
 import { isSessionTurn } from './fake-api.mjs'
 import { INSTRUCTIONS_ARM } from './seed.mjs'
 
+/**
+ * The host did not reach the stand-in at all. Systemic and not a finding about an arm: every cell
+ * after it would say the same, so the preflight stops asking and reports this once.
+ */
+export class StandInNotReached extends Error {}
+
 /** The four parts of a decision, in the order a reader meets them. */
 export const DECISION_PARTS = ['title', 'statement', 'why', 'alternatives']
 
@@ -151,6 +157,12 @@ export function deliveredProblems({ arm, axis, delivered }) {
 export async function deliveredAtOpen({ sandbox, arm, fixture, mnemaBin, pluginDir, claudeBin }) {
   const session = await runAgainstStandIn({ sandbox, arm, fixture, mnemaBin, pluginDir, claudeBin })
   if (session.error) throw new Error(`the host could not run: ${session.error.message}`)
+  if (!session.requests.some((r) => String(r.url).includes('/v1/messages'))) {
+    throw new StandInNotReached(
+      `the host sent nothing to the stand-in (exit ${session.status}): ` +
+        `${(session.stderr || session.stdout).trim().slice(0, 300)}`,
+    )
+  }
   const first = firstSessionRequest(session.requests, session.ticket)
   if (!first) {
     throw new Error(

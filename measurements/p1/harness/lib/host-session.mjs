@@ -14,6 +14,9 @@ import { cellEnv, claudeArgv, writeCellConfig } from './isolation.mjs'
 import { readTicket } from './fixtures.mjs'
 import { startFakeApi } from './fake-api.mjs'
 
+/** A local port nothing listens on: the address a request that is not for the stand-in is sent to. */
+const DEAD_PROXY = 'http://127.0.0.1:9'
+
 /** Not a credential: the stand-in accepts anything. The host compares its last 20 characters. */
 const STAND_IN_KEY = 'sk-ant-stand-in-0000000000000000000000'
 
@@ -33,7 +36,9 @@ export async function runAgainstStandIn({
   claudeBin,
   script = [],
   outputFormat,
-  timeoutMs = 120_000,
+  // A session against the stand-in takes a second or two. Thirty seconds is for a machine under
+  // load, and short enough that a host that never reaches the stand-in is reported as that.
+  timeoutMs = 30_000,
 }) {
   const { settingsPath, mcpPath } = writeCellConfig({ sandbox, arm, mnemaBin, pluginDir })
   // The host stops at "Not logged in" without an onboarding record and an approved key; the
@@ -58,6 +63,19 @@ export async function runAgainstStandIn({
       ANTHROPIC_BASE_URL: api.url,
       ANTHROPIC_API_KEY: STAND_IN_KEY,
       CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1',
+      // DEFENCE IN DEPTH, and found by a mutation: with the line above gone, the host went to the
+      // real API with a key that is not one, waited, and held the whole preflight for half an hour.
+      // Nothing could have been spent — the key is refused — but a stand-in the host can walk
+      // around is not one. Everything that is not the stand-in is sent to a port nothing listens
+      // on, so the same mistake now fails at once and by name.
+      HTTPS_PROXY: DEAD_PROXY,
+      HTTP_PROXY: DEAD_PROXY,
+      ALL_PROXY: DEAD_PROXY,
+      https_proxy: DEAD_PROXY,
+      http_proxy: DEAD_PROXY,
+      all_proxy: DEAD_PROXY,
+      NO_PROXY: '127.0.0.1,localhost',
+      no_proxy: '127.0.0.1,localhost',
     }
     const host = await new Promise((resolve) => {
       const child = spawn(claudeBin, argv, { cwd: sandbox.repo, env, stdio: ['ignore', 'pipe', 'pipe'] })

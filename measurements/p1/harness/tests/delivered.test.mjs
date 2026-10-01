@@ -13,7 +13,7 @@
 
 import { test, describe, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { existsSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { carriesDecision, listFixtures, readDecision } from '../lib/fixtures.mjs'
 import { cellEnv, writeCellConfig } from '../lib/isolation.mjs'
@@ -23,6 +23,7 @@ import { HOOK_EVENT, injectedDocument, productPluginDir } from '../lib/hook.mjs'
 import {
   DECISION_PARTS,
   DELIVERED_AT_OPEN,
+  StandInNotReached,
   declaredAtOpen,
   deliveredAtOpen,
   deliveredParts,
@@ -276,5 +277,40 @@ describe('the opening hook has two commands, and only the second may say nothing
     const { document, detail } = injectedDocument({ sandbox, settingsPath, env })
     assert.equal(document, null)
     assert.match(detail, /the handler wrote nothing \(exit 3\)/)
+  })
+})
+
+describe('a stand-in the host never reaches is the instrument saying it broke', () => {
+  /** A `claude` that answers `--version` and otherwise exits at once, having asked nobody anything. */
+  function claudeThatNeverAsks() {
+    const dir = mkdtempSync(join(sandboxRoot(), 'mnema-bench-mute-host-'))
+    scratch.push(dir)
+    const path = join(dir, 'claude')
+    writeFileSync(path, '#!/bin/sh\nif [ "$1" = "--version" ]; then echo "2.1.1 (Claude Code)"; fi\nexit 0\n')
+    chmodSync(path, 0o755)
+    return path
+  }
+
+  test('deliveredAtOpen names it, instead of reading an empty request as "nothing arrived"', async () => {
+    const sandbox = seeded(axisA, 'claude-md')
+    await assert.rejects(
+      deliveredAtOpen({ sandbox, arm: 'claude-md', fixture: axisA, mnemaBin: MNEMA_BIN, pluginDir: productPluginDir(), claudeBin: claudeThatNeverAsks() }),
+      (error) => error instanceof StandInNotReached && /the host sent nothing to the stand-in/.test(error.message),
+    )
+  })
+
+  test('and --selftest reports it ONCE and stops asking, rather than 14 times', async () => {
+    const dir = mkdtempSync(join(sandboxRoot(), 'mnema-bench-mute-'))
+    scratch.push(dir)
+    const bench = cloneFixtures(dir)
+    for (const id of fixtures.map((f) => f.id)) {
+      if (id !== axisA.id) rmSync(join(bench.fixturesDir, id), { recursive: true, force: true })
+    }
+    const result = await runSelftest({ rounds: [bench], mnemaBin: MNEMA_BIN, claudeBin: claudeThatNeverAsks(), authMode: 'api-key' })
+    const failed = result.checks.filter((c) => !c.ok)
+    assert.deepEqual(failed.map((c) => c.name), ['the text delivered'])
+    const lines = failed[0].detail.split('\n').filter((l) => l.trim() !== '')
+    assert.equal(lines.length, 1, `one cell reported, not ${ARMS.length}: ${failed[0].detail}`)
+    assert.match(lines[0], /the host sent nothing to the stand-in .* the remaining cells are not asked/)
   })
 })

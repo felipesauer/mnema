@@ -152,3 +152,25 @@ describe('frozen against two simulated truths', () => {
     assert.deepEqual([a(), a(), a()], [b(), b(), b()])
   })
 })
+
+describe('what is eligible, and what is not', () => {
+  test('a task on which one arm has no scorable cell is left out — it is not a difference of 100 points', () => {
+    const counted = tally([
+      ...arm('x', ['t1'], 4, 4),
+      ...arm('y', ['t1'], 4, 0),
+      // t2: x was BROKEN in every cell, so x has NO rate there; y conforms 4 of 4.
+      ...['t2'].flatMap((task) => [1, 2, 3, 4].map((r) => ({ arm: 'x', fixture: task, run: r, status: 'ok', verdict: 'BROKEN' }))),
+      ...arm('y', ['t2'], 4, 4),
+    ])
+    const { diffs, tasks } = pairedDifferences(counted, ['t1', 't2'], 'x', 'y')
+    assert.deepEqual(tasks, ['t1'])
+    assert.deepEqual(diffs, [100])
+  })
+
+  test('the reading goes through ONE decision: the level of analysePair is what the simulation measures', () => {
+    // Loosen the level and the null simulation must move; this is the case the mutation that loosened
+    // it to 0.5 found unguarded, because the simulation used to call the permutation test directly.
+    const rate = separationRate({ tasks: 20, runs: 8, effect: 0, rounds: 300, seed: 7, samples: 800 })
+    assert.ok(rate <= 0.05, `${rate}`)
+  })
+})

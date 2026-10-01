@@ -78,7 +78,7 @@ import {
 } from './seed.mjs'
 import { handlerFiles, injectionProblems, productPluginDir, withoutFreshIds } from './hook.mjs'
 import { editPushProblems } from './channel.mjs'
-import { deliveredAtOpen, deliveredProblems } from './delivered.mjs'
+import { StandInNotReached, deliveredAtOpen, deliveredProblems } from './delivered.mjs'
 import { createSandbox, plantRepo, sandboxEnv } from './sandbox.mjs'
 import { mcpProbe } from './mcpcheck.mjs'
 import { mcpAsked } from './mcplog.mjs'
@@ -298,6 +298,7 @@ export async function runSelftest({
   // bytes the seed produced.
   const deliveries = []
   const undelivered = []
+  let standInBroken = null
   {
     const problems = []
     for (const fixture of fixtures) {
@@ -308,13 +309,22 @@ export async function runSelftest({
           seedArm({ arm, fixture, sandbox, mnemaBin })
           assertSeed({ arm, fixture, sandbox, mnemaBin })
           try {
+            if (standInBroken) throw standInBroken
             const seen = await deliveredAtOpen({ sandbox, arm, fixture, mnemaBin, pluginDir, claudeBin })
             for (const problem of deliveredProblems({ arm, axis: fixture.axis, delivered: seen.parts })) {
               undelivered.push(`${where(fixture)}/${arm}: ${problem}`)
             }
             deliveries.push(`${where(fixture)}/${arm}`)
           } catch (err) {
-            undelivered.push(`${where(fixture)}/${arm}: ${err.message}`)
+            // A host that never reaches the stand-in says the same about every cell after this one,
+            // so the first such cell is reported and the rest are not run (the cost of asking a
+            // broken instrument 336 times is the whole preflight).
+            if (err instanceof StandInNotReached && !standInBroken) {
+              standInBroken = err
+              undelivered.push(`${where(fixture)}/${arm}: ${err.message} — the remaining cells are not asked`)
+            } else if (err !== standInBroken) {
+              undelivered.push(`${where(fixture)}/${arm}: ${err.message}`)
+            }
           }
         } catch (err) {
           problems.push(`r${fixture.round}/${err.message}`)

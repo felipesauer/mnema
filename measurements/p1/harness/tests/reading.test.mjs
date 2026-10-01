@@ -110,6 +110,22 @@ describe('the four conditions, one at a time', () => {
     assert.equal(exactly.state, 'vetoed')
   })
 
+  test('the ceiling is measured over the ELIGIBLE tasks only — an arm BROKEN where the other has no rate is not a veto', () => {
+    // x is clean on four tasks and BROKEN in every cell of two more, where y is clean. Those two are
+    // not eligible (x has no rate on them), so the ceiling is read over the four that are, and x is
+    // not vetoed: counting them would put a third of x's cells in the refusal for tasks the pair
+    // is not read over at all.
+    const four = ['t1', 't2', 't3', 't4']
+    const rows = [
+      ...four.flatMap((t) => [...same(t, ['x'], ['CONFORMS', 'CONFORMS']), ...same(t, ['y'], ['VIOLATES', 'VIOLATES'])]),
+      ...['t5', 't6'].flatMap((t) => [...same(t, ['x'], ['BROKEN', 'BROKEN']), ...same(t, ['y'], ['CONFORMS', 'CONFORMS'])]),
+    ]
+    const p = readPair(capture(rows), tasks, 'x', 'y')
+    assert.equal(p.eligible, 4)
+    assert.equal(p.brokenX, 0)
+    assert.equal(p.state, 'greater')
+  })
+
   test('condition 3: a gap at or under the threshold is `≈` however many tasks discriminate', () => {
     // 6 tasks x 4 runs: x conforms 3 of 4 where y conforms 2 of 4 -> +25 on every task, exactly on the
     // old threshold. Move the threshold off the step and the same cells read both ways.
