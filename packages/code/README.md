@@ -966,15 +966,20 @@ nothing. It is never a file to commit: it carries what was kept on this machine.
 Three things arrive without anybody asking: the document a session opens with, the notes
 beside it, and the rules handed over as a file is written. Each can be switched off, and
 the switching is **recorded** — because turning something off is legitimate and turning it
-off in silence is not.
+off in silence is not. The list also holds two gates that hand nothing over: the pause
+before a write where a rule asks for a person, and `agent-accepts`, which is **on** — an
+agent may accept a decision, freely, and the record keeps which agent did, the reply says
+so, and the document a session opens with marks the rule. Switching it off makes an agent's
+accept a refusal; a person's still lands.
 
 ```sh
 mnema switch
-#> 4 channel(s), looked in public, private, global:
+#> 5 channel(s), looked in public, private, global:
 #>   brief-document      on   the document `mnema brief` prints, which a session opens with: …
 #>   recall-document     on   the notes `mnema recall` prints, which a session opens with: …
 #>   edit-rules-push     on   the rules addressed at a file, handed over at each edit of it, …
 #>   edit-asks-a-person  on   the pause before a file is written where the record asks …
+#>   agent-accepts       on   an agent ruling a decision in force: with it off, an agent’s …
 ```
 
 ```sh

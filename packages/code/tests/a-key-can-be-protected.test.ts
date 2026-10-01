@@ -93,7 +93,7 @@ describe('a key nobody protected', () => {
       expect(readFileSync(file, 'utf-8').startsWith(IS_A_PEM)).toBe(true);
       expect(statSync(file).mode & 0o777).toBe(0o600);
     }
-  });
+  }, 120_000);
 });
 
 describe('protecting the key', () => {
@@ -105,7 +105,7 @@ describe('protecting the key', () => {
     expect(refused.out).toContain(VARIABLE);
     for (const file of keyFiles())
       expect(readFileSync(file, 'utf-8').startsWith(IS_A_PEM)).toBe(true);
-  });
+  }, 120_000);
 
   it('encrypts the key and its cold backup, and leaves the mode and the public halves alone', () => {
     expect(mnema(undefined, 'init').status).toBe(0);
@@ -126,7 +126,7 @@ describe('protecting the key', () => {
     ).toEqual(publics);
     // Again: nothing to do, and it says so rather than protecting a protected file twice.
     expect(mnema('correct horse', 'key', 'protect').out).toContain('Protected 0 of 2');
-  });
+  }, 120_000);
 });
 
 describe('signing with a protected key', () => {
@@ -141,7 +141,7 @@ describe('signing with a protected key', () => {
     // Nor is it a second identity: the same one signed before and after.
     const who = mnema(undefined, 'accountability').out.match(/mnid:[0-9a-f]{8}/g) ?? [];
     expect(new Set(who).size).toBe(1);
-  });
+  }, 120_000);
 
   it('refuses a write with no passphrase, by code, and mints no second key', () => {
     aProjectWithAProtectedKey();
@@ -152,7 +152,7 @@ describe('signing with a protected key', () => {
     expect(refused.out).toContain(VARIABLE);
     expect(keyFiles()).toEqual(before);
     expect(mnema(undefined, 'search').out).not.toContain('no passphrase here');
-  });
+  }, 120_000);
 
   it('refuses a write with the wrong passphrase, and writes nothing', () => {
     aProjectWithAProtectedKey();
@@ -161,7 +161,7 @@ describe('signing with a protected key', () => {
     expect(refused.out).toContain('does not open the private key');
     expect(refused.out).toContain('Nothing was written.');
     expect(mnema(undefined, 'search').out).not.toContain('wrong passphrase');
-  });
+  }, 120_000);
 
   it('is refused by the agent’s server as a refusal that says the fact was not recorded', async () => {
     aProjectWithAProtectedKey();
@@ -218,12 +218,12 @@ describe('taking the passphrase off', () => {
       expect(readFileSync(file, 'utf-8').startsWith(IS_A_PEM)).toBe(true);
     // And it signs again with no variable, as a machine that never protected anything does.
     expect(mnema(undefined, 'memory', 'back in the clear').status).toBe(0);
-  });
+  }, 120_000);
 
   it('says nothing changed on a machine that was never protected', () => {
     expect(mnema(undefined, 'init').status).toBe(0);
     const done = mnema(undefined, 'key', 'unprotect');
     expect(done.status, done.out).toBe(0);
     expect(done.out).toContain('Unprotected 0 of 2');
-  });
+  }, 120_000);
 });

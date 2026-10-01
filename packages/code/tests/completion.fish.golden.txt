@@ -94,7 +94,7 @@ complete -c mnema -f -n '__mnema_at ""' -a 'before-a-write' -d 'answer a host’
 complete -c mnema -f -n '__mnema_at ""' -a 'key' -d 'manage this machine\'s signing keys'
 complete -c mnema -f -n '__mnema_at ""' -a 'tail' -d 'authorize a cut in the record\'s own tails'
 complete -c mnema -f -n '__mnema_at ""' -a 'witness' -d 'ask an outside witness to date this record, and read where that stands'
-complete -c mnema -f -n '__mnema_at ""' -a 'switch' -d 'turn off, or back on, what mnema hands to a model unasked'
+complete -c mnema -f -n '__mnema_at ""' -a 'switch' -d 'turn off, or back on, what mnema hands to a model unasked, and whether an agent may accept a decision'
 complete -c mnema -f -n '__mnema_at ""' -a 'verify' -d 'verify this project\'s record — its committed tree and its private one'
 complete -c mnema -f -n '__mnema_at ""' -a 'mcp' -d 'run the mnema MCP server over stdio (for an agent host)'
 complete -c mnema -f -n '__mnema_at ""' -a 'repl' -d 'open an interactive session that reads this project'

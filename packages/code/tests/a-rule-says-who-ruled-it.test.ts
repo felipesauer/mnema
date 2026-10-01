@@ -284,6 +284,12 @@ describe('the setting', () => {
     );
     expect(off.status, off.out).toBe(0);
     expect(mnema(atA, a, 'switch').out).toMatch(/agent-accepts\s+off\s/);
+    // The words of THIS switch: it hands nothing to a model, so the sentences the other channels
+    // use for being off would be false of it.
+    expect(off.out).toContain("agent-accepts is now OFF: an agent's accept is refused.");
+    expect(off.out).toContain('a person at the command line still accepts a decision');
+    expect(off.out).not.toContain('reaches a model');
+    expect(off.out).not.toContain('in front of a model');
 
     // The agent, through the server.
     const [served] = await throughTheServer(atA, a, [
@@ -336,7 +342,9 @@ describe('the setting', () => {
     expect(rejected.status, rejected.out).toBe(0);
 
     // Back on, the agent accepts again.
-    expect(mnema(atA, a, 'switch', 'on', 'agent-accepts').status).toBe(0);
+    const on = mnema(atA, a, 'switch', 'on', 'agent-accepts');
+    expect(on.status).toBe(0);
+    expect(on.out).toContain('agent-accepts is now ON: an agent may accept a decision');
     const [again] = await throughTheServer(atA, a, [
       { name: 'decision_transition', arguments: { id: one, action: 'accept', note: 'now it may' } },
     ]);

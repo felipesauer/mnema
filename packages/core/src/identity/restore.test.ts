@@ -25,9 +25,13 @@ import {
   deriveAnchor,
   enrollmentMessage,
   generateKeyPair,
+  isProtected,
+  KEY_PASSPHRASE_VARIABLE,
+  listPrivateKeyFiles,
   listPrivateKeyFingerprints,
   materializePublicKey,
   openChainForWriting,
+  protectPrivateKeys,
   sign,
   verify,
 } from '@mnema/chain';
@@ -82,7 +86,7 @@ function machine(treeRoot: string, root: string): { writer: ChainWriter; ctx: Wr
  * backup key, the backup's private half copied to a vault OUTSIDE the machine,
  * and the primary private key deleted — the disk is fine, the key is gone.
  */
-function establishThenLoseTheKey(): {
+function establishThenLoseTheKey(protectedWith?: string): {
   anchorBefore: string;
   primaryFp: string;
   backupFp: string;
@@ -93,6 +97,9 @@ function establishThenLoseTheKey(): {
   first.writer.checkpoint();
   const backupFp = established.backup?.fingerprint as string;
   const primaryFp = first.writer.signerFingerprint;
+  // A machine whose keys carry a passphrase: the backup is protected where it is made, and so is
+  // the copy that goes to the vault.
+  if (protectedWith !== undefined) protectPrivateKeys({ root: keyRoot }, protectedWith);
 
   // The person moved the cold private half off the machine, as init told them to.
   const vaultCopy = join(vault, 'mnema-backup.key');
@@ -139,6 +146,40 @@ describe('restoreKey — the identity after the loss is the identity from before
     expect(after.writer.hasAnchor).toBe(true);
     // And it is not the anchor the restored key would have founded on its own.
     expect(after.writer.anchor).not.toBe(deriveAnchor(lost.backupFp));
+  });
+
+  it('installs a PROTECTED copy protected: restoring is not the way a protected key ends up in the clear', () => {
+    const passphrase = 'a passphrase of my own';
+    const before = process.env[KEY_PASSPHRASE_VARIABLE];
+    process.env[KEY_PASSPHRASE_VARIABLE] = passphrase;
+    try {
+      // The backup was protected on the machine, and THAT copy is what went to the vault.
+      const lost = establishThenLoseTheKey(passphrase);
+      expect(isProtected(readFileSync(lost.vaultCopy, 'utf-8'))).toBe(true);
+      const restored = restoreKey({ privateKeyPath: lost.vaultCopy, keyRoot, tree, upcasters });
+      expect(restored.ok).toBe(true);
+      const [installed] = listPrivateKeyFiles({ root: keyRoot });
+      expect(isProtected(readFileSync(installed as string, 'utf-8'))).toBe(true);
+    } finally {
+      if (before === undefined) delete process.env[KEY_PASSPHRASE_VARIABLE];
+      else process.env[KEY_PASSPHRASE_VARIABLE] = before;
+    }
+  });
+
+  it('leaves a copy in the clear in the clear, whatever the passphrase variable says', () => {
+    const before = process.env[KEY_PASSPHRASE_VARIABLE];
+    process.env[KEY_PASSPHRASE_VARIABLE] = 'set for another reason';
+    try {
+      const lost = establishThenLoseTheKey();
+      expect(restoreKey({ privateKeyPath: lost.vaultCopy, keyRoot, tree, upcasters }).ok).toBe(
+        true,
+      );
+      const [installed] = listPrivateKeyFiles({ root: keyRoot });
+      expect(isProtected(readFileSync(installed as string, 'utf-8'))).toBe(false);
+    } finally {
+      if (before === undefined) delete process.env[KEY_PASSPHRASE_VARIABLE];
+      else process.env[KEY_PASSPHRASE_VARIABLE] = before;
+    }
   });
 
   it('continues the chain: the new event carries the original who, and verify is green', () => {

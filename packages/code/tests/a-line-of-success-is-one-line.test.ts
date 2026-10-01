@@ -361,6 +361,15 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the same channel of the closed set, read back off the write',
   },
+  'switch.ts «{} is now ON: an agent may accept a decision, as it did before.» #1': {
+    verdict: 'minted',
+    why: 'the closed channel, read back off the write',
+  },
+  "switch.ts «{} is now OFF: an agent's accept is refused. The switch that decides it was made by {} at {}.» #1":
+    {
+      verdict: 'minted',
+      why: 'the closed channel, the anchor that switched it, and the clock’s own instant',
+    },
   'switch.ts «{} is now OFF: nothing of it reaches a model. The switch that decides it was made by {} at {}.» #1':
     {
       verdict: 'minted',
@@ -619,7 +628,7 @@ describe('every line this wiring words is classified', () => {
     // of their own (`key-file.ts`), which collapses its values where it words them, and the
     // `witness` act's "No tail holds events" moved into `presentation/tails.ts`.
     // 69 until `key protect` and `unprotect` began printing which files they changed.
-    expect(FOUND.sites.length).toBe(71);
+    expect(FOUND.sites.length).toBe(73);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -640,7 +649,7 @@ describe('every line this wiring words is classified', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(34);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(37);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(39);
     expect(FOUND.sites.filter((site) => site.tagged).length).toBe(34);
   });
 

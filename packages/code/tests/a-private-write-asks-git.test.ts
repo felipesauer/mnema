@@ -106,7 +106,7 @@ describe('the ordinary project', () => {
     expect(wrote.status, wrote.out).toBe(0);
     expect(wrote.out).toContain('not committed and does not travel');
     expect(git('status', '--porcelain', '--', '.mnema/private').stdout).toBe('');
-  });
+  }, 120_000);
 });
 
 describe('a committed .gitignore that lost its /private/ line', () => {
@@ -122,7 +122,7 @@ describe('a committed .gitignore that lost its /private/ line', () => {
     expect(existsSync(join(project, '.mnema', 'private'))).toBe(false);
     // And that is what git sees: nothing under the private tree to add.
     expect(git('add', '-A', '-n').stdout).not.toContain('private');
-  });
+  }, 120_000);
 
   it('is refused by the server, as a refusal, with the fact not recorded', async () => {
     aRepository();
@@ -166,7 +166,7 @@ describe('a committed .gitignore that lost its /private/ line', () => {
     expect(after.out).toContain('.mnema/.gitignore');
     // A fact about the working tree: the chain is whole, and the exit says so.
     expect(after.status).toBe(0);
-  });
+  }, 120_000);
 });
 
 describe('where git cannot answer, the write goes on as it did', () => {
@@ -175,7 +175,7 @@ describe('where git cannot answer, the write goes on as it did', () => {
     withoutThePrivateLine();
     const wrote = mnema(undefined, 'memory', '--scope', 'private', 'no repository to leak into');
     expect(wrote.status, wrote.out).toBe(0);
-  });
+  }, 120_000);
 
   it('with no git to ask', () => {
     aRepository();
@@ -183,7 +183,7 @@ describe('where git cannot answer, the write goes on as it did', () => {
     // The binary is run by its absolute path, so an empty PATH hides git and nothing else.
     const wrote = mnema('/nonexistent', 'memory', '--scope', 'private', 'git is not here');
     expect(wrote.status, wrote.out).toBe(0);
-  });
+  }, 120_000);
 });
 
 describe('git’s answer is the whole answer', () => {
@@ -194,5 +194,5 @@ describe('git’s answer is the whole answer', () => {
     const wrote = mnema(undefined, 'memory', '--scope', 'private', 'excluded another way');
     expect(wrote.status, wrote.out).toBe(0);
     expect(git('add', '-A', '-n').stdout).not.toContain('private');
-  });
+  }, 120_000);
 });

@@ -344,10 +344,6 @@ const UNWITNESSED: Readonly<Record<string, Debt>> = {
     reached: 'nobody imports it',
     why: "The zsh rendering, the only one carrying `_describe` descriptions; nothing imports `zshScript`, and with zsh absent its output is merely handed to bash's parser.",
   },
-  'packages/code/src/mcp/hook-reply.ts': {
-    reached: 'nobody imports it',
-    why: 'The shape of the MCP hook reply the host reads; nothing imports `hookReply`, and the one case naming the file greps its source text for the literals `deny` and `escalate`.',
-  },
   'packages/code/src/mcp/route.ts': {
     reached: 'nobody imports it',
     why: "The MCP's one write-destination resolver; mcp-write-routing.test.ts reaches it two hops via tools.ts and asserts which disk a write hit — its wording is only ever a substring.",
@@ -614,7 +610,7 @@ const THE_SHAPE_OF_WHAT_IS_LEFT: Readonly<Record<string, number>> = {
   completion: 4,
   commands: 2,
   barrels: 3,
-  scattered: 14,
+  scattered: 13,
 };
 
 /** Which group of the shape above a debt row belongs to. One reading, so nothing falls in two. */
@@ -806,6 +802,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/env.test.ts': 4,
   'packages/code/src/every-refusal-is-red.test.ts': 7,
   'packages/code/src/key-file.test.ts': 2,
+  'packages/code/src/mcp/hook-reply.test.ts': 2,
   'packages/code/src/mcp/lifecycle.test.ts': 2,
   'packages/code/src/not-a-project.test.ts': 8,
   'packages/code/src/one-voice-for-a-no.test.ts': 11,
@@ -830,6 +827,7 @@ const CLAUSES_PER_FILE: Readonly<Record<string, number>> = {
   'packages/code/src/tree-sources.test.ts': 7,
   'packages/code/src/what-the-session-touches.test.ts': 13,
   'packages/code/src/wiring/from-the-group.test.ts': 5,
+  'packages/code/src/wiring/io.test.ts': 3,
   'packages/code/tests/a-client-that-names-no-workspace.test.ts': 14,
   'packages/code/tests/a-flag-declared-twice.test.ts': 9,
   'packages/code/tests/a-floor-under-the-window.test.ts': 16,
@@ -1500,8 +1498,9 @@ describe('every file has a test that names it', () => {
       PRODUCTION_FILES.length - Object.keys(UNWITNESSED).length,
     );
     // 73 until `chain/src/one-line.test.ts` began calling the functions it is about.
-    expect(found.size).toBe(72);
-    expect(byReach('nobody imports it')).toBe(72);
+    // 72 until `mcp/hook-reply.test.ts` began calling the function it is about.
+    expect(found.size).toBe(71);
+    expect(byReach('nobody imports it')).toBe(71);
     expect(byReach('imported, and no assertion observes it')).toBe(0);
   });
 
@@ -1523,7 +1522,7 @@ describe('every file has a test that names it', () => {
     // Announced in the header and, until now, kept by hand. A shared excuse is how a table
     // like this turns into a rubber stamp, and a row drained to a stub is how it starts.
     const reasons = Object.values(UNWITNESSED).map((one) => one.why);
-    expect(reasons).toHaveLength(72);
+    expect(reasons).toHaveLength(71);
     expect(new Set(reasons).size).toBe(reasons.length);
     // The shortest reason standing is 156 characters; the floor is under it and well over
     // anything that could be written without saying what reaches that file.

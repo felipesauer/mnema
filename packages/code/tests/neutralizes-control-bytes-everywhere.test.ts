@@ -213,6 +213,11 @@ describe('what the command line prints', () => {
     const ran = mnema('--color', 'always', 'show', decisionId);
     const unpainted = ran.out.replace(new RegExp(`${ESC}\\[(?:1|2|22|31|32|33|35|39)m`, 'g'), '');
     expect(controlBytesIn(unpainted), ran.out).toEqual([]);
+    // AND THE STRIPPING ABOVE MUST NOT HIDE WHAT IT STRIPS: the rationale holds a red-colour
+    // sequence of its own, which is one of the product's too, so removing the product's sequences
+    // removes the actor's as well. The actor's is asserted gone by its context, not by its bytes.
+    expect(ran.out).not.toContain(`${ESC}[31mred`);
+    expect(ran.out).toContain('\\u001b[31mred');
   });
 });
 
