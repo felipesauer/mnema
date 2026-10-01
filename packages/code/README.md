@@ -685,10 +685,15 @@ mnema decision import docs/decisions
 #> 3 proposal(s), 1 refused — nothing written. Add --write to record them.
 ```
 
-**The shape it reads is two things.** A level-1 title, and a why: either a `## Context`
-section (`## Contexto` is read too) or prose directly under the title. Everything else
-— the status, the alternatives — is read when it is there and absent when it is not.
-This is the smallest file that goes in:
+**The shape it reads is two things.** A level-1 title, and a why: the file's own decision
+(the *Chosen option, because* sentence of a MADR `## Decision Outcome`, or the `## Decision`
+of a Nygard record) when it has one; else a `## Context` section (`## Contexto` is read too)
+or prose directly under the title. The context is the situation and not the reason, so a
+file that states a decision is recorded with the decision. Everything else — the status, the
+alternatives — is read when it is there and absent when it is not: a MADR `## Considered
+Options` lists every option, the chosen one included, so it is recorded without the option
+the file chose, and when the file does not say which it chose, none is recorded as turned
+down and the plan says so. This is the smallest file that goes in:
 
 ```md
 # Store timestamps in UTC

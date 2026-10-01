@@ -267,7 +267,11 @@ export function registerDecision(program: Command, wiring: Wiring): Declared {
         'MADR shape. A file this cannot read that way is refused by name. A file it CAN\n' +
         'is proposed — including one that is no decision at all: an index page or a\n' +
         'roadmap wears the same shape, and no fact of the document separates them. That\n' +
-        'is why nothing is accepted on your behalf. Nothing here calls a model.',
+        'is why nothing is accepted on your behalf. Nothing here calls a model.\n\n' +
+        'The reason is what the file’s own decision section says (MADR’s “Chosen option, because”,\n' +
+        'Nygard’s `## Decision`). A list of every option (MADR’s `## Considered Options`) is recorded\n' +
+        'WITHOUT the option the file chose; when the file does not say which it chose, none is\n' +
+        'recorded as turned down, and the plan says so.',
     )
     .addHelpText('after', RECORD_CONTRACT_HELP);
   takesFromItsGroup(decisionImport, {
@@ -381,6 +385,9 @@ function importLines(
       `from ${proposal.path}`,
       ...(proposal.status !== undefined ? [`the file says "${proposal.status}"`] : []),
       ...(proposal.alternatives ? ['names what it turned down'] : []),
+      ...(proposal.optionsUnclear
+        ? ['lists its options but not which was chosen, so none is recorded as turned down']
+        : []),
     ];
     lines.push(`      ${notes.join(' · ')}`);
     // In the words every write says it, under the proposal it is about. This was a second

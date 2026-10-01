@@ -28,7 +28,11 @@ We will use Architecture Decision Records.
 See Michael Nygard's article.
 `;
 
-/** The MADR shape: frontmatter, and the options as a first-class section. */
+/**
+ * The MADR shape: frontmatter, the options as a first-class section that lists EVERY option the
+ * chosen one included, and the reason in the Decision Outcome. `published-templates.test.ts`
+ * holds the published templates themselves; this is the short form the cases below share.
+ */
 const MADR = `---
 status: proposed
 date: 2026-01-04
@@ -42,11 +46,12 @@ Timestamps arrive from three services in three zones.
 
 ## Considered Options
 
-Local time with an offset column: two fields that can disagree.
+* UTC at the boundary
+* Local time with an offset column: two fields that can disagree
 
 ## Decision Outcome
 
-UTC at the boundary.
+Chosen option: "UTC at the boundary", because one field cannot disagree with itself.
 `;
 
 describe('reading one decision document', () => {
@@ -55,9 +60,13 @@ describe('reading one decision document', () => {
     expect(read.ok).toBe(true);
     if (!read.ok) return;
     expect(read.title).toBe('Use UTC everywhere');
-    expect(read.rationale).toBe('Timestamps arrive from three services in three zones.');
+    // The reason is the decision's, and the situation above it is not recorded as the why.
+    expect(read.rationale).toBe(
+      'Chosen option: "UTC at the boundary", because one field cannot disagree with itself.',
+    );
+    // Turned down is the list WITHOUT the option the document chose.
     expect(read.alternatives).toBe(
-      'Local time with an offset column: two fields that can disagree.',
+      '* Local time with an offset column: two fields that can disagree',
     );
     expect(read.status).toBe('proposed');
   });
@@ -350,11 +359,14 @@ describe('nothing a document writes as punctuation is read as a field', () => {
       for (const pattern of emptiness) if (pattern.test(line)) found.push(line.trim());
     }
     expect(found).toEqual([]);
-    // NOT VACUOUS: the file really is the one being read, and the rule really is asked — six
-    // calls, and the function they call is the one the write door asks too, imported rather
-    // than defined here, so the two doors cannot come to read a reason two ways again. And the
-    // marker is asked by the door's own function too, of the three fields that are recorded.
-    expect(source.match(/statesSomething\(/g) ?? []).toHaveLength(6);
+    // NOT VACUOUS: the file really is the one being read, and the rule really is asked — ten
+    // calls (six before the decision section was read: the frontmatter, a section body, the
+    // status in two places, the title and the lead; four more for the decision section (two), the
+    // chosen option's title and the options section). The function they call is the one the
+    // write door asks too, imported rather than defined here, so the two doors cannot come to
+    // read a reason two ways again. And the marker is asked by the door's own function too, of
+    // the three fields that are recorded.
+    expect(source.match(/statesSomething\(/g) ?? []).toHaveLength(10);
     expect(source.match(/isMarker\(/g) ?? []).toHaveLength(3);
     expect(source).toContain(
       "import { isMarker, statesSomething } from '../a-reason-states-something.js';",

@@ -1167,6 +1167,11 @@ $ mnema decision import --help
 | roadmap wears the same shape, and no fact of the document separates them. That
 | is why nothing is accepted on your behalf. Nothing here calls a model.
 |
+| The reason is what the file’s own decision section says (MADR’s “Chosen option, because”,
+| Nygard’s `## Decision`). A list of every option (MADR’s `## Considered Options`) is recorded
+| WITHOUT the option the file chose; when the file does not say which it chose, none is
+| recorded as turned down, and the plan says so.
+|
 | What recording means here:
 |   Permanent — mnema is append-only and nothing deletes a fact. A public record
 |   is committed and reaches every machine that clones the repository.
