@@ -251,7 +251,10 @@ describe('the lock a writer holds while it appends', () => {
     const w = founded();
     const lock = tailLockPath({ root }, w.tail);
     // A LIVE pid — ours — with a record from long ago. This is the reused-pid case
-    // the pid check cannot decide, and it is the only thing the age is for.
+    // the pid check cannot decide, and it is the only thing the age is for. It is also a
+    // live holder that is merely slow, which the product cannot tell apart from it: the lock
+    // is taken from it all the same, and `tail-lock.ts` says that is a presumption and not a
+    // proof. The case holds the behaviour so that changing it is a decision and not a drift.
     plantAt(lock, process.pid, Date.now() - 10 * 60_000);
 
     w.append(task(w, 'after-a-reuse'));

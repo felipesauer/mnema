@@ -36,11 +36,29 @@ import type { Line } from './line.js';
 /** How the actor is named on the line — what precedes the agent, or the person. */
 const BY = 'by';
 
+/**
+ * Where a MOVE moved to, as the column that follows its kind — nothing for an event that is not
+ * a move.
+ *
+ * THE LINE USED TO NAME THE KIND AND NOTHING ELSE, so the history of a decision read
+ * `decision.transitioned`, four times, and which of them was the acceptance and which the
+ * supersession was in `--json` only. Every `*.transitioned` payload carries the `to` the gate
+ * resolved, so `→ accepted` is a fact of the event and not an inference. It is the same column
+ * for BOTH lines this module composes — a history a reader asks for and the same history
+ * arriving while they watch — because two spellings of one event are two ideas of what it reads
+ * like. `tests/the-first-use-says-what-it-did.test.ts` holds the two.
+ */
+function theMove(event: CatalogEvent): string[] {
+  const to = (event.payload as { readonly to?: unknown }).to;
+  return typeof to === 'string' && event.kind.endsWith('.transitioned') ? [`→ ${oneLine(to)}`] : [];
+}
+
 /** One occurrence, as the line a reader sees it arrive on. */
 export function occurrenceLine(event: CatalogEvent): Line {
   return itemLine([
     asWhen(oneLine(event.at)),
     oneLine(event.kind),
+    ...theMove(event),
     asId(oneLine(event.subject)),
     `${BY} ${oneLine(event.which ?? A_PERSON)}`,
   ]);
@@ -62,12 +80,18 @@ export function occurrenceLine(event: CatalogEvent): Line {
  * question.
  */
 export function historyLine(
-  entry: { readonly at: string; readonly kind: string; readonly role: string },
+  entry: {
+    readonly at: string;
+    readonly kind: string;
+    readonly role: string;
+    readonly event: CatalogEvent;
+  },
   who: string,
 ): Line {
   return itemLine([
     asWhen(oneLine(entry.at)),
     oneLine(entry.kind),
+    ...theMove(entry.event),
     `[${oneLine(entry.role)}]`,
     who,
   ]);

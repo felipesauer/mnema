@@ -60,10 +60,30 @@ import { isMarker, statesSomething } from '../a-reason-states-something.js';
 export interface AdrDocument {
   /** The decision's title — the level-1 heading, with any ADR numbering removed. */
   readonly title: string;
-  /** The WHY: the context section, or the document's lead when it has no such section. */
+  /**
+   * The WHY: what the document's own decision section says (MADR's *because*, or Nygard's
+   * `## Decision`), else its context section, else its lead. The context is the question or the
+   * situation; it is the reason only for a document that states no decision section at all.
+   */
   readonly rationale: string;
-  /** What was considered and turned down. Absent when the document names none. */
+  /**
+   * What was considered and turned down. Absent when the document names none — and absent,
+   * with {@link optionsUnclear} set, when it lists its options without saying which it chose.
+   */
   readonly alternatives?: string;
+  /**
+   * True when the document lists the options it considered (MADR's `## Considered Options`
+   * holds ALL of them, the chosen one included) and nothing in it says which was chosen. The
+   * list is then not recorded as "turned down": it would put the winner among the losers, which
+   * is the defect this field exists to prevent. The import says so beside the proposal.
+   */
+  readonly optionsUnclear?: true;
+  /**
+   * The WHOLE options section as the document wrote it, which nothing records: the triage
+   * screens it for credentials all the same, because "this file holds a secret" is a fact about
+   * the file and not about the part of it this reader happened to keep.
+   */
+  readonly considered?: string;
   /**
    * The status label as the document spells it, when it carries one — verbatim,
    * never normalized, because it is REPORTED to a person and the word they wrote
@@ -139,6 +159,28 @@ export const ALTERNATIVE_LABELS: readonly string[] = [
   'alternativas consideradas',
   'alternativas',
   'opcoes consideradas',
+];
+
+/**
+ * The `##` labels, among {@link ALTERNATIVE_LABELS}, that list EVERY option the author weighed —
+ * the one that was chosen included. This is MADR's `## Considered Options`: in the published
+ * template (versions 2, 3 and 4) it is the list the *Chosen option* is picked FROM, so reading it
+ * as "what was turned down" records the winner as a loser. The other labels in the table above
+ * (`Rejected Alternatives`, `Alternativas rejeitadas`, `Alternatives considered`) are written by
+ * their authors as the losing side, and are read as they always were.
+ */
+export const EVERY_OPTION_LABELS: readonly string[] = ['considered options', 'opcoes consideradas'];
+
+/**
+ * The `##` labels that hold the decision itself, normalized: MADR's `Decision Outcome` (where the
+ * *Chosen option, because* sentence lives) and Nygard's `Decision`. Their text is the WHY this
+ * product records — the context above them is the situation, not the reason.
+ */
+export const DECISION_LABELS: readonly string[] = [
+  'decision outcome',
+  'decision',
+  'decisao',
+  'resultado da decisao',
 ];
 
 /** The `##` labels that hold the status, normalized. */
@@ -335,7 +377,10 @@ function split(text: string): { readonly lead: string; readonly sections: readon
     if (heading !== null) {
       if (current !== undefined)
         sections.push({ label: current.label, body: current.body.join('\n').trim() });
-      current = { label: normalizeLabel((heading[1] as string).replace(/\*/g, '')), body: [] };
+      current = {
+        label: normalizeLabel((heading[1] as string).replace(/<!--.*?-->/g, '').replace(/\*/g, '')),
+        body: [],
+      };
       continue;
     }
     if (current !== undefined) {
@@ -429,14 +474,148 @@ export function adrIsInForce(status: string | undefined): boolean {
   return first === undefined || !RETIRED_STATUSES.includes(first);
 }
 
+const CLOSING_QUOTE: Readonly<Record<string, string>> = {
+  '"': '"',
+  '“': '”',
+  "'": "'",
+  '«': '»',
+  '`': '`',
+};
+
+/**
+ * The text of a section before its first `###` sub-heading. MADR hangs *Consequences* and
+ * *Confirmation* under `## Decision Outcome` as `###`, and neither is the reason for the choice.
+ */
+function beforeSubsections(body: string): string {
+  const lines = body.split('\n');
+  const cut = lines.findIndex((line) => /^#{3,}\s/.test(line));
+  return (cut < 0 ? lines : lines.slice(0, cut)).join('\n').trim();
+}
+
+/**
+ * The title of the option a decision section says it CHOSE — MADR's *Chosen option: "{title of
+ * option 1}", because {justification}* in the three published versions (2.1.2, 3.0.0 and 4.0.0
+ * all use that sentence), the quotes optional because real documents drop them, and the
+ * Portuguese `Opção escolhida: …` beside it. Only the title is taken: the sentence as a whole
+ * is the rationale, and is recorded as the author wrote it.
+ *
+ * Nothing is guessed. A section that does not contain the sentence has chosen NOTHING as far as
+ * this reader can tell, and returns undefined — the caller says so rather than picking an option.
+ */
+function chosenOption(decisionBody: string): string | undefined {
+  const head = beforeSubsections(decisionBody);
+  const opening = /(?:chosen\s+option|op[cç][aã]o\s+escolhida)\s*:?\s*/i.exec(head);
+  if (opening === null) return undefined;
+  const rest = head.slice(opening.index + opening[0].length);
+  const quote = CLOSING_QUOTE[rest.charAt(0)];
+  const closed = quote !== undefined ? rest.indexOf(quote, 1) : -1;
+  let option: string;
+  if (quote !== undefined && closed > 0) {
+    option = rest.slice(1, closed);
+  } else {
+    const stop = rest.search(/,\s*(?:because|porque)\b|\n/i);
+    option = stop < 0 ? rest : rest.slice(0, stop);
+  }
+  option = option.trim();
+  return statesSomething(option) ? option : undefined;
+}
+
+/** One item of a bulleted or numbered list: the lines as written, and the name to match on. */
+interface OptionItem {
+  readonly text: string;
+  readonly name: string;
+}
+
+/** An option's title with the markdown around it taken off: links, emphasis, brackets, quotes. */
+function optionName(text: string): string {
+  return text
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim();
+}
+
+/**
+ * The top-level items of a section that is a LIST, or undefined when it is not one.
+ *
+ * MADR writes its options as `* {title of option 1}`. A section that opens with prose, or that has
+ * no list item at all, is not that shape and is not read as options: this reader has no way to
+ * tell which sentence of a paragraph is an option, and saying so beats cutting one at a guess.
+ * An HTML comment (`<!-- numbers of options can vary -->`) is the template's furniture, skipped.
+ */
+function optionItems(body: string): OptionItem[] | undefined {
+  const items: string[][] = [];
+  for (const line of body.split('\n')) {
+    if (!/\S/.test(line) || /^\s*<!--.*-->\s*$/.test(line)) continue;
+    if (/^ {0,1}(?:[-*+]|\d+[.)])\s+/.test(line)) {
+      items.push([line.trim()]);
+      continue;
+    }
+    const last = items[items.length - 1];
+    if (last === undefined) return undefined;
+    last.push(line.trim());
+  }
+  if (items.length < 1) return undefined;
+  const read = items.map((lines) => {
+    const text = lines.join('\n').replace(/\s*<!--.*?-->/g, '');
+    return { text, name: optionName(text.replace(/^(?:[-*+]|\d+[.)])\s+/, '')) };
+  });
+  // The template's own `* … <!-- numbers of options can vary -->` is an item with no name.
+  const named = read.filter((item) => item.name.length >= 1);
+  return named.length < 1 ? undefined : named;
+}
+
+/**
+ * Whether an option's line is the one the document chose. The title the author wrote in the
+ * Decision Outcome has to BE the option's title, or the start of its line (`* [MADR](…) 4.0.0 –
+ * The Markdown Architectural Decision Records` is chosen by `"MADR 4.0.0"`).
+ */
+function isTheChosen(item: OptionItem, chosen: string): boolean {
+  const wanted = optionName(chosen);
+  return wanted.length >= 1 && (item.name === wanted || item.name.startsWith(`${wanted} `));
+}
+
+/** What a section of options yields: the losers, or the fact that the winner is not known. */
+interface TurnedDown {
+  readonly alternatives?: string;
+  readonly unclear?: true;
+}
+
+/**
+ * What the document turned down, from a section that lists EVERY option: the list without the
+ * option the decision section chose. `unclear` when the list cannot be told from the choice —
+ * no list, no chosen option, or a chosen one that matches none or several of the items.
+ */
+function turnedDown(optionsBody: string, decisionBody: string | undefined): TurnedDown {
+  const items = optionItems(optionsBody);
+  const chosen = decisionBody !== undefined ? chosenOption(decisionBody) : undefined;
+  if (items === undefined || chosen === undefined) return { unclear: true };
+  const winners = items.filter((item) => isTheChosen(item, chosen));
+  if (winners.length !== 1) return { unclear: true };
+  const losers = items.filter((item) => item !== winners[0]);
+  return losers.length < 1 ? {} : { alternatives: losers.map((item) => item.text).join('\n') };
+}
+
 /**
  * Reads one decision document. Deterministic, and it calls nothing.
  *
  * The title comes from the level-1 heading, or from the frontmatter `title` when
  * the document has no heading — MADR's newer templates put it there. The rationale
- * is the context section, else the lead. What was turned down is the alternatives
- * section, and it is ABSENT rather than empty when the document names none, which
- * keeps "recorded no contender" distinguishable from "recorded an empty one".
+ * is what the document's decision section says (the *because* of MADR's *Chosen
+ * option*, or Nygard's `## Decision`), else its context section, else its lead.
+ * What was turned down is the alternatives section — minus the option the decision
+ * section chose, when the section is MADR's list of every option — and it is ABSENT
+ * rather than empty when the document names none, which keeps "recorded no
+ * contender" distinguishable from "recorded an empty one".
+ *
+ * THIS READ THE CONTEXT AS THE REASON AND THE WHOLE OPTIONS LIST AS THE LOSERS, and
+ * the published templates falsified both: MADR's `## Considered Options` lists the
+ * option it then chooses, and its `## Decision Outcome` says why. Measured on the
+ * binary over a MADR 4 record that chose PostgreSQL, the recorded fact read
+ * "Considered and turned down: PostgreSQL, MySQL, MongoDB" over the question
+ * of the problem statement. `published-templates.test.ts` holds one case per template.
  */
 export function readAdr(text: string): AdrRead | AdrRefused {
   const body = withoutFrontmatter(text);
@@ -448,21 +627,41 @@ export function readAdr(text: string): AdrRead | AdrRefused {
   if (!statesSomething(title)) return { ok: false, code: 'NO_TITLE' };
   if (isMarker(title)) return { ok: false, code: 'TITLE_IS_A_MARKER' };
 
+  const decision = sections.find((section) => DECISION_LABELS.includes(section.label));
+  const statedDecision =
+    decision !== undefined && statesSomething(decision.body) ? decision.body : undefined;
+  const decisionText =
+    statedDecision === undefined
+      ? undefined
+      : statesSomething(beforeSubsections(statedDecision))
+        ? beforeSubsections(statedDecision)
+        : statedDecision;
   const rationale =
-    sectionBody(sections, CONTEXT_LABELS) ?? (statesSomething(lead) ? lead : undefined);
+    decisionText ??
+    sectionBody(sections, CONTEXT_LABELS) ??
+    (statesSomething(lead) ? lead : undefined);
   if (rationale === undefined) return { ok: false, code: 'NO_RATIONALE' };
   if (isMarker(rationale)) return { ok: false, code: 'RATIONALE_IS_A_MARKER' };
 
-  const alternatives = sectionBody(sections, ALTERNATIVE_LABELS);
-  if (alternatives !== undefined && isMarker(alternatives)) {
+  const options = sections.find((section) => ALTERNATIVE_LABELS.includes(section.label));
+  const listed = options !== undefined && statesSomething(options.body) ? options : undefined;
+  if (listed !== undefined && isMarker(listed.body)) {
     return { ok: false, code: 'ALTERNATIVES_ARE_A_MARKER' };
   }
+  const read: TurnedDown =
+    listed === undefined
+      ? {}
+      : EVERY_OPTION_LABELS.includes(listed.label)
+        ? turnedDown(listed.body, statedDecision)
+        : { alternatives: listed.body };
   const status = statusOf(text, sections);
   return {
     ok: true,
     title,
     rationale,
-    ...(alternatives !== undefined ? { alternatives } : {}),
+    ...(read.alternatives !== undefined ? { alternatives: read.alternatives } : {}),
+    ...(read.unclear === true ? { optionsUnclear: true as const } : {}),
+    ...(listed !== undefined ? { considered: listed.body } : {}),
     ...(status !== undefined ? { status } : {}),
   };
 }

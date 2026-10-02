@@ -266,6 +266,11 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'two counts this reading computed',
   },
+  'decision.ts «Moved {} of {}; the rest were refused above and nothing was written for them.» #1':
+    {
+      verdict: 'minted',
+      why: 'two counts of this run: how many ids moved and how many were typed',
+    },
   'decision.ts «Recorded decision {} ({})» #1': {
     verdict: 'minted',
     why: 'an `ADR-<n>` and a uuid, both minted by the write that just landed',
@@ -361,6 +366,15 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the same channel of the closed set, read back off the write',
   },
+  'switch.ts «{} is now ON: an agent may accept a decision, as it did before.» #1': {
+    verdict: 'minted',
+    why: 'the closed channel, read back off the write',
+  },
+  "switch.ts «{} is now OFF: an agent's accept is refused. The switch that decides it was made by {} at {}.» #1":
+    {
+      verdict: 'minted',
+      why: 'the closed channel, the anchor that switched it, and the clock’s own instant',
+    },
   'switch.ts «{} is now OFF: nothing of it reaches a model. The switch that decides it was made by {} at {}.» #1':
     {
       verdict: 'minted',
@@ -434,6 +448,14 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   'init.ts «a write to the public tree here is refused ({}): {}» #1': {
     verdict: 'collapsed',
     why: 'the refusal a write here gets — its code, and the words the core wrote for it',
+  },
+  'key.ts «{} {} of {} private key file(s)» #1': {
+    verdict: 'minted',
+    why: 'this module’s own verb in the past tense and two counts of the files it looked at',
+  },
+  'key.ts «{} {}» #1': {
+    verdict: 'collapsed',
+    why: 'the word for what happened to the file, and its path under this machine’s key root',
   },
   'key.ts «private half installed at {}» #1': {
     verdict: 'collapsed',
@@ -629,7 +651,8 @@ describe('every line this wiring words is classified', () => {
     // `witness` act's "No tail holds events" moved into `presentation/tails.ts`.
     // Seventy-three again since `verify --since` says what it compared, in four lines that
     // carry the revision a caller typed.
-    expect(FOUND.sites.length).toBe(73);
+    // 69 until `key protect` and `unprotect` began printing which files they changed.
+    expect(FOUND.sites.length).toBe(78);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -649,9 +672,9 @@ describe('every line this wiring words is classified', () => {
   it('found sites of both kinds, and the scanner sees a tag when there is one', () => {
     // Neither arm of the case above may be empty, or half of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
-    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(37);
-    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(36);
-    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(37);
+    expect(verdicts.filter((verdict) => verdict === 'collapsed').length).toBe(38);
+    expect(verdicts.filter((verdict) => verdict === 'minted').length).toBe(40);
+    expect(FOUND.sites.filter((site) => site.tagged).length).toBe(38);
   });
 
   it('every reason says where the value comes from', () => {
@@ -792,6 +815,7 @@ const UNREACHABLE: Readonly<Record<string, string>> = {
   'init.ts «a write to the public tree here is refused ({}): {}» #1':
     'needs a checkout its key has left — and the values inside the words are the core’s, ' +
     'each collapsed where it is written (`the-phrase-the-domain-words-is-one-line.test.ts`)',
+  'key.ts «{} {}» #1': 'a path under this machine’s own key root, which no caller names',
   'key.ts «private half installed at {}» #1': 'needs a PEM to restore from',
   'key.ts «Your copy at {} was read, not moved — keep it where it is.» #1': 'the same restore',
   'key.ts «recorded in {}» #1': 'needs a request from a second machine',

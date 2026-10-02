@@ -153,6 +153,7 @@ describe('the same globs reach every instrument this repository ships or runs', 
     expect(theInstruments()).toEqual([
       '.github/a-home-of-its-own/setup.mjs',
       '.github/flake-sampler/summarize.mjs',
+      '.github/the-binary-runs/mark-it-runnable.mjs',
       '.github/the-link-cannot-come-back/scan.mjs',
       '.github/what-the-suite-left-behind/sweep.mjs',
       '.github/why-it-went-red/ledger.mjs',

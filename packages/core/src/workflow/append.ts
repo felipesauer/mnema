@@ -34,7 +34,7 @@
  */
 
 import { type CatalogEvent, type ChainWriter, type Entry, unreadableReason } from '@mnema/chain';
-import { unfilledTitle, unstatedReason } from '../a-reason-states-something.js';
+import { unfilledReference, unfilledTitle, unstatedReason } from '../a-reason-states-something.js';
 
 /**
  * A write refused because the record would not have been readable back; nothing
@@ -83,10 +83,24 @@ export interface NotATitleErr {
 }
 
 /**
- * Why the door refused an event: a read could not open it, its why says nothing, or its title is
- * a marker.
+ * A write refused because a field a later reading looks the fact up by — a link's target or
+ * relation, the entity an observation is about, a handoff's agents — is the marker a recipe
+ * prints where the value goes (`<id>`). Nothing was appended.
+ *
+ * NOT {@link NotATitleErr}: a reference is not a line that names the fact, and the code is what a
+ * caller reads to know which argument to fix.
  */
-export type AppendRefusal = UnreadableEventErr | NotAReasonErr | NotATitleErr;
+export interface NotAReferenceErr {
+  readonly ok: false;
+  readonly code: 'NOT_A_REFERENCE';
+  readonly message: string;
+}
+
+/**
+ * Why the door refused an event: a read could not open it, its why says nothing, its title is a
+ * marker or names nothing, or a reference it is looked up by is a marker.
+ */
+export type AppendRefusal = UnreadableEventErr | NotAReasonErr | NotATitleErr | NotAReferenceErr;
 
 /** One event appended, or the refusal it earned before anything was sealed. */
 export type AppendedEvent = { readonly ok: true; readonly entry: Entry } | AppendRefusal;
@@ -149,6 +163,14 @@ function refuse(event: CatalogEvent): AppendRefusal | undefined {
       ok: false,
       code: 'NOT_A_TITLE',
       message: `${unfilled}. The fact was NOT recorded — a record is permanent, and its title is what every later reading finds it by.`,
+    };
+  }
+  const unreferenced = unfilledReference(event);
+  if (unreferenced !== undefined) {
+    return {
+      ok: false,
+      code: 'NOT_A_REFERENCE',
+      message: `${unreferenced}. The fact was NOT recorded — a record is permanent, and a reference is what every later reading looks it up by.`,
     };
   }
   const unstated = unstatedReason(event);

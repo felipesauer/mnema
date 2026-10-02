@@ -261,7 +261,13 @@ describe('a rule that arrives unasked carries a path that opens', () => {
     // provenance the tree holds to every rule cannot pass here.
     // Sorted, because the ORDER of the two bullets is the document's own — most recently
     // settled first — and this case is about the PAIRING on each line, not about that.
-    expect(bullets(text).sort()).toEqual(
+    // Without the `accepted by` clause the document now ends each bullet with: that is about WHO
+    // ruled, which `a-rule-says-who-ruled-it.test.ts` holds, and this case is about the pairing.
+    expect(
+      bullets(text)
+        .map((line) => line.replace(/ · accepted by .*$/, ''))
+        .sort(),
+    ).toEqual(
       [
         `- **ADR-1 — The gateway is idempotent** · \`${rules.get(GATEWAY) ?? ''}\` · ${DERIVED_FROM} \`docs/adr/${GATEWAY}\``,
         `- **ADR-2 — The ledger is append-only** · \`${rules.get(LEDGER) ?? ''}\` · ${DERIVED_FROM} \`docs/adr/${LEDGER}\``,

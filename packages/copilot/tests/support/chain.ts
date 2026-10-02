@@ -322,8 +322,9 @@ export function moveDecision(
   to: string,
   action: string,
   fields: TransitionFields = { note: `${action}ed` },
+  actor: { readonly who?: string; readonly which?: string } = {},
 ): void {
-  moveDecisionAt(b, id, b.now(), from, to, action, fields);
+  moveDecisionAt(b, id, b.now(), from, to, action, fields, actor);
 }
 
 /**
@@ -340,10 +341,19 @@ export function moveDecisionAt(
   to: string,
   action: string,
   fields: TransitionFields = { note: `${action}ed` },
+  // WHO MOVED IT, when a case is about that: another identity, or an agent on the envelope.
+  // The projection replays `who` and `which` as written, the licence `RunSpec.who` takes.
+  actor: { readonly who?: string; readonly which?: string } = {},
 ): void {
   b.writer.append(
     decisionTransitioned(
-      { at, who: b.who, signerFp: b.writer.signerFingerprint, subject: id },
+      {
+        at,
+        who: actor.who ?? b.who,
+        signerFp: b.writer.signerFingerprint,
+        subject: id,
+        ...(actor.which !== undefined ? { which: actor.which } : {}),
+      },
       { from, to, action, fields },
     ),
   );

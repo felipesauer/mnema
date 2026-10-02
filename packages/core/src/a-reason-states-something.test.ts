@@ -7,16 +7,19 @@ import {
   isMarker,
   MARKER,
   REASONS,
+  REFERENCES,
   reasonRefusal,
+  referenceRefusal,
   statesSomething,
   TITLES,
   titleRefusal,
+  unfilledReference,
   unfilledTitle,
   unstatedReason,
 } from './a-reason-states-something.js';
 import { requestEnrollment } from './identity/handshake.js';
 import { enrollFromRequest, revokeMember } from './identity/roster.js';
-import { recordObservation } from './knowledge/operations.js';
+import { linkKnowledge, recordHandoff, recordObservation } from './knowledge/operations.js';
 import { orderedEvents } from './projections/order.js';
 import { switchChannel } from './workflow/channel-operations.js';
 import { decisionGate } from './workflow/decision-gate.js';
@@ -29,6 +32,7 @@ import { gate } from './workflow/gate.js';
 import { ensureFounded } from './workflow/identity-operations.js';
 import { createTask, transitionTask, type WriteContext } from './workflow/operations.js';
 import { authorizeTailPrune } from './workflow/prune-operations.js';
+import { startRun } from './workflow/session-operations.js';
 import { skillGate } from './workflow/skill-gate.js';
 import { createSkill, reviewSkill } from './workflow/skill-operations.js';
 
@@ -298,10 +302,19 @@ describe('the title, asked of one value', () => {
     expect(titleRefusal('title', ' <title> ')).toBeDefined();
   });
 
-  it('asks only the marker: a title in words, with a tag in it, or of punctuation, passes', () => {
-    // Only the marker, as the module's header says: whether a title states something is not
-    // asked here (the reader of decision files asks it of a file, `NO_TITLE`).
-    for (const said of ['Use UTC', 'use <b> for bold', '理由', '***']) {
+  it('refuses a title of punctuation alone, as the reader of decision files refuses its heading', () => {
+    // THIS CASE USED TO PASS `***`, on the premise that the reader refused it on its own
+    // (`NO_TITLE`) and the door need not. The premise was the defect: `decision record '***'`
+    // recorded a decision named `***`. The same function the reader asks now refuses it here.
+    for (const said of ['***', '---', ' . ', '|', '* * *']) {
+      expect(titleRefusal('title', said)?.message, said).toBe(
+        `the title "${said.trim()}" has no letter and no digit in it, so it names nothing: write the title in words`,
+      );
+    }
+  });
+
+  it('passes a title in words, in any script, with a tag in it, or a single character', () => {
+    for (const said of ['Use UTC', 'use <b> for bold', '理由', 'x', '42', '']) {
       expect(titleRefusal('title', said), said).toBeUndefined();
     }
   });
@@ -374,6 +387,19 @@ describe('every kind says where its title is, and the door asks it there', () =>
     });
   }
 
+  for (const said of ['***', '---', ' | ']) {
+    it(`refuses ${JSON.stringify(said)} (no word in it) at every site, and appends nothing`, () => {
+      for (const row of rows) {
+        const before = count();
+        expect(row.drive(said), `${row.kind} ${row.site}`).toMatchObject({
+          ok: false,
+          code: 'NOT_A_TITLE',
+        });
+        expect(count(), `${row.kind} ${row.site}`).toBe(before);
+      }
+    });
+  }
+
   it('and records the same row with a title in words, so the refusal is about the marker', () => {
     for (const row of rows) {
       expect(row.drive('clocks in UTC'), `${row.kind} ${row.site}`).toMatchObject({ ok: true });
@@ -389,6 +415,155 @@ describe('every kind says where its title is, and the door asks it there', () =>
         payload: { title: '<title>', rationale: 'r', adr: 'ADR-1' },
       } as never),
     ).toContain('the title "<title>"');
+  });
+});
+
+/**
+ * A MARKER IS NO REFERENCE EITHER: the strings a later reading looks a fact up by.
+ *
+ * What was wrong: `mnema link <id> <path> --rel governs`, pasted without filling the markers in,
+ * recorded an edge from the entity `<id>`; `--rel '<rel>'` recorded a relation nothing can ask
+ * for. The same paste, in the fields neither a title nor a why.
+ */
+describe('a reference, asked of one value', () => {
+  it('refuses a marker and names the field and what goes in its place', () => {
+    expect(referenceRefusal('target', '<path>')?.message).toBe(
+      'the target "<path>" is the marker a recipe prints where the value goes, not the value: write the target in its place',
+    );
+    expect(referenceRefusal('rel', ' <rel> ')).toBeDefined();
+  });
+
+  it('asks only the marker: a path, a glob, a name with a tag in it, or punctuation passes', () => {
+    // A reference is a string its owner chose (`src/**`, `a/<b>/c`, `***` as a glob): what it
+    // holds is not a judgment this door makes. Only the blank a recipe leaves is refused.
+    for (const said of ['src/**', 'a/<b>/c', 'use <b> for bold', '***', '', 'governs']) {
+      expect(referenceRefusal('target', said), said).toBeUndefined();
+    }
+  });
+});
+
+describe('every kind says where its references are, and the door asks it there', () => {
+  let root: string;
+  let ctx: WriteContext;
+  const upcasters = catalogUpcasters();
+
+  beforeEach(() => {
+    root = mkdtempSync(join(tmpdir(), 'mnema-reference-'));
+    ctx = { writer: openChainForWriting(root, { keyRoot: root }), layout: { root }, upcasters };
+    ensureFounded(ctx);
+  });
+
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  const count = (): number => orderedEvents(ctx.layout, upcasters).length;
+  const ID = '0198f3c1-7a2e-7b41-9c05-3d8e6f2a1b44';
+
+  /**
+   * One row per (kind, site) {@link REFERENCES} lists that a write operation of this package
+   * reaches, with the value put where the reference goes and every other field in words.
+   */
+  const rows: readonly {
+    readonly kind: string;
+    readonly site: string;
+    readonly drive: (said: string) => { readonly ok: boolean; readonly code?: string };
+  }[] = [
+    { kind: 'run.started', site: 'agent', drive: (said) => startRun(ctx, { agent: said }) },
+    {
+      kind: 'observation.recorded',
+      site: 'about',
+      drive: (said) => recordObservation(ctx, { about: said, topic: 'clocks', text: 'slow' }),
+    },
+    {
+      kind: 'handoff.recorded',
+      site: 'subject',
+      drive: (said) => recordHandoff(ctx, { task: said, fromAgent: 'a', toAgent: 'b' }),
+    },
+    {
+      kind: 'handoff.recorded',
+      site: 'fromAgent',
+      drive: (said) => recordHandoff(ctx, { task: ID, fromAgent: said, toAgent: 'b' }),
+    },
+    {
+      kind: 'handoff.recorded',
+      site: 'toAgent',
+      drive: (said) => recordHandoff(ctx, { task: ID, fromAgent: 'a', toAgent: said }),
+    },
+    {
+      kind: 'knowledge.linked',
+      site: 'subject',
+      drive: (said) => linkKnowledge(ctx, { subject: said, target: 'src/a.ts', rel: 'governs' }),
+    },
+    {
+      kind: 'knowledge.linked',
+      site: 'target',
+      drive: (said) => linkKnowledge(ctx, { subject: ID, target: said, rel: 'governs' }),
+    },
+    {
+      kind: 'knowledge.linked',
+      site: 'rel',
+      drive: (said) => linkKnowledge(ctx, { subject: ID, target: 'src/a.ts', rel: said }),
+    },
+    {
+      kind: 'channel.switched',
+      site: 'subject',
+      drive: (said) => switchChannel(ctx, { channel: said, on: true }),
+    },
+  ];
+
+  /** The sites with no write operation in this package to drive: the door's function is asked directly. */
+  const SERVED_BY_THE_SURFACE = [
+    'skill.consulted subject',
+    'channel.served subject',
+    'channel.asked subject',
+  ];
+
+  it('is total over the catalog, and every site listed has a row here or is served by the surface', () => {
+    expect(Object.keys(REFERENCES).sort()).toEqual(Object.keys(LATEST_VERSION).sort());
+    const listed = Object.entries(REFERENCES).flatMap(([kind, sites]) =>
+      (sites as readonly string[]).map((site) => `${kind} ${site}`),
+    );
+    expect(
+      [...rows.map((row) => `${row.kind} ${row.site}`), ...SERVED_BY_THE_SURFACE].sort(),
+    ).toEqual(listed.sort());
+  });
+
+  for (const said of ['<id>', ' <path> ', '<rel>', '<agent>']) {
+    it(`refuses ${JSON.stringify(said)} at every site, and appends nothing`, () => {
+      for (const row of rows) {
+        const before = count();
+        expect(row.drive(said), `${row.kind} ${row.site}`).toMatchObject({
+          ok: false,
+          code: 'NOT_A_REFERENCE',
+        });
+        expect(count(), `${row.kind} ${row.site}`).toBe(before);
+      }
+    });
+  }
+
+  it('asks the sites no operation here reaches, on the event itself', () => {
+    for (const kind of ['skill.consulted', 'channel.served', 'channel.asked'] as const) {
+      expect(
+        unfilledReference({ kind, subject: '<channel>', payload: {} } as never),
+        kind,
+      ).toContain('the subject "<channel>" is the marker');
+      expect(
+        unfilledReference({ kind, subject: 'coach', payload: {} } as never),
+        kind,
+      ).toBeUndefined();
+    }
+  });
+
+  it('records the same rows with a value in place, so the refusal is about the marker', () => {
+    expect(
+      linkKnowledge(ctx, { subject: ID, target: 'src/<id>/x.ts', rel: 'governs' }),
+    ).toMatchObject({
+      ok: true,
+    });
+    expect(recordObservation(ctx, { about: ID, topic: 'clocks', text: 'slow' })).toMatchObject({
+      ok: true,
+    });
   });
 });
 

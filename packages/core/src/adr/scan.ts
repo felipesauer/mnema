@@ -194,12 +194,15 @@ export function scanAdrDirectory(directory: string): AdrScan {
       refused.push({ path, code: 'FIELD_TOO_LARGE' });
       continue;
     }
-    const classes = [...new Set(fields.flatMap((field) => detectSecrets(field)))].sort();
+    // Screened over what was READ, not only over what is kept: the whole options section is
+    // screened even where the list is not recorded (see {@link AdrDocument.considered}).
+    const screened = document.considered !== undefined ? [...fields, document.considered] : fields;
+    const classes = [...new Set(screened.flatMap((field) => detectSecrets(field)))].sort();
     if (classes.length > 0) {
       refused.push({ path, code: 'HOLDS_A_SECRET', classes });
       continue;
     }
-    const { ok: _ok, ...fieldsOfDocument } = document;
+    const { ok: _ok, considered: _considered, ...fieldsOfDocument } = document;
     read.push({ ...fieldsOfDocument, path });
   }
   return { read, refused };

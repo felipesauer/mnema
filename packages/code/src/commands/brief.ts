@@ -65,8 +65,15 @@
  * this one only reads where the switch stands.
  */
 
+import { dirname } from 'node:path';
 import { type Brief, brief, channelIsOn, channelStates } from '@mnema/copilot';
 import { type DiscoveryEnv, resolveTrees } from '@mnema/core';
+import {
+  basesNeverImported,
+  type DecisionsOutside,
+  decisionsOutsideTheRecord,
+  type UnimportedBase,
+} from '../outside-the-record.js';
 import {
   ASKS_A_PERSON_CHANNEL,
   DOCUMENT_CHANNEL,
@@ -103,6 +110,20 @@ export interface BriefDone {
    * says so.
    */
   readonly linkBreaks: readonly ScopedLinkBreak[];
+  /**
+   * The decision documents of this CHECKOUT the record has no decision for — present only when
+   * the caller asked ({@link runBrief}'s `outside`), which is the hook's copy and never the file.
+   *
+   * They are `mnema status`'s two readings, called the same way (`outside-the-record.ts`): drift
+   * in a base the record already names, then the conventional bases it has never read. A count
+   * of files on one disk is no fact about the record, so the document a person commits never
+   * carries it; the copy a hook hands a session is read once and thrown away, and it is the one
+   * place a session hears that the repository holds decisions the record does not.
+   */
+  readonly outside?: {
+    readonly drift: readonly DecisionsOutside[];
+    readonly arrival: readonly UnimportedBase[];
+  };
 }
 
 /** The read was refused — there is no project to compose a brief for. */
@@ -187,7 +208,10 @@ export function switchedOff(
  * pre-filtered would make the composition's own guard vacuous — it would never be
  * handed a tree to leave out.
  */
-export function runBrief(ctx: BriefContext): BriefDone | BriefRefused | BriefSwitchedOff {
+export function runBrief(
+  ctx: BriefContext,
+  asked: { readonly outside?: boolean } = {},
+): BriefDone | BriefRefused | BriefSwitchedOff {
   const trees = resolveTrees(ctx.cwd, ctx.env);
   if (trees.projectPublic === undefined) {
     return { ok: false, reason: 'NO_PROJECT' };
@@ -212,6 +236,16 @@ export function runBrief(ctx: BriefContext): BriefDone | BriefRefused | BriefSwi
       // stderr: that reader is an AGENT, and the door built for it is the MCP, where
       // this same fact rides beside every answer (`record-integrity.ts`).
       linkBreaks: linkBreaksOf(sources, THE_READING_THAT_OPENED_THESE),
+      // READ FROM THE DISK, AND ONLY WHEN ASKED: see {@link BriefDone.outside}. Over every tree,
+      // for `decision import`'s reason — a file imported into the private tree is imported.
+      ...(asked.outside === true
+        ? {
+            outside: {
+              drift: decisionsOutsideTheRecord(sources, dirname(trees.projectPublic as string)),
+              arrival: basesNeverImported(sources, dirname(trees.projectPublic as string)),
+            },
+          }
+        : {}),
       // BOTH channels the per-edit hook pushes, named here because the vocabulary is this
       // package's. The document explains what a silence at an edit means, and there are now
       // two switches that can produce it — a document naming one of them would explain the

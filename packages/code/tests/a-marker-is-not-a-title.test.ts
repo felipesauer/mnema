@@ -176,3 +176,57 @@ describe('a decision file left where the words go', () => {
     expect(events()).toBe(born);
   }, 60_000);
 });
+
+describe('a title with no word in it', () => {
+  it('is refused as the title of every write that takes one, and nothing lands', async () => {
+    const born = events();
+    for (const said of ['***', '* * *', '. . .']) {
+      for (const argv of titled(said)) {
+        const result = await mnema(...argv);
+        const label = `${argv.slice(0, 2).join(' ')} ${JSON.stringify(said)}`;
+        expect(result.failed, label).toBe(true);
+        expect(result.said, label).toContain('Refused (NOT_A_TITLE)');
+        expect(result.said, label).toContain(
+          'has no letter and no digit in it, so it names nothing',
+        );
+      }
+    }
+    expect(events()).toBe(born);
+  }, 60_000);
+});
+
+describe('a marker the product prints where a reference goes', () => {
+  /** The writes that take a reference a later reading looks up, each with the marker put there. */
+  function referenced(marker: string): readonly (readonly string[])[] {
+    return [
+      ['link', task, marker, '--rel', 'governs'],
+      ['link', task, 'src/a.ts', '--rel', marker],
+      ['link', marker, 'src/a.ts', '--rel', 'governs'],
+      ['observe', marker, '--topic', 'clocks', '--text', 'it was slow'],
+      ['handoff', marker, 'a', 'b'],
+      ['handoff', task, marker, 'b'],
+      ['handoff', task, 'a', marker],
+    ];
+  }
+
+  it('is refused at every write that takes one, and nothing lands', async () => {
+    const born = events();
+    for (const marker of ['<id>', '<path>', '<rel>', '<agent>']) {
+      for (const argv of referenced(marker)) {
+        const result = await mnema(...argv);
+        const label = `${argv.join(' ')}`;
+        expect(result.failed, label).toBe(true);
+        expect(result.said, label).toContain('Refused (NOT_A_REFERENCE)');
+        expect(result.said, label).toContain(`"${marker}" is the marker a recipe prints`);
+      }
+    }
+    expect(events()).toBe(born);
+  }, 60_000);
+
+  it('and the same writes land with a value in place, so the refusal was about the marker', async () => {
+    expect((await mnema('link', task, 'src/<id>/a.ts', '--rel', 'governs')).failed).toBe(false);
+    expect((await mnema('observe', task, '--topic', 'clocks', '--text', 'slow')).failed).toBe(
+      false,
+    );
+  }, 60_000);
+});

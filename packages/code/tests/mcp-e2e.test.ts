@@ -1089,6 +1089,43 @@ describe('MCP session + tools — unit', () => {
     expect(privateEvents).toEqual([]);
   });
 
+  it('decision_transition refuses a successor the action does not read, and says when a supersede leaves nothing in force', () => {
+    const project = makeProject('proj');
+    const session = openSession({
+      clientName: 'claude-code',
+      roots: [pathToFileURL(project).href],
+      env,
+    });
+    const oldD = runRecordDecision(session, { title: 'old', rationale: 'r1' });
+    const newD = runRecordDecision(session, { title: 'new', rationale: 'r2' });
+    if (!oldD.ok || !newD.ok) throw new Error('setup');
+
+    // `by` is read by a supersede and by nothing else: an accept handed one used to return
+    // `accepted` and record the successor nowhere. It is refused, and nothing is appended.
+    const chainRoot = chainRootForScope(session.trees, travelTree(session)) as string;
+    const before = [...orderedEvents({ root: chainRoot }, catalogUpcasters())].length;
+    const refused = runDecisionTransition(session, {
+      id: oldD.id,
+      action: 'accept',
+      note: 'agreed',
+      by: newD.id,
+    });
+    expect(refused).toMatchObject({ ok: false, code: 'UNREAD_FIELD' });
+    expect([...orderedEvents({ root: chainRoot }, catalogUpcasters())].length).toBe(before);
+
+    // A supersede by a successor that is still proposed leaves no rule in force, and says so.
+    const superseded = runDecisionTransition(session, {
+      id: oldD.id,
+      action: 'supersede',
+      by: newD.id,
+      reason: 'a better approach',
+    });
+    expect(superseded).toMatchObject({ ok: true, to: 'superseded' });
+    expect((superseded as { notice?: string }).notice).toContain(
+      `ADR-2 (${newD.id}) is still proposed, so nothing is in force on this subject`,
+    );
+  });
+
   it('decision_transition returns the gate refusal as data, never throwing', () => {
     const project = makeProject('proj');
     const session = openSession({
@@ -2888,7 +2925,10 @@ describe('MCP server — end to end over a real client', () => {
       arguments: { id, action: 'accept', note: 'we ship it' },
     });
     expect(accepted.isError).toBeFalsy();
-    expect(textOf(accepted)).toBe(`Decision ADR-1 (${id}) → accepted`);
+    // The acknowledgement is the first line; an acceptance by an agent adds the sentence that says
+    // it was recorded as an agent's (`a-rule-says-who-ruled-it.test.ts` holds the sentence).
+    expect(textOf(accepted).split('\n')[0]).toBe(`Decision ADR-1 (${id}) → accepted`);
+    expect(textOf(accepted)).toContain('recorded as made by an agent (');
 
     // A supersede with no `by` comes back as a tool error carrying MISSING_BY.
     const noBy = await client.callTool({

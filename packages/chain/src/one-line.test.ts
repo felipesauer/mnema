@@ -40,6 +40,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { neutralized, oneLine } from './one-line.js';
 
 /** The module this file is about. */
 const MODULE = fileURLToPath(new URL('./one-line.ts', import.meta.url));
@@ -142,5 +143,38 @@ describe('the rule of the line needs nothing', () => {
     // The stripper does not eat code that follows a comment, which is how it would pass
     // the file for the wrong reason.
     expect(reaches(`/** doc */${LF}import { oneLine } from './x.js';`)).not.toEqual([]);
+  });
+});
+
+describe('the control bytes of a line are made visible', () => {
+  const ESC = String.fromCharCode(0x1b);
+  const DEL = String.fromCharCode(0x7f);
+  const CSI = String.fromCharCode(0x9b);
+  const NEL = String.fromCharCode(0x85);
+
+  it('writes each C0, DEL and C1 byte as the escape the record holds it by', () => {
+    expect(neutralized(`a${ESC}[2Jb`)).toBe('a\\u001b[2Jb');
+    expect(neutralized(`a${DEL}b${CSI}c${NEL}d`)).toBe('a\\u007fb\\u009bc\\u0085d');
+    expect(neutralized(String.fromCharCode(0))).toBe('\\u0000');
+  });
+
+  it('keeps the whitespace prose is made of, and a CR that ends a line with its LF', () => {
+    expect(neutralized('a\tb\nc\r\nd')).toBe('a\tb\nc\r\nd');
+    expect(neutralized('a\rb')).toBe('a\\u000db');
+  });
+
+  it('is idempotent, so a line that passes two sinks is not escaped twice', () => {
+    const once = neutralized(`x${ESC}]0;t${String.fromCharCode(7)}`);
+    expect(neutralized(once)).toBe(once);
+  });
+
+  it('is part of the rule of the line: a collapsed line holds no control byte either', () => {
+    expect(oneLine(`a ${ESC}[31m  b\n${CSI}`)).toBe('a \\u001b[31m b \\u009b');
+  });
+
+  it('leaves a JSON document parsing to the value it had', () => {
+    const value = { title: `t${ESC}${DEL}${NEL}` };
+    const text = neutralized(JSON.stringify(value, null, 2));
+    expect(JSON.parse(text)).toEqual(value);
   });
 });

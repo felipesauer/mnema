@@ -219,5 +219,58 @@ export function registerKey(program: Command, wiring: Wiring): Declared {
           'No mnema project here. Run `mnema key revoke` inside the project to record it.',
       });
     });
+  // `mnema key protect` / `unprotect` — put a passphrase on this machine's private keys at
+  // rest, or take it off. The passphrase is `MNEMA_KEY_PASSPHRASE`, read where signing reads
+  // it (`commands/key-protect.ts` says why it is not a flag). These touch key files and no
+  // record, and sit under the group's `mutatesTheRecord` declaration as `key restore` does.
+  key
+    .command('protect')
+    .description(
+      "encrypt this machine's private keys at rest with the passphrase in MNEMA_KEY_PASSPHRASE",
+    )
+    .action(async () => {
+      const { runKeyProtect } = await import('../commands/key-protect.js');
+      reportKeyFiles(runKeyProtect(here()), 'Protected');
+    });
+
+  key
+    .command('unprotect')
+    .description("write this machine's private keys back in the clear (needs MNEMA_KEY_PASSPHRASE)")
+    .action(async () => {
+      const { runKeyUnprotect } = await import('../commands/key-protect.js');
+      reportKeyFiles(runKeyUnprotect(here()), 'Unprotected');
+    });
+
+  /** What the two verbs print: the files that changed, the ones that already were, and the rest. */
+  function reportKeyFiles(
+    result: ReturnType<typeof import('../commands/key-protect.js').runKeyProtect>,
+    did: 'Protected' | 'Unprotected',
+  ): void {
+    if (!result.ok) {
+      reportRefusal(wiring, result);
+      return;
+    }
+    const changed = result.files.filter((one) => one.changed);
+    if (result.files.length === 0) {
+      io.out('This machine holds no private key.');
+      return;
+    }
+    io.out(`${did} ${changed.length} of ${result.files.length} private key file(s)`);
+    for (const file of result.files) {
+      io.out(
+        render(fact(onOneLine`${file.changed ? did.toLowerCase() : 'unchanged'} ${file.path}`)),
+      );
+    }
+    if (did === 'Protected' && changed.length > 0) {
+      io.out(
+        render(
+          fact(
+            'Anything that signs now needs MNEMA_KEY_PASSPHRASE set to the same passphrase: this shell, the host an agent runs in, a hook. The record and its verification are as they were.',
+          ),
+        ),
+      );
+    }
+  }
+
   return mutatesTheRecord(key);
 }

@@ -21,6 +21,9 @@
  * is ONE gate and a single place to remove if this plugin ever stopped being quiet. Asserted
  * in `packages/code/tests/the-record-arrives-unasked.test.ts` for every command `hooks.json`
  * declares ("says nothing at all where there is no project").
+ * ONE OUTCOME THAT IS NOT A TEXT IS NO LONGER SILENCE, and it is not a failure of this product:
+ * a program of the same name first on the PATH. The document's handler names it to the session
+ * (see below); silence there was the defect, not the rule.
  *
  * WHAT IT NEVER COVERED IS A RECORD THAT DOES NOT CHAIN, and the three outcomes measured on
  * the built binary are what separate the two: outside a project a verb exits 1 with its
@@ -52,6 +55,17 @@
  * before the flag existed: whole, and past the host's ceiling replaced by a file path. Any other
  * refusal is asked once and stays silence. Asserted in the same test ("asks a binary older than
  * the flag again without it").
+ *
+ * AND BEFORE ANY VERB, IT ASKS THE `mnema` ON THE PATH WHICH PROGRAM IT IS ({@link whoAnswers}).
+ * "No `mnema` on the PATH" was the one way the PATH could be wrong that this module knew, and it
+ * is silence. Measured with Claude Code 2.1.281: a program NAMED `mnema` placed before the real
+ * one was run at all three points the plugin declares (`brief --hook`, `recall --hook`, `mcp`),
+ * the session opened without the record, and nothing said so — the silence above, earned by a
+ * program that is not this product. So the handler that hands over the document asks first,
+ * and a program that does not answer as this product is not run and is NAMED to the session,
+ * with what it answered and where the right one comes from. The notes handler asks too and
+ * stays silent, so a session is told once. Asserted in the same test ("names a program of the
+ * same name to the session instead of running it").
  */
 
 import { spawnSync } from 'node:child_process';
@@ -89,6 +103,79 @@ const BETWEEN_THE_STREAMS = '\n\n';
  */
 const FOR_A_HOOK = '--hook';
 
+/** The question this module asks a `mnema` before it runs a verb: which program it is. */
+const WHICH_PROGRAM = '--identify';
+
+/**
+ * What this product answers {@link WHICH_PROGRAM} with, before its version: the package it is
+ * installed as (`packages/code/src/version.ts`, `PRODUCT_NAME`). A plain string for the reason
+ * the handlers' channel names are: this file runs with no build and cannot import the surface.
+ * The two are held together by every case of `the-record-arrives-unasked.test.ts` that runs the
+ * real binary — a drift would leave all of them without a document.
+ */
+const THIS_PRODUCT = '@mnema/code';
+
+/** How much of what a stranger answered is quoted back — enough to recognize it. */
+const QUOTED = 120;
+
+/**
+ * Which program the `mnema` on the PATH is: this product, this product from before the
+ * question existed, no program at all, or another program of the same name.
+ *
+ * ONE QUESTION, AND THE ANSWER IS A NAME AND A VERSION. A version alone tells nothing apart —
+ * any program prints a number — so the answer starts with the package name, which one publisher
+ * holds on the registry. A build from before the question refuses it in this product's own words
+ * for an option it does not take (`mnema does not take "--identify".`), and that is an answer
+ * too: the verb is then run as before, and the flag fallback below still serves it.
+ *
+ * A SPAWN THAT FAILED is "absent", whatever the reason: that was silence before the question
+ * existed, and the question changes nothing about a PATH with no `mnema` on it.
+ *
+ * @param {string} cwd
+ * @returns {{ readonly kind: 'this' | 'older' | 'absent' } | { readonly kind: 'stranger', readonly said: string, readonly status: number | null }}
+ */
+export function whoAnswers(cwd) {
+  const ran = spawnSync(BINARY, [WHICH_PROGRAM], {
+    cwd,
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  if (ran.error !== undefined) return { kind: 'absent' };
+  const out = (ran.stdout ?? '').trim();
+  if (ran.status === 0 && out.startsWith(`${THIS_PRODUCT} `)) return { kind: 'this' };
+  const err = (ran.stderr ?? '').trim();
+  if (ran.status !== 0 && err.startsWith(`mnema does not take "${WHICH_PROGRAM}".`)) {
+    return { kind: 'older' };
+  }
+  const first = (out !== '' ? out : err).split('\n')[0] ?? '';
+  return {
+    kind: 'stranger',
+    said: first.length > QUOTED ? `${first.slice(0, QUOTED)}...` : first,
+    status: ran.status,
+  };
+}
+
+/**
+ * What a session is told when the `mnema` on the PATH is another program: a fact in this
+ * plugin's own voice, since the product's never ran. It says what was asked, what answered,
+ * what that left out, and where the right program comes from.
+ *
+ * @param {{ readonly said: string, readonly status: number | null }} stranger
+ * @returns {string}
+ */
+export function aStranger(stranger) {
+  const answered =
+    stranger.said === ''
+      ? `printed nothing and exited ${stranger.status}`
+      : `answered ${JSON.stringify(stranger.said)} and exited ${stranger.status}`;
+  return [
+    `The mnema plugin did not run the program named mnema first on this session's PATH: it is not ${THIS_PRODUCT}.`,
+    `Asked \`mnema --identify\`, which ${THIS_PRODUCT} answers with its name and version, it ${answered}.`,
+    "So this project's record was not handed to this session, and the MCP server the plugin declares starts that same program.",
+    `\`which -a mnema\` lists every program of that name on the PATH; the plugin runs the first, and ${THIS_PRODUCT} installs one (\`npm install -g ${THIS_PRODUCT}\`).`,
+  ].join('\n');
+}
+
 /**
  * What a verb has to say here, or `null` when it has nothing.
  *
@@ -101,9 +188,15 @@ const FOR_A_HOOK = '--hook';
  * @param {string} verb The verb to run — each handler names its own.
  * @param {string} cwd Where to run it — the host's project directory, or this process's own
  *   when the host announced none.
+ * @param {{ readonly namesAStranger?: boolean }} [options] Whether a `mnema` that is another
+ *   program is named to the session ({@link aStranger}) rather than met with silence — the one
+ *   handler that hands over the document says it, so a session is told once.
  * @returns {string | null}
  */
-export function whatTheVerbSays(verb, cwd) {
+export function whatTheVerbSays(verb, cwd, { namesAStranger = false } = {}) {
+  const who = whoAnswers(cwd);
+  if (who.kind === 'absent') return null;
+  if (who.kind === 'stranger') return namesAStranger ? aStranger(who) : null;
   const asked = running(verb, [FOR_A_HOOK], cwd);
   const ran = refusesTheFlag(asked) ? running(verb, [], cwd) : asked;
   // EVERY NON-ZERO OUTCOME IS STILL SILENCE, and the refusal on stderr goes with it: it

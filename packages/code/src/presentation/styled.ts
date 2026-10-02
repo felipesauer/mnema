@@ -146,6 +146,22 @@ const ACCENT = '\u001b[35m';
  *     shouting, and what makes the word the subject of its row is that the description
  *     beside it is NOT painted.
  */
+/**
+ * Every sequence this renderer can write, for the port that must let them through while it
+ * escapes every other control byte (`wiring/io.ts`). Built from the constants above, so a
+ * colour added to a table here is a colour the port already knows.
+ */
+export const PAINTING: readonly string[] = [
+  BOLD,
+  DIM,
+  NORMAL,
+  RED,
+  GREEN,
+  YELLOW,
+  DEFAULT_HUE,
+  ACCENT,
+];
+
 const OPENED_BY: { readonly [R in Role]: string } = {
   label: BOLD,
   subject: BOLD,

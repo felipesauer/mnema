@@ -496,18 +496,62 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'how many rules are printed under the heading — a count this document made',
   },
-  'brief.ts «- **{}** · \\`{}\\`{}» oneLine(name) #1': {
+  'brief.ts «- **{}** · \\`{}\\`{}{}» oneLine(name) #1': {
     verdict: 'collapsed',
     why: 'the rule’s name: a title an actor wrote, or a pattern’s name',
   },
-  'brief.ts «- **{}** · \\`{}\\`{}» oneLine(id) #1': {
+  'brief.ts «- **{}** · \\`{}\\`{}{}» oneLine(id) #1': {
     verdict: 'collapsed',
     why: 'the record id — minted, and collapsed anyway because the rule is the line’s',
   },
-  'brief.ts «- **{}** · \\`{}\\`{}» from #1': {
+  'brief.ts «- **{}** · \\`{}\\`{}{}» from #1': {
     verdict: 'composed',
     why: 'the provenance fields, one per source — each already collapsed in the template below, which is why this bullet can take them whole',
   },
+  'brief.ts «- **{}** · \\`{}\\`{}{}» by #1': {
+    verdict: 'composed',
+    why: 'the clause that says who accepted the rule — built by acceptedBy below, every part of it collapsed or this module’s own word',
+  },
+  'brief.ts « · {}» acceptedBy(acceptance) #1': {
+    verdict: 'composed',
+    why: 'the clause itself, joined with its separator; its parts are classified where acceptedBy builds them',
+  },
+  'brief.ts «accepted by {} ({}{})» oneLine(acceptance.by) #1': {
+    verdict: 'collapsed',
+    why: 'the identity that accepted — an anchor read out of the envelope of the accepting event, shortened',
+  },
+  'brief.ts «accepted by {} ({}{})» act #1': {
+    verdict: 'composed',
+    why: 'either this surface’s word for an act with no agent, or the agent clause below, whose name is collapsed',
+  },
+  'brief.ts «accepted by {} ({}{})» mark #1': {
+    verdict: 'minted',
+    why: 'this module’s own word for an identity that nobody else has ruled with, or nothing',
+  },
+  'brief.ts «agent {}» oneLine(acceptance.agent) #1': {
+    verdict: 'collapsed',
+    why: 'the agent’s name as the accepting event carries it, text whoever opened that session wrote',
+  },
+  'brief.ts «{} of them {} accepted by an agent. The record keeps which, and \\`mnema switch\\` says whether an agent may accept.» byAnAgent #1':
+    {
+      verdict: 'minted',
+      why: 'a count of the rules in force, computed here from the list the document is made of',
+    },
+  "brief.ts «{} of them {} accepted by an agent. The record keeps which, and \\`mnema switch\\` says whether an agent may accept.» byAnAgent === 1 ? 'was' : 'were' #1":
+    {
+      verdict: 'minted',
+      why: 'the singular or the plural of a verb written in this module, chosen by the count beside it',
+    },
+  'brief.ts «{} of them {} accepted by an identity marked unconfirmed: it has accepted only decisions it recorded itself, and no other identity has accepted any of them. That is who has looked, not a verdict on the rule.» unconfirmed #1':
+    {
+      verdict: 'minted',
+      why: 'a count of the rules in force, computed here from the list the document is made of',
+    },
+  "brief.ts «{} of them {} accepted by an identity marked unconfirmed: it has accepted only decisions it recorded itself, and no other identity has accepted any of them. That is who has looked, not a verdict on the rule.» unconfirmed === 1 ? 'was' : 'were' #1":
+    {
+      verdict: 'minted',
+      why: 'the singular or the plural of a verb written in this module, chosen by the count beside it',
+    },
   'brief.ts « · {} \\`{}\\`» DERIVED_FROM #1': {
     verdict: 'minted',
     why: 'the one word this product introduces a provenance with, a constant of `provenance.ts` shared by the four printers of the fact',
@@ -563,6 +607,16 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   'exposure.ts «{} of {} record(s) hold a credential format:» report.scanned #1': {
     verdict: 'minted',
     why: 'how many records were read — the same count',
+  },
+
+  // --- plain.ts: the renderer, which neutralizes the text of every part -----------
+  'plain.ts «{}{}» PRECEDED_BY[part.role] #1': {
+    verdict: 'minted',
+    why: 'the punctuation between two parts, chosen by role from a table this module owns',
+  },
+  'plain.ts «{}{}» painted #1': {
+    verdict: 'minted',
+    why: 'a part already classified where its builder took it, with its control bytes made visible here',
   },
 
   // --- occurrence.ts: one event of the chain -------------------------------------
@@ -623,6 +677,15 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     {
       verdict: 'composed',
       why: 'where the words came from, worded by `whereTheWordsCameFrom` out of counts and constants — never the words, which are paths and a branch somebody named',
+    },
+  'brief.ts «- {}» toImport(base.directory, base.documents) #1': {
+    verdict: 'composed',
+    why: 'a base with documents the record has none for, worded by `status.ts`’s `toImport` — the hook copy’s bullet is that one spelling',
+  },
+  "brief.ts «Not in the record: {} in this checkout, by file name, with no decision derived from them here.» counted(total, 'decision document', 'decision documents') #1":
+    {
+      verdict: 'composed',
+      why: 'how many documents are outside the record, worded by `counted` out of a sum of counts and two nouns of this module',
     },
   "recall.ts «{} changed in the working tree» counted(touched.changed, 'file') #1": {
     verdict: 'composed',
@@ -714,6 +777,26 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'collapsed',
     why: 'the decision’s title — text whoever recorded it wrote',
   },
+  'record.ts «recorded by {}» actorText(context.anchors, body.record.recordedBy) #1': {
+    verdict: 'composed',
+    why: 'the actor of the recording event, worded by actorText below: an anchor in its short form, and an act clause whose agent name is collapsed there',
+  },
+  'record.ts «accepted by {}» actorText(context.anchors, body.record.acceptedBy) #1': {
+    verdict: 'composed',
+    why: 'the actor of the accepting event, worded by actorText below, for the reason the recording actor is',
+  },
+  'record.ts «{} ({})» oneLine(anchorText(anchors, actor.who)) #1': {
+    verdict: 'collapsed',
+    why: 'the identity named on the envelope of the event, in the short form this record’s other reads print it in',
+  },
+  'record.ts «{} ({})» act #1': {
+    verdict: 'composed',
+    why: 'either this surface’s word for an act with no agent, or the agent clause below, whose name is collapsed',
+  },
+  'record.ts «agent {}» oneLine(actor.which) #1': {
+    verdict: 'collapsed',
+    why: 'the agent’s name as the event carries it, text whoever opened that session wrote',
+  },
   'record.ts «supersedes {}» oneLine(body.record.supersedes) #1': {
     verdict: 'collapsed',
     why: 'the id the decision names as superseded, as recorded rather than as checked',
@@ -745,6 +828,10 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   'occurrence.ts itemLine(oneLine(entry.kind)) #1': {
     verdict: 'collapsed',
     why: 'the event kind of a history entry, as the catalog spells it',
+  },
+  'occurrence.ts itemLine(...theMove(entry.event)) #1': {
+    verdict: 'composed',
+    why: 'where a move moved to, composed by `theMove` below — the same column the arriving line carries, empty for an event that is not a move',
   },
   'occurrence.ts «[{}]» oneLine(entry.role) #1': {
     verdict: 'collapsed',
@@ -1046,29 +1133,25 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
     verdict: 'minted',
     why: 'the same word again, as the flag that reaches it — a kind is what `--kind` takes',
   },
-  'status.ts «  {} ({}) — mnema decision import {}» oneLine(base.directory) #1': {
+  'status.ts «{} ({}) — mnema decision import {}» oneLine(directory) #1': {
     verdict: 'collapsed',
-    why: 'the directory a `derived-from` edge names — a path somebody’s command line sent into the record, and an open relation anybody may write, so a break in it would forge a second line under this heading',
+    why: 'the directory a `derived-from` edge names, or one of the five conventional ones — a path somebody’s command line sent into the record, and an open relation anybody may write, so a break in it would forge a second line under the heading; a literal of this package is collapsed too, because the field is one field and a rule that held for one source of it and not the other would be two rules',
   },
-  'status.ts «  {} ({}) — mnema decision import {}» base.outside #1': {
+  'status.ts «{} ({}) — mnema decision import {}» documents #1': {
     verdict: 'minted',
     why: 'how many documents of that base the record has no decision for — a count this reading made over the file names',
   },
-  'status.ts «  {} ({}) — mnema decision import {}» oneLine(base.directory) #2': {
+  'status.ts «{} ({}) — mnema decision import {}» oneLine(directory) #2': {
     verdict: 'collapsed',
     why: 'the same path again, as the argument the verb takes — collapsed a second time because it is a second site of the same value, which is the rule this layer applies per FIELD',
   },
-  'status.ts «  {} ({}) — mnema decision import {}» base.documents #1': {
-    verdict: 'minted',
-    why: 'how many decision documents a conventional base holds — a count this reading made over the file names, under the ARRIVAL heading rather than the drift one',
+  'status.ts «  {}» toImport(base.directory, base.outside) #1': {
+    verdict: 'composed',
+    why: 'a base under the drift heading, worded by `toImport` — the one spelling of a base, its count and the command, shared with the opening document’s hook copy',
   },
-  'status.ts «  {} ({}) — mnema decision import {}» oneLine(base.directory) #3': {
-    verdict: 'collapsed',
-    why: 'one of the five conventional directories, a literal of this package — collapsed anyway, because the field is the same field and a rule that held for the value read from the record and not for the value read from a list would be two rules',
-  },
-  'status.ts «  {} ({}) — mnema decision import {}» oneLine(base.directory) #4': {
-    verdict: 'collapsed',
-    why: 'the same path again, as the argument the verb takes — the fourth site of one field, for the third site’s reason',
+  'status.ts «  {}» toImport(base.directory, base.documents) #1': {
+    verdict: 'composed',
+    why: 'a base under the arrival heading, worded by the same `toImport`',
   },
   'status.ts «{} of {}» shown #1': { verdict: 'minted', why: 'how many a list shows — a count' },
   'status.ts «{} of {}» total #1': { verdict: 'minted', why: 'how many there are — a count' },
@@ -1216,6 +1299,94 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   },
 
   // --- exported.ts: the file a pattern leaves in ---------------------------------
+  'diagram.ts «    [*] --> {}: {}» initial #1': {
+    verdict: 'minted',
+    why: 'the birth state of a workflow — a word of the closed state table',
+  },
+  'diagram.ts «    [*] --> {}: {}» entities(BORN[workflow]) #1': {
+    verdict: 'minted',
+    why: 'what a workflow’s birth is called — a constant written in this module, written as entities like every label',
+  },
+  'diagram.ts «    n0([{}])» quoted(id) #1': {
+    verdict: 'composed',
+    why: 'the id a caller typed, as the head of a timeline — `quoted` collapses it and writes the entities, the one door of this module',
+  },
+  'diagram.ts «    n{} --> n{}» at #1': {
+    verdict: 'minted',
+    why: 'the position of an event in a chain — a count this diagram made',
+  },
+  'diagram.ts «    n{} --> n{}» at + 1 #1': {
+    verdict: 'minted',
+    why: 'the position of the next event — a count this diagram made',
+  },
+  'diagram.ts «    n{}[{}]» at + 1 #1': {
+    verdict: 'minted',
+    why: 'the node name of an event — a count this diagram made, never a word of the record',
+  },
+  'diagram.ts «    n{}[{}]» quoted(describe(entry)) #1': {
+    verdict: 'composed',
+    why: 'an event’s line — when, kind, role, who and what it said, handed to `quoted`',
+  },
+  "diagram.ts «    {} --> {}: {}» entities([move.action, ...owed].join(' · ')) #1": {
+    verdict: 'minted',
+    why: 'a move’s action and the words of what it owes — rows of a closed transition table, written as entities',
+  },
+  'diagram.ts «    {} --> {}: {}» move.from #1': {
+    verdict: 'minted',
+    why: 'a state of the closed transition table',
+  },
+  'diagram.ts «    {} --> {}: {}» move.to #1': {
+    verdict: 'minted',
+    why: 'a state of the closed transition table',
+  },
+  'diagram.ts «    {} -->|{}| {}» nameOf(link.from) #1': {
+    verdict: 'minted',
+    why: 'the node name of an edge’s near end — a count this diagram made',
+  },
+  'diagram.ts «    {} -->|{}| {}» nameOf(link.to) #1': {
+    verdict: 'minted',
+    why: 'the node name of an edge’s far end — a count this diagram made',
+  },
+  'diagram.ts «    {} -->|{}| {}» quoted(edge) #1': {
+    verdict: 'composed',
+    why: 'an edge’s role and relation, handed to `quoted`; the relation is open text the record takes verbatim',
+  },
+  'diagram.ts «    {}[{}]» nameOf(id) #1': {
+    verdict: 'minted',
+    why: 'the node name of an entity — a count this diagram made',
+  },
+  'diagram.ts «    {}[{}]» quoted(`${id}${said}`) #1': {
+    verdict: 'composed',
+    why: 'an entity’s id and what the walk said of it, handed to `quoted`',
+  },
+  'diagram.ts « ({})» node.kind #1': {
+    verdict: 'minted',
+    why: 'the kind the search resolved an entity to — a word of the closed vocabulary',
+  },
+  'diagram.ts «"{}"» entities(oneLine(text)) #1': {
+    verdict: 'collapsed',
+    why: 'THE DOOR: every label of a record’s text is collapsed to one line here, then stripped of control characters and written as entities, so nothing in a label can end it',
+  },
+  'diagram.ts «#{};» char.codePointAt(0) #1': {
+    verdict: 'minted',
+    why: 'the number of a character the door wrote as an entity — a number, built from the character',
+  },
+  'diagram.ts «<{}>» proof #1': {
+    verdict: 'minted',
+    why: 'a proof field with no sentence of its own — a word of the closed set of proof fields',
+  },
+  'diagram.ts «n{}» names.size #1': {
+    verdict: 'minted',
+    why: 'the next node name — a count this diagram made',
+  },
+  'diagram.ts «{}:{}» link.rel #1': {
+    verdict: 'composed',
+    why: 'the relation an edge was recorded with, open text — it goes into `edge`, which `quoted` takes',
+  },
+  'diagram.ts «{}:{}» link.role #1': {
+    verdict: 'minted',
+    why: 'one of the three roles the walk chose',
+  },
   'exported.ts aside(NOTHING_RECORDED) #1': {
     verdict: 'minted',
     why: 'this module’s own sentence about what the export did not write',
@@ -1247,6 +1418,14 @@ const CLASSIFIED: Readonly<Record<string, { verdict: Verdict; why: string }>> = 
   'occurrence.ts itemLine(oneLine(event.kind)) #1': {
     verdict: 'collapsed',
     why: 'the event kind: closed today, and collapsed because the rule is the line’s',
+  },
+  'occurrence.ts itemLine(...theMove(event)) #1': {
+    verdict: 'composed',
+    why: 'where a move moved to, composed by `theMove` — one function for this line and the history’s, so the two cannot spell one event two ways',
+  },
+  'occurrence.ts «→ {}» oneLine(to) #1': {
+    verdict: 'collapsed',
+    why: 'the state the gate resolved a move to — a closed word of the workflow, collapsed because the rule is the line’s',
   },
   'occurrence.ts asWhen(oneLine(event.at)) #1': {
     verdict: 'collapsed',
@@ -1502,15 +1681,18 @@ describe('every value this layer puts on a line is classified', () => {
     // values are the start of a memory and an observation's topic, both typed by somebody.
     // The thirtieth is `within-a-hook.ts`, MACHINERY: it words nothing and receives no record —
     // it measures what the two opening texts print for a hook, and cuts them at a whole item.
-    expect(FOUND.composers.length + FOUND.machinery.length).toBe(30);
-    expect(FOUND.composers.length).toBe(17);
+    expect(FOUND.composers.length + FOUND.machinery.length).toBe(31);
+    expect(FOUND.composers.length).toBe(19);
     expect(FOUND.machinery).toContain('items.ts');
     expect(FOUND.machinery).toContain('line.ts');
     expect(FOUND.machinery).toContain('width.ts');
     expect(FOUND.machinery).toContain('within-a-hook.ts');
     expect(FOUND.builders.length).toBeGreaterThan(10);
     // 237 until `witness`'s copy of the no-tail sentence became a call of `tails.ts`'s one.
-    expect(FOUND.sites.length).toBe(251);
+    // 251 until the renderer began making an actor's control bytes visible and joined the
+    // composers with its two template values; then 253 until the rules in force began saying who
+    // accepted them (`brief.ts`, `record.ts`).
+    expect(FOUND.sites.length).toBe(294);
   });
 
   it('reads the verdict off the source rather than believing the table', () => {
@@ -1531,10 +1713,10 @@ describe('every value this layer puts on a line is classified', () => {
     // No arm of the case above may be empty, or that much of it is vacuous.
     const verdicts = Object.values(CLASSIFIED).map((said) => said.verdict);
     const count = (verdict: Verdict): number => verdicts.filter((said) => said === verdict).length;
-    expect(count('collapsed')).toBe(64);
-    expect(count('minted')).toBe(142);
-    expect(count('composed')).toBe(45);
-    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(64);
+    expect(count('collapsed')).toBe(68);
+    expect(count('minted')).toBe(164);
+    expect(count('composed')).toBe(62);
+    expect(FOUND.sites.filter((site) => /\boneLine\b/.test(site.expression))).toHaveLength(68);
   });
 
   it('every reason says where the value comes from', () => {
@@ -1648,17 +1830,28 @@ const SERVED_WHOLE: Readonly<Record<string, string>> = {
 describe('the body is served whole, and it is the only thing that is', () => {
   it('names every value this layer prints as a line of its own', () => {
     // Everything else a reading writes goes through a template or through a part. What
-    // is pushed as a BARE value is a paragraph, and there are five of them.
-    const bare: string[] = [];
+    // is pushed as a bare value is a paragraph, and there are six of them.
+    const served: string[] = [];
+    const unmade: string[] = [];
     for (const file of sourceFiles(LAYER)) {
       const text = withoutComments(readFileSync(file, 'utf-8'));
       for (const pushed of text.matchAll(
-        /\.push\(\s*([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)+)\s*\)/g,
+        /\.push\(\s*(neutralized\(\s*)?([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)+)\s*\)/g,
       )) {
-        bare.push(pushed[1] as string);
+        served.push(pushed[2] as string);
+        if (pushed[1] === undefined) unmade.push(pushed[2] as string);
       }
     }
-    expect(bare.sort()).toEqual(Object.keys(SERVED_WHOLE).sort());
+    expect(served.sort()).toEqual(Object.keys(SERVED_WHOLE).sort());
+    // SERVED WHOLE IS NOT SERVED RAW. This census used to read the bare push (`.push(value)`)
+    // as the shape of a paragraph, and the premise under it was that a body needed no rule
+    // because it is not a line. A body is not a LINE, and it is still text a terminal reads:
+    // a decision's rationale holding a clear-screen sequence came out of `show` as one. So
+    // each of the six is pushed through `neutralized`, which keeps every line feed and tab
+    // the paragraph has and makes the bytes that are commands visible, and a bare push is
+    // the defect this asserts away. `neutralizes-control-bytes-everywhere.test.ts` holds the
+    // behaviour; this holds that no seventh paragraph is added without it.
+    expect(unmade).toEqual([]);
   });
 
   it('says why each one is not a line', () => {
